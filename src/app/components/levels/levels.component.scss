@@ -1,0 +1,35 @@
+
+.levels{
+    width: 100%;
+    height: fit-content;
+    border-radius: 10px;
+    // background-color: #2EB772;
+    box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    background-color: #fff;
+}
+.levels-title{
+    color: #224957;
+    font-weight: bolder;
+    font-size: x-large;
+    padding-top: 1rem;
+    padding-bottom: 0.5rem;
+}
+/* .levels-bar-chart{
+    padding: 50px;
+    width: 80%;
+} */
+
+.levels-bar-chart{
+    padding: 0 0 0.5rem 0;
+    box-sizing: border-box;
+    // background-color: #224957;
+}
+
+
+@media screen and (max-width: 767px){
+    .levels-title{
+        font-size: 1.3em;
+    }
+}

@@ -1,0 +1,60 @@
+.container-sales-card{
+    width: 100%;
+    display: flex;
+
+    .sales-card{
+        width: 23%;
+        height: 180px;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-right: 1rem;
+        // background-color: aquamarine;
+
+        .info{
+            display: flex;
+            justify-content: space-between;
+
+            .info-tittle{
+                font-weight: 500;
+                font-size: 30px;
+                color: #fff;
+            }
+            .info-time{
+                color: black;
+                cursor: pointer;
+
+                .fa-caret-down{
+                    margin-left: 0.3rem;
+                }
+            }
+        }
+
+        .sales-card-content{
+            font-size: 30px;
+            color: #25925B;
+        }
+    }
+
+    .bg-1{
+        background: url(../../../assets/transaction-card1.png);
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-position: cover;
+    }
+    .bg-2{
+        background: url(../../../assets/transaction-card2.png);
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-position: cover;
+    }
+    .bg-3{
+        background: url(../../../assets/transaction-card3.png);
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-position: cover;
+    }
+}
+
+
+
+

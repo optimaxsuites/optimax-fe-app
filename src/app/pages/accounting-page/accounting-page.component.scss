@@ -1,0 +1,263 @@
+ .accounting-container{
+    width: 100%;
+ }
+
+.accounting-header-container{
+    width: 100%;
+    display: flex;
+    justify-content: end;
+}
+.accounting-header{
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.create-invoice-btn{
+    border: none;
+    padding: 0.5rem 1.5rem;
+    background-color: #224957;
+    color: #fff;
+    font-size: 1.1em;
+    border-radius: 10px;
+}
+
+.accounting-searchbar-container{
+    width: 45%;
+}
+.accounting-headersmall-container{
+    width: 50%;
+}
+
+
+.accounting-body{
+    padding: 1rem;
+    width: 100%;
+}
+.accounting-body-title{
+    font-size: 1.5em;
+    color: #224957;
+    text-transform: capitalize;
+}
+
+
+
+
+
+.accounting-body-container{
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+.first-container{
+    width: 69%;
+}
+
+.second-container{
+    width: 30%;
+    height: fit-content;
+}
+
+.today-sales-container{
+    margin-bottom: 1rem;
+}
+
+.earnings-container{
+    margin-bottom: 1rem;
+}
+.levels-container{
+    margin-bottom: 1rem;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// .first-container{
+//     width: 100%;
+//     display: flex;
+//     margin-top: 2.5rem;
+//     /* background-color: black; */
+// }
+// .today-sales-container{
+//     width: 45%;
+// }
+// .flex{
+//     display: flex;
+//     width: 100%;
+// }
+// .levels-container{
+//     width: 70%;
+//     height: fit-content;
+//     margin-left: 1rem;
+// }
+// .earnings-container{
+//     width: 30%;
+//     margin-left: 1rem;
+//     height: 285px;
+// }
+
+// .second-container{
+//     width: 100%;
+//     display: flex;
+//     margin-top: 2.5rem;
+// }
+// .top-products-container{
+//     width: 45%;
+// }
+// .customer-fulfilment-container{
+//     width: 50%;
+//     height: 285px;
+//     margin-left: 1rem;
+// }
+// .total-revenue-container{
+//     width: 50%;
+//     margin-left: 1rem;
+//     height: 285px;
+// }
+// .hidden{
+//     display: none;
+// }
+// .flex-2{
+//     display: flex;
+//     width: 50%;
+// }
+
+
+
+@media screen and (max-width: 1200px){
+    .accounting-container{
+        width: 100%;
+    }
+}
+
+
+@media screen and (max-width: 992px){
+    // .accounting-body-title{
+    //     font-size: 1.5em;
+    // }
+    // .show{
+    //     display: block;
+    // }
+    // .flex{
+    //     display: block;
+    //     width: 49%;
+    // }
+    // .flex-2{
+    //     display: block;
+    //     width: 49%;
+    // }
+    // .md-hidden{
+    //     display: none;
+    // }
+    // .first-container{
+    //     justify-content: space-between;
+    // }
+    // .second-container{
+    //     justify-content: space-between;
+    // }
+    // .today-sales-container{
+    //     width: 49%;
+    // }
+    // .levels-container{
+    //     width: 100%;
+    //     margin: 0;
+    //     height: 285px;
+    // }
+    // .earnings-container{
+    //     width: 100%;
+    //     margin: 0;
+    //     height: 285px;
+    // }
+    // .top-products-container{
+    //     width: 49%;
+    // }
+
+    // .customer-fulfilment-container{
+    //     width: 100%;
+    //     margin: 0;
+    // }
+    // .total-revenue-container{
+    //     width: 100%;
+    //     margin-top: 1rem;
+    //     margin-left: 0;
+    // }
+    .first-container{
+        width: 100%;
+    }
+    .accounting-body-container{
+        display: block;
+    }
+    .second-container{
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .earnings-container, .total-revenue-container{
+        width: 49%;
+    }
+}
+
+@media screen and (max-width: 767px){
+
+
+    // .today-sales-container,
+    // .top-products-container{
+    //     width: 100%;
+    // }
+    // .top-products-container{
+    //     margin-top: 1rem;
+    // }
+    // .accounting-body-title{
+    //     font-size: 1.3em;
+    // }
+    .hidden{
+        display: none;
+    }
+
+}
+
+@media screen and (max-width: 650px){
+    // .second-container{
+    //     display: block;
+    // }
+    // .flex{
+    //     width: 100%;
+    // }
+    // .flex-2{
+    //     margin-top: 1rem;
+    //     width: 100%;
+    // }
+}
+@media screen and (max-width: 600px){
+    .second-container{
+        width: 100%;
+        display: block;
+    }
+    .earnings-container, .total-revenue-container{
+        width: 100%;
+    }
+}

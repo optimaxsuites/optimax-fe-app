@@ -1,0 +1,88 @@
+
+.modal-wrapper{
+    width:1000px;
+}
+
+@media print {
+    .modal-wrapper {
+      width: 100%;
+      height: 100%;
+      margin: 0; /* Remove any margins */
+    }
+  }
+
+.header-section{
+    display: flex;
+    justify-content: space-between;
+}
+.logo-section{
+    background-color: #F1F1F1;
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    
+}
+img{
+    background-color: #F1F1F1;
+    padding: 0.5rem;
+    box-sizing: border-box;
+    height: 200px;
+    width: 200px;
+}
+
+.info-section{
+    // display: flex;
+    // justify-content: end;
+    
+}
+.first-info-section{
+
+    display: flex;
+    justify-content: end;
+    
+}
+.first-container{
+
+    width: 40%;
+    display: inline-block;
+}
+
+mat-form-field{
+    width:100%;
+}
+.second-info-section{
+    display: flex;
+    justify-content: space-between;
+    // border: 1px solid black;
+    padding: 1rem;
+    box-sizing: border-box;
+    
+}
+
+.right{
+    width: 49%;
+    padding: 1rem;
+    background-color: #f2fcff ;
+
+    // border: 1px solid black;
+}
+.billing-span{
+    font-size: 0.7em;
+    color: #949494;
+}
+
+
+
+
+
+.left{
+    width: 49%;
+    padding: 1rem;
+    background-color: #f2fcff ;
+
+    // border: 1px solid black;
+}
+.create-client-btn{
+    background-color: #224957;
+    color: #fff;
+}
