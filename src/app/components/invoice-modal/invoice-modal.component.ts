@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 // import { MatDialog } from '@angular/material/dialog';
 
 interface Company {
@@ -18,12 +19,13 @@ interface Client {
   viewValue: string;
 }
 
-interface ClientDetails {
-  name: string;
-  address: string;
-  phoneNumber: string;
-  email: string;
-}
+// interface ClientDetails {
+//   name: string;
+//   address: string;
+//   phoneNumber: string;
+//   email: string;
+// }
+
 
 @Component({
   selector: 'app-invoice-modal',
@@ -33,14 +35,28 @@ interface ClientDetails {
 export class InvoiceModalComponent {
   showSecondComponent = false;
   selectedValue?: string;
+  clientDetails: any = {}; 
+   
+ 
+  myForm!: FormGroup ;
+  options: string[] = ['Nigeria - NGN', 'US Dollar - USD', 'Cuba - CUD'];
 
+  constructor(private fb: FormBuilder) { }
 
-  // constructor( private dialogRef: MatDialog ){}
+  ngOnInit(): void {
+    this.myForm = this.fb.group({
+      myOption: [''] // Set default value if needed
+    });
+  }
 
-  // onClose(){
-  //   this.dialogRef.closeAll()
-  // }
-
+  tableData = [
+    { name: 'Product 1', taxRate: '0.5%', quantity: 1, rate: 5000, amount: 5000, tax: 25.00, total: 5025.00 },
+    { name: 'Product 2', taxRate: '0.5%', quantity: 1, rate: 5000, amount: 10000, tax: 50.00, total: 5050.00 }
+    // Add more data as needed
+  ];
+  deleteRow(index: number) {
+    this.tableData.splice(index, 1);
+  }
 
   toggleSecondComponent() {
       this.showSecondComponent = !this.showSecondComponent;
@@ -97,14 +113,19 @@ export class InvoiceModalComponent {
     {value: 'Opay', viewValue: 'Opay'},
   ];
 
-  clientDetails: ClientDetails = {
-    name: '',
-    address: '',
-    phoneNumber: '',
-    email: ''
-  };
+  // clientDetails: ClientDetails = {
+  //   name: '',
+  //   address: '',
+  //   phoneNumber: '',
+  //   email: ''
+  // };
+
 
   updateClientInfo() {
+    this.clientDetails = this.clients.find(client => client.value === this.selectedValue);
+      this.showSecondComponent = true; // Show the second component
+
+
     // Replace this logic with your actual business details fetching mechanism
     if (this.selectedValue === 'MTN') {
       this.clientDetails = {
@@ -134,7 +155,6 @@ export class InvoiceModalComponent {
 
 
   
-
 
 
 }

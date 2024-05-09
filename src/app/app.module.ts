@@ -12,6 +12,9 @@ import {MatButtonModule} from '@angular/material/button';
 import {CdkScrollable} from '@angular/cdk/scrolling';
 import {MatTabsModule} from '@angular/material/tabs';
 import {MatDividerModule} from '@angular/material/divider';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { NgApexchartsModule } from 'ng-apexcharts';
+import { DropdownModule } from 'primeng/dropdown';
 
 
 
@@ -45,8 +48,6 @@ import { SettingsPageComponent } from './pages/settings-page/settings-page.compo
 import { MembersPageComponent } from './pages/members-page/members-page.component';
 import { LoginComponent } from './accounts/login/login.component';
 import { RegisterComponent } from './accounts/register/register.component';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { NgApexchartsModule } from 'ng-apexcharts';
 import { CanvasJSAngularChartsModule } from '@canvasjs/angular-charts';
 import { InvoiceModalComponent } from './components/invoice-modal/invoice-modal.component';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
@@ -110,7 +111,8 @@ import { InvoiceComponent } from './components/invoice/invoice.component';
     MatButtonModule,
     CdkScrollable,
     MatTabsModule,
-    MatDividerModule
+    MatDividerModule,
+    DropdownModule
     
   ],
   providers: [

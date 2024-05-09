@@ -1,163 +1,200 @@
+<div class="container" >
+    <div class="modal-wrapper p-4" #contentToPrint>
+        <div class="header-section">
+            <section class="title-section">
+                <h1>Quotation</h1>
+            </section>
+        </div>
 
-<div class="modal-wrapper p-4">
-    <div class="header-section">
-        <section class="logo-section">
-            <img src="../../../assets/invoice-logo.jpg" alt="Company's Logo">
-        </section>
-        <section class="title-section">
-            <h1>Invoice</h1>
-        </section>
-    </div>
+        
 
-    <div class="info-section">
-        <section class="first-info-section">
-            <!-- <label for="">Invoice No</label> -->
-            <div class="first-container">
+        <div class="info-section">
+            <section class="first-info-section">
+                <div class="first-container">
+                    <div>
+                        <mat-form-field>
+                        <mat-label>Quotation No</mat-label>
+                        <input matInput placeholder="Quotation No">
+                        </mat-form-field>
+                    </div>
+                    <div class="d-flex">
+                        <mat-form-field>
+                            <mat-label>Quotation Date</mat-label>
+                            <input matInput [matDatepicker]="picker1" placeholder="dd/mm/yyyy">
+                            <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
+                            <mat-datepicker #picker1></mat-datepicker>
+                        </mat-form-field>
 
-                <div>
-                    <mat-form-field>
-                      <mat-label>Invoice No</mat-label>
-                      <input matInput placeholder="Invoice No">
-                    </mat-form-field>
-                </div>
-                <div class="d-flex">
-                    <mat-form-field>
-                        <mat-label>Choose Date</mat-label>
-                        <input matInput [matDatepicker]="picker1" placeholder="dd/mm/yyyy">
-                        <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
-                        <mat-datepicker #picker1></mat-datepicker>
-                    </mat-form-field>
-
-                    <mat-form-field class="ms-2">
-                        <mat-label>Due Date</mat-label>
-                        <input matInput [matDatepicker]="picker2" placeholder="dd/mm/yyyy">
-                        <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
-                        <mat-datepicker #picker2></mat-datepicker>
-                    </mat-form-field>
-                </div>
-
-
-
-                <!-- <div>
-                    <span><label for="">Invoice No:</label></span>
-                    <input matInput type="text" class="input">
-                </div>
-                <div>
-                    <span><label for="">Invoice Date:</label></span>
-                    <input type="date" class="input">
-                </div>
-                <div>
-                    <span><label for="">Invoice No:</label></span>
-                    <input type="text" class="input">
-                </div> -->
-            </div>
-        </section>
-
-        <section class="second-info-section">
-            <div class="right">
-                <div class="top-container">
-                    <div class="billing-selection">
-                        <form>
-                            <h5 class="billing-title">Billing By <span class="billing-span">[ Company's details ]</span></h5>
-                            <mat-form-field>
-                              <mat-label>Select Company</mat-label>
-                              <mat-select [(ngModel)]="selectedValue" (ngModelChange)="updateBusinessInfo()" name="Company" placeholder="Select Company">
-                                  <mat-option *ngFor="let company of companies" [value]="company.value">{{company.viewValue}}</mat-option>
-                              </mat-select>
-                            </mat-form-field>
-                        </form>
+                        <mat-form-field class="ms-2">
+                            <mat-label> Quotaion Due Date</mat-label>
+                            <input matInput [matDatepicker]="picker2" placeholder="dd/mm/yyyy">
+                            <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
+                            <mat-datepicker #picker2></mat-datepicker>
+                        </mat-form-field>
+                    </div>
+                    <div>
+                        <mat-form-field>
+                        <mat-label>Project Title</mat-label>
+                        <input matInput placeholder="Project Title">
+                        </mat-form-field>
                     </div>
                 </div>
-                <div class="bottom-container">
-                    <h5>Business Details</h5>
-                    <div class="business-info">
-                        <div class="d-flex">
-                            <p>Business Name:</p>
-                            <p class="ms-2">{{ businessDetails.name }}</p>
-                        </div>
-                        <div class="d-flex">
-                            <p>Address:</p>
-                            <p class="ms-2">{{ businessDetails.address }}</p>
-                        </div>
-                        <div class="d-flex">
-                            <P>Phone Number:</P>
-                            <p class="ms-2">{{ businessDetails.phoneNumber }}</p>
-                        </div>
-                        <div class="d-flex">
-                            <p>Email Address:</p>
-                            <p class="ms-2">{{ businessDetails.email }}</p>
-                        </div>
-                    </div>
+                <div class="logo-wrapper">
+                    <section class="logo-section">
+                        <img src="../../../assets/invoce-logo.jpg" alt="Company's Logo">
+                    </section>
                 </div>
-            </div>
+            </section>
 
-            
-
-
-            <div class="left">
-                <div class="top-container"></div>
-                <div class="bottom-container">
+            <section class="second-info-section">
+                <div class="right">
                     <div class="top-container">
                         <div class="billing-selection">
                             <form>
-                                <h5 class="billing-title">Billing To <span class="billing-span">[ Client's details ]</span></h5>
+                                <h5 class="billing-title">Quotation From <span class="billing-span">[ Company's details ]</span></h5>
                                 <mat-form-field>
-                                  <mat-label>Select Company</mat-label>
-                                  <mat-select [(ngModel)]="selectedValue" (ngModelChange)="updateClientInfo()" name="Company" placeholder="Select Company">
-                                      <mat-option *ngFor="let client of clients" [value]="client.value">{{client.viewValue}}</mat-option>
-                                  </mat-select>
+                                <mat-label>Select Company</mat-label>
+                                <mat-select [(ngModel)]="selectedValue" (ngModelChange)="updateBusinessInfo()" name="Company" placeholder="Select Company">
+                                    <mat-option *ngFor="let company of companies" [value]="company.value">{{company.viewValue}}</mat-option>
+                                </mat-select>
                                 </mat-form-field>
                             </form>
                         </div>
                     </div>
-                    <div class="first-component" *ngIf="!showSecondComponent" >
-                        <p>Add a new client</p>
-                        <button (click)="toggleSecondComponent()" class="btn create-client-btn">Create Client</button>
-                    </div>
-                    <div class="second-component" *ngIf="showSecondComponent">
-                        <h5>Business Details</h5>
-                    <div class="business-info">
-                        <div class="d-flex">
-                            <p>Business Name:</p>
-                            <p class="ms-2">{{ clientDetails.name }}</p>
+                    <div class="info-bottom-section">
+                        <div class="bottom-container">
+                            <h5>Business Details</h5>
+                            <div class="business-info">
+                                <div class="d-flex">
+                                    <p>Business Name:</p>
+                                    <p class="ms-2">{{ businessDetails.name }}</p>
+                                </div>
+                                <div class="d-flex">
+                                    <p>Address:</p>
+                                    <p class="ms-2">{{ businessDetails.address }}</p>
+                                </div>
+                                <div class="d-flex">
+                                    <P>Phone Number:</P>
+                                    <p class="ms-2">{{ businessDetails.phoneNumber }}</p>
+                                </div>
+                                <div class="d-flex">
+                                    <p>Email Address:</p>
+                                    <p class="ms-2">{{ businessDetails.email }}</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="d-flex">
-                            <p>Address:</p>
-                            <p class="ms-2">{{ clientDetails.address }}</p>
-                        </div>
-                        <div class="d-flex">
-                            <P>Phone Number:</P>
-                            <p class="ms-2">{{ clientDetails.phoneNumber }}</p>
-                        </div>
-                        <div class="d-flex">
-                            <p>Email Address:</p>
-                            <p class="ms-2">{{ clientDetails.email }}</p>
-                        </div>
-                    </div>
                     </div>
                 </div>
+
+                
+
+
+                <div class="left">
+                    <div class="top-container"></div>
+                    <div class="bottom-container">
+                        <div class="top-container">
+                            <div class="billing-selection">
+                                <form>
+                                    <h5 class="billing-title">Quotation For <span class="billing-span">[ Client's details ]</span></h5>
+                                    <mat-form-field>
+                                    <mat-label>Select Client</mat-label>
+                                    <mat-select [(ngModel)]="selectedValue" (ngModelChange)="updateClientInfo()" name="Company" placeholder="Select Company">
+                                        <mat-option *ngFor="let client of clients" [value]="client.value">{{client.viewValue}}</mat-option>
+                                    </mat-select>
+                                    </mat-form-field>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="info-bottom-section">
+                            <div class="first-component" *ngIf="!showSecondComponent" >
+                                <p>Select client from list</p>
+                                <p class="text-center">Or</p>
+                                <button  class="btn create-client-btn">Add New Client</button>
+                            </div>
+                            <div class="second-component" *ngIf="showSecondComponent">
+                                <h5>Business Details</h5>
+                                <div class="business-info">
+                                    <div class="d-flex">
+                                        <p>Business Name:</p>
+                                        <p class="ms-2">{{ clientDetails.name }}</p>
+                                    </div>
+                                    <div class="d-flex">
+                                        <p>Address:</p>
+                                        <p class="ms-2">{{ clientDetails.address }}</p>
+                                    </div>
+                                    <div class="d-flex">
+                                        <P>Phone Number:</P>
+                                        <p class="ms-2">{{ clientDetails.phoneNumber }}</p>
+                                    </div>
+                                    <div class="d-flex">
+                                        <p>Email Address:</p>
+                                        <p class="ms-2">{{ clientDetails.email }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <div class="info-section">
+            <div class="tax-currency">
+                <div class="tax-btn">
+                    <button class="btn flat-btn">Add Tax</button>
+                </div>
+                <div class="currency-selector ms-2">
+                    <label class="label ms-2 me-2">Currency <span style="color:red">*</span></label>
+                    <form [formGroup]="myForm">
+                        <div class="input">
+                            <select formControlName="myOption" class="currency" >
+                                <option *ngFor="let option of options" [value]="option">{{option}}</option>
+                            </select>
+                        </div>
+                      </form>
+                </div>
             </div>
-        </section>
+        </div>
 
-    </div>
+        <div class="table-wrapper">
+            <table class="top-products-table w3-table">
+                <thead>
+                  <tr class="top-products-table-row">
+                    <th class="top-products-table-head col-6">Item</th>
+                    <th class="top-products-table-head">Tax Rate</th>
+                    <th class="top-products-table-head">Quantity</th>
+                    <th class="top-products-table-head">Rate</th>
+                    <th class="top-products-table-head">Amount</th>
+                    <th class="top-products-table-head">Tax</th>
+                    <th class="top-products-table-head">Total</th>
+                    <th class="top-products-table-head"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                    <tr class="top-products-table-row" *ngFor="let item of tableData; let i = index">
+                        <td class="top-products-table-data">Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis, recusandae!</td>
+                        <td class="top-products-table-data">0.5%</td>
+                        <td class="top-products-table-data">1</td>
+                        <td class="top-products-table-data">5000</td>
+                        <td class="top-products-table-data">5000</td>
+                        <td class="top-products-table-data">25.00</td>
+                        <td class="top-products-table-data">5025.00</td>
+                        <td class="top-products-table-data">
+                            <i (click)="deleteRow(i)" class="fa-solid fa-x"></i>
+                            <!-- <button >Delete</button>  -->
+                          </td>
+                    </tr>
+                </tbody>
+            </table>
 
-    <div class="info-section">
-        <div>
-            
+            <div class="add-table-row">
+                <button class="btn new-table-row">Add New Item</button>
+            </div>
+        </div>
+
+        <div class="btn-wrapper">
+            <button class="btn create-client-btn">Save</button>
         </div>
     </div>
-
-
-
-
-
-
-
-    <!-- <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Excepturi corrupti, dolorem fuga in i
-        taque similique quam expedita sint sit a
-        d nisi vitae velit at eveniet aliquam recusandae quaerat ipsam facilis.</p> -->
-
-
-    <button>Save</button>
-    <button>Close</button>
 </div>
