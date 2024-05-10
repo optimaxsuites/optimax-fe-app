@@ -56,6 +56,7 @@ import { QuotationComponent } from './components/quotation/quotation.component';
 import { ProformaInvoiceComponent } from './components/proforma-invoice/proforma-invoice.component';
 import { ReceiptComponent } from './components/receipt/receipt.component';
 import { InvoiceComponent } from './components/invoice/invoice.component';
+import { NumberOnlyDirective } from './directive/number-only/number-only.directive';
 
 @NgModule({
   declarations: [
@@ -93,6 +94,7 @@ import { InvoiceComponent } from './components/invoice/invoice.component';
     ProformaInvoiceComponent,
     ReceiptComponent,
     InvoiceComponent,
+    NumberOnlyDirective,
   ],
   imports: [
     BrowserModule,

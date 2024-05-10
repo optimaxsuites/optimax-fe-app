@@ -159,15 +159,21 @@ mat-form-field{
 
 
 
-.top-products-table{
+tr, .top-products-table{
+    display: block;
     thead{
         background-color: #224957;
         color: #fff;
     }
     tbody{
         background-color: #f2fcff ;
+        // background-color: red;
+
         tr{
-            border-top: 1px solid lightgray;
+            .table-item{
+                display: flex;
+                justify-content: space-between;
+            }
         }
     }
 }
@@ -176,11 +182,66 @@ mat-form-field{
     color: #224957;
     cursor: pointer;
 }
+thead{
+    width: 100%;
+}
+.table-item{
 
+    display: flex;
+    justify-content: space-between;
+}
 .new-table-row{
     width: 50%;
     background-color: #224957;
     color: #fff;
     border: 1px solid #bfd9e2;
     padding: 1rem 5rem;
+}
+input:focus,
+textarea:focus {
+  outline: none;
+  border: none;
+
+}
+input:active,
+textarea:active {
+  outline: none;
+  border: none;
+
+}
+.form-control{
+    width: 100%;
+    border-top: 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 1px solid black;
+    border-radius: 0;
+    background-color: transparent;
+}
+.add-des-btn{
+}
+
+
+@media screen and (max-width: 1200px) {
+    .modal-wrapper{
+        width: 100%;
+    }
+    table{
+        // width: 700px;
+
+    }
+}
+@media screen and (max-width: 767px) {
+    .modal-wrapper{
+        width: 100%;
+    }
+    table{
+        width: 100%;
+    table-layout: auto;
+    overflow-x: auto;
+
+    }
+    .second-info-section{
+        display: block;
+    }
 }

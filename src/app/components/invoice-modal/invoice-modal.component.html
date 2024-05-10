@@ -17,7 +17,7 @@
                         <input matInput placeholder="Quotation No">
                         </mat-form-field>
                     </div>
-                    <div class="d-flex">
+                    <div class="d-flex ">
                         <mat-form-field>
                             <mat-label>Quotation Date</mat-label>
                             <input matInput [matDatepicker]="picker1" placeholder="dd/mm/yyyy">
@@ -160,36 +160,65 @@
         <div class="table-wrapper">
             <table class="top-products-table w3-table">
                 <thead>
-                  <tr class="top-products-table-row">
-                    <th class="top-products-table-head col-6">Item</th>
-                    <th class="top-products-table-head">Tax Rate</th>
-                    <th class="top-products-table-head">Quantity</th>
-                    <th class="top-products-table-head">Rate</th>
-                    <th class="top-products-table-head">Amount</th>
-                    <th class="top-products-table-head">Tax</th>
-                    <th class="top-products-table-head">Total</th>
-                    <th class="top-products-table-head"></th>
+                  <tr class="top-products-table-row ">
+                    <div class="table-item">
+                        <th class="top-products-table-head col-5">Item</th>
+                        <th class="top-products-table-head col">Tax Rate</th>
+                        <th class="top-products-table-head col">Quantity</th>
+                        <th class="top-products-table-head col">Rate</th>
+                        <th class="top-products-table-head col">Amount</th>
+                        <th class="top-products-table-head col">Tax</th>
+                        <th class="top-products-table-head col">Total</th>
+                        <th class="top-products-table-head"></th>
+                    </div>
                   </tr>
                 </thead>
                 <tbody>
                     <tr class="top-products-table-row" *ngFor="let item of tableData; let i = index">
-                        <td class="top-products-table-data">Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis, recusandae!</td>
-                        <td class="top-products-table-data">0.5%</td>
-                        <td class="top-products-table-data">1</td>
-                        <td class="top-products-table-data">5000</td>
-                        <td class="top-products-table-data">5000</td>
-                        <td class="top-products-table-data">25.00</td>
-                        <td class="top-products-table-data">5025.00</td>
-                        <td class="top-products-table-data">
-                            <i (click)="deleteRow(i)" class="fa-solid fa-x"></i>
-                            <!-- <button >Delete</button>  -->
-                          </td>
+                        <div class="table-item">
+                            <td class="top-products-table-data col-5">
+                                <input type="text" class="form-control" [(ngModel)]="item.name">
+                            </td>
+                            <td class="top-products-table-data col">
+                                <input type="text" class="form-control"  [(ngModel)]="item.taxRate" appNumberOnly>
+                            </td>
+                            <td class="top-products-table-data col">
+                                <input type="text" class="form-control" [(ngModel)]="item.quantity" appNumberOnly>
+                            </td>
+                            <td class="top-products-table-data col">
+                                <input type="text" class="form-control" [(ngModel)]="item.rate" appNumberOnly>
+                            </td>
+                            <td class="top-products-table-data col">
+                                <input type="text" class="form-control" [(ngModel)]="item.amount" appNumberOnly>
+                            </td>
+                            <td class="top-products-table-data col">
+                                <input type="text" class="form-control" [(ngModel)]="item.tax" appNumberOnly>
+                            </td>
+                            <td class="top-products-table-data col">
+                                <input type="text" class="form-control" [(ngModel)]="item.total" appNumberOnly>
+                            </td>
+                            <td class="top-products-table-data">
+                                <i (click)="deleteRow(i)" class="fa-solid fa-x"></i>
+                                <!-- <button >Delete</button>  -->
+                            </td>
+                        </div>
+
+                        <td class="description-box">
+                            <input type="text" title="Enter your description here" placeholder="Hover over me for description">
+
+                        </td>
+
+
+                        <td class="add-description-btn">
+                            <button class="btn btn-light">Add Description</button>
+                        </td>
                     </tr>
                 </tbody>
+                
             </table>
 
             <div class="add-table-row">
-                <button class="btn new-table-row">Add New Item</button>
+                <button (click)="addNewRow()" class="btn new-table-row">Add New </button>
             </div>
         </div>
 

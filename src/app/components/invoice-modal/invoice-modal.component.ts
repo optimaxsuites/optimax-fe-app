@@ -49,13 +49,23 @@ export class InvoiceModalComponent {
     });
   }
 
-  tableData = [
-    { name: 'Product 1', taxRate: '0.5%', quantity: 1, rate: 5000, amount: 5000, tax: 25.00, total: 5025.00 },
-    { name: 'Product 2', taxRate: '0.5%', quantity: 1, rate: 5000, amount: 10000, tax: 50.00, total: 5050.00 }
-    // Add more data as needed
-  ];
+  
+
+  // tableData = [
+  //   { name: 'Product 1', taxRate: '0.5%', quantity: 1, rate: 5000, amount: 5000, tax: 25.00, total: 5025.00 },
+  //   { name: 'Product 2', taxRate: '0.5%', quantity: 1, rate: 5000, amount: 10000, tax: 50.00, total: 5050.00 }
+  //   // Add more data as needed
+  // ];
+
+  tableData: any[] = [{}];
+
   deleteRow(index: number) {
     this.tableData.splice(index, 1);
+  }
+
+  addNewRow(): void {
+    // You can add a new empty row here
+    this.tableData.push({});
   }
 
   toggleSecondComponent() {
