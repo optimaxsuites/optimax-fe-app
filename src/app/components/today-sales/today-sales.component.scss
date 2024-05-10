@@ -1,0 +1,98 @@
+.todaysales{
+    width: 100%;
+    border-radius: 10px;
+    // background-color: #2EB772;
+    box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px;
+    padding: 1rem;
+    box-sizing: border-box;
+    background-color: #fff;
+}
+.todaysales-title{
+    color: #224957;
+    font-weight: bolder;
+    font-size: x-large;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+}
+.todaysales-subtitle{
+    color: black;
+    font-weight: 500;
+    margin: 0;
+    padding: 0;
+}
+.todaysales-body{
+    display: flex;
+    margin-top: 2.5rem;
+    box-sizing: border-box;
+    justify-content: space-between;
+}
+.todaysales-card{
+    width: 23%;
+    /* height: 150px; */
+    padding: 1rem;
+    box-sizing: border-box;
+    border-radius: 10px;
+    background-color: #2EB772;
+}
+.todaysales-card .icon{
+    margin: 0;
+    padding: 0;
+}
+
+.todaysales-card .amount{
+    font-size: larger;
+    font-weight: bolder;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    color: #fff;
+}
+.middle-text{
+    font-weight: 500;
+    color: #fff;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.text-sm{
+    font-size: 0.8rem;
+    font-weight: 400;
+    margin: 0;
+}
+.color-1{
+    color: #FEB95A;
+}
+.color-2{
+    color: #B6B6B6;
+}
+.color-3{
+    color: #F2C8ED;
+}
+.color-4{
+    color: #20AEF3;
+}
+
+
+@media screen and (max-width: 992px){
+    .todaysales-body{
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .todaysales-card{
+        flex: 0 0 calc(50% - 0.5rem);
+        // max-width: calc(50% - 1rem);
+        margin-bottom: 1rem;
+    }
+}
+
+@media screen and (max-width: 767px){
+    .todaysales-body{
+        display: block;
+    }
+    .todaysales-card{
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+    .todaysales-title{
+        font-size: 1.3em;
+
+    }
+}
