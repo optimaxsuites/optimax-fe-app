@@ -1,0 +1,23 @@
+.search-container {
+    width: 100%;
+    position: relative;
+
+    input{
+        width: 100%;
+        background-color: #E9EDEA;
+        padding: 1em;
+        outline: none;
+        border: none;
+        border-radius: 10px;
+    }
+
+    .fa-search {
+        position: absolute;
+        padding: 0.5em;
+        top: 50%;
+        right: 10px; 
+        transform: translateY(-50%);
+        cursor: pointer;
+    }
+}
+

@@ -1,0 +1,23 @@
+<div class="master-container" >
+    <div class="sidebar-container" [ngClass]="{ 'show': !sidebarHidden, 'hidden': sidebarHidden }" >
+        <!-- <div class="fixed-sidebar" > -->
+
+        <app-sidebar #sidebar ></app-sidebar>
+
+        <!-- </div> -->
+        
+    </div>
+    
+    <div class="main-container">
+        <div class="navbar-container">
+            <app-navbar (toggleSidebar)="toggleSidebar()"></app-navbar>
+        </div>
+        <!-- <div class="searchbar-container">
+            <app-searchbar></app-searchbar>
+        </div> -->
+        <div class="main">
+            
+            <router-outlet></router-outlet>
+        </div>
+    </div>
+</div>
