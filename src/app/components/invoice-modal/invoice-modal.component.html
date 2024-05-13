@@ -2,7 +2,7 @@
     <div class="modal-wrapper p-4" #contentToPrint>
         <div class="header-section">
             <section class="title-section">
-                <h1>Quotation</h1>
+                <h1 class="form-title">Quotation</h1>
             </section>
         </div>
 
@@ -174,51 +174,100 @@
                   </tr>
                 </thead>
                 <tbody>
-                    <tr class="top-products-table-row" *ngFor="let item of tableData; let i = index">
-                        <div class="table-item">
-                            <td class="top-products-table-data col-5">
-                                <input type="text" class="form-control" [(ngModel)]="item.name">
-                            </td>
-                            <td class="top-products-table-data col ms-2">
-                                <input type="text" class="form-control"  [(ngModel)]="item.taxRate" appNumberOnly>
-                            </td>
-                            <td class="top-products-table-data col ms-2">
-                                <input type="text" class="form-control" [(ngModel)]="item.quantity" appNumberOnly>
-                            </td>
-                            <td class="top-products-table-data col ms-2">
-                                <input type="text" class="form-control" [(ngModel)]="item.rate" appNumberOnly>
-                            </td>
-                            <td class="top-products-table-data col ms-2">
-                                <input type="text" class="form-control" [(ngModel)]="item.amount" appNumberOnly>
-                            </td>
-                            <td class="top-products-table-data col ms-2">
-                                <input type="text" class="form-control" [(ngModel)]="item.tax" appNumberOnly>
-                            </td>
-                            <td class="top-products-table-data col ms-2">
-                                <input type="text" class="form-control" [(ngModel)]="item.total" appNumberOnly>
-                            </td>
-                            <td class="top-products-table-data">
-                                <i (click)="deleteRow(i)" class="fa-solid fa-x p-2"></i>
-                                <!-- <button >Delete</button>  -->
-                            </td>
-                        </div>
+                    <ng-container *ngFor="let item of tableData; let i = index">
+                        <tr class="top-products-table-row" >
+                            <div class="table-item">
+                                <td class="top-products-table-data col-5">
+                                    <input type="text" class="form-control" [(ngModel)]="item.name">
+                                </td>
+                                <td class="top-products-table-data col ms-2">
+                                    <input type="text" class="form-control"  [(ngModel)]="item.taxRate" appNumberOnly>
+                                </td>
+                                <td class="top-products-table-data col ms-2">
+                                    <input type="text" class="form-control" [(ngModel)]="item.quantity" appNumberOnly>
+                                </td>
+                                <td class="top-products-table-data col ms-2">
+                                    <input type="text" class="form-control" [(ngModel)]="item.rate" appNumberOnly>
+                                </td>
+                                <td class="top-products-table-data col ms-2">
+                                    <input type="text" class="form-control" [(ngModel)]="item.amount" appNumberOnly>
+                                </td>
+                                <td class="top-products-table-data col ms-2">
+                                    <input type="text" class="form-control" [(ngModel)]="item.tax" appNumberOnly>
+                                </td>
+                                <td class="top-products-table-data col ms-2">
+                                    <input type="text" class="form-control" [(ngModel)]="item.total" appNumberOnly>
+                                </td>
+                                <td class="top-products-table-data">
+                                    <i (click)="deleteRow(i)" class="fa-solid fa-x p-2"></i>
+                                    <!-- <button >Delete</button>  -->
+                                </td>
+                            </div>
+    
+                            <div class="description-container">
+                                <!-- <ng-container> -->
+                                    <td class="add-description-btn" *ngIf="!item.showDescriptionBox">
+                                        <button class="btn btn-light" (click)="item.showDescriptionBox = true">Add Description</button>
+                                    </td>
+                                <!-- </ng-container> -->
+                                
+                                <div class="description-box" *ngIf="item.showDescriptionBox">
+                                    <angular-editor placeholder="'Enter text here...'" [config]="editorConfig"></angular-editor>
+                                </div>
+                            </div>
 
-                        <td class="description-box">
-                            <input type="text" title="Enter your description here" placeholder="">
+                            <div class="image-upload-container">
+                                <!-- image container here -->
+                            </div>
 
-                        </td>
 
-
-                        <td class="add-description-btn">
-                            <button class="btn btn-light">Add Description</button>
-                        </td>
-                    </tr>
+                        </tr>
+                    </ng-container>
+                    
                 </tbody>
                 
             </table>
+            
 
             <div class="add-table-row">
                 <button (click)="addNewRow()" class="btn new-table-row">Add New </button>
+            </div>
+
+            <div class="cal">
+                <div class="table-cal-container">
+                    <div class="space-between">
+                        <h5>Total</h5>
+                        <p><b>#</b>1000</p>
+                    </div>
+                    <div class="space-between">
+                        <h5>Tax</h5>
+                        <p><b>#</b>200</p>
+                    </div>
+
+                    <div class="discount-container">
+                        <div class="space-between" *ngFor="let discount of discounts; let i = index">
+                            <h5>Discount</h5>
+                            <div class="d-flex">
+                                <p>200</p>
+                                <p>%</p>
+                            </div>
+                            <button (click)="removeDiscount(i)">remove</button>
+                        </div>
+                        <div class="space-between" *ngFor="let charge of charges; let i = index">
+                            <h5>Additional Charges</h5>
+                            <div class="d-flex">
+                                <p>200</p>
+                                <p>%</p>
+                            </div>
+                            <button (click)="removeCharge(i)">remove</button>
+                        </div>
+                        <div class="discount-btn-wrapper d-block">
+                            <button class="add-btn" (click)="addDiscount()"><i class="fas fa-plus me-2"></i>Add Discount</button><br>
+                            <button class="add-btn" (click)="addCharge()"><i class="fas fa-plus me-2"></i>Add Additional Charges</button>
+
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -227,3 +276,4 @@
         </div>
     </div>
 </div>
+

@@ -15,6 +15,10 @@ import {MatDividerModule} from '@angular/material/divider';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { DropdownModule } from 'primeng/dropdown';
+// import { EditorModule } from "@progress/kendo-angular-editor";
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { HttpClientModule} from '@angular/common/http';
+import { AngularEditorModule } from '@kolkov/angular-editor';
 
 
 
@@ -114,7 +118,12 @@ import { NumberOnlyDirective } from './directive/number-only/number-only.directi
     CdkScrollable,
     MatTabsModule,
     MatDividerModule,
-    DropdownModule
+    DropdownModule,
+    // EditorModule,
+    BrowserAnimationsModule,
+    HttpClientModule,
+    AngularEditorModule
+
     
   ],
   providers: [

@@ -1,5 +1,6 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { AngularEditorConfig } from '@kolkov/angular-editor';
 // import { MatDialog } from '@angular/material/dialog';
 
 interface Company {
@@ -34,9 +35,77 @@ interface Client {
 })
 export class InvoiceModalComponent {
   showSecondComponent = false;
+  showDiscount = false;
+  showAdditionalCharges = false;
   selectedValue?: string;
   clientDetails: any = {}; 
-   
+  showDescriptionBox: boolean = false;
+
+  
+  discounts: any[] = [];
+
+  addDiscount() {
+    this.discounts.push({});
+  }
+
+  removeDiscount(index: number) {
+    this.discounts.splice(index, 1);
+  }
+  charges: any[] = [];
+
+  addCharge() {
+    this.charges.push({});
+  }
+
+  removeCharge(index: number) {
+    this.charges.splice(index, 1);
+  }
+
+  // removeContainer(event: MouseEvent) {
+  //   const button = event.target as HTMLButtonElement;
+  //   const container = button.parentElement;
+  //   if (container) {
+  //     container.remove();
+  //   }
+  // }
+
+  editorConfig: AngularEditorConfig = {
+    editable: true,
+    spellcheck: true,
+    height: '200px',
+    maxHeight: '200px',
+    translate: 'no',
+    defaultParagraphSeparator: 'p',
+    defaultFontName: 'Arial',
+    toolbarHiddenButtons: [
+      [
+        'undo',
+        'redo',
+        'strikeThrough',
+        'subscript',
+        'superscript',
+        'justifyLeft',
+        'justifyCenter',
+        'justifyRight',
+        'justifyFull',
+        'insertUnorderedList',
+        'insertOrderedList',
+        'fontName'
+      ],
+      [
+        'textColor',
+        'backgroundColor',
+        'customClasses',
+        'link',
+        'unlink',
+        'insertImage',
+        'insertVideo',
+        'insertHorizontalRule',
+        'removeFormat',
+        'toggleEditorMode'
+      ]
+    ]
+  };
  
   myForm!: FormGroup ;
   options: string[] = ['Nigeria - NGN', 'US Dollar - USD', 'Cuba - CUD'];
@@ -60,8 +129,13 @@ export class InvoiceModalComponent {
   tableData: any[] = [{}];
 
   deleteRow(index: number) {
-    this.tableData.splice(index, 1);
-  }
+    if (index > 0) {
+        this.tableData.splice(index, 1);
+    } else {
+        // Optionally, you can notify the user that the first row cannot be deleted.
+        // console.log("Cannot delete the first row.");
+    }
+}
 
   addNewRow(): void {
     // You can add a new empty row here
@@ -71,6 +145,10 @@ export class InvoiceModalComponent {
   toggleSecondComponent() {
       this.showSecondComponent = !this.showSecondComponent;
   }
+
+  showDesBox() {
+    this.showDescriptionBox = true;
+}
 
   companies: Company[] = [
     {value: 'Centrifuge', viewValue: 'Centrifuge'},
