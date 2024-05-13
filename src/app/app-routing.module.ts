@@ -44,6 +44,10 @@ const routes: Routes = [
           path: 'sales', 
           component: SalesPageComponent,
         },
+        {
+          path: 'accounting', 
+          component: AccountingPageComponent,
+        },
 
         {
           path: 'invoice', 

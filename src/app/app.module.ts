@@ -1,23 +1,20 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { MatDialogModule } from '@angular/material/dialog';
-import {MatIconModule} from '@angular/material/icon';
-import {MatInputModule} from '@angular/material/input';
-import {MatFormFieldModule} from '@angular/material/form-field';
-import {MatDatepickerModule} from '@angular/material/datepicker';
-import {provideNativeDateAdapter} from '@angular/material/core';
-import {MatSelectModule} from '@angular/material/select';
-import { MatTooltipModule} from '@angular/material/tooltip';
-import {MatButtonModule} from '@angular/material/button';
-import {CdkScrollable} from '@angular/cdk/scrolling';
-import {MatTabsModule} from '@angular/material/tabs';
-import {MatDividerModule} from '@angular/material/divider';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { provideNativeDateAdapter } from '@angular/material/core';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatButtonModule } from '@angular/material/button';
+import { CdkScrollable } from '@angular/cdk/scrolling';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatDividerModule } from '@angular/material/divider';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { DropdownModule } from 'primeng/dropdown';
-
-
-
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -56,10 +53,18 @@ import { QuotationComponent } from './components/quotation/quotation.component';
 import { ProformaInvoiceComponent } from './components/proforma-invoice/proforma-invoice.component';
 import { ReceiptComponent } from './components/receipt/receipt.component';
 import { InvoiceComponent } from './components/invoice/invoice.component';
+import { GeneralLedegerManagementComponent } from './components/general-ledeger-management/general-ledeger-management.component';
+import { AccountPayabaleManagementComponent } from './components/account-payabale-management/account-payabale-management.component';
+import { AccountReceivableManagementComponent } from './components/account-receivable-management/account-receivable-management.component';
+
+import { CashManagementComponent } from './components/cash-management/cash-management.component';
+import { BudgetingForecastingComponent } from './components/budgeting-forecasting/budgeting-forecasting.component';
+
 
 @NgModule({
   declarations: [
     AppComponent,
+GeneralLedegerManagementComponent,
     CustomerFulfilmentComponent,
     EarningsComponent,
     FooterComponent,
@@ -93,6 +98,10 @@ import { InvoiceComponent } from './components/invoice/invoice.component';
     ProformaInvoiceComponent,
     ReceiptComponent,
     InvoiceComponent,
+    AccountPayabaleManagementComponent,
+    AccountReceivableManagementComponent,
+    CashManagementComponent,
+    BudgetingForecastingComponent,
   ],
   imports: [
     BrowserModule,
@@ -112,13 +121,11 @@ import { InvoiceComponent } from './components/invoice/invoice.component';
     CdkScrollable,
     MatTabsModule,
     MatDividerModule,
-    DropdownModule
-    
+    DropdownModule,
+    MatTabsModule,
+    // AccountingPageModule,
   ],
-  providers: [
-    provideAnimationsAsync(),
-    provideNativeDateAdapter()
-  ],
-  bootstrap: [AppComponent]
+  providers: [provideAnimationsAsync(), provideNativeDateAdapter()],
+  bootstrap: [AppComponent],
 })
-export class AppModule { }
+export class AppModule {}
