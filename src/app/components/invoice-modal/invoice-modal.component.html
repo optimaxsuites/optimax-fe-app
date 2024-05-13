@@ -2,7 +2,7 @@
     <div class="modal-wrapper p-4" #contentToPrint>
         <div class="header-section">
             <section class="title-section">
-                <h1>Quotation</h1>
+                <h1 class="form-title">Quotation</h1>
             </section>
         </div>
 
@@ -17,7 +17,7 @@
                         <input matInput placeholder="Quotation No">
                         </mat-form-field>
                     </div>
-                    <div class="d-flex">
+                    <div class="d-flex ">
                         <mat-form-field>
                             <mat-label>Quotation Date</mat-label>
                             <input matInput [matDatepicker]="picker1" placeholder="dd/mm/yyyy">
@@ -160,36 +160,114 @@
         <div class="table-wrapper">
             <table class="top-products-table w3-table">
                 <thead>
-                  <tr class="top-products-table-row">
-                    <th class="top-products-table-head col-6">Item</th>
-                    <th class="top-products-table-head">Tax Rate</th>
-                    <th class="top-products-table-head">Quantity</th>
-                    <th class="top-products-table-head">Rate</th>
-                    <th class="top-products-table-head">Amount</th>
-                    <th class="top-products-table-head">Tax</th>
-                    <th class="top-products-table-head">Total</th>
-                    <th class="top-products-table-head"></th>
+                  <tr class="top-products-table-row ">
+                    <div class="table-item">
+                        <th class="top-products-table-head col-5">Item</th>
+                        <th class="top-products-table-head col">Tax Rate</th>
+                        <th class="top-products-table-head col">Quantity</th>
+                        <th class="top-products-table-head col">Rate</th>
+                        <th class="top-products-table-head col">Amount</th>
+                        <th class="top-products-table-head col">Tax</th>
+                        <th class="top-products-table-head col">Total</th>
+                        <th class="top-products-table-head"></th>
+                    </div>
                   </tr>
                 </thead>
                 <tbody>
-                    <tr class="top-products-table-row" *ngFor="let item of tableData; let i = index">
-                        <td class="top-products-table-data">Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis, recusandae!</td>
-                        <td class="top-products-table-data">0.5%</td>
-                        <td class="top-products-table-data">1</td>
-                        <td class="top-products-table-data">5000</td>
-                        <td class="top-products-table-data">5000</td>
-                        <td class="top-products-table-data">25.00</td>
-                        <td class="top-products-table-data">5025.00</td>
-                        <td class="top-products-table-data">
-                            <i (click)="deleteRow(i)" class="fa-solid fa-x"></i>
-                            <!-- <button >Delete</button>  -->
-                          </td>
-                    </tr>
+                    <ng-container *ngFor="let item of tableData; let i = index">
+                        <tr class="top-products-table-row" >
+                            <div class="table-item">
+                                <td class="top-products-table-data col-5">
+                                    <input type="text" class="form-control" [(ngModel)]="item.name">
+                                </td>
+                                <td class="top-products-table-data col ms-2">
+                                    <input type="text" class="form-control"  [(ngModel)]="item.taxRate" appNumberOnly>
+                                </td>
+                                <td class="top-products-table-data col ms-2">
+                                    <input type="text" class="form-control" [(ngModel)]="item.quantity" appNumberOnly>
+                                </td>
+                                <td class="top-products-table-data col ms-2">
+                                    <input type="text" class="form-control" [(ngModel)]="item.rate" appNumberOnly>
+                                </td>
+                                <td class="top-products-table-data col ms-2">
+                                    <input type="text" class="form-control" [(ngModel)]="item.amount" appNumberOnly>
+                                </td>
+                                <td class="top-products-table-data col ms-2">
+                                    <input type="text" class="form-control" [(ngModel)]="item.tax" appNumberOnly>
+                                </td>
+                                <td class="top-products-table-data col ms-2">
+                                    <input type="text" class="form-control" [(ngModel)]="item.total" appNumberOnly>
+                                </td>
+                                <td class="top-products-table-data">
+                                    <i (click)="deleteRow(i)" class="fa-solid fa-x p-2"></i>
+                                    <!-- <button >Delete</button>  -->
+                                </td>
+                            </div>
+    
+                            <div class="description-container">
+                                <!-- <ng-container> -->
+                                    <td class="add-description-btn" *ngIf="!item.showDescriptionBox">
+                                        <button class="btn btn-light" (click)="item.showDescriptionBox = true">Add Description</button>
+                                    </td>
+                                <!-- </ng-container> -->
+                                
+                                <div class="description-box" *ngIf="item.showDescriptionBox">
+                                    <angular-editor placeholder="'Enter text here...'" [config]="editorConfig"></angular-editor>
+                                </div>
+                            </div>
+
+                            <div class="image-upload-container">
+                                <!-- image container here -->
+                            </div>
+
+
+                        </tr>
+                    </ng-container>
+                    
                 </tbody>
+                
             </table>
+            
 
             <div class="add-table-row">
-                <button class="btn new-table-row">Add New Item</button>
+                <button (click)="addNewRow()" class="btn new-table-row">Add New </button>
+            </div>
+
+            <div class="cal">
+                <div class="table-cal-container">
+                    <div class="space-between">
+                        <h5>Total</h5>
+                        <p><b>#</b>1000</p>
+                    </div>
+                    <div class="space-between">
+                        <h5>Tax</h5>
+                        <p><b>#</b>200</p>
+                    </div>
+
+                    <div class="discount-container">
+                        <div class="space-between" *ngFor="let discount of discounts; let i = index">
+                            <h5>Discount</h5>
+                            <div class="d-flex">
+                                <p>200</p>
+                                <p>%</p>
+                            </div>
+                            <button (click)="removeDiscount(i)">remove</button>
+                        </div>
+                        <div class="space-between" *ngFor="let charge of charges; let i = index">
+                            <h5>Additional Charges</h5>
+                            <div class="d-flex">
+                                <p>200</p>
+                                <p>%</p>
+                            </div>
+                            <button (click)="removeCharge(i)">remove</button>
+                        </div>
+                        <div class="discount-btn-wrapper d-block">
+                            <button class="add-btn" (click)="addDiscount()"><i class="fas fa-plus me-2"></i>Add Discount</button><br>
+                            <button class="add-btn" (click)="addCharge()"><i class="fas fa-plus me-2"></i>Add Additional Charges</button>
+
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -198,3 +276,4 @@
         </div>
     </div>
 </div>
+

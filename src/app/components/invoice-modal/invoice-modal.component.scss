@@ -4,7 +4,8 @@
     padding: 2rem 0;
 }
 .modal-wrapper{
-    background-color: #F5F5F5;
+    // background-color: #F5F5F5;
+    background-color: #fff;
     border: 1px solid lightgrey;
     border-radius: 10px;
     width: 85%;
@@ -26,6 +27,9 @@
     justify-content: center;
     margin-top: 1rem;
     margin-bottom: 5rem;
+    .form-title{
+        border-bottom: 2px solid #25925B ;
+    }
 
 }
 .logo-section{
@@ -140,6 +144,10 @@ mat-form-field{
     display: flex;
     align-items: center;
 }
+
+.table-wrapper{
+    max-width: 100%;
+}
 .input{
     width: 200px;
     select{
@@ -159,15 +167,27 @@ mat-form-field{
 
 
 
-.top-products-table{
+tr, .top-products-table{
+    display: block;
     thead{
         background-color: #224957;
         color: #fff;
     }
     tbody{
-        background-color: #f2fcff ;
+        // background-color: #f2fcff ;
+        // background-color: red;
+
         tr{
-            border-top: 1px solid lightgray;
+        background-color: #f2fcff ;
+        margin-bottom: 1rem;
+        min-height: 150px;
+        padding: 2rem 0;
+        box-sizing: border-box;
+
+            .table-item{
+                display: flex;
+                justify-content: space-between;
+            }
         }
     }
 }
@@ -176,11 +196,96 @@ mat-form-field{
     color: #224957;
     cursor: pointer;
 }
+thead{
+    width: 100%;
+}
+.table-item{
 
+    display: flex;
+    justify-content: space-between;
+}
 .new-table-row{
     width: 50%;
     background-color: #224957;
     color: #fff;
     border: 1px solid #bfd9e2;
     padding: 1rem 5rem;
+}
+input:focus,
+textarea:focus {
+  outline: none;
+  border: none;
+
+}
+input:active,
+textarea:active {
+  outline: none;
+  border: none;
+
+}
+.form-control{
+    width: 100%;
+    border-top: 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 1px solid black;
+    border-radius: 0;
+    background-color: transparent;
+}
+// .add-des-btn{
+// }
+.description-box{
+    max-width: 61.3%;
+    padding: 1rem;
+    box-sizing: border-box;
+    // height: 500px;
+    // background-color: black;
+}
+.cal{
+    display: flex;
+    justify-content: end;
+}
+.table-cal-container{
+    width: 40%;
+    border-bottom: 4px solid lightgrey;
+    // background-color: red;
+
+    .space-between{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-align: center;
+        // border: 1px solid white;
+    }
+}
+.add-btn{
+    outline: none;
+    border: none;
+    padding: 0.5rem 0;
+    background-color: transparent;
+}
+
+
+@media screen and (max-width: 1200px) {
+    .modal-wrapper{
+        width: 100%;
+    }
+    table{
+        // width: 700px;
+
+    }
+}
+@media screen and (max-width: 767px) {
+    .modal-wrapper{
+        width: 100%;
+    }
+    table{
+        width: 100%;
+    table-layout: auto;
+    overflow-x: auto;
+
+    }
+    .second-info-section{
+        display: block;
+    }
 }
