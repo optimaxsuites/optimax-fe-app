@@ -62,6 +62,10 @@ import { ReceiptComponent } from './components/receipt/receipt.component';
 import { InvoiceComponent } from './components/invoice/invoice.component';
 import { NumberOnlyDirective } from './directive/number-only/number-only.directive';
 import { GeneralLedegerManagementComponent } from './components/general-ledeger-management/general-ledeger-management.component';
+import { AccountPayabaleManagementComponent } from './components/account-payabale-management/account-payabale-management.component';
+import { AccountReceivableManagementComponent } from './components/account-receivable-management/account-receivable-management.component';
+import { BudgetingForecastingComponent } from './components/budgeting-forecasting/budgeting-forecasting.component';
+import { CashManagementComponent } from './components/cash-management/cash-management.component';
 
 @NgModule({
   declarations: [
@@ -101,6 +105,10 @@ import { GeneralLedegerManagementComponent } from './components/general-ledeger-
     ReceiptComponent,
     InvoiceComponent,
     NumberOnlyDirective,
+    AccountPayabaleManagementComponent,
+    AccountReceivableManagementComponent,
+    BudgetingForecastingComponent,
+    CashManagementComponent,
   ],
   imports: [
     BrowserModule,
