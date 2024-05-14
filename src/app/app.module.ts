@@ -15,6 +15,13 @@ import { MatDividerModule } from '@angular/material/divider';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { DropdownModule } from 'primeng/dropdown';
+// import { EditorModule } from "@progress/kendo-angular-editor";
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { HttpClientModule} from '@angular/common/http';
+import { AngularEditorModule } from '@kolkov/angular-editor';
+
+
+
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -53,13 +60,7 @@ import { QuotationComponent } from './components/quotation/quotation.component';
 import { ProformaInvoiceComponent } from './components/proforma-invoice/proforma-invoice.component';
 import { ReceiptComponent } from './components/receipt/receipt.component';
 import { InvoiceComponent } from './components/invoice/invoice.component';
-import { GeneralLedegerManagementComponent } from './components/general-ledeger-management/general-ledeger-management.component';
-import { AccountPayabaleManagementComponent } from './components/account-payabale-management/account-payabale-management.component';
-import { AccountReceivableManagementComponent } from './components/account-receivable-management/account-receivable-management.component';
-
-import { CashManagementComponent } from './components/cash-management/cash-management.component';
-import { BudgetingForecastingComponent } from './components/budgeting-forecasting/budgeting-forecasting.component';
-
+import { NumberOnlyDirective } from './directive/number-only/number-only.directive';
 
 @NgModule({
   declarations: [
@@ -98,10 +99,7 @@ GeneralLedegerManagementComponent,
     ProformaInvoiceComponent,
     ReceiptComponent,
     InvoiceComponent,
-    AccountPayabaleManagementComponent,
-    AccountReceivableManagementComponent,
-    CashManagementComponent,
-    BudgetingForecastingComponent,
+    NumberOnlyDirective,
   ],
   imports: [
     BrowserModule,
@@ -122,8 +120,12 @@ GeneralLedegerManagementComponent,
     MatTabsModule,
     MatDividerModule,
     DropdownModule,
-    MatTabsModule,
-    // AccountingPageModule,
+    // EditorModule,
+    BrowserAnimationsModule,
+    HttpClientModule,
+    AngularEditorModule
+
+    
   ],
   providers: [provideAnimationsAsync(), provideNativeDateAdapter()],
   bootstrap: [AppComponent],
