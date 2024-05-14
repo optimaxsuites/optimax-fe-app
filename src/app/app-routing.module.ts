@@ -14,6 +14,7 @@ import { SalesPageComponent } from './pages/sales-page/sales-page.component';
 import { QuotationComponent } from './components/quotation/quotation.component';
 import { ProformaInvoiceComponent } from './components/proforma-invoice/proforma-invoice.component';
 import { ReceiptComponent } from './components/receipt/receipt.component';
+import { PaymentReceiptsModalComponent } from './components/payment-receipts-modal/payment-receipts-modal.component';
 
 const routes: Routes = [
   {
@@ -72,7 +73,11 @@ const routes: Routes = [
         {
           path: 'invoice-modal',
           component: InvoiceModalComponent
-        }
+        },
+        {
+          path: 'payment-receipts-modal',
+          component: PaymentReceiptsModalComponent
+        },
         
 
     ]

@@ -66,6 +66,8 @@ import { AccountPayabaleManagementComponent } from './components/account-payabal
 import { AccountReceivableManagementComponent } from './components/account-receivable-management/account-receivable-management.component';
 import { BudgetingForecastingComponent } from './components/budgeting-forecasting/budgeting-forecasting.component';
 import { CashManagementComponent } from './components/cash-management/cash-management.component';
+import { PaymentReceiptsComponent } from './components/payment-receipts/payment-receipts.component';
+import { PaymentReceiptsModalComponent } from './components/payment-receipts-modal/payment-receipts-modal.component';
 
 @NgModule({
   declarations: [
@@ -109,6 +111,8 @@ import { CashManagementComponent } from './components/cash-management/cash-manag
     AccountReceivableManagementComponent,
     BudgetingForecastingComponent,
     CashManagementComponent,
+    PaymentReceiptsComponent,
+    PaymentReceiptsModalComponent,
   ],
   imports: [
     BrowserModule,
