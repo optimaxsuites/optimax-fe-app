@@ -61,11 +61,12 @@ import { ProformaInvoiceComponent } from './components/proforma-invoice/proforma
 import { ReceiptComponent } from './components/receipt/receipt.component';
 import { InvoiceComponent } from './components/invoice/invoice.component';
 import { NumberOnlyDirective } from './directive/number-only/number-only.directive';
+import { GeneralLedegerManagementComponent } from './components/general-ledeger-management/general-ledeger-management.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-GeneralLedegerManagementComponent,
+    GeneralLedegerManagementComponent,
     CustomerFulfilmentComponent,
     EarningsComponent,
     FooterComponent,
