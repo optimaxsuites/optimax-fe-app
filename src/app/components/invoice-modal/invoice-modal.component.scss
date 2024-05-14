@@ -91,13 +91,19 @@ mat-form-field{
 
     // border: 1px solid black;
 }
+.billing-title{
+    font-size: 1.5em;
+}
 .billing-span{
-    font-size: 0.7em;
+    font-size: 0.6em;
     color: #949494;
 }
 
 .first-component{
     text-align: center;
+}
+.info-bottom-section{
+    font-size: 1.1em;
 }
 .info-bottom-section{
     border: 1px solid lightgray;
@@ -178,7 +184,7 @@ tr, .top-products-table{
         // background-color: red;
 
         tr{
-        background-color: #f2fcff ;
+        background-color: #EEFAFC;
         margin-bottom: 1rem;
         min-height: 150px;
         padding: 2rem 0;
@@ -187,6 +193,13 @@ tr, .top-products-table{
             .table-item{
                 display: flex;
                 justify-content: space-between;
+
+                .top-products-table-data{
+                    input{
+                        background-color: transparent;
+                        padding: 0.5rem;
+                    }
+                }
             }
         }
     }
@@ -223,15 +236,7 @@ textarea:active {
   border: none;
 
 }
-.form-control{
-    width: 100%;
-    border-top: 0;
-    border-left: 0;
-    border-right: 0;
-    border-bottom: 1px solid black;
-    border-radius: 0;
-    background-color: transparent;
-}
+
 // .add-des-btn{
 // }
 .description-box{
@@ -247,7 +252,6 @@ textarea:active {
 }
 .table-cal-container{
     width: 40%;
-    border-bottom: 4px solid lightgrey;
     // background-color: red;
 
     .space-between{
@@ -255,7 +259,10 @@ textarea:active {
         justify-content: space-between;
         align-items: center;
         text-align: center;
-        // border: 1px solid white;
+        padding: 1rem 0;
+        font-size: 1.1em;
+
+        // border: 1px solid red;
     }
 }
 .add-btn{
@@ -264,15 +271,112 @@ textarea:active {
     padding: 0.5rem 0;
     background-color: transparent;
 }
+.cal-total-container{
+    padding: 1.5rem 0;
+    border-bottom: 4px solid lightgrey;
+    border-top: 4px solid lightgrey;
+
+
+    
+}
+.cal-total{
+    font-size: 1.2em;
+    font-weight: bold;
+    margin: 0;
+}
+.value{
+    .input{
+        width: 120px;
+    }
+    .option{
+        width: 55px;
+
+        // option{
+        //     border: none;
+        //     padding: 1rem 0;
+        //     box-sizing: border-box;
+        // }
+    }
+}
+
+select{
+    border: none;
+    option{
+        outline: none;
+    }
+}
+
+.form-control-opti{
+    border: none;
+    border-bottom: 1px solid black;
+    width: 100%;
+
+    &:focus{
+        border: none;
+        border-bottom: 1px solid black;
+    }
+    
+}
+.cal-amount, .cal-total{
+    font-size: 1.5em;
+    font-weight: bold;
+}
+.signature-upload-container{
+    margin: 2rem 0;
+    background-color: rgb(250, 250, 250);
+    padding: 1rem;
+}
+
+.signature-wrapper{
+    max-width: 100%;
+    max-height: 200px; 
+    min-width: 100%;
+    min-height: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #fff;
+    margin-bottom: 1rem;
+
+    img {
+        max-width: 100%;
+        max-height: 200px; 
+        width: auto;
+        height: auto;
+        display: block;
+      }
+}
+
+.btn-sign{
+    button{
+        width: 100%;
+        padding: 1rem;
+        font-weight: 600;
+        background-color: #224957;
+        color: #fff;
+    }
+}
+.add-sign{
+    width: 100%;
+    padding: 1rem;
+    font-weight: 600;
+    background-color: #224957;
+    color: #fff;
+    margin-top: 1rem;
+}
+
+
+
+
+
+
+
+
 
 
 @media screen and (max-width: 1200px) {
     .modal-wrapper{
         width: 100%;
-    }
-    table{
-        // width: 700px;
-
     }
 }
 @media screen and (max-width: 767px) {

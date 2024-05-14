@@ -20,12 +20,6 @@ interface Client {
   viewValue: string;
 }
 
-// interface ClientDetails {
-//   name: string;
-//   address: string;
-//   phoneNumber: string;
-//   email: string;
-// }
 
 
 @Component({
@@ -35,14 +29,17 @@ interface Client {
 })
 export class InvoiceModalComponent {
   showSecondComponent = false;
+  showSignatureButton = false;
   showDiscount = false;
   showAdditionalCharges = false;
   selectedValue?: string;
   clientDetails: any = {}; 
   showDescriptionBox: boolean = false;
-
-  
+  imageUrl: string | ArrayBuffer | null = null;
   discounts: any[] = [];
+
+
+
 
   addDiscount() {
     this.discounts.push({});
@@ -51,6 +48,20 @@ export class InvoiceModalComponent {
   removeDiscount(index: number) {
     this.discounts.splice(index, 1);
   }
+
+  //  signature
+  // signatures: any[] = [];
+
+  // addSignature(){
+  //   this.signatures.push({});
+  // }
+  // removeSignature(index: number){
+  //   this.signatures.splice(index, 1);
+  // }
+
+  // signature 
+
+
   charges: any[] = [];
 
   addCharge() {
@@ -60,14 +71,6 @@ export class InvoiceModalComponent {
   removeCharge(index: number) {
     this.charges.splice(index, 1);
   }
-
-  // removeContainer(event: MouseEvent) {
-  //   const button = event.target as HTMLButtonElement;
-  //   const container = button.parentElement;
-  //   if (container) {
-  //     container.remove();
-  //   }
-  // }
 
   editorConfig: AngularEditorConfig = {
     editable: true,
@@ -118,22 +121,11 @@ export class InvoiceModalComponent {
     });
   }
 
-  
-
-  // tableData = [
-  //   { name: 'Product 1', taxRate: '0.5%', quantity: 1, rate: 5000, amount: 5000, tax: 25.00, total: 5025.00 },
-  //   { name: 'Product 2', taxRate: '0.5%', quantity: 1, rate: 5000, amount: 10000, tax: 50.00, total: 5050.00 }
-  //   // Add more data as needed
-  // ];
-
   tableData: any[] = [{}];
 
   deleteRow(index: number) {
     if (index > 0) {
         this.tableData.splice(index, 1);
-    } else {
-        // Optionally, you can notify the user that the first row cannot be deleted.
-        // console.log("Cannot delete the first row.");
     }
 }
 
@@ -201,13 +193,6 @@ export class InvoiceModalComponent {
     {value: 'Opay', viewValue: 'Opay'},
   ];
 
-  // clientDetails: ClientDetails = {
-  //   name: '',
-  //   address: '',
-  //   phoneNumber: '',
-  //   email: ''
-  // };
-
 
   updateClientInfo() {
     this.clientDetails = this.clients.find(client => client.value === this.selectedValue);
@@ -240,6 +225,18 @@ export class InvoiceModalComponent {
       };
     }
   }
+
+  onFileSelected(event: any) {
+    const file: File = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        this.imageUrl = reader.result;
+      };
+    }
+  }
+
 
 
   
