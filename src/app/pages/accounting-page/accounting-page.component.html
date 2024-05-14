@@ -1,54 +1,56 @@
-<div class='accounting-container'>
-    <div class="accounting-body">
-      <div class="accounting-header">
-        <h1 class='accounting-body-title'>accounting</h1>
-        <button routerLink="create-new-invoice" class=" btn create-invoice-btn">Create New Invoice <i class="fas fa-plus"></i></button>
-      </div>
-      <hr />
-      <div class="bottom-container">
-        <div class="top-products-container">
-          <app-top-products></app-top-products>
-        </div>
-      </div>
-    </div>
+<div class="accounting">
+  <div class="link-wrapper">
+    <mat-tab-group
+      mat-stretch-tabs="true"
+      mat-align-tabs="start"
+      animationDuration="0ms"
+    >
+      <mat-tab label="General Ledger Management">
+        <app-general-ledeger-management></app-general-ledeger-management>
+      </mat-tab>
+      <mat-tab label="Accounts Payable Management">
+        <app-account-payabale-management></app-account-payabale-management>
+      </mat-tab>
+      <mat-tab label="Accounts Receivable Management">
+        <app-account-receivable-management></app-account-receivable-management>
+      </mat-tab>
+      <mat-tab label="Cash Management">
+        <app-cash-management></app-cash-management>
+      </mat-tab>
+      <mat-tab label="Budgeting and Forecasting">
+        <app-budgeting-forecasting></app-budgeting-forecasting>
+      </mat-tab>
+      <mat-tab label="Financial Reporting">
+        <app-receipt></app-receipt>
+      </mat-tab>
+      <mat-tab label="Fixed Asset Management">
+        <app-receipt></app-receipt>
+      </mat-tab>
+      <mat-tab label="Tax Management">
+        <app-receipt></app-receipt>
+      </mat-tab>
+      <mat-tab label="Expense Management">
+        <app-receipt></app-receipt>
+        <h3>My village people</h3>
+      </mat-tab>
+      <mat-tab label="Financial Consolidation">
+        <app-receipt></app-receipt>
+      </mat-tab>
+      <mat-tab label="Audit trail and Compliance">
+        <app-receipt></app-receipt>
+      </mat-tab>
+      <mat-tab label="Intercompany Transactions">
+        <app-receipt></app-receipt>
+      </mat-tab>
+      <mat-tab label="Financial Analytics">
+        <app-receipt></app-receipt>
+      </mat-tab>
+      <mat-tab label="Risk Management">
+        <app-receipt></app-receipt>
+      </mat-tab>
+      <mat-tab label="Integration with other modules">
+        <app-receipt></app-receipt>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
 </div>
-
-
-
-<!-- <div class="first-container">
-        <div class="today-sales-container">
-          <app-today-sales></app-today-sales>
-        </div>
-        <div class="top-products-container hidden show">
-          <app-top-products></app-top-products>
-        </div>
-        <div class="flex md-hidden">
-          <div class="levels-container">
-            <app-levels></app-levels>
-          </div>
-          <div class="earnings-container">
-            <app-earnings></app-earnings>
-          </div>
-        </div>
-      </div>
-      <div class="second-container">
-        <div class="top-products-container md-hidden">
-          <app-top-products />
-        </div>
-        <div class="flex show hidden">
-          <div class="levels-container">
-            <app-levels></app-levels>
-          </div> 
-          <div class="earnings-container mt-3">
-            <app-earnings></app-earnings>
-          </div>
-        </div>
-       <div class="flex-2">
-        <div class="customer-fulfilment-container">
-          <app-customer-fulfilment></app-customer-fulfilment>
-        </div>
-        <div class="total-revenue-container">
-          <app-total-revenue></app-total-revenue>
-        </div>
-       </div>
-      </div> -->

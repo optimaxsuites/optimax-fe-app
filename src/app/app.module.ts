@@ -1,17 +1,17 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { MatDialogModule } from '@angular/material/dialog';
-import {MatIconModule} from '@angular/material/icon';
-import {MatInputModule} from '@angular/material/input';
-import {MatFormFieldModule} from '@angular/material/form-field';
-import {MatDatepickerModule} from '@angular/material/datepicker';
-import {provideNativeDateAdapter} from '@angular/material/core';
-import {MatSelectModule} from '@angular/material/select';
-import { MatTooltipModule} from '@angular/material/tooltip';
-import {MatButtonModule} from '@angular/material/button';
-import {CdkScrollable} from '@angular/cdk/scrolling';
-import {MatTabsModule} from '@angular/material/tabs';
-import {MatDividerModule} from '@angular/material/divider';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { provideNativeDateAdapter } from '@angular/material/core';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatButtonModule } from '@angular/material/button';
+import { CdkScrollable } from '@angular/cdk/scrolling';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatDividerModule } from '@angular/material/divider';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { DropdownModule } from 'primeng/dropdown';
@@ -61,10 +61,12 @@ import { ProformaInvoiceComponent } from './components/proforma-invoice/proforma
 import { ReceiptComponent } from './components/receipt/receipt.component';
 import { InvoiceComponent } from './components/invoice/invoice.component';
 import { NumberOnlyDirective } from './directive/number-only/number-only.directive';
+import { GeneralLedegerManagementComponent } from './components/general-ledeger-management/general-ledeger-management.component';
 
 @NgModule({
   declarations: [
     AppComponent,
+    GeneralLedegerManagementComponent,
     CustomerFulfilmentComponent,
     EarningsComponent,
     FooterComponent,
@@ -126,10 +128,7 @@ import { NumberOnlyDirective } from './directive/number-only/number-only.directi
 
     
   ],
-  providers: [
-    provideAnimationsAsync(),
-    provideNativeDateAdapter()
-  ],
-  bootstrap: [AppComponent]
+  providers: [provideAnimationsAsync(), provideNativeDateAdapter()],
+  bootstrap: [AppComponent],
 })
-export class AppModule { }
+export class AppModule {}
