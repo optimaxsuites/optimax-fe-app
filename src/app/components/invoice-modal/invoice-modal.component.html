@@ -51,7 +51,7 @@
                     <div class="top-container">
                         <div class="billing-selection">
                             <form>
-                                <h5 class="billing-title">Quotation From <span class="billing-span">[ Company's details ]</span></h5>
+                                <p class="billing-title">Quotation From <span class="billing-span">[ Company's details ]</span></p>
                                 <mat-form-field>
                                 <mat-label>Select Company</mat-label>
                                 <mat-select [(ngModel)]="selectedValue" (ngModelChange)="updateBusinessInfo()" name="Company" placeholder="Select Company">
@@ -63,7 +63,7 @@
                     </div>
                     <div class="info-bottom-section">
                         <div class="bottom-container">
-                            <h5>Business Details</h5>
+                            <p><b>Business Details</b></p>
                             <div class="business-info">
                                 <div class="d-flex">
                                     <p>Business Name:</p>
@@ -112,7 +112,7 @@
                                 <button  class="btn create-client-btn">Add New Client</button>
                             </div>
                             <div class="second-component" *ngIf="showSecondComponent">
-                                <h5>Business Details</h5>
+                                <p><b>Client Details</b></p>
                                 <div class="business-info">
                                     <div class="d-flex">
                                         <p>Business Name:</p>
@@ -178,25 +178,25 @@
                         <tr class="top-products-table-row" >
                             <div class="table-item">
                                 <td class="top-products-table-data col-5">
-                                    <input type="text" class="form-control" [(ngModel)]="item.name">
+                                    <input type="text" class="form-control-opti" [(ngModel)]="item.name" style="font-size: 1.1em; font-weight: 400;">
                                 </td>
                                 <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control"  [(ngModel)]="item.taxRate" appNumberOnly>
+                                    <input type="text" class="form-control-opti"  [(ngModel)]="item.taxRate" appNumberOnly style="font-size: 1.1em; font-weight: 400;">
                                 </td>
                                 <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control" [(ngModel)]="item.quantity" appNumberOnly>
+                                    <input type="text" class="form-control-opti" [(ngModel)]="item.quantity" appNumberOnly style="font-size: 1.1em; font-weight: 400;">
                                 </td>
                                 <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control" [(ngModel)]="item.rate" appNumberOnly>
+                                    <input type="text" class="form-control-opti" [(ngModel)]="item.rate" appNumberOnly style="font-size: 1.1em; font-weight: 400;">
                                 </td>
                                 <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control" [(ngModel)]="item.amount" appNumberOnly>
+                                    <input type="text" class="form-control-opti" [(ngModel)]="item.amount" appNumberOnly style="font-size: 1.1em; font-weight: 400;">
                                 </td>
                                 <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control" [(ngModel)]="item.tax" appNumberOnly>
+                                    <input type="text" class="form-control-opti" [(ngModel)]="item.tax" appNumberOnly style="font-size: 1.1em; font-weight: 400;">
                                 </td>
                                 <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control" [(ngModel)]="item.total" appNumberOnly>
+                                    <input type="text" class="form-control-opti" [(ngModel)]="item.total" appNumberOnly style="font-size: 1.1em; font-weight: 400;">
                                 </td>
                                 <td class="top-products-table-data">
                                     <i (click)="deleteRow(i)" class="fa-solid fa-x p-2"></i>
@@ -219,15 +219,10 @@
                             <div class="image-upload-container">
                                 <!-- image container here -->
                             </div>
-
-
                         </tr>
                     </ng-container>
-                    
                 </tbody>
-                
             </table>
-            
 
             <div class="add-table-row">
                 <button (click)="addNewRow()" class="btn new-table-row">Add New </button>
@@ -236,30 +231,40 @@
             <div class="cal">
                 <div class="table-cal-container">
                     <div class="space-between">
-                        <h5>Total</h5>
-                        <p><b>#</b>1000</p>
+                        <p><b>Amount</b></p>
+                        <p><b>₦</b><span style="font-size: 1.1em; font-weight: 500;">1000</span></p>
                     </div>
                     <div class="space-between">
-                        <h5>Tax</h5>
-                        <p><b>#</b>200</p>
+                        <p><b>Tax</b></p>
+                        <p><b>₦</b><span style="font-size: 1.1em; font-weight: 500;">200</span></p>
                     </div>
 
                     <div class="discount-container">
                         <div class="space-between" *ngFor="let discount of discounts; let i = index">
-                            <h5>Discount</h5>
-                            <div class="d-flex">
-                                <p>200</p>
-                                <p>%</p>
+                            <p><b>Discount</b></p>
+                            <div class="value d-flex">
+                                <div class="d-flex">
+                                    <input type="text" class="form-control-opti input" style="font-size: 1.1em; font-weight: 400;" appNumberOnly>
+                                    <select name="" id="" class="form-control-opti ms-2 option">
+                                        <option value=""> ₦ </option>
+                                        <option value=""> % </option>
+                                    </select>
+                                </div>
+                                <i (click)="removeDiscount(i)" class="fa-solid fa-x p-2"></i>
                             </div>
-                            <button (click)="removeDiscount(i)">remove</button>
                         </div>
                         <div class="space-between" *ngFor="let charge of charges; let i = index">
-                            <h5>Additional Charges</h5>
-                            <div class="d-flex">
-                                <p>200</p>
-                                <p>%</p>
+                            <p><b>Additional Charges</b></p>
+                            <div class="value d-flex">
+                                <div class="d-flex">
+                                    <input type="text" class="form-control-opti input" style="font-size: 1.1em; font-weight: 400;" appNumberOnly>
+                                    <select name="" id="" class="form-control-opti ms-2 option">
+                                        <option value=""> ₦ </option>
+                                        <option value=""> % </option>
+                                    </select>
+                                </div>
+                                <i (click)="removeCharge(i)" class="fa-solid fa-x p-2"></i>
                             </div>
-                            <button (click)="removeCharge(i)">remove</button>
                         </div>
                         <div class="discount-btn-wrapper d-block">
                             <button class="add-btn" (click)="addDiscount()"><i class="fas fa-plus me-2"></i>Add Discount</button><br>
@@ -267,9 +272,41 @@
 
                         </div>
                     </div>
+                    <div class="cal-total-container">
+                        <div class="space-between">
+                            <div>
+                                <p class="cal-total" >Total</p>
+                            </div>
+                            <div class="d-flex">
+                                <p class="cal-amount">₦</p>
+                                <p class="cal-amount">200</p>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="signature-upload-container">
+                        <div class="wrapper" *ngIf="showSignatureButton">
+                            <i  class="fa-solid fa-x p-2"></i>
+                            <div class="signature-wrapper">
+                                <img *ngIf="imageUrl" [src]="imageUrl" alt="Signature" class="Signature">
+                            </div>
+                            <div class="btn-sign">
+                                <!-- <input type="" (change)="onFileSelected($event)" class="form-control" /> -->
+                                <input type="file" #fileInput style="display: none" (change)="onFileSelected($event)">
+                                <button class="btn" (click)="fileInput.click()">Upload Signature</button>
+                            </div>
+                        </div>
+                        <div class="add-sign-btn-wrapper">
+                            <button class="btn add-sign " *ngIf="!showSignatureButton" (click)="showSignatureButton = true" >Add Signature</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
+
+
 
         <div class="btn-wrapper">
             <button class="btn create-client-btn">Save</button>
