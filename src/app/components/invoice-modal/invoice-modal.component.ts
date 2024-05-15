@@ -30,6 +30,7 @@ interface Client {
 export class InvoiceModalComponent {
   showSecondComponent = false;
   showSignatureButton = false;
+  showTermsConditionButton = false;
   showDiscount = false;
   showAdditionalCharges = false;
   selectedValue?: string;
@@ -37,8 +38,26 @@ export class InvoiceModalComponent {
   showDescriptionBox: boolean = false;
   imageUrl: string | ArrayBuffer | null = null;
   discounts: any[] = [];
+  terms: any[] = [];
+  termsGroup: any[] = [];
 
+  addTermGroup() {
+    // Create a new term group with an initial term
+    this.termsGroup.push({ terms: [{}] });
+  }
 
+  removeTermGroup(index: number) {
+    this.termsGroup.splice(index, 1);
+  }
+
+  addTermCondition(groupIndex: number) {
+    // Add a new term to the specified term group
+    this.termsGroup[groupIndex].terms.push({});
+  }
+
+  removeTermCondition(groupIndex: number, termIndex: number) {
+    this.termsGroup[groupIndex].terms.splice(termIndex, 1);
+  }
 
 
   addDiscount() {
@@ -116,6 +135,9 @@ export class InvoiceModalComponent {
   constructor(private fb: FormBuilder) { }
 
   ngOnInit(): void {
+    this.addTermGroup();
+
+
     this.myForm = this.fb.group({
       myOption: [''] // Set default value if needed
     });
@@ -127,7 +149,7 @@ export class InvoiceModalComponent {
     if (index > 0) {
         this.tableData.splice(index, 1);
     }
-}
+  }
 
   addNewRow(): void {
     // You can add a new empty row here
