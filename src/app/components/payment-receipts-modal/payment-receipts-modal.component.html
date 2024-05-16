@@ -1,28 +1,290 @@
 <div class="overallContainer">
   <section class="selectClients">
-    <div class="headerSection">
-      <h4>1. Select Clients</h4>
+    <mat-expansion-panel hideToggle>
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <span class="headerText">1. Select Clients</span>
+        </mat-panel-title>
+        <div class="headSection">
+          <img
+            src="assets/chevron-down-svgrepo-com.svg"
+            class="downSvg"
+            alt=""
+          />
+        </div>
+
+        <!-- <mat-panel-description>
+          This is a summary of the content
+        </mat-panel-description> -->
+      </mat-expansion-panel-header>
+      <div class="mainSection">
+        <article>
+          <mat-form-field>
+            <mat-label>Payment Receipt Number</mat-label>
+            <input matInput />
+          </mat-form-field>
+        </article>
+
+        <article>
+          <form class="example-form">
+            <mat-form-field class="example-full-width">
+              <mat-label>Payment Received From</mat-label>
+
+              <input
+                type="text"
+                placeholder="Payment Received From"
+                aria-label="Payment Received From"
+                matInput
+                [formControl]="myControl"
+                [matAutocomplete]="auto"
+              />
+
+              <mat-autocomplete #auto="matAutocomplete">
+                @for (option of filteredOptions | async; track option) {
+
+                <mat-option [value]="option">{{ option }}</mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
+            <div>
+              <button class="btn btn-light">Add New</button>
+            </div>
+          </form>
+        </article>
+        <article>
+          <form class="example-form">
+            <mat-form-field class="example-full-width">
+              <mat-label>Currency</mat-label>
+              <input
+                type="text"
+                placeholder="Currency"
+                aria-label="Currency"
+                matInput
+                [formControl]="currencyControl"
+                [matAutocomplete]="currencyAuto"
+              />
+              <mat-autocomplete #currencyAuto="matAutocomplete">
+                <mat-option
+                  *ngFor="let currency of filteredCurrencies | async"
+                  [value]="currency"
+                >
+                  {{ currency }}
+                </mat-option>
+              </mat-autocomplete>
+            </mat-form-field>
+          </form>
+        </article>
+        <article>
+          <mat-form-field>
+            <mat-label>Choose a date</mat-label>
+            <input matInput [matDatepicker]="picker" />
+            <mat-hint>MM/DD/YYYY</mat-hint>
+            <mat-datepicker-toggle
+              matIconSuffix
+              [for]="picker"
+            ></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+          </mat-form-field>
+        </article>
+      </div>
+    </mat-expansion-panel>
+
+    <div class="divButton">
+      <button class="sectionButton">Continue</button>
     </div>
-    <div class="mainSection">
-      <article >
-        <span>Payment Receipt Number</span>
-        <hr class="spanLine"/>
-      </article>
-      <article>
-        <span>Payment Received From</span>
-        <hr class="spanLine"/>
-      </article>
-      <article>
-        <span>Currency</span>
-        <hr class="spanLine"/>
-      </article>
-      <article>
-        <span class="spanText">Receipt Date</span>
-        <br />
-        <input type="date" />
-      </article>
+  </section>
+
+  <section class="selectClients">
+    <mat-expansion-panel hideToggle>
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <span>2. Add Payment Methods</span>
+        </mat-panel-title>
+        <div class="headSection">
+          <img
+            src="assets/chevron-down-svgrepo-com.svg"
+            class="downSvg"
+            alt=""
+          />
+        </div>
+      </mat-expansion-panel-header>
+      <div class="mainSection">
+        <article>
+          <form class="example-form">
+            <mat-form-field class="example-full-width">
+              <mat-label>Payment Method</mat-label>
+              <input
+                type="text"
+                placeholder="Select"
+                aria-label="Select"
+                matInput
+                [formControl]="paymentMethodControl"
+                [matAutocomplete]="paymentMethodAuto"
+              />
+              <mat-autocomplete #paymentMethodAuto="matAutocomplete">
+                <mat-option
+                  *ngFor="let paymentMethod of filteredPayments | async"
+                  [value]="paymentMethod"
+                >
+                  {{ paymentMethod }}
+                </mat-option>
+              </mat-autocomplete>
+            </mat-form-field>
+          </form>
+        </article>
+
+        <article>
+          <form class="example-form">
+            <mat-form-field class="example-full-width">
+              <mat-label>Deposited To:</mat-label>
+
+              <input
+                type="text"
+                placeholder="Select Payment Account"
+                aria-label="Select Payment Account"
+                matInput
+                [formControl]="myControl"
+                [matAutocomplete]="auto"
+              />
+
+              <mat-autocomplete #auto="matAutocomplete">
+                @for (option of filteredOptions | async; track option) {
+
+                <mat-option [value]="option">{{ option }}</mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
+
+            <div class="addNew">
+              <button class="btn btn-light">Add New</button>
+            </div>
+          </form>
+        </article>
+
+        <article>
+          <form class="example-form">
+            <mat-form-field class="example-full-width">
+              <mat-label>Payment Method</mat-label>
+              <input
+                type="text"
+                placeholder="Payment Method"
+                aria-label="Payment Method"
+                matInput
+                [formControl]="paymentMethodControl"
+                [matAutocomplete]="paymentMethodAuto"
+              />
+              <mat-autocomplete #paymentMethodAuto="matAutocomplete">
+                <mat-option
+                  *ngFor="let paymentMethod of filteredPayments | async"
+                  [value]="paymentMethod"
+                >
+                  {{ paymentMethod }}
+                </mat-option>
+              </mat-autocomplete>
+            </mat-form-field>
+          </form>
+        </article>
+
+        <article>
+          <form class="example-form">
+            <mat-form-field class="example-full-width">
+              <mat-label>Amount Received</mat-label>
+              <input matInput placeholder="NGN" type="number" />
+            </mat-form-field>
+          </form>
+        </article>
+        <article>
+          <form class="example-form">
+            <mat-form-field class="example-full-width">
+              <mat-label>Transaction Charge</mat-label>
+              <input matInput placeholder="NGN" type="number" />
+            </mat-form-field>
+          </form>
+        </article>
+      </div>
+    </mat-expansion-panel>
+
+    <div class="divButton">
+      <button class="sectionButton">Continue</button>
     </div>
-    <div>
+  </section>
+
+  <section class="selectClients">
+    <mat-expansion-panel hideToggle>
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <span>3. Add Aditional Details</span>
+        </mat-panel-title>
+        <div class="headSection">
+          <img
+            src="assets/chevron-down-svgrepo-com.svg"
+            class="downSvg"
+            alt=""
+          />
+        </div>
+      </mat-expansion-panel-header>
+      <div class="mainSection3">
+        <article>
+          <button
+            *ngIf="!showEditor"
+            class="btn btn-light"
+            (click)="toggleEditor()"
+          >
+            Add Notes
+          </button>
+          <angular-editor
+            *ngIf="showEditor"
+            [(ngModel)]="htmlContent"
+            [config]="editorConfig"
+            placeholder="'Enter text here...'"
+          ></angular-editor>
+          <button
+            *ngIf="showEditor"
+            class="btn close-btn"
+            (click)="toggleEditor()"
+          >
+            Save and Continue
+          </button>
+        </article>
+
+        <article class="contactDetails">
+          <!-- <button class="btn btn-light" (click)="toggleEditor()"> -->
+          <button
+            *ngIf="!showContactEditor"
+            class="btn btn-light"
+            (click)="toggleContactDetails()"
+          >
+            Add Contact Details
+          </button>
+
+          <mat-form-field *ngIf="showContactEditor">
+            <mat-label>Name</mat-label>
+            <input matInput type="text" />
+          </mat-form-field>
+          <mat-form-field *ngIf="showContactEditor">
+            <mat-label>Email</mat-label>
+            <input matInput type="email" />
+          </mat-form-field>
+          <mat-form-field *ngIf="showContactEditor">
+            <mat-label>Phone Number</mat-label>
+            <input matInput type="text" />
+          </mat-form-field>
+          <mat-form-field *ngIf="showContactEditor">
+            <mat-label>Any other Information</mat-label>
+            <textarea matInput></textarea>
+          </mat-form-field>
+          <button
+            *ngIf="showContactEditor"
+            class="btn close-btn"
+            (click)="toggleContactDetails()"
+          >
+            Save and Continue
+          </button>
+        </article>
+      </div>
+    </mat-expansion-panel>
+
+    <div class="divButton">
       <button class="sectionButton">Continue</button>
     </div>
   </section>

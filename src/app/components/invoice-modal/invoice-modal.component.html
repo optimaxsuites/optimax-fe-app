@@ -53,10 +53,10 @@
                             <form>
                                 <p class="billing-title">Quotation From <span class="billing-span">[ Company's details ]</span></p>
                                 <mat-form-field>
-                                <mat-label>Select Company</mat-label>
-                                <mat-select [(ngModel)]="selectedValue" (ngModelChange)="updateBusinessInfo()" name="Company" placeholder="Select Company">
-                                    <mat-option *ngFor="let company of companies" [value]="company.value">{{company.viewValue}}</mat-option>
-                                </mat-select>
+                                    <mat-label>Select Company</mat-label>
+                                    <mat-select [(ngModel)]="selectedValue" (ngModelChange)="updateBusinessInfo()" name="Company" placeholder="Select Company">
+                                        <mat-option *ngFor="let company of companies" [value]="company.value">{{company.viewValue}}</mat-option>
+                                    </mat-select>
                                 </mat-form-field>
                             </form>
                         </div>
