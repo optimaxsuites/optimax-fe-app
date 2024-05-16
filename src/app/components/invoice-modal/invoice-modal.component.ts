@@ -1,6 +1,14 @@
+<<<<<<< HEAD
+import { Component } from '@angular/core';
+import {
+  FormBuilder,
+  FormGroup,
+} from '@angular/forms';
+=======
 import { HttpRequest, HttpClient, HttpEventType, HttpResponse } from '@angular/common/http';
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+>>>>>>> c5fa55cd78f52298e34f562d82546af4cc5644d0
 import { AngularEditorConfig } from '@kolkov/angular-editor';
 // import { MatDialog } from '@angular/material/dialog';
 
@@ -15,18 +23,15 @@ interface BusinessDetails {
   email: string;
 }
 
-
 interface Client {
   value: string;
   viewValue: string;
 }
 
-
-
 @Component({
   selector: 'app-invoice-modal',
   templateUrl: './invoice-modal.component.html',
-  styleUrl: './invoice-modal.component.scss'
+  styleUrl: './invoice-modal.component.scss',
 })
 export class InvoiceModalComponent {
   showSecondComponent = false;
@@ -38,7 +43,7 @@ export class InvoiceModalComponent {
   showDiscount = false;
   showAdditionalCharges = false;
   selectedValue?: string;
-  clientDetails: any = {}; 
+  clientDetails: any = {};
   showDescriptionBox: boolean = false;
   imageUrl: string | ArrayBuffer | null = null;
   discounts: any[] = [];
@@ -105,9 +110,6 @@ export class InvoiceModalComponent {
 
 
 
-
-
-
   addDiscount() {
     this.discounts.push({});
   }
@@ -126,8 +128,7 @@ export class InvoiceModalComponent {
   //   this.signatures.splice(index, 1);
   // }
 
-  // signature 
-
+  // signature
 
   charges: any[] = [];
 
@@ -160,7 +161,7 @@ export class InvoiceModalComponent {
         'justifyFull',
         'insertUnorderedList',
         'insertOrderedList',
-        'fontName'
+        'fontName',
       ],
       [
         'textColor',
@@ -172,22 +173,26 @@ export class InvoiceModalComponent {
         'insertVideo',
         'insertHorizontalRule',
         'removeFormat',
-        'toggleEditorMode'
-      ]
-    ]
+        'toggleEditorMode',
+      ],
+    ],
   };
- 
-  myForm!: FormGroup ;
+
+  myForm!: FormGroup;
   options: string[] = ['Nigeria - NGN', 'US Dollar - USD', 'Cuba - CUD'];
 
+<<<<<<< HEAD
+  constructor(private fb: FormBuilder) {}
+=======
   constructor(private fb: FormBuilder, private http: HttpClient) { }
+>>>>>>> c5fa55cd78f52298e34f562d82546af4cc5644d0
 
   ngOnInit(): void {
     this.addTermGroup();
 
 
     this.myForm = this.fb.group({
-      myOption: [''] // Set default value if needed
+      myOption: [''], // Set default value if needed
     });
   }
 
@@ -195,7 +200,7 @@ export class InvoiceModalComponent {
 
   deleteRow(index: number) {
     if (index > 0) {
-        this.tableData.splice(index, 1);
+      this.tableData.splice(index, 1);
     }
   }
 
@@ -205,24 +210,24 @@ export class InvoiceModalComponent {
   }
 
   toggleSecondComponent() {
-      this.showSecondComponent = !this.showSecondComponent;
+    this.showSecondComponent = !this.showSecondComponent;
   }
 
   showDesBox() {
     this.showDescriptionBox = true;
-}
+  }
 
   companies: Company[] = [
-    {value: 'Centrifuge', viewValue: 'Centrifuge'},
-    {value: 'GOP Gadgets', viewValue: 'GOP Gadgets'},
-    {value: 'DeOne', viewValue: 'DeOne'},
+    { value: 'Centrifuge', viewValue: 'Centrifuge' },
+    { value: 'GOP Gadgets', viewValue: 'GOP Gadgets' },
+    { value: 'DeOne', viewValue: 'DeOne' },
   ];
 
   businessDetails: BusinessDetails = {
     name: '',
     address: '',
     phoneNumber: '',
-    email: ''
+    email: '',
   };
 
   updateBusinessInfo() {
@@ -232,7 +237,7 @@ export class InvoiceModalComponent {
         name: 'Centrifuge Group',
         address: 'No 31 juju street, lagos road',
         phoneNumber: '09077556633',
-        email: 'centrifuge@gmail.com'
+        email: 'centrifuge@gmail.com',
       };
     } else if (this.selectedValue === 'GOP Gadgets') {
       // Add logic for GOP Gadgets
@@ -240,7 +245,7 @@ export class InvoiceModalComponent {
         name: 'GOP Gadgets',
         address: 'No 9 Adesanya street, lagos, ikeja',
         phoneNumber: '08144685954',
-        email: 'gop@gmail.com'
+        email: 'gop@gmail.com',
       };
     } else if (this.selectedValue === 'DeOne') {
       // Add logic for DeOne
@@ -248,26 +253,24 @@ export class InvoiceModalComponent {
         name: 'DeOne Gadgets',
         address: 'No 9 Adesanya street, lagos, ikeja',
         phoneNumber: '08060393174',
-        email: 'DeOne@gmail.com'
+        email: 'DeOne@gmail.com',
       };
     }
   }
 
-
-
   // client details
 
   clients: Client[] = [
-    {value: 'MTN', viewValue: 'MTN'},
-    {value: 'GLO', viewValue: 'GLO'},
-    {value: 'Opay', viewValue: 'Opay'},
+    { value: 'MTN', viewValue: 'MTN' },
+    { value: 'GLO', viewValue: 'GLO' },
+    { value: 'Opay', viewValue: 'Opay' },
   ];
 
-
   updateClientInfo() {
-    this.clientDetails = this.clients.find(client => client.value === this.selectedValue);
-      this.showSecondComponent = true; // Show the second component
-
+    this.clientDetails = this.clients.find(
+      (client) => client.value === this.selectedValue
+    );
+    this.showSecondComponent = true; // Show the second component
 
     // Replace this logic with your actual business details fetching mechanism
     if (this.selectedValue === 'MTN') {
@@ -275,7 +278,7 @@ export class InvoiceModalComponent {
         name: 'MTN',
         address: 'No 31 juju street, lagos road',
         phoneNumber: '09077556633',
-        email: 'mtn@gmail.com'
+        email: 'mtn@gmail.com',
       };
     } else if (this.selectedValue === 'GLO') {
       // Add logic for GOP Gadgets
@@ -283,7 +286,7 @@ export class InvoiceModalComponent {
         name: 'GLO',
         address: 'No 9 Adesanya street, lagos, ikeja',
         phoneNumber: '08144685954',
-        email: 'glo@gmail.com'
+        email: 'glo@gmail.com',
       };
     } else if (this.selectedValue === 'Opay') {
       // Add logic for DeOne
@@ -291,7 +294,7 @@ export class InvoiceModalComponent {
         name: 'Opay',
         address: 'No 9 Adesanya street, lagos, ikeja',
         phoneNumber: '08060393174',
-        email: 'opay@gmail.com'
+        email: 'opay@gmail.com',
       };
     }
   }
@@ -306,6 +309,8 @@ export class InvoiceModalComponent {
       };
     }
   }
+<<<<<<< HEAD
+=======
 
   clearSignature() {
     this.imageUrl = null;
@@ -369,9 +374,5 @@ uploadedFiles: { name: string, size: number, progress: number, status: string }[
 
   }
 
+>>>>>>> c5fa55cd78f52298e34f562d82546af4cc5644d0
 }
-
-
-
-
-

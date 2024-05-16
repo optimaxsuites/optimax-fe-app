@@ -1,23 +1,27 @@
 .overallContainer {
-  display: flex;
-  align-items: center;
-  padding: 3rem;
-  justify-content: center;
-  background-color: #d4deed;
+  padding: 2rem;
+  box-sizing: border-box;
 }
 
 .selectClients {
-  padding: 2rem;
-  background-color: #f1f4f9;
-  border-radius: 2rem;
-  width: 80%;
-  display: flex;
-  flex-direction: column;
+  box-shadow: 0px 5px 5px rgb(180, 180, 180);
+  margin-bottom: 2rem;
+  padding: 1rem;
+  box-sizing: border-box;
+  background-color: #ffff;
+
+  border-radius: 10px;
+  // width: 100%;
+  // display: flex;
+  // flex-direction: column;
 }
 
-.headerSection {
-  margin-bottom: 1.5rem;
+.inputField {
+  background-color: red;
 }
+
+// .headerSection {
+// }
 
 .mainSection {
   display: flex;
@@ -36,8 +40,56 @@
   margin-top: 1rem;
 }
 
-.spanLine {
-  margin-top: 3rem;
-  border-color: #0a0a0a;
-  border-width: 0.12rem;
+// Administration takes care of the settings.
+
+.example-form {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.downSvg {
+  height: 3rem;
+}
+
+.addNew {
+  margin-bottom: 0.6rem;
+}
+
+.divButton {
+  margin-top: 0.5rem;
+}
+
+.description-box {
+  max-width: 61.3%;
+  padding: 1rem;
+  box-sizing: border-box;
+  // height: 500px;
+  // background-color: black;
+}
+
+.btn-light {
+  margin-bottom: 1.5rem;
+}
+
+.close-btn {
+  margin-top: 1rem;
+}
+
+.close-btn:hover {
+  margin-top: 1rem;
+  background-color: #e1edf5;
+}
+
+.mainSection3 {
+  display: block;
+}
+
+.contactDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.contactDetails > button {
+  align-self: self-start;
 }

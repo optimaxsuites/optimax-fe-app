@@ -4,6 +4,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import {MatExpansionModule} from '@angular/material/expansion'
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatSelectModule } from '@angular/material/select';
@@ -13,14 +14,15 @@ import { CdkScrollable } from '@angular/cdk/scrolling';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { DropdownModule } from 'primeng/dropdown';
 // import { EditorModule } from "@progress/kendo-angular-editor";
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { HttpClientModule} from '@angular/common/http';
+import { HttpClientModule } from '@angular/common/http';
 import { AngularEditorModule } from '@kolkov/angular-editor';
-
-
+import {MatAutocompleteModule} from '@angular/material/autocomplete';
+import { AsyncPipe } from '@angular/common';
 
 
 import { AppRoutingModule } from './app-routing.module';
@@ -136,9 +138,10 @@ import { PaymentReceiptsModalComponent } from './components/payment-receipts-mod
     // EditorModule,
     BrowserAnimationsModule,
     HttpClientModule,
-    AngularEditorModule
-
-    
+    AngularEditorModule,
+    AsyncPipe,
+    MatAutocompleteModule, 
+    MatExpansionModule
   ],
   providers: [provideAnimationsAsync(), provideNativeDateAdapter()],
   bootstrap: [AppComponent],
