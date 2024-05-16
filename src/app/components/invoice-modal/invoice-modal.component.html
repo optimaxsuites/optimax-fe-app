@@ -106,7 +106,7 @@
                             </div>
                         </div>
                         <div class="info-bottom-section">
-                            <div class="first-component" *ngIf="!showSecondComponent" >
+                            <div class="first-component mt-4" *ngIf="!showSecondComponent" >
                                 <p>Select client from list</p>
                                 <p class="text-center">Or</p>
                                 <button  class="btn create-client-btn">Add New Client</button>
@@ -278,16 +278,32 @@
                                 <p class="cal-total" >Total</p>
                             </div>
                             <div class="d-flex">
-                                <p class="cal-amount">₦</p>
-                                <p class="cal-amount">200</p>
+                                <span class="cal-amount">₦</span>
+                                <span class="cal-amount">200</span>
                             </div>
                         </div>
+                    </div>
+
+                    <div class="amount-words-container my-4" *ngIf="showAmountWord" >
+                        <div class="d-flex justify-content-between">
+                            <p><b>Amount In Words</b></p>
+                            <i (click)="showAmountWord = false" class="fa-solid fa-x p-2"></i>
+                        </div>
+                        <div class="value d-flex">
+                            <div class="d-flex">
+                                <input type="text" class="form-control-opti" >
+                            </div>
+                        </div>
+                    </div>
+                    <div class="discount-btn-wrapper d-block my-4">
+                        <button class="add-btn" *ngIf="!showAmountWord" (click)="showAmountWord = true"><i class="fas fa-plus me-2"></i>Add Amount In Words</button>
+
                     </div>
 
 
                     <div class="signature-upload-container">
                         <div class="wrapper" *ngIf="showSignatureButton">
-                            <i (click)="showSignatureButton = false" class="fa-solid fa-x p-2"></i>
+                            <i (click)=" clearSignature()" class="fa-solid fa-x p-2"></i>
                             <div class="signature-wrapper">
                                 <img *ngIf="imageUrl" [src]="imageUrl" alt="Signature" class="Signature">
                             </div>
@@ -307,15 +323,18 @@
 
         <div class="form-buttom-section">
             <div class="btn-bottom-container" >
-                <button class="add-terms-condition-btn btn" *ngIf="!showTermsConditionButton" (click)="showTermsConditionButton = true">Add Terms & Conditions</button>
+                <button class="add-terms-condition-btn btn" *ngIf="!showTermsConditionButton" (click)="showTermsConditionButton = true;">Add Terms & Conditions</button>
+                <button class="add-terms-condition-btn btn" *ngIf="!showNotes" (click)="showNotes = true;" >Add Notes</button>
+                <button class="add-terms-condition-btn btn" *ngIf="!showAttachments" (click)="showAttachments = true;" >Add Attachments</button>
             </div>
 
             <div class="contents-wrapper">
                 <div class="terms-conditions-container"  *ngIf="showTermsConditionButton">
                     <div class="terms-condition-wrapper" *ngFor="let termGroup of termsGroup; let i = index">
-                        <i (click)="showTermsConditionButton = false" class="fa-solid fa-x p-2 removeTermCondition"></i>
                       <div class="top">
-                        <div class="label mb-4"><p>Terms and Conditions</p></div> <i (click)="removeTermGroup(i)" class="fa-solid fa-x p-2"></i>
+                        <div class="label mb-4"><p>Terms and Conditions</p></div> 
+                        <i *ngIf="i === 0" (click)="removeTermGroup(i); closeTermsConditions()" class="fa-solid fa-x p-2"></i>
+                        <i *ngIf="i !== 0" (click)="removeTermGroup(i)" class="fa-solid fa-x p-2"></i>
                       </div>
                       <div class="d-flex mb-4" *ngFor="let term of termGroup.terms; let j = index">
                         <input type="text" class="form-control-opti terms">
@@ -324,7 +343,53 @@
                       <button (click)="addTermCondition(i)" class="btn add-more-terms"> <i class="fas fa-plus me-2"></i>Add New Term</button>
                     </div>
                     <button (click)="addTermGroup()" class="btn add-more-terms"> <i class="fas fa-plus me-2"></i>Add New Term Group</button>
-                  </div>                  
+                </div>  
+                
+                <div class="terms-conditions-container"  *ngIf="showNotes">
+                    <div class="terms-condition-wrapper">
+                        <div class="terms-condition-wrapper">
+                            <div class="top">
+                                <div class="label mb-4"><p>Add Notes</p></div> <i (click)="showNotes = false" class="fa-solid fa-x p-2"></i>
+                            </div>
+                            <angular-editor placeholder="'Enter text here...'" [config]="editorConfig"></angular-editor>
+                        </div>
+                    </div>
+                </div> 
+
+                <div class="terms-conditions-container"  *ngIf="showAttachments">
+                    <div class="terms-condition-wrapper">
+                        <div class="terms-condition-wrapper">
+                            <div class="top">
+                                <div class="label"><p>Add Attachments</p></div> <i (click)="showAttachments = false" class="fa-solid fa-x p-2"></i>
+                            </div>
+                            <div class="content">
+                                <p>*Add any other attachments that are necessary for the quotation</p>
+                                <!-- attachment.component.html -->
+                                
+                                <!-- file-upload.component.html -->
+                                <div class="file-upload-container">
+                                    <input type="file" #fileInput (change)="fileInputChange($event)" style="display: none" />
+                                    <button class="file-upload-button" (click)="fileInput.click()">Browse</button>
+                                </div>
+                                
+                                <ul class="uploaded-files">
+                                    <li *ngFor="let file of uploadedFiles; let i = index" [class]="file.status" class="uploaded-file">
+                                        <div class="file-details">
+                                            <div class="file-name">{{ file.name }}</div>
+                                            <div class="file-progress">
+                                            <div class="file-progress-bar" [style.width.%]="file.progress"></div>
+                                            </div>
+                                            <div class="file-size">{{ (file.size / (1024 * 1024)).toFixed(2) }} MB</div>
+                                        </div>
+                                        <div class="file-icons" >
+                                            <i (click)="cancelUpload(i)" class="fa-solid fa-x p-2"></i>
+                                        </div>
+                                    </li>
+                                </ul>                            
+                            </div>
+                        </div>
+                    </div>
+                </div> 
             </div>
         </div>
 
@@ -332,7 +397,8 @@
 
 
         <div class="btn-wrapper">
-            <button class="btn create-client-btn">Save</button>
+            <button class="btn create-client-btn-2">Save As Draft</button>
+            <button class="btn create-client-btn">Save & Continue</button>
         </div>
     </div>
 </div>

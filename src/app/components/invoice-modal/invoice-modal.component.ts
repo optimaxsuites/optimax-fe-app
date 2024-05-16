@@ -1,3 +1,4 @@
+import { HttpRequest, HttpClient, HttpEventType, HttpResponse } from '@angular/common/http';
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { AngularEditorConfig } from '@kolkov/angular-editor';
@@ -29,8 +30,11 @@ interface Client {
 })
 export class InvoiceModalComponent {
   showSecondComponent = false;
-  showSignatureButton = false;
+  showSignatureButton: boolean = false;
   showTermsConditionButton = false;
+  showAmountWord = false;
+  showNotes = false;
+  showAttachments = false;
   showDiscount = false;
   showAdditionalCharges = false;
   selectedValue?: string;
@@ -41,23 +45,67 @@ export class InvoiceModalComponent {
   terms: any[] = [];
   termsGroup: any[] = [];
 
-  addTermGroup() {
-    // Create a new term group with an initial term
-    this.termsGroup.push({ terms: [{}] });
-  }
+  // addTermGroup() {
+  //   // Create a new term group with an initial term
+  //   this.termsGroup.push({ terms: [{}] });
+  // }
 
-  removeTermGroup(index: number) {
-    this.termsGroup.splice(index, 1);
-  }
+  // removeTermGroup(index: number) {
+  //   this.termsGroup.splice(index, 1);
+  // }
 
-  addTermCondition(groupIndex: number) {
-    // Add a new term to the specified term group
-    this.termsGroup[groupIndex].terms.push({});
-  }
+  // addTermCondition(groupIndex: number) {
+  //   // Add a new term to the specified term group
+  //   this.termsGroup[groupIndex].terms.push({});
+  // }
 
-  removeTermCondition(groupIndex: number, termIndex: number) {
-    this.termsGroup[groupIndex].terms.splice(termIndex, 1);
-  }
+  // removeTermCondition(groupIndex: number, termIndex: number) {
+  //   this.termsGroup[groupIndex].terms.splice(termIndex, 1);
+  // }
+
+
+
+
+
+      // Function to add a new term group
+      addTermGroup() {
+        this.termsGroup.push({
+            terms: [{}] // Initialize terms as an empty array for each term group
+        });
+    }
+
+    // Function to remove a term group
+    removeTermGroup(index: number) {
+        this.termsGroup.splice(index, 1);
+    }
+
+    // Function to reset the termsGroup array
+    resetTermsGroup() {
+        this.termsGroup = [];
+    }
+
+    // Function to add a new term condition to a specific term group
+    addTermCondition(termGroupIndex: number) {
+        this.termsGroup[termGroupIndex].terms.push({});
+    }
+
+    // Function to remove a term condition from a specific term group
+    removeTermCondition(termGroupIndex: number, termIndex: number) {
+        this.termsGroup[termGroupIndex].terms.splice(termIndex, 1);
+    }
+
+    // Function to close terms and reset data
+    closeTermsConditions() {
+        this.showTermsConditionButton = false;
+        this.resetTermsGroup();
+    }
+
+
+
+
+
+
+
 
 
   addDiscount() {
@@ -132,7 +180,7 @@ export class InvoiceModalComponent {
   myForm!: FormGroup ;
   options: string[] = ['Nigeria - NGN', 'US Dollar - USD', 'Cuba - CUD'];
 
-  constructor(private fb: FormBuilder) { }
+  constructor(private fb: FormBuilder, private http: HttpClient) { }
 
   ngOnInit(): void {
     this.addTermGroup();
@@ -259,10 +307,67 @@ export class InvoiceModalComponent {
     }
   }
 
+  clearSignature() {
+    this.imageUrl = null;
+    this.showSignatureButton = false; 
+}
 
 
-  
 
+
+uploadedFiles: { name: string, size: number, progress: number, status: string }[] = [];
+
+
+
+  fileInputChange(event: any) {
+    const fileList: FileList = event.target.files;
+    if (fileList && fileList.length > 0) {
+      for (let i = 0; i < fileList.length; i++) {
+        const file: File = fileList[i];
+        this.uploadFile(file);
+      }
+    }
+  }
+
+  uploadFile(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const req = new HttpRequest('POST', 'sender.php', formData, {
+      reportProgress: true
+    });
+
+    this.http.request(req).subscribe(event => {
+      if (event.type === HttpEventType.UploadProgress && event.total) {
+        const percentDone = Math.round(100 * event.loaded / event.total);
+        this.updateFileProgress(file.name, percentDone);
+      } else if (event instanceof HttpResponse) {
+        this.updateFileStatus(file.name, 'complete');
+      }
+    });
+    
+    this.uploadedFiles.push({ name: file.name, size: file.size, progress: 0, status: 'in-prog' });
+  }
+
+  updateFileProgress(fileName: string, progress: number) {
+    const file = this.uploadedFiles.find(file => file.name === fileName);
+    if (file) {
+      file.progress = progress;
+    }
+  }
+
+  updateFileStatus(fileName: string, status: string) {
+    const file = this.uploadedFiles.find(file => file.name === fileName);
+    if (file) {
+      file.status = status;
+    }
+  }
+
+  cancelUpload(index: number) {
+    // Implement cancellation logic if needed
+    this.uploadedFiles.splice(index, 1);
+
+  }
 
 }
 
