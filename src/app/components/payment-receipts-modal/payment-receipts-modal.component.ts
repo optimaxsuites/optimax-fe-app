@@ -1,9 +1,15 @@
 import { Component, OnInit } from '@angular/core';
-import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import {
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+} from '@angular/forms';
 import { Observable } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
-import { AsyncPipe } from '@angular/common';
 import { AngularEditorConfig } from '@kolkov/angular-editor';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-payment-receipts-modal',
@@ -26,15 +32,19 @@ export class PaymentReceiptsModalComponent {
     'Prepaid Card',
     'Digital Wallet',
   ];
-
   filteredOptions!: Observable<string[]>;
   filteredCurrencies!: Observable<string[]>;
   filteredPayments!: Observable<string[]>;
   item: any;
-
+  myForm!: FormGroup;
   htmlContent: string = '';
   showEditor: boolean = false;
   showContactEditor: boolean = false;
+  showTable = true;
+
+  toggleTable() {
+    this.showTable = !this.showTable;
+  }
 
   editorConfig: AngularEditorConfig = {
     editable: true,
