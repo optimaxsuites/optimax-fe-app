@@ -1,6 +1,7 @@
 .overallContainer {
   padding: 2rem;
   box-sizing: border-box;
+  height: 1000px;
 }
 
 .selectClients {
@@ -69,7 +70,7 @@
 }
 
 .btn-light {
-  margin-bottom: 1.5rem;
+  width: -webkit-fill-available;
 }
 
 .close-btn {
@@ -92,4 +93,24 @@
 
 .contactDetails > button {
   align-self: self-start;
+}
+
+.mainSection2 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 80%;
+}
+
+.tableDiv {
+  padding: 3rem;
+  box-shadow: 0 0 25px -9px #023d50;
+  width: 50%;
+  margin-top: 1rem;
+}
+
+.smallTable {
+  padding: 1.5rem;
+  box-shadow: 0 0 25px -9px #24143d;
+  width: 50%;
 }

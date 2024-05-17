@@ -1,14 +1,6 @@
-<<<<<<< HEAD
-import { Component } from '@angular/core';
-import {
-  FormBuilder,
-  FormGroup,
-} from '@angular/forms';
-=======
 import { HttpRequest, HttpClient, HttpEventType, HttpResponse } from '@angular/common/http';
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
->>>>>>> c5fa55cd78f52298e34f562d82546af4cc5644d0
 import { AngularEditorConfig } from '@kolkov/angular-editor';
 // import { MatDialog } from '@angular/material/dialog';
 
@@ -181,11 +173,7 @@ export class InvoiceModalComponent {
   myForm!: FormGroup;
   options: string[] = ['Nigeria - NGN', 'US Dollar - USD', 'Cuba - CUD'];
 
-<<<<<<< HEAD
-  constructor(private fb: FormBuilder) {}
-=======
   constructor(private fb: FormBuilder, private http: HttpClient) { }
->>>>>>> c5fa55cd78f52298e34f562d82546af4cc5644d0
 
   ngOnInit(): void {
     this.addTermGroup();
@@ -309,8 +297,6 @@ export class InvoiceModalComponent {
       };
     }
   }
-<<<<<<< HEAD
-=======
 
   clearSignature() {
     this.imageUrl = null;
@@ -374,5 +360,4 @@ uploadedFiles: { name: string, size: number, progress: number, status: string }[
 
   }
 
->>>>>>> c5fa55cd78f52298e34f562d82546af4cc5644d0
 }

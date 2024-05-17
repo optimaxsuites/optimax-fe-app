@@ -44,11 +44,9 @@
 
                 <mat-option [value]="option">{{ option }}</mat-option>
                 }
+                <button class="btn btn-light">Add New</button>
               </mat-autocomplete>
             </mat-form-field>
-            <div>
-              <button class="btn btn-light">Add New</button>
-            </div>
           </form>
         </article>
         <article>
@@ -70,6 +68,7 @@
                 >
                   {{ currency }}
                 </mat-option>
+                <button class="btn btn-light">Add New</button>
               </mat-autocomplete>
             </mat-form-field>
           </form>
@@ -108,8 +107,13 @@
           />
         </div>
       </mat-expansion-panel-header>
-      <div class="mainSection">
-        <article>
+      <div class="mainSection2">
+        <div class="tableDiv" *ngIf="showTable"></div>
+        <div class="smallTable" (click)="toggleTable()">
+          Click to see the big table
+        </div>
+
+        <!-- <article>
           <form class="example-form">
             <mat-form-field class="example-full-width">
               <mat-label>Payment Method</mat-label>
@@ -131,29 +135,29 @@
               </mat-autocomplete>
             </mat-form-field>
           </form>
-        </article>
+        </article> -->
 
-        <article>
+        <!-- <article>
           <form class="example-form">
-            <mat-form-field class="example-full-width">
-              <mat-label>Deposited To:</mat-label>
+      <mat-form-field class="example-full-width">
+<mat-label>Deposited To:</mat-label>
 
-              <input
-                type="text"
-                placeholder="Select Payment Account"
-                aria-label="Select Payment Account"
-                matInput
-                [formControl]="myControl"
-                [matAutocomplete]="auto"
-              />
+<input
+type="text"
+placeholder="Select Payment Account"
+aria-label="Select Payment Account"
+matInput
+[formControl]="myControl"
+[matAutocomplete]="auto"
+/>
 
-              <mat-autocomplete #auto="matAutocomplete">
-                @for (option of filteredOptions | async; track option) {
+<mat-autocomplete #auto="matAutocomplete">
+@for (option of filteredOptions | async; track option) {
 
-                <mat-option [value]="option">{{ option }}</mat-option>
-                }
-              </mat-autocomplete>
-            </mat-form-field>
+<mat-option [value]="option">{{ option }}</mat-option>
+}
+</mat-autocomplete>
+      </mat-form-field>
 
             <div class="addNew">
               <button class="btn btn-light">Add New</button>
@@ -200,7 +204,7 @@
               <input matInput placeholder="NGN" type="number" />
             </mat-form-field>
           </form>
-        </article>
+        </article> -->
       </div>
     </mat-expansion-panel>
 
