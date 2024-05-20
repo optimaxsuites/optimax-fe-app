@@ -30,6 +30,10 @@
     margin-bottom: 5rem;
     .form-title{
         border-bottom: 2px solid #25925B ;
+        font-size: 2em;
+        font-weight: 600;
+        padding-bottom: 0.7rem;
+        box-sizing: border-box;
     }
 
 }
@@ -85,6 +89,23 @@ mat-form-field{
     
 }
 
+.add-new-details-btn-wrapper{
+    padding: 0 1rem;
+}
+.new-detail-btn{
+    width: 100%;
+    background-color: #224957;
+    color: #fff;
+    padding: 1rem 0;
+
+    &:active{
+        border: 1px solid #224957;
+        color: #224957;
+    }
+}
+
+
+
 .right{
     width: 49%;
     padding: 1rem;
@@ -123,8 +144,9 @@ mat-form-field{
     // border: 1px solid black;
 }
 .create-client-btn{
-    background-color: #224957;
-    color: #fff;
+    // background-color: #224957;
+    border: 1px solid #224957;
+    color: #224957;
     padding: 1rem 2.5rem;
 }
 .create-client-btn-2{
@@ -149,9 +171,9 @@ mat-form-field{
 
 
 .flat-btn{
-    background-color: #bfd9e2;
-    color: #fff;
-    border: 1px solid #bfd9e2;
+    // background-color: #bfd9e2;
+    color: #224957;
+    border: 1px solid #224957;
 }
 
 .currency-selector{
@@ -181,37 +203,63 @@ mat-form-field{
 
 
 
-tr, .top-products-table{
+table, .top-products-table{
     display: block;
+    padding: 1rem 0;
+    width: 100%;
+
     thead{
-        background-color: #224957;
+        // background-color: #224957;
         color: #fff;
-    }
-    tbody{
-        // background-color: #f2fcff ;
-        // background-color: red;
-
-        tr{
-        background-color: #f8feff;
-        margin-bottom: 1rem;
-        min-height: 150px;
-        padding: 2rem 0;
-        box-sizing: border-box;
-        // border: 1px solid #e3eef0;
-
+        
+        tr, .top-products-table-row{
+            
 
             .table-item{
                 display: flex;
                 justify-content: space-between;
+                // width: 100%;
+                width: 100%;
+                border-radius: 10px 10px 0 0;
+                background-color: #224957;
+                padding: 1rem;
+            }
 
-                .top-products-table-data{
-                    input{
-                        background-color: transparent;
-                        padding: 0.5rem;
+        }
+    }
+    
+    tbody{
+        // background-color: #f2fcff ;
+        // background-color: red;
+
+        ng-container{
+            tr, .top-{
+                // background-color: #f8feff;
+                // margin-bottom: 1rem;
+                // min-height: 150px;
+                // padding: 2rem 0;
+                // box-sizing: border-box;
+                // border: 1px solid #e3eef0;
+                border: 1px solid black;
+        
+        
+                    .table-item{
+                        display: flex;
+                        justify-content: space-between;
+        
+        
+                        .top-products-table-data{
+                            input{
+                                background-color: transparent;
+                                padding: 0.5rem;
+                            }
+                        }
                     }
                 }
-            }
+            
         }
+
+
     }
 }
 .fa-x{
@@ -219,19 +267,16 @@ tr, .top-products-table{
     color: #224957;
     cursor: pointer;
 }
-thead{
-    width: 100%;
-}
 .table-item{
-
     display: flex;
     justify-content: space-between;
 }
+
 .new-table-row{
     width: 50%;
-    background-color: #224957;
-    color: #fff;
-    border: 1px solid #bfd9e2;
+    // background-color: #224957;
+    color: #224957;
+    border: 1px solid #224957;
     padding: 1rem 5rem;
 }
 input:focus,
@@ -379,21 +424,22 @@ select{
       }
 }
 
-.btn-sign{
-    button{
-        width: 100%;
-        padding: 1rem;
-        font-weight: 600;
-        background-color: #224957;
-        color: #fff;
-    }
-}
+// .btn-sign{
+//     button{
+//         width: 100%;
+//         padding: 1rem;
+//         font-weight: 600;
+//         background-color: #224957;
+//         color: #fff;
+//     }
+// }
 .add-sign{
     width: 100%;
     padding: 1rem;
     font-weight: 600;
-    background-color: #224957;
-    color: #fff;
+    // background-color: #224957;
+    border: 1px solid #224957;
+    color: #224957;
     margin-top: 1rem;
 }
 
@@ -470,26 +516,21 @@ select{
 
 
 
-/* file-upload.component.css */
 
-/* Container for the file input and button */
 .file-upload-container {
     margin-bottom: 20px;
   }
   
-  /* Style the button */
+
   .file-upload-button {
-    background-color: #4CAF50; /* Green */
-    border: none;
-    color: white;
+    // background-color: #4CAF50;
+    border: 1px solid #224957;
+    color: #224957;
     padding: 1rem 2rem;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
+    
     font-size: 1.1em;
     font-weight: 500;
     cursor: pointer;
-    border-radius: 10px;
   }
   
   /* Style the list of uploaded files */
@@ -561,6 +602,12 @@ select{
     margin-left: 10px;
   }
   
+
+.save-continue{
+    border: 1px solid #224957;
+    color: #224957;
+    padding: 1rem 2.5rem;
+}
 
 
 

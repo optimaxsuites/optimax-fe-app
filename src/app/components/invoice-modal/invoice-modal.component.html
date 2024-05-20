@@ -2,7 +2,7 @@
     <div class="modal-wrapper p-4" #contentToPrint>
         <div class="header-section">
             <section class="title-section">
-                <h1 class="form-title">Quotation</h1>
+                <p class="form-title">Quotation</p>
             </section>
         </div>
 
@@ -56,6 +56,9 @@
                                     <mat-label>Select Company</mat-label>
                                     <mat-select [(ngModel)]="selectedValue" (ngModelChange)="updateBusinessInfo()" name="Company" placeholder="Select Company">
                                         <mat-option *ngFor="let company of companies" [value]="company.value">{{company.viewValue}}</mat-option>
+                                        <div class="add-new-details-btn-wrapper">
+                                            <button class="btn new-detail-btn">Add New Company Detail</button>
+                                        </div>
                                     </mat-select>
                                 </mat-form-field>
                             </form>
@@ -100,6 +103,9 @@
                                     <mat-label>Select Client</mat-label>
                                     <mat-select [(ngModel)]="selectedValue" (ngModelChange)="updateClientInfo()" name="Company" placeholder="Select Company">
                                         <mat-option *ngFor="let client of clients" [value]="client.value">{{client.viewValue}}</mat-option>
+                                        <div class="add-new-details-btn-wrapper">
+                                            <button class="btn new-detail-btn">Add New Client Detail</button>
+                                        </div>
                                     </mat-select>
                                     </mat-form-field>
                                 </form>
@@ -107,7 +113,7 @@
                         </div>
                         <div class="info-bottom-section">
                             <div class="first-component mt-4" *ngIf="!showSecondComponent" >
-                                <p>Select client from list</p>
+                                <p>Select Client From List</p>
                                 <p class="text-center">Or</p>
                                 <button  class="btn create-client-btn">Add New Client</button>
                             </div>
@@ -162,14 +168,14 @@
                 <thead>
                   <tr class="top-products-table-row ">
                     <div class="table-item">
-                        <th class="top-products-table-head col-5">Item</th>
-                        <th class="top-products-table-head col">Tax Rate</th>
-                        <th class="top-products-table-head col">Quantity</th>
-                        <th class="top-products-table-head col">Rate</th>
-                        <th class="top-products-table-head col">Amount</th>
-                        <th class="top-products-table-head col">Tax</th>
-                        <th class="top-products-table-head col">Total</th>
-                        <th class="top-products-table-head"></th>
+                        <th class="top-products-table-data col-5">Item</th>
+                        <th class="top-products-table-data col">Tax Rate</th>
+                        <th class="top-products-table-data col">Quantity</th>
+                        <th class="top-products-table-data col">Rate</th>
+                        <th class="top-products-table-data col">Amount</th>
+                        <th class="top-products-table-data col">Tax</th>
+                        <th class="top-products-table-data col">Total</th>
+                        <th class="top-products-table-data"></th>
                     </div>
                   </tr>
                 </thead>
@@ -369,7 +375,7 @@
                                 <!-- file-upload.component.html -->
                                 <div class="file-upload-container">
                                     <input type="file" #fileInput (change)="fileInputChange($event)" style="display: none" />
-                                    <button class="file-upload-button" (click)="fileInput.click()">Browse</button>
+                                    <button class="btn file-upload-button" (click)="fileInput.click()">Browse</button>
                                 </div>
                                 
                                 <ul class="uploaded-files">
@@ -398,7 +404,7 @@
 
         <div class="btn-wrapper">
             <button class="btn create-client-btn-2">Save As Draft</button>
-            <button class="btn create-client-btn">Save & Continue</button>
+            <button class="btn save-continue">Save & Continue</button>
         </div>
     </div>
 </div>

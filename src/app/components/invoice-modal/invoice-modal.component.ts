@@ -180,16 +180,16 @@ export class InvoiceModalComponent {
 
 
     this.myForm = this.fb.group({
-      myOption: [''], // Set default value if needed
+      myOption: [''], 
     });
   }
 
   tableData: any[] = [{}];
 
   deleteRow(index: number) {
-    if (index > 0) {
+    // if (index > 0) {
       this.tableData.splice(index, 1);
-    }
+    // }
   }
 
   addNewRow(): void {
