@@ -11,6 +11,11 @@ import { map, startWith } from 'rxjs/operators';
 import { AngularEditorConfig } from '@kolkov/angular-editor';
 import { MatDialog } from '@angular/material/dialog';
 
+interface DialogData {
+  animal: string;
+  name: string;
+}
+
 @Component({
   selector: 'app-payment-receipts-modal',
   templateUrl: './payment-receipts-modal.component.html',
@@ -41,10 +46,19 @@ export class PaymentReceiptsModalComponent {
   showEditor: boolean = false;
   showContactEditor: boolean = false;
   showTable = true;
+  name: any;
+  animal: any;
+
+  constructor(public dialog: MatDialog) {}
 
   toggleTable() {
     this.showTable = !this.showTable;
   }
+
+  dialogData: DialogData = {
+    name: '',
+    animal: '',
+  };
 
   editorConfig: AngularEditorConfig = {
     editable: true,
@@ -83,6 +97,17 @@ export class PaymentReceiptsModalComponent {
       ],
     ],
   };
+
+  openDialog(): void {
+    const dialogRef = this.dialog.open(PaymentReceiptsModalComponent, {
+      data: { name: this.name, animal: this.animal },
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      console.log('The dialog was closed');
+      this.animal = result;
+    });
+  }
 
   toggleEditor() {
     this.showEditor = !this.showEditor;

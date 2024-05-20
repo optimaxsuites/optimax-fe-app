@@ -15,77 +15,79 @@ import { QuotationComponent } from './components/quotation/quotation.component';
 import { ProformaInvoiceComponent } from './components/proforma-invoice/proforma-invoice.component';
 import { ReceiptComponent } from './components/receipt/receipt.component';
 import { PaymentReceiptsModalComponent } from './components/payment-receipts-modal/payment-receipts-modal.component';
+import { PaymentRecordReceivedComponent } from './components/payment-record-received/payment-record-received.component';
 
 const routes: Routes = [
   {
     path: '',
     component: DefaultComponent,
     children: [
-        {
-            path: '', 
-            component: LoginComponent, 
-        },
-        {
-            path: 'register',
-            component: RegisterComponent
-        }
-    ]
+      {
+        path: '',
+        component: LoginComponent,
+      },
+      {
+        path: 'register',
+        component: RegisterComponent,
+      },
+    ],
   },
 
-
-{
+  {
     path: '',
     component: MasterComponent,
     children: [
-        {
-          path: 'dashboard', 
-          component: DashboardPageComponent
-        },
-        {
-          path: 'sales', 
-          component: SalesPageComponent,
-        },
-        {
-          path: 'accounting', 
-          component: AccountingPageComponent,
-        },
+      {
+        path: 'dashboard',
+        component: DashboardPageComponent,
+      },
+      {
+        path: 'sales',
+        component: SalesPageComponent,
+      },
+      {
+        path: 'accounting',
+        component: AccountingPageComponent,
+      },
 
-        {
-          path: 'invoice', 
-          component: AccountingPageComponent,
-          children: [
-            // {
-            //   path: 'create-new-invoice',
-            //   component: InvoiceModalComponent
-            // }
-          ]
-        },
+      {
+        path: 'invoice',
+        component: AccountingPageComponent,
+        children: [
+          // {
+          //   path: 'create-new-invoice',
+          //   component: InvoiceModalComponent
+          // }
+        ],
+      },
 
-        {
-          path: 'members', 
-          component: MembersPageComponent,
-        },
+      {
+        path: 'members',
+        component: MembersPageComponent,
+      },
 
-        {
-          path: 'settings', 
-          component: SettingsPageComponent
-        },
-        {
-          path: 'invoice-modal',
-          component: InvoiceModalComponent
-        },
-        {
-          path: 'payment-receipts-modal',
-          component: PaymentReceiptsModalComponent
-        },
-        
-
-    ]
-}
+      {
+        path: 'settings',
+        component: SettingsPageComponent,
+      },
+      {
+        path: 'invoice-modal',
+        component: InvoiceModalComponent,
+      },
+      {
+        path: 'payment-receipts-modal',
+        component: PaymentReceiptsModalComponent,
+      },
+      {
+        path: 'payment-record-received',
+        component: PaymentRecordReceivedComponent,
+      },
+    ],
+  },
 ];
 
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-export class AppRoutingModule { }
+export class AppRoutingModule {}
