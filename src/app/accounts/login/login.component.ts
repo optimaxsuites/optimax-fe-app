@@ -30,22 +30,10 @@ export class LoginComponent {
   hide = true;
 
   emailFormControl = new FormControl('', [Validators.required, Validators.email]);
-
-  emailMatcher = new MyErrorStateMatcher();
-
   passwordFormControl = new FormControl('', [Validators.required]);
 
-  passwordMatcher = new MyErrorStateMatcher();
+  matcher = new MyErrorStateMatcher();
+
 
 }
 
-export class signIn{
-  email: string;
-  password: string;
-
-  constructor() {
-    this.email = '';
-    this.password = '';
-  }
-
-}

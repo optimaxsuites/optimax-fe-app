@@ -14,6 +14,13 @@
 
 }
 
+.width-150{
+    width: 150px;
+}
+.width-50{
+    width: 80px;
+}
+
 // @media print {
 //     .modal-wrapper {
 //       width: 100%;
@@ -200,63 +207,59 @@ mat-form-field{
     
 }
 
+th{
+    margin-right: 1rem;
+    // background-color: #224957;
+}
 
-
-
-table, .top-products-table{
+.top-products-table{
     display: block;
     padding: 1rem 0;
     width: 100%;
 
-    thead{
-        // background-color: #224957;
-        color: #fff;
-        
-        tr, .top-products-table-row{
-            
-
+    .thead{
+        .top-products-table-row{
             .table-item{
                 display: flex;
-                justify-content: space-between;
-                // width: 100%;
-                width: 100%;
+                justify-content: space-evenly;
                 border-radius: 10px 10px 0 0;
                 background-color: #224957;
                 padding: 1rem;
+                color: #fff;
             }
 
         }
+        
     }
     
     tbody{
-        // background-color: #f2fcff ;
-        // background-color: red;
+        tr{
+            background-color: #f8feff;
+            background-color: red;
+            // margin-top: 2rem;
+            // min-height: 150px;
+            // padding: 2rem 0;
+            // box-sizing: border-box;
+            // border: 1px solid #e3eef0;
+            border-bottom: 1px solid black;
+            padding: 2rem;
+            width: 1000px;
+    
+    
+            .table-item{
+                display: flex;
+                justify-content: space-between;
+                padding: 1rem 0;
 
-        ng-container{
-            tr, .top-{
-                // background-color: #f8feff;
-                // margin-bottom: 1rem;
-                // min-height: 150px;
-                // padding: 2rem 0;
-                // box-sizing: border-box;
-                // border: 1px solid #e3eef0;
-                border: 1px solid black;
-        
-        
-                    .table-item{
-                        display: flex;
-                        justify-content: space-between;
-        
-        
-                        .top-products-table-data{
-                            input{
-                                background-color: transparent;
-                                padding: 0.5rem;
-                            }
-                        }
+
+
+                .top-products-table-data{
+                    input{
+                        background-color: transparent;
+                        padding: 0.5rem;
                     }
                 }
-            
+            }
         }
 
 
