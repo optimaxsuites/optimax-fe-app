@@ -5,10 +5,43 @@
     // width: 100vw;
 }
 .content{
-    // width: 100vw;
-    flex-grow: 1;
+    width: 100%;
+    flex-grow: 2;
     display: flex;
     align-items: center;
     justify-content: center;
     
+}
+
+.auth{
+    width: 30%;
+}
+
+
+    
+
+    
+@media only screen and (max-width: 1200px) and (min-width:992px) {
+    .auth{
+        width: 30%;
+    }
+}
+
+@media only screen and (max-width: 992px) and (min-width:768px) {
+    .auth{
+        width: 70%;
+    }
+}
+
+@media only screen and (max-width: 768px ) and (min-width:600px) {
+    .auth{
+        width: 80%;
+    }
+}
+@media screen and (max-width: 600px) {
+
+    .auth{
+        width: 100%;
+    }
+        
 }

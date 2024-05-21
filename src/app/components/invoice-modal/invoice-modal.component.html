@@ -164,9 +164,9 @@
         </div>
 
         <div class="table-wrapper">
-            <table class="top-products-table w3-table">
-                <thead>
-                  <tr class="top-products-table-row ">
+            <div class="top-products-table w3-table">
+                <div class="thead">
+                  <div class="top-products-table-row ">
                     <div class="table-item">
                         <th class="top-products-table-data col-5">Item</th>
                         <th class="top-products-table-data col">Tax Rate</th>
@@ -177,11 +177,11 @@
                         <th class="top-products-table-data col">Total</th>
                         <th class="top-products-table-data"></th>
                     </div>
-                  </tr>
-                </thead>
-                <tbody>
-                    <ng-container *ngFor="let item of tableData; let i = index">
-                        <tr class="top-products-table-row" >
+                  </div>
+                </div>
+                <div class="tbody">
+                    <!-- <ng-container > -->
+                        <tr class="top-products-table-row" *ngFor="let item of tableData; let i = index" >
                             <div class="table-item">
                                 <td class="top-products-table-data col-5">
                                     <input type="text" class="form-control-opti" [(ngModel)]="item.name" style="font-size: 1.1em; font-weight: 400;">
@@ -226,9 +226,9 @@
                                 <!-- image container here -->
                             </div>
                         </tr>
-                    </ng-container>
-                </tbody>
-            </table>
+                    <!-- </ng-container> -->
+                </div>
+            </div>
 
             <div class="add-table-row">
                 <button (click)="addNewRow()" class="btn new-table-row">Add New </button>

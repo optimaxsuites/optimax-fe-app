@@ -1,77 +1,68 @@
-<div class="main">
-  <div class="login-container">
-    <div class="login">
-      <div class="logo-img">
-        <img src="../../../assets/Logo-green.png" alt="Logo" />
-      </div>
-      <h4 class="text-center mt-3 mb-4">Welcome to OPTIMAX</h4>
-      <div class="content">
-        <!-- <div class="items">
-                    <input type="email" placeholder="Email" id="email" name="email" required [(ngModel)]="login.email" >
-                </div>
-                <div class="items">
-                    <input type="password" placeholder="Password" name="password" required [(ngModel)]="login.password" >
-                </div> -->
 
-        <div class="example-form">
-          <mat-form-field class="example-full-width">
-            <mat-label>Email</mat-label>
-            <input
-              type="email"
-              matInput
-              [formControl]="emailFormControl"
-              [errorStateMatcher]="emailMatcher"
-              placeholder="Ex. pat@example.com"
-            />
-            @if (emailFormControl.hasError('email') &&
-            !emailFormControl.hasError('required')) {
-            <mat-error>Please enter a valid email address</mat-error>
-            } @if (emailFormControl.hasError('required')) {
-            <mat-error>Email is <strong>required</strong></mat-error>
-            }
-          </mat-form-field>
-        </div>
+<form class="login">
+  <div class="logo-img">
+    <img src="../../../assets/Logo-green.png" alt="Logo" />
+  </div>
+  <p class="text-center mt-3 mb-4">Welcome to OPTIMAX</p>
+  <div class="content">
 
-        <div class="example-form">
-          <mat-form-field class="example-full-width">
-            <mat-label>Password</mat-label>
-            <input
-              type="password"
-              matInput
-              [type]="hide ? 'password' : 'text'"
-              [formControl]="passwordFormControl"
-              [errorStateMatcher]="passwordMatcher"
-            />
-            <button
-              mat-icon-button
-              matSuffix
-              (click)="hide = !hide"
-              [attr.aria-label]="'Hide password'"
-              [attr.aria-pressed]="hide"
-            >
-              <mat-icon>{{ hide ? "visibility_off" : "visibility" }}</mat-icon>
-            </button>
-            @if (passwordFormControl.hasError('required')) {
-            <mat-error>Password is <strong>required</strong></mat-error>
-            }
-          </mat-form-field>
-        </div>
+    <div class="form">
+      <mat-form-field class="example-full-width">
+        <mat-label>Email</mat-label>
+        <input
+          type="email"
+          matInput
+          [formControl]="emailFormControl"
+          [errorStateMatcher]="matcher"
+          placeholder="Ex. pat@example.com"
+        />
+        @if (emailFormControl.hasError('email') &&
+        !emailFormControl.hasError('required')) {
+        <mat-error>Please enter a valid email address</mat-error>
+        } @if (emailFormControl.hasError('required')) {
+        <mat-error>Email is <strong>required</strong></mat-error>
+        }
+      </mat-form-field>
+    </div>
 
-        <div class="wrapper mt-3">
-          <div class="d-flex">
-            <div class="me-2"><input type="checkbox" /></div>
-            <label for="Paddword">Remember me</label>
-          </div>
+    <div class="form">
+      <mat-form-field class="example-full-width">
+        <mat-label>Password</mat-label>
+        <input
+          type="password"
+          matInput
+          [type]="hide ? 'password' : 'text'"
+          [formControl]="passwordFormControl"
+          [errorStateMatcher]="matcher"
+        />
+        <button
+          mat-icon-button
+          matSuffix
+          (click)="hide = !hide"
+          [attr.aria-label]="'Hide password'"
+          [attr.aria-pressed]="hide"
+        >
+          <mat-icon>{{ hide ? "visibility_off" : "visibility" }}</mat-icon>
+        </button>
+        @if (passwordFormControl.hasError('required')) {
+        <mat-error>Password is <strong>required</strong></mat-error>
+        }
+      </mat-form-field>
+    </div>
 
-          <p class="pointer">Forgot password?</p>
-        </div>
+    <div class="wrapper mt-3">
+      <div class="d-flex">
+        <div class="me-2"><input type="checkbox" /></div>
+        <label for="Paddword">Remember me</label>
       </div>
-      <div class="login-btn-container mt-3">
-        <button routerLink="dashboard">Login</button>
-      </div>
-      <div class="bottom">
-        <p>New to Oprimax? <span routerLink="/register">sign-up</span> here</p>
-      </div>
+
+      <p class="pointer">Forgot password?</p>
     </div>
   </div>
-</div>
+  <div class="login-btn-container mt-3">
+    <button routerLink="dashboard">Login</button>
+  </div>
+  <div class="bottom">
+    <p>New to Oprimax? <span routerLink="/register">sign-up</span> here</p>
+  </div>
+</form>

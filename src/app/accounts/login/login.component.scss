@@ -1,126 +1,130 @@
-.main{
-    // width: 100%;
+// .main{
+//     // width: 100%;
 
 
-    .login-container{
+//     .login-container{
+input{
+    width: 100%;
+}
     
         .login{
             padding: 0.5rem 2rem;
             box-sizing: border-box;
-            width: 22.5vw;
+            width: 100%;
             // border-radius: 10px;
             // box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px;
     
             .logo-img{
+                width: 100%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-    
-            }
-        }
-    
-        .content{
-            .items{
-                // margin-top: 1rem;
-    
-                div{
-                    label{
-                        font-weight: 500;
-                    }
+                img{
+                    // width: 100%;
                 }
     
-                input{
+            }
+            .text-center{
+                font-size: 1.2rem;
+            }
+
+            .content{
+                width: 100%;
+                .form {
                     width: 100%;
-                    padding: 0.5rem;
-                    border: none;
-                    border-radius: 5px;
-                    background-color: rgb(236, 236, 236);
                 }
-                input:focus{
-                    border: none;
-                    outline: none;
+                
+                 mat-form-field {
+                    width: 100%;
                 }
-            }
-            .wrapper{
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                .d-flex{
+                
+                input[matInput] {
+                    width: 100%;
+                }
+                
+                .wrapper{
+                    display: flex;
                     align-items: center;
-                    justify-content: center;
-                    .me-2{
-                        display: flex;
+                    justify-content: space-between;
+                    .d-flex{
                         align-items: center;
                         justify-content: center;
-        
-                        input[type="checkbox"] {
-                            -webkit-appearance: none;
-                            -moz-appearance: none;
-                            appearance: none;
-                            width: 15px;
-                            height: 15px;
-                            border: 2px solid #555;
-                            border-radius: 4px;
-                            outline: none;
-                            cursor: pointer;
+                        .me-2{
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+            
+                            input[type="checkbox"] {
+                                -webkit-appearance: none;
+                                -moz-appearance: none;
+                                appearance: none;
+                                width: 15px;
+                                height: 15px;
+                                border: 2px solid #555;
+                                border-radius: 4px;
+                                outline: none;
+                                cursor: pointer;
+                            }
+                            input[type="checkbox"]:checked {
+                                background-color: #224957; /* Change this to your desired color */
+                                border-color: #224957;
+                            }
                         }
-                        input[type="checkbox"]:checked {
-                            background-color: #224957; /* Change this to your desired color */
-                            border-color: #224957;
+                        label{
+                            cursor: pointer;
+                            font-size: 0.8em;
+                            font-weight: 500;
                         }
                     }
-                    label{
+                    p{
                         cursor: pointer;
                         font-size: 0.8em;
                         font-weight: 500;
+                        margin: 0;
+                    }
+                    
+                }
+            }
+            .login-btn-container{
+                button{
+                    width: 100%;
+                    color: #224957;
+                    background-color: #25925B;
+                    border: none;
+                    font-size: 1.2em;
+                    font-weight: 500;
+                    padding: 1rem 0;
+                    border-radius: 5px;
+                    transition: all 0.25s ease-out;
+                }
+                button:hover {
+                    transform: translateY(-3px);
+                }
+            }
+            .bottom{
+                text-align: center;
+                margin-top: 1rem;
+        
+                p{
+                    // font-size: 0.8em;
+                    font-weight: 500;
+        
+                    span{
+                        color: #25925B;
+                        cursor: pointer;
                     }
                 }
-                p{
+                .pointer{
                     cursor: pointer;
-                    font-size: 0.8em;
-                    font-weight: 500;
-                    margin: 0;
-                }
-                
-            }
-        }
-        .login-btn-container{
-            button{
-                width: 100%;
-                color: #224957;
-                background-color: #25925B;
-                border: none;
-                font-size: 1.2em;
-                font-weight: 500;
-                padding: 0.5rem 0;
-                border-radius: 5px;
-                transition: all 0.25s ease-out;
-            }
-            button:hover {
-                transform: translateY(-3px);
-            }
-        }
-        .bottom{
-            text-align: center;
-            margin-top: 1rem;
-    
-            p{
-                // font-size: 0.8em;
-                font-weight: 500;
-    
-                span{
-                    color: #25925B;
-                    cursor: pointer;
+                    color: #224957;
                 }
             }
-            .pointer{
-                cursor: pointer;
-                color: #224957;
-            }
         }
-    }
+    
 
-}
+//     }
+
+// }
 
 .example-form {
     min-width: 150px;
@@ -133,86 +137,3 @@
   }
 
 
-@media screen and (max-width: 600px) {
-
-    .main{
-        .login-container{
-            .login{
-                // padding: 0.5rem 2rem;
-                box-sizing: border-box;
-                width: 100vw;
-                // border-radius: 10px;
-                // box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px;
-        
-        
-            }
-        }
-    }
-    
-}
-
-@media screen and (min-width: 600px) {
-
-    .main{
-        .login-container{
-            .login{
-                // padding: 0.5rem 2rem;
-                box-sizing: border-box;
-                width: 100vw;
-                // border-radius: 10px;
-                // box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px;
-        
-        
-            }
-        }
-    }
-    
-}
-
-@media only screen and (min-width: 768px) {
-    .main{
-        .login-container{
-            .login{
-                padding: 0.5rem 2rem;
-                box-sizing: border-box;
-                width: 70vw;
-                // border-radius: 10px;
-                // box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px;
-        
-        
-            }
-        }
-    }
-}
-
-@media only screen and (min-width: 992px) {
-    .main{
-        .login-container{
-            .login{
-                padding: 0.5rem 2rem;
-                box-sizing: border-box;
-                width: 30vw;
-                // border-radius: 10px;
-                // box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px;
-        
-        
-            }
-        }
-    }
-}
-
-@media only screen and (min-width: 1200px) {
-    .main{
-        .login-container{
-            .login{
-                padding: 0.5rem 2rem;
-                box-sizing: border-box;
-                width: 22.5vw;
-                // border-radius: 10px;
-                // box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px;
-        
-        
-            }
-        }
-    }
-}
