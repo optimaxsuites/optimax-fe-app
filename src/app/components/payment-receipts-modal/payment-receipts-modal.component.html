@@ -108,10 +108,26 @@
         </div>
       </mat-expansion-panel-header>
       <div class="mainSection2">
-        <div class="tableDiv" *ngIf="showTable"></div>
-        <div class="smallTable" (click)="toggleTable()">
-          Click to see the big table
-        </div>
+        <!-- <div class="tableDiv" *ngIf="showTable"></div> -->
+        <!-- <div class="smallTable" routerLink="/payment-record-received"> -->
+        <ol>
+          <li>
+            <mat-form-field>
+              <mat-label>What's your name?</mat-label>
+              <input matInput [(ngModel)]="name" />
+            </mat-form-field>
+          </li>
+          <li>
+            <button mat-raised-button (click)="openDialog()">Pick one</button>
+          </li>
+          @if (animal) {
+          <li>
+            You chose: <em>{{ animal }}</em>
+          </li>
+          }
+        </ol>
+
+        
 
         <!-- <article>
           <form class="example-form">

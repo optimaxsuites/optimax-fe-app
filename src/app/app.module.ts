@@ -70,6 +70,7 @@ import { BudgetingForecastingComponent } from './components/budgeting-forecastin
 import { CashManagementComponent } from './components/cash-management/cash-management.component';
 import { PaymentReceiptsComponent } from './components/payment-receipts/payment-receipts.component';
 import { PaymentReceiptsModalComponent } from './components/payment-receipts-modal/payment-receipts-modal.component';
+import { PaymentRecordReceivedComponent } from './components/payment-record-received/payment-record-received.component';
 
 @NgModule({
   declarations: [
@@ -115,6 +116,7 @@ import { PaymentReceiptsModalComponent } from './components/payment-receipts-mod
     CashManagementComponent,
     PaymentReceiptsComponent,
     PaymentReceiptsModalComponent,
+    PaymentRecordReceivedComponent,
   ],
   imports: [
     BrowserModule,
