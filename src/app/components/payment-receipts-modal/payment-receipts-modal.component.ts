@@ -12,7 +12,7 @@ import { AngularEditorConfig } from '@kolkov/angular-editor';
 import { MatDialog } from '@angular/material/dialog';
 
 interface DialogData {
-  animal: string;
+  invoiceNo: string;
   name: string;
 }
 
@@ -47,7 +47,7 @@ export class PaymentReceiptsModalComponent {
   showContactEditor: boolean = false;
   showTable = true;
   name: any;
-  animal: any;
+  invoiceNo: any;
 
   constructor(public dialog: MatDialog) {}
 
@@ -57,7 +57,7 @@ export class PaymentReceiptsModalComponent {
 
   dialogData: DialogData = {
     name: '',
-    animal: '',
+    invoiceNo: '',
   };
 
   editorConfig: AngularEditorConfig = {
@@ -100,12 +100,12 @@ export class PaymentReceiptsModalComponent {
 
   openDialog(): void {
     const dialogRef = this.dialog.open(PaymentReceiptsModalComponent, {
-      data: { name: this.name, animal: this.animal },
+      data: { name: this.name, invoiceNo: this.invoiceNo },
     });
 
     dialogRef.afterClosed().subscribe((result) => {
       console.log('The dialog was closed');
-      this.animal = result;
+      this.invoiceNo = result;
     });
   }
 
