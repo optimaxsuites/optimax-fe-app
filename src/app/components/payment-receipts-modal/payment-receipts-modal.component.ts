@@ -10,11 +10,12 @@ import { Observable } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
 import { AngularEditorConfig } from '@kolkov/angular-editor';
 import { MatDialog } from '@angular/material/dialog';
+import { PaymentRecordReceivedComponent } from '../payment-record-received/payment-record-received.component';
 
-interface DialogData {
-  invoiceNo: string;
-  name: string;
-}
+// interface DialogData {
+//   invoiceNo: string;
+//   name: string;
+// }
 
 @Component({
   selector: 'app-payment-receipts-modal',
@@ -37,28 +38,24 @@ export class PaymentReceiptsModalComponent {
     'Prepaid Card',
     'Digital Wallet',
   ];
+  
   filteredOptions!: Observable<string[]>;
   filteredCurrencies!: Observable<string[]>;
-  filteredPayments!: Observable<string[]>;
   item: any;
   myForm!: FormGroup;
   htmlContent: string = '';
   showEditor: boolean = false;
   showContactEditor: boolean = false;
   showTable = true;
-  name: any;
-  invoiceNo: any;
+
+  invoiceNo!: string;
+  name!: string;
 
   constructor(public dialog: MatDialog) {}
 
   toggleTable() {
     this.showTable = !this.showTable;
   }
-
-  dialogData: DialogData = {
-    name: '',
-    invoiceNo: '',
-  };
 
   editorConfig: AngularEditorConfig = {
     editable: true,
@@ -99,7 +96,7 @@ export class PaymentReceiptsModalComponent {
   };
 
   openDialog(): void {
-    const dialogRef = this.dialog.open(PaymentReceiptsModalComponent, {
+    const dialogRef = this.dialog.open(PaymentRecordReceivedComponent, {
       data: { name: this.name, invoiceNo: this.invoiceNo },
     });
 
@@ -127,11 +124,11 @@ export class PaymentReceiptsModalComponent {
       // map((value) => this._filter(value || ''))
       map((value) => this._filter(value || '', this.optionCurrency))
     );
-    this.filteredPayments = this.paymentMethodControl.valueChanges.pipe(
-      startWith(''),
-      // map((value) => this._filter(value || ''))
-      map((value) => this._filter(value || '', this.optionPaymentMethod))
-    );
+    // this.filteredPayments = this.paymentMethodControl.valueChanges.pipe(
+    //   startWith(''),
+    //   // map((value) => this._filter(value || ''))
+    //   map((value) => this._filter(value || '', this.optionPaymentMethod))
+    // );
   }
 
   private _filter(value: string, options: string[]): string[] {

@@ -9,7 +9,7 @@
   margin-bottom: 2rem;
   padding: 1rem;
   box-sizing: border-box;
-  background-color: #ffff;
+  // background-color: #ffff;
 
   border-radius: 10px;
   // width: 100%;
@@ -17,12 +17,9 @@
   // flex-direction: column;
 }
 
-.inputField {
-  background-color: red;
+.formField {
+  width: 14rem;
 }
-
-// .headerSection {
-// }
 
 .mainSection {
   display: flex;
@@ -108,7 +105,9 @@
   width: 50%;
   margin-top: 1rem;
 }
-
+.form {
+  width: 100%;
+}
 .smallTable {
   padding: 1.5rem;
   box-shadow: 0 0 25px -9px #24143d;
