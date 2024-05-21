@@ -1,6 +1,6 @@
 <div class="overallContainer">
   <section class="selectClients">
-    <mat-expansion-panel hideToggle>
+    <mat-expansion-panel hideToggle class="con-sec">
       <mat-expansion-panel-header>
         <mat-panel-title>
           <span class="headerText">1. Select Clients</span>
@@ -17,6 +17,7 @@
           This is a summary of the content
         </mat-panel-description> -->
       </mat-expansion-panel-header>
+
       <div class="mainSection">
         <article>
           <mat-form-field>
@@ -25,29 +26,29 @@
           </mat-form-field>
         </article>
 
+       
+
         <article>
-          <form class="example-form">
-            <mat-form-field class="example-full-width">
-              <mat-label>Payment Received From</mat-label>
+          <mat-form-field class="formField">
+            <mat-label>Payment Received From</mat-label>
 
-              <input
-                type="text"
-                placeholder="Payment Received From"
-                aria-label="Payment Received From"
-                matInput
-                [formControl]="myControl"
-                [matAutocomplete]="auto"
-              />
+            <input
+              type="text"
+              placeholder="Payment Received From"
+              aria-label="Payment Received From"
+              matInput
+              [formControl]="myControl"
+              [matAutocomplete]="auto"
+            />
 
-              <mat-autocomplete #auto="matAutocomplete">
-                @for (option of filteredOptions | async; track option) {
+            <mat-autocomplete #auto="matAutocomplete">
+              @for (option of filteredOptions | async; track option) {
 
-                <mat-option [value]="option">{{ option }}</mat-option>
-                }
-                <button class="btn btn-light">Add New</button>
-              </mat-autocomplete>
-            </mat-form-field>
-          </form>
+              <mat-option [value]="option">{{ option }}</mat-option>
+              }
+              <button class="btn btn-light">Add New</button>
+            </mat-autocomplete>
+          </mat-form-field>
         </article>
         <article>
           <form class="example-form">
@@ -108,119 +109,24 @@
         </div>
       </mat-expansion-panel-header>
       <div class="mainSection2">
-        <!-- <div class="tableDiv" *ngIf="showTable"></div> -->
-        <!-- <div class="smallTable" routerLink="/payment-record-received"> -->
         <ol>
-          <li>
+          <!-- <li>
             <mat-form-field>
               <mat-label>What's your name?</mat-label>
               <input matInput [(ngModel)]="name" />
             </mat-form-field>
-          </li>
+          </li> -->
           <li>
-            <button mat-raised-button (click)="openDialog()">Pick one</button>
+            <button mat-raised-button (click)="openDialog()">
+              <Strong>+</Strong> Add Payment Record
+            </button>
           </li>
-          @if (animal) {
+          @if (invoiceNo) {
           <li>
-            You chose: <em>{{ animal }}</em>
+            You chose: <em>{{ invoiceNo }}</em>
           </li>
           }
         </ol>
-
-        
-
-        <!-- <article>
-          <form class="example-form">
-            <mat-form-field class="example-full-width">
-              <mat-label>Payment Method</mat-label>
-              <input
-                type="text"
-                placeholder="Select"
-                aria-label="Select"
-                matInput
-                [formControl]="paymentMethodControl"
-                [matAutocomplete]="paymentMethodAuto"
-              />
-              <mat-autocomplete #paymentMethodAuto="matAutocomplete">
-                <mat-option
-                  *ngFor="let paymentMethod of filteredPayments | async"
-                  [value]="paymentMethod"
-                >
-                  {{ paymentMethod }}
-                </mat-option>
-              </mat-autocomplete>
-            </mat-form-field>
-          </form>
-        </article> -->
-
-        <!-- <article>
-          <form class="example-form">
-      <mat-form-field class="example-full-width">
-<mat-label>Deposited To:</mat-label>
-
-<input
-type="text"
-placeholder="Select Payment Account"
-aria-label="Select Payment Account"
-matInput
-[formControl]="myControl"
-[matAutocomplete]="auto"
-/>
-
-<mat-autocomplete #auto="matAutocomplete">
-@for (option of filteredOptions | async; track option) {
-
-<mat-option [value]="option">{{ option }}</mat-option>
-}
-</mat-autocomplete>
-      </mat-form-field>
-
-            <div class="addNew">
-              <button class="btn btn-light">Add New</button>
-            </div>
-          </form>
-        </article>
-
-        <article>
-          <form class="example-form">
-            <mat-form-field class="example-full-width">
-              <mat-label>Payment Method</mat-label>
-              <input
-                type="text"
-                placeholder="Payment Method"
-                aria-label="Payment Method"
-                matInput
-                [formControl]="paymentMethodControl"
-                [matAutocomplete]="paymentMethodAuto"
-              />
-              <mat-autocomplete #paymentMethodAuto="matAutocomplete">
-                <mat-option
-                  *ngFor="let paymentMethod of filteredPayments | async"
-                  [value]="paymentMethod"
-                >
-                  {{ paymentMethod }}
-                </mat-option>
-              </mat-autocomplete>
-            </mat-form-field>
-          </form>
-        </article>
-
-        <article>
-          <form class="example-form">
-            <mat-form-field class="example-full-width">
-              <mat-label>Amount Received</mat-label>
-              <input matInput placeholder="NGN" type="number" />
-            </mat-form-field>
-          </form>
-        </article>
-        <article>
-          <form class="example-form">
-            <mat-form-field class="example-full-width">
-              <mat-label>Transaction Charge</mat-label>
-              <input matInput placeholder="NGN" type="number" />
-            </mat-form-field>
-          </form>
-        </article> -->
       </div>
     </mat-expansion-panel>
 
