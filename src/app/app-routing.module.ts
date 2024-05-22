@@ -16,6 +16,8 @@ import { ProformaInvoiceComponent } from './components/proforma-invoice/proforma
 import { ReceiptComponent } from './components/receipt/receipt.component';
 import { PaymentReceiptsModalComponent } from './components/payment-receipts-modal/payment-receipts-modal.component';
 import { PaymentRecordReceivedComponent } from './components/payment-record-received/payment-record-received.component';
+import { SalesOrderComponent } from './components/sales-order/sales-order.component';
+import { SalesOrderModalComponent } from './components/sales-order-modal/sales-order-modal.component';
 
 const routes: Routes = [
   {
@@ -77,6 +79,15 @@ const routes: Routes = [
       {
         path: 'payment-receipts-modal',
         component: PaymentReceiptsModalComponent,
+      },
+      {
+        path: 'sales-order-modal',
+        component: SalesOrderModalComponent,
+      },
+
+      {
+        path: 'sales-order',
+        component: SalesOrderComponent,
       },
       {
         path: 'payment-record-received',

@@ -71,6 +71,8 @@ import { CashManagementComponent } from './components/cash-management/cash-manag
 import { PaymentReceiptsComponent } from './components/payment-receipts/payment-receipts.component';
 import { PaymentReceiptsModalComponent } from './components/payment-receipts-modal/payment-receipts-modal.component';
 import { PaymentRecordReceivedComponent } from './components/payment-record-received/payment-record-received.component';
+import { SalesOrderComponent } from './components/sales-order/sales-order.component';
+import { SalesOrderModalComponent } from './components/sales-order-modal/sales-order-modal.component';
 
 @NgModule({
   declarations: [
@@ -117,6 +119,8 @@ import { PaymentRecordReceivedComponent } from './components/payment-record-rece
     PaymentReceiptsComponent,
     PaymentReceiptsModalComponent,
     PaymentRecordReceivedComponent,
+    SalesOrderComponent,
+    SalesOrderModalComponent,
   ],
   imports: [
     BrowserModule,
