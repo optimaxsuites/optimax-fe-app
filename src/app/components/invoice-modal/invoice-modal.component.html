@@ -38,10 +38,36 @@
                         <input matInput placeholder="Project Title">
                         </mat-form-field>
                     </div>
+
+                    <div class="add-more-field-container">
+                        <div class="add-more-field-wrapper" *ngFor="let item of moreFields; let i = index">
+                            <div class="add-more-field">
+                                <mat-form-field>
+                                <mat-label>Add More</mat-label>
+                                <input matInput placeholder="Add More">
+                                </mat-form-field>
+                            </div>
+                            <i (click)="removeMoreField(i)" class="fa-solid fa-x p-2"></i>
+                        </div>
+
+                        <button class="add-btn" (click)="addMoreField()"><i class="fas fa-plus me-2"></i>Add More Field</button>
+                    </div>
                 </div>
-                <div class="logo-wrapper">
+                <div class="">
                     <section class="logo-section">
-                        <img src="../../../assets/invoce-logo.jpg" alt="Company's Logo">
+                        <div class="logo-upload-container">
+                            <div class="wrapper" >
+                                
+                                <div class="logo-wrapper">
+                                    <img *ngIf="logoUrl" [src]="logoUrl" alt="logo" class="logo">
+                                </div>
+                            </div>
+                            <div class="add-logo-btn-wrapper">
+                                <input type="file" #fileInput style="display: none" (change)="onLogoSelected($event)">
+                                <button class="btn" (click)="fileInput.click()" ><i class="fas fa-plus me-2"></i>Add Logo</button>
+                                <button (click)=" clearLogo()" class="btn"><i class="fa-solid fa-x me-2"></i>Remove Logo</button>
+                            </div>
+                        </div>
                     </section>
                 </div>
             </section>
@@ -57,7 +83,7 @@
                                     <mat-select [(ngModel)]="selectedValue" (ngModelChange)="updateBusinessInfo()" name="Company" placeholder="Select Company">
                                         <mat-option *ngFor="let company of companies" [value]="company.value">{{company.viewValue}}</mat-option>
                                         <div class="add-new-details-btn-wrapper">
-                                            <button class="btn new-detail-btn">Add New Company Detail</button>
+                                            <button class="btn new-detail-btn mt-2">Add New Company Details</button>
                                         </div>
                                     </mat-select>
                                 </mat-form-field>
@@ -104,7 +130,7 @@
                                     <mat-select [(ngModel)]="selectedValue" (ngModelChange)="updateClientInfo()" name="Company" placeholder="Select Company">
                                         <mat-option *ngFor="let client of clients" [value]="client.value">{{client.viewValue}}</mat-option>
                                         <div class="add-new-details-btn-wrapper">
-                                            <button class="btn new-detail-btn">Add New Client Detail</button>
+                                            <button class="btn new-detail-btn mt-2">Add New Client Details</button>
                                         </div>
                                     </mat-select>
                                     </mat-form-field>
@@ -181,7 +207,7 @@
                 </div>
                 <div class="tbody">
                     <!-- <ng-container > -->
-                        <tr class="top-products-table-row" *ngFor="let item of tableData; let i = index" >
+                        <div class="top-products-table-row" *ngFor="let item of tableData; let i = index" >
                             <div class="table-item">
                                 <td class="top-products-table-data col-5">
                                     <input type="text" class="form-control-opti" [(ngModel)]="item.name" style="font-size: 1.1em; font-weight: 400;">
@@ -213,7 +239,7 @@
                             <div class="description-container">
                                 <!-- <ng-container> -->
                                     <td class="add-description-btn" *ngIf="!item.showDescriptionBox">
-                                        <button class="btn btn-light" (click)="item.showDescriptionBox = true">Add Description</button>
+                                        <button class="btn btn-light" (click)="item.showDescriptionBox = true"><i class="fas fa-plus me-2"></i>Add Description</button>
                                     </td>
                                 <!-- </ng-container> -->
                                 
@@ -225,7 +251,7 @@
                             <div class="image-upload-container">
                                 <!-- image container here -->
                             </div>
-                        </tr>
+                        </div>
                     <!-- </ng-container> -->
                 </div>
             </div>
@@ -311,11 +337,11 @@
                         <div class="wrapper" *ngIf="showSignatureButton">
                             <i (click)=" clearSignature()" class="fa-solid fa-x p-2"></i>
                             <div class="signature-wrapper">
-                                <img *ngIf="imageUrl" [src]="imageUrl" alt="Signature" class="Signature">
+                                <img *ngIf="signatureUrl" [src]="signatureUrl" alt="Signature" class="Signature">
                             </div>
                             <div class="btn-sign">
                                 <!-- <input type="" (change)="onFileSelected($event)" class="form-control" /> -->
-                                <input type="file" #fileInput style="display: none" (change)="onFileSelected($event)">
+                                <input type="file" #fileInput style="display: none" (change)=" onSignatureSelected($event)">
                                 <button class="btn" (click)="fileInput.click()">Upload Signature</button>
                             </div>
                         </div>
