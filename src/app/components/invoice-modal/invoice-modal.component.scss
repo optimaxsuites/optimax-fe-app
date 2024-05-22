@@ -44,23 +44,55 @@
     }
 
 }
+
 .logo-section{
-    // background-color: #F1F1F1;
+    width: 100%;
+    background-color: #F1F1F1;
     align-items: center;
     display: flex;
     justify-content: center;
     border: 1px solid lightgrey;
-    height: 210px;
-    width: 210px;
-}
-img{
-    // background-color: #F1F1F1;
-    // padding: 0.5rem;
+    padding: .5rem;
     box-sizing: border-box;
-    height: 200px;
-    width: 200px;
+
+    .logo-upload-container{
+        max-width: 250px;
+        height: auto;
+
+        .wrapper{
+        }
+    }
 }
 
+.logo-wrapper{
+    max-width: 100%;
+    max-height: 200px; 
+    min-width: 100%;
+    // min-height: 200px;
+    min-height: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    img {
+        max-width: 100%;
+        max-height: 200px; 
+        min-height: auto;
+        width: auto;
+        height: auto;
+        display: block;
+      }
+}
+
+.add-logo-btn-wrapper{
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    .btn{
+        font-size: .8em;
+        font-weight: 500;
+    }
+}
 .info-section{
     margin: 1rem 0;
     // display: flex;
@@ -86,7 +118,14 @@ img{
 mat-form-field{
     width:100%;
 }
-
+.add-more-field-wrapper{
+    display: flex;
+    // justify-content: center;
+    align-items: center;
+}
+.add-more-field{
+    width: 100%;
+}
 .second-info-section{
     display: flex;
     justify-content: space-between;
@@ -232,18 +271,15 @@ th{
         
     }
     
-    tbody{
-        tr{
+    .tbody{
+        .top-products-table-row{
             background-color: #f8feff;
-            background-color: red;
-            // margin-top: 2rem;
-            // min-height: 150px;
+            // background-color: red;
+            margin-bottom: 1rem;
+            min-height: 200px;
             // padding: 2rem 0;
             // box-sizing: border-box;
-            // border: 1px solid #e3eef0;
-            border-bottom: 1px solid black;
-            padding: 2rem;
-            width: 1000px;
+            border: 1px solid #e3eef0;
     
     
             .table-item{

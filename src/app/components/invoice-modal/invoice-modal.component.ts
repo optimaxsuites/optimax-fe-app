@@ -37,10 +37,14 @@ export class InvoiceModalComponent {
   selectedValue?: string;
   clientDetails: any = {};
   showDescriptionBox: boolean = false;
-  imageUrl: string | ArrayBuffer | null = null;
+  signatureUrl: string | ArrayBuffer | null = null;
+  logoUrl: string | ArrayBuffer | null = null;
   discounts: any[] = [];
   terms: any[] = [];
   termsGroup: any[] = [];
+  charges: any[] = [];
+  moreFields: any[] = [];
+  
 
   // addTermGroup() {
   //   // Create a new term group with an initial term
@@ -99,7 +103,13 @@ export class InvoiceModalComponent {
 
 
 
-
+    addMoreField() {
+      this.moreFields.push({});
+    }
+  
+    removeMoreField(index: number) {
+      this.moreFields.splice(index, 1);
+    }
 
 
   addDiscount() {
@@ -122,7 +132,6 @@ export class InvoiceModalComponent {
 
   // signature
 
-  charges: any[] = [];
 
   addCharge() {
     this.charges.push({});
@@ -287,21 +296,38 @@ export class InvoiceModalComponent {
     }
   }
 
-  onFileSelected(event: any) {
+  onSignatureSelected(event: any) {
     const file: File = event.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
-        this.imageUrl = reader.result;
+        this.signatureUrl = reader.result;
       };
     }
   }
 
   clearSignature() {
-    this.imageUrl = null;
+    this.signatureUrl = null;
     this.showSignatureButton = false; 
-}
+  }
+
+
+  onLogoSelected(event: any) {
+    const file: File = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        this.logoUrl = reader.result;
+      };
+    }
+  }
+
+  clearLogo() {
+    this.logoUrl = null;
+    // this.showSignatureButton = false; 
+  }
 
 
 
