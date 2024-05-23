@@ -56,19 +56,25 @@
                 <div class="">
                     <section class="logo-section">
                         <div class="logo-upload-container">
-                            <div class="wrapper" >
-                                
-                                <div class="logo-wrapper">
-                                    <img *ngIf="logoUrl" [src]="logoUrl" alt="logo" class="logo">
-                                </div>
+                          <div class="wrapper">
+                            <div class="logo-wrapper">
+                              <img *ngIf="logoUrl" [src]="logoUrl" alt="logo" class="logo">
                             </div>
-                            <div class="add-logo-btn-wrapper">
-                                <input type="file" #fileInput style="display: none" (change)="onLogoSelected($event)">
-                                <button class="btn" (click)="fileInput.click()" ><i class="fas fa-plus me-2"></i>Add Logo</button>
-                                <button (click)=" clearLogo()" class="btn"><i class="fa-solid fa-x me-2"></i>Remove Logo</button>
+                          </div>
+                          <div *ngIf="showLogo; else addLogoButtons" class="add-logo-btn-wrapper">
+                            <input type="file" #fileInput style="display: none" (change)="onLogoSelected($event)">
+                            <button class="btn" (click)="fileInput.click()"><i class="fas fa-plus me-2"></i>Change Logo</button>
+                            <button class="btn" (click)="clearLogo()"><i class="fa-solid fa-x me-2"></i>Remove Logo</button>
+                          </div>
+                          <ng-template #addLogoButtons>
+                            <div class="add-logo-toggle">
+                              <input type="file" #fileInput style="display: none" (change)="onLogoSelected($event)">
+                              <button class="btn" (click)="fileInput.click()"><i class="fas fa-plus me-2"></i>Add Business Logo</button>
                             </div>
+                          </ng-template>
                         </div>
-                    </section>
+                      </section>
+                      
                 </div>
             </section>
 
@@ -169,6 +175,138 @@
                 </div>
             </section>
 
+            <section class="shipping-details-container">
+                <div class="shipping-wrapper">
+                    <div class="checkbox-container mb-2" >
+                      <span><input type="checkbox" id="toggleForm" [(ngModel)]="showForm"></span>
+                      <label for="toggleForm"> <i class="fas fa-plus me-2"></i> Add Shipping Details</label>
+                    </div>
+                  
+                    <div *ngIf="showForm" class="form-container">
+                      <div class="form-section">
+                        <div class="shipping-header-wrapper">
+                            <p class="shipping-header">Shipped From</p>
+                        </div>
+                        <div class="form-group">
+                          <!-- <label>Business / Freelancer Name</label> -->
+                          <input type="text" [(ngModel)]="shippedFrom.businessName" placeholder="Business / Freelancer Name" class="form-control-opti">
+                        </div>
+                        <div class="form-group">
+                          <!-- <label>Country</label> -->
+
+                          <div class="custom-dropdown">
+                            <div class="custom-select" (click)="toggleDropdown('companyCountry')">
+                              {{ (getSelectedItem$('companyCountry') | async) || 'Select Company Country' }}
+                              <span class="arrow"></span>
+                            </div>
+                            <ul class="custom-options" *ngIf="isDropdownOpen$('companyCountry') | async">
+                              <li class="custom-option" *ngFor="let item of companyCountry" (click)="selectItem('companyCountry', item)">
+                                {{ item }}
+                              </li>
+                            </ul>
+                          </div>
+
+                        </div>
+                        <div class="form-group">
+                          <!-- <label>Address (optional)</label> -->
+                          <input type="text" [(ngModel)]="shippedFrom.address" placeholder="Address (optional)" class="form-control-opti">
+                        </div>
+                        <div class="form-group row">
+                          <div class="column">
+                            <!-- <label>City (optional)</label> -->
+                            <input type="text" [(ngModel)]="shippedFrom.city" placeholder="City (optional)" class="form-control-opti">
+                          </div>
+                          <div class="column">
+                            <!-- <label>Postal Code / Zip Code</label> -->
+                            <input type="text" [(ngModel)]="shippedFrom.postalCode" placeholder="Postal Code / Zip Code" class="form-control-opti">
+                          </div>
+                        </div>
+                        <div class="form-group">
+                          <!-- <label>State (optional)</label> -->
+                          <input type="text" [(ngModel)]="shippedFrom.state" placeholder="State (optional)" class="form-control-opti">
+                        </div>
+                      </div>
+                  
+                      <div class="form-section">
+                        <div class="shipping-header-wrapper">
+                            <p class="shipping-header">Shipped To</p>
+                        </div>
+                        <div class="dropdown-container mb-2">
+                           
+                            
+
+                                <div class="custom-dropdown">
+                                    <div class="custom-select" (click)="toggleDropdown('clientShippingDetails')">
+                                      {{ (getSelectedItem$('clientShippingDetails') | async) || 'Select Client Shipping Details' }}
+                                      <span class="arrow"></span>
+                                    </div>
+                                    <ul class="custom-options" *ngIf="isDropdownOpen$('clientShippingDetails') | async">
+                                      <li class="custom-option" *ngFor="let item of clientShippingDetails" (click)="selectItem('clientShippingDetails', item)">
+                                        {{ item }}
+                                      </li>
+                                      <div class="btn-dropdown">
+                                        <button class="add-button">Add New Shipping Detail</button>
+                                        </div>
+                                    </ul>
+                                  </div>
+                              
+                            
+                        </div>
+                          
+                        <!-- <div class="form-group d-flex align-center">
+                          <input type="checkbox" id="sameAsClient" [(ngModel)]="sameAsClientAddress">
+                          <label for="sameAsClient" class="mt-2 ms-2">Same as client's address</label>
+                        </div> -->
+                        <div class="form-group">
+                          <!-- <label>Client's Business Name</label> -->
+                          <input type="text" [(ngModel)]="shippedTo.businessName" placeholder="Client's Business Name" class="form-control-opti">
+                        </div>
+                        <div class="form-group">
+
+                          <div class="custom-dropdown">
+                            <div class="custom-select" (click)="toggleDropdown('clientCountry')">
+                              {{ (getSelectedItem$('clientCountry') | async) || 'Select Client Country' }}
+                              <span class="arrow"></span>
+                            </div>
+                            <ul class="custom-options" *ngIf="isDropdownOpen$('clientCountry') | async">
+                              <li class="custom-option" *ngFor="let item of clientCountry" (click)="selectItem('clientCountry', item)">
+                                {{ item }}
+                              </li>
+                            </ul>
+                          </div>
+
+                        </div>
+                        <div class="form-group">
+                          <!-- <label>Address (optional)</label> -->
+                          <input type="text" [(ngModel)]="shippedTo.address" placeholder="Address (optional)" class="form-control-opti">
+                        </div>
+                        <div class="form-group row">
+                          <div class="column">
+                            <!-- <label>City (optional)</label> -->
+                            <input type="text" [(ngModel)]="shippedTo.city" placeholder="City (optional)" class="form-control-opti">
+                          </div>
+                          <div class="column">
+                            <!-- <label>Postal Code / Zip Code</label> -->
+                            <input type="text" [(ngModel)]="shippedTo.postalCode" placeholder="Postal Code / Zip Code" class="form-control-opti">
+                          </div>
+                        </div>
+                        <div class="form-group">
+                          <!-- <label>State (optional)</label> -->
+                          <input type="text" [(ngModel)]="shippedTo.state" placeholder="State (optional)" class="form-control-opti">
+                        </div>
+                        <!-- <div class="form-group">
+                          <input type="checkbox" id="saveClientDetails" [(ngModel)]="saveToClientDetails">
+                          <label for="saveClientDetails">Save to Client Details</label>
+                        </div> -->
+                        <div class="form-group">
+                          <button (click)="addMoreFields()" class=" btn add-more-button">Save Details</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+            </section>
+
         </div>
 
         <div class="info-section">
@@ -176,15 +314,24 @@
                 <div class="tax-btn">
                     <button class="btn flat-btn">Add Tax</button>
                 </div>
-                <div class="currency-selector ms-2">
-                    <label class="label ms-2 me-2">Currency <span style="color:red">*</span></label>
-                    <form [formGroup]="myForm">
-                        <div class="input">
-                            <select formControlName="myOption" class="currency" >
-                                <option *ngFor="let option of options" [value]="option">{{option}}</option>
-                            </select>
-                        </div>
-                      </form>
+                <div class="currency-selector">
+                    <div class="custom-dropdown">
+                    <div class="custom-select" (click)="toggleDropdown('currency')">
+                        {{ (getSelectedItem$('currency') | async) || 'Select Currency' }}
+                        <span class="arrow"></span>
+                    </div>
+                    <ul class="custom-options" *ngIf="isDropdownOpen$('currency') | async">
+                        <li class="custom-option" *ngFor="let item of currency" (click)="selectItem('currency', item)">
+                        {{ item }}
+                        </li>
+                    </ul>
+                    </div>
+                </div>
+                <div class="tax-btn">
+                    <button class="btn flat-btn">Number/Currency Format</button>
+                </div>
+                <div class="tax-btn">
+                    <button class="btn flat-btn">Edit Columns/Formulas</button>
                 </div>
             </div>
         </div>
@@ -195,12 +342,12 @@
                   <div class="top-products-table-row ">
                     <div class="table-item">
                         <th class="top-products-table-data col-5">Item</th>
-                        <th class="top-products-table-data col">Tax Rate</th>
+                        <th class="top-products-table-data col">Tax Rate <span class="input-span">%</span></th>
                         <th class="top-products-table-data col">Quantity</th>
-                        <th class="top-products-table-data col">Rate</th>
-                        <th class="top-products-table-data col">Amount</th>
-                        <th class="top-products-table-data col">Tax</th>
-                        <th class="top-products-table-data col">Total</th>
+                        <th class="top-products-table-data col">Rate <span class="input-span">[{{ extractCurrencyCode((getSelectedItem$('currency') | async)) }}]</span></th>
+                        <th class="top-products-table-data col">Amount <span class="input-span">[{{ extractCurrencyCode((getSelectedItem$('currency') | async)) }}]</span></th>
+                        <th class="top-products-table-data col">Tax <span class="input-span">[{{ extractCurrencyCode((getSelectedItem$('currency') | async)) }}]</span></th>
+                        <th class="top-products-table-data col">Total <span class="input-span">[{{ extractCurrencyCode((getSelectedItem$('currency') | async)) }}]</span></th>
                         <th class="top-products-table-data"></th>
                     </div>
                   </div>
@@ -210,29 +357,28 @@
                         <div class="top-products-table-row" *ngFor="let item of tableData; let i = index" >
                             <div class="table-item">
                                 <td class="top-products-table-data col-5">
-                                    <input type="text" class="form-control-opti" [(ngModel)]="item.name" style="font-size: 1.1em; font-weight: 400;">
+                                    <input type="text" class="form-control-opti" [(ngModel)]="item.name" (ngModelChange)="onInputChange(item)" >
                                 </td>
                                 <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control-opti"  [(ngModel)]="item.taxRate" appNumberOnly style="font-size: 1.1em; font-weight: 400;">
+                                    <input type="text" class="form-control-opti"  [(ngModel)]="item.taxRate"(ngModelChange)="onInputChange(item)" appNumberOnly >
                                 </td>
                                 <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control-opti" [(ngModel)]="item.quantity" appNumberOnly style="font-size: 1.1em; font-weight: 400;">
+                                    <input type="text" class="form-control-opti" [(ngModel)]="item.quantity"(ngModelChange)="onInputChange(item)" (input)="calculateAmount(item)" appNumberOnly >
                                 </td>
                                 <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control-opti" [(ngModel)]="item.rate" appNumberOnly style="font-size: 1.1em; font-weight: 400;">
+                                    <input type="text" class="form-control-opti" [(ngModel)]="item.rate"(ngModelChange)="onInputChange(item)" (input)="calculateAmount(item)" appNumberOnly >
                                 </td>
                                 <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control-opti" [(ngModel)]="item.amount" appNumberOnly style="font-size: 1.1em; font-weight: 400;">
+                                    <input type="text" class="form-control-opti" [(ngModel)]="item.amount"(ngModelChange)="onInputChange(item)" appNumberOnly >
                                 </td>
                                 <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control-opti" [(ngModel)]="item.tax" appNumberOnly style="font-size: 1.1em; font-weight: 400;">
+                                    <input type="text" class="form-control-opti" [(ngModel)]="item.tax"(ngModelChange)="onInputChange(item)" appNumberOnly >
                                 </td>
                                 <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control-opti" [(ngModel)]="item.total" appNumberOnly style="font-size: 1.1em; font-weight: 400;">
+                                    <input type="text" class="form-control-opti" [(ngModel)]="item.total" (ngModelChange)="onInputChange(item)"(ngModelChange)="onInputChange(item)" appNumberOnly >
                                 </td>
                                 <td class="top-products-table-data">
                                     <i (click)="deleteRow(i)" class="fa-solid fa-x p-2"></i>
-                                    <!-- <button >Delete</button>  -->
                                 </td>
                             </div>
     
@@ -264,11 +410,11 @@
                 <div class="table-cal-container">
                     <div class="space-between">
                         <p><b>Amount</b></p>
-                        <p><b>₦</b><span style="font-size: 1.1em; font-weight: 500;">1000</span></p>
+                        <p><span style="font-size: 1.1em; font-weight: 500;"><span class="me-2">{{ extractCurrencyCode((getSelectedItem$('currency') | async)) }}</span>{{ amount }}</span></p>
                     </div>
                     <div class="space-between">
                         <p><b>Tax</b></p>
-                        <p><b>₦</b><span style="font-size: 1.1em; font-weight: 500;">200</span></p>
+                        <p><span style="font-size: 1.1em; font-weight: 500;"> <span class="me-2">{{ extractCurrencyCode((getSelectedItem$('currency') | async)) }}</span>{{ tax }}</span></p>
                     </div>
 
                     <div class="discount-container">
@@ -277,8 +423,8 @@
                             <div class="value d-flex">
                                 <div class="d-flex">
                                     <input type="text" class="form-control-opti input" style="font-size: 1.1em; font-weight: 400;" appNumberOnly>
-                                    <select name="" id="" class="form-control-opti ms-2 option">
-                                        <option value=""> ₦ </option>
+                                    <select name="" id="" class="form-control-opti-2 ms-2 ">
+                                        <option value=""> {{ extractCurrencyCode((getSelectedItem$('currency') | async)) }} </option>
                                         <option value=""> % </option>
                                     </select>
                                 </div>
@@ -290,8 +436,8 @@
                             <div class="value d-flex">
                                 <div class="d-flex">
                                     <input type="text" class="form-control-opti input" style="font-size: 1.1em; font-weight: 400;" appNumberOnly>
-                                    <select name="" id="" class="form-control-opti ms-2 option">
-                                        <option value=""> ₦ </option>
+                                    <select name="" id="" class="form-control-opti-2 ms-2 ">
+                                        <option value=""> {{ extractCurrencyCode((getSelectedItem$('currency') | async)) }} </option>
                                         <option value=""> % </option>
                                     </select>
                                 </div>
@@ -307,11 +453,11 @@
                     <div class="cal-total-container">
                         <div class="space-between">
                             <div>
-                                <p class="cal-total" >Total</p>
+                                <p class="cal-total" >Total [{{ extractCurrencyCode((getSelectedItem$('currency') | async)) }}] </p>
                             </div>
                             <div class="d-flex">
-                                <span class="cal-amount">₦</span>
-                                <span class="cal-amount">200</span>
+                                <span class="cal-amount"><span class="">{{ extractCurrencyCode((getSelectedItem$('currency') | async)) }}</span></span>
+                                <span class="cal-amount ms-2">{{ totalAmount }}</span>
                             </div>
                         </div>
                     </div>
@@ -323,7 +469,8 @@
                         </div>
                         <div class="value d-flex">
                             <div class="d-flex">
-                                <input type="text" class="form-control-opti" >
+                                <!-- <input type="text" class="form-control-opti" > -->
+                                {{ totalAmountInWords }}
                             </div>
                         </div>
                     </div>
