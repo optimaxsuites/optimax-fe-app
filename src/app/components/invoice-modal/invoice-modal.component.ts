@@ -2,6 +2,9 @@ import { HttpRequest, HttpClient, HttpEventType, HttpResponse } from '@angular/c
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { AngularEditorConfig } from '@kolkov/angular-editor';
+import { DropdownService } from '../../services/dropdown/dropdown.service';
+import { Observable } from 'rxjs';
+// import { map } from 'rxjs/operators';
 // import { MatDialog } from '@angular/material/dialog';
 
 interface Company {
@@ -34,6 +37,7 @@ export class InvoiceModalComponent {
   showAttachments = false;
   showDiscount = false;
   showAdditionalCharges = false;
+  showLogo = false;
   selectedValue?: string;
   clientDetails: any = {};
   showDescriptionBox: boolean = false;
@@ -44,6 +48,133 @@ export class InvoiceModalComponent {
   termsGroup: any[] = [];
   charges: any[] = [];
   moreFields: any[] = [];
+
+
+  countryList = [
+    'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 
+    'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas', 
+    'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize', 'Benin', 
+    'Bhutan', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 
+    'Bulgaria', 'Burkina Faso', 'Burundi', 'Cabo Verde', 'Cambodia', 'Cameroon', 
+    'Canada', 'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 
+    'Comoros', 'Congo, Democratic Republic of the', 'Congo, Republic of the', 
+    'Costa Rica', 'Croatia', 'Cuba', 'Cyprus', 'Czech Republic', 'Denmark', 
+    'Djibouti', 'Dominica', 'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 
+    'Equatorial Guinea', 'Eritrea', 'Estonia', 'Eswatini', 'Ethiopia', 'Fiji', 
+    'Finland', 'France', 'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 
+    'Greece', 'Grenada', 'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana', 
+    'Haiti', 'Honduras', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 
+    'Iraq', 'Ireland', 'Israel', 'Italy', 'Jamaica', 'Japan', 'Jordan', 
+    'Kazakhstan', 'Kenya', 'Kiribati', 'Korea, North', 'Korea, South', 'Kosovo', 
+    'Kuwait', 'Kyrgyzstan', 'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 
+    'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg', 'Madagascar', 'Malawi', 
+    'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 
+    'Mauritius', 'Mexico', 'Micronesia', 'Moldova', 'Monaco', 'Mongolia', 
+    'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia', 'Nauru', 
+    'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 
+    'North Macedonia', 'Norway', 'Oman', 'Pakistan', 'Palau', 'Palestine', 
+    'Panama', 'Papua New Guinea', 'Paraguay', 'Peru', 'Philippines', 'Poland', 
+    'Portugal', 'Qatar', 'Romania', 'Russia', 'Rwanda', 'Saint Kitts and Nevis', 
+    'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa', 'San Marino', 
+    'Sao Tome and Principe', 'Saudi Arabia', 'Senegal', 'Serbia', 'Seychelles', 
+    'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 
+    'Somalia', 'South Africa', 'South Sudan', 'Spain', 'Sri Lanka', 'Sudan', 
+    'Suriname', 'Sweden', 'Switzerland', 'Syria', 'Taiwan', 'Tajikistan', 
+    'Tanzania', 'Thailand', 'Timor-Leste', 'Togo', 'Tonga', 'Trinidad and Tobago', 
+    'Tunisia', 'Turkey', 'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine', 
+    'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay', 
+    'Uzbekistan', 'Vanuatu', 'Vatican City', 'Venezuela', 'Vietnam', 'Yemen', 
+    'Zambia', 'Zimbabwe'
+  ];
+
+  currencyList = [
+    'Algerian Dinar (DZD)',
+    'Angolan Kwanza (AOA)',
+    'Argentine Peso (ARS)',
+    'Australian Dollar (AUD)',
+    'Bahraini Dinar (BHD)',
+    'Bangladeshi Taka (BDT)',
+    'Brazilian Real (BRL)',
+    'British Pound Sterling (GBP)',
+    'Canadian Dollar (CAD)',
+    'Chilean Peso (CLP)',
+    'Chinese Yuan (CNY)',
+    'Colombian Peso (COP)',
+    'Comorian Franc (KMF)',
+    'Congolese Franc (CDF)',
+    'Czech Koruna (CZK)',
+    'Danish Krone (DKK)',
+    'Djiboutian Franc (DJF)',
+    'Egyptian Pound (EGP)',
+    'Eritrean Nakfa (ERN)',
+    'Ethiopian Birr (ETB)',
+    'Euro (EUR)',
+    'Gambian Dalasi (GMD)',
+    'Guinean Franc (GNF)',
+    'Hong Kong Dollar (HKD)',
+    'Indian Rupee (INR)',
+    'Indonesian Rupiah (IDR)',
+    'Iraqi Dinar (IQD)',
+    'Israeli New Shekel (ILS)',
+    'Japanese Yen (JPY)',
+    'Jordanian Dinar (JOD)',
+    'Kenyan Shilling (KES)',
+    'Kuwaiti Dinar (KWD)',
+    'Lebanese Pound (LBP)',
+    'Lesotho Loti (LSL)',
+    'Liberian Dollar (LRD)',
+    'Libyan Dinar (LYD)',
+    'Malagasy Ariary (MGA)',
+    'Malawian Kwacha (MWK)',
+    'Malaysian Ringgit (MYR)',
+    'Mauritanian Ouguiya (MRU)',
+    'Mauritian Rupee (MUR)',
+    'Mexican Peso (MXN)',
+    'Moroccan Dirham (MAD)',
+    'Mozambican Metical (MZN)',
+    'Namibian Dollar (NAD)',
+    'New Zealand Dollar (NZD)',
+    'Nigerian Naira (NGN)',
+    'Norwegian Krone (NOK)',
+    'Omani Rial (OMR)',
+    'Pakistani Rupee (PKR)',
+    'Peruvian Sol (PEN)',
+    'Philippine Peso (PHP)',
+    'Polish Zloty (PLN)',
+    'Qatari Riyal (QAR)',
+    'Romanian Leu (RON)',
+    'Russian Ruble (RUB)',
+    'Rwandan Franc (RWF)',
+    'Saudi Riyal (SAR)',
+    'Seychellois Rupee (SCR)',
+    'Sierra Leonean Leone (SLL)',
+    'Singapore Dollar (SGD)',
+    'Somali Shilling (SOS)',
+    'South African Rand (ZAR)',
+    'South Korean Won (KRW)',
+    'South Sudanese Pound (SSP)',
+    'Sudanese Pound (SDG)',
+    'Swazi Lilangeni (SZL)',
+    'Swedish Krona (SEK)',
+    'Swiss Franc (CHF)',
+    'Syrian Pound (SYP)',
+    'Taiwanese Dollar (TWD)',
+    'Tanzanian Shilling (TZS)',
+    'Thai Baht (THB)',
+    'Tunisian Dinar (TND)',
+    'Turkish Lira (TRY)',
+    'Ugandan Shilling (UGX)',
+    'Ukrainian Hryvnia (UAH)',
+    'United Arab Emirates Dirham (AED)',
+    'United States Dollar (USD)',
+    'Uruguayan Peso (UYU)',
+    'Vietnamese Dong (VND)',
+    'West African CFA Franc (XOF)',
+    'Zambian Kwacha (ZMW)',
+    'Zimbabwean Dollar (ZWL)'
+]
+
+  
   
 
   // addTermGroup() {
@@ -182,7 +313,7 @@ export class InvoiceModalComponent {
   myForm!: FormGroup;
   options: string[] = ['Nigeria - NGN', 'US Dollar - USD', 'Cuba - CUD'];
 
-  constructor(private fb: FormBuilder, private http: HttpClient) { }
+  constructor(private fb: FormBuilder, private http: HttpClient, private dropdownService: DropdownService) { }
 
   ngOnInit(): void {
     this.addTermGroup();
@@ -193,7 +324,60 @@ export class InvoiceModalComponent {
     });
   }
 
-  tableData: any[] = [{}];
+  tableData: any[] = [
+    {
+      name: '',
+      taxRate: '',
+      quantity: '',
+      rate: '',
+      amount: '',
+      tax: '',
+      total: '',
+      showDescriptionBox: false
+    }
+  ];
+
+  
+  name: string = '';
+  taxRate: string = '';
+  quantity: number = 0;
+  rate: Number = 0;
+  amount: number = 0;
+  tax: number = 0;
+  total: number = 0;
+  totalAmount: number = 0;
+  totalAmountInWords: string = '';
+
+
+  onInputChange(item: any): void {
+    this.name = item.name;
+    this.taxRate = item.taxRate;
+    this.quantity = item.quantity;
+    this.rate = item.rate;
+    this.amount = item.amount;
+    this.tax = item.tax;
+    this.total = item.total;
+
+  }
+
+  calculateTotal(): void {
+    this.totalAmount = this.amount * this.tax;
+    // Call method to convert total amount to words
+    this.totalAmountInWords = this.convertToWords(this.totalAmount);
+  }
+
+  convertToWords(amount: number): string {
+    // Your logic to convert amount to words
+    return 'Total Amount in Words'; // Placeholder
+  }
+
+
+  calculateAmount(item: any): void {
+    const quantity = parseFloat(item.quantity);
+    const rate = parseFloat(item.rate);
+    item.amount = (quantity * rate);
+  }
+
 
   deleteRow(index: number) {
     // if (index > 0) {
@@ -313,20 +497,35 @@ export class InvoiceModalComponent {
   }
 
 
+  // onLogoSelected(event: any) {
+  //   const file: File = event.target.files[0];
+  //   if (file) {
+  //     const reader = new FileReader();
+  //     reader.readAsDataURL(file);
+  //     reader.onload = () => {
+  //       this.logoUrl = reader.result;
+  //     };
+  //   }
+  // }
+
+  // clearLogo() {
+  //   this.logoUrl = null;
+  //   // this.showSignatureButton = false; 
+  // }
+
   onLogoSelected(event: any) {
-    const file: File = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        this.logoUrl = reader.result;
-      };
-    }
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.logoUrl = reader.result;
+      this.showLogo = true;
+    };
+    reader.readAsDataURL(file);
   }
 
   clearLogo() {
     this.logoUrl = null;
-    // this.showSignatureButton = false; 
+    this.showLogo = false;
   }
 
 
@@ -381,9 +580,65 @@ uploadedFiles: { name: string, size: number, progress: number, status: string }[
   }
 
   cancelUpload(index: number) {
-    // Implement cancellation logic if needed
     this.uploadedFiles.splice(index, 1);
-
   }
 
+
+  showForm: boolean = false;
+  sameAsBusinessAddress: boolean = false;
+  sameAsClientAddress: boolean = false;
+  saveToClientDetails: boolean = false;
+
+  shippedFrom = {
+    businessName: '',
+    country: '',
+    address: '',
+    city: '',
+    postalCode: '',
+    state: ''
+  };
+
+  shippedTo = {
+    businessName: '',
+    country: '',
+    address: '',
+    city: '',
+    postalCode: '',
+    state: ''
+  };
+
+  addMoreFields() {
+    // Logic to add more fields
+  }
+
+
+
+  currency = this.currencyList;
+  companyCountry = this.countryList; 
+  clientCountry = this.countryList; 
+  clientShippingDetails = ['None', 'Shipping 1', 'Shipping 2', 'Shipping 3'];
+
+  isDropdownOpen$(id: string) {
+    return this.dropdownService.isDropdownOpen$(id);
+  }
+
+  getSelectedItem$(id: string): Observable<string | null> {
+    return this.dropdownService.getSelectedItem$(id);
+  }
+
+  toggleDropdown(id: string) {
+    this.dropdownService.toggleDropdown(id);
+  }
+
+  selectItem(id: string, item: string) {
+    this.dropdownService.selectItem(id, item);
+  }
+
+  extractCurrencyCode(currency: string | null): string {
+    if (!currency) {
+      return 'NGN';
+    }
+    const match = currency.match(/\(([^)]+)\)/);
+    return match ? match[1] : currency;
+  }
 }
