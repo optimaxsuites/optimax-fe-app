@@ -4,7 +4,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import {MatExpansionModule} from '@angular/material/expansion'
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatSelectModule } from '@angular/material/select';
@@ -21,9 +21,8 @@ import { DropdownModule } from 'primeng/dropdown';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
 import { AngularEditorModule } from '@kolkov/angular-editor';
-import {MatAutocompleteModule} from '@angular/material/autocomplete';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { AsyncPipe } from '@angular/common';
-
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -58,6 +57,7 @@ import { CanvasJSAngularChartsModule } from '@canvasjs/angular-charts';
 import { InvoiceModalComponent } from './components/invoice-modal/invoice-modal.component';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { SalesPageComponent } from './pages/sales-page/sales-page.component';
+import { MatCardModule } from '@angular/material/card';
 import { QuotationComponent } from './components/quotation/quotation.component';
 import { ProformaInvoiceComponent } from './components/proforma-invoice/proforma-invoice.component';
 import { ReceiptComponent } from './components/receipt/receipt.component';
@@ -73,6 +73,7 @@ import { PaymentReceiptsModalComponent } from './components/payment-receipts-mod
 import { PaymentRecordReceivedComponent } from './components/payment-record-received/payment-record-received.component';
 import { SalesOrderComponent } from './components/sales-order/sales-order.component';
 import { SalesOrderModalComponent } from './components/sales-order-modal/sales-order-modal.component';
+import { MatGridListModule } from '@angular/material/grid-list';
 
 @NgModule({
   declarations: [
@@ -126,6 +127,7 @@ import { SalesOrderModalComponent } from './components/sales-order-modal/sales-o
     BrowserModule,
     AppRoutingModule,
     FormsModule,
+    MatGridListModule,
     ReactiveFormsModule,
     NgApexchartsModule,
     CanvasJSAngularChartsModule,
@@ -142,12 +144,13 @@ import { SalesOrderModalComponent } from './components/sales-order-modal/sales-o
     MatDividerModule,
     DropdownModule,
     // EditorModule,
+    MatCardModule,
     BrowserAnimationsModule,
     HttpClientModule,
     AngularEditorModule,
     AsyncPipe,
-    MatAutocompleteModule, 
-    MatExpansionModule
+    MatAutocompleteModule,
+    MatExpansionModule,
   ],
   providers: [provideAnimationsAsync(), provideNativeDateAdapter()],
   bootstrap: [AppComponent],
