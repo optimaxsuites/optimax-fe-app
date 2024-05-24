@@ -1,584 +1,975 @@
-<div class="container" >
-    <div class="modal-wrapper p-4" #contentToPrint>
-        <div class="header-section">
-            <section class="title-section">
-                <p class="form-title">Quotation</p>
-            </section>
+<div class="container">
+  <div class="modal-wrapper p-4" #contentToPrint>
+    <div class="header-section">
+      <section class="title-section">
+        <p class="form-title">Quotation</p>
+      </section>
+    </div>
+
+    <div class="info-section">
+      <section class="first-info-section">
+        <div class="first-container">
+          <div>
+            <mat-form-field>
+              <mat-label>Quotation No</mat-label>
+              <input matInput placeholder="Quotation No" />
+            </mat-form-field>
+          </div>
+          <div class="d-flex">
+            <mat-form-field>
+              <mat-label>Quotation Date</mat-label>
+              <input
+                matInput
+                [matDatepicker]="picker1"
+                placeholder="dd/mm/yyyy"
+              />
+              <mat-datepicker-toggle
+                matIconSuffix
+                [for]="picker1"
+              ></mat-datepicker-toggle>
+              <mat-datepicker #picker1></mat-datepicker>
+            </mat-form-field>
+
+            <mat-form-field class="ms-2">
+              <mat-label> Quotaion Due Date</mat-label>
+              <input
+                matInput
+                [matDatepicker]="picker2"
+                placeholder="dd/mm/yyyy"
+              />
+              <mat-datepicker-toggle
+                matIconSuffix
+                [for]="picker2"
+              ></mat-datepicker-toggle>
+              <mat-datepicker #picker2></mat-datepicker>
+            </mat-form-field>
+          </div>
+          <div>
+            <mat-form-field>
+              <mat-label>Project Title</mat-label>
+              <input matInput placeholder="Project Title" />
+            </mat-form-field>
+          </div>
+
+          <div class="add-more-field-container">
+            <div
+              class="add-more-field-wrapper"
+              *ngFor="let item of moreFields; let i = index"
+            >
+              <div class="add-more-field">
+                <mat-form-field>
+                  <mat-label>Add More</mat-label>
+                  <input matInput placeholder="Add More" />
+                </mat-form-field>
+              </div>
+              <i (click)="removeMoreField(i)" class="fa-solid fa-x p-2"></i>
+            </div>
+
+            <button class="add-btn" (click)="addMoreField()">
+              <i class="fas fa-plus me-2"></i>Add More Field
+            </button>
+          </div>
+        </div>
+        <div class="">
+          <section class="logo-section">
+            <div class="logo-upload-container">
+              <div class="wrapper">
+                <div class="logo-wrapper">
+                  <img
+                    *ngIf="logoUrl"
+                    [src]="logoUrl"
+                    alt="logo"
+                    class="logo"
+                  />
+                </div>
+              </div>
+              <div
+                *ngIf="showLogo; else addLogoButtons"
+                class="add-logo-btn-wrapper"
+              >
+                <input
+                  type="file"
+                  #fileInput
+                  style="display: none"
+                  (change)="onLogoSelected($event)"
+                />
+                <button class="btn" (click)="fileInput.click()">
+                  <i class="fas fa-plus me-2"></i>Change Logo
+                </button>
+                <button class="btn" (click)="clearLogo()">
+                  <i class="fa-solid fa-x me-2"></i>Remove Logo
+                </button>
+              </div>
+              <ng-template #addLogoButtons>
+                <div class="add-logo-toggle">
+                  <input
+                    type="file"
+                    #fileInput
+                    style="display: none"
+                    (change)="onLogoSelected($event)"
+                  />
+                  <button class="btn" (click)="fileInput.click()">
+                    <i class="fas fa-plus me-2"></i>Add Business Logo
+                  </button>
+                </div>
+              </ng-template>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="second-info-section">
+        <div class="right">
+          <div class="top-container">
+            <div class="billing-selection">
+              <form>
+                <p class="billing-title">
+                  Quotation From
+                  <span class="billing-span">[ Company's details ]</span>
+                </p>
+                <mat-form-field>
+                  <mat-label>Select Company</mat-label>
+                  <mat-select
+                    [(ngModel)]="selectedValue"
+                    (ngModelChange)="updateBusinessInfo()"
+                    name="Company"
+                    placeholder="Select Company"
+                  >
+                    <mat-option
+                      *ngFor="let company of companies"
+                      [value]="company.value"
+                      >{{ company.viewValue }}</mat-option
+                    >
+                    <div class="add-new-details-btn-wrapper">
+                      <button class="btn new-detail-btn mt-2">
+                        Add New Company Details
+                      </button>
+                    </div>
+                  </mat-select>
+                </mat-form-field>
+              </form>
+            </div>
+          </div>
+          <div class="info-bottom-section">
+            <div class="bottom-container">
+              <p><b>Business Details</b></p>
+              <div class="business-info">
+                <div class="d-flex">
+                  <p>Business Name:</p>
+                  <p class="ms-2">{{ businessDetails.name }}</p>
+                </div>
+                <div class="d-flex">
+                  <p>Address:</p>
+                  <p class="ms-2">{{ businessDetails.address }}</p>
+                </div>
+                <div class="d-flex">
+                  <P>Phone Number:</P>
+                  <p class="ms-2">{{ businessDetails.phoneNumber }}</p>
+                </div>
+                <div class="d-flex">
+                  <p>Email Address:</p>
+                  <p class="ms-2">{{ businessDetails.email }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        
-
-        <div class="info-section">
-            <section class="first-info-section">
-                <div class="first-container">
-                    <div>
-                        <mat-form-field>
-                        <mat-label>Quotation No</mat-label>
-                        <input matInput placeholder="Quotation No">
-                        </mat-form-field>
-                    </div>
-                    <div class="d-flex ">
-                        <mat-form-field>
-                            <mat-label>Quotation Date</mat-label>
-                            <input matInput [matDatepicker]="picker1" placeholder="dd/mm/yyyy">
-                            <mat-datepicker-toggle matIconSuffix [for]="picker1"></mat-datepicker-toggle>
-                            <mat-datepicker #picker1></mat-datepicker>
-                        </mat-form-field>
-
-                        <mat-form-field class="ms-2">
-                            <mat-label> Quotaion Due Date</mat-label>
-                            <input matInput [matDatepicker]="picker2" placeholder="dd/mm/yyyy">
-                            <mat-datepicker-toggle matIconSuffix [for]="picker2"></mat-datepicker-toggle>
-                            <mat-datepicker #picker2></mat-datepicker>
-                        </mat-form-field>
-                    </div>
-                    <div>
-                        <mat-form-field>
-                        <mat-label>Project Title</mat-label>
-                        <input matInput placeholder="Project Title">
-                        </mat-form-field>
-                    </div>
-
-                    <div class="add-more-field-container">
-                        <div class="add-more-field-wrapper" *ngFor="let item of moreFields; let i = index">
-                            <div class="add-more-field">
-                                <mat-form-field>
-                                <mat-label>Add More</mat-label>
-                                <input matInput placeholder="Add More">
-                                </mat-form-field>
-                            </div>
-                            <i (click)="removeMoreField(i)" class="fa-solid fa-x p-2"></i>
-                        </div>
-
-                        <button class="add-btn" (click)="addMoreField()"><i class="fas fa-plus me-2"></i>Add More Field</button>
-                    </div>
-                </div>
-                <div class="">
-                    <section class="logo-section">
-                        <div class="logo-upload-container">
-                          <div class="wrapper">
-                            <div class="logo-wrapper">
-                              <img *ngIf="logoUrl" [src]="logoUrl" alt="logo" class="logo">
-                            </div>
-                          </div>
-                          <div *ngIf="showLogo; else addLogoButtons" class="add-logo-btn-wrapper">
-                            <input type="file" #fileInput style="display: none" (change)="onLogoSelected($event)">
-                            <button class="btn" (click)="fileInput.click()"><i class="fas fa-plus me-2"></i>Change Logo</button>
-                            <button class="btn" (click)="clearLogo()"><i class="fa-solid fa-x me-2"></i>Remove Logo</button>
-                          </div>
-                          <ng-template #addLogoButtons>
-                            <div class="add-logo-toggle">
-                              <input type="file" #fileInput style="display: none" (change)="onLogoSelected($event)">
-                              <button class="btn" (click)="fileInput.click()"><i class="fas fa-plus me-2"></i>Add Business Logo</button>
-                            </div>
-                          </ng-template>
-                        </div>
-                      </section>
-                      
-                </div>
-            </section>
-
-            <section class="second-info-section">
-                <div class="right">
-                    <div class="top-container">
-                        <div class="billing-selection">
-                            <form>
-                                <p class="billing-title">Quotation From <span class="billing-span">[ Company's details ]</span></p>
-                                <mat-form-field>
-                                    <mat-label>Select Company</mat-label>
-                                    <mat-select [(ngModel)]="selectedValue" (ngModelChange)="updateBusinessInfo()" name="Company" placeholder="Select Company">
-                                        <mat-option *ngFor="let company of companies" [value]="company.value">{{company.viewValue}}</mat-option>
-                                        <div class="add-new-details-btn-wrapper">
-                                            <button class="btn new-detail-btn mt-2">Add New Company Details</button>
-                                        </div>
-                                    </mat-select>
-                                </mat-form-field>
-                            </form>
-                        </div>
-                    </div>
-                    <div class="info-bottom-section">
-                        <div class="bottom-container">
-                            <p><b>Business Details</b></p>
-                            <div class="business-info">
-                                <div class="d-flex">
-                                    <p>Business Name:</p>
-                                    <p class="ms-2">{{ businessDetails.name }}</p>
-                                </div>
-                                <div class="d-flex">
-                                    <p>Address:</p>
-                                    <p class="ms-2">{{ businessDetails.address }}</p>
-                                </div>
-                                <div class="d-flex">
-                                    <P>Phone Number:</P>
-                                    <p class="ms-2">{{ businessDetails.phoneNumber }}</p>
-                                </div>
-                                <div class="d-flex">
-                                    <p>Email Address:</p>
-                                    <p class="ms-2">{{ businessDetails.email }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                
-
-
-                <div class="left">
-                    <div class="top-container"></div>
-                    <div class="bottom-container">
-                        <div class="top-container">
-                            <div class="billing-selection">
-                                <form>
-                                    <p class="billing-title">Quotation For <span class="billing-span">[ Client's details ]</span></p>
-                                    <mat-form-field>
-                                    <mat-label>Select Client</mat-label>
-                                    <mat-select [(ngModel)]="selectedValue" (ngModelChange)="updateClientInfo()" name="Company" placeholder="Select Company">
-                                        <mat-option *ngFor="let client of clients" [value]="client.value">{{client.viewValue}}</mat-option>
-                                        <div class="add-new-details-btn-wrapper">
-                                            <button class="btn new-detail-btn mt-2">Add New Client Details</button>
-                                        </div>
-                                    </mat-select>
-                                    </mat-form-field>
-                                </form>
-                            </div>
-                        </div>
-                        <div class="info-bottom-section">
-                            <div class="first-component mt-4" *ngIf="!showSecondComponent" >
-                                <p>Select Client From List</p>
-                                <p class="text-center">Or</p>
-                                <button  class="btn create-client-btn">Add New Client</button>
-                            </div>
-                            <div class="second-component" *ngIf="showSecondComponent">
-                                <p><b>Client Details</b></p>
-                                <div class="business-info">
-                                    <div class="d-flex">
-                                        <p>Business Name:</p>
-                                        <p class="ms-2">{{ clientDetails.name }}</p>
-                                    </div>
-                                    <div class="d-flex">
-                                        <p>Address:</p>
-                                        <p class="ms-2">{{ clientDetails.address }}</p>
-                                    </div>
-                                    <div class="d-flex">
-                                        <P>Phone Number:</P>
-                                        <p class="ms-2">{{ clientDetails.phoneNumber }}</p>
-                                    </div>
-                                    <div class="d-flex">
-                                        <p>Email Address:</p>
-                                        <p class="ms-2">{{ clientDetails.email }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="shipping-details-container">
-                <div class="shipping-wrapper">
-                    <div class="checkbox-container mb-2" >
-                      <span><input type="checkbox" id="toggleForm" [(ngModel)]="showForm"></span>
-                      <label for="toggleForm"> <i class="fas fa-plus me-2"></i> Add Shipping Details</label>
-                    </div>
-                  
-                    <div *ngIf="showForm" class="form-container">
-                      <div class="form-section">
-                        <div class="shipping-header-wrapper">
-                            <p class="shipping-header">Shipped From</p>
-                        </div>
-                        <div class="form-group">
-                          <!-- <label>Business / Freelancer Name</label> -->
-                          <input type="text" [(ngModel)]="shippedFrom.businessName" placeholder="Business / Freelancer Name" class="form-control-opti">
-                        </div>
-                        <div class="form-group">
-                          <!-- <label>Country</label> -->
-
-                          <div class="custom-dropdown">
-                            <div class="custom-select" (click)="toggleDropdown('companyCountry')">
-                              {{ (getSelectedItem$('companyCountry') | async) || 'Select Company Country' }}
-                              <span class="arrow"></span>
-                            </div>
-                            <ul class="custom-options" *ngIf="isDropdownOpen$('companyCountry') | async">
-                              <li class="custom-option" *ngFor="let item of companyCountry" (click)="selectItem('companyCountry', item)">
-                                {{ item }}
-                              </li>
-                            </ul>
-                          </div>
-
-                        </div>
-                        <div class="form-group">
-                          <!-- <label>Address (optional)</label> -->
-                          <input type="text" [(ngModel)]="shippedFrom.address" placeholder="Address (optional)" class="form-control-opti">
-                        </div>
-                        <div class="form-group row">
-                          <div class="column">
-                            <!-- <label>City (optional)</label> -->
-                            <input type="text" [(ngModel)]="shippedFrom.city" placeholder="City (optional)" class="form-control-opti">
-                          </div>
-                          <div class="column">
-                            <!-- <label>Postal Code / Zip Code</label> -->
-                            <input type="text" [(ngModel)]="shippedFrom.postalCode" placeholder="Postal Code / Zip Code" class="form-control-opti">
-                          </div>
-                        </div>
-                        <div class="form-group">
-                          <!-- <label>State (optional)</label> -->
-                          <input type="text" [(ngModel)]="shippedFrom.state" placeholder="State (optional)" class="form-control-opti">
-                        </div>
+        <div class="left">
+          <div class="top-container"></div>
+          <div class="bottom-container">
+            <div class="top-container">
+              <div class="billing-selection">
+                <form>
+                  <p class="billing-title">
+                    Quotation For
+                    <span class="billing-span">[ Client's details ]</span>
+                  </p>
+                  <mat-form-field>
+                    <mat-label>Select Client</mat-label>
+                    <mat-select
+                      [(ngModel)]="selectedValue"
+                      (ngModelChange)="updateClientInfo()"
+                      name="Company"
+                      placeholder="Select Company"
+                    >
+                      <mat-option
+                        *ngFor="let client of clients"
+                        [value]="client.value"
+                        >{{ client.viewValue }}</mat-option
+                      >
+                      <div class="add-new-details-btn-wrapper">
+                        <button class="btn new-detail-btn mt-2">
+                          Add New Client Details
+                        </button>
                       </div>
-                  
-                      <div class="form-section">
-                        <div class="shipping-header-wrapper">
-                            <p class="shipping-header">Shipped To</p>
-                        </div>
-                        <div class="dropdown-container mb-2">
-                           
-                            
+                    </mat-select>
+                  </mat-form-field>
+                </form>
+              </div>
+            </div>
+            <div class="info-bottom-section">
+              <div class="first-component mt-4" *ngIf="!showSecondComponent">
+                <p>Select Client From List</p>
+                <p class="text-center">Or</p>
+                <button class="btn create-client-btn">Add New Client</button>
+              </div>
+              <div class="second-component" *ngIf="showSecondComponent">
+                <p><b>Client Details</b></p>
+                <div class="business-info">
+                  <div class="d-flex">
+                    <p>Business Name:</p>
+                    <p class="ms-2">{{ clientDetails.name }}</p>
+                  </div>
+                  <div class="d-flex">
+                    <p>Address:</p>
+                    <p class="ms-2">{{ clientDetails.address }}</p>
+                  </div>
+                  <div class="d-flex">
+                    <P>Phone Number:</P>
+                    <p class="ms-2">{{ clientDetails.phoneNumber }}</p>
+                  </div>
+                  <div class="d-flex">
+                    <p>Email Address:</p>
+                    <p class="ms-2">{{ clientDetails.email }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-                                <div class="custom-dropdown">
-                                    <div class="custom-select" (click)="toggleDropdown('clientShippingDetails')">
-                                      {{ (getSelectedItem$('clientShippingDetails') | async) || 'Select Client Shipping Details' }}
-                                      <span class="arrow"></span>
-                                    </div>
-                                    <ul class="custom-options" *ngIf="isDropdownOpen$('clientShippingDetails') | async">
-                                      <li class="custom-option" *ngFor="let item of clientShippingDetails" (click)="selectItem('clientShippingDetails', item)">
-                                        {{ item }}
-                                      </li>
-                                      <div class="btn-dropdown">
-                                        <button class="add-button">Add New Shipping Detail</button>
-                                        </div>
-                                    </ul>
-                                  </div>
-                              
-                            
-                        </div>
-                          
-                        <!-- <div class="form-group d-flex align-center">
+      <section class="shipping-details-container">
+        <div class="shipping-wrapper">
+          <div class="checkbox-container mb-2">
+            <span
+              ><input type="checkbox" id="toggleForm" [(ngModel)]="showForm"
+            /></span>
+            <label for="toggleForm">
+              <i class="fas fa-plus me-2"></i> Add Shipping Details</label
+            >
+          </div>
+
+          <div *ngIf="showForm" class="form-container">
+            <div class="form-section">
+              <div class="shipping-header-wrapper">
+                <p class="shipping-header">Shipped From</p>
+              </div>
+              <div class="form-group">
+                <!-- <label>Business / Freelancer Name</label> -->
+                <input
+                  type="text"
+                  [(ngModel)]="shippedFrom.businessName"
+                  placeholder="Business / Freelancer Name"
+                  class="form-control-opti"
+                />
+              </div>
+              <div class="form-group">
+                <!-- <label>Country</label> -->
+
+                <div class="custom-dropdown">
+                  <div
+                    class="custom-select"
+                    (click)="toggleDropdown('companyCountry')"
+                  >
+                    {{
+                      (getSelectedItem$("companyCountry") | async) ||
+                        "Select Company Country"
+                    }}
+                    <span class="arrow"></span>
+                  </div>
+                  <ul
+                    class="custom-options"
+                    *ngIf="isDropdownOpen$('companyCountry') | async"
+                  >
+                    <li
+                      class="custom-option"
+                      *ngFor="let item of companyCountry"
+                      (click)="selectItem('companyCountry', item)"
+                    >
+                      {{ item }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div class="form-group">
+                <!-- <label>Address (optional)</label> -->
+                <input
+                  type="text"
+                  [(ngModel)]="shippedFrom.address"
+                  placeholder="Address (optional)"
+                  class="form-control-opti"
+                />
+              </div>
+              <div class="form-group row">
+                <div class="column">
+                  <!-- <label>City (optional)</label> -->
+                  <input
+                    type="text"
+                    [(ngModel)]="shippedFrom.city"
+                    placeholder="City (optional)"
+                    class="form-control-opti"
+                  />
+                </div>
+                <div class="column">
+                  <!-- <label>Postal Code / Zip Code</label> -->
+                  <input
+                    type="text"
+                    [(ngModel)]="shippedFrom.postalCode"
+                    placeholder="Postal Code / Zip Code"
+                    class="form-control-opti"
+                  />
+                </div>
+              </div>
+              <div class="form-group">
+                <!-- <label>State (optional)</label> -->
+                <input
+                  type="text"
+                  [(ngModel)]="shippedFrom.state"
+                  placeholder="State (optional)"
+                  class="form-control-opti"
+                />
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div class="shipping-header-wrapper">
+                <p class="shipping-header">Shipped To</p>
+              </div>
+              <div class="dropdown-container mb-2">
+                <div class="custom-dropdown">
+                  <div
+                    class="custom-select"
+                    (click)="toggleDropdown('clientShippingDetails')"
+                  >
+                    {{
+                      (getSelectedItem$("clientShippingDetails") | async) ||
+                        "Select Client Shipping Details"
+                    }}
+                    <span class="arrow"></span>
+                  </div>
+                  <ul
+                    class="custom-options"
+                    *ngIf="isDropdownOpen$('clientShippingDetails') | async"
+                  >
+                    <li
+                      class="custom-option"
+                      *ngFor="let item of clientShippingDetails"
+                      (click)="selectItem('clientShippingDetails', item)"
+                    >
+                      {{ item }}
+                    </li>
+                    <div class="btn-dropdown">
+                      <button class="add-button">
+                        Add New Shipping Detail
+                      </button>
+                    </div>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- <div class="form-group d-flex align-center">
                           <input type="checkbox" id="sameAsClient" [(ngModel)]="sameAsClientAddress">
                           <label for="sameAsClient" class="mt-2 ms-2">Same as client's address</label>
                         </div> -->
-                        <div class="form-group">
-                          <!-- <label>Client's Business Name</label> -->
-                          <input type="text" [(ngModel)]="shippedTo.businessName" placeholder="Client's Business Name" class="form-control-opti">
-                        </div>
-                        <div class="form-group">
-
-                          <div class="custom-dropdown">
-                            <div class="custom-select" (click)="toggleDropdown('clientCountry')">
-                              {{ (getSelectedItem$('clientCountry') | async) || 'Select Client Country' }}
-                              <span class="arrow"></span>
-                            </div>
-                            <ul class="custom-options" *ngIf="isDropdownOpen$('clientCountry') | async">
-                              <li class="custom-option" *ngFor="let item of clientCountry" (click)="selectItem('clientCountry', item)">
-                                {{ item }}
-                              </li>
-                            </ul>
-                          </div>
-
-                        </div>
-                        <div class="form-group">
-                          <!-- <label>Address (optional)</label> -->
-                          <input type="text" [(ngModel)]="shippedTo.address" placeholder="Address (optional)" class="form-control-opti">
-                        </div>
-                        <div class="form-group row">
-                          <div class="column">
-                            <!-- <label>City (optional)</label> -->
-                            <input type="text" [(ngModel)]="shippedTo.city" placeholder="City (optional)" class="form-control-opti">
-                          </div>
-                          <div class="column">
-                            <!-- <label>Postal Code / Zip Code</label> -->
-                            <input type="text" [(ngModel)]="shippedTo.postalCode" placeholder="Postal Code / Zip Code" class="form-control-opti">
-                          </div>
-                        </div>
-                        <div class="form-group">
-                          <!-- <label>State (optional)</label> -->
-                          <input type="text" [(ngModel)]="shippedTo.state" placeholder="State (optional)" class="form-control-opti">
-                        </div>
-                        <!-- <div class="form-group">
+              <div class="form-group">
+                <!-- <label>Client's Business Name</label> -->
+                <input
+                  type="text"
+                  [(ngModel)]="shippedTo.businessName"
+                  placeholder="Client's Business Name"
+                  class="form-control-opti"
+                />
+              </div>
+              <div class="form-group">
+                <div class="custom-dropdown">
+                  <div
+                    class="custom-select"
+                    (click)="toggleDropdown('clientCountry')"
+                  >
+                    {{
+                      (getSelectedItem$("clientCountry") | async) ||
+                        "Select Client Country"
+                    }}
+                    <span class="arrow"></span>
+                  </div>
+                  <ul
+                    class="custom-options"
+                    *ngIf="isDropdownOpen$('clientCountry') | async"
+                  >
+                    <li
+                      class="custom-option"
+                      *ngFor="let item of clientCountry"
+                      (click)="selectItem('clientCountry', item)"
+                    >
+                      {{ item }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div class="form-group">
+                <!-- <label>Address (optional)</label> -->
+                <input
+                  type="text"
+                  [(ngModel)]="shippedTo.address"
+                  placeholder="Address (optional)"
+                  class="form-control-opti"
+                />
+              </div>
+              <div class="form-group row">
+                <div class="column">
+                  <!-- <label>City (optional)</label> -->
+                  <input
+                    type="text"
+                    [(ngModel)]="shippedTo.city"
+                    placeholder="City (optional)"
+                    class="form-control-opti"
+                  />
+                </div>
+                <div class="column">
+                  <!-- <label>Postal Code / Zip Code</label> -->
+                  <input
+                    type="text"
+                    [(ngModel)]="shippedTo.postalCode"
+                    placeholder="Postal Code / Zip Code"
+                    class="form-control-opti"
+                  />
+                </div>
+              </div>
+              <div class="form-group">
+                <!-- <label>State (optional)</label> -->
+                <input
+                  type="text"
+                  [(ngModel)]="shippedTo.state"
+                  placeholder="State (optional)"
+                  class="form-control-opti"
+                />
+              </div>
+              <!-- <div class="form-group">
                           <input type="checkbox" id="saveClientDetails" [(ngModel)]="saveToClientDetails">
                           <label for="saveClientDetails">Save to Client Details</label>
                         </div> -->
-                        <div class="form-group">
-                          <button (click)="addMoreFields()" class=" btn add-more-button">Save Details</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-            </section>
-
+              <div class="form-group">
+                <button (click)="addMoreFields()" class="btn add-more-button">
+                  Save Details
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-
-        <div class="info-section">
-            <div class="tax-currency">
-                <div class="tax-btn">
-                    <button class="btn flat-btn">Add Tax</button>
-                </div>
-                <div class="currency-selector">
-                    <div class="custom-dropdown">
-                    <div class="custom-select" (click)="toggleDropdown('currency')">
-                        {{ (getSelectedItem$('currency') | async) || 'Select Currency' }}
-                        <span class="arrow"></span>
-                    </div>
-                    <ul class="custom-options" *ngIf="isDropdownOpen$('currency') | async">
-                        <li class="custom-option" *ngFor="let item of currency" (click)="selectItem('currency', item)">
-                        {{ item }}
-                        </li>
-                    </ul>
-                    </div>
-                </div>
-                <div class="tax-btn">
-                    <button class="btn flat-btn">Number/Currency Format</button>
-                </div>
-                <div class="tax-btn">
-                    <button class="btn flat-btn">Edit Columns/Formulas</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="table-wrapper">
-            <div class="top-products-table w3-table">
-                <div class="thead">
-                  <div class="top-products-table-row ">
-                    <div class="table-item">
-                        <th class="top-products-table-data col-5">Item</th>
-                        <th class="top-products-table-data col">Tax Rate <span class="input-span">%</span></th>
-                        <th class="top-products-table-data col">Quantity</th>
-                        <th class="top-products-table-data col">Rate <span class="input-span">[{{ extractCurrencyCode((getSelectedItem$('currency') | async)) }}]</span></th>
-                        <th class="top-products-table-data col">Amount <span class="input-span">[{{ extractCurrencyCode((getSelectedItem$('currency') | async)) }}]</span></th>
-                        <th class="top-products-table-data col">Tax <span class="input-span">[{{ extractCurrencyCode((getSelectedItem$('currency') | async)) }}]</span></th>
-                        <th class="top-products-table-data col">Total <span class="input-span">[{{ extractCurrencyCode((getSelectedItem$('currency') | async)) }}]</span></th>
-                        <th class="top-products-table-data"></th>
-                    </div>
-                  </div>
-                </div>
-                <div class="tbody">
-                    <!-- <ng-container > -->
-                        <div class="top-products-table-row" *ngFor="let item of tableData; let i = index" >
-                            <div class="table-item">
-                                <td class="top-products-table-data col-5">
-                                    <input type="text" class="form-control-opti" [(ngModel)]="item.name" (ngModelChange)="onInputChange(item)" >
-                                </td>
-                                <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control-opti"  [(ngModel)]="item.taxRate"(ngModelChange)="onInputChange(item)" appNumberOnly >
-                                </td>
-                                <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control-opti" [(ngModel)]="item.quantity"(ngModelChange)="onInputChange(item)" (input)="calculateAmount(item)" appNumberOnly >
-                                </td>
-                                <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control-opti" [(ngModel)]="item.rate"(ngModelChange)="onInputChange(item)" (input)="calculateAmount(item)" appNumberOnly >
-                                </td>
-                                <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control-opti" [(ngModel)]="item.amount"(ngModelChange)="onInputChange(item)" appNumberOnly >
-                                </td>
-                                <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control-opti" [(ngModel)]="item.tax"(ngModelChange)="onInputChange(item)" appNumberOnly >
-                                </td>
-                                <td class="top-products-table-data col ms-2">
-                                    <input type="text" class="form-control-opti" [(ngModel)]="item.total" (ngModelChange)="onInputChange(item)"(ngModelChange)="onInputChange(item)" appNumberOnly >
-                                </td>
-                                <td class="top-products-table-data">
-                                    <i (click)="deleteRow(i)" class="fa-solid fa-x p-2"></i>
-                                </td>
-                            </div>
-    
-                            <div class="description-container">
-                                <!-- <ng-container> -->
-                                    <td class="add-description-btn" *ngIf="!item.showDescriptionBox">
-                                        <button class="btn btn-light" (click)="item.showDescriptionBox = true"><i class="fas fa-plus me-2"></i>Add Description</button>
-                                    </td>
-                                <!-- </ng-container> -->
-                                
-                                <div class="description-box" *ngIf="item.showDescriptionBox">
-                                    <angular-editor placeholder="'Enter text here...'" [config]="editorConfig"></angular-editor>
-                                </div>
-                            </div>
-
-                            <div class="image-upload-container">
-                                <!-- image container here -->
-                            </div>
-                        </div>
-                    <!-- </ng-container> -->
-                </div>
-            </div>
-
-            <div class="add-table-row">
-                <button (click)="addNewRow()" class="btn new-table-row">Add New </button>
-            </div>
-
-            <div class="cal">
-                <div class="table-cal-container">
-                    <div class="space-between">
-                        <p><b>Amount</b></p>
-                        <p><span style="font-size: 1.1em; font-weight: 500;"><span class="me-2">{{ extractCurrencyCode((getSelectedItem$('currency') | async)) }}</span>{{ amount }}</span></p>
-                    </div>
-                    <div class="space-between">
-                        <p><b>Tax</b></p>
-                        <p><span style="font-size: 1.1em; font-weight: 500;"> <span class="me-2">{{ extractCurrencyCode((getSelectedItem$('currency') | async)) }}</span>{{ tax }}</span></p>
-                    </div>
-
-                    <div class="discount-container">
-                        <div class="space-between" *ngFor="let discount of discounts; let i = index">
-                            <p><b>Discount</b></p>
-                            <div class="value d-flex">
-                                <div class="d-flex">
-                                    <input type="text" class="form-control-opti input" style="font-size: 1.1em; font-weight: 400;" appNumberOnly>
-                                    <select name="" id="" class="form-control-opti-2 ms-2 ">
-                                        <option value=""> {{ extractCurrencyCode((getSelectedItem$('currency') | async)) }} </option>
-                                        <option value=""> % </option>
-                                    </select>
-                                </div>
-                                <i (click)="removeDiscount(i)" class="fa-solid fa-x p-2"></i>
-                            </div>
-                        </div>
-                        <div class="space-between" *ngFor="let charge of charges; let i = index">
-                            <p><b>Additional Charges</b></p>
-                            <div class="value d-flex">
-                                <div class="d-flex">
-                                    <input type="text" class="form-control-opti input" style="font-size: 1.1em; font-weight: 400;" appNumberOnly>
-                                    <select name="" id="" class="form-control-opti-2 ms-2 ">
-                                        <option value=""> {{ extractCurrencyCode((getSelectedItem$('currency') | async)) }} </option>
-                                        <option value=""> % </option>
-                                    </select>
-                                </div>
-                                <i (click)="removeCharge(i)" class="fa-solid fa-x p-2"></i>
-                            </div>
-                        </div>
-                        <div class="discount-btn-wrapper d-block">
-                            <button class="add-btn" (click)="addDiscount()"><i class="fas fa-plus me-2"></i>Add Discount</button><br>
-                            <button class="add-btn" (click)="addCharge()"><i class="fas fa-plus me-2"></i>Add Additional Charges</button>
-
-                        </div>
-                    </div>
-                    <div class="cal-total-container">
-                        <div class="space-between">
-                            <div>
-                                <p class="cal-total" >Total [{{ extractCurrencyCode((getSelectedItem$('currency') | async)) }}] </p>
-                            </div>
-                            <div class="d-flex">
-                                <span class="cal-amount"><span class="">{{ extractCurrencyCode((getSelectedItem$('currency') | async)) }}</span></span>
-                                <span class="cal-amount ms-2">{{ totalAmount }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="amount-words-container my-4" *ngIf="showAmountWord" >
-                        <div class="d-flex justify-content-between">
-                            <p><b>Amount In Words</b></p>
-                            <i (click)="showAmountWord = false" class="fa-solid fa-x p-2"></i>
-                        </div>
-                        <div class="value d-flex">
-                            <div class="d-flex">
-                                <!-- <input type="text" class="form-control-opti" > -->
-                                {{ totalAmountInWords }}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="discount-btn-wrapper d-block my-4">
-                        <button class="add-btn" *ngIf="!showAmountWord" (click)="showAmountWord = true"><i class="fas fa-plus me-2"></i>Add Amount In Words</button>
-
-                    </div>
-
-
-                    <div class="signature-upload-container">
-                        <div class="wrapper" *ngIf="showSignatureButton">
-                            <i (click)=" clearSignature()" class="fa-solid fa-x p-2"></i>
-                            <div class="signature-wrapper">
-                                <img *ngIf="signatureUrl" [src]="signatureUrl" alt="Signature" class="Signature">
-                            </div>
-                            <div class="btn-sign">
-                                <!-- <input type="" (change)="onFileSelected($event)" class="form-control" /> -->
-                                <input type="file" #fileInput style="display: none" (change)=" onSignatureSelected($event)">
-                                <button class="btn" (click)="fileInput.click()">Upload Signature</button>
-                            </div>
-                        </div>
-                        <div class="add-sign-btn-wrapper">
-                            <button class="btn add-sign " *ngIf="!showSignatureButton" (click)="showSignatureButton = true" >Add Signature</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="form-buttom-section">
-            <div class="btn-bottom-container" >
-                <button class="add-terms-condition-btn btn" *ngIf="!showTermsConditionButton" (click)="showTermsConditionButton = true;">Add Terms & Conditions</button>
-                <button class="add-terms-condition-btn btn" *ngIf="!showNotes" (click)="showNotes = true;" >Add Notes</button>
-                <button class="add-terms-condition-btn btn" *ngIf="!showAttachments" (click)="showAttachments = true;" >Add Attachments</button>
-            </div>
-
-            <div class="contents-wrapper">
-                <div class="terms-conditions-container"  *ngIf="showTermsConditionButton">
-                    <div class="terms-condition-wrapper" *ngFor="let termGroup of termsGroup; let i = index">
-                      <div class="top">
-                        <div class="label mb-4"><p>Terms and Conditions</p></div> 
-                        <i *ngIf="i === 0" (click)="removeTermGroup(i); closeTermsConditions()" class="fa-solid fa-x p-2"></i>
-                        <i *ngIf="i !== 0" (click)="removeTermGroup(i)" class="fa-solid fa-x p-2"></i>
-                      </div>
-                      <div class="d-flex mb-4" *ngFor="let term of termGroup.terms; let j = index">
-                        <input type="text" class="form-control-opti terms">
-                        <i (click)="removeTermCondition(i, j)" class="fa-solid fa-x p-2"></i>
-                      </div>
-                      <button (click)="addTermCondition(i)" class="btn add-more-terms"> <i class="fas fa-plus me-2"></i>Add New Term</button>
-                    </div>
-                    <button (click)="addTermGroup()" class="btn add-more-terms"> <i class="fas fa-plus me-2"></i>Add New Term Group</button>
-                </div>  
-                
-                <div class="terms-conditions-container"  *ngIf="showNotes">
-                    <div class="terms-condition-wrapper">
-                        <div class="terms-condition-wrapper">
-                            <div class="top">
-                                <div class="label mb-4"><p>Add Notes</p></div> <i (click)="showNotes = false" class="fa-solid fa-x p-2"></i>
-                            </div>
-                            <angular-editor placeholder="'Enter text here...'" [config]="editorConfig"></angular-editor>
-                        </div>
-                    </div>
-                </div> 
-
-                <div class="terms-conditions-container"  *ngIf="showAttachments">
-                    <div class="terms-condition-wrapper">
-                        <div class="terms-condition-wrapper">
-                            <div class="top">
-                                <div class="label"><p>Add Attachments</p></div> <i (click)="showAttachments = false" class="fa-solid fa-x p-2"></i>
-                            </div>
-                            <div class="content">
-                                <p>*Add any other attachments that are necessary for the quotation</p>
-                                <!-- attachment.component.html -->
-                                
-                                <!-- file-upload.component.html -->
-                                <div class="file-upload-container">
-                                    <input type="file" #fileInput (change)="fileInputChange($event)" style="display: none" />
-                                    <button class="btn file-upload-button" (click)="fileInput.click()">Browse</button>
-                                </div>
-                                
-                                <ul class="uploaded-files">
-                                    <li *ngFor="let file of uploadedFiles; let i = index" [class]="file.status" class="uploaded-file">
-                                        <div class="file-details">
-                                            <div class="file-name">{{ file.name }}</div>
-                                            <div class="file-progress">
-                                            <div class="file-progress-bar" [style.width.%]="file.progress"></div>
-                                            </div>
-                                            <div class="file-size">{{ (file.size / (1024 * 1024)).toFixed(2) }} MB</div>
-                                        </div>
-                                        <div class="file-icons" >
-                                            <i (click)="cancelUpload(i)" class="fa-solid fa-x p-2"></i>
-                                        </div>
-                                    </li>
-                                </ul>                            
-                            </div>
-                        </div>
-                    </div>
-                </div> 
-            </div>
-        </div>
-
-
-
-
-        <div class="btn-wrapper">
-            <button class="btn create-client-btn-2">Save As Draft</button>
-            <button class="btn save-continue">Save & Continue</button>
-        </div>
+      </section>
     </div>
-</div>
 
+    <div class="info-section">
+      <div class="tax-currency">
+        <div class="tax-btn">
+          <button class="btn flat-btn">Add Tax</button>
+        </div>
+        <div class="currency-selector">
+          <div class="custom-dropdown">
+            <div class="custom-select" (click)="toggleDropdown('currency')">
+              {{ (getSelectedItem$("currency") | async) || "Select Currency" }}
+              <span class="arrow"></span>
+            </div>
+            <ul
+              class="custom-options"
+              *ngIf="isDropdownOpen$('currency') | async"
+            >
+              <li
+                class="custom-option"
+                *ngFor="let item of currency"
+                (click)="selectItem('currency', item)"
+              >
+                {{ item }}
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="tax-btn">
+          <button class="btn flat-btn">Number/Currency Format</button>
+        </div>
+        <div class="tax-btn">
+          <button class="btn flat-btn">Edit Columns/Formulas</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <div class="top-products-table w3-table">
+        <div class="thead">
+          <div class="top-products-table-row">
+            <div class="table-item">
+              <th class="top-products-table-data col-5">S/N</th>
+              <th class="top-products-table-data col-5">Item</th>
+              <th class="top-products-table-data col">
+                Tax Rate <span class="input-span">%</span>
+              </th>
+              <th class="top-products-table-data col">Quantity</th>
+              <th class="top-products-table-data col">
+                Rate
+                <span class="input-span"
+                  >[{{
+                    extractCurrencyCode(getSelectedItem$("currency") | async)
+                  }}]</span
+                >
+              </th>
+              <th class="top-products-table-data col">
+                Amount
+                <span class="input-span"
+                  >[{{
+                    extractCurrencyCode(getSelectedItem$("currency") | async)
+                  }}]</span
+                >
+              </th>
+              <th class="top-products-table-data col">
+                Tax
+                <span class="input-span"
+                  >[{{
+                    extractCurrencyCode(getSelectedItem$("currency") | async)
+                  }}]</span
+                >
+              </th>
+              <th class="top-products-table-data col">
+                Total
+                <span class="input-span"
+                  >[{{
+                    extractCurrencyCode(getSelectedItem$("currency") | async)
+                  }}]</span
+                >
+              </th>
+              <th class="top-products-table-data"></th>
+            </div>
+          </div>
+        </div>
+        <div class="tbody">
+          <!-- <ng-container > -->
+          <div
+            class="top-products-table-row"
+            *ngFor="let item of tableData; let i = index"
+          >
+            <div class="table-item">
+              <td class="top-products-table-data col-5">
+                <input
+                  type="text"
+                  class="form-control-opti"
+                  [(ngModel)]="item.name"
+                  (ngModelChange)="onInputChange(item)"
+                />
+              </td>
+              <td class="top-products-table-data col ms-2">
+                <input
+                  type="text"
+                  class="form-control-opti"
+                  [(ngModel)]="item.taxRate"
+                  (ngModelChange)="onInputChange(item)"
+                  appNumberOnly
+                />
+              </td>
+              <td class="top-products-table-data col ms-2">
+                <input
+                  type="text"
+                  class="form-control-opti"
+                  [(ngModel)]="item.quantity"
+                  (ngModelChange)="onInputChange(item)"
+                  (input)="calculateAmount(item)"
+                  appNumberOnly
+                />
+              </td>
+              <td class="top-products-table-data col ms-2">
+                <input
+                  type="text"
+                  class="form-control-opti"
+                  [(ngModel)]="item.rate"
+                  (ngModelChange)="onInputChange(item)"
+                  (input)="calculateAmount(item)"
+                  appNumberOnly
+                />
+              </td>
+              <td class="top-products-table-data col ms-2">
+                <input
+                  type="text"
+                  class="form-control-opti"
+                  [(ngModel)]="item.amount"
+                  (ngModelChange)="onInputChange(item)"
+                  appNumberOnly
+                />
+              </td>
+              <td class="top-products-table-data col ms-2">
+                <input
+                  type="text"
+                  class="form-control-opti"
+                  [(ngModel)]="item.tax"
+                  (ngModelChange)="onInputChange(item)"
+                  appNumberOnly
+                />
+              </td>
+              <td class="top-products-table-data col ms-2">
+                <input
+                  type="text"
+                  class="form-control-opti"
+                  [(ngModel)]="item.total"
+                  (ngModelChange)="onInputChange(item)"
+                  (ngModelChange)="onInputChange(item)"
+                  appNumberOnly
+                />
+              </td>
+              <td class="top-products-table-data">
+                <i (click)="deleteRow(i)" class="fa-solid fa-x p-2"></i>
+              </td>
+            </div>
+
+            <div class="description-container">
+              <!-- <ng-container> -->
+              <td class="add-description-btn" *ngIf="!item.showDescriptionBox">
+                <button
+                  class="btn btn-light"
+                  (click)="item.showDescriptionBox = true"
+                >
+                  <i class="fas fa-plus me-2"></i>Add Description
+                </button>
+              </td>
+              <!-- </ng-container> -->
+
+              <div class="description-box" *ngIf="item.showDescriptionBox">
+                <angular-editor
+                  placeholder="'Enter text here...'"
+                  [config]="editorConfig"
+                ></angular-editor>
+              </div>
+            </div>
+
+            <div class="image-upload-container">
+              <!-- image container here -->
+            </div>
+          </div>
+          <!-- </ng-container> -->
+        </div>
+      </div>
+
+      <div class="add-table-row">
+        <button (click)="addNewRow()" class="btn new-table-row">Add New</button>
+      </div>
+
+      <div class="cal">
+        <div class="table-cal-container">
+          <div class="space-between">
+            <p><b>Amount</b></p>
+            <p>
+              <span style="font-size: 1.1em; font-weight: 500"
+                ><span class="me-2">{{
+                  extractCurrencyCode(getSelectedItem$("currency") | async)
+                }}</span
+                >{{ amount }}</span
+              >
+            </p>
+          </div>
+          <div class="space-between">
+            <p><b>Tax</b></p>
+            <p>
+              <span style="font-size: 1.1em; font-weight: 500">
+                <span class="me-2">{{
+                  extractCurrencyCode(getSelectedItem$("currency") | async)
+                }}</span
+                >{{ tax }}</span
+              >
+            </p>
+          </div>
+
+          <div class="discount-container">
+            <div
+              class="space-between"
+              *ngFor="let discount of discounts; let i = index"
+            >
+              <p><b>Discount</b></p>
+              <div class="value d-flex">
+                <div class="d-flex">
+                  <input
+                    type="text"
+                    class="form-control-opti input"
+                    style="font-size: 1.1em; font-weight: 400"
+                    appNumberOnly
+                  />
+                  <select name="" id="" class="form-control-opti-2 ms-2">
+                    <option value="">
+                      {{
+                        extractCurrencyCode(
+                          getSelectedItem$("currency") | async
+                        )
+                      }}
+                    </option>
+                    <option value="">%</option>
+                  </select>
+                </div>
+                <i (click)="removeDiscount(i)" class="fa-solid fa-x p-2"></i>
+              </div>
+            </div>
+            <div
+              class="space-between"
+              *ngFor="let charge of charges; let i = index"
+            >
+              <p><b>Additional Charges</b></p>
+              <div class="value d-flex">
+                <div class="d-flex">
+                  <input
+                    type="text"
+                    class="form-control-opti input"
+                    style="font-size: 1.1em; font-weight: 400"
+                    appNumberOnly
+                  />
+                  <select name="" id="" class="form-control-opti-2 ms-2">
+                    <option value="">
+                      {{
+                        extractCurrencyCode(
+                          getSelectedItem$("currency") | async
+                        )
+                      }}
+                    </option>
+                    <option value="">%</option>
+                  </select>
+                </div>
+                <i (click)="removeCharge(i)" class="fa-solid fa-x p-2"></i>
+              </div>
+            </div>
+            <div class="discount-btn-wrapper d-block">
+              <button class="add-btn" (click)="addDiscount()">
+                <i class="fas fa-plus me-2"></i>Add Discount</button
+              ><br />
+              <button class="add-btn" (click)="addCharge()">
+                <i class="fas fa-plus me-2"></i>Add Additional Charges
+              </button>
+            </div>
+          </div>
+          <div class="cal-total-container">
+            <div class="space-between">
+              <div>
+                <p class="cal-total">
+                  Total [{{
+                    extractCurrencyCode(getSelectedItem$("currency") | async)
+                  }}]
+                </p>
+              </div>
+              <div class="d-flex">
+                <span class="cal-amount"
+                  ><span class="">{{
+                    extractCurrencyCode(getSelectedItem$("currency") | async)
+                  }}</span></span
+                >
+                <span class="cal-amount ms-2">{{ totalAmount }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="amount-words-container my-4" *ngIf="showAmountWord">
+            <div class="d-flex justify-content-between">
+              <p><b>Amount In Words</b></p>
+              <i (click)="showAmountWord = false" class="fa-solid fa-x p-2"></i>
+            </div>
+            <div class="value d-flex">
+              <div class="d-flex">
+                <!-- <input type="text" class="form-control-opti" > -->
+                {{ totalAmountInWords }}
+              </div>
+            </div>
+          </div>
+          <div class="discount-btn-wrapper d-block my-4">
+            <button
+              class="add-btn"
+              *ngIf="!showAmountWord"
+              (click)="showAmountWord = true"
+            >
+              <i class="fas fa-plus me-2"></i>Add Amount In Words
+            </button>
+          </div>
+
+          <div class="signature-upload-container">
+            <div class="wrapper" *ngIf="showSignatureButton">
+              <i (click)="clearSignature()" class="fa-solid fa-x p-2"></i>
+              <div class="signature-wrapper">
+                <img
+                  *ngIf="signatureUrl"
+                  [src]="signatureUrl"
+                  alt="Signature"
+                  class="Signature"
+                />
+              </div>
+              <div class="btn-sign">
+                <!-- <input type="" (change)="onFileSelected($event)" class="form-control" /> -->
+                <input
+                  type="file"
+                  #fileInput
+                  style="display: none"
+                  (change)="onSignatureSelected($event)"
+                />
+                <button class="btn" (click)="fileInput.click()">
+                  Upload Signature
+                </button>
+              </div>
+            </div>
+            <div class="add-sign-btn-wrapper">
+              <button
+                class="btn add-sign"
+                *ngIf="!showSignatureButton"
+                (click)="showSignatureButton = true"
+              >
+                Add Signature
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-buttom-section">
+      <div class="btn-bottom-container">
+        <button
+          class="add-terms-condition-btn btn"
+          *ngIf="!showTermsConditionButton"
+          (click)="showTermsConditionButton = true"
+        >
+          Add Terms & Conditions
+        </button>
+        <button
+          class="add-terms-condition-btn btn"
+          *ngIf="!showNotes"
+          (click)="showNotes = true"
+        >
+          Add Notes
+        </button>
+        <button
+          class="add-terms-condition-btn btn"
+          *ngIf="!showAttachments"
+          (click)="showAttachments = true"
+        >
+          Add Attachments
+        </button>
+      </div>
+
+      <div class="contents-wrapper">
+        <div
+          class="terms-conditions-container"
+          *ngIf="showTermsConditionButton"
+        >
+          <div
+            class="terms-condition-wrapper"
+            *ngFor="let termGroup of termsGroup; let i = index"
+          >
+            <div class="top">
+              <div class="label mb-4"><p>Terms and Conditions</p></div>
+              <i
+                *ngIf="i === 0"
+                (click)="removeTermGroup(i); closeTermsConditions()"
+                class="fa-solid fa-x p-2"
+              ></i>
+              <i
+                *ngIf="i !== 0"
+                (click)="removeTermGroup(i)"
+                class="fa-solid fa-x p-2"
+              ></i>
+            </div>
+            <div
+              class="d-flex mb-4"
+              *ngFor="let term of termGroup.terms; let j = index"
+            >
+              <input type="text" class="form-control-opti terms" />
+              <i
+                (click)="removeTermCondition(i, j)"
+                class="fa-solid fa-x p-2"
+              ></i>
+            </div>
+            <button (click)="addTermCondition(i)" class="btn add-more-terms">
+              <i class="fas fa-plus me-2"></i>Add New Term
+            </button>
+          </div>
+          <button (click)="addTermGroup()" class="btn add-more-terms">
+            <i class="fas fa-plus me-2"></i>Add New Term Group
+          </button>
+        </div>
+
+        <div class="terms-conditions-container" *ngIf="showNotes">
+          <div class="terms-condition-wrapper">
+            <div class="terms-condition-wrapper">
+              <div class="top">
+                <div class="label mb-4"><p>Add Notes</p></div>
+                <i (click)="showNotes = false" class="fa-solid fa-x p-2"></i>
+              </div>
+              <angular-editor
+                placeholder="'Enter text here...'"
+                [config]="editorConfig"
+              ></angular-editor>
+            </div>
+          </div>
+        </div>
+
+        <div class="terms-conditions-container" *ngIf="showAttachments">
+          <div class="terms-condition-wrapper">
+            <div class="terms-condition-wrapper">
+              <div class="top">
+                <div class="label"><p>Add Attachments</p></div>
+                <i
+                  (click)="showAttachments = false"
+                  class="fa-solid fa-x p-2"
+                ></i>
+              </div>
+              <div class="content">
+                <p>
+                  *Add any other attachments that are necessary for the
+                  quotation
+                </p>
+                <!-- attachment.component.html -->
+
+                <!-- file-upload.component.html -->
+                <div class="file-upload-container">
+                  <input
+                    type="file"
+                    #fileInput
+                    (change)="fileInputChange($event)"
+                    style="display: none"
+                  />
+                  <button
+                    class="btn file-upload-button"
+                    (click)="fileInput.click()"
+                  >
+                    Browse
+                  </button>
+                </div>
+
+                <ul class="uploaded-files">
+                  <li
+                    *ngFor="let file of uploadedFiles; let i = index"
+                    [class]="file.status"
+                    class="uploaded-file"
+                  >
+                    <div class="file-details">
+                      <div class="file-name">{{ file.name }}</div>
+                      <div class="file-progress">
+                        <div
+                          class="file-progress-bar"
+                          [style.width.%]="file.progress"
+                        ></div>
+                      </div>
+                      <div class="file-size">
+                        {{ (file.size / (1024 * 1024)).toFixed(2) }} MB
+                      </div>
+                    </div>
+                    <div class="file-icons">
+                      <i
+                        (click)="cancelUpload(i)"
+                        class="fa-solid fa-x p-2"
+                      ></i>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-wrapper">
+      <button class="btn create-client-btn-2">Save As Draft</button>
+      <button class="btn save-continue">Save & Continue</button>
+    </div>
+  </div>
+</div>
