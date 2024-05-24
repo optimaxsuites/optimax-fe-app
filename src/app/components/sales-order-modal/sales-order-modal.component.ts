@@ -12,6 +12,8 @@ import {
   Validators,
 } from '@angular/forms';
 import { AngularEditorConfig } from '@kolkov/angular-editor';
+import { Observable } from 'rxjs';
+import { DropdownService } from '../../services/dropdown/dropdown.service';
 
 interface RfqItem {
   item: string;
@@ -62,6 +64,7 @@ export class SalesOrderModalComponent {
   charges: any[] = [];
   moreFields: any[] = [];
   rfqItems: RfqItem[] = [];
+  showLogo = false;
 
   addRow() {
     this.rfqItems.push({
@@ -72,9 +75,21 @@ export class SalesOrderModalComponent {
       totalPrice: 0,
     });
   }
-  
+
   removeRow(index: number) {
     this.rfqItems.splice(index, 1);
+  }
+
+  getSelectedItem$(id: string): Observable<string | null> {
+    return this.dropdownService.getSelectedItem$(id);
+  }
+
+  extractCurrencyCode(currency: string | null): string {
+    if (!currency) {
+      return 'NGN';
+    }
+    const match = currency.match(/\(([^)]+)\)/);
+    return match ? match[1] : currency;
   }
 
   addTermGroup() {
@@ -174,7 +189,47 @@ export class SalesOrderModalComponent {
   myForm!: FormGroup;
   options: string[] = ['Nigeria - NGN', 'US Dollar - USD', 'Cuba - CUD'];
 
-  constructor(private fb: FormBuilder, private http: HttpClient) {}
+  constructor(private fb: FormBuilder, private http: HttpClient, private dropdownService: DropdownService) {}
+
+  tableData: any[] = [
+    {
+      sn: '',
+      name: '',
+      taxRate: '',
+      quantity: '',
+      rate: '',
+      amount: '',
+      tax: '',
+      total: '',
+      showDescriptionBox: false
+    }
+  ];
+
+  sn: number = 0;
+  name: string = '';
+  taxRate: string = '';
+  quantity: number = 0;
+  rate: Number = 0;
+  amount: number = 0;
+  tax: number = 0;
+  total: number = 0;
+  totalAmount: number = 0;
+  totalAmountInWords: string = '';
+  isDropdownOpen$(id: string) {
+    return this.dropdownService.isDropdownOpen$(id);
+  }
+
+  onInputChange(item: any): void {
+    this.sn = item.sn;
+    this.name = item.name;
+    this.taxRate = item.taxRate;
+    this.quantity = item.quantity;
+    this.rate = item.rate;
+    this.amount = item.amount;
+    this.tax = item.tax;
+    this.total = item.total;
+
+  }
 
   ngOnInit(): void {
     this.addTermGroup();
@@ -184,7 +239,13 @@ export class SalesOrderModalComponent {
     });
   }
 
-  tableData: any[] = [{}];
+  calculateAmount(item: any): void {
+    const quantity = parseFloat(item.quantity);
+    const rate = parseFloat(item.rate);
+    item.amount = (quantity * rate);
+  }
+
+  // tableData: any[] = [{}];
 
   deleteRow(index: number) {
     // if (index > 0) {
