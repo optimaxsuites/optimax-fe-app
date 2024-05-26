@@ -1,5 +1,5 @@
 import { HttpRequest, HttpClient, HttpEventType, HttpResponse } from '@angular/common/http';
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { AngularEditorConfig } from '@kolkov/angular-editor';
 import { DropdownService } from '../../services/dropdown/dropdown.service';
@@ -21,6 +21,11 @@ interface BusinessDetails {
 interface Client {
   value: string;
   viewValue: string;
+}
+
+interface Field {
+  text: string;
+  isEditing: boolean;
 }
 
 @Component({
@@ -174,7 +179,31 @@ export class InvoiceModalComponent {
     'Zimbabwean Dollar (ZWL)'
 ]
 
-  
+
+
+fields: Field[] = [
+  // { text: 'Click to edit me', isEditing: false }
+];
+
+// addField() {
+//   this.fields.push({ text: 'New field', isEditing: false });
+// }
+
+removeField(index: number) {
+  this.fields.splice(index, 1);
+}
+
+editField(index: number) {
+  this.fields[index].isEditing = true;
+}
+
+saveField(index: number, event: any) {
+  this.fields[index].isEditing = false;
+  this.fields[index].text = event.target.value;
+}
+
+
+// labelText = 'Add More';
   
 
   // addTermGroup() {
@@ -326,7 +355,7 @@ export class InvoiceModalComponent {
 
   tableData: any[] = [
     {
-      name: '',
+      name,
       taxRate: '',
       quantity: '',
       rate: '',
@@ -337,39 +366,128 @@ export class InvoiceModalComponent {
     }
   ];
 
+
+  addField(): void {
+    this.tableData.push({
+      name: '',
+      taxRate: 0,
+      quantity: 0,
+      rate: 0,
+      amount: 0,
+      tax: 0,
+      total: 0,
+      showDescriptionBox: false
+    });
+
+    // Recalculate totals
+    this.calculateTotal();
+  }
+
   
-  name: string = '';
-  taxRate: string = '';
-  quantity: number = 0;
-  rate: Number = 0;
+  // name: string = '';
+  taxRate: number = 0;
+  // quantity!: number;
+  // rate?: number;
   amount: number = 0;
-  tax: number = 0;
-  total: number = 0;
+  tax: number =0;
+  // total: number = 0;
+  // totalAmount?: number;
+  // totalAmountInWords?: string;
   totalAmount: number = 0;
   totalAmountInWords: string = '';
+  totalTax: number = 0;
+  grandTotal: number = 0;
 
 
   onInputChange(item: any): void {
-    this.name = item.name;
-    this.taxRate = item.taxRate;
-    this.quantity = item.quantity;
-    this.rate = item.rate;
-    this.amount = item.amount;
-    this.tax = item.tax;
-    this.total = item.total;
+    // this.name = item.name;
+    // this.taxRate = item.taxRate;
+    // this.quantity = item.quantity;
+    // this.rate = item.rate;
+    // this.amount = item.amount;
+    // console.log(this.amount)
+    // this.tax = item.tax;
+    // this.total = item.total;
+
+  
+    item.amount = item.quantity * item.rate;
+    item.tax = (item.taxRate / 100) * item.amount;
+    item.total = item.amount + item.tax;
+
+    // Calculate total amount for all items
+    this.calculateTotal();
 
   }
 
   calculateTotal(): void {
-    this.totalAmount = this.amount * this.tax;
-    // Call method to convert total amount to words
-    this.totalAmountInWords = this.convertToWords(this.totalAmount);
+    // this.totalAmount = this.amount * this.tax;
+    // // Call method to convert total amount to words
+    // this.totalAmountInWords = this.convertToWords(this.totalAmount);
+
+    // this.totalAmount = this.tableData.reduce((sum, item) => sum + item.total, 0);
+    this.totalAmountInWords = this.convertToWords(this.grandTotal);
+
+    this.totalAmount = this.tableData.reduce((sum, item) => sum + item.amount, 0);
+    this.totalTax = this.tableData.reduce((sum, item) => sum + item.tax, 0);
+    this.grandTotal = this.tableData.reduce((sum, item) => sum + item.total, 0);
   }
 
-  convertToWords(amount: number): string {
+  convertToWords(grandTotal: number): string {
     // Your logic to convert amount to words
-    return 'Total Amount in Words'; // Placeholder
+    // return 'Total Amount in Words'; // Placeholder
+    return this.convertNumberToWords(grandTotal);
   }
+
+  convertNumberToWords(amount: number): string {
+    const ones = [
+      '', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'
+    ];
+    const teens = [
+      'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'
+    ];
+    const tens = [
+      '', 'ten', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'
+    ];
+    const thousands = [
+      '', 'thousand', 'million', 'billion', 'trillion'
+    ];
+
+    if (amount === 0) return 'zero';
+
+    let words = '';
+
+    const numToWords = (num: number, index: number): string => {
+      if (num === 0) return '';
+      let str = '';
+      if (num > 99) {
+        str += ones[Math.floor(num / 100)] + ' hundred ';
+        num %= 100;
+      }
+      if (num > 10 && num < 20) {
+        str += teens[num - 11] + ' ';
+      } else {
+        str += tens[Math.floor(num / 10)] + ' ';
+        num %= 10;
+        str += ones[num] + ' ';
+      }
+      return str.trim() + ' ' + thousands[index] + ' ';
+    };
+
+    let index = 0;
+    while (amount > 0) {
+      const chunk = amount % 1000;
+      if (chunk > 0) {
+        words = numToWords(chunk, index) + words;
+      }
+      amount = Math.floor(amount / 1000);
+      index++;
+    }
+
+    return words.trim();
+  }
+
+
+
 
 
   calculateAmount(item: any): void {

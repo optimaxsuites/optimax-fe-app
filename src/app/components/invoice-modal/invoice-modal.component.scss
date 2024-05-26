@@ -126,6 +126,27 @@ mat-form-field{
 .add-more-field{
     width: 100%;
 }
+
+.editable-label-container{
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+
+    .editable-label{
+        width: 29%;
+        // background-color: red;
+    }
+    .editable-label-input{
+        width: 70%;
+        display: flex;
+        background-color: green($color: #000000);
+    }
+}
+
+
+
+
+
 .second-info-section{
     display: flex;
     justify-content: space-between;
