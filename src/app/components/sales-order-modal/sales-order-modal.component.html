@@ -10,92 +10,80 @@
     <div class="info-section">
       <section class="first-info-section">
         <div class="first-container">
-          <article>
-            <span>RFQ No:</span>
+          <div>
+            <mat-form-field>
+              <mat-label>RFQ No</mat-label>
+              <input matInput placeholder="RFQ No" />
+            </mat-form-field>
+          </div>
+          <div class="d-flex">
+            <mat-form-field>
+              <mat-label>Date Issued</mat-label>
+              <input
+                matInput
+                [matDatepicker]="picker1"
+                placeholder="dd/mm/yyyy"
+              />
+              <mat-datepicker-toggle
+                matIconSuffix
+                [for]="picker1"
+              ></mat-datepicker-toggle>
+              <mat-datepicker #picker1></mat-datepicker>
+            </mat-form-field>
 
-            <form class="example-form">
-              <mat-form-field class="formClass">
-                <input
-                  type="text"
-                  placeholder="RFQ No:"
-                  aria-label="RFQ No:"
-                  u
-                  matInput
-                />
-              </mat-form-field>
-            </form>
-          </article>
+            <mat-form-field class="ms-2">
+              <mat-label> Expiry Date</mat-label>
+              <input
+                matInput
+                [matDatepicker]="picker2"
+                placeholder="dd/mm/yyyy"
+              />
+              <mat-datepicker-toggle
+                matIconSuffix
+                [for]="picker2"
+              ></mat-datepicker-toggle>
+              <mat-datepicker #picker2></mat-datepicker>
+            </mat-form-field>
+          </div>
+          <div>
+            <mat-form-field>
+              <mat-label>Project Title</mat-label>
+              <input matInput placeholder="Project Title" />
+            </mat-form-field>
+          </div>
 
-          <article>
-            <span>Project Title</span>
-
-            <form class="example-form">
-              <mat-form-field class="formClass">
-                <input
-                  type="text"
-                  placeholder="Project Title"
-                  aria-label="Project Title"
-                  matInput
-                />
-              </mat-form-field>
-            </form>
-          </article>
-
-          <article>
-            <span>Date Issued</span>
-
-            <form class="dateForm">
-              <mat-form-field>
-                <input
-                  matInput
-                  [matDatepicker]="picker2"
-                  placeholder="dd/mm/yyyy"
-                />
-                <mat-datepicker-toggle
-                  matIconSuffix
-                  [for]="picker2"
-                ></mat-datepicker-toggle>
-                <mat-datepicker #picker2></mat-datepicker>
-              </mat-form-field>
-            </form>
-          </article>
-          <article>
-            <span>Expiry Date</span>
-
-            <form class="dateForm">
-              <mat-form-field>
-                <input
-                  matInput
-                  [matDatepicker]="picker2"
-                  placeholder="dd/mm/yyyy"
-                />
-                <mat-datepicker-toggle
-                  matIconSuffix
-                  [for]="picker2"
-                ></mat-datepicker-toggle>
-                <mat-datepicker #picker2></mat-datepicker>
-              </mat-form-field>
-            </form>
-          </article>
-
-          <div class="add-more-field-container">
-            <div
-              class="add-more-field-wrapper"
-              *ngFor="let item of moreFields; let i = index"
-            >
-              <div class="add-more-field">
-                <mat-form-field>
-                  <mat-label>Add More</mat-label>
-                  <input matInput placeholder="Add More" />
-                </mat-form-field>
-              </div>
-              <i (click)="removeMoreField(i)" class="fa-solid fa-x p-2"></i>
+          <div
+            *ngFor="let field of fields; let i = index"
+            class="editable-label-container"
+          >
+            <div class="editable-label">
+              <p *ngIf="!field.isEditing" (click)="editField(i)" class="label">
+                {{ field.text || "Enter New Field" }}
+              </p>
+              <input
+                *ngIf="field.isEditing"
+                placeholder="Enter New Field"
+                [value]="field.text"
+                (blur)="saveField(i, $event)"
+                (keydown.enter)="saveField(i, $event)"
+                class="form-control-opti p-2"
+                style="font-size: 1.1em; font-weight: 400"
+              />
             </div>
 
-            <button class="add-btn" (click)="addMoreField()">
-              <i class="fas fa-plus me-2"></i>Add More Field
-            </button>
+            <div class="editable-label-input">
+              <input
+                type="text"
+                class="form-control-opti p-2"
+                style="font-size: 1.1em; font-weight: 400"
+              />
+              <i (click)="removeField(i)" class="fa-solid fa-x p-2"></i>
+            </div>
           </div>
+
+          <button class="add-btn" (click)="addField()">
+            <i class="fas fa-plus me-2"></i>Add More Field
+          </button>
         </div>
 
         <div class="">
@@ -205,250 +193,249 @@
       </div>
     </section>
 
-    <div class="table-wrapper">
-      <div class="top-products-table w3-table">
-        <div class="thead">
-          <div class="top-products-table-row">
-            <div class="table-item">
-              <th class="top-products-table-data col">S/N</th>
-              <th class="top-products-table-data col">Item</th>
-              <th class="top-products-table-data col">Quantity</th>
-              <th class="top-products-table-data col">
-                Part Number <span class="input-span"></span>
-              </th>
-              <th class="top-products-table-data col">
-                Rate
-                <span class="input-span"
-                  >[{{
-                    extractCurrencyCode(getSelectedItem$("currency") | async)
-                  }}]</span
-                >
-              </th>
-
-              <th class="top-products-table-data col">
-                Total Rate
-                <span class="input-span"
-                  >[{{
-                    extractCurrencyCode(getSelectedItem$("currency") | async)
-                  }}]</span
-                >
-              </th>
-              <th class="top-products-table-data"></th>
-            </div>
-          </div>
-        </div>
-        <div class="tbody">
-          <!-- <ng-container > -->
-          <div
-            class="top-products-table-row"
-            *ngFor="let item of tableData; let i = index"
-          >
-            <div class="table-item">
-              <td class="top-products-table-data col">
-                <mat-form-field class="uio"
-                  ><input matInput [(ngModel)]="item.item"
-                /></mat-form-field>
-                <!-- <input
-                  type="text"
-                  class="form-control-opti"
-                  [(ngModel)]="item.sn"
-                  (ngModelChange)="onInputChange(item)"
-                /> -->
-              </td>
-              <td class="top-products-table-data col-5">
-                <!-- <input
-                  type="text"
-                  class="form-control-opti"
-                  [(ngModel)]="item.name"
-                  (ngModelChange)="onInputChange(item)"
-                /> -->
-              </td>
-              <td class="top-products-table-data col ms-2">
-                <!-- <input
-                  type="text"
-                  class="form-control-opti"
-                  [(ngModel)]="item.taxRate"
-                  (ngModelChange)="onInputChange(item)"
-                  appNumberOnly
-                /> -->
-              </td>
-              <td class="top-products-table-data col ms-2">
-                <!-- <input
-                  type="text"
-                  class="form-control-opti"
-                  [(ngModel)]="item.quantity"
-                  (ngModelChange)="onInputChange(item)"
-                  (input)="calculateAmount(item)"
-                  appNumberOnly
-                /> -->
-              </td>
-              <td class="top-products-table-data col ms-2">
-                <!-- <input
-                  type="text"
-                  class="form-control-opti"
-                  [(ngModel)]="item.rate"
-                  (ngModelChange)="onInputChange(item)"
-                  (input)="calculateAmount(item)"
-                  appNumberOnly
-                /> -->
-              </td>
-              <td class="top-products-table-data col ms-2">
-                <!-- <input
-                  type="text"
-                  class="form-control-opti"
-                  [(ngModel)]="item.amount"
-                  (ngModelChange)="onInputChange(item)"
-                  appNumberOnly
-                /> -->
-              </td>
-              <td class="top-products-table-data col ms-2">
-                <!-- <input
-                  type="text"
-                  class="form-control-opti"
-                  [(ngModel)]="item.tax"
-                  (ngModelChange)="onInputChange(item)"
-                  appNumberOnly
-                /> -->
-              </td>
-              <td class="top-products-table-data col ms-2">
-                <!-- <input
-                  type="text"
-                  class="form-control-opti"
-                  [(ngModel)]="item.total"
-                  (ngModelChange)="onInputChange(item)"
-                  (ngModelChange)="onInputChange(item)"
-                  appNumberOnly
-                /> -->
-              </td>
-              <td class="top-products-table-data">
-                <i (click)="deleteRow(i)" class="fa-solid fa-x p-2"></i>
-              </td>
-            </div>
-
-            <div class="description-container">
-              <!-- <ng-container> -->
-              <td class="add-description-btn" *ngIf="!item.showDescriptionBox">
-                <button
-                  class="btn btn-light"
-                  (click)="item.showDescriptionBox = true"
-                >
-                  <i class="fas fa-plus me-2"></i>Add Description
-                </button>
-              </td>
-              <!-- </ng-container> -->
-
-              <div class="description-box" *ngIf="item.showDescriptionBox">
-                <angular-editor
-                  placeholder="'Enter text here...'"
-                  [config]="editorConfig"
-                ></angular-editor>
-              </div>
-            </div>
-
-            <div class="image-upload-container">
-              <!-- image container here -->
-            </div>
-          </div>
-          <!-- </ng-container> -->
-        </div>
+    <section class="inputSection">
+      <div class="inputDiv">
+        <span>Item Name</span>
+        <mat-form-field>
+          <mat-label>Item Name</mat-label>
+          <input matInput />
+        </mat-form-field>
       </div>
 
-      <div class="add-table-row">
-        <button (click)="addNewRow()" class="btn new-table-row">Add New</button>
+      <div class="inputDiv">
+        <span>Part Number</span>
+        <mat-form-field>
+          <mat-label>Item Name</mat-label>
+          <input matInput />
+        </mat-form-field>
       </div>
 
-      <div class="cal">
-        <div class="table-cal-container">
-          <div class="space-between">
-            <p><b>Amount</b></p>
-            <p>
-              <span style="font-size: 1.1em; font-weight: 500"
-                ><span class="me-2">{{
-                  extractCurrencyCode(getSelectedItem$("currency") | async)
-                }}</span
-                >{{ amount }}</span
-              >
-            </p>
-          </div>
+      <div class="inputDiv">
+        <span>Item description</span>
+        <mat-form-field>
+          <mat-label>Item description</mat-label>
+          <textarea matInput></textarea>
+        </mat-form-field>
+      </div>
 
-          <div class="cal-total-container">
-            <div class="space-between">
-              <div>
-                <p class="cal-total">
-                  Total [{{
-                    extractCurrencyCode(getSelectedItem$("currency") | async)
-                  }}]
-                </p>
-              </div>
-              <div class="d-flex">
-                <span class="cal-amount"
-                  ><span class="">{{
-                    extractCurrencyCode(getSelectedItem$("currency") | async)
-                  }}</span></span
-                >
-                <span class="cal-amount ms-2">{{ totalAmount }}</span>
+      <div class="partImage">
+        <span>Item Image</span>
+        <section class="logo-section2">
+          <div class="logo-upload-container">
+            <div class="wrapper">
+              <div class="logo-wrapper">
+                <img *ngIf="logoUrl" [src]="logoUrl" alt="logo" class="logo" />
               </div>
             </div>
-          </div>
-
-          <div class="amount-words-container my-4" *ngIf="showAmountWord">
-            <div class="d-flex justify-content-between">
-              <p><b>Amount In Words</b></p>
-              <i (click)="showAmountWord = false" class="fa-solid fa-x p-2"></i>
-            </div>
-            <div class="value d-flex">
-              <div class="d-flex">
-                <!-- <input type="text" class="form-control-opti" > -->
-                {{ totalAmountInWords }}
-              </div>
-            </div>
-          </div>
-          <div class="discount-btn-wrapper d-block my-4">
-            <button
-              class="add-btn"
-              *ngIf="!showAmountWord"
-              (click)="showAmountWord = true"
+            <div
+              *ngIf="showLogo; else addLogoButtons"
+              class="add-logo-btn-wrapper"
             >
-              <i class="fas fa-plus me-2"></i>Add Amount In Words
-            </button>
-          </div>
-
-          <div class="signature-upload-container">
-            <div class="wrapper" *ngIf="showSignatureButton">
-              <i (click)="clearSignature()" class="fa-solid fa-x p-2"></i>
-              <div class="signature-wrapper">
-                <img
-                  *ngIf="signatureUrl"
-                  [src]="signatureUrl"
-                  alt="Signature"
-                  class="Signature"
-                />
-              </div>
-              <div class="btn-sign">
-                <!-- <input type="" (change)="onFileSelected($event)" class="form-control" /> -->
+              <input
+                type="file"
+                #fileInput
+                style="display: none"
+                (change)="onLogoSelected($event)"
+              />
+              <button class="btn" (click)="fileInput.click()">
+                <i class="fas fa-plus me-2"></i>Change Logo
+              </button>
+              <button class="btn" (click)="clearLogo()">
+                <i class="fa-solid fa-x me-2"></i>Remove Logo
+              </button>
+            </div>
+            <ng-template #addLogoButtons>
+              <div class="add-logo-toggle">
                 <input
                   type="file"
                   #fileInput
                   style="display: none"
-                  (change)="onSignatureSelected($event)"
+                  (change)="onLogoSelected($event)"
                 />
                 <button class="btn" (click)="fileInput.click()">
-                  Upload Signature
+                  <i class="fas fa-plus me-2"></i>Add Business Logo
                 </button>
               </div>
-            </div>
-            <div class="add-sign-btn-wrapper">
-              <button
-                class="btn add-sign"
-                *ngIf="!showSignatureButton"
-                (click)="showSignatureButton = true"
-              >
-                Add Signature
-              </button>
-            </div>
+            </ng-template>
           </div>
+        </section>
+      </div>
+
+      <div class="budgetDiv">
+        <span>Approved Budget</span>
+        <br />
+        <mat-form-field class="budgetInput">
+          <input matInput />
+        </mat-form-field>
+      </div>
+
+      <div class="buttonDiv">
+        <button class="btn btn-light">Save and Continue</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="first-container">
+        <div>
+          <mat-form-field>
+            <mat-label>RFQ Prepared By</mat-label>
+            <input matInput placeholder="RFQ Prepared By" />
+          </mat-form-field>
+        </div>
+
+        <div>
+          <mat-form-field>
+            <mat-label>Position</mat-label>
+            <input matInput placeholder="Position" />
+          </mat-form-field>
+        </div>
+
+        <div>
+          <mat-form-field>
+            <mat-label>Organisation address</mat-label>
+            <input matInput placeholder="Organisation address" />
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="buttonSaveDiv">
+        <button class="btn btn-light">Save</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- <div class="table-wrapper">
+  <div class="top-products-table w3-table">
+    <div class="thead">
+      <div class="top-products-table-row">
+        <div class="table-item">
+          <th class="top-products-table-data col">Item</th>
+          <th class="top-products-table-data col">Quantity</th>
+          <th class="top-products-table-data col">
+            Part Number <span class="input-span"></span>
+          </th>
+          <th class="top-products-table-data col">Image</th>
+
+          <th class="top-products-table-data"></th>
         </div>
       </div>
     </div>
+    <div class="tbody">
+   <div
+        class="top-products-table-row"
+        *ngFor="let item of tableData; let i = index"
+      >
+        <div class="table-item">
+          <td class="top-products-table-data col"> -->
+<!-- <mat-form-field class="uio"
+              ><input matInput [(ngModel)]="item.item"
+            /></mat-form-field> -->
+<!-- <input
+              type="text"
+              class="form-control-opti"
+              [(ngModel)]="item.sn"
+              (ngModelChange)="onInputChange(item)"
+            /> -->
+<!-- </td>
+          <td class="top-products-table-data col-5"> -->
+<!-- <input
+              type="text"
+              class="form-control-opti"
+              [(ngModel)]="item.name"
+              (ngModelChange)="onInputChange(item)"
+            /> -->
+<!-- </td>
+          <td class="top-products-table-data col ms-2"> -->
+<!-- <input
+              type="text"
+              class="form-control-opti"
+              [(ngModel)]="item.taxRate"
+              (ngModelChange)="onInputChange(item)"
+              appNumberOnly
+            /> -->
+<!-- </td>
+          <td class="top-products-table-data col ms-2"> -->
+<!-- <input
+              type="text"
+              class="form-control-opti"
+              [(ngModel)]="item.quantity"
+              (ngModelChange)="onInputChange(item)"
+              (input)="calculateAmount(item)"
+              appNumberOnly
+            /> -->
+<!-- </td>
+          <td class="top-products-table-data col ms-2"> -->
+<!-- <input
+              type="text"
+              class="form-control-opti"
+              [(ngModel)]="item.rate"
+              (ngModelChange)="onInputChange(item)"
+              (input)="calculateAmount(item)"
+              appNumberOnly
+            /> -->
+<!-- </td> -->
+<!-- <td class="top-products-table-data col ms-2"> -->
+<!-- <input
+              type="text"
+              class="form-control-opti"
+              [(ngModel)]="item.amount"
+              (ngModelChange)="onInputChange(item)"
+              appNumberOnly
+            /> -->
+<!-- </td> -->
+<!-- <td class="top-products-table-data col ms-2"> -->
+<!-- <input
+              type="text"
+              class="form-control-opti"
+              [(ngModel)]="item.tax"
+              (ngModelChange)="onInputChange(item)"
+              appNumberOnly
+            /> -->
+<!-- </td> -->
+<!-- <td class="top-products-table-data col ms-2"> -->
+<!-- <input
+              type="text"
+              class="form-control-opti"
+              [(ngModel)]="item.total"
+              (ngModelChange)="onInputChange(item)"
+              (ngModelChange)="onInputChange(item)"
+              appNumberOnly
+            /> -->
+<!-- </td>
+          <td class="top-products-table-data">
+            <i (click)="deleteRow(i)" class="fa-solid fa-x p-2"></i>
+          </td>
+        </div>
+
+        <div class="description-container">
+         
+          <td class="add-description-btn" *ngIf="!item.showDescriptionBox">
+            <button
+              class="btn btn-light"
+              (click)="item.showDescriptionBox = true"
+            >
+              <i class="fas fa-plus me-2"></i>Add Description
+            </button>
+          </td>
+        
+
+          <div class="description-box" *ngIf="item.showDescriptionBox">
+            <angular-editor
+              placeholder="'Enter text here...'"
+              [config]="editorConfig"
+            ></angular-editor>
+          </div>
+        </div>
+
+        <div class="image-upload-container">
+          
+        </div>
+      </div>
+    
+    </div>
   </div>
-</div>
+ <div class="add-table-row">
+    <button (click)="addNewRow()" class="btn new-table-row">Add New</button>
+  </div>
+</div>  -->
