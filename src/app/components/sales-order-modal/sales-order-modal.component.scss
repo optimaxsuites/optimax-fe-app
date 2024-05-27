@@ -92,10 +92,11 @@ th:nth-child(4) {
 }
 
 .inputDiv {
-  width: 83%;
+  width: 98%;
 }
-mat-form-field {
-  // border: 1px solid #224957;
+
+mat {
+  border: 1px solid #224957;
 }
 
 .budgetDiv {
@@ -113,6 +114,22 @@ mat-form-field {
 
 .buttonSaveDiv {
   margin-left: 64rem;
+}
+
+.editable-label-container {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+
+  .editable-label {
+    width: 29%;
+    // background-color: red;
+  }
+  .editable-label-input {
+    width: 70%;
+    display: flex;
+    background-color: green($color: #000000);
+  }
 }
 
 .dateForm {
