@@ -185,9 +185,9 @@ fields: Field[] = [
   // { text: 'Click to edit me', isEditing: false }
 ];
 
-// addField() {
-//   this.fields.push({ text: 'New field', isEditing: false });
-// }
+addField() {
+  this.fields.push({ text: 'New field', isEditing: false });
+}
 
 removeField(index: number) {
   this.fields.splice(index, 1);
@@ -367,7 +367,7 @@ saveField(index: number, event: any) {
   ];
 
 
-  addField(): void {
+  addRow(): void {
     this.tableData.push({
       name: '',
       taxRate: 0,
