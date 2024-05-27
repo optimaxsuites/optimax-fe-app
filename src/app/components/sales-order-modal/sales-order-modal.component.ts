@@ -39,6 +39,11 @@ interface Client {
   viewValue: string;
 }
 
+interface Field {
+  text: string;
+  isEditing: boolean;
+}
+
 @Component({
   selector: 'app-sales-order-modal',
   templateUrl: './sales-order-modal.component.html',
@@ -189,7 +194,11 @@ export class SalesOrderModalComponent {
   myForm!: FormGroup;
   options: string[] = ['Nigeria - NGN', 'US Dollar - USD', 'Cuba - CUD'];
 
-  constructor(private fb: FormBuilder, private http: HttpClient, private dropdownService: DropdownService) {}
+  constructor(
+    private fb: FormBuilder,
+    private http: HttpClient,
+    private dropdownService: DropdownService
+  ) {}
 
   tableData: any[] = [
     {
@@ -201,8 +210,8 @@ export class SalesOrderModalComponent {
       amount: '',
       tax: '',
       total: '',
-      showDescriptionBox: false
-    }
+      showDescriptionBox: false,
+    },
   ];
 
   sn: number = 0;
@@ -228,8 +237,28 @@ export class SalesOrderModalComponent {
     this.amount = item.amount;
     this.tax = item.tax;
     this.total = item.total;
-
   }
+
+  saveField(index: number, event: any) {
+    this.fields[index].isEditing = false;
+    this.fields[index].text = event.target.value;
+  }
+
+  addField() {
+    this.fields.push({ text: 'New field', isEditing: false });
+  }
+
+  removeField(index: number) {
+    this.fields.splice(index, 1);
+  }
+
+  editField(index: number) {
+    this.fields[index].isEditing = true;
+  }
+
+  fields: Field[] = [
+    // { text: 'Click to edit me', isEditing: false }
+  ];
 
   ngOnInit(): void {
     this.addTermGroup();
@@ -242,7 +271,7 @@ export class SalesOrderModalComponent {
   calculateAmount(item: any): void {
     const quantity = parseFloat(item.quantity);
     const rate = parseFloat(item.rate);
-    item.amount = (quantity * rate);
+    item.amount = quantity * rate;
   }
 
   // tableData: any[] = [{}];

@@ -75,12 +75,44 @@ article {
   display: flex;
   align-items: center;
   // gap: 1rem;
-  width: 25rem;
+  width: 21rem;
 }
 
 article > span {
   margin-right: auto;
   margin-bottom: 1rem;
+}
+
+th:nth-child(4) {
+  text-align: center;
+}
+
+.inputSection {
+  padding: 0rem 1rem;
+}
+
+.inputDiv {
+  width: 83%;
+}
+mat-form-field {
+  // border: 1px solid #224957;
+}
+
+.budgetDiv {
+  margin-top: 2rem;
+}
+
+.budgetInput {
+  width: 31rem;
+  // border: 1px solid #224957;
+}
+
+.buttonDiv {
+  margin-left: 57rem;
+}
+
+.buttonSaveDiv {
+  margin-left: 64rem;
 }
 
 .dateForm {
