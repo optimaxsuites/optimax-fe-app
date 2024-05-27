@@ -4,6 +4,9 @@ import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
 import { AngularEditorConfig } from '@kolkov/angular-editor';
 import { DropdownService } from '../../services/dropdown/dropdown.service';
 import { Observable } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfigureTaxPopupComponent } from '../configure-tax-popup/configure-tax-popup.component';
+import { NumberCurrencyPopupComponent } from '../number-currency-popup/number-currency-popup.component';
 // import { map } from 'rxjs/operators';
 // import { MatDialog } from '@angular/material/dialog';
 
@@ -180,6 +183,38 @@ export class InvoiceModalComponent {
 ]
 
 
+constructor(private fb: FormBuilder, private http: HttpClient, private dropdownService: DropdownService, private dialogRef:MatDialog) { }
+
+
+openTaxDialog(){
+  this.dialogRef.open(ConfigureTaxPopupComponent)
+}
+
+
+openNumberCurrencyDialog(){
+  this.dialogRef.open(NumberCurrencyPopupComponent, {
+    width: '30%',
+  })
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 fields: Field[] = [
   // { text: 'Click to edit me', isEditing: false }
@@ -342,7 +377,6 @@ saveField(index: number, event: any) {
   myForm!: FormGroup;
   options: string[] = ['Nigeria - NGN', 'US Dollar - USD', 'Cuba - CUD'];
 
-  constructor(private fb: FormBuilder, private http: HttpClient, private dropdownService: DropdownService) { }
 
   ngOnInit(): void {
     this.addTermGroup();

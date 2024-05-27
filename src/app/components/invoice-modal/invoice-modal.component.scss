@@ -288,7 +288,6 @@ input[type="checkbox"]:checked {
   }
   
   .custom-select {
-    border: none;
     border-bottom: 1px solid black;
     // font-size: 1.1em; 
     font-weight: 400;
@@ -350,6 +349,7 @@ input[type="checkbox"]:checked {
     padding: 10px;
     color: #333;
     cursor: pointer;
+    border-bottom: 1px solid #ccc;
     transition: background-color 0.3s;
   }
   
@@ -802,7 +802,7 @@ select{
 
 .btn-bottom-container{
     display: flex;
-    justify-content: space-between;
+    // justify-content: space-evenly;
 }
 
 .add-terms-condition-btn{
@@ -812,6 +812,11 @@ select{
     border: 1px solid #224957;
     color: #224957;
     font-weight: 500;
+    margin-right: 3.5rem;
+}
+.add-terms-condition-btn:last-child{
+    margin-right: 0;
+
 }
 
 .contents-wrapper{
