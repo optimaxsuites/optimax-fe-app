@@ -74,6 +74,7 @@ import { PaymentRecordReceivedComponent } from './components/payment-record-rece
 import { SalesOrderComponent } from './components/sales-order/sales-order.component';
 import { SalesOrderModalComponent } from './components/sales-order-modal/sales-order-modal.component';
 import { MatGridListModule } from '@angular/material/grid-list';
+import { EditableLabelComponent } from './editable-label/editable-label.component';
 
 @NgModule({
   declarations: [
@@ -122,6 +123,7 @@ import { MatGridListModule } from '@angular/material/grid-list';
     PaymentRecordReceivedComponent,
     SalesOrderComponent,
     SalesOrderModalComponent,
+    EditableLabelComponent,
   ],
   imports: [
     BrowserModule,
