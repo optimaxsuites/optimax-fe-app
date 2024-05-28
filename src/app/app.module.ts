@@ -13,6 +13,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { CdkScrollable } from '@angular/cdk/scrolling';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
+import {MatRadioModule} from '@angular/material/radio';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { NgApexchartsModule } from 'ng-apexcharts';
@@ -75,6 +76,8 @@ import { SalesOrderComponent } from './components/sales-order/sales-order.compon
 import { SalesOrderModalComponent } from './components/sales-order-modal/sales-order-modal.component';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { EditableLabelComponent } from './editable-label/editable-label.component';
+import { ConfigureTaxPopupComponent } from './components/configure-tax-popup/configure-tax-popup.component';
+import { NumberCurrencyPopupComponent } from './components/number-currency-popup/number-currency-popup.component';
 
 @NgModule({
   declarations: [
@@ -124,6 +127,8 @@ import { EditableLabelComponent } from './editable-label/editable-label.componen
     SalesOrderComponent,
     SalesOrderModalComponent,
     EditableLabelComponent,
+    ConfigureTaxPopupComponent,
+    NumberCurrencyPopupComponent,
   ],
   imports: [
     BrowserModule,
@@ -153,6 +158,8 @@ import { EditableLabelComponent } from './editable-label/editable-label.componen
     AsyncPipe,
     MatAutocompleteModule,
     MatExpansionModule,
+    MatRadioModule
+    
   ],
   providers: [provideAnimationsAsync(), provideNativeDateAdapter()],
   bootstrap: [AppComponent],

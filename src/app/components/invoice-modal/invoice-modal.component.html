@@ -31,7 +31,7 @@
             </mat-form-field>
 
             <mat-form-field class="ms-2">
-              <mat-label> Quotaion Due Date</mat-label>
+              <mat-label> Quotation Due Date</mat-label>
               <input
                 matInput
                 [matDatepicker]="picker2"
@@ -479,14 +479,14 @@
     <div class="info-section">
       <div class="tax-currency">
         <div class="tax-btn">
-          <button class="btn flat-btn">Add Tax</button>
+          <button class="btn flat-btn" (click)="openTaxDialog()">Add Tax</button>
         </div>
         <div class="currency-selector">
           <div class="custom-dropdown">
-            <div class="custom-select" (click)="toggleDropdown('currency')">
+            <button class="btn flat-btn" (click)="toggleDropdown('currency')">
               {{ (getSelectedItem$("currency") | async) || "Select Currency" }}
-              <span class="arrow"></span>
-            </div>
+              <!-- <span class="arrow"></span> -->
+            </button>
             <ul
               class="custom-options"
               *ngIf="isDropdownOpen$('currency') | async"
@@ -502,10 +502,10 @@
           </div>
         </div>
         <div class="tax-btn">
-          <button class="btn flat-btn">Number/Currency Format</button>
+          <button class="btn flat-btn" (click)="openNumberCurrencyDialog()">Number/Currency Format</button>
         </div>
         <div class="tax-btn">
-          <button class="btn flat-btn">Edit Columns</button>
+          <button class="btn flat-btn">Currency Exchange</button>
         </div>
       </div>
     </div>
@@ -834,27 +834,9 @@
 
     <div class="form-buttom-section">
       <div class="btn-bottom-container">
-        <button
-          class="add-terms-condition-btn btn"
-          *ngIf="!showTermsConditionButton"
-          (click)="showTermsConditionButton = true"
-        >
-          Add Terms & Conditions
-        </button>
-        <button
-          class="add-terms-condition-btn btn"
-          *ngIf="!showNotes"
-          (click)="showNotes = true"
-        >
-          Add Notes
-        </button>
-        <button
-          class="add-terms-condition-btn btn"
-          *ngIf="!showAttachments"
-          (click)="showAttachments = true"
-        >
-          Add Attachments
-        </button>
+        <button class="add-terms-condition-btn btn" *ngIf="!showTermsConditionButton" (click)="showTermsConditionButton = true"> Add Terms & Conditions </button>
+        <button class="add-terms-condition-btn btn" *ngIf="!showNotes" (click)="showNotes = true"> Add Notes </button>
+        <button class="add-terms-condition-btn btn" *ngIf="!showAttachments" (click)="showAttachments = true"> Add Attachments </button>
       </div>
 
       <div class="contents-wrapper">

@@ -58,9 +58,16 @@ $ERP-FE-theme: mat.define-light-theme(
 html,
 body {
   height: 100%;
+  font-size: 14px;
 }
 body {
   margin: 0;
   font-family: "Roboto Slab", serif;
 }
 
+@media screen and (min-width: 1200px){
+  html,
+body {
+  font-size: 10px;
+}
+}
