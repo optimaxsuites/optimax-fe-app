@@ -3,16 +3,16 @@
     border-radius: 10px;
     // background-color: #2EB772;
     box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px;
-    padding: 1vw;
+    padding: 1rem;
     box-sizing: border-box;
     background-color: #fff;
 }
 .todaysales-title{
     color: #224957;
     font-weight: bolder;
-    font-size: 1.1vw;
+    font-size: x-large;
     margin-top: 0;
-    margin-bottom: 0.5vw;
+    margin-bottom: 0.5rem;
 }
 .todaysales-subtitle{
     color: black;
@@ -22,14 +22,14 @@
 }
 .todaysales-body{
     display: flex;
-    margin-top: 1vw;
+    margin-top: 2.5rem;
     box-sizing: border-box;
     justify-content: space-between;
 }
 .todaysales-card{
     width: 23%;
     /* height: 150px; */
-    padding: 1vw;
+    padding: 1rem;
     box-sizing: border-box;
     border-radius: 10px;
     background-color: #2EB772;
@@ -40,21 +40,20 @@
 }
 
 .todaysales-card .amount{
-    font-size: 1vw;
+    font-size: larger;
     font-weight: bolder;
-    margin-top: 0.5vw;
-    margin-bottom: 0.5vw;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
     color: #fff;
 }
 .middle-text{
-    font-size: .8vw;
     font-weight: 500;
     color: #fff;
-    margin-top: 0.5vw;
-    margin-bottom: 0.5vw;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
 }
 .text-sm{
-    font-size: .7vw;
+    font-size: 1rem;
     font-weight: 400;
     margin: 0;
 }
@@ -78,9 +77,9 @@
         flex-wrap: wrap;
     }
     .todaysales-card{
-        flex: 0 0 calc(50% - 0.5vw);
+        flex: 0 0 calc(50% - 0.5rem);
         // max-width: calc(50% - 1rem);
-        margin-bottom: 1vw;
+        margin-bottom: 1rem;
     }
 }
 
@@ -90,10 +89,10 @@
     }
     .todaysales-card{
         width: 100%;
-        margin-bottom: 1vw;
+        margin-bottom: 1rem;
     }
     .todaysales-title{
-        // font-size: 1.3vw;
+        font-size: 1.3em;
 
     }
 }
