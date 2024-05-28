@@ -1,3 +1,7 @@
+* {
+  font-size: 1.3rem;
+}
+
 .container {
   display: flex;
   justify-content: center;
@@ -57,8 +61,8 @@
   margin: 1rem 0;
   align-items: center;
   display: flex;
-  // justify-content: space-between;
-  gap: 19rem;
+  justify-content: space-between;
+  // gap: 20rem;
   padding: 2rem 0;
 }
 .first-container {
@@ -98,8 +102,8 @@ th:nth-child(4) {
 .inputTag {
   width: 100%;
   margin-top: 0.5rem;
-  height: 2rem;
-  font-size: 1rem;
+  height: 4rem;
+  font-size: 1.5rem;
   margin-bottom: 1.5rem;
 }
 
@@ -115,10 +119,6 @@ th:nth-child(4) {
 .budgetInput {
   width: 31rem;
   // border: 1px solid #224957;
-}
-
-.buttonDiv {
-  margin-left: 57rem;
 }
 
 .buttonSaveDiv {
@@ -139,6 +139,37 @@ th:nth-child(4) {
     display: flex;
     background-color: green($color: #000000);
   }
+}
+
+.btn-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 10rem;
+}
+
+.create-client-btn-2 {
+  border: 1px solid #25925b;
+  color: #25925b;
+  padding: 1rem 2.5rem;
+  margin-right: 1rem;
+}
+
+.save-continue {
+  border: 1px solid #224957;
+  color: #224957;
+  padding: 1rem 2.5rem;
+  transition: 0.5s ease;
+}
+
+.save-continue:hover {
+  background-color: #224957;
+  color: #fff;
+}
+
+.first-container01 {
+  margin-top: 1.5rem;
+  width: 50%;
+  display: inline-block;
 }
 
 .dateForm {
@@ -292,7 +323,60 @@ th:nth-child(4) {
 
 .table-wrapper {
   max-width: 100%;
+  margin-top: 3rem;
 }
+
+.top-products-table {
+  display: block;
+  padding: 1rem 0;
+  width: 100%;
+
+  .thead {
+    width: 100%;
+    .top-products-table-row {
+      .table-item {
+        display: flex;
+        justify-content: space-between;
+        border-radius: 10px 10px 0 0;
+        background-color: #224957;
+        padding: 1rem;
+        color: #fff;
+
+        .top-products-table-data {
+          .input-span {
+            font-size: 0.9em;
+          }
+        }
+      }
+    }
+  }
+
+  .tbody {
+    .top-products-table-row {
+      background-color: #f8feff;
+      border: 1px solid #e3eef0;
+      // background-color: red;
+      margin-bottom: 1rem;
+      min-height: 200px;
+      // padding: 2rem 0;
+      // box-sizing: border-box;
+
+      .table-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 1rem 0;
+
+        .top-products-table-data {
+          input {
+            background-color: transparent;
+            padding: 0.5rem;
+          }
+        }
+      }
+    }
+  }
+}
+
 .input {
   width: 200px;
   select {

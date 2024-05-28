@@ -4,6 +4,7 @@ import {
   HttpEventType,
   HttpResponse,
 } from '@angular/common/http';
+
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import {
   FormBuilder,
@@ -63,27 +64,13 @@ export class SalesOrderModalComponent {
   showDescriptionBox: boolean = false;
   signatureUrl: string | ArrayBuffer | null = null;
   logoUrl: string | ArrayBuffer | null = null;
-  discounts: any[] = [];
+  // discounts: any[] = [];
   terms: any[] = [];
   termsGroup: any[] = [];
   charges: any[] = [];
   moreFields: any[] = [];
-  rfqItems: RfqItem[] = [];
+
   showLogo = false;
-
-  addRow() {
-    this.rfqItems.push({
-      item: '',
-      description: '',
-      quantity: 0,
-      unitPrice: 0,
-      totalPrice: 0,
-    });
-  }
-
-  removeRow(index: number) {
-    this.rfqItems.splice(index, 1);
-  }
 
   getSelectedItem$(id: string): Observable<string | null> {
     return this.dropdownService.getSelectedItem$(id);
@@ -137,22 +124,6 @@ export class SalesOrderModalComponent {
     this.moreFields.splice(index, 1);
   }
 
-  addDiscount() {
-    this.discounts.push({});
-  }
-
-  removeDiscount(index: number) {
-    this.discounts.splice(index, 1);
-  }
-
-  addCharge() {
-    this.charges.push({});
-  }
-
-  removeCharge(index: number) {
-    this.charges.splice(index, 1);
-  }
-
   editorConfig: AngularEditorConfig = {
     editable: true,
     spellcheck: true,
@@ -200,18 +171,20 @@ export class SalesOrderModalComponent {
     private dropdownService: DropdownService
   ) {}
 
-  tableData: any[] = [
-    {
-      sn: '',
-      name: '',
-      taxRate: '',
-      quantity: '',
-      rate: '',
-      amount: '',
-      tax: '',
-      total: '',
-      showDescriptionBox: false,
-    },
+  // items: any[] = []
+
+  items: any[] = [
+    // {
+    //   sn: '',
+    //   name: '',
+    //   taxRate: '',
+    //   quantity: '',
+    //   rate: '',
+    //   amount: '',
+    //   tax: '',
+    //   total: '',
+    //   showDescriptionBox: false,
+    // },
   ];
 
   sn: number = 0;
@@ -278,14 +251,14 @@ export class SalesOrderModalComponent {
 
   deleteRow(index: number) {
     // if (index > 0) {
-    this.tableData.splice(index, 1);
+    this.items.splice(index, 1);
     // }
   }
 
-  addNewRow(): void {
-    // You can add a new empty row here
-    this.tableData.push({});
-  }
+  // addNewRow(): void {
+  //   // You can add a new empty row here
+  //   this.tableData.push({});
+  // }
 
   toggleSecondComponent() {
     this.showSecondComponent = !this.showSecondComponent;
@@ -405,6 +378,7 @@ export class SalesOrderModalComponent {
 
   clearLogo() {
     this.logoUrl = null;
+    this.showLogo = false;
     // this.showSignatureButton = false;
   }
 
@@ -468,4 +442,7 @@ export class SalesOrderModalComponent {
     // Implement cancellation logic if needed
     this.uploadedFiles.splice(index, 1);
   }
+}
+function getImageUrlFromFile(uploadedFile: any) {
+  throw new Error('Function not implemented.');
 }

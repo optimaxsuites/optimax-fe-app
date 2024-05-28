@@ -97,8 +97,8 @@
                   />
                 </div>
               </div>
-             
-                <div
+
+              <div
                 *ngIf="showLogo; else addLogoButtons"
                 class="add-logo-btn-wrapper"
               >
@@ -124,7 +124,7 @@
                     (change)="onLogoSelected($event)"
                   />
                   <button class="btn" (click)="fileInput.click()">
-                    <i class="fas fa-plus me-2"></i>Add Image
+                    <i class="fas fa-plus me-2"></i>Add Business Logo
                   </button>
                 </div>
               </ng-template>
@@ -479,7 +479,9 @@
     <div class="info-section">
       <div class="tax-currency">
         <div class="tax-btn">
-          <button class="btn flat-btn" (click)="openTaxDialog()">Add Tax</button>
+          <button class="btn flat-btn" (click)="openTaxDialog()">
+            Add Tax
+          </button>
         </div>
         <div class="currency-selector">
           <div class="custom-dropdown">
@@ -502,7 +504,9 @@
           </div>
         </div>
         <div class="tax-btn">
-          <button class="btn flat-btn" (click)="openNumberCurrencyDialog()">Number/Currency Format</button>
+          <button class="btn flat-btn" (click)="openNumberCurrencyDialog()">
+            Number/Currency Format
+          </button>
         </div>
         <div class="tax-btn">
           <button class="btn flat-btn">Currency Exchange</button>
@@ -834,9 +838,27 @@
 
     <div class="form-buttom-section">
       <div class="btn-bottom-container">
-        <button class="add-terms-condition-btn btn" *ngIf="!showTermsConditionButton" (click)="showTermsConditionButton = true"> Add Terms & Conditions </button>
-        <button class="add-terms-condition-btn btn" *ngIf="!showNotes" (click)="showNotes = true"> Add Notes </button>
-        <button class="add-terms-condition-btn btn" *ngIf="!showAttachments" (click)="showAttachments = true"> Add Attachments </button>
+        <button
+          class="add-terms-condition-btn btn"
+          *ngIf="!showTermsConditionButton"
+          (click)="showTermsConditionButton = true"
+        >
+          Add Terms & Conditions
+        </button>
+        <button
+          class="add-terms-condition-btn btn"
+          *ngIf="!showNotes"
+          (click)="showNotes = true"
+        >
+          Add Notes
+        </button>
+        <button
+          class="add-terms-condition-btn btn"
+          *ngIf="!showAttachments"
+          (click)="showAttachments = true"
+        >
+          Add Attachments
+        </button>
       </div>
 
       <div class="contents-wrapper">
