@@ -13,7 +13,9 @@
     box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px;
 
 }
-
+.btn{
+    font-size: 1em;
+}
 .width-150{
     width: 150px;
 }
@@ -59,7 +61,8 @@
         max-width: 250px;
         height: auto;
 
-        .wrapper{
+        .btn{
+            font-size: 1em;
         }
     }
 }
@@ -494,6 +497,9 @@ input[type="checkbox"]:checked {
     // background-color: #bfd9e2;
     color: #224957;
     border: 1px solid #224957;
+    font-weight: 500;
+    font-size: 1em;
+    padding: 1rem;
 }
 
 .currency-selector{
@@ -602,6 +608,8 @@ th{
     color: #224957;
     border: 1px solid #224957;
     padding: 1rem 5rem;
+    font-weight: 500;
+    font-size: 1em;
 }
 input:focus,
 textarea:focus {
@@ -812,7 +820,8 @@ select{
     border: 1px solid #224957;
     color: #224957;
     font-weight: 500;
-    margin-right: 3.5rem;
+    font-size: 1em;
+    margin-right: 6rem;
 }
 .add-terms-condition-btn:last-child{
     margin-right: 0;

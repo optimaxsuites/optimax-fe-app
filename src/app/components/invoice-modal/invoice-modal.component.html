@@ -214,7 +214,7 @@
                         >{{ client.viewValue }}</mat-option
                       >
                       <div class="add-new-details-btn-wrapper">
-                        <button class="btn new-detail-btn mt-2">
+                        <button click class="btn new-detail-btn mt-2">
                           Add New Client Details
                         </button>
                       </div>
@@ -227,7 +227,7 @@
               <div class="first-component mt-4" *ngIf="!showSecondComponent">
                 <p>Select Client From List</p>
                 <p class="text-center">Or</p>
-                <button class="btn create-client-btn">Add New Client</button>
+                <button class="btn create-client-btn" (click)="openAddNewClientDialog()">Add New Client</button>
               </div>
               <div class="second-component" *ngIf="showSecondComponent">
                 <p><b>Client Details</b></p>
@@ -664,7 +664,7 @@
       </div>
 
       <div class="add-table-row">
-        <button (click)="addNewRow()" class="btn new-table-row">Add New</button>
+        <button (click)="addNewRow()" class="btn new-table-row">Add New Row</button>
       </div>
 
       <div class="cal">
