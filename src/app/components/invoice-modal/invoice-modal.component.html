@@ -51,36 +51,23 @@
             </mat-form-field>
           </div>
 
-          <!-- <div class="add-more-field-container">
-            <div
-              class="add-more-field-wrapper"
-              *ngFor="let item of moreFields; let i = index"
-            >
-              <div class="add-more-field">
-                <div class="add-more-editable-label">
-                  <app-editable-label [(text)]="labelText"></app-editable-label>
-                </div>
-                <div class="editable-label-input">
-                  <input
-                    type="text"
-                    class="form-control-opti"
-                    style="font-size: 1.1em; font-weight: 400"
-                  />
-                </div>
-              </div>
-              <i (click)="removeMoreField(i)" class="fa-solid fa-x p-2"></i>
-            </div>
-
-            <button class="add-btn" (click)="addMoreField()">
-              <i class="fas fa-plus me-2"></i>Add More Field
-            </button>
-          </div> -->
-
-
-          <div *ngFor="let field of fields; let i = index" class="editable-label-container">
+          <div
+            *ngFor="let field of fields; let i = index"
+            class="editable-label-container"
+          >
             <div class="editable-label">
-              <p *ngIf="!field.isEditing" (click)="editField(i)" class="label" >{{ field.text || 'Enter New Field' }}</p>
-              <input *ngIf="field.isEditing" placeholder="Enter New Field" [value]="field.text" (blur)="saveField(i, $event)" (keydown.enter)="saveField(i, $event)" class="form-control-opti p-2" style="font-size: 1.1em; font-weight: 400" />
+              <p *ngIf="!field.isEditing" (click)="editField(i)" class="label">
+                {{ field.text || "Enter New Field" }}
+              </p>
+              <input
+                *ngIf="field.isEditing"
+                placeholder="Enter New Field"
+                [value]="field.text"
+                (blur)="saveField(i, $event)"
+                (keydown.enter)="saveField(i, $event)"
+                class="form-control-opti p-2"
+                style="font-size: 1.1em; font-weight: 400"
+              />
             </div>
 
             <div class="editable-label-input">
@@ -89,16 +76,13 @@
                 class="form-control-opti p-2"
                 style="font-size: 1.1em; font-weight: 400"
               />
-            <i (click)="removeField(i)" class="fa-solid fa-x p-2"></i>
+              <i (click)="removeField(i)" class="fa-solid fa-x p-2"></i>
             </div>
           </div>
-          
+
           <button class="add-btn" (click)="addField()">
             <i class="fas fa-plus me-2"></i>Add More Field
           </button>
-          
-
-
         </div>
         <div class="">
           <section class="logo-section">
@@ -113,7 +97,8 @@
                   />
                 </div>
               </div>
-              <div
+             
+                <div
                 *ngIf="showLogo; else addLogoButtons"
                 class="add-logo-btn-wrapper"
               >
@@ -139,7 +124,7 @@
                     (change)="onLogoSelected($event)"
                   />
                   <button class="btn" (click)="fileInput.click()">
-                    <i class="fas fa-plus me-2"></i>Add Business Logo
+                    <i class="fas fa-plus me-2"></i>Add Image
                   </button>
                 </div>
               </ng-template>
@@ -592,7 +577,6 @@
                   class="form-control-opti"
                   [(ngModel)]="item.taxRate"
                   (ngModelChange)="onInputChange(item)"
-                  
                 />
               </td>
               <td class="top-products-table-data col ms-2">

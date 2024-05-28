@@ -85,7 +85,6 @@
             <i class="fas fa-plus me-2"></i>Add More Field
           </button>
         </div>
-
         <div class="">
           <section class="logo-section">
             <div class="logo-upload-container">
@@ -99,6 +98,10 @@
                   />
                 </div>
               </div>
+              <!-- <div
+                [ngClass]="{ 'show-buttons': !logoUrl }"
+                class="add-logo-btn-wrapper"
+              > -->
               <div
                 *ngIf="showLogo; else addLogoButtons"
                 class="add-logo-btn-wrapper"
@@ -194,33 +197,27 @@
     </section>
 
     <section class="inputSection">
-      <div class="inputDiv">
-        <span>Item Name</span>
-        <mat-form-field>
-          <mat-label>Item Name</mat-label>
-          <input matInput />
-        </mat-form-field>
+      <div>
+        <span class="tagName">Item Name</span>
+        <br />
+        <input class="inputTag" type="text" />
       </div>
 
-      <div class="inputDiv">
+      <div>
         <span>Part Number</span>
-        <mat-form-field>
-          <mat-label>Item Name</mat-label>
-          <input matInput />
-        </mat-form-field>
+        <br />
+        <input class="inputTag" type="text" />
       </div>
 
-      <div class="inputDiv">
+      <div>
         <span>Item description</span>
-        <mat-form-field>
-          <mat-label>Item description</mat-label>
-          <textarea matInput></textarea>
-        </mat-form-field>
+        <br />
+        <textarea class="inputTag"></textarea>
       </div>
 
       <div class="partImage">
         <span>Item Image</span>
-        <section class="logo-section2">
+        <section class="logo-section">
           <div class="logo-upload-container">
             <div class="wrapper">
               <div class="logo-wrapper">
@@ -261,12 +258,10 @@
         </section>
       </div>
 
-      <div class="budgetDiv">
+      <div>
         <span>Approved Budget</span>
         <br />
-        <mat-form-field class="budgetInput">
-          <input matInput />
-        </mat-form-field>
+        <input class="inputTag" type="text" />
       </div>
 
       <div class="buttonDiv">

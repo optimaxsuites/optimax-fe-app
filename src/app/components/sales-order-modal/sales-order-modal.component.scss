@@ -57,8 +57,8 @@
   margin: 1rem 0;
   align-items: center;
   display: flex;
-  justify-content: space-between;
-  gap: 3rem;
+  // justify-content: space-between;
+  gap: 19rem;
   padding: 2rem 0;
 }
 .first-container {
@@ -67,9 +67,9 @@
   // border: 1px solid black;
 }
 
-mat-form-field {
-  width: 100%;
-}
+// .partImage {
+//   padding: 2rem;
+// }
 
 article {
   display: flex;
@@ -91,12 +91,21 @@ th:nth-child(4) {
   padding: 0rem 1rem;
 }
 
-.inputDiv {
-  width: 98%;
+.tagName {
+  // margin-top: 0.5rem;
 }
 
-mat {
-  border: 1px solid #224957;
+.inputTag {
+  width: 100%;
+  margin-top: 0.5rem;
+  height: 2rem;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.inputTag:focus {
+  outline: 1px solid #224957;
+  text-indent: 4px;
 }
 
 .budgetDiv {
@@ -137,17 +146,15 @@ mat {
 }
 
 .logo-section {
-  position: absolute;
-  bottom: 24rem;
-  right: 17rem;
-  // width: 30rem;
-  background-color: #f1f1f1;
+  width: 100%;
+  // background-color: #f1f1f1;
   align-items: center;
   display: flex;
   justify-content: center;
-  border: 1px solid lightgrey;
+  border: 1px solid #224957;
   padding: 0.5rem;
   box-sizing: border-box;
+  margin-bottom: 1.5rem;
 
   .logo-upload-container {
     max-width: 250px;
