@@ -124,14 +124,6 @@ export class SalesOrderModalComponent {
     this.moreFields.splice(index, 1);
   }
 
-  addDiscount() {
-    this.discounts.push({});
-  }
-
-  removeDiscount(index: number) {
-    this.discounts.splice(index, 1);
-  }
-
   addCharge() {
     this.charges.push({});
   }
