@@ -78,6 +78,7 @@ import { MatGridListModule } from '@angular/material/grid-list';
 import { EditableLabelComponent } from './editable-label/editable-label.component';
 import { ConfigureTaxPopupComponent } from './components/configure-tax-popup/configure-tax-popup.component';
 import { NumberCurrencyPopupComponent } from './components/number-currency-popup/number-currency-popup.component';
+import { AddNewClientComponent } from './components/add-new-client/add-new-client.component';
 
 @NgModule({
   declarations: [
@@ -129,6 +130,7 @@ import { NumberCurrencyPopupComponent } from './components/number-currency-popup
     EditableLabelComponent,
     ConfigureTaxPopupComponent,
     NumberCurrencyPopupComponent,
+    AddNewClientComponent,
   ],
   imports: [
     BrowserModule,

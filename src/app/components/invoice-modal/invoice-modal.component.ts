@@ -7,6 +7,7 @@ import { Observable } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { ConfigureTaxPopupComponent } from '../configure-tax-popup/configure-tax-popup.component';
 import { NumberCurrencyPopupComponent } from '../number-currency-popup/number-currency-popup.component';
+import { AddNewClientComponent } from '../add-new-client/add-new-client.component';
 // import { map } from 'rxjs/operators';
 // import { MatDialog } from '@angular/material/dialog';
 
@@ -192,11 +193,12 @@ openTaxDialog(){
 
 
 openNumberCurrencyDialog(){
-  this.dialogRef.open(NumberCurrencyPopupComponent, {
-    width: '30%',
-  })
+  this.dialogRef.open(NumberCurrencyPopupComponent)
 }
 
+openAddNewClientDialog(){
+  this.dialogRef.open(AddNewClientComponent)
+}
 
 
 
