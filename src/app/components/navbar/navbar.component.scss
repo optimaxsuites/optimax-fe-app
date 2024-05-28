@@ -8,7 +8,7 @@
     height: auto;
     // background-color: #224957;
     border-bottom: 1px solid lightgrey;
-    padding: 0.5em;
+    padding: 0.5vw;
     box-sizing: border-box;
     display: flex;
     justify-content: space-between;
@@ -32,17 +32,17 @@
         align-items: center;
 
         .items{
-            margin-right: 1rem;
+            margin-right: 1vw;
             box-sizing: border-box;
             cursor: pointer;
             word-wrap: break-word;
 
-            p{
-                font-weight: 400;
-                // color: white;
-                text-decoration: none;
-                margin: 0;
-            }
+            // p{
+            //     font-weight: 400;
+            //     // color: white;
+            //     text-decoration: none;
+            //     margin: 0;
+            // }
 
             .fa-message{
                 display: flex;
@@ -51,10 +51,10 @@
                 cursor: pointer;
                 background-color: red;
                 border-radius: 50%;
-                padding: 1.1rem;
+                padding: 1.1vw;
                 width: 20px;
                 height: 20px;
-                font-size: 0.9em;
+                font-size: 1vw;
                 cursor: pointer;
                 background-color: #DEEEE6;
                 color: #224957;
@@ -67,7 +67,7 @@
 
             .profile-img-container{
                 width: auto;
-                margin-right: 0.5rem;
+                margin-right: 0.5vw;
 
                 .profile-img{
                     width: 50px;
@@ -84,13 +84,16 @@
                 .name{
                     // color: white;
                     font-weight: 400;
-                    font-size: 1em;
+                    font-size: .8vw;
+                margin: 0;
+
                 }
                 
                 .status{
                     color: #B3B3B3;
                     font-weight: 400;
-                    font-size: 1em;
+                margin: 0;
+                    font-size: .8vw;
                 }
             }
         }
@@ -102,11 +105,12 @@
             cursor: pointer;
             width: 20px;
             height: 20px;
-            padding: 1.1rem;
+            padding: 1.1vw;
             border-radius: 50%;
             background-color: #DEEEE6;
             transition-duration: .3s;
             color: #224957;
+            font-size: 1vw;
         }
           
         .fa-bell:hover {
@@ -158,7 +162,7 @@
             // background-color: #224957;
             color: #224957;
             cursor: pointer;
-            padding: 0.2rem 0.7rem;
+            padding: 0.2vw 0.7vw;
             border: 2px solid lightgrey;
         }
         button{
@@ -194,10 +198,10 @@
             .items{
                 .profile-name{
                     .name{
-                        font-size: 0.8em;
+                        font-size: 1vw;
                     }
                     .status{
-                        font-size: 0.8em;
+                        font-size: 1vw;
                     }
                 }
             }
