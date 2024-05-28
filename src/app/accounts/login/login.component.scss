@@ -8,7 +8,7 @@ input{
 }
     
         .login{
-            padding: 0.5vw 2vw;
+            padding: 0.5rem 2rem;
             box-sizing: border-box;
             width: 100%;
             // border-radius: 10px;
@@ -25,7 +25,7 @@ input{
     
             }
             .text-center{
-                font-size: 1vw;
+                font-size: 1.2rem;
             }
 
             .content{
@@ -36,8 +36,6 @@ input{
                 
                  mat-form-field {
                     width: 100%;
-                    font-size: 1vw;
-                    
                 }
                 
                 input[matInput] {
@@ -74,13 +72,13 @@ input{
                         }
                         label{
                             cursor: pointer;
-                            font-size: 0.8vw;
+                            font-size: 0.8em;
                             font-weight: 500;
                         }
                     }
                     p{
                         cursor: pointer;
-                        font-size: 0.8vw;
+                        font-size: 0.8em;
                         font-weight: 500;
                         margin: 0;
                     }
@@ -93,9 +91,9 @@ input{
                     color: #224957;
                     background-color: #25925B;
                     border: none;
-                    font-size: 1vw;
+                    font-size: 1.2em;
                     font-weight: 500;
-                    padding: .6vw 0;
+                    padding: 1rem 0;
                     border-radius: 5px;
                     transition: all 0.25s ease-out;
                 }
@@ -105,10 +103,10 @@ input{
             }
             .bottom{
                 text-align: center;
-                margin-top: 1vw;
+                margin-top: 1rem;
         
                 p{
-                    font-size: 0.8vw;
+                    // font-size: 0.8em;
                     font-weight: 500;
         
                     span{

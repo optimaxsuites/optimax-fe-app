@@ -8,7 +8,7 @@
     height: auto;
     // background-color: #224957;
     border-bottom: 1px solid lightgrey;
-    padding: 0.5vw;
+    padding: 0.5em;
     box-sizing: border-box;
     display: flex;
     justify-content: space-between;
@@ -32,17 +32,17 @@
         align-items: center;
 
         .items{
-            margin-right: 1vw;
+            margin-right: 1em;
             box-sizing: border-box;
             cursor: pointer;
             word-wrap: break-word;
 
-            // p{
-            //     font-weight: 400;
-            //     // color: white;
-            //     text-decoration: none;
-            //     margin: 0;
-            // }
+            p{
+                font-weight: 400;
+                // color: white;
+                text-decoration: none;
+                margin: 0;
+            }
 
             .fa-message{
                 display: flex;
@@ -51,10 +51,10 @@
                 cursor: pointer;
                 background-color: red;
                 border-radius: 50%;
-                padding: 1.1vw;
+                padding: 1.1rem;
                 width: 20px;
                 height: 20px;
-                font-size: 1vw;
+                font-size: 0.9em;
                 cursor: pointer;
                 background-color: #DEEEE6;
                 color: #224957;
@@ -67,7 +67,7 @@
 
             .profile-img-container{
                 width: auto;
-                margin-right: 0.5vw;
+                margin-right: 0.5rem;
 
                 .profile-img{
                     width: 50px;
@@ -76,7 +76,7 @@
                 }
 
                 img{
-                // font-size: 1.5em;
+                font-size: 30px;
                 }
             }
 
@@ -84,16 +84,14 @@
                 .name{
                     // color: white;
                     font-weight: 400;
-                    font-size: .8vw;
-                margin: 0;
+                    font-size: 1em;
 
                 }
                 
                 .status{
                     color: #B3B3B3;
                     font-weight: 400;
-                margin: 0;
-                    font-size: .8vw;
+                    font-size: 1em;
                 }
             }
         }
@@ -105,12 +103,11 @@
             cursor: pointer;
             width: 20px;
             height: 20px;
-            padding: 1.1vw;
+            padding: 1.1rem;
             border-radius: 50%;
             background-color: #DEEEE6;
             transition-duration: .3s;
             color: #224957;
-            font-size: 1vw;
         }
           
         .fa-bell:hover {
@@ -162,7 +159,7 @@
             // background-color: #224957;
             color: #224957;
             cursor: pointer;
-            padding: 0.2vw 0.7vw;
+            padding: 0.2rem 0.7rem;
             border: 2px solid lightgrey;
         }
         button{
@@ -198,10 +195,10 @@
             .items{
                 .profile-name{
                     .name{
-                        font-size: 1vw;
+                        font-size: 0.8em;
                     }
                     .status{
-                        font-size: 1vw;
+                        font-size: 0.8em;
                     }
                 }
             }

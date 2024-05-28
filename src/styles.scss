@@ -51,20 +51,23 @@ $ERP-FE-theme: mat.define-light-theme(
   list-style: none;
   text-decoration: none;
   font-family: "Roboto Slab", serif;
-
-
+  // -webkit-font-smoothing: antialiased;
+  // -moz-osx-font-smoothing: grayscale;
   
 }
 html,
 body {
   height: 100%;
-  // font-size: .5vw;
-
+  font-size: 14px;
 }
 body {
   margin: 0;
   font-family: "Roboto Slab", serif;
 }
-html{
-  // font-size: 1vw;
+
+@media screen and (min-width: 1200px){
+  html,
+body {
+  font-size: 10px;
+}
 }
