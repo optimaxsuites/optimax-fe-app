@@ -128,7 +128,7 @@
                     (change)="onLogoSelected($event)"
                   />
                   <button class="btn" (click)="fileInput.click()">
-                    <i class="fas fa-plus me-2"></i>Add Business Logo
+                    <i class="fas fa-plus me-2"></i>Add Image
                   </button>
                 </div>
               </ng-template>
@@ -200,19 +200,25 @@
       <div>
         <span class="tagName">Item Name</span>
         <br />
-        <input class="inputTag" type="text" />
+        <input #itemNameInput class="inputTag" type="text" />
       </div>
 
       <div>
         <span>Part Number</span>
         <br />
-        <input class="inputTag" type="text" />
+        <input #partNumberInput class="inputTag" type="text" />
       </div>
 
       <div>
         <span>Item description</span>
         <br />
-        <textarea class="inputTag"></textarea>
+        <textarea #descriptionInput class="inputTag"></textarea>
+      </div>
+
+      <div>
+        <span>Quantity</span>
+        <br />
+        <input #quantityInput class="inputTag" type number />
       </div>
 
       <div class="partImage">
@@ -265,38 +271,71 @@
       </div>
 
       <div class="buttonDiv">
-        <button class="btn btn-light">Save and Continue</button>
+        <button class="save-continue">Add Item</button>
       </div>
     </section>
+
+    <div class="table-wrapper">
+      <div class="top-products-table w3-table">
+        <div class="thead">
+          <div class="top-products-table-row">
+            <div class="table-item">
+              <th class="top-products-table-data">Name</th>
+              <th class="top-products-table-data">Description</th>
+              <th class="top-products-table-data">Quantity</th>
+              <th class="top-products-table-data">Part Number</th>
+              <th class="top-products-table-data">Image</th>
+            </div>
+          </div>
+        </div>
+        <div class="tbody">
+          <div class="top-products-table-row" *ngFor="let item of items">
+            <div class="table-item">
+              <td class="top-products-table-data col-5">{{ item.name }}</td>
+              <td class="top-products-table-data col">
+                {{ item.description }}
+              </td>
+              <td class="top-products-table-data col">{{ item.partNumber }}</td>
+              <td class="top-products-table-data col">{{ item.quantity }}</td>
+              <td class="top-products-table-data col">
+                <img
+                  *ngIf="item.imageUrl"
+                  [src]="item.imageUrl"
+                  alt="item image"
+                />
+              </td>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <section>
-      <div class="first-container">
+      <div class="first-container01">
         <div>
-          <mat-form-field>
-            <mat-label>RFQ Prepared By</mat-label>
-            <input matInput placeholder="RFQ Prepared By" />
-          </mat-form-field>
+          <span>RFQ Prepared By</span>
+          <br />
+          <input class="inputTag" type="text" />
         </div>
 
         <div>
-          <mat-form-field>
-            <mat-label>Position</mat-label>
-            <input matInput placeholder="Position" />
-          </mat-form-field>
+          <span>Position</span>
+          <br />
+          <input class="inputTag" type="text" />
         </div>
 
         <div>
-          <mat-form-field>
-            <mat-label>Organisation address</mat-label>
-            <input matInput placeholder="Organisation address" />
-          </mat-form-field>
+          <span>Organisation Address</span>
+          <br />
+          <input class="inputTag" type="text" />
         </div>
-      </div>
-
-      <div class="buttonSaveDiv">
-        <button class="btn btn-light">Save</button>
       </div>
     </section>
+
+    <div class="btn-wrapper">
+      <button class="btn create-client-btn-2">Save As Draft</button>
+      <button class="btn save-continue">Save & Continue</button>
+    </div>
   </div>
 </div>
 
