@@ -64,14 +64,13 @@ export class SalesOrderModalComponent {
   showDescriptionBox: boolean = false;
   signatureUrl: string | ArrayBuffer | null = null;
   logoUrl: string | ArrayBuffer | null = null;
-  discounts: any[] = [];
+  // discounts: any[] = [];
   terms: any[] = [];
   termsGroup: any[] = [];
   charges: any[] = [];
   moreFields: any[] = [];
 
   showLogo = false;
- 
 
   getSelectedItem$(id: string): Observable<string | null> {
     return this.dropdownService.getSelectedItem$(id);
