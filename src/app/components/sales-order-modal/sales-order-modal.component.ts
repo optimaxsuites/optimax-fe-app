@@ -124,14 +124,6 @@ export class SalesOrderModalComponent {
     this.moreFields.splice(index, 1);
   }
 
-  addCharge() {
-    this.charges.push({});
-  }
-
-  removeCharge(index: number) {
-    this.charges.splice(index, 1);
-  }
-
   editorConfig: AngularEditorConfig = {
     editable: true,
     spellcheck: true,
