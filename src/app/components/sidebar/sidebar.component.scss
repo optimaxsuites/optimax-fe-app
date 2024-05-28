@@ -14,18 +14,20 @@
 
     img{
       width: 100%;
+      background-color: #25925b;
     }
   }
 
   .side-bar-body {
-    padding: 0 2rem;
+    padding: 0 1rem;
     box-sizing: border-box;
+    background-color: red;
 
     .items {
       color: #fff;
       border-radius: 5px;
       cursor: pointer;
-      padding: 0.7rem;
+      padding: 0.5rem;
       box-sizing: border-box;
       margin-top: 0.5rem;
       // align-items: center;
