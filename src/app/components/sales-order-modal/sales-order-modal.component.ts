@@ -394,14 +394,13 @@ export class SalesOrderModalComponent {
   }
 
   onLogoSelected(event: any) {
-    const file: File = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        this.logoUrl = reader.result;
-      };
-    }
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.logoUrl = reader.result;
+      this.showLogo = true;
+    };
+    reader.readAsDataURL(file);
   }
 
   clearLogo() {
