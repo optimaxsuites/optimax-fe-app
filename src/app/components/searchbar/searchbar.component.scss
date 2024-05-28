@@ -5,15 +5,16 @@
     input{
         width: 100%;
         background-color: #E9EDEA;
-        padding: 1em;
+        padding: 0.5vw 1vw;
         outline: none;
         border: none;
         border-radius: 10px;
+        font-size: 1vw;
     }
 
     .fa-search {
         position: absolute;
-        padding: 0.5em;
+        padding: 0.5vw;
         top: 50%;
         right: 10px; 
         transform: translateY(-50%);
