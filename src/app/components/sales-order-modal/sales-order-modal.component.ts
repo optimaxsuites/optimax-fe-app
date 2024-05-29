@@ -5,7 +5,7 @@ import {
   HttpResponse,
 } from '@angular/common/http';
 
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Component, ElementRef, ViewChild, OnInit } from '@angular/core';
 import {
   FormBuilder,
   FormControl,
@@ -63,14 +63,106 @@ export class SalesOrderModalComponent {
   clientDetails: any = {};
   showDescriptionBox: boolean = false;
   signatureUrl: string | ArrayBuffer | null = null;
+  showLogo: boolean = false;
   logoUrl: string | ArrayBuffer | null = null;
+  @ViewChild('fileInput') fileInput!: ElementRef;
   // discounts: any[] = [];
   terms: any[] = [];
   termsGroup: any[] = [];
   charges: any[] = [];
   moreFields: any[] = [];
 
-  showLogo = false;
+  name: string = '';
+  partNumber: string = '';
+  description: string = '';
+  quantity: number = 0;
+  imageUrl: string = '';
+  approvedBudget: number = 0;
+
+  items: {
+    name: string;
+    partNumber: string;
+    description: string;
+    quantity: number;
+    imageUrl: string;
+    approvedBudget: number;
+  }[] = [];
+  previewImageUrl: string | null = null;
+
+  addItem() {
+    if (
+      this.name &&
+      this.partNumber &&
+      this.description &&
+      this.quantity &&
+      this.imageUrl
+    ) {
+      this.items.push({
+        name: this.name,
+        partNumber: this.partNumber,
+        description: this.description,
+        quantity: this.quantity,
+        imageUrl: this.imageUrl,
+        approvedBudget: this.approvedBudget,
+      });
+    }
+    console.log(this.imageUrl);
+    console.log(this.name);
+    localStorage.setItem('items', JSON.stringify(this.items));
+    this.clearInputs();
+  }
+
+  clearInputs() {
+    this.name = '';
+    this.partNumber = '';
+    this.description = '';
+    this.quantity = 0;
+    this.approvedBudget = 0;
+    this.imageUrl = '';
+  }
+
+  onLogoSelected(event: any) {
+    const file: File = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        // Ensure reader.result is a string before assigning
+        if (typeof reader.result === 'string') {
+          this.imageUrl = reader.result;
+          this.previewImageUrl = reader.result;
+          this.showLogo = true;
+        } else {
+          console.error(
+            'Unexpected file reading error: result is not a string'
+          );
+        }
+      };
+      reader.onerror = (error) => {
+        console.error('Error reading file:', error);
+        // Display an error message to the user (optional)
+      };
+    }
+  }
+
+  // onLogoSelected(event: any) {
+  //   const file: File = event.target.files[0];
+  //   // console.log(file);
+  //   if (file) {
+  //     const reader = new FileReader();
+  //     reader.readAsDataURL(file);
+  //     reader.onload = () => {
+  //       // console.log(reader.result);
+
+  //       this.logoUrl = reader.result;
+  //       this.showLogo = true;
+  //     };
+  //     reader.onerror = (error) => {
+  //       console.error('Error reading file:', error);
+  //       // Display an error message to the user (optional)
+  //     };
+  //   }
+  // }
 
   getSelectedItem$(id: string): Observable<string | null> {
     return this.dropdownService.getSelectedItem$(id);
@@ -171,46 +263,20 @@ export class SalesOrderModalComponent {
     private dropdownService: DropdownService
   ) {}
 
-  // items: any[] = []
-
-  items: any[] = [
-    // {
-    //   sn: '',
-    //   name: '',
-    //   taxRate: '',
-    //   quantity: '',
-    //   rate: '',
-    //   amount: '',
-    //   tax: '',
-    //   total: '',
-    //   showDescriptionBox: false,
-    // },
-  ];
-
-  sn: number = 0;
-  name: string = '';
-  taxRate: string = '';
-  quantity: number = 0;
-  rate: Number = 0;
-  amount: number = 0;
-  tax: number = 0;
-  total: number = 0;
-  totalAmount: number = 0;
-  totalAmountInWords: string = '';
   isDropdownOpen$(id: string) {
     return this.dropdownService.isDropdownOpen$(id);
   }
 
-  onInputChange(item: any): void {
-    this.sn = item.sn;
-    this.name = item.name;
-    this.taxRate = item.taxRate;
-    this.quantity = item.quantity;
-    this.rate = item.rate;
-    this.amount = item.amount;
-    this.tax = item.tax;
-    this.total = item.total;
-  }
+  // onInputChange(item: any): void {
+  //   this.sn = item.sn;
+  //   this.name = item.name;
+  //   this.taxRate = item.taxRate;
+  //   this.quantity = item.quantity;
+  //   this.rate = item.rate;
+  //   this.amount = item.amount;
+  //   this.tax = item.tax;
+  //   this.total = item.total;
+  // }
 
   saveField(index: number, event: any) {
     this.fields[index].isEditing = false;
@@ -239,6 +305,11 @@ export class SalesOrderModalComponent {
     this.myForm = this.fb.group({
       myOption: [''],
     });
+
+    const storedItems = localStorage.getItem('items');
+    if (storedItems) {
+      this.items = JSON.parse(storedItems);
+    }
   }
 
   calculateAmount(item: any): void {
@@ -248,12 +319,6 @@ export class SalesOrderModalComponent {
   }
 
   // tableData: any[] = [{}];
-
-  deleteRow(index: number) {
-    // if (index > 0) {
-    this.items.splice(index, 1);
-    // }
-  }
 
   // addNewRow(): void {
   //   // You can add a new empty row here
@@ -366,19 +431,20 @@ export class SalesOrderModalComponent {
     this.showSignatureButton = false;
   }
 
-  onLogoSelected(event: any) {
-    const file = event.target.files[0];
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.logoUrl = reader.result;
-      this.showLogo = true;
-    };
-    reader.readAsDataURL(file);
-  }
+  // onLogoSelected(event: any) {
+  //   const file = event.target.files[0];
+  //   const reader = new FileReader();
+  //   reader.onload = () => {
+  //     this.logoUrl = reader.result;
+  //     this.showLogo = true;
+  //   };
+  //   reader.readAsDataURL(file);
+  // }
 
   clearLogo() {
     this.logoUrl = null;
     this.showLogo = false;
+    this.fileInput.nativeElement.value = '';
     // this.showSignatureButton = false;
   }
 
