@@ -1,0 +1,102 @@
+<div class="container">
+    <div class="modal-wrapper">
+        <form (ngSubmit)="onSubmit()" #inventoryForm="ngForm">
+          <div class="header-section">
+            <section class="title-section">
+              <p class="form-title">{{ isEdit ? 'Edit Inventory' : 'Add Inventory' }}</p>
+            </section>
+          </div>
+
+            <div class="form-group">
+              <label for="item-name">Item Image</label>
+              <span class="btn btn-upload-image" >Upload Item image</span>
+              <!-- <input type="text" id="item-name" required [(ngModel)]="inventoryItem.name" name="name"> -->
+            </div>
+
+          <input type="hidden" [(ngModel)]="inventoryItem.id" name="id">
+
+          <div class="form-group">
+            <label for="item-part-number">Item Part Number</label>
+            <input type="text" id="item-part-number" required [(ngModel)]="inventoryItem.partNo" name="partNo" appNumberOnly>
+          </div>
+
+          <div class="form-group">
+            <label for="item-name">Item Name</label>
+            <input type="text" id="item-name" required [(ngModel)]="inventoryItem.name" name="name">
+          </div>
+
+          <div class="form-group">
+            <label for="item-description">Item Description</label>
+
+            <angular-editor placeholder="'Enter text here...'" [config]="editorConfig" id="item-description" required [(ngModel)]="inventoryItem.description" name="description" ></angular-editor>
+          </div>
+
+          <div class="form-group">
+            <label for="initial-stock">Initial Stock</label>
+            <p class="sub-text">The stock available for sale at the beginning of accounting period</p>
+            <input type="text" id="initial-stock" required [(ngModel)]="inventoryItem.name" name="initialStock">
+          </div>
+
+          <div class="d-flex">
+            <div class="form-group-2">
+              <label for="currency">Currency</label>
+              <div class="currency-selector">
+                <div class="custom-dropdown">
+                  <span class="btn flat-btn" (click)="toggleDropdown('currency')">
+                    {{ (getSelectedItem$("currency") | async) || "Select Currency" }}
+                    <!-- <span class="arrow"></span> -->
+                  </span>
+                  <ul
+                    class="custom-options"
+                    *ngIf="isDropdownOpen$('currency') | async"
+                  >
+                    <li
+                      class="custom-option"
+                      *ngFor="let item of currency"
+                      (click)="selectItem('currency', item)"
+                    >
+                      {{ item }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="form-group-2">
+              <label for="currency-format">Currency Format</label>
+              <div class="tax-btn">
+                <span class="btn flat-btn" (click)="openNumberCurrencyDialog()">
+                  Number/Currency Format
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex">
+            <div class="form-group-2">
+            <label for="buying-price">Buying Price</label>
+            <p class="sub-text">Rate at which you purchased this item</p>
+            <input type="text" id="buying-price" required [(ngModel)]="inventoryItem.buyingPrice" name="buyingPrice" appNumberOnly>
+            </div>
+            <div class="form-group-2">
+            <label for="selling-price">Selling Price</label>
+            <p class="sub-text">Rate at which you are going to sell this item</p>
+            <input type="text" id="selling-price" required [(ngModel)]="inventoryItem.sellingPrice" name="sellingPrice" appNumberOnly>
+            </div>
+          </div>
+
+
+
+          <div class="form-group">
+            <label for="item-quantity">Quantity</label>
+            <input type="text" id="item-quantity" required [(ngModel)]="inventoryItem.quantity" name="quantity" appNumberOnly>
+          </div>
+          <div class="form-group">
+            <label for="item-price">Price</label>
+            <input type="text" id="item-price" required [(ngModel)]="inventoryItem.price" name="price" step="0.01" appNumberOnly>
+          </div>
+          <button type="submit">{{ isEdit ? 'Update Item' : 'Add Item' }}</button>
+        </form>
+        <button (click)="navigateToTable()">Back to Inventory Table</button>
+      </div>
+</div>
+  

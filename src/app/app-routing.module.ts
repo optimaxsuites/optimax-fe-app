@@ -18,6 +18,8 @@ import { PaymentReceiptsModalComponent } from './components/payment-receipts-mod
 import { PaymentRecordReceivedComponent } from './components/payment-record-received/payment-record-received.component';
 import { SalesOrderComponent } from './components/sales-order/sales-order.component';
 import { SalesOrderModalComponent } from './components/sales-order-modal/sales-order-modal.component';
+import { InventoryPageComponent } from './pages/inventory-page/inventory-page.component';
+import { InventoryFormComponent } from './components/inventory-form/inventory-form.component';
 
 const routes: Routes = [
   {
@@ -51,30 +53,27 @@ const routes: Routes = [
         path: 'accounting',
         component: AccountingPageComponent,
       },
-
       {
-        path: 'invoice',
-        component: AccountingPageComponent,
-        children: [
-          // {
-          //   path: 'create-new-invoice',
-          //   component: InvoiceModalComponent
-          // }
-        ],
+        path: 'sales/invoice-modal',
+        component: InvoiceModalComponent,
       },
-
+      {
+        path: 'inventory',
+        component: InventoryPageComponent,
+      },
+      // {
+      //   path: 'inventory/inventory-form',
+      //   component: InventoryFormComponent,
+      // },
+      { path: 'inventory/inventory-form', component: InventoryFormComponent },
+      { path: 'inventory/inventory-form/:id', component: InventoryFormComponent },
       {
         path: 'members',
         component: MembersPageComponent,
       },
-
       {
         path: 'settings',
         component: SettingsPageComponent,
-      },
-      {
-        path: 'invoice-modal',
-        component: InvoiceModalComponent,
       },
       {
         path: 'payment-receipts-modal',
@@ -84,7 +83,6 @@ const routes: Routes = [
         path: 'sales-order-modal',
         component: SalesOrderModalComponent,
       },
-
       {
         path: 'sales-order',
         component: SalesOrderComponent,
