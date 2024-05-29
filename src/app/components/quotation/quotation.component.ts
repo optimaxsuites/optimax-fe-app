@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { TopProductService } from '../../services/top-product/top-product.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-quotation',
@@ -20,5 +21,6 @@ export class QuotationComponent {
   ngOnInit(): void {
     this.tableData = this.topProductsService.initializeTopProduct();
   }
+
 
 }

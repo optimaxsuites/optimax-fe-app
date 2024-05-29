@@ -1,0 +1,31 @@
+
+
+<div class="main">
+<!-- <button [routerLink]="['/inventory/inventory-form']"> Add New Item</button> -->
+
+    <div class="add-new-inventory-button">
+        <button class="btn" (click)="navigateToForm()">Add New Item <i class="fas fa-plus"></i></button>
+    </div>
+    <table id="inventory-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Quantity</th>
+          <th>Price</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of inventory; let i = index">
+          <td>{{ item.name }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.price }}</td>
+          <td class="actions">
+            <button (click)="editItem(item.id)" class="edit-button">Edit</button>
+            <button (click)="deleteItem(item.id)" class="delete-button">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  

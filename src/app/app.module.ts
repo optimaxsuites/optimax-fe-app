@@ -79,6 +79,9 @@ import { EditableLabelComponent } from './editable-label/editable-label.componen
 import { ConfigureTaxPopupComponent } from './components/configure-tax-popup/configure-tax-popup.component';
 import { NumberCurrencyPopupComponent } from './components/number-currency-popup/number-currency-popup.component';
 import { AddNewClientComponent } from './components/add-new-client/add-new-client.component';
+import { InventoryPageComponent } from './pages/inventory-page/inventory-page.component';
+import { InventoryTableComponent } from './components/inventory-table/inventory-table.component';
+import { InventoryFormComponent } from './components/inventory-form/inventory-form.component';
 
 @NgModule({
   declarations: [
@@ -131,6 +134,9 @@ import { AddNewClientComponent } from './components/add-new-client/add-new-clien
     ConfigureTaxPopupComponent,
     NumberCurrencyPopupComponent,
     AddNewClientComponent,
+    InventoryPageComponent,
+    InventoryTableComponent,
+    InventoryFormComponent,
   ],
   imports: [
     BrowserModule,
