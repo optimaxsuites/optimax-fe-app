@@ -85,56 +85,6 @@
             <i class="fas fa-plus me-2"></i>Add More Field
           </button>
         </div>
-        <div class="">
-          <section class="logo-section">
-            <div class="logo-upload-container">
-              <div class="wrapper">
-                <div class="logo-wrapper">
-                  <img
-                    *ngIf="logoUrl"
-                    [src]="logoUrl"
-                    alt="logo"
-                    class="logo"
-                  />
-                </div>
-              </div>
-              <!-- <div
-                [ngClass]="{ 'show-buttons': !logoUrl }"
-                class="add-logo-btn-wrapper"
-              > -->
-              <div
-                *ngIf="showLogo; else addLogoButtons"
-                class="add-logo-btn-wrapper"
-              >
-                <input
-                  type="file"
-                  #fileInput
-                  style="display: none"
-                  (change)="onLogoSelected($event)"
-                />
-                <button class="btn" (click)="fileInput.click()">
-                  <i class="fas fa-plus me-2"></i>Change Logo
-                </button>
-                <button class="btn" (click)="clearLogo()">
-                  <i class="fa-solid fa-x me-2"></i>Remove Logo
-                </button>
-              </div>
-              <ng-template #addLogoButtons>
-                <div class="add-logo-toggle">
-                  <input
-                    type="file"
-                    #fileInput
-                    style="display: none"
-                    (change)="onLogoSelected($event)"
-                  />
-                  <button class="btn" (click)="fileInput.click()">
-                    <i class="fas fa-plus me-2"></i>Add Image
-                  </button>
-                </div>
-              </ng-template>
-            </div>
-          </section>
-        </div>
       </section>
     </div>
 
@@ -198,27 +148,41 @@
 
     <section class="inputSection">
       <div>
-        <span class="tagName">Item Name</span>
+        <label for="nameInput" class="tagName">Name</label>
         <br />
-        <input #itemNameInput class="inputTag" type="text" />
+        <input id="nameInput" class="inputTag" type="text" [(ngModel)]="name" />
       </div>
 
       <div>
-        <span>Part Number</span>
+        <label for="partNumberInput">Part Number</label>
         <br />
-        <input #partNumberInput class="inputTag" type="text" />
+        <input
+          id="partNumberInput"
+          class="inputTag"
+          type="text"
+          [(ngModel)]="partNumber"
+        />
       </div>
 
       <div>
-        <span>Item description</span>
+        <label for="descriptionInput">Description</label>
         <br />
-        <textarea #descriptionInput class="inputTag"></textarea>
+        <textarea
+          id="#descriptionInput"
+          class="inputTag"
+          [(ngModel)]="description"
+        ></textarea>
       </div>
 
       <div>
-        <span>Quantity</span>
+        <label for="quantityInput">Quantity</label>
         <br />
-        <input #quantityInput class="inputTag" type number />
+        <input
+          id="quantityInput"
+          class="inputTag"
+          type="number"
+          [(ngModel)]="quantity"
+        />
       </div>
 
       <div class="partImage">
@@ -227,7 +191,12 @@
           <div class="logo-upload-container">
             <div class="wrapper">
               <div class="logo-wrapper">
-                <img *ngIf="logoUrl" [src]="logoUrl" alt="logo" class="logo" />
+                <img
+                  *ngIf="previewImageUrl"
+                  [src]="previewImageUrl"
+                  alt="logo"
+                  class="logo"
+                />
               </div>
             </div>
             <div
@@ -265,13 +234,18 @@
       </div>
 
       <div>
-        <span>Approved Budget</span>
+        <label for="approvedBudget">Approved Budget</label>
         <br />
-        <input class="inputTag" type="text" />
+        <input
+          id="approvedBudget"
+          class="inputTag"
+          type="text"
+          [(ngModel)]="approvedBudget"
+        />
       </div>
 
       <div class="buttonDiv">
-        <button class="save-continue">Add Item</button>
+        <button class="save-continue" (click)="addItem()">Add Item</button>
       </div>
     </section>
 
@@ -280,30 +254,35 @@
         <div class="thead">
           <div class="top-products-table-row">
             <div class="table-item">
-              <th class="top-products-table-data">Name</th>
-              <th class="top-products-table-data">Description</th>
-              <th class="top-products-table-data">Quantity</th>
-              <th class="top-products-table-data">Part Number</th>
-              <th class="top-products-table-data">Image</th>
+              <th class="top-products-table-data col-1">Image</th>
+              <th class="top-products-table-data col-1">Name</th>
+              <th class="top-products-table-data col-5">Description</th>
+              <th class="top-products-table-data col-1">Part Number</th>
+              <th class="top-products-table-data col-1">Quantity</th>
             </div>
           </div>
         </div>
         <div class="tbody">
           <div class="top-products-table-row" *ngFor="let item of items">
             <div class="table-item">
-              <td class="top-products-table-data col-5">{{ item.name }}</td>
-              <td class="top-products-table-data col">
-                {{ item.description }}
-              </td>
-              <td class="top-products-table-data col">{{ item.partNumber }}</td>
-              <td class="top-products-table-data col">{{ item.quantity }}</td>
-              <td class="top-products-table-data col">
+              <td class="top-products-table-data col-1">
                 <img
                   *ngIf="item.imageUrl"
                   [src]="item.imageUrl"
                   alt="item image"
+                  class="imageUploaded"
                 />
+                <!-- <pre>{{ item.imageUrl }}</pre> -->
               </td>
+              <td class="top-products-table-data col-1">{{ item.name }}</td>
+              <td class="top-products-table-data col-5">
+                {{ item.description }}
+              </td>
+
+              <td class="top-products-table-data col-1">
+                {{ item.partNumber }}
+              </td>
+              <td class="top-products-table-data col-1">{{ item.quantity }}</td>
             </div>
           </div>
         </div>
@@ -339,137 +318,50 @@
   </div>
 </div>
 
-<!-- <div class="table-wrapper">
-  <div class="top-products-table w3-table">
-    <div class="thead">
-      <div class="top-products-table-row">
-        <div class="table-item">
-          <th class="top-products-table-data col">Item</th>
-          <th class="top-products-table-data col">Quantity</th>
-          <th class="top-products-table-data col">
-            Part Number <span class="input-span"></span>
-          </th>
-          <th class="top-products-table-data col">Image</th>
-
-          <th class="top-products-table-data"></th>
+<!-- <div class="">
+  <section class="logo-section">
+    <div class="logo-upload-container">
+      <div class="wrapper">
+        <div class="logo-wrapper">
+          <img
+            *ngIf="logoUrl"
+            [src]="logoUrl"
+            alt="logo"
+            class="logo"
+          />
         </div>
       </div>
-    </div>
-    <div class="tbody">
-   <div
-        class="top-products-table-row"
-        *ngFor="let item of tableData; let i = index"
+     
+      <div
+        *ngIf="showLogo; else addLogoButtons"
+        class="add-logo-btn-wrapper"
       >
-        <div class="table-item">
-          <td class="top-products-table-data col"> -->
-<!-- <mat-form-field class="uio"
-              ><input matInput [(ngModel)]="item.item"
-            /></mat-form-field> -->
-<!-- <input
-              type="text"
-              class="form-control-opti"
-              [(ngModel)]="item.sn"
-              (ngModelChange)="onInputChange(item)"
-            /> -->
-<!-- </td>
-          <td class="top-products-table-data col-5"> -->
-<!-- <input
-              type="text"
-              class="form-control-opti"
-              [(ngModel)]="item.name"
-              (ngModelChange)="onInputChange(item)"
-            /> -->
-<!-- </td>
-          <td class="top-products-table-data col ms-2"> -->
-<!-- <input
-              type="text"
-              class="form-control-opti"
-              [(ngModel)]="item.taxRate"
-              (ngModelChange)="onInputChange(item)"
-              appNumberOnly
-            /> -->
-<!-- </td>
-          <td class="top-products-table-data col ms-2"> -->
-<!-- <input
-              type="text"
-              class="form-control-opti"
-              [(ngModel)]="item.quantity"
-              (ngModelChange)="onInputChange(item)"
-              (input)="calculateAmount(item)"
-              appNumberOnly
-            /> -->
-<!-- </td>
-          <td class="top-products-table-data col ms-2"> -->
-<!-- <input
-              type="text"
-              class="form-control-opti"
-              [(ngModel)]="item.rate"
-              (ngModelChange)="onInputChange(item)"
-              (input)="calculateAmount(item)"
-              appNumberOnly
-            /> -->
-<!-- </td> -->
-<!-- <td class="top-products-table-data col ms-2"> -->
-<!-- <input
-              type="text"
-              class="form-control-opti"
-              [(ngModel)]="item.amount"
-              (ngModelChange)="onInputChange(item)"
-              appNumberOnly
-            /> -->
-<!-- </td> -->
-<!-- <td class="top-products-table-data col ms-2"> -->
-<!-- <input
-              type="text"
-              class="form-control-opti"
-              [(ngModel)]="item.tax"
-              (ngModelChange)="onInputChange(item)"
-              appNumberOnly
-            /> -->
-<!-- </td> -->
-<!-- <td class="top-products-table-data col ms-2"> -->
-<!-- <input
-              type="text"
-              class="form-control-opti"
-              [(ngModel)]="item.total"
-              (ngModelChange)="onInputChange(item)"
-              (ngModelChange)="onInputChange(item)"
-              appNumberOnly
-            /> -->
-<!-- </td>
-          <td class="top-products-table-data">
-            <i (click)="deleteRow(i)" class="fa-solid fa-x p-2"></i>
-          </td>
-        </div>
-
-        <div class="description-container">
-         
-          <td class="add-description-btn" *ngIf="!item.showDescriptionBox">
-            <button
-              class="btn btn-light"
-              (click)="item.showDescriptionBox = true"
-            >
-              <i class="fas fa-plus me-2"></i>Add Description
-            </button>
-          </td>
-        
-
-          <div class="description-box" *ngIf="item.showDescriptionBox">
-            <angular-editor
-              placeholder="'Enter text here...'"
-              [config]="editorConfig"
-            ></angular-editor>
-          </div>
-        </div>
-
-        <div class="image-upload-container">
-          
-        </div>
+        <input
+          type="file"
+          #fileInput
+          style="display: none"
+          (change)="onLogoSelected($event)"
+        />
+        <button class="btn" (click)="fileInput.click()">
+          <i class="fas fa-plus me-2"></i>Change Logo
+        </button>
+        <button class="btn" (click)="clearLogo()">
+          <i class="fa-solid fa-x me-2"></i>Remove Logo
+        </button>
       </div>
-    
+      <ng-template #addLogoButtons>
+        <div class="add-logo-toggle">
+          <input
+            type="file"
+            #fileInput
+            style="display: none"
+            (change)="onLogoSelected($event)"
+          />
+          <button class="btn" (click)="fileInput.click()">
+            <i class="fas fa-plus me-2"></i>Add Image
+          </button>
+        </div>
+      </ng-template>
     </div>
-  </div>
- <div class="add-table-row">
-    <button (click)="addNewRow()" class="btn new-table-row">Add New</button>
-  </div>
-</div>  -->
+  </section>
+</div> -->
