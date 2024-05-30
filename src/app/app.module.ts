@@ -24,6 +24,9 @@ import { HttpClientModule } from '@angular/common/http';
 import { AngularEditorModule } from '@kolkov/angular-editor';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { AsyncPipe } from '@angular/common';
+import {MatPaginatorModule} from '@angular/material/paginator';
+import { MatTableModule } from '@angular/material/table';
+
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -82,6 +85,7 @@ import { AddNewClientComponent } from './components/add-new-client/add-new-clien
 import { InventoryPageComponent } from './pages/inventory-page/inventory-page.component';
 import { InventoryTableComponent } from './components/inventory-table/inventory-table.component';
 import { InventoryFormComponent } from './components/inventory-form/inventory-form.component';
+import { ManagedInventoryTableComponent } from './components/managed-inventory-table/managed-inventory-table.component';
 
 @NgModule({
   declarations: [
@@ -137,6 +141,7 @@ import { InventoryFormComponent } from './components/inventory-form/inventory-fo
     InventoryPageComponent,
     InventoryTableComponent,
     InventoryFormComponent,
+    ManagedInventoryTableComponent,
   ],
   imports: [
     BrowserModule,
@@ -166,7 +171,9 @@ import { InventoryFormComponent } from './components/inventory-form/inventory-fo
     AsyncPipe,
     MatAutocompleteModule,
     MatExpansionModule,
-    MatRadioModule
+    MatRadioModule,
+    MatPaginatorModule,
+    MatTableModule
     
   ],
   providers: [provideAnimationsAsync(), provideNativeDateAdapter()],
