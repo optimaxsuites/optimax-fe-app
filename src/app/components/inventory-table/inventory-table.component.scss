@@ -16,24 +16,47 @@
 
     
 }
+.tbody{
+  .top-products-table-row{
+      background-color: #f8feff;
+      border: 1px solid #e3eef0;
+      // background-color: red;
+      margin-bottom: 1rem;
+      min-height: 200px;
+      // padding: 2rem 0;
+      // box-sizing: border-box;
+      margin-bottom: 1rem;
 
+
+      .table-item{
+          display: flex;
+          justify-content: space-between;
+          padding: 1rem 0;
+
+
+
+          .top-products-table-data{
+              input{
+                  background-color: transparent;
+                  padding: 0.5rem;
+              }
+          }
+      }
+  }
+
+
+}
 table {
-    width: 100%;
+    width: 2500px;
     border-collapse: collapse;
     margin-top: 20px;
     padding: 0 1rem;
   }
 
-  .top-products-title{
-    color: #224957;
-    font-weight: bolder;
-    font-size: x-large;
-    margin-top: 0;
-    margin-bottom: 0.5rem;
-    padding: 1rem;
-}
-  
+
+
   table, th, td {
+    font-weight: 400;
     // border: 1px solid #ddd;
   }
   

@@ -538,6 +538,7 @@ th{
 
     .thead{
         width: 100%;
+        
         .top-products-table-row{       
             .table-item{
                 display: flex;
@@ -548,6 +549,7 @@ th{
                 color: #fff;
 
                 .top-products-table-data{
+                    font-weight: 400;
                     .input-span {
                         font-size: .9em;
                     }

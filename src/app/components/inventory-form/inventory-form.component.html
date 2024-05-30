@@ -22,7 +22,7 @@
 
           <div class="form-group">
             <label for="item-name">Item Name</label>
-            <input type="text" id="item-name" required [(ngModel)]="inventoryItem.name" name="name">
+            <input type="text" id="item-name" required [(ngModel)]="inventoryItem.itemName" name="nitemName">
           </div>
 
           <div class="form-group">
@@ -34,7 +34,7 @@
           <div class="form-group">
             <label for="initial-stock">Initial Stock</label>
             <p class="sub-text">The stock available for sale at the beginning of accounting period</p>
-            <input type="text" id="initial-stock" required [(ngModel)]="inventoryItem.name" name="initialStock">
+            <input type="text" id="initial-stock" required [(ngModel)]="inventoryItem.initialStock" name="initialStock">
           </div>
 
           <div class="d-flex">
@@ -87,13 +87,53 @@
 
 
           <div class="form-group">
-            <label for="item-quantity">Quantity</label>
-            <input type="text" id="item-quantity" required [(ngModel)]="inventoryItem.quantity" name="quantity" appNumberOnly>
+            <label for="inventory-ledger">Inventory Ledger</label>
+            <p class="sub-text">The ledger account where you record the inventory of this item</p>
+            <input placeholder="Select Inventory Ledger" type="text" list="inventoryLedger" id="inventory-ledger" required [(ngModel)]="inventoryItem.inventoryLedger" name="inventory-ledger">
+            <datalist id="inventoryLedger">
+              <option *ngFor="let ledger of inventoryLedgers" [value]="ledger">{{ ledger }}</option>
+            </datalist>
           </div>
+
+
+          <div class="d-flex">
+            <div class="form-group-2">
+              <label for="purchase-ledger">Purchase Ledger</label>
+              <p class="sub-text">The ledger account where you record the purchase of this item</p>
+              <input placeholder="Select Purchase Ledger" type="text" list="purchaseLedger"  id="purchase-ledger"  name="purchase-ledger" required [(ngModel)]="inventoryItem.purchaseLedger">
+              <datalist id="purchaseLedger">
+                <option *ngFor="let ledger of purchaseLedgers" [value]="ledger">{{ ledger }}</option>
+              </datalist>
+            </div>
+
+            <div class="form-group-2">
+              <label for="sales-ledger">Sales Ledger</label>
+              <p class="sub-text">The ledger account where you record the sales of this item</p>
+              <input placeholder="Select Sales Ledger" type="text" list="salesLedger" id="sales-ledger" required [(ngModel)]="inventoryItem.salesLedger" name="sales-ledger" >
+              <datalist id="salesLedger">
+                <option *ngFor="let ledger of salesLedgers" [value]="ledger">{{ ledger }}</option>
+              </datalist>
+            </div>
+          </div>
+
+
+          <div class="d-flex">
+            <div class="form-group-2">
+              <label for="tax-rate">Tax Rate (in %)</label>
+              <input type="text" id="tax-rate" required [(ngModel)]="inventoryItem.taxRate" name="tax-rate" appNumberOnly>
+            </div>
+            <div class="form-group-2">
+              <label for="hsn">HSN</label>
+              <input type="text" id="hsn" required [(ngModel)]="inventoryItem.hsn" name="hsn" >
+            </div>
+          </div>
+
           <div class="form-group">
-            <label for="item-price">Price</label>
-            <input type="text" id="item-price" required [(ngModel)]="inventoryItem.price" name="price" step="0.01" appNumberOnly>
+            <label for="tag">Tag</label>
+            <input type="text" id="tag" required [(ngModel)]="inventoryItem.tag" name="tag" >
           </div>
+          
+
           <button type="submit">{{ isEdit ? 'Update Item' : 'Add Item' }}</button>
         </form>
         <button (click)="navigateToTable()">Back to Inventory Table</button>

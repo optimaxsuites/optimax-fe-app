@@ -7,6 +7,26 @@ import { Observable } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { NumberCurrencyPopupComponent } from '../number-currency-popup/number-currency-popup.component';
 
+
+
+interface InventoryItem {
+  id?: string;
+  itemName?: string;
+  partNo?: number;
+  image?: string;
+  description?: string;
+  buyingPrice?: number;
+  sellingPrice?: number;
+  initialStock?: number;
+  purchaseLedger?: string;
+  salesLedger?: string;
+  inventoryLedger?: string;
+  taxRate?: number;
+  hsn?: string;
+  tag?: string;
+}
+
+
 @Component({
   selector: 'app-inventory-form',
   templateUrl: './inventory-form.component.html',
@@ -14,7 +34,49 @@ import { NumberCurrencyPopupComponent } from '../number-currency-popup/number-cu
 })
 export class InventoryFormComponent implements OnInit {
 
-  inventoryItem = { id: '', name: '', quantity: 0, price: 0.0, partNo: 0, description: '', buyingPrice: 0, sellingPrice: 0,  };
+
+  inventoryItem: InventoryItem = {};
+
+  // inventoryItem = { 
+  //   id: '', 
+  //   itemName: '', 
+  //   partNo: 0, 
+  //   image: '',
+  //   description: '', 
+  //   buyingPrice: 0, 
+  //   sellingPrice: 0, 
+  //   initialStock: 0,
+  //   purchaseLedger: '',
+  //   salesLedger: '',
+  //   inventoryLedger: '',
+  //   taxRate: 0,
+  //   hsn: '',
+  //   tag: '',
+  // };
+
+  inventoryLedgers = [
+    'Inventory Ledger 1',
+    'Inventory Ledger 2',
+    'Inventory Ledger 3',
+    'Inventory Ledger 4',
+    'Inventory Ledger 5'
+  ];
+
+  purchaseLedgers = [
+    'Ledger 1',
+    'Ledger 2',
+    'Ledger 3',
+    'Ledger 4',
+    'Ledger 5'
+  ];
+
+  salesLedgers = [
+    'Ledger sales 1',
+    'Ledger sales 2',
+    'Ledger sales 3',
+    'Ledger sales 4',
+    'Ledger sales 5'
+  ];
   isEdit = false;
 
   currencyList = [
