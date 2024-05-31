@@ -5,7 +5,14 @@ import {
   HttpResponse,
 } from '@angular/common/http';
 
-import { Component, ElementRef, ViewChild, OnInit } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  ViewChild,
+  OnInit,
+  Output,
+  EventEmitter,
+} from '@angular/core';
 import {
   FormBuilder,
   FormControl,
@@ -46,11 +53,11 @@ interface Field {
 }
 
 @Component({
-  selector: 'app-sales-order-modal',
-  templateUrl: './sales-order-modal.component.html',
-  styleUrl: './sales-order-modal.component.scss',
+  selector: 'app-rfq-modal',
+  templateUrl: './rfq-modal.component.html',
+  styleUrl: './rfq-modal.component.scss',
 })
-export class SalesOrderModalComponent {
+export class RfqModalComponent {
   showSecondComponent = false;
   showSignatureButton: boolean = false;
   showTermsConditionButton = false;
@@ -78,6 +85,12 @@ export class SalesOrderModalComponent {
   quantity: number = 0;
   imageUrl: string = '';
   approvedBudget: number = 0;
+  rfqNo: string = '';
+  dateIssued: any = null;
+  expiryDate: any = null;
+  projectTitle: string = '';
+  preparedBy: string = '';
+  position: string = '';
 
   items: {
     name: string;
@@ -145,24 +158,18 @@ export class SalesOrderModalComponent {
     }
   }
 
-  // onLogoSelected(event: any) {
-  //   const file: File = event.target.files[0];
-  //   // console.log(file);
-  //   if (file) {
-  //     const reader = new FileReader();
-  //     reader.readAsDataURL(file);
-  //     reader.onload = () => {
-  //       // console.log(reader.result);
+  @Output() rfqDataSaved = new EventEmitter<any>();
 
-  //       this.logoUrl = reader.result;
-  //       this.showLogo = true;
-  //     };
-  //     reader.onerror = (error) => {
-  //       console.error('Error reading file:', error);
-  //       // Display an error message to the user (optional)
-  //     };
-  //   }
-  // }
+  saveAndContinue() {
+    this.rfqDataSaved.emit({
+      rfqNo: this.rfqNo,
+      dateIssued: this.dateIssued,
+      expiryDate: this.expiryDate,
+      preparedBy: this.preparedBy,
+      position: this.position,
+      projectTitle: this.projectTitle,
+    });
+  }
 
   getSelectedItem$(id: string): Observable<string | null> {
     return this.dropdownService.getSelectedItem$(id);

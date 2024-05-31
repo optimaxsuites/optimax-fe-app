@@ -8,14 +8,14 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatSelectModule } from '@angular/material/select';
-import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonModule } from '@angular/material/button';
 import { CdkScrollable } from '@angular/cdk/scrolling';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatDividerModule } from '@angular/material/divider';
-import {MatRadioModule} from '@angular/material/radio';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
+import { MatTabGroup, MatTabsModule } from '@angular/material/tabs';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatRadioModule } from '@angular/material/radio';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { DropdownModule } from 'primeng/dropdown';
 // import { EditorModule } from "@progress/kendo-angular-editor";
@@ -73,7 +73,6 @@ import { PaymentReceiptsComponent } from './components/payment-receipts/payment-
 import { PaymentReceiptsModalComponent } from './components/payment-receipts-modal/payment-receipts-modal.component';
 import { PaymentRecordReceivedComponent } from './components/payment-record-received/payment-record-received.component';
 import { SalesOrderComponent } from './components/sales-order/sales-order.component';
-import { SalesOrderModalComponent } from './components/sales-order-modal/sales-order-modal.component';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { EditableLabelComponent } from './editable-label/editable-label.component';
 import { ConfigureTaxPopupComponent } from './components/configure-tax-popup/configure-tax-popup.component';
@@ -82,7 +81,9 @@ import { AddNewClientComponent } from './components/add-new-client/add-new-clien
 import { InventoryPageComponent } from './pages/inventory-page/inventory-page.component';
 import { InventoryTableComponent } from './components/inventory-table/inventory-table.component';
 import { InventoryFormComponent } from './components/inventory-form/inventory-form.component';
-
+import { PurchasePageComponent } from './pages/purchase-page/purchase-page.component';
+import { RfqComponent } from './components/rfq/rfq.component';
+import { RfqModalComponent } from './components/rfq-modal/rfq-modal.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -126,10 +127,10 @@ import { InventoryFormComponent } from './components/inventory-form/inventory-fo
     BudgetingForecastingComponent,
     CashManagementComponent,
     PaymentReceiptsComponent,
+    RfqComponent,
     PaymentReceiptsModalComponent,
     PaymentRecordReceivedComponent,
     SalesOrderComponent,
-    SalesOrderModalComponent,
     EditableLabelComponent,
     ConfigureTaxPopupComponent,
     NumberCurrencyPopupComponent,
@@ -137,11 +138,15 @@ import { InventoryFormComponent } from './components/inventory-form/inventory-fo
     InventoryPageComponent,
     InventoryTableComponent,
     InventoryFormComponent,
+    PurchasePageComponent,
+    RfqModalComponent,
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
+    MatTabGroup,
     FormsModule,
+    MatTooltip,
     MatGridListModule,
     ReactiveFormsModule,
     NgApexchartsModule,
@@ -150,6 +155,7 @@ import { InventoryFormComponent } from './components/inventory-form/inventory-fo
     MatFormFieldModule,
     MatInputModule,
     MatIconModule,
+    MatTabsModule,
     MatDatepickerModule,
     MatSelectModule,
     MatTooltipModule,
@@ -166,8 +172,7 @@ import { InventoryFormComponent } from './components/inventory-form/inventory-fo
     AsyncPipe,
     MatAutocompleteModule,
     MatExpansionModule,
-    MatRadioModule
-    
+    MatRadioModule,
   ],
   providers: [provideAnimationsAsync(), provideNativeDateAdapter()],
   bootstrap: [AppComponent],

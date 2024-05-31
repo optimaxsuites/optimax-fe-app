@@ -71,9 +71,24 @@
   // border: 1px solid black;
 }
 
-// .partImage {
-//   padding: 2rem;
-// }
+.partImage {
+  justify-self: center;
+}
+
+.headerInputDiv {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 2rem;
+}
+
+.headerInputDiv:nth-child(2) {
+  flex-direction: row;
+  gap: 2rem;
+}
+
+.headerInputDiv:nth-child(2) > div {
+  width: 81%;
+}
 
 article {
   display: flex;
@@ -99,12 +114,24 @@ th:nth-child(4) {
   // margin-top: 0.5rem;
 }
 
-.inputTag {
+.inputTag,
+.inputTage,
+.inputPreparedBy {
   width: 100%;
   margin-top: 0.5rem;
   height: 4rem;
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
+}
+
+.longInput {
+  height: 3.5rem;
+  // margin: 1rem 0rem;
+  width: 95%;
+  font-size: 1.7rem;
+  border: none;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid black;
 }
 
 .inputTag:focus {
@@ -251,11 +278,19 @@ th:nth-child(4) {
 
 .right {
   width: 49%;
+  background-color: #f8feff;
+  border: 1px solid #e3eef0;
   padding: 1rem;
+  border-radius: 10px;
   // background-color: #f2fcff ;
 
   // border: 1px solid black;
 }
+
+.selectCompany {
+  width: 100%;
+}
+
 .billing-title {
   font-size: 1.5em;
 }
@@ -388,6 +423,43 @@ th:nth-child(4) {
 
 .w3-table td {
   text-align: center;
+}
+
+.namePartnoDiv {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.inputTage {
+  height: 11rem;
+}
+
+.namePartnoDiv > div {
+  width: 49%;
+}
+
+.namePartnoDiv > section {
+  width: 20%;
+}
+
+.inputPreparedBy,
+.dateSector {
+  border: none;
+  border-bottom: 1px solid black;
+  width: 50%;
+  height: 3rem;
+}
+
+.dateSector {
+  width: 90%;
+}
+
+.inputPreparedBy:focus,
+.longInput:focus,
+.dateSector:focus {
+  border-bottom: 1px solid black;
 }
 
 .input {
