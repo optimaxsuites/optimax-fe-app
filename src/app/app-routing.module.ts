@@ -65,7 +65,7 @@ const routes: Routes = [
         component: RfqComponent,
       },
       {
-        path: 'rfq-modal',
+        path: 'purchase/rfq-modal',
         component: RfqModalComponent,
       },
 

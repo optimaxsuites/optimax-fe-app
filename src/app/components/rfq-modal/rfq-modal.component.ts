@@ -23,12 +23,13 @@ import { AngularEditorConfig } from '@kolkov/angular-editor';
 import { Observable } from 'rxjs';
 import { DropdownService } from '../../services/dropdown/dropdown.service';
 
-interface RfqItem {
-  item: string;
+interface EditItem {
+  name: string;
+  partNumber: string;
   description: string;
   quantity: number;
-  unitPrice: number;
-  totalPrice: number;
+  imageUrl: string;
+  approvedBudget: number;
 }
 
 interface Company {
@@ -78,7 +79,7 @@ export class RfqModalComponent {
   termsGroup: any[] = [];
   charges: any[] = [];
   moreFields: any[] = [];
-
+  editData: EditItem[] = [];
   name: string = '';
   partNumber: string = '';
   description: string = '';
@@ -91,6 +92,8 @@ export class RfqModalComponent {
   projectTitle: string = '';
   preparedBy: string = '';
   position: string = '';
+  selectedItemIndex: number | null = null;
+  selectedItem: EditItem | null = null;
 
   items: {
     name: string;
@@ -125,6 +128,9 @@ export class RfqModalComponent {
     this.clearInputs();
   }
 
+ 
+
+
   clearInputs() {
     this.name = '';
     this.partNumber = '';
@@ -132,6 +138,12 @@ export class RfqModalComponent {
     this.quantity = 0;
     this.approvedBudget = 0;
     this.imageUrl = '';
+  }
+
+  removeLogo() {
+    this.imageUrl = '';
+    this.previewImageUrl = '';
+    this.showLogo = false; // Optional, hide the preview element
   }
 
   onLogoSelected(event: any) {
@@ -447,13 +459,6 @@ export class RfqModalComponent {
   //   };
   //   reader.readAsDataURL(file);
   // }
-
-  clearLogo() {
-    this.logoUrl = null;
-    this.showLogo = false;
-    this.fileInput.nativeElement.value = '';
-    // this.showSignatureButton = false;
-  }
 
   uploadedFiles: {
     name: string;

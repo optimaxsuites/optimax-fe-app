@@ -130,7 +130,7 @@
       </section>
     </div>
 
-    <section class="inputSection">
+    <section class="inputSection" *ngIf="selectedItemIndex !== null">
       <div class="namePartnoDiv">
         <div>
           <label for="nameInput" class="tagName">Name</label>
@@ -218,7 +218,7 @@
                 <button class="btn" (click)="fileInput.click()">
                   <i class="fas fa-plus me-2"></i>Change Logo
                 </button>
-                <button class="btn" (click)="clearLogo()">
+                <button class="btn" (click)="removeLogo()">
                   <i class="fa-solid fa-x me-2"></i>Remove Logo
                 </button>
               </div>
@@ -255,6 +255,7 @@
               <th class="top-products-table-data col-5">Description</th>
               <th class="top-products-table-data col-1">Part Number</th>
               <th class="top-products-table-data col-1">Quantity</th>
+              <th class="top-products-table-data col-1">Action</th>
             </div>
           </div>
         </div>
@@ -279,6 +280,27 @@
                 {{ item.partNumber }}
               </td>
               <td class="top-products-table-data col-1">{{ item.quantity }}</td>
+              <td class="top-products-table-data col-1">
+                <div class="actionDiv">
+                  <div class="image-container">
+                    <img
+                    
+                      class="actionTags"
+                      src="../../../assets/Edit.svg"
+                      alt=""
+                    />
+                    <span class="tooltip">edit</span>
+                  </div>
+                  <div class="image-container">
+                    <img
+                      class="actionTags"
+                      src="../../../assets/delete (1).svg"
+                      alt=""
+                    />
+                    <span class="tooltip">delete</span>
+                  </div>
+                </div>
+              </td>
             </div>
           </div>
         </div>
