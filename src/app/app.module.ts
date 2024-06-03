@@ -180,8 +180,7 @@ import { RfqModalComponent } from './components/rfq-modal/rfq-modal.component';
     MatExpansionModule,
     MatRadioModule,
     MatPaginatorModule,
-    MatTableModule
-    
+    MatTableModule,
     MatRadioModule,
   ],
   providers: [provideAnimationsAsync(), provideNativeDateAdapter()],
