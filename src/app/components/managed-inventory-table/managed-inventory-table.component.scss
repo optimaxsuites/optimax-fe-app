@@ -32,6 +32,7 @@
   
   .table {
     width: 2500px;
+    padding: 1rem;
     // border-collapse: collapse;
   }
 
@@ -100,10 +101,6 @@
 //   }
   
   th {
-    height: 20px;
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
     background-color: #25925B;
     color: #fff ;
   }
