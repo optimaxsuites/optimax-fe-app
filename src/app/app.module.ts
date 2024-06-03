@@ -24,6 +24,9 @@ import { HttpClientModule } from '@angular/common/http';
 import { AngularEditorModule } from '@kolkov/angular-editor';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { AsyncPipe } from '@angular/common';
+import {MatPaginatorModule} from '@angular/material/paginator';
+import { MatTableModule } from '@angular/material/table';
+
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -81,6 +84,8 @@ import { AddNewClientComponent } from './components/add-new-client/add-new-clien
 import { InventoryPageComponent } from './pages/inventory-page/inventory-page.component';
 import { InventoryTableComponent } from './components/inventory-table/inventory-table.component';
 import { InventoryFormComponent } from './components/inventory-form/inventory-form.component';
+import { ManagedInventoryTableComponent } from './components/managed-inventory-table/managed-inventory-table.component';
+
 import { PurchasePageComponent } from './pages/purchase-page/purchase-page.component';
 import { RfqComponent } from './components/rfq/rfq.component';
 import { RfqModalComponent } from './components/rfq-modal/rfq-modal.component';
@@ -138,6 +143,7 @@ import { RfqModalComponent } from './components/rfq-modal/rfq-modal.component';
     InventoryPageComponent,
     InventoryTableComponent,
     InventoryFormComponent,
+    ManagedInventoryTableComponent,
     PurchasePageComponent,
     RfqModalComponent,
   ],
@@ -172,6 +178,10 @@ import { RfqModalComponent } from './components/rfq-modal/rfq-modal.component';
     AsyncPipe,
     MatAutocompleteModule,
     MatExpansionModule,
+    MatRadioModule,
+    MatPaginatorModule,
+    MatTableModule
+    
     MatRadioModule,
   ],
   providers: [provideAnimationsAsync(), provideNativeDateAdapter()],
