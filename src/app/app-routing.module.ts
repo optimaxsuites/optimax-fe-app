@@ -17,9 +17,12 @@ import { ReceiptComponent } from './components/receipt/receipt.component';
 import { PaymentReceiptsModalComponent } from './components/payment-receipts-modal/payment-receipts-modal.component';
 import { PaymentRecordReceivedComponent } from './components/payment-record-received/payment-record-received.component';
 import { SalesOrderComponent } from './components/sales-order/sales-order.component';
-import { SalesOrderModalComponent } from './components/sales-order-modal/sales-order-modal.component';
+// import { SalesOrderModalComponent } from './components/rfq-modal/rfq-modal.component';
 import { InventoryPageComponent } from './pages/inventory-page/inventory-page.component';
 import { InventoryFormComponent } from './components/inventory-form/inventory-form.component';
+import { PurchasePageComponent } from './pages/purchase-page/purchase-page.component';
+import { RfqComponent } from './components/rfq/rfq.component';
+import { RfqModalComponent } from './components/rfq-modal/rfq-modal.component';
 
 const routes: Routes = [
   {
@@ -54,6 +57,19 @@ const routes: Routes = [
         component: AccountingPageComponent,
       },
       {
+        path: 'purchase',
+        component: PurchasePageComponent,
+      },
+      {
+        path: 'rfq',
+        component: RfqComponent,
+      },
+      {
+        path: 'rfq-modal',
+        component: RfqModalComponent,
+      },
+
+      {
         path: 'sales/invoice-modal',
         component: InvoiceModalComponent,
       },
@@ -66,7 +82,10 @@ const routes: Routes = [
       //   component: InventoryFormComponent,
       // },
       { path: 'inventory/inventory-form', component: InventoryFormComponent },
-      { path: 'inventory/inventory-form/:id', component: InventoryFormComponent },
+      {
+        path: 'inventory/inventory-form/:id',
+        component: InventoryFormComponent,
+      },
       {
         path: 'members',
         component: MembersPageComponent,
@@ -79,10 +98,11 @@ const routes: Routes = [
         path: 'payment-receipts-modal',
         component: PaymentReceiptsModalComponent,
       },
-      {
-        path: 'sales-order-modal',
-        component: SalesOrderModalComponent,
-      },
+
+      // {
+      //   path: 'sales-order-modal',
+      //   component: SalesOrderModalComponent,
+      // },
       {
         path: 'sales-order',
         component: SalesOrderComponent,
