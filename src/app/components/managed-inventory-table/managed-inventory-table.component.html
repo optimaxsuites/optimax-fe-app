@@ -1,137 +1,45 @@
-<!-- 
+
 
 <div class="main">
-        <table id="inventory-table">
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Part No</th>
-              <th> Image</th>
-              <th>Description</th>
-              <th>Initial Stock</th>
-              <th>Buying Price</th>
-              <th>Selling Price</th>
-              <th>Inventory Ledger</th>
-              <th>Purchase Ledger</th>
-              <th>Sales Ledger</th>
-              <th>Tax Rate</th>
-              <th>HSN</th>
-              <th>Current Stock</th>
-              <th>Total Sold Quantity</th>
-              <th>Total Purchase Quantity</th>
-              <th>Tag</th>
-            </tr>
-          </thead>
-          <tbody class="tbody">
-            <tr class="top-products-table-row" *ngFor="let item of paginatedInventory">
-              <td class="top-products-table-data" >{{ item.itemName }}</td>
-              <td class="top-products-table-data" >{{ item.partNo }}</td>
-              <td class="top-products-table-data" >{{ item.image }}</td>
-              <td class="top-products-table-data" >{{item.description}}</td>
-              <td class="top-products-table-data" > {{item.initialStock}} </td>
-              <td class="top-products-table-data" > {{item.buyingPrice}} </td>
-              <td class="top-products-table-data" > {{item.sellingPrice}} </td>
-              <td class="top-products-table-data" > {{item.inventoryLedger}} </td>
-              <td class="top-products-table-data" > {{item.purchaseLedger}} </td>
-              <td class="top-products-table-data" > {{item.salesLedger}} </td>
-              <td class="top-products-table-data" > {{item.taxRate}} </td>
-              <td class="top-products-table-data" > {{item.hsn}} </td>
-              <td class="top-products-table-data" > {{item.tag}} </td>
-            </tr>
-          </tbody>
-        </table>
-        
-      </div>
-
-      <div id="pagination-controls">
-        <button (click)="previousPage()" [disabled]="currentPage === 1">Previous</button>
-        <button *ngFor="let page of totalPagesArray" (click)="setPage(page)" [disabled]="currentPage === page">{{ page }}</button>
-        <button (click)="nextPage()" [disabled]="currentPage === totalPages">Next</button>
-      </div>
-      
-     -->
-
-
-     <div class="main">
-        <div class="table-container">
-          <table mat-table [dataSource]="dataSource" class="table">
-            <ng-container matColumnDef="itemName">
-              <th *matHeaderCellDef> Item </th>
-              <td *matCellDef="let item"> {{item.itemName}} </td>
-            </ng-container>
-            <ng-container matColumnDef="partNo">
-              <th *matHeaderCellDef> Part No </th>
-              <td mat-cell *matCellDef="let item"> {{item.partNo}} </td>
-            </ng-container>
-            <ng-container matColumnDef="image">
-              <th *matHeaderCellDef> Image </th>
-              <td mat-cell *matCellDef="let item"> {{item.image}} </td>
-            </ng-container>
-            <ng-container matColumnDef="description">
-              <th *matHeaderCellDef> Description </th>
-              <td mat-cell *matCellDef="let item"> {{item.description}} </td>
-            </ng-container>
-            <ng-container matColumnDef="initialStock">
-              <th *matHeaderCellDef> Initial Stock </th>
-              <td mat-cell *matCellDef="let item"> {{item.initialStock}} </td>
-            </ng-container>
-            <ng-container matColumnDef="buyingPrice">
-              <th *matHeaderCellDef> Buying Price </th>
-              <td mat-cell *matCellDef="let item"> {{item.buyingPrice}} </td>
-            </ng-container>
-            <ng-container matColumnDef="sellingPrice">
-              <th *matHeaderCellDef> Selling Price </th>
-              <td mat-cell *matCellDef="let item"> {{item.sellingPrice}} </td>
-            </ng-container>
-            <ng-container matColumnDef="inventoryLedger">
-              <th *matHeaderCellDef> Inventory Ledger </th>
-              <td mat-cell *matCellDef="let item"> {{item.inventoryLedger}} </td>
-            </ng-container>
-            <ng-container matColumnDef="purchaseLedger">
-              <th *matHeaderCellDef> Purchase Ledger </th>
-              <td mat-cell *matCellDef="let item"> {{item.purchaseLedger}} </td>
-            </ng-container>
-            <ng-container matColumnDef="salesLedger">
-              <th *matHeaderCellDef> Sales Ledger </th>
-              <td mat-cell *matCellDef="let item"> {{item.salesLedger}} </td>
-            </ng-container>
-            <ng-container matColumnDef="taxRate">
-              <th *matHeaderCellDef> Tax Rate </th>
-              <td mat-cell *matCellDef="let item"> {{item.taxRate}} </td>
-            </ng-container>
-            <ng-container matColumnDef="hsn">
-              <th *matHeaderCellDef> HSN </th>
-              <td mat-cell *matCellDef="let item"> {{item.hsn}} </td>
-            </ng-container>
-            <ng-container matColumnDef="currentStock">
-              <th *matHeaderCellDef> Current Stock </th>
-              <td mat-cell *matCellDef="let item"> {{item.currentStock}} </td>
-            </ng-container>
-            <ng-container matColumnDef="totalSoldQuantity">
-              <th *matHeaderCellDef> Total Sold Quantity </th>
-              <td mat-cell *matCellDef="let item"> {{item.totalSoldQuantity}} </td>
-            </ng-container>
-            <ng-container matColumnDef="totalPurchaseQuantity">
-              <th *matHeaderCellDef> Total Purchase Quantity </th>
-              <td mat-cell *matCellDef="let item"> {{item.totalPurchaseQuantity}} </td>
-            </ng-container>
-            <ng-container matColumnDef="tag">
-              <th *matHeaderCellDef> Tag </th>
-              
-              <td mat-cell *matCellDef="let item"> {{item.tag}} </td>
-            </ng-container>
-      
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-          </table>
-        </div>
-      </div>
-      
-      <div class="paginator">
-        <mat-paginator [length]="inventory.length"
-                       [pageSize]="itemsPerPage"
-                       [pageSizeOptions]="[5, 10, 20]"
-                       (page)="pageEvent = $event; updatePaginatedInventory()">
-        </mat-paginator>
-      </div>
-      
+      <table id="inventory-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Part No</th>
+            <th> Image</th>
+            <th>Description</th>
+            <th>Initial Stock</th>
+            <th>Buying Price</th>
+            <th>Selling Price</th>
+            <th>Inventory Ledger</th>
+            <th>Purchase Ledger</th>
+            <th>Sales Ledger</th>
+            <th>Tax Rate</th>
+            <th>HSN</th>
+            <th>Current Stock</th>
+            <th>Total Sold Quantity</th>
+            <th>Total Purchase Quantity</th>
+            <th>Tag</th>
+          </tr>
+        </thead>
+        <tbody class="tbody">
+          <tr class="top-products-table-row" *ngFor="let item of inventory; let i = index">
+            <td class="top-products-table-data" >{{ item.itemName }}</td>
+            <td class="top-products-table-data" >{{ item.partNo }}</td>
+            <td class="top-products-table-data" >{{ item.image }}</td>
+            <td class="top-products-table-data" >{{item.description}}</td>
+            <td class="top-products-table-data" > {{item.initialStock}} </td>
+            <td class="top-products-table-data" > {{item.buyingPrice}} </td>
+            <td class="top-products-table-data" > {{item.sellingPrice}} </td>
+            <td class="top-products-table-data" > {{item.inventoryLedger}} </td>
+            <td class="top-products-table-data" > {{item.purchaseLedger}} </td>
+            <td class="top-products-table-data" > {{item.salesLedger}} </td>
+            <td class="top-products-table-data" > {{item.taxRate}} </td>
+            <td class="top-products-table-data" > {{item.hsn}} </td>
+            <td class="top-products-table-data" > {{item.tag}} </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+  
