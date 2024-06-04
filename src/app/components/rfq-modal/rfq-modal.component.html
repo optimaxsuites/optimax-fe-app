@@ -13,27 +13,37 @@
           <div class="headerInputDiv">
             <label for="descriptionInput">RFQ NO:</label>
 
-            <input class="longInput" type="text" />
+            <input [(ngModel)]="rfqNo" class="longInput" type="text" />
           </div>
 
           <div class="headerInputDiv">
             <div>
               <label for="dateIssued" class="tagName">Date Issued</label>
               <br />
-              <input id="nameInput" class="dateSector" type="date" />
+              <input
+                [(ngModel)]="dateIssued"
+                id="nameInput"
+                class="dateSector"
+                type="date"
+              />
             </div>
 
             <div>
               <label for="expiryDate">Expiry Date</label>
               <br />
-              <input id="partNumberInput" class="dateSector" type="date" />
+              <input
+                [(ngModel)]="expiryDate"
+                id="partNumberInput"
+                class="dateSector"
+                type="date"
+              />
             </div>
           </div>
 
           <div class="headerInputDiv">
             <label for="projectTitle">Project Title:</label>
 
-            <input class="longInput" type="text" />
+            <input [(ngModel)]="projectTitle" class="longInput" type="text" />
           </div>
 
           <div
@@ -241,7 +251,14 @@
       </div>
 
       <div class="buttonDiv">
-        <button class="save-continue" (click)="addItem()">Add Item</button>
+        <!-- <button class="save-continue" (click)="addItem()">Add Item</button>
+      </div> -->
+        <button
+          class="save-continue"
+          (click)="selectedItemIndex !== null ? updateItem() : addItem()"
+        >
+          {{ selectedItemIndex !== null ? "Update Item" : "Add Item" }}
+        </button>
       </div>
     </section>
 
@@ -284,7 +301,7 @@
                 <div class="actionDiv">
                   <div class="image-container">
                     <img
-                    
+                      (click)="editItem(item)"
                       class="actionTags"
                       src="../../../assets/Edit.svg"
                       alt=""
@@ -293,6 +310,7 @@
                   </div>
                   <div class="image-container">
                     <img
+                      (click)="deleteItem(item)"
                       class="actionTags"
                       src="../../../assets/delete (1).svg"
                       alt=""
@@ -312,13 +330,13 @@
         <div>
           <span>RFQ Prepared By</span>
           <br />
-          <input class="inputPreparedBy" type="text" />
+          <input [(ngModel)]="preparedBy" class="inputPreparedBy" type="text" />
         </div>
 
         <div>
           <span>Position</span>
           <br />
-          <input class="inputPreparedBy" type="text" />
+          <input [(ngModel)]="position" class="inputPreparedBy" type="text" />
         </div>
 
         <div>
