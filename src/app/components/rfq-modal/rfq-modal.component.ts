@@ -22,15 +22,8 @@ import {
 import { AngularEditorConfig } from '@kolkov/angular-editor';
 import { Observable } from 'rxjs';
 import { DropdownService } from '../../services/dropdown/dropdown.service';
-
-interface EditItem {
-  name: string;
-  partNumber: string;
-  description: string;
-  quantity: number;
-  imageUrl: string;
-  approvedBudget: number;
-}
+import { DataService } from '../../data.service';
+import { Router } from '@angular/router';
 
 interface Company {
   value: string;
@@ -59,6 +52,13 @@ interface Field {
   styleUrl: './rfq-modal.component.scss',
 })
 export class RfqModalComponent {
+  constructor(
+    private router: Router,
+    private fb: FormBuilder,
+    private http: HttpClient,
+    private dropdownService: DropdownService,
+    private rfqDataService: DataService
+  ) {}
   showSecondComponent = false;
   showSignatureButton: boolean = false;
   showTermsConditionButton = false;
@@ -75,25 +75,23 @@ export class RfqModalComponent {
   logoUrl: string | ArrayBuffer | null = null;
   @ViewChild('fileInput') fileInput!: ElementRef;
   // discounts: any[] = [];
+  rfqNo: any = '';
+  dateIssued: any = '';
+  expiryDate: any = '';
+  projectTitle: string = '';
+  preparedBy: string = '';
+  position: string = '';
   terms: any[] = [];
   termsGroup: any[] = [];
   charges: any[] = [];
   moreFields: any[] = [];
-  editData: EditItem[] = [];
   name: string = '';
   partNumber: string = '';
   description: string = '';
   quantity: number = 0;
   imageUrl: string = '';
   approvedBudget: number = 0;
-  rfqNo: string = '';
-  dateIssued: any = null;
-  expiryDate: any = null;
-  projectTitle: string = '';
-  preparedBy: string = '';
-  position: string = '';
   selectedItemIndex: number | null = null;
-  selectedItem: EditItem | null = null;
 
   items: {
     name: string;
@@ -102,6 +100,15 @@ export class RfqModalComponent {
     quantity: number;
     imageUrl: string;
     approvedBudget: number;
+  }[] = [];
+
+  rfqData: {
+    rfqNo: any;
+    dateIssued: any;
+    expiryDate: any;
+    projectTitle: string;
+    preparedBy: string;
+    position: string;
   }[] = [];
   previewImageUrl: string | null = null;
 
@@ -128,8 +135,54 @@ export class RfqModalComponent {
     this.clearInputs();
   }
 
- 
+  editItem(item: any) {
+    this.name = item.name;
+    this.partNumber = item.partNumber;
+    this.description = item.description;
+    this.quantity = item.quantity;
+    this.imageUrl = item.imageUrl;
+    this.previewImageUrl = item.imageUrl; // For previewing the image
+    this.approvedBudget = item.approvedBudget;
 
+    // Store the index of the item being edited
+    this.selectedItemIndex = this.items.indexOf(item);
+  }
+
+  updateItem() {
+    if (this.selectedItemIndex !== null) {
+      this.items[this.selectedItemIndex] = {
+        name: this.name,
+        partNumber: this.partNumber,
+        description: this.description,
+        quantity: this.quantity,
+        imageUrl: this.imageUrl,
+        approvedBudget: this.approvedBudget,
+      };
+
+      localStorage.setItem('items', JSON.stringify(this.items));
+      this.clearInputs();
+      this.selectedItemIndex = null; // Reset the selected item index
+    }
+  }
+
+  deleteItem(item: any) {
+    const index = this.items.indexOf(item);
+    if (index > -1) {
+      this.items.splice(index, 1);
+
+      // Update localStorage
+      localStorage.setItem('items', JSON.stringify(this.items));
+
+      // Reset inputs and selectedItemIndex if the deleted item was being edited
+      if (this.selectedItemIndex === index) {
+        this.clearInputs();
+        this.selectedItemIndex = null;
+      }
+    }
+    console.log('deleted');
+  }
+
+  // Function to clear input fields (assumed to be implemented already)
 
   clearInputs() {
     this.name = '';
@@ -170,17 +223,24 @@ export class RfqModalComponent {
     }
   }
 
-  @Output() rfqDataSaved = new EventEmitter<any>();
-
   saveAndContinue() {
-    this.rfqDataSaved.emit({
+    const rfqData = {
       rfqNo: this.rfqNo,
       dateIssued: this.dateIssued,
       expiryDate: this.expiryDate,
+      projectTitle: this.projectTitle,
       preparedBy: this.preparedBy,
       position: this.position,
-      projectTitle: this.projectTitle,
-    });
+    };
+    console.log(this.rfqNo);
+    this.rfqDataService.updateRfqData(rfqData);
+    // this.router.navigate(['/rfq']);
+    localStorage.setItem('rfqData', JSON.stringify(this.rfqData));
+    this.navigateToRfqTable();
+  }
+
+  navigateToRfqTable() {
+    this.router.navigate(['/rfq']);
   }
 
   getSelectedItem$(id: string): Observable<string | null> {
@@ -275,12 +335,6 @@ export class RfqModalComponent {
 
   myForm!: FormGroup;
   options: string[] = ['Nigeria - NGN', 'US Dollar - USD', 'Cuba - CUD'];
-
-  constructor(
-    private fb: FormBuilder,
-    private http: HttpClient,
-    private dropdownService: DropdownService
-  ) {}
 
   isDropdownOpen$(id: string) {
     return this.dropdownService.isDropdownOpen$(id);

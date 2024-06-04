@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { TopProductService } from '../../services/top-product/top-product.service';
+import { DataService } from '../../data.service';
 
 @Component({
   selector: 'app-rfq',
@@ -7,24 +8,25 @@ import { TopProductService } from '../../services/top-product/top-product.servic
   styleUrl: './rfq.component.scss',
   providers: [TopProductService],
 })
-export class RfqComponent {
+export class RfqComponent implements OnInit {
   savedRfqData: any;
   tableData: any[];
-  rfqModalComponent: any;
 
-  constructor(private topProductsService: TopProductService) {
+  constructor(
+    private topProductsService: TopProductService,
+    private rfqDataService: DataService
+  ) {
     this.tableData = [];
   }
 
+
+
   ngOnInit(): void {
     this.tableData = this.topProductsService.initializeTopProduct();
-  }
-
-  ngAfterViewInit() {
-    if (this.rfqModalComponent) {
-      this.rfqModalComponent.rfqDataSaved.subscribe((data: any) => {
+    this.rfqDataService.currentRfqData.subscribe((data) => {
+      if (data) {
         this.savedRfqData = data;
-      });
-    }
+      }
+    });
   }
 }
