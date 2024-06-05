@@ -68,6 +68,8 @@ const routes: Routes = [
         path: 'purchase/rfq-modal',
         component: RfqModalComponent,
       },
+      { path: '', redirectTo: '/purchase', pathMatch: 'full' },
+      { path: 'purchase/rfq-modal/:id', component: RfqModalComponent },
 
       {
         path: 'sales/invoice-modal',
