@@ -21,38 +21,51 @@
               </tr>
             </thead>
             <tbody>
-              <tr class="top-products-table-row" *ngIf="savedRfqData">
+              <tr
+                class="top-products-table-row"
+                *ngFor="let rfq of rfqList; let i = index"
+              >
+                <!-- <tr class="top-products-table-row" *ngIf="savedRfqData"> -->
                 <td class="top-products-table-data">
-                  {{ savedRfqData.rfqNo }}
+                  {{ rfq.rfqNo }}
                 </td>
                 <td class="top-products-table-data">
-                  {{ savedRfqData.dateIssued }}
+                  {{ rfq.dateIssued }}
                 </td>
                 <td class="top-products-table-data">
-                  {{ savedRfqData.expiryDate }}
+                  {{ rfq.expiryDate }}
                 </td>
                 <td class="top-products-table-data">
-                  {{ savedRfqData.projectTitle }}
+                  {{ rfq.projectTitle }}
                 </td>
+                <td class="top-products-table-data">{{ rfq.preparedBy }}</td>
                 <td class="top-products-table-data">
-                  ₦{{ savedRfqData.preparedBy }}
-                </td>
-                <td class="top-products-table-data">
-                  {{ savedRfqData.position }}
+                  {{ rfq.position }}
                 </td>
 
                 <td class="top-products-table-data col-1">
                   <div class="actionDiv">
                     <div class="image-container">
                       <img
+                        (click)="navigateToRfqModal(i)"
                         class="actionTags"
                         src="../../../assets/Edit.svg"
                         alt=""
                       />
-                      <span class="tooltip">edit</span>
+                      <span class="tooltip">View</span>
                     </div>
                     <div class="image-container">
                       <img
+                        (click)="duplicateRfq(i)"
+                        class="actionTags"
+                        src="../../../assets/duplicate.svg"
+                        alt=""
+                      />
+                      <span class="tooltip">Duplicate</span>
+                    </div>
+                    <div class="image-container">
+                      <img
+                        (click)="deleteRfq(i)"
                         class="actionTags"
                         src="../../../assets/delete (1).svg"
                         alt=""

@@ -1,29 +1,7 @@
-import {
-  HttpRequest,
-  HttpClient,
-  HttpEventType,
-  HttpResponse,
-} from '@angular/common/http';
+import { Component } from '@angular/core';
 
-import {
-  Component,
-  ElementRef,
-  ViewChild,
-  OnInit,
-  Output,
-  EventEmitter,
-} from '@angular/core';
-import {
-  FormBuilder,
-  FormControl,
-  FormGroup,
-  Validators,
-} from '@angular/forms';
-import { AngularEditorConfig } from '@kolkov/angular-editor';
-import { Observable } from 'rxjs';
-import { DropdownService } from '../../services/dropdown/dropdown.service';
 import { DataService } from '../../data.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 interface Company {
   value: string;
@@ -34,11 +12,6 @@ interface BusinessDetails {
   address: string;
   phoneNumber: string;
   email: string;
-}
-
-interface Client {
-  value: string;
-  viewValue: string;
 }
 
 interface Field {
@@ -53,29 +26,17 @@ interface Field {
 })
 export class RfqModalComponent {
   constructor(
+    private route: ActivatedRoute,
     private router: Router,
-    private fb: FormBuilder,
-    private http: HttpClient,
-    private dropdownService: DropdownService,
     private rfqDataService: DataService
   ) {}
-  showSecondComponent = false;
-  showSignatureButton: boolean = false;
-  showTermsConditionButton = false;
-  showAmountWord = false;
-  showNotes = false;
-  showAttachments = false;
-  showDiscount = false;
-  showAdditionalCharges = false;
+
   selectedValue?: string;
-  clientDetails: any = {};
-  showDescriptionBox: boolean = false;
-  signatureUrl: string | ArrayBuffer | null = null;
   showLogo: boolean = false;
   logoUrl: string | ArrayBuffer | null = null;
-  @ViewChild('fileInput') fileInput!: ElementRef;
-  // discounts: any[] = [];
   rfqNo: any = '';
+  rfqData: any;
+  rfqId: number = 0;
   dateIssued: any = '';
   expiryDate: any = '';
   projectTitle: string = '';
@@ -102,14 +63,14 @@ export class RfqModalComponent {
     approvedBudget: number;
   }[] = [];
 
-  rfqData: {
-    rfqNo: any;
-    dateIssued: any;
-    expiryDate: any;
-    projectTitle: string;
-    preparedBy: string;
-    position: string;
-  }[] = [];
+  // rfqData: {
+  //   rfqNo: any;
+  //   dateIssued: any;
+  //   expiryDate: any;
+  //   projectTitle: string;
+  //   preparedBy: string;
+  //   position: string;
+  // }[] = [];
   previewImageUrl: string | null = null;
 
   addItem() {
@@ -129,8 +90,7 @@ export class RfqModalComponent {
         approvedBudget: this.approvedBudget,
       });
     }
-    console.log(this.imageUrl);
-    console.log(this.name);
+
     localStorage.setItem('items', JSON.stringify(this.items));
     this.clearInputs();
   }
@@ -170,16 +130,13 @@ export class RfqModalComponent {
     if (index > -1) {
       this.items.splice(index, 1);
 
-      // Update localStorage
       localStorage.setItem('items', JSON.stringify(this.items));
 
-      // Reset inputs and selectedItemIndex if the deleted item was being edited
       if (this.selectedItemIndex === index) {
         this.clearInputs();
         this.selectedItemIndex = null;
       }
     }
-    console.log('deleted');
   }
 
   // Function to clear input fields (assumed to be implemented already)
@@ -225,6 +182,7 @@ export class RfqModalComponent {
 
   saveAndContinue() {
     const rfqData = {
+      id: this.rfqId,
       rfqNo: this.rfqNo,
       dateIssued: this.dateIssued,
       expiryDate: this.expiryDate,
@@ -232,124 +190,14 @@ export class RfqModalComponent {
       preparedBy: this.preparedBy,
       position: this.position,
     };
-    console.log(this.rfqNo);
     this.rfqDataService.updateRfqData(rfqData);
-    // this.router.navigate(['/rfq']);
-    localStorage.setItem('rfqData', JSON.stringify(this.rfqData));
-    this.navigateToRfqTable();
+    console.log(this.rfqData);
+    this.router.navigate(['/rfq']);
   }
 
   navigateToRfqTable() {
     this.router.navigate(['/rfq']);
   }
-
-  getSelectedItem$(id: string): Observable<string | null> {
-    return this.dropdownService.getSelectedItem$(id);
-  }
-
-  extractCurrencyCode(currency: string | null): string {
-    if (!currency) {
-      return 'NGN';
-    }
-    const match = currency.match(/\(([^)]+)\)/);
-    return match ? match[1] : currency;
-  }
-
-  addTermGroup() {
-    this.termsGroup.push({
-      terms: [{}], // Initialize terms as an empty array for each term group
-    });
-  }
-
-  // Function to remove a term group
-  removeTermGroup(index: number) {
-    this.termsGroup.splice(index, 1);
-  }
-
-  // Function to reset the termsGroup array
-  resetTermsGroup() {
-    this.termsGroup = [];
-  }
-
-  // Function to add a new term condition to a specific term group
-  addTermCondition(termGroupIndex: number) {
-    this.termsGroup[termGroupIndex].terms.push({});
-  }
-
-  // Function to remove a term condition from a specific term group
-  removeTermCondition(termGroupIndex: number, termIndex: number) {
-    this.termsGroup[termGroupIndex].terms.splice(termIndex, 1);
-  }
-
-  // Function to close terms and reset data
-  closeTermsConditions() {
-    this.showTermsConditionButton = false;
-    this.resetTermsGroup();
-  }
-
-  addMoreField() {
-    this.moreFields.push({});
-  }
-
-  removeMoreField(index: number) {
-    this.moreFields.splice(index, 1);
-  }
-
-  editorConfig: AngularEditorConfig = {
-    editable: true,
-    spellcheck: true,
-    height: '200px',
-    maxHeight: '200px',
-    translate: 'no',
-    defaultParagraphSeparator: 'p',
-    defaultFontName: 'Arial',
-    toolbarHiddenButtons: [
-      [
-        'undo',
-        'redo',
-        'strikeThrough',
-        'subscript',
-        'superscript',
-        'justifyLeft',
-        'justifyCenter',
-        'justifyRight',
-        'justifyFull',
-        'insertUnorderedList',
-        'insertOrderedList',
-        'fontName',
-      ],
-      [
-        'textColor',
-        'backgroundColor',
-        'customClasses',
-        'link',
-        'unlink',
-        'insertImage',
-        'insertVideo',
-        'insertHorizontalRule',
-        'removeFormat',
-        'toggleEditorMode',
-      ],
-    ],
-  };
-
-  myForm!: FormGroup;
-  options: string[] = ['Nigeria - NGN', 'US Dollar - USD', 'Cuba - CUD'];
-
-  isDropdownOpen$(id: string) {
-    return this.dropdownService.isDropdownOpen$(id);
-  }
-
-  // onInputChange(item: any): void {
-  //   this.sn = item.sn;
-  //   this.name = item.name;
-  //   this.taxRate = item.taxRate;
-  //   this.quantity = item.quantity;
-  //   this.rate = item.rate;
-  //   this.amount = item.amount;
-  //   this.tax = item.tax;
-  //   this.total = item.total;
-  // }
 
   saveField(index: number, event: any) {
     this.fields[index].isEditing = false;
@@ -373,22 +221,27 @@ export class RfqModalComponent {
   ];
 
   ngOnInit(): void {
-    this.addTermGroup();
+    // this.addTermGroup();
 
-    this.myForm = this.fb.group({
-      myOption: [''],
-    });
+    // this.myForm = this.fb.group({
+    //   myOption: [''],
+    // });
 
     const storedItems = localStorage.getItem('items');
     if (storedItems) {
       this.items = JSON.parse(storedItems);
     }
-  }
 
-  calculateAmount(item: any): void {
-    const quantity = parseFloat(item.quantity);
-    const rate = parseFloat(item.rate);
-    item.amount = quantity * rate;
+    this.rfqId = +this.route.snapshot.paramMap.get('id')!;
+    const rfqData = this.rfqDataService.getRfqById(this.rfqId);
+    if (rfqData) {
+      this.rfqNo = rfqData.rfqNo;
+      this.dateIssued = rfqData.dateIssued;
+      this.expiryDate = rfqData.expiryDate;
+      this.projectTitle = rfqData.projectTitle;
+      this.preparedBy = rfqData.preparedBy;
+      this.position = rfqData.position;
+    }
   }
 
   // tableData: any[] = [{}];
@@ -397,14 +250,6 @@ export class RfqModalComponent {
   //   // You can add a new empty row here
   //   this.tableData.push({});
   // }
-
-  toggleSecondComponent() {
-    this.showSecondComponent = !this.showSecondComponent;
-  }
-
-  showDesBox() {
-    this.showDescriptionBox = true;
-  }
 
   companies: Company[] = [
     { value: 'Centrifuge', viewValue: 'Centrifuge' },
@@ -447,63 +292,6 @@ export class RfqModalComponent {
     }
   }
 
-  // client details
-
-  clients: Client[] = [
-    { value: 'MTN', viewValue: 'MTN' },
-    { value: 'GLO', viewValue: 'GLO' },
-    { value: 'Opay', viewValue: 'Opay' },
-  ];
-
-  updateClientInfo() {
-    this.clientDetails = this.clients.find(
-      (client) => client.value === this.selectedValue
-    );
-    this.showSecondComponent = true; // Show the second component
-
-    // Replace this logic with your actual business details fetching mechanism
-    if (this.selectedValue === 'MTN') {
-      this.clientDetails = {
-        name: 'MTN',
-        address: 'No 31 juju street, lagos road',
-        phoneNumber: '09077556633',
-        email: 'mtn@gmail.com',
-      };
-    } else if (this.selectedValue === 'GLO') {
-      // Add logic for GOP Gadgets
-      this.clientDetails = {
-        name: 'GLO',
-        address: 'No 9 Adesanya street, lagos, ikeja',
-        phoneNumber: '08144685954',
-        email: 'glo@gmail.com',
-      };
-    } else if (this.selectedValue === 'Opay') {
-      // Add logic for DeOne
-      this.clientDetails = {
-        name: 'Opay',
-        address: 'No 9 Adesanya street, lagos, ikeja',
-        phoneNumber: '08060393174',
-        email: 'opay@gmail.com',
-      };
-    }
-  }
-
-  onSignatureSelected(event: any) {
-    const file: File = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        this.signatureUrl = reader.result;
-      };
-    }
-  }
-
-  clearSignature() {
-    this.signatureUrl = null;
-    this.showSignatureButton = false;
-  }
-
   // onLogoSelected(event: any) {
   //   const file = event.target.files[0];
   //   const reader = new FileReader();
@@ -513,68 +301,4 @@ export class RfqModalComponent {
   //   };
   //   reader.readAsDataURL(file);
   // }
-
-  uploadedFiles: {
-    name: string;
-    size: number;
-    progress: number;
-    status: string;
-  }[] = [];
-
-  fileInputChange(event: any) {
-    const fileList: FileList = event.target.files;
-    if (fileList && fileList.length > 0) {
-      for (let i = 0; i < fileList.length; i++) {
-        const file: File = fileList[i];
-        this.uploadFile(file);
-      }
-    }
-  }
-
-  uploadFile(file: File) {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const req = new HttpRequest('POST', 'sender.php', formData, {
-      reportProgress: true,
-    });
-
-    this.http.request(req).subscribe((event) => {
-      if (event.type === HttpEventType.UploadProgress && event.total) {
-        const percentDone = Math.round((100 * event.loaded) / event.total);
-        this.updateFileProgress(file.name, percentDone);
-      } else if (event instanceof HttpResponse) {
-        this.updateFileStatus(file.name, 'complete');
-      }
-    });
-
-    this.uploadedFiles.push({
-      name: file.name,
-      size: file.size,
-      progress: 0,
-      status: 'in-prog',
-    });
-  }
-
-  updateFileProgress(fileName: string, progress: number) {
-    const file = this.uploadedFiles.find((file) => file.name === fileName);
-    if (file) {
-      file.progress = progress;
-    }
-  }
-
-  updateFileStatus(fileName: string, status: string) {
-    const file = this.uploadedFiles.find((file) => file.name === fileName);
-    if (file) {
-      file.status = status;
-    }
-  }
-
-  cancelUpload(index: number) {
-    // Implement cancellation logic if needed
-    this.uploadedFiles.splice(index, 1);
-  }
-}
-function getImageUrlFromFile(uploadedFile: any) {
-  throw new Error('Function not implemented.');
 }

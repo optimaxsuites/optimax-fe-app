@@ -87,7 +87,8 @@ import { ManagedInventoryTableComponent } from './components/managed-inventory-t
 
 import { PurchasePageComponent } from './pages/purchase-page/purchase-page.component';
 import { RfqComponent } from './components/rfq/rfq.component';
-import { RfqModalComponent } from './components/rfq-modal/rfq-modal.component'; 
+import { RfqModalComponent } from './components/rfq-modal/rfq-modal.component';
+import { BookKeepingComponent } from './components/book-keeping/book-keeping.component'; 
 @NgModule({
   declarations: [
     AppComponent,
@@ -145,6 +146,7 @@ import { RfqModalComponent } from './components/rfq-modal/rfq-modal.component';
     ManagedInventoryTableComponent,
     PurchasePageComponent,
     RfqModalComponent,
+    BookKeepingComponent,
   ],
   imports: [
     BrowserModule,
