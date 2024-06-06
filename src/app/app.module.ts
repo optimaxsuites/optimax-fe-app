@@ -88,7 +88,8 @@ import { ManagedInventoryTableComponent } from './components/managed-inventory-t
 import { PurchasePageComponent } from './pages/purchase-page/purchase-page.component';
 import { RfqComponent } from './components/rfq/rfq.component';
 import { RfqModalComponent } from './components/rfq-modal/rfq-modal.component';
-import { BookKeepingComponent } from './components/book-keeping/book-keeping.component'; 
+import { BookKeepingComponent } from './components/book-keeping/book-keeping.component';
+import { StripHtmlPipe } from './pipes/strip-html/strip-html.pipe';
 @NgModule({
   declarations: [
     AppComponent,
@@ -147,6 +148,7 @@ import { BookKeepingComponent } from './components/book-keeping/book-keeping.com
     PurchasePageComponent,
     RfqModalComponent,
     BookKeepingComponent,
+    StripHtmlPipe,
   ],
   imports: [
     BrowserModule,

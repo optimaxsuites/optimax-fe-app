@@ -10,7 +10,12 @@
             <div class="form-group">
               <label for="item-name">Item Image</label>
               <span class="btn btn-upload-image" >Upload Item image</span>
-              <!-- <input type="text" id="item-name" required [(ngModel)]="inventoryItem.name" name="name"> -->
+              <input
+                  type="file"
+                  #fileInput
+                  style="display: none"
+                  (change)="onLogoSelected($event)"
+                />
             </div>
 
           <input type="hidden" [(ngModel)]="inventoryItem.id" name="id">
@@ -27,7 +32,6 @@
 
           <div class="form-group">
             <label for="item-description">Item Description</label>
-
             <angular-editor placeholder="'Enter text here...'" [config]="editorConfig" id="item-description" required [(ngModel)]="inventoryItem.description" name="description" ></angular-editor>
           </div>
 

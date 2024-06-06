@@ -42,55 +42,10 @@ export class ManagedInventoryTableComponent {
     private inventoryService: InventoryService
   ) {}
 
-  // ngOnInit() {
-  //   this.inventoryService.getInventory().subscribe(data => {
-  //     this.inventory = data;
-  //   });
-  // }
-
   ngOnInit() {
     this.inventoryService.getInventory().subscribe(data => {
       this.inventory = data;
-      this.updatePaginatedInventory();
     });
   }
-
-  get totalPages(): number {
-    return Math.ceil(this.inventory.length / this.itemsPerPage);
-  }
-
-  get totalPagesArray(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i + 1);
-  }
-
-  updatePaginatedInventory() {
-    const start = (this.currentPage - 1) * this.itemsPerPage;
-    const end = start + this.itemsPerPage;
-    this.paginatedInventory = this.inventory.slice(start, end);
-  }
-
-  setPage(page: number) {
-    this.currentPage = page;
-    this.updatePaginatedInventory();
-  }
-
-  previousPage() {
-    if (this.currentPage > 1) {
-      this.currentPage--;
-      this.updatePaginatedInventory();
-    }
-  }
-
-  nextPage() {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage++;
-      this.updatePaginatedInventory();
-    }
-  }
-
-
- 
-
-
 
 }

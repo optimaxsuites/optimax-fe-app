@@ -22,6 +22,9 @@ interface InventoryItem {
   salesLedger?: string;
   inventoryLedger?: string;
   taxRate?: number;
+  currentStock?: number;
+  totalSoldQuantity?: number;
+  totalPurchaseQuantity?: number;
   hsn?: string;
   tag?: string;
 }
@@ -182,6 +185,28 @@ export class InventoryFormComponent implements OnInit {
         this.inventoryItem = { ...item };
         this.isEdit = true;
       }
+    }
+  }
+
+  onLogoSelected(event: any) {
+    const file: File = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        // Ensure reader.result is a string before assigning
+        if (typeof reader.result === 'string') {
+          this.inventoryItem.image = reader.result;
+        } else {
+          console.error(
+            'Unexpected file reading error: result is not a string'
+          );
+        }
+      };
+      reader.onerror = (error) => {
+        console.error('Error reading file:', error);
+        // Display an error message to the user (optional)
+      };
     }
   }
 
