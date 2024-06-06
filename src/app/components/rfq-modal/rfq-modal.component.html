@@ -152,7 +152,6 @@
             [(ngModel)]="name"
           />
         </div>
-        
 
         <div>
           <label for="partNumberInput">Part Number</label>
@@ -343,7 +342,7 @@
         <div>
           <span>Organisation Address</span>
           <br />
-          <input class="inputPreparedBy" type="text" />
+          <input [(ngModel)]="orgAddress" class="inputPreparedBy" type="text" />
         </div>
       </div>
     </section>
