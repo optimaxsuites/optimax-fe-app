@@ -34,18 +34,20 @@ export class RfqModalComponent {
   selectedValue?: string;
   showLogo: boolean = false;
   logoUrl: string | ArrayBuffer | null = null;
-  rfqNo: any = '';
+  rfqId: any;
   rfqData: any;
-  rfqId: number = 0;
+  rfqNo: any = '';
   dateIssued: any = '';
   expiryDate: any = '';
   projectTitle: string = '';
   preparedBy: string = '';
   position: string = '';
+  orgAddress: string = '';
   terms: any[] = [];
   termsGroup: any[] = [];
   charges: any[] = [];
   moreFields: any[] = [];
+  rfq: any;
   name: string = '';
   partNumber: string = '';
   description: string = '';
@@ -63,14 +65,6 @@ export class RfqModalComponent {
     approvedBudget: number;
   }[] = [];
 
-  // rfqData: {
-  //   rfqNo: any;
-  //   dateIssued: any;
-  //   expiryDate: any;
-  //   projectTitle: string;
-  //   preparedBy: string;
-  //   position: string;
-  // }[] = [];
   previewImageUrl: string | null = null;
 
   addItem() {
@@ -139,6 +133,66 @@ export class RfqModalComponent {
     }
   }
 
+  saveAndContinue() {
+    // Generate unique ID
+    const rfqId = generateUniqueId();
+
+    // Create new RFQ entry with the unique ID
+    const newRfq = {
+      id: rfqId,
+      rfqNo: this.rfqNo,
+      dateIssued: this.dateIssued,
+      expiryDate: this.expiryDate,
+      projectTitle: this.projectTitle,
+      preparedBy: this.preparedBy,
+      position: this.position,
+      orgAddress: this.orgAddress,
+    };
+
+    // Store the RFQ entry in local storage
+    let rfqData = JSON.parse(localStorage.getItem('rfqData') || '[]');
+    rfqData.push(newRfq);
+    localStorage.setItem('rfqData', JSON.stringify(rfqData));
+
+    // Navigate to the RFQ component
+    this.router.navigate(['/rfq']);
+  }
+
+  // saveAndContinue(): void {
+
+  //   this.rfq.rfqNo = this.rfqNo;
+  //   this.rfq.dateIssued = this.dateIssued;
+  //   this.rfq.expiryDate = this.expiryDate;
+  //   this.rfq.projectTitle = this.projectTitle;
+  //   this.rfq.preparedBy = this.preparedBy;
+  //   this.rfq.position = this.position;
+  //   this.rfq.orgAddress = this.orgAddress;
+  //   let rfqData = JSON.parse(localStorage.getItem('rfqData') || '[]');
+  //   rfqData.push(this.rfq);
+  //   localStorage.setItem('rfqData', JSON.stringify(rfqData));
+
+  //   // Navigate back to the RFQ component
+  //   this.router.navigate(['/rfq']);
+  // }
+
+  // saveAndContinue() {
+  //   const newRfq = {
+  //     rfqNo: this.rfqNo,
+  //     dateIssued: this.dateIssued,
+  //     expiryDate: this.expiryDate,
+  //     projectTitle: this.projectTitle,
+  //     preparedBy: this.preparedBy,
+  //     position: this.position,
+  //     orgAddress: this.orgAddress,
+  //   };
+  //   console.log(newRfq);
+  //   let rfqData = JSON.parse(localStorage.getItem('rfqData') || '[]');
+  //   rfqData.push(newRfq);
+  //   localStorage.setItem('rfqData', JSON.stringify(rfqData));
+
+  //   this.router.navigate(['/rfq']);
+  // }
+
   // Function to clear input fields (assumed to be implemented already)
 
   clearInputs() {
@@ -180,25 +234,6 @@ export class RfqModalComponent {
     }
   }
 
-  saveAndContinue() {
-    const rfqData = {
-      id: this.rfqId,
-      rfqNo: this.rfqNo,
-      dateIssued: this.dateIssued,
-      expiryDate: this.expiryDate,
-      projectTitle: this.projectTitle,
-      preparedBy: this.preparedBy,
-      position: this.position,
-    };
-    this.rfqDataService.updateRfqData(rfqData);
-    console.log(this.rfqData);
-    this.router.navigate(['/rfq']);
-  }
-
-  navigateToRfqTable() {
-    this.router.navigate(['/rfq']);
-  }
-
   saveField(index: number, event: any) {
     this.fields[index].isEditing = false;
     this.fields[index].text = event.target.value;
@@ -221,35 +256,14 @@ export class RfqModalComponent {
   ];
 
   ngOnInit(): void {
-    // this.addTermGroup();
-
-    // this.myForm = this.fb.group({
-    //   myOption: [''],
-    // });
-
+    this.rfq = {};
     const storedItems = localStorage.getItem('items');
     if (storedItems) {
       this.items = JSON.parse(storedItems);
     }
 
-    this.rfqId = +this.route.snapshot.paramMap.get('id')!;
-    const rfqData = this.rfqDataService.getRfqById(this.rfqId);
-    if (rfqData) {
-      this.rfqNo = rfqData.rfqNo;
-      this.dateIssued = rfqData.dateIssued;
-      this.expiryDate = rfqData.expiryDate;
-      this.projectTitle = rfqData.projectTitle;
-      this.preparedBy = rfqData.preparedBy;
-      this.position = rfqData.position;
-    }
+   
   }
-
-  // tableData: any[] = [{}];
-
-  // addNewRow(): void {
-  //   // You can add a new empty row here
-  //   this.tableData.push({});
-  // }
 
   companies: Company[] = [
     { value: 'Centrifuge', viewValue: 'Centrifuge' },
@@ -291,14 +305,11 @@ export class RfqModalComponent {
       };
     }
   }
+}
 
-  // onLogoSelected(event: any) {
-  //   const file = event.target.files[0];
-  //   const reader = new FileReader();
-  //   reader.onload = () => {
-  //     this.logoUrl = reader.result;
-  //     this.showLogo = true;
-  //   };
-  //   reader.readAsDataURL(file);
-  // }
+function generateUniqueId(): string {
+  // Generate a unique ID using a timestamp and a random number
+  const timestamp = Date.now().toString(36);
+  const randomNumber = Math.random().toString(36).substr(2, 5); // Substring to get a fixed length
+  return timestamp + randomNumber;
 }
