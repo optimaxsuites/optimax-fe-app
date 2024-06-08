@@ -90,6 +90,10 @@ import { RfqComponent } from './components/rfq/rfq.component';
 import { RfqModalComponent } from './components/rfq-modal/rfq-modal.component';
 import { BookKeepingComponent } from './components/book-keeping/book-keeping.component';
 import { StripHtmlPipe } from './pipes/strip-html/strip-html.pipe';
+import { QuotationModalComponent } from './components/quotation-modal/quotation-modal.component';
+import { ProformaInvoiceModalComponent } from './components/proforma-invoice-modal/proforma-invoice-modal.component';
+import { DispatchNoteComponent } from './components/dispatch-note/dispatch-note.component';
+import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dispatch-note-modal.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -149,6 +153,10 @@ import { StripHtmlPipe } from './pipes/strip-html/strip-html.pipe';
     RfqModalComponent,
     BookKeepingComponent,
     StripHtmlPipe,
+    QuotationModalComponent,
+    ProformaInvoiceModalComponent,
+    DispatchNoteComponent,
+    DispatchNoteModalComponent,
   ],
   imports: [
     BrowserModule,

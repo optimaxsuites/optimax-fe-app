@@ -7,15 +7,17 @@
         justify-content: end;
 
 
-
-
-
-
         button{
             background-color: #224957;
             color: #fff;
             font-size: 1em;
             border-radius: 10px;
+            position: fixed;
+            top: 130px;
+            z-index: 999;
+            right: 20px;
+
+            // text-align: center;
 
         }
     }

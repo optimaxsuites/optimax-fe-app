@@ -2,7 +2,7 @@
   <div class="modal-wrapper p-4" #contentToPrint>
     <div class="header-section">
       <section class="title-section">
-        <p class="form-title">Quotation</p>
+        <p class="form-title">Invoice</p>
       </section>
     </div>
 
@@ -11,13 +11,13 @@
         <div class="first-container">
           <div>
             <mat-form-field>
-              <mat-label>Quotation No</mat-label>
+              <mat-label>Invoice No</mat-label>
               <input matInput placeholder="Quotation No" />
             </mat-form-field>
           </div>
           <div class="d-flex">
             <mat-form-field>
-              <mat-label>Quotation Date</mat-label>
+              <mat-label>Invoice Date</mat-label>
               <input
                 matInput
                 [matDatepicker]="picker1"
@@ -31,7 +31,7 @@
             </mat-form-field>
 
             <mat-form-field class="ms-2">
-              <mat-label> Quotation Due Date</mat-label>
+              <mat-label> Invoice Due Date</mat-label>
               <input
                 matInput
                 [matDatepicker]="picker2"
@@ -139,7 +139,7 @@
             <div class="billing-selection">
               <form>
                 <p class="billing-title">
-                  Quotation From
+                  Invoice From
                   <span class="billing-span">[ Company's details ]</span>
                 </p>
                 <mat-form-field>
@@ -197,7 +197,7 @@
               <div class="billing-selection">
                 <form>
                   <p class="billing-title">
-                    Quotation For
+                    Invoice For
                     <span class="billing-span">[ Client's details ]</span>
                   </p>
                   <mat-form-field>

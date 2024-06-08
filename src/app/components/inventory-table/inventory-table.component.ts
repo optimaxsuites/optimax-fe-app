@@ -17,7 +17,7 @@ export class InventoryTableComponent {
   ) {}
 
   ngOnInit() {
-    this.inventoryService.getInventory().subscribe(data => {
+    this.inventoryService.getItem().subscribe(data => {
       this.inventory = data;
     });
   }
