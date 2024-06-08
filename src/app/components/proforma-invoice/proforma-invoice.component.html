@@ -1,18 +1,17 @@
 <div class='container-fluid'>
     <div class="container-header">
-        <button routerLink="/invoice-modal" class=" btn create-invoice-btn">Create New Proforma Invoice <i class="fas fa-plus"></i></button>
+        <button [routerLink]="['/sales/proformer-invoice/proformer-invoice-form']" class=" btn create-invoice-btn">Create New Proforma Invoice <i class="fas fa-plus"></i></button>
     </div>
     <div class="bottom-container">
         <div class="top-products-container">
             <div class="top-products">
-                <!-- <p class="top-products-title">Recent Purcheases</p> -->
                 <div class="top-products-table-container">
                   <table class="top-products-table w3-table w3-striped">
                     <thead>
                       <tr class="top-products-table-row">
                         <th class="top-products-table-head">Date/Time</th>
-                        <th class="top-products-table-head">Proforma Invoice</th>
-                        <th class="top-products-table-head">Invoice No</th>
+                        <th class="top-products-table-head">Project Title</th>
+                        <th class="top-products-table-head">Proforma Invoice No</th>
                         <th class="top-products-table-head">Client Name</th>
                         <th class="top-products-table-head">Amount</th>
                         <th class="top-products-table-head">Status</th>

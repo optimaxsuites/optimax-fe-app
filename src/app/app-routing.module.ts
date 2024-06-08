@@ -23,6 +23,9 @@ import { InventoryFormComponent } from './components/inventory-form/inventory-fo
 import { PurchasePageComponent } from './pages/purchase-page/purchase-page.component';
 import { RfqComponent } from './components/rfq/rfq.component';
 import { RfqModalComponent } from './components/rfq-modal/rfq-modal.component';
+import { QuotationModalComponent } from './components/quotation-modal/quotation-modal.component';
+import { ProformaInvoiceModalComponent } from './components/proforma-invoice-modal/proforma-invoice-modal.component';
+import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dispatch-note-modal.component';
 
 const routes: Routes = [
   {
@@ -53,6 +56,22 @@ const routes: Routes = [
         component: SalesPageComponent,
       },
       {
+        path: 'sales/quotation/quotation-form',
+        component: QuotationModalComponent,
+      },
+      {
+        path: 'sales/proformer-invoice/proformer-invoice-form',
+        component: ProformaInvoiceModalComponent,
+      },
+      {
+        path: 'sales/dispatch-note/dispatch-note-form',
+        component: DispatchNoteModalComponent,
+      },
+      {
+        path: 'sales/invoice/invoice-form',
+        component: InvoiceModalComponent,
+      },
+      {
         path: 'accounting',
         component: AccountingPageComponent,
       },
@@ -72,19 +91,14 @@ const routes: Routes = [
       // { path: 'purchase/rfq-modal/:id', component: RfqModalComponent },
       { path: 'purchase/rfq-modal/:rfqId', component: RfqModalComponent },
 
-      {
-        path: 'sales/invoice-modal',
-        component: InvoiceModalComponent,
-      },
+      
       {
         path: 'inventory',
         component: InventoryPageComponent,
       },
-      // {
-      //   path: 'inventory/inventory-form',
-      //   component: InventoryFormComponent,
-      // },
-      { path: 'inventory/inventory-form', component: InventoryFormComponent },
+      { path: 'inventory/inventory-form', 
+        component: InventoryFormComponent 
+      },
       {
         path: 'inventory/inventory-form/:id',
         component: InventoryFormComponent,

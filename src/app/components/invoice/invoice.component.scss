@@ -8,19 +8,19 @@
     padding: 0.5rem 1.5rem;
     background-color: #224957;
     color: #fff;
-    font-size: 1.1em;
+    font-size: 1em;
     border-radius: 10px;
 }
 
 
 .top-products{
     width: 100%;
-    border-radius: 10px;
-    padding-top: 20px;
-    box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px;
+    // border-radius: 10px;
+    padding-top: 1rem;
+    // box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px;
     // padding: 1rem;
     box-sizing: border-box;
-    background-color: #fff;
+    // background-color: #fff;
     // color: #fff;
 }
 .top-products-title{
@@ -46,10 +46,10 @@ table{
 
 }
 th{
-    padding: 0.6rem;
+    padding: 1rem;
     box-sizing: border-box;
     background-color: #25925B;
-    color: #224957 ;
+    color: #fff ;
 
 }
 td {

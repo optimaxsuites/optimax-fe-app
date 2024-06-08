@@ -391,7 +391,7 @@ saveField(index: number, event: any) {
 
   tableData: any[] = [
     {
-      name,
+      name:'',
       taxRate: '',
       quantity: '',
       rate: '',

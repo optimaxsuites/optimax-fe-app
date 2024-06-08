@@ -6,32 +6,29 @@ import { BehaviorSubject, Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class InventoryService {
-  private inventorySubject: BehaviorSubject<any[]> = new BehaviorSubject<any[]>([
-    // { id: '1', name: 'Item 1', quantity: 10, price: 100 },
-    // { id: '2', name: 'Item 2', quantity: 5, price: 200 }
-  ]);
+  private itemSubject: BehaviorSubject<any[]> = new BehaviorSubject<any[]>([]);
 
-  getInventory(): Observable<any[]> {
-    return this.inventorySubject.asObservable();
+  getItem(): Observable<any[]> {
+    return this.itemSubject.asObservable();
   }
 
   addItem(item: any) {
-    const currentInventory = this.inventorySubject.value;
+    const currentItem = this.itemSubject.value;
     item.id = Date.now().toString();
-    this.inventorySubject.next([...currentInventory, item]);
+    this.itemSubject.next([...currentItem, item]);
   }
 
   updateItem(item: any) {
-    const currentInventory = this.inventorySubject.value.map(i => (i.id === item.id ? item : i));
-    this.inventorySubject.next(currentInventory);
+    const currentItem = this.itemSubject.value.map(i => (i.id === item.id ? item : i));
+    this.itemSubject.next(currentItem);
   }
 
   deleteItem(id: string) {
-    const currentInventory = this.inventorySubject.value.filter(i => i.id !== id);
-    this.inventorySubject.next(currentInventory);
+    const currentItem = this.itemSubject.value.filter(i => i.id !== id);
+    this.itemSubject.next(currentItem);
   }
 
   getItemById(id: string): any {
-    return this.inventorySubject.value.find(i => i.id === id);
+    return this.itemSubject.value.find(i => i.id === id);
   }
 }

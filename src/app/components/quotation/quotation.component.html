@@ -1,18 +1,17 @@
 <div class='container-fluid'>
     <div class="container-header">
-        <button [routerLink]="['/sales/invoice-modal']" class=" btn create-invoice-btn">Create New Quotation <i class="fas fa-plus"></i></button>
+        <button [routerLink]="['/sales/quotation/quotation-form']" class=" btn create-invoice-btn">Create New Quotation <i class="fas fa-plus"></i></button>
     </div>
     <div class="bottom-container">
         <div class="top-products-container">
             <div class="top-products">
-                <!-- <p class="top-products-title">Recent Purcheases</p> -->
                 <div class="top-products-table-container">
                   <table class="top-products-table w3-table w3-striped">
                     <thead>
                       <tr class="top-products-table-row">
                         <th class="top-products-table-head">Date/Time</th>
-                        <th class="top-products-table-head">Quotation</th>
-                        <th class="top-products-table-head">Invoice No</th>
+                        <th class="top-products-table-head">Project Title</th>
+                        <th class="top-products-table-head">Quotation No</th>
                         <th class="top-products-table-head">Client Name</th>
                         <th class="top-products-table-head">Amount</th>
                         <th class="top-products-table-head">Status</th>
@@ -56,19 +55,6 @@
                   
                 </div>
               </div>
-              
-            
-            
-              <!-- <tr class="top-products-table-row" *ngFor="let item of tableData; let i = index">
-                <td class="top-products-table-data">{{ item.id }}</td>
-                <td class="top-products-table-data">{{ item.name }}</td>
-                <td class="top-products-table-data">
-                  <tr class="progress-bar mt-2">
-                    <td class="progress" [style.width.%]="item.progress" [style.background-color]="item.color"></td>
-                  </tr>
-                </td>
-                <td class="top-products-table-data"><span>{{ item.progress }}%</span></td>
-              </tr> -->
         </div>
     </div>
 </div>
