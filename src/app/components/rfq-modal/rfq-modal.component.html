@@ -79,6 +79,53 @@
             <i class="fas fa-plus me-2"></i>Add More Field
           </button>
         </div>
+        <div class="">
+          <section class="logo-section">
+            <div class="logo-upload-container">
+              <div class="wrapper">
+                <div class="logo-wrapper">
+                  <img
+                    *ngIf="logoUrl"
+                    [src]="logoUrl"
+                    alt="logo"
+                    class="logo"
+                  />
+                </div>
+              </div>
+
+              <div
+                *ngIf="showLogo; else addLogoButtons"
+                class="add-logo-btn-wrapper"
+              >
+                <input
+                  type="file"
+                  #fileInput
+                  style="display: none"
+                  (change)="onLogoSelected($event)"
+                />
+                <button class="btn" (click)="fileInput.click()">
+                  <i class="fas fa-plus me-2"></i>Change Logo
+                </button>
+                <button class="btn" (click)="clearLogo()">
+                  <i class="fa-solid fa-x me-2"></i>Remove Logo
+                </button>
+              </div>
+              <ng-template #addLogoButtons>
+                <div class="add-logo-toggle">
+                  <input
+                    type="file"
+                    #fileInput
+                    style="display: none"
+                    (change)="onLogoSelected($event)"
+                  />
+                  <button class="btn" (click)="fileInput.click()">
+                    <i class="fas fa-plus me-2"></i>Add Business Logo
+                  </button>
+                </div>
+              </ng-template>
+            </div>
+          </section>
+        </div>
       </section>
 
       <section class="second-info-section">
@@ -349,9 +396,9 @@
 
     <div class="btn-wrapper">
       <button class="btn create-client-btn-2">Save As Draft</button>
-      <button (click)="saveAndContinue()" class="btn save-continue">
+      <!-- <button (click)="saveAndContinue()" class="btn save-continue">
         Save & Continue
-      </button>
+      </button> -->
     </div>
   </div>
 </div>
