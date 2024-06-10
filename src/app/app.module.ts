@@ -94,6 +94,7 @@ import { QuotationModalComponent } from './components/quotation-modal/quotation-
 import { ProformaInvoiceModalComponent } from './components/proforma-invoice-modal/proforma-invoice-modal.component';
 import { DispatchNoteComponent } from './components/dispatch-note/dispatch-note.component';
 import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dispatch-note-modal.component';
+import { MailVerificationComponent } from './accounts/mail-verification/mail-verification.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -157,6 +158,7 @@ import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dis
     ProformaInvoiceModalComponent,
     DispatchNoteComponent,
     DispatchNoteModalComponent,
+    MailVerificationComponent,
   ],
   imports: [
     BrowserModule,

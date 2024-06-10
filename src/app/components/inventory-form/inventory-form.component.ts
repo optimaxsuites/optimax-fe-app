@@ -13,7 +13,7 @@ interface InventoryItem {
   id?: string;
   itemName?: string;
   partNo?: number;
-  image?: string;
+  image?: string| ArrayBuffer | null;
   description?: string;
   buyingPrice?: number;
   sellingPrice?: number;
@@ -36,7 +36,7 @@ interface InventoryItem {
   styleUrl: './inventory-form.component.scss'
 })
 export class InventoryFormComponent implements OnInit {
-
+  showLogo = false;
 
   inventoryItem: InventoryItem = {};
 
@@ -189,25 +189,17 @@ export class InventoryFormComponent implements OnInit {
   }
 
   onLogoSelected(event: any) {
-    const file: File = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        // Ensure reader.result is a string before assigning
-        if (typeof reader.result === 'string') {
-          this.inventoryItem.image = reader.result;
-        } else {
-          console.error(
-            'Unexpected file reading error: result is not a string'
-          );
-        }
-      };
-      reader.onerror = (error) => {
-        console.error('Error reading file:', error);
-        // Display an error message to the user (optional)
-      };
-    }
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.inventoryItem.image = reader.result;
+      this.showLogo = true;
+    };
+    reader.readAsDataURL(file);
+  }
+  clearLogo() {
+    this.inventoryItem.image = null;
+    this.showLogo = false;
   }
 
   onSubmit() {

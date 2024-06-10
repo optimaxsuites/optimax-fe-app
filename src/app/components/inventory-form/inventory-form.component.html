@@ -9,14 +9,54 @@
 
             <div class="form-group">
               <label for="item-name">Item Image</label>
-              <span class="btn btn-upload-image" (click)="fileInput.click()">Upload Item image</span>
-              <input
-                  type="file"
-                  #fileInput
-                  style="display: none"
-                  (change)="onLogoSelected($event)"
-                />
+              <section class="logo-section">
+                <div class="logo-upload-container">
+                  <div class="wrapper">
+                    <div class="logo-wrapper">
+                      <img
+                        *ngIf="inventoryItem.image"
+                        [src]="inventoryItem.image"
+                        alt="Item Image"
+                        class="logo"
+                      />
+                    </div>
+                  </div>
+    
+                  <div
+                    *ngIf="showLogo; else addLogoButtons"
+                    class="add-logo-btn-wrapper"
+                  >
+                    <input
+                      type="file"
+                      #fileInput
+                      style="display: none"
+                      (change)="onLogoSelected($event)"
+                    />
+                    <div class="btn-small" (click)="fileInput.click()">
+                      <i class="fas fa-plus me-2"></i>Change Image
+                    </div>
+                    <div class="btn-small" (click)="clearLogo()">
+                      <i class="fa-solid fa-x me-2"></i>Remove Image
+                    </div>
+                  </div>
+                  <ng-template #addLogoButtons>
+                    <div class="add-logo-toggle">
+                      <input
+                        type="file"
+                        #fileInput
+                        style="display: none"
+                        (change)="onLogoSelected($event)"
+                      />
+                      <div class="btn" (click)="fileInput.click()">
+                        <i class="fas fa-plus me-2"></i>Add Item Image
+                      </div>
+                    </div>
+                  </ng-template>
+                </div>
+              </section>
             </div>
+
+            
 
           <input type="hidden" [(ngModel)]="inventoryItem.id" name="id">
 
