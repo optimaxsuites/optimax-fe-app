@@ -26,6 +26,7 @@ import { RfqModalComponent } from './components/rfq-modal/rfq-modal.component';
 import { QuotationModalComponent } from './components/quotation-modal/quotation-modal.component';
 import { ProformaInvoiceModalComponent } from './components/proforma-invoice-modal/proforma-invoice-modal.component';
 import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dispatch-note-modal.component';
+import { MailVerificationComponent } from './accounts/mail-verification/mail-verification.component';
 
 const routes: Routes = [
   {
@@ -37,9 +38,13 @@ const routes: Routes = [
         component: LoginComponent,
       },
       {
-        path: 'register',
+        path: 'signup',
         component: RegisterComponent,
       },
+      {
+        path: 'email-verification',
+        component: MailVerificationComponent,
+      }
     ],
   },
 
