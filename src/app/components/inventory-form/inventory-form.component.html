@@ -3,60 +3,66 @@
         <form (ngSubmit)="onSubmit()" #inventoryForm="ngForm">
           <div class="header-section">
             <section class="title-section">
-              <p class="form-title">{{ isEdit ? 'Edit Inventory' : 'Add Inventory' }}</p>
+              <p class="form-title">{{ isEdit ? 'Edit Product' : 'Add Product' }}</p>
             </section>
           </div>
 
-            <div class="form-group">
-              <label for="item-name">Item Image</label>
-              <section class="logo-section">
-                <div class="logo-upload-container">
-                  <div class="wrapper">
-                    <div class="logo-wrapper">
-                      <img
-                        *ngIf="inventoryItem.image"
-                        [src]="inventoryItem.image"
-                        alt="Item Image"
-                        class="logo"
-                      />
-                    </div>
+
+
+          <div class="form-group">
+            <label for="item-name">Item Images</label>
+            <section class="logo-section">
+              <div class="logo-upload-container">
+                <div class="wrapper" *ngFor="let image of inventoryItem.images; let i = index">
+                  <div class="logo-wrapper">
+                    <img
+                      *ngIf="image"
+                      [src]="image"
+                      alt="Item Image {{i + 1}}"
+                      class="logo"
+                    />
                   </div>
-    
-                  <div
-                    *ngIf="showLogo; else addLogoButtons"
-                    class="add-logo-btn-wrapper"
-                  >
+                  <div class="btn-small" (click)="removeImage(i)">
+                    <i class="fa-solid fa-x me-2"></i>Remove Image
+                  </div>
+                </div>
+          
+                <div
+                  *ngIf="showLogo; else addLogoButtons"
+                  class="add-logo-btn-wrapper"
+                >
+                  <input
+                    type="file"
+                    #fileInput
+                    style="display: none"
+                    (change)="onLogoSelected($event)"
+                    multiple
+                  />
+                  <div class="btn-small" (click)="fileInput.click()">
+                    <i class="fas fa-plus me-2"></i>Change Image
+                  </div>
+                </div>
+                <ng-template #addLogoButtons>
+                  <div class="add-logo-toggle">
                     <input
                       type="file"
                       #fileInput
                       style="display: none"
                       (change)="onLogoSelected($event)"
+                      multiple
                     />
-                    <div class="btn-small" (click)="fileInput.click()">
-                      <i class="fas fa-plus me-2"></i>Change Image
-                    </div>
-                    <div class="btn-small" (click)="clearLogo()">
-                      <i class="fa-solid fa-x me-2"></i>Remove Image
+                    <div class="btn" (click)="fileInput.click()">
+                      <i class="fas fa-plus me-2"></i>Add Item Images
                     </div>
                   </div>
-                  <ng-template #addLogoButtons>
-                    <div class="add-logo-toggle">
-                      <input
-                        type="file"
-                        #fileInput
-                        style="display: none"
-                        (change)="onLogoSelected($event)"
-                      />
-                      <div class="btn" (click)="fileInput.click()">
-                        <i class="fas fa-plus me-2"></i>Add Item Image
-                      </div>
-                    </div>
-                  </ng-template>
-                </div>
-              </section>
-            </div>
+                </ng-template>
+              </div>
+            </section>
+          </div>
+          
 
-            
+
+
 
           <input type="hidden" [(ngModel)]="inventoryItem.id" name="id">
 

@@ -13,7 +13,7 @@ interface InventoryItem {
   id?: string;
   itemName?: string;
   partNo?: number;
-  image?: string| ArrayBuffer | null;
+  images?: string[];
   description?: string;
   buyingPrice?: number;
   sellingPrice?: number;
@@ -189,17 +189,29 @@ export class InventoryFormComponent implements OnInit {
   }
 
   onLogoSelected(event: any) {
-    const file = event.target.files[0];
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.inventoryItem.image = reader.result;
-      this.showLogo = true;
-    };
-    reader.readAsDataURL(file);
+    const files = event.target.files;
+    if (files.length > 0) {
+      for (const file of files) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (!this.inventoryItem.images) {
+            this.inventoryItem.images = [];
+          }
+          this.inventoryItem.images.push(reader.result as string);
+          this.showLogo = true;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
   }
-  clearLogo() {
-    this.inventoryItem.image = null;
-    this.showLogo = false;
+
+  removeImage(index: number) {
+    if (this.inventoryItem.images) {
+      this.inventoryItem.images.splice(index, 1);
+      if (this.inventoryItem.images.length === 0) {
+        this.showLogo = false;
+      }
+    }
   }
 
   onSubmit() {
