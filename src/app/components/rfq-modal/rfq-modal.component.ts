@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 
 import { DataService } from '../../data.service';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -24,12 +24,28 @@ interface Field {
   templateUrl: './rfq-modal.component.html',
   styleUrl: './rfq-modal.component.scss',
 })
-export class RfqModalComponent {
+export class RfqModalComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private rfqDataService: DataService
   ) {}
+
+  ngOnInit(): void {
+    this.route.paramMap.subscribe((params) => {
+      const id = params.get('rfqId');
+      console.log(id);
+      if (id) {
+        this.loadRfqData(id);
+      }
+    });
+    // console.log(this.loadRfqData);
+
+    const storedItems = localStorage.getItem('items');
+    if (storedItems) {
+      this.items = JSON.parse(storedItems);
+    }
+  }
 
   selectedValue?: string;
   showLogo: boolean = false;
@@ -186,7 +202,7 @@ export class RfqModalComponent {
     this.fields[index].isEditing = true;
   }
 
-  saveAndContinue(){
+  saveAndContinue() {
     const rfqData = {
       rfqNo: this.rfqNo,
       dateIssued: this.dateIssued,
@@ -194,8 +210,22 @@ export class RfqModalComponent {
       projectTitle: this.projectTitle,
       preparedBy: this.preparedBy,
       position: this.position,
-      orgAddress: this.orgAddress
-    }
+      orgAddress: this.orgAddress,
+    };
+    console.log(rfqData);
+    this.rfqDataService.saveRfqData(rfqData);
+    this.clearRfqInputs();
+    this.router.navigate(['/purchase']);
+  }
+
+  clearRfqInputs() {
+    this.rfqNo = '';
+    this.projectTitle = '';
+    this.position = '';
+    this.preparedBy = '';
+    this.dateIssued = '';
+    this.expiryDate = '';
+    this.orgAddress = '';
   }
 
   fields: Field[] = [
@@ -207,10 +237,18 @@ export class RfqModalComponent {
     this.showLogo = false;
   }
 
-  ngOnInit(): void {
-    const storedItems = localStorage.getItem('items');
-    if (storedItems) {
-      this.items = JSON.parse(storedItems);
+  loadRfqData(id: string) {
+    const savedData = this.rfqDataService.getRfqData(id);
+
+    console.log('Saved Data:', savedData);
+    if (savedData) {
+      this.rfqNo = savedData.rfqNo;
+      this.dateIssued = savedData.dateIssued;
+      this.expiryDate = savedData.expiryDate;
+      this.projectTitle = savedData.projectTitle;
+      this.preparedBy = savedData.preparedBy;
+      this.position = savedData.position;
+      this.orgAddress = savedData.orgAddress;
     }
   }
 
