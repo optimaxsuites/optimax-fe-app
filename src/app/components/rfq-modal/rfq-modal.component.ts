@@ -186,6 +186,18 @@ export class RfqModalComponent {
     this.fields[index].isEditing = true;
   }
 
+  saveAndContinue(){
+    const rfqData = {
+      rfqNo: this.rfqNo,
+      dateIssued: this.dateIssued,
+      expiryDate: this.expiryDate,
+      projectTitle: this.projectTitle,
+      preparedBy: this.preparedBy,
+      position: this.position,
+      orgAddress: this.orgAddress
+    }
+  }
+
   fields: Field[] = [
     // { text: 'Click to edit me', isEditing: false }
   ];
