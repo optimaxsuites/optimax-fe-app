@@ -1,0 +1,52 @@
+<p-toast></p-toast>
+<div class="p-col-12">
+    <h5>Add Laboratories</h5>
+    <div class="card">
+        <p-toolbar styleClass="p-mb-4">
+            <ng-template pTemplate="left">
+                <button pButton pRipple label="Save" icon="pi pi-plus" class="p-mr-2 p-mb-2" 
+                (click)="addLaboratories()"></button>
+                <button pButton pRipple label="Clear" icon="pi pi-trash" class="p-mb-2"></button>
+            </ng-template>
+
+            <ng-template pTemplate="right">
+                <button pButton pRipple label="Back" (click)="goBack()" icon="pi pi-chevron-left" class="p-button-help p-mb-2"></button>
+            </ng-template>
+        </p-toolbar>
+
+        <div class="p-grid p-formgrid p-fluid">
+           
+        <div class="p-col-4 p-field">
+            <label for="name"> Name</label>
+            <input id="name" type="name" pInputText [(ngModel)]="laboratoriescreatedata.name" aria-describedby="name-help" 
+            placeholder="Enter Laboratory Name">
+
+        </div>
+
+        <div class="p-col-4 p-field">
+            <label for="code">Code </label>
+            <input id="code" type="code" pInputText [(ngModel)]="laboratoriescreatedata.code" aria-describedby="code-help" 
+            placeholder="Enter Laboratory Code" required>
+            <!--small id="lastname-help">Enter your Surname/Lastname.</small-->
+        </div>
+
+        <div class="p-col-4 p-field">
+            <label for="contact_phone_number">Contact Phone Number </label>
+            <input id="contact_phone_number" type="contact_phone_number" pInputText [(ngModel)]="laboratoriescreatedata.contact_phone_number" aria-describedby="contact_phone_number-help" 
+            placeholder="Enter Contact Phone Number " required>
+            <!--small id="lastname-help">Enter your Surname/Lastname.</small-->
+        </div>
+
+        <div class="p-col-8 p-field">
+            <label for="description"> Description </label>
+            <textarea rows="5" cols="30" placeholder="Enter Laboratory Description" [(ngModel)]="laboratoriescreatedata.description" pInputTextarea ></textarea>
+        </div>
+
+        
+    </div>
+      
+        
+    </div>
+</div>
+
+

@@ -13,27 +13,10 @@
     </div>
 
     <div class="items" (click)="toggleDropdown('sales')" routerLink="sales">
-      <!-- <a href="/members"> Members</a> -->
-
       <div class="d-flex">
-        <i class="fas fa-receipt"></i>
+        <img class="salesIcon" src="../../../assets/salesSvg.svg" alt="" />
         <p>Sales</p>
       </div>
-
-      <!-- <div class="list-item-content" *ngIf="dropdownOpen === 'sales'"  >
-            <p routerLink="gggg" >
-              <i class="fas fa-arrow-right"></i>
-              <span>Overview</span>
-            </p>
-            <p routerLink="kkkk" >
-              <i class="fas fa-arrow-right"></i>
-              <span>Option 1</span>
-            </p>
-            <p routerLink="jjjj" >
-              <i class="fas fa-arrow-right"></i>
-              <span>Option 2</span>
-            </p>
-          </div> -->
     </div>
     <div class="items" routerLink="purchase">
       <div class="d-flex">
@@ -97,21 +80,6 @@
         <i class="fas fa-file-invoice"></i>
         <p>Accounting</p>
       </div>
-
-      <!-- <div class="list-item-content" *ngIf="dropdownOpen === 'accounting'" >
-            <p routerLink="invoice" >
-              <i class="fas fa-arrow-right"></i>
-              <span>Invoice</span>
-            </p>
-            <p routerLink="ooo" >
-              <i class="fas fa-arrow-right"></i>
-              <span>Option 1</span>
-            </p>
-            <p routerLink="jjjj" >
-              <i class="fas fa-arrow-right"></i>
-              <span>Option 2</span>
-            </p>
-          </div> -->
     </div>
 
     <div class="items" (click)="toggleDropdown('human-resource')">
@@ -137,30 +105,10 @@
       </div>
     </div>
 
-    <div
-      class="items"
-      (click)="toggleDropdown('crm')"
-      [class.active]="activeItem === 'crm'"
-    >
-      <!-- <a href="/customers"> Customers</a> -->
+    <div class="items" routerLink="crm">
       <div class="d-flex">
         <i class="fas fa-people-group"></i>
         <p>CRM</p>
-      </div>
-
-      <div class="list-item-content" *ngIf="dropdownOpen === 'crm'">
-        <p routerLink="gggg">
-          <i class="fas fa-arrow-right"></i>
-          <span>Overview</span>
-        </p>
-        <p routerLink="kkkk">
-          <i class="fas fa-arrow-right"></i>
-          <span>Option 1</span>
-        </p>
-        <p routerLink="jjjj">
-          <i class="fas fa-arrow-right"></i>
-          <span>Option 2</span>
-        </p>
       </div>
     </div>
 

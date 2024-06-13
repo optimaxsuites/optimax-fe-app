@@ -1,0 +1,123 @@
+<div class="p-grid">
+	<div class="p-col-12">
+
+        <div class="card">
+			<p-toolbar styleClass="p-mb-4">
+				<ng-template pTemplate="left">
+					<button pButton pRipple label="Add Pharmacies" icon="pi pi-plus" class="p-mr-2 p-mb-2" (click)="goToAddPharmacies()"></button>
+					<button pButton pRipple label="Delete Pharmacies" icon="pi pi-trash" class="p-mb-2" (click)="deleteSelectedProducts()" [disabled]="!selectedProducts || !selectedProducts.length"></button>
+				</ng-template>
+
+				<ng-template pTemplate="right">
+					<button pButton pRipple label="Back" icon="pi pi-chevron-left" class="p-button-help p-mb-2" (click)="goBack()"></button>
+				</ng-template>
+            </p-toolbar>
+            <p-table #dt [value]="pharmaciesList" [rows]="10" [paginator]="true" [globalFilterFields]="['pharmacies','']"
+         [rowHover]="true" dataKey="id"
+            styleClass="p-datatable-customers"
+            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries" [showCurrentPageReport]="true">
+   
+            <ng-template pTemplate="caption">
+                <div class="p-d-flex p-flex-column p-flex-md-row p-jc-md-between table-header">
+                    <h5 class="p-m-0">Pharmacies Listing</h5>
+                    <span class="p-input-icon-left">
+                    <i class="pi pi-search"></i>
+                    <input pInputText type="text" (input)="dt.filterGlobal($event.target.value, 'contains')" placeholder="Search..." />
+                </span>
+                </div>
+            </ng-template>
+            <ng-template pTemplate="header">
+                <tr>
+                    <th style="width: 3rem">
+                        <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+                    </th>
+                    <th pSortableColumn="pharmacy_id">Pharmacy id <p-sortIcon field="pharmacy_id"></p-sortIcon></th>
+                    <th pSortableColumn="name"> Name<p-sortIcon field="name"></p-sortIcon></th>
+                    <th pSortableColumn="code "> Code <p-sortIcon field="code"></p-sortIcon></th>
+                    <th pSortableColumn="description">  Description <p-sortIcon field="description"></p-sortIcon></th>
+                    <th pSortableColumn="contact_phone_number"> Contact Phone <p-sortIcon field="contact_phone_number"></p-sortIcon></th>
+                    <th pSortableColumn="created_by "> Created By <p-sortIcon field="created_by"></p-sortIcon></th>
+                    
+                    <th>Action</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-pharmacies>
+                <tr>
+                    <td>
+                        <p-tableCheckbox [value]="laboratories"></p-tableCheckbox>
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{pharmacies.pharmacy_id}}
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{pharmacies.name}}
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{pharmacies.code}}
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{pharmacies.description}}
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{pharmacies.contact_phone_number}}
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{pharmacies.created_by}}
+                    </td>
+                    
+                    <td>
+                        <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success p-mr-2" (click)="editPharmacies(pharmacies)"></button>
+                        <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-warning" (click)="deleteProduct(product)"></button>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="summary">
+                <div class="p-d-flex p-ai-center p-jc-between">
+                    In total there are {{pharmaciesList ? pharmaciesList.length : 0 }} Pharmacies.
+                </div>
+            </ng-template>
+        </p-table>   
+     
+            </div>
+
+            <p-dialog [(visible)]="pharmaciesDialog" [style]="{width: '650px'}" header="Pharmacies Details" [modal]="true" styleClass="p-fluid">
+           
+                <ng-template pTemplate="content">
+                    <div class="p-col-12 p-fluid p-formgrid p-grid">
+                    <div class="p-col-12 p-field">
+                        <label for="name">Name</label>
+                        <input id="name" pInputText [(ngModel)]="selectedPharmacies.name">
+                    </div>
+                    <div class="p-col-6 p-field">
+                        <label for="code">Code</label>
+                        <input id="code" pInputText [(ngModel)]="selectedPharmacies.code">
+                    </div>
+                    <div class="p-col-6 p-field">
+                        <label for="contact_phone_number">Contact Phone Number</label>
+                        <input id="contact_phone_number" pInputText [(ngModel)]="selectedPharmacies.contact_phone_number">
+                    </div>
+            
+            <div class="p-col-6 p-field">
+                <label for="created_by">Created By</label>
+                <input id="created_by" pInputText [(ngModel)]="selectedPharmacies.created_by">
+            </div>
+           
+            <div class="p-col-12 p-field">
+                <label for="description">Description </label>
+                <textarea id="description" pInputText [(ngModel)]="selectedPharmacies.description" required rows="3" cols="20"></textarea>
+            </div>
+                    </div>
+                    </ng-template>
+    
+                    <ng-template pTemplate="footer">
+                        <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hidePharmaciesDialog()"></button>
+                        <button pButton pRipple label="Save" icon="pi pi-check" class="p-button-text" (click)="updatePharmacies()"></button>
+                    </ng-template>
+                    </p-dialog>
+    
+
+
+        </div>
+        </div>
+
+

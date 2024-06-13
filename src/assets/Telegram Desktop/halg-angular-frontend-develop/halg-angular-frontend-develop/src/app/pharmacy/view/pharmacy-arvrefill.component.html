@@ -1,0 +1,205 @@
+
+    <div class="card">
+
+        <div class="p-d-flex p-flex-column p-flex-md-row p-jc-md-between table-header">
+            <div>
+                <button pButton pRipple type="button" icon="pi pi-plus" label="Dispense ARV Drugs"
+                    class="p-button-text p-mr-2" (click)="goToAddDialog('arvdrug')"></button>
+                <button pButton pRipple type="button" icon="pi pi-refresh" label="ARV Drugs Refill"
+                    class="p-button-text p-mr-2" (click)="goToAddDialog('arvdrug')"
+                    [disabled]="!selectedARVDrug || !selectedARVDrug.length"></button>
+            </div>
+            <span class="p-input-icon-left">
+                <i class="pi pi-search"></i>
+                <input pInputText type="text" (input)="dt.filterGlobal($event.target.value, 'contains')"
+                    placeholder="Search..." />
+            </span>
+        </div><br>
+
+        <p-table #dt [value]="arvDrugDispenseList" [rows]="10" [paginator]="true"
+            styleClass="p-datatable-customers"
+            [globalFilterFields]="['prescription_date','drug_id','dose','dosefrequency','unit','prescription_note']"
+            [rowHover]="true" dataKey="client_unique_identifier,regimencombo_id,arv_dispense_date"
+            [(selection)]="selectedARVDrug">
+            <ng-template pTemplate="header">
+                <tr>
+                    <th style="width: 3rem">
+                        <p-tableHeaderCheckbox>Select</p-tableHeaderCheckbox>
+                    </th>
+                    <th pSortableColumn="regimencombo.name">Regimen<p-sortIcon
+                            field="regimencombo.name"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="drugdispensepattern.name">Dosage<p-sortIcon
+                            field="drugdispensepattern.name"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="drugdispensepattern.tablet_no">Unit Dispensed<p-sortIcon
+                            field="drugdispensepattern.tablet_no"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="arv_dispense_date">Dispensed Date <p-sortIcon
+                            field="arv_dispense_date"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="arv_dispense_date">Last ARV Refill Date <p-sortIcon
+                            field="arv_dispense_date"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="arv_next_appointment_date">Next Refill Date <p-sortIcon
+                            field="arv_next_appointment_date">
+                        </p-sortIcon>
+                    </th>
+                    <th pSortableColumn="arv_next_appointment_date">Days to Refill <p-sortIcon
+                            field="arv_next_appointment_date">
+                        </p-sortIcon>
+                    </th>
+                    <th pSortableColumn="action">Action <p-sortIcon field="action"></p-sortIcon>
+                    </th>
+
+
+
+                </tr>
+
+
+            </ng-template>
+            <ng-template pTemplate="body" let-arv>
+                <tr>
+                    <td>
+                        <p-tableCheckbox [value]="arv"></p-tableCheckbox>
+                    </td>
+                    <td>
+                        {{arv.regimencombo.name}}
+                    </td>
+                    <td>
+                        {{arv.drugdispensepattern.name}}
+                    </td>
+                    <td>
+                        {{arv.drugdispensepattern.tablet_no}}
+                    </td>
+                    <td>
+                        {{arv.arv_dispense_date | date}}
+                    </td>
+                    <td>
+                        {{arv.arv_dispense_date | date}}
+                    </td>
+                    <td>
+                        {{arv.arv_next_appointment_date | date}}
+                    </td>
+
+
+
+                    <td>
+                        <p-badge [value]="DateDiff(arv.arv_next_appointment_date)" size="large"
+                            severity="{{DateDiff(arv.arv_next_appointment_date) > 0 ? 'info' : 
+            DateDiff(arv.arv_next_appointment_date) == 0 ? 'warning' : 'danger'}}"></p-badge>
+                    </td>
+
+                    <td>
+                        <button pButton pRipple icon="pi pi-user-edit" pTooltip="Change Regimen"
+                            tooltipPosition="bottom" class="p-button-rounded p-mr-2"
+                            (click)="editRegimen(reg)"></button>
+                        <button pButton pRipple icon="pi pi-refresh" class="p-button-rounded p-mr-2"
+                            (click)="deleteRegimen(reg)" pTooltip="Refill ARV Drug"
+                            tooltipPosition="bottom"></button>
+                        <button pButton pRipple icon="pi pi-info"
+                            class="p-button-rounded p-button-warning" (click)="deleteRegimen(reg)"
+                            pTooltip="Detail" tooltipPosition="bottom"></button>
+                    </td>
+                </tr>
+            </ng-template>
+
+        </p-table>
+    </div>
+
+    <p-dialog [(visible)]="arvdispensedialog" [maximizable]="true" [style]="{width: '1000px'}" header="ARV Drug Pickup"
+    [modal]="true" styleClass="p-fluid">
+
+
+    <ng-template pTemplate="content">
+        <p-card header="ARV Drug Pickup">
+            <div class="p-col-12 p-fluid p-formgrid p-grid p-ai-end vertical-container">
+                <div class="p-col-4 p-field">
+                    <label for="arvpickup"><b>Pickup Date*</b></label>
+                    <p-calendar [(ngModel)]="arvpickupdate" yearRange="1960:{{curYear}}" showButtonBar="true"
+                        required="true" [monthNavigator]="true" [yearNavigator]="true" [maxDate]="maxDate"
+                        [showIcon]="true" [showTime]="false" (onSelect)="CalculateNextAppointmentDate()"
+                        placeholder="Pick Date" dateFormat="dd/mm/yy"></p-calendar>
+
+                </div>
+                <div class="p-field p-col-4">
+                    <label for="med_line"><b>Medication Line*</b></label>
+                    <p-dropdown inputId="med_line" [options]="medLineMap" [(ngModel)]="selectedMedLine"
+                        (onChange)="onMedLineChange()" [filter]="true" filterBy="name" optionLabel="name"
+                        placeholder="Choose a medication line"></p-dropdown>
+                </div>
+                <div class="p-field p-col-4">
+                    <label for="med_line"><b>Regimen*</b></label>
+                    <p-dropdown inputId="med_line" [options]="regimenMap" [(ngModel)]="selectedRegimenCombo"
+                        [filter]="true" filterBy="name" optionLabel="name" placeholder="Select a regimen"
+                        (onChange)="CalculateNextAppointmentDate()"></p-dropdown>
+                </div>
+
+                <div class="p-field p-col-4">
+                    <label for="duration"><b>Duration*</b></label>
+                    <p-dropdown inputId="med_line" [options]="dosageMap" [(ngModel)]="selectedDosage"
+                        (onChange)="CalculateNextAppointmentDate()" [filter]="true" filterBy="name"
+                        optionLabel="name" placeholder="Choose a dosage size"></p-dropdown>
+                </div>
+
+                <div class="p-col-4 p-field">
+                    <label><b>Next Appointment Date*</b></label>
+                    <p-calendar [(ngModel)]="arvdispensecreatedata.next_arv_pick_up_date" disabled="true"
+                        required="true" dateFormat="dd/mm/yy" [showIcon]="true" [showTime]="false"
+                        placeholder="Pick Date" inputId="time"></p-calendar>
+                </div>
+
+                <div class="p-field p-col-4">
+                    <button pButton pRipple label="Add to Review" (click)="AddARVToReview()"
+                        class="p-button-outlined"></button>
+                </div>
+            </div>
+
+        </p-card>
+
+        <br />
+        <br />
+
+        <p-card header="Review and Save">
+            <p-table [value]="arvdispensecreatedatas" responsiveLayout="scroll">
+                <ng-template pTemplate="caption">
+                    <div class="p-d-flex p-col-6">
+
+                        <button type="button" pButton pRipple (click)="SaveARVDrugDispense('save')"
+                            class="p-mr-2 p-button-outlined" pTooltip="Save Regimen" label="Save ARV Drugs"
+                            tooltipPosition="bottom"></button>
+                        <button type="button" pButton pRipple (click)="SaveARVDrugDispense('clear')"
+                            class="p-mr-2 p-button-outlined" pTooltip="Clear/Reset" label="Clear/Reset"
+                            tooltipPosition="bottom"></button>
+
+                    </div>
+                </ng-template>
+                <ng-template pTemplate="header">
+                    <tr>
+                        <th>Pickup Date</th>
+                        <th>Drug Line</th>
+                        <th>Regimen</th>
+                        <th>Duration</th>
+                        <th>Next Appointment</th>
+                    </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-arv>
+                    <tr>
+                        <td>{{arv.arv_dispense_date | date}}</td>
+                        <td>{{arv.medicationline}}</td>
+                        <td>{{arv.regimen}}</td>
+                        <td>{{arv.dosage}}</td>
+                        <td>{{arv.next_arv_pick_up_date | date}}</td>
+                        <td>
+                            <button pButton pRipple icon="pi pi-trash"
+                                class="p-button-rounded p-button-warning"></button>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        </p-card>
+
+    </ng-template>
+
+
+</p-dialog>

@@ -1,0 +1,102 @@
+<div class="p-grid">
+	<div class="p-col-12">
+
+        <div class="card">
+			<p-toolbar styleClass="p-mb-4">
+				<ng-template pTemplate="left">
+					<button pButton pRipple label="Add Enrollment Setting" icon="pi pi-plus" class="p-mr-2 p-mb-2" (click)="goToAddEnrollmentSetting()"></button>
+					<button pButton pRipple label="Delete Enrollment Setting" icon="pi pi-trash" class="p-mb-2" (click)="deleteSelectedProducts()" [disabled]="!selectedProducts || !selectedProducts.length"></button>
+				</ng-template>
+
+				<ng-template pTemplate="right">
+					<button pButton pRipple label="Back" icon="pi pi-chevron-left" class="p-button-help p-mb-2" (click)="goBack()"></button>
+				</ng-template>
+            </p-toolbar>
+            <p-table #dt [value]="enrollmentsettingList" [rows]="10" [paginator]="true" [globalFilterFields]="['name','code']"
+         [rowHover]="true" dataKey="id"
+            styleClass="p-datatable-customers"
+            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries" [showCurrentPageReport]="true">
+   
+            <ng-template pTemplate="caption">
+                <div class="p-d-flex p-flex-column p-flex-md-row p-jc-md-between table-header">
+                    <h5 class="p-m-0">Enrollment Setting Listing</h5>
+                    <span class="p-input-icon-left">
+                    <i class="pi pi-search"></i>
+                    <input pInputText type="text" (input)="dt.filterGlobal($event.target.value, 'contains')" placeholder="Search..." />
+                </span>
+                </div>
+            </ng-template>
+            <ng-template pTemplate="header">
+                <tr>
+                    <th style="width: 3rem">
+                        <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+                    </th>
+                    <th pSortableColumn="enrollment_setting_id"> id <p-sortIcon field="enrollment_setting_id"></p-sortIcon></th>
+                    <th pSortableColumn="name"> Name<p-sortIcon field="name"></p-sortIcon></th>
+                    <th pSortableColumn="code "> Code <p-sortIcon field="code"></p-sortIcon></th>
+                    <th pSortableColumn="description">  Description <p-sortIcon field="description"></p-sortIcon></th>
+                    
+                    <th>Action</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-enrollmentsetting>
+                <tr>
+                    <td>
+                        <p-tableCheckbox [value]="enrollmentsetting"></p-tableCheckbox>
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{enrollmentsetting.enrollments_setting_id}}
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{enrollmentsetting.name}}
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{enrollmentsetting.code}}
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{enrollmentsetting.description}}
+                    </td>
+                    
+                    <td>
+                        <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success p-mr-2" (click)="editEnrollmentSetting(enrollmentsetting)"></button>
+                        <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-warning" (click)="deleteProduct(product)"></button>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="summary">
+                <div class="p-d-flex p-ai-center p-jc-between">
+                    In total there are {{enrollmentsettingList ? enrollmentsettingList.length : 0 }} Enrollment Setting.
+                </div>
+            </ng-template>
+        </p-table>   
+            </div>
+
+            <p-dialog [(visible)]="enrollmentsettingDialog" [style]="{width: '650px'}" header="Enrollmen Setting Details" [modal]="true" styleClass="p-fluid">
+           
+                <ng-template pTemplate="content">
+                    <div class="p-col-12 p-fluid p-formgrid p-grid">
+                    <div class="p-col-12 p-field">
+                        <label for="name">Name</label>
+                        <input id="name" pInputText [(ngModel)]="selectedEnrollmentSetting.name">
+                    </div>
+                    <div class="p-col-6 p-field">
+                        <label for="code">Code</label>
+                        <input id="code" pInputText [(ngModel)]="selectedEnrollmentSetting.code">
+                    </div>
+                    
+            <div class="p-col-12 p-field">
+                <label for="description">Description </label>
+                <textarea id="description" pInputText [(ngModel)]="selectedEnrollmentSetting.description" required rows="3" cols="20"></textarea>
+            </div>
+                    </div>
+                    </ng-template>
+    
+                    <ng-template pTemplate="footer">
+                        <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideEnrollmentSettingDialog()"></button>
+                        <button pButton pRipple label="Save" icon="pi pi-check" class="p-button-text" (click)="updateEnrollmentSetting()"></button>
+                    </ng-template>
+                    </p-dialog>
+        </div>
+        </div>
+
+

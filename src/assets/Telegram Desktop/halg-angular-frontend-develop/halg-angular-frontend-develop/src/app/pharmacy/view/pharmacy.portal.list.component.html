@@ -1,0 +1,423 @@
+<p-scrollTop icon="pi pi-arrow-up" styleClass="custom-scrolltop"></p-scrollTop>
+<div class="layout-dashboard">
+  <div class="p-grid">
+    <div class="p-col-12 p-md-6 p-xl-3">
+      <a href="#" (click)="switchClientExtInfo()">
+        <div class="card overview-box-2 pink">
+          <div class="overview-info">
+            <h6>Total Prescribed</h6>
+            <h3>3,420</h3>
+          </div>
+          <i class="fas fa-capsules"></i>
+        </div>
+      </a>
+    </div>
+
+    <div class="p-col-12 p-md-6 p-xl-3">
+      <a href="#" (click)="switchClientExtInfo()">
+        <div class="card overview-box-2 blue">
+          <div class="overview-info">
+            <h6>Total Dispensed</h6>
+            <h3>2,823</h3>
+          </div>
+          <i class="fas fa-pills"></i>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+<br />
+<div class="p-grid">
+  <div class="p-col-12">
+    <div class="card">
+      <h5>Pharmacy</h5>
+
+      <p-table
+        #dt
+        [value]="pharmarcyInfo"
+        [rows]="20"
+        [loading]="loading"
+        [totalRecords]="totalRecords"
+        [paginator]="true"
+        [globalFilterFields]="[
+          'client_unique_identifier',
+          'surname',
+          'prescription_date'
+        ]"
+        [rowHover]="true"
+        dataKey="client_unique_identifier"
+        [(selection)]="selectedPharmacys"
+        styleClass="p-datatable-customers"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+        [showCurrentPageReport]="true"
+      >
+        <ng-template pTemplate="caption">
+          <br />
+          <div class="p-grid p-justify-between vertical-container">
+            <div class="p-field">
+              <label><b>Registrations: </b></label>
+              <p-dropdown
+                [options]="regperiodmap"
+                [filter]="true"
+                filterBy="name"
+                [showClear]="true"
+                [(ngModel)]="selectedRegDays"
+                class="p-md-8"
+                (onChange)="clientInfoByDays()"
+                optionLabel="name"
+                placeholder="Default Day (30)"
+              ></p-dropdown>
+            </div>
+            <div class="p-field">
+              <label class="p-mr-2 p-mb-2"><b>Search by UID: </b></label>
+              <input
+                pInputText
+                type="text"
+                placeholder="Enter UID"
+                class="p-mr-2 p-mb-2"
+                [(ngModel)]="client_unique_identifier"
+              />
+              <button
+                pButton
+                pRipple
+                type="button"
+                icon="pi pi-search"
+                (click)="getClientInfoByHospitalNum()"
+                class="p-button-text p-mr-1 p-mb-2"
+              ></button>
+              <button
+                pButton
+                pRipple
+                type="button"
+                icon="pi pi-refresh"
+                (click)="PharmacyDataInfo()"
+                class="p-button-text p-mr-1 p-mb-2"
+              ></button>
+            </div>
+            <!-- <div>
+                    <button pButton pRipple type="button" [disabled]="true" icon="fa fa-table" label="Query Builder" (click)="onClickQueryBuilder()" class="p-button-outlined p-mr-2 p-mb-2"></button>
+                    <button pButton pRipple type="button" [disabled]="true" icon="fa fa-crosshairs" label="Pivot Table" class="p-button-outlined p-mr-2 p-mb-2"></button>
+                    </div>
+            
+                <div class="p-field">
+                <label><b>Filter Client Status: </b></label>
+                <p-dropdown [options]="clientstatusmap" [filter]="true" filterBy="name" [showClear]="true"
+                [(ngModel)]="selectedClientStatus" class="p-md-8" optionValue="value"
+                optionLabel="label" placeholder="-Select-"></p-dropdown>
+            </div> -->
+          </div>
+          <br />
+          <div class="p-d-flex">
+            <button
+              type="button"
+              pButton
+              pRipple
+              icon="pi pi-file-o"
+              (click)="dt.exportCSV()"
+              class="p-mr-2"
+              pTooltip="CSV"
+              tooltipPosition="bottom"
+            ></button>
+            <button
+              type="button"
+              pButton
+              pRipple
+              icon="pi pi-file-excel"
+              (click)="exportExcel()"
+              class="p-button-success p-mr-2"
+              pTooltip="XLS"
+              tooltipPosition="bottom"
+            ></button>
+            <button
+              type="button"
+              pButton
+              pRipple
+              icon="pi pi-file-pdf"
+              (click)="exportPdf()"
+              class="p-button-warning p-mr-2"
+              pTooltip="PDF"
+              tooltipPosition="bottom"
+            ></button>
+            <button
+              type="button"
+              pButton
+              pRipple
+              icon="pi pi-filter"
+              (click)="exportExcel({ selectionOnly: true })"
+              class="p-button-info p-ml-auto"
+              pTooltip="Selection Only"
+              tooltipPosition="bottom"
+            ></button>
+
+            <span class="p-input-icon-left p-ml-auto">
+              <i class="pi pi-search"></i>
+              <input
+                pInputText
+                type="text"
+                (input)="dt.filterGlobal($event.target.value, 'contains')"
+                placeholder="Search keyword"
+              />
+            </span>
+          </div>
+        </ng-template>
+
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width: 5%">
+              <p-tableHeaderCheckbox>Select</p-tableHeaderCheckbox>
+            </th>
+
+            <th style="width: 30%">Client Code</th>
+            <th style="width: 25%">Client Name</th>
+            <th style="width: 25%">Prescribed Date</th>
+            <th style="width: 25%">Prescribed By</th>
+
+            <th style="width: 15%">Action</th>
+          </tr>
+
+          <tr>
+            <th></th>
+            <th>
+              <p-columnFilter type="text" field="client_code"></p-columnFilter>
+            </th>
+
+            <th>
+              <p-columnFilter type="text" field="surname"></p-columnFilter>
+            </th>
+
+            <th>
+              <p-columnFilter
+                type="text"
+                field="prescribed_date"
+              ></p-columnFilter>
+            </th>
+
+            <th>
+              <p-columnFilter
+                type="text"
+                field="total_prescribed"
+              ></p-columnFilter>
+            </th>
+
+            <th></th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-pharmacy>
+          <tr>
+            <td>
+              <p-tableCheckbox [value]="pharmacy"></p-tableCheckbox>
+            </td>
+            <td>
+              {{ pharmacy.client_unique_identifier }}
+            </td>
+            <td>
+              {{ pharmacy.clinicalregistration.surname }}
+              {{ pharmacy.clinicalregistration.firstname }}
+              {{ pharmacy.clinicalregistration.otherNames }}
+            </td>
+            <td>
+              {{ pharmacy.prescription_date | date }}
+            </td>
+            <td>
+              {{ pharmacy.users.username }}
+            </td>
+
+            <td>
+              <p-splitButton
+                label="More..."
+                [model]="pharmacyDataActionItems"
+                styleClass="p-mr-2 p-mb-2"
+                (onDropdownClick)="viewPharmacy(pharmacy)"
+              >
+              </p-splitButton>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="5">No client found.</td>
+          </tr>
+          <p-tabPanel header="ARV Drug Dispensing">
+            <div class="card">
+              <div
+                class="
+                  p-d-flex p-flex-column p-flex-md-row p-jc-md-between
+                  table-header
+                "
+              >
+                <div>
+                  <button
+                    pButton
+                    pRipple
+                    type="button"
+                    icon="pi pi-plus"
+                    label="Dispense ARV Drugs"
+                    class="p-button-text p-mr-2"
+                    (click)="goToAddDialog('arvdrug')"
+                  ></button>
+                  <button
+                    pButton
+                    pRipple
+                    type="button"
+                    icon="pi pi-refresh"
+                    label="ARV Drugs Refill"
+                    class="p-button-text p-mr-2"
+                    (click)="goToAddDialog('arvdrug')"
+                    [disabled]="!selectedARVDrug || !selectedARVDrug.length"
+                  ></button>
+                </div>
+                <span class="p-input-icon-left">
+                  <i class="pi pi-search"></i>
+                  <input
+                    pInputText
+                    type="text"
+                    (input)="dt.filterGlobal($event.target.value, 'contains')"
+                    placeholder="Search..."
+                  />
+                </span>
+              </div>
+              <br />
+
+              <p-table
+                #dt
+                [value]="arvDrugDispenseList"
+                [rows]="10"
+                [paginator]="true"
+                styleClass="p-datatable-customers"
+                [globalFilterFields]="[
+                  'prescription_date',
+                  'drug_id',
+                  'dose',
+                  'dosefrequency',
+                  'unit',
+                  'prescription_note'
+                ]"
+                [rowHover]="true"
+                dataKey="client_unique_identifier,regimencombo_id,arv_dispense_date"
+                [(selection)]="selectedARVDrug"
+              >
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th style="width: 3rem">
+                      <p-tableHeaderCheckbox>Select</p-tableHeaderCheckbox>
+                    </th>
+                    <th pSortableColumn="regimencombo.name">
+                      Regimen<p-sortIcon field="regimencombo.name"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="drugdispensepattern.name">
+                      Dosage<p-sortIcon
+                        field="drugdispensepattern.name"
+                      ></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="drugdispensepattern.tablet_no">
+                      Unit Dispensed<p-sortIcon
+                        field="drugdispensepattern.tablet_no"
+                      ></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="arv_dispense_date">
+                      Dispensed Date
+                      <p-sortIcon field="arv_dispense_date"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="arv_dispense_date">
+                      Last ARV Refill Date
+                      <p-sortIcon field="arv_dispense_date"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="arv_next_appointment_date">
+                      Next Refill Date
+                      <p-sortIcon field="arv_next_appointment_date">
+                      </p-sortIcon>
+                    </th>
+                    <th pSortableColumn="arv_next_appointment_date">
+                      Days to Refill
+                      <p-sortIcon field="arv_next_appointment_date">
+                      </p-sortIcon>
+                    </th>
+                    <th pSortableColumn="action">
+                      Action <p-sortIcon field="action"></p-sortIcon>
+                    </th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-arv>
+                  <tr>
+                    <td>
+                      <p-tableCheckbox [value]="arv"></p-tableCheckbox>
+                    </td>
+                    <td>
+                      {{ arv.regimencombo.name }}
+                    </td>
+                    <td>
+                      {{ arv.drugdispensepattern.name }}
+                    </td>
+                    <td>
+                      {{ arv.drugdispensepattern.tablet_no }}
+                    </td>
+                    <td>
+                      {{ arv.arv_dispense_date | date }}
+                    </td>
+                    <td>
+                      {{ arv.arv_dispense_date | date }}
+                    </td>
+                    <td>
+                      {{ arv.arv_next_appointment_date | date }}
+                    </td>
+
+                    <td>
+                      <p-badge
+                        [value]="DateDiff(arv.arv_next_appointment_date)"
+                        size="large"
+                        severity="{{
+                          DateDiff(arv.arv_next_appointment_date) > 0
+                            ? 'info'
+                            : DateDiff(arv.arv_next_appointment_date) == 0
+                            ? 'warning'
+                            : 'danger'
+                        }}"
+                      ></p-badge>
+                    </td>
+
+                    <td>
+                      <button
+                        pButton
+                        pRipple
+                        icon="pi pi-user-edit"
+                        pTooltip="Change Regimen"
+                        tooltipPosition="bottom"
+                        class="p-button-rounded p-mr-2"
+                        (click)="editRegimen(reg)"
+                      ></button>
+                      <button
+                        pButton
+                        pRipple
+                        icon="pi pi-refresh"
+                        class="p-button-rounded p-mr-2"
+                        (click)="deleteRegimen(reg)"
+                        pTooltip="Refill ARV Drug"
+                        tooltipPosition="bottom"
+                      ></button>
+                      <button
+                        pButton
+                        pRipple
+                        icon="pi pi-info"
+                        class="p-button-rounded p-button-warning"
+                        (click)="deleteRegimen(reg)"
+                        pTooltip="Detail"
+                        tooltipPosition="bottom"
+                      ></button>
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            </div>
+          </p-tabPanel>
+        </ng-template>
+        <ng-template pTemplate="summary">
+          <div class="p-d-flex p-ai-center p-jc-between">
+            In total there are
+            {{ pharmarcyInfo ? pharmarcyInfo.length : 0 }} Clients found.
+          </div>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,694 @@
+{
+    "components": [
+        {
+            "components": [
+                {
+                    "components": [
+                        {
+                            "components": [
+                                {
+                                    "legend": "Client Enrolment Form",
+                                    "key": "fieldset",
+                                    "type": "fieldset",
+                                    "label": "",
+                                    "input": false,
+                                    "tableView": false,
+                                    "components": [
+                                        {
+                                            "label": "Columns",
+                                            "columns": [
+                                                {
+                                                    "components": [
+                                                        {
+                                                            "label": "Care Entry Point",
+                                                            "widget": "choicesjs",
+                                                            "placeholder": "-Select-",
+                                                            "tableView": true,
+                                                            "dataSrc": "url",
+                                                            "data": {
+                                                                "values": [
+                                                                    {
+                                                                        "label": "",
+                                                                        "value": ""
+                                                                    }
+                                                                ],
+                                                                "url": "http://198.38.91.113:4040/api/v1/listcareentrypoint",
+                                                                "headers": [
+                                                                    {
+                                                                        "key": "Authorization",
+                                                                        "value": "Bearer {{localStorage.getItem('token2')}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "template": "<span>{{ item.name }}</span>",
+                                                            "selectThreshold": 0.3,
+                                                            "key": "careEntryPoint",
+                                                            "type": "select",
+                                                            "indexeddb": {
+                                                                "filter": {}
+                                                            },
+                                                            "input": true,
+                                                            "hideOnChildrenHidden": false,
+                                                            "disableLimit": false
+                                                        }
+                                                    ],
+                                                    "width": 4,
+                                                    "offset": 0,
+                                                    "push": 0,
+                                                    "pull": 0,
+                                                    "size": "md"
+                                                },
+                                                {
+                                                    "components": [
+                                                        {
+                                                            "label": "Date of confirmed HIV test",
+                                                            "format": "dd/MM/yyyy",
+                                                            "placeholder": "Date HIV Confirmed",
+                                                            "tableView": false,
+                                                            "enableMinDateInput": false,
+                                                            "datePicker": {
+                                                                "disableWeekends": false,
+                                                                "disableWeekdays": false
+                                                            },
+                                                            "enableMaxDateInput": false,
+                                                            "key": "dateOfConfirmedHivTest",
+                                                            "type": "datetime",
+                                                            "input": true,
+                                                            "widget": {
+                                                                "type": "calendar",
+                                                                "displayInTimezone": "viewer",
+                                                                "locale": "en",
+                                                                "useLocaleSettings": false,
+                                                                "allowInput": true,
+                                                                "mode": "single",
+                                                                "enableTime": true,
+                                                                "noCalendar": false,
+                                                                "format": "dd/MM/yyyy",
+                                                                "hourIncrement": 1,
+                                                                "minuteIncrement": 1,
+                                                                "time_24hr": false,
+                                                                "minDate": null,
+                                                                "disableWeekends": false,
+                                                                "disableWeekdays": false,
+                                                                "maxDate": null
+                                                            },
+                                                            "hideOnChildrenHidden": false
+                                                        }
+                                                    ],
+                                                    "width": 4,
+                                                    "offset": 0,
+                                                    "push": 0,
+                                                    "pull": 0,
+                                                    "size": "md"
+                                                },
+                                                {
+                                                    "components": [
+                                                        {
+                                                            "label": "Date enrolled in HIV care",
+                                                            "format": "dd/MM/yyyy",
+                                                            "placeholder": "Date Enrolled in HIV Care",
+                                                            "tableView": false,
+                                                            "enableMinDateInput": false,
+                                                            "datePicker": {
+                                                                "disableWeekends": false,
+                                                                "disableWeekdays": false
+                                                            },
+                                                            "enableMaxDateInput": false,
+                                                            "key": "dateEnrolledInHivCare",
+                                                            "type": "datetime",
+                                                            "input": true,
+                                                            "widget": {
+                                                                "type": "calendar",
+                                                                "displayInTimezone": "viewer",
+                                                                "locale": "en",
+                                                                "useLocaleSettings": false,
+                                                                "allowInput": true,
+                                                                "mode": "single",
+                                                                "enableTime": true,
+                                                                "noCalendar": false,
+                                                                "format": "dd/MM/yyyy",
+                                                                "hourIncrement": 1,
+                                                                "minuteIncrement": 1,
+                                                                "time_24hr": false,
+                                                                "minDate": null,
+                                                                "disableWeekends": false,
+                                                                "disableWeekdays": false,
+                                                                "maxDate": null
+                                                            },
+                                                            "hideOnChildrenHidden": false
+                                                        }
+                                                    ],
+                                                    "size": "md",
+                                                    "width": 4,
+                                                    "offset": 0,
+                                                    "push": 0,
+                                                    "pull": 0
+                                                }
+                                            ],
+                                            "hideLabel": true,
+                                            "key": "columns",
+                                            "type": "columns",
+                                            "input": false,
+                                            "tableView": false
+                                        },
+                                        {
+                                            "label": "Columns",
+                                            "columns": [
+                                                {
+                                                    "components": [
+                                                        {
+                                                            "label": "Pregnancy",
+                                                            "widget": "choicesjs",
+                                                            "placeholder": "Pregnancy",
+                                                            "tableView": true,
+                                                            "data": {
+                                                                "values": [
+                                                                    {
+                                                                        "label": "Pregnant",
+                                                                        "value": "1"
+                                                                    },
+                                                                    {
+                                                                        "label": "Not Pregnant",
+                                                                        "value": "2"
+                                                                    },
+                                                                    {
+                                                                        "label": "Post Partum",
+                                                                        "value": "3"
+                                                                    },
+                                                                    {
+                                                                        "label": "Breast Feeding",
+                                                                        "value": "4"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "selectThreshold": 0.3,
+                                                            "key": "modeOfHivTest",
+                                                            "type": "select",
+                                                            "indexeddb": {
+                                                                "filter": {}
+                                                            },
+                                                            "input": true,
+                                                            "hideOnChildrenHidden": false
+                                                        }
+                                                    ],
+                                                    "width": 4,
+                                                    "offset": 0,
+                                                    "push": 0,
+                                                    "pull": 0,
+                                                    "size": "md"
+                                                },
+                                                {
+                                                    "components": [
+                                                        {
+                                                            "label": "TB Status",
+                                                            "widget": "choicesjs",
+                                                            "placeholder": "TB Status",
+                                                            "tableView": true,
+                                                            "data": {
+                                                                "values": [
+                                                                    {
+                                                                        "label": "No sign of TB",
+                                                                        "value": "1"
+                                                                    },
+                                                                    {
+                                                                        "label": "Suspected TB and referred",
+                                                                        "value": "2"
+                                                                    },
+                                                                    {
+                                                                        "label": "On TB Treatment",
+                                                                        "value": "3"
+                                                                    },
+                                                                    {
+                                                                        "label": "On INH Treatment",
+                                                                        "value": "4"
+                                                                    },
+                                                                    {
+                                                                        "label": "TB positive but not on drugs",
+                                                                        "value": "5"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "selectThreshold": 0.3,
+                                                            "key": "priorArt",
+                                                            "type": "select",
+                                                            "indexeddb": {
+                                                                "filter": {}
+                                                            },
+                                                            "input": true,
+                                                            "hideOnChildrenHidden": false
+                                                        }
+                                                    ],
+                                                    "width": 4,
+                                                    "offset": 0,
+                                                    "push": 0,
+                                                    "pull": 0,
+                                                    "size": "md"
+                                                },
+                                                {
+                                                    "components": [
+                                                        {
+                                                            "label": "Referral Point",
+                                                            "widget": "choicesjs",
+                                                            "placeholder": "Referral Point",
+                                                            "tableView": true,
+                                                            "data": {
+                                                                "values": [
+                                                                    {
+                                                                        "label": "TB",
+                                                                        "value": "1"
+                                                                    },
+                                                                    {
+                                                                        "label": "STI",
+                                                                        "value": "2"
+                                                                    },
+                                                                    {
+                                                                        "label": "FP",
+                                                                        "value": "3"
+                                                                    },
+                                                                    {
+                                                                        "label": "OPD",
+                                                                        "value": "4"
+                                                                    },
+                                                                    {
+                                                                        "label": "Ward",
+                                                                        "value": "5"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "selectThreshold": 0.3,
+                                                            "key": "referralPoint",
+                                                            "type": "select",
+                                                            "indexeddb": {
+                                                                "filter": {}
+                                                            },
+                                                            "input": true,
+                                                            "hideOnChildrenHidden": false
+                                                        }
+                                                    ],
+                                                    "size": "md",
+                                                    "width": 4,
+                                                    "offset": 0,
+                                                    "push": 0,
+                                                    "pull": 0
+                                                }
+                                            ],
+                                            "hideLabel": true,
+                                            "key": "columns1",
+                                            "type": "columns",
+                                            "input": false,
+                                            "tableView": false
+                                        },
+                                        {
+                                            "label": "Columns",
+                                            "columns": [
+                                                {
+                                                    "components": [
+                                                        {
+                                                            "label": "Mode of HIV test",
+                                                            "widget": "choicesjs",
+                                                            "placeholder": "Mode of HIV test",
+                                                            "tableView": true,
+                                                            "data": {
+                                                                "values": [
+                                                                    {
+                                                                        "label": "HIV - ab",
+                                                                        "value": "1"
+                                                                    },
+                                                                    {
+                                                                        "label": "PCR",
+                                                                        "value": "2"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "selectThreshold": 0.3,
+                                                            "key": "modeOfHivTest1",
+                                                            "type": "select",
+                                                            "indexeddb": {
+                                                                "filter": {}
+                                                            },
+                                                            "input": true,
+                                                            "hideOnChildrenHidden": false
+                                                        }
+                                                    ],
+                                                    "width": 4,
+                                                    "offset": 0,
+                                                    "push": 0,
+                                                    "pull": 0,
+                                                    "size": "md"
+                                                },
+                                                {
+                                                    "components": [
+                                                        {
+                                                            "label": "Prior ART",
+                                                            "widget": "choicesjs",
+                                                            "placeholder": "Prior ART",
+                                                            "tableView": true,
+                                                            "data": {
+                                                                "values": [
+                                                                    {
+                                                                        "label": "Transfer in with records",
+                                                                        "value": "1"
+                                                                    },
+                                                                    {
+                                                                        "label": "Transfer without records",
+                                                                        "value": "2"
+                                                                    },
+                                                                    {
+                                                                        "label": "PMTCT only",
+                                                                        "value": "3"
+                                                                    },
+                                                                    {
+                                                                        "label": "PEP",
+                                                                        "value": "4"
+                                                                    },
+                                                                    {
+                                                                        "label": "None",
+                                                                        "value": "non5e"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "selectThreshold": 0.3,
+                                                            "key": "priorArt1",
+                                                            "type": "select",
+                                                            "indexeddb": {
+                                                                "filter": {}
+                                                            },
+                                                            "input": true,
+                                                            "hideOnChildrenHidden": false
+                                                        }
+                                                    ],
+                                                    "width": 4,
+                                                    "offset": 0,
+                                                    "push": 0,
+                                                    "pull": 0,
+                                                    "size": "md"
+                                                },
+                                                {
+                                                    "components": [
+                                                        {
+                                                            "label": "Date transferred in",
+                                                            "format": "dd/MM/yyyy",
+                                                            "placeholder": "Date transferred in",
+                                                            "tableView": false,
+                                                            "enableMinDateInput": false,
+                                                            "datePicker": {
+                                                                "disableWeekends": false,
+                                                                "disableWeekdays": false
+                                                            },
+                                                            "enableMaxDateInput": false,
+                                                            "key": "dateTransferredIn1",
+                                                            "type": "datetime",
+                                                            "input": true,
+                                                            "widget": {
+                                                                "type": "calendar",
+                                                                "displayInTimezone": "viewer",
+                                                                "locale": "en",
+                                                                "useLocaleSettings": false,
+                                                                "allowInput": true,
+                                                                "mode": "single",
+                                                                "enableTime": true,
+                                                                "noCalendar": false,
+                                                                "format": "dd/MM/yyyy",
+                                                                "hourIncrement": 1,
+                                                                "minuteIncrement": 1,
+                                                                "time_24hr": false,
+                                                                "minDate": null,
+                                                                "disableWeekends": false,
+                                                                "disableWeekdays": false,
+                                                                "maxDate": null
+                                                            },
+                                                            "hideOnChildrenHidden": false
+                                                        }
+                                                    ],
+                                                    "size": "md",
+                                                    "width": 4,
+                                                    "offset": 0,
+                                                    "push": 0,
+                                                    "pull": 0
+                                                }
+                                            ],
+                                            "hideLabel": true,
+                                            "key": "columns4",
+                                            "type": "columns",
+                                            "input": false,
+                                            "tableView": false
+                                        },
+                                        {
+                                            "label": "Columns",
+                                            "columns": [
+                                                {
+                                                    "components": [
+                                                        {
+                                                            "label": "Facility transferred from",
+                                                            "widget": "choicesjs",
+                                                            "placeholder": "Facility transferred from",
+                                                            "tableView": true,
+                                                            "data": {
+                                                                "values": [
+                                                                    {
+                                                                        "label": "",
+                                                                        "value": ""
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "selectThreshold": 0.3,
+                                                            "key": "facilityTransferredFrom",
+                                                            "type": "select",
+                                                            "indexeddb": {
+                                                                "filter": {}
+                                                            },
+                                                            "input": true,
+                                                            "hideOnChildrenHidden": false
+                                                        }
+                                                    ],
+                                                    "width": 4,
+                                                    "offset": 0,
+                                                    "push": 0,
+                                                    "pull": 0,
+                                                    "size": "md"
+                                                },
+                                                {
+                                                    "components": [
+                                                        {
+                                                            "label": "Date of Last ARV Pick Up",
+                                                            "format": "dd/MM/yyyy",
+                                                            "placeholder": "Date of Last ARV Pick Up",
+                                                            "tableView": false,
+                                                            "enableMinDateInput": false,
+                                                            "datePicker": {
+                                                                "disableWeekends": false,
+                                                                "disableWeekdays": false
+                                                            },
+                                                            "enableMaxDateInput": false,
+                                                            "key": "dateOfLastArvPickUp",
+                                                            "type": "datetime",
+                                                            "input": true,
+                                                            "widget": {
+                                                                "type": "calendar",
+                                                                "displayInTimezone": "viewer",
+                                                                "locale": "en",
+                                                                "useLocaleSettings": false,
+                                                                "allowInput": true,
+                                                                "mode": "single",
+                                                                "enableTime": true,
+                                                                "noCalendar": false,
+                                                                "format": "dd/MM/yyyy",
+                                                                "hourIncrement": 1,
+                                                                "minuteIncrement": 1,
+                                                                "time_24hr": false,
+                                                                "minDate": null,
+                                                                "disableWeekends": false,
+                                                                "disableWeekdays": false,
+                                                                "maxDate": null
+                                                            },
+                                                            "hideOnChildrenHidden": false
+                                                        }
+                                                    ],
+                                                    "width": 4,
+                                                    "offset": 0,
+                                                    "push": 0,
+                                                    "pull": 0,
+                                                    "size": "md"
+                                                },
+                                                {
+                                                    "components": [
+                                                        {
+                                                            "label": "ART STATUS",
+                                                            "widget": "choicesjs",
+                                                            "placeholder": "ART STATUS",
+                                                            "tableView": true,
+                                                            "data": {
+                                                                "values": [
+                                                                    {
+                                                                        "label": "Active",
+                                                                        "value": "1"
+                                                                    },
+                                                                    {
+                                                                        "label": "Defaulted",
+                                                                        "value": "2"
+                                                                    },
+                                                                    {
+                                                                        "label": "Stopped",
+                                                                        "value": "3"
+                                                                    },
+                                                                    {
+                                                                        "label": "Lost to followup",
+                                                                        "value": "4"
+                                                                    },
+                                                                    {
+                                                                        "label": "Dead",
+                                                                        "value": "5"
+                                                                    },
+                                                                    {
+                                                                        "label": "Transferred out",
+                                                                        "value": "6"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "selectThreshold": 0.3,
+                                                            "key": "artStatus",
+                                                            "type": "select",
+                                                            "indexeddb": {
+                                                                "filter": {}
+                                                            },
+                                                            "input": true,
+                                                            "hideOnChildrenHidden": false
+                                                        }
+                                                    ],
+                                                    "size": "md",
+                                                    "width": 4,
+                                                    "offset": 0,
+                                                    "push": 0,
+                                                    "pull": 0
+                                                }
+                                            ],
+                                            "hideLabel": true,
+                                            "key": "columns2",
+                                            "type": "columns",
+                                            "input": false,
+                                            "tableView": false
+                                        },
+                                        {
+                                            "label": "Columns",
+                                            "columns": [
+                                                {
+                                                    "components": [
+                                                        {
+                                                            "label": "Next ART Appointment",
+                                                            "format": "dd/MM/yyyy",
+                                                            "placeholder": "Next ART Appointment",
+                                                            "tableView": false,
+                                                            "enableMinDateInput": false,
+                                                            "datePicker": {
+                                                                "disableWeekends": false,
+                                                                "disableWeekdays": false
+                                                            },
+                                                            "enableMaxDateInput": false,
+                                                            "key": "nextArtAppointment",
+                                                            "type": "datetime",
+                                                            "input": true,
+                                                            "widget": {
+                                                                "type": "calendar",
+                                                                "displayInTimezone": "viewer",
+                                                                "locale": "en",
+                                                                "useLocaleSettings": false,
+                                                                "allowInput": true,
+                                                                "mode": "single",
+                                                                "enableTime": true,
+                                                                "noCalendar": false,
+                                                                "format": "dd/MM/yyyy",
+                                                                "hourIncrement": 1,
+                                                                "minuteIncrement": 1,
+                                                                "time_24hr": false,
+                                                                "minDate": null,
+                                                                "disableWeekends": false,
+                                                                "disableWeekdays": false,
+                                                                "maxDate": null
+                                                            },
+                                                            "hideOnChildrenHidden": false
+                                                        }
+                                                    ],
+                                                    "width": 4,
+                                                    "offset": 0,
+                                                    "push": 0,
+                                                    "pull": 0,
+                                                    "size": "md"
+                                                },
+                                                {
+                                                    "components": [
+                                                        {
+                                                            "label": "Viral Load Test Result",
+                                                            "placeholder": "Viral Load Test Result",
+                                                            "tableView": true,
+                                                            "key": "viralLoadTestResult",
+                                                            "type": "textfield",
+                                                            "input": true,
+                                                            "hideOnChildrenHidden": false
+                                                        }
+                                                    ],
+                                                    "width": 4,
+                                                    "offset": 0,
+                                                    "push": 0,
+                                                    "pull": 0,
+                                                    "size": "md"
+                                                },
+                                                {
+                                                    "components": [
+                                                        {
+                                                            "label": "Duration in Months on ART",
+                                                            "placeholder": "Duration in Months on ART",
+                                                            "mask": false,
+                                                            "spellcheck": true,
+                                                            "tableView": false,
+                                                            "delimiter": false,
+                                                            "requireDecimal": false,
+                                                            "inputFormat": "plain",
+                                                            "key": "durationInMonthsOnArt",
+                                                            "type": "number",
+                                                            "input": true,
+                                                            "hideOnChildrenHidden": false
+                                                        }
+                                                    ],
+                                                    "size": "md",
+                                                    "width": 4,
+                                                    "offset": 0,
+                                                    "push": 0,
+                                                    "pull": 0
+                                                }
+                                            ],
+                                            "hideLabel": true,
+                                            "key": "columns3",
+                                            "type": "columns",
+                                            "input": false,
+                                            "tableView": false
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "button",
+                                    "label": "Submit",
+                                    "key": "submit",
+                                    "disableOnInvalid": true,
+                                    "input": true,
+                                    "tableView": false
+                                }
+                            ],
+                            "input": true,
+                            "key": "",
+                            "tableView": false,
+                            "label": ""
+                        }
+                    ],
+                    "input": true,
+                    "key": "",
+                    "tableView": false,
+                    "label": ""
+                }
+            ],
+            "input": true,
+            "key": "",
+            "tableView": false,
+            "label": ""
+        }
+    ]
+}

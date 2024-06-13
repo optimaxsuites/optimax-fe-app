@@ -1,0 +1,59 @@
+<p-toast></p-toast>
+<div class="p-col-12">
+    <h5>Add Heirarchy</h5>
+    <div class="card">
+        <p-toolbar styleClass="p-mb-4">
+            <ng-template pTemplate="left">
+                <button pButton pRipple label="Save" icon="pi pi-plus" class="p-mr-2 p-mb-2"
+                    (click)="addHeirarchy()"></button>
+                <button pButton pRipple label="Clear" icon="pi pi-trash" class="p-mb-2"></button>
+            </ng-template>
+
+            <ng-template pTemplate="right">
+                <button pButton pRipple label="Back" (click)="goBack()" icon="pi pi-chevron-left"
+                    class="p-button-help p-mb-2"></button>
+            </ng-template>
+        </p-toolbar>
+
+        <div class="p-grid p-formgrid p-fluid">
+
+            <div class="p-col-4 p-field">
+                <label for="name">Name</label>
+                <input id="name" type="name" pInputText [(ngModel)]="heirarchy.name" aria-describedby="name-help"
+                    placeholder="Enter name">
+
+            </div>
+
+            <div class="p-col-4 p-field">
+                <label for="heirarchylevel">Heirarchy Level</label>
+                <input id="heirarchylevel" type="heirarchylevel" pInputText [(ngModel)]="heirarchy.heirarchylevel" aria-describedby="name-help"
+                    placeholder="Enter heirarchy level">
+
+            </div>          
+
+            <div class="p-col-4 p-field">
+                <label for="fieldtouse">Field To Use</label>
+                <input id="fieldtouse" type="fieldtouse" pInputText [(ngModel)]="heirarchy.fieldtouse" aria-describedby="name-help"
+                    placeholder="Enter field to use">
+
+            </div> 
+            
+            <div class="p-col-4 p-field">
+                <label for="code">Code</label>
+                <input id="code" type="code" pInputText [(ngModel)]="heirarchy.code" aria-describedby="code-help"
+                    placeholder="Enter code">
+
+            </div>
+
+
+        
+
+            <div class="p-col-8 p-field">
+                <label for="description">Description</label>
+                <textarea rows="5" cols="30" placeholder="Description" pInputTextarea
+                    [(ngModel)]="heirarchy.description"></textarea>
+            </div>
+
+        
+    </div>
+</div>

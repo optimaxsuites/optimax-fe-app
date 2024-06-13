@@ -8,12 +8,17 @@ import { v4 as generateUniqueId } from 'uuid';
 export class DataService {
   constructor() {
     this.loadExistingRfqs();
+    this.loadExistingVCats();
   }
 
   private rfqList: any[] = [];
+  private vCatList: any[] = [];
 
   private rfqListSubject = new BehaviorSubject<any[]>(this.rfqList);
   rfqList$ = this.rfqListSubject.asObservable();
+
+  private vCatListSubject = new BehaviorSubject<any[]>(this.vCatList);
+  vCatList$ = this.vCatListSubject.asObservable();
 
   private updateLocalStorage() {
     localStorage.setItem('rfqList', JSON.stringify(this.rfqList));
@@ -28,17 +33,13 @@ export class DataService {
     }
   }
 
-  // private loadExistingRfqs() {
-  //   this.rfqList = [];
-  //   for (let i = 0; i < localStorage.length; i++) {
-  //     const key = localStorage.key(i);
-  //     if (key?.startsWith('rfqData_')) {
-  //       const rfqData = JSON.parse(localStorage.getItem(key) || '{}');
-  //       this.rfqList.push(rfqData);
-  //     }
-  //   }
-  //   this.rfqListSubject.next(this.rfqList);
-  // }
+  private loadExistingVCats() {
+    const storedVCatList = localStorage.getItem('vCatList');
+    if (storedVCatList) {
+      this.rfqList = JSON.parse(storedVCatList);
+      this.vCatListSubject.next(this.vCatList);
+    }
+  }
 
   saveRfqData(rfqData: any) {
     rfqData.id = generateUniqueId();
@@ -50,30 +51,6 @@ export class DataService {
     return this.rfqList.find((rfq) => rfq.id === id);
   }
 
-  // saveRfqData(rfqData: any) {
-  //   if (!rfqData.id) {
-  //     rfqData.id = generateUniqueId();
-  //   }
-  //   localStorage.setItem(`rfqData_${rfqData.id}`, JSON.stringify(rfqData));
-  //   const index = this.rfqList.findIndex((rfq) => rfq.id === rfqData.id);
-  //   if (index !== -1) {
-  //     this.rfqList[index] = rfqData;
-  //   } else {
-  //     this.rfqList.push(rfqData);
-  //   }
-  //   this.rfqListSubject.next(this.rfqList);
-  // }
-
-  // getRfqData(id: string) {
-  //   // const rfqData = localStorage.getItem(`rfqData_${id}`);
-  //   console.log('Looking for ID:', id); // Debugging line
-  //   console.log('Current RFQ List:', this.rfqList);
-  //   const foundRfq = this.rfqList.find((rfq) => rfq.id === id);
-  //   console.log('Found RFQ:', foundRfq); // Debugging line
-  //   return foundRfq;
-  //   // return rfqData ? JSON.parse(rfqData) : null;
-  // }
-
   getAllRfqs() {
     return this.rfqList;
   }
@@ -81,12 +58,6 @@ export class DataService {
   deleteRfq(id: string): void {
     this.rfqList = this.rfqList.filter((rfq) => rfq.id !== id);
     this.updateLocalStorage();
-    // const index = this.rfqList.findIndex((rfq) => rfq.id === id);
-    // if (index !== -1) {
-    //   this.rfqList.splice(index, 1);
-
-    //   localStorage.setItem('rfqList', JSON.stringify(this.rfqList));
-    // }
   }
 
   duplicateRfq(rfq: any): void {
@@ -94,10 +65,25 @@ export class DataService {
     const originalIndex = this.rfqList.findIndex((item) => item.id === rfq.id);
     this.rfqList.splice(originalIndex + 1, 0, duplicatedRfq);
     this.updateLocalStorage();
-    // const duplicatedRfq = { ...rfq, id: uuidv4(), fontColor: 'red' };
-    // const originalIndex = this.rfqList.findIndex((item) => item.id === rfq.id);
-    // this.rfqList.splice(originalIndex + 1, 0, duplicatedRfq);
-    // localStorage.setItem('rfqList', JSON.stringify(this.rfqList));
+  }
+
+  private updateLocalStorageForVendors() {
+    localStorage.setItem('vCatList', JSON.stringify(this.vCatList));
+    this.vCatListSubject.next(this.vCatList);
+  }
+
+  saveVCatData(vCatData: any) {
+    vCatData.id = generateUniqueId();
+    this.vCatList.push(vCatData);
+    this.updateLocalStorageForVendors();
+  }
+
+  getVCatData(id: string) {
+    return this.vCatList.find((vCat) => vCat.id === id);
+  }
+
+  getAllVCats() {
+    return this.vCatList;
   }
 }
 
@@ -107,9 +93,4 @@ function uuidv4() {
       v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
-  // throw new Error('Function not implemented.');
 }
-
-// function uuidv4() {
-//   throw new Error('Function not implemented.');
-// }
