@@ -1,6 +1,9 @@
 import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { InventoryService } from '../../services/inventory/inventory.service';
+import { Observable } from 'rxjs';
+import { DropdownService } from '../../services/dropdown/dropdown.service';
+import { InventoryItem } from '../../interface/data';
 
 @Component({
   selector: 'app-inventory-table',
@@ -9,17 +12,30 @@ import { InventoryService } from '../../services/inventory/inventory.service';
 })
 export class InventoryTableComponent {
 
-  inventory: any[] = [];
+  // inventory: any[] = [];
+  selectedCurrency$: Observable<string | null>;
+  items: InventoryItem[] = [];
 
   constructor(
     private router: Router,
-    private inventoryService: InventoryService
-  ) {}
+    private inventoryService: InventoryService,
+    private dropdownService: DropdownService
+    
+  ) {
+    this.selectedCurrency$ = this.dropdownService.getSelectedItem$('currency');
+  }
 
   ngOnInit() {
     this.inventoryService.getItem().subscribe(data => {
-      this.inventory = data;
+      this.items = data;
     });
+    
+  }
+
+  extractCurrencyCode(currency: string | null | undefined): string {
+    if (!currency) return '';
+    const match = currency.match(/\(([^)]+)\)/);
+    return match ? match[1] : '';
   }
 
   navigateToForm() {

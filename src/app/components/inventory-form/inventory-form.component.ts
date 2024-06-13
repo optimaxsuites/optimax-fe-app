@@ -7,28 +7,11 @@ import { Observable } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { NumberCurrencyPopupComponent } from '../number-currency-popup/number-currency-popup.component';
 import { ToastrService } from 'ngx-toastr';
+import { InventoryItem } from '../../interface/data';
 
 
 
-interface InventoryItem {
-  id?: string;
-  itemName?: string;
-  partNo?: number;
-  images?: string[];
-  description?: string;
-  buyingPrice?: number;
-  sellingPrice?: number;
-  initialStock?: number;
-  purchaseLedger?: string;
-  salesLedger?: string;
-  inventoryLedger?: string;
-  taxRate?: number;
-  currentStock?: number;
-  totalSoldQuantity?: number;
-  totalPurchaseQuantity?: number;
-  hsn?: string;
-  tag?: string;
-}
+
 
 
 @Component({
@@ -39,7 +22,25 @@ interface InventoryItem {
 export class InventoryFormComponent implements OnInit {
   showLogo = false;
 
-  inventoryItem: InventoryItem = {};
+  // inventoryItem: InventoryItem[] = [];
+
+  inventoryItem: InventoryItem = {
+    id: '',
+    itemName: '',
+    partNo: 0,
+    image: '',
+    description: '',
+    buyingPrice: 0,
+    sellingPrice: 0,
+    initialStock: 0,
+    purchaseLedger: '',
+    salesLedger: '',
+    inventoryLedger: '',
+    taxRate: 0,
+    hsn: '',
+    tag: '',
+    images: []
+  };
 
   // inventoryItem = { 
   //   id: '', 
@@ -83,92 +84,184 @@ export class InventoryFormComponent implements OnInit {
   ];
   isEdit = false;
 
-  currencyList = [
-    'Algerian Dinar (DZD)',
-    'Angolan Kwanza (AOA)',
-    'Argentine Peso (ARS)',
-    'Australian Dollar (AUD)',
-    'Bahraini Dinar (BHD)',
-    'Bangladeshi Taka (BDT)',
-    'Brazilian Real (BRL)',
-    'British Pound Sterling (GBP)',
-    'Canadian Dollar (CAD)',
-    'Chilean Peso (CLP)',
-    'Chinese Yuan (CNY)',
-    'Colombian Peso (COP)',
-    'Comorian Franc (KMF)',
-    'Congolese Franc (CDF)',
-    'Czech Koruna (CZK)',
-    'Danish Krone (DKK)',
-    'Djiboutian Franc (DJF)',
-    'Egyptian Pound (EGP)',
-    'Eritrean Nakfa (ERN)',
-    'Ethiopian Birr (ETB)',
-    'Euro (EUR)',
-    'Gambian Dalasi (GMD)',
-    'Guinean Franc (GNF)',
-    'Hong Kong Dollar (HKD)',
-    'Indian Rupee (INR)',
-    'Indonesian Rupiah (IDR)',
-    'Iraqi Dinar (IQD)',
-    'Israeli New Shekel (ILS)',
-    'Japanese Yen (JPY)',
-    'Jordanian Dinar (JOD)',
-    'Kenyan Shilling (KES)',
-    'Kuwaiti Dinar (KWD)',
-    'Lebanese Pound (LBP)',
-    'Lesotho Loti (LSL)',
-    'Liberian Dollar (LRD)',
-    'Libyan Dinar (LYD)',
-    'Malagasy Ariary (MGA)',
-    'Malawian Kwacha (MWK)',
-    'Malaysian Ringgit (MYR)',
-    'Mauritanian Ouguiya (MRU)',
-    'Mauritian Rupee (MUR)',
-    'Mexican Peso (MXN)',
-    'Moroccan Dirham (MAD)',
-    'Mozambican Metical (MZN)',
-    'Namibian Dollar (NAD)',
-    'New Zealand Dollar (NZD)',
-    'Nigerian Naira (NGN)',
-    'Norwegian Krone (NOK)',
-    'Omani Rial (OMR)',
-    'Pakistani Rupee (PKR)',
-    'Peruvian Sol (PEN)',
-    'Philippine Peso (PHP)',
-    'Polish Zloty (PLN)',
-    'Qatari Riyal (QAR)',
-    'Romanian Leu (RON)',
-    'Russian Ruble (RUB)',
-    'Rwandan Franc (RWF)',
-    'Saudi Riyal (SAR)',
-    'Seychellois Rupee (SCR)',
-    'Sierra Leonean Leone (SLL)',
-    'Singapore Dollar (SGD)',
-    'Somali Shilling (SOS)',
-    'South African Rand (ZAR)',
-    'South Korean Won (KRW)',
-    'South Sudanese Pound (SSP)',
-    'Sudanese Pound (SDG)',
-    'Swazi Lilangeni (SZL)',
-    'Swedish Krona (SEK)',
-    'Swiss Franc (CHF)',
-    'Syrian Pound (SYP)',
-    'Taiwanese Dollar (TWD)',
-    'Tanzanian Shilling (TZS)',
-    'Thai Baht (THB)',
-    'Tunisian Dinar (TND)',
-    'Turkish Lira (TRY)',
-    'Ugandan Shilling (UGX)',
-    'Ukrainian Hryvnia (UAH)',
-    'United Arab Emirates Dirham (AED)',
-    'United States Dollar (USD)',
-    'Uruguayan Peso (UYU)',
-    'Vietnamese Dong (VND)',
-    'West African CFA Franc (XOF)',
-    'Zambian Kwacha (ZMW)',
-    'Zimbabwean Dollar (ZWL)'
-]
+//   currencyList = [
+//     'Algerian Dinar (DZD)',
+//     'Angolan Kwanza (AOA)',
+//     'Argentine Peso (ARS)',
+//     'Australian Dollar (AUD)',
+//     'Bahraini Dinar (BHD)',
+//     'Bangladeshi Taka (BDT)',
+//     'Brazilian Real (BRL)',
+//     'British Pound Sterling (GBP)',
+//     'Canadian Dollar (CAD)',
+//     'Chilean Peso (CLP)',
+//     'Chinese Yuan (CNY)',
+//     'Colombian Peso (COP)',
+//     'Comorian Franc (KMF)',
+//     'Congolese Franc (CDF)',
+//     'Czech Koruna (CZK)',
+//     'Danish Krone (DKK)',
+//     'Djiboutian Franc (DJF)',
+//     'Egyptian Pound (EGP)',
+//     'Eritrean Nakfa (ERN)',
+//     'Ethiopian Birr (ETB)',
+//     'Euro (EUR)',
+//     'Gambian Dalasi (GMD)',
+//     'Guinean Franc (GNF)',
+//     'Hong Kong Dollar (HKD)',
+//     'Indian Rupee (INR)',
+//     'Indonesian Rupiah (IDR)',
+//     'Iraqi Dinar (IQD)',
+//     'Israeli New Shekel (ILS)',
+//     'Japanese Yen (JPY)',
+//     'Jordanian Dinar (JOD)',
+//     'Kenyan Shilling (KES)',
+//     'Kuwaiti Dinar (KWD)',
+//     'Lebanese Pound (LBP)',
+//     'Lesotho Loti (LSL)',
+//     'Liberian Dollar (LRD)',
+//     'Libyan Dinar (LYD)',
+//     'Malagasy Ariary (MGA)',
+//     'Malawian Kwacha (MWK)',
+//     'Malaysian Ringgit (MYR)',
+//     'Mauritanian Ouguiya (MRU)',
+//     'Mauritian Rupee (MUR)',
+//     'Mexican Peso (MXN)',
+//     'Moroccan Dirham (MAD)',
+//     'Mozambican Metical (MZN)',
+//     'Namibian Dollar (NAD)',
+//     'New Zealand Dollar (NZD)',
+//     'Nigerian Naira (NGN)',
+//     'Norwegian Krone (NOK)',
+//     'Omani Rial (OMR)',
+//     'Pakistani Rupee (PKR)',
+//     'Peruvian Sol (PEN)',
+//     'Philippine Peso (PHP)',
+//     'Polish Zloty (PLN)',
+//     'Qatari Riyal (QAR)',
+//     'Romanian Leu (RON)',
+//     'Russian Ruble (RUB)',
+//     'Rwandan Franc (RWF)',
+//     'Saudi Riyal (SAR)',
+//     'Seychellois Rupee (SCR)',
+//     'Sierra Leonean Leone (SLL)',
+//     'Singapore Dollar (SGD)',
+//     'Somali Shilling (SOS)',
+//     'South African Rand (ZAR)',
+//     'South Korean Won (KRW)',
+//     'South Sudanese Pound (SSP)',
+//     'Sudanese Pound (SDG)',
+//     'Swazi Lilangeni (SZL)',
+//     'Swedish Krona (SEK)',
+//     'Swiss Franc (CHF)',
+//     'Syrian Pound (SYP)',
+//     'Taiwanese Dollar (TWD)',
+//     'Tanzanian Shilling (TZS)',
+//     'Thai Baht (THB)',
+//     'Tunisian Dinar (TND)',
+//     'Turkish Lira (TRY)',
+//     'Ugandan Shilling (UGX)',
+//     'Ukrainian Hryvnia (UAH)',
+//     'United Arab Emirates Dirham (AED)',
+//     'United States Dollar (USD)',
+//     'Uruguayan Peso (UYU)',
+//     'Vietnamese Dong (VND)',
+//     'West African CFA Franc (XOF)',
+//     'Zambian Kwacha (ZMW)',
+//     'Zimbabwean Dollar (ZWL)'
+// ]
+
+
+
+currencyList = [
+  { name: 'Algerian Dinar', code: 'DZD' },
+  { name: 'Angolan Kwanza', code: 'AOA' },
+  { name: 'Argentine Peso', code: 'ARS' },
+  { name: 'Australian Dollar', code: 'AUD' },
+  { name: 'Bahraini Dinar', code: 'BHD' },
+  { name: 'Bangladeshi Taka', code: 'BDT' },
+  { name: 'Brazilian Real', code: 'BRL' },
+  { name: 'British Pound Sterling', code: 'GBP' },
+  { name: 'Canadian Dollar', code: 'CAD' },
+  { name: 'Chilean Peso', code: 'CLP' },
+  { name: 'Chinese Yuan', code: 'CNY' },
+  { name: 'Colombian Peso', code: 'COP' },
+  { name: 'Comorian Franc', code: 'KMF' },
+  { name: 'Congolese Franc', code: 'CDF' },
+  { name: 'Czech Koruna', code: 'CZK' },
+  { name: 'Danish Krone', code: 'DKK' },
+  { name: 'Djiboutian Franc', code: 'DJF' },
+  { name: 'Egyptian Pound', code: 'EGP' },
+  { name: 'Eritrean Nakfa', code: 'ERN' },
+  { name: 'Ethiopian Birr', code: 'ETB' },
+  { name: 'Euro', code: 'EUR' },
+  { name: 'Gambian Dalasi', code: 'GMD' },
+  { name: 'Guinean Franc', code: 'GNF' },
+  { name: 'Hong Kong Dollar', code: 'HKD' },
+  { name: 'Indian Rupee', code: 'INR' },
+  { name: 'Indonesian Rupiah', code: 'IDR' },
+  { name: 'Iraqi Dinar', code: 'IQD' },
+  { name: 'Israeli New Shekel', code: 'ILS' },
+  { name: 'Japanese Yen', code: 'JPY' },
+  { name: 'Jordanian Dinar', code: 'JOD' },
+  { name: 'Kenyan Shilling', code: 'KES' },
+  { name: 'Kuwaiti Dinar', code: 'KWD' },
+  { name: 'Lebanese Pound', code: 'LBP' },
+  { name: 'Lesotho Loti', code: 'LSL' },
+  { name: 'Liberian Dollar', code: 'LRD' },
+  { name: 'Libyan Dinar', code: 'LYD' },
+  { name: 'Malagasy Ariary', code: 'MGA' },
+  { name: 'Malawian Kwacha', code: 'MWK' },
+  { name: 'Malaysian Ringgit', code: 'MYR' },
+  { name: 'Mauritanian Ouguiya', code: 'MRU' },
+  { name: 'Mauritian Rupee', code: 'MUR' },
+  { name: 'Mexican Peso', code: 'MXN' },
+  { name: 'Moroccan Dirham', code: 'MAD' },
+  { name: 'Mozambican Metical', code: 'MZN' },
+  { name: 'Namibian Dollar', code: 'NAD' },
+  { name: 'New Zealand Dollar', code: 'NZD' },
+  { name: 'Nigerian Naira', code: 'NGN' },
+  { name: 'Norwegian Krone', code: 'NOK' },
+  { name: 'Omani Rial', code: 'OMR' },
+  { name: 'Pakistani Rupee', code: 'PKR' },
+  { name: 'Peruvian Sol', code: 'PEN' },
+  { name: 'Philippine Peso', code: 'PHP' },
+  { name: 'Polish Zloty', code: 'PLN' },
+  { name: 'Qatari Riyal', code: 'QAR' },
+  { name: 'Romanian Leu', code: 'RON' },
+  { name: 'Russian Ruble', code: 'RUB' },
+  { name: 'Rwandan Franc', code: 'RWF' },
+  { name: 'Saudi Riyal', code: 'SAR' },
+  { name: 'Seychellois Rupee', code: 'SCR' },
+  { name: 'Sierra Leonean Leone', code: 'SLL' },
+  { name: 'Singapore Dollar', code: 'SGD' },
+  { name: 'Somali Shilling', code: 'SOS' },
+  { name: 'South African Rand', code: 'ZAR' },
+  { name: 'South Korean Won', code: 'KRW' },
+  { name: 'South Sudanese Pound', code: 'SSP' },
+  { name: 'Sudanese Pound', code: 'SDG' },
+  { name: 'Swazi Lilangeni', code: 'SZL' },
+  { name: 'Swedish Krona', code: 'SEK' },
+  { name: 'Swiss Franc', code: 'CHF' },
+  { name: 'Syrian Pound', code: 'SYP' },
+  { name: 'Taiwanese Dollar', code: 'TWD' },
+  { name: 'Tanzanian Shilling', code: 'TZS' },
+  { name: 'Thai Baht', code: 'THB' },
+  { name: 'Tunisian Dinar', code: 'TND' },
+  { name: 'Turkish Lira', code: 'TRY' },
+  { name: 'Ugandan Shilling', code: 'UGX' },
+  { name: 'Ukrainian Hryvnia', code: 'UAH' },
+  { name: 'United Arab Emirates Dirham', code: 'AED' },
+  { name: 'United States Dollar', code: 'USD' },
+  { name: 'Uruguayan Peso', code: 'UYU' },
+  { name: 'Vietnamese Dong', code: 'VND' },
+  { name: 'West African CFA Franc', code: 'XOF' },
+  { name: 'Zambian Kwacha', code: 'ZMW' },
+  { name: 'Zimbabwean Dollar', code: 'ZWL' }
+];
+
+
+
 
   constructor(
     private router: Router,
@@ -252,6 +345,13 @@ export class InventoryFormComponent implements OnInit {
   }
 
   onSubmit() {
+
+    //   // Perform form validation
+    // if (!this.isFormFilled()) {
+    //   alert('Form must be filled out');
+    //   return;
+    // }
+
     if (this.isEdit) {
       this.inventoryService.updateItem(this.inventoryItem);
     } else {
@@ -259,6 +359,20 @@ export class InventoryFormComponent implements OnInit {
     }
     this.navigateToTable();
   }
+
+  // Helper function to check if the form is filled
+isFormFilled() {
+  // Iterate over each property in the inventoryItem object
+  for (let key in this.inventoryItem) {
+    if (this.inventoryItem.hasOwnProperty(key)) {
+      // Check if the property value is empty
+      if (!this.inventoryItem[key]) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
 
   navigateToTable() {
     this.router.navigate(['/inventory']);
@@ -322,8 +436,8 @@ export class InventoryFormComponent implements OnInit {
     this.dropdownService.toggleDropdown(id);
   }
 
-  selectItem(id: string, item: string) {
-    this.dropdownService.selectItem(id, item);
+  selectItem(id: string, item: { name: string; code: string }) {
+    this.dropdownService.selectItem(id, `${item.name} (${item.code})`);
   }
 
 }

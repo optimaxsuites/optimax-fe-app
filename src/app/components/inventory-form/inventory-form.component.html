@@ -10,7 +10,8 @@
 
 
           <div class="form-group">
-            <label for="item-name">Item Images</label>
+            <label for="item-name">Product Image</label>
+            <p class="sub-text">Only 5 images can be added</p>
             <section class="logo-section">
               <div class="logo-upload-container">
                 <div class="wrapper" *ngFor="let image of inventoryItem.images; let i = index">
@@ -66,7 +67,7 @@
                   multiple
                 />
                 <div class="btn-add-image" (click)="fileInput.click()">
-                  <i class="fas fa-plus me-2"></i>Add Item Images
+                  <i class="fas fa-plus me-2"></i>Add Product Image
                 </div>
               </div>
             </section>
@@ -76,27 +77,36 @@
 
 
 
-          <input type="hidden" [(ngModel)]="inventoryItem.id" name="id">
+          <!-- <input type="hidden" [(ngModel)]="inventoryItem.id" name="id"> -->
 
-          <div class="form-group">
-            <label for="item-part-number">Item Part Number</label>
-            <input type="text" id="item-part-number" required [(ngModel)]="inventoryItem.partNo" name="partNo" appNumberOnly>
+          <div class="d-flex">
+            <div class="form-group-2">
+              <label for="item-part-number">Product Part Number</label>
+              <input type="text" id="item-part-number" required [(ngModel)]="inventoryItem.partNo" name="partNo" appNumberOnly>
+            </div>
+
+            <div class="form-group-2">
+              <label for="item-name">Product Name</label>
+              <input type="text" id="item-name" required [(ngModel)]="inventoryItem.itemName" name="nitemName">
+            </div>
           </div>
 
           <div class="form-group">
-            <label for="item-name">Item Name</label>
-            <input type="text" id="item-name" required [(ngModel)]="inventoryItem.itemName" name="nitemName">
-          </div>
-
-          <div class="form-group">
-            <label for="item-description">Item Description</label>
+            <label for="item-description">Product Description</label>
             <angular-editor placeholder="'Enter text here...'" [config]="editorConfig" id="item-description" required [(ngModel)]="inventoryItem.description" name="description" ></angular-editor>
           </div>
 
-          <div class="form-group">
-            <label for="initial-stock">Initial Stock</label>
-            <p class="sub-text">The stock available for sale at the beginning of accounting period</p>
-            <input type="text" id="initial-stock" required [(ngModel)]="inventoryItem.initialStock" name="initialStock">
+          <div class="d-flex">
+            <div class="form-group-2">
+              <label for="initial-stock">Initial Stock</label>
+              <p class="sub-text">The stock available for sale at the beginning of accounting period</p>
+              <input type="text" id="initial-stock" required [(ngModel)]="inventoryItem.initialStock" name="initialStock">
+            </div>
+  
+            <div class="form-group-2 mt-10">
+              <label for="tax-rate">Tax Rate (in %)</label>
+              <input type="text" id="tax-rate" required [(ngModel)]="inventoryItem.taxRate" name="tax-rate" appNumberOnly>
+            </div>
           </div>
 
           <div class="d-flex">
@@ -106,7 +116,6 @@
                 <div class="custom-dropdown">
                   <span class="btn flat-btn" (click)="toggleDropdown('currency')">
                     {{ (getSelectedItem$("currency") | async) || "Select Currency" }}
-                    <!-- <span class="arrow"></span> -->
                   </span>
                   <ul
                     class="custom-options"
@@ -117,7 +126,7 @@
                       *ngFor="let item of currency"
                       (click)="selectItem('currency', item)"
                     >
-                      {{ item }}
+                    {{ item.name }} ({{ item.code }})
                     </li>
                   </ul>
                 </div>
@@ -146,25 +155,13 @@
             </div>
           </div>
 
-
-
-          <div class="form-group">
-            <label for="inventory-ledger">Inventory Ledger</label>
-            <p class="sub-text">The ledger account where you record the inventory of this item</p>
-            <input placeholder="Select Inventory Ledger" type="text" list="inventoryLedger" id="inventory-ledger" required [(ngModel)]="inventoryItem.inventoryLedger" name="inventory-ledger">
-            <datalist id="inventoryLedger">
-              <option *ngFor="let ledger of inventoryLedgers" [value]="ledger">{{ ledger }}</option>
-            </datalist>
-          </div>
-
-
-          <div class="d-flex">
+          <!-- <div class="d-flex">
             <div class="form-group-2">
-              <label for="purchase-ledger">Purchase Ledger</label>
-              <p class="sub-text">The ledger account where you record the purchase of this item</p>
-              <input placeholder="Select Purchase Ledger" type="text" list="purchaseLedger"  id="purchase-ledger"  name="purchase-ledger" required [(ngModel)]="inventoryItem.purchaseLedger">
-              <datalist id="purchaseLedger">
-                <option *ngFor="let ledger of purchaseLedgers" [value]="ledger">{{ ledger }}</option>
+              <label for="inventory-ledger">Inventory Ledger</label>
+              <p class="sub-text">The ledger account where you record the inventory of this item</p>
+              <input placeholder="Select Inventory Ledger" type="text" list="inventoryLedger" id="inventory-ledger" required [(ngModel)]="inventoryItem.inventoryLedger" name="inventory-ledger">
+              <datalist id="inventoryLedger">
+                <option *ngFor="let ledger of inventoryLedgers" [value]="ledger">{{ ledger }}</option>
               </datalist>
             </div>
 
@@ -176,29 +173,55 @@
                 <option *ngFor="let ledger of salesLedgers" [value]="ledger">{{ ledger }}</option>
               </datalist>
             </div>
-          </div>
+          </div> -->
+
+          <!-- <div class="form-group">
+            <label for="inventory-ledger">Inventory Ledger</label>
+            <p class="sub-text">The ledger account where you record the inventory of this item</p>
+            <input placeholder="Select Inventory Ledger" type="text" list="inventoryLedger" id="inventory-ledger" required [(ngModel)]="inventoryItem.inventoryLedger" name="inventory-ledger">
+            <datalist id="inventoryLedger">
+              <option *ngFor="let ledger of inventoryLedgers" [value]="ledger">{{ ledger }}</option>
+            </datalist>
+          </div> -->
 
 
-          <div class="d-flex">
+          <!-- <div class="d-flex">
             <div class="form-group-2">
+              <label for="purchase-ledger">Purchase Ledger</label>
+              <p class="sub-text">The ledger account where you record the purchase of this item</p>
+              <input placeholder="Select Purchase Ledger" type="text" list="purchaseLedger"  id="purchase-ledger"  name="purchase-ledger" required [(ngModel)]="inventoryItem.purchaseLedger">
+              <datalist id="purchaseLedger">
+                <option *ngFor="let ledger of purchaseLedgers" [value]="ledger">{{ ledger }}</option>
+              </datalist>
+            </div>
+
+            <div class="form-group-2 mt-10">
               <label for="tax-rate">Tax Rate (in %)</label>
               <input type="text" id="tax-rate" required [(ngModel)]="inventoryItem.taxRate" name="tax-rate" appNumberOnly>
             </div>
-            <div class="form-group-2">
+          </div> -->
+
+
+          <div class="d-flex">
+            <!-- <div class="form-group-2">
+              <label for="tax-rate">Tax Rate (in %)</label>
+              <input type="text" id="tax-rate" required [(ngModel)]="inventoryItem.taxRate" name="tax-rate" appNumberOnly>
+            </div> -->
+            <!-- <div class="form-group-2">
               <label for="hsn">HSN</label>
               <input type="text" id="hsn" required [(ngModel)]="inventoryItem.hsn" name="hsn" >
-            </div>
+            </div> -->
           </div>
 
-          <div class="form-group">
+          <!-- <div class="form-group">
             <label for="tag">Tag</label>
             <input type="text" id="tag" required [(ngModel)]="inventoryItem.tag" name="tag" >
-          </div>
+          </div> -->
           
 
-          <button type="submit">{{ isEdit ? 'Update Item' : 'Add Item' }}</button>
+          <button type="submit">{{ isEdit ? 'Update Product' : 'Add Product' }}</button>
         </form>
-        <button (click)="navigateToTable()">Back to Inventory Table</button>
+        <button (click)="navigateToTable()">Back to Product Table</button>
       </div>
 </div>
   
