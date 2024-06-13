@@ -6,6 +6,7 @@ import { DropdownService } from '../../services/dropdown/dropdown.service';
 import { Observable } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { NumberCurrencyPopupComponent } from '../number-currency-popup/number-currency-popup.component';
+import { ToastrService } from 'ngx-toastr';
 
 
 
@@ -175,6 +176,7 @@ export class InventoryFormComponent implements OnInit {
     private inventoryService: InventoryService,
     private dropdownService: DropdownService,
     private dialogRef:MatDialog,
+    private toastr: ToastrService,
   ) {}
 
   ngOnInit() {
@@ -188,9 +190,36 @@ export class InventoryFormComponent implements OnInit {
     }
   }
 
+  // onLogoSelected(event: any) {
+  //   const files = event.target.files;
+  //   if (files.length > 0) {
+  //     for (const file of files) {
+  //       const reader = new FileReader();
+  //       reader.onload = () => {
+  //         if (!this.inventoryItem.images) {
+  //           this.inventoryItem.images = [];
+  //         }
+  //         this.inventoryItem.images.push(reader.result as string);
+  //         this.showLogo = true;
+  //       };
+  //       reader.readAsDataURL(file);
+  //     }
+  //   }
+  // }
+
+
+
+
+
   onLogoSelected(event: any) {
     const files = event.target.files;
     if (files.length > 0) {
+      if ((this.inventoryItem.images ? this.inventoryItem.images.length : 0) + files.length > 5) {
+        this.toastr.error('You can only upload a maximum of 5 images.');
+        // alert('masimum picture selected')
+        return;
+      }
+
       for (const file of files) {
         const reader = new FileReader();
         reader.onload = () => {
@@ -199,12 +228,20 @@ export class InventoryFormComponent implements OnInit {
           }
           this.inventoryItem.images.push(reader.result as string);
           this.showLogo = true;
+          this.toastr.success('Image added successfully!');
         };
         reader.readAsDataURL(file);
       }
     }
   }
 
+
+
+
+
+
+
+  
   removeImage(index: number) {
     if (this.inventoryItem.images) {
       this.inventoryItem.images.splice(index, 1);
