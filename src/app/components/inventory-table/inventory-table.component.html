@@ -13,26 +13,31 @@
                   <th>Initial Stock</th>
                   <th>Buying Price</th>
                   <th>Selling Price</th>
-                  <th>Inventory Ledger</th>
+                  <!-- <th>Inventory Ledger</th>
                   <th>Purchase Ledger</th>
-                  <th>Sales Ledger</th>
+                  <th>Sales Ledger</th> -->
                   <th>Tax Rate</th>
-                  <th>HSN</th>
-                  <th>Current Stock</th>
+                  <!-- <th>HSN</th> -->
+                  <!-- <th>Current Stock</th> -->
                   <th>Total Sold Quantity</th>
                   <th>Total Purchase Quantity</th>
-                  <th>Tag</th>
+                  <!-- <th>Tag</th> -->
                   <th>Actions</th>
               </tr>
           </thead>
           <tbody class="tbody">
-              <tr class="top-products-table-row" *ngFor="let item of inventory; let i = index">
+              <tr class="top-products-table-row" *ngFor="let item of items; let i = index">
                   <td class="top-products-table-data item-cell">
                       {{ item.itemName }}
                       <div class="tooltip-content">
                         <label for="" class="mb-2"><b>Item Image</b></label>
                         <br>
-                        <img [src]="item.image" alt="{{ item.itemName }}" class="item-image"/>
+                        <div class="image-wrapper">
+                            <div *ngFor="let image of item.images; let i = index" class="image-container">
+                                <img [src]="image" alt="{{ item.itemName }}" class="item-image{{ i + 1 }}"/>
+                            </div>
+                        </div>
+                        <!-- <img [src]="item.images" alt="{{ item.itemName }}" class="item-image"/> -->
                         <br>
                         <label for="" class="mb-2"><b>Description</b></label>
                         <p>{{ item.description | stripHtml }}</p>
@@ -40,17 +45,23 @@
                   </td>
                   <td class="top-products-table-data">{{ item.partNo }}</td>
                   <td class="top-products-table-data">{{ item.initialStock }}</td>
-                  <td class="top-products-table-data">{{ item.buyingPrice }}</td>
+                  <td class="top-products-table-data">
+                    <span class="input-span">
+                        {{ extractCurrencyCode((selectedCurrency$ | async)!) }}
+                      </span>
+                    {{ item.buyingPrice }}
+
+                  </td>
                   <td class="top-products-table-data">{{ item.sellingPrice }}</td>
-                  <td class="top-products-table-data">{{ item.inventoryLedger }}</td>
-                  <td class="top-products-table-data">{{ item.purchaseLedger }}</td>
-                  <td class="top-products-table-data">{{ item.salesLedger }}</td>
+                  <!-- <td class="top-products-table-data">{{ item.inventoryLedger }}</td> -->
+                  <!-- <td class="top-products-table-data">{{ item.purchaseLedger }}</td> -->
+                  <!-- <td class="top-products-table-data">{{ item.salesLedger }}</td> -->
                   <td class="top-products-table-data">{{ item.taxRate }}</td>
-                  <td class="top-products-table-data">{{ item.hsn }}</td>
-                  <td class="top-products-table-data">{{ item.currentStock }}</td>
+                  <!-- <td class="top-products-table-data">{{ item.hsn }}</td> -->
+                  <!-- <td class="top-products-table-data">{{ item.currentStock }}</td> -->
                   <td class="top-products-table-data">{{ item.totalSoldQuantity }}</td>
                   <td class="top-products-table-data">{{ item.totalPurchaseQuantity }}</td>
-                  <td class="top-products-table-data">{{ item.tag }}</td>
+                  <!-- <td class="top-products-table-data">{{ item.tag }}</td> -->
                   <td class="top-products-table-data actions">
                     <i (click)="editItem(item.id)" class="fa-regular fa-pen-to-square"></i>
                     <i (click)="deleteItem(item.id)" class="fa-solid fa-trash"></i>
