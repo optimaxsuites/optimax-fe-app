@@ -14,6 +14,9 @@
             <section class="logo-section">
               <div class="logo-upload-container">
                 <div class="wrapper" *ngFor="let image of inventoryItem.images; let i = index">
+                  <div class="btn-remove-image" (click)="removeImage(i)">
+                    <i class="fa-solid fa-trash"></i>
+                  </div>
                   <div class="logo-wrapper">
                     <img
                       *ngIf="image"
@@ -22,12 +25,9 @@
                       class="logo"
                     />
                   </div>
-                  <div class="btn-small" (click)="removeImage(i)">
-                    <i class="fa-solid fa-x me-2"></i>Remove Image
-                  </div>
                 </div>
           
-                <div
+                <!-- <div
                   *ngIf="showLogo; else addLogoButtons"
                   class="add-logo-btn-wrapper"
                 >
@@ -41,9 +41,9 @@
                   <div class="btn-small" (click)="fileInput.click()">
                     <i class="fas fa-plus me-2"></i>Change Image
                   </div>
-                </div>
-                <ng-template #addLogoButtons>
-                  <div class="add-logo-toggle">
+                </div> -->
+                <!-- <ng-template #addLogoButtons> -->
+                  <!-- <div class="add-logo-toggle">
                     <input
                       type="file"
                       #fileInput
@@ -54,8 +54,20 @@
                     <div class="btn" (click)="fileInput.click()">
                       <i class="fas fa-plus me-2"></i>Add Item Images
                     </div>
-                  </div>
-                </ng-template>
+                  </div> -->
+                <!-- </ng-template> -->
+              </div>
+              <div class="add-logo-toggle">
+                <input
+                  type="file"
+                  #fileInput
+                  style="display: none"
+                  (change)="onLogoSelected($event)"
+                  multiple
+                />
+                <div class="btn-add-image" (click)="fileInput.click()">
+                  <i class="fas fa-plus me-2"></i>Add Item Images
+                </div>
               </div>
             </section>
           </div>

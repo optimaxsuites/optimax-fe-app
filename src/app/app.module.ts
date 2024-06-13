@@ -95,9 +95,8 @@ import { ProformaInvoiceModalComponent } from './components/proforma-invoice-mod
 import { DispatchNoteComponent } from './components/dispatch-note/dispatch-note.component';
 import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dispatch-note-modal.component';
 import { MailVerificationComponent } from './accounts/mail-verification/mail-verification.component';
-import { CrmPageComponent } from './pages/crm-page/crm-page.component';
-import { VendorListComponent } from './components/vendor-list/vendor-list.component';
-import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
+import { ToastrModule } from 'ngx-toastr';
+
 
 @NgModule({
   declarations: [
@@ -202,6 +201,11 @@ import { VendorCategoryCreationModalComponent } from './components/vendor-catego
     MatPaginatorModule,
     MatTableModule,
     MatRadioModule,
+    ToastrModule.forRoot({
+      timeOut: 10000,
+      positionClass: 'toast-top-right',
+      // preventDuplicates: true,
+    }), 
   ],
   providers: [provideAnimationsAsync(), provideNativeDateAdapter()],
   bootstrap: [AppComponent],
