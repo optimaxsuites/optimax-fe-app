@@ -1,0 +1,1870 @@
+{
+	"info": {
+		"_postman_id": "d75f3f3c-dfa1-4951-a556-902d76a5ce2b",
+		"name": "PostaBox-UserCtl",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "signup",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"olami\",\n    \"email\": \"a.olayemi@yahoo.com\",\n    \"password\": \"123456\",\n    \"role\": [\n        \"admin\"\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{base_url}}:{{port}}/api/auth/signup",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"api",
+								"auth",
+								"signup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "signout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{base_url}}:{{port}}/api/auth/signout",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"api",
+								"auth",
+								"signout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "signin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const responseJson = pm.response.json();",
+									"var bodyToken = responseJson.accessToken;",
+									"//pm.environment.set(\"token\", bodyToken)",
+									"pm.environment.set(\"token\",pm.cookies.get(\"postaboxcookie\"))",
+									"//console.log(pm.cookies.get(\"auction365cookie\"))"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"olami\",\n    \"password\": \"123456\"\n    \n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5151/api/auth/signin",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5151",
+							"path": [
+								"api",
+								"auth",
+								"signin"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "UserCtrl",
+			"item": [
+				{
+					"name": "Post",
+					"item": [
+						{
+							"name": "changePassword",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"username\":\"damilola\",\n    \"password\":\"123456\",\n    \"email\":\"j2yemi@gmail.com\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{base_url}}:{{port}}/register/chpassword",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "{{port}}",
+									"path": [
+										"register",
+										"chpassword"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "changePasswordSelf",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"oldPassword\": \"123456\",\n    \"newPassword\": \"Lolade12\",\n    \"username\": \"damilola\"\n    \n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{base_url}}:{{port}}/register/changepassword",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "{{port}}",
+									"path": [
+										"register",
+										"changepassword"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "password reset link",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"email\":\"damilola@centrifugegroup.com\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{base_url}}:{{port}}/register/resetpasswordlink",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "{{port}}",
+									"path": [
+										"register",
+										"resetpasswordlink"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "password reset verify link",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:6060/register/verifyresetpasswordlink?token=KPvLLL8O-V60xi1jNWNE",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "6060",
+									"path": [
+										"register",
+										"verifyresetpasswordlink"
+									],
+									"query": [
+										{
+											"key": "token",
+											"value": "KPvLLL8O-V60xi1jNWNE"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "email verify link",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:5151/register/verify?token=Od_HI2Z2HqPhC1LoWSL",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "5151",
+									"path": [
+										"register",
+										"verify"
+									],
+									"query": [
+										{
+											"key": "token",
+											"value": "Od_HI2Z2HqPhC1LoWSL"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "appRole",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\":\"Verification Officer\",\n    \"code\":\"VFO\",\n    \"description\":\"Verification Officer\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{base_url}}:{{port}}/api/v2/approle",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "{{port}}",
+									"path": [
+										"api",
+										"v2",
+										"approle"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "appRolePermission",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"canView\" : true,\n    \"canCreate\": true,\n    \"canDelete\": false,\n    \"canUpdate\": false,\n    \"superuser\": false,\n    \"appRoleId\" : 1,\n    \"appId\":1\n\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{base_url}}:{{port}}/api/v2/approlepermission",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "{{port}}",
+									"path": [
+										"api",
+										"v2",
+										"approlepermission"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "appuserrolepermission",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"userId\" : 83,\n    \"appRoleId\":1\n\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{base_url}}:{{port}}/api/v2/appuserrolepermission",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "{{port}}",
+									"path": [
+										"api",
+										"v2",
+										"appuserrolepermission"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Get",
+					"item": [
+						{
+							"name": "findByUsername",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{base_url}}:{{port}}/api/v2/findByUsername?username=olami",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "{{port}}",
+									"path": [
+										"api",
+										"v2",
+										"findByUsername"
+									],
+									"query": [
+										{
+											"key": "username",
+											"value": "olami"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "findapprolepermission",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{base_url}}:{{port}}/api/v2/findapprolepermission",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "{{port}}",
+									"path": [
+										"api",
+										"v2",
+										"findapprolepermission"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "findappuserrolepermission",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{base_url}}:{{port}}/api/v2/findappuserrolepermission",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "{{port}}",
+									"path": [
+										"api",
+										"v2",
+										"findappuserrolepermission"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "findappuserrolepermissionbyid",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{base_url}}:{{port}}/api/v2/findappuserrolepermissionbyid?userid=83",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "{{port}}",
+									"path": [
+										"api",
+										"v2",
+										"findappuserrolepermissionbyid"
+									],
+									"query": [
+										{
+											"key": "userid",
+											"value": "83"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "findapprole",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{base_url}}:{{port}}/api/v2/findapprole",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "{{port}}",
+									"path": [
+										"api",
+										"v2",
+										"findapprole"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "findByVerifiedUsername",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{base_url}}:{{port}}/api/v2/findUserInformationByUsernameOrEmailOrPhoneNumber?option=olayemi",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "{{port}}",
+									"path": [
+										"api",
+										"v2",
+										"findUserInformationByUsernameOrEmailOrPhoneNumber"
+									],
+									"query": [
+										{
+											"key": "option",
+											"value": "olayemi"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "findAllByAccountVerified",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{protocol}}://{{base_url}}:{{port}}/api/v2/findAllByAccountVerified",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "{{port}}",
+									"path": [
+										"api",
+										"v2",
+										"findAllByAccountVerified"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "changeSSOPassword",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://{{base_url}}:{{port}}/changeSSOPassword?email=a.olayemi@yahoo.com",
+									"protocol": "http",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "{{port}}",
+									"path": [
+										"changeSSOPassword"
+									],
+									"query": [
+										{
+											"key": "email",
+											"value": "a.olayemi@yahoo.com"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "findByUsernameOrEmail",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{base_url}}:{{port}}/api/v2/findByUsernameOrEmail?username=olami",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "{{port}}",
+									"path": [
+										"api",
+										"v2",
+										"findByUsernameOrEmail"
+									],
+									"query": [
+										{
+											"key": "username",
+											"value": "olami"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Del",
+					"item": [
+						{
+							"name": "deleteuser",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{base_url}}:{{port}}/api/v2/deleteuser?id=47",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "{{port}}",
+									"path": [
+										"api",
+										"v2",
+										"deleteuser"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "47"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "UserRegistration",
+			"item": [
+				{
+					"name": "Get",
+					"item": [
+						{
+							"name": "get/send/mail/sender/details/accountId",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true,
+								"disabledSystemHeaders": {}
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbGFtaSIsImlhdCI6MTcwMjkwMzA2MSwiZXhwIjoxNzAyOTg5NDYxfQ.HQGqDVVzVfapmwED1iDefXKk1LOfu6-AlarxKpp3Hzs",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"ids\":[1,6],\n    \"sendFrom\":\"postabox@postabox.co\",\n    \"sendFromFullName\":\"Damilola Awe\",\n    \"replyTo\":\"damilola@postabox.co\",\n    \"accountId\": \"1234567890\"\n    \n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:7171/api/v2/meta/get/send/mail/sender/details/accountId/1234567890",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "7171",
+									"path": [
+										"api",
+										"v2",
+										"meta",
+										"get",
+										"send",
+										"mail",
+										"sender",
+										"details",
+										"accountId",
+										"1234567890"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get/send/mail/recipients/category",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbGFtaSIsImlhdCI6MTcwMjkwMzA2MSwiZXhwIjoxNzAyOTg5NDYxfQ.HQGqDVVzVfapmwED1iDefXKk1LOfu6-AlarxKpp3Hzs",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:7171/api/v2/rcp/get/send/mail/recipients/category",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "7171",
+									"path": [
+										"api",
+										"v2",
+										"rcp",
+										"get",
+										"send",
+										"mail",
+										"recipients",
+										"category"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get/send/mail/recipients/category/ids",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbGFtaSIsImlhdCI6MTcwMjkwMzA2MSwiZXhwIjoxNzAyOTg5NDYxfQ.HQGqDVVzVfapmwED1iDefXKk1LOfu6-AlarxKpp3Hzs",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "[\n    {\n        \"id\":1\n    },\n    {\n        \"id\":2\n    }\n]",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:7171/api/v2/rcp/get/send/mail/recipients/category/ids",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "7171",
+									"path": [
+										"api",
+										"v2",
+										"rcp",
+										"get",
+										"send",
+										"mail",
+										"recipients",
+										"category",
+										"ids"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get/user/info/userid",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:5151/api/v2/get/user/info/7",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "5151",
+									"path": [
+										"api",
+										"v2",
+										"get",
+										"user",
+										"info",
+										"7"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "get/send/mail/connect",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbGFtaSIsImlhdCI6MTcwMjkwMzA2MSwiZXhwIjoxNzAyOTg5NDYxfQ.HQGqDVVzVfapmwED1iDefXKk1LOfu6-AlarxKpp3Hzs",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:7171/api/v2/meta/get/send/mail/connect/j2yemi",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "7171",
+									"path": [
+										"api",
+										"v2",
+										"meta",
+										"get",
+										"send",
+										"mail",
+										"connect",
+										"j2yemi"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "list/user/profile/pic",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:5151/api/v2/list/user/profile/pic",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "5151",
+									"path": [
+										"api",
+										"v2",
+										"list",
+										"user",
+										"profile",
+										"pic"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "list/user/info",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:5151/api/v2/list/user/info",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "5151",
+									"path": [
+										"api",
+										"v2",
+										"list",
+										"user",
+										"info"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Post",
+					"item": [
+						{
+							"name": "create/user/info",
+							"protocolProfileBehavior": {
+								"disabledSystemHeaders": {}
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "info",
+											"value": "{\n    \"firstname\": \"Damilola\",\n    \"lastname\": \"Awe\",\n    \"phoneNumber\": \"+2348034863689\",\n    \"address\": \"569, James Onoja Cresent, Wuye\",\n    \"username\": \"olami\",\n    \"email\": \"a.olayemi@yahoo.com\",\n    \"userId\": \"33\",\n    \"clientType\": \"Client\",\n    \"cityId\": 1\n}",
+											"type": "text"
+										}
+									],
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://be.postabox.co/api/v2/create/user/info",
+									"protocol": "https",
+									"host": [
+										"be",
+										"postabox",
+										"co"
+									],
+									"path": [
+										"api",
+										"v2",
+										"create",
+										"user",
+										"info"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "create/send/mail/recipient/category",
+							"protocolProfileBehavior": {
+								"disabledSystemHeaders": {}
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbGFtaSIsImlhdCI6MTcwMjkwMzA2MSwiZXhwIjoxNzAyOTg5NDYxfQ.HQGqDVVzVfapmwED1iDefXKk1LOfu6-AlarxKpp3Hzs",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\":\"Centrifuge Emails\",\n    \"code\":\"CEM\",\n    \"description\":\"Cent Emails\",\n    \"mailRecipients\" : [\n        {\n            \"email\":\"a.olayemi@yahoo.com\",\n            \"name\" :\"Damilola Awe\",\n            \"phoneNumber\": \"08057301228\",\n            \"company\" : \"CITL\",\n            \"title\" : \"Mail Go\"\n        },\n        {\n            \"email\":\"olabayemi@yahoo.com\",\n            \"name\" :\"Yemi Awe\",\n            \"phoneNumber\": \"08034863689\",\n            \"company\" : \"CERL\",\n            \"title\" : \"Mail Go\"\n        }\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:7171/api/v2/rcp/create/send/mail/recipient/category",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "7171",
+									"path": [
+										"api",
+										"v2",
+										"rcp",
+										"create",
+										"send",
+										"mail",
+										"recipient",
+										"category"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "create/outgoing/mails",
+							"protocolProfileBehavior": {
+								"disabledSystemHeaders": {}
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbGFtaSIsImlhdCI6MTcwMjkwMzA2MSwiZXhwIjoxNzAyOTg5NDYxfQ.HQGqDVVzVfapmwED1iDefXKk1LOfu6-AlarxKpp3Hzs",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"ids\":[1,6],\n    \"sendFrom\":\"d@dd.com\",\n    \"sendFromFullName\":\"Damilola Awe\",\n    \"replyTo\":\"d@dd.com\",\n    \"subject\":\"Test\",\n    \"content\":\"Test\",\n    \"sendDate\":\"\"\n    \n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:7171/api/v2/schedule/create/outgoing/mails",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "7171",
+									"path": [
+										"api",
+										"v2",
+										"schedule",
+										"create",
+										"outgoing",
+										"mails"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "create/send/mail/sender/detail",
+							"protocolProfileBehavior": {
+								"disabledSystemHeaders": {}
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJvbGFtaSIsImlhdCI6MTcwMjkwMzA2MSwiZXhwIjoxNzAyOTg5NDYxfQ.HQGqDVVzVfapmwED1iDefXKk1LOfu6-AlarxKpp3Hzs",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"ids\":[1,6],\n    \"sendFrom\":\"postabox@postabox.co\",\n    \"sendFromFullName\":\"Damilola Awe\",\n    \"replyTo\":\"damilola@postabox.co\",\n    \"accountId\": \"1234567890\"\n    \n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:7171/api/v2/meta/create/send/mail/sender/detail",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "7171",
+									"path": [
+										"api",
+										"v2",
+										"meta",
+										"create",
+										"send",
+										"mail",
+										"sender",
+										"detail"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "meta/create/send/mail/connect",
+							"protocolProfileBehavior": {
+								"disabledSystemHeaders": {}
+							},
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"id\": 2,\n    \"name\" : \"SME Connection\",\n    \"description\" : \"Connection For SMEs\",\n    \"defaultConnection\" : true,\n    \"connectUsername\" : \"centrifugegroupng@gmail.com\",\n    \"connectPassword\" : \"jmapxwfegyeitbqr\",\n    \"username\": \"j2yemi\",\n    \"sendMailProps\" : [\n        {\n            \"propsname\": \"mail.smtp.host\",\n            \"propsvalue\": \"smtp.gmail.com\",\n            \"propstype\": \"config\"\n\n        },\n        {\n            \"propsname\": \"mail.smtp.port\",\n            \"propsvalue\": \"587\",\n            \"propstype\": \"config\"\n\n        },\n        {\n            \"propsname\": \"mail.smtp.auth\",\n            \"propsvalue\": \"true\",\n            \"propstype\": \"config\"\n\n        },\n        {\n            \"propsname\": \"mail.smtp.host\",\n            \"propsvalue\": \"smtp.gmail.com\",\n            \"propstype\": \"config\"\n\n        },\n        {\n            \"propsname\": \"mail.smtp.starttls.enable\",\n            \"propsvalue\": \"true\",\n            \"propstype\": \"config\"\n\n        },\n        {\n            \"propsname\": \"mail.debug\",\n            \"propsvalue\": \"true\",\n            \"propstype\": \"config\"\n\n        }\n    ]\n    \n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:7171/api/v2/meta/create/send/mail/connect",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "7171",
+									"path": [
+										"api",
+										"v2",
+										"meta",
+										"create",
+										"send",
+										"mail",
+										"connect"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "pbx/send/mail",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:7171/api/v2/pbx/send/mail",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "7171",
+									"path": [
+										"api",
+										"v2",
+										"pbx",
+										"send",
+										"mail"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "pbx/send/mail/single",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"sendFrom\": \"postabox@postabox.co\", //required\n    \"replyTo\":\"a.olayemi@yahoo.com\", //optional\n    \"sendTo\": \"j2yemi@gmail.com\", //required\n    \"subject\": \"Simple Mail\", //required\n    \"content\": \"Testing Simple Mail\", //required\n    \"sendFromFullName\" : \"PostaBox\", //optional\n    \"sendToFullName\": \"Damilola Awe\" //optional\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:7171/api/v2/pbx/send/mail/single",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "7171",
+									"path": [
+										"api",
+										"v2",
+										"pbx",
+										"send",
+										"mail",
+										"single"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Del",
+					"item": [
+						{
+							"name": "deleteCSO Reg",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{protocol}}://{{base_url}}:{{port}}/api/v2/src/deletecsoreg?id=23",
+									"protocol": "{{protocol}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"port": "{{port}}",
+									"path": [
+										"api",
+										"v2",
+										"src",
+										"deletecsoreg"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "23"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Metadata",
+			"item": [
+				{
+					"name": "City",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\":\"Enugu Town\",\n    \"code\":\"ENU\",\n    \"description\":\"Enugu Town\",\n    \"stateId\": 4\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://be.postabox.co/api/v2/md/create/city",
+							"protocol": "http",
+							"host": [
+								"be",
+								"postabox",
+								"co"
+							],
+							"path": [
+								"api",
+								"v2",
+								"md",
+								"create",
+								"city"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "State",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Kano\",\n    \"code\": \"KN\",\n    \"description\": \"Kano\",\n    \"countryId\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://be.postabox.co/api/v2/md/create/state",
+							"protocol": "https",
+							"host": [
+								"be",
+								"postabox",
+								"co"
+							],
+							"path": [
+								"api",
+								"v2",
+								"md",
+								"create",
+								"state"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Country",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Ghana\",\n        \"code\": \"GH\",\n        \"description\": \"Ghana\"\n    \n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{base_url}}:{{port}}/api/v2/md/country",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"api",
+								"v2",
+								"md",
+								"country"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "States",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Lagos\",\n    \"code\": \"LA\",\n    \"description\": \"Lagos\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{base_url}}:{{port}}/api/v2/md/allstates",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"api",
+								"v2",
+								"md",
+								"allstates"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Countries",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Lagos\",\n    \"code\": \"LA\",\n    \"description\": \"Lagos\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{base_url}}:{{port}}/api/v2/md/allstates",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "{{port}}",
+							"path": [
+								"api",
+								"v2",
+								"md",
+								"allstates"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cities",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\"name\":\"Lagos City\",\n\"description\":\"Lagos City\",\n\"created_date\":\"2022-09-06T16:00:49.455\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{base_url}}:5151/api/v2/md/list/cities",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"port": "5151",
+							"path": [
+								"api",
+								"v2",
+								"md",
+								"list",
+								"cities"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CitiesStateCountry",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\"name\":\"Lagos City\",\n\"description\":\"Lagos City\",\n\"created_date\":\"2022-09-06T16:00:49.455\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:5151/api/v2/md/list/cities/state/country",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "5151",
+							"path": [
+								"api",
+								"v2",
+								"md",
+								"list",
+								"cities",
+								"state",
+								"country"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

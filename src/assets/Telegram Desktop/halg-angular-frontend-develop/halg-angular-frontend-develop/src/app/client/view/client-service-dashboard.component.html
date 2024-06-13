@@ -1,0 +1,2065 @@
+<p-toast position="top-center"></p-toast>
+<p-scrollTop icon="pi pi-arrow-up" styleClass="custom-scrolltop"> </p-scrollTop>
+<p-panel header="Summary & Stats" [toggleable]="true" [collapsed]="true">
+  <ng-template pTemplate="icons">
+    <button
+      icon="pi pi-cog"
+      pButton
+      class="p-panel-header-icon p-link"
+      (click)="menu.toggle($event)"
+    ></button>
+
+    <p-menu
+      #menu
+      id="config_menu"
+      [model]="userActionOptions"
+      [popup]="true"
+    ></p-menu>
+  </ng-template>
+
+  <div class="p-col-12">
+    <div class="p-d-flex p-p-3">
+      <p class="p-mr-2">
+        <strong
+          >Hospital No.<mark>{{ viewedClient.hospitalNum }}</mark></strong
+        >
+      </p>
+      <!--p class="p-mr-2"><strong>Client Id.<mark>{{viewedClient.hospital_number}}</mark></strong></p>-->
+      <p class="p-mr-2">
+        <strong
+          >Full Name.
+          <mark
+            >{{ viewedClient.surname }} {{ viewedClient.firstname }}
+            {{ viewedClient.otherNames }}</mark
+          >
+        </strong>
+      </p>
+      <p class="p-mr-2">
+        <strong>Age.<mark>23</mark></strong>
+      </p>
+      <p class="p-mr-2">
+        <strong>Dependants.<mark>6</mark></strong>
+      </p>
+      <p class="p-mr-2">
+        <strong
+          >Email.<mark>{{
+            viewedClient.email != null ? viewedClient.email : "N/A"
+          }}</mark></strong
+        >
+      </p>
+      <p class="p-mr-2">
+        <strong
+          >Phone.<mark>{{
+            viewedClient.phone_number != null
+              ? viewedClient.phone_number
+              : "N/A"
+          }}</mark></strong
+        >
+      </p>
+    </div>
+  </div>
+</p-panel>
+<br />
+<p-card>
+  <p-tabView>
+    <p-tabPanel
+      header="Programs Dashboard"
+      leftIcon="pi pi-slack"
+      [selected]="selectedTab === 0"
+    >
+      <div class="p-col-12 p-grid">
+        <div class="p-col-4">
+          <p-panel header="Basic">
+            <div class="p-grid p-jc-center p-field">
+              <div class="box">
+                <p-tag value="{{ viewedClient.hospitalNum }}"></p-tag>
+              </div>
+            </div>
+
+            <div class="p-fluid p-formgrid p-grid">
+              <div class="p-col-12 p-md-6">
+                <label><small>Name</small></label>
+                <p>
+                  <small
+                    ><b
+                      >{{ viewedClient.surname }} {{ viewedClient.firstname }}
+                      {{ viewedClient.otherNames }}</b
+                    ></small
+                  >
+                </p>
+              </div>
+
+              <div class="p-col-12 p-md-6">
+                <label><small>Dependants</small></label>
+                <p><strong>6</strong></p>
+              </div>
+
+              <div class="p-col-12 p-md-6">
+                <label><small>Age</small></label>
+                <p>
+                  <strong>{{ clientAge }}</strong>
+                </p>
+              </div>
+
+              <div class="p-col-12 p-md-6">
+                <label><small>Date of Registration</small></label>
+                <p>
+                  <strong>{{ viewedClient.dateRegistration | date }}</strong>
+                </p>
+              </div>
+
+              <div class="p-col-12 p-md-6">
+                <label><small>Target Group</small></label>
+                <!-- <p><strong>{{viewedClient.targetgroups.name}}</strong></p> -->
+              </div>
+
+              <div class="p-col-12 p-md-6">
+                <label><small>Care Entry Point</small></label>
+                <!-- <p><strong>{{viewedClient.careentrypoint.name}}</strong></p> -->
+              </div>
+
+              <div class="p-col-12 p-md-12">
+                <label><small>Status</small></label>
+                <p><strong>Active</strong></p>
+              </div>
+
+              <div class="p-col-12 p-md-12">
+                <!--p-separator></p-separator-->
+              </div>
+            </div>
+          </p-panel>
+        </div>
+        <div class="p-col-4">
+          <div>
+            <p-panel header="Appointments">
+              <p>No recent appointment found</p>
+            </p-panel>
+          </div>
+          <div>
+            <p-panel header="Programs"> </p-panel>
+          </div>
+          <div>
+            <p-panel header="Drug Pickup"> </p-panel>
+          </div>
+        </div>
+        <div class="p-col-4">
+          <div>
+            <p-panel header="Visits"> </p-panel>
+          </div>
+          <div>
+            <p-panel header="Laboratory"> </p-panel>
+          </div>
+        </div>
+      </div>
+    </p-tabPanel>
+
+    <p-tabPanel
+      header="Clinics"
+      leftIcon="pi pi-user"
+      [selected]="selectedTab === 1"
+    >
+      <p-card>
+        <!--* left -->
+        <ng-template pTemplate="content">
+          <div class="p-col-12 p-grid">
+            <div class="p-col-10">
+              <div class="p-fluid p-formgrid p-grid">
+                <div class="p-field p-col-12 p-md-12">
+                  <p-divider align="left" type="dashed">
+                    <i class="pi pi-user-plus p-mr-2"></i>
+                    <b>Add Visits</b>
+                  </p-divider>
+                </div>
+
+                <div class="p-field p-col-4">
+                  <label for="dor"><b>Visit Date: *</b></label>
+                  <p-calendar
+                    [monthNavigator]="true"
+                    [yearNavigator]="true"
+                    yearRange="2000:{{ curYear }}"
+                    [maxDate]="maxDate"
+                    [(ngModel)]="clinicvisit.date_of_first_visit"
+                    #dor="ngModel"
+                    inputId="navigators"
+                    [showIcon]="true"
+                    showButtonBar="true"
+                    required
+                    placeholder="Enter visit date"
+                    [ngClass]="{
+                      'ng-dirty':
+                        (dor.invalid && submitted) || (dor.dirty && dor.invalid)
+                    }"
+                  >
+                  </p-calendar>
+                  <small
+                    *ngIf="
+                      (dor.invalid && submitted) || (dor.dirty && dor.invalid)
+                    "
+                    class="p-error"
+                  >
+                    Date of registration is required</small
+                  >
+                </div>
+
+                <div class="p-col-8"></div>
+
+                <div class="p-field p-col-4">
+                  <label for="clinical_stage_id"><b>Clinical Stage</b></label>
+                  <p-dropdown
+                    inputId="clinical_stage_id"
+                    [filter]="true"
+                    filterBy="name"
+                    [showClear]="true"
+                    [options]="clinicalStagesMap"
+                    [(ngModel)]="clinicvisit.clinical_stages_id"
+                    optionLabel="name"
+                    optionValue="clinical_stages_id"
+                    placeholder="-Select-"
+                  ></p-dropdown>
+                </div>
+
+                <div class="p-field p-col-4">
+                  <label for="functional_status_id"
+                    ><b>Functional Status</b></label
+                  >
+                  <p-dropdown
+                    inputId="functional_status_id"
+                    [filter]="true"
+                    filterBy="name"
+                    [showClear]="true"
+                    [options]="functionalStatusMap"
+                    [(ngModel)]="clinicvisit.functional_status_id"
+                    optionLabel="name"
+                    optionValue="functional_status_id"
+                    (onChange)="ontest()"
+                    placeholder="-Select-"
+                  >
+                  </p-dropdown>
+                </div>
+
+                <div class="p-field p-col-4">
+                  <label for="tb_status_id"><b>TB Status</b></label>
+                  <p-dropdown
+                    inputId="tb_status_id"
+                    [filter]="true"
+                    filterBy="name"
+                    [showClear]="true"
+                    [options]="tBStatusMap"
+                    [(ngModel)]="clinicvisit.tb_status_id"
+                    optionLabel="name"
+                    optionValue="status_id"
+                    placeholder="-Select-"
+                  ></p-dropdown>
+                </div>
+
+                <div class="p-field p-col-4">
+                  <label for="pregnancy_id"><b>Pregnancy Status</b></label>
+                  <p-dropdown
+                    inputId="pregnancy_id"
+                    [filter]="true"
+                    filterBy="name"
+                    [showClear]="true"
+                    [options]="pregnancyStatusMap"
+                    [(ngModel)]="clinicvisit.pregnancy_status_id"
+                    optionLabel="name"
+                    optionValue="pregnancy_id"
+                    placeholder="-Select-"
+                  ></p-dropdown>
+                </div>
+
+                <div class="p-field p-col-4">
+                  <label for="username"><b>Opportunistic Infections</b></label>
+                  <p-dropdown
+                    inputId="clinical_stage_id"
+                    [filter]="true"
+                    filterBy="name"
+                    [showClear]="true"
+                    [options]="oppInfectionsMap"
+                    [(ngModel)]="clinicvisit.opportunistic_infection_id"
+                    optionLabel="name"
+                    optionValue="opportunistic_infection_id"
+                    placeholder="-Select-"
+                  ></p-dropdown>
+                </div>
+
+                <div class="p-field p-col-4"></div>
+
+                <div class="p-field p-col-4">
+                  <label for="weight"><b>Weight</b></label>
+                  <p-inputNumber
+                    [(ngModel)]="clinicvisit.weight"
+                    inputId="weight"
+                    suffix=" kg"
+                    placeholder="Enter weight in kg"
+                  >
+                  </p-inputNumber>
+                </div>
+
+                <div class="p-field p-col-4">
+                  <label for="height"><b>Height</b></label>
+                  <p-inputNumber
+                    [(ngModel)]="clinicvisit.height"
+                    inputId="height"
+                    suffix=" ft"
+                    placeholder="Enter height in ft"
+                  >
+                  </p-inputNumber>
+                </div>
+
+                <div class="p-field p-col-4"></div>
+
+                <div class="p-field p-col-12 p-md-12">
+                  <p-divider align="left" type="dashed">
+                    <i class="pi pi-user-plus p-mr-2"></i>
+                    <b>Blood Pressure</b>
+                  </p-divider>
+                </div>
+
+                <div class="p-field p-col-4">
+                  <label for="systolic"><b>Systolic</b></label>
+                  <p-inputNumber
+                    [(ngModel)]="clinicvisit.systolic"
+                    inputId="systolic"
+                    suffix=" mmHg"
+                    placeholder="Enter systolic in mmHg"
+                  >
+                  </p-inputNumber>
+                </div>
+
+                <div class="p-field p-col-4">
+                  <label for="distolic"><b>Diastolic</b></label>
+                  <p-inputNumber
+                    [(ngModel)]="clinicvisit.diastolic"
+                    inputId="diastolic"
+                    suffix=" mmHg"
+                    placeholder="Enter diastolic in mmHg"
+                  >
+                  </p-inputNumber>
+                </div>
+
+                <div class="p-field p-col-4"></div>
+
+                <div class="p-field-checkbox p-col-12">
+                  <p-checkbox
+                    [(ngModel)]="clinicvisit.adversed_reaction_screened"
+                    binary="true"
+                    inputId="binadrxary"
+                  ></p-checkbox>
+                  <label for="adrx">Adversed Drug Reaction Screened?</label>
+                </div>
+
+                <div class="p-field p-col-12 p-md-4">
+                  <label for="username"><b>Level of Adherence</b></label>
+                  <p-dropdown
+                    inputId="clinical_stage_id"
+                    [filter]="true"
+                    filterBy="name"
+                    [showClear]="true"
+                    [options]="levelofAdherenceMap"
+                    [(ngModel)]="clinicvisit.adherence_id"
+                    optionLabel="name"
+                    optionValue="adherence_level_id"
+                    placeholder="-Select-"
+                  ></p-dropdown>
+                </div>
+                <div class="p-field p-col-12">
+                  <label for="clinicnote"><b>Clinic Note</b></label>
+                  <textarea
+                    id="clinicnote"
+                    pInputText
+                    required
+                    rows="3"
+                    cols="20"
+                    [(ngModel)]="clinicvisit.clinical_note"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!--* right -->
+            <div class="p-col-2">
+              <div class="p-fluid p-formgrid p-grid">
+                <div class="p-field p-col-12 p-md-12">
+                  <p-divider align="center" type="dashed">
+                    <i class="fa fa-stethoscope p-mr-2"></i>
+                    <b>Last five (5) visits</b>
+                  </p-divider>
+                </div>
+                <p-timeline [value]="visitsByClient" align="alternate">
+                  <ng-template pTemplate="content" let-visit>
+                    {{ visit.date_of_first_visit | date }}
+                  </ng-template>
+                </p-timeline>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="footer">
+          <p-divider type="dashed"> </p-divider>
+          <div class="p-grid p-nogutter p-justify-between">
+            <p-button
+              label="Save"
+              (onClick)="PostClinicVisit()"
+              icon="pi pi-save"
+            ></p-button>
+          </div>
+        </ng-template>
+      </p-card>
+    </p-tabPanel>
+
+    <p-tabPanel
+      header="Appointments"
+      leftIcon="pi pi-calendar-plus"
+      [selected]="selectedTab === 2"
+    >
+      <div class="card">
+        <ejs-schedule
+          width="100%"
+          height="550px"
+          [selectedDate]="selectedDate"
+          [eventSettings]="eventSettings"
+        >
+        </ejs-schedule>
+      </div>
+    </p-tabPanel>
+
+    <p-tabPanel
+      header="Allergies"
+      leftIcon="pi pi-bookmark"
+      [selected]="selectedTab === 3"
+    >
+      <div class="p-grid">
+        <div class="p-col-12">
+          <div class="p-d-flex p-p-3">
+            <button
+              pButton
+              pRipple
+              type="button"
+              icon="pi pi-plus"
+              label="Add Allergy"
+              class="p-button-text p-mr-2"
+              (click)="goToAddDialog('allergy')"
+            ></button>
+            <p-splitButton
+              label="Trends"
+              icon="pi pi-eye"
+              class="p-ml-auto p-button-text"
+              [model]="userProgramOptions"
+            ></p-splitButton>
+          </div>
+
+          <div class="p-col-12 p-xl-12">
+            <p-table
+              #dt
+              [value]="allergiesList"
+              [paginator]="true"
+              [rows]="5"
+              styleClass="p-datatable-customers"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 8rem">
+                    <p-tableHeaderCheckbox>Select</p-tableHeaderCheckbox>
+                  </th>
+                  <th pSortableColumn="date">
+                    Date
+                    <p-sortIcon field="created_date"></p-sortIcon>
+                  </th>
+                  <th pSortableColumn="allergen_id">
+                    Allergen
+                    <p-sortIcon field="allergen_id"></p-sortIcon>
+                  </th>
+                  <th pSortableColumn="allergy">
+                    Allergy
+                    <p-sortIcon field="allergy_id"></p-sortIcon>
+                  </th>
+                  <th pSortableColumn="severity">
+                    Severity
+                    <p-sortIcon field="severity_id"></p-sortIcon>
+                  </th>
+                  <th pSortableColumn="observation">
+                    Observations
+                    <p-sortIcon field="observation"></p-sortIcon>
+                  </th>
+                  <th pSortableColumn="userid">
+                    Seen By
+                    <p-sortIcon field="userid"></p-sortIcon>
+                  </th>
+                  <th></th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-allergies>
+                <tr>
+                  <td>
+                    <p-tableCheckbox [value]="allergies"></p-tableCheckbox>
+                  </td>
+                  <td>
+                    <span class="p-column-title"></span>
+                    {{ allergies.allergies.created_date | date }}
+                  </td>
+                  <td>
+                    <span class="p-column-title"></span>
+                    {{ allergies.allergens.name }}
+                  </td>
+                  <td>
+                    <span class="p-column-title"></span>
+                    {{ allergies.allergies.name }}
+                  </td>
+                  <td>
+                    <span class="p-column-title"></span>
+                    {{ allergies.severity.name }}
+                  </td>
+                  <td>
+                    <span class="p-column-title"></span>
+                    {{ allergies.observation }}
+                  </td>
+                  <td>
+                    <span class="p-column-title"></span>
+                    {{ allergies.users.username }}
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </div>
+      </div>
+
+      <p-dialog
+        [(visible)]="allergyDialog"
+        [maximizable]="true"
+        [style]="{ width: '650px' }"
+        header="Client Allergy/Reaction"
+        [modal]="true"
+        styleClass="p-fluid"
+      >
+        <ng-template pTemplate="content">
+          <div class="p-col-12 p-fluid p-formgrid p-grid">
+            <div class="p-col-6 p-field">
+              <label>Date</label>
+              <p-calendar
+                [monthNavigator]="true"
+                [yearNavigator]="true"
+                yearRange="2000:2030"
+                inputId="navigators"
+                [showTime]="true"
+                [showIcon]="true"
+                placeholder="Pick Date"
+                showButtonBar="true"
+                [(ngModel)]="allergyselectedDate"
+                inputId="time"
+              ></p-calendar>
+            </div>
+            <div class="p-col-6 p-field">
+              <label><b>Allergy</b></label>
+              <p-dropdown
+                [options]="allergyMap"
+                optionLabel="name"
+                type="allergy_id"
+                [(ngModel)]="selectedAllergies"
+                placeholder="-Select-"
+              ></p-dropdown>
+            </div>
+            <div class="p-col-6 p-field">
+              <label><b>Allergen</b></label>
+              <p-dropdown
+                [options]="allergensMap"
+                optionLabel="name"
+                type="allergen_id"
+                [(ngModel)]="selectedAllergens"
+                placeholder="-Select-"
+              ></p-dropdown>
+            </div>
+
+            <div class="p-col-6 p-field">
+              <label><b>Severity</b></label>
+              <p-dropdown
+                [options]="severityMap"
+                optionLabel="name"
+                type="severity_id"
+                [(ngModel)]="selectedSeverity"
+                placeholder="-Select-"
+              ></p-dropdown>
+            </div>
+
+            <div class="p-col-6 p-field">
+              <label><b>Reactions/Symptoms</b></label>
+              <textarea
+                [(ngModel)]="allergiescreatedata.symptoms"
+                pInputTextarea
+                required
+                rows="3"
+                cols="20"
+              ></textarea>
+            </div>
+            <div class="p-col-6 p-field">
+              <label><b>Observation</b></label>
+              <textarea
+                [(ngModel)]="allergiescreatedata.observation"
+                pInputTextarea
+                required
+                rows="3"
+                cols="20"
+              ></textarea>
+            </div>
+          </div>
+
+          <p-confirmDialog
+            [style]="{ width: '50vw' }"
+            [baseZIndex]="10000"
+            rejectButtonStyleClass="p-button-text"
+          >
+          </p-confirmDialog>
+        </ng-template>
+        <ng-template pTemplate="footer">
+          <button
+            pButton
+            pRipple
+            label="Cancel"
+            icon="pi pi-times"
+            class="p-button-text"
+            (click)="hideallergyDialog()"
+          ></button>
+          <button
+            pButton
+            pRipple
+            label="Save"
+            icon="pi pi-check"
+            class="p-button-text"
+            (click)="confirm('allergyDialog')"
+          ></button>
+        </ng-template>
+      </p-dialog>
+    </p-tabPanel>
+
+    <p-tabPanel
+      header="Vital Signs"
+      leftIcon="pi pi-bell"
+      [selected]="selectedTab === 4"
+    >
+      <div class="p-grid">
+        <div class="p-col-12">
+          <div class="p-d-flex p-p-3">
+            <button
+              pButton
+              pRipple
+              type="button"
+              icon="pi pi-plus"
+              label="Add Vital Sign"
+              class="p-button-text p-mr-2"
+              (click)="goToAddDialog('vitalsign')"
+            ></button>
+            <p-splitButton
+              label="Trends"
+              icon="pi pi-eye"
+              class="p-ml-auto p-button-text"
+              [model]="userProgramOptions"
+            ></p-splitButton>
+          </div>
+
+          <div class="p-col-12 p-xl-12">
+            <p-table
+              #dt
+              [value]="vitalsignMap"
+              [rows]="20"
+              [paginator]="true"
+              [rowHover]="true"
+              dataKey="id"
+              [rows]="5"
+              styleClass="p-datatable-customers"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 8rem">
+                    <p-tableHeaderCheckbox>Select</p-tableHeaderCheckbox>
+                  </th>
+
+                  <th pSortableColumn="id">
+                    Date
+                    <p-sortIcon field="id"></p-sortIcon>
+                  </th>
+                  <th pSortableColumn="height">
+                    Height(m)
+                    <p-sortIcon field="height"></p-sortIcon>
+                  </th>
+                  <th pSortableColumn="respirstoryrate">
+                    Respiratory Rate(BRPM)
+                    <p-sortIcon field="respirstoryrate"></p-sortIcon>
+                  </th>
+                  <th pSortableColumn="pulse">
+                    Pulse(BRPM)
+                    <p-sortIcon field="pulse"></p-sortIcon>
+                  </th>
+
+                  <th pSortableColumn="diastolic">
+                    Dastolic BP(mmHg)
+                    <p-sortIcon field="diastolic"></p-sortIcon>
+                  </th>
+
+                  <th pSortableColumn="systolic">
+                    Systolic BP(mmHg)
+                    <p-sortIcon field="systolic"></p-sortIcon>
+                  </th>
+
+                  <th pSortableColumn="temprature">
+                    Temp(℃)
+                    <p-sortIcon field="temprature"></p-sortIcon>
+                  </th>
+
+                  <th pSortableColumn="weight">
+                    Weight(Kg)
+                    <p-sortIcon field="weight"></p-sortIcon>
+                  </th>
+                  <!--th>Action</th-->
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-vitalsign>
+                <tr>
+                  <td>
+                    <p-tableCheckbox [value]="vitalsign"></p-tableCheckbox>
+                  </td>
+                  <td>
+                    <span class="p-column-title"></span>
+                    {{ vitalsign.created_date | date }}
+                  </td>
+                  <td>
+                    <span class="p-column-title"></span>
+                    {{ vitalsign.height }}
+                  </td>
+                  <td>
+                    <span class="p-column-title"></span>
+                    {{ vitalsign.respiratory_rate }}
+                  </td>
+                  <td>
+                    <span class="p-column-title"></span>
+                    {{ vitalsign.pulse }}
+                  </td>
+
+                  <td>
+                    <span class="p-column-title"></span>
+                    {{ vitalsign.systolic }}
+                  </td>
+                  <td>
+                    <span class="p-column-title"></span>
+                    {{ vitalsign.diastolic }}
+                  </td>
+
+                  <td>
+                    <span class="p-column-title"></span>
+                    {{ vitalsign.temperature }}
+                  </td>
+
+                  <td>
+                    <span class="p-column-title"></span>
+                    {{ vitalsign.weight }}
+                  </td>
+                  <!--td>
+                                        <button pButton pRipple type="button" label="Update" class="p-button-outlined p-mr-2 p-mb-2" (click)="goToUpdateDialog('vitalsign')"></button>
+
+                                    </td-->
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </div>
+      </div>
+
+      <p-dialog
+        [(visible)]="vitalSignDialog"
+        [maximizable]="true"
+        [style]="{ width: '650px' }"
+        header="Client Vital Signs"
+        [modal]="true"
+        styleClass="p-fluid"
+      >
+        <ng-template pTemplate="content">
+          <div class="p-col-6 p-field">
+            <label>Date</label><br />
+            <p-calendar
+              [monthNavigator]="true"
+              [yearNavigator]="true"
+              yearRange="2000:2030"
+              inputId="navigators"
+              [showTime]="true"
+              [showIcon]="true"
+              placeholder="Pick Date"
+              [(ngModel)]="vitalsigncreatedata.created_date"
+              inputId="time"
+            ></p-calendar>
+          </div>
+          <div class="p-col-12 p-fluid p-formgrid p-grid">
+            <div class="p-col-6 p-field">
+              <label for="height">Height</label>
+              <p-inputNumber
+                [(ngModel)]="vitalsigncreatedata.height"
+                inputId="height"
+                placeholder="Enter height"
+                suffix=" m"
+                mode="decimal"
+                [minFractionDigits]="2"
+              >
+              </p-inputNumber>
+            </div>
+
+            <div class="p-col-6 p-field">
+              <label for="respiratory_rate">Respiratory Rate(BRPM)</label>
+              <p-inputNumber
+                [(ngModel)]="vitalsigncreatedata.respiratory_rate"
+                inputId="respiratory_rate"
+                placeholder="Enter Respiratory Rate"
+                suffix=" BRPM"
+              ></p-inputNumber>
+            </div>
+            <div class="p-col-4 p-field">
+              <label for="pulse">Pulse(BRPM)</label>
+              <p-inputNumber
+                [(ngModel)]="vitalsigncreatedata.pulse"
+                inputId="pulse"
+                placeholder="Enter pulse"
+                suffix=" BRPM"
+              ></p-inputNumber>
+            </div>
+
+            <div class="p-col-4 p-field">
+              <label for="temperature">Temperature(℃)</label>
+              <p-inputNumber
+                [(ngModel)]="vitalsigncreatedata.temperature"
+                inputId="temperature"
+                placeholder="Enter temperature"
+                suffix=" ℃"
+                [min]="0"
+                [max]="150"
+              ></p-inputNumber>
+            </div>
+            <div class="p-col-4 p-field">
+              <label for="weight">Weight(kg)</label>
+              <p-inputNumber
+                [(ngModel)]="vitalsigncreatedata.weight"
+                inputId="weight"
+                placeholder="Enter weight"
+                suffix=" kg"
+              ></p-inputNumber>
+            </div>
+
+            <div class="p-col-6 p-field">
+              <label for="systolic">Systolic BP(mmHg)</label>
+              <p-inputNumber
+                [(ngModel)]="vitalsigncreatedata.systolic"
+                inputId="systolic"
+                placeholder="Enter Systolic Pressure"
+                suffix=" mmHg"
+              ></p-inputNumber>
+            </div>
+            <div class="p-col-6 p-field">
+              <label for="diastolic">Diastolic BP(mmHg)</label>
+              <p-inputNumber
+                [(ngModel)]="vitalsigncreatedata.diastolic"
+                inputId="diastolic"
+                placeholder="Enter Diastolic pressure"
+                suffix=" mmHg"
+              ></p-inputNumber>
+            </div>
+
+            <p-confirmDialog
+              [style]="{ width: '50vw' }"
+              [baseZIndex]="10000"
+              rejectButtonStyleClass="p-button-text"
+            >
+            </p-confirmDialog>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="footer">
+          <button
+            pButton
+            pRipple
+            label="Cancel"
+            icon="pi pi-times"
+            class="p-button-text"
+            (click)="hideVitalSignDialog()"
+          ></button>
+          <button
+            pButton
+            pRipple
+            label="Save"
+            icon="pi pi-check"
+            class="p-button-text"
+            (click)="confirm('vitalSignDialog')"
+          ></button>
+        </ng-template>
+      </p-dialog>
+    </p-tabPanel>
+
+    <p-tabPanel
+      header="Diagnoses/Investigations"
+      leftIcon="pi pi-eye-slash"
+      [selected]="selectedTab === 5"
+    >
+      <div class="card">
+        <div
+          class="
+            p-d-flex p-flex-column p-flex-md-row p-jc-md-between
+            table-header
+          "
+        >
+          <button
+            pButton
+            pRipple
+            type="button"
+            icon="pi pi-plus"
+            label="Add Investigation/Diagnoses"
+            class="p-button-text p-mr-2"
+            (click)="goToAddDialog('investigation')"
+          ></button>
+          <span class="p-input-icon-left">
+            <i class="pi pi-search"></i>
+
+            <input
+              pInputText
+              type="text"
+              (input)="
+                dt.filterGlobal($event.target.value, 'contains', 'contains')
+              "
+              placeholder="Search..."
+            />
+          </span>
+        </div>
+        <br />
+
+        <p-table
+          #dt
+          [value]="investlist"
+          [globalFilterFields]="[
+            'onset_date',
+            'diagnosed_condition_id',
+            'severity_id',
+            'investigation.clinical_note'
+          ]"
+          styleClass="p-datatable-customers"
+          [rowHover]="true"
+          [rows]="10"
+          [paginator]="true"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width: 3rem">
+                <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+              </th>
+              <th pSortableColumn="onset_date">
+                Onset Date<p-sortIcon field="onset_date"></p-sortIcon>
+              </th>
+
+              <th pSortableColumn="diagnosed_condition_id">
+                Condition
+                <p-sortIcon field="diagnosed_condition_id"></p-sortIcon>
+              </th>
+              <th pSortableColumn="severity_id">
+                Severity <p-sortIcon field="severity_id"></p-sortIcon>
+              </th>
+              <th pSortableColumn="clinical_note">
+                Clinical Note <p-sortIcon field="clinical_note"> </p-sortIcon>
+              </th>
+              <!--th>Action</th-->
+            </tr></ng-template
+          >
+
+          <ng-template pTemplate="body" let-investigation>
+            <tr>
+              <td>
+                <p-tableCheckbox [value]="investigation"></p-tableCheckbox>
+              </td>
+              <td>
+                <span class="p-column-title"></span>
+                {{ investigation.onset_date | date }}
+              </td>
+              <td>
+                <span class="p-column-title"></span>
+                {{ investigation.diagnosisconditions.name }}
+              </td>
+              <td>
+                <span class="p-column-title"></span>
+                {{ investigation.severity.name }}
+              </td>
+              <td>
+                <span class="p-column-title"></span>
+                {{ investigation.clinical_note }}
+              </td>
+              <!--td>
+                                <button pButton pRipple type="button" label="Update"  styleClass="p-mr-2 p-mb-2" class="p-button-outlined p-mr-2 p-mb-2" (click)="viewInvestigation(investigation)"></button>
+
+                                </td-->
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <p-dialog
+        [(visible)]="investigationDialog"
+        [maximizable]="true"
+        [style]="{ width: '1000px' }"
+        header="Investigations/Diagnoses"
+        [modal]="true"
+        styleClass="p-fluid"
+      >
+        <ng-template pTemplate="content">
+          <div class="form-group p-col-6 p-field">
+            <label>Diagnosed Date</label>
+            <p-calendar
+              [monthNavigator]="true"
+              [yearNavigator]="true"
+              yearRange="2000:2030"
+              inputId="navigators"
+              [showTime]="true"
+              [showIcon]="true"
+              placeholder="Pick Date"
+              [(ngModel)]="investigationselectedDate"
+              inputId="time"
+            ></p-calendar>
+
+            <small>Enter the diagnosed date</small>
+          </div>
+          <form [formGroup]="myForm">
+            <div formArrayName="myArray">
+              <div
+                *ngFor="
+                  let address of myForm.controls.myArray.controls;
+                  let i = index
+                "
+                class="panel panel-default"
+              >
+                <div
+                  class="panel-body p-col-12 p-fluid p-formgrid p-grid"
+                  [formGroupName]="i"
+                >
+                  <div class="form-group p-col-3 p-field">
+                    <label for="date">Onset Date</label>
+                    <p-calendar
+                      [monthNavigator]="true"
+                      [yearNavigator]="true"
+                      yearRange="2000:2030"
+                      inputId="navigators"
+                      [showIcon]="true"
+                      showButtonBar="true"
+                      placeholder="Pick Date"
+                      formControlName="onsetdate"
+                    ></p-calendar>
+
+                    <small>persived date when condition started</small>
+                  </div>
+                  <div class="form-group p-col-2 p-field">
+                    <label>Condition</label>
+                    <p-dropdown
+                      [options]="diagnosisconditionsMap"
+                      optionLabel="name"
+                      placeholder="-Select-"
+                      [showClear]="true"
+                      formControlName="diagnosed_condition_id"
+                    ></p-dropdown>
+                  </div>
+                  <div class="form-group p-col-2 p-field">
+                    <label>Severity</label>
+                    <p-dropdown
+                      [options]="severityMap"
+                      placeholder="-Select-"
+                      optionLabel="name"
+                      [showClear]="true"
+                      formControlName="severity_id"
+                    ></p-dropdown>
+                  </div>
+
+                  <div class="form-group p-col-4 p-field">
+                    <label>Note</label>
+                    <textarea
+                      rows="auto"
+                      cols="auto"
+                      placeholder="Enter note"
+                      formControlName="clinical_note"
+                      pInputTextarea
+                    ></textarea>
+                  </div>
+
+                  <div
+                    *ngIf="i > 0"
+                    class="form-group p-col-1 p-field"
+                    style="margin-top: 30px"
+                  >
+                    <button
+                      pButton
+                      pRipple
+                      type="button"
+                      icon="pi pi-times"
+                      class="
+                        p-button-rounded
+                        p-button-danger
+                        p-button-outlined
+                        p-mr-2
+                        p-mb-2
+                      "
+                      style="color: blue"
+                      (click)="removeConsultation(i, 'investigationDialog')"
+                    ></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p-confirmDialog
+              [style]="{ width: '50vw' }"
+              [baseZIndex]="10000"
+              rejectButtonStyleClass="p-button-text"
+            >
+            </p-confirmDialog>
+
+            <div class="p-col-12 p-fluid p-formgrid p-grid">
+              <div class="p-col-2 p-field">
+                <button
+                  pButton
+                  pRipple
+                  type="button"
+                  label="Add"
+                  class="p-button-outlined p-mr-2 p-mb-2 pull-right"
+                  (click)="addConsultation('investigationDialog')"
+                ></button>
+              </div>
+              <div class="p-col-2 p-field">
+                <button
+                  pButton
+                  pRipple
+                  type="button"
+                  label="Save"
+                  class="p-button-outlined p-mr-2 p-mb-2 pull-right"
+                  [disabled]="!myForm.valid"
+                  (click)="confirm('investigationDialog')"
+                ></button>
+              </div>
+            </div>
+            <div class="clearfix"></div>
+          </form>
+        </ng-template>
+      </p-dialog>
+    </p-tabPanel>
+
+    <p-tabPanel
+      header="Laboratory Test"
+      leftIcon="pi pi-camera"
+      [selected]="selectedTab === 6"
+    >
+      <div class="card">
+        <div
+          class="
+            p-d-flex p-flex-column p-flex-md-row p-jc-md-between
+            table-header
+          "
+        >
+          <button
+            pButton
+            pRipple
+            type="button"
+            icon="pi pi-plus"
+            label="Add Lab Test"
+            class="p-button-text p-mr-2"
+            (click)="goToAddDialog('laboratory')"
+          ></button>
+          <span class="p-input-icon-left">
+            <i class="pi pi-search"></i>
+            <input
+              pInputText
+              type="text"
+              (input)="dt.filterGlobal($event.target.value, 'contains')"
+              placeholder="Search..."
+            />
+          </span>
+        </div>
+        <br />
+
+        <p-table
+          #dt
+          [value]="labList"
+          [rows]="10"
+          [paginator]="true"
+          [globalFilterFields]="[
+            'laboratory_test_id',
+            'laboratory_test_type_id',
+            'test_note',
+            'prescription_date',
+            'prescribed_by_id',
+            'hospital_number'
+          ]"
+          [rowHover]="true"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width: 3rem">
+                <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+              </th>
+              <th pSortableColumn="prescription_date">
+                Ordered Date<p-sortIcon field="prescription_date"> </p-sortIcon>
+              </th>
+              <th pSortableColumn="prescribed_by_id">
+                Ordered By <p-sortIcon field="prescribed_by_id"> </p-sortIcon>
+              </th>
+              <th pSortableColumn="order_number">
+                Order Number <p-sortIcon field="order_number"> </p-sortIcon>
+              </th>
+
+              <th pSortableColumn="test_name">
+                Lab Test<p-sortIcon field="test_name"></p-sortIcon>
+              </th>
+              <th pSortableColumn="testtype_name">
+                Lab Test Type<p-sortIcon field="testtype_name"> </p-sortIcon>
+              </th>
+              <th pSortableColumn="test_note">
+                Lab Test Note<p-sortIcon field="test_note"></p-sortIcon>
+              </th>
+              <th>Action</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-lab>
+            <tr>
+              <td>
+                <p-tableCheckbox [value]="labList"></p-tableCheckbox>
+              </td>
+              <td>
+                <span class="p-column-title"></span>
+                {{ lab.ordered_date | date }}
+              </td>
+              <td>
+                <span class="p-column-title"></span>
+                {{ lab.users.username }}
+              </td>
+              <td>
+                <span class="p-column-title"></span>
+                {{ lab.laboratory_ordered_number }}
+              </td>
+              <td>
+                <span class="p-column-title"></span>
+                {{ lab.laboratorytests.name }}
+              </td>
+              <td>
+                <span class="p-column-title"></span>
+                {{ lab.laboratorytesttype.name }}
+              </td>
+              <td>
+                <span class="p-column-title"></span>
+                {{ lab.laboratory_test_note }}
+              </td>
+              <td>
+                <button
+                  pButton
+                  pRipple
+                  icon="pi pi-file"
+                  class="p-button-rounded p-button-success"
+                  pTooltip="View Result"
+                  tooltipPosition="top"
+                  (click)="goToAddDialog('result')"
+                ></button>
+                <!--button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-warning"></button>
+                                    <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-warning"></button-->
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <p-dialog
+        [(visible)]="laborastoryDialog"
+        [maximizable]="true"
+        [style]="{ width: '800px' }"
+        header="Laboratory/Test"
+        [modal]="true"
+        styleClass="p-fluid"
+      >
+        <ng-template pTemplate="content">
+          <div class="form-group p-col-6 p-field">
+            <label>Ordered Date</label>
+            <p-calendar
+              [(ngModel)]="labselectedDate"
+              [monthNavigator]="true"
+              placeholder="Pick Date"
+              [showIcon]="true"
+              [showTime]="true"
+              [yearNavigator]="true"
+              yearRange="2000:2030"
+              inputId="navigators"
+            ></p-calendar>
+          </div>
+          <form [formGroup]="myForm_2">
+            <div formArrayName="myArray_2">
+              <div
+                *ngFor="
+                  let address of myForm_2.controls.myArray_2.controls;
+                  let i = index
+                "
+                class="panel panel-default"
+              >
+                <div
+                  class="panel-body p-col-12 p-fluid p-formgrid p-grid"
+                  [formGroupName]="i"
+                >
+                  <div class="form-group p-col-3 p-field">
+                    <label>Lab Test Type</label>
+                    <p-dropdown
+                      [options]="laboratoryTesttypeMap"
+                      optionLabel="name"
+                      placeholder="-Select-"
+                      [showClear]="true"
+                      formControlName="laboratory_test_type_id"
+                    ></p-dropdown>
+                  </div>
+
+                  <div class="form-group p-col-3 p-field">
+                    <label>Lab Test</label>
+                    <p-dropdown
+                      [options]="laboratoryTestMap"
+                      optionLabel="name"
+                      placeholder="-Select-"
+                      [showClear]="true"
+                      formControlName="laboratory_test_id"
+                    ></p-dropdown>
+                  </div>
+
+                  <div class="form-group p-col-5 p-field">
+                    <label>Lab Test Note</label>
+                    <textarea
+                      rows="auto"
+                      cols="auto"
+                      placeholder="Enter note"
+                      formControlName="test_note"
+                      pInputTextarea
+                    ></textarea>
+                  </div>
+
+                  <div
+                    *ngIf="i > 0"
+                    class="form-group p-col-1 p-field"
+                    style="margin-top: 30px"
+                  >
+                    <button
+                      pButton
+                      pRipple
+                      type="button"
+                      icon="pi pi-times"
+                      class="
+                        p-button-rounded
+                        p-button-danger
+                        p-button-outlined
+                        p-mr-2
+                        p-mb-2
+                      "
+                      style="color: blue"
+                      (click)="removeConsultation(i, 'laborastoryDialog')"
+                    ></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p-confirmDialog
+              [style]="{ width: '50vw' }"
+              [baseZIndex]="10000"
+              rejectButtonStyleClass="p-button-text"
+            >
+            </p-confirmDialog>
+
+            <div class="p-col-12 p-fluid p-formgrid p-grid">
+              <div class="p-col-2 p-field">
+                <button
+                  pButton
+                  pRipple
+                  type="button"
+                  label="Add"
+                  class="p-button-outlined p-mr-2 p-mb-2 pull-right"
+                  (click)="addConsultation('laborastoryDialog', i)"
+                ></button>
+              </div>
+              <div class="p-col-2 p-field">
+                <button
+                  pButton
+                  pRipple
+                  type="button"
+                  label="Save"
+                  class="p-button-outlined p-mr-2 p-mb-2 pull-right"
+                  [disabled]="!myForm.valid"
+                  (click)="submitLaboratory()"
+                ></button>
+              </div>
+            </div>
+            <div class="clearfix"></div>
+          </form>
+        </ng-template>
+      </p-dialog>
+
+      <p-dialog
+        [(visible)]="resultDialog"
+        [maximizable]="true"
+        [style]="{ width: '1000px' }"
+        header="Laboratory Result"
+        [modal]="true"
+        styleClass="p-fluid"
+      >
+        <ng-template pTemplate="content">
+          <div class="p-col-6 p-field">
+            <label for="result">Laboratory Test Result</label>
+            <p-inputNumber
+              {{resultcreatedata.lab_test_result}}
+              inputId="result"
+              placeholder="Enter Test Result"
+            ></p-inputNumber>
+          </div>
+
+          <div class="p-field p-col-12 p-md-12">
+            <label>Laboratory Result Note</label>
+            <textarea
+              rows="auto"
+              [(ngModel)]="selectedresult.lab_result_note"
+              cols="30"
+              placeholder="Enter note"
+              pInputTextarea
+            ></textarea>
+          </div>
+        </ng-template>
+      </p-dialog>
+    </p-tabPanel>
+    <p-tabPanel header="Pharmacy" leftIcon="pi pi-camera">
+      <p-tabView>
+        <p-tabPanel
+          header="General Pharmacy"
+          leftIcon="pi pi-camera"
+          [selected]="selectedTab === 7"
+        >
+          <div class="card">
+            <div
+              class="
+                p-d-flex p-flex-column p-flex-md-row p-jc-md-between
+                table-header
+              "
+            >
+              <button
+                pButton
+                pRipple
+                type="button"
+                icon="pi pi-plus"
+                label="Add Prescription"
+                class="p-button-text p-mr-2"
+                (click)="goToAddDialog('pharmacy')"
+              ></button>
+              <span class="p-input-icon-left">
+                <i class="pi pi-search"></i>
+                <input
+                  pInputText
+                  type="text"
+                  (input)="dt.filterGlobal($event.target.value, 'contains')"
+                  placeholder="Search..."
+                />
+              </span>
+            </div>
+            <br />
+
+            <p-table
+              #dt
+              [value]="drugList"
+              [rows]="10"
+              [paginator]="true"
+              styleClass="p-datatable-customers"
+              [globalFilterFields]="[
+                'prescription_date',
+                'drug_id',
+                'dose',
+                'dosefrequency',
+                'unit',
+                'prescription_note'
+              ]"
+              [rowHover]="true"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 3rem">
+                    <p-tableHeaderCheckbox>Select</p-tableHeaderCheckbox>
+                  </th>
+                  <th pSortableColumn="prescription_date">
+                    Prescription Date<p-sortIcon
+                      field="prescription_date"
+                    ></p-sortIcon>
+                  </th>
+                  <th pSortableColumn="drug_name">
+                    Name<p-sortIcon field="drug_id"></p-sortIcon>
+                  </th>
+                  <th pSortableColumn="dose">
+                    Dosage <p-sortIcon field="dose"></p-sortIcon>
+                  </th>
+                  <th pSortableColumn="drug_frequency_id">
+                    Frequency
+                    <p-sortIcon field="drug_frequency_id"> </p-sortIcon>
+                  </th>
+                  <th pSortableColumn="drug_unit_id">
+                    Unit<p-sortIcon field="drug_unit_id"> </p-sortIcon>
+                  </th>
+                  <th pSortableColumn="prescription_note">
+                    Note<p-sortIcon field="prescription_note"> </p-sortIcon>
+
+                    <!--th> Action
+                        </th-->
+                  </th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-drug>
+                <tr>
+                  <td>
+                    <p-tableCheckbox [value]="drug"></p-tableCheckbox>
+                  </td>
+                  <td>
+                    {{ drug.prescription_date | date }}
+                  </td>
+                  <td>
+                    {{ drug.drugs.name }}
+                  </td>
+                  <td>
+                    {{ drug.dose }}
+                  </td>
+                  <td>
+                    {{ drug.drugfrequency.name }}
+                  </td>
+                  <td>
+                    {{ drug.drugunits.name }}
+                  </td>
+                  <td>
+                    {{ drug.prescription_note }}
+                  </td>
+
+                  <!--td>
+                               <button pButton pRipple type="button" label="Update"  styleClass="p-mr-2 p-mb-2" class="p-button-outlined p-mr-2 p-mb-2" (click)="goToUpdateDialog(drug, 'pharmacy')"></button>
+                            </td-->
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+
+          <p-dialog
+            [(visible)]="pharmacyDialog"
+            [maximizable]="true"
+            [style]="{ width: '1000px' }"
+            header="Pharmacy"
+            [modal]="true"
+            styleClass="p-fluid"
+          >
+            <ng-template pTemplate="content">
+              <div class="form-group p-col-6 p-field">
+                <label>Prescription Date</label>
+                <p-calendar
+                  [monthNavigator]="true"
+                  [yearNavigator]="true"
+                  yearRange="2000:2030"
+                  inputId="navigators"
+                  [showTime]="true"
+                  [showIcon]="true"
+                  placeholder="Pick Date"
+                  [(ngModel)]="prescriptioncreatedata.prescription_date"
+                ></p-calendar>
+              </div>
+              <form [formGroup]="myForm_1">
+                <div formArrayName="myArray_1">
+                  <div
+                    *ngFor="
+                      let address of myForm_1.controls.myArray_1.controls;
+                      let i = index
+                    "
+                    class="panel panel-default"
+                  >
+                    <div
+                      class="panel-body p-col-12 p-fluid p-formgrid p-grid"
+                      [formGroupName]="i"
+                    >
+                      <div class="form-group p-col-2 p-field">
+                        <label>Name</label>
+                        <p-dropdown
+                          [options]="DrugMap"
+                          optionLabel="name"
+                          placeholder="-Select-"
+                          [showClear]="true"
+                          formControlName="drug_id"
+                        >
+                        </p-dropdown>
+                      </div>
+                      <div class="form-group p-col-2 p-field">
+                        <label for="integeronly">Dose</label>
+                        <p-inputNumber
+                          inputId="integeronly"
+                          [showClear]="true"
+                          placeholder="Enter Dose"
+                          formControlName="dose"
+                          suffix=" mg"
+                        ></p-inputNumber>
+                      </div>
+                      <div class="form-group p-col-2 p-field">
+                        <label>Frequency</label>
+                        <p-dropdown
+                          [options]="DoseFrequencyMap"
+                          placeholder="-Select-"
+                          optionLabel="name"
+                          [showClear]="true"
+                          formControlName="drug_frequency_id"
+                        >
+                        </p-dropdown>
+                      </div>
+                      <div class="form-group p-col-2 p-field">
+                        <label>Unit</label>
+                        <p-dropdown
+                          [options]="UnitDataMap"
+                          placeholder="-Select-"
+                          optionLabel="name"
+                          [showClear]="true"
+                          formControlName="drug_unit_id"
+                        ></p-dropdown>
+                      </div>
+                      <div class="form-group p-col-2 p-field">
+                        <label for="integeronly">No. of Tablet</label>
+                        <p-inputNumber
+                          inputId="integeronly"
+                          [showClear]="true"
+                          placeholder="Enter Dose"
+                          formControlName="no_of_tablet"
+                        ></p-inputNumber>
+                      </div>
+                      <div class="form-group p-col-2 p-field">
+                        <label>Prescription Note</label>
+                        <textarea
+                          rows="auto"
+                          cols="auto"
+                          placeholder="Enter note"
+                          formControlName="note"
+                          formControlName="prescription_note"
+                          pInputTextarea
+                        ></textarea>
+                      </div>
+
+                      <div
+                        *ngIf="i > 0"
+                        class="form-group p-col-1 p-field"
+                        style="margin-top: 30px"
+                      >
+                        <button
+                          pButton
+                          pRipple
+                          type="button"
+                          icon="pi pi-times"
+                          class="
+                            p-button-rounded
+                            p-button-danger
+                            p-button-outlined
+                            p-mr-2
+                            p-mb-2
+                          "
+                          style="color: blue"
+                          (click)="removeConsultation(i, 'pharmacyDialog')"
+                        ></button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <p-confirmDialog
+                  [style]="{ width: '50vw' }"
+                  [baseZIndex]="10000"
+                  rejectButtonStyleClass="p-button-text"
+                >
+                </p-confirmDialog>
+
+                <div class="p-col-12 p-fluid p-formgrid p-grid">
+                  <div class="p-col-2 p-field">
+                    <button
+                      pButton
+                      pRipple
+                      type="button"
+                      label="Add"
+                      class="p-button-outlined p-mr-2 p-mb-2 pull-right"
+                      (click)="addConsultation('pharmacyDialog')"
+                    ></button>
+                  </div>
+                  <div class="p-col-2 p-field">
+                    <button
+                      pButton
+                      pRipple
+                      type="button"
+                      label="Save"
+                      class="p-button-outlined p-mr-2 p-mb-2 pull-right"
+                      [disabled]="!myForm.valid"
+                      (click)="confirm('pharmacyDialog')"
+                    ></button>
+                  </div>
+                </div>
+
+                <div class="clearfix"></div>
+
+                <!--div class="margin-20">
+                  <pre>{{myForm.value | json}}</pre>
+              </div-->
+              </form>
+            </ng-template>
+          </p-dialog>
+        </p-tabPanel>
+        <p-tabPanel header="ARV Drug Dispensing">
+          <div class="card">
+            <div
+              class="
+                p-d-flex p-flex-column p-flex-md-row p-jc-md-between
+                table-header
+              "
+            >
+              <div>
+                <button
+                  pButton
+                  pRipple
+                  type="button"
+                  icon="pi pi-plus"
+                  label="Dispense ARV Drugs"
+                  class="p-button-text p-mr-2"
+                  (click)="goToAddDialog('arvdrug')"
+                ></button>
+                <button
+                  pButton
+                  pRipple
+                  type="button"
+                  icon="pi pi-refresh"
+                  label="ARV Drugs Refill"
+                  class="p-button-text p-mr-2"
+                  (click)="goToAddDialog('arvdrug')"
+                  [disabled]="!selectedARVDrug || !selectedARVDrug.length"
+                ></button>
+              </div>
+              <span class="p-input-icon-left">
+                <i class="pi pi-search"></i>
+                <input
+                  pInputText
+                  type="text"
+                  (input)="dt.filterGlobal($event.target.value, 'contains')"
+                  placeholder="Search..."
+                />
+              </span>
+            </div>
+            <br />
+
+            <p-table
+              #dt
+              [value]="arvDrugDispenseList"
+              [rows]="10"
+              [paginator]="true"
+              styleClass="p-datatable-customers"
+              [globalFilterFields]="[
+                'prescription_date',
+                'drug_id',
+                'dose',
+                'dosefrequency',
+                'unit',
+                'prescription_note'
+              ]"
+              [rowHover]="true"
+              dataKey="client_unique_identifier,regimencombo_id,arv_dispense_date"
+              [(selection)]="selectedARVDrug"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th style="width: 3rem">
+                    <p-tableHeaderCheckbox>Select</p-tableHeaderCheckbox>
+                  </th>
+                  <th pSortableColumn="regimencombo.name">
+                    Regimen<p-sortIcon field="regimencombo.name"></p-sortIcon>
+                  </th>
+                  <th pSortableColumn="drugdispensepattern.name">
+                    Dosage<p-sortIcon
+                      field="drugdispensepattern.name"
+                    ></p-sortIcon>
+                  </th>
+                  <th pSortableColumn="drugdispensepattern.tablet_no">
+                    Unit Dispensed<p-sortIcon
+                      field="drugdispensepattern.tablet_no"
+                    ></p-sortIcon>
+                  </th>
+                  <th pSortableColumn="arv_dispense_date">
+                    Dispensed Date
+                    <p-sortIcon field="arv_dispense_date"></p-sortIcon>
+                  </th>
+                  <th pSortableColumn="arv_dispense_date">
+                    Last ARV Refill Date
+                    <p-sortIcon field="arv_dispense_date"></p-sortIcon>
+                  </th>
+                  <th pSortableColumn="arv_next_appointment_date">
+                    Next Refill Date
+                    <p-sortIcon field="arv_next_appointment_date"> </p-sortIcon>
+                  </th>
+                  <th pSortableColumn="arv_next_appointment_date">
+                    Days to Refill
+                    <p-sortIcon field="arv_next_appointment_date"> </p-sortIcon>
+                  </th>
+                  <th pSortableColumn="action">
+                    Action <p-sortIcon field="action"></p-sortIcon>
+                  </th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-arv>
+                <tr>
+                  <td>
+                    <p-tableCheckbox [value]="arv"></p-tableCheckbox>
+                  </td>
+                  <td>
+                    {{ arv.regimencombo.name }}
+                  </td>
+                  <td>
+                    {{ arv.drugdispensepattern.name }}
+                  </td>
+                  <td>
+                    {{ arv.drugdispensepattern.tablet_no }}
+                  </td>
+                  <td>
+                    {{ arv.arv_dispense_date | date }}
+                  </td>
+                  <td>
+                    {{ arv.arv_dispense_date | date }}
+                  </td>
+                  <td>
+                    {{ arv.arv_next_appointment_date | date }}
+                  </td>
+
+                  <td>
+                    <p-badge
+                      [value]="DateDiff(arv.arv_next_appointment_date)"
+                      size="large"
+                      severity="{{
+                        DateDiff(arv.arv_next_appointment_date) > 0
+                          ? 'info'
+                          : DateDiff(arv.arv_next_appointment_date) == 0
+                          ? 'warning'
+                          : 'danger'
+                      }}"
+                    ></p-badge>
+                  </td>
+
+                  <td>
+                    <button
+                      pButton
+                      pRipple
+                      icon="pi pi-user-edit"
+                      pTooltip="Change Regimen"
+                      tooltipPosition="bottom"
+                      class="p-button-rounded p-mr-2"
+                      (click)="editRegimen(reg)"
+                    ></button>
+                    <button
+                      pButton
+                      pRipple
+                      icon="pi pi-refresh"
+                      class="p-button-rounded p-mr-2"
+                      (click)="deleteRegimen(reg)"
+                      pTooltip="Refill ARV Drug"
+                      tooltipPosition="bottom"
+                    ></button>
+                    <button
+                      pButton
+                      pRipple
+                      icon="pi pi-info"
+                      class="p-button-rounded p-button-warning"
+                      (click)="deleteRegimen(reg)"
+                      pTooltip="Detail"
+                      tooltipPosition="bottom"
+                    ></button>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </p-tabPanel>
+      </p-tabView>
+    </p-tabPanel>
+    <p-tabPanel
+      header="Adherence"
+      leftIcon="pi pi-chart-bar"
+      [selected]="selectedTab === 8"
+    >
+      Visit History
+    </p-tabPanel>
+  </p-tabView>
+
+  <p-dialog
+    [(visible)]="arvdispensedialog"
+    [maximizable]="true"
+    [style]="{ width: '1000px' }"
+    header="ARV Drug Pickup"
+    [modal]="true"
+    styleClass="p-fluid"
+  >
+    <ng-template pTemplate="content">
+      <p-card header="ARV Drug Pickup">
+        <div
+          class="p-col-12 p-fluid p-formgrid p-grid p-ai-end vertical-container"
+        >
+          <div class="p-col-4 p-field">
+            <label for="arvpickup"><b>Pickup Date*</b></label>
+            <p-calendar
+              [(ngModel)]="arvpickupdate"
+              yearRange="1960:{{ curYear }}"
+              showButtonBar="true"
+              required="true"
+              [monthNavigator]="true"
+              [yearNavigator]="true"
+              [maxDate]="maxDate"
+              [showIcon]="true"
+              [showTime]="false"
+              (onSelect)="CalculateNextAppointmentDate()"
+              placeholder="Pick Date"
+              dateFormat="dd/mm/yy"
+            ></p-calendar>
+          </div>
+          <div class="p-field p-col-4">
+            <label for="med_line"><b>Medication Line*</b></label>
+            <p-dropdown
+              inputId="med_line"
+              [options]="medLineMap"
+              [(ngModel)]="selectedMedLine"
+              (onChange)="onMedLineChange()"
+              [filter]="true"
+              filterBy="name"
+              optionLabel="name"
+              placeholder="Choose a medication line"
+            ></p-dropdown>
+          </div>
+          <div class="p-field p-col-4">
+            <label for="med_line"><b>Regimen*</b></label>
+            <p-dropdown
+              inputId="med_line"
+              [options]="regimenMap"
+              [(ngModel)]="selectedRegimenCombo"
+              [filter]="true"
+              filterBy="name"
+              optionLabel="name"
+              placeholder="Select a regimen"
+              (onChange)="CalculateNextAppointmentDate()"
+            ></p-dropdown>
+          </div>
+
+          <div class="p-field p-col-4">
+            <label for="duration"><b>Duration*</b></label>
+            <p-dropdown
+              inputId="med_line"
+              [options]="dosageMap"
+              [(ngModel)]="selectedDosage"
+              (onChange)="CalculateNextAppointmentDate()"
+              [filter]="true"
+              filterBy="name"
+              optionLabel="name"
+              placeholder="Choose a dosage size"
+            ></p-dropdown>
+          </div>
+
+          <div class="p-col-4 p-field">
+            <label><b>Next Appointment Date*</b></label>
+            <p-calendar
+              [(ngModel)]="arvdispensecreatedata.next_arv_pick_up_date"
+              disabled="true"
+              required="true"
+              dateFormat="dd/mm/yy"
+              [showIcon]="true"
+              [showTime]="false"
+              placeholder="Pick Date"
+              inputId="time"
+            ></p-calendar>
+          </div>
+
+          <div class="p-field p-col-4">
+            <button
+              pButton
+              pRipple
+              label="Add to Review"
+              (click)="AddARVToReview()"
+              class="p-button-outlined"
+            ></button>
+          </div>
+        </div>
+      </p-card>
+
+      <br />
+      <br />
+
+      <p-card header="Review and Save">
+        <p-table [value]="arvdispensecreatedatas" responsiveLayout="scroll">
+          <ng-template pTemplate="caption">
+            <div class="p-d-flex p-col-6">
+              <button
+                type="button"
+                pButton
+                pRipple
+                (click)="SaveARVDrugDispense('save')"
+                class="p-mr-2 p-button-outlined"
+                pTooltip="Save Regimen"
+                label="Save ARV Drugs"
+                tooltipPosition="bottom"
+              ></button>
+              <button
+                type="button"
+                pButton
+                pRipple
+                (click)="SaveARVDrugDispense('clear')"
+                class="p-mr-2 p-button-outlined"
+                pTooltip="Clear/Reset"
+                label="Clear/Reset"
+                tooltipPosition="bottom"
+              ></button>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Pickup Date</th>
+              <th>Drug Line</th>
+              <th>Regimen</th>
+              <th>Duration</th>
+              <th>Next Appointment</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-arv>
+            <tr>
+              <td>{{ arv.arv_dispense_date | date }}</td>
+              <td>{{ arv.medicationline }}</td>
+              <td>{{ arv.regimen }}</td>
+              <td>{{ arv.dosage }}</td>
+              <td>{{ arv.next_arv_pick_up_date | date }}</td>
+              <td>
+                <button
+                  pButton
+                  pRipple
+                  icon="pi pi-trash"
+                  class="p-button-rounded p-button-warning"
+                ></button>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-card>
+    </ng-template>
+  </p-dialog>
+
+  <!--p-dialog [(visible)]="updatePharmacyDialog" [style]="{width: '800px'}" header="Update Prescription" [modal]="true" styleClass="p-fluid">
+
+            <ng-template pTemplate="content">
+                <div class="p-col-12 p-fluid p-formgrid p-grid">
+                    <div class="p-col-12 p-field">
+                        <label for="drug_name">Drugs</label>
+                        <p-dropdown id="drug_name" [options]="drugList" type="drug_name" [(ngModel)]="selectedPharmacy"></p-dropdown>
+                    </div>
+                    <div>
+                        <label for="dose">Dose</label>
+                        <input id="dose" type="dose" pInputText [(ngModel)]="selectedPharmacy.dose">
+                    </div>
+                    <div class="p-col-6 p-field">
+                        <label for="drug_frequency_id"> Frequency </label>
+                        <input id="drug_frequency_id" type="drugfrequency" pInputText [(ngModel)]="selectedPharmacy.drug_frequency_id">
+                    </div>
+                    <div class="p-col-6 p-field">
+                        <label for="drug_unit_id">Unit</label>
+                        <input id="drug_unit_id" type="drug_unit_id" pInputText [(ngModel)]="selectedPharmacy.drug_unit_id">
+                    </div>
+                    <div class="p-col-6 p-field">
+                    <label for="prescription_note">Prescription Note</label>
+                        <input id="prescription_note" type="name" pInputText [(ngModel)]="selectedPharmacy.prescription_note">
+                    </div>
+
+                </div>
+            </ng-template>
+
+
+        </p-dialog--> </p-card
+>`

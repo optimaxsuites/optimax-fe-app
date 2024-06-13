@@ -1,0 +1,128 @@
+<div class="p-grid">
+	<div class="p-col-12">
+
+        <div class="card">
+			<p-toolbar styleClass="p-mb-4">
+				<ng-template pTemplate="left">
+					<button pButton pRipple label="Add Heirarchy" icon="pi pi-plus" class="p-mr-2 p-mb-2" (click)="goToAddHeirarchy()"></button>
+					<button pButton pRipple label="Delete Heirarchy" icon="pi pi-trash" class="p-mb-2" (click)="deleteSelectedProducts()" [disabled]="!selectedProducts || !selectedProducts.length"></button>
+				</ng-template>
+
+				<ng-template pTemplate="right">
+					<button pButton pRipple label="Back" icon="pi pi-chevron-left" class="p-button-help p-mb-2" (click)="goBack()"></button>
+				</ng-template>
+            </p-toolbar>
+            <p-table #dt [value]="heirarchyList" [rows]="10" [paginator]="true" [globalFilterFields]="['name','code','description']"
+         [rowHover]="true" dataKey="id"
+            styleClass="p-datatable-customers"
+            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries" [showCurrentPageReport]="true">
+   
+            <ng-template pTemplate="caption">
+                <div class="p-d-flex p-flex-column p-flex-md-row p-jc-md-between table-header">
+                    <h5 class="p-m-0">Heirarchy Listing</h5>
+                    <span class="p-input-icon-left">
+                    <i class="pi pi-search"></i>
+                    <input pInputText type="text" (input)="dt.filterGlobal($event.target.value, 'contains')" placeholder="Search..." />
+                </span>
+                </div>
+            </ng-template>
+            <ng-template pTemplate="header">
+                <tr>
+                    <th style="width: 3rem">
+                        <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+                    </th>
+                    <th pSortableColumn="heirarchyid">id <p-sortIcon field="gender_id"></p-sortIcon></th>
+                    <th pSortableColumn="name">Name<p-sortIcon field="name"></p-sortIcon></th>
+                    <th pSortableColumn="code">Code <p-sortIcon field="code"></p-sortIcon></th>
+                    <th pSortableColumn="description">Description <p-sortIcon field="description"></p-sortIcon></th>
+                    <th pSortableColumn="fieldtouse">Field to use <p-sortIcon field="fieldtouse"></p-sortIcon></th>
+                    <th pSortableColumn="heirarchylevel">level <p-sortIcon field="heirarchylevel"></p-sortIcon></th>
+                    <th pSortableColumn="action">Action <p-sortIcon field="action"></p-sortIcon></th>
+                    
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-heirarchy>
+                <tr>
+                    <td>
+                        <p-tableCheckbox [value]="heirarchy"></p-tableCheckbox>
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{heirarchy.heirarchyid}}
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{heirarchy.name}}
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{heirarchy.code}}
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{heirarchy.description}}
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{heirarchy.fieldtouse}}
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{heirarchy.heirarchylevel}}
+                    </td>
+
+                    <td>
+                        <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success p-mr-2" (click)="editHeirarchy(heirarchy)"></button>
+                        <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-warning" (click)="deleteProduct(product)"></button>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="summary">
+                <div class="p-d-flex p-ai-center p-jc-between">
+                    In total there are {{heirarchyList ? heirarchyList.length : 0 }} heirarchys.
+                </div>
+            </ng-template>
+        </p-table>   
+            
+            </div>
+
+             
+           <p-dialog [(visible)]="heirarchyDialog" [style]="{width: '650px'}" header="Heirarchy Details" [modal]="true" styleClass="p-fluid">
+           
+            <ng-template pTemplate="content">
+				<div class="p-col-12 p-fluid p-formgrid p-grid">
+				<div class="p-col-12 p-field">
+					<label for="name">Name</label>
+					<input id="name" type="name" pInputText [(ngModel)]="selectedHeirarchy.name">
+                </div>
+                <div class="p-col-6 p-field">
+					<label for="code">Code</label>
+					<input id="code" type="code" pInputText [(ngModel)]="selectedHeirarchy.code">
+                </div>
+                <div class="p-col-6 p-field">
+					<label for="description"> Description </label>
+					<input id="description" type="description" pInputText [(ngModel)]="selectedHeirarchy.description">
+                </div>
+                <div class="p-col-6 p-field">
+                    <label for="fieldtouse"> Fieldtouse </label>
+                    <input id="fieldtouse" type="fieldtouse" pInputText [(ngModel)]="selectedHeirarchy.fieldtouse">
+                </div>
+                <div class="p-col-6 p-field">
+                    <label for="heirarchylevel"> Heirarchylevel </label>
+                    <input id="heirarchylevel" type="heirarchylevel" pInputText [(ngModel)]="selectedHeirarchy.heirarchylevel">
+                </div>
+                <div class="p-col-6 p-field">
+                        <label for="created_by">Created_By</label>
+                        <input id="created_by" type="created_by" pInputText [(ngModel)]="selectedHeirarchy.created_by">
+                    </div>
+                    <div class="p-col-6 p-field">
+                        <label for="created_date">Created_Date</label>
+                        <input id="created_date" type="created_date" pInputText [(ngModel)]="selectedHeirarchy.created_date">
+                    </div>
+
+                </div>
+                </ng-template>
+
+                <ng-template pTemplate="footer">
+                    <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideGenderDialog()"></button>
+                    <button pButton pRipple label="Save" icon="pi pi-check" class="p-button-text" (click)="updateHeirarchy()"></button>
+                </ng-template>
+                </p-dialog>
+
+        </div>
+        </div>
+        

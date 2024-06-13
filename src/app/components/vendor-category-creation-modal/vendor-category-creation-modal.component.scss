@@ -1,0 +1,39 @@
+section {
+  width: 32rem;
+  height: 18rem;
+  padding: 3rem;
+  border: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.vendorCategory {
+  margin-bottom: 2rem;
+}
+
+.inputField {
+  width: 25rem;
+  margin-top: 0.7rem;
+  border-color: #536365;
+  height: 3.5rem;
+  border-radius: 0.5rem;
+}
+
+.saveButton {
+  color: #25925b;
+  padding: 1rem;
+  border: none;
+  border-radius: 1rem;
+  background-color: transparent;
+  transition: 0.4s ease-in-out;
+}
+
+.saveButton:hover {
+  background-color: #ebebeb;
+}
+
+.btn-wrapper {
+  align-self: flex-end;
+}

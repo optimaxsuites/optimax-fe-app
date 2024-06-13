@@ -1,0 +1,7 @@
+{
+    "/api": {
+        "target": "https://dmelplus.heartlandalliance.org.ng",
+        "secure": false,
+        "logLevel": "debug"
+    }
+}

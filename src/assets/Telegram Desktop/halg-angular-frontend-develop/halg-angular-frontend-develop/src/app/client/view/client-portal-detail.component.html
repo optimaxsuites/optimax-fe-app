@@ -1,0 +1,294 @@
+<p-toast></p-toast>
+<p-card> 
+  <ng-template pTemplate="content">
+
+    <div class="p-col-12 p-grid">
+
+      <div class="p-col-6">
+        <div class="p-fluid p-formgrid p-grid">
+
+          <div class="p-field p-col-12 p-md-12">
+            <p-divider align="left" type="dashed">
+              <i class="pi pi-user-plus p-mr-2"></i>
+              <b>Client Personal Information</b>
+            </p-divider>
+          </div>
+
+          <div class="p-field p-col-4">
+            <label for="clientcode"><b>Client Code/Card No*</b></label>
+            <input  pInputText type="text" id="clientcode" [(ngModel)]="client_code" required readonly>
+         
+            
+          </div>
+      
+
+          <div class="p-field p-col-8">
+            <label for="dor"><b>Date Of Registration*</b></label>
+            <p-calendar [monthNavigator]="true" [yearNavigator]="true" dateFormat="dd/mm/yy"
+              [(ngModel)]="dateRegistration" #dor="ngModel" inputId="navigators" [showIcon]="true" showButtonBar="true"
+              required>
+            </p-calendar> 
+
+          </div>
+
+        </div>
+
+        <div class="p-fluid p-formgrid p-grid">
+
+          <div class="p-field p-col-4">
+            <label for="lastname"><b>Lastname</b></label>
+            <input #lastname="ngModel" id="lastname" type="text" pInputText [(ngModel)]="viewedClient.surname" required>
+
+          </div>
+
+          <div class="p-field p-col-4">
+            <label for="firstname"><b>Firstname</b></label>
+            <input #firstname="ngModel" id="firstname" type="text" pInputText [(ngModel)]="viewedClient.firstname"
+              required>
+
+
+          </div>
+          <div class="p-field p-col-4">
+            <label for="othername"><b>Othername</b></label>
+            <input id="othername" type="text" pInputText [(ngModel)]="viewedClient.otherNames">
+          </div>
+
+        </div>
+
+
+
+
+
+        <div class="p-fluid p-formgrid p-grid">
+
+          <div class="p-field p-col-5">
+            <label for="dob"><b>Date of Birth</b></label>
+            <p-calendar [monthNavigator]="true" [yearNavigator]="true" yearRange="1960:{{minDate}}" inputId="navigators"
+              [showIcon]="true" showButtonBar="true" [(ngModel)]="dateBirth" dateFormat="dd/mm/yy">
+            </p-calendar>
+          </div>
+
+          <div class="p-field p-col-3">
+            <label for="years"><b>Years</b></label>
+            <p-inputNumber mode="decimal" inputId="withoutgrouping" [useGrouping]="false" [(ngModel)]="year"
+              disabled="true">
+            </p-inputNumber>
+          </div>
+
+          <div class="p-field p-col-2">
+            <label for="months"><b>Months</b></label>
+            <p-inputNumber mode="decimal" inputId="withoutgrouping" [useGrouping]="false" [(ngModel)]="month"
+              disabled="true">
+            </p-inputNumber>
+          </div>
+
+          <div class="p-field p-col-2">
+            <label for="days"><b>Days</b></label>
+            <p-inputNumber mode="decimal" inputId="withoutgrouping" [useGrouping]="false" [(ngModel)]="days"
+              disabled="true">
+            </p-inputNumber>
+          </div>
+        </div>
+
+        <div class="p-fluid p-formgrid p-grid">
+          <div class="p-field p-col-6">
+            <label for="gender_id"><b>Gender</b></label>
+            <p-dropdown inputId="gender_id" [options]="personalregistration.genderMap" [(ngModel)]="viewedClient.gender_id" [filter]="true"
+              filterBy="name" [showClear]="true" optionLabel="name" optionValue="gender_id" placeholder="-Select-">
+            </p-dropdown>
+
+          </div>
+
+          <div class="p-field p-col-6">
+            <label for="username"><b>Marital Status</b></label>
+            <p-dropdown inputId="marital_status_id" [filter]="true" filterBy="name" [showClear]="true"
+              [options]="personalregistration.maritalstatusMap" [(ngModel)]="viewedClient.marital_status_id" optionLabel="name"
+              optionValue="marital_status_id" placeholder="-Select-"></p-dropdown>
+          </div>
+        </div>
+
+        <div class="p-fluid p-formgrid p-grid">
+
+          <div class="p-field p-col-6">
+            <label for="email"><b>Email</b></label>
+            <input id="email" type="email" [email]="true" pInputText [(ngModel)]="viewedClient.email">
+          </div>
+
+          <div class="p-field p-col-3">
+            <label for="phonenum"><b>Phone No</b></label>
+            <p-inputMask id="phonenum" [(ngModel)]="viewedClient.phone_number" placeholder="(801) 234-5678"
+              mask="(999) 999-9999"></p-inputMask>
+          </div>
+          <div class="p-field p-col-3">
+            <label for="altphonenum"><b>Alt Phone Num</b></label>
+            <p-inputMask id="altphonenum" [(ngModel)]="viewedClient.alt_phone_number" placeholder="(701) 234-5678"
+              mask="(999) 999-9999"></p-inputMask>
+          </div>
+        </div>
+
+        <div class="p-fluid p-formgrid p-grid">
+          <div class="p-field p-col-6">
+            <label for="language_id"><b>Spoken Language</b></label>
+            <p-dropdown [options]="personalregistration.languageMap" [filter]="true" filterBy="name" [showClear]="true"
+              [(ngModel)]="viewedClient.language_id" optionLabel="name" optionValue="language_id"
+              placeholder="-Select-"></p-dropdown>
+          </div>
+
+          <div class="p-field p-col-6">
+            <label for="religion_id"><b>Religion</b></label>
+            <p-dropdown [options]="personalregistration.religionMap" [filter]="true" filterBy="name" [showClear]="true"
+              [(ngModel)]="viewedClient.religion_id" optionValue="religion_id" optionLabel="name"
+              placeholder="-Select-"></p-dropdown>
+          </div>
+        </div>
+
+        <div class="p-fluid p-formgrid p-grid">
+          <div class="p-field p-col-6">
+            <label for="occupation_id"><b>Occupation</b></label>
+            <p-dropdown [options]="personalregistration.occupationMap" [filter]="true" filterBy="name" [showClear]="true"
+              [(ngModel)]="viewedClient.occupation_id" optionValue="occupation_id" optionLabel="name"
+              placeholder="-Select-"></p-dropdown>
+          </div>
+
+          <div class="p-field p-col-6">
+            <label for="qualification"><b>Qualification</b></label>
+            <p-dropdown [options]="personalregistration.qualificationMap" [filter]="true" filterBy="name" [showClear]="true"
+              [(ngModel)]="viewedClient.qualification_id" optionValue="qualification_id" optionLabel="name"
+              placeholder="-Select-"></p-dropdown>
+          </div>
+        </div>
+
+       
+        <div class="p-fluid p-formgrid p-grid">
+          <div class="p-field p-col-6">
+            <label for="nationality"><b>Nationality</b></label>
+            <p-dropdown inputId="nationality" [options]="personalregistration.nationalityMap" [(ngModel)]="viewedClient.nationality_id"
+              [filter]="true" filterBy="name" [showClear]="true" (onChange)="onNationalitySelection()"
+              optionLabel="name" optionValue="nationality_id" placeholder="-Select-"></p-dropdown>
+
+          </div>
+
+
+          <div class="p-field p-col-6">
+            <label for="stateoforigin"><b>State Of Origin</b></label>
+            <p-dropdown inputId="state_id" [options]="personalregistration.statesMap" [(ngModel)]="viewedClient.state_id" [filter]="true"
+              filterBy="name" [showClear]="true" (onChange)="onStatesSelection()" optionLabel="name"
+              optionValue="state_id" placeholder="-Select-"></p-dropdown>
+          </div>
+
+          <div class="p-field p-col-12">
+            <label for="lgaoforigin"><b>Local Government Area</b></label>
+            <p-dropdown [options]="lgaMap" [(ngModel)]="viewedClient.lga_id" [filter]="true"
+              filterBy="name" [showClear]="true" optionLabel="name" optionValue="viewedClient.lga_id" 
+              placeholder="-Select-"></p-dropdown>
+          </div>
+
+        </div>
+
+
+        <div class="p-fluid p-formgrid p-grid">
+          <div class="p-field p-col-12">
+            <label for="contactaddress"><b>Contact Address</b></label>
+            <textarea id="contactaddress" pInputText required rows="3" cols="20"
+              [(ngModel)]="viewedClient.address"></textarea>
+          </div>
+        </div>
+
+
+      </div>
+
+
+      <div>
+        <p-divider layout="vertical">
+
+        </p-divider>
+      </div>
+
+      <div class="p-col-5">
+
+        <div class="p-fluid p-formgrid p-grid">
+          <div class="p-field p-col-12 p-md-12">
+            <p-divider align="left" type="dashed">
+              <i class="fa fa-stethoscope p-mr-2"></i>
+              <b>Client Hospital Information</b>
+            </p-divider>
+          </div>
+          <div class="p-field p-col-12 p-md-12">
+            <label for="facilityname"><b>Facility Name</b></label>
+            <input readonly  id="facilityname" type="text" pInputText [(ngModel)]="viewedClient.heirarchyunits.name">
+            <!-- <small *ngIf="(facilityname.invalid && submitted) || (facilityname.dirty && facilityname.invalid)" class="p-error">
+              Invalid selection...</small> -->
+            
+            <button pButton pRipple type="button" type="button"
+                class="p-button-text p-mr-2 p-mb-2"
+                label="Choose..." (click) = "loadHeirarchyUnits(1)"></button>
+
+          </div>
+          
+
+
+        </div>
+
+        <div class="p-fluid p-formgrid p-grid">
+          <div class="p-field p-col-12 p-md-6">
+            <label for="referral_id"><b>Referral</b></label>
+            <p-dropdown inputId="referral_id" [options]="personalregistration.refferedfromMap" [filter]="true" filterBy="name"
+              [showClear]="true" [(ngModel)]="viewedClient.reffered_from_id" optionLabel="name"
+              optionValue="reffered_from_id" placeholder="-Select-"></p-dropdown>
+          </div>
+
+          <div class="p-field p-col-12 p-md-6">
+            <label for="target_group_id"><b>Target Group</b></label>
+            <p-dropdown inputId="target_group_id" [options]="personalregistration.targetGroupMap" [(ngModel)]="viewedClient.target_group_id"
+              optionLabel="name" optionValue="target_group_id" placeholder="-Select-"></p-dropdown>
+          </div>
+        </div>
+
+        <div class="p-fluid p-formgrid p-grid">
+          <div class="p-field p-col-12 p-md-6">
+            <label for="care_entry_id"><b>Care Entry Point</b></label>
+            <p-dropdown inputId="care_entry_id" [options]="personalregistration.careEntryPointMap"
+              [(ngModel)]="viewedClient.care_entry_point_id" optionLabel="name" optionValue="care_entry_point_id"
+              placeholder="-Select-"></p-dropdown>
+          </div>
+
+          <!--div class="p-field p-col-12 p-md-6">
+            <label for="target_group_id"><b>Prior ART</b></label>
+            <p-dropdown inputId="target_group_id" optionLabel="name" placeholder="-Select-"></p-dropdown>
+          </div-->
+        </div>
+
+
+      </div>
+    </div>
+
+
+
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <p-divider type="dashed">
+    </p-divider>
+    <div class="p-grid p-nogutter p-justify-end">
+        <p-button label="Next" (click)="nextPage()" icon="pi pi-angle-right" iconPos="right"></p-button>
+    </div>
+  </ng-template>
+
+
+
+  <p-dialog [(visible)]="facilityDialog" [style]="{width: '650px'}" [maximizable]="true" header="OU List" [modal]="true"
+    styleClass="p-fluid">
+    <p-tree [value]="roots" selectionMode="single" scrollHeight="600px" [loading]="loading"
+      [(selection)]="selectedHeirarchyUnit" [filter]="true" filterMode="strict" filterBy="name">
+      <ng-template let-node pTemplate="default">
+        <b>{{node.name}}</b>
+      </ng-template>
+
+    </p-tree>
+    <p-footer>
+      <div class="p-grid p-nogutter p-justify-end">
+        <p-button label="Set {{selectedHeirarchyUnit ? selectedHeirarchyUnit.name : ''}}" (onClick)="heirarchyOnSet()"
+          icon="pi pi-angle-right" iconPos="right"></p-button>
+      </div>
+    </p-footer>
+  </p-dialog>
+</p-card>

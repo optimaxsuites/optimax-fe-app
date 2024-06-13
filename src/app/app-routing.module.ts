@@ -27,6 +27,8 @@ import { QuotationModalComponent } from './components/quotation-modal/quotation-
 import { ProformaInvoiceModalComponent } from './components/proforma-invoice-modal/proforma-invoice-modal.component';
 import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dispatch-note-modal.component';
 import { MailVerificationComponent } from './accounts/mail-verification/mail-verification.component';
+import { CrmPageComponent } from './pages/crm-page/crm-page.component';
+import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
 
 const routes: Routes = [
   {
@@ -44,7 +46,7 @@ const routes: Routes = [
       {
         path: 'email-verification',
         component: MailVerificationComponent,
-      }
+      },
     ],
   },
 
@@ -93,17 +95,13 @@ const routes: Routes = [
         component: RfqModalComponent,
       },
       { path: '', redirectTo: '/purchase', pathMatch: 'full' },
-      
       { path: 'purchase/rfq-modal/:rfqId', component: RfqModalComponent },
 
-      
       {
         path: 'inventory',
         component: InventoryPageComponent,
       },
-      { path: 'inventory/inventory-form', 
-        component: InventoryFormComponent 
-      },
+      { path: 'inventory/inventory-form', component: InventoryFormComponent },
       {
         path: 'inventory/inventory-form/:id',
         component: InventoryFormComponent,
@@ -132,6 +130,14 @@ const routes: Routes = [
       {
         path: 'payment-record-received',
         component: PaymentRecordReceivedComponent,
+      },
+      {
+        path: 'crm',
+        component: CrmPageComponent,
+      },
+      {
+        path: 'crm/vendor-creation',
+        component: VendorCategoryCreationModalComponent,
       },
     ],
   },

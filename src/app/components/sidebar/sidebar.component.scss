@@ -5,14 +5,19 @@
   background-color: #224957; // #224957
   transition: left 0.3s ease;
   text-decoration: none;
-//   display: none;
+  //   display: none;
+
+  .salesIcon {
+    width: 2rem;
+    margin-right: 0.3rem;
+  }
 
   .side-bar-header {
     display: flex;
     align-items: center;
     justify-content: center;
 
-    img{
+    img {
       width: 70%;
       // background-color: #25925b;
     }
@@ -59,7 +64,7 @@
       }
 
       i {
-        margin-right: .5rem;
+        margin-right: 0.5rem;
         text-align: center;
       }
       p {

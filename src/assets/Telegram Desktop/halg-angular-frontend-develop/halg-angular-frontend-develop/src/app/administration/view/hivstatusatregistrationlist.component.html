@@ -1,0 +1,103 @@
+
+<div class="p-grid">
+	<div class="p-col-12">
+
+        <div class="card">
+			<p-toolbar styleClass="p-mb-4">
+				<ng-template pTemplate="left">
+					<button pButton pRipple label="Add Hiv Status At Registration" icon="pi pi-plus" class="p-mr-2 p-mb-2" (click)="goToAddHivstatusatregistration()"></button>
+					<button pButton pRipple label="Delete Hiv Status At Registration" icon="pi pi-trash" class="p-mb-2" (click)="deleteSelectedProducts()" [disabled]="!selectedProducts || !selectedProducts.length"></button>
+				</ng-template>
+
+				<ng-template pTemplate="right">
+					<button pButton pRipple label="Back" icon="pi pi-chevron-left" class="p-button-help p-mb-2" (click)="goBack()"></button>
+				</ng-template>
+            </p-toolbar>
+            <p-table #dt [value]="hivstatusatregistrationList" [rows]="10" [paginator]="true" [globalFilterFields]="['name','code']"
+         [rowHover]="true" dataKey="id"
+            styleClass="p-datatable-customers"
+            currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries" [showCurrentPageReport]="true">
+   
+            <ng-template pTemplate="caption">
+                <div class="p-d-flex p-flex-column p-flex-md-row p-jc-md-between table-header">
+                    <h5 class="p-m-0">Hiv Status At Registration Listing</h5>
+                    <span class="p-input-icon-left">
+                    <i class="pi pi-search"></i>
+                    <input pInputText type="text" (input)="dt.filterGlobal($event.target.value, 'contains')" placeholder="Search..." />
+                </span>
+                </div>
+            </ng-template>
+            <ng-template pTemplate="header">
+                <tr>
+                    <th style="width: 3rem">
+                        <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+                    </th>
+                    <th pSortableColumn="hiv_status_at_registration_id"> id <p-sortIcon field="hiv_status_at_registration_id"></p-sortIcon></th>
+                    <th pSortableColumn="name"> Name<p-sortIcon field="name"></p-sortIcon></th>
+                    <th pSortableColumn="code "> Code <p-sortIcon field="code"></p-sortIcon></th>
+                    <th pSortableColumn="description">  Description <p-sortIcon field="description"></p-sortIcon></th>
+                    
+                    <th>Action</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-hivstatusatregistration(>
+                <tr>
+                    <td>
+                        <p-tableCheckbox [value]="hivstatusatregistration"></p-tableCheckbox>
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{hivstatusatregistration.hiv_status_at_registration_id}}
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{hivstatusatregistration.name}}
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{hivstatusatregistration.code}}
+                    </td>
+                    <td><span class="p-column-title"></span>
+                        {{hivstatusatregistration.description}}
+                    </td>
+                    
+                    <td>
+                        <button pButton pRipple icon="pi pi-pencil" class="p-button-rounded p-button-success p-mr-2" (click)="editHivstatusatregistration(hivstatusatregistration)"></button>
+                        <button pButton pRipple icon="pi pi-trash" class="p-button-rounded p-button-warning" (click)="deleteProduct(product)"></button>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="summary">
+                <div class="p-d-flex p-ai-center p-jc-between">
+                    In total there are {{hivstatusatregistrationList ? hivstatusatregistrationList.length : 0 }} hivstatusatregistration.
+                </div>
+            </ng-template>
+        </p-table>   
+            </div>
+
+            <p-dialog [(visible)]="hivstatusatregistrationDialog" [style]="{width: '650px'}" header="Hivstatusatregistration Details" [modal]="true" styleClass="p-fluid">
+           
+                <ng-template pTemplate="content">
+                    <div class="p-col-12 p-fluid p-formgrid p-grid">
+                    <div class="p-col-12 p-field">
+                        <label for="name">Name</label>
+                        <input id="name" pInputText [(ngModel)]="selectedHivstatusatregistration.name">
+                    </div>
+                    <div class="p-col-6 p-field">
+                        <label for="code">Code</label>
+                        <input id="code" pInputText [(ngModel)]="selectedHivstatusatregistration.code">
+                    </div>
+                    
+            <div class="p-col-12 p-field">
+                <label for="description">Description </label>
+                <textarea id="description" pInputText [(ngModel)]="selectedHivstatusatregistration.description" required rows="3" cols="20"></textarea>
+            </div>
+                    </div>
+                    </ng-template>
+    
+                    <ng-template pTemplate="footer">
+                        <button pButton pRipple label="Cancel" icon="pi pi-times" class="p-button-text" (click)="hideselectedHivstatusatregistrationDialog()"></button>
+                        <button pButton pRipple label="Save" icon="pi pi-check" class="p-button-text" (click)="updateselectedHivstatusatregistration()"></button>
+                    </ng-template>
+                    </p-dialog>
+        </div>
+        </div>
+
+
