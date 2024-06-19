@@ -7,6 +7,8 @@ import {
   Validators,
 } from '@angular/forms';
 import {ErrorStateMatcher} from '@angular/material/core';
+import { ToastrService } from 'ngx-toastr';
+import { AuthenticationService } from '../../services/authentication/authentication.service';
 
 
 /** Error when invalid control is dirty, touched, or submitted. */
@@ -24,7 +26,15 @@ export class MyErrorStateMatcher implements ErrorStateMatcher {
 })
 export class RegisterComponent {
 
+  // this.toastr.error('You can only upload a maximum of 5 images.');
+
+  registerInfo: any = {};
+  signupDetails: any = {};
   hide = true;
+  submitted = false;
+  loading: boolean = false;
+
+
 
   fnFormControl = new FormControl('', [Validators.required]);
   lnFormControl = new FormControl('', [Validators.required]);
@@ -33,6 +43,11 @@ export class RegisterComponent {
   rewritePasswordFormControl = new FormControl('', [Validators.required]);
 
   matcher = new MyErrorStateMatcher();
+
+  constructor(
+    private toastr: ToastrService,
+    private authenticationService: AuthenticationService
+  ) {}
 
 
   userForm: FormGroup = new FormGroup({
@@ -44,8 +59,40 @@ export class RegisterComponent {
     rewritePassword: new FormControl('')
   })
 
-  createUser(){
-    
+  createUser(): void{
+    const { username, email, password, password2 } = this.registerInfo;
+    if (!username || !email || !password || !password2) {
+      this.toastr.error('All fields are required', 'Error');
+      // this.loading = false;
+      return;
+    }
+
+    if (password !== password2) {
+      this.toastr.error('Passwords do not match', 'Error');
+      // this.loading = false;
+      return;
+    }
+
+    const signupDetails = {
+      username,
+      email,
+      password
+    };
+
+      this.loading = true;
+
+
+    this.authenticationService.userRegistration(signupDetails).subscribe(
+      data => {
+        this.toastr.success('Registration successful', 'Success');
+        this.loading = false;
+        // Handle successful registration (e.g., redirect to login)
+      },
+      error => {
+        this.toastr.error('Registration failed', 'Error');
+        this.loading = false;
+      }
+    );
   }
 
 }
