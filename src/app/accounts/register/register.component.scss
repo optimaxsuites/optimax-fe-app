@@ -99,16 +99,20 @@
             }
             .login-btn-container{
                 text-align: center;
+                display: flex;
+                justify-content: center;
                 button{
                     width: 50%;
-                    color: #224957;
-                    background-color: #25925B;
+                    color: #fff;
+                    background-color: #224957;
                     border: none;
                     font-size: 1.2em;
                     font-weight: 500;
                     padding: 1rem 0;
                     border-radius: 5px;
                     transition: all 0.25s ease-out;
+                    display: flex;
+                    justify-content: center;
                 }
                 button:hover {
                     transform: translateY(-3px);
@@ -148,6 +152,11 @@
   .example-full-width {
     width: 100%;
   }
+
+  .custom-spinner {
+  stroke: #224957;
+  color: #224957;
+}
 
 
 

@@ -12,6 +12,8 @@ import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonModule } from '@angular/material/button';
 import { CdkScrollable } from '@angular/cdk/scrolling';
 
+import { ButtonModule } from "primeng/button";
+
 import { MatTabGroup, MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatRadioModule } from '@angular/material/radio';
@@ -26,6 +28,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { AsyncPipe } from '@angular/common';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
+import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -166,7 +169,7 @@ import { VendorCategoryCreationModalComponent } from './components/vendor-catego
     MailVerificationComponent,
     CrmPageComponent,
     VendorListComponent,
-    VendorCategoryCreationModalComponent,
+    VendorCategoryCreationModalComponent
   ],
   imports: [
     BrowserModule,
@@ -191,7 +194,9 @@ import { VendorCategoryCreationModalComponent } from './components/vendor-catego
     MatTabsModule,
     MatDividerModule,
     DropdownModule,
+    MatProgressSpinnerModule,
     // EditorModule,
+    ButtonModule,
     MatCardModule,
     BrowserAnimationsModule,
     HttpClientModule,
