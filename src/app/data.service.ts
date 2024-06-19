@@ -36,7 +36,7 @@ export class DataService {
   private loadExistingVCats() {
     const storedVCatList = localStorage.getItem('vCatList');
     if (storedVCatList) {
-      this.rfqList = JSON.parse(storedVCatList);
+      this.vCatList = JSON.parse(storedVCatList);
       this.vCatListSubject.next(this.vCatList);
     }
   }
