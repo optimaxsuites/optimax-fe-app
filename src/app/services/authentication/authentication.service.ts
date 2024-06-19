@@ -6,20 +6,20 @@ import { catchError, Observable, throwError } from 'rxjs';
   providedIn: 'root'
 })
 export class AuthenticationService {
-  private _apiBaseUrl = (environment as any).apiBaseUrl;
+  private _apiBaseUrl = environment.apiBaseUrl;
 
   constructor(private http: HttpClient) { }
 
-  public RegistrationMultiForm: any = {};
+  // public RegistrationMultiForm: any = {};
 
   userLogin(data: any): Observable<any> {
     return this.http
-        .post<any>(this.getBaseApiUrl() + "/auth/signin", data)
+        .post<any>(`${this._apiBaseUrl}/auth/signin`, data)
         .pipe(catchError(this.handleError));
   }
   userRegistration(data: any): Observable<any> {
     return this.http
-        .post<any>(this.getBaseApiUrl() + "/auth/signup", data)
+        .post<any>(`${this._apiBaseUrl}/auth/signup`, data)
         .pipe(catchError(this.handleError));
   }
 
@@ -36,10 +36,10 @@ export class AuthenticationService {
 
 
 
-  private getBaseApiUrl(): string {
-    return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
-  }
-  
+  // private getBaseApiUrl(): string {
+  //   return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
+  // }
+
   private handleError(error: HttpErrorResponse) {
     if (error.error instanceof ErrorEvent) {
         console.error("An error occurred:", error.error.message);
