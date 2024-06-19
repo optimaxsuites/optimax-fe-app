@@ -57,46 +57,77 @@ export class RegisterComponent {
     rewritePassword: new FormControl('')
   })
 
-  createUser(): void{
+  // createUser(): void{
 
-    const { username, email, password, password2 } = this.registerInfo;
+  //   const { username, email, password, password2 } = this.registerInfo;
 
 
-    if (password !== password2) {
+  //   if (password !== password2) {
+  //     this.toastr.error('Passwords do not match', 'Error');
+  //     // this.loading = false;
+  //     return;
+  //   }
+
+  //   if (!username || !email || !password || !password2) {
+  //     this.toastr.error('All fields are required', 'Error');
+  //     // this.loading = false;
+  //     return;
+  //   }else {
+  //     this.loading = true;
+
+  //     this.signupDetails.username = this.registerInfo.username;
+  //     this.signupDetails.password = this.registerInfo.password;
+  //     this.signupDetails.email = this.registerInfo.email;
+  //     this.signupDetails.role = ["admin"];
+  //   }
+
+  //   // const signupDetails = {
+  //   //   username,
+  //   //   email,
+  //   //   password
+  //   // };
+
+  //     // this.loading = true;
+
+
+  //   this.authenticationService.userRegistration(this.signupDetails).subscribe(
+  //     data => {
+  //       this.toastr.success('User registered successfully!', 'Success');
+  //       this.loading = false;
+  //       // Handle successful registration (e.g., redirect to login)
+  //     },
+  //     error => {
+  //       this.toastr.error('Registration failed', 'Error');
+  //       this.loading = false;
+  //     }
+  //   );
+  // }
+
+  createUser() {
+    this.submitted = true;
+
+    if (this.registerInfo.password !== this.registerInfo.rewritepassword) {
       this.toastr.error('Passwords do not match', 'Error');
-      // this.loading = false;
       return;
     }
 
-    if (!username || !email || !password || !password2) {
-      this.toastr.error('All fields are required', 'Error');
-      // this.loading = false;
-      return;
-    }else {
-      this.loading = true;
+    this.loading = true;
 
-      this.signupDetails.username = this.registerInfo.username;
-      this.signupDetails.password = this.registerInfo.password;
-      this.signupDetails.email = this.registerInfo.email;
-      this.signupDetails.role = ["admin"];
-    }
+    const signupDetails = {
+      username: this.registerInfo.username,
+      password: this.registerInfo.password,
+      email: this.registerInfo.email,
+      role: ['admin']
+    };
 
-    // const signupDetails = {
-    //   username,
-    //   email,
-    //   password
-    // };
-
-      // this.loading = true;
-
-
-    this.authenticationService.userRegistration(this.signupDetails).subscribe(
-      data => {
-        this.toastr.success('User registered successfully!', 'Success');
+    this.authenticationService.userRegistration(signupDetails).subscribe(
+      (data) => {
         this.loading = false;
-        // Handle successful registration (e.g., redirect to login)
+        this.toastr.success('User registered successfully!', 'Success');
+        // Optionally, redirect to another page after successful registration
+        // this.router.navigateByUrl('/login');
       },
-      error => {
+      (error) => {
         this.toastr.error('Registration failed', 'Error');
         this.loading = false;
       }
