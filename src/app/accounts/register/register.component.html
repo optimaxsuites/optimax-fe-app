@@ -26,12 +26,12 @@
           <input
             type="text"
             matInput
-            [formControl]="lnFormControl"
+            [formControl]="usernameFormControl"
             [errorStateMatcher]="matcher"
             [(ngModel)]="registerInfo.username"
 
           />
-          @if (lnFormControl.hasError('required')) {
+          @if (usernameFormControl.hasError('required')) {
           <mat-error>Last name is <strong>required</strong></mat-error>
           }
         </mat-form-field>
