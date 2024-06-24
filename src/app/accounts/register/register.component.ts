@@ -7,8 +7,12 @@ import {
   Validators,
 } from '@angular/forms';
 import {ErrorStateMatcher} from '@angular/material/core';
-import { ToastrService } from 'ngx-toastr';
+// import { ToastrService } from 'ngx-toastr';
 import { AuthenticationService } from '../../services/authentication/authentication.service';
+import { MessageService } from 'primeng/api';
+import { Route, Router } from '@angular/router';
+
+
 
 
 /** Error when invalid control is dirty, touched, or submitted. */
@@ -22,7 +26,8 @@ export class MyErrorStateMatcher implements ErrorStateMatcher {
 @Component({
   selector: 'app-register',
   templateUrl: './register.component.html',
-  styleUrls: ['./register.component.scss']
+  styleUrls: ['./register.component.scss'],
+  providers: [MessageService]
 })
 export class RegisterComponent {
 
@@ -43,8 +48,10 @@ export class RegisterComponent {
   matcher = new MyErrorStateMatcher();
 
   constructor(
-    private toastr: ToastrService,
-    private authenticationService: AuthenticationService
+    // private toastr: ToastrService,
+    private authenticationService: AuthenticationService,
+    private messageService: MessageService,
+    private router: Router
   ) {}
 
 
@@ -103,36 +110,125 @@ export class RegisterComponent {
   //   );
   // }
 
+  // createUser() {
+  //   this.submitted = true;
+
+  //   if (this.registerInfo.password !== this.registerInfo.rewritepassword) {
+  //     this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Passwords do not match' });
+  //     // this.toastr.error('Passwords do not match', 'Error');
+  //   console.log("password dont match");
+
+  //     return;
+  //   } 
+  //   else if (!this.registerInfo.username || !!this.registerInfo.email || !!this.registerInfo.password || !!this.registerInfo.password2) {
+  //     this.messageService.add({ severity: 'error', summary: 'Error', detail: 'All fields are required' });
+  //     // this.toastr.error('All fields are required', 'Error');
+  //   console.log("all field required");
+  //     // this.loading = false;
+  //     return;
+  //   } 
+
+  //   this.loading = true;
+
+  //   const signupDetails = {
+  //     username: this.registerInfo.username,
+  //     password: this.registerInfo.password,
+  //     email: this.registerInfo.email,
+  //     role: ['admin']
+  //   };
+  //   // console.log("Here as "+JSON.stringify(signupDetails));
+  //   this.authenticationService.userRegistration(signupDetails).subscribe(
+      
+  //     (data) => {
+  //       this.loading = false;
+  //       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'User registered successfully!' });
+  //       // this.toastr.success('User registered successfully!', 'Success');/
+  //       // Optionally, redirect to another page after successful registration
+  //       // this.router.navigateByUrl('/login');
+  //     },
+  //     (error) => {
+  //       // this.toastr.error('Registration failed', 'Error');
+  //       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Registration failed' });
+  //       console.log("reg failed");
+
+  //       this.loading = false;
+  //     }
+  //   );
+  // }
+
   createUser() {
     this.submitted = true;
 
+    // Check if passwords match
     if (this.registerInfo.password !== this.registerInfo.rewritepassword) {
-      this.toastr.error('Passwords do not match', 'Error');
-      return;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Passwords do not match' });
+        console.log("Passwords do not match");
+        return;
+    }
+
+    // Check if all fields are filled
+    if (!this.registerInfo.username || !this.registerInfo.email || !this.registerInfo.password || !this.registerInfo.rewritepassword) {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'All fields are required' });
+        console.log("All fields are required");
+        return;
     }
 
     this.loading = true;
 
     const signupDetails = {
-      username: this.registerInfo.username,
-      password: this.registerInfo.password,
-      email: this.registerInfo.email,
-      role: ['admin']
+        username: this.registerInfo.username,
+        password: this.registerInfo.password,
+        email: this.registerInfo.email,
+        role: ['admin']
     };
 
     this.authenticationService.userRegistration(signupDetails).subscribe(
-      (data) => {
-        this.loading = false;
-        this.toastr.success('User registered successfully!', 'Success');
-        // Optionally, redirect to another page after successful registration
-        // this.router.navigateByUrl('/login');
-      },
-      (error) => {
-        this.toastr.error('Registration failed', 'Error');
-        this.loading = false;
-      }
+      async (data) => {
+            this.loading = false;
+            this.messageService.add({ severity: 'success', summary: 'Success', detail: 'User registered successfully!' });
+            // Optionally, redirect to another page after successful registration
+            // this.router.navigateByUrl('/login');
+        },
+        (error) => {
+
+          if (error.status === 400) {
+            // Client-side validation error (invalid input)
+            this.messageService.add({ 
+                severity: 'error', 
+                summary: 'Registration Failed', 
+                detail: 'Invalid input. Please check your information and try again.' 
+            });
+        } else if (error.status === 409) {
+            // Conflict error (e.g., email already registered)
+            this.messageService.add({ 
+                severity: 'error', 
+                summary: 'Registration Failed', 
+                detail: 'Email address is already registered. Please use a different email or login.' 
+            });
+        } else if (error.status === 0) {
+            // Network error or server unreachable
+            this.messageService.add({ 
+                severity: 'error', 
+                summary: 'Registration Failed', 
+                detail: 'Unable to connect to the server. Please check your internet connection.' 
+            });
+        } else {
+            // Other server errors
+            this.messageService.add({ 
+                severity: 'error', 
+                summary: 'Registration Failed', 
+                detail: 'An unexpected error occurred. Please try again later.' 
+            });
+        }
+
+
+            // this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Registration failed' });
+            // console.log("Registration failed");
+            this.loading = false;
+        }
     );
-  }
+}
+
 
 }
 

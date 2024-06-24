@@ -13,6 +13,14 @@ import { MatButtonModule } from '@angular/material/button';
 import { CdkScrollable } from '@angular/cdk/scrolling';
 
 import { ButtonModule } from "primeng/button";
+import { EditorModule } from 'primeng/editor';
+import { PasswordModule } from 'primeng/password';
+import { TableModule } from 'primeng/table';
+import { ToastModule } from 'primeng/toast';
+// import { MessagesModule } from 'primeng/messages';
+// import { MessageModule } from 'primeng/message';
+// import { MessageService } from 'primeng/api';
+import { RippleModule } from 'primeng/ripple';
 
 import { MatTabGroup, MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
@@ -196,6 +204,11 @@ import { VendorCategoryCreationModalComponent } from './components/vendor-catego
     DropdownModule,
     MatProgressSpinnerModule,
     // EditorModule,
+    // MessagesModule,
+    // MessageModule,
+    RippleModule,
+    TableModule,
+    PasswordModule,
     ButtonModule,
     MatCardModule,
     BrowserAnimationsModule,
@@ -208,13 +221,14 @@ import { VendorCategoryCreationModalComponent } from './components/vendor-catego
     MatPaginatorModule,
     MatTableModule,
     MatRadioModule,
-    ToastrModule.forRoot({
-      timeOut: 10000,
-      positionClass: 'toast-top-right',
-      // preventDuplicates: true,
-    }),
+    ToastModule,
+    // ToastrModule.forRoot(),
   ],
-  providers: [provideAnimationsAsync(), provideNativeDateAdapter()],
+  providers: [
+    provideAnimationsAsync(),
+    provideNativeDateAdapter(),
+    // MessageService
+  ],
   bootstrap: [AppComponent],
 })
 export class AppModule {}

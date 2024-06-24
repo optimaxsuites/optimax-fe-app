@@ -1,10 +1,10 @@
 <div class="main">
 
-  <div class="add-new-inventory-button">
+  <div class="add-new-inventory-button mb-4">
       <button class="btn" (click)="navigateToForm()">Add New Item <i class="fas fa-plus"></i></button>
   </div>
   
-  <div class="table-width">
+  <!-- <div class="table-width">
       <table id="inventory-table">
           <thead>
               <tr>
@@ -13,15 +13,9 @@
                   <th>Initial Stock</th>
                   <th>Buying Price</th>
                   <th>Selling Price</th>
-                  <!-- <th>Inventory Ledger</th>
-                  <th>Purchase Ledger</th>
-                  <th>Sales Ledger</th> -->
                   <th>Tax Rate</th>
-                  <!-- <th>HSN</th> -->
-                  <!-- <th>Current Stock</th> -->
                   <th>Total Sold Quantity</th>
                   <th>Total Purchase Quantity</th>
-                  <!-- <th>Tag</th> -->
                   <th>Actions</th>
               </tr>
           </thead>
@@ -37,7 +31,6 @@
                                 <img [src]="image" alt="{{ item.itemName }}" class="item-image{{ i + 1 }}"/>
                             </div>
                         </div>
-                        <!-- <img [src]="item.images" alt="{{ item.itemName }}" class="item-image"/> -->
                         <br>
                         <label for="" class="mb-2"><b>Description</b></label>
                         <p>{{ item.description | stripHtml }}</p>
@@ -53,15 +46,9 @@
 
                   </td>
                   <td class="top-products-table-data">{{ item.sellingPrice }}</td>
-                  <!-- <td class="top-products-table-data">{{ item.inventoryLedger }}</td> -->
-                  <!-- <td class="top-products-table-data">{{ item.purchaseLedger }}</td> -->
-                  <!-- <td class="top-products-table-data">{{ item.salesLedger }}</td> -->
                   <td class="top-products-table-data">{{ item.taxRate }}</td>
-                  <!-- <td class="top-products-table-data">{{ item.hsn }}</td> -->
-                  <!-- <td class="top-products-table-data">{{ item.currentStock }}</td> -->
                   <td class="top-products-table-data">{{ item.totalSoldQuantity }}</td>
                   <td class="top-products-table-data">{{ item.totalPurchaseQuantity }}</td>
-                  <!-- <td class="top-products-table-data">{{ item.tag }}</td> -->
                   <td class="top-products-table-data actions">
                     <i (click)="editItem(item.id)" class="fa-regular fa-pen-to-square"></i>
                     <i (click)="deleteItem(item.id)" class="fa-solid fa-trash"></i>
@@ -69,5 +56,94 @@
               </tr>
           </tbody>
       </table>
+  </div> -->
+
+  <div class="card">
+    <p-table 
+        [value]="items" 
+        [paginator]="true" 
+        styleClass="p-datatable-striped" 
+        [rows]="15">
+            <ng-template pTemplate="header" class="header">
+                <tr>
+                    <th class="table-item">Item</th>
+                    <th class="table-item">Part No</th>
+                    <th class="table-item">Initial Stock</th>
+                    <th class="table-item">Buying Price</th>
+                    <th class="table-item">Selling Price</th>
+                    <!-- <th>Inventory Ledger</th>
+                    <th>Purchase Ledger</th>
+                    <th>Sales Ledger</th> -->
+                    <th class="table-item">Tax Rate</th>
+                    <!-- <th>HSN</th> -->
+                    <!-- <th>Current Stock</th> -->
+                    <th class="table-item">Total Sold Quantity</th>
+                    <th class="table-item">Total Purchase Quantity</th>
+                    <!-- <th>Tag</th> -->
+                    <th class="table-item">Actions</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" class="t-body" let-item let i = index>
+                <tr>
+                    <td class="top-products-table-data item-cell table-item">
+                        {{ item.itemName }}
+                        <div class="tooltip-content">
+                          <label for="" class="mb-2"><b>Item Image</b></label>
+                          <br>
+                          <div class="image-wrapper">
+                              <div *ngFor="let image of item.images; let i = index" class="image-container">
+                                  <img [src]="image" alt="{{ item.itemName }}" class="item-image{{ i + 1 }}"/>
+                              </div>
+                          </div>
+                          <!-- <img [src]="item.images" alt="{{ item.itemName }}" class="item-image"/> -->
+                          <br>
+                          <label for="" class="mb-2"><b>Description</b></label>
+                          <p>{{ item.description | stripHtml }}</p>
+                        </div>
+                    </td>
+                    <td class="top-products-table-data table-item">{{ item.partNo }}</td>
+                    <td class="top-products-table-data table-item">{{ item.initialStock }}</td>
+                    <td class="top-products-table-data table-item">
+                      <span class="input-span">
+                          {{ extractCurrencyCode((selectedCurrency$ | async)!) }}
+                        </span>
+                      {{ item.buyingPrice }}
+  
+                    </td>
+                    <td class="top-products-table-data table-item">{{ item.sellingPrice }}</td>
+                    <!-- <td class="top-products-table-data">{{ item.inventoryLedger }}</td> -->
+                    <!-- <td class="top-products-table-data">{{ item.purchaseLedger }}</td> -->
+                    <!-- <td class="top-products-table-data">{{ item.salesLedger }}</td> -->
+                    <td class="top-products-table-data table-item">{{ item.taxRate }}</td>
+                    <!-- <td class="top-products-table-data">{{ item.hsn }}</td> -->
+                    <!-- <td class="top-products-table-data">{{ item.currentStock }}</td> -->
+                    <td class="top-products-table-data table-item">{{ item.totalSoldQuantity }}</td>
+                    <td class="top-products-table-data table-item">{{ item.totalPurchaseQuantity }}</td>
+                    <!-- <td class="top-products-table-data">{{ item.tag }}</td> -->
+                    <td class="top-products-table-data actions table-item">
+                      <i (click)="editItem(item.id)" class="fa-regular fa-pen-to-square"></i>
+                      <i (click)="deleteItem(item.id)" class="fa-solid fa-trash"></i>
+                    </td>
+                </tr>
+            </ng-template>
+            <!-- <ng-template pTemplate="paginatorleft">
+                <p-button type="button" icon="pi pi-plus" styleClass="p-button-text" />
+            </ng-template>
+            <ng-template pTemplate="paginatorright">
+                <p-button type="button" icon="pi pi-cloud" styleClass="p-button-text" />
+            </ng-template> -->
+    </p-table>
   </div>
+
+
+
+  <!-- <div class="table"> -->
+    
+  <!-- </div> -->
+
+
+
+
+
+
 </div>

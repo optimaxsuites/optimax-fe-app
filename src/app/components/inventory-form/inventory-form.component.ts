@@ -8,6 +8,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { NumberCurrencyPopupComponent } from '../number-currency-popup/number-currency-popup.component';
 import { ToastrService } from 'ngx-toastr';
 import { InventoryItem } from '../../interface/data';
+import { MessageService } from 'primeng/api';
+
 
 
 
@@ -17,30 +19,34 @@ import { InventoryItem } from '../../interface/data';
 @Component({
   selector: 'app-inventory-form',
   templateUrl: './inventory-form.component.html',
-  styleUrl: './inventory-form.component.scss'
+  styleUrl: './inventory-form.component.scss',
+  providers: [MessageService]
 })
 export class InventoryFormComponent implements OnInit {
   showLogo = false;
 
-  // inventoryItem: InventoryItem[] = [];
+  // inventoryItem: InventoryItem[] = [];  
 
-  inventoryItem: InventoryItem = {
-    id: '',
-    itemName: '',
-    partNo: 0,
-    image: '',
-    description: '',
-    buyingPrice: 0,
-    sellingPrice: 0,
-    initialStock: 0,
-    purchaseLedger: '',
-    salesLedger: '',
-    inventoryLedger: '',
-    taxRate: 0,
-    hsn: '',
-    tag: '',
-    images: []
-  };
+
+  inventoryItem: any = {};
+
+  // inventoryItem: InventoryItem = {
+  //   id: '',
+  //   itemName: '',
+  //   partNo: 0,
+  //   image: '',
+  //   description: '',
+  //   buyingPrice: 0,
+  //   sellingPrice: 0,
+  //   initialStock: 0,
+  //   purchaseLedger: '',
+  //   salesLedger: '',
+  //   inventoryLedger: '',
+  //   taxRate: 0,
+  //   hsn: '',
+  //   tag: '',
+  //   images: []
+  // };
 
   // inventoryItem = { 
   //   id: '', 
@@ -269,7 +275,7 @@ currencyList = [
     private inventoryService: InventoryService,
     private dropdownService: DropdownService,
     private dialogRef:MatDialog,
-    private toastr: ToastrService,
+    private messageService: MessageService,
   ) {}
 
   ngOnInit() {
@@ -308,7 +314,9 @@ currencyList = [
     const files = event.target.files;
     if (files.length > 0) {
       if ((this.inventoryItem.images ? this.inventoryItem.images.length : 0) + files.length > 5) {
-        this.toastr.error('You can only upload a maximum of 5 images.');
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'You can only upload a maximum of 5 images' });
+
+        // this.toastr.error('You can only upload a maximum of 5 images.');
         // alert('masimum picture selected')
         return;
       }
@@ -321,7 +329,9 @@ currencyList = [
           }
           this.inventoryItem.images.push(reader.result as string);
           this.showLogo = true;
-          this.toastr.success('Image added successfully!');
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Image added successfully!' });
+          
+          // this.toastr.success('Image added successfully!');
         };
         reader.readAsDataURL(file);
       }
