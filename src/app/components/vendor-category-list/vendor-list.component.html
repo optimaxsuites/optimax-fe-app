@@ -1,0 +1,103 @@
+<div class="container-fluid">
+  <div class="container-header">
+    <button class="btn create-invoice-btn" (click)="openDialog('category')">
+      Create New Vendor Category
+    </button>
+  </div>
+  <div *ngIf="vCatList.length > 0">
+    <section class="selectClients" *ngFor="let vCat of vCatList">
+      <div class="buttonDiv">
+        <button class="newVendor" (click)="openDialog('individual')">
+          Create New Vendor
+        </button>
+      </div>
+      <mat-expansion-panel hideToggle class="con-sec">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <span class="headerText"> {{ vCat.category }} </span>
+          </mat-panel-title>
+          <div class="headSection">
+            <p>View vendors</p>
+          </div>
+        </mat-expansion-panel-header>
+        <div class="asd">
+          <div class="top-products-container">
+            <div class="top-products">
+              <div class="top-products-table-container">
+                <table class="top-products-table w3-table w3-striped">
+                  <thead>
+                    <tr class="top-products-table-row">
+                      <th class="top-products-table-head checkbox"></th>
+                      <th class="top-products-table-head col-1">Name</th>
+                      <th class="top-products-table-head col-1">CAC Number</th>
+                      <th class="top-products-table-head col-1">Address</th>
+                      <th class="top-products-table-head col-1">
+                        Phone Number
+                      </th>
+                      <th class="top-products-table-head col-1">Email</th>
+                      <th class="top-products-table-head col-1">Services</th>
+                      <th class="top-products-table-head col-1">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      class="top-products-table-row"
+                      *ngFor="let iVen of individualVendorList"
+                    >
+                      <td class="top-products-table-data">
+                        <input type="checkbox" class="check" />
+                      </td>
+                      <td class="top-products-table-data">
+                        {{ iVen.vendorName }}
+                      </td>
+                      <td class="top-products-table-data">
+                        {{ iVen.vendorCACNum }}
+                      </td>
+                      <td class="top-products-table-data">
+                        {{ iVen.vendorAddress }}
+                      </td>
+                      <td class="top-products-table-data">
+                        {{ iVen.vendorPhoneNumber }}
+                      </td>
+
+                      <td class="top-products-table-data">
+                        {{ iVen.vendorEmail }}
+                      </td>
+                      <td class="top-products-table-data">
+                        {{ iVen.vendorServices }}
+                      </td>
+
+                      <td class="top-products-table-data col-1">
+                        <div class="actionDiv">
+                          <div class="image-container">
+                            <img
+                              (click)="editVendor(iVen)"
+                              class="actionTags"
+                              src="../../../assets/Edit.svg"
+                              alt=""
+                            />
+                            <span class="tooltip">Edit</span>
+                          </div>
+
+                          <div class="image-container">
+                            <img
+                              (click)="deleteVendor(iVen.id)"
+                              class="actionTags"
+                              src="../../../assets/delete (1).svg"
+                              alt=""
+                            />
+                            <span class="tooltip">Delete</span>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-expansion-panel>
+    </section>
+  </div>
+</div>

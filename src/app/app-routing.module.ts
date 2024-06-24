@@ -28,7 +28,7 @@ import { ProformaInvoiceModalComponent } from './components/proforma-invoice-mod
 import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dispatch-note-modal.component';
 import { MailVerificationComponent } from './accounts/mail-verification/mail-verification.component';
 import { CrmPageComponent } from './pages/crm-page/crm-page.component';
-import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
+import { VendorManagementComponent } from './components/vendorMangement/vendorManagement';
 
 const routes: Routes = [
   {
@@ -137,7 +137,7 @@ const routes: Routes = [
       },
       {
         path: 'crm/vendor-creation',
-        component: VendorCategoryCreationModalComponent,
+        component: VendorManagementComponent,
       },
     ],
   },

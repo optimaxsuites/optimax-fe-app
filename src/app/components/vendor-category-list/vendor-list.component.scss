@@ -21,10 +21,6 @@
   border-radius: 10px;
 }
 
-.downSvg {
-  height: 3rem;
-}
-
 // top product
 
 .top-products {
@@ -63,6 +59,11 @@ th {
   background-color: #25925b;
   color: #ffff;
 }
+
+th:nth-last-child(1) {
+  text-align: center;
+}
+
 td {
   padding: 0.6rem;
   box-sizing: border-box;
@@ -94,12 +95,36 @@ td {
   font-size: 1.5em;
 }
 
+.newVendor {
+  border: none;
+  padding: 1rem;
+  border-radius: 0.9rem;
+  transition: 0.5s ease;
+}
+
+.newVendor:hover {
+  background-color: #7f8e93;
+  color: #fff;
+}
+
 .actionDiv {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 2rem;
-  margin-right: 2rem;
+  margin-left: 2rem;
+  margin-right: 1rem;
+}
+
+.checkbox {
+  width: 3%;
+}
+
+.check {
+  margin-top: 0.6rem;
+  width: 2rem;
+  height: 1.5rem;
+  border: 1px solid red;
 }
 
 .image-container {
