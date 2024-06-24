@@ -1,5 +1,5 @@
-
-<form class="login">
+<p-toast></p-toast>
+<div class="login">
   <div class="logo-img">
     <img src="../../../assets/Logo-green.png" alt="Logo" />
   </div>
@@ -11,9 +11,10 @@
         <mat-label>Email</mat-label>
         <input
           type="email"
+          name="email"
           matInput
-          [formControl]="emailFormControl"
           [errorStateMatcher]="matcher"
+          [(ngModel)]="loginDetails.email"
           placeholder="Ex. pat@example.com"
         />
         @if (emailFormControl.hasError('email') &&
@@ -30,9 +31,10 @@
         <mat-label>Password</mat-label>
         <input
           type="password"
+          name="password"
           matInput
           [type]="hide ? 'password' : 'text'"
-          [formControl]="passwordFormControl"
+          [(ngModel)]="loginDetails.password"
           [errorStateMatcher]="matcher"
         />
         <button
@@ -60,9 +62,13 @@
     </div>
   </div>
   <div class="login-btn-container mt-3">
-    <button routerLink="dashboard">Login</button>
+    <!-- <button (click)="userLoginAction()">Login</button> -->
+    <button (click)="userLoginAction()">
+      <mat-spinner *ngIf="loading" diameter="20" class="custom-spinner"></mat-spinner>
+      <span *ngIf="!loading">Login</span>
+    </button>
   </div>
   <div class="bottom">
     <p>New to Oprimax? <span routerLink="/signup">sign-up</span> here</p>
   </div>
-</form>
+</div>

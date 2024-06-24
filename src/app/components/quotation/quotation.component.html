@@ -6,7 +6,7 @@
         <div class="top-products-container">
             <div class="top-products">
                 <div class="top-products-table-container">
-                  <table class="top-products-table w3-table w3-striped">
+                  <!-- <table class="top-products-table w3-table w3-striped">
                     <thead>
                       <tr class="top-products-table-row">
                         <th class="top-products-table-head">Date/Time</th>
@@ -51,8 +51,66 @@
                         </td>
                       </tr>
                     </tbody>
-                  </table>
+                  </table> -->
                   
+
+
+
+
+                  <div class="card">
+                    <p-table 
+                        [value]="tableData" 
+                        styleClass="p-datatable-striped" 
+                        [tableStyle]="{'min-width': '50rem'}">
+                            <ng-template pTemplate="header">
+                                <tr>
+                                  <th class="top-products-table-head">Date/Time</th>
+                                  <th class="top-products-table-head">Project Title</th>
+                                  <th class="top-products-table-head">Quotation No</th>
+                                  <th class="top-products-table-head">Client Name</th>
+                                  <th class="top-products-table-head">Amount</th>
+                                  <th class="top-products-table-head">Status</th>
+                                  <th class="top-products-table-head col-2">Action</th>
+                                </tr>
+                            </ng-template>
+                            <ng-template pTemplate="body" let-item>
+                                <tr>
+                                  <td class="top-products-table-data">{{ item.dateAndTime }}</td>
+                                  <td class="top-products-table-data">{{ item.invoice }}</td>
+                                  <td class="top-products-table-data">{{ item.invoiceNo}}</td>
+                                  <td class="top-products-table-data">{{item.clientName}}</td>
+                                  <td class="top-products-table-data"> ₦{{ item.amount }}</td>
+                                  <td class="top-products-table-data">{{item.status}}</td>
+                                  <td class="top-products-table-data action">
+                                    <span class="tb-action-btn1" 
+                                      mat-raised-button 
+                                      #tooltip="matTooltip"
+                                      matTooltip="Open"
+                                      matTooltipPosition="below" >
+                                        <i class="fa-regular fa-folder-open"></i>
+                                    </span>
+                                    <span class="tb-action-btn2 ms-4 me-4" 
+                                      mat-raised-button 
+                                      #tooltip="matTooltip"
+                                      matTooltip="Edit"
+                                      matTooltipPosition="below" >
+                                        <i class="fas fa-file-pen"></i>
+                                    </span>
+                                    <span class="tb-action-btn3" 
+                                      mat-raised-button 
+                                      #tooltip="matTooltip"
+                                      matTooltip="Delete"
+                                      matTooltipPosition="below" >
+                                        <i class="fas fa-trash"></i>
+                                    </span>
+                                  </td>
+                                </tr>
+                            </ng-template>
+                    </p-table>
+                  </div>
+
+
+
                 </div>
               </div>
         </div>

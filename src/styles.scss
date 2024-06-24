@@ -78,10 +78,10 @@ $ERP-FE-theme: mat.define-light-theme(
 
 /* You can add global styles to this file, and also import other style files */
 * {
-  padding: 0;
-  margin: 0;
+  // padding: 0;
+  // margin: 0;
   list-style: none;
-  font-weight: 400;
+  // font-weight: 400;
   text-decoration: none;
   font-family: "Roboto Slab", serif;
   // -webkit-font-smoothing: antialiased;
@@ -103,4 +103,12 @@ body {
 body {
   font-size: 10px;
 }
+}
+
+.p-toast{
+  font-size: 1em;
+}
+
+.table-item {
+  font-size: 1.35em; /* Adjust the font size as needed */
 }
