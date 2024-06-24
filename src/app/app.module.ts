@@ -169,7 +169,8 @@ import { VendorManagementComponent } from './components/vendorMangement/vendorMa
     MailVerificationComponent,
     CrmPageComponent,
     VendorListComponent,
-    VendorCategoryCreationModalComponent
+    VendorManagementComponent
+    // VendorCategoryCreationModalComponent
   ],
   imports: [
     BrowserModule,

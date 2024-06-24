@@ -4,7 +4,7 @@
       <span>Vendor Category</span>
       <br />
       <input
-        [(ngModel)]="category"
+        [(ngModel)]="categoryName"
         class="inputField"
         type="text"
         placeholder="Enter Category Name"
@@ -19,73 +19,67 @@
 
 <section *ngIf="formType === 'individual'">
   <div class="first-container01">
-  
-      <div class="vendorCategory">
-        <span>Vendor Name</span>
-        <br />
-        <input
-          [(ngModel)]="vendorName"
-          class="inputField"
-          type="text"
-          placeholder="Name"
-        />
-      </div>
-      <div class="vendorCategory">
-        <span>Vendor CAC Number</span>
-        <br />
-        <input
-          [(ngModel)]="vendorCACNum"
-          class="inputField"
-          type="text"
-          placeholder="CAC Number"
-        />
-     
+    <div class="vendorCategory">
+      <span>Vendor Name</span>
+      <br />
+      <input
+        [(ngModel)]="vendorName"
+        class="inputField"
+        type="text"
+        placeholder="Name"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>Vendor CAC Number</span>
+      <br />
+      <input
+        [(ngModel)]="vendorCACNum"
+        class="inputField"
+        type="text"
+        placeholder="CAC Number"
+      />
     </div>
 
-  
-      <div class="vendorCategory">
-        <span>Vendor Address</span>
-        <br />
-        <input
-          [(ngModel)]="vendorAddress"
-          class="inputField"
-          type="text"
-          placeholder="Address"
-        />
-      </div>
-      <div class="vendorCategory">
-        <span>Vendor Phone Number</span>
-        <br />
-        <input
-          [(ngModel)]="vendorPhoneNumber"
-          class="inputField"
-          type="text"
-          placeholder="Phone"
-        />
-     
+    <div class="vendorCategory">
+      <span>Vendor Address</span>
+      <br />
+      <input
+        [(ngModel)]="vendorAddress"
+        class="inputField"
+        type="text"
+        placeholder="Address"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>Vendor Phone Number</span>
+      <br />
+      <input
+        [(ngModel)]="vendorPhoneNumber"
+        class="inputField"
+        type="text"
+        placeholder="Phone"
+      />
     </div>
 
-   
-      <div class="vendorCategory">
-        <span>Vendor Email</span>
-        <br />
-        <input
-          [(ngModel)]="vendorEmail"
-          class="inputField"
-          type="text"
-          placeholder="Email"
-        />
-      </div>
-      <div class="vendorCategory">
-        <span>Vendor Services</span>
-        <br />
-        <input
-          [(ngModel)]="vendorServices"
-          class="inputField"
-          type="text"
-          placeholder="Services"
-        />
-     
+    <div class="vendorCategory">
+      <span>Vendor Email</span>
+      <br />
+      <input
+        [(ngModel)]="vendorEmail"
+        class="inputField"
+        type="text"
+        placeholder="Email"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>Vendor Services</span>
+      <br />
+      <input
+        [(ngModel)]="vendorServices"
+        class="inputField"
+        type="text"
+        placeholder="Services"
+      />
     </div>
   </div>
 

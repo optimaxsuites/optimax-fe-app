@@ -58,12 +58,6 @@ export class VendorListComponent implements OnInit {
     this.dataService.deleteVendor(id);
   }
 
-  // openDialog(type: string) {
-  //   this.dialog.open(VendorManagementComponent, {
-  //     data: { formType: type },
-  //   });
-  // }
-
   openDialog(type: string, vendor?: any) {
     const dialogRef = this.dialog.open(VendorManagementComponent, {
       data: {
@@ -71,5 +65,9 @@ export class VendorListComponent implements OnInit {
         iVenList: vendor || {},
       },
     });
+  }
+
+  toggleCheckbox(id: string) {
+    this.checkboxState[id] = !this.checkboxState[id];
   }
 }

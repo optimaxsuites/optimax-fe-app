@@ -42,7 +42,9 @@ export class VendorManagementComponent {
     this.iVenList = this.data.iVenList;
   }
 
-  category: string = '';
+  categoryName: string = '';
+  categoryCode: string = '';
+  categoryDesc: string = '';
   vendorName: string = '';
   vendorCACNum: string = '';
   vendorAddress: string = '';
@@ -51,9 +53,9 @@ export class VendorManagementComponent {
   vendorServices: string = '';
 
   saveCategory() {
-    if (this.category) {
+    if (this.categoryName) {
       const vendorData = {
-        category: this.category,
+        category: this.categoryName,
       };
       console.log(vendorData);
 
@@ -95,7 +97,9 @@ export class VendorManagementComponent {
   }
 
   clearVendorInput() {
-    this.category = '';
+    this.categoryName = '';
+    this.categoryCode = '';
+    this.categoryDesc = '';
     this.vendorAddress = '';
     this.vendorCACNum = '';
     this.vendorEmail = '';

@@ -4,7 +4,92 @@
       Create New Vendor Category
     </button>
   </div>
-  <div *ngIf="vCatList.length > 0">
+  <section class="selectClients" *ngFor="let vCat of vCatList">
+    <div class="asd">
+      <div class="top-products-container">
+        <div class="top-products">
+          <div class="top-products-table-container">
+            <table class="top-products-table w3-table w3-striped">
+              <thead>
+                <tr class="top-products-table-row">
+                  <th class="top-products-table-head checkbox"></th>
+                  <th class="top-products-table-head col-1">
+                    {{ vCat.categoryName }}
+                  </th>
+                  <th class="top-products-table-head col-1">{{vCat.categoryCode}</th>
+                  <th class="top-products-table-head col-1">Address</th>
+                  <th class="top-products-table-head col-1">Phone Number</th>
+                  <th class="top-products-table-head col-1">Email</th>
+                  <th class="top-products-table-head col-1">Services</th>
+                  <th class="top-products-table-head col-1">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  class="top-products-table-row"
+                  *ngFor="let iVen of individualVendorList"
+                  [ngClass]="{ 'checked-row': checkboxState[iVen.id] }"
+                >
+                  <td class="top-products-table-data">
+                    <input
+                      type="checkbox"
+                      class="check"
+                      (change)="toggleCheckbox(iVen.id)"
+                    />
+                  </td>
+                  <td class="top-products-table-data">
+                    {{ iVen.vendorName }}
+                  </td>
+                  <td class="top-products-table-data">
+                    {{ iVen.vendorCACNum }}
+                  </td>
+                  <td class="top-products-table-data">
+                    {{ iVen.vendorAddress }}
+                  </td>
+                  <td class="top-products-table-data">
+                    {{ iVen.vendorPhoneNumber }}
+                  </td>
+
+                  <td class="top-products-table-data">
+                    {{ iVen.vendorEmail }}
+                  </td>
+                  <td class="top-products-table-data">
+                    {{ iVen.vendorServices }}
+                  </td>
+
+                  <td class="top-products-table-data col-1">
+                    <div class="actionDiv">
+                      <div class="image-container">
+                        <img
+                          (click)="editVendor(iVen)"
+                          class="actionTags"
+                          src="../../../assets/Edit.svg"
+                          alt=""
+                        />
+                        <span class="tooltip">Edit</span>
+                      </div>
+
+                      <div class="image-container">
+                        <img
+                          (click)="deleteVendor(iVen.id)"
+                          class="actionTags"
+                          src="../../../assets/delete (1).svg"
+                          alt=""
+                        />
+                        <span class="tooltip">Delete</span>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- <div *ngIf="vCatList.length > 0">
     <section class="selectClients" *ngFor="let vCat of vCatList">
       <div class="buttonDiv">
         <button class="newVendor" (click)="openDialog('individual')">
@@ -43,9 +128,10 @@
                     <tr
                       class="top-products-table-row"
                       *ngFor="let iVen of individualVendorList"
+                      [ngClass]="{ 'checked-row': checkboxState[iVen.id] }"
                     >
                       <td class="top-products-table-data">
-                        <input type="checkbox" class="check" />
+                        <input type="checkbox" class="check" (change)="toggleCheckbox(iVen.id)"/>
                       </td>
                       <td class="top-products-table-data">
                         {{ iVen.vendorName }}
@@ -99,5 +185,5 @@
         </div>
       </mat-expansion-panel>
     </section>
-  </div>
+  </div> -->
 </div>

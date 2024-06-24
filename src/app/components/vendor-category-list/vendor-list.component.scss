@@ -102,6 +102,10 @@ td {
   transition: 0.5s ease;
 }
 
+.checked-row {
+  color: red;
+}
+
 .newVendor:hover {
   background-color: #7f8e93;
   color: #fff;
