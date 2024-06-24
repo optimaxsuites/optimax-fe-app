@@ -1,11 +1,11 @@
-<form class="login" [formGroup]="userForm">
+<form class="login">
   <div class="logo-img">
     <img src="../../../assets/Logo-green.png" alt="Logo" />
   </div>
   <h4 class="text-center mt-3 mb-4">Welcome to OPTIMAX</h4>
   <div class="content">
     <div class="wrapper-form">
-      <div class="form">
+      <!-- <div class="form">
         <mat-form-field class="example-full-width">
           <mat-label>First Name</mat-label>
           <input
@@ -13,22 +13,25 @@
             matInput
             [formControl]="fnFormControl"
             [errorStateMatcher]="matcher"
+            [(ngModel)]="registerInfo.firstName"
           />
           @if (fnFormControl.hasError('required')) {
           <mat-error>First name is <strong>required</strong></mat-error>
           }
         </mat-form-field>
-      </div>
+      </div> -->
       <div class="form">
         <mat-form-field class="example-full-width">
-          <mat-label>Last Name</mat-label>
+          <mat-label>Username</mat-label>
           <input
             type="text"
             matInput
-            [formControl]="lnFormControl"
+            [formControl]="usernameFormControl"
             [errorStateMatcher]="matcher"
+            [(ngModel)]="registerInfo.username"
+
           />
-          @if (lnFormControl.hasError('required')) {
+          @if (usernameFormControl.hasError('required')) {
           <mat-error>Last name is <strong>required</strong></mat-error>
           }
         </mat-form-field>
@@ -45,6 +48,8 @@
             [formControl]="emailFormControl"
             [errorStateMatcher]="matcher"
             placeholder="Ex. pat@example.com"
+            [(ngModel)]="registerInfo.email"
+
           />
           @if (emailFormControl.hasError('email') &&
           !emailFormControl.hasError('required')) {
@@ -66,6 +71,7 @@
             [type]="hide ? 'password' : 'text'"
             [formControl]="passwordFormControl"
             [errorStateMatcher]="matcher"
+            [(ngModel)]="registerInfo.password"
           />
           <button
             mat-icon-button
@@ -90,6 +96,7 @@
             [type]="hide ? 'password' : 'text'"
             [formControl]="rewritePasswordFormControl"
             [errorStateMatcher]="matcher"
+            [(ngModel)]="registerInfo.rewritepassword"
           />
           <button
             mat-icon-button
@@ -118,7 +125,10 @@
   </div>
   <div class="login-btn-container mt-3">
     <!-- <button (onclick)="createUser()" routerLink="dashboard">Create account</button> -->
-    <button routerLink="/email-verification">Create account</button>
+    <button (click)="createUser()">
+      <mat-spinner *ngIf="loading" diameter="20" class="custom-spinner"></mat-spinner>
+      <span *ngIf="!loading">Create account</span>
+    </button>
 
   </div>
   <div class="bottom">

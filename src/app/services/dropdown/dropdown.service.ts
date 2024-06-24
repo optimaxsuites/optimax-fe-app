@@ -1,40 +1,34 @@
+// dropdown.service.ts
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DropdownService {
+  private dropdownState = new BehaviorSubject<{ [id: string]: boolean }>({});
+  private selectedItems = new BehaviorSubject<{ [id: string]: string | null }>({});
 
-  private dropdownOpenSubjects: { [key: string]: BehaviorSubject<boolean> } = {};
-  private selectedItemSubjects: { [key: string]: BehaviorSubject<string | null> } = {};
-
-  isDropdownOpen$(id: string) {
-    if (!this.dropdownOpenSubjects[id]) {
-      this.dropdownOpenSubjects[id] = new BehaviorSubject<boolean>(false);
-    }
-    return this.dropdownOpenSubjects[id].asObservable();
+  isDropdownOpen$(id: string): Observable<boolean> {
+    return this.dropdownState.asObservable().pipe(
+      map(state => state[id] || false)
+    );
   }
 
-  getSelectedItem$(id: string) {
-    if (!this.selectedItemSubjects[id]) {
-      this.selectedItemSubjects[id] = new BehaviorSubject<string | null>(null);
-    }
-    return this.selectedItemSubjects[id].asObservable();
+  getSelectedItem$(id: string): Observable<string | null> {
+    return this.selectedItems.asObservable().pipe(
+      map(items => items[id] || null)
+    );
   }
 
   toggleDropdown(id: string) {
-    if (!this.dropdownOpenSubjects[id]) {
-      this.dropdownOpenSubjects[id] = new BehaviorSubject<boolean>(false);
-    }
-    this.dropdownOpenSubjects[id].next(!this.dropdownOpenSubjects[id].value);
+    const currentState = this.dropdownState.value;
+    this.dropdownState.next({ ...currentState, [id]: !currentState[id] });
   }
 
   selectItem(id: string, item: string) {
-    if (!this.selectedItemSubjects[id]) {
-      this.selectedItemSubjects[id] = new BehaviorSubject<string | null>(null);
-    }
-    this.selectedItemSubjects[id].next(item);
-    this.dropdownOpenSubjects[id].next(false);
+    const currentItems = this.selectedItems.value;
+    this.selectedItems.next({ ...currentItems, [id]: item });
   }
 }
