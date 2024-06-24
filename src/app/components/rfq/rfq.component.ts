@@ -29,7 +29,7 @@ export class RfqComponent implements OnInit {
       this.rfqList = []; // Initialize with an empty array if no data is found
     }
   }
-
+ 
   viewRfq(id: string) {
     this.router.navigate(['/purchase/rfq-modal', id]);
   }
