@@ -13,12 +13,14 @@ export class AuthenticationService {
   public RegistrationMultiForm: any = {};
 
   userLogin(data: any): Observable<any> {
-    console.log((this.getBaseApiUrl() + "/auth/signup"+"---"+JSON.stringify(data)))
+    console.log((this.getBaseApiUrl() + "/auth/sigin"+"---"+JSON.stringify(data)))
 
     return this.http
         .post<any>(this.getBaseApiUrl() + "/auth/signin", data)
         .pipe(catchError(this.handleError));
   }
+
+  
   userRegistration(data: any): Observable<any> {
     console.log((this.getBaseApiUrl() + "/auth/signup"+"---"+JSON.stringify(data)))
 

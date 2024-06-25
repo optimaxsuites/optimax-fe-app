@@ -27,8 +27,8 @@
           <mat-label>Username</mat-label>
           <input
             type="text"
+            name="username"
             matInput
-            [formControl]="usernameFormControl"
             [errorStateMatcher]="matcher"
             [(ngModel)]="registerInfo.username"
 
@@ -46,8 +46,8 @@
           <mat-label>Email</mat-label>
           <input
             type="email"
+            name="email"
             matInput
-            [formControl]="emailFormControl"
             [errorStateMatcher]="matcher"
             placeholder="Ex. pat@example.com"
             [(ngModel)]="registerInfo.email"
@@ -69,9 +69,9 @@
           <mat-label>Password</mat-label>
           <input
             type="password"
+            name="password"
             matInput
             [type]="hide ? 'password' : 'text'"
-            [formControl]="passwordFormControl"
             [errorStateMatcher]="matcher"
             [(ngModel)]="registerInfo.password"
           />
@@ -94,9 +94,9 @@
           <mat-label>Rewrite Password</mat-label>
           <input
             type="password"
+            name="rewritepassword"
             matInput
             [type]="hide ? 'password' : 'text'"
-            [formControl]="rewritePasswordFormControl"
             [errorStateMatcher]="matcher"
             [(ngModel)]="registerInfo.rewritepassword"
           />

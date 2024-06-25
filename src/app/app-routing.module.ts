@@ -29,6 +29,7 @@ import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dis
 import { MailVerificationComponent } from './accounts/mail-verification/mail-verification.component';
 import { CrmPageComponent } from './pages/crm-page/crm-page.component';
 import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
+import { ViewProductAsideComponent } from './components/view-product-aside/view-product-aside.component';
 
 const routes: Routes = [
   {
@@ -105,6 +106,10 @@ const routes: Routes = [
       {
         path: 'inventory/inventory-form/:id',
         component: InventoryFormComponent,
+      },
+      {
+        path: 'inventory/view-product',
+        component: ViewProductAsideComponent,
       },
       {
         path: 'members',
