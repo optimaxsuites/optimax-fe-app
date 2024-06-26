@@ -1,31 +1,34 @@
 <div class="sales">
-    <div class="link-wrapper">
-        <!-- <div class="link-item">
+  <div class="link-wrapper">
+    <!-- <div class="link-item">
             <p class="item" routerLink="quotation">Quotation</p>
             <p class="item" routerLink="proforma-invoice">Proforma Invoice</p>
             <p class="item" routerLink="invoice">Invoice</p>
             <p class="item" routerLink="receipt">Receipt</p>
         </div> -->
-        <!-- <hr> -->
-        <mat-tab-group mat-stretch-tabs="false" mat-align-tabs="start" animationDuration="0ms">
-            <mat-tab label="Quotation">
-                <app-quotation></app-quotation>
-            </mat-tab>
-            <mat-tab label="Proforma Invoice">
-                <app-proforma-invoice></app-proforma-invoice>
-            </mat-tab>
-            <mat-tab label="Invoice">
-                <app-invoice></app-invoice>
-            </mat-tab>
-            <mat-tab label="Dispatch Note">
-                <app-dispatch-note></app-dispatch-note>
-                <!-- <app-receipt></app-receipt> -->
-            </mat-tab>
-          </mat-tab-group>
-          
-    </div>
+    <!-- <hr> -->
+    <mat-tab-group
+      mat-stretch-tabs="false"
+      mat-align-tabs="start"
+      animationDuration="0ms"
+    >
+      <mat-tab label="Quotation">
+        <app-quotation></app-quotation>
+      </mat-tab>
+      <mat-tab label="Proforma Invoice">
+        <app-proforma-invoice></app-proforma-invoice>
+      </mat-tab>
+      <mat-tab label="Invoice">
+        <app-invoice></app-invoice>
+      </mat-tab>
+      <mat-tab label="Dispatch Note">
+        <app-dispatch-note></app-dispatch-note>
+        <!-- <app-receipt></app-receipt> -->
+      </mat-tab>
+    </mat-tab-group>
+  </div>
 
-    <!-- <div class="content">
+  <!-- <div class="content">
         <router-outlet></router-outlet>
     </div> -->
 </div>
