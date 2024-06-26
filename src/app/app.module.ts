@@ -111,8 +111,8 @@ import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dis
 import { MailVerificationComponent } from './accounts/mail-verification/mail-verification.component';
 import { ToastrModule } from 'ngx-toastr';
 import { CrmPageComponent } from './pages/crm-page/crm-page.component';
-import { VendorListComponent } from './components/vendor-list/vendor-list.component';
-import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
+import { VendorListComponent } from './components/vendor-category-list/vendor-list.component';
+// import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
 import { ViewProductAsideComponent } from './components/view-product-aside/view-product-aside.component';
 
 @NgModule({
@@ -181,7 +181,7 @@ import { ViewProductAsideComponent } from './components/view-product-aside/view-
     MailVerificationComponent,
     CrmPageComponent,
     VendorListComponent,
-    VendorCategoryCreationModalComponent,
+    // VendorCategoryCreationModalComponent,
     ViewProductAsideComponent
   ],
   imports: [
