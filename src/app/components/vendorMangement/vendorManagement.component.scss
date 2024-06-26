@@ -12,17 +12,34 @@ mat-mdc-dialog-surface {
   width: 30rem;
 }
 
+.createVendor{
+  padding: 3rem;
+}
+
 .vendorCategory {
   margin-bottom: 2rem;
 }
 
+.inputFlex{
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  justify-content: center;
+}
+
 .inputField {
-  width: 25rem;
+  width: 50rem;
   margin-top: 0.7rem;
-  border-color: #536365;
+  border-color: #536365;  
   height: 3.5rem;
   border-radius: 0.5rem;
 }
+
+.descText{
+  border-color: 2px solid red;
+}
+
+
 
 .saveButton {
   color: #25925b;

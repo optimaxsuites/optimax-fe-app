@@ -5,14 +5,17 @@ import { VendorManagementComponent } from '../vendorMangement/vendorManagement';
 import { Router } from '@angular/router';
 
 @Component({
-  selector: 'app-vendor-list',
-  templateUrl: './vendor-list.component.html',
-  styleUrl: './vendor-list.component.scss',
+  selector: 'app-vendor-individual',
+  templateUrl: './vendor-individual.component.html',
+  styleUrl: './vendor-individual.component.scss'
 })
-export class VendorListComponent implements OnInit {
+
+
+export class VendorIndividualComponent implements OnInit {
   vCatList: any[] = [];
   individualVendorList: any[] = [];
   checkboxState: { [key: string]: boolean } = {};
+  isVendorList: boolean = false;
 
   constructor(
     private dataService: DataService,
@@ -54,14 +57,24 @@ export class VendorListComponent implements OnInit {
     // console.log('clicked', vendor);
   }
 
+  editCategory(category: any) {
+    this.openDialog('category', {}, category);
+    console.log('clicked', category);
+  }
+
+  deleteVCategory(id: string) {
+    this.dataService.deleteVCategory(id);
+  }
+
   deleteVendor(id: string) {
     this.dataService.deleteVendor(id);
   }
 
-  openDialog(type: string, vendor?: any) {
+  openDialog(type: string, vendor?: any, category?: any) {
     const dialogRef = this.dialog.open(VendorManagementComponent, {
       data: {
         formType: type,
+        vCatList: category || {},
         iVenList: vendor || {},
       },
     });

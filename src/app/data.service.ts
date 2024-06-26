@@ -9,7 +9,7 @@ export class DataService {
   constructor() {
     this.loadExistingRfqs();
     this.loadExistingVCats();
-    this.loadExistingIndividualVendors();
+    this.loadExistingIndividualVendors()
   }
 
   private rfqList: any[] = [];
@@ -66,7 +66,7 @@ export class DataService {
       'individualVendorList'
     );
     if (storedIndividualVendorList) {
-      this.vCatList = JSON.parse(storedIndividualVendorList);
+      this.individualVendorList = JSON.parse(storedIndividualVendorList);
       this.individualVendorListSubject.next(this.individualVendorList);
     }
   }
@@ -89,6 +89,15 @@ export class DataService {
     this.updateLocalStorageForIndividualVendor();
   }
 
+  updateVendorCategoryData(id: string, updatedCatData: any) {
+    const index = this.vCatList.findIndex(vCat => vCat.id === id);
+    if (index !== -1) {
+      this.vCatList[index] = { ...this.vCatList[index], ...updatedCatData };
+      this.updateLocalStorageForVendors();
+      this.vCatListSubject.next([...this.vCatList]);
+    }
+  }
+
   updateIndividualVendorData(id: string, updatedData: any) {
     const index = this.individualVendorList.findIndex(vendor => vendor.id === id);
     if (index !== -1) {
@@ -102,15 +111,6 @@ export class DataService {
   }
   
 
-  // updateIndividualVendorData(id: string, iVenList: any) {
-  //   const index = this.individualVendorList.findIndex(
-  //     (vendor) => vendor.id === iVenList.id
-  //   );
-  //   if (index !== -1) {
-  //     this.individualVendorList[index] = iVenList;
-  //     this.updateLocalStorageForIndividualVendor();
-  //   }
-  // }
 
   getRfqData(id: string) {
     return this.rfqList.find((rfq) => rfq.id === id);
@@ -118,7 +118,9 @@ export class DataService {
 
   getVCatData(id: string) {
     return this.vCatList.find((vCat) => vCat.id === id);
+    
   }
+  
 
   getIndividualVendorList(id: string) {
     this.individualVendorList.find((iVenList) => iVenList.id === id);
@@ -139,6 +141,13 @@ export class DataService {
   deleteRfq(id: string): void {
     this.rfqList = this.rfqList.filter((rfq) => rfq.id !== id);
     this.updateLocalStorage();
+  }
+
+  deleteVCategory(id: string): void {
+    this.vCatList = this.vCatList.filter(
+      (category) => category.id !== id
+    );
+    this.updateLocalStorageForVendors();
   }
 
   deleteVendor(id: string): void {
