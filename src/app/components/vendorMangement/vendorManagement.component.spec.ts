@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { VendorCategoryCreationModalComponent } from './vendor-category-creation-modal.component';
+import { VendorCategoryCreationModalComponent } from './vendorManagement';
 
 describe('VendorCategoryCreationModalComponent', () => {
   let component: VendorCategoryCreationModalComponent;
@@ -8,10 +8,9 @@ describe('VendorCategoryCreationModalComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [VendorCategoryCreationModalComponent]
-    })
-    .compileComponents();
-    
+      declarations: [VendorCategoryCreationModalComponent],
+    }).compileComponents();
+
     fixture = TestBed.createComponent(VendorCategoryCreationModalComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
