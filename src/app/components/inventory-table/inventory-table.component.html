@@ -1,5 +1,4 @@
 <div class="main">
-
   <div class="add-new-inventory-button mb-4">
       <button class="btn" (click)="navigateToForm()">Add New Item <i class="fas fa-plus"></i></button>
   </div>
@@ -62,88 +61,102 @@
     <p-table 
         [value]="items" 
         [paginator]="true" 
+        [(selection)]="selectedItems" 
+        dataKey="id"
         styleClass="p-datatable-striped" 
-        [rows]="15">
+        [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+        [rows]="15"
+        >
             <ng-template pTemplate="header" class="header">
                 <tr>
-                    <th class="table-item">Item</th>
-                    <th class="table-item">Part No</th>
-                    <th class="table-item">Initial Stock</th>
-                    <th class="table-item">Buying Price</th>
-                    <th class="table-item">Selling Price</th>
-                    <!-- <th>Inventory Ledger</th>
-                    <th>Purchase Ledger</th>
-                    <th>Sales Ledger</th> -->
-                    <th class="table-item">Tax Rate</th>
-                    <!-- <th>HSN</th> -->
-                    <!-- <th>Current Stock</th> -->
-                    <th class="table-item">Total Sold Quantity</th>
-                    <th class="table-item">Total Purchase Quantity</th>
-                    <!-- <th>Tag</th> -->
-                    <th class="table-item">Actions</th>
+                  <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+                  <th class="table-item">Item</th>
+                  <th class="table-item">Part No</th>
+                  <th class="table-item">Initial Stock</th>
+                  <th class="table-item">Buying Price</th>
+                  <th class="table-item">Selling Price</th>
+                  <th class="table-item">Tax Rate</th>
+                  <th class="table-item">Total Sold Quantity</th>
+                  <th class="table-item">Total Purchase Quantity</th>
+                  <th class="table-item">Actions</th>
                 </tr>
             </ng-template>
-            <ng-template pTemplate="body" class="t-body" let-item let i = index>
+            <ng-template pTemplate="body" class="t-body" let-item let-i="rowIndex">
                 <tr>
-                    <td class="top-products-table-data item-cell table-item">
-                        {{ item.itemName }}
-                        <div class="tooltip-content">
-                          <label for="" class="mb-2"><b>Item Image</b></label>
-                          <br>
-                          <div class="image-wrapper">
-                              <div *ngFor="let image of item.images; let i = index" class="image-container">
-                                  <img [src]="image" alt="{{ item.itemName }}" class="item-image{{ i + 1 }}"/>
-                              </div>
-                          </div>
-                          <!-- <img [src]="item.images" alt="{{ item.itemName }}" class="item-image"/> -->
-                          <br>
-                          <label for="" class="mb-2"><b>Description</b></label>
-                          <p>{{ item.description | stripHtml }}</p>
-                        </div>
-                    </td>
-                    <td class="top-products-table-data table-item">{{ item.partNo }}</td>
-                    <td class="top-products-table-data table-item">{{ item.initialStock }}</td>
-                    <td class="top-products-table-data table-item">
-                      <span class="input-span">
-                          {{ extractCurrencyCode((selectedCurrency$ | async)!) }}
-                        </span>
-                      {{ item.buyingPrice }}
-  
-                    </td>
-                    <td class="top-products-table-data table-item">{{ item.sellingPrice }}</td>
-                    <!-- <td class="top-products-table-data">{{ item.inventoryLedger }}</td> -->
-                    <!-- <td class="top-products-table-data">{{ item.purchaseLedger }}</td> -->
-                    <!-- <td class="top-products-table-data">{{ item.salesLedger }}</td> -->
-                    <td class="top-products-table-data table-item">{{ item.taxRate }}</td>
-                    <!-- <td class="top-products-table-data">{{ item.hsn }}</td> -->
-                    <!-- <td class="top-products-table-data">{{ item.currentStock }}</td> -->
-                    <td class="top-products-table-data table-item">{{ item.totalSoldQuantity }}</td>
-                    <td class="top-products-table-data table-item">{{ item.totalPurchaseQuantity }}</td>
-                    <!-- <td class="top-products-table-data">{{ item.tag }}</td> -->
-                    <td class="top-products-table-data actions table-item">
-                      <i (click)="editItem(item.id)" class="fa-regular fa-pen-to-square"></i>
-                      <i (click)="deleteItem(item.id)" class="fa-solid fa-trash"></i>
-                    </td>
+                  <td>
+                    <p-tableCheckbox [value]="item" />
+                  </td>
+                  <td class="table-item">
+                      {{ item.itemName }}
+                  </td>
+                  <td class="table-item">{{ item.partNo }}</td>
+                  <td class=" table-item">{{ item.initialStock }}</td>
+                  <td class=" table-item">
+                    <span class="input-span">
+                        {{ extractCurrencyCode((selectedCurrency$ | async)!) }}
+                      </span>
+                    {{ item.buyingPrice }}
+
+                  </td>
+                  <td class="table-item">{{ item.sellingPrice }}</td>
+                  <td class="table-item">{{ item.taxRate }}</td>
+                  <td class="table-item">{{ item.totalSoldQuantity }}</td>
+                  <td class="table-item">{{ item.totalPurchaseQuantity }}</td>
+                  <td class="actions table-item">
+                    <i (click)="showDialog(item, 'right')" class="pi pi-eye" style="font-size: 1.1em"></i>
+                    <i (click)="editItem(item.id)" class="pi pi-pen-to-square" style="font-size: 1.1em"></i>
+                    <i (click)="deleteItem(item.id)" class="pi pi-times-circle" style="font-size: 1.1em"></i>
+                  </td>
                 </tr>
             </ng-template>
-            <!-- <ng-template pTemplate="paginatorleft">
-                <p-button type="button" icon="pi pi-plus" styleClass="p-button-text" />
-            </ng-template>
-            <ng-template pTemplate="paginatorright">
-                <p-button type="button" icon="pi pi-cloud" styleClass="p-button-text" />
-            </ng-template> -->
     </p-table>
   </div>
-
-
-
-  <!-- <div class="table"> -->
-    
-  <!-- </div> -->
-
-
-
-
-
-
 </div>
+
+
+<p-dialog  
+    [modal]="true"
+    [(visible)]="visible" 
+    [position]="position" 
+    [style]="{ width: '50rem', }" 
+    [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }">
+    
+
+    <div class="container">
+        <div class="main">
+          <div *ngIf="selectedItem">
+            <p><strong>Product name:</strong> {{ selectedItem.itemName }}</p>
+            <p><strong>Part No:</strong> {{ selectedItem.partNo }}</p>
+            <p class="des"><strong>Description:</strong> {{ selectedItem.description | stripHtml }}</p>
+            <p><strong>Images</strong></p>
+            <div class="image-wrapper">
+              <div *ngFor="let image of selectedItem.images; let i = index" class="image-container">
+                <img [src]="image" alt="{{ selectedItem.itemName }}" class="item-image{{ i + 1 }}"/>
+              </div>
+            </div>
+            <br>
+
+            <p><strong>Initial Stock:</strong> {{ selectedItem.initialStock }}</p>
+            <p><strong>Buying Price:</strong> {{ selectedItem.buyingPrice }}</p>
+            <p><strong>Selling Price:</strong> {{ selectedItem.sellingPrice }}</p>
+            <p><strong>Tax Rate:</strong> {{ selectedItem.taxRate }}</p>
+            <p><strong>Total Sold Quantity:</strong> {{ selectedItem.totalSoldQuantity }}</p>
+            <p><strong>Total Purchase Quantity:</strong> {{ selectedItem.totalPurchaseQuantity }}</p>
+          </div>
+        </div>
+    </div>
+
+
+
+
+    <ng-template pTemplate="footer">
+        <p-button 
+            label="Cancel" 
+            [text]="true" 
+            severity="secondary" 
+            (click)="visible = false" />
+    </ng-template>
+</p-dialog>
+
+
+

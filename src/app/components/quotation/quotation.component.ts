@@ -14,13 +14,25 @@ export class QuotationComponent {
   tableData: any[];
 
 
-  constructor(private topProductsService: TopProductService) {
+  constructor(
+    private topProductsService: TopProductService,
+    private router: Router,
+  ) {
     this.tableData = [];
-   }
+  }
 
   ngOnInit(): void {
     this.tableData = this.topProductsService.initializeTopProduct();
   }
 
+  navigateToForm(){
+    this.router.navigate(['/sales/quotation/quotation-form']);
+  }
+  editItem(id: string) {
+  }
+  deleteItem(id: string) {
+  }
+  viewItem(id: string){
+  }
 
 }

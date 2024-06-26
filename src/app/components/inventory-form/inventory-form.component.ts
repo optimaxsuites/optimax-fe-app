@@ -25,45 +25,7 @@ import { MessageService } from 'primeng/api';
 export class InventoryFormComponent implements OnInit {
   showLogo = false;
 
-  // inventoryItem: InventoryItem[] = [];  
-
-
   inventoryItem: any = {};
-
-  // inventoryItem: InventoryItem = {
-  //   id: '',
-  //   itemName: '',
-  //   partNo: 0,
-  //   image: '',
-  //   description: '',
-  //   buyingPrice: 0,
-  //   sellingPrice: 0,
-  //   initialStock: 0,
-  //   purchaseLedger: '',
-  //   salesLedger: '',
-  //   inventoryLedger: '',
-  //   taxRate: 0,
-  //   hsn: '',
-  //   tag: '',
-  //   images: []
-  // };
-
-  // inventoryItem = { 
-  //   id: '', 
-  //   itemName: '', 
-  //   partNo: 0, 
-  //   image: '',
-  //   description: '', 
-  //   buyingPrice: 0, 
-  //   sellingPrice: 0, 
-  //   initialStock: 0,
-  //   purchaseLedger: '',
-  //   salesLedger: '',
-  //   inventoryLedger: '',
-  //   taxRate: 0,
-  //   hsn: '',
-  //   tag: '',
-  // };
 
   inventoryLedgers = [
     'Inventory Ledger 1',
@@ -89,95 +51,6 @@ export class InventoryFormComponent implements OnInit {
     'Ledger sales 5'
   ];
   isEdit = false;
-
-//   currencyList = [
-//     'Algerian Dinar (DZD)',
-//     'Angolan Kwanza (AOA)',
-//     'Argentine Peso (ARS)',
-//     'Australian Dollar (AUD)',
-//     'Bahraini Dinar (BHD)',
-//     'Bangladeshi Taka (BDT)',
-//     'Brazilian Real (BRL)',
-//     'British Pound Sterling (GBP)',
-//     'Canadian Dollar (CAD)',
-//     'Chilean Peso (CLP)',
-//     'Chinese Yuan (CNY)',
-//     'Colombian Peso (COP)',
-//     'Comorian Franc (KMF)',
-//     'Congolese Franc (CDF)',
-//     'Czech Koruna (CZK)',
-//     'Danish Krone (DKK)',
-//     'Djiboutian Franc (DJF)',
-//     'Egyptian Pound (EGP)',
-//     'Eritrean Nakfa (ERN)',
-//     'Ethiopian Birr (ETB)',
-//     'Euro (EUR)',
-//     'Gambian Dalasi (GMD)',
-//     'Guinean Franc (GNF)',
-//     'Hong Kong Dollar (HKD)',
-//     'Indian Rupee (INR)',
-//     'Indonesian Rupiah (IDR)',
-//     'Iraqi Dinar (IQD)',
-//     'Israeli New Shekel (ILS)',
-//     'Japanese Yen (JPY)',
-//     'Jordanian Dinar (JOD)',
-//     'Kenyan Shilling (KES)',
-//     'Kuwaiti Dinar (KWD)',
-//     'Lebanese Pound (LBP)',
-//     'Lesotho Loti (LSL)',
-//     'Liberian Dollar (LRD)',
-//     'Libyan Dinar (LYD)',
-//     'Malagasy Ariary (MGA)',
-//     'Malawian Kwacha (MWK)',
-//     'Malaysian Ringgit (MYR)',
-//     'Mauritanian Ouguiya (MRU)',
-//     'Mauritian Rupee (MUR)',
-//     'Mexican Peso (MXN)',
-//     'Moroccan Dirham (MAD)',
-//     'Mozambican Metical (MZN)',
-//     'Namibian Dollar (NAD)',
-//     'New Zealand Dollar (NZD)',
-//     'Nigerian Naira (NGN)',
-//     'Norwegian Krone (NOK)',
-//     'Omani Rial (OMR)',
-//     'Pakistani Rupee (PKR)',
-//     'Peruvian Sol (PEN)',
-//     'Philippine Peso (PHP)',
-//     'Polish Zloty (PLN)',
-//     'Qatari Riyal (QAR)',
-//     'Romanian Leu (RON)',
-//     'Russian Ruble (RUB)',
-//     'Rwandan Franc (RWF)',
-//     'Saudi Riyal (SAR)',
-//     'Seychellois Rupee (SCR)',
-//     'Sierra Leonean Leone (SLL)',
-//     'Singapore Dollar (SGD)',
-//     'Somali Shilling (SOS)',
-//     'South African Rand (ZAR)',
-//     'South Korean Won (KRW)',
-//     'South Sudanese Pound (SSP)',
-//     'Sudanese Pound (SDG)',
-//     'Swazi Lilangeni (SZL)',
-//     'Swedish Krona (SEK)',
-//     'Swiss Franc (CHF)',
-//     'Syrian Pound (SYP)',
-//     'Taiwanese Dollar (TWD)',
-//     'Tanzanian Shilling (TZS)',
-//     'Thai Baht (THB)',
-//     'Tunisian Dinar (TND)',
-//     'Turkish Lira (TRY)',
-//     'Ugandan Shilling (UGX)',
-//     'Ukrainian Hryvnia (UAH)',
-//     'United Arab Emirates Dirham (AED)',
-//     'United States Dollar (USD)',
-//     'Uruguayan Peso (UYU)',
-//     'Vietnamese Dong (VND)',
-//     'West African CFA Franc (XOF)',
-//     'Zambian Kwacha (ZMW)',
-//     'Zimbabwean Dollar (ZWL)'
-// ]
-
-
 
 currencyList = [
   { name: 'Algerian Dinar', code: 'DZD' },
@@ -266,9 +139,6 @@ currencyList = [
   { name: 'Zimbabwean Dollar', code: 'ZWL' }
 ];
 
-
-
-
   constructor(
     private router: Router,
     private route: ActivatedRoute,
@@ -277,6 +147,7 @@ currencyList = [
     private dialogRef:MatDialog,
     private messageService: MessageService,
   ) {}
+
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
@@ -289,24 +160,6 @@ currencyList = [
     }
   }
 
-  // onLogoSelected(event: any) {
-  //   const files = event.target.files;
-  //   if (files.length > 0) {
-  //     for (const file of files) {
-  //       const reader = new FileReader();
-  //       reader.onload = () => {
-  //         if (!this.inventoryItem.images) {
-  //           this.inventoryItem.images = [];
-  //         }
-  //         this.inventoryItem.images.push(reader.result as string);
-  //         this.showLogo = true;
-  //       };
-  //       reader.readAsDataURL(file);
-  //     }
-  //   }
-  // }
-
-
 
 
 
@@ -315,9 +168,6 @@ currencyList = [
     if (files.length > 0) {
       if ((this.inventoryItem.images ? this.inventoryItem.images.length : 0) + files.length > 5) {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'You can only upload a maximum of 5 images' });
-
-        // this.toastr.error('You can only upload a maximum of 5 images.');
-        // alert('masimum picture selected')
         return;
       }
 
@@ -330,8 +180,6 @@ currencyList = [
           this.inventoryItem.images.push(reader.result as string);
           this.showLogo = true;
           this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Image added successfully!' });
-          
-          // this.toastr.success('Image added successfully!');
         };
         reader.readAsDataURL(file);
       }
@@ -339,12 +187,6 @@ currencyList = [
   }
 
 
-
-
-
-
-
-  
   removeImage(index: number) {
     if (this.inventoryItem.images) {
       this.inventoryItem.images.splice(index, 1);
@@ -355,13 +197,6 @@ currencyList = [
   }
 
   onSubmit() {
-
-    //   // Perform form validation
-    // if (!this.isFormFilled()) {
-    //   alert('Form must be filled out');
-    //   return;
-    // }
-
     if (this.isEdit) {
       this.inventoryService.updateItem(this.inventoryItem);
     } else {
@@ -371,18 +206,18 @@ currencyList = [
   }
 
   // Helper function to check if the form is filled
-isFormFilled() {
-  // Iterate over each property in the inventoryItem object
-  for (let key in this.inventoryItem) {
-    if (this.inventoryItem.hasOwnProperty(key)) {
-      // Check if the property value is empty
-      if (!this.inventoryItem[key]) {
-        return false;
+  isFormFilled() {
+    // Iterate over each property in the inventoryItem object
+    for (let key in this.inventoryItem) {
+      if (this.inventoryItem.hasOwnProperty(key)) {
+        // Check if the property value is empty
+        if (!this.inventoryItem[key]) {
+          return false;
+        }
       }
     }
+    return true;
   }
-  return true;
-}
 
   navigateToTable() {
     this.router.navigate(['/inventory']);

@@ -17,6 +17,9 @@ import { EditorModule } from 'primeng/editor';
 import { PasswordModule } from 'primeng/password';
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
+import { SidebarModule } from 'primeng/sidebar';
+import { DialogModule } from 'primeng/dialog';
+import { TabViewModule } from 'primeng/tabview';
 // import { MessagesModule } from 'primeng/messages';
 // import { MessageModule } from 'primeng/message';
 // import { MessageService } from 'primeng/api';
@@ -108,8 +111,9 @@ import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dis
 import { MailVerificationComponent } from './accounts/mail-verification/mail-verification.component';
 import { ToastrModule } from 'ngx-toastr';
 import { CrmPageComponent } from './pages/crm-page/crm-page.component';
-import { VendorListComponent } from './components/vendor-category-list/vendor-list.component';
-import { VendorManagementComponent } from './components/vendorMangement/vendorManagement';
+import { VendorListComponent } from './components/vendor-list/vendor-list.component';
+import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
+import { ViewProductAsideComponent } from './components/view-product-aside/view-product-aside.component';
 
 @NgModule({
   declarations: [
@@ -177,8 +181,8 @@ import { VendorManagementComponent } from './components/vendorMangement/vendorMa
     MailVerificationComponent,
     CrmPageComponent,
     VendorListComponent,
-    VendorManagementComponent
-    // VendorCategoryCreationModalComponent
+    VendorCategoryCreationModalComponent,
+    ViewProductAsideComponent
   ],
   imports: [
     BrowserModule,
@@ -204,6 +208,9 @@ import { VendorManagementComponent } from './components/vendorMangement/vendorMa
     MatDividerModule,
     DropdownModule,
     MatProgressSpinnerModule,
+    SidebarModule,
+    DialogModule,
+    TabViewModule,
     // EditorModule,
     // MessagesModule,
     // MessageModule,
