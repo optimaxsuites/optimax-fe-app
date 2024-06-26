@@ -19,7 +19,23 @@ export class AuthenticationService {
         .post<any>(this.getBaseApiUrl() + "/auth/signin", data)
         .pipe(catchError(this.handleError));
   }
+  getRegDataByUsername(username: string): Observable<any> {
+    console.log((this.getBaseApiUrl() + "/us/ur/get/user/"+"--- this is username"+JSON.stringify(username)))
 
+    return this.http
+        .get<any>(this.getBaseApiUrl() + "/us/ur/get/user/" + username)
+        .pipe(catchError(this.handleError));
+  }
+
+  findUserByUsername(username: string): Observable<any> {
+    return this.http
+        .get<any>(
+            this.getBaseApiUrl() +
+                "/us/ur/get/user/" +
+                username
+        )
+        .pipe(catchError(this.handleError));
+  }
   
   userRegistration(data: any): Observable<any> {
     console.log((this.getBaseApiUrl() + "/auth/signup"+"---"+JSON.stringify(data)))
