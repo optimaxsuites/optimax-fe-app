@@ -58,6 +58,33 @@
   </div> -->
 
   <div class="card">
+    <p-toolbar styleClass="mb-4 gap-2">
+      <ng-template pTemplate="left">
+          <p-button 
+              pRipple 
+              severity="success" 
+              label="New" 
+              icon="pi pi-plus" 
+              class="mr-2" 
+               />
+               <!-- (click)="openNew()" -->
+          <p-button 
+              pRipple 
+              severity="danger" 
+              label="Delete" 
+              icon="pi pi-trash" 
+              (click)="deleteSelectedItems()" 
+              [disabled]="!selectedItems || !selectedItems.length" />
+      </ng-template>
+
+      <ng-template pTemplate="right">
+          <p-button 
+              pRipple 
+              severity="help" 
+              label="Export" 
+              icon="pi pi-upload" />
+      </ng-template>
+  </p-toolbar>
     <p-table 
         [value]="items" 
         [paginator]="true" 

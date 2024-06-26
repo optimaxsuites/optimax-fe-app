@@ -20,6 +20,8 @@ import { ToastModule } from 'primeng/toast';
 import { SidebarModule } from 'primeng/sidebar';
 import { DialogModule } from 'primeng/dialog';
 import { TabViewModule } from 'primeng/tabview';
+import { ToolbarModule } from 'primeng/toolbar';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 // import { MessagesModule } from 'primeng/messages';
 // import { MessageModule } from 'primeng/message';
 // import { MessageService } from 'primeng/api';
@@ -211,6 +213,8 @@ import { ViewProductAsideComponent } from './components/view-product-aside/view-
     SidebarModule,
     DialogModule,
     TabViewModule,
+    ToolbarModule,
+    ConfirmDialogModule,
     // EditorModule,
     // MessagesModule,
     // MessageModule,
