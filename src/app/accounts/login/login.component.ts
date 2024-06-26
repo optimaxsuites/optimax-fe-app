@@ -32,7 +32,7 @@ export class LoginComponent {
 
   loading: boolean = false;
   // loginDetails: any = {};
-  loginDetails = {
+  loginInfo = {
     email: '',
     password: ''
 };
@@ -54,57 +54,212 @@ export class LoginComponent {
   ){}
 
 
-
   userLoginAction() {
     this.submitted = true;
+
+    // Check if username and password are filled
+    if (!this.loginInfo.email || !this.loginInfo.password) {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
+        console.log("Username and password are required");
+        return;
+    }
+
     this.loading = true;
 
-    // console.log(this.loginDetails)
+    const loginDetails = {
+        username: this.loginInfo.email,
+        password: this.loginInfo.password,
+    };
 
-
-    if (!this.loginDetails.email || !this.loginDetails.password) {
-        this.loading = false;
-        // console.log("Here as "+JSON.stringify(this.loginDetails));
-
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Email and password are required' });
-        // console.log("Email and password are required");
-    } else {
-        setTimeout(() => {
-            this.authenticationService.userLogin(this.loginDetails).subscribe(
-                async (data) => {
-                    if (!data) {
-                        this.messageService.add({ severity: 'error', summary: 'Unsuccessful', detail: 'Invalid login details. Use email.' });
-                        this.loggedIn = false;
-                        this.loading = false;
-                    } else {
-                        // // Handle user login data based on client type
-                        // if (data.clientType === "INDIVIDUAL") {
-                        //     await this.getUserRegInfoData(data);
-                        // } else {
-                        //     await this.getAdminInfoData(data);
-                        // }
-
-                        // Optionally navigate based on roles
-                        if (data.roles.includes('admin')) {
-                          this.router.navigateByUrl('/dashboard');
-                        } 
-                    }
-                },
-                (error) => {
-                    if (error.toString() === "403" || error.toString() === "401") {
-                        this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid email/password.' });
-                        this.loggedIn = false;
-                        this.loading = false;
-                    } else if (error.toString() === "0") {
-                        this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'The server for authentication is unreachable. Check your connection.' });
-                        this.loggedIn = false;
-                        this.loading = false;
-                    }
-                }
-            );
-        }, 2000);
-    }
+    this.authenticationService.userLogin(loginDetails).subscribe(
+        (data) => {
+          this.loading = false;
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Login successful!', life: 2000 });
+          // Optionally, redirect to another page after successful login
+          this.router.navigateByUrl('/dashboard');
+        },
+        (error) => {
+          this.loading = false;
+          if (error.status === 401) {
+              this.messageService.add({ severity: 'error', summary: 'Login Failed', detail: 'Invalid username or password. Please try again.' });
+          } else if (error.status === 0) {
+              this.messageService.add({ severity: 'error', summary: 'Login Failed', detail: 'Unable to connect to the server. Please check your internet connection.' });
+          } else {
+              console.error('Unexpected error:', error);
+              this.messageService.add({ severity: 'error', summary: 'Login Failed', detail: 'An unexpected error occurred. Please try again later.' });
+          }
+      }
+    );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//   userLoginAction() {
+//     this.submitted = true;
+//     this.loading = true;
+
+//     // console.log(this.loginDetails)
+
+
+//     if (!this.loginDetails.email || !this.loginDetails.password) {
+//         this.loading = false;
+//         // console.log("Here as "+JSON.stringify(this.loginDetails));
+
+//         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Email and password are required' });
+//         // console.log("Email and password are required");
+//     }  
+//     else {
+//         setTimeout(() => {
+//             this.authenticationService.userLogin(this.loginDetails).subscribe(
+//                 async (data) => {
+//                     if (!data) {
+//                         this.messageService.add({ severity: 'error', summary: 'Unsuccessful', detail: 'Invalid login details. Use email.' });
+//                         this.loggedIn = false;
+//                         this.loading = false;
+//                     } else {
+//                         // // Handle user login data based on client type
+//                         // if (data.clientType === "INDIVIDUAL") {
+//                         //     await this.getUserRegInfoData(data);
+//                         // } else {
+//                         //     await this.getAdminInfoData(data);
+//                         // }
+
+//                         // Optionally navigate based on roles
+//                         // if (data.roles.includes('admin')) {
+//                           this.router.navigateByUrl('/dashboard');
+//                         // } 
+//                     }
+//                 },
+//                 (error) => {
+//                     if (error.toString() === "403" || error.toString() === "401") {
+//                         this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid email/password.' });
+//                         this.loggedIn = false;
+//                         this.loading = false;
+//                     } else if (error.toString() === "0") {
+//                         this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'The server for authentication is unreachable. Check your connection.' });
+//                         this.loggedIn = false;
+//                         this.loading = false;
+//                     }
+//                 }
+//             );
+//         }, 2000);
+//     }
+// }
 
 
 // userLoginAction() {

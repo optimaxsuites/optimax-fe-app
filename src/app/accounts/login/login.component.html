@@ -14,7 +14,7 @@
           name="email"
           matInput
           [errorStateMatcher]="matcher"
-          [(ngModel)]="loginDetails.email"
+          [(ngModel)]="loginInfo.email"
           placeholder="Ex. pat@example.com"
         />
         @if (emailFormControl.hasError('email') &&
@@ -34,7 +34,7 @@
           name="password"
           matInput
           [type]="hide ? 'password' : 'text'"
-          [(ngModel)]="loginDetails.password"
+          [(ngModel)]="loginInfo.password"
           [errorStateMatcher]="matcher"
         />
         <button
