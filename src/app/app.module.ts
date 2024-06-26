@@ -35,7 +35,7 @@ import { NgApexchartsModule } from 'ng-apexcharts';
 import { DropdownModule } from 'primeng/dropdown';
 // import { EditorModule } from "@progress/kendo-angular-editor";
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { HttpClientModule } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { AngularEditorModule } from '@kolkov/angular-editor';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { AsyncPipe } from '@angular/common';
@@ -116,6 +116,7 @@ import { CrmPageComponent } from './pages/crm-page/crm-page.component';
 import { VendorListComponent } from './components/vendor-category-list/vendor-list.component';
 // import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
 import { ViewProductAsideComponent } from './components/view-product-aside/view-product-aside.component';
+// import { AuthInterceptor } from './services/authentication/auth.interceptor.service';
 
 @NgModule({
   declarations: [
@@ -237,6 +238,11 @@ import { ViewProductAsideComponent } from './components/view-product-aside/view-
     // ToastrModule.forRoot(),
   ],
   providers: [
+    // {
+    //   provide: HTTP_INTERCEPTORS,
+    //   useClass: AuthInterceptor,
+    //   multi: true,
+    // },
     provideAnimationsAsync(),
     provideNativeDateAdapter(),
     // MessageService

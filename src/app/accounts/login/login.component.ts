@@ -6,7 +6,7 @@ import {
   Validators,
 } from '@angular/forms';
 import {ErrorStateMatcher} from '@angular/material/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { AuthenticationService } from 'src/app/services/authentication/authentication.service';
 
@@ -50,7 +50,8 @@ export class LoginComponent {
   constructor(
     private authenticationService: AuthenticationService,
     private messageService: MessageService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute,
   ){}
 
 
@@ -73,23 +74,48 @@ export class LoginComponent {
 
     this.authenticationService.userLogin(loginDetails).subscribe(
         (data) => {
+
+      //     this.loading = false;
+      // console.log('Login successful, received data:', data); // Log the received data
+
+      // if (data) {
+      //   // Store the received token in localStorage
+      //   // sessionStorage.setItem('token', data.token);
+      //   this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Login successful!' });
+
+      //   // Optionally, redirect to another page after successful login
+      //   this.router.navigateByUrl('/dashboard');
+      // }
+        
+
+      // this.loading = false;
+      //   this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Login successful!', life: 2000 });
+        
+      //   const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+      //   this.router.navigateByUrl(returnUrl);
+
+
+
+
           this.loading = false;
           this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Login successful!', life: 2000 });
           // Optionally, redirect to another page after successful login
           this.router.navigateByUrl('/dashboard');
         },
         (error) => {
-          this.loading = false;
-          if (error.status === 401) {
-              this.messageService.add({ severity: 'error', summary: 'Login Failed', detail: 'Invalid username or password. Please try again.' });
-          } else if (error.status === 0) {
-              this.messageService.add({ severity: 'error', summary: 'Login Failed', detail: 'Unable to connect to the server. Please check your internet connection.' });
-          } else {
-              console.error('Unexpected error:', error);
-              this.messageService.add({ severity: 'error', summary: 'Login Failed', detail: 'An unexpected error occurred. Please try again later.' });
+          if (error.toString() == "500") {
+            this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
+            this.loggedIn = false;
+            this.loading = false;
+          } else if (error.toString() == "0") {
+              this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
+              this.loggedIn = false;
+              this.loading = false;
           }
-      }
-    );
+          this.loading = false;
+        }
+        
+      );
 }
 
 
