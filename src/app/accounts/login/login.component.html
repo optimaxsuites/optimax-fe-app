@@ -15,7 +15,7 @@
           matInput
           [errorStateMatcher]="matcher"
           [(ngModel)]="loginInfo.email"
-          placeholder="Ex. pat@example.com or John"
+          placeholder="Email or Username"
         />
         @if (emailFormControl.hasError('email') &&
         !emailFormControl.hasError('required')) {
