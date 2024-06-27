@@ -26,7 +26,6 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 // import { MessageModule } from 'primeng/message';
 // import { MessageService } from 'primeng/api';
 import { RippleModule } from 'primeng/ripple';
-
 import { MatTabGroup, MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatRadioModule } from '@angular/material/radio';
@@ -118,6 +117,7 @@ import { VendorCategoryComponent } from './components/vendor-category/vendor-cat
 import { VendorIndividualComponent } from './components/vendor-individual/vendor-individual.component';
 // import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
 import { ViewProductAsideComponent } from './components/view-product-aside/view-product-aside.component';
+import { VendorCreationModalComponent } from './components/vendor-creation-modal/vendor-creation-modal.component';
 // import { AuthInterceptor } from './services/authentication/auth.interceptor.service';
 
 @NgModule({
@@ -188,6 +188,7 @@ import { ViewProductAsideComponent } from './components/view-product-aside/view-
     VendorManagementComponent,
     VendorCategoryComponent,
     VendorIndividualComponent,
+    VendorCreationModalComponent,
   ],
   imports: [
     BrowserModule,

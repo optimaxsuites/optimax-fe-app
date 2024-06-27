@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { v4 as generateUniqueId } from 'uuid';
 
 @Injectable({
@@ -15,6 +15,8 @@ export class DataService {
   private rfqList: any[] = [];
   private vCatList: any[] = [];
   private individualVendorList: any[] = [];
+  
+ 
 
   private rfqListSubject = new BehaviorSubject<any[]>(this.rfqList);
   rfqList$ = this.rfqListSubject.asObservable();

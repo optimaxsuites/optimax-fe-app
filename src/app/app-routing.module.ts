@@ -32,6 +32,7 @@ import { CrmPageComponent } from './pages/crm-page/crm-page.component';
 import { ViewProductAsideComponent } from './components/view-product-aside/view-product-aside.component';
 import { VendorManagementComponent } from './components/vendorMangement/vendorManagement';
 import { AuthGuard } from './services/authentication/auth.guard';
+import { VendorCreationModalComponent } from './components/vendor-creation-modal/vendor-creation-modal.component';
 
 const routes: Routes = [
   {
@@ -56,7 +57,7 @@ const routes: Routes = [
   {
     path: '',
     component: MasterComponent,
-    canActivate: [AuthGuard],
+    // canActivate: [AuthGuard],
     children: [
       {
         path: 'dashboard',
@@ -144,9 +145,13 @@ const routes: Routes = [
         component: CrmPageComponent,
       },
       {
-        path: 'crm/vendor-creation',
-        component: VendorManagementComponent,
+        path: 'crm/vendorCreation',
+        component: VendorCreationModalComponent,
       },
+      // {
+      //   path: 'crm/vendorManagement',
+      //   component: VendorManagementComponent,
+      // },
     ],
   },
 ];

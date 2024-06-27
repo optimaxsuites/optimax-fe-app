@@ -24,16 +24,34 @@ mat-mdc-dialog-surface {
   display: flex;
   gap: 2rem;
   align-items: center;
-  justify-content: center;
+  // justify-content: center;
 }
 
-.inputField {
-  width: 50rem;
-  margin-top: 0.7rem;
+.smallInput{
+  height: 3.3rem;
+  border-color: #536365;
+  border-radius: 0.5rem;
+
+  // margin-top: 0.7rem;
+
+}
+
+
+
+.inputField, .threeInputField{
+  width: 40rem;
+  // margin-top: 0.7rem;
   border-color: #536365;  
   height: 3.5rem;
   border-radius: 0.5rem;
 }
+
+select, .threeInputField{
+  width: 19rem;
+}
+
+
+
 
 .descText{
   border-color: 2px solid red;

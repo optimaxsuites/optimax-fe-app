@@ -1,10 +1,10 @@
 <div class="container-fluid" >
     <div class="container-header">
-      <button class="btn create-invoice-btn" (click)="openDialog('individual')">
+      <button class="btn create-invoice-btn" routerLink='/crm/vendorCreation' >
         Create New Vendor
       </button>
     </div>
-    <section class="createVendors" >
+    <section class="selectClients" >
       <div class="asd">
         <div class="top-products-container">
           <div class="top-products">
@@ -48,7 +48,6 @@
                       <div class="actionDiv">
                         <div class="image-container">
                           <img 
-                          (click)="editCategory(vCat)"
                             class="actionTags"
                             src="../../../assets/Edit.svg"
                             alt=""
@@ -61,7 +60,6 @@
                             class="actionTags"
                             src="../../../assets/delete (1).svg"
                             alt=""
-                          (click)="deleteVCategory(vCat.id)"
                           />
                           <span class="tooltip">Delete</span>
                         </div>
@@ -75,7 +73,7 @@
         </div>
       </div>
     </section>
-  </div>
+  </div>3
   
   
   
