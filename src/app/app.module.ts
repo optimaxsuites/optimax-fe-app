@@ -113,16 +113,12 @@ import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dis
 import { MailVerificationComponent } from './accounts/mail-verification/mail-verification.component';
 import { ToastrModule } from 'ngx-toastr';
 import { CrmPageComponent } from './pages/crm-page/crm-page.component';
-<<<<<<< HEAD
 import { VendorManagementComponent } from './components/vendorMangement/vendorManagement';
 import { VendorCategoryComponent } from './components/vendor-category/vendor-category.component';
 import { VendorIndividualComponent } from './components/vendor-individual/vendor-individual.component';
-=======
-import { VendorListComponent } from './components/vendor-category-list/vendor-list.component';
 // import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
 import { ViewProductAsideComponent } from './components/view-product-aside/view-product-aside.component';
 // import { AuthInterceptor } from './services/authentication/auth.interceptor.service';
->>>>>>> dc5468cae22fb8cf4404b74dfd47d4a595ccd03a
 
 @NgModule({
   declarations: [
@@ -189,15 +185,9 @@ import { ViewProductAsideComponent } from './components/view-product-aside/view-
     DispatchNoteModalComponent,
     MailVerificationComponent,
     CrmPageComponent,
-<<<<<<< HEAD
     VendorManagementComponent,
     VendorCategoryComponent,
     VendorIndividualComponent,
-=======
-    VendorListComponent,
-    // VendorCategoryCreationModalComponent,
-    ViewProductAsideComponent
->>>>>>> dc5468cae22fb8cf4404b74dfd47d4a595ccd03a
   ],
   imports: [
     BrowserModule,
