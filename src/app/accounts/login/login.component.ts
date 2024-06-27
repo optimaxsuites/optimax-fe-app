@@ -80,12 +80,29 @@ export class LoginComponent {
 
       // if (data) {
       //   // Store the received token in localStorage
-      //   // sessionStorage.setItem('token', data.token);
-      //   this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Login successful!' });
+      //   sessionStorage.setItem('token', data.token);
+      //   // this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Login successful!' });
 
       //   // Optionally, redirect to another page after successful login
       //   this.router.navigateByUrl('/dashboard');
       // }
+
+
+    //   (data) => {
+    //     this.loading = false;
+    //     console.log('Login successful, received data:', data); // Log the received data
+
+    //     if (data && data.token) {
+    //         // Store the received token in sessionStorage
+    //         sessionStorage.setItem('token', data.token);
+    //         this.authenticationService.setAuthenticated(true); // Update authentication status
+    //         this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Login successful!' });
+
+    //         // Optionally, redirect to another page after successful login
+    //         this.router.navigateByUrl('/dashboard');
+    //     } 
+    // },
+      
         
 
       // this.loading = false;
@@ -369,6 +386,84 @@ export class LoginComponent {
 //     }
 
 // }
+
+
+// userLoginAction(): void {
+//   this.submitted = true;
+//   this.loading = true;
+
+//   if (!this.loginInfo.email || !this.loginInfo.password) {
+//       this.loading = false;
+//   } else {
+//       setTimeout(() => {
+//           this.authenticationService.userLogin(this.loginInfo).subscribe(
+//               async (data) => {
+//                   this.loadInitParam(data);
+//                   if (!data) {
+//                       this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
+//                       this.loggedIn = false;
+//                       this.loading = false;
+//                   } else {
+//                       // console.log("greate", data);
+//                       // if (data.clientType === "INDIVIDUAL") {
+//                           await this.getUserRegInfoData(data);
+//                       // }
+//                   }
+//               },
+//               (error) => {
+//                 if (error.toString() == "500") {
+//                     this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
+//                     this.loggedIn = false;
+//                     this.loading = false;
+//                   } else if (error.toString() == "0") {
+//                       this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
+//                       this.loggedIn = false;
+//                       this.loading = false;
+//                   }
+//                   this.loading = false;
+//               }
+//           );
+//       }, 2000);
+//   }
+// }
+
+
+
+// loadInitParam(data: any) {
+//   sessionStorage.setItem("username", data.username);
+//   sessionStorage.setItem("userid", data.id);
+//   sessionStorage.setItem("accessToken", data.accessToken);
+//   localStorage.setItem("accessToken2", data.accessToken);
+//   sessionStorage["userRegData"] = JSON.stringify(data);
+// }
+
+
+// async getUserRegInfoData(data: any) {
+//   this.authenticationService
+//       .getRegDataByUsername(data.username)
+//       .subscribe((p) => {
+//           // console.log("second login method result", data);
+//           // console.log(p[1].user.roles);
+
+//           if (p) {
+//               sessionStorage["userInfoRegData"] = JSON.stringify(p);
+//           }
+//           this.router.navigate(["dashboard"]);
+//       });
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

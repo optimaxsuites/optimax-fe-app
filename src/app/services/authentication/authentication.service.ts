@@ -8,22 +8,52 @@ import { catchError, Observable, throwError } from 'rxjs';
 export class AuthenticationService {
   private _apiBaseUrl = (environment as any).apiBaseUrl;
 
-  private _authenticated: boolean = false; // Renamed property to _authenticated
+  // private _authenticated: boolean = false; // Renamed property to _authenticated
+
+  // constructor(private http: HttpClient) {
+  //   // Check if user is already authenticated on initialization
+  //   this._authenticated = !!sessionStorage.getItem('token');
+  // }
+
+  // // getToken(): string | null {
+  // //   const token = sessionStorage.getItem('token');
+  // //   console.log('Token:', token); // Log the token value
+  // //   return token;
+  // // }
+
+  // isAuthenticated(): boolean { // Renamed method to isAuthenticated
+  //   return this._authenticated;
+  // }
+
+
+  // private _authenticated: boolean = false;
 
   constructor(private http: HttpClient) {
     // Check if user is already authenticated on initialization
-    this._authenticated = !!localStorage.getItem('token');
+    // this._authenticated = !!sessionStorage.getItem('token');
   }
 
-  getToken(): string | null {
-    const token = localStorage.getItem('token');
-    console.log('Token:', token); // Log the token value
-    return token;
-  }
+  // isAuthenticated(): boolean {
+  //   return this._authenticated;
+  // }
 
-  isAuthenticated(): boolean { // Renamed method to isAuthenticated
-    return this._authenticated;
-  }
+  // setAuthenticated(authenticated: boolean): void {
+  //   this._authenticated = authenticated;
+  // }
+  // getToken(): string | null {
+  //   return sessionStorage.getItem('token');
+  // }
+
+  // setAuthenticated(status: boolean): void {
+  //   sessionStorage.setItem('isAuthenticated', status.toString());
+  // }
+
+  // isAuthenticated(): boolean {
+  //   return sessionStorage.getItem('isAuthenticated') === 'true';
+  // }
+
+
+
 
   userLogin(data: any): Observable<any> {
     console.log((this.getBaseApiUrl() + "/auth/sigin"+"---"+JSON.stringify(data)))
@@ -32,6 +62,17 @@ export class AuthenticationService {
         .post<any>(this.getBaseApiUrl() + "/auth/signin", data)
         .pipe(catchError(this.handleError));
   }
+
+  getRegDataByUsername(username: string): Observable<any> {
+    return this.http
+        .get<any>(
+            this.getBaseApiUrl() +
+                "/v2/mkr/findregbyusername?username=" +
+                username
+        )
+        .pipe(catchError(this.handleError));
+}
+
   
   userRegistration(data: any): Observable<any> {
     console.log((this.getBaseApiUrl() + "/auth/signup"+"---"+JSON.stringify(data)))

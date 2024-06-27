@@ -119,6 +119,7 @@ import { VendorIndividualComponent } from './components/vendor-individual/vendor
 // import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
 import { ViewProductAsideComponent } from './components/view-product-aside/view-product-aside.component';
 // import { AuthInterceptor } from './services/authentication/auth.interceptor.service';
+// import { AuthGuard } from './services/authentication/auth.guard';
 
 @NgModule({
   declarations: [
@@ -245,6 +246,7 @@ import { ViewProductAsideComponent } from './components/view-product-aside/view-
     //   useClass: AuthInterceptor,
     //   multi: true,
     // },
+    // AuthGuard,
     provideAnimationsAsync(),
     provideNativeDateAdapter(),
     // MessageService
