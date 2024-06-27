@@ -31,8 +31,7 @@ import { CrmPageComponent } from './pages/crm-page/crm-page.component';
 // import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
 import { ViewProductAsideComponent } from './components/view-product-aside/view-product-aside.component';
 import { VendorManagementComponent } from './components/vendorMangement/vendorManagement';
-import { AuthGuard } from './services/authentication/auth.guard';
-import { VendorCreationModalComponent } from './components/vendor-creation-modal/vendor-creation-modal.component';
+// import { AuthGuard } from './services/authentication/auth.guard';
 
 const routes: Routes = [
   {

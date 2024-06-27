@@ -8,30 +8,29 @@ import { catchError, Observable, throwError } from 'rxjs';
 export class AuthenticationService {
   private _apiBaseUrl = (environment as any).apiBaseUrl;
 
-  private _authenticated: boolean = false; // Renamed property to _authenticated
+  constructor(private http: HttpClient) {  }
 
-  constructor(private http: HttpClient) {
-    // Check if user is already authenticated on initialization
-    this._authenticated = !!localStorage.getItem('token');
-  }
-
-  getToken(): string | null {
-    const token = localStorage.getItem('token');
-    console.log('Token:', token); // Log the token value
-    return token;
-  }
-
-  isAuthenticated(): boolean { // Renamed method to isAuthenticated
-    return this._authenticated;
-  }
 
   userLogin(data: any): Observable<any> {
-    console.log((this.getBaseApiUrl() + "/auth/sigin"+"---"+JSON.stringify(data)))
+    console.log((this.getBaseApiUrl() + "/x/api/v2/auth/sigin"+"---"+JSON.stringify(data)))
 
     return this.http
-        .post<any>(this.getBaseApiUrl() + "/auth/signin", data)
+        .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signin", data)
         .pipe(catchError(this.handleError));
   }
+
+  getRegDataByUsername(username: string): Observable<any> {
+    console.log((this.getBaseApiUrl() + "/x/api/v2/us/ur/findByUsernameOrEmail?username="+"---"+JSON.stringify(username)))
+
+    return this.http
+        .get<any>(
+            this.getBaseApiUrl() +
+                "/x/api/v2/us/ur/findByUsernameOrEmail?username=" +
+                username
+        )
+        .pipe(catchError(this.handleError));
+}
+
   
   userRegistration(data: any): Observable<any> {
     console.log((this.getBaseApiUrl() + "/auth/signup"+"---"+JSON.stringify(data)))
