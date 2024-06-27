@@ -1,14 +1,30 @@
-<!-- <section *ngIf="formType === 'category'">
+<section *ngIf="formType === 'category'">
   <div class="first-container01">
     <div class="vendorCategory">
-      <span>Vendor Category</span>
+      <span>Name</span>
       <br />
       <input
         [(ngModel)]="categoryName"
         class="inputField"
         type="text"
-        placeholder="Enter Category Name"
+        placeholder=" Name" (keydown)="onKeydown($event)"
       />
+    </div>
+    <div class="vendorCategory">
+      <span>Code</span>
+      <br />
+      <input
+        [(ngModel)]="categoryCode"
+        class="inputField"
+        type="text"
+        placeholder="Code" (keydown)="onKeydown($event)"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>Description</span>
+      <br />
+        <textarea 
+        [(ngModel)]="categoryDesc" cols="40" rows="10" placeholder="Description" class="descText" (keydown)="onKeydown($event)" ></textarea>
     </div>
   </div>
 
@@ -17,8 +33,8 @@
   </div>
 </section>
 
-<section *ngIf="formType === 'individual'">
-  <div class="first-container01">
+<section class="createVendor" *ngIf="formType === 'individual'">
+  <div class="inputFlex">
     <div class="vendorCategory">
       <span>Vendor Name</span>
       <br />
@@ -34,11 +50,12 @@
       <br />
       <input
         [(ngModel)]="vendorCACNum"
-        class="inputField"
+        
         type="text"
         placeholder="CAC Number"
       />
     </div>
+  </div>
 
     <div class="vendorCategory">
       <span>Vendor Address</span>
@@ -81,9 +98,9 @@
         placeholder="Services"
       />
     </div>
-  </div>
+  
 
   <div class="btn-wrapper">
     <button (click)="saveVendor()" class="saveButton">Save & Continue</button>
   </div>
-</section> -->
+</section>

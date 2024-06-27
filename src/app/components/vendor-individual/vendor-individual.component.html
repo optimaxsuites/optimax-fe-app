@@ -1,0 +1,82 @@
+<div class="container-fluid" >
+    <div class="container-header">
+      <button class="btn create-invoice-btn" (click)="openDialog('individual')">
+        Create New Vendor
+      </button>
+    </div>
+    <section class="createVendors" >
+      <div class="asd">
+        <div class="top-products-container">
+          <div class="top-products">
+            <div class="top-products-table-container">
+              <table class="top-products-table w3-table w3-striped">
+                <thead>
+                  <tr class="top-products-table-row" >
+                    <th class="top-products-table-head  checkbox"></th>
+                    <th class="top-products-table-head col-1">
+                      Name
+                    </th>
+                    <th class="top-products-table-head col-1">Code</th>
+                    <th class="top-products-table-head col-1">Description</th>
+                    <th class="top-products-table-head col-1">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    class="top-products-table-row"
+                    *ngFor="let vCat of vCatList"
+                  >
+                    <td class="top-products-table-data">
+                      <input
+                        type="checkbox"
+                        class="check"
+                        (change)="toggleCheckbox(vCat.id)"
+                      />
+                    </td>
+                    <td class="top-products-table-data">
+                      {{ vCat.categoryName }}
+                    </td>
+                    <td class="top-products-table-data">
+                      {{ vCat.categoryCode }}
+                    </td>
+                    <td class="top-products-table-data">
+                      {{ vCat.categoryDesc }}
+                    </td>
+                   
+  
+                    <td class="top-products-table-data col-1">
+                      <div class="actionDiv">
+                        <div class="image-container">
+                          <img 
+                          (click)="editCategory(vCat)"
+                            class="actionTags"
+                            src="../../../assets/Edit.svg"
+                            alt=""
+                          />
+                          <span class="tooltip">Edit</span>
+                        </div>
+  
+                        <div class="image-container">
+                          <img
+                            class="actionTags"
+                            src="../../../assets/delete (1).svg"
+                            alt=""
+                          (click)="deleteVCategory(vCat.id)"
+                          />
+                          <span class="tooltip">Delete</span>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+  
+  
+  

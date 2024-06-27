@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { VendorListComponent } from './vendor-list.component';
+import { VendorCategoryComponent } from './vendor-category.component';
 
-describe('VendorListComponent', () => {
-  let component: VendorListComponent;
-  let fixture: ComponentFixture<VendorListComponent>;
+describe('VendorCategoryComponent', () => {
+  let component: VendorCategoryComponent;
+  let fixture: ComponentFixture<VendorCategoryComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [VendorListComponent]
+      declarations: [VendorCategoryComponent]
     })
     .compileComponents();
     
-    fixture = TestBed.createComponent(VendorListComponent);
+    fixture = TestBed.createComponent(VendorCategoryComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
