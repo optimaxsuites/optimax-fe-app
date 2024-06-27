@@ -7,6 +7,7 @@ import { Component } from '@angular/core';
 })
 export class MasterComponent {
   sidebarHidden: boolean = true;
+  
 
   toggleSidebar() {
     this.sidebarHidden = !this.sidebarHidden;

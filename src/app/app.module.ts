@@ -17,6 +17,11 @@ import { EditorModule } from 'primeng/editor';
 import { PasswordModule } from 'primeng/password';
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
+import { SidebarModule } from 'primeng/sidebar';
+import { DialogModule } from 'primeng/dialog';
+import { TabViewModule } from 'primeng/tabview';
+import { ToolbarModule } from 'primeng/toolbar';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 // import { MessagesModule } from 'primeng/messages';
 // import { MessageModule } from 'primeng/message';
 // import { MessageService } from 'primeng/api';
@@ -30,7 +35,7 @@ import { NgApexchartsModule } from 'ng-apexcharts';
 import { DropdownModule } from 'primeng/dropdown';
 // import { EditorModule } from "@progress/kendo-angular-editor";
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { HttpClientModule } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { AngularEditorModule } from '@kolkov/angular-editor';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { AsyncPipe } from '@angular/common';
@@ -108,9 +113,16 @@ import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dis
 import { MailVerificationComponent } from './accounts/mail-verification/mail-verification.component';
 import { ToastrModule } from 'ngx-toastr';
 import { CrmPageComponent } from './pages/crm-page/crm-page.component';
+<<<<<<< HEAD
 import { VendorManagementComponent } from './components/vendorMangement/vendorManagement';
 import { VendorCategoryComponent } from './components/vendor-category/vendor-category.component';
 import { VendorIndividualComponent } from './components/vendor-individual/vendor-individual.component';
+=======
+import { VendorListComponent } from './components/vendor-category-list/vendor-list.component';
+// import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
+import { ViewProductAsideComponent } from './components/view-product-aside/view-product-aside.component';
+// import { AuthInterceptor } from './services/authentication/auth.interceptor.service';
+>>>>>>> dc5468cae22fb8cf4404b74dfd47d4a595ccd03a
 
 @NgModule({
   declarations: [
@@ -177,9 +189,15 @@ import { VendorIndividualComponent } from './components/vendor-individual/vendor
     DispatchNoteModalComponent,
     MailVerificationComponent,
     CrmPageComponent,
+<<<<<<< HEAD
     VendorManagementComponent,
     VendorCategoryComponent,
     VendorIndividualComponent,
+=======
+    VendorListComponent,
+    // VendorCategoryCreationModalComponent,
+    ViewProductAsideComponent
+>>>>>>> dc5468cae22fb8cf4404b74dfd47d4a595ccd03a
   ],
   imports: [
     BrowserModule,
@@ -205,6 +223,11 @@ import { VendorIndividualComponent } from './components/vendor-individual/vendor
     MatDividerModule,
     DropdownModule,
     MatProgressSpinnerModule,
+    SidebarModule,
+    DialogModule,
+    TabViewModule,
+    ToolbarModule,
+    ConfirmDialogModule,
     // EditorModule,
     // MessagesModule,
     // MessageModule,
@@ -227,6 +250,11 @@ import { VendorIndividualComponent } from './components/vendor-individual/vendor
     // ToastrModule.forRoot(),
   ],
   providers: [
+    // {
+    //   provide: HTTP_INTERCEPTORS,
+    //   useClass: AuthInterceptor,
+    //   multi: true,
+    // },
     provideAnimationsAsync(),
     provideNativeDateAdapter(),
     // MessageService

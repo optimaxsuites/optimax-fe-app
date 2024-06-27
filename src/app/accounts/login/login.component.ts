@@ -6,7 +6,7 @@ import {
   Validators,
 } from '@angular/forms';
 import {ErrorStateMatcher} from '@angular/material/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { AuthenticationService } from 'src/app/services/authentication/authentication.service';
 
@@ -32,7 +32,7 @@ export class LoginComponent {
 
   loading: boolean = false;
   // loginDetails: any = {};
-  loginDetails = {
+  loginInfo = {
     email: '',
     password: ''
 };
@@ -50,8 +50,188 @@ export class LoginComponent {
   constructor(
     private authenticationService: AuthenticationService,
     private messageService: MessageService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute,
   ){}
+
+
+  userLoginAction() {
+    this.submitted = true;
+
+    // Check if username and password are filled
+    if (!this.loginInfo.email || !this.loginInfo.password) {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
+        console.log("Username and password are required");
+        return;
+    }
+
+    this.loading = true;
+
+    const loginDetails = {
+        username: this.loginInfo.email,
+        password: this.loginInfo.password,
+    };
+
+    this.authenticationService.userLogin(loginDetails).subscribe(
+        (data) => {
+
+      //     this.loading = false;
+      // console.log('Login successful, received data:', data); // Log the received data
+
+      // if (data) {
+      //   // Store the received token in localStorage
+      //   // sessionStorage.setItem('token', data.token);
+      //   this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Login successful!' });
+
+      //   // Optionally, redirect to another page after successful login
+      //   this.router.navigateByUrl('/dashboard');
+      // }
+        
+
+      // this.loading = false;
+      //   this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Login successful!', life: 2000 });
+        
+      //   const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+      //   this.router.navigateByUrl(returnUrl);
+
+
+
+
+          this.loading = false;
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Login successful!', life: 2000 });
+          // Optionally, redirect to another page after successful login
+          this.router.navigateByUrl('/dashboard');
+        },
+        (error) => {
+          if (error.toString() == "500") {
+            this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
+            this.loggedIn = false;
+            this.loading = false;
+          } else if (error.toString() == "0") {
+              this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
+              this.loggedIn = false;
+              this.loading = false;
+          }
+          this.loading = false;
+        }
+        
+      );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -64,11 +244,12 @@ export class LoginComponent {
 
 //     if (!this.loginDetails.email || !this.loginDetails.password) {
 //         this.loading = false;
-//         console.log("Here as "+JSON.stringify(this.loginDetails));
+//         // console.log("Here as "+JSON.stringify(this.loginDetails));
 
 //         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Email and password are required' });
 //         // console.log("Email and password are required");
-//     } else {
+//     }  
+//     else {
 //         setTimeout(() => {
 //             this.authenticationService.userLogin(this.loginDetails).subscribe(
 //                 async (data) => {
@@ -85,9 +266,9 @@ export class LoginComponent {
 //                         // }
 
 //                         // Optionally navigate based on roles
-//                         if (data.roles.includes('admin')) {
+//                         // if (data.roles.includes('admin')) {
 //                           this.router.navigateByUrl('/dashboard');
-//                         } 
+//                         // } 
 //                     }
 //                 },
 //                 (error) => {
@@ -107,84 +288,87 @@ export class LoginComponent {
 // }
 
 
-userLoginAction() {
-  this.submitted = true;
-  this.loading = true;
+// userLoginAction() {
+//   this.submitted = true;
+//   this.loading = true;
 
-  if (!this.loginDetails.email || !this.loginDetails.password) {
-      this.loading = false;
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Email and password are required' });
-      return; // Exit early if email or password is missing
-  }
+//   if (!this.loginDetails.email || !this.loginDetails.password) {
+//       this.loading = false;
+//       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Email and password are required' });
+//       return; // Exit early if email or password is missing
+//     } else{
 
-  this.authenticationService.userLogin(this.loginDetails).subscribe(
-      async (data) => {
-          if (!data) {
-              this.messageService.add({ severity: 'error', summary: 'Unsuccessful', detail: 'Invalid login details. Please try again.' });
-              this.loggedIn = false;
-          } else {
-              // Optionally navigate based on roles
-              if (data.roles.includes('admin')) {
-                  this.router.navigateByUrl('/dashboard');
-                  this.loggedIn = true; // Set logged-in state to true
-              } 
-              else {
-                  this.messageService.add({ severity: 'error', summary: 'Unauthorized', detail: 'You do not have permission to access this dashboard.' });
-                  this.loggedIn = false;
-              }
-          }
-      },
-      (error) => {
-        if (error.status === 400) {
-            this.messageService.add({ 
-                severity: 'error', 
-                summary: 'Bad Request', 
-                detail: 'The request was invalid. Please check your inputs and try again.' 
-            });
-        } else if (error.status === 401 || error.status === 403) {
-            this.messageService.add({ 
-                severity: 'error', 
-                summary: 'Authentication Failed', 
-                detail: 'Invalid email/password. Please try again.' 
-            });
-        } else if (error.status === 404) {
-            this.messageService.add({ 
-                severity: 'error', 
-                summary: 'Not Found', 
-                detail: 'The requested resource was not found.' 
-            });
-        } else if (error.status === 500) {
-            this.messageService.add({ 
-                severity: 'error', 
-                summary: 'Internal Server Error', 
-                detail: 'Something went wrong on the server. Please try again later.' 
-            });
-        } else if (error.status === 503) {
-            this.messageService.add({ 
-                severity: 'error', 
-                summary: 'Service Unavailable', 
-                detail: 'The server is currently unavailable. Please try again later.' 
-            });
-        } else if (error.status === 0) {
-            this.messageService.add({ 
-                severity: 'error', 
-                summary: 'Server Unreachable', 
-                detail: 'The server for authentication is unreachable. Check your connection.' 
-            });
-        } else {
-            this.messageService.add({ 
-                severity: 'error', 
-                summary: 'Error', 
-                detail: 'An unexpected error occurred. Please try again later.' 
-            });
-        }
-        this.loggedIn = false;
-    }
-    
-  ).add(() => {
-      this.loading = false; // Ensure loading indicator is turned off after API call completes
-  });
-}
+//         this.authenticationService.userLogin(this.loginDetails).subscribe(
+//             async (data) => {
+//                 if (!data) {
+//                     this.messageService.add({ severity: 'error', summary: 'Unsuccessful', detail: 'Invalid login details. Please try again.' });
+//                     this.loggedIn = false;
+//                 } else {
+//                     // Optionally navigate based on roles
+//                     if (data.roles.includes('admin')) {
+//                         this.router.navigateByUrl('/dashboard');
+//                         this.loggedIn = true; // Set logged-in state to true
+//                     } 
+//                     else {
+//                         this.messageService.add({ severity: 'error', summary: 'Unauthorized', detail: 'You do not have permission to access this dashboard.' });
+//                         this.loggedIn = false;
+//                     }
+//                 }
+//             },
+//             (error) => {
+//               if (error.status === 400) {
+//                   this.messageService.add({ 
+//                       severity: 'error', 
+//                       summary: 'Bad Request', 
+//                       detail: 'The request was invalid. Please check your inputs and try again.' 
+//                   });
+//               } else if (error.status === 401 || error.status === 403) {
+//                   this.messageService.add({ 
+//                       severity: 'error', 
+//                       summary: 'Authentication Failed', 
+//                       detail: 'Invalid email/password. Please try again.' 
+//                   });
+//               } else if (error.status === 404) {
+//                   this.messageService.add({ 
+//                       severity: 'error', 
+//                       summary: 'Not Found', 
+//                       detail: 'The requested resource was not found.' 
+//                   });
+//               } else if (error.status === 500) {
+//                   this.messageService.add({ 
+//                       severity: 'error', 
+//                       summary: 'Internal Server Error', 
+//                       detail: 'Something went wrong on the server. Please try again later.' 
+//                   });
+//               } else if (error.status === 503) {
+//                   this.messageService.add({ 
+//                       severity: 'error', 
+//                       summary: 'Service Unavailable', 
+//                       detail: 'The server is currently unavailable. Please try again later.' 
+//                   });
+//               } else if (error.status === 0) {
+//                   this.messageService.add({ 
+//                       severity: 'error', 
+//                       summary: 'Server Unreachable', 
+//                       detail: 'The server for authentication is unreachable. Check your connection.' 
+//                   });
+//               } else {
+//                   this.messageService.add({ 
+//                       severity: 'error', 
+//                       summary: 'Error', 
+//                       detail: 'An unexpected error occurred. Please try again later.' 
+//                   });
+//               }
+//               this.loggedIn = false;
+//           }
+          
+//         ).add(() => {
+//             this.loading = false; // Ensure loading indicator is turned off after API call completes
+//         });
+
+//     }
+
+// }
 
 
 

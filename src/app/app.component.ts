@@ -9,6 +9,9 @@ import { Component, HostListener, ViewEncapsulation } from '@angular/core';
 export class AppComponent {
   title = 'ERP-FE';
 
+  sidebarVisible2: boolean = false;
+
+
   screenWidth: number;
 
   constructor() {

@@ -8,17 +8,31 @@ import { catchError, Observable, throwError } from 'rxjs';
 export class AuthenticationService {
   private _apiBaseUrl = (environment as any).apiBaseUrl;
 
-  constructor(private http: HttpClient) { }
+  private _authenticated: boolean = false; // Renamed property to _authenticated
 
-  public RegistrationMultiForm: any = {};
+  constructor(private http: HttpClient) {
+    // Check if user is already authenticated on initialization
+    this._authenticated = !!localStorage.getItem('token');
+  }
+
+  getToken(): string | null {
+    const token = localStorage.getItem('token');
+    console.log('Token:', token); // Log the token value
+    return token;
+  }
+
+  isAuthenticated(): boolean { // Renamed method to isAuthenticated
+    return this._authenticated;
+  }
 
   userLogin(data: any): Observable<any> {
-    console.log((this.getBaseApiUrl() + "/auth/signup"+"---"+JSON.stringify(data)))
+    console.log((this.getBaseApiUrl() + "/auth/sigin"+"---"+JSON.stringify(data)))
 
     return this.http
         .post<any>(this.getBaseApiUrl() + "/auth/signin", data)
         .pipe(catchError(this.handleError));
   }
+  
   userRegistration(data: any): Observable<any> {
     console.log((this.getBaseApiUrl() + "/auth/signup"+"---"+JSON.stringify(data)))
 
@@ -26,19 +40,6 @@ export class AuthenticationService {
         .post<any>(this.getBaseApiUrl() + "/auth/signup", data)
         .pipe(catchError(this.handleError));
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   private getBaseApiUrl(): string {
     return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
