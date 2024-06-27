@@ -1,27 +1,29 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { DataService } from '../../data.service';
 import { MatDialog } from '@angular/material/dialog';
-import { VendorManagementComponent } from '../vendorMangement/vendorManagement';
-import { Router } from '@angular/router';
 
 @Component({
-  selector: 'app-vendor-list',
-  templateUrl: './vendor-list.component.html',
-  styleUrl: './vendor-list.component.scss',
+  selector: 'app-vendor-individual',
+  templateUrl: './vendor-individual.component.html',
+  styleUrl: './vendor-individual.component.scss'
 })
-export class VendorListComponent implements OnInit {
+
+
+export class VendorIndividualComponent implements OnInit {
   vCatList: any[] = [];
   individualVendorList: any[] = [];
   checkboxState: { [key: string]: boolean } = {};
+  isVendorList: boolean = false;
+  isIndividualFormVisible: boolean = false;
 
   constructor(
     private dataService: DataService,
     private cdr: ChangeDetectorRef,
     public dialog: MatDialog,
-    private router: Router
   ) {}
 
   ngOnInit() {
+    
     this.dataService.vCatList$.subscribe((vCatList) => {
       this.vCatList = vCatList;
       this.cdr.detectChanges();
@@ -49,23 +51,23 @@ export class VendorListComponent implements OnInit {
     }
   }
 
-  editVendor(vendor: any) {
-    this.openDialog('individual', vendor);
-    // console.log('clicked', vendor);
+ 
+
+
+
+  
+
+  
+
+  deleteVCategory(id: string) {
+    this.dataService.deleteVCategory(id);
   }
 
   deleteVendor(id: string) {
     this.dataService.deleteVendor(id);
   }
 
-  openDialog(type: string, vendor?: any) {
-    const dialogRef = this.dialog.open(VendorManagementComponent, {
-      data: {
-        formType: type,
-        iVenList: vendor || {},
-      },
-    });
-  }
+ 
 
   toggleCheckbox(id: string) {
     this.checkboxState[id] = !this.checkboxState[id];

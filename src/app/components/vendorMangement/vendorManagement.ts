@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { DataService } from '../../data.service';
 import {
   MAT_DIALOG_DATA,
@@ -11,9 +11,12 @@ import {
   templateUrl: './vendorManagement.component.html',
   styleUrl: './vendorManagement.component.scss',
 })
-export class VendorManagementComponent {
+export class VendorManagementComponent implements OnInit {
   formType: string;
+  // formType: 'individual' | 'category' = 'category';
   iVenList: any;
+  vCatList: any;
+  category: any;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: any,
@@ -23,23 +26,36 @@ export class VendorManagementComponent {
   ) {
     this.formType = data.formType;
     this.iVenList = data.iVenList || {};
+    this.vCatList = data.vCatList || {};
+   
+}
+
+  ngOnInit() {
+    
+    console.log('Dialog Data:', this.data); // Check what data is received
+    this.formType = this.data.formType;
+    this.iVenList = this.data.iVenList;
+    this.vCatList = this.data.vCatList;
     if (
       this.formType === 'individual' &&
       Object.keys(this.iVenList).length > 0
     ) {
-      this.vendorName = data.iVenList.vendorName;
-      this.vendorCACNum = data.iVenList.vendorCACNum;
-      this.vendorAddress = data.iVenList.vendorAddress;
-      this.vendorPhoneNumber = data.iVenList.vendorPhoneNumber;
-      this.vendorEmail = data.iVenList.vendorEmail;
-      this.vendorServices = data.iVenList.vendorServices;
-    }
+    
+      this.vendorName = this.iVenList.vendorName;
+      this.vendorCACNum = this.iVenList.vendorCACNum;
+      this.vendorAddress = this.iVenList.vendorAddress;
+      this.vendorPhoneNumber = this.iVenList.vendorPhoneNumber;
+      this.vendorEmail = this.iVenList.vendorEmail;
+      this.vendorServices = this.iVenList.vendorServices;
+    } else if(
+      this.formType === 'category' &&
+      Object.keys(this.vCatList).length > 0)
+     {
+    
+  this.categoryName = this.vCatList.categoryName;
+      this.categoryCode = this.vCatList.categoryCode;
+      this.categoryDesc = this.vCatList.categoryDesc;
   }
-
-  ngOnInit() {
-    console.log('Dialog Data:', this.data); // Check what data is received
-    this.formType = this.data.formType;
-    this.iVenList = this.data.iVenList;
   }
 
   categoryName: string = '';
@@ -52,14 +68,32 @@ export class VendorManagementComponent {
   vendorEmail: string = '';
   vendorServices: string = '';
 
+  onKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      event.preventDefault(); 
+      event.stopPropagation();
+      this.saveCategory();
+    }
+  }
+
   saveCategory() {
-    if (this.categoryName) {
+    if (this.categoryName && this.categoryCode && this.categoryDesc) {
       const vendorData = {
-        category: this.categoryName,
+        categoryName: this.categoryName,        
+        categoryCode: this.categoryCode,
+        categoryDesc: this.categoryDesc,
       };
       console.log(vendorData);
 
-      this.dataService.saveVCatData(vendorData);
+      // this.dataService.saveVCatData(vendorData);
+      if (this.vCatList.id) {
+        this.dataService.updateVendorCategoryData(
+          this.vCatList.id,
+          vendorData
+        )
+      } else {
+        this.dataService.saveVCatData(vendorData);
+      }
       this.clearVendorInput();
       this.dialogRef.close();
     }
@@ -108,12 +142,23 @@ export class VendorManagementComponent {
     this.vendorServices;
   }
 
-  openDialog(type: string, vendor?: any) {
-    const dialogRef = this.dialog.open(VendorManagementComponent, {
-      data: {
-        formType: type,
-        iVenList: vendor || {},
-      },
-    });
+ 
+
+  // openDialog(type: string, vendor?: any, category?: any) {
+  //   const dialogRef = this.dialog.open(VendorManagementComponent, {
+  //     data: {
+  //       formType: type,
+  //       iVenList: vendor || {} ,
+  //       vCatList: category || {} ,
+        
+  //     },
+  //   });
+  //   // console.log(category)
+  // }
+
+  toggleForm(type: 'individual' | 'category') {
+    this.formType = type;
+    // Reset form fields if needed
+    // this.resetFormFields();
   }
 }

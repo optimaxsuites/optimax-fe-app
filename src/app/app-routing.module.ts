@@ -143,10 +143,14 @@ const routes: Routes = [
         path: 'crm',
         component: CrmPageComponent,
       },
-      {
-        path: 'crm/vendor-creation',
-        component: VendorManagementComponent,
-      },
+      // {
+      //   path: 'crm/vendorCreation',
+      //   component: VendorCreationModalComponent,
+      // },
+      // {
+      //   path: 'crm/vendorManagement',
+      //   component: VendorManagementComponent,
+      // },
     ],
   },
 ];

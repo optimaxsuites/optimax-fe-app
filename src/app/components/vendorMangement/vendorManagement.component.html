@@ -1,14 +1,30 @@
-<!-- <section *ngIf="formType === 'category'">
+<section>
   <div class="first-container01">
     <div class="vendorCategory">
-      <span>Vendor Category</span>
+      <span>Name</span>
       <br />
       <input
         [(ngModel)]="categoryName"
         class="inputField"
         type="text"
-        placeholder="Enter Category Name"
+        placeholder=" Name" (keydown)="onKeydown($event)"
       />
+    </div>
+    <div class="vendorCategory">
+      <span>Code</span>
+      <br />
+      <input
+        [(ngModel)]="categoryCode"
+        class="inputField"
+        type="text"
+        placeholder="Code" (keydown)="onKeydown($event)"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>Description</span>
+      <br />
+        <textarea 
+        [(ngModel)]="categoryDesc" cols="54" rows="15" placeholder="Description" class="descText" (keydown)="onKeydown($event)" ></textarea>
     </div>
   </div>
 
@@ -17,8 +33,8 @@
   </div>
 </section>
 
-<section *ngIf="formType === 'individual'">
-  <div class="first-container01">
+<form class="createVendor">
+  <div class="inputFlex">
     <div class="vendorCategory">
       <span>Vendor Name</span>
       <br />
@@ -30,16 +46,25 @@
       />
     </div>
     <div class="vendorCategory">
-      <span>Vendor CAC Number</span>
+      <span>Vendor Type</span>
       <br />
-      <input
+      <select name="" id="" class="smallInput">
+        <option value="" disabled selected hidden>Choose Type</option>
+        <option value="individual">Individual
+        </option>
+        <option value="Company">Company</option>
+      </select>
+      
+      <!-- <input
         [(ngModel)]="vendorCACNum"
-        class="inputField"
+        class="smallInput"
         type="text"
         placeholder="CAC Number"
-      />
+      /> -->
     </div>
+  </div>
 
+  <div class="inputFlex">
     <div class="vendorCategory">
       <span>Vendor Address</span>
       <br />
@@ -51,16 +76,18 @@
       />
     </div>
     <div class="vendorCategory">
-      <span>Vendor Phone Number</span>
+      <span>Industry</span>
       <br />
       <input
         [(ngModel)]="vendorPhoneNumber"
-        class="inputField"
+        class="smallInput"
         type="text"
-        placeholder="Phone"
+        placeholder="Industry"
       />
     </div>
+    </div>
 
+    <div class="inputFlex">
     <div class="vendorCategory">
       <span>Vendor Email</span>
       <br />
@@ -72,18 +99,184 @@
       />
     </div>
     <div class="vendorCategory">
-      <span>Vendor Services</span>
+      <span>Category</span>
       <br />
       <input
         [(ngModel)]="vendorServices"
-        class="inputField"
+        class="smallInput"
         type="text"
-        placeholder="Services"
+        placeholder="Category"
       />
     </div>
   </div>
 
+    <div class="inputFlex">
+    <div class="vendorCategory">
+      <span>Contact Person</span>
+      <br />
+      <input
+        [(ngModel)]="vendorEmail"
+        class="inputField"
+        type="text"
+        placeholder="Contact Person"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>Phone Number</span>
+      <br />
+      <input
+        [(ngModel)]="vendorServices"
+        class="smallInput"
+        type="text"
+        placeholder="Phone Number"
+      />
+    </div>
+  </div>
+
+    <div class="inputFlex">
+    
+    <div class="vendorCategory">
+      <span>Job Position</span>
+      <br />
+      <input
+        [(ngModel)]="vendorServices"
+        class="smallInput"
+        type="text"
+        placeholder="Job Position"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>Website Link</span>
+      <br />
+      <input
+        [(ngModel)]="vendorEmail"
+        class="inputField"
+        type="text"
+        placeholder="Website Link"
+      />
+    </div>
+  </div>
+
+    <div class="inputFlex">
+    
+   
+    <div class="vendorCategory">
+      <span>Country</span>
+      <br />
+      <input
+        [(ngModel)]="vendorEmail"
+        class="inputField"
+        type="text"
+        placeholder="Country"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>Street Address</span>
+      <br />
+      <input
+        [(ngModel)]="vendorServices"
+        class="smallInput"
+        type="text"
+        placeholder="Street Address"
+      />
+    </div>
+  </div>
+
+    <div class="inputFlex">
+      <div class="vendorCategory">
+      <span>State</span>
+      <br />
+      <input
+        [(ngModel)]="vendorEmail"
+        class="threeInputField"
+        type="text"
+        placeholder="State"
+      />
+    </div>
+      <div class="vendorCategory">
+      <span>City</span>
+      <br />
+      <input
+        [(ngModel)]="vendorEmail"
+        class="threeInputField"
+        type="text"
+        placeholder="City"
+      />
+    </div>
+      <div class="vendorCategory">
+      <span>Postal Code</span>
+      <br />
+      <input
+        [(ngModel)]="vendorEmail"
+        class="threeInputField"
+        type="text"
+        placeholder="Postal Code"
+      />
+    </div>
+    
+  </div>
+
+    <div class="inputFlex">
+      <div class="vendorCategory">
+      <span>CAC NO:</span>
+      <br />
+      <input
+        [(ngModel)]="vendorEmail"
+        class="threeInputField"
+        type="text"
+        placeholder="CAC NO:"
+      />
+    </div>
+      <div class="vendorCategory">
+      <span>TIN NO:</span>
+      <br />
+      <input
+        [(ngModel)]="vendorEmail"
+        class="threeInputField"
+        type="text"
+        placeholder="TIN NO:"
+      />
+    </div>
+      <div class="vendorCategory">
+      <span>BVN (Optional)</span>
+      <br />
+      <input
+        [(ngModel)]="vendorEmail"
+        class="threeInputField"
+        type="text"
+        placeholder="BVN (Optional)"
+      />
+    </div>
+    
+  </div>
+
+  <h2>BANK DETAILS</h2>
+  <div class="inputFlex">
+    
+    <div class="vendorCategory">
+    <span>Bank Name</span>
+    <br />
+    <input
+      [(ngModel)]="vendorEmail"
+      class="inputField"
+      type="text"
+      placeholder="Bank Name"
+    />
+  </div>
+  <div class="vendorCategory">
+    <span>Account NO:</span>
+    <br />
+    <input
+      [(ngModel)]="vendorEmail"
+      class="smallInput"
+      type="text"
+      placeholder="Account NO:"
+    />
+  </div>
+  
+</div>
+
   <div class="btn-wrapper">
     <button (click)="saveVendor()" class="saveButton">Save & Continue</button>
   </div>
-</section> -->
+</form>
