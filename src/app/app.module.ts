@@ -26,7 +26,6 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 // import { MessageModule } from 'primeng/message';
 // import { MessageService } from 'primeng/api';
 import { RippleModule } from 'primeng/ripple';
-
 import { MatTabGroup, MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatRadioModule } from '@angular/material/radio';
@@ -189,6 +188,7 @@ import { AuthInterceptor } from './services/authentication/auth.interceptor.serv
     VendorManagementComponent,
     VendorCategoryComponent,
     VendorIndividualComponent,
+    // VendorCreationModalComponent,
   ],
   imports: [
     BrowserModule,

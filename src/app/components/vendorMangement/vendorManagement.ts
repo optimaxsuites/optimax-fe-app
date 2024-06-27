@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { DataService } from '../../data.service';
 import {
   MAT_DIALOG_DATA,
@@ -11,8 +11,9 @@ import {
   templateUrl: './vendorManagement.component.html',
   styleUrl: './vendorManagement.component.scss',
 })
-export class VendorManagementComponent {
+export class VendorManagementComponent implements OnInit {
   formType: string;
+  // formType: 'individual' | 'category' = 'category';
   iVenList: any;
   vCatList: any;
   category: any;
@@ -30,6 +31,7 @@ export class VendorManagementComponent {
 }
 
   ngOnInit() {
+    
     console.log('Dialog Data:', this.data); // Check what data is received
     this.formType = this.data.formType;
     this.iVenList = this.data.iVenList;
@@ -142,15 +144,21 @@ export class VendorManagementComponent {
 
  
 
-  openDialog(type: string, vendor?: any, category?: any) {
-    const dialogRef = this.dialog.open(VendorManagementComponent, {
-      data: {
-        formType: type,
-        iVenList: vendor || {} ,
-        vCatList: category || {} ,
+  // openDialog(type: string, vendor?: any, category?: any) {
+  //   const dialogRef = this.dialog.open(VendorManagementComponent, {
+  //     data: {
+  //       formType: type,
+  //       iVenList: vendor || {} ,
+  //       vCatList: category || {} ,
         
-      },
-    });
-    // console.log(category)
+  //     },
+  //   });
+  //   // console.log(category)
+  // }
+
+  toggleForm(type: 'individual' | 'category') {
+    this.formType = type;
+    // Reset form fields if needed
+    // this.resetFormFields();
   }
 }
