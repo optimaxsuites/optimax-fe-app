@@ -188,7 +188,7 @@ import { AuthInterceptor } from './services/authentication/auth.interceptor.serv
     VendorManagementComponent,
     VendorCategoryComponent,
     VendorIndividualComponent,
-    VendorCreationModalComponent,
+    // VendorCreationModalComponent,
   ],
   imports: [
     BrowserModule,
