@@ -118,7 +118,7 @@ import { VendorCategoryComponent } from './components/vendor-category/vendor-cat
 import { VendorIndividualComponent } from './components/vendor-individual/vendor-individual.component';
 // import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
 import { ViewProductAsideComponent } from './components/view-product-aside/view-product-aside.component';
-// import { AuthInterceptor } from './services/authentication/auth.interceptor.service';
+import { AuthInterceptor } from './services/authentication/auth.interceptor.service';
 // import { AuthGuard } from './services/authentication/auth.guard';
 
 @NgModule({
@@ -241,15 +241,13 @@ import { ViewProductAsideComponent } from './components/view-product-aside/view-
     // ToastrModule.forRoot(),
   ],
   providers: [
-    // {
-    //   provide: HTTP_INTERCEPTORS,
-    //   useClass: AuthInterceptor,
-    //   multi: true,
-    // },
-    // AuthGuard,
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true,
+    },
     provideAnimationsAsync(),
     provideNativeDateAdapter(),
-    // MessageService
   ],
   bootstrap: [AppComponent],
 })
