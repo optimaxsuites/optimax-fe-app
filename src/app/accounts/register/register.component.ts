@@ -185,27 +185,27 @@ export class RegisterComponent {
     this.authenticationService.userRegistration(signupDetails).subscribe(
       async (data) => {
             this.loading = false;
-            this.messageService.add({ severity: 'success', summary: 'Success', detail: 'User registered successfully!' });
+            // this.messageService.add({ severity: 'success', summary: 'Success', detail: 'User registered successfully!' });
             // Optionally, redirect to another page after successful registration
-            // this.router.navigateByUrl('/login');
+            this.router.navigateByUrl('/email-verification');
         },
         (error) => {
 
-          if (error.status === 400) {
+          if (error.toString() == '400') {
             // Client-side validation error (invalid input)
             this.messageService.add({ 
                 severity: 'error', 
                 summary: 'Registration Failed', 
-                detail: 'Invalid input. Please check your information and try again.' 
+                detail: 'Your account have not been verified. Check your mail to verify!' 
             });
-        } else if (error.status === 409) {
+        } else if (error.toString() == '409') {
             // Conflict error (e.g., email already registered)
             this.messageService.add({ 
                 severity: 'error', 
                 summary: 'Registration Failed', 
                 detail: 'Email address is already registered. Please use a different email or login.' 
             });
-        } else if (error.status === 0) {
+        } else if (error.toString() == '0') {
             // Network error or server unreachable
             this.messageService.add({ 
                 severity: 'error', 

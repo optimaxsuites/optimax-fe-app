@@ -126,12 +126,12 @@ userLoginAction(): void {
                       this.loading = false;
                   } else {
                       // console.log("greate", data);
-                      if (data.roles === "ROLE_ADMIN") {
+                      // if (data.roles === "ROLE_ADMIN") {
                           await this.getUserRegInfoData(data);
                           // this.router.navigate(["dashboard"]);
                           this.loggedIn = true;
                           this.loading = false;
-                      }
+                      // }
                       
 
                   }
