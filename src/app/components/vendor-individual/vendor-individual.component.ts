@@ -95,9 +95,9 @@ onVendorTypeChange(event: Event) {
   }
 
   clearVendorInput() {
-   this.individualVendor.individualVendorAcctName
+   this.individualVendor.individualVendorAcctName = ''
 
-
+this.individualVendor.individualVendorEmail= ''
 
 
 
