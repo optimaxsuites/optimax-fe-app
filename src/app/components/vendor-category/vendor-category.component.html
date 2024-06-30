@@ -1,10 +1,9 @@
-<div class="container-fluid" >
+<div class="container-fluid" *ngIf="tableSection">
     <div class="container-header">
-      <button class="btn create-invoice-btn" routerLink="/crm/vendorCreation">
-        Create New Vendor Category
+      <button class="btn create-invoice-btn" (click)="openForm()">
+        Create New Vendor Category 
       </button>
-      
-    </div>
+      </div>
     <section class="selectClients" >
       <div class="asd">
         <div class="top-products-container">
@@ -77,6 +76,40 @@
       </div>
     </section>
   </div>
+
+ 
+  <form class="categoryCreation" *ngIf="formSection">
+    <div class="first-container01">
+      <div class="vendorCategory">
+        <span>Name</span>
+        <br />
+        <input
+          class="inputField"
+          type="text"
+          placeholder=" Name" [(ngModel)] = "categoryGroup.categoryName" [ngModelOptions]="{standalone: true}" 
+        />
+      </div>
+      <div class="vendorCategory">
+        <span>Code</span>
+        <br />
+        <input
+          class="inputField"
+          type="text"
+          placeholder="Code" [(ngModel)] = "categoryGroup.categoryCode" [ngModelOptions]="{standalone: true}" 
+        />
+      </div>
+      <div class="vendorCategory">
+        <span>Description</span>
+        <br />
+          <textarea [(ngModel)] = "categoryGroup.categoryDesc" [ngModelOptions]="{standalone: true}"  cols="54" rows="15" placeholder="Description" class="descText"  ></textarea>
+      </div>
+    </div>
+  
+    <div class="btn-wrapper">
+      <button (click)="saveCategory()" class="saveButton">Save & Continue</button>
+    </div>
+  </form>
+
   
   
   

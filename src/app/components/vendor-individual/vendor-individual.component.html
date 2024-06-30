@@ -1,6 +1,6 @@
-<div class="container-fluid" >
+<div class="container-fluid" *ngIf="tableSection">
     <div class="container-header">
-      <button class="btn create-invoice-btn" routerLink='/crm/vendorCreation' >
+      <button class="btn create-invoice-btn"  (click)="openForm()" >
         Create New Vendor
       </button>
     </div>
@@ -16,31 +16,34 @@
                     <th class="top-products-table-head col-1">
                       Name
                     </th>
-                    <th class="top-products-table-head col-1">Code</th>
-                    <th class="top-products-table-head col-1">Description</th>
-                    <th class="top-products-table-head col-1">Actions</th>
+                    <th class="top-products-table-head col-1">Company</th>
+                    <th class="top-products-table-head col-1">Email</th>
+                    <th class="top-products-table-head col-1">Contact</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr
                     class="top-products-table-row"
-                    *ngFor="let vCat of vCatList"
+                    *ngFor="let iVen of individualVendorList"
                   >
                     <td class="top-products-table-data">
                       <input
                         type="checkbox"
                         class="check"
-                        (change)="toggleCheckbox(vCat.id)"
+                        (change)="toggleCheckbox(iVen.id)"
                       />
                     </td>
                     <td class="top-products-table-data">
-                      {{ vCat.categoryName }}
+                      {{ iVen.individualVendorName }}
                     </td>
                     <td class="top-products-table-data">
-                      {{ vCat.categoryCode }}
+                      {{ iVen.individualVendorCompany }}
                     </td>
                     <td class="top-products-table-data">
-                      {{ vCat.categoryDesc }}
+                      {{ iVen.individualVendorContactPerson }}
+                    </td>
+                    <td class="top-products-table-data">
+                      {{ iVen.individualVendorEmail }}
                     </td>
                    
   
@@ -73,8 +76,250 @@
         </div>
       </div>
     </section>
-  </div>3
+  </div>
+
+  <form class="createVendor" *ngIf="formSection">
+    <div class="inputFlex">
+      <div class="vendorCategory">
+        <span>Vendor Name</span>
+        <br />
+        <input
+          class="inputField"
+          type="text"
+          placeholder="Name"
+          [(ngModel)]="individualVendor.individualVendorName"
+          [ngModelOptions]="{standalone: true}"
+        />
+      </div>
+      <div class="vendorCategory">
+        <span>Vendor Type</span>
+        <br />
+        <select name="vendorType" id="vendorType" class="smallInput" [(ngModel)]="selectedVendorType" (change)="onVendorTypeChange($event)">
+          <option value="" disabled selected hidden>Choose Type</option>
+          <option value="individual">Individual
+          </option>
+          <option value="Company">Company</option>
+        </select>
+        
+       
+      </div>
+    </div>
+  
+    <div class="inputFlex">
+      <div class="vendorCategory">
+        <span>Vendor Address</span>
+        <br />
+        <input
+          [(ngModel)]="individualVendor.individualVendorAddress"
+          [ngModelOptions]="{standalone: true}"
+          class="inputField"
+          type="text"
+          placeholder="Address"
+        />
+      </div>
+      <div class="vendorCategory">
+        <span>Industry</span>
+        <br />
+        <input
+          [(ngModel)]="individualVendor.individualVendorIndustry"
+          [ngModelOptions]="{standalone: true}"
+          class="smallInput"
+          type="text"
+          placeholder="Industry"
+        />
+      </div>
+      </div>
+  
+      <div class="inputFlex">
+      <div class="vendorCategory">
+        <span>Vendor Email</span>
+        <br />
+        <input
+          class="inputField"
+          type="text"
+          placeholder="Email"
+          [(ngModel)]="individualVendor.individualVendorEmail"
+          [ngModelOptions]="{standalone: true}"
+        />
+      </div>
+      <div class="vendorCategory">
+        <span>Category</span>
+        <br />
+        <select name="" id="" class="smallInput">
+          <option value="" disabled selected hidden>Choose Type</option>
+
+          <option *ngFor="let vCat of vCatList" [value]="vCat.categoryName">{{ vCat.categoryName }}</option>
+        </select>
+        
+      </div>
+    </div>
+  
+      <div class="inputFlex">
+      <div class="vendorCategory">
+        <span>Contact Person</span>
+        <br />
+        <input
+          class="inputField"
+          type="text"
+          placeholder="Contact Person"
+        />
+      </div>
+      <div class="vendorCategory">
+        <span>Phone Number</span>
+        <br />
+        <input
+          class="smallInput"
+          type="text"
+          placeholder="Phone Number"
+        />
+      </div>
+    </div>
+  
+      <div class="inputFlex">
+      
+      <div class="vendorCategory">
+        <span>Job Position</span>
+        <br />
+        <input
+          class="smallInput"
+          type="text"
+          placeholder="Job Position"
+        />
+      </div>
+      <div class="vendorCategory">
+        <span>Website Link</span>
+        <br />
+        <input
+          class="inputField"
+          type="text"
+          placeholder="Website Link"
+        />
+      </div>
+    </div>
+  
+      <div class="inputFlex">
+      
+     
+      <div class="vendorCategory">
+        <span>Country</span>
+        <br />
+        <input
+          class="inputField"
+          type="text"
+          placeholder="Country"
+        />
+      </div>
+      <div class="vendorCategory">
+        <span>Street Address</span>
+        <br />
+        <input
+        
+          class="smallInput"
+          type="text"
+          placeholder="Street Address"
+        />
+      </div>
+    </div>
+  
+      <div class="inputFlex">
+        <div class="vendorCategory">
+        <span>State</span>
+        <br />
+        <input
+  
+          class="threeInputField"
+          type="text"
+          placeholder="State"
+        />
+      </div>
+        <div class="vendorCategory">
+        <span>City</span>
+        <br />
+        <input
+        
+          class="threeInputField"
+          type="text"
+          placeholder="City"
+        />
+      </div>
+        <div class="vendorCategory">
+        <span>Postal Code</span>
+        <br />
+        <input
+        
+          class="threeInputField"
+          type="text"
+          placeholder="Postal Code"
+        />
+      </div>
+      
+    </div>
+  
+      <div class="inputFlex" *ngIf="companyForm">
+        <div class="vendorCategory">
+        <span>CAC NO:</span>
+        <br />
+        <input
+        
+          class="threeInputField"
+          type="text"
+          placeholder="CAC NO:"
+        />
+      </div>
+        <div class="vendorCategory">
+        <span>TIN NO:</span>
+        <br />
+        <input
+      
+          class="threeInputField"
+          type="text"
+          placeholder="TIN NO:"
+        />
+      </div>
+        <div class="vendorCategory">
+        <span>BVN (Optional)</span>
+        <br />
+        <input
+      
+          class="threeInputField"
+          type="text"
+          placeholder="BVN (Optional)"
+        />
+      </div>
+      
+    </div>
+  
+    <h2>BANK DETAILS</h2>
+    <div class="inputFlex">
+      
+      <div class="vendorCategory">
+      <span>Bank Name</span>
+      <br />
+      <input
+    
+        class="inputField"
+        type="text"
+        placeholder="Bank Name"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>Account NO:</span>
+      <br />
+      <input
+        class="smallInput"
+        type="text"
+        placeholder="Account NO:"
+      />
+    </div>
+    
+  </div>
+  
+    <div class="btn-wrapper">
+      <button (click)="saveVendor()"  class="saveButton">Save & Continue</button>
+    </div>
+  </form>
   
   
   
   
+ 

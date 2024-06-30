@@ -27,10 +27,11 @@ import { QuotationModalComponent } from './components/quotation-modal/quotation-
 import { ProformaInvoiceModalComponent } from './components/proforma-invoice-modal/proforma-invoice-modal.component';
 import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dispatch-note-modal.component';
 import { MailVerificationComponent } from './accounts/mail-verification/mail-verification.component';
-import { CrmPageComponent } from './pages/crm-page/crm-page.component';
-// import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
+import { CrmPageComponent } from './pages/crm-page/crm-page.component';;
 import { ViewProductAsideComponent } from './components/view-product-aside/view-product-aside.component';
 import { VendorManagementComponent } from './components/vendorMangement/vendorManagement';
+import { VendorCategoryComponent } from './components/vendor-category/vendor-category.component';
+import { VendorIndividualComponent } from './components/vendor-individual/vendor-individual.component';
 // import { AuthGuard } from './services/authentication/auth.guard';
 
 const routes: Routes = [
@@ -143,14 +144,18 @@ const routes: Routes = [
         path: 'crm',
         component: CrmPageComponent,
       },
-      // {
-      //   path: 'crm/vendorCreation',
-      //   component: VendorCreationModalComponent,
-      // },
-      // {
-      //   path: 'crm/vendorManagement',
-      //   component: VendorManagementComponent,
-      // },
+      {
+        path: 'crm/vendorCategory',
+        component: VendorCategoryComponent,
+      },
+      {
+        path: 'crm/individualVendor',
+        component: VendorIndividualComponent,
+      },
+      {
+        path: 'crm/vendorManagement',
+        component: VendorManagementComponent,
+      },
     ],
   },
 ];
