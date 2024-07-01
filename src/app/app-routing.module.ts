@@ -32,7 +32,9 @@ import { ViewProductAsideComponent } from './components/view-product-aside/view-
 import { VendorManagementComponent } from './components/vendorMangement/vendorManagement';
 import { VendorCategoryComponent } from './components/vendor-category/vendor-category.component';
 import { VendorIndividualComponent } from './components/vendor-individual/vendor-individual.component';
-// import { AuthGuard } from './services/authentication/auth.guard';
+import { AuthGuard } from './services/authentication/auth.guard';
+import { UserRegComponent } from './accounts/user-reg/user-reg.component';
+import { BusinessRegComponent } from './accounts/business-reg/business-reg.component';
 
 const routes: Routes = [
   {
@@ -53,6 +55,8 @@ const routes: Routes = [
       },
     ],
   },
+
+
 
   {
     path: '',
@@ -99,14 +103,17 @@ const routes: Routes = [
         path: 'purchase/rfq-modal',
         component: RfqModalComponent,
       },
-      { path: '', redirectTo: '/purchase', pathMatch: 'full' },
-      { path: 'purchase/rfq-modal/:rfqId', component: RfqModalComponent },
+      // { path: '', redirectTo: '/purchase', pathMatch: 'full' },
+      { path: 'purchase/rfq-modal/:rfqId', 
+        component: RfqModalComponent 
+      },
 
       {
         path: 'inventory',
         component: InventoryPageComponent,
       },
-      { path: 'inventory/inventory-form', component: InventoryFormComponent },
+      { path: 'inventory/inventory-form', 
+        component: InventoryFormComponent },
       {
         path: 'inventory/inventory-form/:id',
         component: InventoryFormComponent,
@@ -123,6 +130,14 @@ const routes: Routes = [
         path: 'settings',
         component: SettingsPageComponent,
       },
+      // {
+      //   path: 'settings/user-registration',
+      //   component: UserRegComponent
+      // },
+      // {
+      //   path: 'settings/business-registration',
+      //   component: BusinessRegComponent
+      // },
       {
         path: 'payment-receipts-modal',
         component: PaymentReceiptsModalComponent,

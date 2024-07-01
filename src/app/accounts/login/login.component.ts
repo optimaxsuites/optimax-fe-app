@@ -110,6 +110,7 @@ export class LoginComponent {
 userLoginAction(): void {
   this.submitted = true;
   this.loading = true;
+  this.loggedIn = false;
 
 
   if (!this.loginInfo.username || !this.loginInfo.password) {
@@ -118,22 +119,22 @@ userLoginAction(): void {
   } else {
       setTimeout(() => {
           this.authenticationService.userLogin(this.loginInfo).subscribe(
-              async (data) => {
-                  this.loadInitParam(data);
+            (data) => {
                   if (!data) {
                       this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
                       this.loggedIn = false;
                       this.loading = false;
                   } else {
+                    this.loadInitParam(data);
+
                       // console.log("greate", data);
                       // if (data.roles === "ROLE_ADMIN") {
-                          await this.getUserRegInfoData(data);
-                          // this.router.navigate(["dashboard"]);
+                          // await this.getUserRegInfoData(data);
+                          this.router.navigate(["dashboard"]);
                           this.loggedIn = true;
                           this.loading = false;
+                          console.log('login successfull')
                       // }
-                      
-
                   }
               },
               (error) => {
@@ -150,6 +151,7 @@ userLoginAction(): void {
               }
           );
       }, 2000);
+
   }
 }
 
@@ -158,10 +160,10 @@ userLoginAction(): void {
 loadInitParam(data: any) {
   sessionStorage.setItem("username", data.username);
   sessionStorage.setItem("userid", data.id);
-  const tokenStartIndex = data.accessToken.indexOf('=') + 1;
-  const token = data.accessToken.substring(tokenStartIndex, data.accessToken.indexOf(';'));
-  sessionStorage.setItem("accessToken", token);
-  localStorage.setItem("accessToken2", token);
+  // const tokenStartIndex = data.accessToken.indexOf('=') + 1;
+  // const token = data.accessToken.substring(tokenStartIndex, data.accessToken.indexOf(';'));
+  sessionStorage.setItem("accessToken", data.accessToken);
+  localStorage.setItem("accessToken2", data.accessToken);
   sessionStorage["userRegData"] = JSON.stringify(data);
 }
 

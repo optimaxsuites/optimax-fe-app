@@ -17,12 +17,6 @@ export class AuthInterceptor implements HttpInterceptor {
     ): Observable<HttpEvent<any>> {
         const accessToken = sessionStorage.getItem("accessToken");
 
-
-        if (request.url === 'https://be.optimaxsuites.com/x/api/v2/auth/signup') {
-
-            return next.handle(request);
-        }
-
         if (!accessToken) {
             // this.router.navigate(['']);
             return next.handle(request);
@@ -36,7 +30,6 @@ export class AuthInterceptor implements HttpInterceptor {
                 `Bearer ${accessToken}`
             ),
         });
-        console.log(_request)
 
 
 

@@ -2,6 +2,11 @@ import { Injectable, isDevMode } from '@angular/core';
 import { environment } from '../../../environments/environment.prod';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { catchError, Observable, throwError } from 'rxjs';
+
+import { tap } from 'rxjs/operators';
+
+
+
 @Injectable({
   providedIn: 'root'
 })
@@ -29,7 +34,7 @@ export class AuthenticationService {
                 username
         )
         .pipe(catchError(this.handleError));
-}
+  }
 
   
   userRegistration(data: any): Observable<any> {
