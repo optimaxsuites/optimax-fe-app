@@ -85,11 +85,8 @@ $ERP-FE-theme: mat.define-light-theme(
   // margin: 0;
   list-style: none;
   outline: none;
-  // font-weight: 400;
   text-decoration: none;
   font-family: "Roboto Slab", serif;
-  // -webkit-font-smoothing: antialiased;
-  // -moz-osx-font-smoothing: grayscale;
   
 }
 html,
@@ -98,7 +95,7 @@ body {
   font-size: 14px;
 }
 body {
-  margin: 0;
+  // margin: 0;
   font-family: "Roboto Slab", serif;
 }
 
@@ -115,10 +112,17 @@ body {
 .p-dialog{
   font-size: 1em;
 }
+.p-panel{
+  font-size: 1.1em;
+}
 
 
 .table-item {
   font-size: 1.3em; /* Adjust the font size as needed */
+}
+.p-divider{
+  margin: 0;
+  padding: 0;
 }
 
 .pi{
@@ -127,4 +131,9 @@ body {
 
 .pi-times-circle{
   color: red;
+}
+
+.button{
+  background-color: red;
+  font-size: 5em;
 }

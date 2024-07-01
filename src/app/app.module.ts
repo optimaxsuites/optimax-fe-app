@@ -22,6 +22,9 @@ import { DialogModule } from 'primeng/dialog';
 import { TabViewModule } from 'primeng/tabview';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { SplitButtonModule } from 'primeng/splitbutton';
+import { PanelModule } from 'primeng/panel';
+import {DividerModule} from 'primeng/divider';
 // import { MessagesModule } from 'primeng/messages';
 // import { MessageModule } from 'primeng/message';
 // import { MessageService } from 'primeng/api';
@@ -118,6 +121,8 @@ import { VendorIndividualComponent } from './components/vendor-individual/vendor
 // import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
 import { ViewProductAsideComponent } from './components/view-product-aside/view-product-aside.component';
 import { AuthInterceptor } from './services/authentication/auth.interceptor.service';
+import { UserRegComponent } from './accounts/user-reg/user-reg.component';
+import { BusinessRegComponent } from './accounts/business-reg/business-reg.component';
 // import { AuthGuard } from './services/authentication/auth.guard';
 
 @NgModule({
@@ -188,6 +193,8 @@ import { AuthInterceptor } from './services/authentication/auth.interceptor.serv
     VendorManagementComponent,
     VendorCategoryComponent,
     VendorIndividualComponent,
+    UserRegComponent,
+    BusinessRegComponent,
     // VendorCreationModalComponent,
   ],
   imports: [
@@ -219,6 +226,9 @@ import { AuthInterceptor } from './services/authentication/auth.interceptor.serv
     TabViewModule,
     ToolbarModule,
     ConfirmDialogModule,
+    SplitButtonModule,
+    PanelModule,
+    DividerModule,
     // EditorModule,
     // MessagesModule,
     // MessageModule,
