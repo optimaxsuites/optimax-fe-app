@@ -25,6 +25,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SplitButtonModule } from 'primeng/splitbutton';
 import { PanelModule } from 'primeng/panel';
 import {DividerModule} from 'primeng/divider';
+import { OverlayPanelModule } from 'primeng/overlaypanel';
 // import { MessagesModule } from 'primeng/messages';
 // import { MessageModule } from 'primeng/message';
 // import { MessageService } from 'primeng/api';
@@ -229,6 +230,7 @@ import { BusinessRegComponent } from './accounts/business-reg/business-reg.compo
     SplitButtonModule,
     PanelModule,
     DividerModule,
+    OverlayPanelModule,
     // EditorModule,
     // MessagesModule,
     // MessageModule,

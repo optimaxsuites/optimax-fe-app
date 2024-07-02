@@ -142,7 +142,13 @@ userLoginAction(): void {
                     this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
                     this.loggedIn = false;
                     this.loading = false;
-                  } else if (error.toString() == "0") {
+                  } 
+                  if (error.toString() == "404") {
+                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.' });
+                    this.loggedIn = false;
+                    this.loading = false;
+                  }
+                  else if (error.toString() == "0") {
                       this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
                       this.loggedIn = false;
                       this.loading = false;

@@ -3,6 +3,10 @@
     padding: 0;
 }
 
+::ng-deep.p-overlayPanel{
+    background-color: #224957;
+}
+
 .header{
     width: 100%;
     height: auto;
@@ -170,6 +174,13 @@
             font-size: large;
         }
     }
+}
+
+.name-2{
+    font-size: 1.5em;
+}
+.status-2{
+    font-size: 1em;
 }
 
 
