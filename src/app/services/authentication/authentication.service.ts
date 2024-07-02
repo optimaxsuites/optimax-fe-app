@@ -47,7 +47,7 @@ export class AuthenticationService {
 
   userVerification(token: string): Observable<any> {
     return this.http
-    .post<any>(this.getBaseApiUrl() + '/x/api/v2/us/register/verify', token)
+    .get<any>(this.getBaseApiUrl() + '/x/api/v2/us/register/verify?token=' + token)
     .pipe(catchError(this.handleError))
   }
 

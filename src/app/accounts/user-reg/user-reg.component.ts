@@ -10,7 +10,14 @@ import { MessageService } from 'primeng/api';
 export class UserRegComponent {
   items: any;
   isOpen1 = false;
-  isOpen2 = false; isOpen3 = false;
+  isOpen2 = false; 
+  isOpen3 = false;
+
+  visible: boolean = false;
+
+  showDialog() {
+      this.visible = true;
+  }
 
   constructor(private messageService: MessageService){
     this.items = [
@@ -29,14 +36,25 @@ export class UserRegComponent {
     ];
   }
 
+  ngOnInit() {
+    this.isOpen1 = true; // Ensure panel 1 is open by default
+  }
+
   togglePanel1() {
-    this.isOpen1 = !this.isOpen1;
+    this.isOpen1 = true;
+    this.isOpen2 = false;
+    this.isOpen3 = false;
+
   }
   togglePanel2() {
-    this.isOpen2 = !this.isOpen2;
+    this.isOpen2 = true;
+    this.isOpen1 = false;
+    this.isOpen3 = false;
   }
   togglePanel3() {
-    this.isOpen3 = !this.isOpen3;
+    this.isOpen3 = true;
+    this.isOpen2 = false;
+    this.isOpen1 = false;
   }
 
 

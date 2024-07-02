@@ -89,13 +89,14 @@
                     // color: white;
                     font-weight: 400;
                     font-size: 1em;
-
+                    text-transform: capitalize;
                 }
                 
                 .status{
                     color: #B3B3B3;
                     font-weight: 400;
                     font-size: 1em;
+                    text-transform: capitalize;
                 }
             }
         }
@@ -177,11 +178,40 @@
 }
 
 .name-2{
-    font-size: 1.5em;
+    // font-size: 1em;
+    font-family: "Roboto Slab", serif;
+    text-transform: capitalize;
 }
 .status-2{
-    font-size: 1em;
+    // font-size: 1em;
+    font-family: "Roboto Slab", serif;
+
 }
+
+.logout{
+    font-family: "Roboto Slab", serif;
+    margin-top: 1rem;
+    cursor: pointer;
+    align-items: center;
+}
+
+.panel-container{
+    width: 250px;
+
+    .settings{
+        font-family: "Roboto Slab", serif;
+        margin-top: 1rem;
+        cursor: pointer;
+        align-items: center;
+    }
+
+    .pi-sign-out, .pi-cog{
+        font-size: .9em;
+        font-weight: bold;
+        margin-right: 1rem !important;
+    }
+}
+
 
 
 

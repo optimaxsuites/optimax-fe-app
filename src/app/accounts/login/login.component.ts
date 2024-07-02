@@ -127,14 +127,13 @@ userLoginAction(): void {
                   } else {
                     this.loadInitParam(data);
 
-                      // console.log("greate", data);
-                      // if (data.roles === "ROLE_ADMIN") {
-                          // await this.getUserRegInfoData(data);
-                          this.router.navigate(["dashboard"]);
-                          this.loggedIn = true;
-                          this.loading = false;
-                          console.log('login successfull')
-                      // }
+                    if (!data.needsRegistration) {
+                      this.router.navigate(["settings"]);
+                    } else {
+                        this.router.navigate(["dashboard"]);
+                    }
+                    this.loggedIn = true;
+                    this.loading = false;
                   }
               },
               (error) => {
