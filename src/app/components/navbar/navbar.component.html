@@ -10,15 +10,29 @@
         <!-- <div class="items"><p>Contacts</p></div> -->
         <div class="items"><i class="fas fa-bell"></i></div>
         <div class="items"><i class="fas fa-message"></i></div>
-        <div class="items profile-item">
+        <div (click)="op.toggle($event)" class="items profile-item">
             <div class="profile-img-container">
                 <img src='assets/profile.jpg' alt=""  class='profile-img' />
             </div>
             <div class="profile-name">
-                <p class="name">Damilola Awe</p>
+                <p class="name">{{
+                  userRegData.username
+              }}</p>
                 <p class="status">Admin</p>
             </div>
         </div>
+        <p-overlayPanel #op>
+          <div class="profile-name">
+            <p class="name-2">{{
+              userRegData.username
+          }}</p>
+            <p class="status-2">Admin</p>
+          </div>
+          <p-divider></p-divider>
+          <div>
+            <a (click)="logout()" class="logout">Log Out</a>
+          </div>
+        </p-overlayPanel>
     </div>
 
 

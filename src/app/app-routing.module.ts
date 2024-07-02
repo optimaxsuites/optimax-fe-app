@@ -103,7 +103,7 @@ const routes: Routes = [
         path: 'purchase/rfq-modal',
         component: RfqModalComponent,
       },
-      // { path: '', redirectTo: '/purchase', pathMatch: 'full' },
+      { path: '', redirectTo: '/purchase', pathMatch: 'full' },
       { path: 'purchase/rfq-modal/:rfqId', 
         component: RfqModalComponent 
       },
