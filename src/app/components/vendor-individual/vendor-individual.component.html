@@ -13,12 +13,11 @@
                 <thead>
                   <tr class="top-products-table-row" >
                     <th class="top-products-table-head  checkbox"></th>
-                    <th class="top-products-table-head col-1">
-                      Name
-                    </th>
-                    <th class="top-products-table-head col-1">Company</th>
+                    <th class="top-products-table-head col-1">Name</th>
+                  <th class="top-products-table-head col-1">Contact</th>
+                    <th class="top-products-table-head col-1">Phone Number</th>
                     <th class="top-products-table-head col-1">Email</th>
-                    <th class="top-products-table-head col-1">Contact</th>
+                    <th class="top-products-table-head col-1">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -37,10 +36,10 @@
                       {{ iVen.individualVendorName }}
                     </td>
                     <td class="top-products-table-data">
-                      {{ iVen.individualVendorCompany }}
+                      {{ iVen.individualVendorContactPerson }}
                     </td>
                     <td class="top-products-table-data">
-                      {{ iVen.individualVendorContactPerson }}
+                      {{ iVen.individualVendorNumber}}
                     </td>
                     <td class="top-products-table-data">
                       {{ iVen.individualVendorEmail }}
@@ -145,7 +144,7 @@
       <div class="vendorCategory">
         <span>Category</span>
         <br />
-        <select name="" id="" class="smallInput">
+        <select name="" id="" class="smallInput" >
           <option value="" disabled selected hidden>Choose Type</option>
 
           <option *ngFor="let vCat of vCatList" [value]="vCat.categoryName">{{ vCat.categoryName }}</option>
@@ -162,6 +161,9 @@
           class="inputField"
           type="text"
           placeholder="Contact Person"
+          [(ngModel)]="individualVendor.individualVendorContactPerson"
+          [ngModelOptions]="{standalone: true}"
+
         />
       </div>
       <div class="vendorCategory">
@@ -171,6 +173,9 @@
           class="smallInput"
           type="text"
           placeholder="Phone Number"
+          [(ngModel)]="individualVendor.individualVendorNumber"
+          [ngModelOptions]="{standalone: true}"
+
         />
       </div>
     </div>
@@ -184,6 +189,8 @@
           class="smallInput"
           type="text"
           placeholder="Job Position"
+[(ngModel)]="individualVendor.individualVendorJobPosition"
+          [ngModelOptions]="{standalone: true}"
         />
       </div>
       <div class="vendorCategory">
@@ -193,6 +200,8 @@
           class="inputField"
           type="text"
           placeholder="Website Link"
+          [(ngModel)]="individualVendor.individualVendorWebsite"
+          [ngModelOptions]="{standalone: true}"
         />
       </div>
     </div>
@@ -207,16 +216,20 @@
           class="inputField"
           type="text"
           placeholder="Country"
+          [(ngModel)]="individualVendor.individualVendorCountry"
+          [ngModelOptions]="{standalone: true}"
+
         />
       </div>
       <div class="vendorCategory">
         <span>Street Address</span>
         <br />
         <input
-        
           class="smallInput"
           type="text"
           placeholder="Street Address"
+         [(ngModel)]="individualVendor.individualVendorStreetAddress"
+          [ngModelOptions]="{standalone: true}"
         />
       </div>
     </div>
@@ -226,7 +239,9 @@
         <span>State</span>
         <br />
         <input
-  
+          [(ngModel)]="individualVendor.individualVendorState"
+          [ngModelOptions]="{standalone: true}"
+
           class="threeInputField"
           type="text"
           placeholder="State"
@@ -236,7 +251,9 @@
         <span>City</span>
         <br />
         <input
-        
+          [(ngModel)]="individualVendor.individualVendorCity"
+          [ngModelOptions]="{standalone: true}"
+
           class="threeInputField"
           type="text"
           placeholder="City"
@@ -246,7 +263,8 @@
         <span>Postal Code</span>
         <br />
         <input
-        
+          [(ngModel)]="individualVendor.individualVendorPostalCode"
+          [ngModelOptions]="{standalone: true}"
           class="threeInputField"
           type="text"
           placeholder="Postal Code"
@@ -260,7 +278,8 @@
         <span>CAC NO:</span>
         <br />
         <input
-        
+          [(ngModel)]="individualVendor.individualVendorCACNum"
+          [ngModelOptions]="{standalone: true}"
           class="threeInputField"
           type="text"
           placeholder="CAC NO:"
@@ -270,7 +289,8 @@
         <span>TIN NO:</span>
         <br />
         <input
-      
+        [(ngModel)]="individualVendor.individualVendorTINNum"
+          [ngModelOptions]="{standalone: true}"
           class="threeInputField"
           type="text"
           placeholder="TIN NO:"
@@ -280,7 +300,8 @@
         <span>BVN (Optional)</span>
         <br />
         <input
-      
+        [(ngModel)]="individualVendor.individualVendorBVN"
+          [ngModelOptions]="{standalone: true}"
           class="threeInputField"
           type="text"
           placeholder="BVN (Optional)"
@@ -296,7 +317,8 @@
       <span>Bank Name</span>
       <br />
       <input
-    
+      [(ngModel)]="individualVendor.individualVendorAcctName"
+          [ngModelOptions]="{standalone: true}"
         class="inputField"
         type="text"
         placeholder="Bank Name"
@@ -309,6 +331,8 @@
         class="smallInput"
         type="text"
         placeholder="Account NO:"
+          [(ngModel)]="individualVendor.individualVendorAcctNum"
+          [ngModelOptions]="{standalone: true}"
       />
     </div>
     
