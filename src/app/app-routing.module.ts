@@ -55,7 +55,14 @@ const routes: Routes = [
       },
     ],
   },
-
+      {
+        path: 'user-registration',
+        component: UserRegComponent
+      },
+      {
+        path: 'business-registration',
+        component: BusinessRegComponent
+      },
 
 
   {

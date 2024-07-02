@@ -10,7 +10,8 @@ export class NavbarComponent {
   @Output() toggleSidebar = new EventEmitter<void>();
 
   userInfoRegData: any[] = [];
-  userRegData: any = {};
+  userRegData: any = { };
+  
 
   constructor(
     private router: Router

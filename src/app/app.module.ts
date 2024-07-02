@@ -26,6 +26,7 @@ import { SplitButtonModule } from 'primeng/splitbutton';
 import { PanelModule } from 'primeng/panel';
 import {DividerModule} from 'primeng/divider';
 import { OverlayPanelModule } from 'primeng/overlaypanel';
+import { StepperModule } from 'primeng/stepper';
 // import { MessagesModule } from 'primeng/messages';
 // import { MessageModule } from 'primeng/message';
 // import { MessageService } from 'primeng/api';
@@ -231,6 +232,7 @@ import { BusinessRegComponent } from './accounts/business-reg/business-reg.compo
     PanelModule,
     DividerModule,
     OverlayPanelModule,
+    StepperModule,
     // EditorModule,
     // MessagesModule,
     // MessageModule,
