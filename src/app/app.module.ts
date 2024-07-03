@@ -128,6 +128,8 @@ import { AuthInterceptor } from './services/authentication/auth.interceptor.serv
 import { UserRegComponent } from './accounts/user-reg/user-reg.component';
 import { BusinessRegComponent } from './accounts/business-reg/business-reg.component';
 import { Navbar2Component } from './components/navbar/navbar2.component';
+import { VerificationSuccessfullComponent } from './accounts/mail-verification/verification-successfull.component';
+import { VerificationFailedComponent } from './accounts/mail-verification/verification-failed.component';
 // import { AuthGuard } from './services/authentication/auth.guard';
 
 @NgModule({
@@ -201,6 +203,8 @@ import { Navbar2Component } from './components/navbar/navbar2.component';
     UserRegComponent,
     BusinessRegComponent,
     Navbar2Component,
+    VerificationSuccessfullComponent,
+    VerificationFailedComponent,
     // VendorCreationModalComponent,
   ],
   imports: [
