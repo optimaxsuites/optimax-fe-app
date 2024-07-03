@@ -77,6 +77,124 @@ h2{
 
 }
 
+// .profile-upload-container{
+//     display: flex;
+//     justify-content: end;
+//     padding: 1rem;
+
+//     .wrapper{
+//         border-radius: 50%;
+//         height: 200px;
+//         width: 200px;
+//         background-color: lightgrey;
+
+//         .profile-wrapper{
+//             background-color: transparent;
+//             width: 100%;
+
+//             img{
+//                 width: 100%;
+//                 height: auto;
+//                 object-fit: cover;
+//                 border-radius: 50%;
+//             }
+//         }
+//     }
+
+//     .wrapper:hover{
+//         .profile-toggle{
+//             display: block;
+//         }
+//     }
+
+// }
+
+// .btn-remove-image, .btn-add-image{
+//     cursor: pointer;
+//     font-size: 1.5em;
+//     padding: 1rem;
+// }
+
+// .profile-toggle{
+//     display: flex;
+//     justify-content: space-between;
+//     padding: 0 2rem;
+//     display: none;
+//     position: absolute;
+
+// }
+
+//   .btn-remove-image {
+//     cursor: pointer;
+//   }
+  
+
+
+
+
+.profile-section {
+    // position: relative;
+    border-radius: 50%;
+    margin-bottom: 1rem;
+
+}
+
+.profile-upload-container {
+    // position: relative;
+    border-radius: 50%;
+
+}
+img{
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+
+}
+
+.wrapper {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    background-color: #0f3622;
+    border-radius: 50%;
+
+
+}
+
+.profile-wrapper {
+    width: auto;
+}
+
+// .profile-img {
+//     width: 100%; /* Adjust the size as needed */
+//     height: 100%; /* Adjust the size as needed */
+//     object-fit: cover; /* Ensures the image covers the area while maintaining aspect ratio */
+// }
+
+.profile-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.5); /* Optional: to darken the background */
+    // color: white; /* Ensures the icons are visible */
+}
+
+
+
+.justify-content-between {
+    justify-content: space-between;
+}
+
+.btn-remove-image,
+.btn-add-image {
+    cursor: pointer;
+    padding: 5px; /* Adjust padding as needed */
+    background-color: rgba(255, 255, 255, 0.3); /* Optional: add a slight background for better visibility */
+    border-radius: 50%; /* Optional: make the buttons circular */
+}
+
+  
+
 .user-info-form label {
     margin-bottom: 10px;
     color: #333;

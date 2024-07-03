@@ -88,4 +88,21 @@ export class UserRegComponent {
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Data Deleted' });
   }
 
+
+
+  onImageSelect(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.userInfoData.image = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  removeImage(): void {
+    this.userInfoData.image = null;
+  }
+
 }

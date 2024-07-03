@@ -35,7 +35,43 @@
 
                 <!-- <p-divider></p-divider> -->
 
+
                 <div class="panel-content" >
+
+
+                    <section class="profile-section">
+                        <div class="profile-upload-container">
+                            <div class="wrapper" >
+                                <div class="profile-wrapper">
+                                    <img
+                                        *ngIf="userInfoData.image"
+                                        [src]="userInfoData.image"
+                                        alt="profile-img"
+                                        class="profile-img"
+                                    />
+
+                                    <div class="profile-toggle" >
+                                        <div class=" toogle-wrapper d-flex justify-content-between">
+                                            <div class="btn-remove-image" (click)="removeImage()">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </div>
+                                            <input
+                                                type="file"
+                                                #fileInput
+                                                style="display: none"
+                                                (change)="onImageSelect($event)"
+                                            />
+                                            <div class="btn-add-image" (click)="fileInput.click()">
+                                            <i class="fas fa-plus me-2"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </section>
+                      
                     <div class="input-wrapper">
                         <div class="input-width-1">
                             <label for="firstname">First Name</label><br>
