@@ -1,4 +1,4 @@
-
+<app-navbar2></app-navbar2>
 
 <div class="xll">
     <div class="user-info-nav">
@@ -26,7 +26,7 @@
     
     <div class="user-info-container">
         <div class="user-info-form">
-            <div class="panel" *ngIf="isOpen1">
+            <!-- <div class="panel" *ngIf="isOpen1"> -->
                 <h1>Personal Details</h1>
                 <!-- <span class="d-flex justify-content-between" (click)="togglePanel1()">
                     <h2>Personal Details</h2>
@@ -38,29 +38,30 @@
                 <div class="panel-content" >
                     <div class="input-wrapper">
                         <div class="input-width-1">
-                            <label for="first-name">First Name</label><br>
-                            <input type="text" id="first-name" name="first-name" required>
+                            <label for="firstname">First Name</label><br>
+                            <!-- <input type="text" id="first-name" name="first-name" required> -->
+                            <input type="text" id="firstname" pInputText [(ngModel)]="userInfoData.firstName" />
                         </div>
                     
                         <div class="input-width-1">
-                            <label for="last-name">Last Name</label><br>
-                            <input type="text" id="last-name" name="last-name" required>
+                            <label for="lastname">Last Name</label><br>
+                            <input type="text" id="lastname" pInputText [(ngModel)]="userInfoData.lastName" />
                         </div>
                     </div>
                     
                     <div class="input-wrapper">
                         <div class="input-width-1">
-                            <label for="user-name">Username</label>
-                            <input type="text" id="user-name" name="user-name" required>
+                            <label for="username">Username</label>
+                            <input type="text" id="username" pInputText [(ngModel)]="userInfoData.userName" />
                         </div>
 
                         <div class="input-width-1">
-                            <label for="gender">Gender</label>
+                            <label for="gender">Gender</label> <br>
                             <select id="gender" name="gender" required>
-                                <option value="" disabled selected>Select your gender</option>
-                                <option value="male">Male</option>
-                                <option value="female">Female</option>
-                                <option value="other">Other</option>
+                                    <option value="" disabled selected>Select your gender</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
                             </select>
                         </div>
                     </div>
@@ -68,11 +69,11 @@
 
                 <div class="btn-wrapper">
                     <div type="submit"></div>
-                    <button (click)="togglePanel2()" type="submit">Next</button>
+                    <!-- <button (click)="togglePanel2()" type="submit">Next</button> -->
                 </div>
-            </div>
+            <!-- </div> -->
 
-            <div class="panel" *ngIf="isOpen2">
+            <!-- <div class="panel" *ngIf="isOpen2"> -->
                 <h1>Contact Information</h1>
                 <!-- <span class="d-flex justify-content-between" (click)="togglePanel2()">
                     <h2>Contact Information</h2>
@@ -117,12 +118,12 @@
                 </div>
 
                 <div class="btn-wrapper">
-                    <button (click)="togglePanel1()" type="submit">Back</button>
-                    <button (click)="togglePanel3()" type="submit">Next</button>
+                    <!-- <button (click)="togglePanel1()" type="submit">Back</button>
+                    <button (click)="togglePanel3()" type="submit">Next</button> -->
                 </div>
-            </div>
+            <!-- </div> -->
 
-            <div class="panel" *ngIf="isOpen3">
+            <!-- <div class="panel" *ngIf="isOpen3"> -->
                 <h1>Other Details</h1>
                 <!-- <span class="d-flex justify-content-between" (click)="togglePanel3()">
                     <h2>Other Details</h2>
@@ -148,10 +149,10 @@
                 </div>
 
                 <div class="btn-wrapper">
-                    <button (click)="togglePanel2()" type="submit">Back</button>
+                    <!-- <button (click)="togglePanel2()" type="submit">Back</button> -->
                     <button type="submit">Save</button>
                 </div>
-            </div>
+            <!-- </div> -->
 
             
         </div>

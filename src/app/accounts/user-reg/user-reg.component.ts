@@ -1,5 +1,8 @@
 import { Component } from '@angular/core';
 import { MessageService } from 'primeng/api';
+import { Gender } from 'src/app/interface/data';
+
+
 
 @Component({
   selector: 'app-user-reg',
@@ -8,6 +11,7 @@ import { MessageService } from 'primeng/api';
   providers: [MessageService]
 })
 export class UserRegComponent {
+  userInfoData: any=[]
   items: any;
   isOpen1 = false;
   isOpen2 = false; 
@@ -36,8 +40,20 @@ export class UserRegComponent {
     ];
   }
 
+  genders: Gender[] | undefined;
+
+  selectedGender: Gender | undefined;
+
+
+
   ngOnInit() {
     this.isOpen1 = true; // Ensure panel 1 is open by default
+
+    this.genders = [
+      { gender: 'Male',},
+      { gender: 'Female',},
+      { gender: 'Both',},
+    ];
   }
 
   togglePanel1() {
