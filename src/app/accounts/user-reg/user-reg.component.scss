@@ -9,14 +9,14 @@
     border-radius: 15px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
     width: 75%;
-    // height: fit-content;
+    height: fit-content;
     // max-width: 700px;
 }
 
 .user-info-nav{
     width: 20%;
     padding: 2rem;
-    height: 687px;
+    // height: 687px;
     border-radius: 15px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);    
 }
@@ -93,6 +93,38 @@ h2{
     // font-size: 18px;
     width: 100%;
 }
+/* Style the select element */
+.user-info-form select {
+    appearance: none; /* Remove default dropdown arrow */
+    -webkit-appearance: none; /* Remove default dropdown arrow in Safari */
+    -moz-appearance: none; /* Remove default dropdown arrow in Firefox */
+    background-color: #f9f9f9;
+    background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black"><path d="M7 10l5 5 5-5z"/></svg>'); /* Custom arrow icon */
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 15px 15px;
+    padding-right: 40px; /* Ensure padding for custom arrow */
+    transition: border-color 0.3s ease;
+}
+
+/* Add hover and focus effects */
+.user-info-form select:hover,
+.user-info-form select:focus {
+    outline: none;
+}
+
+/* Style the options */
+.user-info-form select option {
+    padding: 1rem;
+    background-color: #ffffff; /* White background for options */
+    color: #333333; /* Text color for options */
+}
+
+/* Style the disabled option */
+.user-info-form select option:disabled {
+    color: #999999; /* Gray color for disabled option */
+}
+
 
 .user-info-form button {
     margin-top: 2rem;
@@ -115,4 +147,10 @@ h2{
     width: 100%;
     display: flex;
     justify-content: space-between;
+}
+
+.gender-dropdown{
+    max-height:200px;
+    border: 2px solid #ccc;
+    position: absolute;
 }

@@ -14,3 +14,8 @@ export interface InventoryItem {
   totalSoldQuantity: number;
   totalPurchaseQuantity: number;
 }
+
+
+export interface Gender {
+  gender: string;
+}

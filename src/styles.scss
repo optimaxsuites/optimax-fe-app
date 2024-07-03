@@ -5,7 +5,7 @@
 // Plus imports for other components in your app.
 
 // custom primeUI
-@import "primeng/resources/themes/lara-light-blue/theme.css";
+@import "primeng/resources/themes/saga-green/theme.css";
 @import "primeng/resources/primeng.css";
 
 
@@ -23,11 +23,11 @@
 $ERP-FE-primary: mat.define-palette(mat.$green-palette, 700);
 $ERP-FE-accent: mat.define-palette(mat.$cyan-palette, 900);
 
-// The warn palette is optional (defaults to red).
+// // The warn palette is optional (defaults to red).
 $ERP-FE-warn: mat.define-palette(mat.$red-palette);
 
-// Create the theme object. A theme consists of configurations for individual
-// theming systems such as "color" or "typography".
+// // Create the theme object. A theme consists of configurations for individual
+// // theming systems such as "color" or "typography".
 $ERP-FE-theme: mat.define-light-theme(
   (
     color: (
@@ -40,9 +40,9 @@ $ERP-FE-theme: mat.define-light-theme(
   )
 );
 
-// Include theme styles for core and each component used in your app.
-// Alternatively, you can import and @include the theme mixins for each component
-// that you are using.
+// // Include theme styles for core and each component used in your app.
+// // Alternatively, you can import and @include the theme mixins for each component
+// // that you are using.
 @include mat.all-component-themes($ERP-FE-theme);
 .my-outlined-dialog {
   outline: 2px solid purple;
@@ -78,11 +78,10 @@ $ERP-FE-theme: mat.define-light-theme(
 
 
 
-
-/* You can add global styles to this file, and also import other style files */
-*, h1,h2,h3,h4,h5,h6{
-  font-family: "Roboto Slab", serif;
-}
+// /* You can add global styles to this file, and also import other style files */
+// *, h1,h2,h3,h4,h5,h6{
+//   font-family: "Roboto Slab", serif;
+// }
 * {
   // padding: 0;
   // margin: 0;
@@ -95,7 +94,7 @@ $ERP-FE-theme: mat.define-light-theme(
 html,
 body {
   height: 100%;
-  font-size: 14px;
+  font-size: 12px;
 }
 body {
   // margin: 0;

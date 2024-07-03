@@ -128,7 +128,7 @@ userLoginAction(): void {
                     this.loadInitParam(data);
 
                     if (!data.needsRegistration) {
-                      this.router.navigate(["settings"]);
+                      this.router.navigate(["user-registration"]);
                     } else {
                         this.router.navigate(["dashboard"]);
                     }
