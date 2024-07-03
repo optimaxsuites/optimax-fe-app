@@ -28,6 +28,8 @@ import { ProformaInvoiceModalComponent } from './components/proforma-invoice-mod
 import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dispatch-note-modal.component';
 import { MailVerificationComponent } from './accounts/mail-verification/mail-verification.component';
 import { CrmPageComponent } from './pages/crm-page/crm-page.component';;
+import { PosPageComponent } from './pages/pos-page/pos-page.component';;
+
 import { ViewProductAsideComponent } from './components/view-product-aside/view-product-aside.component';
 import { VendorManagementComponent } from './components/vendorMangement/vendorManagement';
 import { VendorCategoryComponent } from './components/vendor-category/vendor-category.component';
@@ -35,6 +37,8 @@ import { VendorIndividualComponent } from './components/vendor-individual/vendor
 import { AuthGuard } from './services/authentication/auth.guard';
 import { UserRegComponent } from './accounts/user-reg/user-reg.component';
 import { BusinessRegComponent } from './accounts/business-reg/business-reg.component';
+import { UserComponent } from './layout/user/user.component';
+import { PosCheckoutPageComponent } from './pages/pos-checkout-page/pos-checkout-page.component';
 
 const routes: Routes = [
   {
@@ -64,7 +68,15 @@ const routes: Routes = [
         component: BusinessRegComponent
       },
 
-
+      {
+        path: '',
+        component: UserComponent,
+        // canActivate: [AuthGuard],
+        children:[ {
+          path: 'checkout',
+          component: PosCheckoutPageComponent,
+        },]
+    },
   {
     path: '',
     component: MasterComponent,
@@ -165,6 +177,10 @@ const routes: Routes = [
       {
         path: 'crm',
         component: CrmPageComponent,
+      },
+      {
+        path: 'pos',
+        component: PosPageComponent,
       },
       {
         path: 'crm/vendorCategory',
