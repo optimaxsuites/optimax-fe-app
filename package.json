@@ -22,6 +22,7 @@
     "@angular/platform-browser-dynamic": "^17.3.0",
     "@angular/router": "^17.3.0",
     "@canvasjs/angular-charts": "^1.2.0",
+    "@canvasjs/charts": "^3.8.12",
     "@fortawesome/fontawesome-free": "^6.5.2",
     "@kolkov/angular-editor": "^3.0.0-beta.0",
     "@progress/kendo-angular-buttons": "^15.5.0",

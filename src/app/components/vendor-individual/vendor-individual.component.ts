@@ -1,6 +1,14 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  HostListener,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { DataService } from '../../data.service';
 import { MatDialog } from '@angular/material/dialog';
+import { FormControl, FormGroup } from '@angular/forms';
 
 @Component({
   selector: 'app-vendor-individual',
@@ -8,21 +16,35 @@ import { MatDialog } from '@angular/material/dialog';
   styleUrl: './vendor-individual.component.scss',
 })
 export class VendorIndividualComponent implements OnInit {
+  constructor(
+    private dataService: DataService,
+    private cdr: ChangeDetectorRef,
+    public dialog: MatDialog
+  ) {}
+
+  individualVendorForm?: FormGroup;
   vCatList: any[] = [];
   individualVendorList: any[] = [];
+  iVenList: any[] = [];
   checkboxState: { [key: string]: boolean } = {};
   formSection: boolean = false;
   tableSection: boolean = true;
+  vendorDetails: boolean = false;
   selectedVendorType: string = '';
+  selectedCategory: string = '';
+  selectedVendor: any;
   companyForm: boolean = false;
   onVendorTypeChange(event: Event) {
+    this.selectedVendorType = (event.target as HTMLSelectElement).value;
     this.companyForm = this.selectedVendorType !== 'individual';
-    // this.selectedVendorType = (event.target as HTMLSelectElement).value;
+  }
+
+  onCategoryChange(event: Event) {
+    this.selectedCategory;
   }
 
   individualVendor: {
     individualVendorName: string;
-    individualVendorJobPosition: string;
     individualVendorContactPerson: string;
     individualVendorNumber: string;
     individualVendorPosition: string;
@@ -30,6 +52,7 @@ export class VendorIndividualComponent implements OnInit {
     individualVendorWebsite: string;
     individualVendorEmail: string;
     individualVendorAddress: string;
+    individualVendorStreetAddress: string;
     individualVendorCountry: string;
     individualVendorState: string;
     individualVendorCity: string;
@@ -37,38 +60,34 @@ export class VendorIndividualComponent implements OnInit {
     individualVendorCACNum: string;
     individualVendorTINNum: string;
     individualVendorBVN: string;
+    individualVendorJobPosition: string;
     individualVendorAcctNum: string;
+    // individualVendorCategory: string;
     individualVendorAcctName: string;
-    individualVendorStreetAddress: string;
     id: string;
   } = {
     individualVendorName: '',
-    individualVendorJobPosition: '',
     individualVendorContactPerson: '',
-    individualVendorStreetAddress: '',
     individualVendorEmail: '',
     individualVendorNumber: '',
+    individualVendorJobPosition: '',
     individualVendorPosition: '',
     individualVendorIndustry: '',
     individualVendorWebsite: '',
     individualVendorAddress: '',
+    individualVendorStreetAddress: '',
     individualVendorCountry: '',
     individualVendorState: '',
     individualVendorCity: '',
     individualVendorPostalCode: '',
     individualVendorCACNum: '',
     individualVendorTINNum: '',
-    individualVendorBVN: null || '',
+    individualVendorBVN: '',
+    // individualVendorCategory: '',
     individualVendorAcctNum: '',
     individualVendorAcctName: '',
     id: null || '',
   };
-
-  constructor(
-    private dataService: DataService,
-    private cdr: ChangeDetectorRef,
-    public dialog: MatDialog,
-  ) {}
 
   ngOnInit() {
     this.dataService.vCatList$.subscribe((vCatList) => {
@@ -89,7 +108,7 @@ export class VendorIndividualComponent implements OnInit {
     });
 
     const storedIndividualVendorList = localStorage.getItem(
-      'individualVendorList',
+      'individualVendorList'
     );
     if (storedIndividualVendorList) {
       this.individualVendorList = JSON.parse(storedIndividualVendorList);
@@ -98,12 +117,19 @@ export class VendorIndividualComponent implements OnInit {
     }
   }
 
+  @HostListener('document:keydown.escape', ['$event']) // Listen for Escape key
+  handleEscapeKey(event: KeyboardEvent) {
+    this.toggleSections();
+    this.vendorDetails = false;
+  }
+
   toggleSections(): void {
     this.formSection = false;
     this.tableSection = true;
   }
 
   openForm() {
+    this.dataService.changeLabel('Vendor Creation');
     this.formSection = true;
     this.tableSection = false;
   }
@@ -112,8 +138,6 @@ export class VendorIndividualComponent implements OnInit {
     if (this.individualVendor) {
       const individualVendorData = {
         individualVendorName: this.individualVendor.individualVendorName,
-        individualVendorJobPosition:
-          this.individualVendor.individualVendorJobPosition,
         individualVendorContactPerson:
           this.individualVendor.individualVendorContactPerson,
         individualVendorEmail: this.individualVendor.individualVendorEmail,
@@ -123,7 +147,12 @@ export class VendorIndividualComponent implements OnInit {
         individualVendorIndustry:
           this.individualVendor.individualVendorIndustry,
         individualVendorWebsite: this.individualVendor.individualVendorWebsite,
+        individualVendorStreetAddress:
+          this.individualVendor.individualVendorStreetAddress,
+        // individualVendorCategory: this.individualVendor.individualVendorCategory,
         individualVendorAddress: this.individualVendor.individualVendorAddress,
+        individualVendorJobPosition:
+          this.individualVendor.individualVendorJobPosition,
         individualVendorCountry: this.individualVendor.individualVendorCountry,
         individualVendorState: this.individualVendor.individualVendorState,
         individualVendorCity: this.individualVendor.individualVendorCity,
@@ -131,33 +160,109 @@ export class VendorIndividualComponent implements OnInit {
           this.individualVendor.individualVendorPostalCode,
         individualVendorCACNum: this.individualVendor.individualVendorCACNum,
         individualVendorTINNum: this.individualVendor.individualVendorTINNum,
-        individualVendorBVN: null || this.individualVendor.individualVendorBVN,
+        individualVendorBVN: this.individualVendor.individualVendorBVN || '',
         individualVendorAcctNum: this.individualVendor.individualVendorAcctNum,
         individualVendorAcctName:
           this.individualVendor.individualVendorAcctName,
+        vendorType: this.selectedVendorType,
+        categoryType: this.selectedCategory,
       };
+      // this.dataService.saveIndividualVendorData(individualVendorData);
       console.log(individualVendorData);
-      this.dataService.saveIndividualVendorData(individualVendorData);
 
-      // if (this.iVenList.id) {
-      //   this.dataService.updateIndividualVendorData(
-      //     this.iVenList.id,
-      //     individualVendorData
-      //   );
-      // } else {
-      //   this.dataService.saveIndividualVendorData(individualVendorData);
-      // }
+      if (this.individualVendor.id) {
+        this.dataService.updateIndividualVendorData(
+          this.individualVendor.id,
+          individualVendorData
+        );
+      } else {
+        this.dataService.saveIndividualVendorData(individualVendorData);
+      }
+      this.toggleSections();
       this.clearVendorInput();
     }
   }
 
-  clearVendorInput() {
-    this.individualVendor.individualVendorAcctName = '';
+  preventFormSubmit(event: KeyboardEvent) {
+    event.preventDefault(); // Prevent default form submission on Enter key
+  }
 
-    this.individualVendor.individualVendorEmail = '';
+  clearVendorInput() {
+    (this.individualVendor.individualVendorName = ''),
+      (this.individualVendor.individualVendorContactPerson = '');
+    (this.individualVendor.individualVendorEmail = ''),
+      (this.individualVendor.individualVendorNumber = ''),
+      (this.individualVendor.individualVendorPosition = '');
+    this.individualVendor.individualVendorIndustry = '';
+    this.individualVendor.individualVendorWebsite = '';
+    this.individualVendor.individualVendorStreetAddress = '';
+    // this.individualVendor.individualVendorCategory;
+    this.individualVendor.individualVendorAddress = '';
+    this.individualVendor.individualVendorJobPosition = '';
+    this.individualVendor.individualVendorCountry = '';
+    (this.individualVendor.individualVendorState = ''),
+      (this.individualVendor.individualVendorCity = ''),
+      (this.individualVendor.individualVendorPostalCode = '');
+    (this.individualVendor.individualVendorCACNum = ''),
+      this.individualVendor.individualVendorTINNum,
+      this.individualVendor.individualVendorBVN || null;
+    this.individualVendor.individualVendorAcctNum = '';
+    this.individualVendor.individualVendorAcctName = '';
+    this.selectedCategory = '';
+    this.selectedVendorType = '';
+  }
+
+  editVendor(vendor: any) {
+    this.formSection = true;
+    this.tableSection = false;
+    this.individualVendor = {
+      individualVendorName: vendor.individualVendorName,
+      individualVendorContactPerson: vendor.individualVendorContactPerson,
+      individualVendorEmail: vendor.individualVendorEmail,
+      individualVendorNumber: vendor.individualVendorNumber,
+      individualVendorPosition: vendor.individualVendorPosition,
+      individualVendorIndustry: vendor.individualVendorIndustry,
+      individualVendorWebsite: vendor.individualVendorWebsite,
+      individualVendorStreetAddress: vendor.individualVendorStreetAddress,
+      individualVendorAddress: vendor.individualVendorAddress,
+      individualVendorJobPosition: vendor.individualVendorJobPosition,
+      individualVendorCountry: vendor.individualVendorCountry,
+      individualVendorState: vendor.individualVendorState,
+      individualVendorCity: vendor.individualVendorCity,
+      individualVendorPostalCode: vendor.individualVendorPostalCode,
+      individualVendorCACNum: vendor.individualVendorCACNum,
+      individualVendorTINNum: vendor.individualVendorTINNum,
+      individualVendorBVN: vendor.individualVendorBVN || '',
+      individualVendorAcctNum: vendor.individualVendorAcctNum,
+      individualVendorAcctName: vendor.individualVendorAcctName,
+      id: vendor.id,
+    };
+
+    // console.log('clicked', category);
+  }
+
+  deleteVendor(id: string) {
+    this.dataService.deleteVendor(id);
   }
 
   toggleCheckbox(id: string) {
     this.checkboxState[id] = !this.checkboxState[id];
   }
+
+  viewVendor(vendor: string) {
+    this.dataService.changeLabel('Vendor Details');
+    this.selectedVendor = vendor;
+    this.tableSection = false;
+    this.vendorDetails = true;
+  }
+
+  // viewVendorDetails() {
+  //   // this.dataService.changeLabel('Vendor Details');
+  //   // Your existing logic to view vendor details
+  // }
+
+  // createNewVendor() {
+  //   this.dataService.changeLabel('Vendor Creation');
+  //   // Your existing logic to create a new vendor
+  // }
 }

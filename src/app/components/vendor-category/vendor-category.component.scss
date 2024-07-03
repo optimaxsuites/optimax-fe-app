@@ -124,7 +124,15 @@
   .checkbox {
     width: 3%;
   }
-  
+
+  .first-container01{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 79%;
+    width: fit-content;
+}  
   .check {
     margin-top: 0.6rem;
     width: 2rem;
@@ -161,11 +169,11 @@
   
   .categoryCreation{
     padding: 3rem;
-    border: 3rem;
-    margin-left: 40rem;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
     margin-top: 5rem;
-    // border: 1px solid red;
-    width: 40%;
+    width: 37%;
     box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px,
       rgba(17, 17, 26, 0.05) 0px 8px 32px;
   }
@@ -189,7 +197,7 @@
   }
 
   .inputField, .threeInputField{
-    width: 50rem;
+    width: 26rem;
     // margin-top: 0.7rem;
     border-color: #536365;  
     height: 3.5rem;
@@ -200,8 +208,10 @@
     width: 19rem;
   }
 
-  .descText{
-    border-color: 2px solid red;
+  .descText{    border-radius: 0.5rem;
+    border-color: #536365;
+    width: 26rem;
+
   }
 
   .saveButton {
@@ -211,8 +221,7 @@
     border-radius: 1rem;
     background-color: transparent;
     transition: 0.4s ease-in-out;
-    margin-left: 38rem;
-    margin-top: 2rem;
+    margin-left: 27rem;
   }
   
   .saveButton:hover {
