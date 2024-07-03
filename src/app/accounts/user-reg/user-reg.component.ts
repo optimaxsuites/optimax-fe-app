@@ -1,5 +1,8 @@
 import { Component } from '@angular/core';
 import { MessageService } from 'primeng/api';
+import { Gender } from 'src/app/interface/data';
+
+
 
 @Component({
   selector: 'app-user-reg',
@@ -8,9 +11,17 @@ import { MessageService } from 'primeng/api';
   providers: [MessageService]
 })
 export class UserRegComponent {
+  userInfoData: any=[]
   items: any;
   isOpen1 = false;
-  isOpen2 = false; isOpen3 = false;
+  isOpen2 = false; 
+  isOpen3 = false;
+
+  visible: boolean = false;
+
+  showDialog() {
+      this.visible = true;
+  }
 
   constructor(private messageService: MessageService){
     this.items = [
@@ -29,14 +40,37 @@ export class UserRegComponent {
     ];
   }
 
+  genders: Gender[] | undefined;
+
+  selectedGender: Gender | undefined;
+
+
+
+  ngOnInit() {
+    this.isOpen1 = true; // Ensure panel 1 is open by default
+
+    this.genders = [
+      { gender: 'Male',},
+      { gender: 'Female',},
+      { gender: 'Both',},
+    ];
+  }
+
   togglePanel1() {
-    this.isOpen1 = !this.isOpen1;
+    this.isOpen1 = true;
+    this.isOpen2 = false;
+    this.isOpen3 = false;
+
   }
   togglePanel2() {
-    this.isOpen2 = !this.isOpen2;
+    this.isOpen2 = true;
+    this.isOpen1 = false;
+    this.isOpen3 = false;
   }
   togglePanel3() {
-    this.isOpen3 = !this.isOpen3;
+    this.isOpen3 = true;
+    this.isOpen2 = false;
+    this.isOpen1 = false;
   }
 
 
@@ -52,6 +86,23 @@ export class UserRegComponent {
 
   delete() {
       this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Data Deleted' });
+  }
+
+
+
+  onImageSelect(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.userInfoData.image = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  removeImage(): void {
+    this.userInfoData.image = null;
   }
 
 }

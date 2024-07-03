@@ -25,6 +25,10 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SplitButtonModule } from 'primeng/splitbutton';
 import { PanelModule } from 'primeng/panel';
 import {DividerModule} from 'primeng/divider';
+import { OverlayPanelModule } from 'primeng/overlaypanel';
+import { StepperModule } from 'primeng/stepper';
+import { InputTextModule } from 'primeng/inputtext';
+import { FloatLabelModule } from 'primeng/floatlabel';
 // import { MessagesModule } from 'primeng/messages';
 // import { MessageModule } from 'primeng/message';
 // import { MessageService } from 'primeng/api';
@@ -123,6 +127,9 @@ import { ViewProductAsideComponent } from './components/view-product-aside/view-
 import { AuthInterceptor } from './services/authentication/auth.interceptor.service';
 import { UserRegComponent } from './accounts/user-reg/user-reg.component';
 import { BusinessRegComponent } from './accounts/business-reg/business-reg.component';
+import { Navbar2Component } from './components/navbar/navbar2.component';
+import { VerificationSuccessfullComponent } from './accounts/mail-verification/verification-successfull.component';
+import { VerificationFailedComponent } from './accounts/mail-verification/verification-failed.component';
 // import { AuthGuard } from './services/authentication/auth.guard';
 
 @NgModule({
@@ -195,6 +202,9 @@ import { BusinessRegComponent } from './accounts/business-reg/business-reg.compo
     VendorIndividualComponent,
     UserRegComponent,
     BusinessRegComponent,
+    Navbar2Component,
+    VerificationSuccessfullComponent,
+    VerificationFailedComponent,
     // VendorCreationModalComponent,
   ],
   imports: [
@@ -229,6 +239,10 @@ import { BusinessRegComponent } from './accounts/business-reg/business-reg.compo
     SplitButtonModule,
     PanelModule,
     DividerModule,
+    OverlayPanelModule,
+    StepperModule,
+    InputTextModule,
+    FloatLabelModule,
     // EditorModule,
     // MessagesModule,
     // MessageModule,
