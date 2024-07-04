@@ -6,5 +6,5 @@ import { Component } from '@angular/core';
   styleUrl: './pos-checkout-page.component.scss'
 })
 export class PosCheckoutPageComponent {
-
+  products = Array(28).fill(null); 
 }
