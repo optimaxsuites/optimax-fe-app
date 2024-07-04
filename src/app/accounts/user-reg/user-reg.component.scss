@@ -45,9 +45,6 @@
     letter-spacing: 1px;
 }
 
-.section {
-    // margin-bottom: 30px;
-}
 h2{
     margin: 0;
 }
@@ -77,37 +74,6 @@ h2{
 
 }
 
-// .profile-upload-container{
-//     display: flex;
-//     justify-content: end;
-//     padding: 1rem;
-
-//     .wrapper{
-//         border-radius: 50%;
-//         height: 200px;
-//         width: 200px;
-//         background-color: lightgrey;
-
-//         .profile-wrapper{
-//             background-color: transparent;
-//             width: 100%;
-
-//             img{
-//                 width: 100%;
-//                 height: auto;
-//                 object-fit: cover;
-//                 border-radius: 50%;
-//             }
-//         }
-//     }
-
-//     .wrapper:hover{
-//         .profile-toggle{
-//             display: block;
-//         }
-//     }
-
-// }
 
 // .btn-remove-image, .btn-add-image{
 //     cursor: pointer;
@@ -132,38 +98,38 @@ h2{
 
 
 
-.profile-section {
-    // position: relative;
-    border-radius: 50%;
-    margin-bottom: 1rem;
+// .profile-section {
+//     // position: relative;
+//     border-radius: 50%;
+//     margin-bottom: 1rem;
 
-}
+// }
 
-.profile-upload-container {
-    // position: relative;
-    border-radius: 50%;
+// .profile-upload-container {
+//     // position: relative;
+//     border-radius: 50%;
 
-}
-img{
-    width: 200px;
-    height: 200px;
-    border-radius: 50%;
+// }
+// img{
+//     width: 200px;
+//     height: 200px;
+//     border-radius: 50%;
 
-}
+// }
 
-.wrapper {
-    position: relative;
-    width: 200px;
-    height: 200px;
-    background-color: #0f3622;
-    border-radius: 50%;
+// .wrapper {
+//     position: relative;
+//     width: 200px;
+//     height: 200px;
+//     background-color: #0f3622;
+//     border-radius: 50%;
 
 
-}
+// }
 
-.profile-wrapper {
-    width: auto;
-}
+// .profile-wrapper {
+//     width: auto;
+// }
 
 // .profile-img {
 //     width: 100%; /* Adjust the size as needed */
@@ -171,13 +137,13 @@ img{
 //     object-fit: cover; /* Ensures the image covers the area while maintaining aspect ratio */
 // }
 
-.profile-toggle {
-    position: absolute;
-    top: 0;
-    right: 0;
-    background-color: rgba(0, 0, 0, 0.5); /* Optional: to darken the background */
-    // color: white; /* Ensures the icons are visible */
-}
+// .profile-toggle {
+//     position: absolute;
+//     top: 0;
+//     right: 0;
+//     background-color: rgba(0, 0, 0, 0.5); /* Optional: to darken the background */
+//     // color: white; /* Ensures the icons are visible */
+// }
 
 
 
@@ -232,14 +198,19 @@ img{
 }
 
 /* Style the options */
-.user-info-form select option {
-    padding: 1rem;
+select option {
+    padding: 2rem;
     background-color: #ffffff; /* White background for options */
     color: #333333; /* Text color for options */
 }
 
+select option:hover {
+    background-color: #25925B; /* White background for options */
+    color: #fff; /* Text color for options */
+}
+
 /* Style the disabled option */
-.user-info-form select option:disabled {
+select option:disabled {
     color: #999999; /* Gray color for disabled option */
 }
 
