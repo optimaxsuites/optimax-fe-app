@@ -1,1 +1,78 @@
-<p>pos-checkout-page works!</p>
+<div class="flex w-screen max-h-screen overflow-y-hidden ">
+    <div class="w-2/3 flex flex-col gap-10 h-screen overflow-y-scroll p-4">
+
+        <div class="gap-3 w-full flex justify-between items-center ">
+            <!-- <p>Category</p> -->
+             <select name="category" id="category" class="bg-transparent w-52 cursor-pointer">
+                <option selected  value="Category">Category</option>
+                <option  value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+                <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+                <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+                <option value="Beverages" class="py-2 px-3 cursor-pointer border rounded-2xl">Beverages</option>
+                <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+                <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+                <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+             </select>
+        
+        <div class="w-1/2">
+        <app-searchbar></app-searchbar>
+
+        </div>
+        
+        </div>
+
+         <div class="gap-3 flex flex-col ">
+            <p>Products</p>
+            <div class="grid grid-cols-6 gap-3">
+                <app-product-card *ngFor="let product of products"></app-product-card>
+              
+            </div>
+         </div>
+
+    </div>
+
+
+    <div class="border w-1/3 h-screen  p-4 flex flex-col justify-between"> 
+        <div>
+            <div class="flex justify-end items-center mb-5">
+
+                <div class="flex items-center gap-3">
+                    <p class="py-2 px-3 border rounded-2xl cursor-pointer">Return or Exchange</p>
+                    <p class="py-2 px-3 border rounded-2xl cursor-pointer">Delivery</p>
+                    <p class="py-2 px-3 border rounded-2xl cursor-pointer">Clear All</p>
+                    
+
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <app-cart-item-card></app-cart-item-card>
+                <app-cart-item-card></app-cart-item-card>
+
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-3">
+            <div class="flex justify-end items-center">
+                <div class="flex items-center gap-3">
+                <p>Promo code</p>
+                <div class=" h-12 w-36 border-2"></div>
+                </div>
+            </div>
+            <div class="w-full border-2 flex flex-col gap-3 rounded-xl py-3 px-6">
+                <div class="flex justify-between items-center"><span>Subtotal</span> <span>#20000</span> </div>
+                <div class="flex justify-between items-center"><span>Tax</span> <span>#200</span> </div>
+                <div class="flex justify-between items-center"><span>Discount</span> <span>#20</span> </div>
+                <div class="flex justify-between font-bold text-2xl items-center"><span>Total</span> <span>#200</span> </div>
+            </div>
+            <div class="flex justify-between items-center mt-3" >
+                <div class="py-2 px-6 border-2 rounded-xl">Cash</div>
+                <div class="py-2 px-6 border-2 rounded-xl">Gift card</div>
+                <div class="py-2 px-6 border-2 rounded-xl">Card</div>
+                <div class="py-2 px-6 border-2 rounded-xl">E-wallet</div>
+            </div>
+
+            <button class="w-full  bg-customBlue text-white font-bold text-2xl  py-3 rounded-xl mt-3 ">Checkout</button>
+        </div>
+    </div>
+</div>

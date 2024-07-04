@@ -9,51 +9,11 @@ import { Router } from '@angular/router';
 })
 export class UserComponent {
 
-
-  @Output() toggleSidebar = new EventEmitter<void>();
-
-  userInfoRegData: any[] = [];
-  userRegData: any = { };
+  sidebarHidden: boolean = true;
   
 
-  constructor(
-    private router: Router
-  ){}
-
-  onToggleSidebar() {
-    this.toggleSidebar.emit();
+  toggleSidebar() {
+    this.sidebarHidden = !this.sidebarHidden;
   }
-
-
-  ngOnInit() {
-    if (sessionStorage.getItem("username") == null) {
-        console.log(
-            "Session Expired.",
-            "Your current session has expired. Re-login."
-        );
-        this.router.navigate([""]);
-    }
-
-    this.userInfoRegData = JSON.parse(sessionStorage["userRegData"]);
-    this.userRegData = this.userInfoRegData;
-
-    console.log("testing client types", this.userInfoRegData);
-}
-  
-
-
-
-
-  logout(): void {
-    sessionStorage.removeItem("username");
-    sessionStorage.removeItem("token");
-
-    //added by yomi
-    sessionStorage.removeItem("userInfoRegData");
-    sessionStorage.removeItem("userRegData");
-    sessionStorage.removeItem("accessToken");
-    sessionStorage.removeItem("userid");
-    this.router.navigate([''])
-}
 
 }

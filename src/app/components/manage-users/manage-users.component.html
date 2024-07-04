@@ -1,0 +1,75 @@
+<div class="container-fluid" *ngIf="tableSection" >
+    <div class="container-header">
+      <button class="btn create-invoice-btn"  (click)="openForm()" >
+        Add New User
+      </button>
+    </div>
+    <section class="selectClients" >
+      <div class="asd">
+        <div class="top-products-container">
+          <div class="top-products">
+            <div class="top-products-table-container">
+              <table class="top-products-table w3-table w3-striped">
+                <thead>
+                  <tr class="top-products-table-row" >
+                    <th class="top-products-table-head col-1">
+                      Name
+                    </th>
+                    <th class="top-products-table-head col-1">Role</th>
+                    <th class="top-products-table-head col-1">Email</th>
+                    <th class="top-products-table-head col-1">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                <td>Ogechi</td>
+                <td>Cashier</td>
+                <td>Ogechi&#64;gmail.com</td>
+                <td>
+                    <div class="actionDiv">
+                        <div class="image-container">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                          <span class="tooltip">Edit</span>
+                        </div>
+  
+                        <div class="image-container">
+                            <i class="fa-solid fa-trash" style="color: red;"></i>
+                          <span class="tooltip">Delete</span>
+                        </div>
+                      </div>
+                </td>
+            </tr>
+                
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <form class="createVendor" *ngIf="formSection">
+<div class="form">
+    <div class="inputs">
+        <div class="vendorCategory">
+            <label for="name" style="cursor: pointer; margin-bottom: 5px;">Name</label>
+            <br />
+            <input
+            id="name"
+              class="smallInput"
+              type="text"
+            />
+          </div>
+    </div>
+    <div class="permissions" style="border: red;">
+        <span>Permissions</span>
+    </div>
+</div>
+<Button >Submit</Button>
+  </form>
+  
+  
+  
+  
+ 

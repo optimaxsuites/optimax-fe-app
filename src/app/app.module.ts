@@ -136,6 +136,9 @@ import { PosCheckoutPageComponent } from './pages/pos-checkout-page/pos-checkout
 import { UserComponent } from './layout/user/user.component';
 import { VerificationSuccessfullComponent } from './accounts/mail-verification/verification-successfull.component';
 import { VerificationFailedComponent } from './accounts/mail-verification/verification-failed.component';
+import { ProductCardComponent } from './components/product-card/product-card.component';
+import { CartItemCardComponent } from './components/cart-item-card/cart-item-card.component';
+import { ManageUsersComponent } from './components/manage-users/manage-users.component';
 // import { AuthGuard } from './services/authentication/auth.guard';
 
 @NgModule({
@@ -217,6 +220,9 @@ import { VerificationFailedComponent } from './accounts/mail-verification/verifi
     UserComponent,
     VerificationSuccessfullComponent,
     VerificationFailedComponent,
+    ProductCardComponent,
+    CartItemCardComponent,
+    ManageUsersComponent,
     // VendorCreationModalComponent,
   ],
   imports: [

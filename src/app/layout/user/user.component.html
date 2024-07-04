@@ -1,59 +1,13 @@
-<div class="main-container">
-    <div class='flex justify-between items-center px-5 '>
-
-        <div class="header-center">
-          <div class="searchbar-container">
-             <img src="../../../assets/Logo-green.png" alt="" width="15%" class="w-40 h-40 object-contain">
-          </div>
+   <div class="">
+        <div class="navbar-container ">
+            
+            <app-navbar2 (toggleSidebar)="toggleSidebar()"></app-navbar2>
         </div>
-          
-        <div class="w-1/3">
+        <!-- <div class="searchbar-container">
             <app-searchbar></app-searchbar>
-        </div>
-    
-        <div class="header-end">
-           
-            <div (click)="op.toggle($event)" class="items profile-item flex gap-2 items-center">
-                <div class="profile-img-container">
-                    <img src='assets/profile.jpg' alt=""  class='profile-img w-20 h-20' />
-                </div>
-                <div class="profile-name">
-                    <p class="name">{{
-                      userRegData.username
-                  }}</p>
-                    <!-- <p class="status">{{userRegData.roles}}</p> -->
-                </div>
-            </div>
-            <p-overlayPanel #op>
-              <div class="panel-container">
-                <div class="profile-name">
-                  <h4 class="name-2">{{
-                    userRegData.username
-                }}</h4>
-                  <h4 class="status-2">{{userRegData.roles}}</h4>
-                  <h5><strong>ID: </strong>{{userRegData.accountId}}</h5>
-                </div>
-                  <p-divider></p-divider>
-                  <div>
-                    <h4 routerLink="/settings" class="settings"><i class="pi pi-cog"></i>Settings</h4>
-                    <h4 (click)="logout()" class="logout"><i class="pi pi-sign-out"></i> Sign Out</h4>
-                  </div>
-                </div>
-            </p-overlayPanel>
-        </div>
-    
-    
-        <div class="items hamburger md:hidden" >
-          <button class="hamburger-icon" (click)="onToggleSidebar()">
-          &#9776;
-          </button>
+        </div> -->
+        <div>
+            
+            <router-outlet></router-outlet>
         </div>
     </div>
-    <!-- <div class="searchbar-container">
-        <app-searchbar></app-searchbar>
-    </div> -->
-    <div class="main">
-        
-        <router-outlet></router-outlet>
-    </div>
-</div>
