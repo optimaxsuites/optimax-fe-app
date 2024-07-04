@@ -222,6 +222,10 @@ import { ManageUsersComponent } from './components/manage-users/manage-users.com
     VerificationSuccessfullComponent,
     VerificationFailedComponent,
     // VendorCreationModalComponent,
+    UserRegLayoutComponent,
+    ProductCardComponent,
+    CartItemCardComponent,
+    ManageUsersComponent
   ],
   imports: [
     BrowserModule,
