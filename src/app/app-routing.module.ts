@@ -41,6 +41,7 @@ import { VerificationSuccessfullComponent } from './accounts/mail-verification/v
 import { VerificationFailedComponent } from './accounts/mail-verification/verification-failed.component';
 import { UserComponent } from './layout/user/user.component';
 import { PosCheckoutPageComponent } from './pages/pos-checkout-page/pos-checkout-page.component';
+import { UserRegLayoutComponent } from './accounts/user-reg-layout/user-reg-layout.component';
 
 const routes: Routes = [
   {
@@ -71,7 +72,7 @@ const routes: Routes = [
   },
       {
         path: 'user-registration',
-        component: UserRegComponent
+        component: UserRegLayoutComponent,
       },
       {
         path: 'business-registration',

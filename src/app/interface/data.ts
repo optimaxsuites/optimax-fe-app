@@ -19,3 +19,11 @@ export interface InventoryItem {
 export interface Gender {
   gender: string;
 }
+
+
+export interface City {
+  name: string;
+  cities: string[];
+  state: string;
+  country: string;
+}
