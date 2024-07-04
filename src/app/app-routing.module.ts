@@ -37,6 +37,8 @@ import { VendorIndividualComponent } from './components/vendor-individual/vendor
 import { AuthGuard } from './services/authentication/auth.guard';
 import { UserRegComponent } from './accounts/user-reg/user-reg.component';
 import { BusinessRegComponent } from './accounts/business-reg/business-reg.component';
+import { VerificationSuccessfullComponent } from './accounts/mail-verification/verification-successfull.component';
+import { VerificationFailedComponent } from './accounts/mail-verification/verification-failed.component';
 import { UserComponent } from './layout/user/user.component';
 import { PosCheckoutPageComponent } from './pages/pos-checkout-page/pos-checkout-page.component';
 
@@ -57,6 +59,14 @@ const routes: Routes = [
         path: 'email-verification',
         component: MailVerificationComponent,
       },
+      {
+        path: 'verification-successful',
+        component: VerificationSuccessfullComponent,
+      },
+      {
+        path: 'verification-failed',
+        component: VerificationFailedComponent,
+      }
     ],
   },
       {
