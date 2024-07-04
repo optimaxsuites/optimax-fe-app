@@ -128,6 +128,12 @@ import { AuthInterceptor } from './services/authentication/auth.interceptor.serv
 import { UserRegComponent } from './accounts/user-reg/user-reg.component';
 import { BusinessRegComponent } from './accounts/business-reg/business-reg.component';
 import { Navbar2Component } from './components/navbar/navbar2.component';
+import { PosPageComponent } from './pages/pos-page/pos-page.component';
+import { ProductsComponent } from './components/products/products.component';
+import { ConfigurationComponent } from './components/configuration/configuration.component';
+import { POSDashboardComponent } from './components/posdashboard/posdashboard.component';
+import { PosCheckoutPageComponent } from './pages/pos-checkout-page/pos-checkout-page.component';
+import { UserComponent } from './layout/user/user.component';
 import { VerificationSuccessfullComponent } from './accounts/mail-verification/verification-successfull.component';
 import { VerificationFailedComponent } from './accounts/mail-verification/verification-failed.component';
 // import { AuthGuard } from './services/authentication/auth.guard';
@@ -203,6 +209,12 @@ import { VerificationFailedComponent } from './accounts/mail-verification/verifi
     UserRegComponent,
     BusinessRegComponent,
     Navbar2Component,
+    PosPageComponent,
+    ProductsComponent,
+    ConfigurationComponent,
+    POSDashboardComponent,
+    PosCheckoutPageComponent,
+    UserComponent,
     VerificationSuccessfullComponent,
     VerificationFailedComponent,
     // VendorCreationModalComponent,
