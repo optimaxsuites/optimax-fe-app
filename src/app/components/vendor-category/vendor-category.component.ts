@@ -1,4 +1,9 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  HostListener,
+  OnInit,
+} from '@angular/core';
 import { DataService } from '../../data.service';
 import { MatDialog } from '@angular/material/dialog';
 import { v4 as generateUniqueId } from 'uuid';
@@ -96,6 +101,12 @@ export class VendorCategoryComponent implements OnInit {
   openForm() {
     this.formSection = !this.formSection;
     this.tableSection = !this.tableSection;
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  handleEscapeKey(event: KeyboardEvent) {
+    this.tableSection = true;
+    this.formSection = false;
   }
 
   editCategory(category: any) {
