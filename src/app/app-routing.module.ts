@@ -27,11 +27,10 @@ import { QuotationModalComponent } from './components/quotation-modal/quotation-
 import { ProformaInvoiceModalComponent } from './components/proforma-invoice-modal/proforma-invoice-modal.component';
 import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dispatch-note-modal.component';
 import { MailVerificationComponent } from './accounts/mail-verification/mail-verification.component';
-import { CrmPageComponent } from './pages/crm-page/crm-page.component';;
-import { PosPageComponent } from './pages/pos-page/pos-page.component';;
+import { CrmPageComponent } from './pages/crm-page/crm-page.component';
+import { PosPageComponent } from './pages/pos-page/pos-page.component';
 
 import { ViewProductAsideComponent } from './components/view-product-aside/view-product-aside.component';
-import { VendorManagementComponent } from './components/vendorMangement/vendorManagement';
 import { VendorCategoryComponent } from './components/vendor-category/vendor-category.component';
 import { VendorIndividualComponent } from './components/vendor-individual/vendor-individual.component';
 import { AuthGuard } from './services/authentication/auth.guard';
@@ -39,6 +38,8 @@ import { UserRegComponent } from './accounts/user-reg/user-reg.component';
 import { BusinessRegComponent } from './accounts/business-reg/business-reg.component';
 import { VerificationSuccessfullComponent } from './accounts/mail-verification/verification-successfull.component';
 import { VerificationFailedComponent } from './accounts/mail-verification/verification-failed.component';
+import { VendorManagementComponent } from './components/vendorMangement/vendorManagement';
+import { VendorListComponent } from './components/vendor-list/vendor-list.component';
 import { UserComponent } from './layout/user/user.component';
 import { PosCheckoutPageComponent } from './pages/pos-checkout-page/pos-checkout-page.component';
 import { UserRegLayoutComponent } from './accounts/user-reg-layout/user-reg-layout.component';
@@ -67,27 +68,29 @@ const routes: Routes = [
       {
         path: 'verification-failed',
         component: VerificationFailedComponent,
-      }
+      },
     ],
   },
-      {
-        path: 'user-registration',
-        component: UserRegLayoutComponent,
-      },
-      {
-        path: 'business-registration',
-        component: BusinessRegComponent
-      },
+  {
+    path: 'user-registration',
+    component: UserRegComponent,
+  },
+  {
+    path: 'business-registration',
+    component: BusinessRegComponent,
+  },
 
+  {
+    path: '',
+    component: UserComponent,
+    // canActivate: [AuthGuard],
+    children: [
       {
-        path: '',
-        component: UserComponent,
-        // canActivate: [AuthGuard],
-        children:[ {
-          path: 'checkout',
-          component: PosCheckoutPageComponent,
-        },]
-    },
+        path: 'checkout',
+        component: PosCheckoutPageComponent,
+      },
+    ],
+  },
   {
     path: '',
     component: MasterComponent,
@@ -134,16 +137,13 @@ const routes: Routes = [
         component: RfqModalComponent,
       },
       { path: '', redirectTo: '/purchase', pathMatch: 'full' },
-      { path: 'purchase/rfq-modal/:rfqId', 
-        component: RfqModalComponent 
-      },
+      { path: 'purchase/rfq-modal/:rfqId', component: RfqModalComponent },
 
       {
         path: 'inventory',
         component: InventoryPageComponent,
       },
-      { path: 'inventory/inventory-form', 
-        component: InventoryFormComponent },
+      { path: 'inventory/inventory-form', component: InventoryFormComponent },
       {
         path: 'inventory/inventory-form/:id',
         component: InventoryFormComponent,
@@ -200,6 +200,10 @@ const routes: Routes = [
       {
         path: 'crm/individualVendor',
         component: VendorIndividualComponent,
+      },
+      {
+        path: 'crm/vendorList',
+        component: VendorListComponent,
       },
       {
         path: 'crm/vendorManagement',

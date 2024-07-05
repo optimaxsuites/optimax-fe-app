@@ -1,4 +1,9 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  HostListener,
+  OnInit,
+} from '@angular/core';
 import { DataService } from '../../data.service';
 import { MatDialog } from '@angular/material/dialog';
 import { v4 as generateUniqueId } from 'uuid';
@@ -7,22 +12,22 @@ import { Router } from '@angular/router';
 @Component({
   selector: 'app-vendor-category',
   templateUrl: './vendor-category.component.html',
-  styleUrl: './vendor-category.component.scss'
+  styleUrl: './vendor-category.component.scss',
 })
-
-
 export class VendorCategoryComponent implements OnInit {
   vCatList: any[] = [];
   individualVendorList: any[] = [];
   checkboxState: { [key: string]: boolean } = {};
 
-  categoryGroup: {categoryName: string, 
-    categoryCode: string, categoryDesc: string, id: string
-  } = {categoryName: '', 
-    categoryCode: '', categoryDesc: '', id: null || '' }
+  categoryGroup: {
+    categoryName: string;
+    categoryCode: string;
+    categoryDesc: string;
+    id: string;
+  } = { categoryName: '', categoryCode: '', categoryDesc: '', id: null || '' };
   isVendorList: boolean = false;
-  formSection: boolean = false
-  tableSection: boolean = true
+  formSection: boolean = false;
+  tableSection: boolean = true;
 
   constructor(
     private dataService: DataService,
@@ -62,7 +67,7 @@ export class VendorCategoryComponent implements OnInit {
   saveCategory() {
     if (this.categoryGroup) {
       const vendorData = {
-        categoryName: this.categoryGroup.categoryName,        
+        categoryName: this.categoryGroup.categoryName,
         categoryCode: this.categoryGroup.categoryCode,
         categoryDesc: this.categoryGroup.categoryDesc,
       };
@@ -73,75 +78,66 @@ export class VendorCategoryComponent implements OnInit {
         this.dataService.updateVendorCategoryData(
           this.categoryGroup.id,
           vendorData
-        )
+        );
       } else {
         this.dataService.saveVCatData(vendorData);
       }
-      }
-      this.clearInput();  
-      this.toggleSections()
-     }
-
-    clearInput() {
-      this.categoryGroup.categoryName = '';
-      this.categoryGroup.categoryCode = '';
-      this.categoryGroup.categoryDesc = '';
     }
-
-    toggleSections(): void {
-      this.formSection = false;
-      this.tableSection = true;
-    }
-
-    openForm(){
-      this.formSection = !this.formSection
-      this.tableSection = !this.tableSection
-    }
-  
-    editCategory(category: any) {
-      this.formSection = true
-      this.tableSection = false
-      this.categoryGroup = {
-        categoryName: category.categoryName,
-        categoryCode: category.categoryCode,
-        categoryDesc: category.categoryDesc,
-        id: category.id
-      };
-
-      console.log('clicked', category);
-    }
-  
-
-  editVendor(vendor: any) {
-    // this.openDialog('individual', vendor);
-    // console.log('clicked', vendor);
+    this.clearInput();
+    this.toggleSections();
   }
 
- 
+  clearInput() {
+    this.categoryGroup.categoryName = '';
+    this.categoryGroup.categoryCode = '';
+    this.categoryGroup.categoryDesc = '';
+  }
+
+  toggleSections(): void {
+    this.formSection = false;
+    this.tableSection = true;
+  }
+
+  openForm() {
+    this.formSection = !this.formSection;
+    this.tableSection = !this.tableSection;
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  handleEscapeKey(event: KeyboardEvent) {
+    this.tableSection = true;
+    this.formSection = false;
+  }
+
+  editCategory(category: any) {
+    this.formSection = true;
+    this.tableSection = false;
+    this.categoryGroup = {
+      categoryName: category.categoryName,
+      categoryCode: category.categoryCode,
+      categoryDesc: category.categoryDesc,
+      id: category.id,
+    };
+
+    console.log('clicked', category);
+  }
 
   deleteVCategory(id: string) {
     this.dataService.deleteVCategory(id);
   }
 
-  deleteVendor(id: string) {
-    this.dataService.deleteVendor(id);
-  }
-
-  // openDialog(type: string, vendor?: any, category?: any) {
-  //   const dialogRef = this.dialog.open(VendorManagementComponent, {
-  //     data: {
-  //       formType: type,
-  //       vCatList: category || {},
-  //       iVenList: vendor || {},
-  //     },
-  //   });
-  // }
-
   toggleCheckbox(id: string) {
     this.checkboxState[id] = !this.checkboxState[id];
   }
 
-  
+  viewVendors(categoryName: string) {
+    this.router.navigate(['crm/vendorList'], {
+      queryParams: { category: categoryName },
+    });
+  }
+  // viewVendors() {
+  //   this.router.navigate(['crm/vendorList']);
+  // }
 }
 
 function uuidv4() {
