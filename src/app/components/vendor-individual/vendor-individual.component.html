@@ -210,7 +210,7 @@
         class="smallInput"
         type="text"
         placeholder="Job Position"
-        [(ngModel)]="individualVendor.individualVendorPosition"
+        [(ngModel)]="individualVendor.individualVendorJobPosition"
         [ngModelOptions]="{ standalone: true }"
       />
     </div>
@@ -357,74 +357,73 @@
 
 <ng-container *ngIf="vendorDetails">
   <article class="viewVendor">
-    <h2>Vendor Details</h2>
     <div class="viewFlex">
-      <p>Vendor Name:</p>
+      <p>Name:</p>
       <span>{{ selectedVendor.individualVendorName }}</span>
     </div>
     <div class="viewFlex">
-      <p>Vendor Name:</p>
+      <p>Contact Person:</p>
       <span>{{ selectedVendor.individualVendorContactPerson }}</span>
     </div>
     <div class="viewFlex">
-      <p>Vendor Name:</p>
+      <p>Phone Number:</p>
       <span>{{ selectedVendor.individualVendorNumber }}</span>
     </div>
     <div class="viewFlex">
-      <p>Vendor Name:</p>
+      <p>Job Position:</p>
       <span>{{ selectedVendor.individualVendorJobPosition }}</span>
     </div>
     <div class="viewFlex">
-      <p>Vendor Name:</p>
+      <p>Email:</p>
       <span>{{ selectedVendor.individualVendorEmail }}</span>
     </div>
     <div class="viewFlex">
-      <p>Vendor Name:</p>
+      <p>Website:</p>
       <span>{{ selectedVendor.individualVendorWebsite }}</span>
     </div>
     <div class="viewFlex">
-      <p>Vendor Name:</p>
+      <p>Industry:</p>
       <span>{{ selectedVendor.individualVendorIndustry }}</span>
     </div>
     <div class="viewFlex">
-      <p>Vendor Name:</p>
+      <p>Address:</p>
       <span>{{ selectedVendor.individualVendorAddress }}</span>
     </div>
 
     <div class="viewFlex">
-      <p>Vendor Name:</p>
+      <p>Country:</p>
       <span>{{ selectedVendor.individualVendorCountry }}</span>
     </div>
     <div class="viewFlex">
-      <p>Vendor Name:</p>
+      <p>State:</p>
       <span>{{ selectedVendor.individualVendorState }}</span>
     </div>
     <div class="viewFlex">
-      <p>Vendor Name:</p>
+      <p>City:</p>
       <span>{{ selectedVendor.individualVendorCity }}</span>
     </div>
     <div class="viewFlex">
-      <p>Vendor Name:</p>
+      <p>Postal Code:</p>
       <span>{{ selectedVendor.individualVendorPostalCode }}</span>
     </div>
     <div class="viewFlex">
-      <p>Vendor Name:</p>
+      <p>CAC Number:</p>
       <span>{{ selectedVendor.individualVendorCACNum }}</span>
     </div>
     <div class="viewFlex">
-      <p>Vendor Name:</p>
+      <p>TIN Number:</p>
       <span>{{ selectedVendor.individualVendorTINNum }}</span>
     </div>
     <div class="viewFlex">
-      <p>Vendor Name:</p>
+      <p>BVN:</p>
       <span>{{ selectedVendor.individualVendorBVN }}</span>
     </div>
     <div class="viewFlex">
-      <p>Vendor Name:</p>
+      <p>Bank:</p>
       <span>{{ selectedVendor.individualVendorAcctName }}</span>
     </div>
     <div class="viewFlex">
-      <p>Vendor Name:</p>
+      <p>Account Number:</p>
       <span>{{ selectedVendor.individualVendorAcctNum }}</span>
     </div>
   </article>

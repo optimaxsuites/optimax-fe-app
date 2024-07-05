@@ -12,7 +12,7 @@ import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonModule } from '@angular/material/button';
 import { CdkScrollable } from '@angular/cdk/scrolling';
 
-import { ButtonModule } from "primeng/button";
+import { ButtonModule } from 'primeng/button';
 import { EditorModule } from 'primeng/editor';
 import { PasswordModule } from 'primeng/password';
 import { TableModule } from 'primeng/table';
@@ -24,7 +24,7 @@ import { ToolbarModule } from 'primeng/toolbar';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SplitButtonModule } from 'primeng/splitbutton';
 import { PanelModule } from 'primeng/panel';
-import {DividerModule} from 'primeng/divider';
+import { DividerModule } from 'primeng/divider';
 import { OverlayPanelModule } from 'primeng/overlaypanel';
 import { StepperModule } from 'primeng/stepper';
 import { InputTextModule } from 'primeng/inputtext';
@@ -47,7 +47,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { AsyncPipe } from '@angular/common';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
-import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -119,7 +119,6 @@ import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dis
 import { MailVerificationComponent } from './accounts/mail-verification/mail-verification.component';
 import { ToastrModule } from 'ngx-toastr';
 import { CrmPageComponent } from './pages/crm-page/crm-page.component';
-import { VendorManagementComponent } from './components/vendorMangement/vendorManagement';
 import { VendorCategoryComponent } from './components/vendor-category/vendor-category.component';
 import { VendorIndividualComponent } from './components/vendor-individual/vendor-individual.component';
 // import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
@@ -130,6 +129,8 @@ import { BusinessRegComponent } from './accounts/business-reg/business-reg.compo
 import { Navbar2Component } from './components/navbar/navbar2.component';
 import { VerificationSuccessfullComponent } from './accounts/mail-verification/verification-successfull.component';
 import { VerificationFailedComponent } from './accounts/mail-verification/verification-failed.component';
+import { VendorManagementComponent } from './components/vendorMangement/vendorManagement';
+import { VendorListComponent } from './components/vendor-list/vendor-list.component';
 // import { AuthGuard } from './services/authentication/auth.guard';
 
 @NgModule({
@@ -205,6 +206,7 @@ import { VerificationFailedComponent } from './accounts/mail-verification/verifi
     Navbar2Component,
     VerificationSuccessfullComponent,
     VerificationFailedComponent,
+    VendorListComponent,
     // VendorCreationModalComponent,
   ],
   imports: [

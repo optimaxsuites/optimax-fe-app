@@ -118,6 +118,15 @@ export class VendorCategoryComponent implements OnInit {
   toggleCheckbox(id: string) {
     this.checkboxState[id] = !this.checkboxState[id];
   }
+
+  viewVendors(categoryName: string) {
+    this.router.navigate(['crm/vendorList'], {
+      queryParams: { category: categoryName },
+    });
+  }
+  // viewVendors() {
+  //   this.router.navigate(['crm/vendorList']);
+  // }
 }
 
 function uuidv4() {
