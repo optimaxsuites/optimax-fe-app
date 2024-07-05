@@ -140,6 +140,9 @@ import { UserRegLayoutComponent } from './accounts/user-reg-layout/user-reg-layo
 import { ProductCardComponent } from './components/product-card/product-card.component';
 import { CartItemCardComponent } from './components/cart-item-card/cart-item-card.component';
 import { ManageUsersComponent } from './components/manage-users/manage-users.component';
+import { ManageUserFormComponent } from './components/manage-user-form/manage-user-form.component';
+import { ModalComponent } from './components/modal/modal.component';
+import { CommisionComponent } from './components/commision/commision.component';
 // import { AuthGuard } from './services/authentication/auth.guard';
 
 @NgModule({
@@ -225,7 +228,10 @@ import { ManageUsersComponent } from './components/manage-users/manage-users.com
     UserRegLayoutComponent,
     ProductCardComponent,
     CartItemCardComponent,
-    ManageUsersComponent
+    ManageUsersComponent,
+    ManageUserFormComponent,
+    ModalComponent,
+    CommisionComponent
   ],
   imports: [
     BrowserModule,
