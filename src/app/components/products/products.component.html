@@ -1,0 +1,34 @@
+<div class=" flex flex-col w-full gap-14  p-4">
+
+    <div class="gap-3 w-full flex justify-between items-center ">
+        <!-- <p>Category</p> -->
+         <select name="category" id="category" class="bg-transparent w-52 cursor-pointer">
+            <option selected  value="Category">Category</option>
+            <option  value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+            <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+            <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+            <option value="Beverages" class="py-2 px-3 cursor-pointer border rounded-2xl">Beverages</option>
+            <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+            <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+            <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+         </select>
+    
+    <div class="w-1/2">
+    <app-searchbar></app-searchbar>
+
+    </div>
+    
+    </div>
+
+     <div class="gap-3 flex flex-col ">
+        <div class="flex justify-between items-center">
+        <p>Products</p>
+        <button class="btn px-6 text-white font-bold rounded-xl  py-2 bg-customBlue">Add Product</button>
+        </div>
+        <div class="grid grid-cols-8 gap-3">
+            <app-product-card *ngFor="let product of products"></app-product-card>
+          
+        </div>
+     </div>
+
+</div>

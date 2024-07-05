@@ -1,0 +1,10 @@
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-pos-checkout-page',
+  templateUrl: './pos-checkout-page.component.html',
+  styleUrl: './pos-checkout-page.component.scss'
+})
+export class PosCheckoutPageComponent {
+  products = Array(28).fill(null); 
+}
