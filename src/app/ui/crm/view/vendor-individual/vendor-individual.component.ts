@@ -249,16 +249,16 @@ export class VendorIndividualComponent implements OnInit {
     this.checkboxState[id] = !this.checkboxState[id];
   }
 
-  viewVendor(vendor: string) {
-    this.dataService.viewVendor(vendor);
-  }
-
   // viewVendor(vendor: string) {
-  //   this.dataService.changeLabel('Vendor Details');
-  //   this.selectedVendor = vendor;
-  //   this.tableSection = false;
-  //   this.vendorDetails = true;
+  //   this.dataService.viewVendor(vendor);
   // }
+
+  viewVendor(vendor: string) {
+    this.dataService.changeLabel('Vendor Details');
+    this.selectedVendor = vendor;
+    this.tableSection = false;
+    this.vendorDetails = true;
+  }
 
   // viewVendorDetails() {
   //   // this.dataService.changeLabel('Vendor Details');
