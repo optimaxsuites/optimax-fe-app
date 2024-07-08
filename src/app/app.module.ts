@@ -50,101 +50,97 @@ import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AppRoutingModule } from './app-routing.module';
-import { AppComponent } from './app.component';
-import { CustomerFulfilmentComponent } from './components/customer-fulfilment/customer-fulfilment.component';
-import { EarningsComponent } from './components/earnings/earnings.component';
-import { FooterComponent } from './components/footer/footer.component';
-import { LevelsComponent } from './components/levels/levels.component';
-import { ManagementComponent } from './components/management/management.component';
-import { NavbarComponent } from './components/navbar/navbar.component';
-import { ProductDesignComponent } from './components/product-design/product-design.component';
-import { ProfileCardComponent } from './components/profile-card/profile-card.component';
-import { ProfileInfoComponent } from './components/profile-info/profile-info.component';
-import { QuestionAnswerComponent } from './components/question-answer/question-answer.component';
-import { SalesCardComponent } from './components/sales-card/sales-card.component';
-import { SearchbarComponent } from './components/searchbar/searchbar.component';
-import { SidebarComponent } from './components/sidebar/sidebar.component';
-import { SponsorComponent } from './components/sponsor/sponsor.component';
-import { TodaySalesComponent } from './components/today-sales/today-sales.component';
-import { TopProductsComponent } from './components/top-products/top-products.component';
-import { TotalRevenueComponent } from './components/total-revenue/total-revenue.component';
-import { TransactionCardComponent } from './components/transaction-card/transaction-card.component';
-import { UserInterfaceComponent } from './components/user-interface/user-interface.component';
-import { MasterComponent } from './layout/master/master.component';
-import { DefaultComponent } from './layout/default/default.component';
-import { DashboardPageComponent } from './pages/dashboard-page/dashboard-page.component';
-import { AccountingPageComponent } from './pages/accounting-page/accounting-page.component';
-import { SettingsPageComponent } from './pages/settings-page/settings-page.component';
-import { MembersPageComponent } from './pages/members-page/members-page.component';
-import { LoginComponent } from './accounts/login/login.component';
-import { RegisterComponent } from './accounts/register/register.component';
 import { CanvasJSAngularChartsModule } from '@canvasjs/angular-charts';
-import { InvoiceModalComponent } from './components/invoice-modal/invoice-modal.component';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
-import { SalesPageComponent } from './pages/sales-page/sales-page.component';
 import { MatCardModule } from '@angular/material/card';
-import { QuotationComponent } from './components/quotation/quotation.component';
-import { ProformaInvoiceComponent } from './components/proforma-invoice/proforma-invoice.component';
-import { ReceiptComponent } from './components/receipt/receipt.component';
-import { InvoiceComponent } from './components/invoice/invoice.component';
-import { NumberOnlyDirective } from './directive/number-only/number-only.directive';
-import { GeneralLedegerManagementComponent } from './components/general-ledeger-management/general-ledeger-management.component';
-import { AccountPayabaleManagementComponent } from './components/account-payabale-management/account-payabale-management.component';
-import { AccountReceivableManagementComponent } from './components/account-receivable-management/account-receivable-management.component';
-import { BudgetingForecastingComponent } from './components/budgeting-forecasting/budgeting-forecasting.component';
-import { CashManagementComponent } from './components/cash-management/cash-management.component';
-import { PaymentReceiptsComponent } from './components/payment-receipts/payment-receipts.component';
-import { PaymentReceiptsModalComponent } from './components/payment-receipts-modal/payment-receipts-modal.component';
-import { PaymentRecordReceivedComponent } from './components/payment-record-received/payment-record-received.component';
-import { SalesOrderComponent } from './components/sales-order/sales-order.component';
 import { MatGridListModule } from '@angular/material/grid-list';
-import { EditableLabelComponent } from './editable-label/editable-label.component';
-import { ConfigureTaxPopupComponent } from './components/configure-tax-popup/configure-tax-popup.component';
-import { NumberCurrencyPopupComponent } from './components/number-currency-popup/number-currency-popup.component';
-import { AddNewClientComponent } from './components/add-new-client/add-new-client.component';
-import { InventoryPageComponent } from './pages/inventory-page/inventory-page.component';
-import { InventoryTableComponent } from './components/inventory-table/inventory-table.component';
-import { InventoryFormComponent } from './components/inventory-form/inventory-form.component';
-import { ManagedInventoryTableComponent } from './components/managed-inventory-table/managed-inventory-table.component';
 
-import { PurchasePageComponent } from './pages/purchase-page/purchase-page.component';
-import { RfqComponent } from './components/rfq/rfq.component';
-import { RfqModalComponent } from './components/rfq-modal/rfq-modal.component';
-import { BookKeepingComponent } from './components/book-keeping/book-keeping.component';
-import { StripHtmlPipe } from './pipes/strip-html/strip-html.pipe';
-import { QuotationModalComponent } from './components/quotation-modal/quotation-modal.component';
-import { ProformaInvoiceModalComponent } from './components/proforma-invoice-modal/proforma-invoice-modal.component';
-import { DispatchNoteComponent } from './components/dispatch-note/dispatch-note.component';
-import { DispatchNoteModalComponent } from './components/dispatch-note-modal/dispatch-note-modal.component';
-import { MailVerificationComponent } from './accounts/mail-verification/mail-verification.component';
-import { ToastrModule } from 'ngx-toastr';
-import { CrmPageComponent } from './pages/crm-page/crm-page.component';
-import { VendorCategoryComponent } from './components/vendor-category/vendor-category.component';
-import { VendorIndividualComponent } from './components/vendor-individual/vendor-individual.component';
-// import { VendorCategoryCreationModalComponent } from './components/vendor-category-creation-modal/vendor-category-creation-modal.component';
-import { ViewProductAsideComponent } from './components/view-product-aside/view-product-aside.component';
-import { AuthInterceptor } from './services/authentication/auth.interceptor.service';
-import { UserRegComponent } from './accounts/user-reg/user-reg.component';
-import { BusinessRegComponent } from './accounts/business-reg/business-reg.component';
-import { Navbar2Component } from './components/navbar/navbar2.component';
-import { PosPageComponent } from './pages/pos-page/pos-page.component';
-import { ProductsComponent } from './components/products/products.component';
-import { ConfigurationComponent } from './components/configuration/configuration.component';
-import { POSDashboardComponent } from './components/posdashboard/posdashboard.component';
-import { PosCheckoutPageComponent } from './pages/pos-checkout-page/pos-checkout-page.component';
-import { UserComponent } from './layout/user/user.component';
-import { VerificationSuccessfullComponent } from './accounts/mail-verification/verification-successfull.component';
-import { VerificationFailedComponent } from './accounts/mail-verification/verification-failed.component';
-import { VendorManagementComponent } from './components/vendorMangement/vendorManagement';
-import { VendorListComponent } from './components/vendor-list/vendor-list.component';
-import { UserRegLayoutComponent } from './accounts/user-reg-layout/user-reg-layout.component';
-import { ProductCardComponent } from './components/product-card/product-card.component';
-import { CartItemCardComponent } from './components/cart-item-card/cart-item-card.component';
-import { ManageUsersComponent } from './components/manage-users/manage-users.component';
-import { ManageUserFormComponent } from './components/manage-user-form/manage-user-form.component';
-import { ModalComponent } from './components/modal/modal.component';
-import { CommisionComponent } from './components/commision/commision.component';
-// import { AuthGuard } from './services/authentication/auth.guard';
+
+import { AppComponent } from './app.component';
+import { GeneralLedegerManagementComponent } from './ui/shared/view/general-ledeger-management/general-ledeger-management.component';
+import { CustomerFulfilmentComponent } from './ui/shared/view/customer-fulfilment/customer-fulfilment.component';
+import { EarningsComponent } from './ui/dashboard/view/earnings/earnings.component';
+import { FooterComponent } from './ui/shared/view/footer/footer.component';
+import { LevelsComponent } from './ui/dashboard/view/levels/levels.component';
+import { ManagementComponent } from './ui/shared/view/management/management.component';
+import { NavbarComponent } from './ui/shared/view/navbar/navbar.component';
+import { ProductDesignComponent } from './ui/shared/view/product-design/product-design.component';
+import { ProfileInfoComponent } from './ui/shared/view/profile-info/profile-info.component';
+import { QuestionAnswerComponent } from './ui/shared/view/question-answer/question-answer.component';
+import { SalesCardComponent } from './ui/dashboard/view/sales-card/sales-card.component';
+import { SearchbarComponent } from './ui/shared/view/searchbar/searchbar.component';
+import { SidebarComponent } from './ui/shared/view/sidebar/sidebar.component';
+import { SponsorComponent } from './ui/dashboard/view/sponsor/sponsor.component';
+import { TodaySalesComponent } from './ui/dashboard/view/today-sales/today-sales.component';
+import { TopProductsComponent } from './ui/dashboard/view/top-products/top-products.component';
+import { TotalRevenueComponent } from './ui/dashboard/view/total-revenue/total-revenue.component';
+import { TransactionCardComponent } from './ui/dashboard/view/transaction-card/transaction-card.component';
+import { UserInterfaceComponent } from './ui/shared/view/user-interface/user-interface.component';
+import { MasterComponent } from './master.component';
+import { DefaultComponent } from './default.component';
+import { DashboardPageComponent } from './ui/dashboard/view/dashboard-page.component';
+import { AccountingPageComponent } from './ui/accounting/view/accounting-page.component';
+import { SettingsPageComponent } from './ui/settings/view/settings-page.component';
+import { LoginComponent } from './ui/auth/view/login/login.component';
+import { RegisterComponent } from './ui/auth/view/register/register.component';
+import { InvoiceModalComponent } from './ui/sales/view/invoice-modal/invoice-modal.component';
+import { SalesPageComponent } from './ui/sales/view/sales-page.component';
+import { QuotationComponent } from './ui/sales/view/quotation/quotation.component';
+import { ProformaInvoiceComponent } from './ui/sales/view/proforma-invoice/proforma-invoice.component';
+import { ReceiptComponent } from './ui/shared/view/receipt/receipt.component';
+import { InvoiceComponent } from './ui/sales/view/invoice/invoice.component';
+import { NumberOnlyDirective } from './ui/shared/domain/number-only/number-only.directive';
+import { AccountPayabaleManagementComponent } from './ui/shared/view/account-payabale-management/account-payabale-management.component';
+import { AccountReceivableManagementComponent } from './ui/accounting/view/account-receivable-management/account-receivable-management.component';
+import { BudgetingForecastingComponent } from './ui/accounting/view/budgeting-forecasting/budgeting-forecasting.component';
+import { CashManagementComponent } from './ui/shared/view/cash-management/cash-management.component';
+import { PaymentReceiptsComponent } from './ui/accounting/view/payment-receipts/payment-receipts.component';
+import { RfqComponent } from './ui/purchase/view/rfq/rfq.component';
+import { PaymentReceiptsModalComponent } from './ui/accounting/view/payment-receipts-modal/payment-receipts-modal.component';
+import { PaymentRecordReceivedComponent } from './ui/accounting/view/payment-record-received/payment-record-received.component';
+import { SalesOrderComponent } from './ui/accounting/view/sales-order/sales-order.component';
+import { EditableLabelComponent } from './ui/shared/view/editable-label/editable-label.component';
+import { ConfigureTaxPopupComponent } from './ui/shared/view/configure-tax-popup/configure-tax-popup.component';
+import { NumberCurrencyPopupComponent } from './ui/shared/view/number-currency-popup/number-currency-popup.component';
+import { AddNewClientComponent } from './ui/sales/view/add-new-client/add-new-client.component';
+import { InventoryPageComponent } from './ui/inventory/view/inventory-page.component';
+import { InventoryTableComponent } from './ui/inventory/view/inventory-table/inventory-table.component';
+import { InventoryFormComponent } from './ui/inventory/view/inventory-form/inventory-form.component';
+import { ManagedInventoryTableComponent } from './ui/shared/view/managed-inventory-table/managed-inventory-table.component';
+import { PurchasePageComponent } from './ui/purchase/view/purchase-page.component';
+import { RfqModalComponent } from './ui/purchase/view/rfq-modal/rfq-modal.component';
+import { BookKeepingComponent } from './ui/accounting/view/book-keeping/book-keeping.component';
+import { StripHtmlPipe } from './ui/shared/domain/strip-html/strip-html.pipe';
+import { QuotationModalComponent } from './ui/sales/view/quotation-modal/quotation-modal.component';
+import { ProformaInvoiceModalComponent } from './ui/sales/view/proforma-invoice-modal/proforma-invoice-modal.component';
+import { DispatchNoteComponent } from './ui/sales/view/dispatch-note/dispatch-note.component';
+import { DispatchNoteModalComponent } from './ui/sales/view/dispatch-note-modal/dispatch-note-modal.component';
+import { MailVerificationComponent } from './ui/auth/view/mail-verification/mail-verification.component';
+import { CrmPageComponent } from './ui/crm/view/crm-page.component';
+import { VendorManagementComponent } from './ui/crm/view/vendorMangement/vendorManagement';
+import { VendorCategoryComponent } from './ui/crm/view/vendor-category/vendor-category.component';
+import { VendorIndividualComponent } from './ui/crm/view/vendor-individual/vendor-individual.component';
+import { UserRegComponent } from './ui/auth/view/user-reg/user-reg.component';
+import { BusinessRegComponent } from './ui/auth/view/business-reg/business-reg.component';
+import { Navbar2Component } from './ui/shared/view/navbar/navbar2.component';
+import { PosPageComponent } from './ui/pos/view/pos-page.component';
+import { ProductsComponent } from './ui/pos/view/products/products.component';
+import { ConfigurationComponent } from './ui/pos/view/configuration/configuration.component';
+import { POSDashboardComponent } from './ui/pos/view/posdashboard/posdashboard.component';
+import { PosCheckoutPageComponent } from './ui/pos/view/pos-checkout-page/pos-checkout-page.component';
+import { UserComponent } from './user.component';
+import { VerificationSuccessfullComponent } from './ui/auth/view/mail-verification/verification-successfull.component';
+import { VerificationFailedComponent } from './ui/auth/view/mail-verification/verification-failed.component';
+import { VendorListComponent } from './ui/crm/view/vendor-list/vendor-list.component';
+import { UserRegLayoutComponent } from './ui/auth/view/user-reg-layout.component';
+import { ProductCardComponent } from './ui/pos/view/product-card/product-card.component';
+import { CartItemCardComponent } from './ui/pos/view/cart-item-card/cart-item-card.component';
+import { ManageUsersComponent } from './ui/pos/view/manage-users/manage-users.component';
+import { ManageUserFormComponent } from './ui/pos/view/manage-user-form/manage-user-form.component';
+import { ModalComponent } from './ui/shared/view/modal/modal.component';
+import { CommisionComponent } from './ui/pos/view/commision/commision.component';
+import { AuthInterceptor } from './ui/auth/service/auth.interceptor.service';
+import { ProfileCardComponent } from './ui/shared/view/profile-card/profile-card.component';
 
 @NgModule({
   declarations: [
@@ -174,7 +170,7 @@ import { CommisionComponent } from './components/commision/commision.component';
     DashboardPageComponent,
     AccountingPageComponent,
     SettingsPageComponent,
-    MembersPageComponent,
+    // MembersPageComponent,
     LoginComponent,
     RegisterComponent,
     InvoiceModalComponent,
@@ -226,7 +222,6 @@ import { CommisionComponent } from './components/commision/commision.component';
     VerificationSuccessfullComponent,
     VerificationFailedComponent,
     VendorListComponent,
-    // VendorCreationModalComponent,
     UserRegLayoutComponent,
     ProductCardComponent,
     CartItemCardComponent,
@@ -234,6 +229,7 @@ import { CommisionComponent } from './components/commision/commision.component';
     ManageUserFormComponent,
     ModalComponent,
     CommisionComponent,
+    ModalComponent,
   ],
   imports: [
     BrowserModule,
