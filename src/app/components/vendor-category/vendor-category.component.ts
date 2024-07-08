@@ -3,11 +3,13 @@ import {
   Component,
   HostListener,
   OnInit,
+  ViewChild,
 } from '@angular/core';
 import { DataService } from '../../data.service';
 import { MatDialog } from '@angular/material/dialog';
 import { v4 as generateUniqueId } from 'uuid';
 import { Router } from '@angular/router';
+import { VendorListComponent } from '../vendor-list/vendor-list.component';
 
 @Component({
   selector: 'app-vendor-category',
