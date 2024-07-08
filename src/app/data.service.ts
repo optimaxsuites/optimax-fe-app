@@ -12,6 +12,11 @@ export class DataService {
     this.loadExistingIndividualVendors();
   }
 
+  formSection: boolean = false;
+  tableSection: boolean = true;
+  vendorDetails: boolean = false;
+  selectedVendor: any;
+
   private rfqList: any[] = [];
   private vCatList: any[] = [];
   private individualVendorList: any[] = [];
@@ -168,6 +173,13 @@ export class DataService {
 
   changeLabel(newLabel: string) {
     this.tabLabelSubject.next(newLabel);
+  }
+
+  viewVendor(vendor: string) {
+    // this.dataService.changeLabel('Vendor Details');
+    this.selectedVendor = vendor;
+    this.tableSection = false;
+    this.vendorDetails = true;
   }
 }
 

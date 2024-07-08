@@ -250,11 +250,15 @@ export class VendorIndividualComponent implements OnInit {
   }
 
   viewVendor(vendor: string) {
-    this.dataService.changeLabel('Vendor Details');
-    this.selectedVendor = vendor;
-    this.tableSection = false;
-    this.vendorDetails = true;
+    this.dataService.viewVendor(vendor);
   }
+
+  // viewVendor(vendor: string) {
+  //   this.dataService.changeLabel('Vendor Details');
+  //   this.selectedVendor = vendor;
+  //   this.tableSection = false;
+  //   this.vendorDetails = true;
+  // }
 
   // viewVendorDetails() {
   //   // this.dataService.changeLabel('Vendor Details');
