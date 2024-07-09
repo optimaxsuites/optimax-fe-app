@@ -6,5 +6,12 @@ import { Component } from '@angular/core';
   styleUrl: './pos-checkout-page.component.scss'
 })
 export class PosCheckoutPageComponent {
-  products = Array(28).fill(null); 
+
+  products = Array(10).fill(null); 
+
+  cartItems = Array<any>(); 
+
+  addToCart(product: any) {
+    this.cartItems.push(product); 
+  }
 }

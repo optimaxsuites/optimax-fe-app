@@ -6,7 +6,9 @@ import { Component } from '@angular/core';
   styleUrl: './cart-item-card.component.scss'
 })
 export class CartItemCardComponent {
- count = 0
+ count = 1
+
+ price = 100
 
   decreaseCount() {
   this.count--
