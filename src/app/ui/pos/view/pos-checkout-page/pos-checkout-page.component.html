@@ -61,7 +61,7 @@
                 </div> -->
     
                 <div  *ngIf="cartItems.length > 0" class="flex flex-col gap-3">
-                        <app-cart-item-card *ngFor="let item of cartItems"></app-cart-item-card>
+                        <app-cart-item-card *ngFor="let item of cartItems let i = index"  (delete)="deleteCartItem(i)"></app-cart-item-card>
 
                 </div>
             </div>

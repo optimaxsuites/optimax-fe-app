@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
   selector: 'app-cart-item-card',
@@ -6,8 +6,8 @@ import { Component } from '@angular/core';
   styleUrl: './cart-item-card.component.scss'
 })
 export class CartItemCardComponent {
+  @Input() delete!: () => void;
  count = 1
-
  price = 100
 
   decreaseCount() {

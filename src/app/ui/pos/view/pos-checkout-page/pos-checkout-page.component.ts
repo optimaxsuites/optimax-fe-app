@@ -7,11 +7,16 @@ import { Component } from '@angular/core';
 })
 export class PosCheckoutPageComponent {
 
+
   products = Array(10).fill(null); 
 
-  cartItems = Array<any>(); 
+  cartItems = Array<any>();  
 
   addToCart(product: any) {
-    this.cartItems.push(product); 
+    this.cartItems.push(this.cartItems.length + 1); 
   }
+
+  deleteCartItem() {
+    throw new Error('Method not implemented.');
+    }
 }
