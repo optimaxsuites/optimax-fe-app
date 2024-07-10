@@ -107,22 +107,33 @@
 </app-modal>
 
 <app-modal *ngIf="dicountModal && cartItems.length > 0" (close)="dicountModal = false">
-    <div class="flex justify-between items-end">
-        <div class="border flex rounded-xl text-3xl justify-between items-center font-bold w-48">
-            <span class="w-full cursor-pointer text-center p-3"  *ngFor="let opt of stateOptions" [class.text-white]="opt.value === value" [class.rounded-xl]="opt.value === value" [class.bg-customBlue]="opt.value === value" (click)="value = opt.value">{{opt.label}}</span>
-        </div>
+    <div class="flex flex-col justify-between gap-5 py-10">
+        <div class="flex flex-col gap-5">
+        <div class="flex justify-between items-end">
+            <div class="border flex rounded-xl text-3xl justify-between items-center font-bold w-48">
+                <span class="w-full cursor-pointer text-center p-3"  *ngFor="let opt of stateOptions" [class.text-white]="opt.value === value" [class.rounded-xl]="opt.value === value" [class.bg-customBlue]="opt.value === value" (click)="value = opt.value">{{opt.label}}</span>
+            </div>
 
-        <div>
             <div class="flex items-center">
-                <input type="text" placeholder="0" class="discount-input">
+                <input type="text" max="100" placeholder="0" class="discount-input" [(ngModel)]="discountValue"  (input)="validateDiscountValue()" />
                 <span *ngIf="value == 'percentage'">%</span>
                 <span *ngIf="value == 'naira'">#</span>
             </div>
-       
-            <div class="border flex rounded-xl text-3xl justify-between items-center font-bold w-48">
-                <span class="w-full cursor-pointer text-center p-3"  *ngFor="let opt of discountOptions" [class.text-white]="opt.value === discountValue" [class.rounded-xl]="opt.value === discountValue" [class.bg-customBlue]="opt.value === discountValue" (click)="discount-value = opt.value">{{opt.label}}</span>
-            </div>
         </div>
+
+        <div class="border flex rounded-xl text-3xl divide-x-2 bg-customGreen/50 justify-between items-center font-bold w-full">
+            <span class="w-full cursor-pointer text-center p-3"  *ngFor="let opt of discountOptions" [class.text-white]="opt.value === discountValue" [class.rounded-xl]="opt.value === discountValue" [class.bg-customBlue]="opt.value === discountValue" (click)="discountValue = opt.value">{{opt.label}}{{getLabelForValue(value)}}</span>
+        </div>
+    </div>
+        <div class="modalBtn flex-end">
+            <button class="btn create-invoice-btn" (click)="dicountModal = false" >
+            Cancel
+            </button>
+    
+            <button class="btn create-invoice-btn"  (click)="calculateDiscount()">
+            Save
+            </button>
+          </div>
     </div>
     
 </app-modal>

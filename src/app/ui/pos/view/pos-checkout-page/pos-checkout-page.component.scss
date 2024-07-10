@@ -41,3 +41,21 @@ nav > p {
 .discount-input {
    @apply text-end   outline-none placeholder:text-5xl text-5xl text-gray-600 placeholder:text-gray-400 pb-2 flex-grow 
 }
+
+
+.modalBtn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 3rem;
+  }
+
+  .create-invoice-btn {
+    border: none;
+    padding: 0.8rem 1.8rem;
+    background-color: #224957;
+    color: #fff;
+    font-weight: bold;
+    font-size: 1.3rem;
+    border-radius: 10px;
+  }
