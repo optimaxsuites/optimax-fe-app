@@ -6,38 +6,46 @@
     <div class="product-cart-container " >
 
         <div class="product-view">
-            <div class="gap-3 w-full flex justify-between items-center ">
-                 <select name="category" id="category" class="bg-transparent w-52 cursor-pointer">
-                    <option selected  value="Category">Category</option>
-                    <option  value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
-                    <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
-                    <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
-                    <option value="Beverages" class="py-2 px-3 cursor-pointer border rounded-2xl">Beverages</option>
-                    <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
-                    <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
-                    <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
-                 </select>
-            
-        <div class="w-1/2">
-            <app-searchbar></app-searchbar>
-    
-            </div>
-            
-            </div>
-    
-             <div class="gap-3 flex flex-col overflow-y-auto ">
-                <p>Products</p>
-                <div class="grid grid-cols-6 gap-3">
-                    <app-product-card *ngFor="let product of products let i = index" (click)="addToCart(i)"></app-product-card>
+            <div class="flex flex-col gap-10">
+                <div class="gap-3 w-full flex justify-between items-center ">
+                    <select name="category" id="category" class="bg-transparent w-52 cursor-pointer">
+                       <option selected  value="Category">Category</option>
+                       <option  value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+                       <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+                       <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+                       <option value="Beverages" class="py-2 px-3 cursor-pointer border rounded-2xl">Beverages</option>
+                       <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+                       <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+                       <option value="Beverages" class="py-2 cursor-pointer px-3 border rounded-2xl">Beverages</option>
+                    </select>
+               
+                <div class="w-1/2">
+               <app-searchbar></app-searchbar>
+       
+               </div>
+               
+               </div>
+       
+                <div class="gap-3 flex flex-col overflow-y-auto ">
+                   <p>Products</p>
+                   <div class="grid grid-cols-6 gap-3">
+                       <!-- <app-product-card *ngFor="let product of products let i = index" [product]="products" (click)="addToCart(i)"></app-product-card> -->
+                       <app-product-card 
+                           *ngFor="let product of products" 
+                           [product]="product"
+                           (addToCart)="addToCart(product)">
+                       </app-product-card>
+                   </div>
                 </div>
-             </div>
+            </div>
+           
 
 
              <nav >
                 <p>More</p>
 
                 <p>Note</p>
-                <p>Discount</p>
+                <p (click)="toggleDiscountModal()" >Discount</p>
                 <p>Refund</p>
                 <p>Return or Exchange</p>
                 <p>Delivery</p>
@@ -48,22 +56,17 @@
     
     
         <div class="cart-view"> 
-            <div class="overflow-y-auto">
-                <!-- <div class="flex justify-end items-center mb-5">
-    
-                    <div class="flex items-center gap-3">
-                        <p class="py-2 px-3 border rounded-2xl cursor-pointer">Return or Exchange</p>
-                        <p class="py-2 px-3 border rounded-2xl cursor-pointer">Delivery</p>
-                        <p class="py-2 px-3 border rounded-2xl cursor-pointer">Clear All</p>
-                        
-    
-                    </div>
-                </div> -->
+            <div class="overflow-y-auto h-full">
     
                 <div  *ngIf="cartItems.length > 0" class="flex flex-col gap-3">
-                        <app-cart-item-card *ngFor="let item of cartItems let i = index"  (delete)="deleteCartItem(i)"></app-cart-item-card>
-
+                        <app-cart-item-card *ngFor="let item of cartItems let i = index" [item]="item" (delete)="deleteCartItem(i)" 
+                        (click)="openItemUpdateModal(i)"  (countChange)="handleCountChange($event, i)"></app-cart-item-card>
                 </div>
+
+                <div  *ngIf="cartItems.length == 0" class="empty-cart">
+                        <p class="text-3xl font-bold text-gray-600">Order is empty</p>
+                        <p class="text-xl text-gray-500">Scan items or add from catelog</p>
+                 </div>
             </div>
     
             <div class="flex flex-col">
@@ -74,10 +77,10 @@
                     </div>
                 </div> -->
                 <div class="w-full border-2 flex flex-col gap-3 rounded-xl py-3 px-6">
-                    <div class="flex justify-between items-center"><span>Subtotal</span> <span>#20000</span> </div>
-                    <div class="flex justify-between items-center"><span>Tax</span> <span>#200</span> </div>
-                    <div class="flex justify-between items-center"><span>Discount</span> <span>#20</span> </div>
-                    <div class="flex justify-between font-bold text-2xl items-center"><span>Total</span> <span>#200</span> </div>
+                    <div class="flex justify-between items-center"><span>Subtotal</span> <span>#{{subtotal| number:'1.2-2'}}</span> </div>
+                    <div class="flex justify-between items-center"><span>Tax</span> <span>#{{tax | number:'1.2-2'}}</span> </div>
+                    <div class="flex justify-between items-center"><span>Discount</span> <span>#{{discount | number:'1.2-2'}}</span> </div>
+                    <div class="flex justify-between font-bold text-2xl items-center"><span>Total</span> <span>#{{total | number:'1.2-2'}}</span> </div>
                 </div>
                 <!-- <div class="payment flex justify-between items-center mt-3" >
                     <p>Cash</p>
@@ -97,3 +100,29 @@
     
     </div>
 </div>
+
+
+<app-modal *ngIf="itemUpdateModal">
+    <p >{{products[3].name}}</p>
+</app-modal>
+
+<app-modal *ngIf="dicountModal && cartItems.length > 0" (close)="dicountModal = false">
+    <div class="flex justify-between items-end">
+        <div class="border flex rounded-xl text-3xl justify-between items-center font-bold w-48">
+            <span class="w-full cursor-pointer text-center p-3"  *ngFor="let opt of stateOptions" [class.text-white]="opt.value === value" [class.rounded-xl]="opt.value === value" [class.bg-customBlue]="opt.value === value" (click)="value = opt.value">{{opt.label}}</span>
+        </div>
+
+        <div>
+            <div class="flex items-center">
+                <input type="text" placeholder="0" class="discount-input">
+                <span *ngIf="value == 'percentage'">%</span>
+                <span *ngIf="value == 'naira'">#</span>
+            </div>
+       
+            <div class="border flex rounded-xl text-3xl justify-between items-center font-bold w-48">
+                <span class="w-full cursor-pointer text-center p-3"  *ngFor="let opt of discountOptions" [class.text-white]="opt.value === discountValue" [class.rounded-xl]="opt.value === discountValue" [class.bg-customBlue]="opt.value === discountValue" (click)="discount-value = opt.value">{{opt.label}}</span>
+            </div>
+        </div>
+    </div>
+    
+</app-modal>

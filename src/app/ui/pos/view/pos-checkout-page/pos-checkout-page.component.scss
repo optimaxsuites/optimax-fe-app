@@ -4,7 +4,7 @@
 }
 
 .product-view {
-    @apply w-[62%] flex flex-col h-full gap-10  px-4 pt-4 overflow-hidden
+    @apply w-[62%] flex flex-col justify-between h-full gap-10  px-4 pt-4 overflow-hidden
 }
 
 .cart-view {
@@ -29,4 +29,15 @@ nav > p {
 
 .paymentBtn > button {
     @apply bg-customBlue text-white font-bold text-2xl  py-4  w-[50%]
+}
+
+.empty-cart {
+    @apply flex flex-col w-full h-full justify-center items-center
+}
+
+.cursor-disabled {
+    @apply cursor-not-allowed 
+}
+.discount-input {
+   @apply text-end   outline-none placeholder:text-5xl text-5xl text-gray-600 placeholder:text-gray-400 pb-2 flex-grow 
 }
