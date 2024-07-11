@@ -1,6 +1,9 @@
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { Gender } from 'src/app/ui/shared/domain/interface/data';
+import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
+
 
 
 interface UserInfo {
@@ -64,11 +67,20 @@ export class UserRegComponent {
 
   visible: boolean = false;
 
+  genders: Gender[] | undefined;
+
+  selectedGender: Gender | undefined;
+  viewDonorProfile: any = []
+
   showDialog() {
       this.visible = true;
   }
 
-  constructor(private messageService: MessageService){
+  constructor(
+    private messageService: MessageService,
+    private router: Router,
+    private navigationLink: NavigationLinksService,
+  ){
     this.items = [
       {
           label: 'Update',
@@ -85,9 +97,7 @@ export class UserRegComponent {
     ];
   }
 
-  genders: Gender[] | undefined;
 
-  selectedGender: Gender | undefined;
 
 
 
@@ -617,24 +627,29 @@ export class UserRegComponent {
   ];
 
 
-selectedCountry: Country | null = null;
-selectedState: State | null = null;
-states: State[] = [];
-cities: City[] = [];
+  selectedCountry: Country | null = null;
+  selectedState: State | null = null;
+  states: State[] = [];
+  cities: City[] = [];
 
-onCountryChange() {
-  const selectedCountry = this.countries.find(country => country.name === this.userInfoData.selectedCountry);
-  this.states = selectedCountry ? selectedCountry.states : [];
-  this.cities = [];
-  this.userInfoData.selectedState = '';
-  this.userInfoData.selectedCity = '';
-}
+  onCountryChange() {
+    const selectedCountry = this.countries.find(country => country.name === this.userInfoData.selectedCountry);
+    this.states = selectedCountry ? selectedCountry.states : [];
+    this.cities = [];
+    this.userInfoData.selectedState = '';
+    this.userInfoData.selectedCity = '';
+  }
 
-onStateChange() {
-  const selectedState = this.states.find(state => state.name === this.userInfoData.selectedState);
-  this.cities = selectedState ? selectedState.cities : [];
-  this.userInfoData.selectedCity = '';
-}
+  onStateChange() {
+    const selectedState = this.states.find(state => state.name === this.userInfoData.selectedState);
+    this.cities = selectedState ? selectedState.cities : [];
+    this.userInfoData.selectedCity = '';
+  }
 
+
+  saveUserInfo(){
+    const dashboardLink = this.navigationLink.getLink('dashboardLink');
+    this.router.navigate([dashboardLink]);
+  }
 
 }

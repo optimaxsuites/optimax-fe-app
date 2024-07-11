@@ -60,6 +60,23 @@ export class QuotationModalComponent {
   charges: any[] = [];
   moreFields: any[] = [];
 
+  selectedCompany?: string;
+  selectedClient?: string;
+
+  quotationData: any = {
+    clientDetails: {},
+    businessDetails: {},
+    fields: [],
+    q_editable_header: '',
+    q_editable_field: ''
+  };
+
+  isFormVisible: boolean = false;
+
+  toggleForm() {
+    this.isFormVisible = !this.isFormVisible;
+  }
+
 
   countryList = [
     'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 
@@ -186,7 +203,17 @@ export class QuotationModalComponent {
 ]
 
 
-constructor(private fb: FormBuilder, private http: HttpClient, private dropdownService: DropdownService, private dialogRef:MatDialog) { }
+constructor(
+  private fb: FormBuilder, 
+  private http: HttpClient, 
+  private dropdownService: DropdownService, 
+  private dialogRef:MatDialog
+) { }
+
+
+onsubmit(){
+  console.log("quotation into", this.quotationData)
+}
 
 
 openTaxDialog(){
@@ -203,26 +230,24 @@ openAddNewClientDialog(){
 }
 
 
-fields: Field[] = [
-  // { text: 'Click to edit me', isEditing: false }
-];
-
 addField() {
-  this.fields.push({ text: 'New field', isEditing: false });
+  this.quotationData.fields.push({ text: 'New field', isEditing: false });
 }
 
 removeField(index: number) {
-  this.fields.splice(index, 1);
+  this.quotationData.fields.splice(index, 1);
 }
 
 editField(index: number) {
-  this.fields[index].isEditing = true;
+  this.quotationData.fields[index].isEditing = true;
 }
 
 saveField(index: number, event: any) {
-  this.fields[index].isEditing = false;
-  this.fields[index].text = event.target.value;
+  this.quotationData.fields[index].isEditing = false;
+  this.quotationData.fields[index].text = event.target.value;
 }
+
+
 
 
 
@@ -505,41 +530,37 @@ saveField(index: number, event: any) {
   companies: Company[] = [
     { value: 'Centrifuge', viewValue: 'Centrifuge' },
     { value: 'GOP Gadgets', viewValue: 'GOP Gadgets' },
-    { value: 'DeOne', viewValue: 'DeOne' },
+    { value: 'DeOne', viewValue: 'DeOne' }
   ];
 
-  businessDetails: BusinessDetails = {
-    name: '',
-    address: '',
-    phoneNumber: '',
-    email: '',
-  };
 
   updateBusinessInfo() {
-    // Replace this logic with your actual business details fetching mechanism
-    if (this.selectedValue === 'Centrifuge') {
-      this.businessDetails = {
-        name: 'Centrifuge Group',
-        address: 'No 31 juju street, lagos road',
-        phoneNumber: '09077556633',
-        email: 'centrifuge@gmail.com',
-      };
-    } else if (this.selectedValue === 'GOP Gadgets') {
-      // Add logic for GOP Gadgets
-      this.businessDetails = {
-        name: 'GOP Gadgets',
-        address: 'No 9 Adesanya street, lagos, ikeja',
-        phoneNumber: '08144685954',
-        email: 'gop@gmail.com',
-      };
-    } else if (this.selectedValue === 'DeOne') {
-      // Add logic for DeOne
-      this.businessDetails = {
-        name: 'DeOne Gadgets',
-        address: 'No 9 Adesanya street, lagos, ikeja',
-        phoneNumber: '08060393174',
-        email: 'DeOne@gmail.com',
-      };
+    const selectedCompany = this.companies.find(company => company.value === this.quotationData.selectedCompany);
+    this.showSecondComponent = true;
+
+    if (selectedCompany) {
+      if (selectedCompany.value === 'Centrifuge') {
+        this.quotationData.businessDetails = {
+          name: 'Centrifuge Group',
+          address: 'No 31 juju street, lagos road',
+          phoneNumber: '09077556633',
+          email: 'centrifuge@gmail.com'
+        };
+      } else if (selectedCompany.value === 'GOP Gadgets') {
+        this.quotationData.businessDetails = {
+          name: 'GOP Gadgets',
+          address: 'No 9 Adesanya street, lagos, ikeja',
+          phoneNumber: '08144685954',
+          email: 'gop@gmail.com'
+        };
+      } else if (selectedCompany.value === 'DeOne') {
+        this.quotationData.businessDetails = {
+          name: 'DeOne Gadgets',
+          address: 'No 9 Adesanya street, lagos, ikeja',
+          phoneNumber: '08060393174',
+          email: 'DeOne@gmail.com'
+        };
+      }
     }
   }
 
@@ -548,39 +569,36 @@ saveField(index: number, event: any) {
   clients: Client[] = [
     { value: 'MTN', viewValue: 'MTN' },
     { value: 'GLO', viewValue: 'GLO' },
-    { value: 'Opay', viewValue: 'Opay' },
+    { value: 'Opay', viewValue: 'Opay' }
   ];
 
   updateClientInfo() {
-    this.clientDetails = this.clients.find(
-      (client) => client.value === this.selectedValue
-    );
-    this.showSecondComponent = true; // Show the second component
+    const selectedClient = this.clients.find(client => client.value === this.quotationData.selectedClient);
+    this.showSecondComponent = true;
 
-    // Replace this logic with your actual business details fetching mechanism
-    if (this.selectedValue === 'MTN') {
-      this.clientDetails = {
-        name: 'MTN',
-        address: 'No 31 juju street, lagos road',
-        phoneNumber: '09077556633',
-        email: 'mtn@gmail.com',
-      };
-    } else if (this.selectedValue === 'GLO') {
-      // Add logic for GOP Gadgets
-      this.clientDetails = {
-        name: 'GLO',
-        address: 'No 9 Adesanya street, lagos, ikeja',
-        phoneNumber: '08144685954',
-        email: 'glo@gmail.com',
-      };
-    } else if (this.selectedValue === 'Opay') {
-      // Add logic for DeOne
-      this.clientDetails = {
-        name: 'Opay',
-        address: 'No 9 Adesanya street, lagos, ikeja',
-        phoneNumber: '08060393174',
-        email: 'opay@gmail.com',
-      };
+    if (selectedClient) {
+      if (selectedClient.value === 'MTN') {
+        this.quotationData.clientDetails = {
+          name: 'MTN',
+          address: 'No 31 juju street, lagos road',
+          phoneNumber: '09077556633',
+          email: 'mtn@gmail.com'
+        };
+      } else if (selectedClient.value === 'GLO') {
+        this.quotationData.clientDetails = {
+          name: 'GLO',
+          address: 'No 9 Adesanya street, lagos, ikeja',
+          phoneNumber: '08144685954',
+          email: 'glo@gmail.com'
+        };
+      } else if (selectedClient.value === 'Opay') {
+        this.quotationData.clientDetails = {
+          name: 'Opay',
+          address: 'No 9 Adesanya street, lagos, ikeja',
+          phoneNumber: '08060393174',
+          email: 'opay@gmail.com'
+        };
+      }
     }
   }
 
@@ -688,7 +706,7 @@ uploadedFiles: { name: string, size: number, progress: number, status: string }[
   }
 
 
-  showForm: boolean = false;
+  // showForm: boolean = false;
   sameAsBusinessAddress: boolean = false;
   sameAsClientAddress: boolean = false;
   saveToClientDetails: boolean = false;

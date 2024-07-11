@@ -9,6 +9,8 @@ import { TopProductService } from 'src/app/ui/dashboard/service/top-product/top-
 })
 export class DispatchNoteComponent {
   tableData: any[];
+  selectedItems!: any[];
+
 
 
   constructor(

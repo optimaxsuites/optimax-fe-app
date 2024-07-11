@@ -17,125 +17,9 @@ import { DropdownService } from 'src/app/ui/shared/service/dropdown/dropdown.ser
 })
 export class InventoryTableComponent implements OnInit{
 
-
-  // sidebarVisible2: boolean = false;
-  // // selectedItem: any; // Holds the selected item for displaying details in the sidebar
-  // // inventory: any[] = [];
-  // selectedCurrency$: Observable<string | null>;
-  // items: InventoryItem[] = [];
-
-  // constructor(
-  //   private router: Router,
-  //   private inventoryService: InventoryService,
-  //   private dropdownService: DropdownService
-    
-  // ) {
-  //   this.selectedCurrency$ = this.dropdownService.getSelectedItem$('currency');
-  // }
-
-  // // ngOnInit() {
-  // //   this.inventoryService.getItem().subscribe(data => {
-  // //     this.items = data;
-  // //     // this.items = [
-  // //     //   {
-  // //     //     id: "NLJEYduajI",
-  // //     //     itemName: "ONeTLyjObcjpaXo",
-  // //     //     partNo: "RNaTnbTq",
-  // //     //     taxRate: 15.95,
-  // //     //     description: "mnycpLmAcwStjWZYnmYHFwwSseENHgOfQWuDDFQACRfyCRYfFx",
-  // //     //     images: [
-  // //     //       "https://example.com/image72.jpg",
-  // //     //       "https://example.com/image56.jpg",
-  // //     //       "https://example.com/image11.jpg",
-  // //     //       "https://example.com/image70.jpg",
-  // //     //       "https://example.com/image54.jpg"
-  // //     //     ],
-  // //     //     buyingPrice: 420.35,
-  // //     //     sellingPrice: 278.93,
-  // //     //     initialStock: 452,
-  // //     //     totalSoldQuantity: 931,
-  // //     //     totalPurchaseQuantity: 121
-  // //     //   }
-  // //     // ];
-  // //   });
-  // // }
-
-
-  // ngOnInit() {
-  //   const savedItems = sessionStorage.getItem('items');
-  //   if (savedItems) {
-  //     this.items = JSON.parse(savedItems);
-  //   } else {
-  //     this.inventoryService.getItem().subscribe(data => {
-  //       this.items = data;
-  //       sessionStorage.setItem('items', JSON.stringify(this.items));
-  //     });
-  //   }
-  // }
-
-  // extractCurrencyCode(currency: string | null | undefined): string {
-  //   if (!currency) return '';
-  //   const match = currency.match(/\(([^)]+)\)/);
-  //   return match ? match[1] : '';
-  // }
-
-  // navigateToForm() {
-  //   this.router.navigate(['/inventory/inventory-form']);
-  // }
-
-  // editItem(id: string) {
-  //   this.router.navigate(['/inventory/inventory-form', id]);
-  // }
-
-  // deleteItem(id: string) {
-  //   this.inventoryService.deleteItem(id);
-  // }
-  // viewItem(item: any) {
-  //   this.showDialog(item, 'right');
-  // }
-  
-  
-  
-  // visible: boolean = false;
-  // selectedItem: InventoryItem | null = null;
-  // position: any = '';
-
-  // showDialog(item: InventoryItem, position: string = 'right'): void {
-  //   this.selectedItem = item;
-  //   this.position = position;
-  //   this.visible = true;
-  // }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   sidebarVisible2: boolean = false;
   selectedCurrency$: Observable<string | null>;
+  
   items: InventoryItem[] = [];
   selectedItems: InventoryItem[] = [];
   visible: boolean = false;
@@ -173,16 +57,23 @@ export class InventoryTableComponent implements OnInit{
     this.router.navigate(['/inventory/inventory-form', id]);
   }
   deleteItem(id: string) {
-    this.inventoryService.deleteItem(id);
+    this.confirmationService.confirm({
+      message: 'Are you sure you want to delete this product?',
+      header: 'Confirmation',
+      acceptIcon: 'pi pi-check m-2',
+      rejectIcon: 'pi pi-times m-2',
+      rejectButtonStyleClass: 'p-button-sm m-2',
+      acceptButtonStyleClass: 'p-button-outlined p-button-sm m-2',
+      accept:()=>{
+        this.inventoryService.deleteItem(id);
+        this.messageService.add({ severity: 'success', summary: 'Successful', detail: 'Product Deleted', life: 3000 });
+      },
+      reject: () => {
+        this.messageService.add({ severity: 'error', summary: 'Unsuccessful', detail: 'Product not Deleted', life: 3000 });
+      }
+    });
   }
 
-
-  // deleteItem(id: string) {
-  //   this.inventoryService.deleteItem(id).subscribe(() => {
-  //     this.items = this.items.filter(item => item.id !== id);
-  //     this.saveItemsToSession();
-  //   });
-  // }
 
   viewItem(item: any) {
     this.showDialog(item, 'right');
@@ -197,13 +88,19 @@ export class InventoryTableComponent implements OnInit{
 
   deleteSelectedItems() {
     this.confirmationService.confirm({
-        message: 'Are you sure you want to delete the selected products?',
-        header: 'Confirm',
-        icon: 'pi pi-exclamation-triangle',
+        header: 'Confirmation',
+        message: 'Are you sure you want to delete the selected product(s)?',
+        acceptIcon: 'pi pi-check m-2',
+        rejectIcon: 'pi pi-times m-2',
+        rejectButtonStyleClass: 'p-button-sm m-2',
+        acceptButtonStyleClass: 'p-button-outlined p-button-sm m-2',
         accept: () => {
             this.items = this.items.filter((val) => !this.selectedItems?.includes(val));
             this.selectedItems = [];
-            this.messageService.add({ severity: 'success', summary: 'Successful', detail: 'Products Deleted', life: 3000 });
+            this.messageService.add({ severity: 'success', summary: 'Successful', detail: 'Product(s) Deleted', life: 3000 });
+        },
+        reject: () => {
+            this.messageService.add({ severity: 'error', summary: 'Unsuccessful', detail: 'Product(s) not Deleted', life: 3000 });
         }
     });
   }

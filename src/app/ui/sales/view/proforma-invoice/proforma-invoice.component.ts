@@ -13,6 +13,7 @@ import { TopProductService } from 'src/app/ui/dashboard/service/top-product/top-
 })
 export class ProformaInvoiceComponent {
   tableData: any[];
+  selectedItems!: any[];
 
 
   constructor(

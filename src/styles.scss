@@ -11,7 +11,9 @@
 @import "primeng/resources/primeng.css";
 @import "node_modules/primeng/resources/primeng.min.css";
 
-/* Order */
+/* Custom css */
+@import "assets/theme/theme.css";
+
 
 
 
@@ -51,7 +53,7 @@ $ERP-FE-theme: mat.define-light-theme(
 // // that you are using.
 @include mat.all-component-themes($ERP-FE-theme);
 .my-outlined-dialog {
-  outline: 2px solid purple;
+  outline: 2px solid rgb(28, 0, 128);
 }
 
 

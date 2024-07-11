@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 
 
 @Component({
@@ -11,4 +12,12 @@ import { Component } from '@angular/core';
 })
 export class DashboardPageComponent {
 
+  token!: string;
+
+  constructor(private route: ActivatedRoute) {}
+
+  ngOnInit(): void {
+    this.token = this.route.snapshot.paramMap.get('token')!;
+    console.log('Token:', this.token);
+  }
 }
