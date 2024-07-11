@@ -7,10 +7,11 @@ import {
 } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Router } from '@angular/router';
+import { NavigationLinksService } from '../../shared/service/navigation-links/navigation-links.service';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-    constructor(private router: Router) {}
+    constructor(private router: Router, private navigationLink: NavigationLinksService) {}
     intercept(
         request: HttpRequest<any>,
         next: HttpHandler
@@ -18,7 +19,8 @@ export class AuthInterceptor implements HttpInterceptor {
         const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
-            // this.router.navigate(['']);
+            const loginLink = this.navigationLink.getLink('loginLink')
+            this.router.navigate([loginLink]);
             return next.handle(request);
         }
 

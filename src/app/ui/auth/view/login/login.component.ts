@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import {
   FormControl,
   FormGroupDirective,
@@ -9,6 +9,9 @@ import {ErrorStateMatcher} from '@angular/material/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { AuthenticationService } from '../../service/authentication.service';
+import { RandomTokenService } from 'src/app/ui/shared/service/random-token/random-token.service';
+import { v4 as uuidV4 } from 'uuid';
+import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 
 
 /** Error when invalid control is dirty, touched, or submitted. */
@@ -28,7 +31,7 @@ export class MyErrorStateMatcher implements ErrorStateMatcher {
   providers:[MessageService]
 
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
 
   loading: boolean = false;
   // loginDetails: any = {};
@@ -38,6 +41,8 @@ export class LoginComponent {
 };
   loggedIn: boolean = false;
   submitted: boolean = false;
+
+  public token!: string;
 
  
   hide = true;
@@ -51,152 +56,109 @@ export class LoginComponent {
     private authenticationService: AuthenticationService,
     private messageService: MessageService,
     private router: Router,
+    private navigationLink: NavigationLinksService,
     private route: ActivatedRoute,
+    private randomTokenService: RandomTokenService,
   ){}
 
+  // viewDonorProfile: any = []
 
-
-
-  // works without gaurd and interceptor
-  // userLoginAction() {
-  //   this.submitted = true;
-
-  //   // Check if username and password are filled
-  //   if (!this.loginInfo.email || !this.loginInfo.password) {
-  //       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
-  //       console.log("Username and password are required");
-  //       return;
-  //   }
-
-  //   this.loading = true;
-
-  //   const loginDetails = {
-  //       username: this.loginInfo.email,
-  //       password: this.loginInfo.password,
-  //   };
-
-  //   this.authenticationService.userLogin(loginDetails).subscribe(
-  //       (data) => {
-
-  //         this.loading = false;
-  //         this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Login successful!', life: 2000 });
-  //         // Optionally, redirect to another page after successful login
-  //         this.router.navigateByUrl('/dashboard');
-  //       },
-  //       (error) => {
-  //         if (error.toString() == "500") {
-  //           this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
-  //           this.loggedIn = false;
-  //           this.loading = false;
-  //         } else if (error.toString() == "0") {
-  //             this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
-  //             this.loggedIn = false;
-  //             this.loading = false;
-  //         }
-  //         this.loading = false;
-  //       }
-        
-  //     );
-  // }
-
-
-
+  ngOnInit(): void {
+    const uuid = this.route.snapshot.paramMap.get('uuid');
+    if (!uuid) {
+      console.error('UUID parameter not found.');
+      return;
+    }
+    console.log("this is the uuid" + uuid)
+    const loginLink = this.navigationLink.getLink('loginLink')
+    this.router.navigate([loginLink]);
+  }
 
 
 
 
 
 // Guarded
-userLoginAction(): void {
-  this.submitted = true;
-  this.loading = true;
-  this.loggedIn = false;
+  userLoginAction(): void {
+    this.submitted = true;
+    this.loading = true;
+    this.loggedIn = false;
 
 
-  if (!this.loginInfo.username || !this.loginInfo.password) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
-      this.loading = false;
-  } else {
-      setTimeout(() => {
-          this.authenticationService.userLogin(this.loginInfo).subscribe(
-            async (data) => {
-              this.loadInitParam(data);
-                  if (!data) {
+    if (!this.loginInfo.username || !this.loginInfo.password) {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
+        this.loading = false;
+    } else {
+        setTimeout(() => {
+            this.authenticationService.userLogin(this.loginInfo).subscribe(
+              async (data) => {
+                this.loadInitParam(data);
+                    if (!data) {
+                        this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
+                        this.loggedIn = false;
+                        this.loading = false;
+                    } else {
+                      if (!data.needsRegistration) {
+                        const registrationLink = this.navigationLink.getLink('userRegistrationLink');
+                        this.router.navigate([registrationLink]);
+                      } else {
+                        const dashboardLink = this.navigationLink.getLink('dashboardLink');
+                        this.router.navigate([dashboardLink]);
+                      }
+                      this.loggedIn = true;
+                      this.loading = false;
+                    }
+                },
+                (error) => {
+                  if (error.toString() == "500") {
                       this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
                       this.loggedIn = false;
                       this.loading = false;
-                  } else {
-                    if (!data.needsRegistration) {
-                      this.router.navigate(["user-registration"]);
-                    } else {
-                        this.router.navigate(["dashboard"]);
-                    }
-                    this.loggedIn = true;
-                    this.loading = false;
-                  }
-              },
-              (error) => {
-                if (error.toString() == "500") {
-                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
-                    this.loggedIn = false;
-                    this.loading = false;
-                  } 
-                  if (error.toString() == "404") {
-                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.' });
-                    this.loggedIn = false;
-                    this.loading = false;
-                  }
-                  else if (error.toString() == "0") {
-                      this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
+                    } 
+                    if (error.toString() == "404") {
+                      this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.' });
                       this.loggedIn = false;
                       this.loading = false;
-                  }
-                  this.loading = false;
-              }
-          );
-      }, 2000);
+                    }
+                    else if (error.toString() == "0") {
+                        this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
+                        this.loggedIn = false;
+                        this.loading = false;
+                    }
+                    this.loading = false;
+                }
+            );
+        }, 2000);
 
+    }
   }
-}
 
 
 
-loadInitParam(data: any) {
-  sessionStorage.setItem("username", data.username);
-  sessionStorage.setItem("userid", data.id);
-  // const tokenStartIndex = data.accessToken.indexOf('=') + 1;
-  // const token = data.accessToken.substring(tokenStartIndex, data.accessToken.indexOf(';'));
-  sessionStorage.setItem("accessToken", data.accessToken);
-  localStorage.setItem("accessToken2", data.accessToken);
-  sessionStorage["userRegData"] = JSON.stringify(data);
-}
+  loadInitParam(data: any) {
+    sessionStorage.setItem("username", data.username);
+    sessionStorage.setItem("userid", data.id);
+    // const tokenStartIndex = data.accessToken.indexOf('=') + 1;
+    // const token = data.accessToken.substring(tokenStartIndex, data.accessToken.indexOf(';'));
+    sessionStorage.setItem("accessToken", data.accessToken);
+    localStorage.setItem("accessToken2", data.accessToken);
+    sessionStorage["userRegData"] = JSON.stringify(data);
+  }
 
 
-async getUserRegInfoData(data: any) {
-  this.authenticationService
-      .getRegDataByUsername(data.username)
-      .subscribe((p) => {
-          console.log("second login method result", data);
-          console.log(p[1].user.roles);
+  async getUserRegInfoData(data: any) {
+    this.authenticationService
+        .getRegDataByUsername(data.username)
+        .subscribe((p) => {
+            console.log("second login method result", data);
+            console.log(p[1].user.roles);
 
-          if (p) {
-              sessionStorage["userInfoRegData"] = JSON.stringify(p);
-          }
-          this.router.navigate(["dashboard"]);
-      });
-}
-
-
-
-
-
-
-
-
-
-
-
-
+            if (p) {
+                sessionStorage["userInfoRegData"] = JSON.stringify(p);
+            }
+            this.router.navigate(["dashboard"]);
+        });
+  }
 
 
 
