@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, SimpleChanges } from '@angular/core';
 
 @Component({
   selector: 'app-pos-checkout-page',
@@ -11,7 +11,15 @@ export class PosCheckoutPageComponent {
   itemUpdateModal: boolean = false
   productThatNeedsUpdate: number | undefined 
   dicountModal:boolean = false
-  products = Array(10).fill(null).map((_, index) => ({ name: `Nivea lotion - Even glow ${index + 1}`, price: (index + 1) * 10, cartPriceTotal: (index + 1) * 10, count: 0 })); 
+  products = Array(10).fill(null).map((_, index) => ({ 
+    name: `Nivea lotion - Even glow ${index + 1}`, 
+    id: index + 1,
+    price: (index + 1) * 10, 
+    cartPriceTotal: (index + 1) * 10, 
+    count: 0,
+    dicount: 0.00  
+  })); 
+  
   subtotal: number = 0.00;
   tax: number = 0.00;
   discount: number = 0.00;
@@ -29,9 +37,11 @@ export class PosCheckoutPageComponent {
     return option ? option.label : '';
   }
 
+
+
+
   addToCart(product: any) {
     // this.cartItems.push(product);
-    this.calculateDiscount()
 
     let existingItem = this.cartItems.find(item => item.name === product.name);
     if (existingItem) {
@@ -41,19 +51,22 @@ export class PosCheckoutPageComponent {
       this.cartItems.push(product);
       product.count = product.count + 1
     }
+    this.calculateDiscount()
   
     this.calculateTotals();
     
   }
 
   deleteCartItem(index: number) {
+
     this.cartItems[index].cartPriceTotal = this.cartItems[index].price
     this.cartItems[index].count = 0
     this.cartItems.splice(index, 1);
+    this.calculateDiscount()
     if (this.cartItems.length === 0) {
       this.resetDiscount();
     }
-    this.calculateTotals()
+    // this.calculateTotals()
    
   }
 
@@ -62,11 +75,11 @@ export class PosCheckoutPageComponent {
     this.discountValue = 0;
   }
 
-  openItemUpdateModal(i: number) {
-   this.itemUpdateModal = !true
-   this.productThatNeedsUpdate = i
+  openItemUpdateModal(index: any) {
+    console.log(index)
+   this.itemUpdateModal = true
+   this.productThatNeedsUpdate = index
   }
-
 
   calculateTotals() {
     this.subtotal = this.cartItems.reduce((acc, item) => acc + item.cartPriceTotal, 0);
@@ -74,6 +87,7 @@ export class PosCheckoutPageComponent {
     // this.discount = 0; 
     this.total = this.subtotal + this.tax - this.discount;
   }
+
   handleCountChange(newCount: number, index: number) {
     this.cartItems[index].cartPriceTotal = this.cartItems[index].price * newCount;
     this.calculateDiscount()
@@ -97,14 +111,34 @@ export class PosCheckoutPageComponent {
     }
     this.calculateTotals();
     this.dicountModal = false
-  }
+  } 
+    get _discountValue(): number {
+      return this.discountValue;
+    }
 
+  set _discountValue(value: number) {
+    if (this.value === 'percentage' && value > 100) {
+      this.discountValue = 100;
+    } else if (this.value === 'naira' && value > this.subtotal) {
+      this.discountValue = this.subtotal;
+    } else if (value < 0) {
+      this.discountValue = 0;
+    } else {
+      this.discountValue = value;
+    }
+    // this.calculateDiscount();
+  }
   validateDiscountValue() {
     const discount = Number(this.discountValue);
-    if (discount > 100) {
+    if (this.value =="percentage" && discount > 100) {
       this.discountValue =  100;
+    }else if (this.value =="naira" && discount > this.subtotal) {
+      this.discountValue = this.subtotal;
     } else if (discount < 0) {
       this.discountValue = 0;
     }
   }
+
+
+
 }

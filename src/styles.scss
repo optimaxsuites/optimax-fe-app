@@ -149,3 +149,22 @@ body {
   background-color: red;
   font-size: 5em;
 }
+
+.custom-header {
+  font-size: 2rem; 
+  color: purple; 
+  font-weight: bold;
+  text-decoration: none ;
+  margin-bottom: 1rem;
+  padding: 0;
+}
+.custom-header > a {
+  color: #224957; 
+  font-weight: bold;
+  text-decoration: none ;
+}
+.custom-header > a[aria-selected="true"] {
+  background-color: rgb(37 146 91 / 0.6);
+  color: white;
+  border-radius: 1rem;
+}

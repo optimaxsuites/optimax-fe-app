@@ -9,6 +9,8 @@ export class CartItemCardComponent {
   @Input() item: any ;
   @Output() delete = new EventEmitter<void>();
   @Output() countChange = new EventEmitter<number>();
+  @Output() updateItem = new EventEmitter<number>();
+
 
   // count: number = this.item.count
 
@@ -29,10 +31,15 @@ export class CartItemCardComponent {
   this.countChange.emit( this.item.count );
 }
 
+
  onDelete() {
   this.delete.emit();
 }
 onCountChange(newCount: number) {
   this.countChange.emit( newCount ); 
+}
+
+onClick(){
+  this.updateItem.emit( this.item.id );
 }
 }
