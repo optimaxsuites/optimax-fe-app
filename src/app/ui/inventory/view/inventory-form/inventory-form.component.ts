@@ -8,6 +8,7 @@ import { MessageService } from 'primeng/api';
 import { InventoryService } from '../../service/inventory/inventory.service';
 import { DropdownService } from 'src/app/ui/shared/service/dropdown/dropdown.service';
 import { NumberCurrencyPopupComponent } from 'src/app/ui/shared/view/number-currency-popup/number-currency-popup.component';
+import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 
 
 
@@ -145,6 +146,7 @@ currencyList = [
     private dropdownService: DropdownService,
     private dialogRef:MatDialog,
     private messageService: MessageService,
+    private navigationLink: NavigationLinksService,
   ) {}
 
 
@@ -219,7 +221,9 @@ currencyList = [
   }
 
   navigateToTable() {
-    this.router.navigate(['/inventory']);
+    const inventoryLink = this.navigationLink.getLink('inventoryLink')
+    this.router.navigate([inventoryLink]);
+    
   }
 
 

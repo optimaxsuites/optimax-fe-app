@@ -1,7 +1,7 @@
 <p-toast></p-toast>
 <div class="container">
     <div class="modal-wrapper">
-        <form (ngSubmit)="onSubmit()" #inventoryForm="ngForm">
+        <form #inventoryForm="ngForm">
           <div class="header-section">
             <section class="title-section">
               <p class="form-title">{{ isEdit ? 'Edit Product' : 'Add Product' }}</p>
@@ -125,74 +125,11 @@
             <input type="text" id="selling-price" required [(ngModel)]="inventoryItem.sellingPrice" name="sellingPrice" appNumberOnly>
             </div>
           </div>
-
-          <!-- <div class="d-flex">
-            <div class="form-group-2">
-              <label for="inventory-ledger">Inventory Ledger</label>
-              <p class="sub-text">The ledger account where you record the inventory of this item</p>
-              <input placeholder="Select Inventory Ledger" type="text" list="inventoryLedger" id="inventory-ledger" required [(ngModel)]="inventoryItem.inventoryLedger" name="inventory-ledger">
-              <datalist id="inventoryLedger">
-                <option *ngFor="let ledger of inventoryLedgers" [value]="ledger">{{ ledger }}</option>
-              </datalist>
-            </div>
-
-            <div class="form-group-2">
-              <label for="sales-ledger">Sales Ledger</label>
-              <p class="sub-text">The ledger account where you record the sales of this item</p>
-              <input placeholder="Select Sales Ledger" type="text" list="salesLedger" id="sales-ledger" required [(ngModel)]="inventoryItem.salesLedger" name="sales-ledger" >
-              <datalist id="salesLedger">
-                <option *ngFor="let ledger of salesLedgers" [value]="ledger">{{ ledger }}</option>
-              </datalist>
-            </div>
-          </div> -->
-
-          <!-- <div class="form-group">
-            <label for="inventory-ledger">Inventory Ledger</label>
-            <p class="sub-text">The ledger account where you record the inventory of this item</p>
-            <input placeholder="Select Inventory Ledger" type="text" list="inventoryLedger" id="inventory-ledger" required [(ngModel)]="inventoryItem.inventoryLedger" name="inventory-ledger">
-            <datalist id="inventoryLedger">
-              <option *ngFor="let ledger of inventoryLedgers" [value]="ledger">{{ ledger }}</option>
-            </datalist>
-          </div> -->
-
-
-          <!-- <div class="d-flex">
-            <div class="form-group-2">
-              <label for="purchase-ledger">Purchase Ledger</label>
-              <p class="sub-text">The ledger account where you record the purchase of this item</p>
-              <input placeholder="Select Purchase Ledger" type="text" list="purchaseLedger"  id="purchase-ledger"  name="purchase-ledger" required [(ngModel)]="inventoryItem.purchaseLedger">
-              <datalist id="purchaseLedger">
-                <option *ngFor="let ledger of purchaseLedgers" [value]="ledger">{{ ledger }}</option>
-              </datalist>
-            </div>
-
-            <div class="form-group-2 mt-10">
-              <label for="tax-rate">Tax Rate (in %)</label>
-              <input type="text" id="tax-rate" required [(ngModel)]="inventoryItem.taxRate" name="tax-rate" appNumberOnly>
-            </div>
-          </div> -->
-
-
-          <div class="d-flex">
-            <!-- <div class="form-group-2">
-              <label for="tax-rate">Tax Rate (in %)</label>
-              <input type="text" id="tax-rate" required [(ngModel)]="inventoryItem.taxRate" name="tax-rate" appNumberOnly>
-            </div> -->
-            <!-- <div class="form-group-2">
-              <label for="hsn">HSN</label>
-              <input type="text" id="hsn" required [(ngModel)]="inventoryItem.hsn" name="hsn" >
-            </div> -->
+          <div class="btn-center">
+            <app-button text="{{ isEdit ? 'Update' : 'Save' }}" (click)="onSubmit()" class="btn-save"></app-button>
           </div>
-
-          <!-- <div class="form-group">
-            <label for="tag">Tag</label>
-            <input type="text" id="tag" required [(ngModel)]="inventoryItem.tag" name="tag" >
-          </div> -->
-          
-
-          <button type="submit">{{ isEdit ? 'Update Product' : 'Add Product' }}</button>
         </form>
-        <button (click)="navigateToTable()">Back to Product Table</button>
+        <!-- <app-button (click)="navigateToTable()">Back to Product Table</app-button> -->
       </div>
 </div>
   

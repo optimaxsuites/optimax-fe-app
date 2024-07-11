@@ -34,6 +34,7 @@ import { VendorCategoryComponent } from './ui/crm/view/vendor-category/vendor-ca
 import { VendorIndividualComponent } from './ui/crm/view/vendor-individual/vendor-individual.component';
 import { VendorListComponent } from './ui/crm/view/vendor-list/vendor-list.component';
 import { VendorManagementComponent } from './ui/crm/view/vendorMangement/vendorManagement';
+// import { randomTokenResolver } from './ui/shared/domain/random-token/random-token.resolver';
 
 
 
@@ -44,7 +45,7 @@ const routes: Routes = [
     component: DefaultComponent,
     children: [
       {
-        path: '',
+        path: ':uuid',
         component: LoginComponent,
       },
       {
@@ -52,21 +53,23 @@ const routes: Routes = [
         component: RegisterComponent,
       },
       {
-        path: 'email-verification',
+        path: 'email-verification/:uuid',
         component: MailVerificationComponent,
       },
       {
-        path: 'verification-successful',
+        path: 'vrs/:uuid',
         component: VerificationSuccessfullComponent,
       },
       {
-        path: 'verification-failed',
+        path: 'vrf/:uuid',
         component: VerificationFailedComponent,
       },
     ],
   },
+
+
   {
-    path: 'user-registration',
+    path: 'admin/settings/user-reg/:uuid',
     component: UserRegLayoutComponent,
   },
   {
@@ -75,7 +78,7 @@ const routes: Routes = [
   },
 
   {
-    path: '',
+    path: 'user',
     component: UserComponent,
     // canActivate: [AuthGuard],
     children: [
@@ -85,17 +88,18 @@ const routes: Routes = [
       },
     ],
   },
+
   {
     path: '',
     component: MasterComponent,
     // canActivate: [AuthGuard],
     children: [
       {
-        path: 'dashboard',
+        path: 'admin/dashboard/:uuid',
         component: DashboardPageComponent,
       },
       {
-        path: 'sales',
+        path: 'admin/sales/:uuid',
         component: SalesPageComponent,
       },
       {
@@ -115,11 +119,11 @@ const routes: Routes = [
         component: InvoiceModalComponent,
       },
       {
-        path: 'accounting',
+        path: 'admin/accounting/:uuid',
         component: AccountingPageComponent,
       },
       {
-        path: 'purchase',
+        path: 'admin/purchase/:uuid',
         component: PurchasePageComponent,
       },
       {
@@ -134,7 +138,7 @@ const routes: Routes = [
       { path: 'purchase/rfq-modal/:rfqId', component: RfqModalComponent },
 
       {
-        path: 'inventory',
+        path: 'admin/inventory/:uuid',
         component: InventoryPageComponent,
       },
       { path: 'inventory/inventory-form', component: InventoryFormComponent },
@@ -147,7 +151,7 @@ const routes: Routes = [
         component: ViewProductAsideComponent,
       },
       {
-        path: 'settings',
+        path: 'admin/settings/:uuid',
         component: SettingsPageComponent,
       },
       {
@@ -163,11 +167,11 @@ const routes: Routes = [
         component: PaymentRecordReceivedComponent,
       },
       {
-        path: 'crm',
+        path: 'admin/crm/:uuid',
         component: CrmPageComponent,
       },
       {
-        path: 'pos',
+        path: 'admin/pos/:uuid',
         component: PosPageComponent,
       },
       {

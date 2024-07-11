@@ -4,155 +4,82 @@
   </div>
 
   <div class="side-bar-body">
-    <div class="items" routerLink="dashboard">
-      <!-- <a href="/dashboard"> Dashboard</a> -->
+    <div class="items" [routerLink]="navigationLink.getLink('dashboardLink')">
       <div class="d-flex">
         <i class="fas fa-dashboard"></i>
         <p>Dashboard</p>
       </div>
     </div>
 
-    <div class="items" (click)="toggleDropdown('sales')" routerLink="sales">
+    <div class="items" [routerLink]="navigationLink.getLink('salesLink')" >
       <div class="d-flex">
         <img class="salesIcon" src="../../../assets/salesSvg.svg" alt="" />
         <p>Sales</p>
       </div>
     </div>
-    <div class="items" routerLink="purchase">
+
+    <div class="items" [routerLink]="navigationLink.getLink('purchaseLink')">
       <div class="d-flex">
         <i class="fas fa-receipt"></i>
         <p>Purchase</p>
       </div>
     </div>
 
-    <div class="items" routerLink="inventory">
-      <!-- <a href="/projects"> Projects</a> -->
+    <div class="items" [routerLink]="navigationLink.getLink('inventoryLink')">
       <div class="d-flex">
         <i class="fas fa-project-diagram"></i>
         <p>Inventory</p>
       </div>
-
-      <!-- <div class="list-item-content" *ngIf="dropdownOpen === 'inventoty'">
-        <p routerLink="gggg">
-          <i class="fas fa-arrow-right"></i>
-          <span>Overview</span>
-        </p>
-        <p routerLink="kkkk">
-          <i class="fas fa-arrow-right"></i>
-          <span>Option 1</span>
-        </p>
-        <p routerLink="jjjj">
-          <i class="fas fa-arrow-right"></i>
-          <span>Option 2</span>
-        </p>
-      </div> -->
     </div>
 
-    <div class="items" (click)="toggleDropdown('procurement')">
-      <!-- <a href="/projects"> Projects</a> -->
+    <div class="items" [routerLink]="navigationLink.getLink('procurementLink')">
       <div class="d-flex">
         <i class="fas fa-project-diagram"></i>
         <p>Procurement</p>
       </div>
-
-      <div class="list-item-content" *ngIf="dropdownOpen === 'procurement'">
-        <p routerLink="gggg">
-          <i class="fas fa-arrow-right"></i>
-          <span>Overview</span>
-        </p>
-        <p routerLink="kkkk">
-          <i class="fas fa-arrow-right"></i>
-          <span>Option 1</span>
-        </p>
-        <p routerLink="jjjj">
-          <i class="fas fa-arrow-right"></i>
-          <span>Option 2</span>
-        </p>
-      </div>
     </div>
 
-    <div
-      class="items"
-      (click)="toggleDropdown('accounting')"
-      routerLink="accounting"
-    >
+    <div class="items" [routerLink]="navigationLink.getLink('accountingLink')">
       <div class="d-flex">
         <i class="fas fa-file-invoice"></i>
         <p>Accounting</p>
       </div>
     </div>
 
-    <div class="items" (click)="toggleDropdown('human-resource')">
-      <!-- <a href="/sales"> Sales</a> -->
+    <div class="items" [routerLink]="navigationLink.getLink('hrLink')">
       <div class="d-flex">
         <i class="fas fa-users"></i>
         <p>Human Resource</p>
       </div>
-
-      <div class="list-item-content" *ngIf="dropdownOpen === 'human-resource'">
-        <p routerLink="gggg">
-          <i class="fas fa-arrow-right"></i>
-          <span>Overview</span>
-        </p>
-        <p routerLink="kkkk">
-          <i class="fas fa-arrow-right"></i>
-          <span>Option 1</span>
-        </p>
-        <p routerLink="jjjj">
-          <i class="fas fa-arrow-right"></i>
-          <span>Option 2</span>
-        </p>
-      </div>
     </div>
-    <div class="items" routerLink="pos">
+
+    <div class="items" [routerLink]="navigationLink.getLink('posLink')">
       <div class="d-flex">
         <i class="fas fa-people-group"></i>
         <p>POS</p>
       </div>
     </div>
-    <div class="items" routerLink="crm">
+
+    <div class="items" [routerLink]="navigationLink.getLink('crmLink')">
       <div class="d-flex">
         <i class="fas fa-people-group"></i>
         <p>CRM</p>
       </div>
     </div>
 
-    <div class="items" (click)="toggleDropdown('report-analytics')">
-      <!-- <a href="/"> Chat Support</a> -->
+    <!-- <div class="items">
       <div class="d-flex">
         <i class="fas fa-headset"></i>
         <p>Report and Analysis</p>
       </div>
+    </div> -->
 
-      <div
-        class="list-item-content"
-        *ngIf="dropdownOpen === 'report-analytics'"
-      >
-        <p routerLink="gggg">
-          <i class="fas fa-arrow-right"></i>
-          <span>Overview</span>
-        </p>
-        <p routerLink="kkkk">
-          <i class="fas fa-arrow-right"></i>
-          <span>Option 1</span>
-        </p>
-        <p routerLink="jjjj">
-          <i class="fas fa-arrow-right"></i>
-          <span>Option 2</span>
-        </p>
-      </div>
-    </div>
-
-    <div
-      class="items"
-      (click)="toggleDropdown('settings')"
-      routerLink="settings"
-    >
-      <!-- <a href="/settings"> Settings</a> -->
+    <div class="items" [routerLink]="navigationLink.getLink('settingsLink')">
       <div class="d-flex">
         <i class="fas fa-gears"></i>
         <p>Settings</p>
       </div>
     </div>
+
   </div>
 </div>

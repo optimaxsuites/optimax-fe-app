@@ -12,77 +12,58 @@
             <div>
               <mat-form-field>
                 <mat-label>Quotation No</mat-label>
-                <input matInput placeholder="Quotation No" />
+                <input matInput placeholder="Quotation No" [(ngModel)]="quotationData.qNo" />
               </mat-form-field>
             </div>
             <div class="d-flex">
               <mat-form-field>
                 <mat-label>Quotation Date</mat-label>
-                <input
-                  matInput
-                  [matDatepicker]="picker1"
-                  placeholder="dd/mm/yyyy"
-                />
-                <mat-datepicker-toggle
-                  matIconSuffix
-                  [for]="picker1"
-                ></mat-datepicker-toggle>
+                <input matInput [matDatepicker]="picker1" placeholder="dd/mm/yyyy" [(ngModel)]="quotationData.qDate"/>
+                <mat-datepicker-toggle matIconSuffix [for]="picker1" ></mat-datepicker-toggle>
                 <mat-datepicker #picker1></mat-datepicker>
               </mat-form-field>
   
               <mat-form-field class="ms-2">
                 <mat-label> Quotation Due Date</mat-label>
-                <input
-                  matInput
-                  [matDatepicker]="picker2"
-                  placeholder="dd/mm/yyyy"
-                />
-                <mat-datepicker-toggle
-                  matIconSuffix
-                  [for]="picker2"
-                ></mat-datepicker-toggle>
+                <input matInput [matDatepicker]="picker2" placeholder="dd/mm/yyyy" [(ngModel)]="quotationData.qDueDate" />
+                <mat-datepicker-toggle matIconSuffix [for]="picker2" ></mat-datepicker-toggle>
                 <mat-datepicker #picker2></mat-datepicker>
               </mat-form-field>
             </div>
             <div>
               <mat-form-field>
                 <mat-label>Project Title</mat-label>
-                <input matInput placeholder="Project Title" />
+                <input matInput placeholder="Project Title" [(ngModel)]="quotationData.projectTitle" />
               </mat-form-field>
             </div>
   
-            <div
-              *ngFor="let field of fields; let i = index"
-              class="editable-label-container"
-            >
+            <div *ngFor="let field of quotationData.fields; let i = index" class="editable-label-container">
               <div class="editable-label">
                 <p *ngIf="!field.isEditing" (click)="editField(i)" class="label">
-                  {{ field.text || "Enter New Field" }}
+                  {{ "Enter New Field" || field.header }}
                 </p>
                 <input
                   *ngIf="field.isEditing"
                   placeholder="Enter New Field"
                   [value]="field.text"
+                  [(ngModel)]="field.value"
                   (blur)="saveField(i, $event)"
                   (keydown.enter)="saveField(i, $event)"
                   class="form-control-opti p-2"
                   style="font-size: 1.1em; font-weight: 400"
                 />
               </div>
-  
+              
               <div class="editable-label-input">
-                <input
-                  type="text"
-                  class="form-control-opti p-2"
-                  style="font-size: 1.1em; font-weight: 400"
-                />
+                <input type="text" class="form-control-opti p-2" style="font-size: 1.1em; font-weight: 400" />
                 <i (click)="removeField(i)" class="fa-solid fa-x p-2"></i>
               </div>
             </div>
-  
+            
             <button class="add-btn" (click)="addField()">
               <i class="fas fa-plus me-2"></i>Add More Field
             </button>
+            
           </div>
           <div class="">
             <section class="logo-section">
@@ -92,22 +73,15 @@
                     <img
                       *ngIf="logoUrl"
                       [src]="logoUrl"
+                      [(ngModel)]="quotationData.companyLogo"
                       alt="logo"
                       class="logo"
                     />
                   </div>
                 </div>
   
-                <div
-                  *ngIf="showLogo; else addLogoButtons"
-                  class="add-logo-btn-wrapper"
-                >
-                  <input
-                    type="file"
-                    #fileInput
-                    style="display: none"
-                    (change)="onLogoSelected($event)"
-                  />
+                <div *ngIf="showLogo; else addLogoButtons" class="add-logo-btn-wrapper" >
+                  <input type="file" #fileInput style="display: none" (change)="onLogoSelected($event)" />
                   <button class="btn" (click)="fileInput.click()">
                     <i class="fas fa-plus me-2"></i>Change Logo
                   </button>
@@ -117,12 +91,7 @@
                 </div>
                 <ng-template #addLogoButtons>
                   <div class="add-logo-toggle">
-                    <input
-                      type="file"
-                      #fileInput
-                      style="display: none"
-                      (change)="onLogoSelected($event)"
-                    />
+                    <input type="file" #fileInput style="display: none" (change)="onLogoSelected($event)" />
                     <button class="btn" (click)="fileInput.click()">
                       <i class="fas fa-plus me-2"></i>Add Business Logo
                     </button>
@@ -138,27 +107,13 @@
             <div class="top-container">
               <div class="billing-selection">
                 <form>
-                  <p class="billing-title">
-                    Quotation From
-                    <span class="billing-span">[ Company's details ]</span>
-                  </p>
+                  <p class="billing-title"> Quotation From <span class="billing-span">[ Company's details ]</span></p>
                   <mat-form-field>
                     <mat-label>Select Company</mat-label>
-                    <mat-select
-                      [(ngModel)]="selectedValue"
-                      (ngModelChange)="updateBusinessInfo()"
-                      name="Company"
-                      placeholder="Select Company"
-                    >
-                      <mat-option
-                        *ngFor="let company of companies"
-                        [value]="company.value"
-                        >{{ company.viewValue }}</mat-option
-                      >
+                    <mat-select [(ngModel)]="quotationData.selectedCompany" (ngModelChange)="updateBusinessInfo()" name="Company" placeholder="Select Company">
+                      <mat-option *ngFor="let company of companies" [value]="company.value">{{ company.viewValue }}</mat-option>
                       <div class="add-new-details-btn-wrapper">
-                        <button class="btn new-detail-btn mt-2">
-                          Add New Company Details
-                        </button>
+                        <button class="btn new-detail-btn mt-2"> Add New Company Details </button>
                       </div>
                     </mat-select>
                   </mat-form-field>
@@ -171,24 +126,25 @@
                 <div class="business-info">
                   <div class="d-flex">
                     <p>Business Name:</p>
-                    <p class="ms-2">{{ businessDetails.name }}</p>
+                    <p class="ms-2">{{ quotationData.businessDetails.name }}</p>
                   </div>
                   <div class="d-flex">
                     <p>Address:</p>
-                    <p class="ms-2">{{ businessDetails.address }}</p>
+                    <p class="ms-2">{{ quotationData.businessDetails.address }}</p>
                   </div>
                   <div class="d-flex">
                     <P>Phone Number:</P>
-                    <p class="ms-2">{{ businessDetails.phoneNumber }}</p>
+                    <p class="ms-2">{{ quotationData.businessDetails.phoneNumber }}</p>
                   </div>
                   <div class="d-flex">
                     <p>Email Address:</p>
-                    <p class="ms-2">{{ businessDetails.email }}</p>
+                    <p class="ms-2">{{ quotationData.businessDetails.email }}</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+          
   
           <div class="left">
             <div class="top-container"></div>
@@ -202,21 +158,10 @@
                     </p>
                     <mat-form-field>
                       <mat-label>Select Client</mat-label>
-                      <mat-select
-                        [(ngModel)]="selectedValue"
-                        (ngModelChange)="updateClientInfo()"
-                        name="Company"
-                        placeholder="Select Company"
-                      >
-                        <mat-option
-                          *ngFor="let client of clients"
-                          [value]="client.value"
-                          >{{ client.viewValue }}</mat-option
-                        >
+                      <mat-select [(ngModel)]="quotationData.selectedClient" (ngModelChange)="updateClientInfo()" name="Company" placeholder="Select Company">
+                        <mat-option *ngFor="let client of clients" [value]="client.value">{{ client.viewValue }}</mat-option>
                         <div class="add-new-details-btn-wrapper">
-                          <button (click)="openAddNewClientDialog()" class="btn new-detail-btn mt-2">
-                            Add New Client Details
-                          </button>
+                          <button (click)="openAddNewClientDialog()" class="btn new-detail-btn mt-2"> Add New Client Details </button>
                         </div>
                       </mat-select>
                     </mat-form-field>
@@ -234,39 +179,35 @@
                   <div class="business-info">
                     <div class="d-flex">
                       <p>Business Name:</p>
-                      <p class="ms-2">{{ clientDetails.name }}</p>
+                      <p class="ms-2">{{ quotationData.clientDetails.name }}</p>
                     </div>
                     <div class="d-flex">
                       <p>Address:</p>
-                      <p class="ms-2">{{ clientDetails.address }}</p>
+                      <p class="ms-2">{{ quotationData.clientDetails.address }}</p>
                     </div>
                     <div class="d-flex">
                       <P>Phone Number:</P>
-                      <p class="ms-2">{{ clientDetails.phoneNumber }}</p>
+                      <p class="ms-2">{{ quotationData.clientDetails.phoneNumber }}</p>
                     </div>
                     <div class="d-flex">
                       <p>Email Address:</p>
-                      <p class="ms-2">{{ clientDetails.email }}</p>
+                      <p class="ms-2">{{ quotationData.clientDetails.email }}</p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </div>          
         </section>
   
         <section class="shipping-details-container">
           <div class="shipping-wrapper">
-            <div class="checkbox-container mb-2">
-              <span
-                ><input type="checkbox" id="toggleForm" [(ngModel)]="showForm"
-              /></span>
-              <label for="toggleForm">
-                <i class="fas fa-plus me-2"></i> Add Shipping Details</label
-              >
+            <div class="add-terms-condition-btn btn" (click)="toggleForm()" >
+              <!-- <span><input type="checkbox" id="toggleForm"  /></span> -->
+              <label> Add Shipping Details</label>
             </div>
   
-            <div *ngIf="showForm" class="form-container">
+            <div *ngIf="isFormVisible" class="form-container">
               <div class="form-section">
                 <div class="shipping-header-wrapper">
                   <p class="shipping-header">Shipped From</p>
@@ -275,7 +216,7 @@
                   <!-- <label>Business / Freelancer Name</label> -->
                   <input
                     type="text"
-                    [(ngModel)]="shippedFrom.businessName"
+                    [(ngModel)]="quotationData.shippedFrom.businessName"
                     placeholder="Business / Freelancer Name"
                     class="form-control-opti"
                   />
@@ -312,7 +253,7 @@
                   <!-- <label>Address (optional)</label> -->
                   <input
                     type="text"
-                    [(ngModel)]="shippedFrom.address"
+                    [(ngModel)]="quotationData.shippedFrom.address"
                     placeholder="Address (optional)"
                     class="form-control-opti"
                   />
@@ -322,7 +263,7 @@
                     <!-- <label>City (optional)</label> -->
                     <input
                       type="text"
-                      [(ngModel)]="shippedFrom.city"
+                      [(ngModel)]="quotationData.shippedFrom.city"
                       placeholder="City (optional)"
                       class="form-control-opti"
                     />
@@ -331,7 +272,7 @@
                     <!-- <label>Postal Code / Zip Code</label> -->
                     <input
                       type="text"
-                      [(ngModel)]="shippedFrom.postalCode"
+                      [(ngModel)]="quotationData.shippedFrom.postalCode"
                       placeholder="Postal Code / Zip Code"
                       class="form-control-opti"
                     />
@@ -341,7 +282,7 @@
                   <!-- <label>State (optional)</label> -->
                   <input
                     type="text"
-                    [(ngModel)]="shippedFrom.state"
+                    [(ngModel)]="quotationData.shippedFrom.state"
                     placeholder="State (optional)"
                     class="form-control-opti"
                   />
@@ -392,7 +333,7 @@
                   <!-- <label>Client's Business Name</label> -->
                   <input
                     type="text"
-                    [(ngModel)]="shippedTo.businessName"
+                    [(ngModel)]="quotationData.shippedTo.businessName"
                     placeholder="Client's Business Name"
                     class="form-control-opti"
                   />
@@ -427,7 +368,7 @@
                   <!-- <label>Address (optional)</label> -->
                   <input
                     type="text"
-                    [(ngModel)]="shippedTo.address"
+                    [(ngModel)]="quotationData.shippedTo.address"
                     placeholder="Address (optional)"
                     class="form-control-opti"
                   />
@@ -437,7 +378,7 @@
                     <!-- <label>City (optional)</label> -->
                     <input
                       type="text"
-                      [(ngModel)]="shippedTo.city"
+                      [(ngModel)]="quotationData.shippedTo.city"
                       placeholder="City (optional)"
                       class="form-control-opti"
                     />
@@ -446,7 +387,7 @@
                     <!-- <label>Postal Code / Zip Code</label> -->
                     <input
                       type="text"
-                      [(ngModel)]="shippedTo.postalCode"
+                      [(ngModel)]="quotationData.shippedTo.postalCode"
                       placeholder="Postal Code / Zip Code"
                       class="form-control-opti"
                     />
@@ -456,7 +397,7 @@
                   <!-- <label>State (optional)</label> -->
                   <input
                     type="text"
-                    [(ngModel)]="shippedTo.state"
+                    [(ngModel)]="quotationData.shippedTo.state"
                     placeholder="State (optional)"
                     class="form-control-opti"
                   />
@@ -485,7 +426,7 @@
           </div>
           <div class="currency-selector">
             <div class="custom-dropdown">
-              <button class="btn flat-btn" (click)="toggleDropdown('currency')">
+              <button class="btn flat-btn" [(ngModel)]="quotationData.selectedCurrency" (click)="toggleDropdown('currency')">
                 {{ (getSelectedItem$("currency") | async) || "Select Currency" }}
                 <!-- <span class="arrow"></span> -->
               </button>
@@ -564,7 +505,7 @@
             <!-- <ng-container > -->
             <div
               class="top-products-table-row"
-              *ngFor="let item of tableData; let i = index"
+              *ngFor="let item of quotationData.tableData; let i = index"
             >
               <div class="table-item">
                 <td class="top-products-table-data col-5">
@@ -651,6 +592,7 @@
                   <angular-editor
                     placeholder="'Enter text here...'"
                     [config]="editorConfig"
+                    [(ngModel)]="quotationData.des"
                   ></angular-editor>
                   <!-- <div class="card">
                     <p-editor [style]="{ height: '100%' }" />
@@ -698,13 +640,14 @@
             <div class="discount-container">
               <div
                 class="space-between"
-                *ngFor="let discount of discounts; let i = index"
+                *ngFor="let discount of quotationData.discounts; let i = index"
               >
                 <p><b>Discount</b></p>
                 <div class="value d-flex">
                   <div class="d-flex">
                     <input
                       type="text"
+                      [(ngModel)]="discount.value"
                       class="form-control-opti input"
                       style="font-size: 1.1em; font-weight: 400"
                       appNumberOnly
@@ -725,13 +668,14 @@
               </div>
               <div
                 class="space-between"
-                *ngFor="let charge of charges; let i = index"
+                *ngFor="let charge of quotationData.charges; let i = index"
               >
                 <p><b>Additional Charges</b></p>
                 <div class="value d-flex">
                   <div class="d-flex">
                     <input
                       type="text"
+                      [(ngModel)]="charge.value"
                       class="form-control-opti input"
                       style="font-size: 1.1em; font-weight: 400"
                       appNumberOnly
@@ -808,29 +752,21 @@
                   <img
                     *ngIf="signatureUrl"
                     [src]="signatureUrl"
+                    [(ngModel)]="quotationData.sign"
                     alt="Signature"
                     class="Signature"
                   />
                 </div>
                 <div class="btn-sign">
                   <!-- <input type="" (change)="onFileSelected($event)" class="form-control" /> -->
-                  <input
-                    type="file"
-                    #fileInput
-                    style="display: none"
-                    (change)="onSignatureSelected($event)"
-                  />
+                  <input type="file" #fileInput style="display: none" (change)="onSignatureSelected($event)" />
                   <button class="btn" (click)="fileInput.click()">
                     Upload Signature
                   </button>
                 </div>
               </div>
               <div class="add-sign-btn-wrapper">
-                <button
-                  class="btn add-sign"
-                  *ngIf="!showSignatureButton"
-                  (click)="showSignatureButton = true"
-                >
+                <button class="btn add-sign" *ngIf="!showSignatureButton" (click)="showSignatureButton = true" >
                   Add Signature
                 </button>
               </div>
@@ -841,25 +777,13 @@
   
       <div class="form-buttom-section">
         <div class="btn-bottom-container">
-          <button
-            class="add-terms-condition-btn btn"
-            *ngIf="!showTermsConditionButton"
-            (click)="showTermsConditionButton = true"
-          >
+          <button class="add-terms-condition-btn btn" *ngIf="!showTermsConditionButton" (click)="showTermsConditionButton = true" >
             Add Terms & Conditions
           </button>
-          <button
-            class="add-terms-condition-btn btn"
-            *ngIf="!showNotes"
-            (click)="showNotes = true"
-          >
+          <button class="add-terms-condition-btn btn" *ngIf="!showNotes" (click)="showNotes = true">
             Add Notes
           </button>
-          <button
-            class="add-terms-condition-btn btn"
-            *ngIf="!showAttachments"
-            (click)="showAttachments = true"
-          >
+          <button class="add-terms-condition-btn btn"  *ngIf="!showAttachments"(click)="showAttachments = true" >
             Add Attachments
           </button>
         </div>
@@ -869,32 +793,15 @@
             class="terms-conditions-container"
             *ngIf="showTermsConditionButton"
           >
-            <div
-              class="terms-condition-wrapper"
-              *ngFor="let termGroup of termsGroup; let i = index"
-            >
+            <div class="terms-condition-wrapper" *ngFor="let termGroup of termsGroup; let i = index">
               <div class="top">
                 <div class="label mb-4"><p>Terms and Conditions</p></div>
-                <i
-                  *ngIf="i === 0"
-                  (click)="removeTermGroup(i); closeTermsConditions()"
-                  class="fa-solid fa-x p-2"
-                ></i>
-                <i
-                  *ngIf="i !== 0"
-                  (click)="removeTermGroup(i)"
-                  class="fa-solid fa-x p-2"
-                ></i>
+                <i *ngIf="i === 0" (click)="removeTermGroup(i); closeTermsConditions()" class="fa-solid fa-x p-2"></i>
+                <i *ngIf="i !== 0" (click)="removeTermGroup(i)" class="fa-solid fa-x p-2" ></i>
               </div>
-              <div
-                class="d-flex mb-4"
-                *ngFor="let term of termGroup.terms; let j = index"
-              >
-                <input type="text" class="form-control-opti terms" />
-                <i
-                  (click)="removeTermCondition(i, j)"
-                  class="fa-solid fa-x p-2"
-                ></i>
+              <div class="d-flex mb-4" *ngFor="let term of quotationData.termGroup.terms; let j = index" >
+                <input type="text" class="form-control-opti terms" [(ngModel)]="term.term_des" />
+                <i (click)="removeTermCondition(i, j)" class="fa-solid fa-x p-2"></i>
               </div>
               <button (click)="addTermCondition(i)" class="btn add-more-terms">
                 <i class="fas fa-plus me-2"></i>Add New Term
@@ -912,10 +819,7 @@
                   <div class="label mb-4"><p>Add Notes</p></div>
                   <i (click)="showNotes = false" class="fa-solid fa-x p-2"></i>
                 </div>
-                <angular-editor
-                  placeholder="'Enter text here...'"
-                  [config]="editorConfig"
-                ></angular-editor>
+                <angular-editor placeholder="'Enter text here...'" [config]="editorConfig" [(ngModel)]="quotationData.note"></angular-editor>
               </div>
             </div>
           </div>
@@ -925,40 +829,22 @@
               <div class="terms-condition-wrapper">
                 <div class="top">
                   <div class="label"><p>Add Attachments</p></div>
-                  <i
-                    (click)="showAttachments = false"
-                    class="fa-solid fa-x p-2"
-                  ></i>
+                  <i (click)="showAttachments = false" class="fa-solid fa-x p-2"></i>
                 </div>
                 <div class="content">
-                  <p>
-                    *Add any other attachments that are necessary for the
-                    quotation
-                  </p>
+                  <p>*Add any other attachments that are necessary for the quotation</p>
                   <!-- attachment.component.html -->
   
                   <!-- file-upload.component.html -->
-                  <div class="file-upload-container">
-                    <input
-                      type="file"
-                      #fileInput
-                      (change)="fileInputChange($event)"
-                      style="display: none"
-                    />
-                    <button
-                      class="btn file-upload-button"
-                      (click)="fileInput.click()"
-                    >
+                  <div class="file-upload-continer">
+                    <input type="file" #fileInput (change)="fileInputChange($event)" style="display: none"/>
+                    <button class="btn file-upload-button" (click)="fileInput.click()" >
                       Browse
                     </button>
                   </div>
   
                   <ul class="uploaded-files">
-                    <li
-                      *ngFor="let file of uploadedFiles; let i = index"
-                      [class]="file.status"
-                      class="uploaded-file"
-                    >
+                    <li *ngFor="let file of quotationData.uploadedFiles; let i = index" [class]="file.status" class="uploaded-file" >
                       <div class="file-details">
                         <div class="file-name">{{ file.name }}</div>
                         <div class="file-progress">
@@ -987,9 +873,9 @@
       </div>
   
       <div class="btn-wrapper">
-        <button class="btn create-client-btn-2">Save As Draft</button>
-        <button class="btn save-continue">Save & Continue</button>
+        <!-- <button class="btn create-client-btn-2">Save As Draft</button> -->
+        <button class="btn save-continue" (click)="onsubmit()">Save & Continue</button>
       </div>
     </div>
-  </div>
+</div>
   
