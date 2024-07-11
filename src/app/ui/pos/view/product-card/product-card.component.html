@@ -1,7 +1,10 @@
-<div class="border rounded-xl p-3 cursor-pointer">
-    <img src="https://static.vecteezy.com/system/resources/thumbnails/030/607/510/small/cosmetic-rounded-all-white-soap-bottle-mockup-on-white-table-ai-generative-free-photo.jpg" alt="product image" class="w-44 h-44 object-contain">
-    <div class="flex flex-col gap-3">
-        <p>Nivea lotion - Even glow</p>
-        <p>#5000</p>
+<div class="border rounded-xl px-2 pt-3 cursor-pointer" (click)="onAddToCart()">
+    <img src="https://static.vecteezy.com/system/resources/thumbnails/030/607/510/small/cosmetic-rounded-all-white-soap-bottle-mockup-on-white-table-ai-generative-free-photo.jpg" alt="product image" class="w-full h-44 object-contain">
+    <div class="flex flex-col w-full mt-2 px-2">
+        <!-- <p>Nivea lotion - Even glow</p>
+        <p>#5000</p> -->
+
+        <p>{{product.name}}</p>
+        <p>₦{{product.price}}</p>
     </div>
 </div>
