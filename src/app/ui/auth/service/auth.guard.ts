@@ -2,14 +2,15 @@ import { Injectable } from '@angular/core';
 import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router, UrlTree } from '@angular/router';
 import { Observable } from 'rxjs';
 import { AuthenticationService } from './authentication.service';
-import { LoginComponent } from 'src/app/accounts/login/login.component';
+import { LoginComponent } from '../view/login/login.component';
+import { NavigationLinksService } from '../../shared/service/navigation-links/navigation-links.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthGuard implements CanActivate {
 
-  constructor(private loginService: LoginComponent, private router: Router) {}
+  constructor(private loginService: LoginComponent, private router: Router,private navigationLink: NavigationLinksService) {}
 
   canActivate(
     next: ActivatedRouteSnapshot,
@@ -17,7 +18,8 @@ export class AuthGuard implements CanActivate {
     if (this.loginService.loggedIn) {
       return true;
     } else {
-      this.router.navigate([""]);
+      const loginLink = this.navigationLink.getLink('loginLink')
+      this.router.navigate([loginLink]);
       return false;
     }
   }

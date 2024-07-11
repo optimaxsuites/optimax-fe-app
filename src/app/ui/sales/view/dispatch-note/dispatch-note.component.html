@@ -1,93 +1,54 @@
-<div class='container-fluid'>
+<div class='table-container'>
     <div class="container-header">
-        <button (click)="navigateToForm()" class=" btn create-invoice-btn">Create New Dispatch Note <i class="fas fa-plus"></i></button>
+        <!-- <button (click)="navigateToForm()" class=" btn create-invoice-btn">Create New Dispatch Note <i class="fas fa-plus"></i></button> -->
     </div>
-    <div class="bottom-container">
-        <div class="top-products-container">
-            <div class="top-products">
-                <div class="top-products-table-container">
-                  <!-- <table class="top-products-table w3-table w3-striped">
-                    <thead>
-                      <tr class="top-products-table-row">
-                        <th class="top-products-table-head">Date/Time</th>
-                        <th class="top-products-table-head">Project Title</th>
-                        <th class="top-products-table-head">Dispatch No</th>
-                        <th class="top-products-table-head">Client Name</th>
-                        <th class="top-products-table-head">Status</th>
-                        <th class="top-products-table-head col-2">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr class="top-products-table-row" *ngFor="let item of tableData; let i = index">
-                        <td class="top-products-table-data">{{ item.dateAndTime }}</td>
-                        <td class="top-products-table-data">{{ item.projectTitle }}</td>
-                        <td class="top-products-table-data">{{ item.dispatchNo}}</td>
-                        <td class="top-products-table-data">{{item.clientName}}</td>
-                        <td class="top-products-table-data">{{item.status}}</td>
-                        <td class="top-products-table-data action">
-                          <span class="tb-action-btn1" 
-                            mat-raised-button 
-                            #tooltip="matTooltip"
-                            matTooltip="Open"
-                            matTooltipPosition="below" >
-                              <i class="fa-regular fa-folder-open"></i>
-                          </span>
-                          <span class="tb-action-btn2 ms-4 me-4" 
-                            mat-raised-button 
-                            #tooltip="matTooltip"
-                            matTooltip="Edit"
-                            matTooltipPosition="below" >
-                              <i class="fas fa-file-pen"></i>
-                          </span>
-                          <span class="tb-action-btn3" 
-                            mat-raised-button 
-                            #tooltip="matTooltip"
-                            matTooltip="Delete"
-                            matTooltipPosition="below" >
-                              <i class="fas fa-trash"></i>
-                          </span>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table> -->
-
-                  <div class="card">
-                    <p-table 
-                      [paginator]="true" 
-                      dataKey="id"
-                      styleClass="p-datatable-striped" 
-                      [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
-                      [rows]="15"
-                      >
-                        <ng-template pTemplate="header" class="header">
-                          <tr class="table-item">
-                            <th>Date/Time</th>
-                            <th>Project Title</th>
-                            <th>Dispatch No</th>
-                            <th>Client Name</th>
-                            <th>Status</th>
-                            <th>Action</th>
-                          </tr>
-                        </ng-template>
-                        <ng-template pTemplate="body" let-item let-i="rowIndex">
-                            <tr class="table-item">
-                              <td>{{ item.dateAndTime }}</td>
-                              <td>{{ item.projectTitle }}</td>
-                              <td>{{ item.dispatchNo}}</td>
-                              <td>{{item.clientName}}</td>
-                              <td>{{item.status}}</td>
-                              <td class="action">
-                                <i (click)="viewItem(item.id)" class="pi pi-eye" style="font-size: 1.1em"></i>
-                                <i (click)="editItem(item.id)" class="pi pi-pen-to-square" style="font-size: 1.1em"></i>
-                                <i (click)="deleteItem(item.id)" class="pi pi-times-circle" style="font-size: 1.1em"></i>
-                              </td>
-                            </tr>                            
-                        </ng-template>
-                    </p-table>
-                  </div>
-                  
-                </div>
-              </div>
-        </div>
+    <div class="">
+      <p-toolbar styleClass="mb-4 gap-2">
+        <ng-template pTemplate="left">
+          <app-button text="Delete" class="btn-delete" ></app-button>
+        </ng-template>
+  
+        <ng-template pTemplate="right">
+          <app-button text="Add New" (btnClick)="navigateToForm()" class="btn-navigate" ></app-button>
+          <app-button text="Import"  class="btn-export" ></app-button>
+        </ng-template>
+      </p-toolbar>
+      <p-table 
+        [paginator]="true" 
+        [(selection)]="selectedItems"
+        dataKey="id"
+        styleClass="p-datatable-striped" 
+        [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+        [rows]="15"
+        >
+          <ng-template pTemplate="header" class="header">
+            <tr class="table-item">
+              <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+              <th>Date/Time</th>
+              <th>Project Title</th>
+              <th>Dispatch No</th>
+              <th>Client Name</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-item let-i="rowIndex">
+              <tr class="table-item">
+                <td>
+                  <p-tableCheckbox [value]="item" />
+                </td>
+                <td>{{ item.dateAndTime }}</td>
+                <td>{{ item.projectTitle }}</td>
+                <td>{{ item.dispatchNo}}</td>
+                <td>{{item.clientName}}</td>
+                <td>{{item.status}}</td>
+                <td class="action">
+                  <i (click)="viewItem(item.id)" class="pi pi-eye" style="font-size: 1.1em"></i>
+                  <i (click)="editItem(item.id)" class="pi pi-pen-to-square" style="font-size: 1.1em"></i>
+                  <i (click)="deleteItem(item.id)" class="pi pi-times-circle" style="font-size: 1.1em"></i>
+                </td>
+              </tr>                            
+          </ng-template>
+      </p-table>
     </div>
 </div>

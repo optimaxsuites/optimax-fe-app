@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { NavigationLinksService } from '../../service/navigation-links/navigation-links.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -11,7 +12,9 @@ export class SidebarComponent {
   sidebarHidden: boolean = false;
 
 
-  // constructor(private renderer: Renderer2, private elementRef: ElementRef) {}
+  constructor(
+    public navigationLink: NavigationLinksService,
+  ) {}
 
   
   ngOnInit(): void {
@@ -30,5 +33,8 @@ export class SidebarComponent {
     } else {
         this.dropdownOpen = item;
     }
-}
+  }
+
+
+
 }
