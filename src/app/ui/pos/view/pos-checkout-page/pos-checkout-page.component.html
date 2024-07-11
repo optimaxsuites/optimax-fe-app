@@ -77,10 +77,10 @@
                     </div>
                 </div> -->
                 <div class="w-full border-2 flex flex-col gap-3 rounded-xl py-3 px-6">
-                    <div class="flex justify-between items-center"><span>Subtotal</span> <span>#{{subtotal| number:'1.2-2'}}</span> </div>
-                    <div class="flex justify-between items-center"><span>Tax</span> <span>#{{tax | number:'1.2-2'}}</span> </div>
-                    <div class="flex justify-between items-center"><span>Discount</span> <span>#{{discount | number:'1.2-2'}}</span> </div>
-                    <div class="flex justify-between font-bold text-2xl items-center"><span>Total</span> <span>#{{total | number:'1.2-2'}}</span> </div>
+                    <div class="flex justify-between items-center"><span>Subtotal</span> <span>₦{{subtotal| number:'1.2-2'}}</span> </div>
+                    <div class="flex justify-between items-center"><span>Tax</span> <span>₦{{tax | number:'1.2-2'}}</span> </div>
+                    <div class="flex justify-between items-center"><span>Discount</span> <span>₦{{discount | number:'1.2-2'}}</span> </div>
+                    <div class="flex justify-between font-bold text-2xl items-center"><span>Total</span> <span>₦{{total | number:'1.2-2'}}</span> </div>
                 </div>
                 <!-- <div class="payment flex justify-between items-center mt-3" >
                     <p>Cash</p>
@@ -106,27 +106,28 @@
     <div  class="flex flex-col justify-between gap-5 py-10">
         <p-tabView>
             <p-tabPanel header="Discount" [headerStyleClass]="'custom-header'" >
-                <div class="flex flex-col gap-5 mt-6">
+                <div class="flex flex-col gap-5 mt-6 px-2">
                     <div class="flex justify-between items-end">
                         <div class="border flex rounded-xl text-3xl justify-between items-center font-bold w-48">
                             <span class="w-full cursor-pointer text-center p-3"  *ngFor="let opt of stateOptions" [class.text-white]="opt.value === value" [class.rounded-xl]="opt.value === value" [class.bg-customBlue]="opt.value === value" (click)="value = opt.value">{{opt.label}}</span>
                         </div>
             
                         <div class="flex items-center">
-                            <input type="text" max="100" placeholder="0" class="discount-input" [(ngModel)]="_discountValue" (input)="validateDiscountValue()" />
-                            <span *ngIf="value == 'percentage'">%</span>
-                            <span *ngIf="value == 'naira'">#</span>
+                            <input type="text" max="100" placeholder="0" class="discount-input" [(ngModel)]="_productDiscountValue"  />
+                            <span *ngIf="value == 'percentage'"  class="text-5xl">%</span>
+                            <span *ngIf="value == 'naira'">₦</span>
                         </div>
                     </div>
             
                     <div class="border flex rounded-xl text-3xl divide-x-2 bg-customGreen/50 justify-between items-center font-bold w-full">
-                        <span class="w-full cursor-pointer text-center p-3"  *ngFor="let opt of discountOptions" [class.text-white]="opt.value === discountValue" [class.rounded-xl]="opt.value === discountValue" [class.bg-customBlue]="opt.value === discountValue" (click)="discountValue = opt.value">{{opt.label}}{{getLabelForValue(value)}}</span>
+                        <span class="w-full cursor-pointer text-center p-3"  *ngFor="let opt of discountOptions" [class.text-white]="opt.value === productDiscountValue" [class.rounded-xl]="opt.value === productDiscountValue" [class.bg-customBlue]="opt.value === productDiscountValue" (click)="productDiscountValue = opt.value">{{opt.label}}{{getLabelForValue(value)}}</span>
                     </div>
                 </div>
             </p-tabPanel>
             <p-tabPanel header="Metrics" [headerStyleClass]="'custom-header'">
                 <p>
                     Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium...
+                    Lorem ipsum dolor sit amet consectetur adipisicing elit. Consequuntur, adipisci consequatur nulla atque dolore aspernatur! Natus at consequuntur quod, facilis cum voluptas veniam ad debitis excepturi beatae omnis. Ea nemo odio minus ut ipsum vel vero exercitationem, eius eaque odit omnis! Exercitationem quis unde accusantium mollitia quos ipsam dolorum nemo.
                 </p>
             </p-tabPanel>
     
@@ -140,7 +141,7 @@
             Cancel
             </button>
     
-            <button class="btn create-invoice-btn"  >
+            <button class="btn create-invoice-btn"  (click)="calculateProductDiscount()">
             Save
             </button>
           </div>
@@ -158,7 +159,7 @@
             <div class="flex items-center">
                 <input type="text" max="100" placeholder="0" class="discount-input" [(ngModel)]="_discountValue" (input)="validateDiscountValue()" />
                 <span *ngIf="value == 'percentage'">%</span>
-                <span *ngIf="value == 'naira'">#</span>
+                <span *ngIf="value == 'naira'">₦</span>
             </div>
         </div>
 

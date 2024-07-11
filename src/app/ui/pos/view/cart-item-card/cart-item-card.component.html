@@ -2,7 +2,7 @@
    
         <div class="flex flex-col  gap-1" (click)="onClick()">
             <span class="text-wrap">{{item.name}}</span>
-            <span>#{{item.price}}</span>
+            <span>₦{{item.price}}</span>
         </div>
     
    
@@ -15,7 +15,11 @@
     </div>
 
     <div class="flex gap-4 items-center">
-    <span class=" font-semibold">#{{item.cartPriceTotal}}</span>
+
+        <div class="flex flex-col  gap-1" (click)="onClick()">
+             <span class=" font-semibold" >₦{{item.cartPriceTotal}}</span>
+            <span *ngIf="item.discount > 0" [class.text-red-500]="item.discount > 0">-₦{{item.discount}}</span>
+        </div>
     <i class="fa-solid fa-trash  cursor-pointer" (click)="onDelete()" ></i>
 
     </div>
