@@ -142,6 +142,7 @@ import { CommisionComponent } from './ui/pos/view/commision/commision.component'
 import { AuthInterceptor } from './ui/auth/service/auth.interceptor.service';
 import { ProfileCardComponent } from './ui/shared/view/profile-card/profile-card.component';
 import { CheckoutHeaderComponent } from './ui/pos/view/pos-checkout-page/components/checkout-header/checkout-header.component';
+import { ButtonComponent } from './ui/shared/view/button/button.component';
 
 @NgModule({
   declarations: [
@@ -232,6 +233,7 @@ import { CheckoutHeaderComponent } from './ui/pos/view/pos-checkout-page/compone
     CommisionComponent,
     ModalComponent,
     CheckoutHeaderComponent,
+    ButtonComponent
   ],
   imports: [
     BrowserModule,
