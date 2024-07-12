@@ -28,7 +28,7 @@ export class NavigationLinksService {
     this.links['settingsLink'] = '/admin/settings/' +uuidV4();
 
 
-    this.links['loginLink'] = '/' +uuidV4();
+    this.links['loginLink'] = '' +uuidV4();
 
     this.links['vrsLink'] = '/vrs/' +uuidV4();
     this.links['vrfLink'] = '/vrf/' +uuidV4();
