@@ -83,7 +83,7 @@ const routes: Routes = [
     // canActivate: [AuthGuard],
     children: [
       {
-        path: 'user/checkout/:uuid',
+        path: 'user/checkout',
         component: PosCheckoutPageComponent,
       },
     ],
