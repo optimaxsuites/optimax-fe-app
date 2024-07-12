@@ -78,12 +78,12 @@ const routes: Routes = [
   },
 
   {
-    path: 'user',
+    path: '',
     component: UserComponent,
     // canActivate: [AuthGuard],
     children: [
       {
-        path: 'checkout',
+        path: 'user/checkout/:uuid',
         component: PosCheckoutPageComponent,
       },
     ],
