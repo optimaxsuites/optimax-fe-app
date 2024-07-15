@@ -441,10 +441,10 @@ input[type="checkbox"]:checked {
     
 }
 
-th{
-    margin-right: 1rem;
-    // background-color: #224957;
-}
+// th{
+//     margin-right: 1rem;
+//     // background-color: #224957;
+// }
 
 .top-products-table{
     display: block;
@@ -454,7 +454,9 @@ th{
     .thead{
         width: 100%;
         
-        .top-products-table-row{       
+        .top-products-table-row{   
+        width: 100%;
+
             .table-item{
                 display: flex;
                 justify-content: space-evenly;
@@ -463,12 +465,12 @@ th{
                 padding: 1rem;
                 color: #fff;
 
-                .top-products-table-data{
-                    font-weight: 400;
-                    .input-span {
-                        font-size: .9em;
-                    }
-                }
+                // .top-products-table-data{
+                //     font-weight: 400;
+                //     .input-span {
+                //         font-size: .9em;
+                //     }
+                // }
             }
 
         }

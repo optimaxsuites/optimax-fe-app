@@ -70,7 +70,7 @@ export class LoginComponent implements OnInit {
       return;
     }
     console.log("this is the uuid" + uuid)
-    const loginLink = this.navigationLink.getLink('loginLink')
+    const loginLink = this.navigationLink.getLink('signinLink')
     this.router.navigate([loginLink]);
   }
 

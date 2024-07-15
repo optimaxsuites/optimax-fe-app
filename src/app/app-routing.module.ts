@@ -36,6 +36,7 @@ import { VendorCategoryComponent } from './ui/crm/view/vendor-category/vendor-ca
 import { VendorIndividualComponent } from './ui/crm/view/vendor-individual/vendor-individual.component';
 import { VendorListComponent } from './ui/crm/view/vendor-list/vendor-list.component';
 import { VendorManagementComponent } from './ui/crm/view/vendorMangement/vendorManagement';
+import { AuthGuard } from './ui/auth/service/auth.guard';
 import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-orders.component';
 // import { randomTokenResolver } from './ui/shared/domain/random-token/random-token.resolver';
 
@@ -45,26 +46,31 @@ import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-
 const routes: Routes = [
   {
     path: '',
+    redirectTo: 'auth/sign-in/3bbfd81a-f9ef-4d61-9969-cc7b8f29a25b',
+    pathMatch: 'full',
+  },
+  {
+    path: '',
     component: DefaultComponent,
     children: [
       {
-        path: ':uuid',
+        path: 'auth/sign-in/:uuid',
         component: LoginComponent,
       },
       {
-        path: 'signup',
+        path: 'auth/sign-up/:uuid',
         component: RegisterComponent,
       },
       {
-        path: 'email-verification/:uuid',
+        path: 'auth/emv/:uuid',
         component: MailVerificationComponent,
       },
       {
-        path: 'vrs/:uuid',
+        path: 'auth/vrs/:uuid',
         component: VerificationSuccessfullComponent,
       },
       {
-        path: 'vrf/:uuid',
+        path: 'auth/vrf/:uuid',
         component: VerificationFailedComponent,
       },
     ],
