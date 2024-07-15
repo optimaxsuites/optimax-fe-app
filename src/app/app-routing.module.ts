@@ -10,6 +10,8 @@ import { UserRegLayoutComponent } from './ui/auth/view/user-reg-layout.component
 import { BusinessRegComponent } from './ui/auth/view/business-reg/business-reg.component';
 import { UserComponent } from './user.component';
 import { PosCheckoutPageComponent } from './ui/pos/view/pos-checkout-page/pos-checkout-page.component';
+// import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders.component';
+
 import { MasterComponent } from './master.component';
 import { DashboardPageComponent } from './ui/dashboard/view/dashboard-page.component';
 import { SalesPageComponent } from './ui/sales/view/sales-page.component';
@@ -35,6 +37,7 @@ import { VendorIndividualComponent } from './ui/crm/view/vendor-individual/vendo
 import { VendorListComponent } from './ui/crm/view/vendor-list/vendor-list.component';
 import { VendorManagementComponent } from './ui/crm/view/vendorMangement/vendorManagement';
 import { AuthGuard } from './ui/auth/service/auth.guard';
+import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-orders.component';
 // import { randomTokenResolver } from './ui/shared/domain/random-token/random-token.resolver';
 
 
@@ -84,13 +87,17 @@ const routes: Routes = [
   },
 
   {
-    path: 'user',
+    path: '',
     component: UserComponent,
     // canActivate: [AuthGuard],
     children: [
       {
-        path: 'checkout',
+        path: 'user/checkout/:uuid',
         component: PosCheckoutPageComponent,
+      },
+      {
+        path: 'user/checkout/orders/:uuid',
+        component: CheckoutOrdersComponent,
       },
     ],
   },

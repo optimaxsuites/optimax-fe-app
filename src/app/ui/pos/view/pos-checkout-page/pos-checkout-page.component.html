@@ -49,7 +49,7 @@
                 <p>Refund</p>
                 <p>Return or Exchange</p>
                 <p>Delivery</p>
-                <p>Save</p>
+                <p (click)="saveModal = true">Save</p>
 
              </nav>
         </div>
@@ -79,7 +79,7 @@
                 <div class="w-full border-2 flex flex-col gap-3 rounded-xl py-3 px-6">
                     <div class="flex justify-between items-center"><span>Subtotal</span> <span>₦{{subtotal| number:'1.2-2'}}</span> </div>
                     <div class="flex justify-between items-center"><span>Tax</span> <span>₦{{tax | number:'1.2-2'}}</span> </div>
-                    <div class="flex justify-between items-center"><span>Discount</span> <span>₦{{discount | number:'1.2-2'}}</span> </div>
+                    <div class="flex justify-between items-center"><span>Discount</span> <span>₦{{displayedDiscount | number:'1.2-2'}}</span> </div>
                     <div class="flex justify-between font-bold text-2xl items-center"><span>Total</span> <span>₦{{total | number:'1.2-2'}}</span> </div>
                 </div>
                 <!-- <div class="payment flex justify-between items-center mt-3" >
@@ -177,5 +177,23 @@
             </button>
           </div>
     </div>
+    
+</app-modal>
+
+<app-modal *ngIf="saveModal && cartItems.length > 0" (close)="saveModal = false">
+  
+    <div class="flex items-center gap-3 p-3 my-3 mx-2 border bg-white/50 rounded-xl ">
+        <label for="orderName" class=" font-semibold">Order name:</label>
+        <input class="outline-none text-gray-600" type="text" id="orderName" [(ngModel)]="orderName" placeholder="Type here">
+    </div>
+        <div class="modalBtn mt-5 flex-end">
+            <button class="btn create-invoice-btn" (click)="saveModal = false" >
+            Cancel
+            </button>
+    
+            <button class="btn create-invoice-btn"  (click)="saveCurrentCartItem()">
+            Save
+            </button>
+          </div>
     
 </app-modal>
