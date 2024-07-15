@@ -1,4 +1,6 @@
-<div class="container">
+<div class="sales-form-wrapper">
+  <app-back-button></app-back-button>
+  <div class="container">
     <div class="modal-wrapper p-4" #contentToPrint>
       <div class="header-section">
         <section class="title-section">
@@ -458,7 +460,7 @@
         <div class="top-products-table w3-table">
           <div class="thead">
             <div class="top-products-table-row">
-              <div class="table-item">
+              <div class="">
                 <th class="top-products-table-data col-5">Item</th>
                 <th class="top-products-table-data col">
                   Tax Rate <span class="input-span">%</span>
@@ -504,9 +506,9 @@
             <!-- <ng-container > -->
             <div
               class="top-products-table-row"
-              *ngFor="let item of quotationData.tableData; let i = index"
+              *ngFor="let item of tableData; let i = index"
             >
-              <div class="table-item">
+              <div class="">
                 <td class="top-products-table-data col-5">
                   <input
                     type="text"
@@ -876,5 +878,6 @@
         <button class="btn save-continue" (click)="onsubmit()">Save & Continue</button>
       </div>
     </div>
+  </div>
 </div>
-  
+

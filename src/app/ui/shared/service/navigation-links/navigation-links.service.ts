@@ -28,12 +28,16 @@ export class NavigationLinksService {
     this.links['settingsLink'] = '/admin/settings/' +uuidV4();
 
 
-    this.links['loginLink'] = '' +uuidV4();
+    this.links['signinLink'] = '/auth/sign-in' +uuidV4();
+    this.links['vrsLink'] = '/auth/vrs/' +uuidV4();
+    this.links['vrfLink'] = '/auth/vrf/' +uuidV4();
+    this.links['signupLink'] = '/auth/sign-up/' +uuidV4();
+    this.links['emvLink'] = '/auth/emv/' +uuidV4();
 
-    this.links['vrsLink'] = '/vrs/' +uuidV4();
-    this.links['vrfLink'] = '/vrf/' +uuidV4();
     this.links['checkoutLink'] = '/user/checkout/' +uuidV4();
     this.links['checkoutOrderLink'] = '/user/checkout/orders/' +uuidV4();
+
+    
     this.links['salesLink'] = '/admin/sales/' +uuidV4();
 
   }
