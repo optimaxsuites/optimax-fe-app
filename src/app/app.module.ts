@@ -143,6 +143,7 @@ import { AuthInterceptor } from './ui/auth/service/auth.interceptor.service';
 import { ProfileCardComponent } from './ui/shared/view/profile-card/profile-card.component';
 import { CheckoutHeaderComponent } from './ui/pos/view/pos-checkout-page/components/checkout-header/checkout-header.component';
 import { ButtonComponent } from './ui/shared/view/button/button.component';
+import { BackButtonComponent } from './ui/shared/view/back-button/back-button.component';
 
 @NgModule({
   declarations: [
@@ -233,7 +234,8 @@ import { ButtonComponent } from './ui/shared/view/button/button.component';
     CommisionComponent,
     ModalComponent,
     CheckoutHeaderComponent,
-    ButtonComponent
+    ButtonComponent,
+    BackButtonComponent
   ],
   imports: [
     BrowserModule,

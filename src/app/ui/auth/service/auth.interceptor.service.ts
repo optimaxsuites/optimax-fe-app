@@ -19,7 +19,7 @@ export class AuthInterceptor implements HttpInterceptor {
         const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
-            const loginLink = this.navigationLink.getLink('loginLink')
+            const loginLink = this.navigationLink.getLink('signinLink')
             this.router.navigate([loginLink]);
             return next.handle(request);
         }
