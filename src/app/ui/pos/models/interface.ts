@@ -11,3 +11,10 @@ export interface Product {
     label: string ;
     value: number | string;
   }
+  
+  export interface Order {
+    name: string;
+    cartDiscount: number;
+    state: string;
+    cart: Product[];
+  }

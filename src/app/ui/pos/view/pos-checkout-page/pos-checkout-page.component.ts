@@ -194,6 +194,7 @@ saveCurrentCartItem() {
   };
 
   this.orders.push(pausedCart);
+  localStorage.setItem("savedItems", JSON.stringify(this.orders));
   
   this.cartItems = [];
   this.orderName = "";
