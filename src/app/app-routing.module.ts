@@ -36,9 +36,6 @@ import { VendorListComponent } from './ui/crm/view/vendor-list/vendor-list.compo
 import { VendorManagementComponent } from './ui/crm/view/vendorMangement/vendorManagement';
 // import { randomTokenResolver } from './ui/shared/domain/random-token/random-token.resolver';
 
-
-
-
 const routes: Routes = [
   {
     path: '',
@@ -66,7 +63,6 @@ const routes: Routes = [
       },
     ],
   },
-
 
   {
     path: 'admin/settings/user-reg/:uuid',
@@ -182,6 +178,11 @@ const routes: Routes = [
         path: 'crm/individualVendor',
         component: VendorIndividualComponent,
       },
+      {
+        path: 'crm/individualVendor/edit/:id',
+        component: VendorIndividualComponent,
+      },
+      // { path: '', redirectTo: '/crm/individualVendor', pathMatch: 'full' },
       {
         path: 'crm/vendorList',
         component: VendorListComponent,

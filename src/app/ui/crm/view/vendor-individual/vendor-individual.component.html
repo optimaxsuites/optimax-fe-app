@@ -1,4 +1,4 @@
-<div class="container-fluid" *ngIf="tableSection">
+<div class="container-fluid" *ngIf="dataService.tableSection">
   <div class="container-header">
     <button class="btn create-invoice-btn" (click)="openForm()">
       Create New Vendor
@@ -91,7 +91,11 @@
   </section>
 </div>
 
-<form class="createVendor" *ngIf="formSection" (ngSubmit)="saveVendor()">
+<form
+  class="createVendor"
+  *ngIf="dataService.formSection"
+  (ngSubmit)="saveVendor()"
+>
   <div class="viewFlex">
     <div class="vendorCategory">
       <span>Vendor Name</span>
@@ -167,6 +171,7 @@
         class="smallInput"
         [(ngModel)]="selectedCategory"
         (change)="onCategoryChange($event)"
+        [ngModelOptions]="{ standalone: true }"
       >
         <option value="" disabled selected hidden>Choose Type</option>
 
@@ -355,76 +360,78 @@
   </div>
 </form>
 
-<ng-container *ngIf="vendorDetails">
+<ng-container *ngIf="dataService.vendorDetails">
   <article class="viewVendor">
     <div class="viewFlex">
       <p>Name:</p>
-      <span>{{ selectedVendor.individualVendorName }}</span>
+      <span>{{ dataService.selectedVendor.individualVendorName }}</span>
     </div>
     <div class="viewFlex">
       <p>Contact Person:</p>
-      <span>{{ selectedVendor.individualVendorContactPerson }}</span>
+      <span>{{
+        dataService.selectedVendor.individualVendorContactPerson
+      }}</span>
     </div>
     <div class="viewFlex">
       <p>Phone Number:</p>
-      <span>{{ selectedVendor.individualVendorNumber }}</span>
+      <span>{{ dataService.selectedVendor.individualVendorNumber }}</span>
     </div>
     <div class="viewFlex">
       <p>Job Position:</p>
-      <span>{{ selectedVendor.individualVendorJobPosition }}</span>
+      <span>{{ dataService.selectedVendor.individualVendorJobPosition }}</span>
     </div>
     <div class="viewFlex">
       <p>Email:</p>
-      <span>{{ selectedVendor.individualVendorEmail }}</span>
+      <span>{{ dataService.selectedVendor.individualVendorEmail }}</span>
     </div>
     <div class="viewFlex">
       <p>Website:</p>
-      <span>{{ selectedVendor.individualVendorWebsite }}</span>
+      <span>{{ dataService.selectedVendor.individualVendorWebsite }}</span>
     </div>
     <div class="viewFlex">
       <p>Industry:</p>
-      <span>{{ selectedVendor.individualVendorIndustry }}</span>
+      <span>{{ dataService.selectedVendor.individualVendorIndustry }}</span>
     </div>
     <div class="viewFlex">
       <p>Address:</p>
-      <span>{{ selectedVendor.individualVendorAddress }}</span>
+      <span>{{ dataService.selectedVendor.individualVendorAddress }}</span>
     </div>
 
     <div class="viewFlex">
       <p>Country:</p>
-      <span>{{ selectedVendor.individualVendorCountry }}</span>
+      <span>{{ dataService.selectedVendor.individualVendorCountry }}</span>
     </div>
     <div class="viewFlex">
       <p>State:</p>
-      <span>{{ selectedVendor.individualVendorState }}</span>
+      <span>{{ dataService.selectedVendor.individualVendorState }}</span>
     </div>
     <div class="viewFlex">
       <p>City:</p>
-      <span>{{ selectedVendor.individualVendorCity }}</span>
+      <span>{{ dataService.selectedVendor.individualVendorCity }}</span>
     </div>
     <div class="viewFlex">
       <p>Postal Code:</p>
-      <span>{{ selectedVendor.individualVendorPostalCode }}</span>
+      <span>{{ dataService.selectedVendor.individualVendorPostalCode }}</span>
     </div>
     <div class="viewFlex">
       <p>CAC Number:</p>
-      <span>{{ selectedVendor.individualVendorCACNum }}</span>
+      <span>{{ dataService.selectedVendor.individualVendorCACNum }}</span>
     </div>
     <div class="viewFlex">
       <p>TIN Number:</p>
-      <span>{{ selectedVendor.individualVendorTINNum }}</span>
+      <span>{{ dataService.selectedVendor.individualVendorTINNum }}</span>
     </div>
     <div class="viewFlex">
       <p>BVN:</p>
-      <span>{{ selectedVendor.individualVendorBVN }}</span>
+      <span>{{ dataService.selectedVendor.individualVendorBVN }}</span>
     </div>
     <div class="viewFlex">
       <p>Bank:</p>
-      <span>{{ selectedVendor.individualVendorAcctName }}</span>
+      <span>{{ dataService.selectedVendor.individualVendorAcctName }}</span>
     </div>
     <div class="viewFlex">
       <p>Account Number:</p>
-      <span>{{ selectedVendor.individualVendorAcctNum }}</span>
+      <span>{{ dataService.selectedVendor.individualVendorAcctNum }}</span>
     </div>
   </article>
 </ng-container>

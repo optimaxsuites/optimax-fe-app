@@ -176,7 +176,6 @@ export class DataService {
   }
 
   viewVendor(vendor: string) {
-    // this.dataService.changeLabel('Vendor Details');
     this.selectedVendor = vendor;
     this.tableSection = false;
     this.vendorDetails = true;

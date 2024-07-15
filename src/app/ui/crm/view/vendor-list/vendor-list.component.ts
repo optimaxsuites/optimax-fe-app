@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { Component, HostListener, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DataService } from '../../service/data.service';
+import { Location } from '@angular/common';
 
 @Component({
   selector: 'app-vendor-list',
@@ -14,7 +15,9 @@ export class VendorListComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private dataService: DataService
+    private router: Router,
+    private dataService: DataService,
+    private location: Location
   ) {}
 
   ngOnInit(): void {
@@ -37,5 +40,16 @@ export class VendorListComponent implements OnInit {
     } else {
       this.filteredVendorList = [...this.individualVendorList];
     }
+  }
+
+  viewVendor(vendor: string) {
+    this.dataService.viewVendor(vendor);
+    this.router.navigate(['crm/individualVendor/edit/:id', vendor]);
+    console.log('clicked');
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  handleEscapeKey(event: KeyboardEvent) {
+    this.location.back();
   }
 }

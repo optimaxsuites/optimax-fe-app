@@ -1,4 +1,5 @@
 import {
+  ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   ElementRef,
@@ -9,6 +10,7 @@ import {
 import { MatDialog } from '@angular/material/dialog';
 import { FormControl, FormGroup } from '@angular/forms';
 import { DataService } from '../../service/data.service';
+import { Location } from '@angular/common';
 
 @Component({
   selector: 'app-vendor-individual',
@@ -17,9 +19,10 @@ import { DataService } from '../../service/data.service';
 })
 export class VendorIndividualComponent implements OnInit {
   constructor(
-    private dataService: DataService,
+    public dataService: DataService,
     private cdr: ChangeDetectorRef,
-    public dialog: MatDialog
+    public dialog: MatDialog,
+    private location: Location
   ) {}
 
   individualVendorForm?: FormGroup;
@@ -44,6 +47,9 @@ export class VendorIndividualComponent implements OnInit {
   }
 
   individualVendor: {
+    // selectedCategory: string;
+    vendorType: string;
+    categoryType: string;
     individualVendorName: string;
     individualVendorContactPerson: string;
     individualVendorNumber: string;
@@ -66,6 +72,9 @@ export class VendorIndividualComponent implements OnInit {
     individualVendorAcctName: string;
     id: string;
   } = {
+    vendorType: '',
+    categoryType: '',
+    // selectedCategory: '',
     individualVendorName: '',
     individualVendorContactPerson: '',
     individualVendorEmail: '',
@@ -83,7 +92,6 @@ export class VendorIndividualComponent implements OnInit {
     individualVendorCACNum: '',
     individualVendorTINNum: '',
     individualVendorBVN: '',
-    // individualVendorCategory: '',
     individualVendorAcctNum: '',
     individualVendorAcctName: '',
     id: null || '',
@@ -117,26 +125,28 @@ export class VendorIndividualComponent implements OnInit {
     }
   }
 
-  @HostListener('document:keydown.escape', ['$event']) // Listen for Escape key
+  @HostListener('document:keydown.escape', ['$event'])
   handleEscapeKey(event: KeyboardEvent) {
-    this.toggleSections();
-    this.vendorDetails = false;
+    this.dataService.tableSection = true;
+    this.dataService.formSection = false;
+    this.dataService.vendorDetails = false;
   }
 
   toggleSections(): void {
-    this.formSection = false;
-    this.tableSection = true;
+    this.dataService.formSection = false;
+    this.dataService.tableSection = true;
   }
 
   openForm() {
     this.dataService.changeLabel('Vendor Creation');
-    this.formSection = true;
-    this.tableSection = false;
+    this.dataService.formSection = true;
+    this.dataService.tableSection = false;
   }
 
   saveVendor() {
     if (this.individualVendor) {
       const individualVendorData = {
+        categoryType: this.selectedCategory,
         individualVendorName: this.individualVendor.individualVendorName,
         individualVendorContactPerson:
           this.individualVendor.individualVendorContactPerson,
@@ -149,7 +159,7 @@ export class VendorIndividualComponent implements OnInit {
         individualVendorWebsite: this.individualVendor.individualVendorWebsite,
         individualVendorStreetAddress:
           this.individualVendor.individualVendorStreetAddress,
-        // individualVendorCategory: this.individualVendor.individualVendorCategory,
+        // individualSelectedCategory: this.selectedCategory,
         individualVendorAddress: this.individualVendor.individualVendorAddress,
         individualVendorJobPosition:
           this.individualVendor.individualVendorJobPosition,
@@ -165,10 +175,8 @@ export class VendorIndividualComponent implements OnInit {
         individualVendorAcctName:
           this.individualVendor.individualVendorAcctName,
         vendorType: this.selectedVendorType,
-        categoryType: this.selectedCategory,
       };
-      // this.dataService.saveIndividualVendorData(individualVendorData);
-      console.log(individualVendorData);
+      console.log(this.selectedCategory);
 
       if (this.individualVendor.id) {
         this.dataService.updateIndividualVendorData(
@@ -196,7 +204,6 @@ export class VendorIndividualComponent implements OnInit {
     this.individualVendor.individualVendorIndustry = '';
     this.individualVendor.individualVendorWebsite = '';
     this.individualVendor.individualVendorStreetAddress = '';
-    // this.individualVendor.individualVendorCategory;
     this.individualVendor.individualVendorAddress = '';
     this.individualVendor.individualVendorJobPosition = '';
     this.individualVendor.individualVendorCountry = '';
@@ -213,9 +220,13 @@ export class VendorIndividualComponent implements OnInit {
   }
 
   editVendor(vendor: any) {
-    this.formSection = true;
-    this.tableSection = false;
+    this.dataService.formSection = true;
+    this.dataService.tableSection = false;
+    this.selectedCategory = vendor.categoryType;
+    this.selectedVendorType = vendor.vendorType;
     this.individualVendor = {
+      vendorType: vendor.vendorType,
+      categoryType: vendor.selectedCategory,
       individualVendorName: vendor.individualVendorName,
       individualVendorContactPerson: vendor.individualVendorContactPerson,
       individualVendorEmail: vendor.individualVendorEmail,
@@ -235,10 +246,11 @@ export class VendorIndividualComponent implements OnInit {
       individualVendorBVN: vendor.individualVendorBVN || '',
       individualVendorAcctNum: vendor.individualVendorAcctNum,
       individualVendorAcctName: vendor.individualVendorAcctName,
+      // selectedCategory: vendor.selectedCategory,
       id: vendor.id,
     };
 
-    // console.log('clicked', category);
+    console.log('clicked', vendor);
   }
 
   deleteVendor(id: string) {
@@ -249,24 +261,7 @@ export class VendorIndividualComponent implements OnInit {
     this.checkboxState[id] = !this.checkboxState[id];
   }
 
-  // viewVendor(vendor: string) {
-  //   this.dataService.viewVendor(vendor);
-  // }
-
   viewVendor(vendor: string) {
-    // this.dataService.changeLabel('Vendor Details');
-    this.selectedVendor = vendor;
-    this.tableSection = false;
-    this.vendorDetails = true;
+    this.dataService.viewVendor(vendor);
   }
-
-  // viewVendorDetails() {
-  //   // this.dataService.changeLabel('Vendor Details');
-  //   // Your existing logic to view vendor details
-  // }
-
-  // createNewVendor() {
-  //   this.dataService.changeLabel('Vendor Creation');
-  //   // Your existing logic to create a new vendor
-  // }
 }
