@@ -16,7 +16,7 @@ nav {
 }
 
 nav > p {
-    @apply text-gray-600 font-semibold  p-5 cursor-pointer mb-0 w-full text-center shadow-sm text-nowrap
+    @apply text-gray-600 font-semibold  p-5 cursor-pointer mb-0 w-full text-center shadow-sm text-nowrap hover:bg-customGreen/70 hover:text-white
 }
 
 .payment > p {

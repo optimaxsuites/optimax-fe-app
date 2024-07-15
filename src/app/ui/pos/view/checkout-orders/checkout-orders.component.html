@@ -1,0 +1,44 @@
+<app-checkout-header></app-checkout-header>
+
+<p class="text-3xl font-bold" *ngIf="orders.length === 0">No orders here</p>
+<div *ngIf="orders.length > 0">
+    <div *ngFor="let order of orders">
+         <div *ngFor="let product of order.cart">
+    <section class="selectClients" >
+        <div class="asd">
+          <div class="top-products-container">
+            <div class="top-products">
+              <div class="top-products-table-container">
+                <table class="top-products-table w3-table w3-striped">
+                  <thead>
+                    <tr class="top-products-table-row" >
+                      <th class="top-products-table-head col-1">
+                        Date
+                      </th>
+                      <th class="top-products-table-head col-1">Status</th>
+                      <th class="top-products-table-head col-1">Order Name</th>
+                      <th class="top-products-table-head col-1">Total Sales</th>
+                      <th class="top-products-table-head col-1">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                      <tr style="cursor: pointer;">
+                  <td>Ogechi</td>
+                  <td>{{order.state}}</td>
+                  <td>{{product.cartPriceTotal}}</td>
+                  <td>
+                      open
+                  </td>
+              </tr>
+                  
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      </div>
+    </div>
+</div>
