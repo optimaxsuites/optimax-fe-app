@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
     --celadon-green: #2EB270;
     --blue-green: #2E6276;

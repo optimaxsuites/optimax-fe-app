@@ -39,14 +39,13 @@
   
             <div *ngFor="let field of quotationData.fields; let i = index" class="editable-label-container">
               <div class="editable-label">
-                <p *ngIf="!field.isEditing" (click)="editField(i)" class="label">
-                  {{ "Enter New Field" || field.header }}
+                <p *ngIf="!field.isEditing" (click)="editField(i)" class="label" >
+                  {{ field.header || "Enter New Field" }}
                 </p>
                 <input
                   *ngIf="field.isEditing"
                   placeholder="Enter New Field"
                   [value]="field.text"
-                  [(ngModel)]="field.value"
                   (blur)="saveField(i, $event)"
                   (keydown.enter)="saveField(i, $event)"
                   class="form-control-opti p-2"
