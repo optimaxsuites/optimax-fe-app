@@ -9,6 +9,9 @@ import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-lin
   styleUrl: './checkout-orders.component.scss'
 })
 export class CheckoutOrdersComponent {
+orderDetails() {
+throw new Error('Method not implemented.');
+}
 
   orders: Order[] = []
   userInfoRegData: any[] = [];
@@ -22,6 +25,7 @@ export class CheckoutOrdersComponent {
 
   ngOnInit() {
     this.loadSavedItems();
+    this.sortOrdersByTimestamp()
     this.userInfoRegData = JSON.parse(sessionStorage["userRegData"]);
     this.userRegData = this.userInfoRegData;
   }
@@ -33,7 +37,9 @@ export class CheckoutOrdersComponent {
     }
   }
 
- 
+  sortOrdersByTimestamp() {
+    this.orders.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }
 
   handleAction(order: Order) {
     console.log('Action for order:', order);

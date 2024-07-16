@@ -241,7 +241,8 @@ saveCurrentCartItem() {
     state: 'Open',
     total: this.total,
     discountValue: this.discountValue,
-    value: this.value
+    value: this.value,
+    timestamp: new Date().toLocaleString()
   };
   const savedItems = localStorage.getItem("savedItems");
   this.orders = savedItems ? JSON.parse(savedItems) : [];
@@ -266,8 +267,15 @@ resetProductProperties() {
 }
 
 processCashPayment() {
+  const  cart ={
+    cartItems: [...this.cartItems],
+    total: this.total,
+    discount: this.displayedDiscount,
+    tax: this.tax,
+    subtotal: this.subtotal
+  }
   const cashPayment = this.navigationLink.getLink("cashPayment")
-  this.router.navigate([cashPayment], { state: { cart: this.cartItems } });
+  this.router.navigate([cashPayment], { state: { cart } });
 }
 
 }  
