@@ -61,9 +61,9 @@
                   <td class="table-item">{{ item.totalSoldQuantity }}</td>
                   <td class="table-item">{{ item.totalPurchaseQuantity }}</td>
                   <td class="actions table-item">
-                    <i (click)="showDialog(item, 'right')" class="pi pi-eye" style="font-size: 1.1em"></i>
-                    <i (click)="editItem(item.id)" class="pi pi-pen-to-square" style="font-size: 1.1em"></i>
-                    <i (click)="deleteItem(item.id)" class="pi pi-times-circle" style="font-size: 1.1em"></i>
+                    <i (click)="showDialog(item, 'right')" class="pi pi-eye table-item" ></i>
+                    <i (click)="editItem(item.id)" class="pi pi-pen-to-square table-item" ></i>
+                    <i (click)="deleteItem(item.id)" class="pi pi-times-circle table-item" ></i>
                   </td>
                 </tr>
             </ng-template>
