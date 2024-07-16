@@ -5,6 +5,8 @@ export interface Product {
     cartPriceTotal: number;
     count: number;
     discount: number;
+    discountType: string;
+    discountValue: number;
   }
   
   export interface DiscountOption {
@@ -13,8 +15,28 @@ export interface Product {
   }
   
   export interface Order {
+timestamp: any;
     name: string;
     cartDiscount: number;
     state: string;
+    total: number
     cart: Product[];
+  }
+
+  export interface Cart {
+changeOffered: any;
+paymentMethod: any;
+state: any;
+timestamp: any;
+    total: number;
+    discount: number;
+    tax: number;
+    subtotal: number;
+    cartItems: Product[];
+    cart: Product[]
+  }
+  
+  export interface NavigationState {
+    cart: Cart;
+    order: Cart
   }

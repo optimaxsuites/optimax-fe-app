@@ -149,6 +149,8 @@ import { CheckoutHeaderComponent } from './ui/pos/view/pos-checkout-page/compone
 import { ButtonComponent } from './ui/shared/view/button/button.component';
 import { BackButtonComponent } from './ui/shared/view/back-button/back-button.component';
 import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-orders.component';
+import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.component';
+import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';
 
 @NgModule({
   declarations: [
@@ -241,7 +243,9 @@ import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-
     CheckoutHeaderComponent,
     ButtonComponent,
     BackButtonComponent,
-    CheckoutOrdersComponent
+    CheckoutOrdersComponent,
+    CashPaymentComponent,
+    OrderDetailComponent
   ],
   imports: [
     BrowserModule,
