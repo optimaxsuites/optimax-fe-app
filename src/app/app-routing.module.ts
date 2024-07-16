@@ -39,6 +39,7 @@ import { VendorManagementComponent } from './ui/crm/view/vendorMangement/vendorM
 import { AuthGuard } from './ui/auth/service/auth.guard';
 import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-orders.component';
 import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.component';
+import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';
 // import { randomTokenResolver } from './ui/shared/domain/random-token/random-token.resolver';
 
 
@@ -104,6 +105,10 @@ const routes: Routes = [
         path: 'user/checkout/cash-payment/:uuid',
         component: CashPaymentComponent,
       },
+      {
+        path: "user/checkout/order/:uuid",
+        component: OrderDetailComponent
+      }
     ],
   },
 

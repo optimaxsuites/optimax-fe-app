@@ -33,14 +33,14 @@
                     <!-- {{ order?.timestamp | date: 'shortTime' }} -->
                     <td>{{ order?.timestamp }}</td>
                     <td>
-                            <p class="mb-0 capitalize font-bold text-yellow-600" [ngClass]="{'text-green-700': order.state == 'Paid'}"  >{{order.state}}</p>
+                            <p [ngClass]="{'text-green-700': order.state === 'Paid'}"  class="mb-0 capitalize font-bold text-yellow-600"    >{{order.state}}</p>
                     </td>
                     <td class="capitalize">{{order.name}}</td>
                     <td>₦{{order.total}}</td>
                     <td>
                       <div class="flex gap-3 text-[18px]" >
                         <i *ngIf="order.state == 'Open'"   class="fa-solid fa-cart-shopping hover:bg-customGreen/30 p-2 rounded-md" (click)="reOpenCart(order)"></i>
-                        <i class="fa-solid fa-arrow-right hover:bg-customGreen/30 rounded-md p-2" (click)="orderDetails()"></i>
+                        <i class="fa-solid fa-arrow-right hover:bg-customGreen/30 rounded-md p-2" (click)="orderDetails(order)"></i>
                       </div>
                     </td>
                   </tr>

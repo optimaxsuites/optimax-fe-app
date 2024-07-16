@@ -24,13 +24,19 @@ timestamp: any;
   }
 
   export interface Cart {
+changeOffered: any;
+paymentMethod: any;
+state: any;
+timestamp: any;
     total: number;
     discount: number;
     tax: number;
     subtotal: number;
     cartItems: Product[];
+    cart: Product[]
   }
   
   export interface NavigationState {
     cart: Cart;
+    order: Cart
   }

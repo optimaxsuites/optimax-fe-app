@@ -46,14 +46,15 @@ export class CashPaymentComponent {
         ];
       }
       processCashPayment() {
-        if(this.priceValue < this.navigationState?.cart?.total )  this.messageService.add({ severity: 'warn', summary: 'Error', detail: 'Wrong amount tendered', key: 'tl', life: 3000 });
-
-       
-        this.saveCurrentCartItem()
-        const order: any[] = []
-        const checkoutLink = this.navigationLink.getLink("checkoutLink")
-        this.router.navigate([checkoutLink], { state: { order } });
-        
+        if(this.priceValue < this.navigationState?.cart?.total )  {
+          console.log(this.priceValue)
+          this.messageService.add({ severity: 'warn', summary: 'Error', detail: 'Wrong amount tendered', key: 'tl', life: 3000 });
+        } else{
+          this.saveCurrentCartItem()
+          const order: any[] = []
+          const checkoutLink = this.navigationLink.getLink("checkoutLink")
+          this.router.navigate([checkoutLink], { state: { order } });
+        }       
     }
 
     saveCurrentCartItem() {
@@ -61,11 +62,13 @@ export class CashPaymentComponent {
         name: "fulfilled",
         cart: this.navigationState?.cart?.cartItems.map(item => ({ ...item })),
         cartDiscount: this.navigationState?.cart?.discount,
+        tax: this.navigationState?.cart?.tax,
+        subtotal: this.navigationState?.cart?.subtotal,
         state: 'Paid',
         total: this.navigationState?.cart?.total,
         paymentMethod: "cash",
         priceTender: this.priceValue,
-        changeOffered: this.priceValue - this.navigationState?.cart?.total,
+        changeOffered: (this.priceValue - this.navigationState?.cart?.total),
         timestamp: new Date().toLocaleString()
       };
       const savedItems = localStorage.getItem("savedItems");

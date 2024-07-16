@@ -9,9 +9,7 @@ import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-lin
   styleUrl: './checkout-orders.component.scss'
 })
 export class CheckoutOrdersComponent {
-orderDetails() {
-throw new Error('Method not implemented.');
-}
+
 
   orders: Order[] = []
   userInfoRegData: any[] = [];
@@ -50,4 +48,10 @@ throw new Error('Method not implemented.');
     const checkoutLink = this.navigationLink.getLink("checkoutLink")
     this.router.navigate([checkoutLink], { state: { order } });
   } 
+
+  orderDetails(order: Order) {
+    this.selectedOrder = order;
+    const checkoutLink = this.navigationLink.getLink("orderDetails")
+    this.router.navigate([checkoutLink], { state: { order } });
+  }
 }
