@@ -10,7 +10,6 @@ import {
 import { MatDialog } from '@angular/material/dialog';
 import { FormControl, FormGroup } from '@angular/forms';
 import { DataService } from '../../service/data.service';
-import { Location } from '@angular/common';
 
 @Component({
   selector: 'app-vendor-individual',
@@ -21,8 +20,7 @@ export class VendorIndividualComponent implements OnInit {
   constructor(
     public dataService: DataService,
     private cdr: ChangeDetectorRef,
-    public dialog: MatDialog,
-    private location: Location
+    public dialog: MatDialog
   ) {}
 
   individualVendorForm?: FormGroup;
@@ -127,8 +125,7 @@ export class VendorIndividualComponent implements OnInit {
 
   @HostListener('document:keydown.escape', ['$event'])
   handleEscapeKey(event: KeyboardEvent) {
-    this.dataService.tableSection = true;
-    this.dataService.formSection = false;
+    this.toggleSections();
     this.dataService.vendorDetails = false;
   }
 
@@ -263,5 +260,6 @@ export class VendorIndividualComponent implements OnInit {
 
   viewVendor(vendor: string) {
     this.dataService.viewVendor(vendor);
+    this.dataService.tableSection = false;
   }
 }

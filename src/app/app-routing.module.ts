@@ -191,11 +191,7 @@ const routes: Routes = [
         path: 'crm/individualVendor',
         component: VendorIndividualComponent,
       },
-      {
-        path: 'crm/individualVendor/edit/:id',
-        component: VendorIndividualComponent,
-      },
-      // { path: '', redirectTo: '/crm/individualVendor', pathMatch: 'full' },
+     
       {
         path: 'crm/vendorList',
         component: VendorListComponent,

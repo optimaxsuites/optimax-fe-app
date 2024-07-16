@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { NavigationEnd, Router } from '@angular/router';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { v4 as generateUniqueId } from 'uuid';
 
@@ -6,10 +7,11 @@ import { v4 as generateUniqueId } from 'uuid';
   providedIn: 'root',
 })
 export class DataService {
-  constructor() {
+  constructor(private router: Router) {
     this.loadExistingRfqs();
     this.loadExistingVCats();
     this.loadExistingIndividualVendors();
+    this.escapeKey();
   }
 
   formSection: boolean = false;
@@ -19,6 +21,7 @@ export class DataService {
 
   private rfqList: any[] = [];
   private vCatList: any[] = [];
+  private history: string[] = [];
   private individualVendorList: any[] = [];
 
   private rfqListSubject = new BehaviorSubject<any[]>(this.rfqList);
@@ -177,8 +180,25 @@ export class DataService {
 
   viewVendor(vendor: string) {
     this.selectedVendor = vendor;
-    this.tableSection = false;
     this.vendorDetails = true;
+  }
+
+  private escapeKey() {
+    this.router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd) {
+        this.history.push(event.urlAfterRedirects);
+      }
+    });
+  }
+
+  back(): void {
+    this.history.pop();
+    if (this.history.length > 0) {
+      this.router.navigateByUrl(this.history[this.history.length - 1]);
+    }
+    // else {
+    //   this.router.navigate(['/']); // Default to home or another route
+    // }
   }
 }
 
