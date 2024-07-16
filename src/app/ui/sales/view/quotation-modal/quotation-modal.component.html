@@ -4,68 +4,58 @@
     <div class="modal-wrapper p-4" #contentToPrint>
       <div class="header-section">
         <section class="title-section">
-          <p class="form-title">Quotation</p>
+          <p class="form-title">{{isEdit ? 'Edit Quotation' : 'Quotation'}}</p>
         </section>
       </div>
   
       <div class="info-section">
         <section class="first-info-section">
           <div class="first-container">
-            <div>
-              <mat-form-field>
-                <mat-label>Quotation No</mat-label>
-                <input matInput placeholder="Quotation No" [(ngModel)]="quotationData.qNo" />
-              </mat-form-field>
+            <div class="input-container-100">
+              <label for="qNo">Quotation No</label>
+              <input type="text" id="qNo" [(ngModel)]="quotationData.qNo" class="form-control-opti" />
             </div>
-            <div class="d-flex">
-              <mat-form-field>
-                <mat-label>Quotation Date</mat-label>
-                <input matInput [matDatepicker]="picker1" placeholder="dd/mm/yyyy" [(ngModel)]="quotationData.qDate"/>
-                <mat-datepicker-toggle matIconSuffix [for]="picker1" ></mat-datepicker-toggle>
-                <mat-datepicker #picker1></mat-datepicker>
-              </mat-form-field>
-  
-              <mat-form-field class="ms-2">
-                <mat-label> Quotation Due Date</mat-label>
-                <input matInput [matDatepicker]="picker2" placeholder="dd/mm/yyyy" [(ngModel)]="quotationData.qDueDate" />
-                <mat-datepicker-toggle matIconSuffix [for]="picker2" ></mat-datepicker-toggle>
-                <mat-datepicker #picker2></mat-datepicker>
-              </mat-form-field>
+            <div class="d-flex gap-4 my-4">
+              <div class="input-container-50">
+                <label for="qDate">Date</label>
+                <input type="date" id="qDate" [(ngModel)]="quotationData.qDate" class="form-control-opti" />
+              </div>
+
+              <div class="input-container-50">
+                <label for="qDueDate">Due Date</label>
+                <input type="date" id="qDueDate" [(ngModel)]="quotationData.qDueDate" class="form-control-opti" />
+              </div>
             </div>
-            <div>
-              <mat-form-field>
-                <mat-label>Project Title</mat-label>
-                <input matInput placeholder="Project Title" [(ngModel)]="quotationData.projectTitle" />
-              </mat-form-field>
+            <div class="input-container-100">
+              <label for="projectTitle">Project Title</label>
+              <input type="text" id="projectTitle" [(ngModel)]="quotationData.projectTitle" class="form-control-opti" />
             </div>
   
-            <div *ngFor="let field of quotationData.fields; let i = index" class="editable-label-container">
+            <div *ngFor="let field of quotationData.fields; let i = index" class="editable-label-container gap-4 my-4">
               <div class="editable-label">
-                <p *ngIf="!field.isEditing" (click)="editField(i)" class="label" >
-                  {{ field.header || "Enter New Field" }}
-                </p>
+                <!-- <p *ngIf="!field.isEditing" (click)="editField(i)" class="label" >
+                  {{ field.header || field.text }}
+                </p> -->
                 <input
-                  *ngIf="field.isEditing"
-                  placeholder="Enter New Field"
-                  [value]="field.text"
-                  (blur)="saveField(i, $event)"
-                  (keydown.enter)="saveField(i, $event)"
+                  type="text"
+                  [(ngModel)]="field.header"
                   class="form-control-opti p-2"
-                  style="font-size: 1.1em; font-weight: 400"
+                  placeholder="Title"
                 />
               </div>
               
               <div class="editable-label-input">
-                <input type="text" class="form-control-opti p-2" style="font-size: 1.1em; font-weight: 400" />
+                <input type="text" [(ngModel)]="field.content" class="form-control-opti p-2" style="font-size: 1.1em; font-weight: 400" />
                 <i (click)="removeField(i)" class="fa-solid fa-x p-2"></i>
               </div>
             </div>
             
-            <button class="add-btn" (click)="addField()">
+            <button class="add-btn my-2" (click)="addField()">
               <i class="fas fa-plus me-2"></i>Add More Field
             </button>
             
           </div>
+
           <div class="">
             <section class="logo-section">
               <div class="logo-upload-container">
@@ -159,7 +149,7 @@
                     </p>
                     <mat-form-field>
                       <mat-label>Select Client</mat-label>
-                      <mat-select [(ngModel)]="quotationData.selectedClient" (ngModelChange)="updateClientInfo()" name="Company" placeholder="Select Company">
+                      <mat-select [(ngModel)]="quotationData.selectedClient" (ngModelChange)="updateClientInfo()" name="Client" placeholder="Select Company">
                         <mat-option *ngFor="let client of clients" [value]="client.value">{{ client.viewValue }}</mat-option>
                         <div class="add-new-details-btn-wrapper">
                           <button (click)="openAddNewClientDialog()" class="btn new-detail-btn mt-2"> Add New Client Details </button>
@@ -459,73 +449,75 @@
       <div class="table-wrapper">
         <div class="top-products-table w3-table">
           <div class="thead">
-            <div class="top-products-table-row">
-              <div class="">
-                <th class="top-products-table-data col-5">Item</th>
-                <th class="top-products-table-data col">
+            <div class="">
+              <ul class="table-item-1 gap-3">
+                <li class="col-4">Item</li>
+                <li class="form-control-opti-header">
                   Tax Rate <span class="input-span">%</span>
-                </th>
-                <th class="top-products-table-data col">Quantity</th>
-                <th class="top-products-table-data col">
+                </li>
+                <li class="form-control-opti-header">Quantity</li>
+                <li class="form-control-opti-header">
                   Rate
                   <span class="input-span"
                     >[{{
                       extractCurrencyCode(getSelectedItem$("currency") | async)
                     }}]</span
                   >
-                </th>
-                <th class="top-products-table-data col">
+                </li>
+                <li class="form-control-opti-header">
                   Amount
                   <span class="input-span"
                     >[{{
                       extractCurrencyCode(getSelectedItem$("currency") | async)
                     }}]</span
                   >
-                </th>
-                <th class="top-products-table-data col">
+                </li>
+                <li class="form-control-opti-header">
                   Tax
                   <span class="input-span"
                     >[{{
                       extractCurrencyCode(getSelectedItem$("currency") | async)
                     }}]</span
                   >
-                </th>
-                <th class="top-products-table-data col">
+                </li>
+                <li class="form-control-opti-header">
                   Total
                   <span class="input-span"
                     >[{{
                       extractCurrencyCode(getSelectedItem$("currency") | async)
                     }}]</span
                   >
-                </th>
-                <th class="top-products-table-data"></th>
-              </div>
+                </li>
+                <li class="">
+                  <i  class=" p-2"></i>
+                </li>
+              </ul>
             </div>
           </div>
           <div class="tbody">
             <!-- <ng-container > -->
             <div
-              class="top-products-table-row"
+              class="item-table-row"
               *ngFor="let item of tableData; let i = index"
             >
-              <div class="">
-                <td class="top-products-table-data col-5">
+              <ul class="table-item-list gap-3">
+                <li class="col-4">
                   <input
                     type="text"
                     class="form-control-opti"
                     [(ngModel)]="item.name"
                     (ngModelChange)="onInputChange(item)"
                   />
-                </td>
-                <td class="top-products-table-data col ms-2">
+                </li>
+                <li class="">
                   <input
                     type="text"
                     class="form-control-opti"
                     [(ngModel)]="item.taxRate"
                     (ngModelChange)="onInputChange(item)"
                   />
-                </td>
-                <td class="top-products-table-data col ms-2">
+                </li>
+                <li class="">
                   <input
                     type="text"
                     class="form-control-opti"
@@ -534,8 +526,8 @@
                     (input)="calculateAmount(item)"
                     appNumberOnly
                   />
-                </td>
-                <td class="top-products-table-data col ms-2">
+                </li>
+                <li class="">
                   <input
                     type="text"
                     class="form-control-opti"
@@ -544,8 +536,8 @@
                     (input)="calculateAmount(item)"
                     appNumberOnly
                   />
-                </td>
-                <td class="top-products-table-data col ms-2">
+                </li>
+                <li class="">
                   <input
                     type="text"
                     class="form-control-opti"
@@ -553,8 +545,8 @@
                     (ngModelChange)="onInputChange(item)"
                     appNumberOnly
                   />
-                </td>
-                <td class="top-products-table-data col ms-2">
+                </li>
+                <li class="">
                   <input
                     type="text"
                     class="form-control-opti"
@@ -562,8 +554,8 @@
                     (ngModelChange)="onInputChange(item)"
                     appNumberOnly
                   />
-                </td>
-                <td class="top-products-table-data col ms-2">
+                </li>
+                <li class="">
                   <input
                     type="text"
                     class="form-control-opti"
@@ -571,22 +563,22 @@
                     (ngModelChange)="onInputChange(item)"
                     appNumberOnly
                   />
-                </td>
-                <td class="top-products-table-data">
+                </li>
+                <li class="">
                   <i (click)="deleteRow(i)" class="fa-solid fa-x p-2"></i>
-                </td>
-              </div>
+                </li>
+              </ul>
   
               <div class="description-container">
                 <!-- <ng-container> -->
-                <td class="add-description-btn" *ngIf="!item.showDescriptionBox">
+                <div class="add-description-btn" *ngIf="!item.showDescriptionBox">
                   <button
                     class="btn btn-light"
                     (click)="item.showDescriptionBox = true"
                   >
                     <i class="fas fa-plus me-2"></i>Add Description
                   </button>
-                </td>
+                </div>
                 <!-- </ng-container> -->
   
                 <div class="description-box" *ngIf="item.showDescriptionBox">
@@ -641,7 +633,7 @@
             <div class="discount-container">
               <div
                 class="space-between"
-                *ngFor="let discount of quotationData.discounts; let i = index"
+                *ngFor="let discount of discounts; let i = index"
               >
                 <p><b>Discount</b></p>
                 <div class="value d-flex">
@@ -653,7 +645,7 @@
                       style="font-size: 1.1em; font-weight: 400"
                       appNumberOnly
                     />
-                    <select name="" id="" class="form-control-opti-2 ms-2">
+                    <select id="" class="form-control-opti-2 ms-2">
                       <option value="">
                         {{
                           extractCurrencyCode(
@@ -669,7 +661,7 @@
               </div>
               <div
                 class="space-between"
-                *ngFor="let charge of quotationData.charges; let i = index"
+                *ngFor="let charge of charges; let i = index"
               >
                 <p><b>Additional Charges</b></p>
                 <div class="value d-flex">
@@ -681,7 +673,7 @@
                       style="font-size: 1.1em; font-weight: 400"
                       appNumberOnly
                     />
-                    <select name="" id="" class="form-control-opti-2 ms-2">
+                    <select id="" class="form-control-opti-2 ms-2">
                       <option value="">
                         {{
                           extractCurrencyCode(
@@ -800,7 +792,7 @@
                 <i *ngIf="i === 0" (click)="removeTermGroup(i); closeTermsConditions()" class="fa-solid fa-x p-2"></i>
                 <i *ngIf="i !== 0" (click)="removeTermGroup(i)" class="fa-solid fa-x p-2" ></i>
               </div>
-              <div class="d-flex mb-4" *ngFor="let term of quotationData.termGroup.terms; let j = index" >
+              <div class="d-flex mb-4" *ngFor="let term of termGroup.terms; let j = index" >
                 <input type="text" class="form-control-opti terms" [(ngModel)]="term.term_des" />
                 <i (click)="removeTermCondition(i, j)" class="fa-solid fa-x p-2"></i>
               </div>
@@ -845,7 +837,7 @@
                   </div>
   
                   <ul class="uploaded-files">
-                    <li *ngFor="let file of quotationData.uploadedFiles; let i = index" [class]="file.status" class="uploaded-file" >
+                    <li *ngFor="let file of uploadedFiles; let i = index" [class]="file.status" class="uploaded-file" >
                       <div class="file-details">
                         <div class="file-name">{{ file.name }}</div>
                         <div class="file-progress">
@@ -875,7 +867,8 @@
   
       <div class="btn-wrapper">
         <!-- <button class="btn create-client-btn-2">Save As Draft</button> -->
-        <button class="btn save-continue" (click)="onsubmit()">Save & Continue</button>
+        <!-- <button class="btn save-continue" (click)="onSubmit()">{{isEdit ? 'Update' : 'Save'}}</button> -->
+        <app-button text="{{ isEdit ? 'Update' : 'Save' }}" (click)="onSubmit()" class="btn-save"></app-button>
       </div>
     </div>
   </div>
