@@ -1,7 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { TopProductService } from 'src/app/ui/dashboard/service/top-product/top-product.service';
+import { QuotationData } from '../../domain/quotation.data';
+import { InventoryService } from 'src/app/ui/inventory/service/inventory/inventory.service';
+import { QuotationService } from '../../service/quotation/quotation.service';
 
 @Component({
   selector: 'app-quotation',
@@ -13,35 +16,49 @@ import { TopProductService } from 'src/app/ui/dashboard/service/top-product/top-
     MessageService
   ]
 })
-export class QuotationComponent {
-  selectedItems?: any[] = [];
-  quotationData: any[] = [];
+export class QuotationComponent implements OnInit {
+  selectedItems: QuotationData[] = [];
+  quotationData: QuotationData[] = [];
   visible: boolean = false;
-  selectedItem: any | null = null;
+  selectedItem: QuotationData | null = null;
   position: any = '';
 
 
   constructor(
-    private topProductsService: TopProductService,
+    private quotationService: QuotationService,
     private router: Router,
     private confirmationService: ConfirmationService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private inventoryService: InventoryService,
   ) {
   }
 
   ngOnInit(): void {
-    this.topProductsService.getItem().subscribe(data => {
+    this.quotationService.getItem().subscribe(data => {
       this.quotationData = data;
     });
   }
+
+  getSeverity(status: string) {
+    switch (status) {
+        case "active":
+            return "success";
+        case "pending":
+            return "warning";
+        case "inactive":
+            return "danger";
+        default:
+            return undefined; // or another default value
+    }
+}
 
   navigateToForm(){
     this.router.navigate(['/sales/quotation/quotation-form']);
   }
   editItem(id: string) {
     this.router.navigate(['/sales/quotation/quotation-form', id]);
-
   }
+
   deleteItem(id: string) {
     this.confirmationService.confirm({
       message: 'Are you sure you want to delete this product?',
@@ -51,7 +68,7 @@ export class QuotationComponent {
       rejectButtonStyleClass: 'p-button-sm m-2',
       acceptButtonStyleClass: 'p-button-outlined p-button-sm m-2',
       accept:()=>{
-        this.topProductsService.deleteItem(id);
+        this.quotationService.deleteItem(id);
         this.messageService.add({ severity: 'success', summary: 'Successful', detail: 'Product Deleted', life: 3000 });
       },
       reject: () => {
@@ -59,11 +76,11 @@ export class QuotationComponent {
       }
     });
   }
-  viewItem(item: string){
+  viewItem(item: any){
     this.showDialog(item, 'right');
   }
 
-  showDialog(item: any, position: string = 'right'): void {
+  showDialog(item: QuotationData, position: string = 'right'): void {
     this.selectedItem = item;
     this.position = position;
     this.visible = true;

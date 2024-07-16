@@ -130,6 +130,10 @@ const routes: Routes = [
         component: QuotationModalComponent,
       },
       {
+        path: 'sales/quotation/quotation-form/:id',
+        component: QuotationModalComponent,
+      },
+      {
         path: 'sales/proformer-invoice/proformer-invoice-form',
         component: ProformaInvoiceModalComponent,
       },

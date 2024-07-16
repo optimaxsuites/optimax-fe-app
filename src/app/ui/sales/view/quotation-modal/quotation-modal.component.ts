@@ -1,6 +1,6 @@
 import { HttpRequest, HttpClient, HttpEventType, HttpResponse } from '@angular/common/http';
-import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Component, OnInit,} from '@angular/core';
+import { FormBuilder, FormGroup } from '@angular/forms';
 import { AngularEditorConfig } from '@kolkov/angular-editor';
 import { Observable } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -8,8 +8,12 @@ import { AddNewClientComponent } from '../add-new-client/add-new-client.componen
 import { DropdownService } from 'src/app/ui/shared/service/dropdown/dropdown.service';
 import { ConfigureTaxPopupComponent } from 'src/app/ui/shared/view/configure-tax-popup/configure-tax-popup.component';
 import { NumberCurrencyPopupComponent } from 'src/app/ui/shared/view/number-currency-popup/number-currency-popup.component';
+import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { QuotationService } from '../../service/quotation/quotation.service';
 // import { map } from 'rxjs/operators';
 // import { MatDialog } from '@angular/material/dialog';
+
 
 interface Company {
   value: string;
@@ -36,9 +40,9 @@ interface Field {
 @Component({
   selector: 'app-quotation-modal',
   templateUrl: './quotation-modal.component.html',
-  styleUrl: './quotation-modal.component.scss'
+  styleUrl: './quotation-modal.component.scss',
 })
-export class QuotationModalComponent {
+export class QuotationModalComponent implements OnInit {
 
   showSecondComponent = false;
   showSignatureButton: boolean = false;
@@ -60,6 +64,8 @@ export class QuotationModalComponent {
   charges: any[] = [];
   moreFields: any[] = [];
 
+  isEdit: boolean = false
+
   selectedCompany?: string;
   selectedClient?: string;
 
@@ -67,9 +73,9 @@ export class QuotationModalComponent {
     clientDetails: {},
     businessDetails: {},
     fields: [],
-    q_editable_header: '',
-    q_editable_field: ''
   };
+ 
+
 
   isFormVisible: boolean = false;
 
@@ -207,12 +213,46 @@ constructor(
   private fb: FormBuilder, 
   private http: HttpClient, 
   private dropdownService: DropdownService, 
-  private dialogRef:MatDialog
+  private dialogRef:MatDialog,
+  private quotationService: QuotationService,
+  private navigationLink: NavigationLinksService,
+  private router: Router,
+  private route: ActivatedRoute,
 ) { }
 
+ngOnInit(): void {
+  this.addTermGroup();
 
-onsubmit(){
+  const id = this.route.snapshot.paramMap.get('id');
+  if (id) {
+    const item = this.quotationService.getItemById(id);
+    if (item) {
+      this.quotationData = { ...item };
+      this.isEdit = true;
+    }
+  }
+  
+}
+
+// ngOnInit(): void {
+//   this.myForm = this.fb.group({
+//     myOption: [''], 
+//   });
+// }
+
+onSubmit(){
   console.log("quotation into", this.quotationData)
+  if (this.isEdit) {
+    this.quotationService.updateItem(this.quotationData);
+  } else {
+    this.quotationService.addItem(this.quotationData);
+  }
+  this.navigateToTable();
+}
+navigateToTable() {
+  const salesLink = this.navigationLink.getLink('salesLink')
+  this.router.navigate([salesLink]);
+  
 }
 
 
@@ -231,21 +271,21 @@ openAddNewClientDialog(){
 
 
 addField() {
-  this.quotationData.fields.push({ text: 'New field', isEditing: false });
+  this.quotationData.fields.push({});
 }
 
 removeField(index: number) {
   this.quotationData.fields.splice(index, 1);
 }
 
-editField(index: number) {
-  this.quotationData.fields[index].isEditing = true;
-}
+// editField(index: number) {
+//   this.quotationData.fields[index].isEditing = true;
+// }
 
-saveField(index: number, event: any) {
-  this.quotationData.fields[index].isEditing = false;
-  this.quotationData.fields[index].text = event.target.value;
-}
+// saveField(index: number, event: any) {
+//   this.quotationData.fields[index].isEditing = false;
+//   this.quotationData.fields[index].text = event.target.value;
+// }
 
 
 
@@ -355,14 +395,7 @@ saveField(index: number, event: any) {
   options: string[] = ['Nigeria - NGN', 'US Dollar - USD', 'Cuba - CUD'];
 
 
-  ngOnInit(): void {
-    this.addTermGroup();
 
-
-    this.myForm = this.fb.group({
-      myOption: [''], 
-    });
-  }
 
   tableData: any[] = [
     {

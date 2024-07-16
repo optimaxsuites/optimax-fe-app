@@ -39,7 +39,11 @@ import { MatRadioModule } from '@angular/material/radio';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { DropdownModule } from 'primeng/dropdown';
+import { TagModule } from 'primeng/tag';
+
 // import { EditorModule } from "@progress/kendo-angular-editor";
+
+
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { AngularEditorModule } from '@kolkov/angular-editor';
@@ -298,6 +302,7 @@ import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.co
     MatTableModule,
     MatRadioModule,
     ToastModule,
+    TagModule,
     // ToastrModule.forRoot(),
   ],
   providers: [
