@@ -232,13 +232,6 @@ constructor(
   private route: ActivatedRoute,
 ) { }
 
-@HostListener('document:click', ['$event'])
-  onDocumentClick(event: Event): void {
-    if (!this.el.nativeElement.contains(event.target)) {
-      this.dropdownOpen = false;
-    }
-  }
-
 ngOnInit(): void {
   this.addTermGroup();
 
