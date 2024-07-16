@@ -1,5 +1,5 @@
 import { HttpRequest, HttpClient, HttpEventType, HttpResponse } from '@angular/common/http';
-import { Component, OnInit,} from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, Renderer2,} from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { AngularEditorConfig } from '@kolkov/angular-editor';
 import { Observable } from 'rxjs';
@@ -66,7 +66,7 @@ export class QuotationModalComponent implements OnInit {
 
   isEdit: boolean = false
 
-  selectedCompany?: string;
+  // selectedCompany?: string;
   selectedClient?: string;
 
   quotationData: any = {
@@ -75,6 +75,17 @@ export class QuotationModalComponent implements OnInit {
     fields: [],
   };
  
+
+
+
+
+  dropdownOpen = false;
+  selectedCompany?: Company;
+
+
+
+
+
 
 
   isFormVisible: boolean = false;
@@ -210,7 +221,8 @@ export class QuotationModalComponent implements OnInit {
 
 
 constructor(
-  private fb: FormBuilder, 
+  private renderer: Renderer2, 
+  private el: ElementRef,
   private http: HttpClient, 
   private dropdownService: DropdownService, 
   private dialogRef:MatDialog,
@@ -219,6 +231,13 @@ constructor(
   private router: Router,
   private route: ActivatedRoute,
 ) { }
+
+@HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    if (!this.el.nativeElement.contains(event.target)) {
+      this.dropdownOpen = false;
+    }
+  }
 
 ngOnInit(): void {
   this.addTermGroup();
@@ -560,16 +579,33 @@ removeField(index: number) {
     this.showDescriptionBox = true;
   }
 
+
+// ====================================company selection============================================
   companies: Company[] = [
     { value: 'Centrifuge', viewValue: 'Centrifuge' },
     { value: 'GOP Gadgets', viewValue: 'GOP Gadgets' },
     { value: 'DeOne', viewValue: 'DeOne' }
   ];
+  toggleDropdownCompany() {
+    this.dropdownOpen = !this.dropdownOpen;
+  }
 
+  selectCompany(company: any) {
+    this.quotationData.selectedCompany = company.value;
+    this.selectedCompany = company;
+    this.dropdownOpen = false;
+    this.updateBusinessInfo();
+  }
+
+
+  addNewCompany(event: Event) {
+    event.stopPropagation();
+    // Your logic to add a new company goes here
+  }
 
   updateBusinessInfo() {
     const selectedCompany = this.companies.find(company => company.value === this.quotationData.selectedCompany);
-    this.showSecondComponent = true;
+    // this.showSecondComponent = true;
 
     if (selectedCompany) {
       if (selectedCompany.value === 'Centrifuge') {
@@ -596,6 +632,9 @@ removeField(index: number) {
       }
     }
   }
+
+// ====================================company selection============================================
+
 
   // client details
 

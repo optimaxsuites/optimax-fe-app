@@ -99,15 +99,37 @@
               <div class="billing-selection">
                 <form>
                   <p class="billing-title"> Quotation From <span class="billing-span">[ Company's details ]</span></p>
-                  <mat-form-field>
-                    <mat-label>Select Company</mat-label>
-                    <mat-select [(ngModel)]="quotationData.selectedCompany" (ngModelChange)="updateBusinessInfo()" name="Company" placeholder="Select Company">
-                      <mat-option *ngFor="let company of companies" [value]="company.value">{{ company.viewValue }}</mat-option>
-                      <div class="add-new-details-btn-wrapper">
+                  <!-- <div class="width-100">
+                    <label>Select Company</label>
+                    <select class="width-100 form-control-opti" [(ngModel)]="quotationData.selectedCompany" (ngModelChange)="updateBusinessInfo()" name="Company" placeholder="Select Company">
+                      <option class="width-100" *ngFor="let company of companies" [value]="company.value">{{ company.viewValue }}</option>
+                      <option class="add-new-details-btn-wrapper">
                         <button class="btn new-detail-btn mt-2"> Add New Company Details </button>
+                      </option>
+                    </select>
+                  </div> -->
+
+                  <div class="dropdown">
+                    <label>Select Company</label>
+                    <div class="dropdown-selected" (click)="toggleDropdownCompany()">
+                      {{ selectedCompany ? selectedCompany.viewValue : 'Select Company' }}
+                    </div>
+                    <div class="dropdown-list" *ngIf="dropdownOpen">
+                      <div
+                        class="dropdown-item"
+                        *ngFor="let company of companies"
+                        (click)="selectCompany(company)"
+                      >
+                        {{ company.viewValue }}
                       </div>
-                    </mat-select>
-                  </mat-form-field>
+                      <div class="add-new-details-btn-wrapper">
+                        <button class="btn new-detail-btn mt-2" (click)="addNewCompany($event)">
+                          Add New Company Details
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
                 </form>
               </div>
             </div>
