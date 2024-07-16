@@ -36,9 +36,7 @@ export class NavigationLinksService {
 
     this.links['checkoutLink'] = '/user/checkout/' +uuidV4();
     this.links['checkoutOrderLink'] = '/user/checkout/orders/' +uuidV4();
-
-    
-    this.links['salesLink'] = '/admin/sales/' +uuidV4();
+    this.links['cashPayment'] = '/user/checkout/cash-payment/' +uuidV4();
 
   }
 

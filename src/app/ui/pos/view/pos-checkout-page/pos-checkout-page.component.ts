@@ -1,4 +1,6 @@
 import { Component, SimpleChanges } from '@angular/core';
+import { Router } from '@angular/router';
+import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 
 @Component({
   selector: 'app-pos-checkout-page',
@@ -19,7 +21,9 @@ export class PosCheckoutPageComponent {
     price: (index + 1) * 10, 
     cartPriceTotal: (index + 1) * 10, 
     count: 0,
-    discount: 0.00  
+    discount: 0.00,
+    discountType: 'naira',
+    discountValue: 0
   })); 
   
   subtotal: number = 0.00;
@@ -39,6 +43,34 @@ export class PosCheckoutPageComponent {
 
 
   orders: any[] = []
+  navigationState: { order: any; };
+
+  
+   constructor(
+  private router: Router, 
+   public navigationLink: NavigationLinksService
+   ) {
+
+     const navigation = this.router.getCurrentNavigation();
+    this.navigationState = navigation?.extras.state as { order: any };
+  
+    }
+
+  ngOnInit() {
+   
+    if (this.navigationState?.order) {
+      this.loadOrder(this.navigationState.order);
+    }
+  }
+  loadOrder(order: any) {
+    this.cartItems = order.cart.map((item: any) => ({ ...item }));
+    this.discount = order.cartDiscount;
+    this.discountValue = order.discountValue
+    this.value = order.value
+    this.total = order.total;
+    this.calculateTotals();
+  }
+
 
   getLabelForValue(value: string): string {
     const option = this.stateOptions.find(opt => opt.value === value);
@@ -55,9 +87,10 @@ export class PosCheckoutPageComponent {
       this.cartItems.push(product);
       product.count = product.count + 1
     }
-    this.calculateDiscount()
     this.calculateProductDiscount()
-    // this.calculateTotals();
+
+    this.calculateTotals();
+    this.calculateDiscount()
   }
 
   deleteCartItem(index: number) {
@@ -66,17 +99,19 @@ export class PosCheckoutPageComponent {
     this.cartItems[index].cartPriceTotal = this.cartItems[index].price
     this.cartItems[index].count = 0
     this.cartItems.splice(index, 1);
+    this.calculateTotals()
+
     this.calculateDiscount()
+
     if (this.cartItems.length === 0) {
       this.resetDiscount();
     }
-    // this.calculateTotals()
+
    
   }
   resetProductDiscount(index: number) {
     this.cartItems[index].discount = 0.00
     this.productDiscountValue = 0
-    console.log(this.cartItems[index])
   }
 
   resetDiscount() {
@@ -94,7 +129,7 @@ export class PosCheckoutPageComponent {
     const prodductDiscount = this.cartItems.reduce((acc, item) => acc + (item.discount || 0), 0);
     this.displayedDiscount = this.discount + prodductDiscount
     this.tax = this.subtotal * 0.1;
-    this.total = this.subtotal + this.tax - (this.discountValue + prodductDiscount);
+    this.total = this.subtotal + this.tax - (this.discount + prodductDiscount);
   }
 
   handleCountChange(newCount: number, index: number) {
@@ -111,6 +146,7 @@ export class PosCheckoutPageComponent {
   }
 
   calculateDiscount(){
+
     if(this.value == 'naira'){
       this.discount = Number(this.discountValue)
 
@@ -168,30 +204,47 @@ set _productDiscountValue(value: number) {
 }
 
 calculateProductDiscount() {
-  
-
   for (let item of this.cartItems) {
+
     if (item.id === this.productThatNeedsUpdate) {
-      if (this.value === 'naira') {
-        item.discount = Number(this.productDiscountValue);
+      item.discountType = this.value;
+      item.discountValue = this.productDiscountValue
+      if (item.discountType === 'naira') {
+        item.discount = Number(item.discountValue);
       } else {
-        const discountedValue = item.cartPriceTotal * Number(this.productDiscountValue) / 100;
+        const discountedValue = item.cartPriceTotal * Number(item.discountValue) / 100;
         item.discount = discountedValue;
       }
-      break; 
     }
+
+
+    if (item.discountValue > 0) {
+      if (item.discountType === 'naira') {
+        item.discount = Number(item.discountValue);
+      } else {
+        const discountedValue = item.cartPriceTotal * Number(item.discountValue) / 100;
+        item.discount = discountedValue;
+      }
+    }
+   
   }
 
   this.calculateTotals();
   this.itemUpdateModal = false
 }
+
 saveCurrentCartItem() {
   const pausedCart = {
     name: this.orderName,
     cart: this.cartItems.map(item => ({ ...item })),
     cartDiscount: this.discount,
     state: 'Open',
+    total: this.total,
+    discountValue: this.discountValue,
+    value: this.value
   };
+  const savedItems = localStorage.getItem("savedItems");
+  this.orders = savedItems ? JSON.parse(savedItems) : [];
 
   this.orders.push(pausedCart);
   localStorage.setItem("savedItems", JSON.stringify(this.orders));
@@ -202,7 +255,6 @@ saveCurrentCartItem() {
   this.resetProductProperties();
 
   this.saveModal = false;
-  console.log(this.orders);
 }
 
 resetProductProperties() {
@@ -213,6 +265,9 @@ resetProductProperties() {
   });
 }
 
-
-
+processCashPayment() {
+  const cashPayment = this.navigationLink.getLink("cashPayment")
+  this.router.navigate([cashPayment], { state: { cart: this.cartItems } });
 }
+
+}  

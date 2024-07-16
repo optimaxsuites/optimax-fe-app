@@ -16,5 +16,6 @@ export interface Product {
     name: string;
     cartDiscount: number;
     state: string;
+    total: number
     cart: Product[];
   }
