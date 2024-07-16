@@ -20,7 +20,7 @@
              <span class=" font-semibold" >₦{{item.cartPriceTotal}}</span>
             <span *ngIf="item.discount > 0" [class.text-red-500]="item.discount > 0">-₦{{item.discount}}</span>
         </div>
-    <i class="fa-solid fa-trash  cursor-pointer" (click)="onDelete()" ></i>
+    <i  *ngIf="showDelete"  class="fa-solid fa-trash  cursor-pointer" (click)="onDelete()" ></i>
 
     </div>
 </div>

@@ -7,6 +7,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 })
 export class CartItemCardComponent {
   @Input() item: any ;
+  @Input() showDelete: boolean = true;
   @Output() delete = new EventEmitter<void>();
   @Output() countChange = new EventEmitter<number>();
   @Output() updateItem = new EventEmitter<number>();
