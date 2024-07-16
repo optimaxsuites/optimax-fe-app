@@ -446,67 +446,45 @@ input[type="checkbox"]:checked {
 //     // background-color: #224957;
 // }
 
+
+// ===============================================
+// move to global
+
 .top-products-table{
-    display: block;
+    // display: block;
     padding: 1rem 0;
     width: 100%;
+}
 
-    .thead{
-        width: 100%;
-        
-        .top-products-table-row{   
-        width: 100%;
-
-            .table-item{
-                display: flex;
-                justify-content: space-evenly;
-                border-radius: 10px 10px 0 0;
-                background-color: #224957;
-                padding: 1rem;
-                color: #fff;
-
-                // .top-products-table-data{
-                //     font-weight: 400;
-                //     .input-span {
-                //         font-size: .9em;
-                //     }
-                // }
-            }
-
-        }
-        
-    }
-    
-    .tbody{
-        .top-products-table-row{
-            background-color: #f8feff;
-            border: 1px solid #e3eef0;
-            // background-color: red;
-            margin-bottom: 1rem;
-            min-height: 200px;
-            // padding: 2rem 0;
-            // box-sizing: border-box;
-    
-    
-            .table-item{
-                display: flex;
-                justify-content: space-between;
-                padding: 1rem 0;
-
-
-
-                .top-products-table-data{
-                    input{
-                        background-color: transparent;
-                        padding: 0.5rem;
-                    }
-                }
-            }
-        }
-
-
+.thead{
+    background-color: var(--celadon-green);
+    width: 100%;
+    color: #fff;
+    padding: 1rem 0;
+    ul{
+        margin-bottom: 0;
     }
 }
+.table-item-1{
+    display: flex;
+    // justify-content: space-between;
+    padding: 1rem;
+}
+.table-item-list{
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem;
+}
+
+.item-table-row{
+    background-color: #f8feff;
+    border: 1px solid hsl(189, 30%, 92%);
+    // background-color: red;
+    margin-bottom: 1rem;
+    min-height: 200px;
+}
+
+// =======================================================
 .fa-x{
     // background-color: red;
     color: #224957;
@@ -616,49 +594,63 @@ select{
     }
 }
 
-.form-control-opti-2{
-    border: none;
-    border-bottom: 1px solid black;
-    width: 100%;
-    font-size: .9em; 
-    font-weight: 400;
-    background-color: transparent;
-    padding: .5rem 0;
+// .form-control-opti-2{
+//     border: none;
+//     border-bottom: 1px solid black;
+//     width: 100%;
+//     font-size: .9em; 
+//     font-weight: 400;
+//     background-color: transparent;
+//     padding: .5rem 0;
 
-    &:focus{
-        border-color: none;
-        box-shadow: none;
-        outline: none;
-        border: none;
-        border-bottom: 1px solid black;
-    }
+//     &:focus{
+//         border-color: none;
+//         box-shadow: none;
+//         outline: none;
+//         border: none;
+//         border-bottom: 1px solid black;
+//     }
 
     
-}
+// }
+
+// .form-control-opti-header{
+//     width: 100%;
+// }
 
 
-.form-control-opti{
+// .form-control-opti{
+//     border: none;
+//     border-bottom: 1px solid black;
+//     width: 100%;
+//     font-size: 1.1em; 
+//     font-weight: 400;
+//     background-color: transparent;
+//     padding: .5rem 0;
+
+//     &:focus{
+//         border-color: none;
+//         box-shadow: none;
+//         outline: none;
+//         border: none;
+//         border-bottom: 1px solid black;
+//     }
+
+//     // .currency-option{
+//     //     font-size: .7em;
+//     // }
+    
+// }
+
+.form-control-opti:focus{
+    border-color: none;
+    box-shadow: none;
+    outline: none;
     border: none;
     border-bottom: 1px solid black;
-    width: 100%;
-    font-size: 1.1em; 
-    font-weight: 400;
-    background-color: transparent;
-    // padding: .5rem 0;
+  } 
 
-    &:focus{
-        border-color: none;
-        box-shadow: none;
-        outline: none;
-        border: none;
-        border-bottom: 1px solid black;
-    }
 
-    // .currency-option{
-    //     font-size: .7em;
-    // }
-    
-}
 .cal-amount, .cal-total{
     font-size: 1.5em;
     font-weight: bold;
@@ -885,6 +877,7 @@ select{
     color: #224957;
     padding: 1rem 2.5rem;
 }
+
 
 
 
