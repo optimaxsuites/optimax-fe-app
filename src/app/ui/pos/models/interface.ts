@@ -24,10 +24,10 @@ timestamp: any;
   }
 
   export interface Cart {
-changeOffered: any;
-paymentMethod: any;
-state: any;
-timestamp: any;
+    changeOffered: any;
+    paymentMethod: any;
+    state: any;
+    timestamp: any;
     total: number;
     discount: number;
     tax: number;
