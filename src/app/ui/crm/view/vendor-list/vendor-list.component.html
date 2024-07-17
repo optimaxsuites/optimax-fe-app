@@ -1,4 +1,4 @@
-<div class="container-fluid">
+<div class="container-fluid" *ngIf="categoryTable">
   <div class="container-header">
     <h2>Category: {{ categoryFilter }}</h2>
   </div>
@@ -46,6 +46,7 @@
                     <div class="actionDiv">
                       <div class="image-container">
                         <img
+                          (click)="viewVendor(vendor)"
                           class="actionTags"
                           src="../../../assets/view.svg"
                           alt="View"
@@ -79,3 +80,79 @@
     </div>
   </section>
 </div>
+
+<ng-container *ngIf="dataService.vendorDetails">
+  <article class="viewVendor">
+    <div class="viewFlex">
+      <p>Name:</p>
+      <span>{{ dataService.selectedVendor.individualVendorName }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Contact Person:</p>
+      <span>{{
+        dataService.selectedVendor.individualVendorContactPerson
+      }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Phone Number:</p>
+      <span>{{ dataService.selectedVendor.individualVendorNumber }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Job Position:</p>
+      <span>{{ dataService.selectedVendor.individualVendorJobPosition }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Email:</p>
+      <span>{{ dataService.selectedVendor.individualVendorEmail }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Website:</p>
+      <span>{{ dataService.selectedVendor.individualVendorWebsite }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Industry:</p>
+      <span>{{ dataService.selectedVendor.individualVendorIndustry }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Address:</p>
+      <span>{{ dataService.selectedVendor.individualVendorAddress }}</span>
+    </div>
+
+    <div class="viewFlex">
+      <p>Country:</p>
+      <span>{{ dataService.selectedVendor.individualVendorCountry }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>State:</p>
+      <span>{{ dataService.selectedVendor.individualVendorState }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>City:</p>
+      <span>{{ dataService.selectedVendor.individualVendorCity }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Postal Code:</p>
+      <span>{{ dataService.selectedVendor.individualVendorPostalCode }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>CAC Number:</p>
+      <span>{{ dataService.selectedVendor.individualVendorCACNum }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>TIN Number:</p>
+      <span>{{ dataService.selectedVendor.individualVendorTINNum }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>BVN:</p>
+      <span>{{ dataService.selectedVendor.individualVendorBVN }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Bank:</p>
+      <span>{{ dataService.selectedVendor.individualVendorAcctName }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Account Number:</p>
+      <span>{{ dataService.selectedVendor.individualVendorAcctNum }}</span>
+    </div>
+  </article>
+</ng-container>

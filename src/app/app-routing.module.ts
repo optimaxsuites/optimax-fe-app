@@ -42,9 +42,6 @@ import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.co
 import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';
 // import { randomTokenResolver } from './ui/shared/domain/random-token/random-token.resolver';
 
-
-
-
 const routes: Routes = [
   {
     path: '',
@@ -77,7 +74,6 @@ const routes: Routes = [
       },
     ],
   },
-
 
   {
     path: 'admin/settings/user-reg/:uuid',
@@ -209,6 +205,7 @@ const routes: Routes = [
         path: 'crm/individualVendor',
         component: VendorIndividualComponent,
       },
+     
       {
         path: 'crm/vendorList',
         component: VendorListComponent,

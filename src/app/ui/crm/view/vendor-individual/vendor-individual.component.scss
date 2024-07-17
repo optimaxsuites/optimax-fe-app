@@ -2,6 +2,7 @@
   padding: 1rem;
   display: flex;
   justify-content: end;
+  // background-color: red;
 }
 
 .create-invoice-btn {
@@ -26,7 +27,7 @@
 .top-products {
   width: 100%;
   border-radius: 10px;
-  padding-top: 20px;
+  // padding-top: 20px;
   box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px,
     rgba(17, 17, 26, 0.05) 0px 8px 32px;
   // padding: 1rem;
@@ -211,6 +212,7 @@ td {
   display: flex;
   gap: 2rem;
   align-items: center;
+  justify-content: space-between;
 }
 
 .viewFlex {
@@ -221,24 +223,21 @@ td {
 
 .smallInput {
   height: 3.3rem;
-  border-color: #536365;
+  border: 1px solid #536365;
   border-radius: 0.5rem;
-
-  // margin-top: 0.7rem;
 }
 
 .inputField,
 .threeInputField {
   width: 40rem;
-  // margin-top: 0.7rem;
-  border-color: #536365;
+  border: 1px solid #536365;
   height: 3.5rem;
   border-radius: 0.5rem;
 }
 
 select,
 .threeInputField {
-  width: 19rem;
+  width: 18rem;
 }
 
 .descText {
