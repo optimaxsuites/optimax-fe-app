@@ -9,6 +9,10 @@
     --anti-flash-white: #EEEEEE;
     --light-blue: #B6D6E2;
     --white: #fff;
+
+    --gray-light: #f0f0f0;  /* Light gray for even rows */
+    --gray-dark: #e2e2e2;   /* Darker gray for odd rows */
+
   
     --font-size: 10px;
     --font-family: 'Roboto Slab', serif;
@@ -29,14 +33,22 @@ th{
     box-sizing: border-box;
     background-color: var(--celadon-green);
     color: var(--white) ;
-
 }
+
+
 td {
     padding: 0.6rem;
     box-sizing: border-box;
-    border-bottom: 1px solid grey;
+    /* background-color: #f1f1f1; */
     /* color: #25925B ; */
     
+}
+tr:nth-child(odd) {
+  background-color: var(--gray-light);
+}
+
+tr:nth-child(even) {
+  background-color: var(--gray-dark);
 }
 
 .table-item {
