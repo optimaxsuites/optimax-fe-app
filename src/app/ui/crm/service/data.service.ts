@@ -36,6 +36,7 @@ export class DataService {
   individualVendorList$ = this.individualVendorListSubject.asObservable();
 
   private updateLocalStorage() {
+    console.log('Updating Local Storage:', this.rfqList);
     localStorage.setItem('rfqList', JSON.stringify(this.rfqList));
     this.rfqListSubject.next(this.rfqList);
   }
@@ -81,7 +82,9 @@ export class DataService {
 
   saveRfqData(rfqData: any) {
     rfqData.id = generateUniqueId();
+    console.log('Before Push:', this.rfqList);
     this.rfqList.push(rfqData);
+    console.log('After Push:', this.rfqList);
     this.updateLocalStorage();
   }
 

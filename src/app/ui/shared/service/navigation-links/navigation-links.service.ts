@@ -26,6 +26,9 @@ export class NavigationLinksService {
     this.links['posLink'] = '/admin/pos/' +uuidV4();
     this.links['crmLink'] = '/admin/crm/' +uuidV4();
     this.links['settingsLink'] = '/admin/settings/' +uuidV4();
+    this.links['expensesLink'] = '/admin/expenses/' + uuidV4();
+    this.links['orderDetails'] = '/user/checkout/order/' + uuidV4();
+
 
 
     this.links['signinLink'] = '/auth/sign-in' +uuidV4();
@@ -38,6 +41,8 @@ export class NavigationLinksService {
     this.links['checkoutOrderLink'] = '/user/checkout/orders/' +uuidV4();
     this.links['cashPayment'] = '/user/checkout/cash-payment/' +uuidV4();
     this.links['orderDetails'] = '/user/checkout/order/' +uuidV4();
+
+
     
 
   }

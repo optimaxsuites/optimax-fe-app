@@ -11,7 +11,7 @@
       </div>
     </div>
 
-    <div class="items" [routerLink]="navigationLink.getLink('salesLink')" >
+    <div class="items" [routerLink]="navigationLink.getLink('salesLink')">
       <div class="d-flex">
         <img class="salesIcon" src="../../../assets/salesSvg.svg" alt="" />
         <p>Sales</p>
@@ -73,6 +73,17 @@
         <p>CRM</p>
       </div>
     </div>
+    <div class="items" [routerLink]="navigationLink.getLink('expensesLink')">
+      <div class="d-flex">
+        <img
+          class="salesIcon"
+          src="../../../../../assets/budget-svgrepo-com.svg"
+          alt=""
+        />
+
+        <p>Expenses</p>
+      </div>
+    </div>
 
     <!-- <div class="items">
       <div class="d-flex">
@@ -87,6 +98,5 @@
         <p>Settings</p>
       </div>
     </div>
-
   </div>
 </div>
