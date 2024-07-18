@@ -149,6 +149,7 @@ import { BackButtonComponent } from './ui/shared/view/back-button/back-button.co
 import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-orders.component';
 import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.component';
 import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';
+import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.component';
 import { ExpensesComponent } from './ui/expenses/view/expenses.component';
 
 @NgModule({
@@ -245,6 +246,7 @@ import { ExpensesComponent } from './ui/expenses/view/expenses.component';
     CheckoutOrdersComponent,
     CashPaymentComponent,
     OrderDetailComponent,
+    VerifyTokenComponent,
     ExpensesComponent,
   ],
   imports: [
