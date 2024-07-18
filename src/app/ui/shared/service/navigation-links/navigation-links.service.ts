@@ -27,7 +27,7 @@ export class NavigationLinksService {
     this.links['settingsLink'] = '/admin/settings/' +uuidV4();
 
 // auth links ================================================================================================================
-    this.links['signinLink'] = '/user/auth/sign-in' +uuidV4();
+    this.links['signinLink'] = '/#/' +uuidV4();
     this.links['vrsLink'] = '/user/auth/vrs/' +uuidV4();
     this.links['vrfLink'] = '/user/auth/vrf/' +uuidV4();
     this.links['signupLink'] = '/user/auth/sign-up/' +uuidV4();

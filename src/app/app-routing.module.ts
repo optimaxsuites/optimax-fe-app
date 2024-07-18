@@ -46,7 +46,7 @@ import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.c
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'auth/sign-in/3bbfd81a-f9ef-4d61-9969-cc7b8f29a25b',
+    redirectTo: '#/3bbfd81a-f9ef-4d61-9969-cc7b8f29a25b',
     pathMatch: 'full',
   },
   {
@@ -54,7 +54,7 @@ const routes: Routes = [
     component: DefaultComponent,
     children: [
       {
-        path: 'user/auth/sign-in/:uuid',
+        path: '#/:uuid',
         component: LoginComponent,
       },
       {
