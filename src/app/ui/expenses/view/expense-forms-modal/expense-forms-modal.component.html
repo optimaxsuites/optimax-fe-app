@@ -1,1 +1,22 @@
-<p>expense-forms-modal works!</p>
+<section class="formBackground">
+  <div class="formContainer">
+    <div class="leftWing">
+      <h4>Expense Description</h4>
+      <label for="eTitle">Quotation No</label>
+
+      <input
+        type="text"
+        id="eTitle"
+        pInputText
+        [(ngModel)]="expenseList.eTitle"
+      />
+
+      <input
+        pInputText
+        class="ng-invalid ng-dirty"
+        id="eProduct"
+        [(ngModel)]="expenseList.eProduct"
+      />
+    </div>
+  </div>
+</section>
