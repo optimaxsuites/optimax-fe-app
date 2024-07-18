@@ -1,0 +1,97 @@
+<p-toast />
+<p-confirmDialog />
+
+<div class="table-container">
+  <div class="container-header"></div>
+
+  <div class="">
+    <p-toolbar styleClass="mb-4 gap-2">
+      <ng-template pTemplate="left">
+        <!-- <app-button text="Delete" 
+          (btnClick)="deleteSelectedItems()" class="btn-delete" ></app-button> -->
+      </ng-template>
+
+      <ng-template pTemplate="right">
+        <app-button
+          text="Add New"
+          routerLink="/expenses/expensesForm"
+          class="btn-navigate"
+        ></app-button>
+        <app-button text="Import" class="btn-export"></app-button>
+      </ng-template>
+    </p-toolbar>
+    <p-table
+      [paginator]="true"
+      dataKey="id"
+      responsiveLayout="stack"
+      [breakpoint]="'960px'"
+      styleClass="p-datatable-striped"
+      [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '650px' }"
+      [rows]="15"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+          <th class="table-item">RFQ No</th>
+          <th class="table-item">Project Title</th>
+          <th class="table-item">Date Issued</th>
+          <th class="table-item">Expiry Date</th>
+          <th class="table-item">Prepared By</th>
+          <th class="table-item">Position</th>
+          <th class="table-item">Status</th>
+          <th class="table-item">Action</th>
+        </tr>
+      </ng-template>
+      <ng-template
+        pTemplate="body"
+        let-rfq
+        let-i="rowIndex"
+        let-columns="columns"
+      >
+        <tr>
+          <td>
+            <p-tableCheckbox [value]="rfq" />
+          </td>
+          <td class="table-item">{{ rfq.rfqNo }}</td>
+          <td class="table-item">
+            <span class="p-column-title">Project Title</span
+            >{{ rfq.projectTitle }}
+          </td>
+          <td class="table-item">{{ rfq.dateIssued }}</td>
+          <td class="table-item">{{ rfq.expiryDate }}</td>
+          <td class="table-item">{{ rfq.preparedBy }}</td>
+          <td class="table-item">{{ rfq.position }}</td>
+          <td class="table-item">
+            <span class="p-column-title">Status</span>
+            <!-- <p-tag [value]="rfq.status" [severity]="getSeverity(rfq.status)" /> -->
+          </td>
+          <td class="actions table-item">
+            <span class="p-column-title">Action</span>
+            <i
+              pTooltip="send"
+              tooltipPosition="bottom"
+              class="pi pi-send table-item"
+            ></i>
+            <i
+              pTooltip="view"
+              tooltipPosition="bottom"
+              class="pi pi-eye table-item"
+            ></i>
+
+            <i
+              pTooltip="copy"
+              tooltipPosition="bottom"
+              class="pi pi-clone table-item"
+            ></i>
+
+            <i
+              pTooltip="delete"
+              tooltipPosition="bottom"
+              class="pi pi-times-circle table-item"
+            ></i>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

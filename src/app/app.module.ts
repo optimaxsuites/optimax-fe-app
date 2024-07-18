@@ -150,6 +150,8 @@ import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-
 import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.component';
 import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';
 import { ExpensesComponent } from './ui/expenses/view/expenses.component';
+import { ExpenseTableComponent } from './ui/expenses/view/expense-table/expense-table.component';
+import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-modal/expense-forms-modal.component';
 
 @NgModule({
   declarations: [
@@ -246,6 +248,8 @@ import { ExpensesComponent } from './ui/expenses/view/expenses.component';
     CashPaymentComponent,
     OrderDetailComponent,
     ExpensesComponent,
+    ExpenseTableComponent,
+    ExpenseFormsModalComponent,
   ],
   imports: [
     BrowserModule,
