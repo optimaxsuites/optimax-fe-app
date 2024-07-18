@@ -17,7 +17,6 @@ export class NavigationLinksService {
     this.links['dashboardLink'] = '/admin/dashboard/' + uuidV4();
     this.links['userRegistrationLink'] = '/admin/settings/user-reg/' + uuidV4();
     this.links['salesLink'] = '/admin/sales/' +uuidV4();
-
     this.links['purchaseLink'] = '/admin/purchase/' +uuidV4();
     this.links['inventoryLink'] = '/admin/inventory/' +uuidV4();
     this.links['procurementLink'] = '/admin/procurement/' +uuidV4();
@@ -27,13 +26,14 @@ export class NavigationLinksService {
     this.links['crmLink'] = '/admin/crm/' +uuidV4();
     this.links['settingsLink'] = '/admin/settings/' +uuidV4();
 
-
-    this.links['signinLink'] = '/auth/sign-in' +uuidV4();
-    this.links['vrsLink'] = '/auth/vrs/' +uuidV4();
-    this.links['vrfLink'] = '/auth/vrf/' +uuidV4();
-    this.links['signupLink'] = '/auth/sign-up/' +uuidV4();
-    this.links['emvLink'] = '/auth/emv/' +uuidV4();
-    this.links['verifyTokenLink'] = '/auth/verify-token/' +uuidV4();
+// auth links ================================================================================================================
+    this.links['signinLink'] = '/user/auth/sign-in' +uuidV4();
+    this.links['vrsLink'] = '/user/auth/vrs/' +uuidV4();
+    this.links['vrfLink'] = '/user/auth/vrf/' +uuidV4();
+    this.links['signupLink'] = '/user/auth/sign-up/' +uuidV4();
+    this.links['emvLink'] = '/user/auth/emv/' +uuidV4();
+    this.links['verifyTokenLink'] = '/user/auth/verify/' +uuidV4();
+//=============================================================================================================================
 
 
     this.links['checkoutLink'] = '/user/checkout/' +uuidV4();

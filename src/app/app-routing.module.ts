@@ -54,27 +54,27 @@ const routes: Routes = [
     component: DefaultComponent,
     children: [
       {
-        path: 'auth/sign-in/:uuid',
+        path: 'user/auth/sign-in/:uuid',
         component: LoginComponent,
       },
       {
-        path: 'auth/sign-up/:uuid',
+        path: 'user/auth/sign-up/:uuid',
         component: RegisterComponent,
       },
       {
-        path: 'auth/emv/:uuid',
+        path: 'user/auth/emv/:uuid',
         component: MailVerificationComponent,
       },
       {
-        path: 'auth/vrs/:uuid',
+        path: 'user/auth/vrs/:uuid',
         component: VerificationSuccessfullComponent,
       },
       {
-        path: 'auth/vrf/:uuid',
+        path: 'user/auth/vrf/:uuid',
         component: VerificationFailedComponent,
       },
       {
-        path: 'auth/verify-token/:uuid',
+        path: 'user/auth/verify/:uuid',
         component: VerifyTokenComponent,
       },
     ],
