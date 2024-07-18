@@ -136,6 +136,7 @@ export class LoginComponent implements OnInit {
   navigateToSignup(){
     const signupLink = this.navigationLink.getLink('signupLink');
     this.router.navigate([signupLink]);
+    console.log()
   }
 
 
