@@ -133,13 +133,19 @@ export class LoginComponent implements OnInit {
     }
   }
 
+  navigateToSignup(){
+    const signupLink = this.navigationLink.getLink('signupLink');
+    this.router.navigate([signupLink]);
+    console.log()
+  }
+
 
 
   loadInitParam(data: any) {
     sessionStorage.setItem("username", data.username);
     sessionStorage.setItem("userid", data.id);
-    // const tokenStartIndex = data.accessToken.indexOf('=') + 1;
-    // const token = data.accessToken.substring(tokenStartIndex, data.accessToken.indexOf(';'));
+    const tokenStartIndex = data.accessToken.indexOf('=') + 1;
+    const token = data.accessToken.substring(tokenStartIndex, data.accessToken.indexOf(';'));
     sessionStorage.setItem("accessToken", data.accessToken);
     localStorage.setItem("accessToken2", data.accessToken);
     sessionStorage["userRegData"] = JSON.stringify(data);
