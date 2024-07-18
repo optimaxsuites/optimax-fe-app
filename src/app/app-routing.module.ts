@@ -47,7 +47,7 @@ import { ExpensesComponent } from './ui/expenses/view/expenses.component';
 const routes: Routes = [
   {
     path: '',
-    redirectTo: '#/3bbfd81a-f9ef-4d61-9969-cc7b8f29a25b',
+    redirectTo: 'user/auth/sign-in/3bbfd81a-f9ef-4d61-9969-cc7b8f29a25b',
     pathMatch: 'full',
   },
   {
@@ -55,7 +55,7 @@ const routes: Routes = [
     component: DefaultComponent,
     children: [
       {
-        path: '#/:uuid',
+        path: 'user/auth/sign-in/:uuid',
         component: LoginComponent,
       },
       {
@@ -75,7 +75,7 @@ const routes: Routes = [
         component: VerificationFailedComponent,
       },
       {
-        path: 'user/auth/verify/:uuid',
+        path: 'user/auth/verify',
         component: VerifyTokenComponent,
       },
     ],
@@ -163,7 +163,7 @@ const routes: Routes = [
         path: 'purchase/rfq-modal',
         component: RfqModalComponent,
       },
-      { path: '', redirectTo: '/purchase', pathMatch: 'full' },
+      // { path: '', redirectTo: '/purchase', pathMatch: 'full' },
       { path: 'purchase/rfq-modal/:rfqId', component: RfqModalComponent },
 
       {
