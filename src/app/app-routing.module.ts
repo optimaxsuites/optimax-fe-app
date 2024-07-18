@@ -41,6 +41,7 @@ import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-
 import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.component';
 import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';
 import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.component';
+import { ExpensesComponent } from './ui/expenses/view/expenses.component';
 // import { randomTokenResolver } from './ui/shared/domain/random-token/random-token.resolver';
 
 const routes: Routes = [
@@ -107,9 +108,9 @@ const routes: Routes = [
         component: CashPaymentComponent,
       },
       {
-        path: "user/checkout/order/:uuid",
-        component: OrderDetailComponent
-      }
+        path: 'user/checkout/order/:uuid',
+        component: OrderDetailComponent,
+      },
     ],
   },
 
@@ -199,6 +200,10 @@ const routes: Routes = [
         component: CrmPageComponent,
       },
       {
+        path: 'admin/expenses/:uuid',
+        component: ExpensesComponent,
+      },
+      {
         path: 'admin/pos/:uuid',
         component: PosPageComponent,
       },
@@ -210,7 +215,7 @@ const routes: Routes = [
         path: 'crm/individualVendor',
         component: VendorIndividualComponent,
       },
-     
+
       {
         path: 'crm/vendorList',
         component: VendorListComponent,

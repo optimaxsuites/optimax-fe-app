@@ -1,75 +1,163 @@
-<div class="container-fluid">
-  <div class="container-header">
-    <button routerLink="/purchase/rfq-modal" class="btn create-invoice-btn">
-      Create New Rfq <i class="fas fa-plus"></i>
-    </button>
-  </div>
-  <div class="bottom-containesr">
-    <div class="top-products-container">
-      <div class="top-products">
-        <div class="top-products-table-container">
-          <table class="top-products-table w3-table w3-striped">
-            <thead>
-              <tr class="top-products-table-row">
-                <th class="top-products-table-head">RFQ No</th>
-                <th class="top-products-table-head">RFQ Name</th>
-                <th class="top-products-table-head">RFQ Date</th>
-                <th class="top-products-table-head">RFQ Expiry Date</th>
-                <th class="top-products-table-head">Prepared By</th>
-                <th class="top-products-table-head">Position</th>
-                <th class="top-products-table-head">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                class="top-products-table-row"
-                [style.color]="rfq.fontColor"
-                *ngFor="let rfq of rfqList"
-              >
-                <td class="top-products-table-data">{{ rfq.rfqNo }}</td>
-                <td class="top-products-table-data">{{ rfq.dateIssued }}</td>
-                <td class="top-products-table-data">{{ rfq.expiryDate }}</td>
-                <td class="top-products-table-data">{{ rfq.rfqName }}</td>
+<p-toast />
+<p-confirmDialog />
 
-                <td class="top-products-table-data">{{ rfq.position }}</td>
-                <td class="top-products-table-data">{{ rfq.preparedBy }}</td>
+<div class="table-container">
+  <div class="container-header"></div>
 
-                <td class="top-products-table-data col-1">
-                  <div class="actionDiv">
-                    <div class="image-container">
-                      <img
-                        (click)="viewRfq(rfq.id)"
-                        class="actionTags"
-                        src="../../../assets/Edit.svg"
-                        alt=""
-                      />
-                      <span class="tooltip">View</span>
-                    </div>
-                    <div class="image-container">
-                      <img
-                        (click)="duplicateRfq(rfq)"
-                        class="actionTags"
-                        src="../../../assets/duplicate.svg"
-                        alt=""
-                      />
-                      <span class="tooltip">Duplicate</span>
-                    </div>
-                    <div class="image-container">
-                      <img
-                        (click)="deleteRfq(rfq.id)"
-                        class="actionTags"
-                        src="../../../assets/delete (1).svg"
-                        alt=""
-                      />
-                      <span class="tooltip">delete</span>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+  <div class="">
+    <p-toolbar styleClass="mb-4 gap-2">
+      <ng-template pTemplate="left">
+        <!-- <app-button text="Delete" 
+          (btnClick)="deleteSelectedItems()" class="btn-delete" ></app-button> -->
+      </ng-template>
+
+      <ng-template pTemplate="right">
+        <app-button
+          text="Add New"
+          routerLink="/purchase/rfq-modal"
+          class="btn-navigate"
+        ></app-button>
+        <app-button text="Import" class="btn-export"></app-button>
+      </ng-template>
+    </p-toolbar>
+    <p-table
+      [value]="rfqList"
+      [paginator]="true"
+      dataKey="id"
+      responsiveLayout="stack"
+      [breakpoint]="'960px'"
+      styleClass="p-datatable-striped"
+      [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '650px' }"
+      [rows]="15"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+          <th class="table-item">RFQ No</th>
+          <th class="table-item">Project Title</th>
+          <th class="table-item">Date Issued</th>
+          <th class="table-item">Expiry Date</th>
+          <th class="table-item">Prepared By</th>
+          <th class="table-item">Position</th>
+          <th class="table-item">Status</th>
+          <th class="table-item">Action</th>
+        </tr>
+      </ng-template>
+      <ng-template
+        pTemplate="body"
+        let-rfq
+        let-i="rowIndex"
+        let-columns="columns"
+      >
+        <!-- <tr *ngFor="let rfq of rfqList" let i="index"> -->
+        <tr>
+          <td>
+            <p-tableCheckbox [value]="rfq" />
+          </td>
+          <td class="table-item">{{ rfq.rfqNo }}</td>
+          <td class="table-item">
+            <span class="p-column-title">Project Title</span
+            >{{ rfq.projectTitle }}
+          </td>
+          <td class="table-item">{{ rfq.dateIssued }}</td>
+          <td class="table-item">{{ rfq.expiryDate }}</td>
+          <td class="table-item">{{ rfq.preparedBy }}</td>
+          <td class="table-item">{{ rfq.position }}</td>
+          <td class="table-item">
+            <span class="p-column-title">Status</span>
+            <p-tag [value]="rfq.status" [severity]="getSeverity(rfq.status)" />
+          </td>
+          <td class="actions table-item">
+            <span class="p-column-title">Action</span>
+            <i
+              pTooltip="send"
+              tooltipPosition="bottom"
+              class="pi pi-send table-item"
+            ></i>
+            <i
+              pTooltip="view"
+              tooltipPosition="bottom"
+              (click)="viewRfq(rfq.id)"
+              class="pi pi-eye table-item"
+            ></i>
+
+            <i
+              pTooltip="copy"
+              tooltipPosition="bottom"
+              (click)="duplicateRfq(rfq)"
+              class="pi pi-clone table-item"
+            ></i>
+
+            <i
+              pTooltip="delete"
+              tooltipPosition="bottom"
+              (click)="deleteRfq(rfq.id)"
+              class="pi pi-times-circle table-item"
+            ></i>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <!-- <p-table
+      [value]="rfqList"
+      [paginator]="true"
+      dataKey="id"
+      responsiveLayout="stack"
+      [breakpoint]="'960px'"
+      styleClass="p-datatable-striped"
+      [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '650px' }"
+      [rows]="15"
+    >
+      <ng-template pTemplate="header" class="header" let-columns>
+        <tr>
+          <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+          <th class="table-item">RFQ No</th>
+          <th class="table-item">Project Title</th>
+          <th class="table-item">Date Issued</th>
+          <th class="table-item">Expiry Date</th>
+          <th class="table-item">Prepared By</th>
+          <th class="table-item">Position</th>
+          <th class="table-item">Status</th>
+          <th class="table-item">Action</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-i="rowIndex" let-columns="columns">
+        <tr *ngFor="let rfq of rfqList; let i = index">
+          <td>
+            <p-tableCheckbox [value]="rfq" />
+          </td>
+          <td class="table-item">{{ rfq.rfqNo }}</td>
+          <td class="table-item">
+            <span class="p-column-title">Project Title</span
+            >{{ rfq.projectTitle }}
+          </td>
+          <td class="table-item">{{ rfq.dateIssued }}</td>
+          <td class="table-item">{{ rfq.expiryDate }}</td>
+          <td class="table-item">
+            {{ rfq.preparedBy }}
+          </td>
+          <td class="table-item">
+            {{ rfq.position }}
+          </td>
+          <td class="table-item">
+            <span class="p-column-title">Status</span>
+            <p-tag [value]="rfq.status" [severity]="getSeverity(rfq.status)" />
+          </td>
+          <td class="actions table-item">
+            <span class="p-column-title">Action</span>
+            <i (click)="viewRfq(rfq.id)" class="pi pi-eye table-item"></i>
+            <i
+              (click)="duplicateRfq(rfq)"
+              class="pi pi-pen-to-square table-item"
+            ></i>
+            <i
+              (click)="deleteRfq(rfq.id)"
+              class="pi pi-times-circle table-item"
+            ></i>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table> -->
   </div>
 </div>

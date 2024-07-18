@@ -108,7 +108,7 @@ export class RfqModalComponent implements OnInit {
     this.description = item.description;
     this.quantity = item.quantity;
     this.imageUrl = item.imageUrl;
-    this.previewImageUrl = item.imageUrl; // For previewing the image
+    this.previewImageUrl = item.imageUrl; 
     this.approvedBudget = item.approvedBudget;
 
     // Store the index of the item being edited
@@ -214,8 +214,8 @@ export class RfqModalComponent implements OnInit {
     };
     console.log(rfqData);
     this.rfqDataService.saveRfqData(rfqData);
-    this.clearRfqInputs();
-    this.router.navigate(['/purchase']);
+    // this.clearRfqInputs();
+    this.router.navigate(['/admin/purchase/uuid']);
   }
 
   clearRfqInputs() {

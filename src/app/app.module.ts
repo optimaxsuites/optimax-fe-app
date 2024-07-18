@@ -43,7 +43,6 @@ import { TagModule } from 'primeng/tag';
 
 // import { EditorModule } from "@progress/kendo-angular-editor";
 
-
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { AngularEditorModule } from '@kolkov/angular-editor';
@@ -58,7 +57,6 @@ import { CanvasJSAngularChartsModule } from '@canvasjs/angular-charts';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { MatCardModule } from '@angular/material/card';
 import { MatGridListModule } from '@angular/material/grid-list';
-
 
 import { AppComponent } from './app.component';
 import { GeneralLedegerManagementComponent } from './ui/shared/view/general-ledeger-management/general-ledeger-management.component';
@@ -152,6 +150,7 @@ import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-
 import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.component';
 import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';
 import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.component';
+import { ExpensesComponent } from './ui/expenses/view/expenses.component';
 
 @NgModule({
   declarations: [
@@ -248,6 +247,7 @@ import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.c
     CashPaymentComponent,
     OrderDetailComponent,
     VerifyTokenComponent
+    ExpensesComponent,
   ],
   imports: [
     BrowserModule,
