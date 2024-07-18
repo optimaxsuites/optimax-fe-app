@@ -246,7 +246,7 @@ import { ExpensesComponent } from './ui/expenses/view/expenses.component';
     CheckoutOrdersComponent,
     CashPaymentComponent,
     OrderDetailComponent,
-    VerifyTokenComponent
+    VerifyTokenComponent,
     ExpensesComponent,
   ],
   imports: [
