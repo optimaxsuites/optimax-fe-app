@@ -151,6 +151,8 @@ import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.co
 import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';
 import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.component';
 import { ExpensesComponent } from './ui/expenses/view/expenses.component';
+import { ExpenseTableComponent } from './ui/expenses/view/expense-table/expense-table.component';
+import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-modal/expense-forms-modal.component';
 
 @NgModule({
   declarations: [
@@ -248,6 +250,8 @@ import { ExpensesComponent } from './ui/expenses/view/expenses.component';
     OrderDetailComponent,
     VerifyTokenComponent,
     ExpensesComponent,
+    ExpenseTableComponent,
+    ExpenseFormsModalComponent,
   ],
   imports: [
     BrowserModule,

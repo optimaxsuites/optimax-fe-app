@@ -42,6 +42,7 @@ import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.co
 import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';
 import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.component';
 import { ExpensesComponent } from './ui/expenses/view/expenses.component';
+import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-modal/expense-forms-modal.component';
 // import { randomTokenResolver } from './ui/shared/domain/random-token/random-token.resolver';
 
 const routes: Routes = [
@@ -160,6 +161,7 @@ const routes: Routes = [
         component: RfqComponent,
       },
       {
+
         path: 'purchase/rfq-modal',
         component: RfqModalComponent,
       },
@@ -203,6 +205,12 @@ const routes: Routes = [
         path: 'admin/expenses/:uuid',
         component: ExpensesComponent,
       },
+      {
+
+        path: 'expenses/expensesForm',
+        component: ExpenseFormsModalComponent,
+      },
+      { path: '', redirectTo: '/expenses', pathMatch: 'full' },
       {
         path: 'admin/pos/:uuid',
         component: PosPageComponent,
