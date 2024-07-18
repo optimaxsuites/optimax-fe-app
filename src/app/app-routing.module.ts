@@ -40,6 +40,7 @@ import { AuthGuard } from './ui/auth/service/auth.guard';
 import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-orders.component';
 import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.component';
 import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';
+import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.component';
 import { ExpensesComponent } from './ui/expenses/view/expenses.component';
 import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-modal/expense-forms-modal.component';
 // import { randomTokenResolver } from './ui/shared/domain/random-token/random-token.resolver';
@@ -47,7 +48,7 @@ import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-mod
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'auth/sign-in/3bbfd81a-f9ef-4d61-9969-cc7b8f29a25b',
+    redirectTo: '#/3bbfd81a-f9ef-4d61-9969-cc7b8f29a25b',
     pathMatch: 'full',
   },
   {
@@ -55,24 +56,28 @@ const routes: Routes = [
     component: DefaultComponent,
     children: [
       {
-        path: 'auth/sign-in/:uuid',
+        path: '#/:uuid',
         component: LoginComponent,
       },
       {
-        path: 'auth/sign-up/:uuid',
+        path: 'user/auth/sign-up/:uuid',
         component: RegisterComponent,
       },
       {
-        path: 'auth/emv/:uuid',
+        path: 'user/auth/emv/:uuid',
         component: MailVerificationComponent,
       },
       {
-        path: 'auth/vrs/:uuid',
+        path: 'user/auth/vrs/:uuid',
         component: VerificationSuccessfullComponent,
       },
       {
-        path: 'auth/vrf/:uuid',
+        path: 'user/auth/vrf/:uuid',
         component: VerificationFailedComponent,
+      },
+      {
+        path: 'user/auth/verify/:uuid',
+        component: VerifyTokenComponent,
       },
     ],
   },
