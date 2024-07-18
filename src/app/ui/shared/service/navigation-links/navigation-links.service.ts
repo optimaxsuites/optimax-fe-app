@@ -33,6 +33,8 @@ export class NavigationLinksService {
     this.links['vrfLink'] = '/auth/vrf/' +uuidV4();
     this.links['signupLink'] = '/auth/sign-up/' +uuidV4();
     this.links['emvLink'] = '/auth/emv/' +uuidV4();
+    this.links['verifyTokenLink'] = '/auth/verify-token/' +uuidV4();
+
 
     this.links['checkoutLink'] = '/user/checkout/' +uuidV4();
     this.links['checkoutOrderLink'] = '/user/checkout/orders/' +uuidV4();

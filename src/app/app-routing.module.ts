@@ -40,6 +40,7 @@ import { AuthGuard } from './ui/auth/service/auth.guard';
 import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-orders.component';
 import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.component';
 import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';
+import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.component';
 // import { randomTokenResolver } from './ui/shared/domain/random-token/random-token.resolver';
 
 const routes: Routes = [
@@ -71,6 +72,10 @@ const routes: Routes = [
       {
         path: 'auth/vrf/:uuid',
         component: VerificationFailedComponent,
+      },
+      {
+        path: 'auth/verify-token/:uuid',
+        component: VerifyTokenComponent,
       },
     ],
   },
