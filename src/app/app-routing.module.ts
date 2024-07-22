@@ -74,7 +74,7 @@ const routes: Routes = [
         component: VerificationFailedComponent,
       },
       {
-        path: 'user/auth/verify',
+        path: 'users/auth/verify',
         component: VerifyTokenComponent,
       },
     ],
