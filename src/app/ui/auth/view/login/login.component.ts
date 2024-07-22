@@ -76,11 +76,6 @@ export class LoginComponent implements OnInit {
 
 
 
-// userLoginAction(){
-//   const dashboardLink = this.navigationLink.getLink('dashboardLink');
-//   this.router.navigate([dashboardLink]);
-// }
-
 // Guarded
   userLoginAction(): void {
     this.submitted = true;

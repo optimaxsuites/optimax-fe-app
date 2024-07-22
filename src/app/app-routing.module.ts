@@ -36,14 +36,12 @@ import { VendorCategoryComponent } from './ui/crm/view/vendor-category/vendor-ca
 import { VendorIndividualComponent } from './ui/crm/view/vendor-individual/vendor-individual.component';
 import { VendorListComponent } from './ui/crm/view/vendor-list/vendor-list.component';
 import { VendorManagementComponent } from './ui/crm/view/vendorMangement/vendorManagement';
-// import { AuthGuard } from './ui/auth/service/auth.guard';
 import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-orders.component';
 import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.component';
 import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';
 import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.component';
 import { ExpensesComponent } from './ui/expenses/view/expenses.component';
 import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-modal/expense-forms-modal.component';
-// import { randomTokenResolver } from './ui/shared/domain/random-token/random-token.resolver';
 
 const routes: Routes = [
   {
