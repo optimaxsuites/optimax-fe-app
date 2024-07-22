@@ -36,7 +36,7 @@ import { VendorCategoryComponent } from './ui/crm/view/vendor-category/vendor-ca
 import { VendorIndividualComponent } from './ui/crm/view/vendor-individual/vendor-individual.component';
 import { VendorListComponent } from './ui/crm/view/vendor-list/vendor-list.component';
 import { VendorManagementComponent } from './ui/crm/view/vendorMangement/vendorManagement';
-import { AuthGuard } from './ui/auth/service/auth.guard';
+// import { AuthGuard } from './ui/auth/service/auth.guard';
 import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-orders.component';
 import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.component';
 import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';

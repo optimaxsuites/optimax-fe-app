@@ -8,8 +8,9 @@ import {
 } from '@angular/forms';
 import {ErrorStateMatcher} from '@angular/material/core';
 import { MessageService } from 'primeng/api';
-import { Route, Router } from '@angular/router';
+import { ActivatedRoute, Route, Router } from '@angular/router';
 import { AuthenticationService } from '../../service/authentication.service';
+import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 
 
 
@@ -50,7 +51,9 @@ export class RegisterComponent {
     // private toastr: ToastrService,
     private authenticationService: AuthenticationService,
     private messageService: MessageService,
-    private router: Router
+    private router: Router,
+    private navigationLink: NavigationLinksService,
+    private route: ActivatedRoute,
   ) {}
 
 
@@ -186,7 +189,9 @@ export class RegisterComponent {
             this.loading = false;
             // this.messageService.add({ severity: 'success', summary: 'Success', detail: 'User registered successfully!' });
             // Optionally, redirect to another page after successful registration
-            this.router.navigateByUrl('/email-verification');
+            // this.router.navigateByUrl('/email-verification');
+            const emvLink = this.navigationLink.getLink('emvLink')
+            this.router.navigate([emvLink]);
         },
         (error) => {
 
