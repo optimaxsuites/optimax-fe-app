@@ -185,7 +185,7 @@ td {
 
 .smallInput {
   height: 3.3rem;
-  border-color: #536365;
+  border: 1px solid #536365;
   border-radius: 0.5rem;
 }
 
@@ -197,7 +197,7 @@ td {
 .threeInputField {
   width: 26rem;
   // margin-top: 0.7rem;
-  border-color: #536365;
+  border: 1px solid #536365;
   height: 3.5rem;
   border-radius: 0.5rem;
 }
@@ -209,7 +209,7 @@ select,
 
 .descText {
   border-radius: 0.5rem;
-  border-color: #536365;
+  border: 1px solid #536365;
   width: 26rem;
 }
 
