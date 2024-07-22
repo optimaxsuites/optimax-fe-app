@@ -1,22 +1,177 @@
-<section class="formBackground">
-  <div class="formContainer">
-    <div class="leftWing">
-      <h4>Expense Description</h4>
-      <label for="eTitle">Quotation No</label>
+<main>
+  <section class="formBackground">
+    <article class="topWing">
+      <div class="descDiv">
+        <label for="eTitle">Expense Description</label>
+        <br />
+        <input
+          type="text"
+          id="eTitle"
+          pInputText
+          [(ngModel)]="expenseList.eTitle"
+        />
+      </div>
 
-      <input
-        type="text"
-        id="eTitle"
-        pInputText
-        [(ngModel)]="expenseList.eTitle"
-      />
+      <div class="">
+        <img
+          src="../../../../../assets/duplicate.svg"
+          alt=""
+          style="width: 2rem"
+        />
+      </div>
+    </article>
 
-      <input
-        pInputText
-        class="ng-invalid ng-dirty"
-        id="eProduct"
-        [(ngModel)]="expenseList.eProduct"
-      />
+    <div class="formContainer">
+      <div class="leftWing">
+        <div class="inputFlex">
+          <label for="eTitle">Product</label>
+
+          <select
+            name="vendorType"
+            id="vendorType"
+            class="smallInput"
+            [(ngModel)]="expenseList.eProduct"
+          >
+            <option value="" disabled selected hidden>Choose Type</option>
+            <option
+              *ngFor="let product of expenseList.productArray"
+              [value]="product"
+            >
+              {{ product }}
+            </option>
+          </select>
+        </div>
+
+        <div class="inputFlex">
+          <label for="eTitle">Unit Price</label>
+
+          <input
+            pInputText
+            class="ng-invalid ng-dirty"
+            id="eProduct"
+            [(ngModel)]="expenseList.eUnitPrice"
+          />
+        </div>
+
+        <div class="inputFlex">
+          <label for="eTitle">Quantity</label>
+          <input
+            pInputText
+            class="ng-invalid ng-dirty"
+            id="eProduct"
+            [(ngModel)]="expenseList.eQuantity"
+          />
+        </div>
+
+        <div class="inputFlex">
+          <label for="eTitle">Taxes</label>
+          <select
+            name="vendorType"
+            id="vendorType"
+            class="smallInput"
+            [(ngModel)]="expenseList.eTaxes"
+          >
+            <option value="" disabled selected hidden>Choose Type</option>
+            <option
+              *ngFor="let taxes of expenseList.taxesArray"
+              [value]="taxes"
+            >
+              {{ taxes }}
+            </option>
+          </select>
+        </div>
+
+        <div class="inputFlex">
+          <span>Total</span>
+          <p>#90.00</p>
+        </div>
+
+        <div class="inputPaymentFlex">
+          <label for="">Payment By</label>
+          <div class="checkFlex">
+            <div class="inputCheckFlex">
+              <input
+                type="checkbox"
+                [(ngModel)]="expenseList.eEmployment"
+                style="border-radius: 50%"
+              />
+              <p>Employee</p>
+            </div>
+            <!-- <div class="inputCheckFlex">
+              <input type="checkbox" class="checkBox" [(ngModel)]="expenseList.eCompany" />
+
+              <p>Company</p>
+            </div> -->
+            <!-- <label class="custom-checkbox">
+              <input
+                type="checkbox"
+                class="checkBox"
+                [(ngModel)]="expenseList.eCompany"
+              />
+              <span class="checkmark"></span>
+              Check me
+            </label> -->
+          </div>
+        </div>
+      </div>
+
+      <div class="rightWing">
+        <div class="inputFlex">
+          <label for="">Date</label>
+          <p-calendar
+            [(ngModel)]="expenseList.eDate"
+            [iconDisplay]="'input'"
+            [showIcon]="true"
+            inputId="icondisplay"
+          />
+        </div>
+
+        <div class="inputFlex">
+          <label for="">Employee</label>
+          <select
+            name="vendorType"
+            id="vendorType"
+            class="smallInput"
+            [(ngModel)]="expenseList.eEmployee"
+          >
+            <option value="" disabled selected hidden>Choose Type</option>
+            <option
+              *ngFor="let employee of expenseList.employeeArray"
+              [value]="employee"
+            >
+              {{ employee }}
+            </option>
+          </select>
+        </div>
+
+        <div class="inputFlex">
+          <label for="">Journal Entry</label>
+          <select
+            name="vendorType"
+            id="vendorType"
+            class="smallInput"
+            [(ngModel)]="expenseList.eJournal"
+          >
+            <option value="" disabled selected hidden>Choose Type</option>
+            <option
+              *ngFor="let journal of expenseList.journalArray"
+              [value]="journal"
+            >
+              {{ journal }}
+            </option>
+          </select>
+        </div>
+
+        <div class="inputFlex">
+          <label for="">Expenses Journal</label>
+          <input
+            pInputText
+            class="ng-invalid ng-dirty"
+            id="eProduct"
+            [(ngModel)]="expenseList.eProduct"
+          />
+        </div>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
+</main>

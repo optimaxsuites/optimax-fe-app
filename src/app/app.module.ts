@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -153,6 +153,8 @@ import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.c
 import { ExpensesComponent } from './ui/expenses/view/expenses.component';
 import { ExpenseTableComponent } from './ui/expenses/view/expense-table/expense-table.component';
 import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-modal/expense-forms-modal.component';
+import { CalendarModule } from 'primeng/calendar';
+import { CheckboxModule } from 'primeng/checkbox';
 
 @NgModule({
   declarations: [
@@ -309,6 +311,8 @@ import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-mod
     MatRadioModule,
     ToastModule,
     TagModule,
+    CalendarModule,
+    CheckboxModule
     // ToastrModule.forRoot(),
   ],
   providers: [
@@ -320,6 +324,7 @@ import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-mod
     provideAnimationsAsync(),
     provideNativeDateAdapter(),
   ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   bootstrap: [AppComponent],
 })
 export class AppModule {}
