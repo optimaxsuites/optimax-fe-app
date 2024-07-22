@@ -2,6 +2,8 @@ import { Injectable, isDevMode } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from 'src/environments/environment.prod';
+import { NavigationLinksService } from '../../shared/service/navigation-links/navigation-links.service';
+import { Router } from '@angular/router';
 
 
 
@@ -11,7 +13,25 @@ import { environment } from 'src/environments/environment.prod';
 export class AuthenticationService {
   private _apiBaseUrl = (environment as any).apiBaseUrl;
 
-  constructor(private http: HttpClient) {  }
+  constructor(private http: HttpClient, private navigationLink: NavigationLinksService, private router: Router) {  }
+  
+  logout(): void {
+    sessionStorage.removeItem("username");
+    sessionStorage.removeItem("token");
+
+    //added by yomi
+    sessionStorage.removeItem("userInfoRegData");
+    sessionStorage.removeItem("userRegData");
+    sessionStorage.removeItem("accessToken");
+    sessionStorage.removeItem("userid");
+    // this.router.navigate([''])
+    const loginLink = this.navigationLink.getLink('signinLink')
+    this.router.navigate([loginLink]);
+}
+
+isLoggedIn(): boolean {
+  return !!sessionStorage.getItem('userid');
+}
 
 
   userLogin(data: any): Observable<any> {
