@@ -30,13 +30,15 @@ export class VerifyTokenComponent implements OnInit {
   verifyUserToken(token: string): void {
     this.authenticationService.userVerification(token).subscribe(
       response => {
-        const signupLink = this.navigationLink.getLink('signupLink');
-        this.router.navigate([signupLink]);
+        const vrsLink = this.navigationLink.getLink('vrsLink');
+        this.router.navigate([vrsLink]);
+
         console.log("Verification successful", response);
       },
       error => {
-        const signupLink = this.navigationLink.getLink('signupLink');
-        this.router.navigate([signupLink]);
+        const vrfLink = this.navigationLink.getLink('vrfLink');
+        this.router.navigate([vrfLink]);
+
         console.error("Verification failed", error);
       }
     );

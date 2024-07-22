@@ -76,65 +76,60 @@ export class LoginComponent implements OnInit {
 
 
 
-userLoginAction(){
-  const signupLink = this.navigationLink.getLink('signinLink');
-  this.router.navigate([signupLink]);
-}
-
 // Guarded
-  // userLoginAction(): void {
-  //   this.submitted = true;
-  //   this.loading = true;
-  //   this.loggedIn = false;
+  userLoginAction(): void {
+    this.submitted = true;
+    this.loading = true;
+    this.loggedIn = false;
 
 
-  //   if (!this.loginInfo.username || !this.loginInfo.password) {
-  //       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
-  //       this.loading = false;
-  //   } else {
-  //       setTimeout(() => {
-  //           this.authenticationService.userLogin(this.loginInfo).subscribe(
-  //             async (data) => {
-  //               this.loadInitParam(data);
-  //                   if (!data) {
-  //                       this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
-  //                       this.loggedIn = false;
-  //                       this.loading = false;
-  //                   } else {
-  //                     if (!data.needsRegistration) {
-  //                       const registrationLink = this.navigationLink.getLink('userRegistrationLink');
-  //                       this.router.navigate([registrationLink]);
-  //                     } else {
-  //                       const dashboardLink = this.navigationLink.getLink('dashboardLink');
-  //                       this.router.navigate([dashboardLink]);
-  //                     }
-  //                     this.loggedIn = true;
-  //                     this.loading = false;
-  //                   }
-  //               },
-  //               (error) => {
-  //                 if (error.toString() == "500") {
-  //                     this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
-  //                     this.loggedIn = false;
-  //                     this.loading = false;
-  //                   } 
-  //                   if (error.toString() == "404") {
-  //                     this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.' });
-  //                     this.loggedIn = false;
-  //                     this.loading = false;
-  //                   }
-  //                   else if (error.toString() == "0") {
-  //                       this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
-  //                       this.loggedIn = false;
-  //                       this.loading = false;
-  //                   }
-  //                   this.loading = false;
-  //               }
-  //           );
-  //       }, 2000);
+    if (!this.loginInfo.username || !this.loginInfo.password) {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
+        this.loading = false;
+    } else {
+        setTimeout(() => {
+            this.authenticationService.userLogin(this.loginInfo).subscribe(
+              async (data) => {
+                this.loadInitParam(data);
+                    if (!data) {
+                        this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
+                        this.loggedIn = false;
+                        this.loading = false;
+                    } else {
+                      if (!data.needsRegistration) {
+                        const registrationLink = this.navigationLink.getLink('userRegistrationLink');
+                        this.router.navigate([registrationLink]);
+                      } else {
+                        const dashboardLink = this.navigationLink.getLink('dashboardLink');
+                        this.router.navigate([dashboardLink]);
+                      }
+                      this.loggedIn = true;
+                      this.loading = false;
+                    }
+                },
+                (error) => {
+                  if (error.toString() == "500") {
+                      this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
+                      this.loggedIn = false;
+                      this.loading = false;
+                    } 
+                    if (error.toString() == "404") {
+                      this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.' });
+                      this.loggedIn = false;
+                      this.loading = false;
+                    }
+                    else if (error.toString() == "0") {
+                        this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
+                        this.loggedIn = false;
+                        this.loading = false;
+                    }
+                    this.loading = false;
+                }
+            );
+        }, 2000);
 
-  //   }
-  // }
+    }
+  }
 
   navigateToSignup(){
     const signupLink = this.navigationLink.getLink('signupLink');
