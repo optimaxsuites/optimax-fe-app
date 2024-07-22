@@ -12,6 +12,7 @@ import { AuthenticationService } from '../../service/authentication.service';
 import { RandomTokenService } from 'src/app/ui/shared/service/random-token/random-token.service';
 import { v4 as uuidV4 } from 'uuid';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
+import { Message } from 'primeng/api';
 
 
 /** Error when invalid control is dirty, touched, or submitted. */
@@ -41,6 +42,8 @@ export class LoginComponent implements OnInit {
 };
   loggedIn: boolean = false;
   submitted: boolean = false;
+  loggedOutMessage1?: string;
+  messages: Message[] | undefined;
 
   public token!: string;
 
@@ -64,15 +67,29 @@ export class LoginComponent implements OnInit {
   // viewDonorProfile: any = []
 
   ngOnInit(): void {
-    const uuid = this.route.snapshot.paramMap.get('uuid');
-    if (!uuid) {
-      console.error('UUID parameter not found.');
-      return;
-    }
-    console.log("this is the uuid" + uuid)
+    // const uuid = this.route.snapshot.paramMap.get('uuid');
+    // if (!uuid) {
+    //   console.error('UUID parameter not found.');
+    //   return;
+    // }
+    // console.log("this is the uuid" + uuid)
     const loginLink = this.navigationLink.getLink('signinLink')
     this.router.navigate([loginLink]);
+
+    if (this.authenticationService.isLoggedIn()) {
+      this.authenticationService.logout();
+      this.loggedOutMessage1 = 'You have been logged out. Please log in again';
+      this.messages = [{ severity: 'info', detail: 'You have been logged out. Please log in again' }];
+
+      // this.messageService.add({ severity: 'info', summary: 'Info Message', detail: 'Via MessageService' });
+      
+      // this.messageService.add({ severity: 'info', summary: 'Info', detail: this.loggedOutMessage });
+    }
   }
+
+  
+
+
 
 
 
@@ -81,6 +98,8 @@ export class LoginComponent implements OnInit {
     this.submitted = true;
     this.loading = true;
     this.loggedIn = false;
+
+ 
 
 
     if (!this.loginInfo.username || !this.loginInfo.password) {
@@ -136,6 +155,7 @@ export class LoginComponent implements OnInit {
     this.router.navigate([signupLink]);
     console.log()
   }
+
 
 
 

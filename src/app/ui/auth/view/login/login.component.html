@@ -1,10 +1,16 @@
 <p-toast></p-toast>
+<!-- <p-messages 
+[(value)]="messages" 
+[enableService]="false" 
+[closable]="false" /> -->
+
 <div class="login">
   <div class="logo-img">
     <img src="../../../assets/Logo-green.png" alt="Logo" />
   </div>
   <p class="text-center mt-3 mb-4">Welcome to OPTIMAX</p>
   <div class="content">
+    <p class="text-center mt-3 mb-4" style="color: red;" *ngIf="loggedOutMessage1">{{ loggedOutMessage1 }}</p>
 
     <div class="form">
       <mat-form-field class="example-full-width">
