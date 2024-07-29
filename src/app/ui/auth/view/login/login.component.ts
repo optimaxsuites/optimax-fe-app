@@ -67,88 +67,87 @@ export class LoginComponent implements OnInit {
   // viewDonorProfile: any = []
 
   ngOnInit(): void {
-    // const uuid = this.route.snapshot.paramMap.get('uuid');
-    // if (!uuid) {
-    //   console.error('UUID parameter not found.');
-    //   return;
+    // const loginLink = this.navigationLink.getLink('signinLink')
+    // this.router.navigate([loginLink]);
+
+    // if (this.authenticationService.isLoggedIn()) {
+    //   this.authenticationService.logout();
+    //   this.loggedOutMessage1 = 'You have been logged out. Please log in again';
+    //   this.messages = [{ severity: 'info', detail: 'You have been logged out. Please log in again' }];
     // }
-    // console.log("this is the uuid" + uuid)
-    const loginLink = this.navigationLink.getLink('signinLink')
-    this.router.navigate([loginLink]);
-
-    if (this.authenticationService.isLoggedIn()) {
-      this.authenticationService.logout();
-      this.loggedOutMessage1 = 'You have been logged out. Please log in again';
-      this.messages = [{ severity: 'info', detail: 'You have been logged out. Please log in again' }];
-
-      // this.messageService.add({ severity: 'info', summary: 'Info Message', detail: 'Via MessageService' });
-      
-      // this.messageService.add({ severity: 'info', summary: 'Info', detail: this.loggedOutMessage });
-    }
   }
 
   
 
 
 
+  userLoginAction(){
 
+    // this.submitted = true;
+    // this.loading = false;
+    // this.loggedIn = true;
+    
+    const dashboardLink = this.navigationLink.getLink('dashboardLink');
+                        this.router.navigate([dashboardLink]);
+    console.log("logged in")
+  }
 
 // Guarded
-  userLoginAction(): void {
-    this.submitted = true;
-    this.loading = true;
-    this.loggedIn = false;
+  // userLoginAction(): void {
+  //   this.submitted = true;
+  //   this.loading = true;
+  //   this.loggedIn = false;
 
  
 
 
-    if (!this.loginInfo.username || !this.loginInfo.password) {
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
-        this.loading = false;
-    } else {
-        setTimeout(() => {
-            this.authenticationService.userLogin(this.loginInfo).subscribe(
-              async (data) => {
-                this.loadInitParam(data);
-                    if (!data) {
-                        this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
-                        this.loggedIn = false;
-                        this.loading = false;
-                    } else {
-                      if (!data.needsRegistration) {
-                        const registrationLink = this.navigationLink.getLink('userRegistrationLink');
-                        this.router.navigate([registrationLink]);
-                      } else {
-                        const dashboardLink = this.navigationLink.getLink('dashboardLink');
-                        this.router.navigate([dashboardLink]);
-                      }
-                      this.loggedIn = true;
-                      this.loading = false;
-                    }
-                },
-                (error) => {
-                  if (error.toString() == "500") {
-                      this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
-                      this.loggedIn = false;
-                      this.loading = false;
-                    } 
-                    if (error.toString() == "404") {
-                      this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.' });
-                      this.loggedIn = false;
-                      this.loading = false;
-                    }
-                    else if (error.toString() == "0") {
-                        this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
-                        this.loggedIn = false;
-                        this.loading = false;
-                    }
-                    this.loading = false;
-                }
-            );
-        }, 2000);
+  //   if (!this.loginInfo.username || !this.loginInfo.password) {
+  //       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
+  //       this.loading = false;
+  //   } else {
+  //       setTimeout(() => {
+  //           this.authenticationService.userLogin(this.loginInfo).subscribe(
+  //             async (data) => {
+  //               this.loadInitParam(data);
+  //                   if (!data) {
+  //                       this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
+  //                       this.loggedIn = false;
+  //                       this.loading = false;
+  //                   } else {
+  //                     if (!data.needsRegistration) {
+  //                       const registrationLink = this.navigationLink.getLink('userRegistrationLink');
+  //                       this.router.navigate([registrationLink]);
+  //                     } else {
+  //                       const dashboardLink = this.navigationLink.getLink('dashboardLink');
+  //                       this.router.navigate([dashboardLink]);
+  //                     }
+  //                     this.loggedIn = true;
+  //                     this.loading = false;
+  //                   }
+  //               },
+  //               (error) => {
+  //                 if (error.toString() == "500") {
+  //                     this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
+  //                     this.loggedIn = false;
+  //                     this.loading = false;
+  //                   } 
+  //                   if (error.toString() == "404") {
+  //                     this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.' });
+  //                     this.loggedIn = false;
+  //                     this.loading = false;
+  //                   }
+  //                   else if (error.toString() == "0") {
+  //                       this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
+  //                       this.loggedIn = false;
+  //                       this.loading = false;
+  //                   }
+  //                   this.loading = false;
+  //               }
+  //           );
+  //       }, 2000);
 
-    }
-  }
+  //   }
+  // }
 
   navigateToSignup(){
     const signupLink = this.navigationLink.getLink('signupLink');
