@@ -67,12 +67,6 @@ export class LoginComponent implements OnInit {
   // viewDonorProfile: any = []
 
   ngOnInit(): void {
-    // const uuid = this.route.snapshot.paramMap.get('uuid');
-    // if (!uuid) {
-    //   console.error('UUID parameter not found.');
-    //   return;
-    // }
-    // console.log("this is the uuid" + uuid)
     const loginLink = this.navigationLink.getLink('signinLink')
     this.router.navigate([loginLink]);
 
@@ -80,17 +74,10 @@ export class LoginComponent implements OnInit {
       this.authenticationService.logout();
       this.loggedOutMessage1 = 'You have been logged out. Please log in again';
       this.messages = [{ severity: 'info', detail: 'You have been logged out. Please log in again' }];
-
-      // this.messageService.add({ severity: 'info', summary: 'Info Message', detail: 'Via MessageService' });
-      
-      // this.messageService.add({ severity: 'info', summary: 'Info', detail: this.loggedOutMessage });
     }
   }
 
   
-
-
-
 
 
 // Guarded

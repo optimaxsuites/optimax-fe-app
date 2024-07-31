@@ -17,6 +17,8 @@
     --font-size: 10px;
     --font-family: 'Roboto Slab', serif;
 }
+
+/* costom table */
 .table-container{
     padding: 2rem 0;
 }
@@ -43,17 +45,19 @@ td {
     /* color: #25925B ; */
     
 }
-tr:nth-child(odd) {
+/* tr:nth-child(odd) {
   background-color: var(--gray-light);
 }
 
 tr:nth-child(even) {
   background-color: var(--gray-dark);
-}
+} */
 
 .table-item {
   font-size: 1.3em; /* Adjust the font size as needed */
 }
+
+/* costom table */
 
 
 
@@ -240,3 +244,18 @@ tr:nth-child(even) {
   width: 100%;
 }
 /* drop down style */
+
+/* custom checkbox */
+.p-checkbox {
+  background-color: var(--blue-green);
+}
+
+.p-checkbox-box {
+  background-color: #fff;
+  border: 1px solid var(--blue-green);
+}
+
+.p-checkbox-box .p-checkbox-icon {
+  color: var(--celadon-green);
+}
+/* custom checkbox */

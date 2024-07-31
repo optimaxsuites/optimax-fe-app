@@ -27,11 +27,11 @@ export class AuthenticationService {
     // this.router.navigate([''])
     const loginLink = this.navigationLink.getLink('signinLink')
     this.router.navigate([loginLink]);
-}
+  }
 
-isLoggedIn(): boolean {
-  return !!sessionStorage.getItem('userid');
-}
+  isLoggedIn(): boolean {
+    return !!sessionStorage.getItem('userid');
+  }
 
 
   userLogin(data: any): Observable<any> {
@@ -59,16 +59,16 @@ isLoggedIn(): boolean {
     // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/signup"+"---"+JSON.stringify(data)))
 
     return this.http
-        .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signup", data)
-        .pipe(catchError(this.handleError));
+      .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signup", data)
+      .pipe(catchError(this.handleError));
   }
 
   userVerification(token: string): Observable<any> {
     console.log((this.getBaseApiUrl() + "/x/api/v2/us/register/verify?token="+"---"+JSON.stringify(token)))
 
     return this.http
-    .get<any>(this.getBaseApiUrl() + '/x/api/v2/us/register/verify?token=' + token)
-    .pipe(catchError(this.handleError))
+      .get<any>(this.getBaseApiUrl() + '/x/api/v2/us/register/verify?token=' + token)
+      .pipe(catchError(this.handleError))
   }
 
   private getBaseApiUrl(): string {
