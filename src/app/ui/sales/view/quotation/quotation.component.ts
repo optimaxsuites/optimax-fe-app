@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { TopProductService } from 'src/app/ui/dashboard/service/top-product/top-product.service';
-import { QuotationData } from '../../domain/quotation.data';
+import { QuotationDTO } from '../../domain/quotation.dto';
 import { InventoryService } from 'src/app/ui/inventory/service/inventory/inventory.service';
 import { QuotationService } from '../../service/quotation/quotation.service';
 
@@ -17,10 +17,10 @@ import { QuotationService } from '../../service/quotation/quotation.service';
   ]
 })
 export class QuotationComponent implements OnInit {
-  selectedItems: QuotationData[] = [];
-  quotationData: QuotationData[] = [];
+  selectedItems: QuotationDTO[] = [];
+  quotationData: QuotationDTO[] = [];
   visible: boolean = false;
-  selectedItem: QuotationData | null = null;
+  selectedItem: QuotationDTO | null = null;
   position: any = '';
 
 
@@ -80,7 +80,7 @@ export class QuotationComponent implements OnInit {
     this.showDialog(item, 'right');
   }
 
-  showDialog(item: QuotationData, position: string = 'right'): void {
+  showDialog(item: QuotationDTO, position: string = 'right'): void {
     this.selectedItem = item;
     this.position = position;
     this.visible = true;

@@ -13,39 +13,42 @@
           <div class="first-container">
             <div class="input-container-100">
               <label for="qNo">Quotation No</label>
-              <input type="text" id="qNo" [(ngModel)]="quotationData.qNo" class="form-control-opti" />
+              <input type="text" id="qNo" [(ngModel)]="quotationData.quotationNo" class="form-control-opti" />
             </div>
             <div class="d-flex gap-4 my-4">
               <div class="input-container-50">
                 <label for="qDate">Date</label>
-                <input type="date" id="qDate" [(ngModel)]="quotationData.qDate" class="form-control-opti" />
+                <input type="date" id="qDate" [(ngModel)]="quotationData.quotationDate" class="form-control-opti" />
               </div>
 
               <div class="input-container-50">
                 <label for="qDueDate">Due Date</label>
-                <input type="date" id="qDueDate" [(ngModel)]="quotationData.qDueDate" class="form-control-opti" />
+                <input type="date" id="qDueDate" [(ngModel)]="quotationData.quotationDueDate" class="form-control-opti" />
               </div>
             </div>
             <div class="input-container-100">
               <label for="projectTitle">Project Title</label>
-              <input type="text" id="projectTitle" [(ngModel)]="quotationData.projectTitle" class="form-control-opti" />
+              <input type="text" id="projectTitle" [(ngModel)]="projectDate.name" class="form-control-opti" />
             </div>
   
-            <div *ngFor="let field of quotationData.fields; let i = index" class="editable-label-container gap-4 my-4">
+            <div *ngFor="let field of fieldData; let i = index" class="editable-label-container gap-4 my-4">
               <div class="editable-label">
-                <!-- <p *ngIf="!field.isEditing" (click)="editField(i)" class="label" >
-                  {{ field.header || field.text }}
-                </p> -->
                 <input
                   type="text"
-                  [(ngModel)]="field.header"
+                  [(ngModel)]="field.title"
                   class="form-control-opti p-2"
                   placeholder="Title"
                 />
               </div>
               
               <div class="editable-label-input">
-                <input type="text" [(ngModel)]="field.content" class="form-control-opti p-2" style="font-size: 1.1em; font-weight: 400" />
+                <input
+                  type="text"
+                  [(ngModel)]="field.description"
+                  class="form-control-opti p-2"
+                  style="font-size: 1.1em; font-weight: 400"
+                  placeholder="Description"
+                />
                 <i (click)="removeField(i)" class="fa-solid fa-x p-2"></i>
               </div>
             </div>
@@ -53,6 +56,7 @@
             <button class="add-btn my-2" (click)="addField()">
               <i class="fas fa-plus me-2"></i>Add More Field
             </button>
+            
             
           </div>
 
@@ -64,7 +68,7 @@
                     <img
                       *ngIf="logoUrl"
                       [src]="logoUrl"
-                      [(ngModel)]="quotationData.companyLogo"
+                      [(ngModel)]="quotationData.logo"
                       alt="logo"
                       class="logo"
                     />
@@ -94,22 +98,14 @@
         </section>
   
         <section class="second-info-section">
+          <!-- company details start -->
           <div class="right">
             <div class="top-container">
               <div class="billing-selection">
                 <form>
                   <p class="billing-title"> Quotation From <span class="billing-span">[ Company's details ]</span></p>
-                  <!-- <div class="width-100">
-                    <label>Select Company</label>
-                    <select class="width-100 form-control-opti" [(ngModel)]="quotationData.selectedCompany" (ngModelChange)="updateBusinessInfo()" name="Company" placeholder="Select Company">
-                      <option class="width-100" *ngFor="let company of companies" [value]="company.value">{{ company.viewValue }}</option>
-                      <option class="add-new-details-btn-wrapper">
-                        <button class="btn new-detail-btn mt-2"> Add New Company Details </button>
-                      </option>
-                    </select>
-                  </div> -->
-
-                  <div class="dropdown">
+                  <!-- dropdown start -->
+                  <!-- <div class="dropdown">
                     <label>Select Company</label>
                     <div class="dropdown-selected" (click)="toggleDropdownCompany()">
                       {{ selectedCompany ? selectedCompany.viewValue : 'Select Company' }}
@@ -128,56 +124,70 @@
                         </button>
                       </div>
                     </div>
-                  </div>
-                  
+                  </div> -->
+                  <!-- dropdown ends -->
                 </form>
               </div>
             </div>
+
+            <!-- display company info -->
             <div class="info-bottom-section">
               <div class="bottom-container">
                 <p><b>Business Details</b></p>
                 <div class="business-info">
                   <div class="d-flex">
                     <p>Business Name:</p>
-                    <p class="ms-2">{{ quotationData.businessDetails.name }}</p>
+                    <p class="ms-2">{{ companyData.name }}</p>
                   </div>
                   <div class="d-flex">
                     <p>Address:</p>
-                    <p class="ms-2">{{ quotationData.businessDetails.address }}</p>
+                    <p class="ms-2">{{ companyData.address }}</p>
                   </div>
                   <div class="d-flex">
                     <P>Phone Number:</P>
-                    <p class="ms-2">{{ quotationData.businessDetails.phoneNumber }}</p>
+                    <p class="ms-2">{{ companyData.phoneNumber }}</p>
                   </div>
                   <div class="d-flex">
                     <p>Email Address:</p>
-                    <p class="ms-2">{{ quotationData.businessDetails.email }}</p>
+                    <p class="ms-2">{{ companyData.email }}</p>
                   </div>
                 </div>
               </div>
             </div>
+            <!-- display company info -->
           </div>
-          
-  
+          <!-- company details ends -->
+
+          <!-- client details starts -->
           <div class="left">
             <div class="top-container"></div>
             <div class="bottom-container">
               <div class="top-container">
                 <div class="billing-selection">
                   <form>
-                    <p class="billing-title">
-                      Quotation For
-                      <span class="billing-span">[ Client's details ]</span>
-                    </p>
-                    <mat-form-field>
-                      <mat-label>Select Client</mat-label>
-                      <mat-select [(ngModel)]="quotationData.selectedClient" (ngModelChange)="updateClientInfo()" name="Client" placeholder="Select Company">
-                        <mat-option *ngFor="let client of clients" [value]="client.value">{{ client.viewValue }}</mat-option>
-                        <div class="add-new-details-btn-wrapper">
-                          <button (click)="openAddNewClientDialog()" class="btn new-detail-btn mt-2"> Add New Client Details </button>
+                    <p class="billing-title">Quotation For <span class="billing-span">[ Client's details ]</span></p>
+                    <!-- dropdown start -->
+                    <!-- <div class="dropdown">
+                      <label>Select Client</label>
+                      <div class="dropdown-selected" (click)="toggleDropdownClient()">
+                        {{ selectedClient ? selectedClient.viewValue : 'Select Client' }}
+                      </div>
+                      <div class="dropdown-list" *ngIf="dropdownOpen1">
+                        <div
+                          class="dropdown-item"
+                          *ngFor="let client of clients"
+                          (click)="selectClient(client)"
+                        >
+                          {{ client.viewValue }}
                         </div>
-                      </mat-select>
-                    </mat-form-field>
+                        <div class="add-new-details-btn-wrapper">
+                          <button class="btn new-detail-btn mt-2" (click)="openAddNewClientDialog()">
+                            Add New Client Details
+                          </button>
+                        </div>
+                      </div>
+                    </div> -->
+                  <!-- dropdown ends -->
                   </form>
                 </div>
               </div>
@@ -192,243 +202,143 @@
                   <div class="business-info">
                     <div class="d-flex">
                       <p>Business Name:</p>
-                      <p class="ms-2">{{ quotationData.clientDetails.name }}</p>
+                      <p class="ms-2">{{ customerData.name }}</p>
                     </div>
                     <div class="d-flex">
                       <p>Address:</p>
-                      <p class="ms-2">{{ quotationData.clientDetails.address }}</p>
+                      <p class="ms-2">{{ customerData.address }}</p>
                     </div>
                     <div class="d-flex">
                       <P>Phone Number:</P>
-                      <p class="ms-2">{{ quotationData.clientDetails.phoneNumber }}</p>
+                      <p class="ms-2">{{ customerData.phoneNumber }}</p>
                     </div>
                     <div class="d-flex">
                       <p>Email Address:</p>
-                      <p class="ms-2">{{ quotationData.clientDetails.email }}</p>
+                      <p class="ms-2">{{ customerData.email }}</p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>          
+          </div>
+          <!-- client details ends -->
         </section>
-  
+
+
+        <!-- shipping-details-container -->
         <section class="shipping-details-container">
           <div class="shipping-wrapper">
-            <div class="add-terms-condition-btn btn" (click)="toggleForm()" >
-              <!-- <span><input type="checkbox" id="toggleForm"  /></span> -->
+            <div class="add-terms-condition-btn btn " (click)="toggleForm()" >
               <label> Add Shipping Details</label>
             </div>
   
-            <div *ngIf="isFormVisible" class="form-container">
+            <div *ngIf="isFormVisible" class="form-container mt-4">
+              <!-- shipping from starts -->
               <div class="form-section">
                 <div class="shipping-header-wrapper">
                   <p class="shipping-header">Shipped From</p>
                 </div>
                 <div class="form-group">
-                  <!-- <label>Business / Freelancer Name</label> -->
                   <input
                     type="text"
-                    [(ngModel)]="quotationData.shippedFrom.businessName"
+                    [(ngModel)]="shippingData"
                     placeholder="Business / Freelancer Name"
                     class="form-control-opti"
                   />
                 </div>
                 <div class="form-group">
-                  <!-- <label>Country</label> -->
-  
-                  <div class="custom-dropdown">
-                    <div
-                      class="custom-select"
-                      (click)="toggleDropdown('companyCountry')"
-                    >
-                      {{
-                        (getSelectedItem$("companyCountry") | async) ||
-                          "Select Company Country"
-                      }}
-                      <span class="arrow"></span>
-                    </div>
-                    <ul
-                      class="custom-options"
-                      *ngIf="isDropdownOpen$('companyCountry') | async"
-                    >
-                      <li
-                        class="custom-option"
-                        *ngFor="let item of companyCountry"
-                        (click)="selectItem('companyCountry', item)"
-                      >
-                        {{ item }}
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <!-- <label>Address (optional)</label> -->
                   <input
                     type="text"
-                    [(ngModel)]="quotationData.shippedFrom.address"
+                    [(ngModel)]="shippingData"
                     placeholder="Address (optional)"
                     class="form-control-opti"
                   />
                 </div>
                 <div class="form-group row">
                   <div class="column">
-                    <!-- <label>City (optional)</label> -->
                     <input
                       type="text"
-                      [(ngModel)]="quotationData.shippedFrom.city"
+                      [(ngModel)]="shippingData"
                       placeholder="City (optional)"
                       class="form-control-opti"
                     />
                   </div>
                   <div class="column">
-                    <!-- <label>Postal Code / Zip Code</label> -->
                     <input
                       type="text"
-                      [(ngModel)]="quotationData.shippedFrom.postalCode"
+                      [(ngModel)]="shippingData"
                       placeholder="Postal Code / Zip Code"
                       class="form-control-opti"
                     />
                   </div>
                 </div>
                 <div class="form-group">
-                  <!-- <label>State (optional)</label> -->
                   <input
                     type="text"
-                    [(ngModel)]="quotationData.shippedFrom.state"
+                    [(ngModel)]="shippingData"
                     placeholder="State (optional)"
                     class="form-control-opti"
                   />
                 </div>
               </div>
-  
+              <!-- shipping from ends -->
+
+              <!-- shipping to starts -->
               <div class="form-section">
                 <div class="shipping-header-wrapper">
                   <p class="shipping-header">Shipped To</p>
                 </div>
-                <div class="dropdown-container mb-2">
-                  <div class="custom-dropdown">
-                    <div
-                      class="custom-select"
-                      (click)="toggleDropdown('clientShippingDetails')"
-                    >
-                      {{
-                        (getSelectedItem$("clientShippingDetails") | async) ||
-                          "Select Client Shipping Details"
-                      }}
-                      <span class="arrow"></span>
-                    </div>
-                    <ul
-                      class="custom-options"
-                      *ngIf="isDropdownOpen$('clientShippingDetails') | async"
-                    >
-                      <li
-                        class="custom-option"
-                        *ngFor="let item of clientShippingDetails"
-                        (click)="selectItem('clientShippingDetails', item)"
-                      >
-                        {{ item }}
-                      </li>
-                      <div class="btn-dropdown">
-                        <button class="add-button">
-                          Add New Shipping Detail
-                        </button>
-                      </div>
-                    </ul>
-                  </div>
-                </div>
-  
-                <!-- <div class="form-group d-flex align-center">
-                            <input type="checkbox" id="sameAsClient" [(ngModel)]="sameAsClientAddress">
-                            <label for="sameAsClient" class="mt-2 ms-2">Same as client's address</label>
-                          </div> -->
                 <div class="form-group">
-                  <!-- <label>Client's Business Name</label> -->
                   <input
                     type="text"
-                    [(ngModel)]="quotationData.shippedTo.businessName"
+                    [(ngModel)]="shippingData"
                     placeholder="Client's Business Name"
                     class="form-control-opti"
                   />
                 </div>
                 <div class="form-group">
-                  <div class="custom-dropdown">
-                    <div
-                      class="custom-select"
-                      (click)="toggleDropdown('clientCountry')"
-                    >
-                      {{
-                        (getSelectedItem$("clientCountry") | async) ||
-                          "Select Client Country"
-                      }}
-                      <span class="arrow"></span>
-                    </div>
-                    <ul
-                      class="custom-options"
-                      *ngIf="isDropdownOpen$('clientCountry') | async"
-                    >
-                      <li
-                        class="custom-option"
-                        *ngFor="let item of clientCountry"
-                        (click)="selectItem('clientCountry', item)"
-                      >
-                        {{ item }}
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <!-- <label>Address (optional)</label> -->
                   <input
                     type="text"
-                    [(ngModel)]="quotationData.shippedTo.address"
+                    [(ngModel)]="shippingData"
                     placeholder="Address (optional)"
                     class="form-control-opti"
                   />
                 </div>
                 <div class="form-group row">
                   <div class="column">
-                    <!-- <label>City (optional)</label> -->
                     <input
                       type="text"
-                      [(ngModel)]="quotationData.shippedTo.city"
+                      [(ngModel)]="shippingData"
                       placeholder="City (optional)"
                       class="form-control-opti"
                     />
                   </div>
                   <div class="column">
-                    <!-- <label>Postal Code / Zip Code</label> -->
                     <input
                       type="text"
-                      [(ngModel)]="quotationData.shippedTo.postalCode"
+                      [(ngModel)]="shippingData"
                       placeholder="Postal Code / Zip Code"
                       class="form-control-opti"
                     />
                   </div>
                 </div>
                 <div class="form-group">
-                  <!-- <label>State (optional)</label> -->
                   <input
                     type="text"
-                    [(ngModel)]="quotationData.shippedTo.state"
+                    [(ngModel)]="shippingData"
                     placeholder="State (optional)"
                     class="form-control-opti"
                   />
                 </div>
-                <!-- <div class="form-group">
-                            <input type="checkbox" id="saveClientDetails" [(ngModel)]="saveToClientDetails">
-                            <label for="saveClientDetails">Save to Client Details</label>
-                          </div> -->
                 <div class="form-group">
-                  <button (click)="addMoreFields()" class="btn add-more-button">
-                    Save Details
-                  </button>
                 </div>
               </div>
+              <!-- shipping to ends -->
             </div>
           </div>
         </section>
       </div>
+      <!-- shipping-details-container ends -->
   
       <div class="info-section">
         <div class="tax-currency">
@@ -439,9 +349,8 @@
           </div>
           <div class="currency-selector">
             <div class="custom-dropdown">
-              <button class="btn flat-btn" [(ngModel)]="quotationData.selectedCurrency" (click)="toggleDropdown('currency')">
+              <button class="btn flat-btn" [(ngModel)]="quotationData" (click)="toggleDropdown('currency')">
                 {{ (getSelectedItem$("currency") | async) || "Select Currency" }}
-                <!-- <span class="arrow"></span> -->
               </button>
               <ul
                 class="custom-options"
@@ -516,11 +425,12 @@
               </ul>
             </div>
           </div>
+          
           <div class="tbody">
             <!-- <ng-container > -->
             <div
               class="item-table-row"
-              *ngFor="let item of tableData; let i = index"
+              *ngFor="let item of itemsData; let i = index"
             >
               <ul class="table-item-list gap-3">
                 <li class="col-4">
@@ -543,7 +453,7 @@
                   <input
                     type="text"
                     class="form-control-opti"
-                    [(ngModel)]="item.quantity"
+                    [(ngModel)]="item.qty"
                     (ngModelChange)="onInputChange(item)"
                     (input)="calculateAmount(item)"
                     appNumberOnly
@@ -593,25 +503,22 @@
   
               <div class="description-container">
                 <!-- <ng-container> -->
-                <div class="add-description-btn" *ngIf="!item.showDescriptionBox">
+                <div class="add-description-btn" *ngIf="!showDescriptionBox">
                   <button
                     class="btn btn-light"
-                    (click)="item.showDescriptionBox = true"
+                    (click)="showDescriptionBox = true"
                   >
                     <i class="fas fa-plus me-2"></i>Add Description
                   </button>
                 </div>
                 <!-- </ng-container> -->
   
-                <div class="description-box" *ngIf="item.showDescriptionBox">
+                <div class="description-box" *ngIf="showDescriptionBox">
                   <angular-editor
                     placeholder="'Enter text here...'"
                     [config]="editorConfig"
-                    [(ngModel)]="quotationData.des"
+                    [(ngModel)]="item.description"
                   ></angular-editor>
-                  <!-- <div class="card">
-                    <p-editor [style]="{ height: '100%' }" />
-                  </div> -->
                 </div>
               </div>
   
@@ -767,7 +674,7 @@
                   <img
                     *ngIf="signatureUrl"
                     [src]="signatureUrl"
-                    [(ngModel)]="quotationData.sign"
+                    [(ngModel)]="quotationData.signature"
                     alt="Signature"
                     class="Signature"
                   />
@@ -834,7 +741,7 @@
                   <div class="label mb-4"><p>Add Notes</p></div>
                   <i (click)="showNotes = false" class="fa-solid fa-x p-2"></i>
                 </div>
-                <angular-editor placeholder="'Enter text here...'" [config]="editorConfig" [(ngModel)]="quotationData.note"></angular-editor>
+                <angular-editor placeholder="'Enter text here...'" [config]="editorConfig" [(ngModel)]="quotationData.quotationNote"></angular-editor>
               </div>
             </div>
           </div>

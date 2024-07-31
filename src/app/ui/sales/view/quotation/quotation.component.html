@@ -45,7 +45,7 @@
           <ng-template pTemplate="body" let-item let-i="rowIndex" let-columns="columns">
               <tr>
                 <td>
-                  <p-tableCheckbox [value]="item" />
+                  <p-tableCheckbox [value]="item" class="custom-checkbox"/>
                 </td>
                 <td class="table-item"><span class="p-column-title">Quotation No</span>{{ item.qNo}}</td>
                 <td class="table-item"><span class="p-column-title">Project Title</span>{{ item.projectTitle }}</td>
