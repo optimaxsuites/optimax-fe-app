@@ -42,6 +42,7 @@ import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.co
 import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.component';
 import { ExpensesComponent } from './ui/expenses/view/expenses.component';
 import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-modal/expense-forms-modal.component';
+import { OrderRefundComponent } from './ui/pos/view/order-refund/order-refund.component';
 
 const routes: Routes = [
   {
@@ -109,6 +110,10 @@ const routes: Routes = [
       {
         path: 'user/checkout/order/:uuid',
         component: OrderDetailComponent,
+      },
+      {
+        path: 'user/checkout/refund/:uuid',
+        component: OrderRefundComponent,
       },
     ],
   },

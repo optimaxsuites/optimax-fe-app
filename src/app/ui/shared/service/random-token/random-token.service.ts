@@ -7,7 +7,7 @@ export class RandomTokenService {
 
   constructor() { }
 
-  getRandomToken(): string {
+ public getRandomToken(): string {
     return Math.random().toString(36).substr(2, 50);
   }
 

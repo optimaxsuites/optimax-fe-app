@@ -155,6 +155,7 @@ import { ExpenseTableComponent } from './ui/expenses/view/expense-table/expense-
 import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-modal/expense-forms-modal.component';
 import { CalendarModule } from 'primeng/calendar';
 import { CheckboxModule } from 'primeng/checkbox';
+import { OrderRefundComponent } from './ui/pos/view/order-refund/order-refund.component';
 
 @NgModule({
   declarations: [
@@ -254,6 +255,7 @@ import { CheckboxModule } from 'primeng/checkbox';
     ExpensesComponent,
     ExpenseTableComponent,
     ExpenseFormsModalComponent,
+    OrderRefundComponent,
   ],
   imports: [
     BrowserModule,

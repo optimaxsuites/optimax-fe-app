@@ -21,6 +21,8 @@ timestamp: any;
     state: string;
     total: number
     cart: Product[];
+    id: string
+
   }
 
   export interface Cart {
@@ -33,10 +35,23 @@ timestamp: any;
     tax: number;
     subtotal: number;
     cartItems: Product[];
-    cart: Product[]
+    cart: Product[];
+    id: string
   }
   
   export interface NavigationState {
     cart: Cart;
     order: Cart
+  }
+
+   
+  export interface Refund {
+timestamp: any;
+    orderId: string,
+    customerName: string,
+    refundMeans: string,
+    refundReason: string,
+    cashierComment: string,
+    status: string,
+    selectedItems: any
   }

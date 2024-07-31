@@ -26,13 +26,13 @@ export class CheckoutHeaderComponent {
 
 
   ngOnInit() {
-    if (sessionStorage.getItem("username") == null) {
-        console.log(
-            "Session Expired.",
-            "Your current session has expired. Re-login."
-        );
-        this.router.navigate([""]);
-    }
+    // if (sessionStorage.getItem("username") == null) {
+    //     console.log(
+    //         "Session Expired.",
+    //         "Your current session has expired. Re-login."
+    //     );
+    //     this.router.navigate([""]);
+    // }
 
     this.userInfoRegData = JSON.parse(sessionStorage["userRegData"]);
     this.userRegData = this.userInfoRegData;

@@ -46,7 +46,7 @@
 
                 <p>Note</p>
                 <p (click)="toggleDiscountModal()" >Discount</p>
-                <p>Refund</p>
+                <p [routerLink]="navigationLink.getLink('orderRefund')">Refund</p>
                 <p>Return or Exchange</p>
                 <p>Delivery</p>
                 <p (click)="saveModal = true">Save</p>
