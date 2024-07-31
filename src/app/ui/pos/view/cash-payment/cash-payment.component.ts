@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 import { NavigationState } from '../../models/interface';
 import { MessageService } from 'primeng/api';
+import { RandomTokenService } from 'src/app/ui/shared/service/random-token/random-token.service';
 
 @Component({
   selector: 'app-cash-payment',
@@ -21,7 +22,7 @@ export class CashPaymentComponent {
   constructor(
     private router: Router, 
      public navigationLink: NavigationLinksService,
-     private messageService: MessageService
+     private messageService: MessageService, private randomTokenService: RandomTokenService
      ) {
   
        const navigation = this.router.getCurrentNavigation();
@@ -69,7 +70,8 @@ export class CashPaymentComponent {
         paymentMethod: "cash",
         priceTender: this.priceValue,
         changeOffered: (this.priceValue - this.navigationState?.cart?.total),
-        timestamp: new Date().toLocaleString()
+    id: this.randomTokenService.getRandomToken(),
+    timestamp: new Date().toLocaleString(),
       };
       const savedItems = localStorage.getItem("savedItems");
       this.orders = savedItems ? JSON.parse(savedItems) : [];

@@ -82,12 +82,6 @@ export class LoginComponent implements OnInit {
 
 // Guarded
   userLoginAction(): void {
-    this.submitted = true;
-    this.loading = true;
-    this.loggedIn = false;
-
- 
-
 
     if (!this.loginInfo.username || !this.loginInfo.password) {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
@@ -135,6 +129,9 @@ export class LoginComponent implements OnInit {
         }, 2000);
 
     }
+    // const dashboardLink = this.navigationLink.getLink('dashboardLink');
+    //                     this.router.navigate([dashboardLink]);
+    
   }
 
   navigateToSignup(){

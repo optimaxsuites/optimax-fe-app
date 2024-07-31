@@ -1,6 +1,7 @@
 import { Component, SimpleChanges } from '@angular/core';
 import { Router } from '@angular/router';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
+import { RandomTokenService } from 'src/app/ui/shared/service/random-token/random-token.service';
 
 @Component({
   selector: 'app-pos-checkout-page',
@@ -45,10 +46,9 @@ export class PosCheckoutPageComponent {
   orders: any[] = []
   navigationState: { order: any; };
 
-  
    constructor(
   private router: Router, 
-   public navigationLink: NavigationLinksService
+   public navigationLink: NavigationLinksService, private randomTokenService: RandomTokenService
    ) {
 
      const navigation = this.router.getCurrentNavigation();
@@ -242,7 +242,8 @@ saveCurrentCartItem() {
     total: this.total,
     discountValue: this.discountValue,
     value: this.value,
-    timestamp: new Date().toLocaleString()
+    timestamp: new Date().toLocaleString(),
+    id: this.randomTokenService.getRandomToken()
   };
   const savedItems = localStorage.getItem("savedItems");
   this.orders = savedItems ? JSON.parse(savedItems) : [];
