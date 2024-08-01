@@ -43,6 +43,9 @@ import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.c
 import { ExpensesComponent } from './ui/expenses/view/expenses.component';
 import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-modal/expense-forms-modal.component';
 import { OrderRefundComponent } from './ui/pos/view/order-refund/order-refund.component';
+import { RequestDetailsComponent } from './ui/pos/view/request-details/request-details.component';
+import { OpenRegisterComponent } from './ui/pos/view/open-register/open-register.component';
+import { CloseRegisterComponent } from './ui/pos/view/close-register/close-register.component';
 
 const routes: Routes = [
   {
@@ -114,6 +117,17 @@ const routes: Routes = [
       {
         path: 'user/checkout/refund/:uuid',
         component: OrderRefundComponent,
+      },
+      {
+        path: 'user/checkout/refund-request/:uuid',
+        component: RequestDetailsComponent,
+      },
+      {
+        path: 'user/checkout/openRegister/:uuid',
+        component: OpenRegisterComponent,
+      },{
+        path: 'user/checkout/closeRegister/:uuid',
+        component: CloseRegisterComponent,
       },
     ],
   },

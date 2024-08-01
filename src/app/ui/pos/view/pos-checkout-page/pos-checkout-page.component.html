@@ -1,6 +1,6 @@
 <div class=" h-screen flex flex-col">
     <div>
-        <app-checkout-header></app-checkout-header>
+        <app-checkout-header (closeRegisterEvent)="closeRegister()"></app-checkout-header>
     </div>
     
     <div class="product-cart-container " >
@@ -46,8 +46,7 @@
 
                 <p>Note</p>
                 <p (click)="toggleDiscountModal()" >Discount</p>
-                <p [routerLink]="navigationLink.getLink('orderRefund')">Refund</p>
-                <p>Return or Exchange</p>
+                <p [routerLink]="navigationLink.getLink('orderRefund')">Refund or Return</p>
                 <p>Delivery</p>
                 <p (click)="saveModal = true">Save</p>
 
@@ -103,7 +102,7 @@
 
 
 <app-modal *ngIf="itemUpdateModal" (close)="itemUpdateModal = false">
-    <div  class="flex flex-col justify-between gap-5 py-10">
+    <div  class="w-[40vw] flex flex-col justify-between gap-5 py-10">
         <p-tabView>
             <p-tabPanel header="Discount" [headerStyleClass]="'custom-header'" >
                 <div class="flex flex-col gap-5 mt-6 px-2">
@@ -149,7 +148,7 @@
 </app-modal>
 
 <app-modal *ngIf="dicountModal && cartItems.length > 0" (close)="dicountModal = false">
-    <div class="flex flex-col justify-between gap-5 py-10">
+    <div class="flex flex-col  justify-between gap-5 py-10 w-[40vw]">
         <div class="flex flex-col gap-5">
         <div class="flex justify-between items-end">
             <div class="border flex rounded-xl text-3xl justify-between items-center font-bold w-48">
@@ -157,7 +156,7 @@
             </div>
 
             <div class="flex items-center">
-                <input type="text" max="100" placeholder="0" class="discount-input" [(ngModel)]="_discountValue" (input)="validateDiscountValue()" />
+                <input type="text" max="100" placeholder="0" class="discount-input " [(ngModel)]="_discountValue" (input)="validateDiscountValue()" />
                 <span *ngIf="value == 'percentage'">%</span>
                 <span *ngIf="value == 'naira'">₦</span>
             </div>
@@ -182,7 +181,7 @@
 
 <app-modal *ngIf="saveModal && cartItems.length > 0" (close)="saveModal = false">
   
-    <div class="flex items-center gap-3 p-3 my-3 mx-2 border bg-white/50 rounded-xl ">
+    <div class="flex items-center gap-3 p-3 my-3 mx-2 border bg-white/50 rounded-xl w-[30vw]" >
         <label for="orderName" class=" font-semibold">Order name:</label>
         <input class="outline-none text-gray-600" type="text" id="orderName" [(ngModel)]="orderName" placeholder="Type here">
     </div>
@@ -197,3 +196,4 @@
           </div>
     
 </app-modal>
+

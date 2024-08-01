@@ -1,4 +1,4 @@
-<app-checkout-header></app-checkout-header>
+<app-checkout-header (closeRegisterEvent)="closeRegister()"></app-checkout-header>
 
 <div class="gap-3 w-full flex justify-between items-center px-10 mt-10">
     <!-- <p class="back" ><i class="fa-solid fa-arrow-left"></i> Back</p> -->
@@ -32,6 +32,16 @@
         </div>
 
         <div class="flex gap-3 flex-col text-[16px]">
+          <label for="customerName" class="block  font-medium leading-6 text-gray-900">Customer's Phone number</label>
+         <input type="text" name="customerName" id="customerName" [(ngModel)]="refundData.phoneNumber" required class="outline-none border-2 rounded-md w-full border-gray-500 p-2">
+        </div>
+
+        <div class="flex gap-3 flex-col text-[16px]">
+          <label for="customerName" class="block  font-medium leading-6 text-gray-900">Customer's Email Address</label>
+         <input type="text" name="customerName" id="customerName" [(ngModel)]="refundData.emailAddress" required class="outline-none border-2 rounded-md w-full border-gray-500 p-2">
+        </div>
+
+        <div class="flex gap-3 flex-col text-[16px]">
           <label for="refundMeans" class="block  font-medium leading-6 text-gray-900">Refund means</label>
          <input type="text" name="refundMeans" id="refundMeans" [(ngModel)]="refundData.refundMeans" required class="outline-none border-2 rounded-md w-full border-gray-500 p-2">
         </div>
@@ -44,7 +54,7 @@
 
         
         <div class="flex gap-3 flex-col text-[16px]">
-          <label for="cashierComment" class="block  font-medium leading-6 text-gray-900">Cashier</label>
+          <label for="cashierComment" class="block  font-medium leading-6 text-gray-900">Cashier's Comment</label>
          <textarea type="text" name="cashierComment" id="cashierComment" class="outline-none border-2 rounded-md w-full border-gray-500 p-2"  [(ngModel)]="refundData.cashierComment" rows="5" required></textarea>
         </div>
 
@@ -82,14 +92,14 @@
                     <!-- {{ order?.timestamp || date: 'shortTime' }} -->
                     <td>{{ request?.timestamp }}</td>
                     <td>
-                            <p [ngClass]="{'text-green-700': request.status === 'Paid'}"  class="mb-0 capitalize font-bold text-yellow-600"    >{{request.orderId}}</p>
+                    <p [ngClass]="{'text-green-700': request.status === 'Paid'}"  class="mb-0 capitalize font-bold text-yellow-600"  >{{request.orderId}}</p>
                     </td>
                     <td class="capitalize">{{request.customerName}}</td>
                     <td>{{request.status}}</td>
                     <td>
                       <div class="flex gap-3 text-[16px]" >
                         <!-- <i class="fa-solid fa-cart-shopping hover:bg-customGreen/30 p-2 rounded-md" ></i> -->
-                        <i class="fa-solid fa-arrow-right hover:bg-customGreen/30 rounded-md p-2" ></i>
+                        <i class="fa-solid fa-arrow-right hover:bg-customGreen/30 rounded-md p-2" (click)="requestDetails(request)" ></i>
                       </div>
                     </td>
                   </tr>

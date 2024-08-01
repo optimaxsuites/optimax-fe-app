@@ -46,7 +46,23 @@ timestamp: any;
 
    
   export interface Refund {
-timestamp: any;
+    phoneNumber: string;
+    emailAddress: string;
+    timestamp: any;
+    orderId: string,
+    customerName: string,
+    refundMeans: string,
+    refundReason: string,
+    cashierComment: string,
+    status: string,
+    selectedItems: any
+  }
+
+  export interface SelectedRequest {
+    selectedRequest: Refund;
+    phoneNumber: string;
+    emailAddress: string;
+    timestamp: any;
     orderId: string,
     customerName: string,
     refundMeans: string,
