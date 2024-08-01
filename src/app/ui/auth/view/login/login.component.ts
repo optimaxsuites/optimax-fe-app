@@ -82,7 +82,7 @@ export class LoginComponent implements OnInit {
 
 // Guarded
   userLoginAction(): void {
-
+    this.loading = true;
     if (!this.loginInfo.username || !this.loginInfo.password) {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
         this.loading = false;
@@ -148,6 +148,8 @@ export class LoginComponent implements OnInit {
     sessionStorage.setItem("userid", data.id);
     const tokenStartIndex = data.accessToken.indexOf('=') + 1;
     const token = data.accessToken.substring(tokenStartIndex, data.accessToken.indexOf(';'));
+    sessionStorage.setItem("Token", token);
+    localStorage.setItem("Token2", token);
     sessionStorage.setItem("accessToken", data.accessToken);
     localStorage.setItem("accessToken2", data.accessToken);
     sessionStorage["userRegData"] = JSON.stringify(data);

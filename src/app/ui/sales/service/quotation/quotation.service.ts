@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { BehaviorSubject, catchError, Observable, throwError } from 'rxjs';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 import { environment } from 'src/environments/environment.prod';
-import { QuotationDTO } from '../../domain/quotation.dto';
+import { AddressDTO, BanksDTO, CompanyDTO, CustomerDTO, DiscountAndChargesDTO, IndustryDTO, ItemsDTO, QuotationDTO } from '../../domain/quotation.dto';
 
 @Injectable({
   providedIn: 'root'
@@ -14,7 +14,7 @@ export class QuotationService {
   constructor(private http: HttpClient, private navigationLink: NavigationLinksService, private router: Router) {  }
 
 
-
+// quotation==============================================================================================================================
   createQuotation(data: any): Observable<any> {
     console.log((this.getBaseApiUrl() + "/x/api/v2/sales/quotation"+"---"+JSON.stringify(data)))
 
@@ -45,11 +45,284 @@ export class QuotationService {
     .pipe(catchError(this.handleError));
   }
 
-  updateQuotationById(id: string, quotation: QuotationDTO): Observable<any> {
+  updateQuotationById(data: QuotationDTO): Observable<any> {
     return this.http
-    .put<any>( this.getBaseApiUrl() + `/x/api/v2/sales/quotation/${id}`, quotation )
+    .put<any>( this.getBaseApiUrl() + `/x/api/v2/sales/quotation/${data.id}`, data )
     .pipe(catchError(this.handleError));
   }
+// quotation==============================================================================================================================
+
+
+// Customer==================================================================================================================================
+createCustomer(data: any): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/customer"+"---"+JSON.stringify(data)))
+
+  return this.http
+      .post<any>(this.getBaseApiUrl() + "/x/api/v2/sales/customer", data)
+      .pipe(catchError(this.handleError));
+}
+
+getCustomer(data: string): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/customer"+"---"+JSON.stringify(data)))
+
+  return this.http
+      .get<any>( this.getBaseApiUrl() + "/x/api/v2/sales/customer" )
+      .pipe(catchError(this.handleError));
+}
+
+getCustomerById (id: string): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/customer"+"---"+JSON.stringify(id)))
+
+  return this.http
+      .get<any>( this.getBaseApiUrl() + `/x/api/v2/sales/customer/${id}`)
+      .pipe(catchError(this.handleError));
+}
+
+deleteCustomerById (id: string): Observable<any> {
+  return this.http
+  .delete<any>( this.getBaseApiUrl() + `/x/api/v2/sales/customer/${id}` )
+  .pipe(catchError(this.handleError));
+}
+
+updateCustomerById(data: CustomerDTO): Observable<any> {
+  return this.http
+  .put<any>( this.getBaseApiUrl() + `/x/api/v2/sales/customer/${data.id}`, data )
+  .pipe(catchError(this.handleError));
+}
+// Customer==================================================================================================================================
+
+
+// Company==================================================================================================================================
+createCompany(data: any): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/company"+"---"+JSON.stringify(data)))
+
+  return this.http
+      .post<any>(this.getBaseApiUrl() + "/x/api/v2/sales/company", data)
+      .pipe(catchError(this.handleError));
+}
+
+getCompany(data: string): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/company"+"---"+JSON.stringify(data)))
+
+  return this.http
+      .get<any>( this.getBaseApiUrl() + "/x/api/v2/sales/company" )
+      .pipe(catchError(this.handleError));
+}
+
+getCompanyById (id: string): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/company"+"---"+JSON.stringify(id)))
+
+  return this.http
+      .get<any>( this.getBaseApiUrl() + `/x/api/v2/sales/company/${id}`)
+      .pipe(catchError(this.handleError));
+}
+
+deleteCompanyById (id: string): Observable<any> {
+  return this.http
+  .delete<any>( this.getBaseApiUrl() + `/x/api/v2/sales/company/${id}` )
+  .pipe(catchError(this.handleError));
+}
+
+updateCompanyById(data: CompanyDTO): Observable<any> {
+  return this.http
+  .put<any>( this.getBaseApiUrl() + `/x/api/v2/sales/company/${data.id}`, data )
+  .pipe(catchError(this.handleError));
+}
+// Company==================================================================================================================================
+
+// Address==================================================================================================================================
+createAddress(data: any): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/address"+"---"+JSON.stringify(data)))
+
+  return this.http
+      .post<any>(this.getBaseApiUrl() + "/x/api/v2/sales/address", data)
+      .pipe(catchError(this.handleError));
+}
+
+getAddress(data: string): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/address"+"---"+JSON.stringify(data)))
+
+  return this.http
+      .get<any>( this.getBaseApiUrl() + "/x/api/v2/sales/address" )
+      .pipe(catchError(this.handleError));
+}
+
+getAddressById (id: string): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/address"+"---"+JSON.stringify(id)))
+
+  return this.http
+      .get<any>( this.getBaseApiUrl() + `/x/api/v2/sales/address/${id}`)
+      .pipe(catchError(this.handleError));
+}
+
+deleteAddressById (id: string): Observable<any> {
+  return this.http
+  .delete<any>( this.getBaseApiUrl() + `/x/api/v2/sales/address/${id}` )
+  .pipe(catchError(this.handleError));
+}
+
+updateAddressById(data: AddressDTO): Observable<any> {
+  return this.http
+  .put<any>( this.getBaseApiUrl() + `/x/api/v2/sales/address/${data.id}`, data )
+  .pipe(catchError(this.handleError));
+}
+// Address==================================================================================================================================
+
+
+
+// Bank==================================================================================================================================
+createBank(data: any): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/bank"+"---"+JSON.stringify(data)))
+
+  return this.http
+      .post<any>(this.getBaseApiUrl() + "/x/api/v2/sales/bank", data)
+      .pipe(catchError(this.handleError));
+}
+
+getBank(data: string): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/bank"+"---"+JSON.stringify(data)))
+
+  return this.http
+      .get<any>( this.getBaseApiUrl() + "/x/api/v2/sales/bank" )
+      .pipe(catchError(this.handleError));
+}
+
+getBankById (id: string): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/bank"+"---"+JSON.stringify(id)))
+
+  return this.http
+      .get<any>( this.getBaseApiUrl() + `/x/api/v2/sales/bank/${id}`)
+      .pipe(catchError(this.handleError));
+}
+
+deleteBankById (id: string): Observable<any> {
+  return this.http
+  .delete<any>( this.getBaseApiUrl() + `/x/api/v2/sales/bank/${id}` )
+  .pipe(catchError(this.handleError));
+}
+
+updateBankById(data: BanksDTO): Observable<any> {
+  return this.http
+  .put<any>( this.getBaseApiUrl() + `/x/api/v2/sales/bank/${data.id}`, data )
+  .pipe(catchError(this.handleError));
+}
+// Bank==================================================================================================================================
+
+// Discount-&-Charges==================================================================================================================================
+createDiscountAndCharges(data: any): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/discountAndCharges"+"---"+JSON.stringify(data)))
+
+  return this.http
+      .post<any>(this.getBaseApiUrl() + "/x/api/v2/sales/discountAndCharges", data)
+      .pipe(catchError(this.handleError));
+}
+
+getDiscountAndCharges(data: string): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/discountAndCharges"+"---"+JSON.stringify(data)))
+
+  return this.http
+      .get<any>( this.getBaseApiUrl() + "/x/api/v2/sales/discountAndCharges" )
+      .pipe(catchError(this.handleError));
+}
+
+getDiscountAndChargesById (id: string): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/discountAndCharges"+"---"+JSON.stringify(id)))
+
+  return this.http
+      .get<any>( this.getBaseApiUrl() + `/x/api/v2/sales/discountAndCharges/${id}`)
+      .pipe(catchError(this.handleError));
+}
+
+deleteDiscountAndChargesById (id: string): Observable<any> {
+  return this.http
+  .delete<any>( this.getBaseApiUrl() + `/x/api/v2/sales/discountAndCharges/${id}` )
+  .pipe(catchError(this.handleError));
+}
+
+updateDiscountAndChargesById(data: DiscountAndChargesDTO): Observable<any> {
+  return this.http
+  .put<any>( this.getBaseApiUrl() + `/x/api/v2/sales/discountAndCharges/${data.id}`, data )
+  .pipe(catchError(this.handleError));
+}
+// Discount-&-Charges==================================================================================================================================
+
+// Industry==================================================================================================================================
+createIndustry(data: IndustryDTO): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/industry"+"---"+JSON.stringify(data)))
+
+  return this.http
+      .post<any>(this.getBaseApiUrl() + "/x/api/v2/sales/industry", data)
+      .pipe(catchError(this.handleError));
+}
+
+getIndustry(data: IndustryDTO): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/industry"+"---"+JSON.stringify(data)))
+
+  return this.http
+      .get<any>( this.getBaseApiUrl() + "/x/api/v2/sales/industry" )
+      .pipe(catchError(this.handleError));
+}
+
+getIndustryById (data: IndustryDTO): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/industry"+"---"+JSON.stringify(data.id)))
+
+  return this.http
+      .get<any>( this.getBaseApiUrl() + `/x/api/v2/sales/industry/${data.id}`)
+      .pipe(catchError(this.handleError));
+}
+
+deleteIndustryById (data: IndustryDTO): Observable<any> {
+  return this.http
+  .delete<any>( this.getBaseApiUrl() + `/x/api/v2/sales/industry/${data.id}` )
+  .pipe(catchError(this.handleError));
+}
+
+updateIndustryById(data: IndustryDTO): Observable<any> {
+  return this.http
+  .put<any>( this.getBaseApiUrl() + `/x/api/v2/sales/industry/${data.id}`, data )
+  .pipe(catchError(this.handleError));
+}
+// Bank==================================================================================================================================
+
+
+// Item==================================================================================================================================
+createItem(data: any): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/item"+"---"+JSON.stringify(data)))
+
+  return this.http
+      .post<any>(this.getBaseApiUrl() + "/x/api/v2/sales/item", data)
+      .pipe(catchError(this.handleError));
+}
+
+getItem(data: string): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/item"+"---"+JSON.stringify(data)))
+
+  return this.http
+      .get<any>( this.getBaseApiUrl() + "/x/api/v2/sales/item" )
+      .pipe(catchError(this.handleError));
+}
+
+getItemById (id: string): Observable<any> {
+  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/item"+"---"+JSON.stringify(id)))
+
+  return this.http
+      .get<any>( this.getBaseApiUrl() + `/x/api/v2/sales/item/${id}`)
+      .pipe(catchError(this.handleError));
+}
+
+deleteItemById (id: string): Observable<any> {
+  return this.http
+  .delete<any>( this.getBaseApiUrl() + `/x/api/v2/sales/item/${id}` )
+  .pipe(catchError(this.handleError));
+}
+
+updateItemById(data: ItemsDTO): Observable<any> {
+  return this.http
+  .put<any>( this.getBaseApiUrl() + `/x/api/v2/sales/item/${data.id}`, data )
+  .pipe(catchError(this.handleError));
+}
+// Item==================================================================================================================================
+
 
 
 
@@ -119,7 +392,7 @@ export class QuotationService {
 
   private itemSubject: BehaviorSubject<any[]> = new BehaviorSubject<any[]>([]);
 
-  getItem(): Observable<any[]> {
+  getItem1(): Observable<any[]> {
     return this.itemSubject.asObservable();
   }
 
@@ -139,7 +412,7 @@ export class QuotationService {
     this.itemSubject.next(currentItem);
   }
 
-  getItemById(id: string): any {
+  getItemById1(id: string): any {
     return this.itemSubject.value.find(i => i.id === id);
   }
 }
