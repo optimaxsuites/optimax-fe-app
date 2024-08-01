@@ -156,7 +156,13 @@ import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-mod
 import { CalendarModule } from 'primeng/calendar';
 import { CheckboxModule } from 'primeng/checkbox';
 import { OrderRefundComponent } from './ui/pos/view/order-refund/order-refund.component';
+<<<<<<< HEAD
 import { DropdownComponent } from './ui/shared/view/dropdown/dropdown.component';
+=======
+import { RequestDetailsComponent } from './ui/pos/view/request-details/request-details.component';
+import { OpenRegisterComponent } from './ui/pos/view/open-register/open-register.component';
+import { CloseRegisterComponent } from './ui/pos/view/close-register/close-register.component';
+>>>>>>> 5822651d0effb898aa339cfa7cb6b5c47c0a7e13
 
 @NgModule({
   declarations: [
@@ -257,7 +263,13 @@ import { DropdownComponent } from './ui/shared/view/dropdown/dropdown.component'
     ExpenseTableComponent,
     ExpenseFormsModalComponent,
     OrderRefundComponent,
+<<<<<<< HEAD
     DropdownComponent,
+=======
+    RequestDetailsComponent,
+    OpenRegisterComponent,
+    CloseRegisterComponent,
+>>>>>>> 5822651d0effb898aa339cfa7cb6b5c47c0a7e13
   ],
   imports: [
     BrowserModule,

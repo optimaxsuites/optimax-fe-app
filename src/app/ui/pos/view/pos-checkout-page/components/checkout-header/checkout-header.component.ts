@@ -1,14 +1,19 @@
 import { Component, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
+import { PosCheckoutPageComponent } from '../../pos-checkout-page.component';
 
 @Component({
   selector: 'app-checkout-header',
   templateUrl: './checkout-header.component.html',
-  styleUrl: './checkout-header.component.scss'
+  styleUrl: './checkout-header.component.scss',
+  providers: [PosCheckoutPageComponent]
+
 })
 export class CheckoutHeaderComponent {
   @Output() toggleSidebar = new EventEmitter<void>();
+  @Output() closeRegisterEvent = new EventEmitter<void>();
+
 
   userInfoRegData: any[] = [];
   userRegData: any = { };
@@ -17,9 +22,15 @@ export class CheckoutHeaderComponent {
 
   constructor(
     private router: Router,
-   public navigationLink: NavigationLinksService
+   public navigationLink: NavigationLinksService, public posCheckoutPageComponent: PosCheckoutPageComponent 
   ){}
 
+
+  closeRegister() {
+    this.closeRegisterEvent.emit();
+  
+  }
+ 
   onToggleSidebar() {
     this.toggleSidebar.emit();
   }

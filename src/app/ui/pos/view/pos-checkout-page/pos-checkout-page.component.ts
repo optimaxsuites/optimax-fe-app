@@ -2,15 +2,19 @@ import { Component, SimpleChanges } from '@angular/core';
 import { Router } from '@angular/router';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 import { RandomTokenService } from 'src/app/ui/shared/service/random-token/random-token.service';
+import { UserComponent } from 'src/app/user.component';
+import { RegisterService } from '../../service/register.service';
 
 @Component({
   selector: 'app-pos-checkout-page',
   templateUrl: './pos-checkout-page.component.html',
-  styleUrl: './pos-checkout-page.component.scss'
+  styleUrl: './pos-checkout-page.component.scss',
+  providers: [UserComponent]
+
 })
 export class PosCheckoutPageComponent {
 
-
+  register: string = "open"
   orderName: string = "";
   itemUpdateModal: boolean = false
   productThatNeedsUpdate: number = 0
@@ -48,7 +52,7 @@ export class PosCheckoutPageComponent {
 
    constructor(
   private router: Router, 
-   public navigationLink: NavigationLinksService, private randomTokenService: RandomTokenService
+   public navigationLink: NavigationLinksService, private randomTokenService: RandomTokenService, public userComponent: UserComponent, private registerService: RegisterService
    ) {
 
      const navigation = this.router.getCurrentNavigation();
@@ -279,4 +283,7 @@ processCashPayment() {
   this.router.navigate([cashPayment], { state: { cart } });
 }
 
+closeRegister() {
+  this.registerService.triggerCloseRegister();
+}
 }  
