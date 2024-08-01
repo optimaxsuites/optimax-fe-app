@@ -160,6 +160,7 @@ import { DropdownComponent } from './ui/shared/view/dropdown/dropdown.component'
 import { RequestDetailsComponent } from './ui/pos/view/request-details/request-details.component';
 import { OpenRegisterComponent } from './ui/pos/view/open-register/open-register.component';
 import { CloseRegisterComponent } from './ui/pos/view/close-register/close-register.component';
+import { TruncatePipe } from './truncate.pipe';
 
 @NgModule({
   declarations: [
@@ -264,6 +265,7 @@ import { CloseRegisterComponent } from './ui/pos/view/close-register/close-regis
     RequestDetailsComponent,
     OpenRegisterComponent,
     CloseRegisterComponent,
+    TruncatePipe,
   ],
   imports: [
     BrowserModule,

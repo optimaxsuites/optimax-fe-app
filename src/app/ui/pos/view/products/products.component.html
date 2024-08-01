@@ -19,16 +19,67 @@
     </div>
     
     </div>
-
+<!-- 
      <div class="gap-3 flex flex-col ">
         <div class="flex justify-between items-center">
         <p>Products</p>
         <button class="btn px-6 text-white font-bold rounded-xl  py-2 bg-customBlue">Add Product</button>
         </div>
-        <!-- <div class="grid grid-cols-8 gap-3">
+        <div class="grid grid-cols-8 gap-3">
             <app-product-card *ngFor="let product of products"></app-product-card>
           
-        </div> -->
-     </div>
-
+        </div>
+     </div> -->
+     <div class="">
+        <p-toolbar styleClass="mb-4 gap-2">
+          <ng-template pTemplate="left">
+            <app-button text="Delete"  class="btn-delete" ></app-button>
+          </ng-template>
+    
+          <ng-template pTemplate="right">
+            <app-button text="Add New"  class="btn-navigate" ></app-button>
+            <app-button text="Import"  class="btn-export" ></app-button>
+          </ng-template>
+        </p-toolbar>
+        <p-table 
+        [value]="products"
+          [paginator]="true" 
+          dataKey="id"
+          responsiveLayout="stack" 
+          [breakpoint]="'960px'"
+          styleClass="p-datatable-striped"
+          [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+          [rows]="15"
+          >
+            <ng-template pTemplate="header" class="header" let-columns>
+              <tr>
+                <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+                <th class="table-item">Product Id</th>
+                <th class="table-item">Name</th>
+                <th class="table-item">Price</th>
+                <th class="table-item">Quantity</th>
+                <th class="table-item">Category</th>
+                <th class="table-item">Action</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-item let-i="rowIndex" let-columns="columns">
+                <tr>
+                  <td>
+                    <p-tableCheckbox [value]="item" class="custom-checkbox"/>
+                  </td>
+                  <td class="table-item"><span class="p-column-title">Product Id</span>{{ item.id}}</td>
+                  <td class="table-item"><span class="p-column-title">Name</span>{{ item.name }}</td>
+                  <td class="table-item"><span class="p-column-title">Price</span>{{item.price}}</td>
+                  <td class="table-item"><span class="p-column-title">Quantity</span>200</td>
+                  <td class="table-item"><span class="p-column-title">Category</span>{{ item.category }}</td>
+                  <td class="actions table-item">
+                    <span class="p-column-title">Action</span>
+                    <i  class="pi pi-eye table-item" ></i>
+                    <i  class="pi pi-pen-to-square table-item" ></i>
+                    <i  class="pi pi-times-circle table-item" ></i>
+                  </td>
+                </tr>                            
+            </ng-template>
+        </p-table>
+      </div>
 </div>
