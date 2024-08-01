@@ -56,7 +56,7 @@ export class AuthenticationService {
 
   
   userRegistration(data: any): Observable<any> {
-    console.log((this.getBaseApiUrl() + "/x/api/v2/auth/signup"+"---"+JSON.stringify(data)))
+    // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/signup"+"---"+JSON.stringify(data)))
 
     return this.http
       .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signup", data)
