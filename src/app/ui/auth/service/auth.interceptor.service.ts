@@ -16,7 +16,7 @@ export class AuthInterceptor implements HttpInterceptor {
         request: HttpRequest<any>,
         next: HttpHandler
     ): Observable<HttpEvent<any>> {
-        const accessToken = sessionStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("Token");
 
         if (!accessToken) {
             const loginLink = this.navigationLink.getLink('signinLink')
@@ -31,7 +31,10 @@ export class AuthInterceptor implements HttpInterceptor {
                 "Authorization",
                 `Bearer ${accessToken}`
             ),
+
         });
+        console.log("na request", _request)
+
 
 
 
