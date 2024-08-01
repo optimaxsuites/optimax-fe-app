@@ -2,6 +2,7 @@ import { Component, Input } from '@angular/core';
 import { Order, Product } from '../../models/interface';
 import { Router } from '@angular/router';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
+import { RegisterService } from '../../service/register.service';
 
 @Component({
   selector: 'app-checkout-orders',
@@ -18,7 +19,7 @@ export class CheckoutOrdersComponent {
   
   constructor(
     private router: Router,
-   public navigationLink: NavigationLinksService
+   public navigationLink: NavigationLinksService,  private registerService: RegisterService
   ){}
 
   ngOnInit() {
@@ -53,5 +54,8 @@ export class CheckoutOrdersComponent {
     this.selectedOrder = order;
     const checkoutLink = this.navigationLink.getLink("orderDetails")
     this.router.navigate([checkoutLink], { state: { order } });
+  }
+  closeRegister() {
+    this.registerService.triggerCloseRegister();
   }
 }
