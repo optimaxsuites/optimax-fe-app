@@ -1,5 +1,5 @@
 export interface QuotationDTO {
-    id: string;
+    id: number;
     quotationNo: string; // maxLength: 100, minLength: 0
     quotationDate: string; // format: date-time
     quotationDueDate: string; // format: date-time
@@ -12,6 +12,7 @@ export interface QuotationDTO {
     saveStatus: 'DRAFT' | 'SAVED';
     project: number;
     customer: number;
+    field: FieldDTO[]; // Optional, if FieldDTO is part of QuotationDTO
   }
 
   export interface FieldDTO{

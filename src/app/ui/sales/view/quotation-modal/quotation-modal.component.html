@@ -28,10 +28,10 @@
             </div>
             <div class="input-container-100">
               <label for="projectTitle">Project Title</label>
-              <input type="text" id="projectTitle" [(ngModel)]="projectDate.name" class="form-control-opti" />
+              <input type="text" id="projectTitle" [(ngModel)]="quotationData.project" class="form-control-opti" />
             </div>
   
-            <div *ngFor="let field of fieldData; let i = index" class="editable-label-container gap-4 my-4">
+            <div *ngFor="let field of quotationData.field; let i = index" class="editable-label-container gap-4 my-4">
               <div class="editable-label">
                 <input
                   type="text"
@@ -105,6 +105,13 @@
                 <form>
                   <p class="billing-title"> Quotation From <span class="billing-span">[ Company's details ]</span></p>
                   <!-- dropdown start -->
+                  <app-reusable-dropdown 
+                  [options]="companyOptions" 
+                  [(selectedValue)]="selectedCompanyId"
+                  (valueChange)="onCompanyDropdownValueChange($event)">
+                </app-reusable-dropdown>
+                
+                <!-- <p>Selected Option: {{ selectedOption }}</p> -->
                   <!-- <div class="dropdown">
                     <label>Select Company</label>
                     <div class="dropdown-selected" (click)="toggleDropdownCompany()">
@@ -131,7 +138,7 @@
             </div>
 
             <!-- display company info -->
-            <div class="info-bottom-section">
+            <div class="info-bottom-section" > <!--*ngIf="selectedCompanyId"-->
               <div class="bottom-container">
                 <p><b>Business Details</b></p>
                 <div class="business-info">

@@ -61,13 +61,13 @@ export class QuotationModalComponent implements OnInit {
   bankData: BanksDTO[] = [];
   addressData: AddressDTO[] = [];
   shippingData: ShippingDTO[] = [];
-  fieldData: FieldDTO[] = [];
+  // fieldData: FieldDTO[] = [];
 
 
 
 
   quotationData: QuotationDTO = {
-    id: '',
+    id: 0,
     quotationNo: '',
     quotationDate: '',
     quotationDueDate: '',
@@ -80,9 +80,10 @@ export class QuotationModalComponent implements OnInit {
     saveStatus: 'DRAFT',
     project: 0,
     customer: 0,
+    field: [] 
   };
 
-  projectDate: ProjectDTO = {
+  projectData: ProjectDTO = {
     id: 0,
     name: '',
     code: '',
@@ -118,6 +119,67 @@ export class QuotationModalComponent implements OnInit {
     email: '',
     phoneNumber: 0,
   };
+
+
+
+
+
+
+
+  companyOptions: { id: number, name: string }[] = [];
+  customerOptions: { id: number, name: string }[] = [];
+  selectedCompanyId: string | null = null;
+  selectedCustomerId: string | null = null;
+  // companyData: CompanyDTO | null = null;
+  // customerData: CustomerDTO | null = null;
+
+
+
+  onCompanyDropdownValueChange(selectedId: any): void {
+    this.selectedCompanyId = selectedId;
+    this.quotationService.getCompanyById(selectedId).subscribe(company => {
+      this.companyData = company;
+    });
+  }
+
+  onCustomerDropdownValueChange(selectedId: any): void {
+    this.selectedCustomerId = selectedId;
+    this.quotationService.getCustomerById(selectedId).subscribe(customer => {
+      this.customerData = customer;
+    });
+  }
+
+
+
+
+
+  ngOnInit(): void {
+    this.addTermGroup();
+  
+    this.quotationService.getCompany('').subscribe((data: CompanyDTO[]) => {
+      this.companyOptions = data.map(company => ({ id: company.id, name: company.name }));
+    });
+  
+    this.quotationService.getCustomer('').subscribe((data: CustomerDTO[]) => {
+      this.customerOptions = data.map(customer => ({ id: customer.id, name: customer.name }));
+    });
+    
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -272,36 +334,44 @@ constructor(
   private route: ActivatedRoute,
 ) { }
 
-ngOnInit(): void {
-  this.addTermGroup();
 
-  // const id = this.route.snapshot.paramMap.get('id');
-  // if (id) {
-  //   const item = this.quotationService.getItemById(id);
-  //   if (item) {
-  //     this.quotationData = { ...item };
-  //     this.isEdit = true;
-  //   }
-  // }
-  
-}
 
-// ngOnInit(): void {
-//   this.myForm = this.fb.group({
-//     myOption: [''], 
-//   });
-// }
 
-onSubmit(){
-  console.log("quotation into", this.quotationData)
-
-  if (this.isEdit) {
-    this.quotationService.updateQuotationById(this.quotationData.id, this.quotationData);
-  } else {
-    this.quotationService.createQuotation(this.quotationData);
+  // more fields
+  addMoreField() {
+    this.moreFields.push({});
   }
-  this.navigateToTable();
-}
+
+  removeMoreField(index: number) {
+    this.moreFields.splice(index, 1);
+  }
+
+
+
+
+
+
+  onSubmit(){
+    console.log("quotation into", this.quotationData)
+    console.log("quotation into", this.companyData)
+    console.log("quotation into", this.customerData)
+
+
+    if (this.isEdit) {
+      this.quotationService.updateQuotationById(this.quotationData);
+      this.quotationService.updateCompanyById(this.companyData);
+      this.quotationService.updateCustomerById(this.customerData);
+    } else {
+      this.quotationService.createQuotation(this.quotationData);
+      this.quotationService.createCompany(this.companyData);
+      this.quotationService.createCompany(this.customerData);
+    }
+    this.navigateToTable();
+  }
+
+
+
+
 navigateToTable() {
   const salesLink = this.navigationLink.getLink('salesLink')
   this.router.navigate([salesLink]);
@@ -321,10 +391,25 @@ openNumberCurrencyDialog(){
 
 
 
+// addField() {
+//   // Add a new field with default values
+//   this.fieldData.push({
+//     id: this.fieldData.length + 1,
+//     title: '',
+//     description: ''
+//   });
+// }
+
+// removeField(index: number) {
+//   // Remove field at the specified index
+//   this.fieldData.splice(index, 1);
+// }
+
+
 addField() {
   // Add a new field with default values
-  this.fieldData.push({
-    id: this.fieldData.length + 1,
+  this.quotationData.field.push({
+    id: this.quotationData.field.length + 1,
     title: '',
     description: ''
   });
@@ -332,64 +417,49 @@ addField() {
 
 removeField(index: number) {
   // Remove field at the specified index
-  this.fieldData.splice(index, 1);
+  this.quotationData.field.splice(index, 1);
 }
 
-// editField(index: number) {
-//   this.quotationData.fields[index].isEditing = true;
-// }
-
-// saveField(index: number, event: any) {
-//   this.quotationData.fields[index].isEditing = false;
-//   this.quotationData.fields[index].text = event.target.value;
-// }
 
 
 
 
 
       // Function to add a new term group
-      addTermGroup() {
-        this.termsGroup.push({
-            terms: [{}] // Initialize terms as an empty array for each term group
-        });
-    }
+  addTermGroup() {
+    this.termsGroup.push({
+        terms: [{}] // Initialize terms as an empty array for each term group
+    });
+  }
 
-    // Function to remove a term group
-    removeTermGroup(index: number) {
-        this.termsGroup.splice(index, 1);
-    }
+  // Function to remove a term group
+  removeTermGroup(index: number) {
+      this.termsGroup.splice(index, 1);
+  }
 
-    // Function to reset the termsGroup array
-    resetTermsGroup() {
-        this.termsGroup = [];
-    }
+  // Function to reset the termsGroup array
+  resetTermsGroup() {
+      this.termsGroup = [];
+  }
 
-    // Function to add a new term condition to a specific term group
-    addTermCondition(termGroupIndex: number) {
-        this.termsGroup[termGroupIndex].terms.push({});
-    }
+  // Function to add a new term condition to a specific term group
+  addTermCondition(termGroupIndex: number) {
+      this.termsGroup[termGroupIndex].terms.push({});
+  }
 
-    // Function to remove a term condition from a specific term group
-    removeTermCondition(termGroupIndex: number, termIndex: number) {
-        this.termsGroup[termGroupIndex].terms.splice(termIndex, 1);
-    }
+  // Function to remove a term condition from a specific term group
+  removeTermCondition(termGroupIndex: number, termIndex: number) {
+      this.termsGroup[termGroupIndex].terms.splice(termIndex, 1);
+  }
 
-    // Function to close terms and reset data
-    closeTermsConditions() {
-        this.showTermsConditionButton = false;
-        this.resetTermsGroup();
-    }
+  // Function to close terms and reset data
+  closeTermsConditions() {
+      this.showTermsConditionButton = false;
+      this.resetTermsGroup();
+  }
 
 
 
-    addMoreField() {
-      this.moreFields.push({});
-    }
-  
-    removeMoreField(index: number) {
-      this.moreFields.splice(index, 1);
-    }
 
 
   addDiscount() {

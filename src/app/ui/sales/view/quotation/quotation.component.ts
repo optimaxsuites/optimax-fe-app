@@ -34,9 +34,9 @@ export class QuotationComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.quotationService.getItem().subscribe(data => {
-      this.quotationData = data;
-    });
+    // this.quotationService.getItem().subscribe(data => {
+    //   this.quotationData = data;
+    // });
   }
 
   getSeverity(status: string) {
