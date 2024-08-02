@@ -24,6 +24,8 @@ export class AuthenticationService {
     sessionStorage.removeItem("userRegData");
     sessionStorage.removeItem("accessToken");
     sessionStorage.removeItem("userid");
+    sessionStorage.removeItem("Token");
+
     // this.router.navigate([''])
     const loginLink = this.navigationLink.getLink('signinLink')
     this.router.navigate([loginLink]);
