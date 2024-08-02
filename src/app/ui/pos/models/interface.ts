@@ -7,6 +7,10 @@ export interface Product {
     discount: number;
     discountType: string;
     discountValue: number;
+    image: string;
+    rating: {};
+    category: string;
+    description: string;
   }
   
   export interface DiscountOption {

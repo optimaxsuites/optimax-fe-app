@@ -1,9 +1,10 @@
-import { Component, SimpleChanges } from '@angular/core';
+import { Component, OnInit, SimpleChanges } from '@angular/core';
 import { Router } from '@angular/router';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 import { RandomTokenService } from 'src/app/ui/shared/service/random-token/random-token.service';
 import { UserComponent } from 'src/app/user.component';
 import { RegisterService } from '../../service/register.service';
+import { PosServiceService } from '../../service/pos-service.service';
 
 @Component({
   selector: 'app-pos-checkout-page',
@@ -12,7 +13,7 @@ import { RegisterService } from '../../service/register.service';
   providers: [UserComponent]
 
 })
-export class PosCheckoutPageComponent {
+export class PosCheckoutPageComponent implements OnInit {
 
   register: string = "open"
   orderName: string = "";
@@ -20,16 +21,7 @@ export class PosCheckoutPageComponent {
   productThatNeedsUpdate: number = 0
   dicountModal:boolean = false
   saveModal:boolean = false
-  products = Array(10).fill(null).map((_, index) => ({ 
-    name: `Nivea lotion - Even glow ${index + 1}`, 
-    id: index + 1,
-    price: (index + 1) * 10, 
-    cartPriceTotal: (index + 1) * 10, 
-    count: 0,
-    discount: 0.00,
-    discountType: 'naira',
-    discountValue: 0
-  })); 
+  products = this.posService.products
   
   subtotal: number = 0.00;
   tax: number = 0.00;
@@ -52,7 +44,11 @@ export class PosCheckoutPageComponent {
 
    constructor(
   private router: Router, 
-   public navigationLink: NavigationLinksService, private randomTokenService: RandomTokenService, public userComponent: UserComponent, private registerService: RegisterService
+   public navigationLink: NavigationLinksService, 
+   private randomTokenService: RandomTokenService, 
+   public userComponent: UserComponent, 
+   private registerService: RegisterService,
+   private posService: PosServiceService,
    ) {
 
      const navigation = this.router.getCurrentNavigation();
