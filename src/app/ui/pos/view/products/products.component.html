@@ -68,7 +68,7 @@
                     <p-tableCheckbox [value]="item" class="custom-checkbox"/>
                   </td>
                   <td class="table-item"><span class="p-column-title">Product Id</span>{{ item.id}}</td>
-                  <td class="table-item"><span class="p-column-title">Name</span>{{ item.name }}</td>
+                  <td class="table-item"><span class="p-column-title">Name</span>{{ item.name | truncate:40:true }}</td>
                   <td class="table-item"><span class="p-column-title">Price</span>{{item.price}}</td>
                   <td class="table-item"><span class="p-column-title">Quantity</span>200</td>
                   <td class="table-item"><span class="p-column-title">Category</span>{{ item.category }}</td>
