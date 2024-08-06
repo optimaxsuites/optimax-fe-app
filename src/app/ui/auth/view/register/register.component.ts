@@ -11,6 +11,7 @@ import { MessageService } from 'primeng/api';
 import { ActivatedRoute, Route, Router } from '@angular/router';
 import { AuthenticationService } from '../../service/authentication.service';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
+import { environment } from 'src/environments/environment.prod';
 
 
 
@@ -57,14 +58,14 @@ export class RegisterComponent {
   ) {}
 
 
-  userForm: FormGroup = new FormGroup({
-    // id: new FormControl('0'),
-    // firstName: new FormControl(''),
-    username: new FormControl(''),
-    email: new FormControl(''),
-    password: new FormControl(''),
-    rewritePassword: new FormControl('')
-  })
+  // userForm: FormGroup = new FormGroup({
+  //   // id: new FormControl('0'),
+  //   // firstName: new FormControl(''),
+  //   username: new FormControl(''),
+  //   email: new FormControl(''),
+  //   password: new FormControl(''),
+  //   rewritePassword: new FormControl('')
+  // })
 
   // createUser(): void{
 
@@ -181,7 +182,9 @@ export class RegisterComponent {
         username: this.registerInfo.username,
         password: this.registerInfo.password,
         email: this.registerInfo.email,
-        role: ['admin']
+        role: ['user'],
+        project : `${environment.project}`,
+        apiKey : `${environment.apiKey}`
     };
 
     this.authenticationService.userRegistration(signupDetails).subscribe(

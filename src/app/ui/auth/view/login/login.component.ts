@@ -13,6 +13,7 @@ import { RandomTokenService } from 'src/app/ui/shared/service/random-token/rando
 import { v4 as uuidV4 } from 'uuid';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 import { Message } from 'primeng/api';
+import { environment } from 'src/environments/environment.prod';
 
 
 /** Error when invalid control is dirty, touched, or submitted. */
@@ -35,11 +36,10 @@ export class MyErrorStateMatcher implements ErrorStateMatcher {
 export class LoginComponent implements OnInit {
 
   loading: boolean = false;
-  // loginDetails: any = {};
-  loginInfo = {
-    username: '',
-    password: ''
-};
+  loginInfo: any = {};
+  loginDetails: any = {};
+
+
   loggedIn: boolean = false;
   submitted: boolean = false;
   loggedOutMessage1?: string;
@@ -78,17 +78,31 @@ export class LoginComponent implements OnInit {
   }
 
   
-
+  // loginInfo = {
+  //   username: '',
+  //   password: '',
+    
+  // };
 
 // Guarded
   userLoginAction(): void {
     this.loading = true;
+
+
+
+    const loginDetails = {
+      username: this.loginInfo.username,
+      password: this.loginInfo.password,
+      project : `${environment.project}`,
+      apiKey : `${environment.apiKey}`
+    };
+
     if (!this.loginInfo.username || !this.loginInfo.password) {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
         this.loading = false;
     } else {
         setTimeout(() => {
-            this.authenticationService.userLogin(this.loginInfo).subscribe(
+            this.authenticationService.userLogin(loginDetails).subscribe(
               async (data) => {
                 this.loadInitParam(data);
                     if (!data) {

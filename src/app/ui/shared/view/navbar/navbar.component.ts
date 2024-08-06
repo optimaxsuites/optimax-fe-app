@@ -1,5 +1,6 @@
 import { Component, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
+import { AuthenticationService } from 'src/app/ui/auth/service/authentication.service';
 
 @Component({
   selector: 'app-navbar',
@@ -14,7 +15,9 @@ export class NavbarComponent {
   
 
   constructor(
-    private router: Router
+    private router: Router,
+    private authenticationService: AuthenticationService,
+
   ){}
 
   onToggleSidebar() {
@@ -42,15 +45,19 @@ export class NavbarComponent {
 
 
   logout(): void {
-    sessionStorage.removeItem("username");
-    sessionStorage.removeItem("token");
+    this.authenticationService.logout();
 
-    //added by yomi
-    sessionStorage.removeItem("userInfoRegData");
-    sessionStorage.removeItem("userRegData");
-    sessionStorage.removeItem("accessToken");
-    sessionStorage.removeItem("userid");
-    this.router.navigate([''])
+    // sessionStorage.removeItem("username");
+    // sessionStorage.removeItem("token");
+
+    // //added by yomi
+    // sessionStorage.removeItem("userInfoRegData");
+    // sessionStorage.removeItem("userRegData");
+    // sessionStorage.removeItem("accessToken");
+    // sessionStorage.removeItem("userid");
+    // sessionStorage.removeItem("Token");
+
+    // this.router.navigate([''])
 }
 
 
