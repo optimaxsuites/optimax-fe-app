@@ -1,4 +1,4 @@
-<div class=" flex flex-col w-full gap-14  p-4">
+<div *ngIf="tableSection" class=" flex flex-col w-full gap-14  p-4">
 
     <div class="gap-3 w-full flex justify-between items-center ">
         <!-- <p>Category</p> -->
@@ -74,12 +74,147 @@
                   <td class="table-item"><span class="p-column-title">Category</span>{{ item.category }}</td>
                   <td class="actions table-item">
                     <span class="p-column-title">Action</span>
-                    <i  class="pi pi-eye table-item" ></i>
+                    <i  class="pi pi-eye table-item" (click)="openViewProduct(item)" ></i>
                     <i  class="pi pi-pen-to-square table-item" ></i>
-                    <i  class="pi pi-times-circle table-item" ></i>
+                    <i  class="pi pi-times-circle table-item" (click)="openDeleteModal(item)"></i>
                   </td>
                 </tr>                            
             </ng-template>
         </p-table>
       </div>
 </div>
+
+
+<div class="createVendor"  *ngIf="viewUser">
+    <p class="back" style="cursor: pointer;" (click)="openViewProduct()"><i class="fa-solid fa-arrow-left"></i> Back</p>
+    <div class="container-header" style="padding: 0.5rem 1rem !important;">
+    <button class="btn create-invoice-btn"  (click)="openViewEditForm()" >
+      Edit
+    </button>
+  </div>
+    <div class="details">
+      <div>
+        <img class="w-[450px] h-[450px]" src={{activeItem?.image}}>
+  <!-- 
+            <div class=" detailDiv" >
+          <p>Full Name</p>
+          <p class="name">Ogechi Mariam Lucas</p>
+          </div>
+          <div class=" detailDiv" >
+            <p>Email Addressc</p>
+            <p class="name">Ogechi Mariam Lucas</p>
+            </div>
+            <div class=" detailDiv" >
+                <p>Role</p>
+                <p class="name">Cashier</p>
+                </div>
+                <div class=" detailDiv" >
+                  <p>Password</p>
+                  <p class="name"> ******</p>
+                  </div> -->
+      </div> 
+      <div class="permissionDiv">
+      <div>
+        <p>id</p>
+        <p class="name">{{activeItem.id}}</p>
+      </div>
+        <div>
+          <p>Name</p>
+          <p class="name">{{activeItem.name}}</p>
+        </div>
+        <div class=" detailDiv" >
+          <p>description</p>
+          <p class="name">{{activeItem.description}} </p>
+        </div>
+        <div class=" detailDiv" >
+          <p>price</p>
+          <p class="name">₦{{activeItem.price | number:'1.2-2'}} </p>
+        </div>
+        <div class=" detailDiv" >
+          <p>Quantity</p>
+          <p class="name">{{activeItem.quantity}} </p>
+        </div>
+        <div class=" detailDiv" >
+          <p>Category</p>
+          <p class="name">{{activeItem.category}} </p>
+        </div> <div class=" detailDiv" >
+          <p>Rating</p>
+          <p class="name"> Rate: {{activeItem.rating.rate}} Count: {{activeItem.rating.count}}  </p>
+        </div> <div class=" detailDiv" >
+          <p>Discount on item</p>
+          <p class="name">{{activeItem.discount | number:'1.2-2'}} </p>
+        </div>
+
+
+      <!-- <p class="back">Permisions</p>
+      <div class="permissionCategory">
+        <input
+        id="takeOrder"
+          class=""
+          type="checkbox"
+        />
+        <label for="takeOrder" style="cursor: pointer; margin-bottom: 5px;">Take orders</label>
+
+      </div>  
+      <div class="permissionCategory">
+        <input
+        id="removeOrderItem"
+          class=""
+          type="checkbox"
+        />
+        <label for="removeOrderItem" style="cursor: pointer; margin-bottom: 5px;">Remove order item</label>
+
+      </div> 
+      <div class="permissionCategory">
+        <input
+        id="takeOrder"
+          class=""
+          type="checkbox"
+        />
+        <label for="takeOrder" style="cursor: pointer; margin-bottom: 5px;">Take orders</label>
+
+      </div> 
+      <div class="permissionCategory">
+        <input
+        id="takeOrder"
+          class=""
+          type="checkbox"
+        />
+        <label for="takeOrder" style="cursor: pointer; margin-bottom: 5px;">Take orders</label>
+
+      </div> 
+      <div class="permissionCategory">
+        <input
+        id="takeOrder"
+          class=""
+          type="checkbox"
+        />
+        <label for="takeOrder" style="cursor: pointer; margin-bottom: 5px;">Take orders</label>
+
+      </div> 
+    </div>
+
+ 
+  </div> -->
+
+  
+
+</div>
+
+<app-modal *ngIf="deleteModal"
+[header]="'Delete Ogechi '"
+[title]="'Cancel'"
+(close)="openDeleteModal()">
+<p class="modalText">Are You sure you want to carry out this action? <br>
+  Clicking on <span style="color: red; font-weight: bold;">DELETE </span>, would lead to permanent removal of <span style="font-weight: bold;">{{activeItem.name}}</span></p>
+
+  <div class="modalBtn">
+    <button class="btn create-invoice-btn" (click)="openDeleteModal()" >
+    Cancel
+    </button>
+
+    <button class="btn create-invoice-btn" style="background-color: red !important;"  (click)="openDeleteModal()"  >
+    Delete
+    </button>
+  </div>
+</app-modal>
