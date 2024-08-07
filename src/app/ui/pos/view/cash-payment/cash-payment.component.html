@@ -11,7 +11,7 @@
     <div class="flex w-full h-full">
         <div class="w-[45%] shadow-lg flex flex-col justify-between">
 
-            <div  *ngIf="navigationState.cart.cartItems.length > 0" class="flex flex-col gap-3 p-3">
+            <div  *ngIf="navigationState.cart.cartItems.length > 0" class="flex flex-col gap-3 p-3 overflow-y-scroll h-[90vh]">
                 <app-cart-item-card  *ngFor="let item of navigationState.cart.cartItems let i = index" [item]="item"  [showDelete]="false"
                  class="cursor-pointer"></app-cart-item-card>
         </div>

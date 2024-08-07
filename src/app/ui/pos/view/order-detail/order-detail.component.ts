@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { Navigation, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 import { NavigationState } from '../../models/interface';
@@ -33,7 +33,9 @@ export class OrderDetailComponent {
 
 
         reOpenCart() {
-          throw new Error('Method not implemented.');
-          }
+          const order = this.navigationState.order;
+          const checkoutLink = this.navigationLink.getLink("checkoutLink")
+          this.router.navigate([checkoutLink], { state: { order } });
+        }
 
 }

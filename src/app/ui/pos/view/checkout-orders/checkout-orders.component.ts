@@ -44,7 +44,7 @@ export class CheckoutOrdersComponent {
     console.log('Action for order:', order);
   }
 
-  reOpenCart(order: Order) {
+ reOpenCart(order: Order) {
     this.selectedOrder = order;
     const checkoutLink = this.navigationLink.getLink("checkoutLink")
     this.router.navigate([checkoutLink], { state: { order } });

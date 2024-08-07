@@ -63,6 +63,7 @@ export class PosCheckoutPageComponent implements OnInit {
     }
   }
   loadOrder(order: any) {
+    console.log(order)
     this.cartItems = order.cart.map((item: any) => ({ ...item }));
     this.discount = order.cartDiscount;
     this.discountValue = order.discountValue
