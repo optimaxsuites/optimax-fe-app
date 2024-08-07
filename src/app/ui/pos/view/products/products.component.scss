@@ -78,3 +78,11 @@
     font-size: 1.3rem;
     border-radius: 10px;
   }
+
+  .editInput {
+    @apply border border-black rounded-lg p-4 w-full placeholder:text-gray-500
+  }
+
+  .editDetails > p{
+    @apply capitalize
+  }

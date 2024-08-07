@@ -9,12 +9,13 @@ import { Product } from '../../models/interface';
 })
 export class ProductsComponent implements OnInit {
   products = this.posService.products 
-  viewUser: boolean = false
-  editUser: boolean = false;
+  viewProduct: boolean = false
+  // editUser: boolean = false;
   activeItem: any = {}
+  deleteModal: boolean = false;
+  editProduct: boolean = false
 
   tableSection: boolean = true;
-deleteModal: boolean = false;
   constructor(
     private posService: PosServiceService,
   ) {
@@ -28,20 +29,29 @@ deleteModal: boolean = false;
 
     this.activeItem = item
     console.log(this.activeItem)
-    this.viewUser = !this.viewUser
+    this.viewProduct = !this.viewProduct
     this.tableSection =!this.tableSection
   }
 
   openViewEditForm() {
-    this.viewUser = !this.viewUser
-    this.editUser = !this.editUser
+    this.viewProduct = !this.viewProduct
+    this.editProduct = !this.editProduct
   
   }
 
   openDeleteModal(item: any ={}) {
     this.activeItem = item
-
+    // this.tableSection =!this.tableSection
+    console.log("modal open", this.deleteModal)
     this.deleteModal = !this.deleteModal
   }
+
+  openEdit(item: any ={}) {
+    this.activeItem = item
+    this.tableSection =!this.tableSection
+    this.viewProduct = false
+    this.editProduct =!this.editProduct
+  }
+
 
 }

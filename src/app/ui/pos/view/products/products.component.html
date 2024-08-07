@@ -19,17 +19,7 @@
     </div>
     
     </div>
-<!-- 
-     <div class="gap-3 flex flex-col ">
-        <div class="flex justify-between items-center">
-        <p>Products</p>
-        <button class="btn px-6 text-white font-bold rounded-xl  py-2 bg-customBlue">Add Product</button>
-        </div>
-        <div class="grid grid-cols-8 gap-3">
-            <app-product-card *ngFor="let product of products"></app-product-card>
-          
-        </div>
-     </div> -->
+
      <div class="">
         <p-toolbar styleClass="mb-4 gap-2">
           <ng-template pTemplate="left">
@@ -75,7 +65,7 @@
                   <td class="actions table-item">
                     <span class="p-column-title">Action</span>
                     <i  class="pi pi-eye table-item" (click)="openViewProduct(item)" ></i>
-                    <i  class="pi pi-pen-to-square table-item" ></i>
+                    <i  class="pi pi-pen-to-square table-item" (click)="openEdit(item)"></i>
                     <i  class="pi pi-times-circle table-item" (click)="openDeleteModal(item)"></i>
                   </td>
                 </tr>                            
@@ -84,8 +74,25 @@
       </div>
 </div>
 
+<app-modal *ngIf="deleteModal"
+[header]="'Delete ' + activeItem.name"
+[title]="'Cancel'"
+(close)="openDeleteModal()">
+<p class="modalText">Are You sure you want to carry out this action? <br>
+  Clicking on <span style="color: red; font-weight: bold;">DELETE </span>, would lead to permanent removal of <span style="font-weight: bold;">{{activeItem.name}}</span></p>
 
-<div class="createVendor"  *ngIf="viewUser">
+  <div class="modalBtn">
+    <button class="btn create-invoice-btn" (click)="openDeleteModal()" >
+    Cancel
+    </button>
+
+    <button class="btn create-invoice-btn" style="background-color: red !important;"  (click)="openDeleteModal()"  >
+    Delete
+    </button>
+  </div>
+</app-modal>
+
+<div class="createVendor"  *ngIf="viewProduct">
     <p class="back" style="cursor: pointer;" (click)="openViewProduct()"><i class="fa-solid fa-arrow-left"></i> Back</p>
     <div class="container-header" style="padding: 0.5rem 1rem !important;">
     <button class="btn create-invoice-btn"  (click)="openViewEditForm()" >
@@ -197,24 +204,55 @@
  
   </div> -->
 
-  
 
+    </div>
+    </div>
 </div>
 
-<app-modal *ngIf="deleteModal"
-[header]="'Delete Ogechi '"
-[title]="'Cancel'"
-(close)="openDeleteModal()">
-<p class="modalText">Are You sure you want to carry out this action? <br>
-  Clicking on <span style="color: red; font-weight: bold;">DELETE </span>, would lead to permanent removal of <span style="font-weight: bold;">{{activeItem.name}}</span></p>
+<div class="createVendor"  *ngIf="editProduct">
+  <p class="back" style="cursor: pointer;" (click)="openEdit()"><i class="fa-solid fa-arrow-left"></i> Back</p>
 
-  <div class="modalBtn">
-    <button class="btn create-invoice-btn" (click)="openDeleteModal()" >
-    Cancel
-    </button>
+  <div class="details">
+    <div class="flex flex-col items-center gap-4">
+      <img class="w-[450px] h-[450px]" src={{activeItem?.image}}>
+       <label for="image"  class="btn create-invoice-btn p-4">Upload new product image</label>
+       <input type="file" id="image" hidden>
+    </div> 
+    <div class="permissionDiv flex flex-col gap-6">
+      <div>
+        <p>Name</p>
+      <input class="name editInput" [placeholder]="activeItem.name"/>  
+      </div>
+      <div class=" detailDiv" >
+        <p>Description</p>
+      <textarea class="name editInput"  rows="4" [placeholder]="activeItem.description"></textarea>  
+      </div>
+      <div class=" detailDiv" >
+        <p>Price</p>
+      <input class="name editInput" [placeholder]="activeItem.price | number:'1.2-2'"/>  
+      </div>
+      <div class=" detailDiv" >
+        <p>Quantity</p>
+      <p class="name editInput">200</p> 
+      </div>
+      <div class=" detailDiv" >
+        <p>Category</p>
+      <input class="name editInput" [placeholder]="activeItem.category"/>  
+      </div> 
+      <!-- <div class=" detailDiv" >
+        <p>Rating</p>
+        <p class="name"> Rate: {{activeItem.rating.rate}} Count: {{activeItem.rating.count}}  </p>
+      </div>  -->
+      <div class=" detailDiv" >
+        <p>Discount on item</p>
+      <input class="name editInput" [placeholder]="activeItem.discount | number:'1.2-2'"/>  
+      </div>
 
-    <button class="btn create-invoice-btn" style="background-color: red !important;"  (click)="openDeleteModal()"  >
-    Delete
-    </button>
+<div class="flex flex-col items-center mt-5">
+  <button class="btn  create-invoice-btn">Submit</button>
+</div>
+
+
+    </div>
   </div>
-</app-modal>
+</div>
