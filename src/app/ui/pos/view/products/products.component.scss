@@ -40,7 +40,8 @@
     display: flex;
     flex-direction:column ;
     // gap:0.1rem;
-    margin-bottom: 1.5rem;
+    // margin-bottom: 1.5rem;
+    @apply ml-3
   }
   .name {
     padding-left: 0.8rem;
@@ -56,17 +57,17 @@
 
   .details {
     display: flex;
-    gap: 10rem;
-    @apply justify-around items-center w-full
+    // gap: 10rem;
+    @apply justify-around w-full bg-gray-50 rounded-xl shadow-sm p-3
    
   }
 
   .permissionDiv {
-    border: 2px solid #224957;
+    // border: 2px solid #224957;
     border-width: 2px;
     padding: 1rem 1.5rem;
     border-radius: 0.5rem;
-    @apply w-1/2
+    @apply w-1/2 shadow-lg
   }
 
   .create-invoice-btn {
@@ -85,4 +86,12 @@
 
   .editDetails > p{
     @apply capitalize
+  }
+
+  .imageDiv {
+    @apply w-1/2 p-3
+  }
+
+  p {
+    @apply pb-0 mb-0
   }

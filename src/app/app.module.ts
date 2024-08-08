@@ -161,6 +161,7 @@ import { RequestDetailsComponent } from './ui/pos/view/request-details/request-d
 import { OpenRegisterComponent } from './ui/pos/view/open-register/open-register.component';
 import { CloseRegisterComponent } from './ui/pos/view/close-register/close-register.component';
 import { TruncatePipe } from './truncate.pipe';
+import { SideModalComponent } from './ui/shared/view/side-modal/side-modal.component';
 
 @NgModule({
   declarations: [
@@ -266,6 +267,7 @@ import { TruncatePipe } from './truncate.pipe';
     OpenRegisterComponent,
     CloseRegisterComponent,
     TruncatePipe,
+    SideModalComponent,
   ],
   imports: [
     BrowserModule,

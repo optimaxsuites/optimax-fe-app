@@ -8,12 +8,29 @@ import { Product } from '../../models/interface';
   styleUrl: './products.component.scss'
 })
 export class ProductsComponent implements OnInit {
+
+
+
   products = this.posService.products 
   viewProduct: boolean = false
-  // editUser: boolean = false;
+  addProduct: boolean = false;
   activeItem: any = {}
   deleteModal: boolean = false;
   editProduct: boolean = false
+  newCategory: string = '';
+  categories: string[] = ["men's clothing", "jewelery", "electronics", "women's clothing"]
+  newVariant = {
+    name: '',
+    price: '',
+    quantity: '',
+    sku: ''
+  };
+  variants: any[] = [];
+  discountType:string = ''
+  selectedCategory: string=  ""
+  openCategories: boolean = false
+  openAddCategory: boolean = false
+  openAddVariant: boolean = false
 
   tableSection: boolean = true;
   constructor(
@@ -23,6 +40,44 @@ export class ProductsComponent implements OnInit {
 
   ngOnInit(): void {
  
+  }
+
+  addCategory() {
+    const categoryTrimmed = this.newCategory.trim();
+    if (categoryTrimmed && !this.categories.includes(categoryTrimmed)) {
+      this.categories.push(categoryTrimmed);
+      this.newCategory = '';
+    }
+  }
+
+  removeCategory(category: string) {
+    this.categories = this.categories.filter(cat => cat !== category);
+  }
+
+  addVariant() {
+    this.variants.push({ ...this.newVariant });
+
+    this.newVariant = {
+      name: '',
+      price: '',
+      quantity: '',
+      sku: ''
+    };
+
+    this.openAddVariant = false;
+  }
+
+  deleteVariant(index: number) {
+    this.variants.splice(index, 1);
+  }
+
+  selectCategory(category: string) {
+    this.selectedCategory = category;
+    this.openCategories = false;
+  }
+
+  toggleCategoryDropdown(){
+    this.openCategories =!this.openCategories
   }
  
   openViewProduct(item: any = {}) {
@@ -48,10 +103,31 @@ export class ProductsComponent implements OnInit {
 
   openEdit(item: any ={}) {
     this.activeItem = item
-    this.tableSection =!this.tableSection
+    this.tableSection = false
     this.viewProduct = false
+    this.addProduct = false
     this.editProduct =!this.editProduct
   }
 
+  closeEdit(){
+    this.tableSection = true
+    this.viewProduct = false
+    this.editProduct = false
+    this.addProduct = false
+  }
+
+  openAddProdut(){
+    this.tableSection = false
+    this.viewProduct = false
+    this.editProduct = false
+    this.addProduct = true
+  }
+
+  closeAddProduct() {
+    this.tableSection = true
+    this.viewProduct = false
+    this.editProduct = false
+    this.addProduct = false
+    }
 
 }
