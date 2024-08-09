@@ -162,7 +162,7 @@ import { OpenRegisterComponent } from './ui/pos/view/open-register/open-register
 import { CloseRegisterComponent } from './ui/pos/view/close-register/close-register.component';
 import { TruncatePipe } from './truncate.pipe';
 import { SideModalComponent } from './ui/shared/view/side-modal/side-modal.component';
-
+import { NgSelectModule } from '@ng-select/ng-select';
 @NgModule({
   declarations: [
     AppComponent,
@@ -326,7 +326,8 @@ import { SideModalComponent } from './ui/shared/view/side-modal/side-modal.compo
     ToastModule,
     TagModule,
     CalendarModule,
-    CheckboxModule
+    CheckboxModule,
+    NgSelectModule,
     // ToastrModule.forRoot(),
   ],
   providers: [

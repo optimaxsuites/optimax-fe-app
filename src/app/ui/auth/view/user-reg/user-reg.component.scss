@@ -1,24 +1,29 @@
 .xll{
     padding: 2rem;
     display: flex;
-    justify-content: space-between;
+    justify-content:center;
+    align-items: center;
+    height: 82vh;
+    gap: 2rem;
 }
 .user-info-container {
     // background-color: #fff;
     padding: 2rem;
-    border-radius: 15px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-    width: 75%;
-    height: fit-content;
+    border-radius: 10px;
+    width: 40%;
+    height: 100%;
     // max-width: 700px;
+
+    @apply shadow-md border
 }
 
 .user-info-nav{
-    width: 20%;
+    width: 50%;
     padding: 2rem;
-    // height: 687px;
-    border-radius: 15px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);    
+    height: 100%;
+    border-radius: 10px;
+    @apply shadow-md border
+   
 }
 
 .user-info-form {
@@ -36,13 +41,24 @@
 }
 
 .user-info-form h1 {
-    margin-bottom: 30px;
+    // margin-bottom: 30px;
     font-size: 1.5em;
     font-weight: 500;
     color: #333;
     // text-align: center;
     // text-transform: uppercase;
     letter-spacing: 1px;
+    @apply text-customBlue capitalize mt-2
+}
+.user-info-nav h1 {
+    // margin-bottom: 30px;
+    font-size: 1.5em;
+    font-weight: 500;
+    color: #333;
+    // text-align: center;
+    // text-transform: uppercase;
+    letter-spacing: 1px;
+    @apply text-customBlue capitalize mt-2
 }
 
 h2{
@@ -144,6 +160,10 @@ h2{
 //     background-color: rgba(0, 0, 0, 0.5); /* Optional: to darken the background */
 //     // color: white; /* Ensures the icons are visible */
 // }
+.editInput {
+    @apply border border-gray-300 rounded-lg p-4 w-full placeholder:text-gray-500
+  }
+
 
 
 
@@ -161,35 +181,39 @@ h2{
 
   
 
-.user-info-form label {
+.user-info-form label, .user-info-nav label {
     margin-bottom: 10px;
     color: #333;
     // font-size: 18px;
 }
 
-.user-info-form input,
-.user-info-form select,
-.user-info-form textarea {
-    margin-bottom: 20px;
-    padding: 15px;
-    border: 2px solid #ccc;
-    border-radius: 10px;
-    // font-size: 18px;
-    width: 100%;
-}
+// .user-info-form input,
+// .user-info-form select,
+// .user-info-form textarea, .user-info-nav input,
+// .user-info-nav select,
+// .user-info-nav textarea {
+//     margin-bottom: 20px;
+//     padding: 15px;
+//     border: 2px solid #ccc;
+//     border-radius: 10px;
+//     // font-size: 18px;
+//     width: 100%;
+// }
+
+
 /* Style the select element */
-.user-info-form select {
-    appearance: none; /* Remove default dropdown arrow */
-    -webkit-appearance: none; /* Remove default dropdown arrow in Safari */
-    -moz-appearance: none; /* Remove default dropdown arrow in Firefox */
-    background-color: #f9f9f9;
-    background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black"><path d="M7 10l5 5 5-5z"/></svg>'); /* Custom arrow icon */
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-size: 15px 15px;
-    padding-right: 40px; /* Ensure padding for custom arrow */
-    transition: border-color 0.3s ease;
-}
+// .user-info-form select {
+//     appearance: none; /* Remove default dropdown arrow */
+//     -webkit-appearance: none; /* Remove default dropdown arrow in Safari */
+//     -moz-appearance: none; /* Remove default dropdown arrow in Firefox */
+//     background-color: #f9f9f9;
+//     background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="black"><path d="M7 10l5 5 5-5z"/></svg>'); /* Custom arrow icon */
+//     background-repeat: no-repeat;
+//     background-position: right 10px center;
+//     background-size: 15px 15px;
+//     padding-right: 40px; /* Ensure padding for custom arrow */
+//     transition: border-color 0.3s ease;
+// }
 
 /* Add hover and focus effects */
 .user-info-form select:hover,
@@ -242,4 +266,8 @@ select option:disabled {
     max-height:200px;
     border: 2px solid #ccc;
     position: absolute;
+}
+
+label {
+@apply my-3
 }

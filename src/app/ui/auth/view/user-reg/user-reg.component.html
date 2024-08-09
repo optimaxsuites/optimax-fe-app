@@ -1,114 +1,89 @@
 
 <div class="xll">
     <div class="user-info-nav">
-        <span class="nav-item" (click)="togglePanel1()">
-            <h4>Personal Details</h4>
-            <!-- <i class="pi" [ngClass]="isOpen1 ? 'pi-chevron-up' : 'pi-chevron-down'" style="font-size: 1em;"></i> -->
-        </span>
+          <!-- <div class="panel" *ngIf="isOpen1"> -->
+            <h1>Personal Details</h1>
+            <!-- <span class="d-flex justify-content-between" (click)="togglePanel1()">
+                <h2>Personal Details</h2>
+                <i class="pi" [ngClass]="isOpen1 ? 'pi-chevron-up' : 'pi-chevron-down'" style="font-size: 1em;"></i>
+            </span> -->
 
-        <br>
-
-        <span class="nav-item" (click)="togglePanel2()">
-            <h4>Contact Information</h4>
-            <!-- <i class="pi" [ngClass]="isOpen2 ? 'pi-chevron-up' : 'pi-chevron-down'" style="font-size: 1em;"></i> -->
-        </span>
-
-        <br>
-
-        <span class="nav-item" (click)="togglePanel3()">
-            <h4>Other Details</h4>
-            <!-- <i class="pi" [ngClass]="isOpen3 ? 'pi-chevron-up' : 'pi-chevron-down'" style="font-size: 1em;"></i> -->
-        </span>
-
-    </div>
-
-    
-    <div class="user-info-container">
-        <div class="user-info-form">
-            <!-- <div class="panel" *ngIf="isOpen1"> -->
-                <h1>Personal Details</h1>
-                <!-- <span class="d-flex justify-content-between" (click)="togglePanel1()">
-                    <h2>Personal Details</h2>
-                    <i class="pi" [ngClass]="isOpen1 ? 'pi-chevron-up' : 'pi-chevron-down'" style="font-size: 1em;"></i>
-                </span> -->
-
-                <!-- <p-divider></p-divider> -->
+            <!-- <p-divider></p-divider> -->
 
 
-                <div class="panel-content" >
+            <div class="panel-content" >
 
 
-                    <!-- <section class="profile-section">
-                        <div class="profile-upload-container">
-                            <div class="wrapper" >
-                                <div class="profile-wrapper">
-                                    <img
-                                        *ngIf="userInfoData.image"
-                                        [src]="userInfoData.image"
-                                        alt="profile-img"
-                                        class="profile-img"
-                                    />
+                <!-- <section class="profile-section">
+                    <div class="profile-upload-container">
+                        <div class="wrapper" >
+                            <div class="profile-wrapper">
+                                <img
+                                    *ngIf="userInfoData.image"
+                                    [src]="userInfoData.image"
+                                    alt="profile-img"
+                                    class="profile-img"
+                                />
 
-                                    <div class="profile-toggle" >
-                                        <div class=" toogle-wrapper d-flex justify-content-between">
-                                            <div class="btn-remove-image" (click)="removeImage()">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </div>
-                                            <input
-                                                type="file"
-                                                #fileInput
-                                                style="display: none"
-                                                (change)="onImageSelect($event)"
-                                            />
-                                            <div class="btn-add-image" (click)="fileInput.click()">
-                                            <i class="fas fa-plus me-2"></i>
-                                            </div>
+                                <div class="profile-toggle" >
+                                    <div class=" toogle-wrapper d-flex justify-content-between">
+                                        <div class="btn-remove-image" (click)="removeImage()">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </div>
+                                        <input
+                                            type="file"
+                                            #fileInput
+                                            style="display: none"
+                                            (change)="onImageSelect($event)"
+                                        />
+                                        <div class="btn-add-image" (click)="fileInput.click()">
+                                        <i class="fas fa-plus me-2"></i>
                                         </div>
                                     </div>
                                 </div>
-                                
                             </div>
-                        </div>
-                    </section> -->
-                      
-                    <div class="input-wrapper">
-                        <div class="input-width-1">
-                            <label for="firstname">First Name</label><br>
-                            <!-- <input type="text" id="first-name" name="first-name" required> -->
-                            <input type="text" id="firstname" pInputText [(ngModel)]="userInfoData.firstName" />
-                        </div>
-                    
-                        <div class="input-width-1">
-                            <label for="lastname">Last Name</label><br>
-                            <input type="text" id="lastname" pInputText [(ngModel)]="userInfoData.lastName" />
+                            
                         </div>
                     </div>
-                    
-                    <div class="input-wrapper">
-                        <div class="input-width-1">
-                            <label for="username">Username</label>
-                            <input type="text" id="username" pInputText [(ngModel)]="userInfoData.username" />
-                        </div>
+                </section> -->
+                  
+        
+                    <div >
+                        <label for="fullname">Full Name</label><br>
+                        <!-- <input type="text" id="first-name" name="first-name" required> -->
+                        <input  class="editInput"  type="text" id="fullname" pInputText [(ngModel)]="userInfoData.firstName" />
+                    </div>
+                
+                
+         
+                
+                <div class="input-wrapper">
+                    <div class="input-width-1">
+                        <label for="username">Username</label>
+                        <input type="text" class="editInput" id="username" pInputText [(ngModel)]="userInfoData.username" />
+                    </div>
 
-                        <div class="input-width-1">
-                            <label for="gender">Gender</label> <br>
-                            <select id="gender" name="gender" required>
-                                    <option value="" disabled selected>Select your gender</option>
-                                    <option value="male">Male</option>
-                                    <option value="female">Female</option>
-                                    <option value="other">Other</option>
-                            </select>
-                        </div>
+                    <div class="input-width-1">
+                        <label for="gender">Gender</label> <br>
+                        <!-- <select class="editInput" id="gender" name="gender" required>
+                                <option value="" disabled selected>Select your gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                        </select> -->
+                        <ng-select 
+                        [items]="genders"
+                        bindLabel="label"
+                        bindValue="value"
+                        [(ngModel)]="userInfoData.gender"
+                        [multiple]="false"
+                        placeholder="Select gender">
+                        </ng-select> 
                     </div>
                 </div>
+            </div>
 
-                <div class="btn-wrapper">
-                    <div type="submit"></div>
-                    <!-- <button (click)="togglePanel2()" type="submit">Next</button> -->
-                </div>
-            <!-- </div> -->
-
-            <!-- <div class="panel" *ngIf="isOpen2"> -->
+               <!-- <div class="panel" *ngIf="isOpen2"> -->
                 <h1>Contact Information</h1>
                 <!-- <span class="d-flex justify-content-between" (click)="togglePanel2()">
                     <h2>Contact Information</h2>
@@ -121,22 +96,22 @@
                     <div class="input-wrapper">
                         <div class="input-width-1">
                             <label for="email">Email</label>
-                            <input type="email" id="email" pInputText [(ngModel)]="userInfoData.email">
+                            <input class="editInput" type="email" id="email" pInputText [(ngModel)]="userInfoData.email">
                         </div>
                         <div class="input-width-1">
                             <label for="phone">Phone Number</label>
-                            <input type="tel" id="phone" pattern="[0-9]{10}" pInputText [(ngModel)]="userInfoData.phoneNumber" >
+                            <input class="editInput" type="tel" id="phone" pattern="[0-9]{10}" pInputText [(ngModel)]="userInfoData.phoneNumber" >
                         </div>
                     </div>
 
                     <div class="input-wrapper">
                         <div class="input-width-1">
                             <label for="address">Address</label>
-                            <input id="address" pInputText [(ngModel)]="userInfoData.address">
+                            <input class="editInput" id="address" pInputText [(ngModel)]="userInfoData.address">
                         </div>
                         <div class="input-width-1">
                             <label for="country">Country</label>
-                            <select id="country" name="country" pInputText [(ngModel)]="userInfoData.selectedCountry" (change)="onCountryChange()">
+                            <select class="editInput" id="country" name="country" pInputText [(ngModel)]="userInfoData.selectedCountry" (change)="onCountryChange()">
                               <option value="" disabled selected>Select your country</option>
                               <option *ngFor="let country of countries" [value]="country.name">{{country.name}}</option>
                             </select>
@@ -148,24 +123,40 @@
                     <div class="input-wrapper">
                         <div class="input-width-1">
                             <label for="state">State</label>
-                            <select id="state" name="state" pInputText [(ngModel)]="userInfoData.selectedState" (change)="onStateChange()">
+                            <select class="editInput" id="state" name="state" pInputText [(ngModel)]="userInfoData.selectedState" (change)="onStateChange()">
                               <option value="" disabled selected>Select your state</option>
                               <option *ngFor="let state of states" [value]="state.name">{{state.name}}</option>
                             </select>
+                            <ng-select 
+                            [items]="states"
+                            bindLabel="label"
+                            bindValue="value"
+                            [(ngModel)]="userInfoData.selectedState"
+                            [multiple]="false"
+                            placeholder="Select gender">
+                            </ng-select> 
                           </div>
                           <div class="input-width-1">
                             <label for="city">City</label>
-                            <select id="city" name="city" pInputText [(ngModel)]="userInfoData.selectedCity">
+                            <select class="editInput" id="city" name="city" pInputText [(ngModel)]="userInfoData.selectedCity">
                               <option value="" disabled selected>Select your city</option>
                               <option *ngFor="let city of cities" [value]="city.name">{{city.name}}</option>
                             </select>
+                            <ng-select 
+                            [items]="genders"
+                            bindLabel="label"
+                            bindValue="value"
+                            [(ngModel)]="userInfoData.selectedCity"
+                            [multiple]="false"
+                            placeholder="Select gender">
+                            </ng-select> 
                           </div>
                     </div>
 
                     <div class="input-wrapper">                        
                         <div class="input-width-1">
                             <label for="postal-code">Postal Code</label>
-                            <input id="postal-code" id="postal-code" pInputText [(ngModel)]="userInfoData.postalCode">
+                            <input class="editInput" id="postal-code" id="postal-code" pInputText [(ngModel)]="userInfoData.postalCode">
                         </div>
                     </div>
                 </div>
@@ -175,6 +166,21 @@
                     <button (click)="togglePanel3()" type="submit">Next</button> -->
                 </div>
             <!-- </div> -->
+
+
+    </div>
+
+    
+    <div class="user-info-container">
+        <div class="user-info-form">
+          
+                <div class="btn-wrapper">
+                    <div type="submit"></div>
+                    <!-- <button (click)="togglePanel2()" type="submit">Next</button> -->
+                </div>
+            <!-- </div> -->
+
+         
 
             <!-- <div class="panel" *ngIf="isOpen3"> -->
                 <h1>Other Details</h1>
@@ -189,16 +195,16 @@
                     <div class="input-wrapper">
                         <div class="input-width-1">
                             <label for="occupation">Occupation</label>
-                            <input type="text" id="occupation" pInputText [(ngModel)]="userInfoData.occupation">
+                            <input class="editInput" type="text" id="occupation" pInputText [(ngModel)]="userInfoData.occupation">
                         </div>
                         <div class="input-width-1">
                             <label for="company">Company</label>
-                            <input type="text" id="company" pInputText [(ngModel)]="userInfoData.company">
+                            <input class="editInput" type="text" id="company" pInputText [(ngModel)]="userInfoData.company">
                         </div>
                     </div>
                     
                     <label for="bio">Bio</label>
-                    <textarea id="bio" rows="4" pInputText [(ngModel)]="userInfoData.bio"></textarea>
+                    <textarea class="editInput" id="bio" rows="4" pInputText [(ngModel)]="userInfoData.bio"></textarea>
                 </div>
 
                 <div class="btn-wrapper">

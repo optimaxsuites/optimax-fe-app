@@ -60,6 +60,14 @@ export class UserRegComponent {
     company: '',
     bio: ''
   };
+  genders = [
+    { label: 'Male', value: 'male' },
+    { label: 'Female', value: 'female' },
+    { label: 'Other', value: 'other' },
+  ]
+  state: any[] = [{label: 'Lagos', value: 'lagos'},
+    {label: 'FCT', value: 'FCT'},{label: 'Ondo', value: 'ondo'},{label: 'Lagos', value: 'lagos'},{label: 'Lagos', value: 'lagos'},
+  ]
   items: any;
   isOpen1 = false;
   isOpen2 = false; 
@@ -67,7 +75,7 @@ export class UserRegComponent {
 
   visible: boolean = false;
 
-  genders: Gender[] | undefined;
+  // genders: Gender[] | undefined;
 
   selectedGender: Gender | undefined;
   viewDonorProfile: any = []
@@ -104,11 +112,11 @@ export class UserRegComponent {
   ngOnInit() {
     this.isOpen1 = true; // Ensure panel 1 is open by default
 
-    this.genders = [
-      { gender: 'Male',},
-      { gender: 'Female',},
-      { gender: 'Both',},
-    ];
+    // this.genders = [
+    //   { gender: 'Male',},
+    //   { gender: 'Female',},
+    //   { gender: 'Both',},
+    // ];
   }
 
   togglePanel1() {
