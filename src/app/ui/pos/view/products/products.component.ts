@@ -75,7 +75,7 @@ export class ProductsComponent implements OnInit {
  
   }
 
-  productCode: string = '5901234123457'; // This would be your generated product code
+  productCode: string = '5901234123457';
 
   generateBarcode() {
     
@@ -91,27 +91,27 @@ export class ProductsComponent implements OnInit {
   }
   
 
-  generatePDF() {
-    const barcodeElement = document.getElementById('barcode');
-    console.log(barcodeElement); 
-    if (barcodeElement) {
-      html2canvas(barcodeElement).then((canvas) => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'px',
-          format: 'a4'
-        });
+  // generatePDF() {
+  //   const barcodeElement = document.getElementById('barcode');
+  //   console.log(barcodeElement); 
+  //   if (barcodeElement) {
+  //     html2canvas(barcodeElement).then((canvas) => {
+  //       const imgData = canvas.toDataURL('image/png');
+  //       const pdf = new jsPDF({
+  //         orientation: 'portrait',
+  //         unit: 'px',
+  //         format: 'a4'
+  //       });
   
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+  //       const imgProps = pdf.getImageProperties(imgData);
+  //       const pdfWidth = pdf.internal.pageSize.getWidth();
+  //       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
   
-        pdf.addImage(imgData, 'PNG', 10, 10, pdfWidth - 20, pdfHeight);
-        pdf.save('barcode.pdf');
-      });
-    }
-  }
+  //       pdf.addImage(imgData, 'PNG', 10, 10, pdfWidth - 20, pdfHeight);
+  //       pdf.save('barcode.pdf');
+  //     });
+  //   }
+  // }
 
   
   addCategory() {
