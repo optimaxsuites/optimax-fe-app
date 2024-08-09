@@ -51,7 +51,7 @@
                     <div >
                         <label for="fullname">Full Name</label><br>
                         <!-- <input type="text" id="first-name" name="first-name" required> -->
-                        <input  class="editInput"  type="text" id="fullname" pInputText [(ngModel)]="userInfoData.firstName" />
+                        <input  class="editInput"  type="text" id="fullname" pInputText [(ngModel)]="userInfoData.fullName" />
                     </div>
                 
                 
@@ -123,33 +123,33 @@
                     <div class="input-wrapper">
                         <div class="input-width-1">
                             <label for="state">State</label>
-                            <select class="editInput" id="state" name="state" pInputText [(ngModel)]="userInfoData.selectedState" (change)="onStateChange()">
+                            <!-- <select class="editInput" id="state" name="state" pInputText [(ngModel)]="userInfoData.selectedState" (change)="onStateChange()">
                               <option value="" disabled selected>Select your state</option>
                               <option *ngFor="let state of states" [value]="state.name">{{state.name}}</option>
-                            </select>
+                            </select> -->
                             <ng-select 
                             [items]="states"
                             bindLabel="label"
                             bindValue="value"
                             [(ngModel)]="userInfoData.selectedState"
-                            [multiple]="false"
-                            placeholder="Select gender">
-                            </ng-select> 
+                            placeholder="Select your state"
+                            (change)="onStateChange()">
+                          </ng-select> 
                           </div>
                           <div class="input-width-1">
                             <label for="city">City</label>
-                            <select class="editInput" id="city" name="city" pInputText [(ngModel)]="userInfoData.selectedCity">
+                            <!-- <select class="editInput" id="city" name="city" pInputText [(ngModel)]="userInfoData.selectedCity">
                               <option value="" disabled selected>Select your city</option>
                               <option *ngFor="let city of cities" [value]="city.name">{{city.name}}</option>
-                            </select>
+                            </select> -->
                             <ng-select 
-                            [items]="genders"
+                            [items]="filteredCities"
                             bindLabel="label"
                             bindValue="value"
                             [(ngModel)]="userInfoData.selectedCity"
-                            [multiple]="false"
-                            placeholder="Select gender">
-                            </ng-select> 
+                            placeholder="Select your city"
+                            [disabled]="!userInfoData.selectedState">
+                          </ng-select> 
                           </div>
                     </div>
 
@@ -207,7 +207,7 @@
                     <textarea class="editInput" id="bio" rows="4" pInputText [(ngModel)]="userInfoData.bio"></textarea>
                 </div>
 
-                <div class="btn-wrapper">
+                <div class="flex justify-end items-center mt-5">
                     <!-- <button (click)="togglePanel2()" type="submit">Back</button> -->
                     <button type="submit" (click)="saveUserInfo()">Save</button>
                 </div>

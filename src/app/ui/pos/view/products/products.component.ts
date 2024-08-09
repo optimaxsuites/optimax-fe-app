@@ -87,7 +87,7 @@ export class ProductsComponent implements OnInit {
         displayValue: true
     });
 
-    this.generatePDF()
+    // this.generatePDF()
   }
   
 
