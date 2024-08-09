@@ -7,8 +7,7 @@ import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-lin
 
 
 interface UserInfo {
-  firstName: string;
-  lastName: string;
+  fullName: string;
   username: string;
   gender: string[];
   email: string;
@@ -45,8 +44,7 @@ interface City {
 })
 export class UserRegComponent {
   userInfoData: UserInfo = {
-    firstName: '',
-    lastName: '',
+    fullName: '',
     username: '',
     gender: [],
     email: '',
@@ -60,14 +58,24 @@ export class UserRegComponent {
     company: '',
     bio: ''
   };
+  genders = [
+    { label: 'Male', value: 'male' },
+    { label: 'Female', value: 'female' },
+    { label: 'Other', value: 'other' },
+  ]
+ 
+
   items: any;
   isOpen1 = false;
   isOpen2 = false; 
   isOpen3 = false;
 
   visible: boolean = false;
+  states: any = [];
+  filteredCities: any[] = [];
 
-  genders: Gender[] | undefined;
+
+  // genders: Gender[] | undefined;
 
   selectedGender: Gender | undefined;
   viewDonorProfile: any = []
@@ -81,6 +89,7 @@ export class UserRegComponent {
     private router: Router,
     private navigationLink: NavigationLinksService,
   ){
+    this.initializeStates();
     this.items = [
       {
           label: 'Update',
@@ -98,17 +107,37 @@ export class UserRegComponent {
   }
 
 
+  initializeStates() {
+    this.states = this.countries[0].states.map((state) => ({
+      label: state.name,
+      value: state.name.toLowerCase(),
+    }));
+  }
 
+  onStateChange() {
+    const selectedState = this.userInfoData.selectedState;
+    const foundState = this.countries[0].states.find(
+      (state) => state.name.toLowerCase() === selectedState
+    );
 
+    this.filteredCities = foundState
+      ? foundState.cities.map((city) => ({
+          label: city.name,
+          value: city.name.toLowerCase(),
+        }))
+      : [];
+console.log(this.filteredCities)
+    this.userInfoData.selectedCity = ""; // Reset city selection
+  }
 
   ngOnInit() {
     this.isOpen1 = true; // Ensure panel 1 is open by default
 
-    this.genders = [
-      { gender: 'Male',},
-      { gender: 'Female',},
-      { gender: 'Both',},
-    ];
+    // this.genders = [
+    //   { gender: 'Male',},
+    //   { gender: 'Female',},
+    //   { gender: 'Both',},
+    // ];
   }
 
   togglePanel1() {
@@ -629,27 +658,85 @@ export class UserRegComponent {
 
   selectedCountry: Country | null = null;
   selectedState: State | null = null;
-  states: State[] = [];
   cities: City[] = [];
 
   onCountryChange() {
     const selectedCountry = this.countries.find(country => country.name === this.userInfoData.selectedCountry);
-    this.states = selectedCountry ? selectedCountry.states : [];
-    this.cities = [];
+
     this.userInfoData.selectedState = '';
     this.userInfoData.selectedCity = '';
   }
 
-  onStateChange() {
-    const selectedState = this.states.find(state => state.name === this.userInfoData.selectedState);
-    this.cities = selectedState ? selectedState.cities : [];
-    this.userInfoData.selectedCity = '';
-  }
+  // onStateChange() {
+  //   const selectedState = this.states.find(state => state.name === this.userInfoData.selectedState);
+  //   this.cities = selectedState ? selectedState.cities : [];
+  //   this.userInfoData.selectedCity = '';
+  // }
 
 
   saveUserInfo(){
     const dashboardLink = this.navigationLink.getLink('dashboardLink');
     this.router.navigate([dashboardLink]);
-  }
 
+  // const userDetails = {
+  //   fullname: this.userInfoData.fullname,
+  //   email: this.userInfoData.email,
+   //   phoneNumber: this.userInfoData.phoneNumber, 
+   //   username: this.userInfoData.username, 
+   //   city: this.userInfoData.city,
+    //   state: this.userInfoData.state,
+     //   country: this.userInfoData.country,
+      //   profileImage: this.userInfoData.profileImage,
+       //   clientType: this.userInfoData.clientType,
+        //   companyName: this.userInfoData.company,
+  //   project : `${environment.project}`,
+  //   apiKey : `${environment.apiKey}`
+  // };
+
+  // if (!this.userInfoData.username || !this.userInfoData.password) {
+  //     this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
+  //     this.loading = false;
+  // } else {
+  //     setTimeout(() => {
+  //         this.authenticationService.userLogin(loginDetails).subscribe(
+  //           async (data) => {
+  //             this.loadInitParam(data);
+  //                 if (!data) {
+  //                     this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
+  //                     this.loggedIn = false;
+  //                     this.loading = false;
+  //                 } else {
+  //                   if (!data.needsRegistration) {
+  //                     const registrationLink = this.navigationLink.getLink('userRegistrationLink');
+  //                     this.router.navigate([registrationLink]);
+  //                   } else {
+  //                     const dashboardLink = this.navigationLink.getLink('dashboardLink');
+  //                     this.router.navigate([dashboardLink]);
+  //                   }
+  //                   this.loggedIn = true;
+  //                   this.loading = false;
+  //                 }
+  //             },
+  //             (error) => {
+  //               if (error.toString() == "500") {
+  //                   this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
+  //                   this.loggedIn = false;
+  //                   this.loading = false;
+  //                 } 
+  //                 if (error.toString() == "404") {
+  //                   this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.' });
+  //                   this.loggedIn = false;
+  //                   this.loading = false;
+  //                 }
+  //                 else if (error.toString() == "0") {
+  //                     this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
+  //                     this.loggedIn = false;
+  //                     this.loading = false;
+  //                 }
+  //                 this.loading = false;
+  //             }
+  //         );
+  //     }, 2000);
+
+  }
 }
