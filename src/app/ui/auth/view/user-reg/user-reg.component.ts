@@ -662,8 +662,7 @@ console.log(this.filteredCities)
 
   onCountryChange() {
     const selectedCountry = this.countries.find(country => country.name === this.userInfoData.selectedCountry);
-    this.states = selectedCountry ? selectedCountry.states : [];
-    this.cities = [];
+
     this.userInfoData.selectedState = '';
     this.userInfoData.selectedCity = '';
   }

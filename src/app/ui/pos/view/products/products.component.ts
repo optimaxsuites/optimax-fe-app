@@ -79,40 +79,76 @@ export class ProductsComponent implements OnInit {
 
   generateBarcode() {
     
-    JsBarcode('#barcode', this.productCode,  {
-        format: this.barcodeType,  
-        lineColor: '#000',
-        width: 2,
-        height: 100,
-        displayValue: true
+    const barcodeSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    JsBarcode(barcodeSvg, this.productCode, {
+      format: this.barcodeType,
+      lineColor: '#000',
+      width: 1,
+      height: 50,
+      displayValue: true
     });
 
-    // this.generatePDF()
+
+    this.convertSvgToPng(barcodeSvg);
   }
   
-
-  // generatePDF() {
-  //   const barcodeElement = document.getElementById('barcode');
-  //   console.log(barcodeElement); 
-  //   if (barcodeElement) {
-  //     html2canvas(barcodeElement).then((canvas) => {
-  //       const imgData = canvas.toDataURL('image/png');
-  //       const pdf = new jsPDF({
-  //         orientation: 'portrait',
-  //         unit: 'px',
-  //         format: 'a4'
-  //       });
+  convertSvgToPng(svgElement: Node) {
+    const svgString = new XMLSerializer().serializeToString(svgElement);
+    
+    // Encode the SVG string
+    const encodedSvg = encodeURIComponent(svgString);
+    
+    const img = new Image();
+    
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
   
-  //       const imgProps = pdf.getImageProperties(imgData);
-  //       const pdfWidth = pdf.internal.pageSize.getWidth();
-  //       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      const imgData = canvas.toDataURL('image/png');
+      this.generatePDF(imgData);
+    };
   
-  //       pdf.addImage(imgData, 'PNG', 10, 10, pdfWidth - 20, pdfHeight);
-  //       pdf.save('barcode.pdf');
-  //     });
-  //   }
-  // }
+    img.src = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
+  }
+  
+  generatePDF(imgData: string) {
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'px',
+      format: 'a4'
+    });
+  
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (100 * pdfWidth) / 200; // Adjust height based on your needs
 
+    const padding = 10;
+    const barcodeWidth = 150;
+    const barcodeHeight = 50;
+    const itemsPerRow = Math.floor((pdfWidth - 2 * padding) / pdfWidth);
+    let currentX = padding;
+    let currentY = padding;
+  
+    for (let i = 0; i < 10; i++) {
+      pdf.addImage(imgData, 'PNG', currentX, currentY, barcodeWidth, barcodeHeight);
+  
+      currentX += pdfWidth;
+      if (currentX + pdfWidth > pdf.internal.pageSize.getWidth()) {
+        currentX = padding;
+        currentY += pdfHeight + padding;
+      }
+
+      if (currentY + pdfHeight + padding > pdf.internal.pageSize.getHeight()) {
+        pdf.addPage();
+        currentX = padding;
+        currentY = padding;
+      }
+    }
+  
+    pdf.save('barcodes.pdf');
+  }
   
   addCategory() {
     const categoryTrimmed = this.newCategory.trim();
