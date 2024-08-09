@@ -45,8 +45,6 @@
     "bootstrap": "^5.3.3",
     "currency-codes": "^2.1.0",
     "html2canvas": "^1.4.1",
-    "jsbarcode": "^3.11.6",
-    "jspdf": "^2.5.1",
     "ng-apexcharts": "^1.10.0",
     "ngx-toastr": "^19.0.0",
     "primeicons": "^7.0.0",
