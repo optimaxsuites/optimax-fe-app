@@ -44,7 +44,6 @@
     "apexcharts": "^3.49.0",
     "bootstrap": "^5.3.3",
     "currency-codes": "^2.1.0",
-    "html2canvas": "^1.4.1",
     "ng-apexcharts": "^1.10.0",
     "ngx-toastr": "^19.0.0",
     "primeicons": "^7.0.0",
