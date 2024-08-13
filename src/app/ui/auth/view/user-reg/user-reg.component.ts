@@ -3,12 +3,12 @@ import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { Gender } from 'src/app/ui/shared/domain/interface/data';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
+import { UserInfoService } from '../../service/user-info.service';
 
 
 
 interface UserInfo {
-  firstName: string;
-  lastName: string;
+  fullName: string;
   username: string;
   gender: string[];
   email: string;
@@ -18,9 +18,11 @@ interface UserInfo {
   selectedState: string;
   selectedCountry: string;
   postalCode: string;
-  occupation: string;
+  industry: string;
   company: string;
   bio: string;
+  image: any;
+  clientType: string
 }
 
 interface Country {
@@ -45,8 +47,7 @@ interface City {
 })
 export class UserRegComponent {
   userInfoData: UserInfo = {
-    firstName: '',
-    lastName: '',
+    fullName: '',
     username: '',
     gender: [],
     email: '',
@@ -56,18 +57,31 @@ export class UserRegComponent {
     selectedState: '',
     selectedCountry: '',
     postalCode: '',
-    occupation: '',
+    industry: '',
     company: '',
-    bio: ''
+    bio: '',
+   image: '',
+   clientType: ''
+
   };
+  genders = [
+    { label: 'Male', value: 'male' },
+    { label: 'Female', value: 'female' },
+    { label: 'Other', value: 'other' },
+  ]
+ 
+
   items: any;
   isOpen1 = false;
   isOpen2 = false; 
   isOpen3 = false;
 
   visible: boolean = false;
+  states: any = [];
+  filteredCities: any[] = [];
 
-  genders: Gender[] | undefined;
+
+  // genders: Gender[] | undefined;
 
   selectedGender: Gender | undefined;
   viewDonorProfile: any = []
@@ -76,11 +90,24 @@ export class UserRegComponent {
       this.visible = true;
   }
 
+  onImageUpload(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.userInfoData.image = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
   constructor(
     private messageService: MessageService,
     private router: Router,
     private navigationLink: NavigationLinksService,
+    private userInforService: UserInfoService,
   ){
+    this.initializeStates();
     this.items = [
       {
           label: 'Update',
@@ -98,17 +125,37 @@ export class UserRegComponent {
   }
 
 
+  initializeStates() {
+    this.states = this.countries[0].states.map((state) => ({
+      label: state.name,
+      value: state.name.toLowerCase(),
+    }));
+  }
 
+  onStateChange() {
+    const selectedState = this.userInfoData.selectedState;
+    const foundState = this.countries[0].states.find(
+      (state) => state.name.toLowerCase() === selectedState
+    );
 
+    this.filteredCities = foundState
+      ? foundState.cities.map((city) => ({
+          label: city.name,
+          value: city.name.toLowerCase(),
+        }))
+      : [];
+console.log(this.filteredCities)
+    this.userInfoData.selectedCity = "";
+  }
 
   ngOnInit() {
     this.isOpen1 = true; // Ensure panel 1 is open by default
 
-    this.genders = [
-      { gender: 'Male',},
-      { gender: 'Female',},
-      { gender: 'Both',},
-    ];
+    // this.genders = [
+    //   { gender: 'Male',},
+    //   { gender: 'Female',},
+    //   { gender: 'Both',},
+    // ];
   }
 
   togglePanel1() {
@@ -629,27 +676,79 @@ export class UserRegComponent {
 
   selectedCountry: Country | null = null;
   selectedState: State | null = null;
-  states: State[] = [];
   cities: City[] = [];
 
   onCountryChange() {
     const selectedCountry = this.countries.find(country => country.name === this.userInfoData.selectedCountry);
-    this.states = selectedCountry ? selectedCountry.states : [];
-    this.cities = [];
+
     this.userInfoData.selectedState = '';
     this.userInfoData.selectedCity = '';
   }
-
-  onStateChange() {
-    const selectedState = this.states.find(state => state.name === this.userInfoData.selectedState);
-    this.cities = selectedState ? selectedState.cities : [];
-    this.userInfoData.selectedCity = '';
+  checkForEmptyFields(): boolean {
+    return Object.values(this.userInfoData).some(value => typeof value === 'string' && value.trim() === '');
   }
-
+  
 
   saveUserInfo(){
-    const dashboardLink = this.navigationLink.getLink('dashboardLink');
-    this.router.navigate([dashboardLink]);
-  }
+    // const dashboardLink = this.navigationLink.getLink('dashboardLink');
+    // this.router.navigate([dashboardLink]);
 
+      const userDetails = {
+      fullname: this.userInfoData.fullName,
+      email: this.userInfoData.email,
+      phoneNumber: this.userInfoData.phoneNumber,
+      username: this.userInfoData.username,
+      city: this.userInfoData.selectedCity,
+      state: this.userInfoData.selectedState,
+      country: this.userInfoData.selectedCountry,
+      profileImage: this.userInfoData.image,
+      address: this.userInfoData.address,
+      clientType: this.userInfoData.clientType,
+      companyName: this.userInfoData.company,
+      industry: this.userInfoData.industry,
+      bio: this.userInfoData.bio,
+      postalCode: this.userInfoData.postalCode,
+        // project : `${environment.project}`,
+        // apiKey : `${environment.apiKey}`
+      };
+
+  if (this.checkForEmptyFields()) {
+    console.log("all fiellds are required")
+      this.messageService.add({ severity: 'error', summary: 'warn', detail: 'All fields are required' , key: 'tl', life: 3000 });
+  } else {
+
+          this.userInforService.saveBasicInfo(userDetails).subscribe(
+            async (data) => {
+          console.log(data)
+                  if (!data) {
+                      this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.', key: 'tl', life: 3000  });
+                  
+                  } else {
+                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.', key: 'tl', life: 3000  });
+                      const dashboardLink = this.navigationLink.getLink('dashboardLink');
+                      this.router.navigate([dashboardLink]);
+
+                  
+                  }
+              },
+              (error) => {
+                if (error.toString() == "500") {
+                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.', key: 'tl', life: 3000  });
+          
+                  } 
+                  if (error.toString() == "404") {
+                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.', key: 'tl', life: 3000  });
+               
+                  }
+                  else if (error.toString() == "0") {
+                      this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.', key: 'tl', life: 3000  });
+                
+                  }
+               
+              }
+          );
+
+
+    }
+  }
 }
