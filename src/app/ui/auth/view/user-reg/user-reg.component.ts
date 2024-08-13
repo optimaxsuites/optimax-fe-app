@@ -146,7 +146,7 @@ export class UserRegComponent {
           value: city.name.toLowerCase(),
         }))
       : [];
-console.log(this.filteredCities)
+    console.log(this.filteredCities)
     this.userInfoData.selectedCity = "";
   }
 
