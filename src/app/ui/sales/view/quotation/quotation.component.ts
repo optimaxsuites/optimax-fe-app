@@ -34,7 +34,7 @@ export class QuotationComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // this.quotationService.getItem().subscribe(data => {
+    // this.quotationService.getQuotation().subscribe(data => {
     //   this.quotationData = data;
     // });
   }
