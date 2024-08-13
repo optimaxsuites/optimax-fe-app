@@ -4,8 +4,11 @@ import { MessageService } from 'primeng/api';
 import { Gender } from 'src/app/ui/shared/domain/interface/data';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 import { UserInfoService } from '../../service/user-info.service';
+<<<<<<< HEAD
+=======
 import { environment } from 'src/environments/environment.prod';
 
+>>>>>>> 83c8870a75056e73e58cbf8b3ee787b26f528316
 
 
 
@@ -723,10 +726,17 @@ console.log(this.filteredCities)
             async (data) => {
           console.log(data)
                   if (!data) {
+<<<<<<< HEAD
+                      this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.', key: 'tl', life: 3000  });
+                  
+                  } else {
+                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.', key: 'tl', life: 3000  });
+=======
                       this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Failed, please try again.', key: 'tl', life: 3000  });
                   
                   } else {
                     this.messageService.add({ severity: 'success', summary: 'Authentication Failed', detail: 'Registered successfully.', key: 'tl', life: 3000  });
+>>>>>>> 83c8870a75056e73e58cbf8b3ee787b26f528316
                       const dashboardLink = this.navigationLink.getLink('dashboardLink');
                       this.router.navigate([dashboardLink]);
 
@@ -735,11 +745,19 @@ console.log(this.filteredCities)
               },
               (error) => {
                 if (error.toString() == "500") {
+<<<<<<< HEAD
+                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.', key: 'tl', life: 3000  });
+          
+                  } 
+                  if (error.toString() == "404") {
+                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.', key: 'tl', life: 3000  });
+=======
                     this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Check form details and try again.', key: 'tl', life: 3000  });
           
                   } 
                   if (error.toString() == "404") {
                     this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Error, try again.', key: 'tl', life: 3000  });
+>>>>>>> 83c8870a75056e73e58cbf8b3ee787b26f528316
                
                   }
                   else if (error.toString() == "0") {
