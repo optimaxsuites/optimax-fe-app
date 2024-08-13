@@ -1,177 +1,70 @@
-<main>
-  <section class="formBackground">
-    <article class="topWing">
-      <div class="descDiv">
-        <label for="eTitle">Expense Description</label>
-        <br />
-        <input
-          type="text"
-          id="eTitle"
-          pInputText
-          [(ngModel)]="expenseList.eTitle"
-        />
-      </div>
-
-      <div class="">
-        <img
-          src="../../../../../assets/duplicate.svg"
-          alt=""
-          style="width: 2rem"
-        />
-      </div>
-    </article>
-
-    <div class="formContainer">
-      <div class="leftWing">
-        <div class="inputFlex">
-          <label for="eTitle">Product</label>
-
-          <select
-            name="vendorType"
-            id="vendorType"
-            class="smallInput"
-            [(ngModel)]="expenseList.eProduct"
-          >
-            <option value="" disabled selected hidden>Choose Type</option>
-            <option
-              *ngFor="let product of expenseList.productArray"
-              [value]="product"
-            >
-              {{ product }}
-            </option>
-          </select>
-        </div>
-
-        <div class="inputFlex">
-          <label for="eTitle">Unit Price</label>
-
-          <input
-            pInputText
-            class="ng-invalid ng-dirty"
-            id="eProduct"
-            [(ngModel)]="expenseList.eUnitPrice"
-          />
-        </div>
-
-        <div class="inputFlex">
-          <label for="eTitle">Quantity</label>
-          <input
-            pInputText
-            class="ng-invalid ng-dirty"
-            id="eProduct"
-            [(ngModel)]="expenseList.eQuantity"
-          />
-        </div>
-
-        <div class="inputFlex">
-          <label for="eTitle">Taxes</label>
-          <select
-            name="vendorType"
-            id="vendorType"
-            class="smallInput"
-            [(ngModel)]="expenseList.eTaxes"
-          >
-            <option value="" disabled selected hidden>Choose Type</option>
-            <option
-              *ngFor="let taxes of expenseList.taxesArray"
-              [value]="taxes"
-            >
-              {{ taxes }}
-            </option>
-          </select>
-        </div>
-
-        <div class="inputFlex">
-          <span>Total</span>
-          <p>#90.00</p>
-        </div>
-
-        <div class="inputPaymentFlex">
-          <label for="">Payment By</label>
-          <div class="checkFlex">
-            <div class="inputCheckFlex">
-              <input
-                type="checkbox"
-                [(ngModel)]="expenseList.eEmployment"
-                style="border-radius: 50%"
-              />
-              <p>Employee</p>
-            </div>
-            <!-- <div class="inputCheckFlex">
-              <input type="checkbox" class="checkBox" [(ngModel)]="expenseList.eCompany" />
-
-              <p>Company</p>
-            </div> -->
-            <!-- <label class="custom-checkbox">
-              <input
-                type="checkbox"
-                class="checkBox"
-                [(ngModel)]="expenseList.eCompany"
-              />
-              <span class="checkmark"></span>
-              Check me
-            </label> -->
+<div class="parent-container">
+  <app-back-button></app-back-button>
+  <div class="add-expense-container">
+      <div class="expense-form">
+          <div class="form-left">
+              <div class="form-group">
+                  <label for="amount">Amount</label>
+                  <input type="number" id="amount" name="amount" placeholder="Enter amount">
+              </div>
+              <div class="form-group">
+                  <label for="merchant">Merchant</label>
+                  <input type="text" id="merchant" name="merchant" placeholder="Enter merchant">
+              </div>
+              <div class="form-group">
+                  <label for="expense-date">Expense Date</label>
+                  <input type="date" id="expense-date" name="expense-date">
+              </div>
+              <div class="form-group">
+                  <label for="category">Category</label>
+                  <select id="category" name="category">
+                      <option value="travel">Travel</option>
+                      <option value="food">Food</option>
+                      <option value="accommodation">Accommodation</option>
+                      <option value="other">Other</option>
+                  </select>
+              </div>
+              <div class="form-group">
+                  <label for="tax-rate">Tax Rate</label>
+                  <select id="tax-rate" name="tax-rate">
+                      <option value="standard">Standard</option>
+                      <option value="reduced">Reduced</option>
+                      <option value="zero">Zero</option>
+                  </select>
+              </div>
+              <div class="form-group">
+                  <label for="tax-percentage">Tax Percentage (%)</label>
+                  <input type="number" id="tax-percentage" name="tax-percentage" placeholder="Enter tax percentage">
+              </div>
+              <div class="form-group">
+                  <label for="tax-amount">Tax Amount (NGN)</label>
+                  <input type="number" id="tax-amount" name="tax-amount" placeholder="Enter tax amount">
+              </div>
+              <hr>
+              <div class="form-group">
+                  <label for="pay-method">Payment method</label>
+                  <select id="pay-method" name="pay-method">
+                      <option value="standard">Cash</option>
+                  </select>
+              </div>
+              <div class="form-group">
+                  <label for="project">Project</label>
+                  <select id="project" name="project">
+                      <option value="standard">Cash</option>
+                  </select>
+              </div>
+              <hr>
+              <div class="form-group">
+                  <label for="comment">Comment</label>
+                  <textarea id="comments" name="comments" rows="4" cols="50" placeholder="Enter your comments here..."></textarea>
+              </div>
           </div>
-        </div>
+          <div class="form-right">
+              <div class="upload-container">
+                  <input type="file" id="upload-receipt" name="upload-receipt" class="upload-input">
+                  <p>Click or drag file to to upload</p>
+              </div>
+          </div>
       </div>
+</div>
 
-      <div class="rightWing">
-        <div class="inputFlex">
-          <label for="">Date</label>
-          <p-calendar
-            [(ngModel)]="expenseList.eDate"
-            [iconDisplay]="'input'"
-            [showIcon]="true"
-            inputId="icondisplay"
-          />
-        </div>
-
-        <div class="inputFlex">
-          <label for="">Employee</label>
-          <select
-            name="vendorType"
-            id="vendorType"
-            class="smallInput"
-            [(ngModel)]="expenseList.eEmployee"
-          >
-            <option value="" disabled selected hidden>Choose Type</option>
-            <option
-              *ngFor="let employee of expenseList.employeeArray"
-              [value]="employee"
-            >
-              {{ employee }}
-            </option>
-          </select>
-        </div>
-
-        <div class="inputFlex">
-          <label for="">Journal Entry</label>
-          <select
-            name="vendorType"
-            id="vendorType"
-            class="smallInput"
-            [(ngModel)]="expenseList.eJournal"
-          >
-            <option value="" disabled selected hidden>Choose Type</option>
-            <option
-              *ngFor="let journal of expenseList.journalArray"
-              [value]="journal"
-            >
-              {{ journal }}
-            </option>
-          </select>
-        </div>
-
-        <div class="inputFlex">
-          <label for="">Expenses Journal</label>
-          <input
-            pInputText
-            class="ng-invalid ng-dirty"
-            id="eProduct"
-            [(ngModel)]="expenseList.eProduct"
-          />
-        </div>
-      </div>
-    </div>
-  </section>
-</main>
