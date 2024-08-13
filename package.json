@@ -25,11 +25,7 @@
     "@canvasjs/charts": "^3.8.12",
     "@fortawesome/fontawesome-free": "^6.5.2",
     "@kolkov/angular-editor": "^3.0.0-beta.0",
-<<<<<<< HEAD
-    "@ng-select/ng-select": "^13.7.0",
-=======
     "@ng-select/ng-select": "^12.0.7",
->>>>>>> 83c8870a75056e73e58cbf8b3ee787b26f528316
     "@progress/kendo-angular-buttons": "^15.5.0",
     "@progress/kendo-angular-common": "^15.5.0",
     "@progress/kendo-angular-dialog": "^15.5.0",
@@ -49,11 +45,7 @@
     "bootstrap": "^5.3.3",
     "currency-codes": "^2.1.0",
     "html2canvas": "^1.4.1",
-<<<<<<< HEAD
-    "jsbarcode": "^3.11.6",
-=======
     "jsbarcode": "^3.11.0",
->>>>>>> 83c8870a75056e73e58cbf8b3ee787b26f528316
     "jspdf": "^2.5.1",
     "ng-apexcharts": "^1.10.0",
     "ngx-toastr": "^19.0.0",
