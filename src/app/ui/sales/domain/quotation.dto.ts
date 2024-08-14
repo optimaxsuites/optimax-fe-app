@@ -29,18 +29,19 @@ export interface QuotationDTO {
   }
   
   export interface ItemsDTO {
-    id: number;
+    id?: number;
     name: string; // maxLength: 255, minLength: 0
-    businessSalesType: 'REQUEST_FOR_QUOTATION' | 'QUOTATION';
+    businessSalesType?: 'REQUEST_FOR_QUOTATION' | 'QUOTATION';
     taxRate: number; // format: double
     qty: number; // format: int32
     rate: number; // format: double
     amount: number; 
     total: number;// format: double
     tax: number; // format: double
-    createdBy: number;
-    quotation: number;
+    createdBy?: number;
+    quotation?: number;
     description: string;
+    showDescriptionBox: false;
   }
   
   export interface IndustryDTO {

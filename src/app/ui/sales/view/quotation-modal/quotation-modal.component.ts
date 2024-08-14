@@ -549,7 +549,7 @@ removeField(index: number) {
       tax: 0,
       total: 0,
       description: '',
-
+      showDescriptionBox: false,
       businessSalesType: "QUOTATION",
       createdBy: 0,
       quotation: 0
