@@ -23,6 +23,9 @@ import { QuotationService } from 'src/app/ui/sales/service/quotation/quotation.s
   providers: [TopProductService, ConfirmationService, MessageService],
 })
 export class ExpenseTableComponent implements OnInit {
+deleteSelectedItems() {
+throw new Error('Method not implemented.');
+}
   visible: boolean = false;
   position: any = '';
 

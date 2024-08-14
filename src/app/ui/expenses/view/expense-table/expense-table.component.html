@@ -1,20 +1,38 @@
 <p-toast />
 <p-confirmDialog />
+<div class="controls">
+  <!-- <div class="action-button">My Expenses</div> -->
+
+</div>
 <div class="table-container">
   <div class="container-header"></div>
-
   <div class="">
     <p-toolbar styleClass="mb-4 gap-2">
       <ng-template pTemplate="left">
-        <!-- <app-button text="Delete" 
-          (btnClick)="deleteSelectedItems()" class="btn-delete" ></app-button> -->
+        <app-button text="Delete" 
+          (btnClick)="deleteSelectedItems()" class="btn-delete" ></app-button>
       </ng-template>
-      <ng-template pTemplate="right">
-        <app-button
-          text="Add New"
-          routerLink="/expenses/expensesForm"
-          class="btn-navigate"
-        ></app-button>
+      <ng-template pTemplate="right" >
+        <div class="dropdown-container">
+          <i class="fa fa-plus-circle plus-icon"></i>
+          <div class="custom-dropdown">
+              <button class="custom-dropdown-button">
+                  Add New
+                  <i class="fa fa-caret-down"></i>
+              </button>
+              <div class="custom-dropdown-content">
+                  <a href="#" routerLink="/expenses/expensesForm" class="dropdown-item">
+                      <i class="fa fa-plus-circle"></i> Add Expense
+                  </a>
+                  <a href="#" routerLink="/expenses/upload-reciept" class="dropdown-item">
+                      <i class="fa fa-upload"></i> Upload Receipt
+                  </a>
+                  <a href="#" class="dropdown-item">
+                      <i class="fa fa-money-bill"></i> Add per Diem
+                  </a>
+              </div>
+          </div>
+      </div>
         <app-button text="Import" class="btn-export"></app-button>
       </ng-template>
     </p-toolbar>

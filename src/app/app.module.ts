@@ -163,6 +163,7 @@ import { CloseRegisterComponent } from './ui/pos/view/close-register/close-regis
 import { TruncatePipe } from './truncate.pipe';
 import { SideModalComponent } from './ui/shared/view/side-modal/side-modal.component';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { UploadRecieptComponent } from './ui/expenses/view/upload-reciept/upload-reciept.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -268,6 +269,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
     CloseRegisterComponent,
     TruncatePipe,
     SideModalComponent,
+    UploadRecieptComponent,
   ],
   imports: [
     BrowserModule,
