@@ -3,6 +3,7 @@ import { PosServiceService } from '../../service/pos-service.service';
 import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { Product } from '../../models/interface';
 @Component({
   selector: 'app-products',
   templateUrl: './products.component.html',
@@ -12,6 +13,36 @@ import html2canvas from 'html2canvas';
 export class ProductsComponent implements OnInit {
 
 
+productData: Product = {
+  name: "",
+  code: "",
+  description: "",
+  sku: "",
+  weight: 0,
+  initialPrice: "",
+  effectivePrice: "",
+  initialQuantity: 0,
+  effectiveQuantity: 0,
+  partNumber: "",
+  tax: 0,
+  branch: "",
+  variant: "",
+  discount: 0,
+  productCategory: 0,
+  id: 0,
+  count: 0,
+  discountType: "",
+  discountValue: 0,
+  image: "",
+  rating: "",
+  category: "",
+  cartPriceTotal: 0
+}
+
+barcodeConfig = {
+  barcodeType: 'CODE128',
+  barcodeQuantity: 1
+}
 
   products = this.posService.products 
   viewProduct: boolean = false
@@ -39,7 +70,7 @@ export class ProductsComponent implements OnInit {
     {label: 'MSI1010', value: 'MSI1010'},
     {label: 'MSI1110', value: 'MSI1110'},
   ]
-  barcodeType: string = 'CODE128'
+
   branches: any[] = [
     { label: 'HQT', value: 'headquarter' },
     {label: 'wuse', value: 'Wuse'}
@@ -77,11 +108,16 @@ export class ProductsComponent implements OnInit {
 
   productCode: string = '5901234123457';
 
+  openGenerateBarcode() {
+    this.configureBarcode = true
+    this.addSuccessfull = false
+  }
+
   generateBarcode() {
     
     const barcodeSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     JsBarcode(barcodeSvg, this.productCode, {
-      format: this.barcodeType,
+      format: this.barcodeConfig.barcodeType,
       lineColor: '#000',
       width: 1,
       height: 50,
@@ -130,10 +166,15 @@ export class ProductsComponent implements OnInit {
     let currentX = padding;
     let currentY = padding;
   
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
       pdf.addImage(imgData, 'PNG', currentX, currentY, barcodeWidth, barcodeHeight);
   
       currentX += pdfWidth;
+      if ((i + 1) % itemsPerRow === 0) {
+        currentX = padding;
+        currentY += barcodeHeight + padding;
+      }
+
       if (currentX + pdfWidth > pdf.internal.pageSize.getWidth()) {
         currentX = padding;
         currentY += pdfHeight + padding;
