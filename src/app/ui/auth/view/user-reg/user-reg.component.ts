@@ -685,8 +685,8 @@ export class UserRegComponent {
     this.userInfoData.selectedState = '';
     this.userInfoData.selectedCity = '';
   }
-  checkForEmptyFields(): boolean {
-    return Object.values(this.userInfoData).some(value => typeof value === 'string' && value.trim() === '');
+  checkForEmptyFields(details: any): boolean {
+    return Object.values(details).some(value => typeof value === 'string' && value.trim() === '');
   }
   
 
@@ -713,7 +713,7 @@ export class UserRegComponent {
         // apiKey : `${environment.apiKey}`
       };
 
-  if (this.checkForEmptyFields()) {
+  if (this.checkForEmptyFields(userDetails)) {
     console.log("all fiellds are required")
       this.messageService.add({ severity: 'error', summary: 'warn', detail: 'All fields are required' , key: 'tl', life: 3000 });
   } else {
