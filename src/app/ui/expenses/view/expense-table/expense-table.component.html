@@ -1,116 +1,57 @@
-<p-toast />
-<p-confirmDialog />
-<div class="controls">
-  <!-- <div class="action-button">My Expenses</div> -->
-
-</div>
 <div class="table-container">
-  <div class="container-header"></div>
-  <div class="">
+  <div class="container-header">
+    <!-- Optionally, add a header or title here -->
+  </div>
+
+  <div>
     <p-toolbar styleClass="mb-4 gap-2">
       <ng-template pTemplate="left">
-        <app-button text="Delete" 
-          (btnClick)="deleteSelectedItems()" class="btn-delete" ></app-button>
+        <app-button text="Delete" class="btn-delete"></app-button>
       </ng-template>
-      <ng-template pTemplate="right" >
-        <div class="dropdown-container">
-          <i class="fa fa-plus-circle plus-icon"></i>
-          <div class="custom-dropdown">
-              <button class="custom-dropdown-button">
-                  Add New
-                  <i class="fa fa-caret-down"></i>
-              </button>
-              <div class="custom-dropdown-content">
-                  <a href="#" routerLink="/expenses/expensesForm" class="dropdown-item">
-                      <i class="fa fa-plus-circle"></i> Add Expense
-                  </a>
-                  <a href="#" routerLink="/expenses/uploadReciept" class="dropdown-item">
-                      <i class="fa fa-upload"></i> Upload Receipt
-                  </a>
-                
-                  <a href="#" routerLink="/expenses/Addperdiem" class="dropdown-item">
-                      <i class="fa fa-money-bill"></i> Add per Diem
-                  </a>
-              </div>
-          </div>
-      </div>
+
+      <ng-template pTemplate="right">
+        <app-button text="Add New" (btnClick)="navigateToForm()" class="btn-navigate" ></app-button>
         <app-button text="Import" class="btn-export"></app-button>
       </ng-template>
     </p-toolbar>
-    <p-table
-      [paginator]="true"
-      dataKey="id"
-      responsiveLayout="stack"
-      [breakpoint]="'960px'"
-      styleClass="p-datatable-striped"
-      [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '650px' }"
-      [rows]="15"
-    >
+
+    <p-table 
+      [value]="expenses" 
+      [paginator]="true" 
+      styleClass="p-datatable-striped" 
+      [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+      [rows]="15">
+      
       <ng-template pTemplate="header">
         <tr>
           <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
-          <th class="table-item">RFQ No</th>
-          <th class="table-item">Project Title</th>
-          <th class="table-item">Date Issued</th>
-          <th class="table-item">Expiry Date</th>
-          <th class="table-item">Prepared By</th>
-          <th class="table-item">Position</th>
+          <th class="table-item">Expense</th>
+          <th class="table-item">Merchant</th>
+          <th class="table-item">Category</th>
+          <th class="table-item">Amount</th>
+          <th class="table-item">Date</th>
           <th class="table-item">Status</th>
-          <th class="table-item">Action</th>
+          <th class="table-item">Actions</th>
         </tr>
       </ng-template>
-      <ng-template
-        pTemplate="body"
-        let-rfq
-        let-i="rowIndex"
-        let-columns="columns"
-      >
+
+      <ng-template pTemplate="body" let-expense let-i="rowIndex">
         <tr>
-          <td>
-            <p-tableCheckbox [value]="rfq" />
-          </td>
-          <td class="table-item">{{ rfq.rfqNo }}</td>
-          <td class="table-item">
-            <span class="p-column-title">Project Title</span
-            >{{ rfq.projectTitle }}
-          </td>
-          <td class="table-item">{{ rfq.dateIssued }}</td>
-          <td class="table-item">{{ rfq.expiryDate }}</td>
-          <td class="table-item">{{ rfq.preparedBy }}</td>
-          <td class="table-item">{{ rfq.position }}</td>
-          <td class="table-item">
-            <span class="p-column-title">Status</span>
-            <!-- <p-tag [value]="rfq.status" [severity]="getSeverity(rfq.status)" /> -->
-          </td>
+          <td><p-tableCheckbox [value]="expense" /></td>
+          <td class="table-item">{{ expense.id }}</td>
+          <td class="table-item">{{ expense.merchant }}</td>
+          <td class="table-item">{{ expense.category }}</td>
+          <td class="table-item">{{ expense.amount }}</td>
+          <td class="table-item">{{ expense.date }}</td>
+          <td class="table-item">{{ expense.status }}</td>
           <td class="actions table-item">
-            <span class="p-column-title">Action</span>
-            <i
-              pTooltip="send"
-              tooltipPosition="bottom"
-              class="pi pi-send table-item"
-            ></i>
-            <i
-              pTooltip="view"
-              tooltipPosition="bottom"
-              class="pi pi-eye table-item"
-            ></i>
-
-            <i
-              pTooltip="copy"
-              tooltipPosition="bottom"
-              class="pi pi-clone table-item"
-            ></i>
-
-            <i
-              pTooltip="delete"
-              tooltipPosition="bottom"
-              class="pi pi-times-circle table-item"
-            ></i>
+            <i class="pi pi-eye table-item" (click)="viewExpenseApproval(expense)"></i> <!-- New icon for approval -->
+            <i class="pi pi-pen-to-square table-item" (click)="editExpense(expense)"></i>
+            <i class="pi pi-times-circle table-item" (click)="deleteExpense(expense)"></i>
           </td>
         </tr>
+        
       </ng-template>
     </p-table>
   </div>
 </div>
-
-

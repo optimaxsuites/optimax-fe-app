@@ -166,6 +166,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { UploadRecieptComponent } from './ui/expenses/view/upload-reciept/upload-reciept.component';
 import { AddPerDiemComponent } from './ui/expenses/view/add-per-diem/add-per-diem.component';
 import { ExpenseSummaryComponent } from './ui/expenses/view/expense-summary/expense-summary.component';
+import { ExpenseApprovalComponent } from './ui/expenses/view/expense-approval/expense-approval.component';
 
 @NgModule({
   declarations: [
@@ -275,6 +276,7 @@ import { ExpenseSummaryComponent } from './ui/expenses/view/expense-summary/expe
     UploadRecieptComponent,
     AddPerDiemComponent,
     ExpenseSummaryComponent,
+    ExpenseApprovalComponent,
   ],
   imports: [
     BrowserModule,
