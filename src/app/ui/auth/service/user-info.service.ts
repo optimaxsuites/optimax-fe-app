@@ -1,6 +1,6 @@
 import { Injectable, isDevMode } from '@angular/core';
 import { environment } from 'src/environments/environment.prod';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { NavigationLinksService } from '../../shared/service/navigation-links/navigation-links.service';
 import { Router } from '@angular/router';
 import { catchError, Observable, throwError } from 'rxjs';
@@ -30,9 +30,7 @@ export class UserInfoService {
     //   'Authorization': `Bearer ${this.token}`
     // });
     return this.http
-    .post<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/create/user/primary/info", data, {
-      // headers: headers
-    })
+    .post<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/create/user/primary/info", data)
     .pipe(catchError(this.handleError));
   }
 
