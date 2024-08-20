@@ -21,7 +21,12 @@
       </div>
       <div class="detail-row">
         <label class="detail-label">Status:</label>
-        <span class="detail-value">{{ expense?.status }}</span>
+        <span class="detail-value" [ngClass]="{
+          'status-approved': expense?.status === 'Approved',
+          'status-rejected': expense?.status === 'Rejected'
+        }">
+          {{ expense?.status }}
+        </span>
       </div>
       <div class="detail-row">
         <label class="detail-label">Comments:</label>
