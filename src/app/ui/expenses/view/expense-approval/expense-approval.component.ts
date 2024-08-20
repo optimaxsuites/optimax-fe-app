@@ -9,8 +9,7 @@ import { ExpenseService, Expense } from '../../service/expense.service';
 })
 export class ExpenseApprovalComponent implements OnInit {
   expense: Expense | undefined;
-  dropdownOpen = false; // Tracks the dropdown state
-
+  dropdownOpen = false; 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -28,7 +27,7 @@ export class ExpenseApprovalComponent implements OnInit {
     if (this.expense) {
       this.expense.status = 'Approved';
       this.expenseService.updateExpense(this.expense);
-      this.router.navigate(['/expenses']); // Navigate back to the list
+      this.router.navigate(['/expenses']); 
     }
   }
 

@@ -138,7 +138,7 @@
      (dragover)="onDragOver($event)"
      (drop)="onFileDrop($event, 'receipt')">
   <input type="file" #fileInput class="file-input" (change)="onFileSelect($event, 'receipt')" />
-  <p *ngIf="!receiptFile">Click or drag and drop to upload a receipt</p>
+  <p *ngIf="!receiptFile">Click or drag and drop to upload Document</p>
   <p *ngIf="receiptFile">Receipt: {{ receiptFile.name }}</p>
 </div>
 
@@ -147,7 +147,7 @@
      (dragover)="onDragOver($event)"
      (drop)="onFileDrop($event, 'invoice')">
   <input type="file" #invoiceInput class="file-input" (change)="onFileSelect($event, 'invoice')" />
-  <p *ngIf="!invoiceFile">Click or drag and drop to upload an invoice</p>
+  <p *ngIf="!invoiceFile">Click or drag and drop to upload an Invoice/Receipt</p>
   <p *ngIf="invoiceFile">Invoice: {{ invoiceFile.name }}</p>
 </div>
 
