@@ -262,3 +262,196 @@ tr:nth-child(even) {
 
 
 
+
+/* ESPENSE */
+
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f5f5f5;
+}
+
+.parent-container {
+  width: 90%;
+  margin: 0 auto;
+  position: relative;
+}
+
+.nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 77%;
+  background-color: #224957;
+  color: white;
+  padding: 10px 20px;
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 50px;
+  z-index: 1000;
+  box-sizing: border-box;
+}
+
+.cancel-icon {
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.nav-title {
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.add-expense-container {
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 20px;
+  padding-top: 30px; 
+  padding-bottom: 70px; 
+  box-sizing: border-box;
+}
+
+.expense-form {
+  display: flex;
+  width: 100%;
+  background-color: white;
+  padding: 20px;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  flex-grow: 1;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.form-left, .form-right {
+  width: 50%;
+  margin: 10px;
+}
+
+.form-left {
+  overflow-y: hidden; 
+}
+
+.form-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  width: 30%;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+.upload-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  border: 2px dashed #ccc;
+  border-radius: 5px;
+  padding: 20px;
+  text-align: center;
+  color: #999;
+}
+
+.upload-container label {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.upload-container input {
+  display: none;
+}
+
+.upload-container p {
+  margin: 0;
+}
+
+/* .footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+  background-color: #224957;
+  padding: 10px 20px;
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 50px;
+  z-index: 1000;
+  box-sizing: border-box;
+} */
+
+/* .footer-button {
+  padding: 10px 20px;
+  margin-left: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  color: white;
+} */
+
+.submit-button {
+  background-color: #007bff;
+}
+
+.save-button {
+  background-color: #28a745;
+}
+
+.cancel-button {
+  background-color: #dc3545;
+}
+
+.footer-button:hover {
+  opacity: 0.8;
+}
+
+/* expense.component.css */
+.slide-in-container {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 100%;
+  max-width: 400px; 
+  height: 100%;
+  background-color: white;
+  box-shadow: -2px 0 5px rgba(0,0,0,0.5);
+  transition: right 0.3s ease;
+  z-index: 1001; 
+}
+
+.slide-in-container.show {
+  right: 0;
+}
+
+
+
+
+
+/* ESPENSE */
+
+
