@@ -388,11 +388,11 @@ body {
   margin: 0;
 }
 
-.footer {
+/* .footer {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  width: 77%;
+  width: 100%;
   background-color: #224957;
   padding: 10px 20px;
   position: fixed;
@@ -402,9 +402,9 @@ body {
   height: 50px;
   z-index: 1000;
   box-sizing: border-box;
-}
+} */
 
-.footer-button {
+/* .footer-button {
   padding: 10px 20px;
   margin-left: 10px;
   border: none;
@@ -412,7 +412,7 @@ body {
   cursor: pointer;
   font-weight: bold;
   color: white;
-}
+} */
 
 .submit-button {
   background-color: #007bff;
