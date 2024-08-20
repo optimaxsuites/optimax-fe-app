@@ -164,6 +164,9 @@ import { TruncatePipe } from './truncate.pipe';
 import { SideModalComponent } from './ui/shared/view/side-modal/side-modal.component';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { UploadRecieptComponent } from './ui/expenses/view/upload-reciept/upload-reciept.component';
+import { AddPerDiemComponent } from './ui/expenses/view/add-per-diem/add-per-diem.component';
+import { ExpenseSummaryComponent } from './ui/expenses/view/expense-summary/expense-summary.component';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -270,6 +273,8 @@ import { UploadRecieptComponent } from './ui/expenses/view/upload-reciept/upload
     TruncatePipe,
     SideModalComponent,
     UploadRecieptComponent,
+    AddPerDiemComponent,
+    ExpenseSummaryComponent,
   ],
   imports: [
     BrowserModule,

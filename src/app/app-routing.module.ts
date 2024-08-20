@@ -42,6 +42,8 @@ import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.co
 import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.component';
 import { ExpensesComponent } from './ui/expenses/view/expenses.component';
 import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-modal/expense-forms-modal.component';
+import { UploadRecieptComponent } from './ui/expenses/view/upload-reciept/upload-reciept.component';
+import { AddPerDiemComponent } from './ui/expenses/view/add-per-diem/add-per-diem.component';
 import { OrderRefundComponent } from './ui/pos/view/order-refund/order-refund.component';
 import { RequestDetailsComponent } from './ui/pos/view/request-details/request-details.component';
 import { OpenRegisterComponent } from './ui/pos/view/open-register/open-register.component';
@@ -223,9 +225,16 @@ const routes: Routes = [
         component: ExpensesComponent,
       },
       {
-
         path: 'expenses/expensesForm',
         component: ExpenseFormsModalComponent,
+      },
+      {
+        path: 'expenses/uploadReciept',
+        component: UploadRecieptComponent,
+      },
+      {
+        path: 'expenses/Addperdiem',
+        component: AddPerDiemComponent,
       },
       { path: '', redirectTo: '/expenses', pathMatch: 'full' },
       {

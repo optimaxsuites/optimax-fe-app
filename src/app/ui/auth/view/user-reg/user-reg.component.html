@@ -1,12 +1,12 @@
 
-<div class="xll">
+<div class="xll relative">
     <div class="user-info-container">
 
             <h1>Personal Details</h1>
 
-            <div class="panel-content flex justify-between w-full items-center" >
+            <div class="panel-content flex flex-col-reverse md:flex-row justify-between w-full items-center" >
                 
-                <div class="w-2/3 flex flex-col gap-6">
+                <div class="w-full md:w-2/3 flex flex-col gap-6">
                     <div class="w-full" >
                         <label for="fullname">Full Name</label><br>
                         <input  class="editInput"  type="text" id="fullname" pInputText [(ngModel)]="userInfoData.fullName" />
@@ -17,7 +17,7 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col justify-center items-center gap-4 pr-24">
+                <div class="flex flex-col justify-center items-center gap-4 lg:pr-24 .image-block">
                     <img class="w-[200px] h-[200px] bg-transparent object-contain border rounded-full"  [src]="userInfoData.image ? userInfoData.image : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTr3jhpAFYpzxx39DRuXIYxNPXc0zI5F6IiMQ&s'" alt="placeholder">
                      <label for="image"  class="btn create-invoice-btn p-4">Upload profile image</label>
                      <input type="file" id="image" (change)="onImageUpload($event)" [(ngModel)]="userInfoData.image" hidden>
@@ -124,9 +124,11 @@
                         <div class="input-width-1">
                             <label for="clientType">Client type</label>
                             <select class="editInput" type="text" id="clientType" pInputText [(ngModel)]="userInfoData.clientType">
-                                <option value=""></option>
-                                <option value="company">Company</option>
-
+                                <option value="dxx"></option>
+                                <option value="Company">Company</option>
+                                <option value="Client">Client</option>
+                                <option value="Individual">Individual</option>
+                                <option value="Group">Group</option>
                             </select>
                         </div>
                     </div>
@@ -144,6 +146,32 @@
         </div>
         
     </div>
+
+    <!-- <div class="magicpattern">
+        
+        <svg xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 310 350">
+            <path d="M156.4,339.5c31.8-2.5,59.4-26.8,80.2-48.5c28.3-29.5,40.5-47,56.1-85.1c14-34.3,20.7-75.6,2.3-111  c-18.1-34.8-55.7-58-90.4-72.3c-11.7-4.8-24.1-8.8-36.8-11.5l-0.9-0.9l-0.6,0.6c-27.7-5.8-56.6-6-82.4,3c-38.8,13.6-64,48.8-66.8,90.3c-3,43.9,17.8,88.3,33.7,128.8c5.3,13.5,10.4,27.1,14.9,40.9C77.5,309.9,111,343,156.4,339.5z"/>
+            </svg>
+
+    </div>
+
+        
+    <div class="magicpattern2">
+        
+        <svg xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 310 350">
+            <path d="M156.4,339.5c31.8-2.5,59.4-26.8,80.2-48.5c28.3-29.5,40.5-47,56.1-85.1c14-34.3,20.7-75.6,2.3-111  c-18.1-34.8-55.7-58-90.4-72.3c-11.7-4.8-24.1-8.8-36.8-11.5l-0.9-0.9l-0.6,0.6c-27.7-5.8-56.6-6-82.4,3c-38.8,13.6-64,48.8-66.8,90.3c-3,43.9,17.8,88.3,33.7,128.8c5.3,13.5,10.4,27.1,14.9,40.9C77.5,309.9,111,343,156.4,339.5z"/>
+            </svg>
+
+    </div>
+
+    <div class="magicpattern3">
+        
+            <svg xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 310 350">
+                <path d="M156.4,339.5c31.8-2.5,59.4-26.8,80.2-48.5c28.3-29.5,40.5-47,56.1-85.1c14-34.3,20.7-75.6,2.3-111  c-18.1-34.8-55.7-58-90.4-72.3c-11.7-4.8-24.1-8.8-36.8-11.5l-0.9-0.9l-0.6,0.6c-27.7-5.8-56.6-6-82.4,3c-38.8,13.6-64,48.8-66.8,90.3c-3,43.9,17.8,88.3,33.7,128.8c5.3,13.5,10.4,27.1,14.9,40.9C77.5,309.9,111,343,156.4,339.5z"/>
+                </svg>
+    
+    </div>    -->
+
 </div>
 
 <p-toast position="top-right" key="tl" />

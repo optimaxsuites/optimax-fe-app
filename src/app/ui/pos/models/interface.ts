@@ -1,7 +1,10 @@
 export interface Product {
     id: number;
     name: string;
-    price: number;
+    initialPrice: string;
+    effectivePrice: string;
+    initialQuantity: number;
+    effectiveQuantity: number;
     cartPriceTotal: number;
     count: number;
     discount: number;
@@ -11,6 +14,14 @@ export interface Product {
     rating: {};
     category: string;
     description: string;
+    code: string;
+    sku: string;
+    weight: number
+    partNumber: string
+    tax: number
+    branch: string
+    variant: string 
+    productCategory: number
   }
   
   export interface DiscountOption {
@@ -19,7 +30,7 @@ export interface Product {
   }
   
   export interface Order {
-timestamp: any;
+    timestamp: any;
     name: string;
     cartDiscount: number;
     state: string;

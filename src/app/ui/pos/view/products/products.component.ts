@@ -3,15 +3,54 @@ import { PosServiceService } from '../../service/pos-service.service';
 import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { Product } from '../../models/interface';
+import { MessageService } from 'primeng/api';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 @Component({
   selector: 'app-products',
   templateUrl: './products.component.html',
   styleUrl: './products.component.scss',
-
+  providers: [MessageService]
 })
 export class ProductsComponent implements OnInit {
 
 
+productData: Product = {
+  name: "",
+  code: "",
+  description: "",
+  sku: "",
+  weight: 0,
+  initialPrice: "",
+  effectivePrice: "",
+  initialQuantity: 0,
+  effectiveQuantity: 0,
+  partNumber: "",
+  tax: 0,
+  branch: "",
+  variant: "",
+  discount: 0,
+  productCategory: 0,
+  id: 0,
+  count: 0,
+  discountType: "",
+  discountValue: 0,
+  image: "",
+  rating: "",
+  category: "",
+  cartPriceTotal: 0
+}
+
+categoryData = {
+  name: "",
+  code: "",
+  description: "",
+}
+
+barcodeConfig = {
+  barcodeType: 'CODE128',
+  barcodeQuantity: 1
+}
 
   products = this.posService.products 
   viewProduct: boolean = false
@@ -20,7 +59,7 @@ export class ProductsComponent implements OnInit {
   deleteModal: boolean = false;
   editProduct: boolean = false
   newCategory: string = '';
-  categories: string[] = ["men's clothing", "jewelery", "electronics", "women's clothing"]
+  categories: any[] = []
   addSuccessfull: boolean = false
   configureBarcode: boolean = false
   barcodes: any[] = [
@@ -39,7 +78,7 @@ export class ProductsComponent implements OnInit {
     {label: 'MSI1010', value: 'MSI1010'},
     {label: 'MSI1110', value: 'MSI1110'},
   ]
-  barcodeType: string = 'CODE128'
+
   branches: any[] = [
     { label: 'HQT', value: 'headquarter' },
     {label: 'wuse', value: 'Wuse'}
@@ -67,21 +106,27 @@ export class ProductsComponent implements OnInit {
 
   tableSection: boolean = true;
   constructor(
-    private posService: PosServiceService,
+    private messageService: MessageService,
+    private posService: PosServiceService,  private http: HttpClient
   ) {
   }
 
   ngOnInit(): void {
- 
+this.loadCategory()
   }
 
   productCode: string = '5901234123457';
+
+  openGenerateBarcode() {
+    this.configureBarcode = true
+    this.addSuccessfull = false
+  }
 
   generateBarcode() {
     
     const barcodeSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     JsBarcode(barcodeSvg, this.productCode, {
-      format: this.barcodeType,
+      format: this.barcodeConfig.barcodeType,
       lineColor: '#000',
       width: 1,
       height: 50,
@@ -130,10 +175,15 @@ export class ProductsComponent implements OnInit {
     let currentX = padding;
     let currentY = padding;
   
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
       pdf.addImage(imgData, 'PNG', currentX, currentY, barcodeWidth, barcodeHeight);
   
       currentX += pdfWidth;
+      if ((i + 1) % itemsPerRow === 0) {
+        currentX = padding;
+        currentY += barcodeHeight + padding;
+      }
+
       if (currentX + pdfWidth > pdf.internal.pageSize.getWidth()) {
         currentX = padding;
         currentY += pdfHeight + padding;
@@ -148,13 +198,67 @@ export class ProductsComponent implements OnInit {
   
     pdf.save('barcodes.pdf');
   }
-  
+  checkForEmptyFields(obj: any): boolean {
+    return Object.values(obj).some(value => typeof value === 'string' && value.trim() === '');
+  }
+
+  loadCategory(){
+    this.posService.getCategories().subscribe(
+      async (data) => {
+        console.log(data)
+        if (data) {
+          this.categories = data
+        } else {
+         console.log("error loading data")
+        }}
+    )
+
+    
+  }
   addCategory() {
-    const categoryTrimmed = this.newCategory.trim();
-    if (categoryTrimmed && !this.categories.includes(categoryTrimmed)) {
-      this.categories.push(categoryTrimmed);
-      this.newCategory = '';
+    // const categoryTrimmed = this.newCategory.trim();
+    // if (categoryTrimmed && !this.categories.includes(categoryTrimmed)) {
+    //   this.categories.push(categoryTrimmed);
+    //   this.newCategory = '';
+    // }
+
+    const categoryDetails = {
+      name: this.categoryData.name,
+      code: this.categoryData.code,
+      description: this.categoryData.description
     }
+
+    if (this.checkForEmptyFields(this.categoryData)) {
+      console.log("all fiellds are required")
+        this.messageService.add({ severity: 'error', summary: 'warn', detail: 'All fields are required' , key: 'tl', life: 3000 });
+    } else {
+            this.posService.addCategory(categoryDetails).subscribe(
+              async (data) => {
+            console.log(data)
+            if (data) {
+              this.messageService.add({ severity: 'success', summary: 'Category Added', detail: 'Category added successfully.', key: 'tl', life: 3000 });
+              this.categoryData = {
+                name: "",
+                code: "",
+                description: "",
+              }
+            } else {
+              this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Failed, please try again.', key: 'tl', life: 3000 });
+            }
+                },
+                (error: HttpErrorResponse) => {
+                  if (error.status === 500) {
+                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Check form details and try again.', key: 'tl', life: 3000 });
+                  } else if (error.status === 404) {
+                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Error, try again.', key: 'tl', life: 3000 });
+                  } else if (error.status === 0) {
+                    this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.', key: 'tl', life: 3000 });
+                  } else {
+                    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'An unexpected error occurred.', key: 'tl', life: 3000 });
+                  }
+                }
+            );}
+  
   }
 
   removeCategory(category: string) {

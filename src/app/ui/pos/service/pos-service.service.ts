@@ -1,12 +1,16 @@
-import { Injectable } from '@angular/core';
-import { Product } from '../models/interface';
+import { Injectable, isDevMode } from '@angular/core';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { environment } from 'src/environments/environment.prod';
 import { RandomTokenService } from '../../shared/service/random-token/random-token.service';
+import { NavigationLinksService } from '../../shared/service/navigation-links/navigation-links.service';
+import { catchError, Observable, throwError } from 'rxjs';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PosServiceService {
-  constructor(private randomTokenService: RandomTokenService, ){}
+  constructor(private randomTokenService: RandomTokenService, private http: HttpClient, private navigationLink: NavigationLinksService, private router: Router){}
   
  products =[
   {
@@ -350,9 +354,44 @@ export class PosServiceService {
     }
   }
 ];
+private getBaseApiUrl(): string {
+  return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
+}
+addCategory(data: any){
+  return this.http
+  .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/productCategories", data)
+  .pipe(catchError(this.handleError));
+}
 
+getCategories(){
+  return this.http
+  .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/productCategories")
+  .pipe(catchError(this.handleError));
+}
+addProduct(data: any){
+  return this.http
+  .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/products/product", data)
+  .pipe(catchError(this.handleError));
+}
 
-  
+getProducts(){
+  return this.http
+  .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/products")
+  .pipe(catchError(this.handleError));
+}
+
+private handleError(error: HttpErrorResponse) {
+  if (error.error instanceof ErrorEvent) {
+      console.error("An error occurred:", error.error.message);
+  } else {
+      console.error(
+          `Backend returned code ${error.status}, ` +
+              `body was: ${JSON.stringify(error.error)}`
+      );
+  }
+  return throwError(`${error.status}`);
+  // 'Something bad happened; please try again later.');
+}
   
 }
 

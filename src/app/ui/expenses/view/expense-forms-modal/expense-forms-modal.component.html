@@ -1,5 +1,18 @@
 <div class="parent-container">
   <app-back-button></app-back-button>
+
+
+  <div class="progress-container">
+    <div class="progress-bar" [ngClass]="currentStage"></div>
+    <div class="progress-stages">
+      <div class="stage" [ngClass]="{'active': currentStage === 'to-submit'}">To Submit</div>
+      <div class="stage" [ngClass]="{'active': currentStage === 'submitted'}">Submitted</div>
+      <div class="stage" [ngClass]="{'active': currentStage === 'approved'}">Approved</div>
+      <div class="stage" [ngClass]="{'active': currentStage === 'paid'}">Paid</div>
+    </div>
+  </div>
+
+
   <div class="add-expense-container">
       <div class="expense-form">
           <div class="form-left">
@@ -64,7 +77,33 @@
                   <input type="file" id="upload-receipt" name="upload-receipt" class="upload-input">
                   <p>Click or drag file to to upload</p>
               </div>
-          </div>
+    <!-- Buttons Section -->
+    <div class="form-buttons">
+        <button class="footer-button submit-button" (click)="submitForm()">Submit</button>
+        <button class="footer-button save-button" (click)="saveForm()">Save</button>
+        <button class="footer-button cancel-button" (click)="cancelForm()">Cancel</button>
       </div>
-</div>
+    </div>
+  </div>
+
+
+
+    <!-- Modal for Summary -->
+    <div class="modal" [ngClass]="{'show': showModal}">
+        <div class="modal-content">
+          <span class="close-button" (click)="closeSummaryModal()">&times;</span>
+          <h2>Expense Summary</h2>
+          <p><strong>Amount:</strong> {{ expenseSummary.amount }}</p>
+          <p><strong>Merchant:</strong> {{ expenseSummary.merchant }}</p>
+          <p><strong>Expense Date:</strong> {{ expenseSummary.expenseDate }}</p>
+          <p><strong>Category:</strong> {{ expenseSummary.category }}</p>
+          <p><strong>Tax Rate:</strong> {{ expenseSummary.taxRate }}</p>
+          <p><strong>Tax Percentage:</strong> {{ expenseSummary.taxPercentage }}</p>
+          <p><strong>Tax Amount:</strong> {{ expenseSummary.taxAmount }}</p>
+          <p><strong>Payment Method:</strong> {{ expenseSummary.payMethod }}</p>
+          <p><strong>Project:</strong> {{ expenseSummary.project }}</p>
+          <p><strong>Comments:</strong> {{ expenseSummary.comments }}</p>
+        </div>
+      </div>
+    </div>
 
