@@ -1,4 +1,14 @@
 export interface ExpenseData {
+category: any;
+amount: any;
+expenseDate: any;
+merchant: any;
+taxRate: any;
+taxPercentage: any;
+taxAmount: any;
+payMethod: any;
+project: any;
+comments: any;
   id: string;
   eTitle: string;
   eProduct: string;

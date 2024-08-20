@@ -13,9 +13,6 @@ import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-lin
 
 
 
-
-
-
 @Component({
   selector: 'app-inventory-form',
   templateUrl: './inventory-form.component.html',
