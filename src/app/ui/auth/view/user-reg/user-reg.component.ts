@@ -702,7 +702,7 @@ export class UserRegComponent {
       city: this.userInfoData.selectedCity,
       state: this.userInfoData.selectedState,
       country: this.userInfoData.selectedCountry,
-      profileImage: this.userInfoData.image,
+      // profileImage: this.userInfoData.image,
       address: this.userInfoData.address,
       clientType: this.userInfoData.clientType,
       companyName: this.userInfoData.company,
