@@ -6,6 +6,7 @@ import html2canvas from 'html2canvas';
 import { Product } from '../../models/interface';
 import { MessageService } from 'primeng/api';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { MatStartDate } from '@angular/material/datepicker';
 @Component({
   selector: 'app-products',
   templateUrl: './products.component.html',
@@ -15,7 +16,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 export class ProductsComponent implements OnInit {
 
 
-productData: Product = {
+productData = {
   name: "",
   code: "",
   description: "",
@@ -30,15 +31,15 @@ productData: Product = {
   branch: "",
   variant: "",
   discount: 0,
-  productCategory: 0,
+  category: "",
   id: 0,
   count: 0,
-  discountType: "",
+  discountType: [] as string[],
   discountValue: 0,
   image: "",
-  rating: "",
-  category: "",
-  cartPriceTotal: 0
+  startDate: "",
+  endDate: "",
+  discountMinQuantity: 0
 }
 
 categoryData = {
@@ -113,6 +114,7 @@ barcodeConfig = {
 
   ngOnInit(): void {
 this.loadCategory()
+this.getProducts()
   }
 
   productCode: string = '5901234123457';
@@ -198,8 +200,21 @@ this.loadCategory()
   
     pdf.save('barcodes.pdf');
   }
+
   checkForEmptyFields(obj: any): boolean {
     return Object.values(obj).some(value => typeof value === 'string' && value.trim() === '');
+  }
+
+  getProducts() {
+    this.posService.getProducts().subscribe(
+      async (data) => {
+        console.log(data)
+        if (data) {
+          
+        } else {
+         console.log("error loading data")
+        }}
+    )  
   }
 
   loadCategory(){
@@ -211,17 +226,9 @@ this.loadCategory()
         } else {
          console.log("error loading data")
         }}
-    )
-
-    
+    )  
   }
   addCategory() {
-    // const categoryTrimmed = this.newCategory.trim();
-    // if (categoryTrimmed && !this.categories.includes(categoryTrimmed)) {
-    //   this.categories.push(categoryTrimmed);
-    //   this.newCategory = '';
-    // }
-
     const categoryDetails = {
       name: this.categoryData.name,
       code: this.categoryData.code,
@@ -260,6 +267,17 @@ this.loadCategory()
             );}
   
   }
+  
+  onImageUpload(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.productData.image = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
 
   removeCategory(category: string) {
     this.categories = this.categories.filter(cat => cat !== category);
@@ -281,10 +299,62 @@ this.loadCategory()
   deleteVariant(index: number) {
     this.variants.splice(index, 1);
   }
-
+  addToProduct(){
+   const product = {
+        name: this.productData.name,
+        code: this.productData.code,
+        description: this.productData.description,
+        sku: this.productData.sku,
+        weight: this.productData.weight,
+        initialPrice: this.productData.initialPrice,
+        effectivePrice: this.productData.effectivePrice,
+        initialQuantity: this.productData.initialQuantity,
+        effectiveQuantity: this.productData.effectiveQuantity,
+        partNumber: this.productData.partNumber,
+        tax: this.productData.tax,
+        branch: this.productData.branch[0],
+        discount: {
+          name: this.productData.discountType.join(" and "),
+          value: this.productData.discountValue,
+          startDate: this.productData.startDate,
+          endDate: this.productData.endDate,
+          minQuantity: this.productData.discountMinQuantity,
+          discountType: this.productData.discountType.join(" and ")
+        },
+        category: this.productData.category,
+     
+    }
+    if (this.checkForEmptyFields(product)) {
+      console.log("all fiellds are required")
+        this.messageService.add({ severity: 'error', summary: 'warn', detail: 'All fields are required' , key: 'tl', life: 3000 });
+    } else {
+            this.posService.addProduct(product).subscribe(
+              async (data) => {
+            console.log(data)
+            if (data) {
+            
+            } else {
+              this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Failed, please try again.', key: 'tl', life: 3000 });
+            }
+                },
+                (error: HttpErrorResponse) => {
+                  if (error.status === 500) {
+                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Check form details and try again.', key: 'tl', life: 3000 });
+                  } else if (error.status === 404) {
+                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Error, try again.', key: 'tl', life: 3000 });
+                  } else if (error.status === 0) {
+                    this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.', key: 'tl', life: 3000 });
+                  } else {
+                    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'An unexpected error occurred.', key: 'tl', life: 3000 });
+                  }
+                }
+            );}
+   
+  }
   selectCategory(category: string) {
     this.selectedCategory = category;
     this.openCategories = false;
+    this.productData.category = category
   }
 
   toggleCategoryDropdown(){
