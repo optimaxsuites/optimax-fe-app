@@ -368,6 +368,13 @@ getCategories(){
   .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/productCategories")
   .pipe(catchError(this.handleError));
 }
+
+deleteCategory(id: number){
+  return this.http
+  .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/productCategories/${id}`)
+  .pipe(catchError(this.handleError));
+}
+
 addProduct(data: any){
   return this.http
   .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/products/product", data)
@@ -377,6 +384,12 @@ addProduct(data: any){
 getProducts(){
   return this.http
   .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/products")
+  .pipe(catchError(this.handleError));
+}
+
+getDiscountTypes(){
+  return this.http
+  .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/discountTypes")
   .pipe(catchError(this.handleError));
 }
 

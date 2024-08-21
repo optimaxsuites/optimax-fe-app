@@ -5,7 +5,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { Product } from '../../models/interface';
 import { MessageService } from 'primeng/api';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse,  } from '@angular/common/http';
 import { MatStartDate } from '@angular/material/datepicker';
 @Component({
   selector: 'app-products',
@@ -34,7 +34,7 @@ productData = {
   category: "",
   id: 0,
   count: 0,
-  discountType: [] as string[],
+  discountType: [] as any[],
   discountValue: 0,
   image: "",
   startDate: "",
@@ -115,6 +115,7 @@ barcodeConfig = {
   ngOnInit(): void {
 this.loadCategory()
 this.getProducts()
+this.getDiscountTypes()
   }
 
   productCode: string = '5901234123457';
@@ -216,7 +217,17 @@ this.getProducts()
         }}
     )  
   }
-
+  getDiscountTypes(){
+    this.posService.getDiscountTypes().subscribe(
+      async (data) => {
+        console.log(data)
+        if (data) {
+          this.discountTypes = data
+        } else {
+         console.log("error loading data")
+        }}
+    )  
+  }
   loadCategory(){
     this.posService.getCategories().subscribe(
       async (data) => {
@@ -244,6 +255,7 @@ this.getProducts()
             console.log(data)
             if (data) {
               this.messageService.add({ severity: 'success', summary: 'Category Added', detail: 'Category added successfully.', key: 'tl', life: 3000 });
+          this.loadCategory();
               this.categoryData = {
                 name: "",
                 code: "",
@@ -279,8 +291,28 @@ this.getProducts()
     }
   }
 
-  removeCategory(category: string) {
-    this.categories = this.categories.filter(cat => cat !== category);
+  removeCategory(id: number) {
+    this.posService.deleteCategory(id).subscribe(
+      async (data) => {
+        if (data) {
+          this.messageService.add({ 
+            severity: 'error', 
+            summary: 'Failed', 
+            detail: 'Failed to delete category.', 
+            key: 'tl', 
+            life: 3000 
+          });
+        } else {
+          this.loadCategory();
+          this.messageService.add({ 
+            severity: 'success', 
+            summary: 'Category deleted', 
+            detail: 'Category deleted successfully.', 
+            key: 'tl', 
+            life: 3000 
+          });
+        }}
+    )  
   }
 
   addVariant() {
@@ -324,6 +356,7 @@ this.getProducts()
         category: this.productData.category,
      
     }
+    console.log(product)
     if (this.checkForEmptyFields(product)) {
       console.log("all fiellds are required")
         this.messageService.add({ severity: 'error', summary: 'warn', detail: 'All fields are required' , key: 'tl', life: 3000 });
@@ -351,10 +384,10 @@ this.getProducts()
             );}
    
   }
-  selectCategory(category: string) {
-    this.selectedCategory = category;
+  selectCategory(category: any) {
+    this.selectedCategory = category.name;
     this.openCategories = false;
-    this.productData.category = category
+    this.productData.category = category.id
   }
 
   toggleCategoryDropdown(){
