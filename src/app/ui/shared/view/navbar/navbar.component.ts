@@ -37,7 +37,7 @@ export class NavbarComponent {
     this.userInfoRegData = JSON.parse(sessionStorage["userRegData"]);
     this.userRegData = this.userInfoRegData;
 
-    console.log("testing client types", this.userInfoRegData);
+    // console.log("testing client types", this.userInfoRegData);
 }
   
 

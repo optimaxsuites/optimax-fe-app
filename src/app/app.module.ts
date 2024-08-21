@@ -167,6 +167,9 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { UploadRecieptComponent } from './ui/expenses/view/upload-reciept/upload-reciept.component';
 import { AddPerDiemComponent } from './ui/expenses/view/add-per-diem/add-per-diem.component';
 import { ExpenseSummaryComponent } from './ui/expenses/view/expense-summary/expense-summary.component';
+import { ExpenseApprovalComponent } from './ui/expenses/view/expense-approval/expense-approval.component';
+
+import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 import { InventoryComponent } from './ui/pos/view/inventory/inventory.component';
 
 @NgModule({
@@ -277,7 +280,6 @@ import { InventoryComponent } from './ui/pos/view/inventory/inventory.component'
     UploadRecieptComponent,
     AddPerDiemComponent,
     ExpenseSummaryComponent,
-    InventoryComponent,
   ],
   imports: [
     BrowserModule,
@@ -347,6 +349,11 @@ import { InventoryComponent } from './ui/pos/view/inventory/inventory.component'
       useClass: AuthInterceptor,
       multi: true,
     },
+    { 
+      provide: JWT_OPTIONS, 
+      useValue: JWT_OPTIONS 
+    },
+    JwtHelperService,
     provideAnimationsAsync(),
     provideNativeDateAdapter(),
   ],

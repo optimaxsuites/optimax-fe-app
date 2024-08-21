@@ -10,12 +10,17 @@ import { NavigationLinksService } from '../../shared/service/navigation-links/na
 })
 export class AuthGuard implements CanActivate {
 
-  constructor(private loginService: LoginComponent, private router: Router,private navigationLink: NavigationLinksService) {}
+  constructor(
+    private loginService: LoginComponent, 
+    private router: Router, 
+    private navigationLink: NavigationLinksService,
+    private authService: AuthenticationService
+  ) {}
 
   canActivate(
     next: ActivatedRouteSnapshot,
     state: RouterStateSnapshot): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
-    if (this.loginService.loggedIn) {
+      if (this.authService.isAuthenticated()) {
       return true;
     } else {
       const loginLink = this.navigationLink.getLink('signinLink')

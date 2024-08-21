@@ -725,6 +725,7 @@ export class UserRegComponent {
                       this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Failed, please try again.', key: 'tl', life: 3000  });
                   
                   } else {
+                    console.log('reg successful')
                     this.messageService.add({ severity: 'success', summary: 'Authentication Failed', detail: 'Registered successfully.', key: 'tl', life: 3000  });
                       const dashboardLink = this.navigationLink.getLink('dashboardLink');
                       this.router.navigate([dashboardLink]);

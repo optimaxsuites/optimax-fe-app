@@ -1,102 +1,94 @@
-import { Component } from '@angular/core';
-import { ExpenseData } from '../../domain/expense.data';
+import { Component, OnInit } from '@angular/core';
+import { ExpenseService, Expense } from '../../service/expense.service';
+import { Router, ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'app-expense-forms-modal',
   templateUrl: './expense-forms-modal.component.html',
-  styleUrl: './expense-forms-modal.component.scss',
+  styleUrls: ['./expense-forms-modal.component.scss'],
 })
-export class ExpenseFormsModalComponent {
-  currentStage: string = 'to-submit'; // Initial stage
-  showModal: boolean = false; // Modal visibility control
+export class ExpenseFormsModalComponent implements OnInit {
+  currentStage: string = 'to-submit';
+  expenseSummary: any = {};
+  receiptFile: File | null = null;
+  invoiceFile: File | null = null;
 
-  // Object to store form summary data
-  expenseSummary = {
-    amount: '',
-    merchant: '',
-    expenseDate: '',
-    category: '',
-    taxRate: '',
-    taxPercentage: '',
-    taxAmount: '',
-    payMethod: '',
-    project: '',
-    comments: ''
-  };
+  constructor(
+    private expenseService: ExpenseService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
 
-  // Method to set the current stage of the form
-  setStage(stage: string) {
-    this.currentStage = stage;
+  ngOnInit(): void {
+    this.route.queryParams.subscribe((params) => {
+      const expenseId = params['id'];
+      if (expenseId) {
+        const expense = this.expenseService.getExpenseById(expenseId);
+        if (expense) {
+          this.expenseSummary = { ...expense };
+        }
+      }
+    });
   }
 
-  // Method to proceed to the next stage based on the current stage
-  nextStage() {
-    switch (this.currentStage) {
-      case 'to-submit':
-        this.currentStage = 'submitted';
-        break;
-      case 'submitted':
-        this.currentStage = 'approved';
-        break;
-      case 'approved':
-        this.currentStage = 'paid';
-        break;
+  // Handle the drag over event
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const target = event.target as HTMLElement;
+    target.classList.add('dragover');
+  }
+
+  // Handle the file drop event
+  onFileDrop(event: DragEvent, type: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const target = event.target as HTMLElement;
+    target.classList.remove('dragover');
+    if (event.dataTransfer && event.dataTransfer.files.length > 0) {
+      const file = event.dataTransfer.files[0];
+      this.assignFile(file, type);
     }
   }
 
-  checked: boolean = false;
-  expenseList: ExpenseData = {
-    id: '',
-    eTitle: '',
-    eProduct: '',
-    eUnitPrice: 0,
-    eQuantity: 0,
-    eTaxes: 0,
-    eEmployment: '',
-    eCompany: '',
-    employeeArray: [] || null,
-    eDate: Date || '',
-    eEmployee: '',
-    eJournal: '',
-    productArray: undefined,
-    journalArray: undefined,
-    taxesArray: undefined,
-    eNote: '',
-  };
-
-  // Method to handle form submission
-  submitForm() {
-    // Capture form data for summary display
-    this.expenseSummary.amount = (document.getElementById('amount') as HTMLInputElement).value;
-    this.expenseSummary.merchant = (document.getElementById('merchant') as HTMLInputElement).value;
-    this.expenseSummary.expenseDate = (document.getElementById('expense-date') as HTMLInputElement).value;
-    this.expenseSummary.category = (document.getElementById('category') as HTMLSelectElement).value;
-    this.expenseSummary.taxRate = (document.getElementById('tax-rate') as HTMLSelectElement).value;
-    this.expenseSummary.taxPercentage = (document.getElementById('tax-percentage') as HTMLInputElement).value;
-    this.expenseSummary.taxAmount = (document.getElementById('tax-amount') as HTMLInputElement).value;
-    this.expenseSummary.payMethod = (document.getElementById('pay-method') as HTMLSelectElement).value;
-    this.expenseSummary.project = (document.getElementById('project') as HTMLSelectElement).value;
-    this.expenseSummary.comments = (document.getElementById('comments') as HTMLTextAreaElement).value;
-
-    // Show the summary modal
-    this.showModal = true;
+  // Assign the dropped or selected file to the correct variable
+  assignFile(file: File, type: string): void {
+    if (type === 'receipt') {
+      this.receiptFile = file;
+    } else if (type === 'invoice') {
+      this.invoiceFile = file;
+    }
   }
 
-  // Method to save the form
-  saveForm() {
-    console.log('Form saved');
+  // Handle file selection via input field
+  onFileSelect(event: Event, type: string): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      this.assignFile(file, type);
+    }
   }
 
-  // Method to cancel the form process
-  cancelForm() {
-    console.log('Form cancelled');
-    this.setStage('to-submit');
+  // Submit the expense
+  submitExpense() {
+    // If editing, update the existing expense
+    if (this.expenseSummary.id) {
+      this.expenseService.updateExpense(this.expenseSummary);
+    } else {
+      // If creating a new expense
+      const newExpense: Expense = {
+        ...this.expenseSummary,
+        id: this.generateId(),
+        status: this.currentStage,
+      };
+      this.expenseService.addExpense(newExpense);
+    }
+
+    this.router.navigate(['/expenses']);
   }
 
-  // Method to close the summary modal
-  closeSummaryModal() {
-    this.showModal = false;
+  // Generate a random ID for new expenses
+  generateId(): string {
+    return Math.random().toString(36).substr(2, 9);
   }
-
-  
 }
