@@ -62,4 +62,13 @@ export class ExpenseApprovalComponent implements OnInit {
   toggleDropdown(): void {
     this.dropdownOpen = !this.dropdownOpen;
   }
+
+  downloadFile(fileName: string | undefined): void {
+    if (!fileName) return;
+    
+    // Logic to download the file, e.g., creating a URL or triggering a download
+    console.log(`Downloading file: ${fileName}`);
+    // You could use FileSaver.js or a similar library to handle the download.
+  }
+  
 }

@@ -3,6 +3,16 @@
     <!-- Optionally, add a header or title here -->
   </div>
 
+  <!-- <div class="search-container">
+    <input
+      type="text"
+      [(ngModel)]="searchTerm"
+      (input)="onSearch()"
+      placeholder="Search expenses..."
+      class="search-input"
+    />
+  </div> -->
+
   <div>
     <p-toolbar styleClass="mb-4 gap-2">
       <ng-template pTemplate="left">
@@ -10,13 +20,13 @@
       </ng-template>
 
       <ng-template pTemplate="right">
-        <app-button text="Add New" (btnClick)="navigateToForm()" class="btn-navigate" ></app-button>
+        <app-button text="Add New" (btnClick)="navigateToForm()" class="btn-navigate gap-2"></app-button>
         <app-button text="Import" class="btn-export"></app-button>
       </ng-template>
     </p-toolbar>
 
     <p-table 
-      [value]="expenses" 
+      [value]="filteredExpenses" 
       [paginator]="true" 
       styleClass="p-datatable-striped" 
       [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
@@ -41,16 +51,15 @@
           <td class="table-item">{{ expense.id }}</td>
           <td class="table-item">{{ expense.merchant }}</td>
           <td class="table-item">{{ expense.category }}</td>
-          <td class="table-item">{{ expense.amount }}</td>
-          <td class="table-item">{{ expense.date }}</td>
+          <td class="table-item">{{ expense.amount | currency }}</td>
+          <td class="table-item">{{ expense.date | date: 'shortDate' }}</td>
           <td class="table-item">{{ expense.status }}</td>
           <td class="actions table-item">
-            <i class="pi pi-eye table-item" (click)="viewExpenseApproval(expense)"></i> <!-- New icon for approval -->
+            <i class="pi pi-eye table-item" (click)="viewExpenseApproval(expense)"></i> <!-- Icon for approval -->
             <i class="pi pi-pen-to-square table-item" (click)="editExpense(expense)"></i>
             <i class="pi pi-times-circle table-item" (click)="deleteExpense(expense)"></i>
           </td>
         </tr>
-        
       </ng-template>
     </p-table>
   </div>

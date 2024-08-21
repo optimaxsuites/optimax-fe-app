@@ -7,10 +7,10 @@ import { ExpenseService, Expense } from '../../service/expense.service';
   templateUrl: './expense-table.component.html',
   styleUrls: ['./expense-table.component.scss'],
 })
-// Existing imports and component metadata
-
 export class ExpenseTableComponent implements OnInit {
   expenses: Expense[] = [];
+  filteredExpenses: Expense[] = [];
+  searchTerm: string = '';
 
   constructor(
     private router: Router, 
@@ -20,7 +20,23 @@ export class ExpenseTableComponent implements OnInit {
   ngOnInit(): void {
     this.expenseService.expenses$.subscribe((expenses) => {
       this.expenses = expenses;
+      this.filteredExpenses = expenses;
     });
+  }
+
+  onSearch(): void {
+    if (this.searchTerm) {
+      this.filteredExpenses = this.expenses.filter(expense =>
+        expense.merchant.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        expense.category.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        expense.amount.toString().includes(this.searchTerm) ||
+        expense.date.toString().includes(this.searchTerm) ||
+        expense.id.toString().includes(this.searchTerm) ||
+        expense.status.toLowerCase().includes(this.searchTerm.toLowerCase())
+      );
+    } else {
+      this.filteredExpenses = this.expenses;
+    }
   }
 
   navigateToForm(): void {
@@ -37,7 +53,6 @@ export class ExpenseTableComponent implements OnInit {
     this.expenseService.deleteExpense(expense.id);
   }
 
-  // New method to navigate to the approval page
   viewExpenseApproval(expense: Expense): void {
     this.router.navigate(['/expenses/expensesApproval', expense.id]);
   }
