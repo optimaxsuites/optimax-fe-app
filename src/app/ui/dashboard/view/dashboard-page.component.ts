@@ -17,7 +17,7 @@ export class DashboardPageComponent {
   constructor(private route: ActivatedRoute) {}
 
   ngOnInit(): void {
-    this.token = this.route.snapshot.paramMap.get('token')!;
-    console.log('Token:', this.token);
+    // this.token = this.route.snapshot.paramMap.get('token')!;
+    // console.log('Token:', this.token);
   }
 }

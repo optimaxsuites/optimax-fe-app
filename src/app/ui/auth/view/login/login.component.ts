@@ -5,6 +5,7 @@ import {
   NgForm,
   Validators,
 } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import {ErrorStateMatcher} from '@angular/material/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -38,21 +39,16 @@ export class LoginComponent implements OnInit {
   loading: boolean = false;
   loginInfo: any = {};
   loginDetails: any = {};
-
-
   loggedIn: boolean = false;
   submitted: boolean = false;
   loggedOutMessage1?: string;
   messages: Message[] | undefined;
 
-  public token!: string;
-
- 
+  public token!: string; 
   hide = true;
 
   emailFormControl = new FormControl('', [Validators.required, Validators.email]);
   passwordFormControl = new FormControl('', [Validators.required]);
-
   matcher = new MyErrorStateMatcher();
 
   constructor(
@@ -63,8 +59,6 @@ export class LoginComponent implements OnInit {
     private route: ActivatedRoute,
     private randomTokenService: RandomTokenService,
   ){}
-
-  // viewDonorProfile: any = []
 
   ngOnInit(): void {
     const loginLink = this.navigationLink.getLink('signinLink')
@@ -77,75 +71,83 @@ export class LoginComponent implements OnInit {
     }
   }
 
-  
-  // loginInfo = {
-  //   username: '',
-  //   password: '',
-    
-  // };
-
-// Guarded
-  userLoginAction(): void {
+  async userLoginAction(): Promise<void> {
     this.loading = true;
-
-
-
+  
     const loginDetails = {
       username: this.loginInfo.username,
       password: this.loginInfo.password,
-      project : `${environment.project}`,
-      apiKey : `${environment.apiKey}`
+      project: `${environment.project}`,
+      apiKey: `${environment.apiKey}`
     };
-
+  
     if (!this.loginInfo.username || !this.loginInfo.password) {
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
-        this.loading = false;
-    } else {
-        setTimeout(() => {
-            this.authenticationService.userLogin(loginDetails).subscribe(
-              async (data) => {
-                this.loadInitParam(data);
-                    if (!data) {
-                        this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
-                        this.loggedIn = false;
-                        this.loading = false;
-                    } else {
-                      if (!data.needsRegistration) {
-                        const registrationLink = this.navigationLink.getLink('userRegistrationLink');
-                        this.router.navigate([registrationLink]);
-                      } else {
-                        const dashboardLink = this.navigationLink.getLink('dashboardLink');
-                        this.router.navigate([dashboardLink]);
-                      }
-                      this.loggedIn = true;
-                      this.loading = false;
-                    }
-                },
-                (error) => {
-                  if (error.toString() == "500") {
-                      this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
-                      this.loggedIn = false;
-                      this.loading = false;
-                    } 
-                    if (error.toString() == "404") {
-                      this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.' });
-                      this.loggedIn = false;
-                      this.loading = false;
-                    }
-                    else if (error.toString() == "0") {
-                        this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
-                        this.loggedIn = false;
-                        this.loading = false;
-                    }
-                    this.loading = false;
-                }
-            );
-        }, 2000);
-
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
+      this.loading = false;
+      return;
     }
-    // const dashboardLink = this.navigationLink.getLink('dashboardLink');
-    //                     this.router.navigate([dashboardLink]);
-    
+  
+    try {
+      const data = await this.authenticationService.userLogin(loginDetails).toPromise();
+      this.loadInitParam(data);
+  
+      if (!data) {
+        this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
+        this.loggedIn = false;
+      } else {
+        const registrationComplete = await this.checkUserReg();
+        console.log('Registration complete:', registrationComplete); 
+  
+        if (registrationComplete) {
+          const dashboardLink = this.navigationLink.getLink('dashboardLink');
+          this.router.navigate([dashboardLink]);
+        } else {
+          const registrationLink = this.navigationLink.getLink('userRegistrationLink');
+          this.router.navigate([registrationLink]);
+        }
+        this.loggedIn = true;
+      }
+    } catch (error) {
+      if (error instanceof HttpErrorResponse) {
+        if (error.status === 500) {
+          this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
+        } else if (error.status === 404) {
+          this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.' });
+        } else if (error.status === 0) {
+          this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
+        }
+      } else {
+        this.messageService.add({ severity: 'error', summary: 'Unknown Error', detail: 'An unexpected error occurred.' });
+      }
+      this.loggedIn = false;
+    } finally {
+      this.loading = false;
+    }
+  }
+  
+  checkUserReg(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      const userId = sessionStorage.getItem('userid');
+      // console.log('Checking registration for userId:', userId); 
+  
+      if (!userId) {
+        resolve(false); 
+        return;
+      }
+  
+      this.authenticationService.getUserPrimaryInfoById(userId).subscribe(
+        data => {
+          sessionStorage["userPrimaryInfoRegData"] = JSON.stringify(data);
+
+          // console.log('User registration data:', data); 
+          resolve(!!data && !!data.id); 
+        },
+        error => {
+          // console.error('Error fetching user info:', error); 
+          resolve(false); 
+        }
+      );
+    });
   }
 
   navigateToSignup(){
@@ -153,9 +155,6 @@ export class LoginComponent implements OnInit {
     this.router.navigate([signupLink]);
     console.log()
   }
-
-
-
 
   loadInitParam(data: any) {
     sessionStorage.setItem("username", data.username);
@@ -169,7 +168,6 @@ export class LoginComponent implements OnInit {
     sessionStorage["userRegData"] = JSON.stringify(data);
   }
 
-
   async getUserRegInfoData(data: any) {
     this.authenticationService
         .getRegDataByUsername(data.username)
@@ -180,12 +178,8 @@ export class LoginComponent implements OnInit {
             if (p) {
                 sessionStorage["userInfoRegData"] = JSON.stringify(p);
             }
-            this.router.navigate(["dashboard"]);
         });
   }
-
-
-
 
 }
 

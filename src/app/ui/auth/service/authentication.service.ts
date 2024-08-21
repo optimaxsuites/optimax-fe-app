@@ -4,6 +4,7 @@ import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from 'src/environments/environment.prod';
 import { NavigationLinksService } from '../../shared/service/navigation-links/navigation-links.service';
 import { Router } from '@angular/router';
+import { JwtHelperService } from '@auth0/angular-jwt';
 
 
 
@@ -13,7 +14,22 @@ import { Router } from '@angular/router';
 export class AuthenticationService {
   private _apiBaseUrl = (environment as any).apiBaseUrl;
 
-  constructor(private http: HttpClient, private navigationLink: NavigationLinksService, private router: Router) {  }
+  constructor(
+    private http: HttpClient, 
+    private navigationLink: NavigationLinksService, 
+    private router: Router,
+    private jwtHelper: JwtHelperService
+  ) {  }
+
+  isAuthenticated(): boolean {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+    if (!token || this.jwtHelper.isTokenExpired(token)) {
+      return false;
+    }
+
+    return true;
+  }
   
   logout(): void {
     sessionStorage.removeItem("username");
@@ -25,6 +41,8 @@ export class AuthenticationService {
     sessionStorage.removeItem("accessToken");
     sessionStorage.removeItem("userid");
     sessionStorage.removeItem("Token");
+    sessionStorage.removeItem("userPrimaryInfoRegData");
+
 
     // this.router.navigate([''])
     const loginLink = this.navigationLink.getLink('signinLink')
@@ -37,15 +55,26 @@ export class AuthenticationService {
 
 
   userLogin(data: any): Observable<any> {
-    console.log((this.getBaseApiUrl() + "/x/api/v2/auth/sigin"+"---"+JSON.stringify(data)))
+    // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/sigin"+"---"+JSON.stringify(data)))
 
     return this.http
         .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signin", data)
         .pipe(catchError(this.handleError));
   }
 
+  getUserPrimaryInfoById(data: string): Observable<any>{
+    // console.log((this.getBaseApiUrl() + `/x/api/v2/us/ur/get/user/primary/info/${data}`+"---"+JSON.stringify(data)))
+    // const url = `${this.getBaseApiUrl()}/x/api/v2/us/ur/get/user/primary/info/${data}`;
+
+    return this.http
+        .get<any>(
+            this.getBaseApiUrl() +
+                `/x/api/v2/us/ur/get/user/primary/info/${data}`)
+        .pipe(catchError(this.handleError));
+  }
+
   getRegDataByUsername(username: string): Observable<any> {
-    console.log((this.getBaseApiUrl() + "/x/api/v2/us/ur/findByUsernameOrEmail?username="+"---"+JSON.stringify(username)))
+    // console.log((this.getBaseApiUrl() + "/x/api/v2/us/ur/findByUsernameOrEmail?username="+"---"+JSON.stringify(username)))
 
     return this.http
         .get<any>(
@@ -66,7 +95,7 @@ export class AuthenticationService {
   }
 
   userVerification(token: string): Observable<any> {
-    console.log((this.getBaseApiUrl() + "/x/api/v2/us/register/verify?token="+"---"+JSON.stringify(token)))
+    // console.log((this.getBaseApiUrl() + "/x/api/v2/us/register/verify?token="+"---"+JSON.stringify(token)))
 
     return this.http
       .get<any>(this.getBaseApiUrl() + '/x/api/v2/us/register/verify?token=' + token)
