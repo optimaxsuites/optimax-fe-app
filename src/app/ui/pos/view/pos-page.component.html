@@ -1,4 +1,4 @@
-<div class="sales">
+<!-- <div class="sales">
     <div class="link-wrapper">
       <mat-tab-group
         mat-stretch-tabs="false"
@@ -11,22 +11,68 @@
         <mat-tab label="Products">
           <app-products></app-products>
         </mat-tab>
-        <mat-tab label="Configuration">
-          <app-configuration></app-configuration>
+        <mat-tab label="Inventory">
+          <app-inventory></app-inventory>
         </mat-tab>
+        <mat-tab label="Settings">
+          <app-configuration></app-configuration>
+        
+        </mat-tab>
+
+       
         <mat-tab label="Manage Users">
           <app-manage-users></app-manage-users>
         </mat-tab>
-        <mat-tab label="Commissions">
-          <app-commision></app-commision>
-        </mat-tab>
+     
       </mat-tab-group>
     </div>
   
-    <!-- <div class="content">
+    <div class="content">
           <router-outlet></router-outlet>
-      </div> -->
+      </div>
   </div>
   
-  <!-- <router-outlet></router-outlet> -->
-  
+<router-outlet></router-outlet> -->
+
+
+<div class="sales">
+  <div class="link-wrapper">
+    <!-- Navigation Tabs -->
+    <button class="tab-btn"  [ngClass]="{'active': selectedTab === 'dashboard'}" (click)="selectTab('dashboard')">Dashboard</button>
+    <button class="tab-btn"  [ngClass]="{'active': selectedTab === 'products'}" (click)="selectTab('products')">Products</button>
+    <button class="tab-btn"  [ngClass]="{'active': selectedTab === 'ineventory'}" (click)="selectTab('inventory')">Inventory</button>
+    
+    <!-- Settings tab with dropdown -->
+    <div class="settings-tab-menu relative">
+      <button class="tab-btn"  [ngClass]="{'active': selectedTab === 'configurations'}" (click)="toggleDropdown()">Settings ▼</button>
+      <div class="absolute bg-white p-3 gap-3 shadow-sm text-left " *ngIf="isDropdownOpen">
+        <button class="pb-3" (click)="selectSetting('configurations')">Configurations</button>
+        <button (click)="selectSetting('users')">Users</button>
+        </div>
+    </div>
+
+    
+  </div>
+
+  <!-- Content area -->
+  <div class="tab-content">
+    <div *ngIf="selectedTab === 'dashboard'">
+      <app-posdashboard></app-posdashboard>
+    </div>
+    <div *ngIf="selectedTab === 'products'">
+      <app-products></app-products>
+    </div>
+    <div *ngIf="selectedTab === 'inventory'">
+      <app-inventory></app-inventory>
+    </div>
+    <div *ngIf="selectedTab === 'settings'">
+      <!-- Nested content for settings -->
+      <div *ngIf="selectedSetting === 'configurations'">
+        <app-configuration></app-configuration>
+      </div>
+      <div *ngIf="selectedSetting === 'users'">
+        <app-manage-users></app-manage-users>
+      </div>
+    </div>
+  </div>
+</div>

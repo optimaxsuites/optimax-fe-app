@@ -36,10 +36,11 @@ productData = {
   count: 0,
   discountType: [] as any[],
   discountValue: 0,
-  image: "",
+  image: {} as any,
   startDate: "",
   endDate: "",
-  discountMinQuantity: 0
+  discountMinQuantity: 0,
+  discountName: ''
 }
 
 categoryData = {
@@ -53,7 +54,7 @@ barcodeConfig = {
   barcodeQuantity: 1
 }
 
-  products = this.posService.products 
+  products = [] 
   viewProduct: boolean = false
   addProduct: boolean = false;
   activeItem: any = {}
@@ -104,7 +105,7 @@ barcodeConfig = {
   openCategories: boolean = false
   openAddCategory: boolean = false
   openAddVariant: boolean = false
-
+  productImage: any = ''
   tableSection: boolean = true;
   constructor(
     private messageService: MessageService,
@@ -211,7 +212,7 @@ this.getDiscountTypes()
       async (data) => {
         console.log(data)
         if (data) {
-          
+          this.products = data
         } else {
          console.log("error loading data")
         }}
@@ -282,10 +283,13 @@ this.getDiscountTypes()
   
   onImageUpload(event: any) {
     const file = event.target.files[0];
+    console.log(file)
+        this.productData.image = file;
+
     if (file) {
       const reader = new FileReader();
       reader.onload = (e: any) => {
-        this.productData.image = e.target.result;
+        this.productImage = e.target.result;
       };
       reader.readAsDataURL(file);
     }
@@ -332,6 +336,7 @@ this.getDiscountTypes()
     this.variants.splice(index, 1);
   }
   addToProduct(){
+   const userName = sessionStorage.getItem("username")
    const product = {
         name: this.productData.name,
         code: this.productData.code,
@@ -346,48 +351,76 @@ this.getDiscountTypes()
         tax: this.productData.tax,
         branch: this.productData.branch[0],
         discount: {
-          name: this.productData.discountType.join(" and "),
+          name: this.productData.discountName,
           value: this.productData.discountValue,
           startDate: this.productData.startDate,
           endDate: this.productData.endDate,
           minQuantity: this.productData.discountMinQuantity,
           discountType: this.productData.discountType.join(" and ")
         },
-        category: this.productData.category,
-     
+        // productCategory: this.productData.category,
+        createdBy: userName,
+        createdDate:  new Date().toISOString(),
+
     }
-    console.log(product)
-    if (this.checkForEmptyFields(product)) {
-      console.log("all fiellds are required")
+
+    const formData = new FormData();
+    formData.append('product', JSON.stringify(product));
+    if (this.productData.image instanceof File) {
+      formData.append('files', this.productData.image);
+    }
+    console.log(formData)
+    if (this.checkForEmptyFields(formData)) {
         this.messageService.add({ severity: 'error', summary: 'warn', detail: 'All fields are required' , key: 'tl', life: 3000 });
     } else {
-            this.posService.addProduct(product).subscribe(
+            this.posService.addProduct(formData).subscribe(
               async (data) => {
-            console.log(data)
+
             if (data) {
-            
+              this.messageService.add({ severity: 'success', summary: 'Product Added', detail: 'Product added successfully.', key: 'tl', life: 3000 });
+              this.productData = {
+                name: "",
+                code: "",
+                description: "",
+                sku: "",
+                weight: 0,
+                initialPrice: "",
+                effectivePrice: "",
+                initialQuantity: 0,
+                effectiveQuantity: 0,
+                partNumber: "",
+                tax: 0,
+                branch: "",
+                variant: "",
+                discount: 0,
+                category: "",
+                id: 0,
+                count: 0,
+                discountType: [] as any[],
+                discountValue: 0,
+                image: {} as any,
+                startDate: "",
+                endDate: "",
+                discountMinQuantity: 0,
+                discountName: ''
+              }
+              this.productImage = ""
             } else {
               this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Failed, please try again.', key: 'tl', life: 3000 });
             }
                 },
-                (error: HttpErrorResponse) => {
-                  if (error.status === 500) {
-                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Check form details and try again.', key: 'tl', life: 3000 });
-                  } else if (error.status === 404) {
-                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Error, try again.', key: 'tl', life: 3000 });
-                  } else if (error.status === 0) {
-                    this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.', key: 'tl', life: 3000 });
-                  } else {
-                    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'An unexpected error occurred.', key: 'tl', life: 3000 });
-                  }
+                (error) => {
+                  this.messageService.add({ severity: 'error', summary: 'Error', detail: error, key: 'tl', life: 3000 });
                 }
             );}
    
   }
   selectCategory(category: any) {
-    this.selectedCategory = category.name;
-    this.openCategories = false;
-    this.productData.category = category.id
+    console.log(
+    category
+    )
+    this.productData.category = category
+    console.log(this.productData.category)
   }
 
   toggleCategoryDropdown(){

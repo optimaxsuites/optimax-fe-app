@@ -10,6 +10,7 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
 import { CdkScrollable } from '@angular/cdk/scrolling';
 
 import { ButtonModule } from 'primeng/button';
@@ -166,6 +167,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { UploadRecieptComponent } from './ui/expenses/view/upload-reciept/upload-reciept.component';
 import { AddPerDiemComponent } from './ui/expenses/view/add-per-diem/add-per-diem.component';
 import { ExpenseSummaryComponent } from './ui/expenses/view/expense-summary/expense-summary.component';
+import { InventoryComponent } from './ui/pos/view/inventory/inventory.component';
 
 @NgModule({
   declarations: [
@@ -275,6 +277,7 @@ import { ExpenseSummaryComponent } from './ui/expenses/view/expense-summary/expe
     UploadRecieptComponent,
     AddPerDiemComponent,
     ExpenseSummaryComponent,
+    InventoryComponent,
   ],
   imports: [
     BrowserModule,
@@ -335,6 +338,7 @@ import { ExpenseSummaryComponent } from './ui/expenses/view/expense-summary/expe
     CalendarModule,
     CheckboxModule,
     NgSelectModule,
+    MatMenuModule,
     // ToastrModule.forRoot(),
   ],
   providers: [
