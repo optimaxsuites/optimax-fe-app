@@ -49,6 +49,7 @@ import { OrderRefundComponent } from './ui/pos/view/order-refund/order-refund.co
 import { RequestDetailsComponent } from './ui/pos/view/request-details/request-details.component';
 import { OpenRegisterComponent } from './ui/pos/view/open-register/open-register.component';
 import { CloseRegisterComponent } from './ui/pos/view/close-register/close-register.component';
+import { AuthGuard } from './ui/auth/service/auth.guard';
 
 const routes: Routes = [
   {
@@ -90,10 +91,12 @@ const routes: Routes = [
   {
     path: 'admin/settings/user-reg/:uuid',
     component: UserRegLayoutComponent,
+    // canActivate: [AuthGuard],
   },
   {
     path: 'business-registration',
     component: BusinessRegComponent,
+    // canActivate: [AuthGuard],
   },
 
   {
@@ -128,7 +131,8 @@ const routes: Routes = [
       {
         path: 'user/checkout/openRegister/:uuid',
         component: OpenRegisterComponent,
-      },{
+      },
+      {
         path: 'user/checkout/closeRegister/:uuid',
         component: CloseRegisterComponent,
       },
@@ -181,18 +185,21 @@ const routes: Routes = [
         component: RfqComponent,
       },
       {
-
         path: 'purchase/rfq-modal',
         component: RfqModalComponent,
       },
-      // { path: '', redirectTo: '/purchase', pathMatch: 'full' },
-      { path: 'purchase/rfq-modal/:rfqId', component: RfqModalComponent },
-
+      { 
+        path: 'purchase/rfq-modal/:rfqId', 
+        component: RfqModalComponent 
+      },
       {
         path: 'admin/inventory/:uuid',
         component: InventoryPageComponent,
       },
-      { path: 'inventory/inventory-form', component: InventoryFormComponent },
+      { 
+        path: 'inventory/inventory-form', 
+        component: InventoryFormComponent 
+      },
       {
         path: 'inventory/inventory-form/:id',
         component: InventoryFormComponent,
@@ -241,7 +248,6 @@ const routes: Routes = [
         path: 'expenses/Addperdiem',
         component: AddPerDiemComponent,
       },
-      { path: '', redirectTo: '/expenses', pathMatch: 'full' },
       {
         path: 'admin/pos/:uuid',
         component: PosPageComponent,
@@ -266,6 +272,7 @@ const routes: Routes = [
     ],
   },
 ];
+
 
 @NgModule({
   imports: [RouterModule.forRoot(routes)],

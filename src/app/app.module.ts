@@ -168,6 +168,8 @@ import { AddPerDiemComponent } from './ui/expenses/view/add-per-diem/add-per-die
 import { ExpenseSummaryComponent } from './ui/expenses/view/expense-summary/expense-summary.component';
 import { ExpenseApprovalComponent } from './ui/expenses/view/expense-approval/expense-approval.component';
 
+import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -345,6 +347,11 @@ import { ExpenseApprovalComponent } from './ui/expenses/view/expense-approval/ex
       useClass: AuthInterceptor,
       multi: true,
     },
+    { 
+      provide: JWT_OPTIONS, 
+      useValue: JWT_OPTIONS 
+    },
+    JwtHelperService,
     provideAnimationsAsync(),
     provideNativeDateAdapter(),
   ],

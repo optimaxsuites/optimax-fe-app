@@ -33,7 +33,7 @@ export class AuthInterceptor implements HttpInterceptor {
             ),
 
         });
-        console.log("na request", _request)
+        // console.log("na request", _request)
 
 
 
