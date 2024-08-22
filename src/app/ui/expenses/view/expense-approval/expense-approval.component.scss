@@ -35,7 +35,12 @@
     color: #333;
   }
   
-  /* Status Text Colors */
+  .action-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
   .status-approved {
     color: green;
     font-weight: bold;
@@ -46,11 +51,6 @@
     font-weight: bold;
   }
   
-  .action-buttons {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
   
   .primary-actions {
     display: flex;
@@ -59,6 +59,7 @@
   
   .dropdown {
     position: relative;
+    margin-left: 10px;
   }
   
   .btn {
@@ -91,7 +92,6 @@
   .btn-more {
     background-color: #224957;
     color: #fff;
-    margin-left: 10px;
   }
   
   .dropdown-content {
@@ -101,7 +101,7 @@
     top: 100%;
     min-width: 160px;
     background-color: #f1f1f1;
-    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    // box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
     z-index: 1;
     border-radius: 5px;
     padding: 0;
@@ -123,6 +123,7 @@
     border-bottom: none;
   }
   
+  /* Show the dropdown when the class "show" is added */
   .dropdown-content.show {
     display: block;
   }
@@ -131,4 +132,15 @@
     opacity: 0.65;
     cursor: not-allowed;
   }
+  
+
+
+
+
+
+
+
+
+
+
   

@@ -12,6 +12,8 @@ import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonModule } from '@angular/material/button';
 import { CdkScrollable } from '@angular/cdk/scrolling';
 
+// import { SignaturePadModule } from 'angular2-signaturepad';
+
 import { ButtonModule } from 'primeng/button';
 import { EditorModule } from 'primeng/editor';
 import { PasswordModule } from 'primeng/password';
@@ -340,6 +342,7 @@ import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
     CheckboxModule,
     NgSelectModule,
     // ToastrModule.forRoot(),
+    // SignaturePadModule,
   ],
   providers: [
     {
