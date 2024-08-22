@@ -1,4 +1,58 @@
-//Tailwindcss
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* General styles */
+.link-wrapper {
+    display: flex;
+   
+    padding: 0 16px;
+ 
+  }
+  
+  .tab-btn {
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    padding: 12px 24px;
+    border-radius: 4px;
+    @apply text-gray-600
+  }
+  
+  .tab-btn:hover {
+    @apply bg-gray-50 text-gray-700
+  }
+
+  .active{
+    @apply text-customGreen border-b-2 border-b-customGreen
+  }
+  
+  .settings-tab-menu {
+    position: relative;
+    display: inline-block;
+  }
+  
+
+  
+  .dropdown-item {
+    display: block;
+    padding: 8px 16px;
+    background-color: white;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .dropdown-item:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .dropdown-item:last-child {
+    border-bottom: none;
+  }
+  
+  .tab-content {
+    margin-top: 20px;
+    padding: 16px;
+  }
+  
