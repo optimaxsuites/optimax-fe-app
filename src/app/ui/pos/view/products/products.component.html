@@ -130,12 +130,12 @@
       <p class="text-2xl text-gray-700 font-semibold pb-0 mb-0 mt-2">Pricing</p>
 
       <div class="flex gap-5 items-center w-full" >
-        <div class=" detailDiv" >
+        <div class=" detailDiv  w-full" >
         <label for="price">Base price</label>
-        <p class="name editInput"  rows="4" id="description">{{activeItem.initialPrice | number:'1.2-2'}}</p>  
+        <p class="name editInput w-full"  rows="4" id="description">{{activeItem.initialPrice | number:'1.2-2'}}</p>  
  
       </div>
-      <div class=" detailDiv" >
+      <div class=" detailDiv w-full" >
         <label for="price">Tax percentage (%)</label>
         <p class="name editInput"  rows="4" id="description">{{activeItem.tax | number:'1.2-2'}}</p>  
 
@@ -187,12 +187,12 @@
     
 
     <div class="flex gap-5 items-center w-full" >
-      <div class=" detailDiv" >
+      <div class=" detailDiv w-full" >
         <label for="e-price">Discount name</label>
         <p class="name editInput"  rows="4" id="description">{{activeItem.discount?.name}}</p>  
 
       </div>
-      <div class=" detailDiv" >
+      <div class=" detailDiv w-full" >
         <label for="e-price">Effective price</label>
         <p class="name editInput"  rows="4" id="description">{{activeItem.effectivePrice | number:'1.2-2'}} </p>  
 
@@ -704,7 +704,6 @@
 
   <div class="mt-5 flex flex-col gap-4">
     <div class="flex items-center">
-      <!-- <input type="text"  [(ngModel)]="newCategory"  class=" outline-none" placeholder="category name" (keydown.enter)="addCategory()"> -->
       <div class="ml-3"> 
         <label for="name">Category name</label >
       <input class="name editInput" [(ngModel)]="categoryData.name" placeholder="category name" id="name"/>  
@@ -812,7 +811,6 @@
   <input class="name editInput" type="number" placeholder="1" id="name" [(ngModel)]="barcodeConfig.barcodeQuantity"/>  
   </div>
 
-  <!-- <svg id="barcode"></svg> -->
 
   <div class="flex justify-between gap-10 my-5 items-center">
     <button class="btn create-invoice-btn w-full" (click)="generateBarcode()" >Get PDF</button>

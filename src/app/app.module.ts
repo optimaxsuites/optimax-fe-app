@@ -173,6 +173,9 @@ import { ExpenseApprovalComponent } from './ui/expenses/view/expense-approval/ex
 
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 import { InventoryComponent } from './ui/pos/view/inventory/inventory.component';
+import { ViewProductComponent } from './ui/pos/view/products/view-product/view-product.component';
+import { AddProductComponent } from './ui/pos/view/products/add-product/add-product.component';
+import { EditProductComponent } from './ui/pos/view/products/edit-product/edit-product.component';
 
 @NgModule({
   declarations: [
@@ -282,6 +285,9 @@ import { InventoryComponent } from './ui/pos/view/inventory/inventory.component'
     UploadRecieptComponent,
     AddPerDiemComponent,
     ExpenseSummaryComponent,
+    ViewProductComponent,
+    AddProductComponent,
+    EditProductComponent,
   ],
   imports: [
     CommonModule,
