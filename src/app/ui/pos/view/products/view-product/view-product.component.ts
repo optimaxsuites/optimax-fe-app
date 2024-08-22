@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
   selector: 'app-view-product',
@@ -7,4 +7,20 @@ import { Component } from '@angular/core';
 })
 export class ViewProductComponent {
 
+
+  @Input() activeItem: any;
+  @Output() edit = new EventEmitter<void>();  
+  @Output() closeView = new EventEmitter<void>();  
+  
+  constructor() {}
+
+  openViewProduct() {
+    this.closeView.emit();
+
+    }
+
+    openEdit(arg0: any) {
+      this.edit.emit(arg0);
+
+}
 }

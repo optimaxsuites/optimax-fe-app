@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { PosServiceService } from '../../../service/pos-service.service';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
@@ -11,6 +11,7 @@ import jsPDF from 'jspdf';
   styleUrl: './add-product.component.scss'
 })
 export class AddProductComponent {
+  @Output() close = new EventEmitter<void>();  
   productData = {
     name: "",
     code: "",
@@ -62,12 +63,10 @@ export class AddProductComponent {
     {label: 'wuse', value: 'Wuse'}
     ]
 
-    discountTypes = [
-      { label: 'Periodic', value: 'periodic' },
-      { label: 'Quantity Based', value: 'quantityBased' },
-      { label: 'Global Discount', value: 'globalDiscount' }
-    ];
-    
+  discountTypes: any[] = [];
+    discountType: string[] = []
+    periodicDiscount: { startDate: string, endDate: string } = { startDate: '', endDate: '' };
+    quantityBasedDiscount: { minQuantity: number } = { minQuantity: 0 };
   addSuccessfull: boolean = false
 
   selectedBranch: any[] = []
@@ -100,9 +99,20 @@ export class AddProductComponent {
   }
   ngOnInit(): void {
     this.loadCategory()
+    this.getDiscountTypes()
 
       }
-
+  getDiscountTypes(){
+        this.posService.getDiscountTypes().subscribe(
+          async (data) => {
+            console.log(data)
+            if (data) {
+              this.discountTypes = data
+            } else {
+             console.log("error loading data")
+            }}
+        )  
+      }
   checkForEmptyFields(obj: any): boolean {
     return Object.values(obj).some(value => typeof value === 'string' && value.trim() === '');
   }
@@ -199,9 +209,9 @@ export class AddProductComponent {
              );}
     
    }
-   closeAddProduct() {
-    this.addProduct = false
-    }
+   triggerClose() {
+    this.close.emit();
+  }
    addVariant() {
     this.variants.push({ ...this.newVariant });
 
