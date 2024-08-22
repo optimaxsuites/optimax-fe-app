@@ -51,11 +51,13 @@
           <td class="table-item">{{ expense.id }}</td>
           <td class="table-item">{{ expense.merchant }}</td>
           <td class="table-item">{{ expense.category }}</td>
-          <td class="table-item">{{ expense.amount | currency }}</td>
-          <td class="table-item">{{ expense.date | date: 'shortDate' }}</td>
+          <td class="table-item">{{ expense.amount}}</td>
+          <!-- <td class="table-item">{{ expense.amount | currency }}</td> -->
+          <td class="table-item">{{ expense.date}}</td>
+          <!-- <td class="table-item">{{ expense.date | date: 'shortDate' }}</td> -->
           <td class="table-item">{{ expense.status }}</td>
           <td class="actions table-item">
-            <i class="pi pi-eye table-item" (click)="viewExpenseApproval(expense)"></i> <!-- Icon for approval -->
+            <i class="pi pi-eye table-item" (click)="viewExpenseApproval(expense)"></i>
             <i class="pi pi-pen-to-square table-item" (click)="editExpense(expense)"></i>
             <i class="pi pi-times-circle table-item" (click)="deleteExpense(expense)"></i>
           </td>
