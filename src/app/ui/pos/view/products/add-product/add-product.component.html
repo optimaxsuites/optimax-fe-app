@@ -1,3 +1,5 @@
+<form [formGroup]="productForm" (ngSubmit)="isEditMode ? updateProduct() : addToProduct()">
+
 <div class="createVendor" >
     <p class="back" style="cursor: pointer;" (click)="triggerClose()"><i class="fa-solid fa-arrow-left"></i> Back</p>
   
@@ -7,11 +9,17 @@
         <p class="text-2xl text-gray-700 font-semibold pb-0 mb-0">General Information</p>
         <div class="ml-3"> 
           <label for="name">Name</label >
-        <input class="name editInput" [(ngModel)]="productData.name" placeholder="name" id="name"/>  
+        <input class="name editInput"    formControlName="name" placeholder="name" id="name"/>  
+        <div *ngIf="productForm.get('name')?.invalid && productForm.get('name')?.touched" class="error">
+          Name is required.
+        </div>
         </div>
         <div class=" detailDiv ml-3" >
           <label for="description">Description</label>
-        <textarea class="name editInput" [(ngModel)]="productData.description" rows="4" placeholder="description" id="description"></textarea>  
+        <textarea class="name editInput"  formControlName="description" rows="4" placeholder="description" id="description"></textarea>  
+        <div *ngIf="productForm.get('description')?.invalid && productForm.get('desccription')?.touched" class="error">
+          Description is required.
+        </div>
         </div>
   
         <div class=" flex gap-4 items-center w-full">
@@ -21,15 +29,20 @@
             [items]="branches"
             bindLabel="label"
             bindValue="value"
-            [(ngModel)]="productData.branch"
-            [multiple]="true"
+            formControlName="branch"
+            [multiple]="false"
             placeholder="Select branch">
             </ng-select>
+            <div *ngIf="productForm.get('branch')?.invalid && productForm.get('branch')?.touched" class="error">
+              Branch is required.
+            </div>
             </div>
             <div class=" detailDiv w-full" >
               <label for="code">Code</label>
-              <input class="name editInput" [(ngModel)]="productData.code" placeholder="code" id="code"/>  
-         
+              <input class="name editInput" formControlName="code" placeholder="code" id="code"/>  
+              <div *ngIf="productForm.get('code')?.invalid && productForm.get('code')?.touched" class="error">
+                Code is required.
+              </div>
               </div>
   
         </div>
@@ -41,11 +54,17 @@
   
         <div class=" detailDiv w-full" >
           <label for="price">Base price</label>
-        <input class="name editInput"  type="text" [(ngModel)]="productData.initialPrice" id="price" placeholder="price"/>  
+        <input class="name editInput"  type="text" formControlName="initialPrice" id="price" placeholder="price"/>  
+        <div *ngIf="productForm.get('initialPrice')?.invalid && productForm.get('initialPrice')?.touched" class="error">
+          Base price is required.
+        </div>
         </div>
         <div class=" detailDiv w-full" >
           <label for="price">Tax percentage (%)</label>
-        <input class="name editInput" type="text" [(ngModel)]="productData.tax" id="price" placeholder="tax"/>  
+        <input class="name editInput" type="text" formControlName="tax" id="price" placeholder="tax"/>  
+        <div *ngIf="productForm.get('tax')?.invalid && productForm.get('cotaxde')?.touched" class="error">
+          Tax is required.
+        </div>
         </div>
       </div>
   
@@ -53,7 +72,10 @@
    
           <div class=" detailDiv w-full" >
             <label for="discount">Discount percentage (%)</label>
-          <input id="discount" [(ngModel)]="productData.discountValue"  class="name editInput" placeholder="discount"/>  
+          <input id="discount" formControlName="discountValue"  class="name editInput" placeholder="discount"/>  
+          <div *ngIf="productForm.get('discountValue')?.invalid && productForm.get('discountValue')?.touched" class="error">
+            Discount percentage is required.
+          </div>
           </div>
   
           <div class=" detailDiv w-full" >
@@ -62,34 +84,46 @@
           [items]="discountTypes"
           bindLabel="name"
           bindValue="id"
-          [(ngModel)]="productData.discountType"
+          formControlName="discountType"
           [multiple]="true"
           placeholder="Select discount types">
           </ng-select>
+          <div *ngIf="productForm.get('discountType')?.invalid && productForm.get('discountType')?.touched" class="error">
+            Discount Type is required.
+          </div>
           </div>
   
         </div>
   
-        <div  *ngIf="productData.discountType.includes(2)">
+        <div  *ngIf="productForm.get('discountType')?.value?.includes(2)">
         <p class="text-2xl text-gray-700 ml-3 pb-0 mb-0 mt-2">Discount validity period</p>
   
         <div  class="flex gap-4 items-center w-full">
           
           <div class=" detailDiv w-full" >
             <label for="start">Start date</label>
-          <input type="date" [(ngModel)]="productData.startDate"  id="start"  class="name editInput" />  
+          <input type="date" formControlName="startDate" id="start"  class="name editInput" />  
+          <div *ngIf="productForm.get('startDate')?.invalid && productForm.get('startDate')?.touched" class="error">
+            Start date is required.
           </div>
-          <div class=" detailDiv w-full" >
+          </div>
+          <div class=" detailDiv w-full" > 
             <label for="end">End date</label>
-          <input type="date" [(ngModel)]="productData.endDate" id="end"  class="name editInput" />  
+          <input type="date" formControlName="endDate" id="end"  class="name editInput" /> 
+          <div *ngIf="productForm.get('endDate')?.invalid && productForm.get('endDate')?.touched" class="error">
+            End date is required.
+          </div> 
           </div>
         </div>
       </div>
   
-      <div *ngIf="productData.discountType.includes(3)"> 
+      <div *ngIf="productForm.get('discountType')?.value?.includes(3)">
           <div class=" detailDiv w-full" >
             <label for="minQuantity">Minimum quantity</label>
-          <input type="text" id="minQuantity" [(ngModel)]="productData.discountMinQuantity"  class="name editInput" />  
+          <input type="text" id="minQuantity" formControlName="discountMinQuantity"  class="name editInput" />  
+          <div *ngIf="productForm.get('discountMinQuantity')?.invalid && productForm.get('discountMinQuantity')?.touched" class="error">
+            Minimum quantity is required.
+          </div>
           </div>     
       </div>
   
@@ -98,11 +132,17 @@
       <div class="flex gap-4 items-center w-full" >
         <div class=" detailDiv w-full" >
           <label for="e-price">Discount name</label>
-        <input class="name editInput"  type="text" id="e-price" [(ngModel)]="productData.discountName" placeholder="Discount name"/>  
+        <input class="name editInput"  type="text" id="e-price" formControlName="discountName" placeholder="Discount name"/>  
+        <div *ngIf="productForm.get('discountName')?.invalid && productForm.get('discountName')?.touched" class="error">
+          Discount Name is required.
+        </div>
         </div>
         <div class=" detailDiv w-full" >
           <label for="e-price">Effective price</label>
-        <input class="name editInput"  type="text" id="e-price" [(ngModel)]="productData.effectivePrice" placeholder="Effective Price"/>  
+        <input class="name editInput"  type="text" id="e-price" formControlName="effectivePrice" placeholder="Effective Price"/>  
+        <div *ngIf="productForm.get('effectivePrice')?.invalid && productForm.get('effectivePrice')?.touched" class="error">
+          Effective price is required.
+        </div>
         </div>
   
       </div>
@@ -112,24 +152,36 @@
       <div class="flex gap-4 items-center w-full">
         <div class=" detailDiv w-full" >
           <label for="quantity">Quantity</label>
-          <input id="quantity" [(ngModel)]="productData.initialQuantity" class="name editInput" placeholder="quantity"/>  
+          <input id="quantity" formControlName="initialQuantity" class="name editInput" placeholder="quantity"/>  
+          <div *ngIf="productForm.get('initialQuantity')?.invalid && productForm.get('initialQuantity')?.touched" class="error">
+            Initial quantity is required.
+          </div>
         </div>
   
         <div class=" detailDiv w-full" >
-          <label for="sku">SKU (Optional)</label>
-          <input id="sku"  class="name editInput" [(ngModel)]="productData.sku" placeholder="sku"/>  
+          <label for="sku">SKU</label>
+          <input id="sku"  class="name editInput" formControlName="sku" placeholder="sku"/>  
+          <div *ngIf="productForm.get('sku')?.invalid && productForm.get('sku')?.touched" class="error">
+            SKU is required.
+          </div>
         </div>
       </div>
   
       <div class="flex gap-4 items-center w-full">
         <div class=" detailDiv w-full" >
           <label for="e-price">Effective Quantity</label>
-        <input class="name editInput"  type="text" id="e-price" [(ngModel)]="productData.effectiveQuantity" placeholder="Effective Quantity"/>  
+        <input class="name editInput"  type="text" id="e-price" formControlName="effectivePrice" placeholder="Effective Quantity"/>  
+        <div *ngIf="productForm.get('effectivePrice')?.invalid && productForm.get('effectivePrice')?.touched" class="error">
+          EffectivePrice is required.
+        </div>
         </div>
   
         <div class=" detailDiv w-full" >
           <label for="partNumber">Part number</label>
-          <input id="partNumber"  class="name editInput" [(ngModel)]="productData.partNumber" placeholder="Part Number"/>  
+          <input id="partNumber"  class="name editInput" formControlName="partNumber" placeholder="Part Number"/>  
+          <div *ngIf="productForm.get('partNumber')?.invalid && productForm.get('partNumber')?.touched" class="error">
+           Part number is required.
+          </div>
         </div>
       </div>
     
@@ -142,6 +194,9 @@
         <img class="w-[450px] h-[400px]" [src]="productImage ? productImage : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s'" alt="placeholder">
          <label for="image"  class="btn create-invoice-btn p-4">Upload product image</label>
          <input type="file" (change)="onImageUpload($event)" [(ngModel)]="productData.image" id="image" hidden>
+         <div *ngIf="productForm.get('image')?.invalid && productForm.get('image')?.touched" class="error">
+          Image is required.
+         </div>
       </div> 
   
   
@@ -163,7 +218,7 @@
         
         
   
-          <button class="btn create-invoice-btn mt-3" (click)="openAddCategory = true">Add</button>
+          <button class="btn create-invoice-btn mt-3"  (click)="openAddCategory = true">Add</button>
         </div>
         
   
@@ -198,7 +253,10 @@
       <p class=" text-2xl text-gray-700 font-semibold pb-0 mb-0 mt-2">Shipping and delivery</p>
         <div class="ml-3"> 
           <label for="weight">Item's weight</label >
-        <input class="name editInput" [(ngModel)]="productData.weight" placeholder="weight in  kg" id="weight"/>  
+        <input class="name editInput" formControlName="weight" placeholder="weight in  kg" id="weight"/>  
+        <div *ngIf="productForm.get('weight')?.invalid && productForm.get('weight')?.touched" class="error">
+          Weight is required.
+        </div>
       </div>
     </div>
   
@@ -206,9 +264,12 @@
     </div>
   
     <div class="flex justify-center items-center mt-4">
-      <button class="btn create-invoice-btn p-4" (click)="addToProduct()">Add Product</button>
+      <button class="btn create-invoice-btn p-4"  type="submit">{{ isEditMode ? 'Update Product' : 'Add Product' }}</button>
     </div>
   </div>
+</form>
+
+
   <app-side-modal *ngIf="openAddCategory" (close)="openAddCategory = false">
     <div class="modal-header flex justify-between items-center text-gray-700 ">
       <h2 class="font-semibold pb-0 mb-0">Categories</h2>

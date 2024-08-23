@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
 import { MessageService } from 'primeng/api';
@@ -12,6 +12,8 @@ import { PosServiceService } from '../../../service/pos-service.service';
 })
 export class EditProductComponent {
   @Input() activeItem: any;
+  @Output() close = new EventEmitter<void>();  
+
   productData = {
     name: "",
     code: "",
@@ -129,100 +131,7 @@ export class EditProductComponent {
       reader.readAsDataURL(file);
     }
   }
-  addToProduct(){
-    const userName = sessionStorage.getItem("username")
-    const product = {
-         name: this.productData.name,
-         code: this.productData.code,
-         description: this.productData.description,
-         sku: this.productData.sku,
-         weight: this.productData.weight,
-         initialPrice: this.productData.initialPrice,
-         effectivePrice: this.productData.effectivePrice,
-         initialQuantity: this.productData.initialQuantity,
-         effectiveQuantity: this.productData.effectiveQuantity,
-         partNumber: this.productData.partNumber,
-         tax: this.productData.tax,
-         branch: this.productData.branch[0],
-         discount: {
-           name: this.productData.discountName,
-           value: this.productData.discountValue,
-           startDate: this.productData.startDate,
-           endDate: this.productData.endDate,
-           minQuantity: this.productData.discountMinQuantity,
-           discountType: this.productData.discountType.join(" and ")
-         },
-         // productCategory: this.productData.category,
-         createdBy: userName,
-         createdDate:  new Date().toISOString(),
  
-     }
- 
-     const formData = new FormData();
-     formData.append('product', JSON.stringify(product));
-     if (this.productData.image instanceof File) {
-       formData.append('files', this.productData.image);
-     }
-     console.log(formData)
-     if (this.checkForEmptyFields(formData)) {
-         this.messageService.add({ severity: 'error', summary: 'warn', detail: 'All fields are required' , key: 'tl', life: 3000 });
-     } else {
-             this.posService.addProduct(formData).subscribe(
-               async (data) => {
- 
-             if (data) {
-               this.messageService.add({ severity: 'success', summary: 'Product Added', detail: 'Product added successfully.', key: 'tl', life: 3000 });
-               this.productData = {
-                 name: "",
-                 code: "",
-                 description: "",
-                 sku: "",
-                 weight: 0,
-                 initialPrice: "",
-                 effectivePrice: "",
-                 initialQuantity: 0,
-                 effectiveQuantity: 0,
-                 partNumber: "",
-                 tax: 0,
-                 branch: "",
-                 variant: "",
-                 discount: 0,
-                 category: "",
-                 id: 0,
-                 count: 0,
-                 discountType: [] as any[],
-                 discountValue: 0,
-                 image: {} as any,
-                 startDate: "",
-                 endDate: "",
-                 discountMinQuantity: 0,
-                 discountName: ''
-               }
-               this.productImage = ""
-             } else {
-               this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Failed, please try again.', key: 'tl', life: 3000 });
-             }
-                 },
-                 (error) => {
-                   this.messageService.add({ severity: 'error', summary: 'Error', detail: error, key: 'tl', life: 3000 });
-                 }
-             );}
-    
-   }
-
-   addVariant() {
-    this.variants.push({ ...this.newVariant });
-
-    this.newVariant = {
-      name: '',
-      price: '',
-      quantity: '',
-      sku: ''
-    };
-
-    this.openAddVariant = false;
-  }
-
   deleteVariant(index: number) {
     this.variants.splice(index, 1);
   } 
@@ -394,4 +303,22 @@ export class EditProductComponent {
   
     pdf.save('barcodes.pdf');
   }
+
+  closeEdit() {
+    this.close.emit();
+
+    }
+
+    addVariant() {
+      this.variants.push({ ...this.newVariant });
+  
+      this.newVariant = {
+        name: '',
+        price: '',
+        quantity: '',
+        sku: ''
+      };
+  
+      this.openAddVariant = false;
+    }
 }

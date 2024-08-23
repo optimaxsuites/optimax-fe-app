@@ -56,7 +56,7 @@ this.getDiscountTypes()
   getProducts() {
     this.posService.getProducts().subscribe(
       async (data) => {
-        console.log(data)
+    
         if (data) {
           this.products = data
         } else {
@@ -88,7 +88,22 @@ this.getDiscountTypes()
   }
 
 
- 
+  deleteProduct(){
+    
+    this.posService.deleteProduct(this.activeItem.id).subscribe(
+      async (data) => {
+        if (data) {
+          console.log(data)
+         
+        } else {
+          this.deleteModal = false
+          this.getProducts()
+          this.messageService.add({ severity: 'success', summary: 'Product deleted', detail: `${this.activeItem.name} deleted successfully`, key: 'tl', life: 3000 });
+        }}
+    )  
+  
+  }
+
  
   openViewProduct(item: any = {}) {
 

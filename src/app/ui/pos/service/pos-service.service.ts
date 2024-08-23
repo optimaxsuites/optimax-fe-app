@@ -387,6 +387,22 @@ getProducts(){
   .pipe(catchError(this.handleError));
 }
 
+updateProduct(id:number, data:any){
+  return this.http
+  .put<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/${id}`, data)
+  .pipe(catchError(this.handleError));
+}
+
+deleteProduct(id: number){
+  return this.http
+  .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/${id}`)
+  .pipe(catchError(this.handleError));
+}
+
+getProductImage(filename: string){
+  return this.getBaseApiUrl() + `/x/api/v2/pos/products/images/${filename}.png`
+}
+
 getDiscountTypes(){
   return this.http
   .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/discountTypes")

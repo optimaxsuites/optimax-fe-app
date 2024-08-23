@@ -57,13 +57,13 @@
 
         <div class=" detailDiv w-full" >
         <label for="discountType">Discount Type</label>
-        <p class="name editInput"  rows="4" id="description">{{activeItem.discount?.discountType }}</p>  
+        <p class="name editInput"  rows="4" id="description">{{activeItem.discount?.discountType ? activeItem.discount?.discountType : "Null" }}</p>  
 
         </div>
 
       </div>
 
-      <div  *ngIf="activeItem.discountType.includes(2)">
+      <div  *ngIf="activeItem?.discountType?.includes(2)">
       <p class="text-2xl text-gray-700 ml-3 pb-0 mb-0 mt-2">Discount validity period</p>
 
       <div  class="flex justify-between items-center">
@@ -81,7 +81,7 @@
       </div>
     </div>
 
-    <div *ngIf="activeItem.discountType.includes(3)"> 
+    <div *ngIf="activeItem?.discountType?.includes(3)"> 
         <div class=" detailDiv w-full" >
           <label for="minQuantity">Minimum quantity</label>
           <p class="name editInput"  rows="4" id="description">{{activeItem.discount?.minQuantity}}</p>  
@@ -119,22 +119,22 @@
         </div>
   
         <div class=" detailDiv w-full" >
-          <label for="sku">SKU (Optional)</label>
-          <p class="name editInput"  rows="4" id="description">{{activeItem.sku}}</p>  
+          <label for="sku">SKU</label>
+          <p class="name editInput"   id="sku">{{activeItem.sku}}</p>  
 
         </div>
       </div>
   
       <div class="flex gap-5 items-center w-full">
         <div class=" detailDiv w-full" >
-          <label for="e-price">Effective Quantity</label>
-          <p class="name editInput"  rows="4" id="description">{{activeItem.effectiveQuantity}}</p>  
+          <label for="effectiveQuantity">Effective Quantity</label>
+          <p class="name editInput"  id="effectiveQuantity">{{activeItem.effectiveQuantity}}</p>  
 
         </div>
   
         <div class=" detailDiv w-full" >
           <label for="partNumber">Part number</label>
-          <p class="name editInput"  rows="4" id="description">{{activeItem.partNumber}}</p>  
+          <p class="name editInput"   id="partNumber">{{activeItem.partNumber}}</p>  
  
         </div>
       </div>
@@ -148,7 +148,7 @@
 
     <div class="imageDiv">
       <div class="flex flex-col justify-center items-center gap-4">
-        <img class="w-[450px] h-[400px]" [src]="activeItem.productImages ? activeItem.productImages : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s'" alt="placeholder">
+        <img class="w-[450px] h-[400px]" [src]="activeItem?.productImages ? getImageUrl(activeItem?.productImages[0]?.imgNo) : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s'" alt="placeholder">
       </div> 
   
   
@@ -158,7 +158,7 @@
     
   
           <div class="flex gap-3 items-center"> 
-            <p class="name editInput"  rows="4" id="description">{{activeItem.productCategory.name}}</p>  
+            <p class="name editInput"  rows="4" id="description">{{activeItem?.productCategory?.name ? activeItem.productCategory?.name : "Null"}}</p>  
   
         </div>
         
@@ -168,7 +168,7 @@
       <div class="ml-3  flex justify-between items-center" >
       <p class="pb-0 mb-0">Product Variants</p>
       </div>
-      <table *ngIf="activeItem.productVariant.length > 0"  class="min-w-full mt-3 bg-white">
+      <table *ngIf="activeItem?.variants?.length > 0"  class="min-w-full mt-3 bg-white">
         <thead>
           <tr>
             <th class="py-2 px-4 bg-gray-600">Name</th>
@@ -179,7 +179,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let variant of activeItem.productVariant,  let i = index">
+          <tr *ngFor="let variant of activeItem?.variants,  let i = index">
             <td class="py-2 px-4 border-b">{{ variant.name }}</td>
             <td class="py-2 px-4 border-b">{{ variant.price }}</td>
             <td class="py-2 px-4 border-b">{{ variant.quantity }}</td>
@@ -191,7 +191,7 @@
       <p class=" text-2xl text-gray-700 font-semibold pb-0 mb-0 mt-2">Shipping and delivery</p>
         <div class="ml-3"> 
           <label for="weight">Item's weight</label >
-            <p class="name editInput"  rows="4" id="description">{{activeItem.weight}}</p>  
+            <p class="name editInput"  rows="4" id="description">{{activeItem?.weight}}</p>  
   
       </div>
     </div>

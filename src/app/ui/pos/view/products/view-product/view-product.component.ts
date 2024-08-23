@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { PosServiceService } from '../../../service/pos-service.service';
 
 @Component({
   selector: 'app-view-product',
@@ -12,7 +13,9 @@ export class ViewProductComponent {
   @Output() edit = new EventEmitter<void>();  
   @Output() closeView = new EventEmitter<void>();  
   
-  constructor() {}
+    constructor(
+    private posService: PosServiceService,  
+    ) {}
 
   openViewProduct() {
     this.closeView.emit();
@@ -23,4 +26,8 @@ export class ViewProductComponent {
       this.edit.emit(arg0);
 
 }
+
+  getImageUrl(string: string){
+  return this.posService.getProductImage(string)
+  }
 }

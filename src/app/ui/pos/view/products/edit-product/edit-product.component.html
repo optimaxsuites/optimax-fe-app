@@ -1,5 +1,5 @@
 <div class="createVendor"  >
-  <p class="back" style="cursor: pointer;" ><i class="fa-solid fa-arrow-left"></i> Back</p>
+  <p class="back" style="cursor: pointer;" (click)="closeEdit()"><i class="fa-solid fa-arrow-left"></i> Back</p>
 
  
   <div class="details">
@@ -171,3 +171,130 @@
     <button class="btn create-invoice-btn p-4">Update Product</button>
   </div>
 </div>
+
+<app-side-modal *ngIf="openAddCategory" (close)="openAddCategory = false">
+  <div class="modal-header flex justify-between items-center text-gray-700 ">
+    <h2 class="font-semibold pb-0 mb-0">Categories</h2>
+
+    <div class="flex gap-3">
+      <button class=" border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold" (click)="openAddCategory=false">Cancel</button>
+    </div>
+  </div>
+
+
+
+  <div class="mt-5 flex flex-col gap-4">
+    <div class="flex items-center">
+      <div class="ml-3"> 
+        <label for="name">Category name</label >
+      <input class="name editInput" [(ngModel)]="categoryData.name" placeholder="category name" id="name"/>  
+      </div>
+      <div class="ml-3"> 
+        <label for="code">Category code</label >
+      <input class="name editInput" [(ngModel)]="categoryData.code"  placeholder="category code" id="code"/>  
+     
+    </div>
+  </div> 
+  <div class="ml-3"> 
+    <label for="description">description</label >
+      <textarea class="name editInput"  rows="4" [(ngModel)]="categoryData.description"  placeholder="category description" id="description"></textarea>  
+  </div>
+
+  <div class="flex justify-end my-4">
+    <button class="btn create-invoice-btn" (click)="addCategory()">Add</button>
+  </div>
+  </div>
+<hr>
+
+  <div *ngFor="let category of categories" class="flex flex-col gap-3 my-3 text-gray-700 font-mono">
+    <div class="flex justify-between items-center">
+    <p>{{category.name}}</p>
+    <i class="fa-solid fa-trash cursor-pointer"  (click)="removeCategory(category.id)"></i>
+    </div>
+  </div>
+
+
+</app-side-modal>
+<app-side-modal *ngIf="openAddVariant" (close)="openAddVariant = false">
+  <div class="modal-header flex justify-between items-center text-gray-700 ">
+    <h2 class="font-semibold pb-0 mb-0">Variants</h2>
+
+    <div class="flex gap-3">
+      <button class=" border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold" (click)="openAddVariant=false">Cancel</button>
+      <button class="btn create-invoice-btn" (click)="addVariant()">Save</button>
+    </div>
+  </div>
+
+
+
+  <div class="mt-5 mb-2">
+    <div class=" flex flex-col gap-2 ">
+      <label for="variant-name">Name</label>
+      <input type="text" id="variant-name"  [(ngModel)]="newVariant.name"  class="editInput outline-none" placeholder="variant name" >
+
+      <label for="variant-price">Price</label>
+      <input type="text" id="variant-price"  [(ngModel)]="newVariant.price"  class="editInput outline-none" placeholder="variant price" >
+
+      <label for="variant-quantity">Quantity</label>
+      <input type="text" id="variant-quantity"   [(ngModel)]="newVariant.quantity"  class="editInput outline-none" placeholder="variant quantity" >
+
+      <label for="variant-sku">SKU</label>
+      <input type="text" id="variant-sku" [(ngModel)]="newVariant.sku"  class="editInput outline-none" placeholder="variant SKU" >
+
+    
+      <label for="">Branch</label>
+      <ng-select 
+      [items]="branches"
+      bindLabel="label"
+      bindValue="value"
+      [(ngModel)]="selectedBranch"
+      [multiple]="true"
+      placeholder="Select branch">
+      </ng-select>
+    
+    </div>
+  </div>
+
+
+</app-side-modal>
+
+<app-modal *ngIf="addSuccessfull" (close)="addSuccessfull = false">
+  <div class=" flex flex-col items-center justify-center gap-3 px-4">
+  <img class="w-96 h-96" src="https://png.pngtree.com/png-vector/20220319/ourmid/pngtree-vector-eps10-icon-of-badge-with-a-check-mark-indicating-success-and-approval-vector-png-image_44982234.jpg" alt="">
+  <p class="text-4xl font-semibold text-gray-700">Product Added successfully</p>
+  <div class="flex justify-between gap-10 my-5 items-center">
+    <button class="btn create-invoice-btn" (click)="openGenerateBarcode()">Generate Barcode(s)</button>
+    <button class="btn create-invoice-btn">Print Label(s)</button>
+  </div>
+  </div>
+
+
+</app-modal>
+
+<app-modal *ngIf="configureBarcode" (close)="configureBarcode = false" header="Configure Barcode">
+  <div class="flex gap-3 mt-2 flex-col">
+  <div class=""> 
+    <label for="type">Barcode Type</label >
+      <ng-select 
+      [items]="barcodes"
+      bindLabel="label"
+      bindValue="value"
+      [(ngModel)]="barcodeConfig.barcodeType"
+      [multiple]="false"
+      placeholder="Select branch">
+      </ng-select> 
+  </div>
+
+  <div class=""> 
+    <label for="name">Quantity</label >
+  <input class="name editInput" type="number" placeholder="1" id="name" [(ngModel)]="barcodeConfig.barcodeQuantity"/>  
+  </div>
+
+
+  <div class="flex justify-between gap-10 my-5 items-center">
+    <button class="btn create-invoice-btn w-full" (click)="generateBarcode()" >Get PDF</button>
+    <button class="btn create-invoice-btn w-full">Print</button>
+  </div>
+</div>
+
+</app-modal>
