@@ -176,6 +176,7 @@ import { InventoryComponent } from './ui/pos/view/inventory/inventory.component'
 import { ViewProductComponent } from './ui/pos/view/products/view-product/view-product.component';
 import { AddProductComponent } from './ui/pos/view/products/add-product/add-product.component';
 import { EditProductComponent } from './ui/pos/view/products/edit-product/edit-product.component';
+import { NavTabComponent } from './ui/shared/view/nav-tab/nav-tab.component';
 
 @NgModule({
   declarations: [
@@ -288,6 +289,7 @@ import { EditProductComponent } from './ui/pos/view/products/edit-product/edit-p
     ViewProductComponent,
     AddProductComponent,
     EditProductComponent,
+    NavTabComponent,
   ],
   imports: [
     CommonModule,

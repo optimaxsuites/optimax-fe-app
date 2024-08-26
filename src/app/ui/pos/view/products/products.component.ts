@@ -58,7 +58,12 @@ this.getDiscountTypes()
       async (data) => {
     
         if (data) {
-          this.products = data
+          this.products = data.sort((a: any, b: any) => {
+            const dateA = new Date(a.createdDate[0], a.createdDate[1] - 1, a.createdDate[2], a.createdDate[3], a.createdDate[4], a.createdDate[5]);
+            const dateB = new Date(b.createdDate[0], b.createdDate[1] - 1, b.createdDate[2], b.createdDate[3], b.createdDate[4], b.createdDate[5]);
+            return dateB.getTime() - dateA.getTime();
+          });
+     console.log(this.products)
         } else {
          console.log("error loading data")
         }}
@@ -139,6 +144,8 @@ this.getDiscountTypes()
     this.viewProduct = false
     this.editProduct = false
     this.addProduct = false
+this.getProducts()
+
   }
 
   openAddProdut(){
@@ -153,6 +160,8 @@ this.getDiscountTypes()
     this.viewProduct = false
     this.editProduct = false
     this.addProduct = false
+this.getProducts()
+
     }
 
 }

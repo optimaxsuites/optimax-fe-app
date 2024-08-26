@@ -387,9 +387,9 @@ getProducts(){
   .pipe(catchError(this.handleError));
 }
 
-updateProduct(id:number, data:any){
+updateProduct( data:any){
   return this.http
-  .put<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/${id}`, data)
+  .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/products/product", data)
   .pipe(catchError(this.handleError));
 }
 
@@ -400,12 +400,24 @@ deleteProduct(id: number){
 }
 
 getProductImage(filename: string){
-  return this.getBaseApiUrl() + `/x/api/v2/pos/products/images/${filename}.png`
+  return this.getBaseApiUrl() + `/x/api/v2/pos/products/images/${filename}`
 }
 
 getDiscountTypes(){
   return this.http
   .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/discountTypes")
+  .pipe(catchError(this.handleError));
+}
+
+getDiscount(){
+  return this.http
+  .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/discounts")
+  .pipe(catchError(this.handleError));
+}
+
+addDiscount(data: any){
+  return this.http
+  .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/discounts", data)
   .pipe(catchError(this.handleError));
 }
 

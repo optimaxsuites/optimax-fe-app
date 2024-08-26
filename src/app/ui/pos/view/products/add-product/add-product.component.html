@@ -68,75 +68,31 @@
         </div>
       </div>
   
-        <div class="flex gap-4 items-center w-full" >
-   
-          <div class=" detailDiv w-full" >
-            <label for="discount">Discount percentage (%)</label>
-          <input id="discount" formControlName="discountValue"  class="name editInput" placeholder="discount"/>  
-          <div *ngIf="productForm.get('discountValue')?.invalid && productForm.get('discountValue')?.touched" class="error">
-            Discount percentage is required.
-          </div>
-          </div>
-  
-          <div class=" detailDiv w-full" >
-          <label for="discountType">Discount Type</label>
-          <ng-select 
-          [items]="discountTypes"
-          bindLabel="name"
-          bindValue="id"
-          formControlName="discountType"
-          [multiple]="true"
-          placeholder="Select discount types">
-          </ng-select>
-          <div *ngIf="productForm.get('discountType')?.invalid && productForm.get('discountType')?.touched" class="error">
-            Discount Type is required.
-          </div>
-          </div>
-  
-        </div>
-  
-        <div  *ngIf="productForm.get('discountType')?.value?.includes(2)">
-        <p class="text-2xl text-gray-700 ml-3 pb-0 mb-0 mt-2">Discount validity period</p>
-  
-        <div  class="flex gap-4 items-center w-full">
-          
-          <div class=" detailDiv w-full" >
-            <label for="start">Start date</label>
-          <input type="date" formControlName="startDate" id="start"  class="name editInput" />  
-          <div *ngIf="productForm.get('startDate')?.invalid && productForm.get('startDate')?.touched" class="error">
-            Start date is required.
-          </div>
-          </div>
-          <div class=" detailDiv w-full" > 
-            <label for="end">End date</label>
-          <input type="date" formControlName="endDate" id="end"  class="name editInput" /> 
-          <div *ngIf="productForm.get('endDate')?.invalid && productForm.get('endDate')?.touched" class="error">
-            End date is required.
-          </div> 
-          </div>
-        </div>
+      <div class="ml-3" >
+        <label for="discount">Discount</label>
+
+      <div class="flex gap-3 items-center"> 
+        <ng-select 
+        [items]="discounts"
+        bindLabel="name"
+        bindValue="id"
+        (change)="selectDiscount($event)"
+        [(ngModel)]="productData.discount"
+        [multiple]="false"
+        id="discount"
+        placeholder="Discount" class="w-full mt-3">
+        
+        </ng-select>
+      
+      
+
+        <button class="btn create-invoice-btn mt-3" type="button" (click)="openAddDiscount = true">Add</button>
       </div>
-  
-      <div *ngIf="productForm.get('discountType')?.value?.includes(3)">
-          <div class=" detailDiv w-full" >
-            <label for="minQuantity">Minimum quantity</label>
-          <input type="text" id="minQuantity" formControlName="discountMinQuantity"  class="name editInput" />  
-          <div *ngIf="productForm.get('discountMinQuantity')?.invalid && productForm.get('discountMinQuantity')?.touched" class="error">
-            Minimum quantity is required.
-          </div>
-          </div>     
-      </div>
-  
+    </div>
       
   
       <div class="flex gap-4 items-center w-full" >
-        <div class=" detailDiv w-full" >
-          <label for="e-price">Discount name</label>
-        <input class="name editInput"  type="text" id="e-price" formControlName="discountName" placeholder="Discount name"/>  
-        <div *ngIf="productForm.get('discountName')?.invalid && productForm.get('discountName')?.touched" class="error">
-          Discount Name is required.
-        </div>
-        </div>
+        
         <div class=" detailDiv w-full" >
           <label for="e-price">Effective price</label>
         <input class="name editInput"  type="text" id="e-price" formControlName="effectivePrice" placeholder="Effective Price"/>  
@@ -218,7 +174,7 @@
         
         
   
-          <button class="btn create-invoice-btn mt-3"  (click)="openAddCategory = true">Add</button>
+          <button class="btn create-invoice-btn mt-3" type="button" (click)="openAddCategory = true">Add</button>
         </div>
         
   
@@ -358,7 +314,80 @@
   
   
   </app-side-modal>
+    
+  <app-side-modal *ngIf="openAddDiscount"  (close)="openAddDiscount = false">
+    <div class="modal-header flex justify-between items-center text-gray-700 ">
+      <h2 class="font-semibold pb-0 mb-0">Discount</h2>
   
+      <div class="flex gap-3">
+        <button class=" border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold" (click)="openAddDiscount=false">Cancel</button>
+        <button class="btn create-invoice-btn" (click)="addDiscount()">Save</button>
+      </div>
+    </div>
+  
+  
+  
+    <div class="mt-5 mb-2 flex flex-col gap-4">
+      <div class=" detailDiv w-full" >
+        <label for="e-price">Name</label>
+      <input class="name editInput"  type="text" id="e-price" [(ngModel)]="discountData.name" placeholder="Discount name"/>  
+      </div>
+     
+
+   
+          <div class=" detailDiv w-full" >
+            <label for="discount">Discount percentage (%)</label>
+          <input id="discount"  [(ngModel)]="discountData.value"  class="name editInput" placeholder="Discount value"/>  
+
+          </div>
+  
+          <div class=" detailDiv w-full" >
+          <label for="discountType">Discount Type</label>
+          <ng-select 
+          [items]="discountTypes"
+          bindLabel="name"
+          bindValue="id"
+          [(ngModel)]="discountData.discountType"
+          [multiple]="true"
+          placeholder="Select discount types">
+          </ng-select>
+
+          </div>
+  
+
+  
+        <div  *ngIf="discountData.discountType.includes(2)">
+        <p class="text-2xl text-gray-700 ml-3 pb-0 mb-0 mt-2">Discount validity period</p>
+  
+        <div  class="flex gap-4 items-center w-full">
+          
+          <div class=" detailDiv w-full" >
+            <label for="start">Start date</label>
+          <input type="date" formControlName="startDate" id="start"  class="name editInput" />  
+     
+          </div>
+          <div class=" detailDiv w-full" > 
+            <label for="end">End date</label>
+          <input type="date" formControlName="endDate" id="end"  class="name editInput" /> 
+     
+          </div>
+        </div>
+      </div>
+  
+      <div *ngIf="discountData.discountType.includes(3)">
+          <div class=" detailDiv w-full" >
+            <label for="minQuantity">Minimum quantity</label>
+          <input type="text" id="minQuantity" formControlName="discountMinQuantity"  class="name editInput" />  
+
+          </div>     
+      </div>
+
+
+  
+    </div>
+  
+  
+  </app-side-modal>
   <app-modal *ngIf="addSuccessfull" (close)="addSuccessfull = false">
     <div class=" flex flex-col items-center justify-center gap-3 px-4">
     <img class="w-96 h-96" src="https://png.pngtree.com/png-vector/20220319/ourmid/pngtree-vector-eps10-icon-of-badge-with-a-check-mark-indicating-success-and-approval-vector-png-image_44982234.jpg" alt="">
