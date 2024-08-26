@@ -9,12 +9,21 @@
     --anti-flash-white: #EEEEEE;
     --light-blue: #B6D6E2;
     --white: #fff;
-
+    
+    --sky-blue: #f8feff;
+    --sky-blue-2: #e3eef0;
     --gray-light: #f0f0f0;  /* Light gray for even rows */
     --gray-dark: #e2e2e2;   /* Darker gray for odd rows */
 
-  
-    --font-size: 10px;
+    --sm-font: .8em;
+    --md-font: 1em;
+    --l-font: 1.2em;
+    --xl-font: 1.3em;
+    --xxl-font: 1.5em;
+
+
+    --border-5px: 5px;
+    /* --font-size: 10px; */
     --font-family: 'Roboto Slab', serif;
 }
 
@@ -165,22 +174,6 @@ tr:nth-child(even) {
   width: 100%;
 }
 
-.form-control-opti{
-    border: none;
-    border-bottom: 1px solid black;
-    width: 100%;
-    font-size: 1.1em; 
-    font-weight: 400;
-    background-color: transparent;
-    padding: .5rem 0;   
-}
-.form-control-opti:focus{
-  border-color: none;
-  box-shadow: none;
-  outline: none;
-  border: none;
-  border-bottom: 1px solid black;
-} 
 
 /* input styles */
 
@@ -455,3 +448,107 @@ body {
 /* ESPENSE */
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*  QUOTATION */
+.editInput {
+  /* @apply border border-gray-300 rounded-lg p-3 w-full placeholder:text-gray-500 */
+  border: 1px solid lightgrey;
+  border-radius: 5px;
+  padding: .7rem;
+  width: 100%;
+
+}
+
+.contain{
+  display: flex;
+  Justify-content: center;
+  padding: 2rem 0;
+}
+.modal-wrapper{
+  width: 85%;
+}
+.header-section{
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+    margin-bottom: 5rem;  
+}
+.form-title{
+    border-bottom: 2px solid #25925B ;
+    font-size: 1.5em;
+    font-weight: 600;
+    padding-bottom: 0.7rem;
+    box-sizing: border-box;
+}
+
+.first-info-section{
+  width: 50%;
+}
+.editable-label-container{
+  display: flex;
+  justify-content: space-between;
+}
+.editable-label-input{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 70%;
+}
+
+.add-btn{
+  padding: 1rem 0;
+  color: var(--celadon-green);
+}
+
+
+.second-info-section{
+  display: flex;
+  justify-content: space-between;
+  margin: 2rem 0;
+}
+
+.right, .left{
+  width: 49%;
+  /* background-color: var(--sky-blue); */
+  border: 1px solid var(--sky-blue-2);
+  padding: 1rem;
+}
+.billing-title{
+  font-size: var(--l-font);
+  font-weight: bold;
+}
+.billing-span{
+  font-size: var(--sm-font);
+  font-weight: 400;
+}
+.first-component{
+  text-align: center;
+}
+.form-actions button {
+  background-color: var(--celadon-green);
+  color: white;
+  padding: .5rem 2rem;
+  border: 2px solid var(--celadon-green);
+  border-radius: var(--border-5px);
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: 0.3s ease-in-out;
+}
+
+.form-actions button:hover {
+  background-color: var(--white);
+  color: var(--celadon-green);
+  box-sizing: border-box;
+}

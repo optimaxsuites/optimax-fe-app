@@ -70,7 +70,7 @@ getCustomer(data: string): Observable<any> {
       .pipe(catchError(this.handleError));
 }
 
-getCustomerById (id: string): Observable<any> {
+getCustomerById (id: any): Observable<any> {
   console.log((this.getBaseApiUrl() + "/x/api/v2/sales/customer"+"---"+JSON.stringify(id)))
 
   return this.http
@@ -109,7 +109,7 @@ getCompany(data: string): Observable<any> {
       .pipe(catchError(this.handleError));
 }
 
-getCompanyById (id: string): Observable<any> {
+getCompanyById (id: any): Observable<any> {
   console.log((this.getBaseApiUrl() + "/x/api/v2/sales/company"+"---"+JSON.stringify(id)))
 
   return this.http

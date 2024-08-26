@@ -75,7 +75,7 @@
             [errorStateMatcher]="matcher"
             [(ngModel)]="registerInfo.password"
           />
-          <button
+          <span
             mat-icon-button
             matSuffix
             (click)="hide = !hide"
@@ -83,7 +83,7 @@
             [attr.aria-pressed]="hide"
           >
             <mat-icon>{{ hide ? "visibility_off" : "visibility" }}</mat-icon>
-          </button>
+          </span>
           @if (passwordFormControl.hasError('required')) {
           <mat-error>Password is <strong>required</strong></mat-error>
           }
@@ -100,7 +100,7 @@
             [errorStateMatcher]="matcher"
             [(ngModel)]="registerInfo.rewritepassword"
           />
-          <button
+          <span
             mat-icon-button
             matSuffix
             (click)="hide = !hide"
@@ -108,7 +108,7 @@
             [attr.aria-pressed]="hide"
           >
             <mat-icon>{{ hide ? "visibility_off" : "visibility" }}</mat-icon>
-          </button>
+          </span>
           @if (rewritePasswordFormControl.hasError('required')) {
           <mat-error>Rewrite password is <strong>required</strong></mat-error>
           }

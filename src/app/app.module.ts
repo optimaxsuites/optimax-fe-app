@@ -168,6 +168,8 @@ import { AddPerDiemComponent } from './ui/expenses/view/add-per-diem/add-per-die
 import { ExpenseSummaryComponent } from './ui/expenses/view/expense-summary/expense-summary.component';
 
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
+import { AddShippingDetailsComponent } from './ui/sales/view/add-shipping-details/add-shipping-details.component';
+import { AddQuotationItemComponent } from './ui/sales/view/add-quotation-item/add-quotation-item.component';
 
 @NgModule({
   declarations: [
@@ -277,6 +279,8 @@ import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
     UploadRecieptComponent,
     AddPerDiemComponent,
     ExpenseSummaryComponent,
+    AddShippingDetailsComponent,
+    AddQuotationItemComponent,
   ],
   imports: [
     BrowserModule,
