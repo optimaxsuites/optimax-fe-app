@@ -349,3 +349,44 @@ p {
   line-height: 1.6;
   margin-bottom: 15px;
 }
+
+
+
+.signature-container {
+  margin-top: 20px;
+}
+
+.signature-container label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.signature-pad-wrapper {
+  border: 2px solid #ccc;
+  border-radius: 5px;
+  width: 100%;
+  height: 200px;
+  position: relative;
+  background-color: #fff;
+}
+
+.signature-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.signature-actions button {
+  padding: 10px 20px;
+  background-color: #224957;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.signature-actions button:hover {
+  background-color: #0056b3;
+}
+
