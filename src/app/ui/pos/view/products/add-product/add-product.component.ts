@@ -114,21 +114,22 @@ export class AddProductComponent {
   ) {
   }
   ngOnInit(): void {
+    console.log(this.activeItem)
     this.loadCategory()
     this.getDiscountTypes()
     this.getDiscounts()
     this.productForm = this.fb.group({
       name: ['', Validators.required],
       code: ['', Validators.required],
-      description: ['', Validators.required],
+      description: ['', [Validators.required, Validators.maxLength(255)]],
       sku: ['', Validators.required],
-      weight: [0, [Validators.required, Validators.min(0)]],
-      initialPrice: ['', [Validators.required, Validators.pattern('^[0-9]+(\.[0-9]{1,2})?$')]],
-      effectivePrice: ['', [Validators.required, Validators.pattern('^[0-9]+(\.[0-9]{1,2})?$')]],
-      initialQuantity: [0, [Validators.required, Validators.min(0)]],
-      effectiveQuantity: [0, [Validators.required, Validators.min(0)]],
+      weight: [, [ Validators.min(0)]],
+      initialPrice: ['', [Validators.required, Validators.pattern('^[0-9]*\.?[0-9]{0,2}$')]],
+      effectivePrice: ['', [Validators.required, Validators.pattern('^[0-9]*\.?[0-9]{0,2}$')]],
+      initialQuantity: [, [Validators.required, Validators.min(0)]],
+      effectiveQuantity: [, [Validators.required, Validators.min(0)]],
       partNumber: ['', Validators.required],
-      tax: [0, [Validators.required, Validators.min(0)]],
+      tax: [, [Validators.required, Validators.min(0)]],
       branch: ['', Validators.required],
       variant: [''],
       discount: [""],
@@ -140,17 +141,27 @@ export class AddProductComponent {
       discountName: [''],
       variants: [this.variants]
     });
+    this.productForm.get('initialQuantity')?.valueChanges.subscribe(value => {
+      this.productForm.get('effectiveQuantity')?.setValue(value, { emitEvent: false });
+    });
+    this.productForm.get('initialPrice')?.valueChanges.subscribe(() => {
+      this.calculateEffectivePrice();
+    });
+
+    this.productForm.get('tax')?.valueChanges.subscribe(() => {
+      this.calculateEffectivePrice();
+    });
     if (this.isEditMode && this.activeItem) {
       this.productForm.patchValue(this.activeItem);
       if(this.activeItem.variants.length > 0){
         this.variants = this.activeItem.variants
       }
-      this.productForm.get('discountType')?.setValue(this.activeItem.discount.discountType)
-      this.productForm.get('discountName')?.setValue(this.activeItem.discount.name)
-      this.productForm.get('discountMinQuantity')?.setValue(this.activeItem.discount.minQuantity)
-      this.productForm.get('startDate')?.setValue(this.activeItem.discount.startDate)
-      this.productForm.get('endDate')?.setValue(this.activeItem.discount.endDate)
-      this.productForm.get('discountValue')?.setValue(this.activeItem.discount.value)
+      this.productForm.get('discountType')?.setValue(this.activeItem?.discount?.discountType)
+      this.productForm.get('discountName')?.setValue(this.activeItem?.discount?.name)
+      this.productForm.get('discountMinQuantity')?.setValue(this.activeItem?.discount?.minQuantity)
+      this.productForm.get('startDate')?.setValue(this.activeItem?.discount?.startDate)
+      this.productForm.get('endDate')?.setValue(this.activeItem?.discount?.endDate)
+      this.productForm.get('discountValue')?.setValue(this.activeItem?.discount?.value)
       
     }
   }
@@ -160,6 +171,17 @@ export class AddProductComponent {
     const field = this.productForm.get(fieldName);
    
     return field?.invalid && (field.touched || field.dirty);
+  }
+
+  
+  calculateEffectivePrice() {
+    const basePrice = this.productForm.get('initialPrice')?.value;
+    const taxPercentage = this.productForm.get('tax')?.value;
+
+    if (basePrice && taxPercentage) {
+      const effectivePrice = basePrice * (1 + taxPercentage / 100);
+      this.productForm.get('effectivePrice')?.setValue(effectivePrice, { emitEvent: false });
+    }
   }
 
   getDiscountTypes(){
@@ -284,21 +306,25 @@ export class AddProductComponent {
     const userName = sessionStorage.getItem("username");
   
     if (this.productForm.invalid) {
+  
+      
       this.messageService.add({
         severity: 'error',
-        summary: 'Warn',
-        detail: 'All fields are required',
+        summary: 'Validation Error',
+        detail: "Please ensure all required fields are filled in correctly.",
         key: 'tl',
         life: 3000
       });
-      return;
-    }
+
+    return;
+  }
   
    
     const formValues = this.productForm.value;
   
 
     const product = {
+      id: 0,
       name: formValues.name,
       code: formValues.code,
       description: formValues.description,
@@ -687,5 +713,36 @@ export class AddProductComponent {
     }
   
     pdf.save('barcodes.pdf');
+  }
+  getImageUrl(string: string){
+    return this.posService.getProductImage(string)
+    }
+  getErrorMessage(controlName: string,  displayName?: string): string {
+    const control = this.productForm.get(controlName);
+    const name = displayName || controlName;
+
+    if (control && control.errors) {
+      const errors = control.errors;
+      const errorKeys = Object.keys(errors);
+  
+      if (errorKeys.length > 0) {
+        switch (errorKeys[0]) {
+          case 'required':
+            return `${name} is required.`;
+          case 'pattern':
+            return `${name} has an invalid format.`;
+          case 'min':
+            return `${name} must be at least ${errors['min'].min}.`;
+          case 'minlength':
+            return `${name} must be at least ${errors['minlength'].requiredLength}.`;
+          case 'maxlength':
+            return `${name} should not exceed ${errors['maxlength'].requiredLength} characters.`;
+          default:
+            return `${name} has an error.`;
+        }
+      }
+    }
+  
+    return '';
   }
 }

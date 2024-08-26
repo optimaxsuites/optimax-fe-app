@@ -99,3 +99,7 @@
   label {
     @apply pb-2
   }
+
+  .error {
+    @apply text-red-400 text-[12px]
+  }
