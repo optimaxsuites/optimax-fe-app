@@ -9,13 +9,30 @@ import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-lin
 })
 export class VerificationSuccessfullComponent implements OnInit {
 
+  countdown: number = 5;
+
   constructor(
-    private navigationLink: NavigationLinksService,
+    public navigationLink: NavigationLinksService,
     private router: Router,
   ){}
 
   ngOnInit(): void {
-    const vrsLink = this.navigationLink.getLink('vrsLink')
-    this.router.navigate([vrsLink]);
+
+
+    const interval = setInterval(() => {
+      this.countdown--;
+
+      if (this.countdown === 0) {
+        clearInterval(interval);
+        const signinLink = this.navigationLink.getLink('signinLink')
+        this.router.navigate([signinLink]);
+      }
+    }, 1000);
+
+    // setTimeout(() => {
+    //   const signinLink = this.navigationLink.getLink('signinLink')
+    //   this.router.navigate([signinLink]);
+    // }, 10000);
+    
   }
 }
