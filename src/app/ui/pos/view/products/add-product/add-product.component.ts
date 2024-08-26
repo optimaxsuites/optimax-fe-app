@@ -114,6 +114,7 @@ export class AddProductComponent {
   ) {
   }
   ngOnInit(): void {
+    console.log(this.activeItem)
     this.loadCategory()
     this.getDiscountTypes()
     this.getDiscounts()
@@ -155,12 +156,12 @@ export class AddProductComponent {
       if(this.activeItem.variants.length > 0){
         this.variants = this.activeItem.variants
       }
-      this.productForm.get('discountType')?.setValue(this.activeItem.discount.discountType)
-      this.productForm.get('discountName')?.setValue(this.activeItem.discount.name)
-      this.productForm.get('discountMinQuantity')?.setValue(this.activeItem.discount.minQuantity)
-      this.productForm.get('startDate')?.setValue(this.activeItem.discount.startDate)
-      this.productForm.get('endDate')?.setValue(this.activeItem.discount.endDate)
-      this.productForm.get('discountValue')?.setValue(this.activeItem.discount.value)
+      this.productForm.get('discountType')?.setValue(this.activeItem?.discount?.discountType)
+      this.productForm.get('discountName')?.setValue(this.activeItem?.discount?.name)
+      this.productForm.get('discountMinQuantity')?.setValue(this.activeItem?.discount?.minQuantity)
+      this.productForm.get('startDate')?.setValue(this.activeItem?.discount?.startDate)
+      this.productForm.get('endDate')?.setValue(this.activeItem?.discount?.endDate)
+      this.productForm.get('discountValue')?.setValue(this.activeItem?.discount?.value)
       
     }
   }
@@ -713,7 +714,9 @@ export class AddProductComponent {
   
     pdf.save('barcodes.pdf');
   }
-
+  getImageUrl(string: string){
+    return this.posService.getProductImage(string)
+    }
   getErrorMessage(controlName: string,  displayName?: string): string {
     const control = this.productForm.get(controlName);
     const name = displayName || controlName;

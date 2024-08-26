@@ -97,7 +97,7 @@
   <app-add-product (close)="closeAddProduct()"></app-add-product>
 </div>
 <div *ngIf="viewProduct">
-  <app-view-product [activeItem]="activeItem" (edit)="openEdit()" (closeView)="openViewProduct()"></app-view-product>
+  <app-view-product [activeItem]="activeItem" (edit)="openEdit(activeItem)" (closeView)="openViewProduct()"></app-view-product>
 </div>
 <div *ngIf="editProduct" >
   <app-add-product [activeItem]="activeItem"  [isEditMode]="true" (close)="closeEdit()"></app-add-product>

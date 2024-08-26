@@ -182,7 +182,7 @@
     </div>
     <div class="imageDiv">
       <div class="flex flex-col justify-center items-center gap-4">
-        <img class="w-[450px] h-[400px]" [src]="productImage ? productImage : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s'" alt="placeholder">
+        <img class="w-[450px] h-[400px]" [src]="isEditMode ? (productImage || getImageUrl(activeItem?.productImages[0]?.imgNo)) : (productImage ||  'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s')" alt="product image">
         <label for="image" class="btn create-invoice-btn p-4">Upload product image <span style="color: red;">*</span></label>
         <input type="file" (change)="onImageUpload($event)" [(ngModel)]="productData.image" id="image" hidden>
         <div *ngIf="productForm.get('image')?.invalid && productForm.get('image')?.touched" class="error">

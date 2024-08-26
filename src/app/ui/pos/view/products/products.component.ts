@@ -133,6 +133,7 @@ this.getDiscountTypes()
 
   openEdit(item: any ={}) {
     this.activeItem = item
+    console.log("view", item)
     this.tableSection = false
     this.viewProduct = false
     this.addProduct = false
