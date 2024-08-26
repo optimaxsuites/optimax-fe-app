@@ -13,7 +13,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { CdkScrollable } from '@angular/cdk/scrolling';
 
-// import { SignaturePadModule } from 'angular2-signaturepad';
+
 
 import { ButtonModule } from 'primeng/button';
 import { EditorModule } from 'primeng/editor';
@@ -353,7 +353,6 @@ import { NavTabComponent } from './ui/shared/view/nav-tab/nav-tab.component';
     NgSelectModule,
     MatMenuModule,
     // ToastrModule.forRoot(),
-    // SignaturePadModule,
   ],
   providers: [
     {

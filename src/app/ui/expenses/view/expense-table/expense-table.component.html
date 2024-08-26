@@ -3,16 +3,6 @@
     <!-- Optionally, add a header or title here -->
   </div>
 
-  <!-- <div class="search-container">
-    <input
-      type="text"
-      [(ngModel)]="searchTerm"
-      (input)="onSearch()"
-      placeholder="Search expenses..."
-      class="search-input"
-    />
-  </div> -->
-
   <div>
     <p-toolbar styleClass="mb-4 gap-2">
       <ng-template pTemplate="left">
@@ -24,6 +14,16 @@
         <app-button text="Import" class="btn-export"></app-button>
       </ng-template>
     </p-toolbar>
+
+    <div class="search-bar">
+      <input 
+        type="text" 
+        placeholder="Search by Merchant, Amount, or ID" 
+        [(ngModel)]="searchTerm" 
+        (input)="onSearchInputChange()" 
+        class="search-input"
+      />
+    </div>
 
     <p-table 
       [value]="filteredExpenses" 
@@ -51,10 +51,8 @@
           <td class="table-item">{{ expense.id }}</td>
           <td class="table-item">{{ expense.merchant }}</td>
           <td class="table-item">{{ expense.category }}</td>
-          <td class="table-item">{{ expense.amount}}</td>
-          <!-- <td class="table-item">{{ expense.amount | currency }}</td> -->
-          <td class="table-item">{{ expense.date}}</td>
-          <!-- <td class="table-item">{{ expense.date | date: 'shortDate' }}</td> -->
+          <td class="table-item">{{ expense.amount }}</td>
+          <td class="table-item">{{ expense.date }}</td>
           <td class="table-item">{{ expense.status }}</td>
           <td class="actions table-item">
             <i class="pi pi-eye table-item" (click)="viewExpenseApproval(expense)"></i>
