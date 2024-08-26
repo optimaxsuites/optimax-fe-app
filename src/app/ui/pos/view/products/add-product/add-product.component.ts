@@ -379,7 +379,7 @@ export class AddProductComponent {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: error,
+          detail: "Unexpected error occured, please try again later",
           key: 'tl',
           life: 3000
         });
