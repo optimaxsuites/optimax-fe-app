@@ -13,7 +13,7 @@ export class PosPageComponent {
 
   toggleDropdown() {
     this.isDropdownOpen = !this.isDropdownOpen;
-    console.log(this.isDropdownOpen)
+   
   }
 
   selectTab(tab: string) {

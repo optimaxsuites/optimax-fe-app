@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { PosServiceService } from '../../../service/pos-service.service';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
+import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 @Component({
   selector: 'app-add-product',
@@ -11,6 +12,10 @@ import jsPDF from 'jspdf';
   styleUrl: './add-product.component.scss'
 })
 export class AddProductComponent {
+  @Output() close = new EventEmitter<void>();  
+  @Input() activeItem: any;
+  @Input() isEditMode: boolean = false;
+  productForm!: FormGroup;
   productData = {
     name: "",
     code: "",
@@ -42,6 +47,14 @@ export class AddProductComponent {
     code: "",
     description: "",
   }
+ discountData = {
+    name: "",
+    value: "",
+    startDate: "",
+    endDate: "",
+    minQuantity: "",
+    discountType: [] as number[]
+  }
   barcodeConfig = {
     barcodeType: 'CODE128',
     barcodeQuantity: 1
@@ -62,19 +75,19 @@ export class AddProductComponent {
     {label: 'wuse', value: 'Wuse'}
     ]
 
-    discountTypes = [
-      { label: 'Periodic', value: 'periodic' },
-      { label: 'Quantity Based', value: 'quantityBased' },
-      { label: 'Global Discount', value: 'globalDiscount' }
-    ];
-    
+  discountTypes: any[] = [];
+    discountType: string[] = []
+    discounts: any[] = []
+
+    periodicDiscount: { startDate: string, endDate: string } = { startDate: '', endDate: '' };
+    quantityBasedDiscount: { minQuantity: number } = { minQuantity: 0 };
   addSuccessfull: boolean = false
 
   selectedBranch: any[] = []
   selectedCategory: string=  ""
   openCategories: boolean = false
   openAddCategory: boolean = false
-  newCategory: string = '';
+  openAddDiscount: boolean = false
   categories: any[] = []
   configureBarcode: boolean = false
   barcodes: any[] = [
@@ -95,21 +108,88 @@ export class AddProductComponent {
   ]
   constructor(
     private messageService: MessageService,
-    private posService: PosServiceService,  private http: HttpClient
+    private posService: PosServiceService,  
+    private http: HttpClient, 
+    private fb: FormBuilder,
   ) {
   }
   ngOnInit(): void {
     this.loadCategory()
-
+    this.getDiscountTypes()
+    this.getDiscounts()
+    this.productForm = this.fb.group({
+      name: ['', Validators.required],
+      code: ['', Validators.required],
+      description: ['', Validators.required],
+      sku: ['', Validators.required],
+      weight: [0, [Validators.required, Validators.min(0)]],
+      initialPrice: ['', [Validators.required, Validators.pattern('^[0-9]+(\.[0-9]{1,2})?$')]],
+      effectivePrice: ['', [Validators.required, Validators.pattern('^[0-9]+(\.[0-9]{1,2})?$')]],
+      initialQuantity: [0, [Validators.required, Validators.min(0)]],
+      effectiveQuantity: [0, [Validators.required, Validators.min(0)]],
+      partNumber: ['', Validators.required],
+      tax: [0, [Validators.required, Validators.min(0)]],
+      branch: ['', Validators.required],
+      variant: [''],
+      discount: [""],
+      category: [''],
+      image: [null], 
+      startDate: [''],
+      endDate: [''],
+      discountMinQuantity: [0],
+      discountName: [''],
+      variants: [this.variants]
+    });
+    if (this.isEditMode && this.activeItem) {
+      this.productForm.patchValue(this.activeItem);
+      if(this.activeItem.variants.length > 0){
+        this.variants = this.activeItem.variants
       }
+      this.productForm.get('discountType')?.setValue(this.activeItem.discount.discountType)
+      this.productForm.get('discountName')?.setValue(this.activeItem.discount.name)
+      this.productForm.get('discountMinQuantity')?.setValue(this.activeItem.discount.minQuantity)
+      this.productForm.get('startDate')?.setValue(this.activeItem.discount.startDate)
+      this.productForm.get('endDate')?.setValue(this.activeItem.discount.endDate)
+      this.productForm.get('discountValue')?.setValue(this.activeItem.discount.value)
+      
+    }
+  }
+  
+  
+  isFieldInvalid(fieldName: string) {
+    const field = this.productForm.get(fieldName);
+   
+    return field?.invalid && (field.touched || field.dirty);
+  }
 
+  getDiscountTypes(){
+        this.posService.getDiscountTypes().subscribe(
+          async (data) => {
+            if (data) {
+              this.discountTypes = data
+            } else {
+             console.log("error loading data")
+            }}
+        )  
+    }
+
+  getDiscounts(){
+        this.posService.getDiscount().subscribe(
+          async (data) => {
+            if (data) {
+              this.discounts = data
+            } else {
+             console.log("error loading data")
+            }}
+        )  
+  }
   checkForEmptyFields(obj: any): boolean {
     return Object.values(obj).some(value => typeof value === 'string' && value.trim() === '');
   }
   onImageUpload(event: any) {
     const file = event.target.files[0];
-    console.log(file)
-        this.productData.image = file;
+
+    this.productForm.get('image')?.setValue(file);
 
     if (file) {
       const reader = new FileReader();
@@ -119,89 +199,262 @@ export class AddProductComponent {
       reader.readAsDataURL(file);
     }
   }
-  addToProduct(){
-    const userName = sessionStorage.getItem("username")
-    const product = {
-         name: this.productData.name,
-         code: this.productData.code,
-         description: this.productData.description,
-         sku: this.productData.sku,
-         weight: this.productData.weight,
-         initialPrice: this.productData.initialPrice,
-         effectivePrice: this.productData.effectivePrice,
-         initialQuantity: this.productData.initialQuantity,
-         effectiveQuantity: this.productData.effectiveQuantity,
-         partNumber: this.productData.partNumber,
-         tax: this.productData.tax,
-         branch: this.productData.branch[0],
-         discount: {
-           name: this.productData.discountName,
-           value: this.productData.discountValue,
-           startDate: this.productData.startDate,
-           endDate: this.productData.endDate,
-           minQuantity: this.productData.discountMinQuantity,
-           discountType: this.productData.discountType.join(" and ")
-         },
-         // productCategory: this.productData.category,
-         createdBy: userName,
-         createdDate:  new Date().toISOString(),
+  // addToProduct(){
+  //   const userName = sessionStorage.getItem("username")
+  //   const product = {
+  //        name: this.productData.name,
+  //        code: this.productData.code,
+  //        description: this.productData.description,
+  //        sku: this.productData.sku,
+  //        weight: this.productData.weight,
+  //        initialPrice: this.productData.initialPrice,
+  //        effectivePrice: this.productData.effectivePrice,
+  //        initialQuantity: this.productData.initialQuantity,
+  //        effectiveQuantity: this.productData.effectiveQuantity,
+  //        partNumber: this.productData.partNumber,
+  //        tax: this.productData.tax,
+  //        branch: this.productData.branch[0],
+  //        discount: {
+  //          name: this.productData.discountName,
+  //          value: this.productData.discountValue,
+  //          startDate: this.productData.startDate,
+  //          endDate: this.productData.endDate,
+  //          minQuantity: this.productData.discountMinQuantity,
+  //          discountType: this.productData.discountType.join(" and ")
+  //        },
+  //        // productCategory: this.productData.category,
+  //        createdBy: userName,
+  //        createdDate:  new Date().toISOString(),
  
-     }
+  //    }
  
-     const formData = new FormData();
-     formData.append('product', JSON.stringify(product));
-     if (this.productData.image instanceof File) {
-       formData.append('files', this.productData.image);
-     }
-     console.log(formData)
-     if (this.checkForEmptyFields(formData)) {
-         this.messageService.add({ severity: 'error', summary: 'warn', detail: 'All fields are required' , key: 'tl', life: 3000 });
-     } else {
-             this.posService.addProduct(formData).subscribe(
-               async (data) => {
+  //    const formData = new FormData();
+  //    formData.append('product', JSON.stringify(product));
+  //    if (this.productData.image instanceof File) {
+  //      formData.append('files', this.productData.image);
+  //    }
+  //    console.log(formData)
+  //    if (this.checkForEmptyFields(formData)) {
+  //        this.messageService.add({ severity: 'error', summary: 'warn', detail: 'All fields are required' , key: 'tl', life: 3000 });
+  //    } else {
+  //            this.posService.addProduct(formData).subscribe(
+  //              async (data) => {
  
-             if (data) {
-               this.messageService.add({ severity: 'success', summary: 'Product Added', detail: 'Product added successfully.', key: 'tl', life: 3000 });
-               this.productData = {
-                 name: "",
-                 code: "",
-                 description: "",
-                 sku: "",
-                 weight: 0,
-                 initialPrice: "",
-                 effectivePrice: "",
-                 initialQuantity: 0,
-                 effectiveQuantity: 0,
-                 partNumber: "",
-                 tax: 0,
-                 branch: "",
-                 variant: "",
-                 discount: 0,
-                 category: "",
-                 id: 0,
-                 count: 0,
-                 discountType: [] as any[],
-                 discountValue: 0,
-                 image: {} as any,
-                 startDate: "",
-                 endDate: "",
-                 discountMinQuantity: 0,
-                 discountName: ''
-               }
-               this.productImage = ""
-             } else {
-               this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Failed, please try again.', key: 'tl', life: 3000 });
-             }
-                 },
-                 (error) => {
-                   this.messageService.add({ severity: 'error', summary: 'Error', detail: error, key: 'tl', life: 3000 });
-                 }
-             );}
+  //            if (data) {
+  //              this.messageService.add({ severity: 'success', summary: 'Product Added', detail: 'Product added successfully.', key: 'tl', life: 3000 });
+  //              this.productData = {
+  //                name: "",
+  //                code: "",
+  //                description: "",
+  //                sku: "",
+  //                weight: 0,
+  //                initialPrice: "",
+  //                effectivePrice: "",
+  //                initialQuantity: 0,
+  //                effectiveQuantity: 0,
+  //                partNumber: "",
+  //                tax: 0,
+  //                branch: "",
+  //                variant: "",
+  //                discount: 0,
+  //                category: "",
+  //                id: 0,
+  //                count: 0,
+  //                discountType: [] as any[],
+  //                discountValue: 0,
+  //                image: {} as any,
+  //                startDate: "",
+  //                endDate: "",
+  //                discountMinQuantity: 0,
+  //                discountName: ''
+  //              }
+  //              this.productImage = ""
+  //            } else {
+  //              this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Failed, please try again.', key: 'tl', life: 3000 });
+  //            }
+  //                },
+  //                (error) => {
+  //                  this.messageService.add({ severity: 'error', summary: 'Error', detail: error, key: 'tl', life: 3000 });
+  //                }
+  //            );}
     
-   }
-   closeAddProduct() {
-    this.addProduct = false
+  //  }
+
+  addToProduct() {
+    const userName = sessionStorage.getItem("username");
+  
+    if (this.productForm.invalid) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Warn',
+        detail: 'All fields are required',
+        key: 'tl',
+        life: 3000
+      });
+      return;
     }
+  
+   
+    const formValues = this.productForm.value;
+  
+
+    const product = {
+      name: formValues.name,
+      code: formValues.code,
+      description: formValues.description,
+      sku: formValues.sku,
+      weight: formValues.weight,
+      initialPrice: formValues.initialPrice,
+      effectivePrice: formValues.effectivePrice,
+      initialQuantity: formValues.initialQuantity,
+      effectiveQuantity: formValues.effectiveQuantity,
+      partNumber: formValues.partNumber,
+      tax: formValues.tax,
+      branch: formValues.branch, 
+      discount: formValues.discount,
+      variants: this.variants,
+      productCategory: formValues.category,
+      createdBy: userName,
+      createdDate: new Date().toISOString(),
+    };
+  
+
+    const formData = new FormData();
+    formData.append('product', JSON.stringify(product));
+
+    if (formValues.image instanceof File) {
+      formData.append('files', formValues.image);
+    }
+  
+    console.log(formData);
+
+    this.posService.addProduct(formData).subscribe(
+      async (data) => {
+        if (data) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Product Added',
+            detail: 'Product added successfully.',
+            key: 'tl',
+            life: 3000
+          });
+          this.resetForm();
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Failed',
+            detail: 'Failed, please try again.',
+            key: 'tl',
+            life: 3000
+          });
+        }
+      },
+      (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error,
+          key: 'tl',
+          life: 3000
+        });
+      }
+    );
+  }
+
+  updateProduct(){
+    const userName = sessionStorage.getItem("username");
+  
+    if (this.productForm.invalid) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Warn',
+        detail: 'All fields are required',
+        key: 'tl',
+        life: 3000
+      });
+      return;
+    }
+  
+   
+    const formValues = this.productForm.value;
+  
+
+    const product = {
+      id: this.activeItem.id,
+      name: formValues.name,
+      code: formValues.code,
+      description: formValues.description,
+      sku: formValues.sku,
+      weight: formValues.weight,
+      initialPrice: formValues.initialPrice,
+      effectivePrice: formValues.effectivePrice,
+      initialQuantity: formValues.initialQuantity,
+      effectiveQuantity: formValues.effectiveQuantity,
+      partNumber: formValues.partNumber,
+      tax: formValues.tax,
+      branch: formValues.branch, 
+      discount: formValues.discount,
+      variants: this.variants,
+      productCategory: formValues.category,
+      createdBy: userName,
+      createdDate: new Date().toISOString(),
+    };
+  
+
+    const formData = new FormData();
+    formData.append('product', JSON.stringify(product));
+
+    if (formValues.image instanceof File) {
+      formData.append('files', formValues.image);
+    }
+  
+    console.log(formData);
+
+    this.posService.addProduct(formData).subscribe(
+      async (data) => {
+        if (data) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Product updated',
+            detail: 'Product updated successfully.',
+            key: 'tl',
+            life: 3000
+          });
+          this.resetForm();
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Failed',
+            detail: 'Failed, please try again.',
+            key: 'tl',
+            life: 3000
+          });
+        }
+      },
+      (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error,
+          key: 'tl',
+          life: 3000
+        });
+      }
+    );
+  }
+
+ 
+  resetForm() {
+    this.productForm.reset();
+    this.productImage = "";
+  }
+    
+   triggerClose() {
+    this.close.emit();
+  }
+  get variantFormArray() {
+    return this.productForm.get('variant') as FormArray;
+  }
    addVariant() {
     this.variants.push({ ...this.newVariant });
 
@@ -213,6 +466,7 @@ export class AddProductComponent {
     };
 
     this.openAddVariant = false;
+  
   }
 
   deleteVariant(index: number) {
@@ -297,11 +551,59 @@ export class AddProductComponent {
     category
     )
     this.productData.category = category
+    this.productForm.get('category')?.setValue(category)
     console.log(this.productData.category)
   }
 
   toggleCategoryDropdown(){
     this.openCategories =!this.openCategories
+  }
+
+  addDiscount() {
+    const discountDetails = {
+      name: this.discountData.name,
+      value: this.discountData.value,
+      discountTypes: this.discountData.discountType,
+      endDate: this.discountData.endDate,
+      startDate: this.discountData.startDate,
+      minQuantity: this.discountData.minQuantity,
+    }
+
+     this.posService.addDiscount(discountDetails).subscribe(
+              async (data) => {
+            console.log(data)
+            if (data) {
+              this.messageService.add({ severity: 'success', summary: 'Discount Added', detail: 'Discount added successfully.', key: 'tl', life: 3000 });
+          this.getDiscounts();
+              this.discountData = {
+                name: "",
+                value: "",
+                startDate: "",
+                endDate: "",
+                minQuantity: "",
+                discountType: [] as number[]
+              }
+            } else {
+              this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Failed, please try again.', key: 'tl', life: 3000 });
+            }
+                },
+                (error: HttpErrorResponse) => {
+                  if (error.status === 500) {
+                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Check form details and try again.', key: 'tl', life: 3000 });
+                  } else if (error.status === 404) {
+                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Error, try again.', key: 'tl', life: 3000 });
+                  } else if (error.status === 0) {
+                    this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.', key: 'tl', life: 3000 });
+                  } else {
+                    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'An unexpected error occurred.', key: 'tl', life: 3000 });
+                  }
+                }
+            )
+  
+  }
+  selectDiscount(discount: any) {
+    this.productData.category = discount
+    this.productForm.get('discount')?.setValue(discount)
   }
 
   openGenerateBarcode() {
