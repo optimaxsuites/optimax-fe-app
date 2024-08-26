@@ -8,12 +8,12 @@
                 
                 <div class="w-full md:w-2/3 flex flex-col gap-6">
                     <div class="w-full" >
-                        <label for="fullname">Full Name</label><br>
+                        <label for="fullname">Full Name <span style="color: red;">*</span></label><br>
                         <input  class="editInput"  type="text" id="fullname" pInputText [(ngModel)]="userInfoData.fullName" />
                     </div>
                     <div class="w-full">
-                        <label for="username">Username</label>
-                        <input type="text" class="editInput" id="username" pInputText [(ngModel)]="userInfoData.username" />
+                        <label for="username">Username <span style="color: red;">*</span></label>
+                        <input type="text" class="editInput" id="username" pInputText [(ngModel)]="userInfoData.username" disabled/>
                     </div>
                 </div>
 
@@ -35,26 +35,31 @@
             <div class="panel-content" >
                 <div class="input-wrapper gap-5">
                     <div class="input-width-1">
-                        <label for="email">Email</label>
-                        <input class="editInput" type="email" id="email" pInputText [(ngModel)]="userInfoData.email">
+                        <label for="email">Email <span style="color: red;">*</span></label>
+                        <input class="editInput" type="email" id="email" pInputText [(ngModel)]="userInfoData.email" disabled />
                     </div>
                     <div class="input-width-1">
-                        <label for="phone">Phone Number</label>
+                        <label for="phone">Phone Number <span style="color: red;">*</span></label>
                         <input class="editInput" type="tel" id="phone" pattern="[0-9]{10}" pInputText [(ngModel)]="userInfoData.phoneNumber" >
                     </div>
                 </div>
 
                 <div class="input-wrapper gap-5">
                     <div class="input-width-1">
-                        <label for="address">Address</label>
+                        <label for="address">Address <span style="color: red;">*</span></label>
                         <input class="editInput" id="address" pInputText [(ngModel)]="userInfoData.address">
                     </div>
                     <div class="input-width-1">
-                        <label for="country">Country</label>
-                        <select class="editInput" id="country" name="country" pInputText [(ngModel)]="userInfoData.selectedCountry" (change)="onCountryChange()">
-                          <option value="" disabled selected>Select your country</option>
-                          <option *ngFor="let country of countries" [value]="country.name">{{country.name}}</option>
-                        </select>
+                        <label for="country">Country <span style="color: red;">*</span></label>
+                        <ng-select 
+                            [items]="countries"
+                            bindLabel="name"
+                            bindValue="name"
+                            [(ngModel)]="userInfoData.selectedCountry"
+                            (change)="onCountrySelect($event)"
+                            placeholder="Select Country"
+                            >
+                        </ng-select>
                       </div>                        
                 </div>
 
@@ -62,28 +67,26 @@
 
                 <div class="input-wrapper  gap-5">
                     <div class="input-width-1">
-                        <label for="state">State</label>
-                 
+                        <label for="state">State <span style="color: red;">*</span></label>
                         <ng-select 
-                        [items]="states"
-                        bindLabel="label"
-                        bindValue="value"
-                        [(ngModel)]="userInfoData.selectedState"
-                        placeholder="Select your state"
-                        (change)="onStateChange()">
-                      </ng-select> 
+                            [items]="states"
+                            bindLabel="name"
+                            bindValue="name"
+                            placeholder="Select State"
+                            [(ngModel)]="userInfoData.selectedState"
+                            (change)="onStateSelect($event)">
+                        </ng-select> 
                       </div>
                       <div class="input-width-1">
-                        <label for="city">City</label>
-                 
+                        <label for="city">City <span style="color: red;">*</span></label>
                         <ng-select 
-                        [items]="filteredCities"
-                        bindLabel="label"
-                        bindValue="value"
-                        [(ngModel)]="userInfoData.selectedCity"
-                        placeholder="Select your city"
-                        [disabled]="!userInfoData.selectedState">
-                      </ng-select> 
+                            [items]="cities"
+                            bindLabel="name"
+                            bindValue="name"
+                            placeholder="Select City"
+                            (change)="onCitySelect($event)"
+                            [(ngModel)]="userInfoData.selectedCity">
+                        </ng-select>
                       </div>
                 </div>
 
@@ -114,15 +117,15 @@
                 <div class="panel-content" >
                     <div class="input-wrapper gap-3">
                         <div class="input-width-1">
-                            <label for="industry">Industry</label>
+                            <label for="industry">Industry <span style="color: red;">*</span></label>
                             <input class="editInput" type="text" id="industry" pInputText [(ngModel)]="userInfoData.industry">
                         </div>
                         <div class="input-width-1">
-                            <label for="company">Company Name</label>
+                            <label for="company">Company Name <span style="color: red;">*</span></label>
                             <input class="editInput" type="text" id="company" pInputText [(ngModel)]="userInfoData.company">
                         </div>
                         <div class="input-width-1">
-                            <label for="clientType">Client type</label>
+                            <label for="clientType">Client type <span style="color: red;">*</span></label>
                             <select class="editInput" type="text" id="clientType" pInputText [(ngModel)]="userInfoData.clientType">
                                 <option value="dxx"></option>
                                 <option value="Company">Company</option>
@@ -133,7 +136,7 @@
                         </div>
                     </div>
                     
-                    <label for="bio">Bio</label>
+                    <label for="bio">Bio <span style="color: red;">*</span></label>
                     <textarea class="editInput" id="bio" rows="4" pInputText [(ngModel)]="userInfoData.bio"></textarea>
                 </div>
 

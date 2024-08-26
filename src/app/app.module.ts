@@ -172,6 +172,8 @@ import { ExpenseSummaryComponent } from './ui/expenses/view/expense-summary/expe
 import { ExpenseApprovalComponent } from './ui/expenses/view/expense-approval/expense-approval.component';
 
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
+import { AddShippingDetailsComponent } from './ui/sales/view/add-shipping-details/add-shipping-details.component';
+import { AddQuotationItemComponent } from './ui/sales/view/add-quotation-item/add-quotation-item.component';
 import { InventoryComponent } from './ui/pos/view/inventory/inventory.component';
 import { ViewProductComponent } from './ui/pos/view/products/view-product/view-product.component';
 import { AddProductComponent } from './ui/pos/view/products/add-product/add-product.component';
@@ -286,6 +288,8 @@ import { NavTabComponent } from './ui/shared/view/nav-tab/nav-tab.component';
     UploadRecieptComponent,
     AddPerDiemComponent,
     ExpenseSummaryComponent,
+    AddShippingDetailsComponent,
+    AddQuotationItemComponent,
     ViewProductComponent,
     AddProductComponent,
     EditProductComponent,
