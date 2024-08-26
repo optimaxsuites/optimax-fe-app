@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ExpenseService, Expense } from '../../service/expense.service';
 import { Router, ActivatedRoute } from '@angular/router';
-import { SignaturePad } from 'angular2-signaturepad';
+
 
 @Component({
   selector: 'app-expense-forms-modal',
@@ -18,7 +18,7 @@ throw new Error('Method not implemented.');
 clearSignature() {
 throw new Error('Method not implemented.');
 }
-  @ViewChild(SignaturePad) signaturePad!: SignaturePad;
+
 
   productData: any = {};
   categories: { name: string }[] = [
@@ -121,18 +121,7 @@ throw new Error('Method not implemented.');
     }
   }
 
-  // Handle signature completion
-  drawComplete(): void {
-    this.signatureUrl = this.signaturePad.toDataURL();
-    this.expenseSummary.signature = this.signatureUrl;
-  }
 
-  // Clear the signature pad
-  drawClear(): void {
-    this.signaturePad.clear();
-    this.signatureUrl = null;
-    this.expenseSummary.signature = '';
-  }
 
   // Submit the expense
   submitExpense(): void {
@@ -140,9 +129,9 @@ throw new Error('Method not implemented.');
       ...this.expenseSummary,
       id: this.expenseSummary.id || this.generateId(),
       status: this.currentStage,
-      receiptFile: this.receiptFile, // Attach receipt file
-      invoiceFile: this.invoiceFile, // Attach invoice file
-      signature: this.signatureUrl, // Attach the signature data URL
+      receiptFile: this.receiptFile, 
+      invoiceFile: this.invoiceFile, 
+      signature: this.signatureUrl, 
     };
 
     if (this.expenseSummary.id) {
