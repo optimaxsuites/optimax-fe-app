@@ -11,6 +11,8 @@ import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-lin
 export class VerifyTokenComponent implements OnInit {
 
   token: string | null = null;
+  isVerified: boolean | null = null;
+
 
   constructor(private route: ActivatedRoute,
      private authenticationService: AuthenticationService,
@@ -43,5 +45,18 @@ export class VerifyTokenComponent implements OnInit {
       }
     );
   }
+
+  // verifyUserToken(token: string): void {
+  //   this.authenticationService.userVerification(token).subscribe(
+  //     response => {
+  //       this.isVerified = true;
+  //       console.log("Verification successful", response);
+  //     },
+  //     error => {
+  //       this.isVerified = false;
+  //       console.error("Verification failed", error);
+  //     }
+  //   );
+  // }
 
 }
