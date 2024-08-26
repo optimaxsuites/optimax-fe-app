@@ -1,6 +1,6 @@
 <div class="sales-form-wrapper">
   <app-back-button></app-back-button>
-  <div class="container">
+  <div class="contain">
     <div class="modal-wrapper p-4" #contentToPrint>
       <div class="header-section">
         <section class="title-section">
@@ -13,127 +13,60 @@
           <div class="first-container">
             <div class="input-container-100">
               <label for="qNo">Quotation No</label>
-              <input type="text" id="qNo" [(ngModel)]="quotationData.quotationNo" class="form-control-opti" />
+              <input type="text" name="any" id="qNo" [(ngModel)]="quotationData.quotationNo" class="editInput" />
             </div>
             <div class="d-flex gap-4 my-4">
               <div class="input-container-50">
                 <label for="qDate">Date</label>
-                <input type="date" id="qDate" [(ngModel)]="quotationData.quotationDate" class="form-control-opti" />
+                <input type="date" name="any" id="qDate" [(ngModel)]="quotationData.quotationDate" class="editInput" />
               </div>
-
               <div class="input-container-50">
                 <label for="qDueDate">Due Date</label>
-                <input type="date" id="qDueDate" [(ngModel)]="quotationData.quotationDueDate" class="form-control-opti" />
+                <input type="date" name="any" id="qDueDate" [(ngModel)]="quotationData.quotationDueDate" class="editInput" />
               </div>
             </div>
             <div class="input-container-100">
               <label for="projectTitle">Project Title</label>
-              <input type="text" id="projectTitle" [(ngModel)]="quotationData.project" class="form-control-opti" />
+              <input type="text" name="any" id="projectTitle" [(ngModel)]="quotationData.project" class="editInput" />
             </div>
-  
-            <div *ngFor="let field of quotationData.field; let i = index" class="editable-label-container gap-4 my-4">
-              <div class="editable-label">
-                <input
-                  type="text"
-                  [(ngModel)]="field.title"
-                  class="form-control-opti p-2"
-                  placeholder="Title"
-                />
-              </div>
-              
-              <div class="editable-label-input">
-                <input
-                  type="text"
-                  [(ngModel)]="field.description"
-                  class="form-control-opti p-2"
-                  style="font-size: 1.1em; font-weight: 400"
-                  placeholder="Description"
-                />
-                <i (click)="removeField(i)" class="fa-solid fa-x p-2"></i>
+            <div class="editInput mt-2">
+              <button class="add-btn" (click)="addField()">
+                <i class="fas fa-plus me-2"></i>Add More Field
+              </button>
+              <div *ngFor="let field of quotationData.field; let i = index" class="input-container-100 editable-label-container gap-4 my-4">
+                <div class="editable-label">
+                  <input type="text" name="any" [(ngModel)]="field.title" class="editInput" placeholder="Title" />
+                </div>
+                <div class="editable-label-input">
+                  <input type="text" name="any" [(ngModel)]="field.description" class="editInput" placeholder="Description" />
+                  <i (click)="removeField(i)" class="fa-solid fa-x p-2"></i>
+                </div>
               </div>
             </div>
-            
-            <button class="add-btn my-2" (click)="addField()">
-              <i class="fas fa-plus me-2"></i>Add More Field
-            </button>
-            
-            
-          </div>
-
-          <div class="">
-            <section class="logo-section">
-              <div class="logo-upload-container">
-                <div class="wrapper">
-                  <div class="logo-wrapper">
-                    <img
-                      *ngIf="logoUrl"
-                      [src]="logoUrl"
-                      [(ngModel)]="quotationData.logo"
-                      alt="logo"
-                      class="logo"
-                    />
-                  </div>
-                </div>
-  
-                <div *ngIf="showLogo; else addLogoButtons" class="add-logo-btn-wrapper" >
-                  <input type="file" #fileInput style="display: none" (change)="onLogoSelected($event)" />
-                  <button class="btn" (click)="fileInput.click()">
-                    <i class="fas fa-plus me-2"></i>Change Logo
-                  </button>
-                  <button class="btn" (click)="clearLogo()">
-                    <i class="fa-solid fa-x me-2"></i>Remove Logo
-                  </button>
-                </div>
-                <ng-template #addLogoButtons>
-                  <div class="add-logo-toggle">
-                    <input type="file" #fileInput style="display: none" (change)="onLogoSelected($event)" />
-                    <button class="btn" (click)="fileInput.click()">
-                      <i class="fas fa-plus me-2"></i>Add Business Logo
-                    </button>
-                  </div>
-                </ng-template>
-              </div>
-            </section>
           </div>
         </section>
-  
+
+        <hr>
+
         <section class="second-info-section">
           <!-- company details start -->
           <div class="right">
             <div class="top-container">
               <div class="billing-selection">
-                <form>
+                <div>
                   <p class="billing-title"> Quotation From <span class="billing-span">[ Company's details ]</span></p>
                   <!-- dropdown start -->
-                  <app-reusable-dropdown 
-                  [options]="companyOptions" 
-                  [(selectedValue)]="selectedCompanyId"
-                  (valueChange)="onCompanyDropdownValueChange($event)">
-                </app-reusable-dropdown>
-                
-                <!-- <p>Selected Option: {{ selectedOption }}</p> -->
-                  <!-- <div class="dropdown">
-                    <label>Select Company</label>
-                    <div class="dropdown-selected" (click)="toggleDropdownCompany()">
-                      {{ selectedCompany ? selectedCompany.viewValue : 'Select Company' }}
-                    </div>
-                    <div class="dropdown-list" *ngIf="dropdownOpen">
-                      <div
-                        class="dropdown-item"
-                        *ngFor="let company of companies"
-                        (click)="selectCompany(company)"
-                      >
-                        {{ company.viewValue }}
-                      </div>
-                      <div class="add-new-details-btn-wrapper">
-                        <button class="btn new-detail-btn mt-2" (click)="addNewCompany($event)">
-                          Add New Company Details
-                        </button>
-                      </div>
-                    </div>
-                  </div> -->
+                  <ng-select 
+                  [items]="companyOptions"
+                  bindLabel="name"
+                  bindValue="id"
+                  name="any"
+                  [(ngModel)]="selectedCompanyId"
+                  (change)="onCompanyChange($event)"
+                  placeholder="Select Company">
+                  </ng-select>
                   <!-- dropdown ends -->
-                </form>
+                </div>
               </div>
             </div>
 
@@ -142,22 +75,10 @@
               <div class="bottom-container">
                 <p><b>Business Details</b></p>
                 <div class="business-info">
-                  <div class="d-flex">
-                    <p>Business Name:</p>
-                    <p class="ms-2">{{ companyData.name }}</p>
-                  </div>
-                  <div class="d-flex">
-                    <p>Address:</p>
-                    <p class="ms-2">{{ companyData.address }}</p>
-                  </div>
-                  <div class="d-flex">
-                    <P>Phone Number:</P>
-                    <p class="ms-2">{{ companyData.phoneNumber }}</p>
-                  </div>
-                  <div class="d-flex">
-                    <p>Email Address:</p>
-                    <p class="ms-2">{{ companyData.email }}</p>
-                  </div>
+                    <input type="text" name="any" class="editInput" placeholder="Business Name" [(ngModel)]="companyData.name" disabled />
+                    <input type="text" name="any" class="editInput my-2" placeholder="Address" [(ngModel)]="companyData.address" disabled />
+                    <input type="text" name="any" class="editInput mb-2" placeholder="Phone Number" [(ngModel)]="companyData.phoneNumber" disabled />
+                    <input type="text" name="any" class="editInput" placeholder="Email" [(ngModel)]="companyData.email" disabled />
                 </div>
               </div>
             </div>
@@ -171,58 +92,35 @@
             <div class="bottom-container">
               <div class="top-container">
                 <div class="billing-selection">
-                  <form>
+                  <div>
                     <p class="billing-title">Quotation For <span class="billing-span">[ Client's details ]</span></p>
                     <!-- dropdown start -->
-                    <!-- <div class="dropdown">
-                      <label>Select Client</label>
-                      <div class="dropdown-selected" (click)="toggleDropdownClient()">
-                        {{ selectedClient ? selectedClient.viewValue : 'Select Client' }}
-                      </div>
-                      <div class="dropdown-list" *ngIf="dropdownOpen1">
-                        <div
-                          class="dropdown-item"
-                          *ngFor="let client of clients"
-                          (click)="selectClient(client)"
-                        >
-                          {{ client.viewValue }}
-                        </div>
-                        <div class="add-new-details-btn-wrapper">
-                          <button class="btn new-detail-btn mt-2" (click)="openAddNewClientDialog()">
-                            Add New Client Details
-                          </button>
-                        </div>
-                      </div>
-                    </div> -->
-                  <!-- dropdown ends -->
-                  </form>
+                    <ng-select 
+                    [items]="customerOptions"
+                    bindLabel="name"
+                    name="any"
+                    bindValue="id"
+                    [(ngModel)]="selectedCustomerId"
+                    (change)="onCustomerChange($event)"
+                    placeholder="Select Company">
+                    </ng-select>
+                    <!-- dropdown ends -->
+                  </div>
                 </div>
               </div>
               <div class="info-bottom-section">
                 <div class="first-component mt-4" *ngIf="!showSecondComponent">
                   <p>Select Client From List</p>
-                  <p class="text-center">Or</p>
-                  <button class="btn create-client-btn" (click)="openAddNewClientDialog()">Add New Client</button>
+                  <p class="">Or</p>
+                  <button class="add-btn" (click)="openAddClient=true"> <i class="fas fa-plus me-2"></i> Add New Client</button>
                 </div>
                 <div class="second-component" *ngIf="showSecondComponent">
                   <p><b>Client Details</b></p>
                   <div class="business-info">
-                    <div class="d-flex">
-                      <p>Business Name:</p>
-                      <p class="ms-2">{{ customerData.name }}</p>
-                    </div>
-                    <div class="d-flex">
-                      <p>Address:</p>
-                      <p class="ms-2">{{ customerData.address }}</p>
-                    </div>
-                    <div class="d-flex">
-                      <P>Phone Number:</P>
-                      <p class="ms-2">{{ customerData.phoneNumber }}</p>
-                    </div>
-                    <div class="d-flex">
-                      <p>Email Address:</p>
-                      <p class="ms-2">{{ customerData.email }}</p>
-                    </div>
+                    <input type="text" name="any" class="editInput" placeholder="Business Name" [(ngModel)]="customerData.name" disabled />
+                    <input type="text" name="any" class="editInput my-2" placeholder="Address" [(ngModel)]="customerData.address" disabled />
+                    <input type="text" name="any" class="editInput mb-2" placeholder="Phone Number" [(ngModel)]="customerData.phoneNumber" disabled />
+                    <input type="text" name="any" class="editInput" placeholder="Email" [(ngModel)]="customerData.email" disabled />
                   </div>
                 </div>
               </div>
@@ -231,161 +129,126 @@
           <!-- client details ends -->
         </section>
 
+        <hr>
 
         <!-- shipping-details-container -->
         <section class="shipping-details-container">
-          <div class="shipping-wrapper">
-            <div class="add-terms-condition-btn btn " (click)="toggleForm()" >
-              <label> Add Shipping Details</label>
-            </div>
+          <div class="shipping-wrapper editInput">
+            <button class="add-btn" (click)="toggleForm()" >
+              <i class="fas fa-plus me-2"></i> Add Shipping Details
+            </button>
+
+            <!-- <button class="add-btn" (click)="openAddShipping=true"> <i class="fas fa-plus me-2"></i> Add Shipping Info</button> -->
   
-            <div *ngIf="isFormVisible" class="form-container mt-4">
+            <div *ngIf="isFormVisible" class="second-info-section mt-4">
               <!-- shipping from starts -->
-              <div class="form-section">
+              <div class="right">
                 <div class="shipping-header-wrapper">
-                  <p class="shipping-header">Shipped From</p>
+                  <p><b>Shipped From</b></p>
                 </div>
-                <div class="form-group">
-                  <input
-                    type="text"
-                    [(ngModel)]="shippingData"
-                    placeholder="Business / Freelancer Name"
-                    class="form-control-opti"
-                  />
+                <div class="">
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Business / Freelancer Name" class="editInput" />
                 </div>
-                <div class="form-group">
-                  <input
-                    type="text"
-                    [(ngModel)]="shippingData"
-                    placeholder="Address (optional)"
-                    class="form-control-opti"
-                  />
+                <div class="">
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Address" class="editInput my-2" />
                 </div>
-                <div class="form-group row">
+                <div class=" row">
                   <div class="column">
-                    <input
-                      type="text"
-                      [(ngModel)]="shippingData"
-                      placeholder="City (optional)"
-                      class="form-control-opti"
-                    />
+                    <input type="text" [(ngModel)]="shippingData" placeholder="City" class="editInput" />
                   </div>
                   <div class="column">
-                    <input
-                      type="text"
-                      [(ngModel)]="shippingData"
-                      placeholder="Postal Code / Zip Code"
-                      class="form-control-opti"
-                    />
+                    <input type="text" [(ngModel)]="shippingData" placeholder="Postal Code / Zip Code" class="editInput my-2" />
                   </div>
                 </div>
-                <div class="form-group">
-                  <input
-                    type="text"
-                    [(ngModel)]="shippingData"
-                    placeholder="State (optional)"
-                    class="form-control-opti"
-                  />
+                <div class="">
+                  <input type="text" [(ngModel)]="shippingData" placeholder="State" class="editInput" />
                 </div>
               </div>
               <!-- shipping from ends -->
 
               <!-- shipping to starts -->
-              <div class="form-section">
+              <div class="left">
                 <div class="shipping-header-wrapper">
-                  <p class="shipping-header">Shipped To</p>
+                  <p><b>Shipped To</b></p>
                 </div>
-                <div class="form-group">
-                  <input
-                    type="text"
-                    [(ngModel)]="shippingData"
-                    placeholder="Client's Business Name"
-                    class="form-control-opti"
-                  />
+                <div class="">
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Client's Business Name" class="editInput" />
                 </div>
-                <div class="form-group">
-                  <input
-                    type="text"
-                    [(ngModel)]="shippingData"
-                    placeholder="Address (optional)"
-                    class="form-control-opti"
-                  />
+                <div class="">
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Address" class="editInput my-2" />
                 </div>
-                <div class="form-group row">
+                <div class=" row">
                   <div class="column">
-                    <input
-                      type="text"
-                      [(ngModel)]="shippingData"
-                      placeholder="City (optional)"
-                      class="form-control-opti"
-                    />
+                    <input type="text" [(ngModel)]="shippingData" placeholder="City" class="editInput" />
                   </div>
                   <div class="column">
-                    <input
-                      type="text"
-                      [(ngModel)]="shippingData"
-                      placeholder="Postal Code / Zip Code"
-                      class="form-control-opti"
-                    />
+                    <input type="text" [(ngModel)]="shippingData" placeholder="Postal Code / Zip Code" class="editInput my-2" />
                   </div>
                 </div>
-                <div class="form-group">
-                  <input
-                    type="text"
-                    [(ngModel)]="shippingData"
-                    placeholder="State (optional)"
-                    class="form-control-opti"
-                  />
-                </div>
-                <div class="form-group">
+                <div class="">
+                  <input type="text" [(ngModel)]="shippingData" placeholder="State" class="editInput" />
                 </div>
               </div>
               <!-- shipping to ends -->
             </div>
           </div>
         </section>
+        <hr>
       </div>
       <!-- shipping-details-container ends -->
   
-      <div class="info-section">
-        <div class="tax-currency">
-          <div class="tax-btn">
-            <button class="btn flat-btn" (click)="openTaxDialog()">
-              Add Tax
-            </button>
-          </div>
-          <div class="currency-selector">
-            <div class="custom-dropdown">
-              <button class="btn flat-btn" [(ngModel)]="quotationData" (click)="toggleDropdown('currency')">
-                {{ (getSelectedItem$("currency") | async) || "Select Currency" }}
-              </button>
-              <ul
-                class="custom-options"
-                *ngIf="isDropdownOpen$('currency') | async"
-              >
-                <li
-                  class="custom-option"
-                  *ngFor="let item of currency"
-                  (click)="selectItem('currency', item)"
-                >
-                  {{ item }}
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div class="tax-btn">
-            <button class="btn flat-btn" (click)="openNumberCurrencyDialog()">
-              Number/Currency Format
-            </button>
-          </div>
-          <div class="tax-btn">
-            <button class="btn flat-btn">Currency Exchange</button>
-          </div>
-        </div>
+      <div class="">
+        <p-toolbar styleClass="mb-4 gap-2">
+          <ng-template pTemplate="left">
+          </ng-template>
+    
+          <ng-template pTemplate="right">
+            <app-button (click)="openAddItem=true" text="Add New Item" class="btn-navigate" ></app-button>
+          </ng-template>
+        </p-toolbar>
+        <p-table 
+          [value]="items"
+          [paginator]="true" 
+          dataKey="id"
+          responsiveLayout="stack" 
+          [breakpoint]="'960px'"
+          styleClass="p-datatable-striped"
+          [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+          [rows]="5"
+          >
+            <ng-template pTemplate="header" let-columns>
+              <tr>
+                <th class="table-item">Item</th>
+                <th class="table-item">Tax Rate</th>
+                <th class="table-item">Quantity</th>
+                <th class="table-item">Rate</th>
+                <th class="table-item">Amount</th>
+                <th class="table-item">Tax</th>
+                <th class="table-item">Total</th>
+                <th class="table-item">Action</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-item >
+                <tr>
+                  <td class="table-item"><span class="p-column-title">Item</span>{{ item.name}}</td>
+                  <td class="table-item"><span class="p-column-title">Tax Rate</span>{{ item.taxRate }}</td>
+                  <td class="table-item"><span class="p-column-title">Quantity</span>{{item.qty}}</td>
+                  <td class="table-item"><span class="p-column-title">Rate</span>{{ item.rate }}</td>
+                  <td class="table-item"><span class="p-column-title">Amount</span>{{ item.amount }}</td>
+                  <td class="table-item"><span class="p-column-title">Tax</span> {{ item.tax }}</td>
+                  <td class="table-item"><span class="p-column-title">Total</span> {{ item.total }}</td>
+                  <td class="actions table-item">
+                    <span class="p-column-title">Action</span>
+                    <i class="pi pi-pen-to-square table-item" ></i>
+                    <i class="pi pi-times-circle table-item" ></i>
+                  </td>
+                </tr>                            
+            </ng-template>
+        </p-table>
       </div>
   
       <div class="table-wrapper">
-        <div class="top-products-table w3-table">
+        <!-- <div class="top-products-table w3-table">
           <div class="thead">
             <div class="">
               <ul class="table-item-1 gap-3">
@@ -434,7 +297,6 @@
           </div>
           
           <div class="tbody">
-            <!-- <ng-container > -->
             <div
               class="item-table-row"
               *ngFor="let item of itemsData; let i = index"
@@ -443,6 +305,7 @@
                 <li class="col-4">
                   <input
                     type="text"
+                    name="any"
                     class="form-control-opti"
                     [(ngModel)]="item.name"
                     (ngModelChange)="onInputChange(item)"
@@ -451,6 +314,7 @@
                 <li class="">
                   <input
                     type="text"
+                    name="any"
                     class="form-control-opti"
                     [(ngModel)]="item.taxRate"
                     (ngModelChange)="onInputChange(item)"
@@ -459,6 +323,7 @@
                 <li class="">
                   <input
                     type="text"
+                    name="any"
                     class="form-control-opti"
                     [(ngModel)]="item.qty"
                     (ngModelChange)="onInputChange(item)"
@@ -469,6 +334,7 @@
                 <li class="">
                   <input
                     type="text"
+                    name="any"
                     class="form-control-opti"
                     [(ngModel)]="item.rate"
                     (ngModelChange)="onInputChange(item)"
@@ -479,6 +345,7 @@
                 <li class="">
                   <input
                     type="text"
+                    name="any"
                     class="form-control-opti"
                     [(ngModel)]="item.amount"
                     (ngModelChange)="onInputChange(item)"
@@ -488,6 +355,7 @@
                 <li class="">
                   <input
                     type="text"
+                    name="any"
                     class="form-control-opti"
                     [(ngModel)]="item.tax"
                     (ngModelChange)="onInputChange(item)"
@@ -497,6 +365,7 @@
                 <li class="">
                   <input
                     type="text"
+                    name="any"
                     class="form-control-opti"
                     [(ngModel)]="item.total"
                     (ngModelChange)="onInputChange(item)"
@@ -509,7 +378,6 @@
               </ul>
   
               <div class="description-container">
-                <!-- <ng-container> -->
                 <div class="add-description-btn" *ngIf="!showDescriptionBox">
                   <button
                     class="btn btn-light"
@@ -518,7 +386,6 @@
                     <i class="fas fa-plus me-2"></i>Add Description
                   </button>
                 </div>
-                <!-- </ng-container> -->
   
                 <div class="description-box" *ngIf="showDescriptionBox">
                   <angular-editor
@@ -530,16 +397,17 @@
               </div>
   
               <div class="image-upload-container">
-                <!-- image container here -->
               </div>
             </div>
-            <!-- </ng-container> -->
           </div>
-        </div>
+        </div> -->
   
-        <div class="add-table-row">
+        <!-- <div class="add-table-row">
           <button (click)="addNewRow()" class="btn new-table-row">Add New Row</button>
-        </div>
+        </div> -->
+
+
+
   
         <div class="cal">
           <div class="table-cal-container">
@@ -576,6 +444,7 @@
                   <div class="d-flex">
                     <input
                       type="text"
+                      name="any"
                       [(ngModel)]="discount.value"
                       class="form-control-opti input"
                       style="font-size: 1.1em; font-weight: 400"
@@ -604,6 +473,7 @@
                   <div class="d-flex">
                     <input
                       type="text"
+                      name="any"
                       [(ngModel)]="charge.value"
                       class="form-control-opti input"
                       style="font-size: 1.1em; font-weight: 400"
@@ -659,7 +529,6 @@
               </div>
               <div class="value d-flex">
                 <div class="d-flex">
-                  <!-- <input type="text" class="form-control-opti" > -->
                   {{ totalAmountInWords }}
                 </div>
               </div>
@@ -687,8 +556,7 @@
                   />
                 </div>
                 <div class="btn-sign">
-                  <!-- <input type="" (change)="onFileSelected($event)" class="form-control" /> -->
-                  <input type="file" #fileInput style="display: none" (change)="onSignatureSelected($event)" />
+                  <input type="file" name="any" #fileInput style="display: none" (change)="onSignatureSelected($event)" />
                   <button class="btn" (click)="fileInput.click()">
                     Upload Signature
                   </button>
@@ -729,7 +597,7 @@
                 <i *ngIf="i !== 0" (click)="removeTermGroup(i)" class="fa-solid fa-x p-2" ></i>
               </div>
               <div class="d-flex mb-4" *ngFor="let term of termGroup.terms; let j = index" >
-                <input type="text" class="form-control-opti terms" [(ngModel)]="term.term_des" />
+                <input type="text" name="any" class="form-control-opti terms" [(ngModel)]="term.term_des" />
                 <i (click)="removeTermCondition(i, j)" class="fa-solid fa-x p-2"></i>
               </div>
               <button (click)="addTermCondition(i)" class="btn add-more-terms">
@@ -762,11 +630,9 @@
                 </div>
                 <div class="content">
                   <p>*Add any other attachments that are necessary for the quotation</p>
-                  <!-- attachment.component.html -->
-  
-                  <!-- file-upload.component.html -->
+
                   <div class="file-upload-continer">
-                    <input type="file" #fileInput (change)="fileInputChange($event)" style="display: none"/>
+                    <input type="file" name="any" #fileInput (change)="fileInputChange($event)" style="display: none"/>
                     <button class="btn file-upload-button" (click)="fileInput.click()" >
                       Browse
                     </button>
@@ -802,11 +668,38 @@
       </div>
   
       <div class="btn-wrapper">
-        <!-- <button class="btn create-client-btn-2">Save As Draft</button> -->
-        <!-- <button class="btn save-continue" (click)="onSubmit()">{{isEdit ? 'Update' : 'Save'}}</button> -->
         <app-button text="{{ isEdit ? 'Update' : 'Save' }}" (click)="onSubmit()" class="btn-save"></app-button>
       </div>
     </div>
   </div>
 </div>
 
+<app-side-modal *ngIf="openAddClient" (close)="!openAddClient = false">
+  <div class="modal-header flex justify-between items-center text-gray-700 ">
+    <h2 class="font-semibold pb-0 mb-0">Add Client</h2>
+    <div class="flex gap-3">
+      <button class=" border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold" (click)="openAddClient=false">Cancel</button>
+    </div>
+  </div>
+  <app-add-new-client></app-add-new-client>
+</app-side-modal>
+
+<app-side-modal *ngIf="openAddShipping" (close)="!openAddShipping = false" >
+  <div class="modal-header flex justify-between items-center text-gray-700 ">
+    <h2 class="font-semibold pb-0 mb-0">Add Shipping Details</h2>
+    <div class="flex gap-3">
+      <button class=" border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold" (click)="openAddShipping=false">Cancel</button>
+    </div>
+  </div>
+  <app-add-shipping-details></app-add-shipping-details>
+</app-side-modal>
+
+<app-side-modal *ngIf="openAddItem" (close)="openAddItem = false">
+  <div class="modal-header flex justify-between items-center text-gray-700">
+    <h2 class="font-semibold pb-0 mb-0">Add New Item</h2>
+    <div class="flex gap-3">
+      <button class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold" (click)="openAddItem = false">Cancel</button>
+    </div>
+  </div>
+  <app-add-quotation-item></app-add-quotation-item>
+</app-side-modal>

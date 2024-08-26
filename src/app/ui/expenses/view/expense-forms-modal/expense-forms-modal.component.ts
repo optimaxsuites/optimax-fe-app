@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ExpenseService, Expense } from '../../service/expense.service';
 import { Router, ActivatedRoute } from '@angular/router';
+
 
 @Component({
   selector: 'app-expense-forms-modal',
@@ -8,34 +9,48 @@ import { Router, ActivatedRoute } from '@angular/router';
   styleUrls: ['./expense-forms-modal.component.scss'],
 })
 export class ExpenseFormsModalComponent implements OnInit {
-closeRegister() {
+drawStart() {
 throw new Error('Method not implemented.');
 }
+saveSignature() {
+throw new Error('Method not implemented.');
+}
+clearSignature() {
+throw new Error('Method not implemented.');
+}
+
+
   productData: any = {};
   categories: { name: string }[] = [
     { name: 'Travel' },
     { name: 'Food' },
     { name: 'Accommodation' },
-    { name: 'Other' }
+    { name: 'Other' },
   ];
-
 
   paymentMethods = [
     { label: 'Cash', value: 'cash' },
     { label: 'Credit Card', value: 'credit' },
-    { label: 'Debit Card', value: 'debit' }
+    { label: 'Debit Card', value: 'debit' },
   ];
-  
+
   projects = [
     { label: 'Project 1', value: 'project1' },
     { label: 'Project 2', value: 'project2' },
-    { label: 'Project 3', value: 'project3' }
+    { label: 'Project 3', value: 'project3' },
   ];
 
   currentStage: string = 'to-submit';
-  expenseSummary: any = {};
+  expenseSummary: any = { amount: null }; // Start with null to show the placeholder
   receiptFile: File | null = null;
   invoiceFile: File | null = null;
+  signatureUrl: string | null = null; // To store the signature as a data URL
+
+  public signaturePadOptions: Object = {
+    minWidth: 1,
+    canvasWidth: 500,
+    canvasHeight: 300,
+  };
 
   constructor(
     private expenseService: ExpenseService,
@@ -52,9 +67,20 @@ throw new Error('Method not implemented.');
           this.expenseSummary = { ...expense };
           this.receiptFile = expense.receiptFile || null;
           this.invoiceFile = expense.invoiceFile || null;
+          this.signatureUrl = expense.signature || null; // Load saved signature
         }
       }
     });
+  }
+
+  // Handle amount input to prevent negative values
+  onAmountInput(event: any): void {
+    const input = event.target.value;
+    if (input < 0) {
+      this.expenseSummary.amount = 0; // Set to 0 if input is negative
+    } else {
+      this.expenseSummary.amount = input;
+    }
   }
 
   // Handle the drag over event
@@ -95,14 +121,17 @@ throw new Error('Method not implemented.');
     }
   }
 
+
+
   // Submit the expense
-  submitExpense() {
+  submitExpense(): void {
     const newExpense: Expense = {
       ...this.expenseSummary,
       id: this.expenseSummary.id || this.generateId(),
       status: this.currentStage,
-      receiptFile: this.receiptFile,  // Attach receipt file
-      invoiceFile: this.invoiceFile   // Attach invoice file
+      receiptFile: this.receiptFile, 
+      invoiceFile: this.invoiceFile, 
+      signature: this.signatureUrl, 
     };
 
     if (this.expenseSummary.id) {

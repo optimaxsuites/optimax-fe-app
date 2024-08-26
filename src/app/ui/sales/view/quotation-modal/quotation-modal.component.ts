@@ -34,8 +34,10 @@ export class QuotationModalComponent implements OnInit {
   showDiscount = false;
   showAdditionalCharges = false;
   showLogo = false;
+  openAddClient?: boolean;
+  openAddShipping?: boolean;
+  openAddItem?: boolean;
   selectedValue?: string;
-  // clientDetails: any = {};
   showDescriptionBox: boolean = false;
   signatureUrl: string | ArrayBuffer | null = null;
   logoUrl: string | ArrayBuffer | null = null;
@@ -44,136 +46,76 @@ export class QuotationModalComponent implements OnInit {
   termsGroup: any[] = [];
   charges: any[] = [];
   moreFields: any[] = [];
-
   isEdit: boolean = false
-
-
-
-
-
-  // quotationData: QuotationDTO[] = [];
-  // projectDate: ProjectDTO[] = [];
   itemsData: ItemsDTO[] = [];
   industryData: IndustryDTO[] = [];
   discountChargesData: DiscountAndChargesDTO[] = [];
-  // customerData: CustomerDTO[] = [];
-  // companyData: CompanyDTO[] = [];
   bankData: BanksDTO[] = [];
   addressData: AddressDTO[] = [];
   shippingData: ShippingDTO[] = [];
-  // fieldData: FieldDTO[] = [];
+  quotationData: QuotationDTO = {};
+  projectData: ProjectDTO = {};
+  customerData: CustomerDTO = {};
+  companyData: CompanyDTO = {};
 
-
-
-
-  quotationData: QuotationDTO = {
-    id: 0,
-    quotationNo: '',
-    quotationDate: '',
-    quotationDueDate: '',
-    termsAndConditions: '',
-    quotationNote: '',
-    logo: '',
-    signature: '',
-    attachment: '',
-    createdBy: 0,
-    saveStatus: 'DRAFT',
-    project: 0,
-    customer: 0,
-    field: [] 
-  };
-
-  projectData: ProjectDTO = {
-    id: 0,
-    name: '',
-    code: '',
-    description: ''
-  };
-
-  customerData: CustomerDTO = {
-    id: 0,
-    name: '',
-    customerType: 'INDIVIDUAL',
-    email: '',
-    phoneNumber: '',
-    industry: 0,
-    address: [],
-  };
-  
-  companyData: CompanyDTO = {
-    id: 0,
-    name: '',
-    companySize: 0,
-    yearOfRegistration: '',
-    companyRegistrationNumber: '',
-    companyClassification: 'BUSINESS_NAME',
-    industryId: 0,
-    companyGenNo: '',
-    idType: 'BVN',
-    assignedId: '',
-    createdBy: 0,
-    companyType: 'COMPANY',
-    companyAttr: 'PARENT',
-    customer: 0,
-    address: [],
-    email: '',
-    phoneNumber: 0,
-  };
-
-
-
-
-
-
-
-  companyOptions: { id: number, name: string }[] = [];
-  customerOptions: { id: number, name: string }[] = [];
-  selectedCompanyId: string | null = null;
-  selectedCustomerId: string | null = null;
-  // companyData: CompanyDTO | null = null;
-  // customerData: CustomerDTO | null = null;
-
-
-
-  onCompanyDropdownValueChange(selectedId: any): void {
-    this.selectedCompanyId = selectedId;
-    this.quotationService.getCompanyById(selectedId).subscribe(company => {
-      this.companyData = company;
-    });
-  }
-
-  onCustomerDropdownValueChange(selectedId: any): void {
-    this.selectedCustomerId = selectedId;
-    this.quotationService.getCustomerById(selectedId).subscribe(customer => {
-      this.customerData = customer;
-    });
-  }
-
-
-
-
-
+// ===================================================================================
   ngOnInit(): void {
     this.addTermGroup();
-  
+    this.getCompanyInfo();
+    this.getCustomerInfo();
+  }
+// ===================================================================================
+  companyOptions: { id: number, name: string }[] = [];
+  selectedCompanyId!: number;
+
+  getCompanyInfo(){
     this.quotationService.getCompany('').subscribe((data: CompanyDTO[]) => {
-      this.companyOptions = data.map(company => ({ id: company.id, name: company.name }));
+      this.companyOptions = data.map(company => ({ id: company.id!, name: company.name! }));
     });
-  
-    this.quotationService.getCustomer('').subscribe((data: CustomerDTO[]) => {
-      this.customerOptions = data.map(customer => ({ id: customer.id, name: customer.name }));
-    });
-    
   }
 
+  onCompanyChange(companyId: number): void {
+    if (companyId) {
+      this.quotationService.getCompanyById(companyId).subscribe((company: CompanyDTO) => {
+        this.companyData = company;
+      });
+    } else {
+      this.companyData = {};
+    }
+  }
+// ================================================================================
+  customerOptions: { id: number, name: string }[] = [];
+  selectedCustomerId!: number;
 
+  getCustomerInfo(){
+    this.quotationService.getCustomer('').subscribe((data: CustomerDTO[]) => {
+      this.customerOptions = data.map(customer => ({ id: customer.id!, name: customer.name! }));
+    });
+  }
 
+  onCustomerChange(customerId: number): void {
+    if (customerId) {
+      this.quotationService.getCustomerById(customerId).subscribe((customer: CustomerDTO) => {
+        this.customerData = customer;
+      });
+    } else {
+      this.customerData = {};
+    }
+  }
+  // ====================================================================================
 
-
-
-
-
-
+  items = [
+    { id: 1, name: 'Ladies shoes 1', taxRate: 5, qty: 10, rate: 100, amount: 1000, tax: 50, total: 1050 },
+    { id: 2, name: 'Item 2', taxRate: 10, qty: 20, rate: 150, amount: 3000, tax: 300, total: 3300 },
+    { id: 3, name: 'Item 3', taxRate: 8, qty: 15, rate: 200, amount: 3000, tax: 240, total: 3240 },
+    { id: 4, name: 'Item 4', taxRate: 12, qty: 25, rate: 50, amount: 1250, tax: 150, total: 1400 },
+    { id: 5, name: 'Item 5', taxRate: 7, qty: 30, rate: 75, amount: 2250, tax: 157.5, total: 2407.5 },
+    { id: 6, name: 'Item 6', taxRate: 6, qty: 18, rate: 80, amount: 1440, tax: 86.4, total: 1526.4 },
+    { id: 7, name: 'Item 7', taxRate: 9, qty: 12, rate: 120, amount: 1440, tax: 129.6, total: 1569.6 },
+    { id: 8, name: 'Item 8', taxRate: 11, qty: 22, rate: 90, amount: 1980, tax: 217.8, total: 2197.8 },
+    { id: 9, name: 'Item 9', taxRate: 10, qty: 8, rate: 300, amount: 2400, tax: 240, total: 2640 },
+    { id: 10, name: 'Item 10', taxRate: 4, qty: 50, rate: 25, amount: 1250, tax: 50, total: 1300 }
+  ];
 
 
 
@@ -390,34 +332,17 @@ openNumberCurrencyDialog(){
 
 
 
-
-// addField() {
-//   // Add a new field with default values
-//   this.fieldData.push({
-//     id: this.fieldData.length + 1,
-//     title: '',
-//     description: ''
-//   });
-// }
-
-// removeField(index: number) {
-//   // Remove field at the specified index
-//   this.fieldData.splice(index, 1);
-// }
-
-
 addField() {
-  // Add a new field with default values
-  this.quotationData.field.push({
-    id: this.quotationData.field.length + 1,
-    title: '',
-    description: ''
-  });
+  if(!this.quotationData.field){
+    this.quotationData.field = []
+  }
+  this.quotationData.field.push({})
 }
 
 removeField(index: number) {
-  // Remove field at the specified index
-  this.quotationData.field.splice(index, 1);
+  if (this.quotationData.field && index >= 0 && index < this.quotationData.field.length) {
+    this.quotationData.field.splice(index, 1);
+  }
 }
 
 
@@ -524,36 +449,9 @@ removeField(index: number) {
 
 
 
-  // tableData: any[] = [
-  //   {
-  //     name:'',
-  //     taxRate: '',
-  //     quantity: '',
-  //     rate: '',
-  //     amount: '',
-  //     tax: '',
-  //     total: '',
-  //     showDescriptionBox: false
-  //   }
-  // ];
-
 
   addRow(): void {
-    this.itemsData.push({
-      id: 0,
-      name: '',
-      taxRate: 0,
-      qty: 0,
-      rate: 0,
-      amount: 0,
-      tax: 0,
-      total: 0,
-      description: '',
-      showDescriptionBox: false,
-      businessSalesType: "QUOTATION",
-      createdBy: 0,
-      quotation: 0
-    });
+    this.itemsData.push({});
 
     // Recalculate totals
     this.calculateTotal();
@@ -576,14 +474,6 @@ removeField(index: number) {
 
 
   onInputChange(item: any): void {
-    // this.name = item.name;
-    // this.taxRate = item.taxRate;
-    // this.quantity = item.quantity;
-    // this.rate = item.rate;
-    // this.amount = item.amount;
-    // console.log(this.amount)
-    // this.tax = item.tax;
-    // this.total = item.total;
 
   
     item.amount = item.quantity * item.rate;
@@ -603,9 +493,9 @@ removeField(index: number) {
     // this.totalAmount = this.tableData.reduce((sum, item) => sum + item.total, 0);
     this.totalAmountInWords = this.convertToWords(this.grandTotal);
 
-    this.totalAmount = this.itemsData.reduce((sum, item) => sum + item.amount, 0);
-    this.totalTax = this.itemsData.reduce((sum, item) => sum + item.tax, 0);
-    this.grandTotal = this.itemsData.reduce((sum, item) => sum + item.total, 0);
+    this.totalAmount = this.itemsData.reduce((sum, item) => sum + item.amount!, 0);
+    this.totalTax = this.itemsData.reduce((sum, item) => sum + item.tax!, 0);
+    this.grandTotal = this.itemsData.reduce((sum, item) => sum + item.total!, 0);
   }
 
   convertToWords(grandTotal: number): string {
@@ -693,113 +583,7 @@ removeField(index: number) {
   }
 
 
-// ====================================company selection============================================
-  // companies: Company[] = [
-  //   { value: 'Centrifuge', viewValue: 'Centrifuge' },
-  //   { value: 'GOP Gadgets', viewValue: 'GOP Gadgets' },
-  //   { value: 'DeOne', viewValue: 'DeOne' }
-  // ];
-  // toggleDropdownCompany() {
-  //   this.dropdownOpen = !this.dropdownOpen;
-  // }
-
-  // selectCompany(company: any) {
-  //   this.quotationData.selectedCompany = company.value;
-  //   this.selectedCompany = company;
-  //   this.dropdownOpen = false;
-  //   this.updateBusinessInfo();
-  // }
-
-
-  // addNewCompany(event: Event) {
-  //   event.stopPropagation();
-  //   // Your logic to add a new company goes here
-  // }
-
-  // updateBusinessInfo() {
-  //   const selectedCompany = this.companies.find(company => company.value === this.quotationData.selectedCompany);
-  //   // this.showSecondComponent = true;
-
-  //   if (selectedCompany) {
-  //     if (selectedCompany.value === 'Centrifuge') {
-  //       this.quotationData.businessDetails = {
-  //         name: 'Centrifuge Group',
-  //         address: 'No 31 juju street, lagos road',
-  //         phoneNumber: '09077556633',
-  //         email: 'centrifuge@gmail.com'
-  //       };
-  //     } else if (selectedCompany.value === 'GOP Gadgets') {
-  //       this.quotationData.businessDetails = {
-  //         name: 'GOP Gadgets',
-  //         address: 'No 9 Adesanya street, lagos, ikeja',
-  //         phoneNumber: '08144685954',
-  //         email: 'gop@gmail.com'
-  //       };
-  //     } else if (selectedCompany.value === 'DeOne') {
-  //       this.quotationData.businessDetails = {
-  //         name: 'DeOne Gadgets',
-  //         address: 'No 9 Adesanya street, lagos, ikeja',
-  //         phoneNumber: '08060393174',
-  //         email: 'DeOne@gmail.com'
-  //       };
-  //     }
-  //   }
-  // }
-
-// ====================================company selection============================================
-
-
-  // client details
-
-  // clients: Client[] = [
-  //   { value: 'MTN', viewValue: 'MTN' },
-  //   { value: 'GLO', viewValue: 'GLO' },
-  //   { value: 'Opay', viewValue: 'Opay' }
-  // ];
-
-
-  // toggleDropdownClient() {
-  //   this.dropdownOpen1 = !this.dropdownOpen1;
-  // }
-
-  // selectClient(client: any) {
-  //   this.quotationData.selectedClient = client.value;
-  //   this.selectedClient = client;
-  //   this.dropdownOpen1 = false;
-  //   this.updateClientInfo();
-  // }
-
-  // updateClientInfo() {
-  //   const selectedClient = this.clients.find(client => client.value === this.quotationData.selectedClient);
-  //   this.showSecondComponent = true;
-
-  //   if (selectedClient) {
-  //     if (selectedClient.value === 'MTN') {
-  //       this.quotationData.clientDetails = {
-  //         name: 'MTN',
-  //         address: 'No 31 juju street, lagos road',
-  //         phoneNumber: '09077556633',
-  //         email: 'mtn@gmail.com'
-  //       };
-  //     } else if (selectedClient.value === 'GLO') {
-  //       this.quotationData.clientDetails = {
-  //         name: 'GLO',
-  //         address: 'No 9 Adesanya street, lagos, ikeja',
-  //         phoneNumber: '08144685954',
-  //         email: 'glo@gmail.com'
-  //       };
-  //     } else if (selectedClient.value === 'Opay') {
-  //       this.quotationData.clientDetails = {
-  //         name: 'Opay',
-  //         address: 'No 9 Adesanya street, lagos, ikeja',
-  //         phoneNumber: '08060393174',
-  //         email: 'opay@gmail.com'
-  //       };
-  //     }
-  //   }
-  // }
-
-  openAddNewClientDialog(){
+  openAddClientDialog(){
     this.dialogRef.open(AddNewClientComponent)
   }
 
@@ -820,22 +604,6 @@ removeField(index: number) {
     this.showSignatureButton = false; 
   }
 
-
-  // onLogoSelected(event: any) {
-  //   const file: File = event.target.files[0];
-  //   if (file) {
-  //     const reader = new FileReader();
-  //     reader.readAsDataURL(file);
-  //     reader.onload = () => {
-  //       this.logoUrl = reader.result;
-  //     };
-  //   }
-  // }
-
-  // clearLogo() {
-  //   this.logoUrl = null;
-  //   // this.showSignatureButton = false; 
-  // }
 
   onLogoSelected(event: any) {
     const file = event.target.files[0];
