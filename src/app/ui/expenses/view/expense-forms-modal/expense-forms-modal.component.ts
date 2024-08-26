@@ -1,102 +1,150 @@
-import { Component } from '@angular/core';
-import { ExpenseData } from '../../domain/expense.data';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { ExpenseService, Expense } from '../../service/expense.service';
+import { Router, ActivatedRoute } from '@angular/router';
+
 
 @Component({
   selector: 'app-expense-forms-modal',
   templateUrl: './expense-forms-modal.component.html',
-  styleUrl: './expense-forms-modal.component.scss',
+  styleUrls: ['./expense-forms-modal.component.scss'],
 })
-export class ExpenseFormsModalComponent {
-  currentStage: string = 'to-submit'; // Initial stage
-  showModal: boolean = false; // Modal visibility control
+export class ExpenseFormsModalComponent implements OnInit {
+drawStart() {
+throw new Error('Method not implemented.');
+}
+saveSignature() {
+throw new Error('Method not implemented.');
+}
+clearSignature() {
+throw new Error('Method not implemented.');
+}
 
-  // Object to store form summary data
-  expenseSummary = {
-    amount: '',
-    merchant: '',
-    expenseDate: '',
-    category: '',
-    taxRate: '',
-    taxPercentage: '',
-    taxAmount: '',
-    payMethod: '',
-    project: '',
-    comments: ''
+
+  productData: any = {};
+  categories: { name: string }[] = [
+    { name: 'Travel' },
+    { name: 'Food' },
+    { name: 'Accommodation' },
+    { name: 'Other' },
+  ];
+
+  paymentMethods = [
+    { label: 'Cash', value: 'cash' },
+    { label: 'Credit Card', value: 'credit' },
+    { label: 'Debit Card', value: 'debit' },
+  ];
+
+  projects = [
+    { label: 'Project 1', value: 'project1' },
+    { label: 'Project 2', value: 'project2' },
+    { label: 'Project 3', value: 'project3' },
+  ];
+
+  currentStage: string = 'to-submit';
+  expenseSummary: any = { amount: null }; // Start with null to show the placeholder
+  receiptFile: File | null = null;
+  invoiceFile: File | null = null;
+  signatureUrl: string | null = null; // To store the signature as a data URL
+
+  public signaturePadOptions: Object = {
+    minWidth: 1,
+    canvasWidth: 500,
+    canvasHeight: 300,
   };
 
-  // Method to set the current stage of the form
-  setStage(stage: string) {
-    this.currentStage = stage;
+  constructor(
+    private expenseService: ExpenseService,
+    private router: Router,
+    private route: ActivatedRoute
+  ) {}
+
+  ngOnInit(): void {
+    this.route.queryParams.subscribe((params) => {
+      const expenseId = params['id'];
+      if (expenseId) {
+        const expense = this.expenseService.getExpenseById(expenseId);
+        if (expense) {
+          this.expenseSummary = { ...expense };
+          this.receiptFile = expense.receiptFile || null;
+          this.invoiceFile = expense.invoiceFile || null;
+          this.signatureUrl = expense.signature || null; // Load saved signature
+        }
+      }
+    });
   }
 
-  // Method to proceed to the next stage based on the current stage
-  nextStage() {
-    switch (this.currentStage) {
-      case 'to-submit':
-        this.currentStage = 'submitted';
-        break;
-      case 'submitted':
-        this.currentStage = 'approved';
-        break;
-      case 'approved':
-        this.currentStage = 'paid';
-        break;
+  // Handle amount input to prevent negative values
+  onAmountInput(event: any): void {
+    const input = event.target.value;
+    if (input < 0) {
+      this.expenseSummary.amount = 0; // Set to 0 if input is negative
+    } else {
+      this.expenseSummary.amount = input;
     }
   }
 
-  checked: boolean = false;
-  expenseList: ExpenseData = {
-    id: '',
-    eTitle: '',
-    eProduct: '',
-    eUnitPrice: 0,
-    eQuantity: 0,
-    eTaxes: 0,
-    eEmployment: '',
-    eCompany: '',
-    employeeArray: [] || null,
-    eDate: Date || '',
-    eEmployee: '',
-    eJournal: '',
-    productArray: undefined,
-    journalArray: undefined,
-    taxesArray: undefined,
-    eNote: '',
-  };
-
-  // Method to handle form submission
-  submitForm() {
-    // Capture form data for summary display
-    this.expenseSummary.amount = (document.getElementById('amount') as HTMLInputElement).value;
-    this.expenseSummary.merchant = (document.getElementById('merchant') as HTMLInputElement).value;
-    this.expenseSummary.expenseDate = (document.getElementById('expense-date') as HTMLInputElement).value;
-    this.expenseSummary.category = (document.getElementById('category') as HTMLSelectElement).value;
-    this.expenseSummary.taxRate = (document.getElementById('tax-rate') as HTMLSelectElement).value;
-    this.expenseSummary.taxPercentage = (document.getElementById('tax-percentage') as HTMLInputElement).value;
-    this.expenseSummary.taxAmount = (document.getElementById('tax-amount') as HTMLInputElement).value;
-    this.expenseSummary.payMethod = (document.getElementById('pay-method') as HTMLSelectElement).value;
-    this.expenseSummary.project = (document.getElementById('project') as HTMLSelectElement).value;
-    this.expenseSummary.comments = (document.getElementById('comments') as HTMLTextAreaElement).value;
-
-    // Show the summary modal
-    this.showModal = true;
+  // Handle the drag over event
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const target = event.target as HTMLElement;
+    target.classList.add('dragover');
   }
 
-  // Method to save the form
-  saveForm() {
-    console.log('Form saved');
+  // Handle the file drop event
+  onFileDrop(event: DragEvent, type: string): void {
+    event.preventDefault();
+    event.stopPropagation();
+    const target = event.target as HTMLElement;
+    target.classList.remove('dragover');
+    if (event.dataTransfer && event.dataTransfer.files.length > 0) {
+      const file = event.dataTransfer.files[0];
+      this.assignFile(file, type);
+    }
   }
 
-  // Method to cancel the form process
-  cancelForm() {
-    console.log('Form cancelled');
-    this.setStage('to-submit');
+  // Handle file selection via input field
+  onFileSelect(event: Event, type: string): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      this.assignFile(file, type);
+    }
   }
 
-  // Method to close the summary modal
-  closeSummaryModal() {
-    this.showModal = false;
+  // Assign the dropped or selected file to the correct variable
+  assignFile(file: File, type: string): void {
+    if (type === 'receipt') {
+      this.receiptFile = file;
+    } else if (type === 'invoice') {
+      this.invoiceFile = file;
+    }
   }
 
-  
+
+
+  // Submit the expense
+  submitExpense(): void {
+    const newExpense: Expense = {
+      ...this.expenseSummary,
+      id: this.expenseSummary.id || this.generateId(),
+      status: this.currentStage,
+      receiptFile: this.receiptFile, 
+      invoiceFile: this.invoiceFile, 
+      signature: this.signatureUrl, 
+    };
+
+    if (this.expenseSummary.id) {
+      this.expenseService.updateExpense(newExpense);
+    } else {
+      this.expenseService.addExpense(newExpense);
+    }
+
+    this.router.navigate(['/expenses']);
+  }
+
+  // Generate a random ID for new expenses
+  generateId(): string {
+    return Math.random().toString(36).substr(2, 9);
+  }
 }

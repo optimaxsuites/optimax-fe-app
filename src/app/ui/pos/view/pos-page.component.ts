@@ -7,5 +7,24 @@ import { Component, ViewEncapsulation } from '@angular/core';
   encapsulation: ViewEncapsulation.Emulated 
 })
 export class PosPageComponent {
+  isDropdownOpen = false;
+  selectedTab: string = 'dashboard'; 
+  selectedSetting: string | null = null;
 
+  toggleDropdown() {
+    this.isDropdownOpen = !this.isDropdownOpen;
+   
+  }
+
+  selectTab(tab: string) {
+    this.selectedTab = tab;
+    this.isDropdownOpen = false; 
+  }
+
+  selectSetting(setting: string) {
+    this.selectedTab = 'settings'; 
+    this.selectedSetting = setting;
+    this.isDropdownOpen = false; 
+  }
+  
 }

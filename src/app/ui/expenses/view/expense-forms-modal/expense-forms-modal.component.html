@@ -1,109 +1,230 @@
 <div class="parent-container">
   <app-back-button></app-back-button>
-
-
   <div class="progress-container">
     <div class="progress-bar" [ngClass]="currentStage"></div>
     <div class="progress-stages">
-      <div class="stage" [ngClass]="{'active': currentStage === 'to-submit'}">To Submit</div>
-      <div class="stage" [ngClass]="{'active': currentStage === 'submitted'}">Submitted</div>
-      <div class="stage" [ngClass]="{'active': currentStage === 'approved'}">Approved</div>
-      <div class="stage" [ngClass]="{'active': currentStage === 'paid'}">Paid</div>
-    </div>
-  </div>
-
-
-  <div class="add-expense-container">
-      <div class="expense-form">
-          <div class="form-left">
-              <div class="form-group">
-                  <label for="amount">Amount</label>
-                  <input type="number" id="amount" name="amount" placeholder="Enter amount">
-              </div>
-              <div class="form-group">
-                  <label for="merchant">Merchant</label>
-                  <input type="text" id="merchant" name="merchant" placeholder="Enter merchant">
-              </div>
-              <div class="form-group">
-                  <label for="expense-date">Expense Date</label>
-                  <input type="date" id="expense-date" name="expense-date">
-              </div>
-              <div class="form-group">
-                  <label for="category">Category</label>
-                  <select id="category" name="category">
-                      <option value="travel">Travel</option>
-                      <option value="food">Food</option>
-                      <option value="accommodation">Accommodation</option>
-                      <option value="other">Other</option>
-                  </select>
-              </div>
-              <div class="form-group">
-                  <label for="tax-rate">Tax Rate</label>
-                  <select id="tax-rate" name="tax-rate">
-                      <option value="standard">Standard</option>
-                      <option value="reduced">Reduced</option>
-                      <option value="zero">Zero</option>
-                  </select>
-              </div>
-              <div class="form-group">
-                  <label for="tax-percentage">Tax Percentage (%)</label>
-                  <input type="number" id="tax-percentage" name="tax-percentage" placeholder="Enter tax percentage">
-              </div>
-              <div class="form-group">
-                  <label for="tax-amount">Tax Amount (NGN)</label>
-                  <input type="number" id="tax-amount" name="tax-amount" placeholder="Enter tax amount">
-              </div>
-              <hr>
-              <div class="form-group">
-                  <label for="pay-method">Payment method</label>
-                  <select id="pay-method" name="pay-method">
-                      <option value="standard">Cash</option>
-                  </select>
-              </div>
-              <div class="form-group">
-                  <label for="project">Project</label>
-                  <select id="project" name="project">
-                      <option value="standard">Cash</option>
-                  </select>
-              </div>
-              <hr>
-              <div class="form-group">
-                  <label for="comment">Comment</label>
-                  <textarea id="comments" name="comments" rows="4" cols="50" placeholder="Enter your comments here..."></textarea>
-              </div>
-          </div>
-          <div class="form-right">
-              <div class="upload-container">
-                  <input type="file" id="upload-receipt" name="upload-receipt" class="upload-input">
-                  <p>Click or drag file to to upload</p>
-              </div>
-    <!-- Buttons Section -->
-    <div class="form-buttons">
-        <button class="footer-button submit-button" (click)="submitForm()">Submit</button>
-        <button class="footer-button save-button" (click)="saveForm()">Save</button>
-        <button class="footer-button cancel-button" (click)="cancelForm()">Cancel</button>
+      <div class="stage" [ngClass]="{ active: currentStage === 'to-submit' }">
+        To Submit
+      </div>
+      <div class="stage" [ngClass]="{ active: currentStage === 'submitted' }">
+        Submitted
+      </div>
+      <div class="stage" [ngClass]="{ active: currentStage === 'approved' }">
+        Approved
+      </div>
+      <div class="stage" [ngClass]="{ active: currentStage === 'paid' }">
+        Paid
       </div>
     </div>
   </div>
+  <div class="add-expense-container">
+    <div class="expense-form">
+      <div class="form-left">
+        <!-- New inputs -->
+        <div class="form-group">
+          <label for="name">Name</label>
+          <input
+            type="text"
+            id="name"
+            [(ngModel)]="expenseSummary.name"
+            placeholder="Enter name"
+          />
+        </div>
 
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea
+            id="description"
+            name="description"
+            rows="4"
+            cols="50"
+            [(ngModel)]="expenseSummary.description"
+            placeholder="Enter description"
+          ></textarea>
+        </div>
 
+        <div class="form-group">
+          <label for="event-date">Event Date</label>
+          <input
+            type="date"
+            id="event-date"
+            name="event-date"
+            [(ngModel)]="expenseSummary.eventDate"
+          />
+        </div>
 
-    <!-- Modal for Summary -->
-    <div class="modal" [ngClass]="{'show': showModal}">
-        <div class="modal-content">
-          <span class="close-button" (click)="closeSummaryModal()">&times;</span>
-          <h2>Expense Summary</h2>
-          <p><strong>Amount:</strong> {{ expenseSummary.amount }}</p>
-          <p><strong>Merchant:</strong> {{ expenseSummary.merchant }}</p>
-          <p><strong>Expense Date:</strong> {{ expenseSummary.expenseDate }}</p>
-          <p><strong>Category:</strong> {{ expenseSummary.category }}</p>
-          <p><strong>Tax Rate:</strong> {{ expenseSummary.taxRate }}</p>
-          <p><strong>Tax Percentage:</strong> {{ expenseSummary.taxPercentage }}</p>
-          <p><strong>Tax Amount:</strong> {{ expenseSummary.taxAmount }}</p>
-          <p><strong>Payment Method:</strong> {{ expenseSummary.payMethod }}</p>
-          <p><strong>Project:</strong> {{ expenseSummary.project }}</p>
-          <p><strong>Comments:</strong> {{ expenseSummary.comments }}</p>
+        <div class="form-group">
+          <label for="amount">Amount</label>
+          <input
+            type="number"
+            id="amount"
+            [(ngModel)]="expenseSummary.amount"
+            (input)="onAmountInput($event)"
+            min="0"
+            placeholder="Enter amount"
+          />
+        </div>
+
+        <!-- Existing inputs -->
+        <div class="form-group">
+          <label for="merchant">Merchant</label>
+          <input
+            type="text"
+            id="merchant"
+            name="merchant"
+            [(ngModel)]="expenseSummary.merchant"
+            placeholder="Enter merchant"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="expense-date">Expense Date</label>
+          <input
+            type="date"
+            id="expense-date"
+            name="expense-date"
+            [(ngModel)]="expenseSummary.expenseDate"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="category">Category</label>
+          <ng-select
+            [items]="categories"
+            bindLabel="name"
+            bindValue="name"
+            [(ngModel)]="expenseSummary.category"
+            placeholder="Select a category"
+            class="w-full mt-3"
+          >
+          </ng-select>
+        </div>
+
+        <div class="form-group">
+          <label for="tax-rate">Tax Rate</label>
+          <select
+            id="tax-rate"
+            name="tax-rate"
+            [(ngModel)]="expenseSummary.taxRate"
+          >
+            <option value="standard">Standard</option>
+            <option value="reduced">Reduced</option>
+            <option value="zero">Zero</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="tax-percentage">Tax Percentage (%)</label>
+          <input
+            type="number"
+            id="tax-percentage"
+            name="tax-percentage"
+            [(ngModel)]="expenseSummary.taxPercentage"
+            placeholder="Enter tax percentage"
+          />
+        </div>
+
+        <hr />
+        <div class="form-group">
+          <label for="pay-method">Payment Method</label>
+          <ng-select
+            [items]="paymentMethods"
+            bindLabel="label"
+            bindValue="value"
+            [(ngModel)]="expenseSummary.payMethod"
+            placeholder="Select Payment Method"
+            class="w-full mt-3"
+          >
+          </ng-select>
+        </div>
+
+        <div class="form-group">
+          <label for="project">Project</label>
+          <ng-select
+            [items]="projects"
+            bindLabel="label"
+            bindValue="value"
+            [(ngModel)]="expenseSummary.project"
+            placeholder="Select Project"
+            class="w-full mt-3"
+          >
+          </ng-select>
+        </div>
+
+        <hr />
+        <div class="form-group">
+          <label for="comment">Comment</label>
+          <textarea
+            id="comment"
+            name="comment"
+            rows="4"
+            cols="50"
+            [(ngModel)]="expenseSummary.comment"
+            placeholder="Enter your comments here..."
+          ></textarea>
         </div>
       </div>
-    </div>
 
+      <div class="form-right">
+        <!-- Receipt Upload -->
+        <div
+          class="upload-container"
+          (click)="fileInput.click()"
+          (dragover)="onDragOver($event)"
+          (drop)="onFileDrop($event, 'receipt')"
+        >
+          <input
+            type="file"
+            #fileInput
+            class="file-input"
+            (change)="onFileSelect($event, 'receipt')"
+          />
+          <p *ngIf="!receiptFile">Click or drag and drop to upload Document</p>
+          <p *ngIf="receiptFile">Receipt: {{ receiptFile.name }}</p>
+        </div>
+
+        <!-- Invoice Upload -->
+        <div
+          class="upload-container"
+          (click)="invoiceInput.click()"
+          (dragover)="onDragOver($event)"
+          (drop)="onFileDrop($event, 'invoice')"
+        >
+          <input
+            type="file"
+            #invoiceInput
+            class="file-input"
+            (change)="onFileSelect($event, 'invoice')"
+          />
+          <p *ngIf="!invoiceFile">
+            Click or drag and drop to upload an Invoice/Receipt
+          </p>
+          <p *ngIf="invoiceFile">Invoice: {{ invoiceFile.name }}</p>
+        </div>
+
+        <!-- <div class="signature-container">
+          <label for="signature">Signature</label>
+          <div class="signature-pad-wrapper">
+            <signature-pad
+              [options]="signaturePadOptions"
+              (onEnd)="drawComplete()"
+              (onBegin)="drawStart()"
+            ></signature-pad>
+          </div>
+          <div class="signature-actions">
+            <button (click)="clearSignature()">Clear</button>
+            <button (click)="saveSignature()">Save</button>
+          </div>
+        </div> -->
+        
+        
+        <div class="form-buttons">
+          <button class="footer-button submit-button" (click)="submitExpense()">
+            Submit
+          </button>
+          <button class="footer-button save-button">Save</button>
+          <button class="footer-button cancel-button">Cancel</button>
+        </div>
+      </div>
+    <!-- </div> -->
+  </div>
+</div>

@@ -43,6 +43,7 @@ import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.c
 import { ExpensesComponent } from './ui/expenses/view/expenses.component';
 import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-modal/expense-forms-modal.component';
 import { UploadRecieptComponent } from './ui/expenses/view/upload-reciept/upload-reciept.component';
+import { ExpenseApprovalComponent } from './ui/expenses/view/expense-approval/expense-approval.component';
 import { AddPerDiemComponent } from './ui/expenses/view/add-per-diem/add-per-diem.component';
 import { OrderRefundComponent } from './ui/pos/view/order-refund/order-refund.component';
 import { RequestDetailsComponent } from './ui/pos/view/request-details/request-details.component';
@@ -234,6 +235,10 @@ const routes: Routes = [
       {
         path: 'expenses/expensesForm',
         component: ExpenseFormsModalComponent,
+      },
+      {
+        path: 'expenses/expensesApproval/:id',
+        component: ExpenseApprovalComponent,
       },
       {
         path: 'expenses/uploadReciept',

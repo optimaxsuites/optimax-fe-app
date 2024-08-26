@@ -10,7 +10,10 @@ import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
 import { CdkScrollable } from '@angular/cdk/scrolling';
+
+
 
 import { ButtonModule } from 'primeng/button';
 import { EditorModule } from 'primeng/editor';
@@ -47,7 +50,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { AngularEditorModule } from '@kolkov/angular-editor';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { AsyncPipe } from '@angular/common';
+import { AsyncPipe, CommonModule } from '@angular/common';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -166,10 +169,16 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { UploadRecieptComponent } from './ui/expenses/view/upload-reciept/upload-reciept.component';
 import { AddPerDiemComponent } from './ui/expenses/view/add-per-diem/add-per-diem.component';
 import { ExpenseSummaryComponent } from './ui/expenses/view/expense-summary/expense-summary.component';
+import { ExpenseApprovalComponent } from './ui/expenses/view/expense-approval/expense-approval.component';
 
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 import { AddShippingDetailsComponent } from './ui/sales/view/add-shipping-details/add-shipping-details.component';
 import { AddQuotationItemComponent } from './ui/sales/view/add-quotation-item/add-quotation-item.component';
+import { InventoryComponent } from './ui/pos/view/inventory/inventory.component';
+import { ViewProductComponent } from './ui/pos/view/products/view-product/view-product.component';
+import { AddProductComponent } from './ui/pos/view/products/add-product/add-product.component';
+import { EditProductComponent } from './ui/pos/view/products/edit-product/edit-product.component';
+import { NavTabComponent } from './ui/shared/view/nav-tab/nav-tab.component';
 
 @NgModule({
   declarations: [
@@ -281,8 +290,13 @@ import { AddQuotationItemComponent } from './ui/sales/view/add-quotation-item/ad
     ExpenseSummaryComponent,
     AddShippingDetailsComponent,
     AddQuotationItemComponent,
+    ViewProductComponent,
+    AddProductComponent,
+    EditProductComponent,
+    NavTabComponent,
   ],
   imports: [
+    CommonModule,
     BrowserModule,
     AppRoutingModule,
     MatTabGroup,
@@ -341,6 +355,7 @@ import { AddQuotationItemComponent } from './ui/sales/view/add-quotation-item/ad
     CalendarModule,
     CheckboxModule,
     NgSelectModule,
+    MatMenuModule,
     // ToastrModule.forRoot(),
   ],
   providers: [

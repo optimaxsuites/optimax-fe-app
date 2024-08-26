@@ -368,6 +368,13 @@ getCategories(){
   .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/productCategories")
   .pipe(catchError(this.handleError));
 }
+
+deleteCategory(id: number){
+  return this.http
+  .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/productCategories/${id}`)
+  .pipe(catchError(this.handleError));
+}
+
 addProduct(data: any){
   return this.http
   .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/products/product", data)
@@ -380,17 +387,58 @@ getProducts(){
   .pipe(catchError(this.handleError));
 }
 
+updateProduct( data:any){
+  return this.http
+  .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/products/product", data)
+  .pipe(catchError(this.handleError));
+}
+
+deleteProduct(id: number){
+  return this.http
+  .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/${id}`)
+  .pipe(catchError(this.handleError));
+}
+
+getProductImage(filename: string){
+  return this.getBaseApiUrl() + `/x/api/v2/pos/products/images/${filename}`
+}
+
+getDiscountTypes(){
+  return this.http
+  .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/discountTypes")
+  .pipe(catchError(this.handleError));
+}
+
+getDiscount(){
+  return this.http
+  .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/discounts")
+  .pipe(catchError(this.handleError));
+}
+
+addDiscount(data: any){
+  return this.http
+  .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/discounts", data)
+  .pipe(catchError(this.handleError));
+}
+
 private handleError(error: HttpErrorResponse) {
-  if (error.error instanceof ErrorEvent) {
-      console.error("An error occurred:", error.error.message);
-  } else {
-      console.error(
-          `Backend returned code ${error.status}, ` +
-              `body was: ${JSON.stringify(error.error)}`
-      );
-  }
-  return throwError(`${error.status}`);
-  // 'Something bad happened; please try again later.');
+  let errorMessage = 'An unknown error occurred!';
+    if (error.error instanceof ErrorEvent) {
+      // Client-side error
+      errorMessage = `Error: ${error.error.message}`;
+    } else {
+      // Server-side error
+      if (error.status === 500) {
+        errorMessage = 'Server error: ' + error.error.message || 'Check form details and try again.';
+      } else if (error.status === 404) {
+        errorMessage = 'Resource not found. Please try again.';
+      } else if (error.status === 0) {
+        errorMessage = 'Unable to connect to the server. Please check your internet connection.';
+      } else {
+        errorMessage = error.error.message || 'An unexpected error occurred.';
+      }
+    }
+    return throwError(() => errorMessage);
 }
   
 }

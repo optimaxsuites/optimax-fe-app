@@ -1,129 +1,74 @@
-// import { Component } from '@angular/core';
-
-// @Component({
-//   selector: 'app-expense-table',
-//   templateUrl: './expense-table.component.html',
-//   styleUrl: './expense-table.component.scss'
-// })
-// export class ExpenseTableComponent {
-
-// }
-
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { TopProductService } from 'src/app/ui/dashboard/service/top-product/top-product.service';
-import { InventoryService } from 'src/app/ui/inventory/service/inventory/inventory.service';
-import { QuotationService } from 'src/app/ui/sales/service/quotation/quotation.service';
+import { ExpenseService, Expense } from '../../service/expense.service';
+import { debounceTime, Subject } from 'rxjs';
 
 @Component({
   selector: 'app-expense-table',
   templateUrl: './expense-table.component.html',
-  styleUrl: './expense-table.component.scss',
-  providers: [TopProductService, ConfirmationService, MessageService],
+  styleUrls: ['./expense-table.component.scss'],
 })
 export class ExpenseTableComponent implements OnInit {
-deleteSelectedItems() {
-throw new Error('Method not implemented.');
-}
-  visible: boolean = false;
-  position: any = '';
+  expenses: Expense[] = [];
+  filteredExpenses: Expense[] = [];
+  searchTerm: string = '';
+  private searchTermSubject: Subject<string> = new Subject();
 
   constructor(
-    private quotationService: QuotationService,
-    private router: Router,
-    private confirmationService: ConfirmationService,
-    private messageService: MessageService,
-    private inventoryService: InventoryService
+    private router: Router, 
+    private expenseService: ExpenseService
   ) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    // Subscribe to expenses from the service
+    this.expenseService.expenses$.subscribe((expenses) => {
+      this.expenses = expenses;
+      this.filteredExpenses = expenses; // Initially, display all expenses
+    });
 
-  getSeverity(status: string) {
-    switch (status) {
-      case 'active':
-        return 'success';
-      case 'pending':
-        return 'warning';
-      case 'inactive':
-        return 'danger';
-      default:
-        return undefined; // or another default value
+    // Debounce the search input to avoid frequent filtering
+    this.searchTermSubject.pipe(debounceTime(300)).subscribe(() => {
+      this.onSearch();
+    });
+  }
+
+  // Called when the user types in the search input
+  onSearchInputChange(): void {
+    this.searchTermSubject.next(this.searchTerm);
+  }
+
+  // Filter the expenses based on the search term
+  onSearch(): void {
+    if (this.searchTerm) {
+      this.filteredExpenses = this.expenses.filter(expense =>
+        expense.merchant.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+        expense.id.toString().includes(this.searchTerm) ||
+        expense.amount.toString().includes(this.searchTerm)
+      );
+    } else {
+      this.filteredExpenses = this.expenses; // If no search term, show all expenses
     }
   }
 
-  navigateToForm() {
-    this.router.navigate(['/sales/quotation/quotation-form']);
-  }
-  editItem(id: string) {
-    this.router.navigate(['/sales/quotation/quotation-form', id]);
+  // Navigate to the form to add a new expense
+  navigateToForm(): void {
+    this.router.navigate(['/expenses/expensesForm']);
   }
 
-  deleteItem(id: string) {
-    this.confirmationService.confirm({
-      message: 'Are you sure you want to delete this product?',
-      header: 'Confirmation',
-      acceptIcon: 'pi pi-check m-2',
-      rejectIcon: 'pi pi-times m-2',
-      rejectButtonStyleClass: 'p-button-sm m-2',
-      acceptButtonStyleClass: 'p-button-outlined p-button-sm m-2',
-      accept: () => {
-        this.quotationService.deleteItem(id);
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Successful',
-          detail: 'Product Deleted',
-          life: 3000,
-        });
-      },
-      reject: () => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Unsuccessful',
-          detail: 'Product not Deleted',
-          life: 3000,
-        });
-      },
+  // Navigate to the form to edit an existing expense
+  editExpense(expense: Expense): void {
+    this.router.navigate(['/expenses/expensesForm'], {
+      queryParams: { id: expense.id }
     });
   }
-  // viewItem(item: any) {
-  //   this.showDialog(item, 'right');
-  // }
 
-  // showDialog(item: QuotationData, position: string = 'right'): void {
-  //   this.selectedItem = item;
-  //   this.position = position;
-  //   this.visible = true;
-  // }
+  // Delete an expense
+  deleteExpense(expense: Expense): void {
+    this.expenseService.deleteExpense(expense.id);
+  }
 
-  // deleteSelectedItems() {
-  //   this.confirmationService.confirm({
-  //     header: 'Confirmation',
-  //     message: 'Are you sure you want to delete the selected product(s)?',
-  //     acceptIcon: 'pi pi-check m-2',
-  //     rejectIcon: 'pi pi-times m-2',
-  //     rejectButtonStyleClass: 'p-button-sm m-2',
-  //     acceptButtonStyleClass: 'p-button-outlined p-button-sm m-2',
-  //     accept: () => {
-  //       this.quotationData = this.quotationData.filter(
-  //         (val) => !this.selectedItems?.includes(val)
-  //       );
-  //       this.selectedItems = [];
-  //       this.messageService.add({
-  //         severity: 'success',
-  //         summary: 'Successful',
-  //         detail: 'Product(s) Deleted',
-  //         life: 3000,
-  //       });
-  //     },
-  //     reject: () => {
-  //       this.messageService.add({
-  //         severity: 'error',
-  //         summary: 'Unsuccessful',
-  //         detail: 'Product(s) not Deleted',
-  //         life: 3000,
-  //       });
-  //     },
-  //   });
-  // }
+  // View the approval details of an expense
+  viewExpenseApproval(expense: Expense): void {
+    this.router.navigate(['/expenses/expensesApproval', expense.id]);
+  }
 }
