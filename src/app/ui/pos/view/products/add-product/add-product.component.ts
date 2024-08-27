@@ -12,6 +12,7 @@ import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
   styleUrl: './add-product.component.scss'
 })
 export class AddProductComponent {
+
   @Output() close = new EventEmitter<void>();  
   @Input() activeItem: any;
   @Input() isEditMode: boolean = false;
@@ -63,6 +64,8 @@ export class AddProductComponent {
   addProduct: boolean = false;
   productImage: any = ''
   openAddVariant: boolean = false
+  isEditing: boolean = false; 
+  editingIndex: number | null = null
   variants: any[] = [];
   newVariant = {
     name: '',
@@ -162,6 +165,8 @@ export class AddProductComponent {
       this.productForm.get('startDate')?.setValue(this.activeItem?.discount?.startDate)
       this.productForm.get('endDate')?.setValue(this.activeItem?.discount?.endDate)
       this.productForm.get('discountValue')?.setValue(this.activeItem?.discount?.value)
+      this.productForm.get('image')?.setValue(this.activeItem?.productImages)
+
       
     }
   }
@@ -401,7 +406,6 @@ export class AddProductComponent {
   
    
     const formValues = this.productForm.value;
-  
 
     const product = {
       id: this.activeItem.id,
@@ -419,6 +423,7 @@ export class AddProductComponent {
       branch: formValues.branch, 
       discount: formValues.discount,
       variants: this.variants,
+      productImages: [] as any[],
       productCategory: formValues.category,
       createdBy: userName,
       createdDate: new Date().toISOString(),
@@ -431,7 +436,12 @@ export class AddProductComponent {
     if (formValues.image instanceof File) {
       formData.append('files', formValues.image);
     }
-  
+    if (formValues.image) {
+     
+      product.productImages.push(...formValues.image);
+
+      formData.append('files', new Blob(), formValues.image); 
+    }
     console.log(formData);
 
     this.posService.addProduct(formData).subscribe(
@@ -445,6 +455,7 @@ export class AddProductComponent {
             life: 3000
           });
           this.resetForm();
+          this.triggerClose()
         } else {
           this.messageService.add({
             severity: 'error',
@@ -483,7 +494,13 @@ export class AddProductComponent {
     return this.productForm.get('variant') as FormArray;
   }
    addVariant() {
-    this.variants.push({ ...this.newVariant });
+    if (this.isEditing && this.editingIndex !== null) {
+      this.variants[this.editingIndex] = { ...this.newVariant };
+      this.isEditing = false;
+      this.editingIndex = null;
+    } else {
+      this.variants.push({ ...this.newVariant });
+    }
 
     this.newVariant = {
       name: '',
@@ -499,6 +516,16 @@ export class AddProductComponent {
   deleteVariant(index: number) {
     this.variants.splice(index, 1);
   } 
+  editVariant(index: number) {
+    this.isEditing = true;
+    this.editingIndex = index;
+    
+    const selectedVariant = this.variants[index];
+    this.newVariant = { ...selectedVariant }; 
+
+    this.openAddVariant = true; 
+
+   }
   loadCategory(){
     this.posService.getCategories().subscribe(
       async (data) => {
