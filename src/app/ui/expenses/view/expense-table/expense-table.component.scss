@@ -17,4 +17,105 @@
   .search-bar{
     margin-bottom: 30px;
   }
+
+
+  ::ng-deep .custom-confirm-dialog {
+    .p-dialog-content {
+      width: 400px;
+      padding: 2rem;
+      background-color: #f8f9fa;
+    }
+  
+    .p-dialog-header {
+      background-color: #f1f3f5;
+      color: #495057;
+      padding: 1rem;
+      border-bottom: 1px solid #dee2e6;
+    }
+  
+    .p-dialog-footer {
+      background-color: #f8f9fa;
+      padding: 1rem;
+      border-top: 1px solid #dee2e6;
+    }
+  
+    .p-confirm-dialog-message {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+    }
+  
+    .p-confirm-dialog-icon {
+      font-size: 2rem;
+      color: rgb(250, 4, 4);
+      margin-right: 0.5rem;
+    }
+  
+    .p-button {
+      margin: 0 0.5rem;
+    }
+
+    .Delete{
+      background-color: red;
+    }
+
+    .p-button-custom-cancel {
+      background-color: #224957;
+      color: white;
+  
+      &:hover {
+        background-color: #1b3b47;
+      }
+  
+      &:focus {
+        box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #4d7b8a, 0 1px 2px 0 black !important;
+      }
+    }
+  
+    .p-button {
+      margin: 0 0.5rem;
+    }
+
+
+    .p-button-danger {
+      background-color: red ;
+      color: white;
+  
+    }
+  
+    .p-button {
+      margin: 0 0.5rem;
+    }
+
+
+    .p-dialog-footer {
+      background-color: #f8f9fa;
+      padding: 1rem;
+      border-top: 1px solid #dee2e6;
+      display: flex;
+      justify-content: center;
+    }
+  
+    .p-confirm-dialog-reject, .p-confirm-dialog-accept {
+      min-width: 70px; 
+      height: 25px;
+      padding: 5px;
+    }
+  
+    .custom-confirm-button {
+      margin: 0 1rem; 
+    }
+  
+    .p-button-custom-cancel {
+      background-color: #224957;
+      color: white;
+  
+      &:hover {
+        background-color: #1b3b47;
+      }
+  
+      &:focus {
+        box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #4d7b8a, 0 1px 2px 0 black !important;
+      }
+    }
+  }
   

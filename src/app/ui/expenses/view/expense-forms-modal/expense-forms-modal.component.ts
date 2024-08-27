@@ -41,10 +41,10 @@ throw new Error('Method not implemented.');
   ];
 
   currentStage: string = 'to-submit';
-  expenseSummary: any = { amount: null }; // Start with null to show the placeholder
+  expenseSummary: any = { amount: null }; 
   receiptFile: File | null = null;
   invoiceFile: File | null = null;
-  signatureUrl: string | null = null; // To store the signature as a data URL
+  signatureUrl: string | null = null; 
 
   public signaturePadOptions: Object = {
     minWidth: 1,
@@ -67,23 +67,23 @@ throw new Error('Method not implemented.');
           this.expenseSummary = { ...expense };
           this.receiptFile = expense.receiptFile || null;
           this.invoiceFile = expense.invoiceFile || null;
-          this.signatureUrl = expense.signature || null; // Load saved signature
+          this.signatureUrl = expense.signature || null; 
         }
       }
     });
   }
 
-  // Handle amount input to prevent negative values
+  
   onAmountInput(event: any): void {
     const input = event.target.value;
     if (input < 0) {
-      this.expenseSummary.amount = 0; // Set to 0 if input is negative
+      this.expenseSummary.amount = 0; 
     } else {
       this.expenseSummary.amount = input;
     }
   }
 
-  // Handle the drag over event
+  
   onDragOver(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
@@ -91,7 +91,7 @@ throw new Error('Method not implemented.');
     target.classList.add('dragover');
   }
 
-  // Handle the file drop event
+  
   onFileDrop(event: DragEvent, type: string): void {
     event.preventDefault();
     event.stopPropagation();
@@ -103,7 +103,7 @@ throw new Error('Method not implemented.');
     }
   }
 
-  // Handle file selection via input field
+  
   onFileSelect(event: Event, type: string): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
@@ -112,7 +112,7 @@ throw new Error('Method not implemented.');
     }
   }
 
-  // Assign the dropped or selected file to the correct variable
+  
   assignFile(file: File, type: string): void {
     if (type === 'receipt') {
       this.receiptFile = file;
@@ -123,7 +123,6 @@ throw new Error('Method not implemented.');
 
 
 
-  // Submit the expense
   submitExpense(): void {
     const newExpense: Expense = {
       ...this.expenseSummary,
@@ -143,7 +142,7 @@ throw new Error('Method not implemented.');
     this.router.navigate(['/expenses']);
   }
 
-  // Generate a random ID for new expenses
+  
   generateId(): string {
     return Math.random().toString(36).substr(2, 9);
   }
