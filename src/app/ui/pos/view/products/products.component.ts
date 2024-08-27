@@ -7,6 +7,7 @@ import { Product } from '../../models/interface';
 import { MessageService } from 'primeng/api';
 import { HttpClient, HttpErrorResponse,  } from '@angular/common/http';
 import { MatStartDate } from '@angular/material/datepicker';
+import { filter } from 'rxjs';
 @Component({
   selector: 'app-products',
   templateUrl: './products.component.html',
@@ -15,7 +16,8 @@ import { MatStartDate } from '@angular/material/datepicker';
 })
 export class ProductsComponent implements OnInit {
 
-  products = [] 
+  products:any [] = [] 
+  originalProducts: any[] = [];
   viewProduct: boolean = false
   addProduct: boolean = false;
   activeItem: any = {}
@@ -32,6 +34,8 @@ export class ProductsComponent implements OnInit {
   quantityBasedDiscount: { minQuantity: number } = { minQuantity: 0 };
   productImage: any = ''
   tableSection: boolean = true;
+  searchTerm: string = '';
+  selectedCategories: number[] = [];
   categories: any[] = [];
   constructor(
     private messageService: MessageService,
@@ -45,7 +49,7 @@ this.getProducts()
 this.getDiscountTypes()
   }
 
-  productCode: string = '5901234123457';
+
 
 
 
@@ -58,12 +62,12 @@ this.getDiscountTypes()
       async (data) => {
     
         if (data) {
-          this.products = data.sort((a: any, b: any) => {
+          this.originalProducts = data.sort((a: any, b: any) => {
             const dateA = new Date(a.createdDate[0], a.createdDate[1] - 1, a.createdDate[2], a.createdDate[3], a.createdDate[4], a.createdDate[5]);
             const dateB = new Date(b.createdDate[0], b.createdDate[1] - 1, b.createdDate[2], b.createdDate[3], b.createdDate[4], b.createdDate[5]);
             return dateB.getTime() - dateA.getTime();
           });
-     console.log(this.products)
+          this.products = [...this.originalProducts];
         } else {
          console.log("error loading data")
         }}
@@ -91,9 +95,35 @@ this.getDiscountTypes()
         }}
     )  
   }
+  
+    filterProductsBySearch(searchValue: string) {
+      this.searchTerm = searchValue;
+      if (searchValue.length === 0) {
+        if (this.selectedCategories.length === 0) {
+          this.products = [...this.originalProducts];
+        } else { 
+         this.filterProductsByCategory()
+        }
+      } else {
+        this.products = this.originalProducts.filter(product => {
+          const matchesCategory = this.selectedCategories.length === 0 || this.selectedCategories.includes(product.productCategory?.id);
+          const matchesSearch = product.name.toLowerCase().includes(this.searchTerm);
+          return matchesCategory && matchesSearch;
+        });
+      }
+    }
 
-
+  filterProductsByCategory() {
+    if (this.selectedCategories.length === 0) {
+      this.products = [...this.originalProducts];
+    } else {
+      this.products = this.originalProducts.filter(product =>
+        this.selectedCategories.includes(product.productCategory?.id)
+      );
+    }
+  }
   deleteProduct(){
+
     
     this.posService.deleteProduct(this.activeItem.id).subscribe(
       async (data) => {
