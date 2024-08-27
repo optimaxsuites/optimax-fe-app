@@ -180,7 +180,7 @@ export class AddProductComponent {
 
     if (basePrice && taxPercentage) {
       const effectivePrice = basePrice * (1 + taxPercentage / 100);
-      this.productForm.get('effectivePrice')?.setValue(effectivePrice, { emitEvent: false });
+      this.productForm.get('effectivePrice')?.setValue(parseFloat(effectivePrice.toFixed(2)), { emitEvent: false });
     }
   }
 
@@ -306,8 +306,6 @@ export class AddProductComponent {
     const userName = sessionStorage.getItem("username");
   
     if (this.productForm.invalid) {
-  
-      
       this.messageService.add({
         severity: 'error',
         summary: 'Validation Error',
@@ -379,7 +377,7 @@ export class AddProductComponent {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: "Unexpected error occured, please try again later",
+          detail: "Unexpected error occured, please try again later3",
           key: 'tl',
           life: 3000
         });
@@ -473,6 +471,9 @@ export class AddProductComponent {
   resetForm() {
     this.productForm.reset();
     this.productImage = "";
+    this.variants =[]
+    this.categories = []
+    this.discounts = []
   }
     
    triggerClose() {
