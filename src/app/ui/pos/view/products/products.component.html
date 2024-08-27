@@ -1,18 +1,22 @@
 <div *ngIf="tableSection" class=" flex flex-col w-full gap-14  p-4">
 
     <div class="gap-3 w-full flex justify-between items-center ">
-        <!-- <p>Category</p> -->
         <ng-select 
         [items]="categories"
         bindLabel="name"
         bindValue="id"
-        [(ngModel)]="discountType"
+        [(ngModel)]="selectedCategories"
         [multiple]="true"
-        placeholder="Categories">
+        placeholder="Categories"
+        (change)="filterProductsByCategory()">
         </ng-select>
     
     <div class="w-1/2">
-    <app-searchbar></app-searchbar>
+      <div class='search-container'>
+        <input type="input" class="Search-input" placeholder='Search...'  [(ngModel)]="searchTerm" 
+        (ngModelChange)="filterProductsBySearch($event)"  />
+        <i class="fas fa-search"></i>
+    </div>
 
     </div>
     

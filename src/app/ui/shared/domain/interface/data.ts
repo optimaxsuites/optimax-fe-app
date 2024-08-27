@@ -1,3 +1,5 @@
+import { Type } from "@angular/core";
+
 export interface Data {
 }
 
@@ -26,4 +28,17 @@ export interface City {
   cities: string[];
   state: string;
   country: string;
+}
+
+export interface TabConfig {
+  name: string;
+  component: any;
+  hasDropdown?: boolean;
+  dropdownOptions?: DropdownOption[]; 
+}
+
+export interface DropdownOption {
+  label: string; 
+  action: string; 
+  component: Type<any>;
 }

@@ -1,40 +1,4 @@
-<!-- <div class="sales">
-    <div class="link-wrapper">
-      <mat-tab-group
-        mat-stretch-tabs="false"
-        mat-align-tabs="start"
-        animationDuration="0ms"
-      >
-        <mat-tab label="Dashboard">
-          <app-posdashboard></app-posdashboard>
-        </mat-tab>
-        <mat-tab label="Products">
-          <app-products></app-products>
-        </mat-tab>
-        <mat-tab label="Inventory">
-          <app-inventory></app-inventory>
-        </mat-tab>
-        <mat-tab label="Settings">
-          <app-configuration></app-configuration>
-        
-        </mat-tab>
-
-       
-        <mat-tab label="Manage Users">
-          <app-manage-users></app-manage-users>
-        </mat-tab>
-     
-      </mat-tab-group>
-    </div>
-  
-    <div class="content">
-          <router-outlet></router-outlet>
-      </div>
-  </div>
-  
-<router-outlet></router-outlet> -->
-
-
+<!-- 
 <div class="sales">
   <div class="link-wrapper">
 
@@ -75,4 +39,7 @@
       </div>
     </div>
   </div>
-</div>
+</div> -->
+
+
+<app-nav-tab [tabsConfig]="tabsConfig"></app-nav-tab>
