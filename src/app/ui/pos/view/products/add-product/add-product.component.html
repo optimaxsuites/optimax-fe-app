@@ -229,8 +229,11 @@
                 <td class="py-2 px-4 border-b">{{ variant.price }}</td>
                 <td class="py-2 px-4 border-b">{{ variant.quantity }}</td>
                 <td class="py-2 px-4 border-b">{{ variant.sku }}</td>
-                <td class="py-2 px-4 border-b">
+                <td class="py-3 px-4 border-b flex gap-3">
+                  <i class="fa-regular fa-pen-to-square cursor-pointer" (click)="editVariant(i)"></i>
+
                   <i class="fa-solid fa-trash cursor-pointer" (click)="deleteVariant(i)"></i>
+
                 </td>
               </tr>
             </tbody>
@@ -316,19 +319,19 @@
     <div class="mt-5 mb-2">
       <div class=" flex flex-col gap-2 ">
         <label for="variant-name">Name</label>
-        <input type="text" id="variant-name"  [(ngModel)]="newVariant.name"  class="editInput outline-none" placeholder="variant name" >
+        <input type="text" id="variant-name"  [(ngModel)]="newVariant.name"  class="editInput mb-2 outline-none" placeholder="variant name" >
   
         <label for="variant-price">Price</label>
-        <input type="text" id="variant-price"  [(ngModel)]="newVariant.price"  class="editInput outline-none" placeholder="variant price" >
+        <input type="text" id="variant-price"  [(ngModel)]="newVariant.price"  class="editInput mb-2 outline-none" placeholder="variant price" >
   
         <label for="variant-quantity">Quantity</label>
-        <input type="text" id="variant-quantity"   [(ngModel)]="newVariant.quantity"  class="editInput outline-none" placeholder="variant quantity" >
+        <input type="text" id="variant-quantity"   [(ngModel)]="newVariant.quantity"  class="editInput mb-2 outline-none" placeholder="variant quantity" >
   
         <label for="variant-sku">SKU</label>
-        <input type="text" id="variant-sku" [(ngModel)]="newVariant.sku"  class="editInput outline-none" placeholder="variant SKU" >
+        <input type="text" id="variant-sku" [(ngModel)]="newVariant.sku"  class="editInput mb-2 outline-none" placeholder="variant SKU" >
   
       
-        <label for="">Branch</label>
+        <!-- <label for="">Branch</label>
         <ng-select 
         [items]="branches"
         bindLabel="label"
@@ -336,7 +339,7 @@
         [(ngModel)]="selectedBranch"
         [multiple]="true"
         placeholder="Select branch">
-        </ng-select>
+        </ng-select> -->
       
       </div>
     </div>
