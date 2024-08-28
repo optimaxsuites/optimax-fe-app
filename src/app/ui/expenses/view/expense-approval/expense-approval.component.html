@@ -1,9 +1,7 @@
 <div class="expense-approval-container">
   <h1 class="title">Expense Approval</h1>
 
-  <!-- Expense Details Section -->
   <div class="expense-details">
-    <!-- Other detail rows -->
     <div class="detail-row">
       <label class="detail-label">Merchant:</label>
       <span class="detail-value">{{ expense?.merchant }}</span>
@@ -50,14 +48,12 @@
     </div>
   </div>
 
-  <!-- Admin Action Buttons Group -->
   <div class="action-buttons">
     <div class="primary-actions">
       <button class="btn btn-approve" (click)="approveExpense()" [disabled]="expense?.status === 'Approved'">Approve</button>
       <button class="btn btn-reject" (click)="rejectExpense()" [disabled]="expense?.status === 'Rejected'">Reject</button>
     </div>
 
-    <!-- More Actions Dropdown -->
     <div class="dropdown">
       <button class="btn btn-more" (click)="toggleDropdown()">More Actions &#x25BC;</button>
       <ul class="dropdown-content" [class.show]="dropdownOpen">

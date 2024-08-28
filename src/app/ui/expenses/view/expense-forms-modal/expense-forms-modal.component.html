@@ -20,7 +20,6 @@
   <div class="add-expense-container">
     <div class="expense-form">
       <div class="form-left">
-        <!-- New inputs -->
         <div class="form-group">
           <label for="name">Name</label>
           <input
@@ -65,7 +64,6 @@
           />
         </div>
 
-        <!-- Existing inputs -->
         <div class="form-group">
           <label for="merchant">Merchant</label>
           <input
@@ -165,7 +163,6 @@
       </div>
 
       <div class="form-right">
-        <!-- Receipt Upload -->
         <div
           class="upload-container"
           (click)="fileInput.click()"
@@ -182,7 +179,6 @@
           <p *ngIf="receiptFile">Receipt: {{ receiptFile.name }}</p>
         </div>
 
-        <!-- Invoice Upload -->
         <div
           class="upload-container"
           (click)="invoiceInput.click()"
@@ -215,8 +211,7 @@
             <button (click)="saveSignature()">Save</button>
           </div>
         </div> -->
-        
-        
+
         <div class="form-buttons">
           <button class="footer-button submit-button" (click)="submitExpense()">
             Submit
@@ -225,6 +220,6 @@
           <button class="footer-button cancel-button">Cancel</button>
         </div>
       </div>
-    <!-- </div> -->
+    </div>
   </div>
 </div>
