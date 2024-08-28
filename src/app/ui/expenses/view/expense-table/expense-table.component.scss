@@ -21,7 +21,7 @@
 
   ::ng-deep .custom-confirm-dialog {
     .p-dialog-content {
-      width: 400px;
+      width: 450px;
       padding: 2rem;
       background-color: #f8f9fa;
     }
@@ -66,9 +66,9 @@
         background-color: #1b3b47;
       }
   
-      &:focus {
-        box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #4d7b8a, 0 1px 2px 0 black !important;
-      }
+      // &:focus {
+      //   box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #4d7b8a, 0 1px 2px 0 black !important;
+      // }
     }
   
     .p-button {
@@ -116,6 +116,12 @@
       &:focus {
         box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #4d7b8a, 0 1px 2px 0 black !important;
       }
+    }
+
+    .delete-text {
+      color: #dc3545;
+      font-weight: bold;
+      text-transform: uppercase;
     }
   }
   

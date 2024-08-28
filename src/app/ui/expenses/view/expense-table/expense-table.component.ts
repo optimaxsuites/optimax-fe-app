@@ -24,22 +24,9 @@ export class ExpenseTableComponent implements OnInit {
   ) {}
 
 
-// Hardcoded test data
-  // ngOnInit(): void {
-  //   this.expenses = [
-  //     { id: '1', date: '2024-08-01', merchant: 'Amazon', amount: 100, category: 'Office Supplies', comment: '', status: 'Approved', signature: null, invoiceFile: null, receiptFile: null },
-  //     { id: '2', date: '2024-08-02', merchant: 'Starbucks', amount: 15, category: 'Food', comment: '', status: 'Pending', signature: null, invoiceFile: null, receiptFile: null },
-  //     { id: '3', date: '2024-08-03', merchant: 'Uber', amount: 50, category: 'Transport', comment: '', status: 'Approved', signature: null, invoiceFile: null, receiptFile: null }
-  //   ];
-  //   this.filteredExpenses = this.expenses;
-  //   this.searchTermSubject.pipe(debounceTime(300)).subscribe(() => {
-  //     this.onSearch();
-  //   });
-  // }
-
-
   ngOnInit(): void {
     this.expenseService.expenses$.subscribe((expenses) => {
+      console.log('Received expenses:', expenses);
       this.expenses = expenses;
       this.filteredExpenses = expenses; 
     });
@@ -48,12 +35,12 @@ export class ExpenseTableComponent implements OnInit {
     });
   }
 
-  // Called when the user types in the search input
   onSearchInputChange(): void {
     this.searchTermSubject.next(this.searchTerm);
   }
 
   onSearch(): void {
+    console.log('Search triggered with term:', this.searchTerm);
     if (this.searchTerm) {
       this.filteredExpenses = this.expenses.filter(expense =>
         expense.merchant.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
@@ -77,7 +64,7 @@ export class ExpenseTableComponent implements OnInit {
 
   confirmDelete(expense: Expense): void {
     this.confirmationService.confirm({
-      message: 'Are you sure you want to delete this expense?',
+      message: `Are You sure you want to carry out this action?  Clicking on DELETE, would lead to permanent removal of - ${expense.merchant}`,
       header: `Delete Expense - ${expense.merchant}`,
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger custom-confirm-button',
@@ -102,11 +89,6 @@ export class ExpenseTableComponent implements OnInit {
     });
   }
 
-  // deleteExpense(expense: Expense): void {
-  //   this.expenseService.deleteExpense(expense.id);
-  // }
-
-  // View the approval details of an expense
   viewExpenseApproval(expense: Expense): void {
     this.router.navigate(['/expenses/expensesApproval', expense.id]);
   }
