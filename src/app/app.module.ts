@@ -179,6 +179,10 @@ import { ViewProductComponent } from './ui/pos/view/products/view-product/view-p
 import { AddProductComponent } from './ui/pos/view/products/add-product/add-product.component';
 import { EditProductComponent } from './ui/pos/view/products/edit-product/edit-product.component';
 import { NavTabComponent } from './ui/shared/view/nav-tab/nav-tab.component';
+import { ProcurementPageComponent } from './ui/procurement/view/procurement.page.component';
+import { Pro1Component } from './ui/procurement/view/pro-1/pro-1.component';
+import { Pro2Component } from './ui/procurement/view/pro-2/pro-2.component';
+import { AddProComponent } from './ui/procurement/view/add-pro/add-pro.component';
 
 @NgModule({
   declarations: [
@@ -294,6 +298,10 @@ import { NavTabComponent } from './ui/shared/view/nav-tab/nav-tab.component';
     AddProductComponent,
     EditProductComponent,
     NavTabComponent,
+    ProcurementPageComponent,
+    Pro1Component,
+    Pro2Component,
+    AddProComponent
   ],
   imports: [
     CommonModule,

@@ -1,0 +1,29 @@
+
+
+<div *ngIf="showPro1">
+    <p>pro-1 works!</p>
+    <button (click)="addPro()">Add new</button>
+    <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of items">
+            <td>{{ item.id }}</td>
+            <td>{{ item.name }}</td>
+            <td>
+              <button (click)="viewItem(item)">View</button>
+              <button (click)="editItem(item)">Edit</button>
+              <button (click)="deleteItem(item)">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+</div>
+
+
+<ng-template #container></ng-template>
