@@ -7,12 +7,19 @@ export interface QuotationDTO {
     quotationNote?: string; // maxLength: 500, minLength: 0
     logo?: string;
     signature?: string; // maxLength: 255, minLength: 0
-    attachment?: string; // maxLength: 255, minLength: 0
+    attachment?: AttachmentDTO[]; // maxLength: 255, minLength: 0
     createdBy?: number;
     saveStatus?: 'DRAFT' | 'SAVED';
     project?: number;
     customer?: number;
     field?: FieldDTO[]; // Optional, if FieldDTO is part of QuotationDTO
+  }
+
+  export interface AttachmentDTO {
+    name: string;
+    size: number;
+    progress: number;
+    status: string;
   }
 
   export interface FieldDTO{
@@ -47,6 +54,7 @@ export interface QuotationDTO {
   export interface IndustryDTO {
     id?: number;
     name?: string; // maxLength: 100, minLength: 0
+    // data?: string; 
     code?: string; // maxLength: 10, minLength: 0
     description?: string; // maxLength: 255, minLength: 0
   }

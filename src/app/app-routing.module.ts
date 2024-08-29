@@ -50,6 +50,7 @@ import { RequestDetailsComponent } from './ui/pos/view/request-details/request-d
 import { OpenRegisterComponent } from './ui/pos/view/open-register/open-register.component';
 import { CloseRegisterComponent } from './ui/pos/view/close-register/close-register.component';
 import { AuthGuard } from './ui/auth/service/auth.guard';
+import { ProcurementPageComponent } from './ui/procurement/view/procurement.page.component';
 
 const routes: Routes = [
   {
@@ -151,6 +152,10 @@ const routes: Routes = [
       {
         path: 'admin/sales/:uuid',
         component: SalesPageComponent,
+      },
+      {
+        path: 'admin/procurement/:uuid',
+        component: ProcurementPageComponent
       },
       {
         path: 'sales/quotation/quotation-form',

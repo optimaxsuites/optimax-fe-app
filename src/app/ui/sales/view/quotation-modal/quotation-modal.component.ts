@@ -11,12 +11,18 @@ import { NumberCurrencyPopupComponent } from 'src/app/ui/shared/view/number-curr
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { QuotationService } from '../../service/quotation/quotation.service';
-import { AddressDTO, BanksDTO, CompanyDTO, CustomerDTO, DiscountAndChargesDTO, FieldDTO, IndustryDTO, ItemsDTO, ProjectDTO, QuotationDTO, ShippingDTO } from '../../domain/quotation.dto';
+import { AddressDTO, AttachmentDTO, BanksDTO, CompanyDTO, CustomerDTO, DiscountAndChargesDTO, FieldDTO, IndustryDTO, ItemsDTO, ProjectDTO, QuotationDTO, ShippingDTO } from '../../domain/quotation.dto';
 // import { map } from 'rxjs/operators';
 // import { MatDialog } from '@angular/material/dialog';
 
 
+interface Term {
+  term_des: string;
+}
 
+interface TermGroup {
+  terms: Term[];
+}
 
 @Component({
   selector: 'app-quotation-modal',
@@ -43,7 +49,7 @@ export class QuotationModalComponent implements OnInit {
   logoUrl: string | ArrayBuffer | null = null;
   discounts: any[] = [];
   terms: any[] = [];
-  termsGroup: any[] = [];
+  termsGroup: any[] = [ this.terms];
   charges: any[] = [];
   moreFields: any[] = [];
   isEdit: boolean = false
@@ -58,9 +64,13 @@ export class QuotationModalComponent implements OnInit {
   customerData: CustomerDTO = {};
   companyData: CompanyDTO = {};
 
+  // termsGroup: TermGroup[] = [
+  //   { terms: [{ term_des: '' }] }
+  // ];
+
 // ===================================================================================
   ngOnInit(): void {
-    this.addTermGroup();
+    this.addTerm();
     this.getCompanyInfo();
     this.getCustomerInfo();
   }
@@ -299,16 +309,16 @@ constructor(
     console.log("quotation into", this.customerData)
 
 
-    if (this.isEdit) {
-      this.quotationService.updateQuotationById(this.quotationData);
-      this.quotationService.updateCompanyById(this.companyData);
-      this.quotationService.updateCustomerById(this.customerData);
-    } else {
-      this.quotationService.createQuotation(this.quotationData);
-      this.quotationService.createCompany(this.companyData);
-      this.quotationService.createCompany(this.customerData);
-    }
-    this.navigateToTable();
+    // if (this.isEdit) {
+    //   this.quotationService.updateQuotationById(this.quotationData);
+    //   this.quotationService.updateCompanyById(this.companyData);
+    //   this.quotationService.updateCustomerById(this.customerData);
+    // } else {
+    //   this.quotationService.createQuotation(this.quotationData);
+    //   this.quotationService.createCompany(this.companyData);
+    //   this.quotationService.createCompany(this.customerData);
+    // }
+    // this.navigateToTable();
   }
 
 
@@ -350,38 +360,83 @@ removeField(index: number) {
 
 
 
-      // Function to add a new term group
+  //     // Function to add a new term group
+  // addTermGroup() {
+  //   this.termsGroup.push({
+  //       terms: [{}] // Initialize terms as an empty array for each term group
+  //   });
+  // }
+
+  // // Function to remove a term group
+  // removeTermGroup(index: number) {
+  //     this.termsGroup.splice(index, 1);
+  // }
+
+  // // Function to reset the termsGroup array
+  // resetTermsGroup() {
+  //     this.termsGroup = [];
+  // }
+
+  // // Function to add a new term condition to a specific term group
+  // addTermCondition(termGroupIndex: number) {
+  //     this.termsGroup[termGroupIndex].terms.push({});
+  // }
+
+  // // Function to remove a term condition from a specific term group
+  // removeTermCondition(termGroupIndex: number, termIndex: number) {
+  //     this.termsGroup[termGroupIndex].terms.splice(termIndex, 1);
+  // }
+
+  // // Function to close terms and reset data
+  // closeTermsConditions() {
+  //     this.showTermsConditionButton = false;
+  //     this.resetTermsGroup();
+  // }
+
+
+
+
+  // Method to add a new term to the group
+  addTerm() {
+    this.terms.push({ term_des: '' });
+  }
+
+  removeTerm(index: number) {
+    this.terms.splice(index, 1);
+  }
+
   addTermGroup() {
-    this.termsGroup.push({
-        terms: [{}] // Initialize terms as an empty array for each term group
-    });
+    this.terms = [];
+    this.termsGroup = [this.terms];
+    this.addTerm(); // Add initial term
+    this.showTermsConditionButton = true;
   }
 
-  // Function to remove a term group
   removeTermGroup(index: number) {
-      this.termsGroup.splice(index, 1);
+    this.termsGroup.splice(index, 1);
+    this.showTermsConditionButton = false;
   }
 
-  // Function to reset the termsGroup array
-  resetTermsGroup() {
-      this.termsGroup = [];
+
+  cancelNotes() {
+    this.showNotes = false;
+    this.quotationData.quotationNote = ''; 
   }
 
-  // Function to add a new term condition to a specific term group
-  addTermCondition(termGroupIndex: number) {
-      this.termsGroup[termGroupIndex].terms.push({});
+  cancelAttachement() {
+    this.showAttachments = false;
+    this.quotationData.quotationNote = ''; 
   }
 
-  // Function to remove a term condition from a specific term group
-  removeTermCondition(termGroupIndex: number, termIndex: number) {
-      this.termsGroup[termGroupIndex].terms.splice(termIndex, 1);
-  }
 
-  // Function to close terms and reset data
-  closeTermsConditions() {
-      this.showTermsConditionButton = false;
-      this.resetTermsGroup();
-  }
+
+
+
+
+
+
+
+
 
 
 
@@ -405,43 +460,6 @@ removeField(index: number) {
     this.charges.splice(index, 1);
   }
 
-  editorConfig: AngularEditorConfig = {
-    editable: true,
-    spellcheck: true,
-    height: '200px',
-    maxHeight: '200px',
-    translate: 'no',
-    defaultParagraphSeparator: 'p',
-    defaultFontName: 'Arial',
-    toolbarHiddenButtons: [
-      [
-        'undo',
-        'redo',
-        'strikeThrough',
-        'subscript',
-        'superscript',
-        'justifyLeft',
-        'justifyCenter',
-        'justifyRight',
-        'justifyFull',
-        'insertUnorderedList',
-        'insertOrderedList',
-        'fontName',
-      ],
-      [
-        'textColor',
-        'backgroundColor',
-        'customClasses',
-        'link',
-        'unlink',
-        'insertImage',
-        'insertVideo',
-        'insertHorizontalRule',
-        'removeFormat',
-        'toggleEditorMode',
-      ],
-    ],
-  };
 
   myForm!: FormGroup;
   options: string[] = ['Nigeria - NGN', 'US Dollar - USD', 'Cuba - CUD'];
@@ -486,11 +504,6 @@ removeField(index: number) {
   }
 
   calculateTotal(): void {
-    // this.totalAmount = this.amount * this.tax;
-    // // Call method to convert total amount to words
-    // this.totalAmountInWords = this.convertToWords(this.totalAmount);
-
-    // this.totalAmount = this.tableData.reduce((sum, item) => sum + item.total, 0);
     this.totalAmountInWords = this.convertToWords(this.grandTotal);
 
     this.totalAmount = this.itemsData.reduce((sum, item) => sum + item.amount!, 0);
@@ -499,8 +512,6 @@ removeField(index: number) {
   }
 
   convertToWords(grandTotal: number): string {
-    // Your logic to convert amount to words
-    // return 'Total Amount in Words'; // Placeholder
     return this.convertNumberToWords(grandTotal);
   }
 
@@ -623,11 +634,11 @@ removeField(index: number) {
 
 
 
-uploadedFiles: { name: string, size: number, progress: number, status: string }[] = [];
-
+  attachment: AttachmentDTO[] = [];
 
 
   fileInputChange(event: any) {
+    console.log('File input change event:', event);
     const fileList: FileList = event.target.files;
     if (fileList && fileList.length > 0) {
       for (let i = 0; i < fileList.length; i++) {
@@ -636,44 +647,96 @@ uploadedFiles: { name: string, size: number, progress: number, status: string }[
       }
     }
   }
-
+  
+  
   uploadFile(file: File) {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const req = new HttpRequest('POST', 'sender.php', formData, {
-      reportProgress: true
-    });
-
-    this.http.request(req).subscribe(event => {
-      if (event.type === HttpEventType.UploadProgress && event.total) {
-        const percentDone = Math.round(100 * event.loaded / event.total);
-        this.updateFileProgress(file.name, percentDone);
-      } else if (event instanceof HttpResponse) {
-        this.updateFileStatus(file.name, 'complete');
+    const reader = new FileReader();
+    reader.onload = (event: any) => {
+      const fileData = event.target.result;
+  
+      // Initialize attachment array if not present
+      if (!this.quotationData.attachment) {
+        this.quotationData.attachment = [];
       }
-    });
-    
-    this.uploadedFiles.push({ name: file.name, size: file.size, progress: 0, status: 'in-prog' });
+  
+      // Add file to QuotationDTO
+      this.quotationData.attachment.push({
+        name: file.name,
+        size: file.size,
+        // data: fileData,
+        progress: 0,
+        status: 'in-progress'
+      });
+    };
+    reader.readAsDataURL(file);
   }
-
+  
   updateFileProgress(fileName: string, progress: number) {
-    const file = this.uploadedFiles.find(file => file.name === fileName);
+    const file = this.attachment.find(file => file.name === fileName);
     if (file) {
       file.progress = progress;
     }
   }
-
+  
   updateFileStatus(fileName: string, status: string) {
-    const file = this.uploadedFiles.find(file => file.name === fileName);
+    const file = this.attachment.find(file => file.name === fileName);
     if (file) {
       file.status = status;
     }
   }
-
+  
   cancelUpload(index: number) {
-    this.uploadedFiles.splice(index, 1);
+    this.attachment.splice(index, 1);
   }
+
+
+  // fileInputChange(event: any) {
+  //   const fileList: FileList = event.target.files;
+  //   if (fileList && fileList.length > 0) {
+  //     for (let i = 0; i < fileList.length; i++) {
+  //       const file: File = fileList[i];
+  //       this.uploadFile(file);
+  //     }
+  //   }
+  // }
+
+  // uploadFile(file: File) {
+  //   const formData = new FormData();
+  //   formData.append('file', file);
+
+  //   const req = new HttpRequest('POST', 'sender.php', formData, {
+  //     reportProgress: true
+  //   });
+
+  //   this.http.request(req).subscribe(event => {
+  //     if (event.type === HttpEventType.UploadProgress && event.total) {
+  //       const percentDone = Math.round(100 * event.loaded / event.total);
+  //       this.updateFileProgress(file.name, percentDone);
+  //     } else if (event instanceof HttpResponse) {
+  //       this.updateFileStatus(file.name, 'complete');
+  //     }
+  //   });
+    
+  //   this.attachment.push({ name: file.name, size: file.size, progress: 0, status: 'in-prog' });
+  // }
+
+  // updateFileProgress(fileName: string, progress: number) {
+  //   const file = this.attachment.find(file => file.name === fileName);
+  //   if (file) {
+  //     file.progress = progress;
+  //   }
+  // }
+
+  // updateFileStatus(fileName: string, status: string) {
+  //   const file = this.attachment.find(file => file.name === fileName);
+  //   if (file) {
+  //     file.status = status;
+  //   }
+  // }
+
+  // cancelUpload(index: number) {
+  //   this.attachment.splice(index, 1);
+  // }
 
 
   // showForm: boolean = false;

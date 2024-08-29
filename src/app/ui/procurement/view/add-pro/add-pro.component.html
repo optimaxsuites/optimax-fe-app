@@ -1,0 +1,17 @@
+<p>add-pro works!</p>
+
+
+<button (click)="goBack()">back</button>
+
+
+<form>
+    <label for="id">ID:</label>
+    <input type="number" id="id" [(ngModel)]="newItem.id" name="id" required />
+  
+    <label for="name">Name:</label>
+    <input type="text" id="name" [(ngModel)]="newItem.name" name="name" required />
+  
+    <button (click)="save()">Save</button>
+    <button (click)="cancel()">Cancel</button>
+  </form>
+  
