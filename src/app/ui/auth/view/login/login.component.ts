@@ -159,6 +159,7 @@ export class LoginComponent implements OnInit {
   loadInitParam(data: any) {
     sessionStorage.setItem("role", data.roles)
     sessionStorage.setItem("username", data.username);
+    sessionStorage.setItem("email", data.email);
     sessionStorage.setItem("userid", data.id);
     const tokenStartIndex = data.accessToken.indexOf('=') + 1;
     const token = data.accessToken.substring(tokenStartIndex, data.accessToken.indexOf(';'));

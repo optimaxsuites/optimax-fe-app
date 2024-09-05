@@ -40,7 +40,23 @@ export class UserRegComponent {
     private userInforService: UserInfoService,
   ){  }
 
-  ngOnInit() {  }
+  ngOnInit() { 
+    const username = sessionStorage.getItem('username');
+    const email = sessionStorage.getItem('email');
+
+    // const storedUsername = sessionStorage.getItem('username');
+    // const storedEmail = sessionStorage.getItem('email');
+
+    // Set values to userInfoData
+    if (username) {
+      this.userInfoData.username = username;
+    }
+    if (email) {
+      this.userInfoData.email = email;
+    }
+
+    console.log(username,email)
+   }
 
   checkForEmptyFields(details: any): boolean {
     return Object.values(details).some(value => typeof value === 'string' && value.trim() === '');
@@ -92,9 +108,6 @@ export class UserRegComponent {
   
 
   saveUserInfo(){
-    // const dashboardLink = this.navigationLink.getLink('dashboardLink');
-    // this.router.navigate([dashboardLink]);
-
       const userDetails = {
       fullname: this.userInfoData.fullName,
       email: this.userInfoData.email,
@@ -103,15 +116,12 @@ export class UserRegComponent {
       city: this.userInfoData.selectedCity,
       state: this.userInfoData.selectedState,
       country: this.userInfoData.selectedCountry,
-      // profileImage: this.userInfoData.image,
       address: this.userInfoData.address,
       clientType: this.userInfoData.clientType,
       companyName: this.userInfoData.company,
       industry: this.userInfoData.industry,
       bio: this.userInfoData.bio,
       postalCode: this.userInfoData.postalCode,
-        // project : `${environment.project}`,
-        // apiKey : `${environment.apiKey}`
       };
 
   if (this.checkForEmptyFields(userDetails)) {
