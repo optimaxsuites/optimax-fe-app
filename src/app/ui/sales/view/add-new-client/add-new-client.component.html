@@ -4,14 +4,17 @@
             <div class="d-flex gap-4 my-2">
                 <div class="input-container-50">
                     <label for="business-name">Business Name <span style="color: red;">*</span></label>
-                    <input type="text" id="business-name" name="business" class="editInput" required>
+                    <input type="text" id="business-name" name="business" class="editInput" [(ngModel)]="customerData.firstname" required>
+                    <input type="text" id="business-name" name="business" class="editInput" [(ngModel)]="customerData.lastname" required>
                 </div>
                 <div class="input-container-50">
                     <label for="client-industry">Client Industry <span style="color: red;">*</span></label>
                     <ng-select 
-                        bindLabel="name"
-                        bindValue="id"
-                        placeholder="Select Industry">
+                        [items]="customerTypes"
+                        bindLabel="label"
+                        bindValue="value"
+                        [(ngModel)]="customerData.customerType"
+                        placeholder="Select Customer Type">
                     </ng-select>
                 </div>
             </div>
@@ -19,11 +22,11 @@
             <div class="d-flex gap-4">
                 <div class="input-container-50">
                     <label for="email">Email <span style="color: red;">*</span></label>
-                    <input type="email" id="email" name="email" class="editInput">
+                    <input type="email" id="email" name="email" [(ngModel)]="customerData.email" class="editInput">
                 </div>
                 <div class="input-container-50" >
                     <label for="phone-number">Phone Number <span style="color: red;">*</span></label>
-                    <input type="tel" id="phone-number" name="phone-number" placeholder="+234" class="editInput" >
+                    <input type="tel" id="phone-number" name="phone-number" [(ngModel)]="customerData.phoneNumber" placeholder="+234" class="editInput" >
                 </div>
             </div>
 

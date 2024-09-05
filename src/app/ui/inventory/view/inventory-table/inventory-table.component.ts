@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { InventoryItem } from 'src/app/ui/shared/domain/interface/data';
+import { InventoryItem } from 'src/app/ui/shared/service/interface/data';
 import { InventoryService } from '../../service/inventory/inventory.service';
 import { DropdownService } from 'src/app/ui/shared/service/dropdown/dropdown.service';
 

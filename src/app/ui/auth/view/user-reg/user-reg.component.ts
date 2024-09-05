@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { Gender } from 'src/app/ui/shared/domain/interface/data';
+import { Gender } from 'src/app/ui/shared/service/interface/data';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 import { UserInfoService } from '../../service/user-info.service';
 import { City, Country, State } from 'src/app/ui/shared/domain/country-data.model';

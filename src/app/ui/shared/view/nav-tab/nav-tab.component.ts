@@ -1,5 +1,5 @@
 import { Component, Input, Type } from '@angular/core';
-import { DropdownOption, TabConfig } from '../../domain/interface/data';
+import { DropdownOption, TabConfig } from '../../service/interface/data';
 
 @Component({
   selector: 'app-nav-tab',

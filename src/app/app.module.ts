@@ -94,7 +94,7 @@ import { QuotationComponent } from './ui/sales/view/quotation/quotation.componen
 import { ProformaInvoiceComponent } from './ui/sales/view/proforma-invoice/proforma-invoice.component';
 import { ReceiptComponent } from './ui/shared/view/receipt/receipt.component';
 import { InvoiceComponent } from './ui/sales/view/invoice/invoice.component';
-import { NumberOnlyDirective } from './ui/shared/domain/number-only/number-only.directive';
+import { NumberOnlyDirective } from './ui/shared/service/number-only/number-only.directive';
 import { AccountPayabaleManagementComponent } from './ui/shared/view/account-payabale-management/account-payabale-management.component';
 import { AccountReceivableManagementComponent } from './ui/accounting/view/account-receivable-management/account-receivable-management.component';
 import { BudgetingForecastingComponent } from './ui/accounting/view/budgeting-forecasting/budgeting-forecasting.component';
@@ -115,7 +115,7 @@ import { ManagedInventoryTableComponent } from './ui/shared/view/managed-invento
 import { PurchasePageComponent } from './ui/purchase/view/purchase-page.component';
 import { RfqModalComponent } from './ui/purchase/view/rfq-modal/rfq-modal.component';
 import { BookKeepingComponent } from './ui/accounting/view/book-keeping/book-keeping.component';
-import { StripHtmlPipe } from './ui/shared/domain/strip-html/strip-html.pipe';
+import { StripHtmlPipe } from './ui/shared/service/strip-html/strip-html.pipe';
 import { QuotationModalComponent } from './ui/sales/view/quotation-modal/quotation-modal.component';
 import { ProformaInvoiceModalComponent } from './ui/sales/view/proforma-invoice-modal/proforma-invoice-modal.component';
 import { DispatchNoteComponent } from './ui/sales/view/dispatch-note/dispatch-note.component';
@@ -183,6 +183,7 @@ import { ProcurementPageComponent } from './ui/procurement/view/procurement.page
 import { Pro1Component } from './ui/procurement/view/pro-1/pro-1.component';
 import { Pro2Component } from './ui/procurement/view/pro-2/pro-2.component';
 import { AddProComponent } from './ui/procurement/view/add-pro/add-pro.component';
+import { Sidebar2Component } from './ui/shared/view/sidebar2/sidebar2.component';
 
 @NgModule({
   declarations: [
@@ -301,7 +302,8 @@ import { AddProComponent } from './ui/procurement/view/add-pro/add-pro.component
     ProcurementPageComponent,
     Pro1Component,
     Pro2Component,
-    AddProComponent
+    AddProComponent,
+    Sidebar2Component
   ],
   imports: [
     CommonModule,
