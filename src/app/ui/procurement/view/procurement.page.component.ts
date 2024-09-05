@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { TabConfig } from '../../shared/domain/interface/data';
+import { TabConfig } from '../../shared/service/interface/data';
 import { ProductsComponent } from '../../pos/view/products/products.component';
 import { InventoryComponent } from '../../pos/view/inventory/inventory.component';
 import { ConfigurationComponent } from '../../pos/view/configuration/configuration.component';

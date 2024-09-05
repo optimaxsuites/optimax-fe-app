@@ -3,23 +3,28 @@ export interface QuotationDTO {
     quotationNo?: string; // maxLength: 100, minLength: 0
     quotationDate?: string; // format: date-time
     quotationDueDate?: string; // format: date-time
-    termsAndConditions?: string; // maxLength: 500, minLength: 0
+    projectTitle?: string;
+    termsAndConditions?: any[]; // maxLength: 500, minLength: 0
     quotationNote?: string; // maxLength: 500, minLength: 0
     logo?: string;
     signature?: string; // maxLength: 255, minLength: 0
-    attachment?: AttachmentDTO[]; // maxLength: 255, minLength: 0
+    attachments?: AttachmentDTO[]; // maxLength: 255, minLength: 0
     createdBy?: number;
     saveStatus?: 'DRAFT' | 'SAVED';
-    project?: number;
     customer?: number;
     field?: FieldDTO[]; // Optional, if FieldDTO is part of QuotationDTO
+    items?: ItemsDTO[];
+    discountCharges?: DiscountAndChargesDTO[];
+    companyInfo?: CompanyDTO;
   }
 
   export interface AttachmentDTO {
     name: string;
     size: number;
-    progress: number;
-    status: string;
+    type: string; // 'image' or 'document'
+    url: string; // path to the uploaded file
+    progress?: number;
+    status?: string; // 'completed', 'uploading', 'failed'
   }
 
   export interface FieldDTO{
@@ -72,6 +77,8 @@ export interface QuotationDTO {
   
   export interface CustomerDTO {
     id?: number;
+    firstname?: string;
+    lastname?: string;
     name?: string; // maxLength: 100, minLength: 0
     // lastname: string; // maxLength: 100, minLength: 0
     customerType?: 'COMPANY' | 'INDIVIDUAL';
@@ -79,6 +86,7 @@ export interface QuotationDTO {
     phoneNumber?: string; // maxLength: 20, minLength: 0
     industry?: number;
     address?: number[],
+    label?: string;
   }
   
   export interface CompanyDTO {

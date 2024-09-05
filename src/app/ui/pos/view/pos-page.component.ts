@@ -1,5 +1,5 @@
 import { Component, ViewEncapsulation } from '@angular/core';
-import { TabConfig } from '../../shared/domain/interface/data';
+import { TabConfig } from '../../shared/service/interface/data';
 import { POSDashboardComponent } from './posdashboard/posdashboard.component';
 import { ProductsComponent } from './products/products.component';
 import { InventoryComponent } from './inventory/inventory.component';

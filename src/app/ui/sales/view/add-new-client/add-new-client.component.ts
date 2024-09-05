@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import {countriesData} from '../../../shared/service/country-data';
 import { City, Country, State } from 'src/app/ui/shared/domain/country-data.model';
+import { CustomerDTO, QuotationDTO } from '../../domain/quotation.dto';
+import { QuotationService } from '../../service/quotation/quotation.service';
 
 
 @Component({
@@ -9,6 +11,9 @@ import { City, Country, State } from 'src/app/ui/shared/domain/country-data.mode
   styleUrl: './add-new-client.component.scss'
 })
 export class AddNewClientComponent implements OnInit{
+
+  customerData: CustomerDTO = {};
+
   countries: Country[] = countriesData;
   states: State[] = [];
   cities: City[] = [];
@@ -17,8 +22,17 @@ export class AddNewClientComponent implements OnInit{
   selectedState?: string;
   selectedCity?: string;
 
+  constructor(
+    private quotationService: QuotationService
+  ){}
+
   ngOnInit() {
   }
+
+  customerTypes = [
+    { label: 'Company', value: 'COMPANY' },
+    { label: 'Individual', value: 'INDIVIDUAL' }
+  ];
 
 
 
@@ -66,7 +80,19 @@ export class AddNewClientComponent implements OnInit{
 
 
   onSubmit(){
-    this.getFinalSelection();
+    // this.getFinalSelection();
+    console.log("cus info", this.customerData)
+
+    this.quotationService.createCustomer(this.customerData).subscribe(
+      (response) => {
+        console.log('Customer created successfully:', response);
+        // Handle success, maybe navigate to another page or display a success message
+      },
+      (error) => {
+        console.error('Error creating customer:', error);
+        // Handle the error, maybe display an error message to the user
+      }
+    );
   }
 
 }

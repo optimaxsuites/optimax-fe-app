@@ -62,19 +62,19 @@ createCustomer(data: any): Observable<any> {
       .pipe(catchError(this.handleError));
 }
 
-getCustomer(data: string): Observable<any> {
-  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/customer"+"---"+JSON.stringify(data)))
+getCustomer(): Observable<CustomerDTO[]> {
+  // console.log((this.getBaseApiUrl() + "/x/api/v2/sales/customer"+"-GEt info--"+JSON.stringify()))
 
   return this.http
-      .get<any>( this.getBaseApiUrl() + "/x/api/v2/sales/customer" )
+      .get<CustomerDTO[]>( this.getBaseApiUrl() + "/x/api/v2/sales/customer" )
       .pipe(catchError(this.handleError));
 }
 
-getCustomerById (id: any): Observable<any> {
-  console.log((this.getBaseApiUrl() + "/x/api/v2/sales/customer"+"---"+JSON.stringify(id)))
+getCustomerById (id: any): Observable<CustomerDTO> {
+  console.log((this.getBaseApiUrl() + `/x/api/v2/sales/customer/${id}`+"--byID-"+JSON.stringify(id)))
 
   return this.http
-      .get<any>( this.getBaseApiUrl() + `/x/api/v2/sales/customer/${id}`)
+      .get<CustomerDTO>( this.getBaseApiUrl() + `/x/api/v2/sales/customer/${id}`)
       .pipe(catchError(this.handleError));
 }
 

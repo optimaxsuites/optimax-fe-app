@@ -18,16 +18,16 @@
             <div class="d-flex gap-4 my-4">
               <div class="input-container-50">
                 <label for="qDate">Date</label>
-                <input type="date" name="any" id="qDate" [(ngModel)]="quotationData.quotationDate" class="editInput" />
+                <input type="datetime-local" name="any" id="qDate" [(ngModel)]="quotationData.quotationDate" class="editInput" />
               </div>
               <div class="input-container-50">
                 <label for="qDueDate">Due Date</label>
-                <input type="date" name="any" id="qDueDate" [(ngModel)]="quotationData.quotationDueDate" class="editInput" />
+                <input type="datetime-local" name="any" id="qDueDate" [(ngModel)]="quotationData.quotationDueDate" class="editInput" />
               </div>
             </div>
             <div class="input-container-100">
               <label for="projectTitle">Project Title</label>
-              <input type="text" name="any" id="projectTitle" [(ngModel)]="quotationData.project" class="editInput" />
+              <input type="text" name="any" id="projectTitle" [(ngModel)]="quotationData.projectTitle" class="editInput" />
             </div>
             <div class="editInput mt-2">
               <button class="add-btn" (click)="addField()">
@@ -97,12 +97,11 @@
                     <!-- dropdown start -->
                     <ng-select 
                     [items]="customerOptions"
-                    bindLabel="name"
-                    name="any"
+                    bindLabel="firstname"
                     bindValue="id"
-                    [(ngModel)]="selectedCustomerId"
-                    (change)="onCustomerChange($event)"
-                    placeholder="Select Company">
+                    [(ngModel)]="quotationData.customer"
+                    (ngModelChange)="onCustomerChange($event)"
+                    placeholder="Select Customer">
                     </ng-select>
                     <!-- dropdown ends -->
                   </div>
@@ -117,7 +116,7 @@
                 <div class="second-component" *ngIf="showSecondComponent">
                   <p><b>Client Details</b></p>
                   <div class="business-info">
-                    <input type="text" name="any" class="editInput" placeholder="Business Name" [(ngModel)]="customerData.name" disabled />
+                    <input type="text" name="any" class="editInput" placeholder="Business Name" [(ngModel)]="customerData.firstname" disabled />
                     <input type="text" name="any" class="editInput my-2" placeholder="Address" [(ngModel)]="customerData.address" disabled />
                     <input type="text" name="any" class="editInput mb-2" placeholder="Phone Number" [(ngModel)]="customerData.phoneNumber" disabled />
                     <input type="text" name="any" class="editInput" placeholder="Email" [(ngModel)]="customerData.email" disabled />
@@ -150,18 +149,29 @@
                   <input type="text" [(ngModel)]="shippingData" placeholder="Business / Freelancer Name" class="editInput" />
                 </div>
                 <div class="">
-                  <input type="text" [(ngModel)]="shippingData" placeholder="Address" class="editInput my-2" />
-                </div>
-                <div class=" row">
-                  <div class="column">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="City" class="editInput" />
-                  </div>
-                  <div class="column">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="Postal Code / Zip Code" class="editInput my-2" />
-                  </div>
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Phone No" class="editInput my-2" />
                 </div>
                 <div class="">
-                  <input type="text" [(ngModel)]="shippingData" placeholder="State" class="editInput" />
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Email" class="editInput" />
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Address" class="editInput my-2" />
+                </div>
+                <div class="d-flex gap-2">
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="shippingData" placeholder="Country" class="editInput" />
+                  </div>
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="shippingData" placeholder="State" class="editInput" />
+                  </div>
+                </div>
+                <div class="d-flex gap-2 my-2">
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="shippingData" placeholder="City" class="editInput" />
+                  </div>
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="shippingData" placeholder="Postal Code / Zip Code" class="editInput" />
+                  </div>
                 </div>
               </div>
               <!-- shipping from ends -->
@@ -175,18 +185,29 @@
                   <input type="text" [(ngModel)]="shippingData" placeholder="Client's Business Name" class="editInput" />
                 </div>
                 <div class="">
-                  <input type="text" [(ngModel)]="shippingData" placeholder="Address" class="editInput my-2" />
-                </div>
-                <div class=" row">
-                  <div class="column">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="City" class="editInput" />
-                  </div>
-                  <div class="column">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="Postal Code / Zip Code" class="editInput my-2" />
-                  </div>
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Phone No" class="editInput my-2" />
                 </div>
                 <div class="">
-                  <input type="text" [(ngModel)]="shippingData" placeholder="State" class="editInput" />
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Email" class="editInput" />
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="shippingData" placeholder="Address" class="editInput my-2" />
+                </div>
+                <div class="d-flex gap-2">
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="shippingData" placeholder="Country" class="editInput" />
+                  </div>
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="shippingData" placeholder="State" class="editInput" />
+                  </div>
+                </div>
+                <div class="d-flex gap-2 my-2">
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="shippingData" placeholder="City" class="editInput" />
+                  </div>
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="shippingData" placeholder="Postal Code / Zip Code" class="editInput" />
+                  </div>
                 </div>
               </div>
               <!-- shipping to ends -->
@@ -206,7 +227,8 @@
             <app-button (click)="openAddItem=true" text="Add New Item" class="btn-navigate" ></app-button>
           </ng-template>
         </p-toolbar>
-        <p-table 
+        <div class="brd-gry">
+          <p-table 
           [value]="items"
           [paginator]="true" 
           dataKey="id"
@@ -245,6 +267,7 @@
                 </tr>                            
             </ng-template>
         </p-table>
+        </div>
       </div>
   
       <div>
@@ -404,7 +427,64 @@
         </div>
       </div>
 
-      <div class="form-buttom-section editInput mb-2">
+
+
+      <div class="form-bottom-section editInput mb-2">
+        <div class="btn-bottom-container" *ngIf="!showAttachments">
+          <button class="add-btn" (click)="showAttachments = true">
+            <i class="fas fa-plus me-2"></i> Add Attachments
+          </button>
+        </div>
+      
+        <div class="contents-wrapper">
+          <div class="terms-conditions-container" *ngIf="showAttachments">
+            <div class="terms-condition-wrapper">
+              <div class="terms-condition-wrapper">
+                <div class="top">
+                  <div class="label">
+                    <p><b>Add Attachments</b></p>
+                  </div>
+                  <i (click)="showAttachments = false" class="pi pi-times-circle table-item p-2"></i>
+                </div>
+                <div class="content">
+                  <p>Add any other attachments that are necessary for the quotation</p>
+      
+                  <div class="file-upload-continer">
+                    <input type="file" #fileInput (change)="fileInputChange($event)" style="display: none" multiple />
+                    <button class="add-btn" (click)="fileInput.click()">
+                      <i class="fas fa-plus me-2"></i> Browse
+                    </button>
+                  </div>
+      
+                  <ul class="uploaded-files">
+                    <li *ngFor="let file of quotationData.attachments; let i = index" [class]="file.status" class="uploaded-file">
+                      <div class="file-details">
+                        <div class="file-name">{{ file.name }}</div>
+                        <div class="file-progress">
+                          <div class="file-progress-bar" [style.width.%]="file.progress"></div>
+                        </div>
+                        <div class="file-size">{{ (file.size / (1024 * 1024)).toFixed(2) }} MB</div>
+                      </div>
+                      <div class="file-icons">
+                        <i (click)="cancelUpload(i)" class="pi pi-times-circle table-item p-2"></i>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+
+
+
+
+
+
+
+      <!-- <div class="form-buttom-section editInput mb-2">
         <div class="btn-bottom-container" *ngIf="!showAttachments">
           <button class="add-btn " (click)="showAttachments = true" >
             <i class="fas fa-plus me-2"></i> Add Attachments
@@ -456,10 +536,10 @@
             </div>
           </div>
         </div>
-      </div>
+      </div> -->
   
       <div class="btn-wrapper">
-        <app-button text="{{ isEdit ? 'Update' : 'Save' }}" (click)="onSubmit()" class="btn-save"></app-button>
+        <app-button text="{{ isEdit ? 'Update' : 'Save' }}" (click)="onSubmit()" class="btn-navigate"></app-button>
       </div>
     </div>
   </div>

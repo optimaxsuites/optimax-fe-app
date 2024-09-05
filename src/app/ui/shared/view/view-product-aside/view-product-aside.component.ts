@@ -1,6 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { InventoryItem } from '../../domain/interface/data';
+import { InventoryItem } from '../../service/interface/data';
 import { InventoryService } from 'src/app/ui/inventory/service/inventory/inventory.service';
 
 @Component({

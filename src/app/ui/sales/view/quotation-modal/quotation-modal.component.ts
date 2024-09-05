@@ -45,6 +45,7 @@ export class QuotationModalComponent implements OnInit {
   openAddItem?: boolean;
   selectedValue?: string;
   showDescriptionBox: boolean = false;
+  isFormVisible: boolean = false;
   signatureUrl: string | ArrayBuffer | null = null;
   logoUrl: string | ArrayBuffer | null = null;
   discounts: any[] = [];
@@ -64,23 +65,32 @@ export class QuotationModalComponent implements OnInit {
   customerData: CustomerDTO = {};
   companyData: CompanyDTO = {};
 
-  // termsGroup: TermGroup[] = [
-  //   { terms: [{ term_des: '' }] }
-  // ];
+  constructor(
+    private renderer: Renderer2, 
+    private el: ElementRef,
+    private http: HttpClient, 
+    private dropdownService: DropdownService, 
+    private dialogRef:MatDialog,
+    private quotationService: QuotationService,
+    private navigationLink: NavigationLinksService,
+    private router: Router,
+    private route: ActivatedRoute,
+  ) { }
 
 // ===================================================================================
   ngOnInit(): void {
     this.addTerm();
     this.getCompanyInfo();
-    this.getCustomerInfo();
+    this.loadCustomers();
+
   }
 // ===================================================================================
-  companyOptions: { id: number, name: string }[] = [];
+  companyOptions: { name: string }[] = [];
   selectedCompanyId!: number;
 
   getCompanyInfo(){
     this.quotationService.getCompany('').subscribe((data: CompanyDTO[]) => {
-      this.companyOptions = data.map(company => ({ id: company.id!, name: company.name! }));
+      this.companyOptions = data.map(company => ({ name: company.name! }));
     });
   }
 
@@ -94,24 +104,91 @@ export class QuotationModalComponent implements OnInit {
     }
   }
 // ================================================================================
-  customerOptions: { id: number, name: string }[] = [];
-  selectedCustomerId!: number;
+  // companyOptions: CustomerDT[];
+  // selectedCustomerId!: number;
 
-  getCustomerInfo(){
-    this.quotationService.getCustomer('').subscribe((data: CustomerDTO[]) => {
-      this.customerOptions = data.map(customer => ({ id: customer.id!, name: customer.name! }));
+  // getCustomerInfo(){
+  //   this.quotationService.getCustomer().subscribe((data: CustomerDTO[]) => {
+  //     this.customerOptions = data.map(customer => ({ id: customer.id!, name: customer.name! }));
+  //   });
+  // }
+
+  // loadCompanyOptions(): void {
+  //   // Assuming this.yourService.getCompanies() returns an array of { id: number, name: string }
+  //   this.quotationService.getCustomer().subscribe((data) => {
+  //     companyOptions = data;
+  //   });
+  // }
+
+  // getCustomerInfo() {
+  //   this.quotationService.getCustomer('').subscribe((data: CustomerDTO[]) => {
+  //     this.customerOptions = data.map(customer => ({ id: customer.id!, name: `${customer.firstname} ${customer.lastname}` }));
+  //   });
+  // }
+
+  // onCustomerChange(customerId: number): void {
+  //   if (customerId) {
+  //     this.quotationService.getCustomerById(customerId).subscribe((customer: CustomerDTO) => {
+  //       this.customerData = customer;
+  //       this.showSecondComponent = true;
+  //     });
+  //   } else {
+  //     this.customerData = {};
+  //     this.showSecondComponent = false;
+  //   }
+  // }
+
+    customerOptions: CustomerDTO[] = [];
+    selectedCustomerId!: number;
+
+  loadCustomers() {
+    this.quotationService.getCustomer().subscribe(customers => {
+      this.customerOptions = customers;
+      console.log("options", this.customerOptions)
     });
   }
 
-  onCustomerChange(customerId: number): void {
-    if (customerId) {
-      this.quotationService.getCustomerById(customerId).subscribe((customer: CustomerDTO) => {
+  onCustomerChange(selectedCustomerId: number) {
+    this.selectedCustomerId = selectedCustomerId; // Set the selected customer ID
+    console.log("Selected Customer ID:", selectedCustomerId);
+  
+    if (selectedCustomerId) {
+      this.quotationService.getCustomerById(selectedCustomerId).subscribe(customer => {
         this.customerData = customer;
+        this.showSecondComponent = true; // Show customer details section
       });
     } else {
       this.customerData = {};
+      this.showSecondComponent = false; // Hide customer details section if no customer is selected
     }
   }
+  // loadCustomers(): void {
+  //   this.quotationService.getCustomer().subscribe(
+  //     (data: CustomerDTO[]) => {
+  //       this.customerOptions = data;
+  //     },
+  //     error => {
+  //       console.error('Error fetching customer data:', error);
+  //     }
+  //   );
+  // }
+
+  // onCustomerChange(selectedCustomerId: number): void {
+  //   this.selectedCustomerId = selectedCustomerId;
+  //   this.loadCustomerDetails(selectedCustomerId);
+  // }
+
+  // loadCustomerDetails(customerId: number): void {
+  //   this.quotationService.getCustomerById(customerId).subscribe(
+  //     (data: any) => {
+  //       this.customerData = data;
+  //       this.showSecondComponent = true;
+  //     },
+  //     error => {
+  //       console.error('Error fetching customer details:', error);
+  //     }
+  //   );
+  // }
   // ====================================================================================
 
   items = [
@@ -127,220 +204,26 @@ export class QuotationModalComponent implements OnInit {
     { id: 10, name: 'Item 10', taxRate: 4, qty: 50, rate: 25, amount: 1250, tax: 50, total: 1300 }
   ];
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  isFormVisible: boolean = false;
+// SHIPPING DETAILS TOGGLE==================================================================================
 
   toggleForm() {
     this.isFormVisible = !this.isFormVisible;
   }
 
-
-  countryList = [
-    'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 
-    'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas', 
-    'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize', 'Benin', 
-    'Bhutan', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 
-    'Bulgaria', 'Burkina Faso', 'Burundi', 'Cabo Verde', 'Cambodia', 'Cameroon', 
-    'Canada', 'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 
-    'Comoros', 'Congo, Democratic Republic of the', 'Congo, Republic of the', 
-    'Costa Rica', 'Croatia', 'Cuba', 'Cyprus', 'Czech Republic', 'Denmark', 
-    'Djibouti', 'Dominica', 'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 
-    'Equatorial Guinea', 'Eritrea', 'Estonia', 'Eswatini', 'Ethiopia', 'Fiji', 
-    'Finland', 'France', 'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 
-    'Greece', 'Grenada', 'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana', 
-    'Haiti', 'Honduras', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 
-    'Iraq', 'Ireland', 'Israel', 'Italy', 'Jamaica', 'Japan', 'Jordan', 
-    'Kazakhstan', 'Kenya', 'Kiribati', 'Korea, North', 'Korea, South', 'Kosovo', 
-    'Kuwait', 'Kyrgyzstan', 'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 
-    'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg', 'Madagascar', 'Malawi', 
-    'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 
-    'Mauritius', 'Mexico', 'Micronesia', 'Moldova', 'Monaco', 'Mongolia', 
-    'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia', 'Nauru', 
-    'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 
-    'North Macedonia', 'Norway', 'Oman', 'Pakistan', 'Palau', 'Palestine', 
-    'Panama', 'Papua New Guinea', 'Paraguay', 'Peru', 'Philippines', 'Poland', 
-    'Portugal', 'Qatar', 'Romania', 'Russia', 'Rwanda', 'Saint Kitts and Nevis', 
-    'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa', 'San Marino', 
-    'Sao Tome and Principe', 'Saudi Arabia', 'Senegal', 'Serbia', 'Seychelles', 
-    'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 
-    'Somalia', 'South Africa', 'South Sudan', 'Spain', 'Sri Lanka', 'Sudan', 
-    'Suriname', 'Sweden', 'Switzerland', 'Syria', 'Taiwan', 'Tajikistan', 
-    'Tanzania', 'Thailand', 'Timor-Leste', 'Togo', 'Tonga', 'Trinidad and Tobago', 
-    'Tunisia', 'Turkey', 'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine', 
-    'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay', 
-    'Uzbekistan', 'Vanuatu', 'Vatican City', 'Venezuela', 'Vietnam', 'Yemen', 
-    'Zambia', 'Zimbabwe'
-  ];
-
-  currencyList = [
-    'Algerian Dinar (DZD)',
-    'Angolan Kwanza (AOA)',
-    'Argentine Peso (ARS)',
-    'Australian Dollar (AUD)',
-    'Bahraini Dinar (BHD)',
-    'Bangladeshi Taka (BDT)',
-    'Brazilian Real (BRL)',
-    'British Pound Sterling (GBP)',
-    'Canadian Dollar (CAD)',
-    'Chilean Peso (CLP)',
-    'Chinese Yuan (CNY)',
-    'Colombian Peso (COP)',
-    'Comorian Franc (KMF)',
-    'Congolese Franc (CDF)',
-    'Czech Koruna (CZK)',
-    'Danish Krone (DKK)',
-    'Djiboutian Franc (DJF)',
-    'Egyptian Pound (EGP)',
-    'Eritrean Nakfa (ERN)',
-    'Ethiopian Birr (ETB)',
-    'Euro (EUR)',
-    'Gambian Dalasi (GMD)',
-    'Guinean Franc (GNF)',
-    'Hong Kong Dollar (HKD)',
-    'Indian Rupee (INR)',
-    'Indonesian Rupiah (IDR)',
-    'Iraqi Dinar (IQD)',
-    'Israeli New Shekel (ILS)',
-    'Japanese Yen (JPY)',
-    'Jordanian Dinar (JOD)',
-    'Kenyan Shilling (KES)',
-    'Kuwaiti Dinar (KWD)',
-    'Lebanese Pound (LBP)',
-    'Lesotho Loti (LSL)',
-    'Liberian Dollar (LRD)',
-    'Libyan Dinar (LYD)',
-    'Malagasy Ariary (MGA)',
-    'Malawian Kwacha (MWK)',
-    'Malaysian Ringgit (MYR)',
-    'Mauritanian Ouguiya (MRU)',
-    'Mauritian Rupee (MUR)',
-    'Mexican Peso (MXN)',
-    'Moroccan Dirham (MAD)',
-    'Mozambican Metical (MZN)',
-    'Namibian Dollar (NAD)',
-    'New Zealand Dollar (NZD)',
-    'Nigerian Naira (NGN)',
-    'Norwegian Krone (NOK)',
-    'Omani Rial (OMR)',
-    'Pakistani Rupee (PKR)',
-    'Peruvian Sol (PEN)',
-    'Philippine Peso (PHP)',
-    'Polish Zloty (PLN)',
-    'Qatari Riyal (QAR)',
-    'Romanian Leu (RON)',
-    'Russian Ruble (RUB)',
-    'Rwandan Franc (RWF)',
-    'Saudi Riyal (SAR)',
-    'Seychellois Rupee (SCR)',
-    'Sierra Leonean Leone (SLL)',
-    'Singapore Dollar (SGD)',
-    'Somali Shilling (SOS)',
-    'South African Rand (ZAR)',
-    'South Korean Won (KRW)',
-    'South Sudanese Pound (SSP)',
-    'Sudanese Pound (SDG)',
-    'Swazi Lilangeni (SZL)',
-    'Swedish Krona (SEK)',
-    'Swiss Franc (CHF)',
-    'Syrian Pound (SYP)',
-    'Taiwanese Dollar (TWD)',
-    'Tanzanian Shilling (TZS)',
-    'Thai Baht (THB)',
-    'Tunisian Dinar (TND)',
-    'Turkish Lira (TRY)',
-    'Ugandan Shilling (UGX)',
-    'Ukrainian Hryvnia (UAH)',
-    'United Arab Emirates Dirham (AED)',
-    'United States Dollar (USD)',
-    'Uruguayan Peso (UYU)',
-    'Vietnamese Dong (VND)',
-    'West African CFA Franc (XOF)',
-    'Zambian Kwacha (ZMW)',
-    'Zimbabwean Dollar (ZWL)'
-]
-
-
-constructor(
-  private renderer: Renderer2, 
-  private el: ElementRef,
-  private http: HttpClient, 
-  private dropdownService: DropdownService, 
-  private dialogRef:MatDialog,
-  private quotationService: QuotationService,
-  private navigationLink: NavigationLinksService,
-  private router: Router,
-  private route: ActivatedRoute,
-) { }
-
-
-
-
-  // more fields
-  addMoreField() {
-    this.moreFields.push({});
-  }
-
-  removeMoreField(index: number) {
-    this.moreFields.splice(index, 1);
-  }
-
-
-
-
-
+// SUBMIT QUOTATION ACTION============================================================================
 
   onSubmit(){
     console.log("quotation into", this.quotationData)
-    console.log("quotation into", this.companyData)
-    console.log("quotation into", this.customerData)
-
-
-    // if (this.isEdit) {
-    //   this.quotationService.updateQuotationById(this.quotationData);
-    //   this.quotationService.updateCompanyById(this.companyData);
-    //   this.quotationService.updateCustomerById(this.customerData);
-    // } else {
-    //   this.quotationService.createQuotation(this.quotationData);
-    //   this.quotationService.createCompany(this.companyData);
-    //   this.quotationService.createCompany(this.customerData);
-    // }
-    // this.navigateToTable();
   }
 
-
-
-
+// NAVIGATE TO TABLE====================================================================================
 navigateToTable() {
   const salesLink = this.navigationLink.getLink('salesLink')
   this.router.navigate([salesLink]);
   
 }
 
-
-openTaxDialog(){
-  this.dialogRef.open(ConfigureTaxPopupComponent)
-}
-
-
-openNumberCurrencyDialog(){
-  this.dialogRef.open(NumberCurrencyPopupComponent)
-}
-
-
+// ADDITIONAL FIELDS=======================================================================================
 
 addField() {
   if(!this.quotationData.field){
@@ -355,48 +238,7 @@ removeField(index: number) {
   }
 }
 
-
-
-
-
-
-  //     // Function to add a new term group
-  // addTermGroup() {
-  //   this.termsGroup.push({
-  //       terms: [{}] // Initialize terms as an empty array for each term group
-  //   });
-  // }
-
-  // // Function to remove a term group
-  // removeTermGroup(index: number) {
-  //     this.termsGroup.splice(index, 1);
-  // }
-
-  // // Function to reset the termsGroup array
-  // resetTermsGroup() {
-  //     this.termsGroup = [];
-  // }
-
-  // // Function to add a new term condition to a specific term group
-  // addTermCondition(termGroupIndex: number) {
-  //     this.termsGroup[termGroupIndex].terms.push({});
-  // }
-
-  // // Function to remove a term condition from a specific term group
-  // removeTermCondition(termGroupIndex: number, termIndex: number) {
-  //     this.termsGroup[termGroupIndex].terms.splice(termIndex, 1);
-  // }
-
-  // // Function to close terms and reset data
-  // closeTermsConditions() {
-  //     this.showTermsConditionButton = false;
-  //     this.resetTermsGroup();
-  // }
-
-
-
-
-  // Method to add a new term to the group
+// TERMS AND CONDITION=================================================================================
   addTerm() {
     this.terms.push({ term_des: '' });
   }
@@ -417,30 +259,20 @@ removeField(index: number) {
     this.showTermsConditionButton = false;
   }
 
-
+// NOTE==================================================================================================
   cancelNotes() {
     this.showNotes = false;
     this.quotationData.quotationNote = ''; 
   }
+
+  // ATTACHMENT============================================================================================
 
   cancelAttachement() {
     this.showAttachments = false;
     this.quotationData.quotationNote = ''; 
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+// DISCOUNT==================================================================================================
 
   addDiscount() {
     this.discounts.push({});
@@ -450,7 +282,7 @@ removeField(index: number) {
     this.discounts.splice(index, 1);
   }
 
-
+// CHARGES=================================================================================================
 
   addCharge() {
     this.charges.push({});
@@ -461,30 +293,30 @@ removeField(index: number) {
   }
 
 
-  myForm!: FormGroup;
-  options: string[] = ['Nigeria - NGN', 'US Dollar - USD', 'Cuba - CUD'];
+  // myForm!: FormGroup;
+  // options: string[] = ['Nigeria - NGN', 'US Dollar - USD', 'Cuba - CUD'];
 
 
 
+// ADD ROW
 
+  // addRow(): void {
+  //   this.itemsData.push({});
 
-  addRow(): void {
-    this.itemsData.push({});
-
-    // Recalculate totals
-    this.calculateTotal();
-  }
+  //   // Recalculate totals
+  //   this.calculateTotal();
+  // }
 
   
-  // name: string = '';
-  taxRate: number = 0;
-  // quantity!: number;
-  // rate?: number;
-  amount: number = 0;
-  tax: number =0;
-  // total: number = 0;
-  // totalAmount?: number;
-  // totalAmountInWords?: string;
+  // // name: string = '';
+  // taxRate: number = 0;
+  // // quantity!: number;
+  // // rate?: number;
+  // amount: number = 0;
+  // tax: number =0;
+  // // total: number = 0;
+  // // totalAmount?: number;
+  // // totalAmountInWords?: string;
   totalAmount: number = 0;
   totalAmountInWords: string = '';
   totalTax: number = 0;
@@ -634,166 +466,47 @@ removeField(index: number) {
 
 
 
-  attachment: AttachmentDTO[] = [];
+
+
+
 
 
   fileInputChange(event: any) {
-    console.log('File input change event:', event);
-    const fileList: FileList = event.target.files;
-    if (fileList && fileList.length > 0) {
-      for (let i = 0; i < fileList.length; i++) {
-        const file: File = fileList[i];
-        this.uploadFile(file);
-      }
-    }
-  }
-  
-  
-  uploadFile(file: File) {
-    const reader = new FileReader();
-    reader.onload = (event: any) => {
-      const fileData = event.target.result;
-  
-      // Initialize attachment array if not present
-      if (!this.quotationData.attachment) {
-        this.quotationData.attachment = [];
-      }
-  
-      // Add file to QuotationDTO
-      this.quotationData.attachment.push({
+    const files = event.target.files;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const attachment: AttachmentDTO = {
         name: file.name,
         size: file.size,
-        // data: fileData,
+        type: file.type.includes('image') ? 'image' : 'document',
+        url: '', // This will be set after upload
         progress: 0,
-        status: 'in-progress'
-      });
-    };
-    reader.readAsDataURL(file);
-  }
-  
-  updateFileProgress(fileName: string, progress: number) {
-    const file = this.attachment.find(file => file.name === fileName);
-    if (file) {
-      file.progress = progress;
+        status: 'uploading',
+      };
+
+      this.quotationData.attachments?.push(attachment);
+      this.uploadFile(file, attachment);
     }
   }
-  
-  updateFileStatus(fileName: string, status: string) {
-    const file = this.attachment.find(file => file.name === fileName);
-    if (file) {
-      file.status = status;
-    }
+
+  uploadFile(file: File, attachment: AttachmentDTO) {
+    // Simulate file upload process
+    const uploadSimulation = setInterval(() => {
+      if (attachment.progress! >= 100) {
+        attachment.status = 'completed';
+        attachment.url = ''; // Set the file URL after upload
+        clearInterval(uploadSimulation);
+      } else {
+        attachment.progress! += 10; // Increase progress
+      }
+    }, 200);
   }
-  
+
   cancelUpload(index: number) {
-    this.attachment.splice(index, 1);
-  }
-
-
-  // fileInputChange(event: any) {
-  //   const fileList: FileList = event.target.files;
-  //   if (fileList && fileList.length > 0) {
-  //     for (let i = 0; i < fileList.length; i++) {
-  //       const file: File = fileList[i];
-  //       this.uploadFile(file);
-  //     }
-  //   }
-  // }
-
-  // uploadFile(file: File) {
-  //   const formData = new FormData();
-  //   formData.append('file', file);
-
-  //   const req = new HttpRequest('POST', 'sender.php', formData, {
-  //     reportProgress: true
-  //   });
-
-  //   this.http.request(req).subscribe(event => {
-  //     if (event.type === HttpEventType.UploadProgress && event.total) {
-  //       const percentDone = Math.round(100 * event.loaded / event.total);
-  //       this.updateFileProgress(file.name, percentDone);
-  //     } else if (event instanceof HttpResponse) {
-  //       this.updateFileStatus(file.name, 'complete');
-  //     }
-  //   });
-    
-  //   this.attachment.push({ name: file.name, size: file.size, progress: 0, status: 'in-prog' });
-  // }
-
-  // updateFileProgress(fileName: string, progress: number) {
-  //   const file = this.attachment.find(file => file.name === fileName);
-  //   if (file) {
-  //     file.progress = progress;
-  //   }
-  // }
-
-  // updateFileStatus(fileName: string, status: string) {
-  //   const file = this.attachment.find(file => file.name === fileName);
-  //   if (file) {
-  //     file.status = status;
-  //   }
-  // }
-
-  // cancelUpload(index: number) {
-  //   this.attachment.splice(index, 1);
-  // }
-
-
-  // showForm: boolean = false;
-  sameAsBusinessAddress: boolean = false;
-  sameAsClientAddress: boolean = false;
-  saveToClientDetails: boolean = false;
-
-  shippedFrom = {
-    businessName: '',
-    country: '',
-    address: '',
-    city: '',
-    postalCode: '',
-    state: ''
-  };
-
-  shippedTo = {
-    businessName: '',
-    country: '',
-    address: '',
-    city: '',
-    postalCode: '',
-    state: ''
-  };
-
-  addMoreFields() {
-    // Logic to add more fields
-  }
-
-
-
-  currency = this.currencyList;
-  companyCountry = this.countryList; 
-  clientCountry = this.countryList; 
-  clientShippingDetails = ['None', 'Shipping 1', 'Shipping 2', 'Shipping 3'];
-
-  isDropdownOpen$(id: string) {
-    return this.dropdownService.isDropdownOpen$(id);
-  }
-
-  getSelectedItem$(id: string): Observable<string | null> {
-    return this.dropdownService.getSelectedItem$(id);
-  }
-
-  toggleDropdown(id: string) {
-    this.dropdownService.toggleDropdown(id);
-  }
-
-  selectItem(id: string, item: string) {
-    this.dropdownService.selectItem(id, item);
-  }
-
-  extractCurrencyCode(currency: string | null): string {
-    if (!currency) {
-      return 'NGN';
+    if (this.quotationData.attachments && this.quotationData.attachments[index]) {
+      this.quotationData.attachments.splice(index, 1);
     }
-    const match = currency.match(/\(([^)]+)\)/);
-    return match ? match[1] : currency;
   }
+
+
 }
