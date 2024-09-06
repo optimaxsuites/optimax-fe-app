@@ -151,7 +151,6 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        display: none;
 
         .hamburger-icon{
             // background-color: #224957;
@@ -215,36 +214,36 @@ h1, h2, h3, h4, h5, h6 {
 
 
 
-@media only screen and (max-width: 1200px) {
-    .header{
-        .hamburger{
-            display: contents;
-        }
-    }
-}
+// @media only screen and (max-width: 1200px) {
+//     .header{
+//         .hamburger{
+//             display: contents;
+//         }
+//     }
+// }
 
 
 
-@media only screen and (max-width: 767px) {
-    .header{
+// @media only screen and (max-width: 767px) {
+//     .header{
 
-        .header-center{
-            display: none;
-        }
-        .header-end{
-            .items{
-                .profile-name{
-                    .name{
-                        font-size: 0.8em;
-                    }
-                    .status{
-                        font-size: 0.8em;
-                    }
-                }
-            }
-        }
-    }
-}
+//         .header-center{
+//             display: none;
+//         }
+//         .header-end{
+//             .items{
+//                 .profile-name{
+//                     .name{
+//                         font-size: 0.8em;
+//                     }
+//                     .status{
+//                         font-size: 0.8em;
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }
 
 
 
