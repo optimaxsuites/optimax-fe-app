@@ -1,114 +1,192 @@
 
-.master-container {
-    display: flex;
-    // height: 100vh;
-}
+// .master-container {
+//     display: flex;
+//     // height: 100vh;
+// }
 
 
-.navbar-container{
-  width: 100%;
-  background-color: #fff;
-}
-.searchbar-container{
-  display: none;
-  padding: 1rem;
-  box-sizing: border-box;
-}
-.main-container {
-    transition: 0.3s ease-in-out;
-    flex: 1;
-    margin-left: 15%;
-    // overflow-y: auto;
-    width: 100%;
-}
-.main{
-    height: fit-content;
-    margin-top: 2rem;
-    // width: 100%;
-}
+// .navbar-container{
+//   width: 100%;
+//   background-color: #fff;
+// }
+// .searchbar-container{
+//   display: none;
+//   padding: 1rem;
+//   box-sizing: border-box;
+// }
+// .main-container {
+//     transition: 0.3s ease-in-out;
+//     flex: 1;
+//     margin-left: 15%;
+//     // overflow-y: auto;
+//     width: 100%;
+// }
+// .main{
+//     height: fit-content;
+//     margin-top: 2rem;
+//     // width: 100%;
+// }
 
 
 
 
 
+// .sidebar-container {
+//     height: 100%;
+//     width: 15%; /* Reset width for larger screens */
+//     position: fixed; /* Reset position */
+//     // background-color: red; /* Reset background color */
+// }
+
+
+
+
+
+
+// /* Styles for screens with a maximum width of 1200px */
+// @media screen and (max-width: 1200px) {
+//     .master-container {
+//       // position: relative;
+//       // display: flex;
+//       // justify-content: space-between;
+//     }
+  
+//     .sidebar-container {
+//       position: fixed;
+//       top: 0;
+//       left: -50%; /* Initially hide the sidebar off-screen */
+//       width: 50%;
+//       height: 100%;
+//       // background-color: rgba(248, 10, 10, 0.5); /* Semi-transparent overlay */
+//       z-index: 1000; /* Ensure it's above other content */
+//       transition: 0.3s ease; /* Add smooth transition for animation */
+//     }
+  
+//     .sidebar-container.show {
+//       left: 0; /* Show the sidebar by bringing it back to the screen */
+//     }
+  
+//     .sidebar-container.hidden {
+//       left: -100%; /* Hide the sidebar off-screen */
+//     }
+  
+//     .fixed-sidebar {
+//       // position: relative;
+//       // top: 0;
+//       // width: 100%; /* Set width as needed */
+//       // max-width: 300px; /* Set max-width as needed */
+//       // height: 100%;
+//       // background-color: blue;
+//       // overflow-y: auto; /* Enable vertical scrolling if needed */
+//       // box-shadow: 0 0 10px rgba(225, 0, 255, 0.2); /* Add shadow for better visibility */
+//     }
+  
+//     .main-container {
+//       transition: margin-left 0.3s ease; /* Add smooth transition for animation */
+//       width: 100%;
+//         margin-left: 0;
+
+//     }
+  
+//     .main-container.shift {
+//       margin-left: 300px; /* Shift content to accommodate the sidebar */
+//     }
+//   }  
+
+// @media only screen and (max-width: 767px) {
+//   .searchbar-container{
+//     display: block;
+//   }
+//   .navbar-container{
+//     z-index: 1;
+//     position: fixed;
+//   }
+//   .searchbar-container{
+//     margin-top: 80px;
+//   }
+//   .main{
+//     margin-top: 5rem;
+//   }
+// }
+
+
+  
+  
+
+
+// /* Sidebar visible by default */
+// .sidebar-container {
+//   display: block;
+// }
+
+// /* When 'show' class is not applied, the sidebar is hidden */
+// .sidebar-container.hidden {
+//   display: none;
+// }
+
+// /* On small screens (less than 992px), the sidebar is hidden by default */
+// @media (max-width: 992px) {
+//   .sidebar-container {
+//     display: none;
+//   }
+
+//   /* On small screens, if the 'show' class is applied, show the sidebar */
+//   .sidebar-container.show {
+//     display: block;
+//   }
+// }
+
+
+
+
+
+/* Sidebar visible by default on large screens */
 .sidebar-container {
-    height: 100%;
-    width: 15%; /* Reset width for larger screens */
-    position: fixed; /* Reset position */
-    // background-color: red; /* Reset background color */
+  width: 250px;  /* Fixed width for the sidebar */
+  height: 100vh; /* Full height of the viewport */
+  background-color: #f8f9fa; /* Example background color */
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  transition: left 0.3s ease;
 }
 
-
-
-
-
-
-/* Styles for screens with a maximum width of 1200px */
-@media screen and (max-width: 1200px) {
-    .master-container {
-      // position: relative;
-      // display: flex;
-      // justify-content: space-between;
-    }
-  
-    .sidebar-container {
-      position: fixed;
-      top: 0;
-      left: -50%; /* Initially hide the sidebar off-screen */
-      width: 50%;
-      height: 100%;
-      // background-color: rgba(248, 10, 10, 0.5); /* Semi-transparent overlay */
-      z-index: 1000; /* Ensure it's above other content */
-      transition: 0.3s ease; /* Add smooth transition for animation */
-    }
-  
-    .sidebar-container.show {
-      left: 0; /* Show the sidebar by bringing it back to the screen */
-    }
-  
-    .sidebar-container.hidden {
-      left: -100%; /* Hide the sidebar off-screen */
-    }
-  
-    .fixed-sidebar {
-      // position: relative;
-      // top: 0;
-      // width: 100%; /* Set width as needed */
-      // max-width: 300px; /* Set max-width as needed */
-      // height: 100%;
-      // background-color: blue;
-      // overflow-y: auto; /* Enable vertical scrolling if needed */
-      // box-shadow: 0 0 10px rgba(225, 0, 255, 0.2); /* Add shadow for better visibility */
-    }
-  
-    .main-container {
-      transition: margin-left 0.3s ease; /* Add smooth transition for animation */
-      width: 100%;
-        margin-left: 0;
-
-    }
-  
-    .main-container.shift {
-      margin-left: 300px; /* Shift content to accommodate the sidebar */
-    }
-  }  
-
-@media only screen and (max-width: 767px) {
-  .searchbar-container{
-    display: block;
-  }
-  .navbar-container{
-    z-index: 1;
-    position: fixed;
-  }
-  .searchbar-container{
-    margin-top: 80px;
-  }
-  .main{
-    margin-top: 5rem;
-  }
+/* Hide the sidebar when the 'hidden' class is applied */
+.sidebar-container.hidden {
+  left: -250px; /* Move sidebar off the screen */
 }
 
+/* Show the sidebar when the 'show' class is applied */
+.sidebar-container.show {
+  left: 0; /* Sidebar slides in */
+}
 
-  
-  
+/* Main container takes the remaining space when sidebar is visible */
+.main-container {
+  // width: calc(100% - 250px);
+  height: 100vh;
+  margin-left: 250px; /* Reserve space for sidebar */
+  transition: margin-left 0.3s ease;
+  // background-color: red;
+}
+
+/* On small screens (less than 992px), the sidebar is hidden by default */
+@media (max-width: 992px) {
+  .sidebar-container {
+    z-index: 1000;
+    width: 100%; /* Sidebar takes the full width when visible */
+    left: -100%; /* Hidden by default */
+    transition: left 0.3s ease;
+  }
+
+  /* When the sidebar is visible (on small screens), it slides in */
+  .sidebar-container.show {
+    left: 0;
+  }
+
+  .main-container {
+    margin-left: 0; /* No margin, takes the full screen width */
+    width: 100%; /* Full width */
+  }
+}
