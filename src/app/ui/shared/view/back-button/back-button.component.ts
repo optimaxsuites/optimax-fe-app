@@ -8,14 +8,17 @@ import { Component, EventEmitter, Output } from '@angular/core';
 })
 export class BackButtonComponent {
 
-  @Output() backEvent = new EventEmitter<void>();
+  // @Output() backEvent = new EventEmitter<void>();
 
   constructor(private location: Location) {}
 
+  @Output() close = new EventEmitter<void>();
+
   goBack() {
-    // First, try to navigate back using Angular's location service.
-    this.location.back();
-    // Emit an event to notify parent components if they need to handle something.
-    this.backEvent.emit();
+    if (window.history.length > 1) {
+      this.location.back(); 
+    } else {
+      this.close.emit(); 
+    }
   }
 }

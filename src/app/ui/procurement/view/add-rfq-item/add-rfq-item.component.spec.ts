@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { AddProComponent } from './add-pro.component';
+import { AddRfqItemComponent } from './add-rfq-item.component';
 
-describe('AddProComponent', () => {
-  let component: AddProComponent;
-  let fixture: ComponentFixture<AddProComponent>;
+describe('AddRfqItemComponent', () => {
+  let component: AddRfqItemComponent;
+  let fixture: ComponentFixture<AddRfqItemComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [AddProComponent]
+      declarations: [AddRfqItemComponent]
     })
     .compileComponents();
     
-    fixture = TestBed.createComponent(AddProComponent);
+    fixture = TestBed.createComponent(AddRfqItemComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

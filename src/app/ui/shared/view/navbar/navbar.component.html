@@ -8,7 +8,9 @@
 
     <div class="items hamburger" >
       <button class="hamburger-icon" (click)="onToggleSidebar()">
-      &#9776;
+        <i *ngIf="sidebarHidden" class="pi pi-bars"></i>
+        <i *ngIf="!sidebarHidden" class="pi pi-bars"></i> 
+        <!-- <i *ngIf="!sidebarHidden" class="pi pi-times"></i>  -->
       </button>
     </div>
 

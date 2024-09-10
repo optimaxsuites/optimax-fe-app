@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { Pro1Component } from './pro-1.component';
+import { RfqCategoryListComponent } from './rfq-category-list.component';
 
-describe('Pro1Component', () => {
-  let component: Pro1Component;
-  let fixture: ComponentFixture<Pro1Component>;
+describe('RfqCategoryListComponent', () => {
+  let component: RfqCategoryListComponent;
+  let fixture: ComponentFixture<RfqCategoryListComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [Pro1Component]
+      declarations: [RfqCategoryListComponent]
     })
     .compileComponents();
     
-    fixture = TestBed.createComponent(Pro1Component);
+    fixture = TestBed.createComponent(RfqCategoryListComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

@@ -51,6 +51,10 @@ import { OpenRegisterComponent } from './ui/pos/view/open-register/open-register
 import { CloseRegisterComponent } from './ui/pos/view/close-register/close-register.component';
 import { AuthGuard } from './ui/auth/service/auth.guard';
 import { ProcurementPageComponent } from './ui/procurement/view/procurement.page.component';
+import { VendorPageComponent } from './ui/vendor/view/vendor-page.component';
+import { RfqListComponent } from './ui/procurement/view/rfq-list/rfq-list.component';
+import { RfqFormComponent } from './ui/procurement/view/rfq-form/rfq-form.component';
+import { RfqCategoryListComponent } from './ui/procurement/view/rfq-category-list/rfq-category-list.component';
 
 const routes: Routes = [
   {
@@ -154,9 +158,13 @@ const routes: Routes = [
         component: SalesPageComponent,
       },
       {
-        path: 'admin/procurement/:uuid',
-        component: ProcurementPageComponent
+        path: 'admin/procurement/',
+        component: ProcurementPageComponent,
       },
+      {path: 'admin/procurement/rfq/:uuid', component: RfqListComponent},
+      {path: 'admin/procurement/rfq-form/:uuid', component:RfqFormComponent },
+      {path: 'admin/procurement/category/:uuid', component:RfqCategoryListComponent },
+
       {
         path: 'sales/quotation/quotation-form',
         component: QuotationModalComponent,
@@ -180,6 +188,10 @@ const routes: Routes = [
       {
         path: 'admin/accounting/:uuid',
         component: AccountingPageComponent,
+      },
+      {
+        path: 'vendor/:uuid',
+        component: VendorPageComponent,
       },
       {
         path: 'admin/purchase/:uuid',

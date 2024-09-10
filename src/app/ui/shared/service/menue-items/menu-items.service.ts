@@ -6,124 +6,6 @@ import { NavigationLinksService } from '../navigation-links/navigation-links.ser
   providedIn: 'root'
 })
 export class MenuItemsService {
-
-  // private menuItems: MenuItem[] = [
-  //   {
-  //     label: 'Dashboard',
-  //     route: this.navigationLink.getLink('dashboardLink'),
-  //     roles: ['ROLE_USER'],
-  //   },
-  //   {
-  //     label: 'Sales',
-  //     roles: ['ROLE_USER'],
-  //     submenu: [
-  //       { label: 'Quotation', route: this.navigationLink.getLink('salesLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Invoice', route: this.navigationLink.getLink('salesLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Proforma Invoice', route: this.navigationLink.getLink('salesLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Dispatch Note', route: this.navigationLink.getLink('salesLink'), roles: ['ROLE_USER'] },
-  //     ],
-  //   },
-  //   {
-  //     label: 'Purchase',
-  //     roles: ['ROLE_USER'],
-  //     submenu: [
-  //       { label: 'Quotation', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Invoice', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Proforma Invoice', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Dispatch Note', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER'] },
-
-  //     ],
-  //   },
-  //   {
-  //     label: 'Inventory',
-  //     roles: ['ROLE_USER'],
-  //     submenu: [
-  //       { label: 'User Management', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Product Management', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER'] },
-  //       { label: 'User Management', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Product Management', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER'] },
-  //     ],
-  //   },
-  //   {
-  //     label: 'Procurement',
-  //     roles: ['ROLE_USER'],
-  //     submenu: [
-  //       { label: 'Quotation', route: this.navigationLink.getLink('procurementLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Invoice', route: this.navigationLink.getLink('procurementLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Proforma Invoice', route: this.navigationLink.getLink('procurementLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Dispatch Note', route: this.navigationLink.getLink('procurementLink'), roles: ['ROLE_USER'] },
-
-  //     ],
-  //   },
-  //   {
-  //     label: 'Accounting',
-  //     roles: ['ROLE_USER'],
-  //     submenu: [
-  //       { label: 'Quotation', route: this.navigationLink.getLink('accountingLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Invoice', route: this.navigationLink.getLink('accountingLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Proforma Invoice', route: this.navigationLink.getLink('accountingLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Dispatch Note', route: this.navigationLink.getLink('accountingLink'), roles: ['ROLE_USER'] },
-
-  //     ],
-  //   },{
-  //     label: 'Human Resourses',
-  //     roles: ['ROLE_USER'],
-  //     submenu: [
-  //       { label: 'Quotation', route: this.navigationLink.getLink('hrLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Invoice', route: this.navigationLink.getLink('hrLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Proforma Invoice', route: this.navigationLink.getLink('hrLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Dispatch Note', route: this.navigationLink.getLink('hrLink'), roles: ['ROLE_USER'] },
-
-  //     ],
-  //   },{
-  //     label: 'POS',
-  //     roles: ['ROLE_USER'],
-  //     submenu: [
-  //       { label: 'Quotation', route: this.navigationLink.getLink('posLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Invoice', route: this.navigationLink.getLink('posLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Proforma Invoice', route: this.navigationLink.getLink('posLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Dispatch Note', route: this.navigationLink.getLink('posLink'), roles: ['ROLE_USER'] },
-
-  //     ],
-  //   },
-  //   {
-  //     label: 'Checkout',
-  //     roles: ['ROLE_USER'],
-  //     submenu: [
-  //       { label: 'Quotation', route: this.navigationLink.getLink('checkoutLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Invoice', route: this.navigationLink.getLink('checkoutLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Proforma Invoice', route: this.navigationLink.getLink('checkoutLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Dispatch Note', route: this.navigationLink.getLink('checkoutLink'), roles: ['ROLE_USER'] },
-
-  //     ],
-  //   },{
-  //     label: 'CRM',
-  //     roles: ['ROLE_USER'],
-  //     submenu: [
-  //       { label: 'Quotation', route: this.navigationLink.getLink('crmLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Invoice', route: this.navigationLink.getLink('crmLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Proforma Invoice', route: this.navigationLink.getLink('crmLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Dispatch Note', route: this.navigationLink.getLink('crmLink'), roles: ['ROLE_USER'] },
-
-  //     ],
-  //   },{
-  //     label: 'Expense',
-  //     roles: ['ROLE_USER'],
-  //     submenu: [
-  //       { label: 'Quotation', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Invoice', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Proforma Invoice', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'] },
-  //       { label: 'Dispatch Note', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'] },
-
-  //     ],
-  //   },
-  //   {
-  //     label: 'Settings',
-  //     route: this.navigationLink.getLink('settingsLink'),
-  //     roles: ['ROLE_USER'],
-  //   },
-  // ];
-
   private menuItems: MenuItem[] = [
     {
       label: 'Dashboard',
@@ -167,8 +49,8 @@ export class MenuItemsService {
       roles: ['ROLE_USER'],
       icon: 'pi pi-truck', // PrimeNG icon class
       submenu: [
-        { label: 'Quotation', route: this.navigationLink.getLink('procurementLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        { label: 'Invoice', route: this.navigationLink.getLink('procurementLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
+        { label: 'Request For Quotation', route: this.navigationLink.getLink('rfqLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
+        { label: 'Category', route: this.navigationLink.getLink('procurementCategoryLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
       ],
     },
     {
@@ -223,6 +105,15 @@ export class MenuItemsService {
       submenu: [
         { label: 'Expenses', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
         { label: 'Reimbursements', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
+      ],
+    },
+    {
+      label: 'Vendor',
+      roles: ['ROLE_USER'],
+      icon: 'pi pi-money-bill', // PrimeNG icon class
+      submenu: [
+        { label: 'View 1', route: this.navigationLink.getLink('vendorLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
+        // { label: 'View ', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
       ],
     },
     {

@@ -180,10 +180,13 @@ import { AddProductComponent } from './ui/pos/view/products/add-product/add-prod
 import { EditProductComponent } from './ui/pos/view/products/edit-product/edit-product.component';
 import { NavTabComponent } from './ui/shared/view/nav-tab/nav-tab.component';
 import { ProcurementPageComponent } from './ui/procurement/view/procurement.page.component';
-import { Pro1Component } from './ui/procurement/view/pro-1/pro-1.component';
-import { Pro2Component } from './ui/procurement/view/pro-2/pro-2.component';
-import { AddProComponent } from './ui/procurement/view/add-pro/add-pro.component';
+import { RfqListComponent } from './ui/procurement/view/rfq-list/rfq-list.component';
+import { RfqFormComponent } from './ui/procurement/view/rfq-form/rfq-form.component';
 import { Sidebar2Component } from './ui/shared/view/sidebar2/sidebar2.component';
+import { VendorPageComponent } from './ui/vendor/view/vendor-page.component';
+import { AddRfqItemComponent } from './ui/procurement/view/add-rfq-item/add-rfq-item.component';
+import { RfqCategoryListComponent } from './ui/procurement/view/rfq-category-list/rfq-category-list.component';
+import { RfqCategoryFormComponent } from './ui/procurement/view/rfq-category-form/rfq-category-form.component';
 
 @NgModule({
   declarations: [
@@ -300,10 +303,13 @@ import { Sidebar2Component } from './ui/shared/view/sidebar2/sidebar2.component'
     EditProductComponent,
     NavTabComponent,
     ProcurementPageComponent,
-    Pro1Component,
-    Pro2Component,
-    AddProComponent,
-    Sidebar2Component
+    RfqListComponent,
+    RfqFormComponent,
+    Sidebar2Component,
+    VendorPageComponent,
+    AddRfqItemComponent,
+    RfqCategoryListComponent,
+    RfqCategoryFormComponent,
   ],
   imports: [
     CommonModule,

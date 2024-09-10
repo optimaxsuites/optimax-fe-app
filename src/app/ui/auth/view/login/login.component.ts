@@ -111,7 +111,8 @@ export class LoginComponent implements OnInit {
       if (error instanceof HttpErrorResponse) {
         if (error.status === 500) {
           this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
-        } else if (error.status === 404) {
+        } 
+        else if (error.status === 404) {
           this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.' });
         } else if (error.status === 0) {
           this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
@@ -159,6 +160,7 @@ export class LoginComponent implements OnInit {
   loadInitParam(data: any) {
     sessionStorage.setItem("role", data.roles)
     sessionStorage.setItem("username", data.username);
+    sessionStorage.setItem("fullname", data.fullname);
     sessionStorage.setItem("email", data.email);
     sessionStorage.setItem("userid", data.id);
     const tokenStartIndex = data.accessToken.indexOf('=') + 1;

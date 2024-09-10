@@ -152,18 +152,16 @@
         align-items: center;
         justify-content: center;
 
-        .hamburger-icon{
-            // background-color: #224957;
-            color: #224957;
+        .pi-bars, .pi-times{
+            color: var(--blue-green);
             cursor: pointer;
             padding: 0.2rem 0.7rem;
-            border: 2px solid lightgrey;
+            font-size: var(--xl-font);
         }
         button{
             background: none;
             border: none;
             outline: none;
-            font-size: large;
         }
     }
 }
