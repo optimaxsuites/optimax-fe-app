@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter, Input } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthenticationService } from 'src/app/ui/auth/service/authentication.service';
 
@@ -9,10 +9,10 @@ import { AuthenticationService } from 'src/app/ui/auth/service/authentication.se
 })
 export class NavbarComponent {
   @Output() toggleSidebar = new EventEmitter<void>();
+  @Input() sidebarHidden!: boolean;
 
   userInfoRegData: any[] = [];
   userRegData: any = { };
-  
 
   constructor(
     private router: Router,

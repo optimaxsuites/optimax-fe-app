@@ -19,7 +19,18 @@ export class NavigationLinksService {
     this.links['salesLink'] = '/admin/sales/' +uuidV4();
     this.links['purchaseLink'] = '/admin/purchase/' +uuidV4();
     this.links['inventoryLink'] = '/admin/inventory/' +uuidV4();
+
     this.links['procurementLink'] = '/admin/procurement/' +uuidV4();
+    this.links['rfqLink'] = '/admin/procurement/rfq/' +uuidV4();
+    this.links['rfqFormLink'] = '/admin/procurement/rfq-form/' +uuidV4();
+    this.links['procurementCategoryLink'] = '/admin/procurement/category/' +uuidV4();
+    // this.links['procurementCategoryLink'] = '/admin/procurement/category/' +uuidV4();
+
+
+
+
+
+
     this.links['accountingLink'] = '/admin/accounting/' +uuidV4();
     this.links['hrLink'] = '/admin/hr/' +uuidV4();
     this.links['posLink'] = '/admin/pos/' +uuidV4();
@@ -27,6 +38,10 @@ export class NavigationLinksService {
     this.links['settingsLink'] = '/admin/settings/' +uuidV4();
     this.links['expensesLink'] = '/admin/expenses/' + uuidV4();
     this.links['orderDetails'] = '/user/checkout/order/' + uuidV4();
+
+// Vendor link========================================================================================================
+    this.links['vendorLink'] = '/vendor/' +uuidV4();
+
 
 
 // auth links ================================================================================================================

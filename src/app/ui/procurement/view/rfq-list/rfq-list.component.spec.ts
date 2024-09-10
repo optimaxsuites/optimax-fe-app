@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { Pro2Component } from './pro-2.component';
+import { RfqListComponent } from './rfq-list.component';
 
-describe('Pro2Component', () => {
-  let component: Pro2Component;
-  let fixture: ComponentFixture<Pro2Component>;
+describe('Pro1Component', () => {
+  let component: RfqListComponent;
+  let fixture: ComponentFixture<RfqListComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [Pro2Component]
+      declarations: [RfqListComponent]
     })
     .compileComponents();
     
-    fixture = TestBed.createComponent(Pro2Component);
+    fixture = TestBed.createComponent(RfqListComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
