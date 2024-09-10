@@ -10,7 +10,7 @@
   
       <div class="info-section">
         <section class="first-info-section">
-          <div class="first-container">
+          <div class="right">
             <div class="input-container-100">
               <label for="qNo">Quotation No</label>
               <input type="text" name="any" id="qNo" [(ngModel)]="quotationData.quotationNo" class="editInput" />
@@ -44,47 +44,6 @@
               </div>
             </div>
           </div>
-        </section>
-
-        <hr>
-
-        <section class="second-info-section">
-          <!-- company details start -->
-          <div class="right">
-            <div class="top-container">
-              <div class="billing-selection">
-                <div>
-                  <p class="billing-title"> Quotation From <span class="billing-span">[ Company's details ]</span></p>
-                  <!-- dropdown start -->
-                  <ng-select 
-                  [items]="companyOptions"
-                  bindLabel="name"
-                  bindValue="id"
-                  name="any"
-                  [(ngModel)]="selectedCompanyId"
-                  (change)="onCompanyChange($event)"
-                  placeholder="Select Company">
-                  </ng-select>
-                  <!-- dropdown ends -->
-                </div>
-              </div>
-            </div>
-
-            <!-- display company info -->
-            <div class="info-bottom-section" > <!--*ngIf="selectedCompanyId"-->
-              <div class="bottom-container">
-                <p><b>Business Details</b></p>
-                <div class="business-info">
-                    <input type="text" name="any" class="editInput" placeholder="Business Name" [(ngModel)]="companyData.name" disabled />
-                    <input type="text" name="any" class="editInput my-2" placeholder="Address" [(ngModel)]="companyData.address" disabled />
-                    <input type="text" name="any" class="editInput mb-2" placeholder="Phone Number" [(ngModel)]="companyData.phoneNumber" disabled />
-                    <input type="text" name="any" class="editInput" placeholder="Email" [(ngModel)]="companyData.email" disabled />
-                </div>
-              </div>
-            </div>
-            <!-- display company info -->
-          </div>
-          <!-- company details ends -->
 
           <!-- client details starts -->
           <div class="left">
@@ -129,6 +88,11 @@
         </section>
 
         <hr>
+
+        <!-- second-info-section -->
+
+
+        <!-- <hr> -->
 
         <!-- shipping-details-container -->
         <section class="shipping-details-container">

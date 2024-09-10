@@ -509,9 +509,7 @@ body {
     box-sizing: border-box;
 }
 
-.first-info-section{
-  width: 50%;
-}
+
 .editable-label-container{
   display: flex;
   justify-content: space-between;
@@ -529,7 +527,7 @@ body {
 }
 
 
-.second-info-section{
+.second-info-section, .first-info-section{
   display: flex;
   justify-content: space-between;
   margin: 2rem 0;
