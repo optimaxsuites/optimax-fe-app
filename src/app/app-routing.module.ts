@@ -55,6 +55,7 @@ import { VendorPageComponent } from './ui/vendor/view/vendor-page.component';
 import { RfqListComponent } from './ui/procurement/view/rfq-list/rfq-list.component';
 import { RfqFormComponent } from './ui/procurement/view/rfq-form/rfq-form.component';
 import { RfqCategoryListComponent } from './ui/procurement/view/rfq-category-list/rfq-category-list.component';
+import { ProcurementSettingsComponent } from './ui/procurement/view/procurement-settings/procurement-settings.component';
 
 const routes: Routes = [
   {
@@ -163,8 +164,7 @@ const routes: Routes = [
       },
       {path: 'admin/procurement/rfq/:uuid', component: RfqListComponent},
       {path: 'admin/procurement/rfq-form/:uuid', component:RfqFormComponent },
-      {path: 'admin/procurement/category/:uuid', component:RfqCategoryListComponent },
-
+      {path: 'admin/procurement/settings/:uuid', component:ProcurementSettingsComponent },
       {
         path: 'sales/quotation/quotation-form',
         component: QuotationModalComponent,

@@ -9,7 +9,8 @@ import { Router } from '@angular/router';
   styleUrl: './rfq-category-list.component.scss'
 })
 export class RfqCategoryListComponent {
-  rfqTableData: any[] = []
+  rfqCategoryData: any[] = [];
+  rfqCategoryInfo: any = {}
   selectedItems: any[] = [];
 
   constructor (
@@ -60,7 +61,7 @@ export class RfqCategoryListComponent {
 
   loadTableData() {
     this.rfqService.getAllRfqs().subscribe((data: any[]) => {
-      this.rfqTableData = data;
+      this.rfqCategoryData = data;
     });
   }
 

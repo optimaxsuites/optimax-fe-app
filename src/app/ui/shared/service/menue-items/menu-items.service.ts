@@ -50,7 +50,7 @@ export class MenuItemsService {
       icon: 'pi pi-truck', // PrimeNG icon class
       submenu: [
         { label: 'Request For Quotation', route: this.navigationLink.getLink('rfqLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        { label: 'Category', route: this.navigationLink.getLink('procurementCategoryLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
+        { label: 'Settings', route: this.navigationLink.getLink('procurementSettingsLink'), roles: ['ROLE_USER'], icon: 'pi pi-cog' },
       ],
     },
     {
