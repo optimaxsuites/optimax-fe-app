@@ -187,6 +187,7 @@ import { VendorPageComponent } from './ui/vendor/view/vendor-page.component';
 import { AddRfqItemComponent } from './ui/procurement/view/add-rfq-item/add-rfq-item.component';
 import { RfqCategoryListComponent } from './ui/procurement/view/rfq-category-list/rfq-category-list.component';
 import { RfqCategoryFormComponent } from './ui/procurement/view/rfq-category-form/rfq-category-form.component';
+import { ProcurementSettingsComponent } from './ui/procurement/view/procurement-settings/procurement-settings.component';
 
 @NgModule({
   declarations: [
@@ -310,6 +311,7 @@ import { RfqCategoryFormComponent } from './ui/procurement/view/rfq-category-for
     AddRfqItemComponent,
     RfqCategoryListComponent,
     RfqCategoryFormComponent,
+    ProcurementSettingsComponent,
   ],
   imports: [
     CommonModule,

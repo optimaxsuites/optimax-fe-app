@@ -21,10 +21,9 @@ export class NavigationLinksService {
     this.links['inventoryLink'] = '/admin/inventory/' +uuidV4();
 
     this.links['procurementLink'] = '/admin/procurement/' +uuidV4();
+    this.links['procurementSettingsLink'] = '/admin/procurement/settings/' +uuidV4();
     this.links['rfqLink'] = '/admin/procurement/rfq/' +uuidV4();
     this.links['rfqFormLink'] = '/admin/procurement/rfq-form/' +uuidV4();
-    this.links['procurementCategoryLink'] = '/admin/procurement/category/' +uuidV4();
-    // this.links['procurementCategoryLink'] = '/admin/procurement/category/' +uuidV4();
 
 
 
