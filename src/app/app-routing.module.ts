@@ -56,6 +56,7 @@ import { RfqListComponent } from './ui/procurement/view/rfq-list/rfq-list.compon
 import { RfqFormComponent } from './ui/procurement/view/rfq-form/rfq-form.component';
 import { RfqCategoryListComponent } from './ui/procurement/view/rfq-category-list/rfq-category-list.component';
 import { ProcurementSettingsComponent } from './ui/procurement/view/procurement-settings/procurement-settings.component';
+import { VendorRfqComponent } from './ui/vendor/view/vendor-rfq/vendor-rfq.component';
 
 const routes: Routes = [
   {
@@ -193,6 +194,7 @@ const routes: Routes = [
         path: 'vendor/:uuid',
         component: VendorPageComponent,
       },
+      {path: 'vendor/rfq/:uuid', component:VendorRfqComponent },
       {
         path: 'admin/purchase/:uuid',
         component: PurchasePageComponent,

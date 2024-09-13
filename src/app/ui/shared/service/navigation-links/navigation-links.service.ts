@@ -30,6 +30,8 @@ export class NavigationLinksService {
 
 
 
+
+
     this.links['accountingLink'] = '/admin/accounting/' +uuidV4();
     this.links['hrLink'] = '/admin/hr/' +uuidV4();
     this.links['posLink'] = '/admin/pos/' +uuidV4();
@@ -40,6 +42,7 @@ export class NavigationLinksService {
 
 // Vendor link========================================================================================================
     this.links['vendorLink'] = '/vendor/' +uuidV4();
+    this.links['vendorRfqLink'] = '/vendor/rfq/' +uuidV4();
 
 
 
