@@ -7,7 +7,11 @@ import { Component, HostListener } from '@angular/core';
 })
 export class MasterComponent {
   sidebarHidden: boolean = true;
-  
+  currentYear?: number;
+
+  ngOnInit(): void {
+    this.currentYear = new Date().getFullYear();
+  }
 
   constructor() {
     this.checkScreenWidth();

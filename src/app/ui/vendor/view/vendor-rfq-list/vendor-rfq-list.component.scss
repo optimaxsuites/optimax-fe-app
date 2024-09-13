@@ -1,0 +1,10 @@
+.table-item-panel{
+    cursor: pointer;
+    font-size: var(--l-font);
+    padding: .8rem 1rem;
+}
+
+.table-item-panel:hover{
+    color: var(--white);
+    background-color: var(--celadon-green);
+}

@@ -27,6 +27,16 @@
     --font-family: 'Roboto Slab', serif;
 }
 
+/* vendor-quote-form.component.css */
+.table-row:nth-child(even) {
+  background-color: var(--white); /* Light gray for even rows */
+}
+
+.table-row:nth-child(odd) {
+  background-color: rgb(240, 240, 240); /* White for odd rows */
+}
+
+
 /* costom table */
 .table-container{
     padding: 2rem 0;

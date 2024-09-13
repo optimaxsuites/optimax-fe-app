@@ -31,13 +31,17 @@
               <label for="projectTitle">Project Title</label>
               <input type="text" name="any" id="projectTitle" [(ngModel)]="rfqData.projectTitle" class="editInput" />
             </div>
-            <div class="input-container-100">
+            <div class="input-container-100 my-4">
               <label for="category">Category</label>
               <ng-select 
                     bindLabel="name"
                     bindValue="id"
                     placeholder="Select Category">
                     </ng-select>
+            </div>
+            <div class="input-container-100">
+              <label for="projectTitle">Prepared By</label>
+              <input type="text" name="any" id="projectTitle" [(ngModel)]="rfqData.preparedBy" class="editInput" />
             </div>
           </div>
         </section>
@@ -69,12 +73,9 @@
             <ng-template pTemplate="header" let-columns>
               <tr>
                 <th class="table-item">Item</th>
-                <th class="table-item">Tax Rate</th>
-                <th class="table-item">Quantity</th>
-                <th class="table-item">Rate</th>
-                <th class="table-item">Amount</th>
-                <th class="table-item">Tax</th>
-                <th class="table-item">Total</th>
+                <th class="table-item">Part No</th>
+                <th class="table-item">Unit</th>
+                <th class="table-item">Budject</th>
                 <th class="table-item">Action</th>
               </tr>
             </ng-template>

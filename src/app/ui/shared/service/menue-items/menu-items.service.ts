@@ -113,7 +113,7 @@ export class MenuItemsService {
       icon: 'pi pi-money-bill', // PrimeNG icon class
       submenu: [
         { label: 'View 1', route: this.navigationLink.getLink('vendorLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
-        // { label: 'View ', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
+        { label: 'Incoming RFQ ', route: this.navigationLink.getLink('vendorRfqLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
       ],
     },
     {
