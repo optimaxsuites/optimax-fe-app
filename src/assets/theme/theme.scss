@@ -55,7 +55,9 @@ th{
     background-color: var(--celadon-green);
     color: var(--white) ;
 }
-
+.p-table-row{
+  border-bottom: 1px solid rgb(238, 238, 238);
+}
 
 td {
     padding: 0.6rem;

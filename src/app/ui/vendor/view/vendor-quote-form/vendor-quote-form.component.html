@@ -30,14 +30,14 @@
                 <label for="projectTitle">Project Title</label>
                 <input type="text" name="any" id="projectTitle" [(ngModel)]="rfqData.projectTitle" class="editInput" />
               </div>
-              <div class="input-container-100 my-4">
+              <!-- <div class="input-container-100 my-4">
                 <label for="category">Category</label>
                 <ng-select 
                       bindLabel="name"
                       bindValue="id"
                       placeholder="Select Category">
                       </ng-select>
-              </div>
+              </div> -->
               <div class="input-container-100">
                 <label for="projectTitle">Prepared By</label>
                 <input type="text" name="any" id="projectTitle" [(ngModel)]="rfqData.preparedBy" class="editInput" />
@@ -88,28 +88,24 @@
                     <td class="table-item"><span class="p-column-title"><strong>Unit</strong></span>{{item.unit}}</td>
                     <td class="table-item"><span class="p-column-title"><strong>Serial No</strong></span>
                       <!-- {{ item.serialNo }} -->
-                      <input type="text" name="any" id="projectTitle" [(ngModel)]="rfqData.preparedBy" class="editInput" />
+                      <input type="text" name="any" id="serialNo" [(ngModel)]="item.serialNo" class="editInput" />
                     </td>
                     <td class="table-item"><span class="p-column-title"><strong>Amount/unit</strong></span>
                       <!-- {{ item.amount }} -->
-                      <input type="text" name="any" id="projectTitle" [(ngModel)]="rfqData.preparedBy" class="editInput" />
+                      <input type="number" name="any" id="amount" [(ngModel)]="item.amount" class="editInput" />
                     </td>
                     <td class="table-item"><span class="p-column-title"><strong>Tax Rate</strong></span> 
                       <!-- {{ item.taxRate }} -->
-                      <input type="text" name="any" id="projectTitle" [(ngModel)]="rfqData.preparedBy" class="editInput" />
+                      <input type="number" name="any" id="taxRate" [(ngModel)]="item.taxRate" class="editInput" />
                     </td>
                     <td class="table-item"><span class="p-column-title"><strong>Tax</strong></span> 
                       <!-- {{ item.tax }} -->
-                      <input type="text" name="any" id="projectTitle" [(ngModel)]="rfqData.preparedBy" class="editInput" />
+                      <input type="number" name="any" id="tax" [(ngModel)]="item.tax" class="editInput" />
                     </td>
                     <td class="table-item"><span class="p-column-title"><strong>Total</strong></span> 
                       <!-- {{ item.total }} -->
-                      <input type="text" name="any" id="projectTitle" [(ngModel)]="rfqData.preparedBy" class="editInput" />
+                      <input type="number" name="any" id="total" [(ngModel)]="item.total" class="editInput" readonly/>
                     </td>
-                    <!-- <div>
-                        <p>description</p>
-                        <textarea name="" id="">{{item.des}}</textarea>
-                    </div> -->
                   </tr> 
                   <tr [ngClass]="{'table-row': false}">
                     <td colspan="8" class="table-item">

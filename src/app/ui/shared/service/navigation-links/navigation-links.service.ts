@@ -34,6 +34,12 @@ export class NavigationLinksService {
 
     this.links['accountingLink'] = '/admin/accounting/' +uuidV4();
     this.links['hrLink'] = '/admin/hr/' +uuidV4();
+    this.links['recuitmentLink'] = '/admin/hr/recuitment/' +uuidV4();
+
+
+
+
+
     this.links['posLink'] = '/admin/pos/' +uuidV4();
     this.links['crmLink'] = '/admin/crm/' +uuidV4();
     this.links['settingsLink'] = '/admin/settings/' +uuidV4();

@@ -1,0 +1,84 @@
+<div class="card">
+    <p-toolbar styleClass="mb-4 gap-2">
+      <ng-template pTemplate="left">
+        <app-button text="Delete" class="btn-delete"></app-button>
+      </ng-template>
+
+      <ng-template pTemplate="right">
+        <!-- <app-button text="Add New" class="btn-navigate gap-2"></app-button> -->
+        <app-button text="Import" class="btn-export"></app-button>
+      </ng-template>
+    </p-toolbar>
+
+    <div class="search-bar">
+      <input 
+        type="text" 
+        placeholder="Filter" 
+        class="editInput"
+      />
+    </div>
+
+    <p-table 
+        [value]="candidates" 
+        [paginator]="true" 
+        styleClass="p-datatable-striped" 
+        [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+        [rows]="15"
+        [globalFilterFields]="[
+                    'candidate',
+                    'contactNumber',
+                    'dateApplied',
+                    'stage'
+                ]"
+        >
+        
+        <ng-template pTemplate="header">
+        <tr>
+            <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+            <th class="table-item" pSortableColumn="candidate">Candidate<p-sortIcon field="candidate" ></p-sortIcon></th>
+            <th class="table-item" pSortableColumn="email">Email<p-sortIcon field="email" ></p-sortIcon></th>
+            <th class="table-item" pSortableColumn="contactNumber">Contact Number<p-sortIcon field="contactNumber" ></p-sortIcon></th>
+            <th class="table-item" pSortableColumn="dateApplied">Date Applied<p-sortIcon field="dateApplied" ></p-sortIcon></th>
+            <th class="table-item" pSortableColumn="stage">Stage<p-sortIcon field="stage" ></p-sortIcon></th>
+            <th class="table-item"></th>
+        </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-candidate let-i="rowIndex">
+        <tr class="p-table-row">
+            <td><p-tableCheckbox [value]="candidate" /></td>
+            <td class="table-item">{{ candidate.candidate }}</td>
+            <td class="table-item">{{ candidate.email }}</td>
+            <td class="table-item">{{ candidate.contactNo }}</td>
+            <td class="table-item">{{ candidate.dateApplied }}</td>
+            <td class="table-item">
+                <!-- <ng-select 
+                    [items]="stages"
+                    bindLabel="firstname"
+                    bindValue="id"
+                    [(ngModel)]="candidate.stage"
+                    (ngModelChange)="updateStage(candidate, $event.value)"
+                    class="custom-ng-select"
+                    >
+                </ng-select> -->
+
+                <ng-select 
+                    [items]="stages"
+                    [(ngModel)]="candidate.stage"
+                    (ngModelChange)="updateStage(candidate, $event)"
+                    class="custom-ng-select"
+                    dropdownPosition="auto"
+                    appendTo="body"
+                    [clearable]="false"
+                    [disabled]="candidate.stage === 'Hired'">
+                    <ng-option class="table-item" *ngFor="let stage of stages" [value]="stage">{{ stage }}</ng-option>
+                </ng-select>
+            </td>
+            <td class="actions table-item">
+            <i class="pi pi-ellipsis-v table-item"></i>
+            </td>
+        </tr>
+        </ng-template>
+    </p-table>
+  
+  </div>
