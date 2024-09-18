@@ -66,13 +66,17 @@ td {
     /* color: #25925B ; */
     
 }
-/* tr:nth-child(odd) {
-  background-color: var(--gray-light);
+
+.table-item-panel{
+  cursor: pointer;
+  font-size: var(--l-font);
+  padding: .8rem 1rem;
 }
 
-tr:nth-child(even) {
-  background-color: var(--gray-dark);
-} */
+.table-item-panel:hover{
+  color: var(--white);
+  background-color: var(--celadon-green);
+}
 
 .table-item {
   font-size: 1.3em; /* Adjust the font size as needed */
