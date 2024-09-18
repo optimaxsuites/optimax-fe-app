@@ -28,7 +28,7 @@ export class VendorRfqListComponent {
           unit: 2,
           serialNo: 'SN-12345',
           amount: 250000,
-          taxRate: '7.5%',
+          taxRate: 7.5,
           tax: 18750,
           total: 268750,
           des: 'High-performance laptop for business use'
@@ -39,7 +39,7 @@ export class VendorRfqListComponent {
           unit: 5,
           serialNo: 'SN-54321',
           amount: 15000,
-          taxRate: '7.5%',
+          taxRate: 7.5,
           tax: 1125,
           total: 16125,
           des: 'Ergonomic office chair with adjustable height'
@@ -61,7 +61,7 @@ export class VendorRfqListComponent {
           unit: 1,
           serialNo: 'SN-98765',
           amount: 120000,
-          taxRate: '7.5%',
+          taxRate: 7.5,
           tax: 9000,
           total: 129000,
           des: 'HD projector for conference rooms'
@@ -72,7 +72,7 @@ export class VendorRfqListComponent {
           unit: 3,
           serialNo: 'SN-24680',
           amount: 45000,
-          taxRate: '7.5%',
+          taxRate: 7.5,
           tax: 3375,
           total: 48375,
           des: 'Laser printer with automatic duplex printing'
@@ -94,7 +94,7 @@ export class VendorRfqListComponent {
           unit: 1,
           serialNo: 'SN-13579',
           amount: 80000,
-          taxRate: '7.5%',
+          taxRate: 7.5,
           tax: 6000,
           total: 86000,
           des: 'Large conference table seating 10 people'

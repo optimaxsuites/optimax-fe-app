@@ -67,8 +67,8 @@ export class MenuItemsService {
       roles: ['ROLE_USER'],
       icon: 'pi pi-users', // PrimeNG icon class
       submenu: [
-        { label: 'Employee Records', route: this.navigationLink.getLink('hrLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
-        { label: 'Payroll', route: this.navigationLink.getLink('hrLink'), roles: ['ROLE_USER'], icon: 'pi pi-wallet' },
+        { label: 'Recuitment', route: this.navigationLink.getLink('recuitmentLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
+        // { label: 'Payroll', route: this.navigationLink.getLink('hrLink'), roles: ['ROLE_USER'], icon: 'pi pi-wallet' },
       ],
     },
     {
@@ -105,6 +105,8 @@ export class MenuItemsService {
       submenu: [
         { label: 'Expenses', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
         { label: 'Reimbursements', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
+        { label: 'Retirement', route: "", roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
+
       ],
     },
     {

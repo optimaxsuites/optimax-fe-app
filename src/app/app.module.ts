@@ -192,6 +192,10 @@ import { VendorRfqComponent } from './ui/vendor/view/vendor-rfq/vendor-rfq.compo
 import { VendorRfqListComponent } from './ui/vendor/view/vendor-rfq-list/vendor-rfq-list.component';
 import { VendorRfqFormComponent } from './ui/vendor/view/vendor-rfq-form/vendor-rfq-form.component';
 import { VendorQuoteFormComponent } from './ui/vendor/view/vendor-quote-form/vendor-quote-form.component';
+import { RecuitmentComponent } from './ui/hr/view/recuitment/recuitment.component';
+import { RecuitmentFormComponent } from './ui/hr/view/recuitment-form/recuitment-form.component';
+import { CandidateComponent } from './ui/hr/view/candidate/candidate.component';
+import { VacancyComponent } from './ui/hr/view/vacancy/vacancy.component';
 
 @NgModule({
   declarations: [
@@ -320,6 +324,10 @@ import { VendorQuoteFormComponent } from './ui/vendor/view/vendor-quote-form/ven
     VendorRfqListComponent,
     VendorRfqFormComponent,
     VendorQuoteFormComponent,
+    RecuitmentComponent,
+    RecuitmentFormComponent,
+    CandidateComponent,
+    VacancyComponent,
   ],
   imports: [
     CommonModule,

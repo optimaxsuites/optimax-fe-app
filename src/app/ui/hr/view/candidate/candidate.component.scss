@@ -1,0 +1,36 @@
+.search-bar{
+    padding: 0rem 1rem 1rem 1rem;
+}
+
+
+
+.custom-ng-select {
+    width: 100%;
+    // min-width: 50%;
+    // max-width: fit-content;
+  }
+
+  .ng-select {
+    border: none;
+  }
+  
+  .ng-select .ng-select-container {
+    border: none !important; /* Removes border from ng-select */
+    padding: 0;
+    // min-width: 50%;
+    // max-width: fit-content;
+  }
+  
+  .ng-select .ng-option {
+    white-space: nowrap;
+  }
+  
+  .ng-select .ng-dropdown-panel {
+    overflow: visible !important; /* Ensure dropdown options overflow properly */
+    z-index: 1000; /* Ensure dropdown is above table and other elements */
+  }
+  
+  .ng-dropdown-panel {
+    position: absolute;
+  }
+  
