@@ -1,7 +1,7 @@
-<div class="sales-form-wrapper">
+<div class="sales-form-wrapper ">
   <app-back-button></app-back-button>
-  <div class="contain">
-    <div class="modal-wrapper p-4" #contentToPrint>
+  <div class="contain ">
+    <div class="modal-wrapper  card p-4" #contentToPrint>
       <div class="header-section">
         <section class="title-section">
           <p class="form-title">{{isEdit ? 'Edit Quotation' : 'Quotation'}}</p>
@@ -46,6 +46,87 @@
           </div>
 
           <!-- client details starts -->
+          <!-- <div class="left">
+            <div class="top-container"></div>
+            <div class="bottom-container">
+              <div class="top-container">
+                <div class="billing-selection">
+                  <div>
+                    <p class="billing-title">Quotation For <span class="billing-span">[ Client's details ]</span></p>
+                    <ng-select 
+                    [items]="customerOptions"
+                    bindLabel="firstname"
+                    bindValue="id"
+                    [(ngModel)]="quotationData.customer"
+                    (ngModelChange)="onCustomerChange($event)"
+                    placeholder="Select Customer">
+                    </ng-select>
+                  </div>
+                </div>
+              </div>
+              <div class="info-bottom-section">
+                <div class="first-component mt-4" *ngIf="!showSecondComponent">
+                  <p>Select Client From List</p>
+                  <p class="">Or</p>
+                  <button class="add-btn" (click)="openAddClient=true"> <i class="fas fa-plus me-2"></i> Add New Client</button>
+                </div>
+                <div class="second-component" *ngIf="showSecondComponent">
+                  <p><b>Client Details</b></p>
+                  <div class="business-info">
+                    <input type="text" name="any" class="editInput" placeholder="Business Name" [(ngModel)]="customerData.firstname" disabled />
+                    <input type="text" name="any" class="editInput my-2" placeholder="Address" [(ngModel)]="customerData.address" disabled />
+                    <input type="text" name="any" class="editInput mb-2" placeholder="Phone Number" [(ngModel)]="customerData.phoneNumber" disabled />
+                    <input type="text" name="any" class="editInput" placeholder="Email" [(ngModel)]="customerData.email" disabled />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div> -->
+          <!-- client details ends -->
+        </section>
+
+        <hr>
+
+        <!-- second-info-section -->
+        <section class="second-info-section">
+          <!-- company details start -->
+          <div class="right">
+            <div class="top-container">
+              <div class="billing-selection">
+                <div>
+                  <p class="billing-title"> Quotation From <span class="billing-span">[ Company's details ]</span></p>
+                  <!-- dropdown start -->
+                  <ng-select 
+                  [items]="companyOptions"
+                  bindLabel="name"
+                  bindValue="id"
+                  name="any"
+                  [(ngModel)]="selectedCompanyId"
+                  (change)="onCompanyChange($event)"
+                  placeholder="Select Company">
+                  </ng-select>
+                  <!-- dropdown ends -->
+                </div>
+              </div>
+            </div>
+          
+            <!-- display company info -->
+            <div class="info-bottom-section" > <!--*ngIf="selectedCompanyId"-->
+              <div class="bottom-container">
+                <p><b>Business Details</b></p>
+                <div class="business-info">
+                    <input type="text" name="any" class="editInput" placeholder="Business Name" [(ngModel)]="companyData.name" disabled />
+                    <input type="text" name="any" class="editInput my-2" placeholder="Address" [(ngModel)]="companyData.address" disabled />
+                    <input type="text" name="any" class="editInput mb-2" placeholder="Phone Number" [(ngModel)]="companyData.phoneNumber" disabled />
+                    <input type="text" name="any" class="editInput" placeholder="Email" [(ngModel)]="companyData.email" disabled />
+                </div>
+              </div>
+            </div>
+            <!-- display company info -->
+          </div>
+          <!-- company details ends -->
+          
+          <!-- client details starts -->
           <div class="left">
             <div class="top-container"></div>
             <div class="bottom-container">
@@ -85,14 +166,11 @@
             </div>
           </div>
           <!-- client details ends -->
-        </section>
+          </section>
+         <!-- second-info-section -->
+
 
         <hr>
-
-        <!-- second-info-section -->
-
-
-        <!-- <hr> -->
 
         <!-- shipping-details-container -->
         <section class="shipping-details-container">
@@ -182,7 +260,7 @@
       </div>
       <!-- shipping-details-container ends -->
   
-      <div class="">
+      <div class="card mb-4">
         <p-toolbar styleClass="mb-4 gap-2">
           <ng-template pTemplate="left">
           </ng-template>
@@ -191,7 +269,7 @@
             <app-button (click)="openAddItem=true" text="Add New Item" class="btn-navigate" ></app-button>
           </ng-template>
         </p-toolbar>
-        <div class="brd-gry">
+        <div>
           <p-table 
           [value]="items"
           [paginator]="true" 
