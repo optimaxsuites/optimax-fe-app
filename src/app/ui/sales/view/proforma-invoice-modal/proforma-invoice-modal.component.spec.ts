@@ -1,17 +1,23 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
+
+
+
 import { ProformaInvoiceModalComponent } from './proforma-invoice-modal.component';
 
-describe('ProformaInvoiceModalComponent', () => {
-  let component: ProformaInvoiceModalComponent;
-  let fixture: ComponentFixture<ProformaInvoiceModalComponent>;
+  describe('ProformaInvoiceModalComponent', () => {
+    let component: ProformaInvoiceModalComponent;
+    let fixture: ComponentFixture<ProformaInvoiceModalComponent>;
+
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+
+
       declarations: [ProformaInvoiceModalComponent]
     })
-    .compileComponents();
-    
+    .compileComponents()
+
     fixture = TestBed.createComponent(ProformaInvoiceModalComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -21,3 +27,10 @@ describe('ProformaInvoiceModalComponent', () => {
     expect(component).toBeTruthy();
   });
 });
+
+
+
+
+
+
+

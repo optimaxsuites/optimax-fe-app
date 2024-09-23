@@ -11,7 +11,7 @@ describe('ProformaInvoiceComponent', () => {
       declarations: [ProformaInvoiceComponent]
     })
     .compileComponents();
-    
+
     fixture = TestBed.createComponent(ProformaInvoiceComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
