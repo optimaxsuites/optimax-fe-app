@@ -196,6 +196,11 @@ import { RecuitmentComponent } from './ui/hr/view/recuitment/recuitment.componen
 import { RecuitmentFormComponent } from './ui/hr/view/recuitment-form/recuitment-form.component';
 import { CandidateComponent } from './ui/hr/view/candidate/candidate.component';
 import { VacancyComponent } from './ui/hr/view/vacancy/vacancy.component';
+import { LeaveComponent } from './ui/hr/view/leave/leave.component';
+import { LeaveRequestComponent } from './ui/hr/view/leave-request/leave-request.component';
+import { AssignLeaveComponent } from './ui/hr/view/assign-leave/assign-leave.component';
+import { LeaveUsageComponent } from './ui/hr/view/leave-usage/leave-usage.component';
+import { ApplyComponent } from './ui/hr/view/apply/apply.component';
 import { VacancyFormComponent } from './ui/hr/view/vacancy-form/vacancy-form.component';
 import { AttendanceComponent } from './ui/hr/view/attendance/attendance.component';
 import { AttendanceSheetComponent } from './ui/hr/view/attendance-sheet/attendance-sheet.component';
@@ -334,6 +339,11 @@ import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.
     RecuitmentFormComponent,
     CandidateComponent,
     VacancyComponent,
+    LeaveComponent,
+    LeaveRequestComponent,
+    AssignLeaveComponent,
+    LeaveUsageComponent,
+    ApplyComponent,
     VacancyFormComponent,
     AttendanceComponent,
     AttendanceSheetComponent,

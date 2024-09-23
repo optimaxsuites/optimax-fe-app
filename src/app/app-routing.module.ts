@@ -58,6 +58,7 @@ import { RfqCategoryListComponent } from './ui/procurement/view/rfq-category-lis
 import { ProcurementSettingsComponent } from './ui/procurement/view/procurement-settings/procurement-settings.component';
 import { VendorRfqComponent } from './ui/vendor/view/vendor-rfq/vendor-rfq.component';
 import { RecuitmentComponent } from './ui/hr/view/recuitment/recuitment.component';
+import { LeaveComponent } from './ui/hr/view/leave/leave.component';
 import { AttendanceComponent } from './ui/hr/view/attendance/attendance.component';
 
 const routes: Routes = [
@@ -293,6 +294,10 @@ const routes: Routes = [
       {
         path: 'admin/hr/recuitment/:uuid',
         component: RecuitmentComponent,
+      },
+      {
+        path: 'admin/hr/leave/:uuid',
+        component: LeaveComponent,
       },
       {
         path: 'admin/hr/attendance/:uuid',
