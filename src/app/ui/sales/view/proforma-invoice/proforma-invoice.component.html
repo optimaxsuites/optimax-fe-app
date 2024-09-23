@@ -7,17 +7,17 @@
         <ng-template pTemplate="left">
           <app-button text="Delete" class="btn-delete" ></app-button>
         </ng-template>
-  
+
         <ng-template pTemplate="right">
           <app-button text="Add New" (btnClick)="navigateToForm()" class="btn-navigate" ></app-button>
           <app-button text="Import"  class="btn-export" ></app-button>
         </ng-template>
     </p-toolbar>
-      <p-table 
-        [paginator]="true" 
-        [(selection)]="selectedItems" 
+      <p-table
+        [paginator]="true"
+        [(selection)]="selectedItems"
         dataKey="id"
-        styleClass="p-datatable-striped" 
+        styleClass="p-datatable-striped"
         [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
         [rows]="15"
         >
@@ -49,7 +49,7 @@
                   <i (click)="editItem(item.id)" class="pi pi-pen-to-square" style="font-size: 1.1em"></i>
                   <i (click)="deleteItem(item.id)" class="pi pi-times-circle" style="font-size: 1.1em"></i>
                 </td>
-              </tr>                            
+              </tr>
           </ng-template>
       </p-table>
     </div>
