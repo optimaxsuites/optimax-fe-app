@@ -59,6 +59,7 @@ import { ProcurementSettingsComponent } from './ui/procurement/view/procurement-
 import { VendorRfqComponent } from './ui/vendor/view/vendor-rfq/vendor-rfq.component';
 import { RecuitmentComponent } from './ui/hr/view/recuitment/recuitment.component';
 import { LeaveComponent } from './ui/hr/view/leave/leave.component';
+import { AttendanceComponent } from './ui/hr/view/attendance/attendance.component';
 
 const routes: Routes = [
   {
@@ -209,17 +210,17 @@ const routes: Routes = [
         path: 'purchase/rfq-modal',
         component: RfqModalComponent,
       },
-      { 
-        path: 'purchase/rfq-modal/:rfqId', 
-        component: RfqModalComponent 
+      {
+        path: 'purchase/rfq-modal/:rfqId',
+        component: RfqModalComponent
       },
       {
         path: 'admin/inventory/:uuid',
         component: InventoryPageComponent,
       },
-      { 
-        path: 'inventory/inventory-form', 
-        component: InventoryFormComponent 
+      {
+        path: 'inventory/inventory-form',
+        component: InventoryFormComponent
       },
       {
         path: 'inventory/inventory-form/:id',
@@ -297,6 +298,10 @@ const routes: Routes = [
       {
         path: 'admin/hr/leave/:uuid',
         component: LeaveComponent,
+      },
+      {
+        path: 'admin/hr/attendance/:uuid',
+        component: AttendanceComponent,
       },
     ],
   },

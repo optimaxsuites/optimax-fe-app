@@ -36,6 +36,7 @@ export class NavigationLinksService {
     this.links['hrLink'] = '/admin/hr/' +uuidV4();
     this.links['recuitmentLink'] = '/admin/hr/recuitment/' +uuidV4();
     this.links['leaveLink'] = '/admin/hr/leave/' +uuidV4();
+    this.links['attendanceLink'] = '/admin/hr/attendance/' +uuidV4();
 
 
 

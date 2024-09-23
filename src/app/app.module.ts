@@ -201,6 +201,12 @@ import { LeaveRequestComponent } from './ui/hr/view/leave-request/leave-request.
 import { AssignLeaveComponent } from './ui/hr/view/assign-leave/assign-leave.component';
 import { LeaveUsageComponent } from './ui/hr/view/leave-usage/leave-usage.component';
 import { ApplyComponent } from './ui/hr/view/apply/apply.component';
+import { VacancyFormComponent } from './ui/hr/view/vacancy-form/vacancy-form.component';
+import { AttendanceComponent } from './ui/hr/view/attendance/attendance.component';
+import { AttendanceSheetComponent } from './ui/hr/view/attendance-sheet/attendance-sheet.component';
+import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.component';
+
+
 
 @NgModule({
   declarations: [
@@ -338,9 +344,13 @@ import { ApplyComponent } from './ui/hr/view/apply/apply.component';
     AssignLeaveComponent,
     LeaveUsageComponent,
     ApplyComponent,
+    VacancyFormComponent,
+    AttendanceComponent,
+    AttendanceSheetComponent,
+    MyAttendanceComponent,
   ],
   imports: [
-    CommonModule,
+  CommonModule,
     BrowserModule,
     AppRoutingModule,
     MatTabGroup,
@@ -408,9 +418,9 @@ import { ApplyComponent } from './ui/hr/view/apply/apply.component';
       useClass: AuthInterceptor,
       multi: true,
     },
-    { 
-      provide: JWT_OPTIONS, 
-      useValue: JWT_OPTIONS 
+    {
+      provide: JWT_OPTIONS,
+      useValue: JWT_OPTIONS
     },
     JwtHelperService,
     provideAnimationsAsync(),

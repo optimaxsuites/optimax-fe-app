@@ -1,6 +1,6 @@
 import { HttpRequest, HttpClient, HttpEventType, HttpResponse } from '@angular/common/http';
-import { Component, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Component, ElementRef, HostListener, OnInit, Renderer2,} from '@angular/core';
+import { FormBuilder, FormGroup } from '@angular/forms';
 import { AngularEditorConfig } from '@kolkov/angular-editor';
 import { Observable } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -8,34 +8,27 @@ import { AddNewClientComponent } from '../add-new-client/add-new-client.componen
 import { DropdownService } from 'src/app/ui/shared/service/dropdown/dropdown.service';
 import { ConfigureTaxPopupComponent } from 'src/app/ui/shared/view/configure-tax-popup/configure-tax-popup.component';
 import { NumberCurrencyPopupComponent } from 'src/app/ui/shared/view/number-currency-popup/number-currency-popup.component';
+import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { QuotationService } from '../../service/quotation/quotation.service';
+import { AddressDTO, AttachmentDTO, BanksDTO, CompanyDTO, CustomerDTO, DiscountAndChargesDTO, FieldDTO, IndustryDTO, ItemsDTO, ProjectDTO, QuotationDTO, ShippingDTO } from '../../domain/quotation.dto';
 // import { map } from 'rxjs/operators';
 // import { MatDialog } from '@angular/material/dialog';
 
-interface Company {
-  value: string;
-  viewValue: string;
-}
-interface BusinessDetails {
-  name: string;
-  address: string;
-  phoneNumber: string;
-  email: string;
+
+interface Term {
+  term_des: string;
 }
 
-interface Client {
-  value: string;
-  viewValue: string;
-}
-
-interface Field {
-  text: string;
-  isEditing: boolean;
+interface TermGroup {
+  terms: Term[];
 }
 
 @Component({
   selector: 'app-proforma-invoice-modal',
   templateUrl: './proforma-invoice-modal.component.html',
   styleUrl: './proforma-invoice-modal.component.scss'
+
 })
 export class ProformaInvoiceModalComponent {
 
@@ -48,226 +41,239 @@ export class ProformaInvoiceModalComponent {
   showDiscount = false;
   showAdditionalCharges = false;
   showLogo = false;
+  openAddClient?: boolean;
+  openAddShipping?: boolean;
+  openAddItem?: boolean;
   selectedValue?: string;
-  clientDetails: any = {};
   showDescriptionBox: boolean = false;
+  isFormVisible: boolean = false;
   signatureUrl: string | ArrayBuffer | null = null;
   logoUrl: string | ArrayBuffer | null = null;
   discounts: any[] = [];
   terms: any[] = [];
-  termsGroup: any[] = [];
+  termsGroup: any[] = [ this.terms];
   charges: any[] = [];
   moreFields: any[] = [];
+  isEdit: boolean = false
+  itemsData: ItemsDTO[] = [];
+  industryData: IndustryDTO[] = [];
+  discountChargesData: DiscountAndChargesDTO[] = [];
+  bankData: BanksDTO[] = [];
+  addressData: AddressDTO[] = [];
+  shippingData: ShippingDTO[] = [];
+  quotationData: QuotationDTO = {};
+  projectData: ProjectDTO = {};
+  customerData: CustomerDTO = {};
+  companyData: CompanyDTO = {};
 
+  constructor(
+    private renderer: Renderer2,
+    private el: ElementRef,
+    private http: HttpClient,
+    private dropdownService: DropdownService,
+    private dialogRef:MatDialog,
+    private quotationService: QuotationService,
+    private navigationLink: NavigationLinksService,
+    private router: Router,
+    private route: ActivatedRoute,
+  ) { }
 
-  countryList = [
-    'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 
-    'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaijan', 'Bahamas', 
-    'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize', 'Benin', 
-    'Bhutan', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 
-    'Bulgaria', 'Burkina Faso', 'Burundi', 'Cabo Verde', 'Cambodia', 'Cameroon', 
-    'Canada', 'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 
-    'Comoros', 'Congo, Democratic Republic of the', 'Congo, Republic of the', 
-    'Costa Rica', 'Croatia', 'Cuba', 'Cyprus', 'Czech Republic', 'Denmark', 
-    'Djibouti', 'Dominica', 'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador', 
-    'Equatorial Guinea', 'Eritrea', 'Estonia', 'Eswatini', 'Ethiopia', 'Fiji', 
-    'Finland', 'France', 'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 
-    'Greece', 'Grenada', 'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana', 
-    'Haiti', 'Honduras', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 
-    'Iraq', 'Ireland', 'Israel', 'Italy', 'Jamaica', 'Japan', 'Jordan', 
-    'Kazakhstan', 'Kenya', 'Kiribati', 'Korea, North', 'Korea, South', 'Kosovo', 
-    'Kuwait', 'Kyrgyzstan', 'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 
-    'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg', 'Madagascar', 'Malawi', 
-    'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 
-    'Mauritius', 'Mexico', 'Micronesia', 'Moldova', 'Monaco', 'Mongolia', 
-    'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia', 'Nauru', 
-    'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 
-    'North Macedonia', 'Norway', 'Oman', 'Pakistan', 'Palau', 'Palestine', 
-    'Panama', 'Papua New Guinea', 'Paraguay', 'Peru', 'Philippines', 'Poland', 
-    'Portugal', 'Qatar', 'Romania', 'Russia', 'Rwanda', 'Saint Kitts and Nevis', 
-    'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa', 'San Marino', 
-    'Sao Tome and Principe', 'Saudi Arabia', 'Senegal', 'Serbia', 'Seychelles', 
-    'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 
-    'Somalia', 'South Africa', 'South Sudan', 'Spain', 'Sri Lanka', 'Sudan', 
-    'Suriname', 'Sweden', 'Switzerland', 'Syria', 'Taiwan', 'Tajikistan', 
-    'Tanzania', 'Thailand', 'Timor-Leste', 'Togo', 'Tonga', 'Trinidad and Tobago', 
-    'Tunisia', 'Turkey', 'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine', 
-    'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay', 
-    'Uzbekistan', 'Vanuatu', 'Vatican City', 'Venezuela', 'Vietnam', 'Yemen', 
-    'Zambia', 'Zimbabwe'
+// ===================================================================================
+  ngOnInit(): void {
+    this.addTerm();
+    this.getCompanyInfo();
+    this.loadCustomers();
+
+  }
+// ===================================================================================
+  companyOptions: { name: string }[] = [];
+  selectedCompanyId!: number;
+
+  getCompanyInfo(){
+    this.quotationService.getCompany('').subscribe((data: CompanyDTO[]) => {
+      this.companyOptions = data.map(company => ({ name: company.name! }));
+    });
+  }
+
+  onCompanyChange(companyId: number): void {
+    if (companyId) {
+      this.quotationService.getCompanyById(companyId).subscribe((company: CompanyDTO) => {
+        this.companyData = company;
+      });
+    } else {
+      this.companyData = {};
+    }
+  }
+// ================================================================================
+  // companyOptions: CustomerDT[];
+  // selectedCustomerId!: number;
+
+  // getCustomerInfo(){
+  //   this.quotationService.getCustomer().subscribe((data: CustomerDTO[]) => {
+  //     this.customerOptions = data.map(customer => ({ id: customer.id!, name: customer.name! }));
+  //   });
+  // }
+
+  // loadCompanyOptions(): void {
+  //   // Assuming this.yourService.getCompanies() returns an array of { id: number, name: string }
+  //   this.quotationService.getCustomer().subscribe((data) => {
+  //     companyOptions = data;
+  //   });
+  // }
+
+  // getCustomerInfo() {
+  //   this.quotationService.getCustomer('').subscribe((data: CustomerDTO[]) => {
+  //     this.customerOptions = data.map(customer => ({ id: customer.id!, name: `${customer.firstname} ${customer.lastname}` }));
+  //   });
+  // }
+
+  // onCustomerChange(customerId: number): void {
+  //   if (customerId) {
+  //     this.quotationService.getCustomerById(customerId).subscribe((customer: CustomerDTO) => {
+  //       this.customerData = customer;
+  //       this.showSecondComponent = true;
+  //     });
+  //   } else {
+  //     this.customerData = {};
+  //     this.showSecondComponent = false;
+  //   }
+  // }
+
+    customerOptions: CustomerDTO[] = [];
+    selectedCustomerId!: number;
+
+  loadCustomers() {
+    this.quotationService.getCustomer().subscribe(customers => {
+      this.customerOptions = customers;
+      console.log("options", this.customerOptions)
+    });
+  }
+
+  onCustomerChange(selectedCustomerId: number) {
+    this.selectedCustomerId = selectedCustomerId; // Set the selected customer ID
+    console.log("Selected Customer ID:", selectedCustomerId);
+
+    if (selectedCustomerId) {
+      this.quotationService.getCustomerById(selectedCustomerId).subscribe(customer => {
+        this.customerData = customer;
+        this.showSecondComponent = true; // Show customer details section
+      });
+    } else {
+      this.customerData = {};
+      this.showSecondComponent = false; // Hide customer details section if no customer is selected
+    }
+  }
+  // loadCustomers(): void {
+  //   this.quotationService.getCustomer().subscribe(
+  //     (data: CustomerDTO[]) => {
+  //       this.customerOptions = data;
+  //     },
+  //     error => {
+  //       console.error('Error fetching customer data:', error);
+  //     }
+  //   );
+  // }
+
+  // onCustomerChange(selectedCustomerId: number): void {
+  //   this.selectedCustomerId = selectedCustomerId;
+  //   this.loadCustomerDetails(selectedCustomerId);
+  // }
+
+  // loadCustomerDetails(customerId: number): void {
+  //   this.quotationService.getCustomerById(customerId).subscribe(
+  //     (data: any) => {
+  //       this.customerData = data;
+  //       this.showSecondComponent = true;
+  //     },
+  //     error => {
+  //       console.error('Error fetching customer details:', error);
+  //     }
+  //   );
+  // }
+  // ====================================================================================
+
+  items = [
+    { id: 1, name: 'Ladies shoes 1', taxRate: 5, qty: 10, rate: 100, amount: 1000, tax: 50, total: 1050 },
+    { id: 2, name: 'Item 2', taxRate: 10, qty: 20, rate: 150, amount: 3000, tax: 300, total: 3300 },
+    { id: 3, name: 'Item 3', taxRate: 8, qty: 15, rate: 200, amount: 3000, tax: 240, total: 3240 },
+    { id: 4, name: 'Item 4', taxRate: 12, qty: 25, rate: 50, amount: 1250, tax: 150, total: 1400 },
+    { id: 5, name: 'Item 5', taxRate: 7, qty: 30, rate: 75, amount: 2250, tax: 157.5, total: 2407.5 },
+    { id: 6, name: 'Item 6', taxRate: 6, qty: 18, rate: 80, amount: 1440, tax: 86.4, total: 1526.4 },
+    { id: 7, name: 'Item 7', taxRate: 9, qty: 12, rate: 120, amount: 1440, tax: 129.6, total: 1569.6 },
+    { id: 8, name: 'Item 8', taxRate: 11, qty: 22, rate: 90, amount: 1980, tax: 217.8, total: 2197.8 },
+    { id: 9, name: 'Item 9', taxRate: 10, qty: 8, rate: 300, amount: 2400, tax: 240, total: 2640 },
+    { id: 10, name: 'Item 10', taxRate: 4, qty: 50, rate: 25, amount: 1250, tax: 50, total: 1300 }
   ];
 
-  currencyList = [
-    'Algerian Dinar (DZD)',
-    'Angolan Kwanza (AOA)',
-    'Argentine Peso (ARS)',
-    'Australian Dollar (AUD)',
-    'Bahraini Dinar (BHD)',
-    'Bangladeshi Taka (BDT)',
-    'Brazilian Real (BRL)',
-    'British Pound Sterling (GBP)',
-    'Canadian Dollar (CAD)',
-    'Chilean Peso (CLP)',
-    'Chinese Yuan (CNY)',
-    'Colombian Peso (COP)',
-    'Comorian Franc (KMF)',
-    'Congolese Franc (CDF)',
-    'Czech Koruna (CZK)',
-    'Danish Krone (DKK)',
-    'Djiboutian Franc (DJF)',
-    'Egyptian Pound (EGP)',
-    'Eritrean Nakfa (ERN)',
-    'Ethiopian Birr (ETB)',
-    'Euro (EUR)',
-    'Gambian Dalasi (GMD)',
-    'Guinean Franc (GNF)',
-    'Hong Kong Dollar (HKD)',
-    'Indian Rupee (INR)',
-    'Indonesian Rupiah (IDR)',
-    'Iraqi Dinar (IQD)',
-    'Israeli New Shekel (ILS)',
-    'Japanese Yen (JPY)',
-    'Jordanian Dinar (JOD)',
-    'Kenyan Shilling (KES)',
-    'Kuwaiti Dinar (KWD)',
-    'Lebanese Pound (LBP)',
-    'Lesotho Loti (LSL)',
-    'Liberian Dollar (LRD)',
-    'Libyan Dinar (LYD)',
-    'Malagasy Ariary (MGA)',
-    'Malawian Kwacha (MWK)',
-    'Malaysian Ringgit (MYR)',
-    'Mauritanian Ouguiya (MRU)',
-    'Mauritian Rupee (MUR)',
-    'Mexican Peso (MXN)',
-    'Moroccan Dirham (MAD)',
-    'Mozambican Metical (MZN)',
-    'Namibian Dollar (NAD)',
-    'New Zealand Dollar (NZD)',
-    'Nigerian Naira (NGN)',
-    'Norwegian Krone (NOK)',
-    'Omani Rial (OMR)',
-    'Pakistani Rupee (PKR)',
-    'Peruvian Sol (PEN)',
-    'Philippine Peso (PHP)',
-    'Polish Zloty (PLN)',
-    'Qatari Riyal (QAR)',
-    'Romanian Leu (RON)',
-    'Russian Ruble (RUB)',
-    'Rwandan Franc (RWF)',
-    'Saudi Riyal (SAR)',
-    'Seychellois Rupee (SCR)',
-    'Sierra Leonean Leone (SLL)',
-    'Singapore Dollar (SGD)',
-    'Somali Shilling (SOS)',
-    'South African Rand (ZAR)',
-    'South Korean Won (KRW)',
-    'South Sudanese Pound (SSP)',
-    'Sudanese Pound (SDG)',
-    'Swazi Lilangeni (SZL)',
-    'Swedish Krona (SEK)',
-    'Swiss Franc (CHF)',
-    'Syrian Pound (SYP)',
-    'Taiwanese Dollar (TWD)',
-    'Tanzanian Shilling (TZS)',
-    'Thai Baht (THB)',
-    'Tunisian Dinar (TND)',
-    'Turkish Lira (TRY)',
-    'Ugandan Shilling (UGX)',
-    'Ukrainian Hryvnia (UAH)',
-    'United Arab Emirates Dirham (AED)',
-    'United States Dollar (USD)',
-    'Uruguayan Peso (UYU)',
-    'Vietnamese Dong (VND)',
-    'West African CFA Franc (XOF)',
-    'Zambian Kwacha (ZMW)',
-    'Zimbabwean Dollar (ZWL)'
-]
+// SHIPPING DETAILS TOGGLE==================================================================================
 
+  toggleForm() {
+    this.isFormVisible = !this.isFormVisible;
+  }
 
-constructor(private fb: FormBuilder, private http: HttpClient, private dropdownService: DropdownService, private dialogRef:MatDialog) { }
+// SUBMIT QUOTATION ACTION============================================================================
 
+  onSubmit(){
+    console.log("quotation into", this.quotationData)
+  }
 
-openTaxDialog(){
-  this.dialogRef.open(ConfigureTaxPopupComponent)
+// NAVIGATE TO TABLE====================================================================================
+navigateToTable() {
+  const salesLink = this.navigationLink.getLink('salesLink')
+  this.router.navigate([salesLink]);
+
 }
 
-
-openNumberCurrencyDialog(){
-  this.dialogRef.open(NumberCurrencyPopupComponent)
-}
-
-openAddNewClientDialog(){
-  this.dialogRef.open(AddNewClientComponent)
-}
-
-
-fields: Field[] = [
-  // { text: 'Click to edit me', isEditing: false }
-];
+// ADDITIONAL FIELDS=======================================================================================
 
 addField() {
-  this.fields.push({ text: 'New field', isEditing: false });
+  if(!this.quotationData.field){
+    this.quotationData.field = []
+  }
+  this.quotationData.field.push({})
 }
 
 removeField(index: number) {
-  this.fields.splice(index, 1);
+  if (this.quotationData.field && index >= 0 && index < this.quotationData.field.length) {
+    this.quotationData.field.splice(index, 1);
+  }
 }
 
-editField(index: number) {
-  this.fields[index].isEditing = true;
-}
+// TERMS AND CONDITION=================================================================================
+  addTerm() {
+    this.terms.push({ term_des: '' });
+  }
 
-saveField(index: number, event: any) {
-  this.fields[index].isEditing = false;
-  this.fields[index].text = event.target.value;
-}
+  removeTerm(index: number) {
+    this.terms.splice(index, 1);
+  }
 
+  addTermGroup() {
+    this.terms = [];
+    this.termsGroup = [this.terms];
+    this.addTerm(); // Add initial term
+    this.showTermsConditionButton = true;
+  }
 
+  removeTermGroup(index: number) {
+    this.termsGroup.splice(index, 1);
+    this.showTermsConditionButton = false;
+  }
 
-      // Function to add a new term group
-      addTermGroup() {
-        this.termsGroup.push({
-            terms: [{}] // Initialize terms as an empty array for each term group
-        });
-    }
+// NOTE==================================================================================================
+  cancelNotes() {
+    this.showNotes = false;
+    this.quotationData.quotationNote = '';
+  }
 
-    // Function to remove a term group
-    removeTermGroup(index: number) {
-        this.termsGroup.splice(index, 1);
-    }
+  // ATTACHMENT============================================================================================
 
-    // Function to reset the termsGroup array
-    resetTermsGroup() {
-        this.termsGroup = [];
-    }
+  cancelAttachement() {
+    this.showAttachments = false;
+    this.quotationData.quotationNote = '';
+  }
 
-    // Function to add a new term condition to a specific term group
-    addTermCondition(termGroupIndex: number) {
-        this.termsGroup[termGroupIndex].terms.push({});
-    }
-
-    // Function to remove a term condition from a specific term group
-    removeTermCondition(termGroupIndex: number, termIndex: number) {
-        this.termsGroup[termGroupIndex].terms.splice(termIndex, 1);
-    }
-
-    // Function to close terms and reset data
-    closeTermsConditions() {
-        this.showTermsConditionButton = false;
-        this.resetTermsGroup();
-    }
-
-
-
-    addMoreField() {
-      this.moreFields.push({});
-    }
-  
-    removeMoreField(index: number) {
-      this.moreFields.splice(index, 1);
-    }
-
+// DISCOUNT==================================================================================================
 
   addDiscount() {
     this.discounts.push({});
@@ -277,7 +283,7 @@ saveField(index: number, event: any) {
     this.discounts.splice(index, 1);
   }
 
-
+// CHARGES=================================================================================================
 
   addCharge() {
     this.charges.push({});
@@ -287,97 +293,31 @@ saveField(index: number, event: any) {
     this.charges.splice(index, 1);
   }
 
-  editorConfig: AngularEditorConfig = {
-    editable: true,
-    spellcheck: true,
-    height: '200px',
-    maxHeight: '200px',
-    translate: 'no',
-    defaultParagraphSeparator: 'p',
-    defaultFontName: 'Arial',
-    toolbarHiddenButtons: [
-      [
-        'undo',
-        'redo',
-        'strikeThrough',
-        'subscript',
-        'superscript',
-        'justifyLeft',
-        'justifyCenter',
-        'justifyRight',
-        'justifyFull',
-        'insertUnorderedList',
-        'insertOrderedList',
-        'fontName',
-      ],
-      [
-        'textColor',
-        'backgroundColor',
-        'customClasses',
-        'link',
-        'unlink',
-        'insertImage',
-        'insertVideo',
-        'insertHorizontalRule',
-        'removeFormat',
-        'toggleEditorMode',
-      ],
-    ],
-  };
 
-  myForm!: FormGroup;
-  options: string[] = ['Nigeria - NGN', 'US Dollar - USD', 'Cuba - CUD'];
+  // myForm!: FormGroup;
+  // options: string[] = ['Nigeria - NGN', 'US Dollar - USD', 'Cuba - CUD'];
 
 
-  ngOnInit(): void {
-    this.addTermGroup();
+
+// ADD ROW
+
+  // addRow(): void {
+  //   this.itemsData.push({});
+
+  //   // Recalculate totals
+  //   this.calculateTotal();
+  // }
 
 
-    this.myForm = this.fb.group({
-      myOption: [''], 
-    });
-  }
-
-  tableData: any[] = [
-    {
-      name:'',
-      taxRate: '',
-      quantity: '',
-      rate: '',
-      amount: '',
-      tax: '',
-      total: '',
-      showDescriptionBox: false
-    }
-  ];
-
-
-  addRow(): void {
-    this.tableData.push({
-      name: '',
-      taxRate: 0,
-      quantity: 0,
-      rate: 0,
-      amount: 0,
-      tax: 0,
-      total: 0,
-      showDescriptionBox: false
-    });
-
-    // Recalculate totals
-    this.calculateTotal();
-  }
-
-  
-  // name: string = '';
-  taxRate: number = 0;
-  // quantity!: number;
-  // rate?: number;
-  amount: number = 0;
-  tax: number =0;
-  // total: number = 0;
-  // totalAmount?: number;
-  // totalAmountInWords?: string;
+  // // name: string = '';
+  // taxRate: number = 0;
+  // // quantity!: number;
+  // // rate?: number;
+  // amount: number = 0;
+  // tax: number =0;
+  // // total: number = 0;
+  // // totalAmount?: number;
+  // // totalAmountInWords?: string;
   totalAmount: number = 0;
   totalAmountInWords: string = '';
   totalTax: number = 0;
@@ -385,16 +325,8 @@ saveField(index: number, event: any) {
 
 
   onInputChange(item: any): void {
-    // this.name = item.name;
-    // this.taxRate = item.taxRate;
-    // this.quantity = item.quantity;
-    // this.rate = item.rate;
-    // this.amount = item.amount;
-    // console.log(this.amount)
-    // this.tax = item.tax;
-    // this.total = item.total;
 
-  
+
     item.amount = item.quantity * item.rate;
     item.tax = (item.taxRate / 100) * item.amount;
     item.total = item.amount + item.tax;
@@ -405,21 +337,14 @@ saveField(index: number, event: any) {
   }
 
   calculateTotal(): void {
-    // this.totalAmount = this.amount * this.tax;
-    // // Call method to convert total amount to words
-    // this.totalAmountInWords = this.convertToWords(this.totalAmount);
-
-    // this.totalAmount = this.tableData.reduce((sum, item) => sum + item.total, 0);
     this.totalAmountInWords = this.convertToWords(this.grandTotal);
 
-    this.totalAmount = this.tableData.reduce((sum, item) => sum + item.amount, 0);
-    this.totalTax = this.tableData.reduce((sum, item) => sum + item.tax, 0);
-    this.grandTotal = this.tableData.reduce((sum, item) => sum + item.total, 0);
+    this.totalAmount = this.itemsData.reduce((sum, item) => sum + item.amount!, 0);
+    this.totalTax = this.itemsData.reduce((sum, item) => sum + item.tax!, 0);
+    this.grandTotal = this.itemsData.reduce((sum, item) => sum + item.total!, 0);
   }
 
   convertToWords(grandTotal: number): string {
-    // Your logic to convert amount to words
-    // return 'Total Amount in Words'; // Placeholder
     return this.convertNumberToWords(grandTotal);
   }
 
@@ -484,13 +409,13 @@ saveField(index: number, event: any) {
 
   deleteRow(index: number) {
     // if (index > 0) {
-      this.tableData.splice(index, 1);
+      this.itemsData.splice(index, 1);
     // }
   }
 
   addNewRow(): void {
     // You can add a new empty row here
-    this.tableData.push({});
+    this.itemsData.push();
   }
 
   toggleSecondComponent() {
@@ -501,87 +426,11 @@ saveField(index: number, event: any) {
     this.showDescriptionBox = true;
   }
 
-  companies: Company[] = [
-    { value: 'Centrifuge', viewValue: 'Centrifuge' },
-    { value: 'GOP Gadgets', viewValue: 'GOP Gadgets' },
-    { value: 'DeOne', viewValue: 'DeOne' },
-  ];
 
-  businessDetails: BusinessDetails = {
-    name: '',
-    address: '',
-    phoneNumber: '',
-    email: '',
-  };
-
-  updateBusinessInfo() {
-    // Replace this logic with your actual business details fetching mechanism
-    if (this.selectedValue === 'Centrifuge') {
-      this.businessDetails = {
-        name: 'Centrifuge Group',
-        address: 'No 31 juju street, lagos road',
-        phoneNumber: '09077556633',
-        email: 'centrifuge@gmail.com',
-      };
-    } else if (this.selectedValue === 'GOP Gadgets') {
-      // Add logic for GOP Gadgets
-      this.businessDetails = {
-        name: 'GOP Gadgets',
-        address: 'No 9 Adesanya street, lagos, ikeja',
-        phoneNumber: '08144685954',
-        email: 'gop@gmail.com',
-      };
-    } else if (this.selectedValue === 'DeOne') {
-      // Add logic for DeOne
-      this.businessDetails = {
-        name: 'DeOne Gadgets',
-        address: 'No 9 Adesanya street, lagos, ikeja',
-        phoneNumber: '08060393174',
-        email: 'DeOne@gmail.com',
-      };
-    }
+  openAddClientDialog(){
+    this.dialogRef.open(AddNewClientComponent)
   }
 
-  // client details
-
-  clients: Client[] = [
-    { value: 'MTN', viewValue: 'MTN' },
-    { value: 'GLO', viewValue: 'GLO' },
-    { value: 'Opay', viewValue: 'Opay' },
-  ];
-
-  updateClientInfo() {
-    this.clientDetails = this.clients.find(
-      (client) => client.value === this.selectedValue
-    );
-    this.showSecondComponent = true; // Show the second component
-
-    // Replace this logic with your actual business details fetching mechanism
-    if (this.selectedValue === 'MTN') {
-      this.clientDetails = {
-        name: 'MTN',
-        address: 'No 31 juju street, lagos road',
-        phoneNumber: '09077556633',
-        email: 'mtn@gmail.com',
-      };
-    } else if (this.selectedValue === 'GLO') {
-      // Add logic for GOP Gadgets
-      this.clientDetails = {
-        name: 'GLO',
-        address: 'No 9 Adesanya street, lagos, ikeja',
-        phoneNumber: '08144685954',
-        email: 'glo@gmail.com',
-      };
-    } else if (this.selectedValue === 'Opay') {
-      // Add logic for DeOne
-      this.clientDetails = {
-        name: 'Opay',
-        address: 'No 9 Adesanya street, lagos, ikeja',
-        phoneNumber: '08060393174',
-        email: 'opay@gmail.com',
-      };
-    }
-  }
 
   onSignatureSelected(event: any) {
     const file: File = event.target.files[0];
@@ -596,25 +445,9 @@ saveField(index: number, event: any) {
 
   clearSignature() {
     this.signatureUrl = null;
-    this.showSignatureButton = false; 
+    this.showSignatureButton = false;
   }
 
-
-  // onLogoSelected(event: any) {
-  //   const file: File = event.target.files[0];
-  //   if (file) {
-  //     const reader = new FileReader();
-  //     reader.readAsDataURL(file);
-  //     reader.onload = () => {
-  //       this.logoUrl = reader.result;
-  //     };
-  //   }
-  // }
-
-  // clearLogo() {
-  //   this.logoUrl = null;
-  //   // this.showSignatureButton = false; 
-  // }
 
   onLogoSelected(event: any) {
     const file = event.target.files[0];
@@ -634,114 +467,47 @@ saveField(index: number, event: any) {
 
 
 
-uploadedFiles: { name: string, size: number, progress: number, status: string }[] = [];
+
+
 
 
 
   fileInputChange(event: any) {
-    const fileList: FileList = event.target.files;
-    if (fileList && fileList.length > 0) {
-      for (let i = 0; i < fileList.length; i++) {
-        const file: File = fileList[i];
-        this.uploadFile(file);
+    const files = event.target.files;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const attachment: AttachmentDTO = {
+        name: file.name,
+        size: file.size,
+        type: file.type.includes('image') ? 'image' : 'document',
+        url: '', // This will be set after upload
+        progress: 0,
+        status: 'uploading',
+      };
+
+      this.quotationData.attachments?.push(attachment);
+      this.uploadFile(file, attachment);
+    }
+  }
+
+  uploadFile(file: File, attachment: AttachmentDTO) {
+    // Simulate file upload process
+    const uploadSimulation = setInterval(() => {
+      if (attachment.progress! >= 100) {
+        attachment.status = 'completed';
+        attachment.url = ''; // Set the file URL after upload
+        clearInterval(uploadSimulation);
+      } else {
+        attachment.progress! += 10; // Increase progress
       }
-    }
-  }
-
-  uploadFile(file: File) {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const req = new HttpRequest('POST', 'sender.php', formData, {
-      reportProgress: true
-    });
-
-    this.http.request(req).subscribe(event => {
-      if (event.type === HttpEventType.UploadProgress && event.total) {
-        const percentDone = Math.round(100 * event.loaded / event.total);
-        this.updateFileProgress(file.name, percentDone);
-      } else if (event instanceof HttpResponse) {
-        this.updateFileStatus(file.name, 'complete');
-      }
-    });
-    
-    this.uploadedFiles.push({ name: file.name, size: file.size, progress: 0, status: 'in-prog' });
-  }
-
-  updateFileProgress(fileName: string, progress: number) {
-    const file = this.uploadedFiles.find(file => file.name === fileName);
-    if (file) {
-      file.progress = progress;
-    }
-  }
-
-  updateFileStatus(fileName: string, status: string) {
-    const file = this.uploadedFiles.find(file => file.name === fileName);
-    if (file) {
-      file.status = status;
-    }
+    }, 200);
   }
 
   cancelUpload(index: number) {
-    this.uploadedFiles.splice(index, 1);
-  }
-
-
-  showForm: boolean = false;
-  sameAsBusinessAddress: boolean = false;
-  sameAsClientAddress: boolean = false;
-  saveToClientDetails: boolean = false;
-
-  shippedFrom = {
-    businessName: '',
-    country: '',
-    address: '',
-    city: '',
-    postalCode: '',
-    state: ''
-  };
-
-  shippedTo = {
-    businessName: '',
-    country: '',
-    address: '',
-    city: '',
-    postalCode: '',
-    state: ''
-  };
-
-  addMoreFields() {
-    // Logic to add more fields
-  }
-
-
-
-  currency = this.currencyList;
-  companyCountry = this.countryList; 
-  clientCountry = this.countryList; 
-  clientShippingDetails = ['None', 'Shipping 1', 'Shipping 2', 'Shipping 3'];
-
-  isDropdownOpen$(id: string) {
-    return this.dropdownService.isDropdownOpen$(id);
-  }
-
-  getSelectedItem$(id: string): Observable<string | null> {
-    return this.dropdownService.getSelectedItem$(id);
-  }
-
-  toggleDropdown(id: string) {
-    this.dropdownService.toggleDropdown(id);
-  }
-
-  selectItem(id: string, item: string) {
-    this.dropdownService.selectItem(id, item);
-  }
-
-  extractCurrencyCode(currency: string | null): string {
-    if (!currency) {
-      return 'NGN';
+    if (this.quotationData.attachments && this.quotationData.attachments[index]) {
+      this.quotationData.attachments.splice(index, 1);
     }
-    const match = currency.match(/\(([^)]+)\)/);
-    return match ? match[1] : currency;
   }
+
+
 }

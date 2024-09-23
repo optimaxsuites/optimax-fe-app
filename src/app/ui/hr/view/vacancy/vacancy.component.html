@@ -1,1 +1,67 @@
-<p>vacancy works!</p>
+
+<div class="card">
+  <p-toolbar styleClass="mb-4 gap-2">
+    <ng-template pTemplate="left">
+      <app-button text="Delete" class="btn-delete"></app-button>
+    </ng-template>
+
+    <ng-template pTemplate="right">
+      <app-button text="Add Vacancy" class="btn-export" (click)="openVacancyForm = true"></app-button>
+      <app-button text="Import" class="btn-export"></app-button>
+    </ng-template>
+  </p-toolbar>
+
+  <div class="search-bar">
+    <input
+      type="text"
+      placeholder="Filter"
+      class="editInput"
+    />
+  </div>
+
+  <p-table
+      [value]="candidates"
+      [paginator]="true"
+      styleClass="p-datatable-striped"
+      [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+      [rows]="15"
+      >
+
+      <ng-template pTemplate="header">
+      <tr>
+          <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+          <th class="table-item" pSortableColumn="Vacancy Title">Vacancy Title</th>
+          <th class="table-item" pSortableColumn="Job Title">Job Title</th>
+          <th class="table-item" pSortableColumn="Job Description">Job Description</th>
+          <th class="table-item" pSortableColumn="Requirement">Requirement</th>
+          <th class="table-item" pSortableColumn="Location">Location</th>
+          <th class="table-item" pSortableColumn="Job Category">Job Category</th>
+          <th class="table-item" pSortableColumn="Vacancy Status">Vacancy Status</th>
+
+          <th class="table-item"></th>
+      </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-candidate let-i="rowIndex">
+      <tr class="p-table-row">
+
+
+      </tr>
+      </ng-template>
+  </p-table>
+
+</div>
+
+
+<app-side-modal *ngIf="openVacancyForm" (close)="openVacancyForm = false">
+  <div class="modal-header flex justify-between items-center text-gray-700">
+    <h2 class="font-semibold pb-0 mb-0">Add New Vacancy</h2>
+    <div class="flex gap-3">
+      <button class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold" (click)="openVacancyForm = false">Cancel</button>
+    </div>
+  </div>
+  <app-vacancy-form></app-vacancy-form>
+  hghhghg
+</app-side-modal>
+
+
