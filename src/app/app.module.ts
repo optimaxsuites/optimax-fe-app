@@ -196,6 +196,11 @@ import { RecuitmentComponent } from './ui/hr/view/recuitment/recuitment.componen
 import { RecuitmentFormComponent } from './ui/hr/view/recuitment-form/recuitment-form.component';
 import { CandidateComponent } from './ui/hr/view/candidate/candidate.component';
 import { VacancyComponent } from './ui/hr/view/vacancy/vacancy.component';
+import { LeaveComponent } from './ui/hr/view/leave/leave.component';
+import { LeaveRequestComponent } from './ui/hr/view/leave-request/leave-request.component';
+import { AssignLeaveComponent } from './ui/hr/view/assign-leave/assign-leave.component';
+import { LeaveUsageComponent } from './ui/hr/view/leave-usage/leave-usage.component';
+import { ApplyComponent } from './ui/hr/view/apply/apply.component';
 
 @NgModule({
   declarations: [
@@ -328,6 +333,11 @@ import { VacancyComponent } from './ui/hr/view/vacancy/vacancy.component';
     RecuitmentFormComponent,
     CandidateComponent,
     VacancyComponent,
+    LeaveComponent,
+    LeaveRequestComponent,
+    AssignLeaveComponent,
+    LeaveUsageComponent,
+    ApplyComponent,
   ],
   imports: [
     CommonModule,

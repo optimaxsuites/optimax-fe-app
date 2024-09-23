@@ -69,6 +69,8 @@ export class MenuItemsService {
       submenu: [
         { label: 'Recuitment', route: this.navigationLink.getLink('recuitmentLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
         // { label: 'Payroll', route: this.navigationLink.getLink('hrLink'), roles: ['ROLE_USER'], icon: 'pi pi-wallet' },
+        { label: 'Leave', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
+
       ],
     },
     {
