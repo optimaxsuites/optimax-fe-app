@@ -68,7 +68,7 @@ export class MenuItemsService {
       icon: 'pi pi-users', // PrimeNG icon class
       submenu: [
         { label: 'Recuitment', route: this.navigationLink.getLink('recuitmentLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
-        // { label: 'Payroll', route: this.navigationLink.getLink('hrLink'), roles: ['ROLE_USER'], icon: 'pi pi-wallet' },
+        { label: 'Attendance', route: this.navigationLink.getLink('attendanceLink'), roles: ['ROLE_USER'], icon: 'pi pi-check' },
       ],
     },
     {
@@ -125,7 +125,7 @@ export class MenuItemsService {
       icon: 'pi pi-cog' // PrimeNG icon class
     },
   ];
-  
+
 
   constructor(public navigationLink: NavigationLinksService) {}
 

@@ -196,6 +196,12 @@ import { RecuitmentComponent } from './ui/hr/view/recuitment/recuitment.componen
 import { RecuitmentFormComponent } from './ui/hr/view/recuitment-form/recuitment-form.component';
 import { CandidateComponent } from './ui/hr/view/candidate/candidate.component';
 import { VacancyComponent } from './ui/hr/view/vacancy/vacancy.component';
+import { VacancyFormComponent } from './ui/hr/view/vacancy-form/vacancy-form.component';
+import { AttendanceComponent } from './ui/hr/view/attendance/attendance.component';
+import { AttendanceSheetComponent } from './ui/hr/view/attendance-sheet/attendance-sheet.component';
+import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.component';
+
+
 
 @NgModule({
   declarations: [
@@ -328,9 +334,13 @@ import { VacancyComponent } from './ui/hr/view/vacancy/vacancy.component';
     RecuitmentFormComponent,
     CandidateComponent,
     VacancyComponent,
+    VacancyFormComponent,
+    AttendanceComponent,
+    AttendanceSheetComponent,
+    MyAttendanceComponent,
   ],
   imports: [
-    CommonModule,
+  CommonModule,
     BrowserModule,
     AppRoutingModule,
     MatTabGroup,
@@ -398,9 +408,9 @@ import { VacancyComponent } from './ui/hr/view/vacancy/vacancy.component';
       useClass: AuthInterceptor,
       multi: true,
     },
-    { 
-      provide: JWT_OPTIONS, 
-      useValue: JWT_OPTIONS 
+    {
+      provide: JWT_OPTIONS,
+      useValue: JWT_OPTIONS
     },
     JwtHelperService,
     provideAnimationsAsync(),
