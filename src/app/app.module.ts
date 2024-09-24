@@ -208,6 +208,7 @@ import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.
 import { InterviewComponent } from './ui/hr/view/interview/interview.component';
 import { ScheduledInterviewComponent } from './ui/hr/view/scheduled-interview/scheduled-interview.component';
 import { InterviewInviteComponent } from './ui/hr/view/candidate/interview-invite/interview-invite.component';
+import { ViewComponent } from './ui/hr/view/candidate/view/view.component';
 
 
 
@@ -354,6 +355,7 @@ import { InterviewInviteComponent } from './ui/hr/view/candidate/interview-invit
     InterviewComponent,
     ScheduledInterviewComponent,
     InterviewInviteComponent,
+    ViewComponent,
   ],
   imports: [
   CommonModule,

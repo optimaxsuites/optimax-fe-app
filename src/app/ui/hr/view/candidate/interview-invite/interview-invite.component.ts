@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Output } from '@angular/core';
 
 @Component({
   selector: 'app-interview-invite',
@@ -6,5 +6,10 @@ import { Component } from '@angular/core';
   styleUrl: './interview-invite.component.scss'
 })
 export class InterviewInviteComponent {
+  @Output() back = new EventEmitter<void>();
 
+  // Method to trigger back button event
+  goBack() {
+    this.back.emit();
+  }
 }

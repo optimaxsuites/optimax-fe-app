@@ -4,7 +4,9 @@
 
 :root {
     --celadon-green: #2EB270;
+    --celadon-green-hover: #47e797;
     --blue-green: #2E6276;
+    --blue-green-hover: #4291b1;
     --mint-green: #D6FFFE;
     --anti-flash-white: #EEEEEE;
     --light-blue: #B6D6E2;
@@ -36,6 +38,17 @@
   background-color: rgb(240, 240, 240); /* White for odd rows */
 }
 
+.back-btn{
+  padding: .7rem 3rem;
+  // border-radius: 5px;
+  background-color: rgb(243, 243, 243);
+
+  .pi-arrow-left{
+      font-size: var(--l-font);
+      padding: 0;
+      margin: 0;
+  }
+}
 
 /* costom table */
 .table-container{
@@ -120,7 +133,7 @@ td {
 
 .r-btn {
     // padding: 1.5rem;
-    /* font-size: 1em; */
+    font-size: inherit;
     padding: 0;
     margin: 0;
     border-radius: inherit;
@@ -145,7 +158,6 @@ td {
     color: var(--white);
     font-size: 1.15em;
     padding: 0.8rem 1rem;
-
   }
   
   .btn-export{
@@ -204,8 +216,14 @@ td {
   }
   
   .actions {
+    justify-content: end;
     display: flex;
-    justify-content: space-around;
+    .pi-ellipsis-v{
+      padding: 1rem;
+      margin: 0;
+      border-radius: 50%;
+      background-color: #e0e0e0;
+    }
   }
 
 
@@ -613,4 +631,70 @@ body {
   background-color: var(--white);
   color: var(--celadon-green);
   box-sizing: border-box;
+}
+
+
+
+
+// INTERVIEW INVITE========================================
+
+
+// .move-back{
+//   border-bottom: 1px solid lightgrey;
+// }
+.invite-main{
+  padding: 2rem;
+}
+.invite-template{
+  display: flex;
+  justify-content: space-between;
+  border: 1px solid lightgrey;
+  padding: 1rem;
+  width: 50%;
+
+
+}
+.invite-template-wrapper{
+  h3{
+    margin: 0;
+  }
+}
+.template-card{
+  height: 80px;
+  width: 32.5%;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid lightgrey;
+  // background-color: red;
+}
+.invite-body{
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid lightgrey;
+}
+
+// INTERVIEW CANDIDTE VIEW======================================
+.view-wrapper{
+  width: 1200px;
+}
+
+.btn-download{
+  background-color: var(--blue-green);
+  color: var(--white);
+  font-size: var(--md-font);
+  padding: 0.8rem 1rem;
+  border-radius: 5px;
+
+  .resume{
+    font-size: var(--md-font);
+  }
+}
+.btn-download:hover{
+  background-color: var(--blue-green-hover);
+}
+.cover-letter{
+  min-height: 500px;
+  max-height: fit-content;
 }

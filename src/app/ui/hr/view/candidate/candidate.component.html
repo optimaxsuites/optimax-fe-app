@@ -2,6 +2,8 @@
 
 <div *ngIf="showCandidate">
   <div class="card">
+    <!-- <app-back-button></app-back-button> -->
+
     <p-toolbar styleClass="mb-4 gap-2">
       <ng-template pTemplate="left">
         <app-button text="Delete" class="btn-delete"></app-button>
@@ -74,12 +76,12 @@
                     <ng-option class="table-item" *ngFor="let stage of stages" [value]="stage">{{ stage }}</ng-option>
                 </ng-select>
             </td>
-            <td class="actions table-item">
+            <td class="actions">
             <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event)" ></i>
             <p-overlayPanel #op ngClass="padding: 0;">
                     <div>
                         <!-- <li class="table-item-panel"> <i class="pi pi-user-plus table-item me-2"></i> Add as Employee</li> -->
-                        <li class="table-item-panel"> <i class="pi pi-eye table-item me-2"></i> View</li>
+                        <li class="table-item-panel" (click)="openViewModal(candidate, op)"> <i class="pi pi-eye table-item me-2"></i> View</li>
                         <li class="table-item-panel"> <i class="pi pi-download table-item me-2"></i> Download Resume</li>
                         <li class="table-item-panel" (click)="openInterviewInvite()"> <i class="pi pi-send table-item me-2"></i> Send Invite</li>
                         <!-- <li class="table-item-panel"> <i class="pi pi-users table-item me-2"></i> Compare with Other Candidates </li> -->
@@ -95,10 +97,52 @@
 </div>
 
 
-<!-- <div *ngIf="!showCandidate">
-  <li class="table-item-panel" (click)="openInterviewInvite()"> <i class="pi pi-send table-item me-2"></i> Send Invite</li>
-</div> -->
-
 <div *ngIf="showInterviewInvite">
-  <app-interview-invite></app-interview-invite>
+  <app-interview-invite (back)="closeInterviewInvite()"></app-interview-invite>
 </div>
+
+<app-modal 
+  *ngIf="viewModal"
+  [header]="'Viewing ' + activeItem.candidate + ' information'"
+  [title]="'Cancel'"
+  (close)="closeViewModal()">
+  <!-- <app-view></app-view> -->
+     <div class="view-wrapper">
+      <div class="d-flex gap-4 my-2">
+        <div class="input-container-50">
+            <label for="name">Name </label>
+            <input type="text" id="name" name="name" class="editInput" required>
+        </div>
+        <div class="input-container-50">
+            <label for="phone-number">Phone Number </label>
+            <input type="text" id="phone-number" name="phone-number" class="editInput" required appNumberOnly>
+        </div>
+      </div>
+      <div class="d-flex gap-4 my-2">
+        <div class="input-container-50">
+            <label for="email">Email</label>
+            <input type="text" id="email" name="email" class="editInput" required>
+        </div>
+        <div class="input-container-50">
+            <label for="position">Position</label>
+            <input type="" id="position" name="position" class="editInput" required appNumberOnly>
+        </div>
+      </div>
+      <div class="d-flex gap-4 my-2">
+        <div class="input-container-50">
+            <label for="date">Date Applied</label>
+            <input type="text" id="date" name="date" class="editInput" required>
+        </div>
+        <div class="input-container-50">
+            <label for="resume">Resume</label> <br>
+            <button text="Download Resume" class="btn-download" (click)="downloadResume()"><i class="pi pi-download resume me-2"></i> Download Resume</button>
+        </div>
+      </div>
+      <div class="">
+        <label for="cover-letter">Cover Letter</label>
+        <textarea class="cover-letter editInput" name="cover-letter" id="" disabled>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Debitis alias iure repellat! Atque rem, tempore alias exercitationem dolorum distinctio natus perspiciatis odio amet quos ducimus aperiam, qui dignissimos, sapiente molestiae. Minima eius harum, amet expedita maxime animi. Perferendis necessitatibus aliquam, earum ipsam dolore inventore! Mollitia sunt veritatis optio repudiandae nulla assumenda ipsa tempore dicta nisi, nemo officiis corporis culpa quibusdam quos aliquid tempora consectetur dolores hic animi nam. Rerum dignissimos facilis fugiat et maiores enim temporibus fuga provident! Quidem obcaecati nam laborum fugiat earum vitae nisi ut placeat error ea numquam hic maxime culpa, atque quaerat at nostrum unde quae ratione quo, molestias expedita? Impedit itaque asperiores natus animi quisquam porro similique, voluptas temporibus ad ut maiores quaerat modi esse! A quo, labore pariatur, quia placeat asperiores aliquid quis ut delectus sequi optio vel ex! Cupiditate voluptatem error laudantium recusandae perferendis repellendus molestiae illo sint dolore, a numquam ipsum consequatur, odio dolor suscipit nobis amet excepturi totam minima adipisci ullam eaque animi architecto. Nemo, itaque, labore dicta et ipsam aspernatur placeat dignissimos odio laboriosam illum asperiores maxime vero omnis sapiente natus animi officia quo assumenda voluptatum perferendis? Ut, repudiandae repellat ab ea hic dolore sequi, dolores quas excepturi adipisci facere.
+          Lorem ipsum dolor, sit amet consectetur adipisicing elit. Debitis alias iure repellat! Atque rem, tempore alias exercitationem dolorum distinctio natus perspiciatis odio amet quos ducimus aperiam, qui dignissimos, sapiente molestiae. Minima eius harum, amet expedita maxime animi. Perferendis necessitatibus aliquam, earum ipsam dolore inventore! Mollitia sunt veritatis optio repudiandae nulla assumenda ipsa tempore dicta nisi, nemo officiis corporis culpa quibusdam quos aliquid tempora consectetur dolores hic animi nam. Rerum dignissimos facilis fugiat et maiores enim temporibus fuga provident! Quidem obcaecati nam laborum fugiat earum vitae nisi ut placeat error ea numquam hic maxime culpa, atque quaerat at nostrum unde quae ratione quo, molestias expedita? Impedit itaque asperiores natus animi quisquam porro similique, voluptas temporibus ad ut maiores quaerat modi esse! A quo, labore pariatur, quia placeat asperiores aliquid quis ut delectus sequi optio vel ex! Cupiditate voluptatem error laudantium recusandae perferendis repellendus molestiae illo sint dolore, a numquam ipsum consequatur, odio dolor suscipit nobis amet excepturi totam minima adipisci ullam eaque animi architecto. Nemo, itaque, labore dicta et ipsam aspernatur placeat dignissimos odio laboriosam illum asperiores maxime vero omnis sapiente natus animi officia quo assumenda voluptatum perferendis? Ut, repudiandae repellat ab ea hic dolore sequi, dolores quas excepturi adipisci facere.
+        </textarea>
+      </div>
+     </div>
+</app-modal>
