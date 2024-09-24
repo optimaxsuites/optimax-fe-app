@@ -1,25 +1,39 @@
-<div class="card">
+
+
+<div *ngIf="showCandidate">
+  <div class="card">
     <p-toolbar styleClass="mb-4 gap-2">
       <ng-template pTemplate="left">
         <app-button text="Delete" class="btn-delete"></app-button>
       </ng-template>
 
       <ng-template pTemplate="right">
+        <div>
+          <ng-select 
+            [items]="positions"
+            class="table-item"
+            bindLabel="position"
+            [multiple]="true"
+            placeholder="Filter by position"
+            [(ngModel)]="selectedPositions"
+            (ngModelChange)="filterCandidatesByPosition()">
+          </ng-select>
+        </div>
         <!-- <app-button text="Add New" class="btn-navigate gap-2"></app-button> -->
-        <app-button text="Import" class="btn-export"></app-button>
+        <!-- <app-button text="Import" class="btn-export"></app-button> -->
       </ng-template>
     </p-toolbar>
 
     <div class="search-bar">
       <input 
         type="text" 
-        placeholder="Filter" 
+        placeholder="Search" 
         class="editInput"
       />
     </div>
 
     <p-table 
-        [value]="candidates" 
+        [value]="filteredCandidates" 
         [paginator]="true" 
         styleClass="p-datatable-striped" 
         [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
@@ -32,6 +46,7 @@
             <th class="table-item" pSortableColumn="candidate">Candidate</th>
             <th class="table-item" pSortableColumn="email">Email</th>
             <th class="table-item" pSortableColumn="contactNumber">Contact Number</th>
+            <th class="table-item" pSortableColumn="contactNumber">Position</th>
             <th class="table-item" pSortableColumn="dateApplied">Date Applied</th>
             <th class="table-item" pSortableColumn="stage">Stage</th>
             <th class="table-item"></th>
@@ -44,6 +59,7 @@
             <td class="table-item">{{ candidate.candidate }}</td>
             <td class="table-item">{{ candidate.email }}</td>
             <td class="table-item">{{ candidate.contactNo }}</td>
+            <td class="table-item">{{ candidate.position }}</td>
             <td class="table-item">{{ candidate.dateApplied }}</td>
             <td class="table-item">
                 <ng-select 
@@ -62,10 +78,11 @@
             <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event)" ></i>
             <p-overlayPanel #op ngClass="padding: 0;">
                     <div>
-                        <li class="table-item-panel"> <i class="pi pi-user-plus table-item me-2"></i> Add as Employee</li>
+                        <!-- <li class="table-item-panel"> <i class="pi pi-user-plus table-item me-2"></i> Add as Employee</li> -->
+                        <li class="table-item-panel"> <i class="pi pi-eye table-item me-2"></i> View</li>
                         <li class="table-item-panel"> <i class="pi pi-download table-item me-2"></i> Download Resume</li>
-                        <li class="table-item-panel"> <i class="pi pi-download table-item me-2"></i> Download Application Form</li>
-                        <li class="table-item-panel"> <i class="pi pi-users table-item me-2"></i> Compare with Other Candidates </li>
+                        <li class="table-item-panel" (click)="openInterviewInvite()"> <i class="pi pi-send table-item me-2"></i> Send Invite</li>
+                        <!-- <li class="table-item-panel"> <i class="pi pi-users table-item me-2"></i> Compare with Other Candidates </li> -->
                         <li class="table-item-panel"> <i class="pi pi-trash table-item me-2"></i> Delete</li>
                     </div>
                   </p-overlayPanel>
@@ -75,3 +92,13 @@
     </p-table>
   
   </div>
+</div>
+
+
+<!-- <div *ngIf="!showCandidate">
+  <li class="table-item-panel" (click)="openInterviewInvite()"> <i class="pi pi-send table-item me-2"></i> Send Invite</li>
+</div> -->
+
+<div *ngIf="showInterviewInvite">
+  <app-interview-invite></app-interview-invite>
+</div>

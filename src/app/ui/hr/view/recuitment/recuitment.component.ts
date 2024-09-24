@@ -17,9 +17,9 @@ export class RecuitmentComponent {
 
 
   tabsConfig: TabConfig[] = [
-    { name: 'Form', component: RecuitmentFormComponent },
+    { name: 'Job Posting', component: RecuitmentFormComponent },
     { name: 'Candidate', component: CandidateComponent },
-    { name: 'Vacancy', component: VacancyComponent },
+    // { name: 'Vacancy', component: VacancyComponent },
 
     // { name: 'view2', component: RfqCategoryListComponent },
     // { 
