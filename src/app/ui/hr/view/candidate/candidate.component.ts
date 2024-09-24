@@ -9,14 +9,32 @@ export class CandidateComponent {
   showCandidate: boolean = true;
   showInterviewInvite: boolean = false;
 
+  activeItem: any = {}
+  viewModal: boolean = false;
 
+
+  openViewModal(candidate: any, op: any) {
+    this.activeItem = candidate
+    // this.tableSection =!this.tableSection
+    this.viewModal = !this.viewModal;
+    op.hide();
+  }
+  closeViewModal() {
+    this.viewModal = false;
+  }
 
   openInterviewInvite(){
     this.showCandidate = false;
     this.showInterviewInvite = true;
   }
+  closeInterviewInvite() {
+    this.showCandidate = true;
+    this.showInterviewInvite = false;
+  }
 
-
+  downloadResume(){
+    
+  }
 
 
 

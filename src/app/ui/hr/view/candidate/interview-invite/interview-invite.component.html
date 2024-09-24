@@ -1,4 +1,42 @@
 
 <div class="card">
-    hhhhhhhh
+    <div class="move-back">
+        <app-back-button (click)="goBack()"></app-back-button>
+    </div>
+
+    <div class="invite-main">
+        <div class="invite-header">
+            <div class="d-flex gap-4 my-2">
+                <div class="input-container-50">
+                    <label for="name">Name </label>
+                    <input type="text" id="name" name="name" class="editInput" required>
+                </div>
+                <div class="input-container-50">
+                    <label for="phone-number">Phone Number </label>
+                    <input type="text" id="phone-number" name="phone-number" class="editInput" required appNumberOnly>
+                </div>
+            </div>
+            <div class="d-flex gap-4 my-2">
+                <div class="input-container-50">
+                    <label for="email">Email</label>
+                    <input type="text" id="email" name="email" class="editInput" required>
+                </div>
+                <div class="input-container-50">
+                    <label for="position">Position</label>
+                    <input type="" id="position" name="position" class="editInput" required appNumberOnly>
+                </div>
+            </div>
+        </div>
+        <div class="invite-template-wrapper">
+            <h3><strong>Template</strong></h3>
+            <div class="invite-template">
+                <div class="template-card"><div>Template 1</div></div>
+                <div class="template-card"><div>Template 2</div></div>
+                <div class="template-card"><div>Template 3</div></div>
+            </div>
+        </div>
+        <div class="invite-body">
+            text editor here!
+        </div>
+    </div>
 </div>
