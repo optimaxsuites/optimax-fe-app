@@ -1,1 +1,108 @@
-<p>leave-request works!</p>
+<div class="card">
+    <p-toolbar styleClass="mb-4 gap-2">
+      <ng-template pTemplate="left">
+        <app-button text="Reject" class="btn-delete" (click)="bulkReject()"></app-button>
+      </ng-template>
+
+      <ng-template pTemplate="right">
+        
+        <app-button (click)="bulkApprove()" text="Approve"  class="btn-navigate gap-2"></app-button>
+      </ng-template>
+    </p-toolbar>
+
+    <div class="flex w-full justify-between gap-4 px-3">
+<div class="flex gap-4 w-1/2">
+      <div class="w-full">
+        <ng-select 
+          [items]="leaveTypes"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by position"
+          [(ngModel)]="selectedLeaveType"
+          (ngModelChange)="filterBySelectedLeaveType()">
+        </ng-select>
+      </div>
+
+      <div class="w-full">
+        <ng-select 
+          [items]="statuses"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by status"
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="filterBySelectedStatus()">
+        </ng-select>
+      </div>
+    </div>
+      <div class="search-bar w-[70%]">
+        <input 
+          type="text" 
+          placeholder="Search" 
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="filterCandidates()"
+          class="editInput w-full"
+        />
+      </div>
+    </div>
+   
+
+    <p-table 
+        [value]="filteredCandidates" 
+        [paginator]="true" 
+        [(selection)]="selectedEmployees"
+        styleClass="" 
+        [tableStyle]="{'min-height': 'fit-content', 'max-height': '1000px'}"
+        [rows]="20"
+        >
+        
+        <ng-template pTemplate="header">
+        <tr>
+            <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+            <th class="table-item" pSortableColumn="candidate">Employee</th>
+            <th class="table-item" pSortableColumn="email">Date Applied for</th>
+            <th class="table-item" pSortableColumn="contactNumber">Leave Type</th>
+            <th class="table-item" pSortableColumn="contactNumber">Net Leave Balance</th>
+            <th class="table-item" pSortableColumn="dateApplied">	Requested Duration</th>
+            <th class="table-item" pSortableColumn="stage">Status</th>
+            <th class="table-item"></th>
+        </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-employee let-i="rowIndex">
+        <tr class="p-table-row">
+            <td><p-tableCheckbox [value]="employee" /></td>
+            <td class="table-item" pSortableColumn="employee">{{ employee.Employee }}</td>
+            <td class="table-item">{{ employee.Date }}</td>
+            <td class="table-item">{{ employee.LeaveType }}</td>
+            <td class="table-item">{{ employee.NetLeaveBalance }}</td>
+            <td class="table-item">{{ employee.RequestedDuration }}</td>
+            <td class="table-item">{{ employee.Status }}</td>
+            <td class="actions table-item">
+            <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event)" ></i>
+            <p-overlayPanel #op ngClass="padding: 0;">
+                    <div>
+                        <li class="table-item-panel"> <i class="pi pi-eye table-item me-2"></i> View</li>
+                        <li class="table-item-panel" *ngIf="employee.Status.includes('Pending Approval')" (click)="openAcceptRejectModal(employee)">  <i class="pi pi-download table-item me-2"></i> Approve/Reject</li>
+                        <!-- <li class="table-item-panel"> <i class="pi pi-trash table-item me-2"></i> Reject</li> -->
+                    </div>
+                  </p-overlayPanel>
+            </td>
+        </tr>
+        </ng-template>
+    </p-table>
+  
+  </div>
+
+
+
+  <app-modal *ngIf="acceptModal" (close)="closeModal()" >
+
+    <p class="mb-3 text-gray-800 pt-2 text-3xl">Comment</p>
+    <textarea name="comment" id="comment" class="border-0 outline-none border-b-2 placeholder:text-gray-400 w-full" rows="5" cols="50" placeholder="enter message here"></textarea>
+
+    <div class="flex justify-around my-6 px-3 items-center w-full ">
+        <button class="bg-customGreen  text-white rounded-xl w-[40%] py-4" (click)="acceptLeave()">Approve</button>
+        <button class="  bg-red-600  text-white rounded-xl w-[40%] py-4" (click)="rejectLeave()">Reject</button>
+    </div>
+  </app-modal>
+  <p-toast position="top-right" key="tl" />
