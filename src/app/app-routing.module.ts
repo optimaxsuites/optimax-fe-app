@@ -59,6 +59,7 @@ import { ProcurementSettingsComponent } from './ui/procurement/view/procurement-
 import { VendorRfqComponent } from './ui/vendor/view/vendor-rfq/vendor-rfq.component';
 import { RecuitmentComponent } from './ui/hr/view/recuitment/recuitment.component';
 import { AttendanceComponent } from './ui/hr/view/attendance/attendance.component';
+import { InterviewComponent } from './ui/hr/view/interview/interview.component';
 
 const routes: Routes = [
   {
@@ -297,6 +298,10 @@ const routes: Routes = [
       {
         path: 'admin/hr/attendance/:uuid',
         component: AttendanceComponent,
+      },
+      {
+        path: 'admin/hr/interview/:uuid',
+        component: InterviewComponent,
       },
     ],
   },

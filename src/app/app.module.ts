@@ -200,6 +200,9 @@ import { VacancyFormComponent } from './ui/hr/view/vacancy-form/vacancy-form.com
 import { AttendanceComponent } from './ui/hr/view/attendance/attendance.component';
 import { AttendanceSheetComponent } from './ui/hr/view/attendance-sheet/attendance-sheet.component';
 import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.component';
+import { InterviewComponent } from './ui/hr/view/interview/interview.component';
+import { ScheduledInterviewComponent } from './ui/hr/view/scheduled-interview/scheduled-interview.component';
+import { InterviewInviteComponent } from './ui/hr/view/candidate/interview-invite/interview-invite.component';
 
 
 
@@ -338,6 +341,9 @@ import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.
     AttendanceComponent,
     AttendanceSheetComponent,
     MyAttendanceComponent,
+    InterviewComponent,
+    ScheduledInterviewComponent,
+    InterviewInviteComponent,
   ],
   imports: [
   CommonModule,
