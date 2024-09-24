@@ -19,9 +19,9 @@ export class MenuItemsService {
       icon: 'pi pi-dollar', // PrimeNG icon class
       submenu: [
         { label: 'Quotation', route: this.navigationLink.getLink('salesLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        { label: 'Invoice', route: this.navigationLink.getLink('salesLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        { label: 'Proforma Invoice', route: this.navigationLink.getLink('salesLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        { label: 'Dispatch Note', route: this.navigationLink.getLink('salesLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
+        // { label: 'Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
+        // { label: 'Proforma Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
+        // { label: 'Dispatch Note', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
       ],
     },
     {
@@ -30,9 +30,9 @@ export class MenuItemsService {
       icon: 'pi pi-shopping-cart', // PrimeNG icon class
       submenu: [
         { label: 'Quotation', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        { label: 'Invoice', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        { label: 'Proforma Invoice', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        { label: 'Dispatch Note', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
+        // { label: 'Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
+        // { label: 'Proforma Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
+        // { label: 'Dispatch Note', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
       ],
     },
     {
@@ -41,7 +41,7 @@ export class MenuItemsService {
       icon: 'pi pi-cog', // PrimeNG icon class
       submenu: [
         { label: 'User Management', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER'], icon: 'pi pi-users' },
-        { label: 'Product Management', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER'], icon: 'pi pi-box' },
+        // { label: 'Product Management', route: "", roles: ['ROLE_USER'], icon: 'pi pi-box' },
       ],
     },
     {
@@ -59,7 +59,7 @@ export class MenuItemsService {
       icon: 'pi pi-credit-card', // PrimeNG icon class
       submenu: [
         { label: 'Quotation', route: this.navigationLink.getLink('accountingLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        { label: 'Invoice', route: this.navigationLink.getLink('accountingLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
+        // { label: 'Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
       ],
     },
     {
@@ -80,7 +80,7 @@ export class MenuItemsService {
       icon: 'pi pi-shopping-bag', // PrimeNG icon class
       submenu: [
         { label: 'Sales', route: this.navigationLink.getLink('posLink'), roles: ['ROLE_USER'], icon: 'pi pi-cart' },
-        { label: 'Transactions', route: this.navigationLink.getLink('posLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
+        // { label: 'Transactions', route: "", roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
       ],
     },
     {
@@ -89,7 +89,7 @@ export class MenuItemsService {
       icon: 'pi pi-check', // PrimeNG icon class
       submenu: [
         { label: 'Order Summary', route: this.navigationLink.getLink('checkoutLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        { label: 'Payment Details', route: this.navigationLink.getLink('checkoutLink'), roles: ['ROLE_USER'], icon: 'pi pi-wallet' },
+        // { label: 'Payment Details', route: "", roles: ['ROLE_USER'], icon: 'pi pi-wallet' },
       ],
     },
     {
@@ -98,7 +98,7 @@ export class MenuItemsService {
       icon: 'pi pi-users', // PrimeNG icon class
       submenu: [
         { label: 'Contacts', route: this.navigationLink.getLink('crmLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
-        { label: 'Opportunities', route: this.navigationLink.getLink('crmLink'), roles: ['ROLE_USER'], icon: 'pi pi-briefcase' },
+        // { label: 'Opportunities', route: "", roles: ['ROLE_USER'], icon: 'pi pi-briefcase' },
       ],
     },
     {
@@ -107,10 +107,16 @@ export class MenuItemsService {
       icon: 'pi pi-money-bill', // PrimeNG icon class
       submenu: [
         { label: 'Expenses', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
-        { label: 'Reimbursements', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
-        { label: 'Retirement', route: "", roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
+        // { label: 'Reimbursements', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
+        // { label: 'Retirement', route: "", roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
 
       ],
+    },
+    {
+      label: 'Tender',
+      // route: ,
+      roles: ['ROLE_USER'],
+      icon: 'pi pi-user' // PrimeNG icon class
     },
     {
       label: 'Vendor',
