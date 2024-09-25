@@ -10,12 +10,12 @@ export class MenuItemsService {
     {
       label: 'Dashboard',
       route: this.navigationLink.getLink('dashboardLink'),
-      roles: ['ROLE_USER'],
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-home' // PrimeNG icon class
     },
     {
       label: 'Sales',
-      roles: ['ROLE_USER'],
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-dollar', // PrimeNG icon class
       submenu: [
         { label: 'Quotation', route: this.navigationLink.getLink('salesLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
@@ -26,7 +26,7 @@ export class MenuItemsService {
     },
     {
       label: 'Purchase',
-      roles: ['ROLE_USER'],
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-shopping-cart', // PrimeNG icon class
       submenu: [
         { label: 'Quotation', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
@@ -37,7 +37,7 @@ export class MenuItemsService {
     },
     {
       label: 'Inventory',
-      roles: ['ROLE_USER'],
+      roles: ['ROLE_USER' , 'ROLE_ADMIN'],
       icon: 'pi pi-cog', // PrimeNG icon class
       submenu: [
         { label: 'User Management', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER'], icon: 'pi pi-users' },
@@ -46,7 +46,7 @@ export class MenuItemsService {
     },
     {
       label: 'Procurement',
-      roles: ['ROLE_USER'],
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-truck', // PrimeNG icon class
       submenu: [
         { label: 'Request For Quotation', route: this.navigationLink.getLink('rfqLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
@@ -55,7 +55,7 @@ export class MenuItemsService {
     },
     {
       label: 'Accounting',
-      roles: ['ROLE_USER'],
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-credit-card', // PrimeNG icon class
       submenu: [
         { label: 'Quotation', route: this.navigationLink.getLink('accountingLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
@@ -64,7 +64,7 @@ export class MenuItemsService {
     },
     {
       label: 'Human Resources',
-      roles: ['ROLE_USER'],
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-users', // PrimeNG icon class
       submenu: [
         { label: 'Recuitment', route: this.navigationLink.getLink('recuitmentLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
@@ -76,7 +76,7 @@ export class MenuItemsService {
     },
     {
       label: 'POS',
-      roles: ['ROLE_USER'],
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-shopping-bag', // PrimeNG icon class
       submenu: [
         { label: 'Sales', route: this.navigationLink.getLink('posLink'), roles: ['ROLE_USER'], icon: 'pi pi-cart' },
@@ -85,7 +85,7 @@ export class MenuItemsService {
     },
     {
       label: 'Checkout',
-      roles: ['ROLE_USER'],
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-check', // PrimeNG icon class
       submenu: [
         { label: 'Order Summary', route: this.navigationLink.getLink('checkoutLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
@@ -94,7 +94,7 @@ export class MenuItemsService {
     },
     {
       label: 'CRM',
-      roles: ['ROLE_USER'],
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-users', // PrimeNG icon class
       submenu: [
         { label: 'Contacts', route: this.navigationLink.getLink('crmLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
@@ -103,7 +103,7 @@ export class MenuItemsService {
     },
     {
       label: 'Expense',
-      roles: ['ROLE_USER'],
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-money-bill', // PrimeNG icon class
       submenu: [
         { label: 'Expenses', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
@@ -115,12 +115,12 @@ export class MenuItemsService {
     {
       label: 'Tender',
       // route: ,
-      roles: ['ROLE_USER'],
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-user' // PrimeNG icon class
     },
     {
       label: 'Vendor',
-      roles: ['ROLE_USER'],
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-money-bill', // PrimeNG icon class
       submenu: [
         { label: 'View 1', route: this.navigationLink.getLink('vendorLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
@@ -130,7 +130,7 @@ export class MenuItemsService {
     {
       label: 'Settings',
       route: this.navigationLink.getLink('settingsLink'),
-      roles: ['ROLE_USER'],
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-cog' // PrimeNG icon class
     },
   ];
