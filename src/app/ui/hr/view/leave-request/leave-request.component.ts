@@ -125,7 +125,7 @@ filterCandidates() {
       employee.Employee.toLowerCase().includes(this.searchTerm.toLowerCase())
     );
     this.sortByStatus();
-  }
+}
   filterBySelectedStatus() {
     console.log(this.selectedStatus)
     if (this.selectedStatus.length == 0 ) {
