@@ -13,9 +13,13 @@ export class NavTabComponent {
   selectedTab: string = ""; 
   selectedSetting: string | null = null;
   selectedDropdownTab: string = '';
-
+  user_role:any = ''
   ngOnInit(): void{
-this.selectedTab = this.tabsConfig[0]?.name
+    // this.selectedTab = this.tabsConfig[0]?.name
+    this.user_role = sessionStorage.getItem('role'); 
+    const accessibleTab = this.tabsConfig.find(tab => !tab.role || tab.role === this.user_role);
+    this.selectedTab = accessibleTab ? accessibleTab.name : this.tabsConfig[0]?.name;
+
   }
 
   toggleDropdown(tabName:string) {
