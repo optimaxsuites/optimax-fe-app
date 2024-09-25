@@ -203,12 +203,12 @@ import { LeaveUsageComponent } from './ui/hr/view/leave-usage/leave-usage.compon
 import { ApplyComponent } from './ui/hr/view/apply/apply.component';
 import { VacancyFormComponent } from './ui/hr/view/vacancy-form/vacancy-form.component';
 import { AttendanceComponent } from './ui/hr/view/attendance/attendance.component';
-import { AttendanceSheetComponent } from './ui/hr/view/attendance-sheet/attendance-sheet.component';
 import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.component';
 import { InterviewComponent } from './ui/hr/view/interview/interview.component';
 import { ScheduledInterviewComponent } from './ui/hr/view/scheduled-interview/scheduled-interview.component';
 import { InterviewInviteComponent } from './ui/hr/view/candidate/interview-invite/interview-invite.component';
 import { ViewComponent } from './ui/hr/view/candidate/view/view.component';
+import { AttendanceSheetsComponent } from './ui/hr/view/attendance-sheet/attendance-sheet.component';
 
 
 
@@ -350,7 +350,7 @@ import { ViewComponent } from './ui/hr/view/candidate/view/view.component';
     ApplyComponent,
     VacancyFormComponent,
     AttendanceComponent,
-    AttendanceSheetComponent,
+    AttendanceSheetsComponent,
     MyAttendanceComponent,
     InterviewComponent,
     ScheduledInterviewComponent,
