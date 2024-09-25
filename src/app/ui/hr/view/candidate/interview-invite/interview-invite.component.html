@@ -9,34 +9,37 @@
             <div class="d-flex gap-4 my-2">
                 <div class="input-container-50">
                     <label for="name">Name </label>
-                    <input type="text" id="name" name="name" class="editInput" required>
+                    <input type="text" id="name" name="name" [(ngModel)]="candidate.candidate" class="editInput" required>
                 </div>
                 <div class="input-container-50">
                     <label for="phone-number">Phone Number </label>
-                    <input type="text" id="phone-number" name="phone-number" class="editInput" required appNumberOnly>
+                    <input type="text" id="phone-number" name="phone-number" [(ngModel)]="candidate.contactNo" class="editInput" required appNumberOnly>
                 </div>
             </div>
             <div class="d-flex gap-4 my-2">
                 <div class="input-container-50">
                     <label for="email">Email</label>
-                    <input type="text" id="email" name="email" class="editInput" required>
+                    <input type="text" id="email" name="email" [(ngModel)]="candidate.email" class="editInput" required>
                 </div>
                 <div class="input-container-50">
                     <label for="position">Position</label>
-                    <input type="" id="position" name="position" class="editInput" required appNumberOnly>
+                    <input type="" id="position" name="position" [(ngModel)]="candidate.position" class="editInput" required appNumberOnly>
                 </div>
             </div>
         </div>
         <div class="invite-template-wrapper">
             <h3><strong>Template</strong></h3>
             <div class="invite-template">
-                <div class="template-card"><div>Template 1</div></div>
-                <div class="template-card"><div>Template 2</div></div>
-                <div class="template-card"><div>Template 3</div></div>
+                <div class="template-card" *ngFor="let template of templates; let i = index" (click)="setTemplate(i)" [ngClass]="{'active': activeTemplateIndex === i}" >{{ getTemplateName(i) }}</div>
             </div>
         </div>
-        <div class="invite-body">
-            text editor here!
+        <div class="invite-template-wrapper">
+            <h3><strong>Interview Invite</strong></h3>
+            <textarea name="invite" id="invite" class="invite editInput" [(ngModel)]="processedTemplate" (input)="onTemplateEdit(processedTemplate)"></textarea>
+        </div>
+        <div class="btn-wrapper">
+            <app-button text="Send Invite" class="btn-save" (click)="sendInvite()" ></app-button>
         </div>
     </div>
+
 </div>
