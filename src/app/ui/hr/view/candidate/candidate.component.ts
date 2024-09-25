@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 @Component({
   selector: 'app-candidate',
@@ -23,10 +23,13 @@ export class CandidateComponent {
     this.viewModal = false;
   }
 
-  openInterviewInvite(){
+  openInterviewInvite(candidate: any){
+    this.activeItem = candidate
+    console.log(candidate)
     this.showCandidate = false;
     this.showInterviewInvite = true;
   }
+
   closeInterviewInvite() {
     this.showCandidate = true;
     this.showInterviewInvite = false;
