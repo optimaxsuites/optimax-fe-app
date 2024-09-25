@@ -193,6 +193,18 @@ filterCandidates() {
     this.filteredCandidates = this.savedEmployees.filter((employee: { Employee: string; }) => 
       employee.Employee.toLowerCase().includes(this.searchTerm.toLowerCase())
     );
+    this.filteredCandidates = this.savedEmployees.filter(employee => {
+      // Check if the candidate matches the search term
+      const matchesSearchTerm = employee.Employee.toLowerCase().includes(this.searchTerm.toLowerCase());
+  
+      // Check if the candidate matches one of the selected leaveType or status (if any)
+      const matchesLeaveType = this.selectedLeaveType.length === 0 || this.selectedLeaveType.includes(employee.LeaveType);
+      const matchesStatus = this.selectedStatus.length === 0 || this.selectedStatus.includes(employee.Status);
+
+  
+      // Return true if all conditions are met
+      return matchesSearchTerm && matchesLeaveType && matchesStatus;
+    });
     this.sortByStatus();
 }
   filterBySelectedStatus() {
@@ -306,7 +318,7 @@ filterCandidates() {
           }
     });
     this.updateLocalStorage()
-    this.messageService.add({ severity: 'success', summary: 'Leave', detail: `Selected leave(s) has been rejected`, key: 'tl', life: 3000 });
+    this.messageService.add({ severity: 'warn', summary: 'Leave', detail: `Selected leave(s) has been rejected`, key: 'tl', life: 3000 });
     this.selectedEmployees = [];
     this.sortByStatus();
 
