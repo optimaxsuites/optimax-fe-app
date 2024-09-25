@@ -11,6 +11,13 @@
     --anti-flash-white: #EEEEEE;
     --light-blue: #B6D6E2;
     --white: #fff;
+
+    // badge
+    --badge-grey: rgb(182, 182, 182);
+    --badge-red: rgb(233, 55, 55);
+    --badge-lightblue: rgb(101, 199, 231);
+    --badge-green: rgb(112, 231, 101);
+
     
     --sky-blue: #f8feff;
     --sky-blue-2: #e3eef0;
@@ -28,6 +35,42 @@
     /* --font-size: 10px; */
     --font-family: 'Roboto Slab', serif;
 }
+
+
+// badge
+.badge {
+  padding: .7rem 2rem !important;
+  border-radius: 5px !important;
+  color: #fff !important;
+  font-weight: 300 !important;
+  font-size: var(--md-font) !important;
+}
+
+.badge-lightgrey {
+  background-color: var(--badge-grey);
+}
+
+.badge-lightblue {
+  background-color: var(--badge-lightblue);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* vendor-quote-form.component.css */
 .table-row:nth-child(even) {
