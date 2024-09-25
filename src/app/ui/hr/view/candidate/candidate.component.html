@@ -10,28 +10,32 @@
       </ng-template>
 
       <ng-template pTemplate="right">
-        <div>
-          <ng-select 
-            [items]="positions"
-            class="table-item"
-            bindLabel="position"
-            [multiple]="true"
-            placeholder="Filter by position"
-            [(ngModel)]="selectedPositions"
-            (ngModelChange)="filterCandidatesByPosition()">
-          </ng-select>
-        </div>
-        <!-- <app-button text="Add New" class="btn-navigate gap-2"></app-button> -->
-        <!-- <app-button text="Import" class="btn-export"></app-button> -->
+        
       </ng-template>
     </p-toolbar>
 
-    <div class="search-bar">
-      <input 
-        type="text" 
-        placeholder="Search" 
-        class="editInput"
-      />
+    <div class="flex w-full justify-between ">
+      <div class="w-1/1">
+        <ng-select 
+          [items]="positions"
+          class="px-3"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by position"
+          [(ngModel)]="selectedPositions"
+          (ngModelChange)="filterCandidatesByPosition()">
+        </ng-select>
+      </div>
+
+      <div class="search-bar w-[90%]">
+        <input 
+          type="text" 
+          placeholder="Search" 
+          class="editInput"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="filterCandidates()"
+        />
+      </div>
     </div>
 
     <p-table 
@@ -64,17 +68,9 @@
             <td class="table-item">{{ candidate.position }}</td>
             <td class="table-item">{{ candidate.dateApplied }}</td>
             <td class="table-item">
-                <ng-select 
-                    [items]="stages"
-                    [(ngModel)]="candidate.stage"
-                    (ngModelChange)="updateStage(candidate, $event)"
-                    class="custom-ng-select"
-                    dropdownPosition="auto"
-                    appendTo="body"
-                    [clearable]="false"
-                    [disabled]="candidate.stage === 'Hired'">
-                    <ng-option class="table-item" *ngFor="let stage of stages" [value]="stage">{{ stage }}</ng-option>
-                </ng-select>
+                <span [ngClass]="getStatusClass(candidate.stage)">
+                  {{ candidate.stage }} 
+                </span>
             </td>
             <td class="actions">
             <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event)" ></i>
@@ -92,7 +88,6 @@
         </tr>
         </ng-template>
     </p-table>
-  
   </div>
 </div>
 
@@ -106,42 +101,42 @@
   [header]="'Viewing ' + activeItem.candidate + ' information'"
   [title]="'Cancel'"
   (close)="closeViewModal()">
-  <!-- <app-view></app-view> -->
      <div class="view-wrapper">
       <div class="d-flex gap-4 my-2">
         <div class="input-container-50">
-            <label for="name">Name </label>
-            <input type="text" id="name" name="name" class="editInput" required>
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" class="editInput" [(ngModel)]="activeItem.candidate" required disabled>
         </div>
         <div class="input-container-50">
-            <label for="phone-number">Phone Number </label>
-            <input type="text" id="phone-number" name="phone-number" class="editInput" required appNumberOnly>
+            <label for="phone-number">Phone Number</label>
+            <input type="text" id="phone-number" name="phone-number" class="editInput" [(ngModel)]="activeItem.contactNo" required disabled>
         </div>
       </div>
       <div class="d-flex gap-4 my-2">
         <div class="input-container-50">
             <label for="email">Email</label>
-            <input type="text" id="email" name="email" class="editInput" required>
+            <input type="text" id="email" name="email" class="editInput" [(ngModel)]="activeItem.email" required disabled>
         </div>
         <div class="input-container-50">
             <label for="position">Position</label>
-            <input type="" id="position" name="position" class="editInput" required appNumberOnly>
+            <input type="text" id="position" name="position" class="editInput" [(ngModel)]="activeItem.position" required disabled>
         </div>
       </div>
       <div class="d-flex gap-4 my-2">
         <div class="input-container-50">
             <label for="date">Date Applied</label>
-            <input type="text" id="date" name="date" class="editInput" required>
+            <input type="text" id="date" name="date" class="editInput" [(ngModel)]="activeItem.dateApplied" required disabled>
         </div>
         <div class="input-container-50">
             <label for="resume">Resume</label> <br>
-            <button text="Download Resume" class="btn-download" (click)="downloadResume()"><i class="pi pi-download resume me-2"></i> Download Resume</button>
+            <button text="Download Resume" class="btn-download" (click)="downloadResume(activeItem.resume)">
+              <i class="pi pi-download resume me-2"></i> Download Resume
+            </button>
         </div>
       </div>
       <div class="">
         <label for="cover-letter">Cover Letter</label>
-        <textarea class="cover-letter editInput" name="cover-letter" id="" disabled>
-        </textarea>
+        <textarea class="cover-letter editInput" name="cover-letter" [(ngModel)]="activeItem.coverLetter" disabled></textarea>
       </div>
      </div>
 </app-modal>
