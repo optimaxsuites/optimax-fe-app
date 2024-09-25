@@ -16,20 +16,21 @@ export class MenuItemsService {
     {
       label: 'Sales',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      route: this.navigationLink.getLink('salesLink'),
       icon: 'pi pi-dollar', // PrimeNG icon class
-      submenu: [
-        { label: 'Quotation', route: this.navigationLink.getLink('salesLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        // { label: 'Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        // { label: 'Proforma Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        // { label: 'Dispatch Note', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
-      ],
+      // submenu: [
+      //   { label: 'Quotation', , roles: ['ROLE_USER'], icon: 'pi pi-file' },
+      //   // { label: 'Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
+      //   // { label: 'Proforma Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
+      //   // { label: 'Dispatch Note', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
+      // ],
     },
     {
       label: 'Purchase',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-shopping-cart', // PrimeNG icon class
       submenu: [
-        { label: 'Quotation', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
+        { label: 'Request For Quotation', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
         // { label: 'Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
         // { label: 'Proforma Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
         // { label: 'Dispatch Note', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
@@ -67,7 +68,7 @@ export class MenuItemsService {
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-users', // PrimeNG icon class
       submenu: [
-        { label: 'Recuitment', route: this.navigationLink.getLink('recuitmentLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
+        { label: 'Recruitment', route: this.navigationLink.getLink('recuitmentLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
         { label: 'Interview', route: this.navigationLink.getLink('interviewLink'), roles: ['ROLE_USER'], icon: 'pi pi-check' },
         { label: 'Attendance', route: this.navigationLink.getLink('attendanceLink'), roles: ['ROLE_USER'], icon: 'pi pi-check' },
         { label: 'Leave', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
