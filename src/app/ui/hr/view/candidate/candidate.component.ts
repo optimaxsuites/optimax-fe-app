@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-candidate',
@@ -23,13 +23,10 @@ export class CandidateComponent {
     this.viewModal = false;
   }
 
-  openInterviewInvite(candidate: any){
-    this.activeItem = candidate
-    console.log(candidate)
+  openInterviewInvite(){
     this.showCandidate = false;
     this.showInterviewInvite = true;
   }
-
   closeInterviewInvite() {
     this.showCandidate = true;
     this.showInterviewInvite = false;
@@ -94,7 +91,6 @@ export class CandidateComponent {
       // Check if the candidate matches one of the selected positions (if any)
       const matchesPosition = this.selectedPositions.length === 0 || this.selectedPositions.includes(candidate.position);
   
-      // Return true if both conditions are met
       return matchesSearchTerm && matchesPosition;
     });
   }
