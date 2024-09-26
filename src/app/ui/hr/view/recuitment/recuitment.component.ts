@@ -3,6 +3,7 @@ import { TabConfig } from 'src/app/ui/shared/service/interface/data';
 import { RecuitmentFormComponent } from '../recuitment-form/recuitment-form.component';
 import { CandidateComponent } from '../candidate/candidate.component';
 import { VacancyComponent } from '../vacancy/vacancy.component';
+import { ScheduledInterviewComponent } from '../scheduled-interview/scheduled-interview.component';
 
 @Component({
   selector: 'app-recuitment',
@@ -19,18 +20,8 @@ export class RecuitmentComponent {
   tabsConfig: TabConfig[] = [
     { name: 'Job Posting', component: RecuitmentFormComponent },
     { name: 'Candidate', component: CandidateComponent },
-    // { name: 'Vacancy', component: VacancyComponent },
-
-    // { name: 'view2', component: RfqCategoryListComponent },
-    // { 
-    //   name: 'Settings', 
-    //   component: null, 
-    //   hasDropdown: true,
-    //   dropdownOptions: [
-    //     { label: 'Configurations', action: 'configurations', component: ConfigurationComponent },
-    //     { label: 'Users', action: 'users', component: ManageUsersComponent }
-    //   ]
-    // }
+    { name: 'Scheduled Interview', component: ScheduledInterviewComponent },
+    { name: 'Score Sheet', component: CandidateComponent },
   ];
   ngOnInit(): void {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
