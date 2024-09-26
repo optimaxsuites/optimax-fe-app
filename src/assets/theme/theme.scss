@@ -11,6 +11,7 @@
     --anti-flash-white: #EEEEEE;
     --light-blue: #B6D6E2;
     --white: #fff;
+    --red: red;
 
     // badge
     --badge-grey: rgb(182, 182, 182);
@@ -24,6 +25,7 @@
     --gray-light: #f0f0f0;  /* Light gray for even rows */
     --gray-dark: #e2e2e2;   /* Darker gray for odd rows */
 
+    --text-gray: #495057;
     --sm-font: .8em;
     --md-font: 1em;
     --l-font: 1.2em;
@@ -35,6 +37,117 @@
     /* --font-size: 10px; */
     --font-family: 'Roboto Slab', serif;
 }
+
+// delete
+.custom-confirm-dialog {
+  width: 30%;
+  .p-dialog-content {
+    // width: 450px;
+    padding: 2rem;
+    background-color: var(--white);
+  }
+
+  .p-dialog-header {
+    background-color: var(--sky-blue);
+    color: var(--text-gray);
+    padding: 1rem;
+    border-bottom: 1px solid var(--gray-dark);
+  }
+
+  .p-dialog-footer {
+    background-color: var(--sky-blue);
+    padding: 1rem;
+    border-top: 1px solid var(--gray-dark);
+    display: flex;
+    justify-content: center;
+  }
+
+  .p-confirm-dialog-message {
+    font-size: var(--md-font);
+    margin-bottom: 1rem;
+  }
+
+  .p-confirm-dialog-icon {
+    color: var(--red);
+    margin-right: 0.5rem;
+  }
+
+  // .p-button {
+  //   margin: 0 0.5rem;
+  // }
+
+  // .Delete{
+  //   background-color: var(--red);
+  // }
+
+  .p-button-custom-cancel {
+    background-color: var(--blue-green);
+    color: var(--white);
+
+    &:hover {
+      background-color: var(--blue-green-hover);
+    }
+
+    &:focus {
+      box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #4d7b8a, 0 1px 2px 0 black !important;
+    }
+  }
+
+  .p-btn-danger {
+    background-color: var(--red);
+  }
+  .p-btn-cancle {
+    margin-right: 1rem;
+    background-color: var(--blue-green);
+  }
+  .p-button-text{
+    padding: .7rem 1rem;
+    color: var(--white);
+    border-radius: 5px;
+  }
+
+
+  // .p-dialog-footer {
+  //   background-color: #f8f9fa;
+  //   padding: 1rem;
+  //   border-top: 1px solid #dee2e6;
+  //   display: flex;
+  //   justify-content: center;
+  // }
+
+  // .p-confirm-dialog-reject, .p-confirm-dialog-accept {
+  //   min-width: 70px; 
+  //   height: 25px;
+  //   padding: 5px;
+  // }
+
+  .custom-confirm-button {
+    margin: 0 1rem; 
+  }
+
+  // .p-button-custom-cancel {
+  //   background-color: var(--blue-green);
+  //   color: white;
+
+  //   &:hover {
+  //     background-color: var(--blue-green-hover);
+  //   }
+
+  //   &:focus {
+  //     box-shadow: 0 0 0 2px var(--white), 0 0 0 4px var(--blue-green), 0 1px 2px 0 black !important;
+  //   }
+  // }
+
+  // .delete-text {
+  //   color: var(--red);
+  //   font-weight: bold;
+  //   text-transform: uppercase;
+  // }
+}
+// delete
+
+
+
 
 .invite{
   min-height: 700px;

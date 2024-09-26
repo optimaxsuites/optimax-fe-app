@@ -7,12 +7,18 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 })
 export class InterviewInviteComponent {
   @Output() back = new EventEmitter<void>();
+  @Output() shortlisted = new EventEmitter<void>();
   @Input() candidate: any;
 
   ngOnInit(): void {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
     //Add 'implements OnInit' to the class.
     this.setTemplate(0)
+  }
+
+  sendInvite() {
+    // Emit the shortlisted event when the button is clicked
+    this.shortlisted.emit();
   }
 
   // Method to trigger back button event
@@ -128,16 +134,6 @@ Best,
   }
 
 
-  sendInvite() {
-    const email = 'psimeon360@gmail.com';
-    const subject = 'Interview Invitation';
-    const body = encodeURIComponent(this.processedTemplate); // Encode the body for URL
-    const mailtoLink = `mailto:${email}?subject=${subject}&body=${body}`;
 
-    // Use window.location to open the mail client
-    window.location.href = mailtoLink;
 
-    // Optionally, you can also display a success message or handle errors here
-    alert('Invite sent to ' + email);
-  }
 }

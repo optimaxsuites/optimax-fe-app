@@ -10,6 +10,6 @@ import { ScheduledInterviewComponent } from '../scheduled-interview/scheduled-in
 export class InterviewComponent {
   tabsConfig: TabConfig[] = [
     { name: 'Scheduled Interview', component: ScheduledInterviewComponent },
-    // { name: 'My attendance', component: MyAttendanceComponent },
+    { name: 'Score sheet', component: ScheduledInterviewComponent },
   ];
 }
