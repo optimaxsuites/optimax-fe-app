@@ -79,7 +79,7 @@
                         <!-- <li class="table-item-panel"> <i class="pi pi-user-plus table-item me-2"></i> Add as Employee</li> -->
                         <li class="table-item-panel" (click)="openViewModal(candidate, op)"> <i class="pi pi-eye table-item me-2"></i> View</li>
                         <li class="table-item-panel"> <i class="pi pi-download table-item me-2"></i> Download Resume</li>
-                        <li class="table-item-panel" (click)="openInterviewInvite()"> <i class="pi pi-send table-item me-2"></i> Send Invite</li>
+                        <li class="table-item-panel" (click)="openInterviewInvite(candidate)"> <i class="pi pi-send table-item me-2"></i> Send Invite</li>
                         <!-- <li class="table-item-panel"> <i class="pi pi-users table-item me-2"></i> Compare with Other Candidates </li> -->
                         <li class="table-item-panel"> <i class="pi pi-trash table-item me-2"></i> Delete</li>
                     </div>
@@ -100,7 +100,7 @@
 
 
 <div *ngIf="showInterviewInvite">
-  <app-interview-invite (back)="closeInterviewInvite()"></app-interview-invite>
+  <app-interview-invite [candidate]="activeItem" (back)="closeInterviewInvite()"></app-interview-invite>
 </div>
 
 <app-modal 
