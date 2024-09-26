@@ -15,8 +15,8 @@ export class LeaveComponent {
   tabsConfig: TabConfig[] = [
     { name: 'Leave requests', component: LeaveRequestComponent, role: 'ROLE_ADMIN' },
     { name: 'Assign leave', component: AssignLeaveComponent , role: 'ROLE_ADMIN' },
-    { name: 'My Leave Usage', component: LeaveUsageComponent },
     { name: 'Apply', component: ApplyComponent },
+    { name: 'My Leave Usage', component: LeaveUsageComponent },
 
   
 

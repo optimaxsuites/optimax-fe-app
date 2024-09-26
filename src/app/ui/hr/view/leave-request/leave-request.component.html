@@ -109,8 +109,8 @@
     <textarea name="comment" id="comment" class="border-0 outline-none border-b-2 placeholder:text-gray-400 w-full" rows="5" cols="50" placeholder="enter message here" [(ngModel)]="comment"></textarea>
 
     <div class="flex justify-around my-6 px-3 items-center w-full ">
-        <button class="bg-customGreen  text-white rounded-xl w-[40%] py-4" (click)="acceptLeave()">Approve</button>
-        <button class="  bg-red-600  text-white rounded-xl w-[40%] py-4" (click)="rejectLeave()">Reject</button>
+        <button class="bg-customGreen  text-white rounded-xl w-[40%] py-4 hover:bg-customGreenHover" (click)="acceptLeave()">Approve</button>
+        <button class="  bg-red-600 hover:bg-red-400  text-white rounded-xl w-[40%] py-4" (click)="rejectLeave()">Reject</button>
     </div>
   </app-modal>
 
@@ -124,12 +124,12 @@
     <p>Applied on: {{employeeInView.AppliedOn}}</p>
     <p>Leave Type: {{employeeInView.LeaveType}}</p>
 
-    <p class="w-[30vw]">Reason: <br>    <span class="ml-2 border-b border-b-black mb-5 pb-2 text-wrap">
+    <p class="w-[30vw]">Reason: <br>    <span  class="ml-2  mb-5 pb-2 text-wrap">
       {{employeeInView.RequestComment}}
     </span></p>
  
     
-      <p class="w-[30vw]" *ngIf="!employeeInView.Status.includes('Pending Approval')">Review Comment: <br>  <span class="ml-2 border-b border-b-black mb-5 pb-2 text-wrap">
+      <p class="w-[30vw]" *ngIf="!employeeInView.Status.includes('Pending Approval')">Review Comment: <br>  <span class="ml-2  mb-5 pb-2 text-wrap">
         {{employeeInView.ApprovalComment}} 
       </span> </p>
      
@@ -137,7 +137,7 @@
 
       
     <div *ngIf="employeeInView.Status.includes('Pending Approval')"  class="flex justify-around my-3 px-3 items-center w-full ">
-      <button class="bg-customBlue text-white rounded-xl w-[40%] py-4" (click)="openAcceptRejectModal(employeeInView)">Approve/Reject</button>
+      <button class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl w-[40%] py-4" (click)="openAcceptRejectModal(employeeInView)">Approve/Reject</button>
   </div>
 
   </app-modal>

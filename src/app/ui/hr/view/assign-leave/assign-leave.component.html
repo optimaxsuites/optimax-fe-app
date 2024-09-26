@@ -1,9 +1,9 @@
-<div class="w-full bg-gray-50 my-3 rounded-2xl  p-12 text-gray-800">
-    <h2 class="font-semibold">Assign leave</h2>
+<div class="w-full bg-white/90 my-3 rounded-2xl  p-8 text-gray-800">
+    <h2 class="font-bold text-gray-700">Assign leave</h2>
     <hr>
 
 
-<div class="w-[60%] flex mt-5 flex-col gap-2">
+<div class="w-[60%] flex mt-5 flex-col gap-4">
 
     <div>
     <p>Employee*</p>
@@ -12,10 +12,10 @@
           [items]="employees"
           bindLabel="fullname"
           bindValue="fullname"
-          [multiple]="false"
+          [multiple]="true"
           placeholder="Select employee"
           [(ngModel)]="selectedEmployee"
-          class="h-full"
+          class="custom-ng-select h-full"
          >
         </ng-select>
       </div>
@@ -43,7 +43,7 @@
               [multiple]="false"
               placeholder="Select leave type"
               [(ngModel)]="selectedLeaveType"
-              class="h-full"
+              class="custom-ng-select  h-full"
              >
             </ng-select>
           </div>
@@ -51,7 +51,7 @@
     
       <div>
         <p>Comments</p>
-        <textarea name="comment" id="comment" class="w-full rounded-xl outline-none p-3 border border-blak" placeholder="Enter comment here " rows="7" [(ngModel)]="comment"></textarea>
+        <textarea name="comment" id="comment" class="w-full rounded-xl outline-none bg-transparent p-3 border border-blak" placeholder="Enter comment here " rows="7" [(ngModel)]="comment"></textarea>
       </div>
 
 
@@ -59,7 +59,7 @@
     
 </div>
 <div class="flex items-center justify-end ">
-    <button class=" font-bold bg-customBlue text-white rounded-xl p-4" (click)="assignLeave()">
+    <button class="hover:bg-customBlueHover font-bold bg-customBlue text-white rounded-xl p-4" (click)="assignLeave()">
     Assign
 
     </button>
