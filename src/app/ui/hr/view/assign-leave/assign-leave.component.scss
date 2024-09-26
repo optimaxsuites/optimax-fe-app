@@ -1,3 +1,7 @@
 .editInput {
-    @apply p-2 h-16 outline-none
+    @apply p-2 h-16 outline-none bg-transparent text-gray-700
 }
+
+::ng-deep .custom-ng-select .ng-select-container {
+    background-color: transparent
+  }

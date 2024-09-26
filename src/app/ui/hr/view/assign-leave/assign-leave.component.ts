@@ -19,7 +19,7 @@ export class AssignLeaveComponent {
    private leaveService: LeaveServiceService
   ) {
   }
-selectedEmployee: string = '';
+selectedEmployee: string[] = [];
 employees:any[] = []
 
 ngOnInit(): void {
@@ -75,33 +75,40 @@ getCurrentDateTime(): string {
 }
 
 assignLeave() {
+  let leaveRequests = JSON.parse((localStorage.getItem('leaveRequest')) || '[]');
+
   if(this.selectedEmployee.length > 0 && this.fromDate && this.toDate && this.selectedLeaveType.length > 0){
+
+
     const from = new Date(this.fromDate);
     const to = new Date(this.toDate);
 
     const timeDiff = to.getTime() - from.getTime();
 
     const dayDiff = timeDiff / (1000 * 3600 * 24);
-    const leaveRequest  =  {
-      Employee: this.selectedEmployee,
-      Date: `${this.fromDate} to ${this.toDate}`,
-      LeaveType: this.selectedLeaveType,
-      NetLeaveBalance: "5.00 day(s)",
-      RequestedDuration: `${dayDiff}.00 day(s)`,
-      Status: "Approved",
-      RequestComment: '',
-      AppliedOn: this.getCurrentDateTime(),
-      ApprovalComment: this.comment,
-      Id: this.token.getRandomToken()
-  }
+       this.selectedEmployee.forEach((employee: any) => {
+      const leaveRequest = {
+        Employee: employee,
+        Date: `${this.fromDate} to ${this.toDate}`,
+        LeaveType: this.selectedLeaveType,
+        NetLeaveBalance: "5.00 day(s)",
+        RequestedDuration: `${dayDiff}.00 day(s)`,
+        Status: "Approved",
+        RequestComment: '',
+        AppliedOn: this.getCurrentDateTime(),
+        ApprovalComment: this.comment,
+        Id: this.token.getRandomToken()
+      };
 
-  let leaveRequests = JSON.parse((localStorage.getItem('leaveRequest')) || '[]');
+      leaveRequests.push(leaveRequest);
+    });
 
-  leaveRequests.push(leaveRequest);
+
+  // leaveRequests.push(leaveRequest);
 
   localStorage.setItem('leaveRequest', JSON.stringify(leaveRequests));
 
-  this.selectedEmployee =''
+  this.selectedEmployee = []
   this.comment = ''
   this.fromDate = ''
   this.toDate = ''

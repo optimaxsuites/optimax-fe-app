@@ -12,7 +12,6 @@ import { RandomTokenService } from 'src/app/ui/shared/service/random-token/rando
 export class LeaveRequestComponent {
 
 
-  stages = ['Application Received', 'Shortlisted'];
   statuses: string[] = ['Pending Approval', 'Approved', 'Rejected']
   leaveTypes: string[] = [  "Annual Leave",
     "Sick Leave",
@@ -172,10 +171,11 @@ export class LeaveRequestComponent {
   ) {
   }
   ngOnInit() {
-    this.sortByStatus();
 
     this.savedEmployees = JSON.parse(localStorage.getItem("leaveRequest") || '[]');
     this.filteredCandidates = [...this.savedEmployees];
+    this.sortByStatus();
+
 
   }
   sortByStatus() {
@@ -253,9 +253,9 @@ filterCandidates() {
     if (this.selectedEmployee) {
 
       this.selectedEmployee.Status = 'Approved';
-      if(this.comment.length >0){
-        this.selectedEmployee.ApprovalComment = this.comment
-      }
+   
+      this.selectedEmployee.ApprovalComment = this.comment? this.comment : "No comment"
+ 
       this.comment = ''
       this.messageService.add({ severity: 'success', summary: 'Leave', detail: `${this.selectedEmployee?.Employee}'s leave has been accepted`, key: 'tl', life: 3000 });
 
@@ -271,9 +271,9 @@ filterCandidates() {
 
     if (this.selectedEmployee) {
       this.selectedEmployee.Status = 'Rejected';
-      if(this.comment.length >0){
-        this.selectedEmployee.ApprovalComment = this.comment
-      }
+ 
+        this.selectedEmployee.ApprovalComment = this.comment? this.comment : "No comment"
+      
       this.comment = ''
       this.messageService.add({ severity: 'warn', summary: 'Leave', detail: `${this.selectedEmployee?.Employee}'s leave has been rejected`, key: 'tl', life: 3000 });
 
