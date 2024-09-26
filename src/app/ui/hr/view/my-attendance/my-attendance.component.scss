@@ -1,0 +1,149 @@
+.attendance-container {
+  padding: 20px;
+  width: 66.67%;
+  margin-left: auto;
+}
+
+
+
+
+.attendance-boxes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attendance-wrapper {
+  display: flex;
+  height: 100vh; /* Ensure the wrapper takes the full height of the viewport */
+  align-items: stretch;
+}
+
+.attendance-box {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: left;
+  transition: background-color 0.3s;
+  width: 100%;
+}
+
+.attendance-box:hover {
+  background-color: #f0f0f0;
+}
+
+.present {
+  background-color: #c8e6c9; /* Green for present */
+}
+
+.absent {
+  background-color: #2fab72; /* Red for absent */
+}
+
+.day {
+  font-weight: bold;
+}
+
+.status {
+  margin: 10px 0;
+}
+
+
+.left-container {
+  width: 33%; /* Takes up 1/3 of the page */
+  padding: 20px;
+  background-color: #f9fafb;
+}
+
+.employee-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.profile-picture {
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  margin-right: 15px;
+}
+
+.employee-details {
+  h3 {
+    margin: 0;
+    font-size: 18px;
+  }
+  p {
+    margin: 0;
+    color: #2fab72;
+    font-size: 14px;
+  }
+}
+
+.time-info {
+  margin-bottom: 30px;
+
+  .time-today {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+
+  .status {
+    p {
+      font-weight: bold;
+      margin: 0;
+    }
+    .not-submitted {
+      color: red;
+    }
+  }
+
+  .period {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+  }
+}
+
+.weekly-time {
+  margin-top: 20px;
+
+  h4 {
+    margin-bottom: 10px;
+  }
+
+  .chart {
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    height: 100px;
+    background-color: #eee;
+    padding: 10px;
+
+    .chart-bar {
+      width: 20px;
+      background-color: #2fab72;
+      text-align: center;
+
+      div {
+        background-color: #2fab72;
+        width: 100%;
+        transition: height 0.3s ease;
+      }
+
+      span {
+        display: block;
+        margin-top: 5px;
+        font-size: 12px;
+      }
+    }
+  }
+
+  .total-week-time {
+    margin-top: 10px;
+    font-size: 18px;
+    font-weight: bold;
+  }
+}
