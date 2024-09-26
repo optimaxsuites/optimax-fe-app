@@ -1,1 +1,55 @@
-<p>my-attendance works!</p>
+
+
+<div class="attendance-container">
+
+  <div class="attendance-boxes">
+    <div *ngFor="let day of days" class="attendance-box" [ngClass]="getAttendanceClass(day)">
+      <div class="day">{{ day }}</div>
+      <div class="status">{{ getStatus(day) }}</div>
+      <button (click)="markAttendance(day)">Mark Attendance</button>
+    </div>
+  </div>
+</div>
+
+<div class="left-container">
+  <!-- Employee Information -->
+  <div class="employee-info">
+    <img src="path-to-profile-picture.jpg" alt="Profile Picture" class="profile-picture">
+    <div class="employee-details">
+      <h3>Akinola Ifeoluwa</h3>
+      <p>Punched Out: Today at 03:20 PM (GMT 1.0)</p>
+    </div>
+  </div>
+
+  <!-- Time Information -->
+  <div class="time-info">
+    <div class="time-today">
+      <h2>15h 20m Today</h2>
+    </div>
+    <div class="status">
+      <p>Status</p>
+      <span class="not-submitted">NOT SUBMITTED</span>
+    </div>
+    <div class="period">
+      <p>Period</p>
+      <input type="date" [(ngModel)]="selectedPeriodStart" /> to
+      <input type="date" [(ngModel)]="selectedPeriodEnd" />
+    </div>
+  </div>
+
+  <!-- Weekly Time Chart -->
+  <div class="weekly-time">
+    <h4>This Week</h4>
+    <div class="chart">
+      <div *ngFor="let day of weekData" class="chart-bar">
+        <div [style.height]="day.hoursWorked + '%'"></div>
+        <span>{{ day.day }}</span>
+      </div>
+    </div>
+    <div class="total-week-time">
+      <p>73h 26m</p>
+    </div>
+  </div>
+</div>
+
+o

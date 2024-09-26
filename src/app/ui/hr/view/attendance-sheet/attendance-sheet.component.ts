@@ -4,45 +4,40 @@ import { Component, ChangeDetectorRef } from '@angular/core';
   selector: 'app-attendance-sheet',
   templateUrl: './attendance-sheet.component.html',
   styleUrls: ['./attendance-sheet.component.scss']
-
 })
 export class AttendanceSheetsComponent {
   showAttendanceSheets: boolean = true;
-  searchTerm: string = '';
+  showCheckAttendance: boolean = false; // New flag to control visibility
   activeItem: any = {};
   viewModal: boolean = false;
 
-
-  getStatusClass(Remarks: string) {
-    switch (Remarks) {
-      case 'late':
-        return 'badge badge-lightgrey';
-      case 'early':
-        return 'badge badge-lightblue';
-        case 'absent':
-          return 'badge badge-lightblue';
-      default:
-        return '';
-    }
-  }
-
-
-
-
-
-
-
-  Remarks = ['late', 'early' , 'absent'];
-
   attendanceSheets: any[] = [
-    { employeeID: 'EMP001', employeeName: 'Akinola Ifeoluwa', department: 'IT', date: '2023-11-20',  punchInTimeNote: '09:00', punchoutTimeNote: '17:00' , punchoutTime: '17:00' , punchInTime:'12:00' , Remark: 'late' },
-    { employeeID: 'EMP002', employeeName: 'Damilola Awe', department: 'CEO', date: '2023-11-20', inTime: '07:00', outTime: '14:00', },
-    { employeeID: 'EMP003', employeeName: 'Babalola Oni', department: 'Accounting', date: '2023-11-20', inTime: '09:00', outTime: '17:00' , Remark: 'absent' },
-    { employeeID: 'EMP004', employeeName: 'Akeredolu Oyinlola ', department: 'Sales', date: '2023-11-20', inTime: '07:00', outTime: '14:00', Remark: 'early'},
-
+    { employeeID: 'EMP001', employeeName: 'Akinola Ifeoluwa', department: 'IT', date: '2023-11-20', inTime: '07:00', outTime: '14:00' },
+    { employeeID: 'EMP002', employeeName: 'Damilola Awe', department: 'CEO', date: '2023-11-20', inTime: '07:00', outTime: '14:00' },
+    { employeeID: 'EMP003', employeeName: 'Babalola Oni', department: 'Accounting', date: '2023-11-20', inTime: '09:00', outTime: '17:00' },
+    { employeeID: 'EMP004', employeeName: 'Akeredolu Oyinlola', department: 'Sales', date: '2023-11-20', inTime: '07:00', outTime: '14:00' }
   ];
 
-  filteredAttendanceSheets: any[] = [...this.attendanceSheets];
+  attendanceDetails: any[] = [
+    // Dummy data for punch in/out details
+    { date: '2023-11-20', inTime: '07:00', outTime: '14:00', remarks: 'None' },
+    { date: '2023-11-20', inTime: '08:00', outTime: '16:00', remarks: 'None' },
+    // Add more entries as needed
+  ];
+
+  goToCheckAttendance(employeeID: any) {
+    this.activeItem = employeeID;
+    this.showAttendanceSheets = false; // Hide attendance sheets
+    this.showCheckAttendance = true; // Show check attendance
+  }
+
+  closeViewModal() {
+    this.viewModal = false;
+    this.showAttendanceSheets = true; // Show attendance sheets again when modal closes
+    this.showCheckAttendance = false; // Hide check attendance
+  }
+}
+
 
   // constructor(private changeDetectorRef: ChangeDetectorRef) {}
 
@@ -100,4 +95,3 @@ export class AttendanceSheetsComponent {
   // }
 
   // Other methods as needed
-}
