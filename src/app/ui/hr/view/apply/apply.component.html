@@ -71,7 +71,7 @@
                 <p class="font-semibold text-gray-700 outline-none mb-2">Attachment</p>
 
                 <label class="cursor-pointer text-white bg-customBlue py-3 px-4 rounded-xl hover:bg-customBlueHover" for="attachment">  <i class="pi pi-upload resume me-2  text-2xl"></i>  Upload file</label>
-                <input name="attachment" id="attachment" class="w-full rounded-xl outline-none bg-transparent p-3 border border-blak" type="file"[(ngModel)]="attachment" hidden/>
+                <input name="attachment" id="attachment" class="w-full rounded-xl outline-none bg-transparent p-3 border border-blak" type="file" [(ngModel)]="attachment"  (change)="onFileSelected($event)" hidden/>
               </div>
     </div>
     
