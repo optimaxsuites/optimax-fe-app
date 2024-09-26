@@ -1,1 +1,70 @@
-<p>attendance-sheet works!</p>
+<div class="card">
+  <p-toolbar styleClass="mb-4 gap-2">
+    <ng-template pTemplate="left">
+      <app-button text="Delete" class="btn-delete"></app-button>
+    </ng-template>
+
+    <ng-template pTemplate="right">
+      <app-button text="Add New" class="btn-navigate" ></app-button>
+    </ng-template>
+  </p-toolbar>
+
+  <div class="search-bar">
+    <input
+      type="text"
+      placeholder="Filter"
+      class="editInput"
+    />
+  </div>
+
+  <p-table
+      [value]='attendanceSheets'
+      [paginator]="true"
+      styleClass="p-datatable-striped"
+      [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+      [rows]="15"
+      >
+
+      <ng-template pTemplate="header">
+      <tr>
+          <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+          <th class="table-item" pSortableColumn="employeeID">Employee ID</th>
+          <th class="table-item" pSortableColumn="employeeName">Employee Name</th>
+          <th class="table-item" pSortableColumn="department">Department</th>
+          <th class="table-item" pSortableColumn="date">Date</th>
+          <th class="table-item" pSortableColumn="inTime">punchInTimeNote</th>
+          <th class="table-item" pSortableColumn="outTime">PunchOutTimeNote</th>
+          <th class="table-item" pSortableColumn="inTime">In Time</th>
+          <th class="table-item" pSortableColumn="outTime">Out Time</th>
+        
+          <th class="table-item"></th>
+      </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-item let-i="rowIndex">
+      <tr class="p-table-row">
+          <td><p-tableCheckbox [value]="item" /></td>
+          <td class="table-item">{{ item.employeeID }}</td>
+          <td class="table-item">{{ item.employeeName }}</td>
+          <td class="table-item">{{ item.department }}</td>
+          <td class="table-item">{{ item.date }}</td>
+          <td class="table-item">{{ item.inTime }}</td>
+          <td class="table-item">{{ item.outTime }}</td>
+          <td class="table-item">{{ item.remarks }}</td>
+          <td class="actions">
+            <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event)" ></i>
+            <p-overlayPanel #op ngClass="padding: 0;">
+              <div>
+                  <li class="table-item-panel"> <i class="pi pi-chart-bar table-item me-2"></i> Accumulated time per month </li>
+                  <li class="table-item-panel"> <i class="pi pi-pencil  table-item me-2"></i> Check Attendance</li>
+                  <li class="table-item-panel"> <i class="pi pi-users table-item me-2"></i> Employee Record</li>
+              </div>
+            </p-overlayPanel>
+          </td>
+      </tr>
+      </ng-template>
+  </p-table>
+
+</div>
+
+

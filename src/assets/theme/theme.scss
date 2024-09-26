@@ -36,6 +36,11 @@
     --font-family: 'Roboto Slab', serif;
 }
 
+.invite{
+  min-height: 700px;
+  resize: none; /* Disable manual resizing */
+  // overflow: hidden; /* Hide the scrollbars */
+}
 
 // badge
 .badge {
@@ -174,17 +179,17 @@ td {
 
 
 
-.r-btn {
-    // padding: 1.5rem;
-    font-size: inherit;
-    padding: 0;
-    margin: 0;
-    border-radius: inherit;
-    cursor: pointer;
-    border: none;
-    background-color: inherit;
-    color: inherit;
-  }
+// .r-btn {
+//     // padding: 1.5rem;
+//     font-size: inherit;
+//     padding: 0;
+//     margin: 0;
+//     border-radius: inherit;
+//     cursor: pointer;
+//     border: none;
+//     background-color: inherit;
+//     color: inherit;
+//   }
   
   .r-btn:disabled {
     cursor: not-allowed;
@@ -208,8 +213,9 @@ td {
     color: var(--white);
     font-size: 1.15em;
     padding: 0.8rem 1rem;
-
-
+  }
+  .btn-export:hover{
+    background-color: var(--celadon-green-hover);
   }
   
   .btn-navigate{
@@ -217,6 +223,9 @@ td {
     color: var(--white);
     font-size: 1.15em;
     padding: 0.8rem 1rem;
+  }
+  .btn-navigate:hover{
+    background-color: var(--blue-green-hover);
   }
 
   .btn-wrapper{
@@ -228,10 +237,13 @@ td {
   }
 
   .btn-save{
-    width: 20%;
+    width: fit-content;
     background-color: var(--blue-green);
     color: var(--white);
-    padding: .8rem 0;
+    padding: .8rem 2rem;
+  }
+  .btn-save:hover{
+    background-color: var(--blue-green-hover);
   }
   .btn-center{
     display: flex;
@@ -710,7 +722,13 @@ body {
   justify-content: center;
   align-items: center;
   border: 1px solid lightgrey;
+  transition: background-color 0.3s;
   // background-color: red;
+}
+.template-card.active {
+  background-color: var(--celadon-green);
+  color: white;
+  border-color: var(--celadon-green);
 }
 .invite-body{
   margin-top: 1rem;
