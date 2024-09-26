@@ -182,7 +182,15 @@ export class LeaveRequestComponent {
     this.filteredCandidates.sort((a, b) => {
       const statusA = a.Status.includes('Pending Approval') ? 0 : 1;
       const statusB = b.Status.includes('Pending Approval') ? 0 : 1;
-      return statusA - statusB;
+  
+      if (statusA !== statusB) {
+        return statusA - statusB;
+      }
+  
+      const dateA = new Date(a.AppliedOn);
+      const dateB = new Date(b.AppliedOn);
+      
+      return dateB.getTime() - dateA.getTime();
     });
   }
 
@@ -330,8 +338,22 @@ filterCandidates() {
 
   viewEmployee(employee: any, op: any){
     this.employeeInView = employee
+    console.log(employee)
     this.openViewEmployee = true
     op.hide();
 
   }
+
+
+  downloadAttachment(leaveRequest: any) {
+    if (leaveRequest.Attachment != "Null") {
+      const link = document.createElement('a');
+      link.href = leaveRequest.Attachment.fileData;
+      link.download = leaveRequest.Attachment.fileName;
+      link.click();
+    } else {
+      this.messageService.add({ severity: 'info', summary: 'No Attachment', detail: 'No file attached to this request.', key: 'tl', life: 3000 });
+    }
+  }
+  
 }

@@ -58,12 +58,12 @@
         <ng-template pTemplate="header">
         <tr>
             <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
-            <th class="table-item" pSortableColumn="candidate">Employee</th>
-            <th class="table-item" pSortableColumn="email">Date Applied for</th>
-            <th class="table-item" pSortableColumn="contactNumber">Leave Type</th>
-            <th class="table-item" pSortableColumn="contactNumber">Net Leave Balance</th>
-            <th class="table-item" pSortableColumn="dateApplied">	Requested Duration</th>
-            <th class="table-item" pSortableColumn="stage">Status</th>
+            <th class="table-item" pSortableColumn="Employee">Employee</th>
+            <th class="table-item" pSortableColumn="Date">Date Applied for</th>
+            <th class="table-item" pSortableColumn="LeaveType">Leave Type</th>
+            <th class="table-item" pSortableColumn="NetLeaveBalance">Net Leave Balance</th>
+            <th class="table-item" pSortableColumn="RequestedDuration">	Requested Duration</th>
+            <th class="table-item" pSortableColumn="Status">Status</th>
             <th class="table-item"></th>
         </tr>
         </ng-template>
@@ -71,7 +71,7 @@
         <ng-template pTemplate="body" let-employee let-i="rowIndex">
         <tr class="p-table-row">
             <td><p-tableCheckbox [value]="employee" /></td>
-            <td class="table-item" pSortableColumn="employee">{{ employee.Employee }}</td>
+            <td class="table-item" >{{ employee.Employee }}</td>
             <td class="table-item">{{ employee.Date }}</td>
             <td class="table-item">{{ employee.LeaveType }}</td>
             <td class="table-item">{{ employee.NetLeaveBalance }}</td>
@@ -119,17 +119,21 @@
       <img src="https://cdn.vectorstock.com/i/500p/53/42/user-member-avatar-face-profile-icon-vector-22965342.jpg" alt="" class="w-28 h-28"/>
       <p class="font-bold text-2xl text-gray-700">{{employeeInView.Employee}}</p>
     </div>
-    <p>Requested for: {{employeeInView.Date}}</p>
-    <p>Duration: {{employeeInView.RequestedDuration}}</p>
-    <p>Applied on: {{employeeInView.AppliedOn}}</p>
-    <p>Leave Type: {{employeeInView.LeaveType}}</p>
+    <p>Requested For: <span class="ml-2  mb-5 pb-2 text-wrap">{{employeeInView.Date}}</span></p>
+    <p>Duration: <span class="ml-2  mb-5 pb-2 text-wrap"> {{employeeInView.RequestedDuration}}</span></p>
+    <p>Applied On: <span class="ml-2  mb-5 pb-2 text-wrap">{{employeeInView.AppliedOn}}</span></p>
+    <p>Leave Type: <span class="ml-2  mb-5 pb-2 text-wrap">{{employeeInView.LeaveType}}</span></p>
+    <p *ngIf="employeeInView.Attachment  && employeeInView.Attachment.fileName.length > 0"  >Attachement:  <button text="Download Resume" class="text-customGreen font-bold ml-2" (click)="downloadAttachment(employeeInView)">
+      <i class="pi pi-download resume me-2 text-xl"></i> Download Attachment
+    </button></p>
+    <p *ngIf=" employeeInView.Attachment == null"  (click)="downloadAttachment(employeeInView)">Attachement: No attachment attached</p>
 
-    <p class="w-[30vw]">Reason: <br>    <span  class="ml-2  mb-5 pb-2 text-wrap">
+    <p class="w-[30vw]">Reason:   <span  class="ml-2  mb-5 pb-2 text-wrap">
       {{employeeInView.RequestComment}}
     </span></p>
  
     
-      <p class="w-[30vw]" *ngIf="!employeeInView.Status.includes('Pending Approval')">Review Comment: <br>  <span class="ml-2  mb-5 pb-2 text-wrap">
+      <p class="w-[30vw]" *ngIf="!employeeInView.Status.includes('Pending Approval')">Review Comment:   <span class="ml-2  mb-5 pb-2 text-wrap">
         {{employeeInView.ApprovalComment}} 
       </span> </p>
      

@@ -15,7 +15,8 @@ export class ApplyComponent {
   userRegData: any = { };
 fromDate: any;
 toDate: any;
-leaveTypes: string[] = [  "Annual Leave",
+leaveTypes: string[] = [  
+  "Annual Leave",
   "Sick Leave",
   "Maternity Leave",
   "Paternity Leave",
@@ -63,47 +64,104 @@ constructor(
     return `${year}-${month}-${day}, ${formattedHours}:${minutes} ${ampm}`;
   }
 
+
+  onFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      this.attachment = file;
+    }
+  }
+  resetForm() {
+    this.comment = '';
+    this.fromDate = '';
+    this.toDate = '';
+    this.selectedLeaveType = '';
+    this.attachment = null;
+  }
+  
   assignLeave() {
-    let leaveRequests = JSON.parse((localStorage.getItem('leaveRequest')) || '[]');
+    let leaveRequests = JSON.parse(localStorage.getItem('leaveRequest') || '[]');
   
-    if( this.fromDate && this.toDate && this.selectedLeaveType.length > 0){
-  
-  
+    if (this.fromDate && this.toDate && this.selectedLeaveType.length > 0) {
       const from = new Date(this.fromDate);
       const to = new Date(this.toDate);
-  
       const timeDiff = to.getTime() - from.getTime();
-  
       const dayDiff = timeDiff / (1000 * 3600 * 24);
-        
+  
+      const createLeaveRequest = (attachmentData: any) => {
         const leaveRequest = {
           Employee: this.userRegData.fullname,
           Date: `${this.fromDate} to ${this.toDate}`,
           LeaveType: this.selectedLeaveType,
           NetLeaveBalance: "10.00 day(s)",
           RequestedDuration: `${dayDiff}.00 day(s)`,
-          Status: `Pending Approval (${dayDiff}.00 day(s)) `,
+          Status: `Pending Approval (${dayDiff}.00 day(s))`,
           RequestComment: this.comment ? this.comment : "No comment",
           AppliedOn: this.getCurrentDateTime(),
           ApprovalComment: '',
-          Id: this.token.getRandomToken()
+          Id: this.token.getRandomToken(),
+          Attachment: attachmentData 
         };
   
         leaveRequests.push(leaveRequest);
-      
-
+        localStorage.setItem('leaveRequest', JSON.stringify(leaveRequests));
   
-    localStorage.setItem('leaveRequest', JSON.stringify(leaveRequests));
+        this.resetForm();
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Leave',
+          detail: `Leave requested successfully`,
+          key: 'tl',
+          life: 3000,
+        });
+      };
   
-    this.comment = ''
-    this.fromDate = ''
-    this.toDate = ''
-    this.selectedLeaveType = ''
-     this.messageService.add({ severity: 'success', summary: 'Leave', detail: `Leave requested sucessfully`, key: 'tl', life: 3000 });
+      const handleFileRead = (): Promise<any> => {
+        return new Promise((resolve, reject) => {
+          if (this.attachment) {
+            const file = this.attachment;
+            const reader = new FileReader();
   
-    }else {
-     this.messageService.add({ severity: 'error', summary: 'Leave', detail: "Please ensure all required fields are filled", key: 'tl', life: 3000 });
+            reader.onload = () => {
+              const attachmentData = {
+                fileName: file.name,
+                fileType: file.type,
+                fileData: reader.result
+              };
+              resolve(attachmentData);
+            };
+  
+            reader.onerror = (error) => reject(error);
+            reader.readAsDataURL(file);
+          } else {
+            resolve(null);
+          }
+        });
+      };
+  
+      handleFileRead()
+        .then(attachmentData => {
+          createLeaveRequest(attachmentData);
+        })
+        .catch(error => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'File Error',
+            detail: 'Error reading the file',
+            life: 3000,
+          });
+          console.error('File reading error:', error);
+        });
+    } else {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Leave',
+        detail: 'Please ensure all required fields are filled',
+        key: 'tl',
+        life: 3000,
+      });
     }
-
   }
+  
+  
 }
