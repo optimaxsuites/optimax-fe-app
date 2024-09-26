@@ -9,21 +9,21 @@
             <div class="d-flex gap-4 my-2">
                 <div class="input-container-50">
                     <label for="name">Name </label>
-                    <input type="text" id="name" name="name" [(ngModel)]="candidate.candidate" class="editInput" required>
+                    <input type="text" id="name" name="name" [(ngModel)]="candidate.candidate" class="editInput" disabled>
                 </div>
                 <div class="input-container-50">
                     <label for="phone-number">Phone Number </label>
-                    <input type="text" id="phone-number" name="phone-number" [(ngModel)]="candidate.contactNo" class="editInput" required appNumberOnly>
+                    <input type="text" id="phone-number" name="phone-number" [(ngModel)]="candidate.contactNo" class="editInput" disabled appNumberOnly>
                 </div>
             </div>
             <div class="d-flex gap-4 my-2">
                 <div class="input-container-50">
                     <label for="email">Email</label>
-                    <input type="text" id="email" name="email" [(ngModel)]="candidate.email" class="editInput" required>
+                    <input type="text" id="email" name="email" [(ngModel)]="candidate.email" class="editInput" disabled>
                 </div>
                 <div class="input-container-50">
                     <label for="position">Position</label>
-                    <input type="" id="position" name="position" [(ngModel)]="candidate.position" class="editInput" required appNumberOnly>
+                    <input type="" id="position" name="position" [(ngModel)]="candidate.position" class="editInput" disabled appNumberOnly>
                 </div>
             </div>
         </div>
