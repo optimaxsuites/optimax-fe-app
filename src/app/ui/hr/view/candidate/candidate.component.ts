@@ -91,7 +91,6 @@ export class CandidateComponent {
       // Check if the candidate matches one of the selected positions (if any)
       const matchesPosition = this.selectedPositions.length === 0 || this.selectedPositions.includes(candidate.position);
   
-      // Return true if both conditions are met
       return matchesSearchTerm && matchesPosition;
     });
   }
