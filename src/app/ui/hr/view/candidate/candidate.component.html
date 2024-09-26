@@ -1,37 +1,58 @@
-<div class="card">
+
+
+<div *ngIf="showCandidate">
+  <div class="card">
+    <!-- <app-back-button></app-back-button> -->
+
     <p-toolbar styleClass="mb-4 gap-2">
       <ng-template pTemplate="left">
         <app-button text="Delete" class="btn-delete"></app-button>
       </ng-template>
 
       <ng-template pTemplate="right">
-        <!-- <app-button text="Add New" class="btn-navigate gap-2"></app-button> -->
-        <app-button text="Import" class="btn-export"></app-button>
+        
       </ng-template>
     </p-toolbar>
 
-    <div class="search-bar">
-      <input
-        type="text"
-        placeholder="Filter"
-        class="editInput"
-      />
+    <div class="flex w-full justify-between ">
+      <div class="w-1/1">
+        <ng-select 
+          [items]="positions"
+          class="px-3"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by position"
+          [(ngModel)]="selectedPositions"
+          (ngModelChange)="filterCandidatesByPosition()">
+        </ng-select>
+      </div>
+
+      <div class="search-bar w-[90%]">
+        <input 
+          type="text" 
+          placeholder="Search" 
+          class="editInput"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="filterCandidates()"
+        />
+      </div>
     </div>
 
-    <p-table
-        [value]="candidates"
-        [paginator]="true"
-        styleClass="p-datatable-striped"
+    <p-table 
+        [value]="filteredCandidates" 
+        [paginator]="true" 
+        styleClass="p-datatable-striped" 
         [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
         [rows]="15"
         >
-
+        
         <ng-template pTemplate="header">
         <tr>
             <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
             <th class="table-item" pSortableColumn="candidate">Candidate</th>
             <th class="table-item" pSortableColumn="email">Email</th>
             <th class="table-item" pSortableColumn="contactNumber">Contact Number</th>
+            <th class="table-item" pSortableColumn="contactNumber">Position</th>
             <th class="table-item" pSortableColumn="dateApplied">Date Applied</th>
             <th class="table-item" pSortableColumn="stage">Stage</th>
             <th class="table-item"></th>
@@ -44,27 +65,22 @@
             <td class="table-item">{{ candidate.candidate }}</td>
             <td class="table-item">{{ candidate.email }}</td>
             <td class="table-item">{{ candidate.contactNo }}</td>
+            <td class="table-item">{{ candidate.position }}</td>
             <td class="table-item">{{ candidate.dateApplied }}</td>
             <td class="table-item">
-                <ng-select
-                    [items]="stages"
-                    [(ngModel)]="candidate.stage"
-                    (ngModelChange)="updateStage(candidate, $event)"
-                    class="custom-ng-select"
-                    dropdownPosition="auto"
-                    appendTo="body"
-                    [clearable]="false"
-                    [disabled]="candidate.stage === 'Hired'">
-                    <ng-option class="table-item" *ngFor="let stage of stages" [value]="stage">{{ stage }}</ng-option>
-                </ng-select>
+                <span [ngClass]="getStatusClass(candidate.stage)">
+                  {{ candidate.stage }} 
+                </span>
             </td>
-            <td class="actions table-item">
+            <td class="actions">
             <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event)" ></i>
             <p-overlayPanel #op ngClass="padding: 0;">
                     <div>
+                        <!-- <li class="table-item-panel"> <i class="pi pi-user-plus table-item me-2"></i> Add as Employee</li> -->
                         <li class="table-item-panel" (click)="openViewModal(candidate, op)"> <i class="pi pi-eye table-item me-2"></i> View</li>
                         <li class="table-item-panel"> <i class="pi pi-download table-item me-2"></i> Download Resume</li>
-                        <li class="table-item-panel" (click)="openInterviewInvite(candidate)"> <i class="pi pi-send table-item me-2"></i> Send Invite</li>
+                        <li class="table-item-panel" (click)="openInterviewInvite()"> <i class="pi pi-send table-item me-2"></i> Send Invite</li>
+                        <!-- <li class="table-item-panel"> <i class="pi pi-users table-item me-2"></i> Compare with Other Candidates </li> -->
                         <li class="table-item-panel"> <i class="pi pi-trash table-item me-2"></i> Delete</li>
                     </div>
                   </p-overlayPanel>
@@ -72,14 +88,15 @@
         </tr>
         </ng-template>
     </p-table>
-
-<div *ngIf="showInterviewInvite">
-  <app-interview-invite [candidate]="activeItem"
-  (back)="closeInterviewInvite()">
-  </app-interview-invite>
+  </div>
 </div>
 
-<app-modal
+
+<div *ngIf="showInterviewInvite">
+  <app-interview-invite (back)="closeInterviewInvite()"></app-interview-invite>
+</div>
+
+<app-modal 
   *ngIf="viewModal"
   [header]="'Viewing ' + activeItem.candidate + ' information'"
   [title]="'Cancel'"
