@@ -302,6 +302,7 @@ filterCandidates() {
   selectedEmployees: any[] = [];
 
   bulkApprove() {
+    if(this.selectedEmployees.length == 0) return
 
     this.selectedEmployees.forEach((employee) => {
         if (employee.Status.includes('Pending Approval')) {
@@ -318,6 +319,8 @@ filterCandidates() {
   }
 
   bulkReject() {
+
+    if(this.selectedEmployees.length == 0) return
 
     this.selectedEmployees.forEach((employee) => {
         if (employee.Status.includes('Pending Approval')) {

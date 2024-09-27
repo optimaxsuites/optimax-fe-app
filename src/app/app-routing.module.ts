@@ -61,6 +61,8 @@ import { RecuitmentComponent } from './ui/hr/view/recuitment/recuitment.componen
 import { LeaveComponent } from './ui/hr/view/leave/leave.component';
 import { AttendanceComponent } from './ui/hr/view/attendance/attendance.component';
 import { InterviewComponent } from './ui/hr/view/interview/interview.component';
+import { GeneralSettingsComponent } from './ui/settings/view/general/general-settings/general-settings.component';
+import { HrSettingsComponent } from './ui/settings/view/hr/hr-settings/hr-settings.component';
 
 const routes: Routes = [
   {
@@ -232,8 +234,20 @@ const routes: Routes = [
         component: ViewProductAsideComponent,
       },
       {
-        path: 'admin/settings/:uuid',
+        path: 'admin/settings',
         component: SettingsPageComponent,
+        children: [
+          // { path: '', redirectTo: 'admin/settings/general-settings/:uuid', pathMatch: 'full' },
+          {
+            path: 'general-settings/:uuid',
+            component: GeneralSettingsComponent,
+          },
+          {
+            path: 'HR-settings/:uuid',
+            component: HrSettingsComponent,
+          },
+      
+        ]
       },
       {
         path: 'payment-receipts-modal',
@@ -308,8 +322,15 @@ const routes: Routes = [
         path: 'admin/hr/interview/:uuid',
         component: InterviewComponent,
       },
+    
     ],
   },
+
+  // {
+  //   path: 'settings', // General settings path
+  //   component: GeneralSettingsComponent, // The component containing your sidebar and router-outlet
+  //   c
+  // },
 ];
 
 
