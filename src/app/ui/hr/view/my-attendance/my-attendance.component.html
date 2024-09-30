@@ -1,6 +1,7 @@
 
+<div class="container flex flex-row justify-between">
 
-<div class="attendance-container">
+  <div class="attendance-container flex-1">
 
   <div class="attendance-boxes">
     <div *ngFor="let day of days" class="attendance-box" [ngClass]="getAttendanceClass(day)">
@@ -11,7 +12,9 @@
   </div>
 </div>
 
-<div class="left-container">
+
+
+<div class="left-container flex-1">
   <!-- Employee Information -->
   <div class="employee-info">
     <img src="path-to-profile-picture.jpg" alt="Profile Picture" class="profile-picture">
@@ -24,32 +27,51 @@
   <!-- Time Information -->
   <div class="time-info">
     <div class="time-today">
-      <h2>15h 20m Today</h2>
+
+
+
+        <button (click)="toggleClockIn()" text="" class="btn-save">{{isClockedIn ? "Clock Out" : "Clock In"}}</button>
+
     </div>
-    <div class="status">
-      <p>Status</p>
-      <span class="not-submitted">NOT SUBMITTED</span>
+
+    <div class="input-container-100 my-4">
+      <label for="name">period</label>
+      <ng-select
+        bindLabel= "from"
+        bindValue= "from"
+        placeholder="Select period">
+      </ng-select>
     </div>
-    <div class="period">
-      <p>Period</p>
-      <input type="date" [(ngModel)]="selectedPeriodStart" /> to
-      <input type="date" [(ngModel)]="selectedPeriodEnd" />
-    </div>
+
+
+
   </div>
 
   <!-- Weekly Time Chart -->
-  <div class="weekly-time">
-    <h4>This Week</h4>
-    <div class="chart">
-      <div *ngFor="let day of weekData" class="chart-bar">
-        <div [style.height]="day.hoursWorked + '%'"></div>
-        <span>{{ day.day }}</span>
+  <div class="grid grid-row-2 gap-12 items-center">
+      <div class="flex flex-col justify-center text-center bg-customBlue px-3 py-2 rounded-xl text-white ">
+        <p>Total Time </p>
+        <p class="text-[24px] pt-4 font-semibold">10.00 day(s)</p>
       </div>
-    </div>
-    <div class="total-week-time">
-      <p>73h 26m</p>
-    </div>
+      <div class="flex flex-col justify-center text-center bg-customBlue px-3 py-2 rounded-xl text-white ">
+        <p>Regular Time</p>
+        <p class="text-[24px] pt-4 font-semibold">10.00 day(s)</p>
+      </div>
+      <div class="flex flex-col justify-center text-center bg-customBlue px-3 py-2 rounded-xl text-white ">
+        <p>Over Time </p>
+        <p class="text-[24px] pt-4 font-semibold">10.00 day(s)</p>
+      </div>
+      <div class="flex flex-col justify-center text-center bg-customBlue px-3 py-2 rounded-xl text-white ">
+        <p>Double Time </p>
+        <p class="text-[24px] pt-4 font-semibold">10.00 day(s)</p>
+      </div>
+
+
+
+
   </div>
 </div>
+</div>
 
-o
+
+
