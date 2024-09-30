@@ -82,11 +82,11 @@ export class CandidateComponent implements OnInit {
   // stages = ['Application Received', 'Shortlisted'];
   
   myCandidates: any[] = [
-    { id: 1, candidate: 'Damilola Awe', position: 'Frontend Dev', email: 'damilola.awe@hotmail.com', contactNo: '202-555-0181', dateApplied: '2023-06-04', stage: 'Application Received', resume: 'resume 1', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas, aliquam officiis. Maiores dolore quod quia voluptas adipisci atque assumenda. Possimus tempora maxime odio adipisci amet dolor labore. Ratione nemo vel unde minus ullam reiciendis commodi esse iste sunt voluptatum cumque,' },
-    { id: 2, candidate: 'Awe Williams', position: 'Sales Personel', email: 'Awe.williams@gmail.com', contactNo: '+1(970)333-3833', dateApplied: '2023-06-04', stage: 'Application Received', resume: 'resume 2', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas, aliquam officiis. Maiores dolore quod quia voluptas adipisci atque assumenda. Possimus tempora maxime odio adipisci amet dolor labore. Ratione nemo vel unde minus ullam reiciendis commodi esse iste sunt voluptatum cumque, veritatis dignissimos totam pariatur perspiciatis enim? Labore sapiente dignissimos quo nostrum ex ducimus doloremque. Deserunt minus explicabo dolorum asperiores facere eos minima iusto laborum quas quia? Accusantium similique ducimus fuga harum labore maxime eveniet deserunt placeat laudantium numquam, ' },
-    { id: 3, candidate: 'Anthony Awe', position: 'Frontend Dev', email: 'anthony.Awe@gmail.com', contactNo: '+1(970)888-3866', dateApplied: '2023-06-03', stage: 'Application Received', resume: 'resume 3', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas, aliquam officiis. Maiores dolore quod quia voluptas ' },
-    { id: 4, candidate: 'Kevin Awe', position: 'Backend Dev', email: 'kevin.Awe@gmail.com', contactNo: '202-555-0120', dateApplied: '2023-06-02', stage: 'Application Received', resume: 'resume 4', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas, aliquam officiis. Maiores dolore quod quia voluptas adipisci atque assumenda. Possimus tempora maxime odio adipisci amet dolor labore. Ratione nemo vel unde minus ullam reiciendis commodi esse iste sunt voluptatum cumque, veritatis dignissimos totam pariatur perspiciatis enim? Labore sapiente dignissimos quo nostrum ex ducimus doloremque. Deserunt minus explicabo dolorum asperiores facere eos minima iusto laborum quas quia? Accusantium similique ducimus fuga harum labore maxime eveniet deserunt placeat laudantium numquam, quae ve' },
-    { id: 5, candidate: 'Christopher Awe', position: 'CEO', email: 'christopher.Awe@gmail.com', contactNo: '+49800600600', dateApplied: '2023-06-02', stage: 'Application Received', resume: 'resume 5', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas, aliquam officiis. Maiores dolore quod quia voluptas adipisci atque assumenda. Possimus tempora maxime odio adipisci amet dolor labore. Ratione nemo vel unde minus ullam reiciendis commodi esse iste sunt voluptatum cumque, veritatis dignissimos totam pariatur perspiciatis enim? Labore sapiente dignissimos quo nostrum ex ducimus doloremque. Deserunt minus explicabo doloru' }
+    { id: 1, candidate: 'Damilola Awe', position: 'Frontend Dev', email: 'damilola.awe@hotmail.com', contactNo: '202-555-0181', dateApplied: '2023-06-04', stage: 'Application Received', resume: 'resume 1', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas, aliquam officiis. Maiores dolore quod quia voluptas adipisci atque assumenda. Possimus tempora maxime odio adipisci amet dolor labore. Ratione nemo vel unde minus ullam reiciendis commodi esse iste sunt voluptatum cumque,', interviewType: '', interviewInvite: '' },
+    { id: 2, candidate: 'Awe Williams', position: 'Sales Personel', email: 'Awe.williams@gmail.com', contactNo: '+1(970)333-3833', dateApplied: '2023-06-04', stage: 'Application Received', resume: 'resume 2', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas, aliquam officiis. Maiores dolore quod quia voluptas adipisci atque assumenda. Possimus tempora maxime odio adipisci amet dolor labore. Ratione nemo vel unde minus ullam reiciendis commodi esse iste sunt voluptatum cumque, veritatis dignissimos totam pariatur perspiciatis enim? Labore sapiente dignissimos quo nostrum ex ducimus doloremque. Deserunt minus explicabo dolorum asperiores facere eos minima iusto laborum quas quia? Accusantium similique ducimus fuga harum labore maxime eveniet deserunt placeat laudantium numquam, ', interviewType: '', interviewInvite: '' },
+    { id: 3, candidate: 'Anthony Awe', position: 'Frontend Dev', email: 'anthony.Awe@gmail.com', contactNo: '+1(970)888-3866', dateApplied: '2023-06-03', stage: 'Application Received', resume: 'resume 3', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas, aliquam officiis. Maiores dolore quod quia voluptas ', interviewType: '', interviewInvite: '' },
+    { id: 4, candidate: 'Kevin Awe', position: 'Backend Dev', email: 'kevin.Awe@gmail.com', contactNo: '202-555-0120', dateApplied: '2023-06-02', stage: 'Application Received', resume: 'resume 4', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas, aliquam officiis. Maiores dolore quod quia voluptas adipisci atque assumenda. Possimus tempora maxime odio adipisci amet dolor labore. Ratione nemo vel unde minus ullam reiciendis commodi esse iste sunt voluptatum cumque, veritatis dignissimos totam pariatur perspiciatis enim? Labore sapiente dignissimos quo nostrum ex ducimus doloremque. Deserunt minus explicabo dolorum asperiores facere eos minima iusto laborum quas quia? Accusantium similique ducimus fuga harum labore maxime eveniet deserunt placeat laudantium numquam, quae ve', interviewType: '', interviewInvite: '' },
+    { id: 5, candidate: 'Christopher Awe', position: 'CEO', email: 'christopher.Awe@gmail.com', contactNo: '+49800600600', dateApplied: '2023-06-02', stage: 'Application Received', resume: 'resume 5', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas, aliquam officiis. Maiores dolore quod quia voluptas adipisci atque assumenda. Possimus tempora maxime odio adipisci amet dolor labore. Ratione nemo vel unde minus ullam reiciendis commodi esse iste sunt voluptatum cumque, veritatis dignissimos totam pariatur perspiciatis enim? Labore sapiente dignissimos quo nostrum ex ducimus doloremque. Deserunt minus explicabo doloru', interviewType: '', interviewInvite: '' }
   ];
 
   candidates:any[] = [];
@@ -167,41 +167,56 @@ export class CandidateComponent implements OnInit {
     });
   }
 
-  markCandidateAsShortlisted(): void {
-    if (this.activeItem) {
-      // Update the candidate's stage to "shortlisted"
-      this.activeItem.stage = 'Shortlisted';
+  // sendInvite(): void {
+  //   if (this.activeItem) {
+  //     // Update the candidate's stage to "shortlisted"
+  //     this.activeItem.stage = 'Shortlisted';
   
-      // Retrieve candidates from localStorage
-      const storedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+  //     // Retrieve candidates from localStorage
+  //     const storedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
   
-      // Find the candidate to update
-      const updatedCandidates = storedCandidates.map((candidate: any) => {
-        if (candidate.id === this.activeItem.id) {
-          return { ...candidate, stage: 'Shortlisted' };  // Update the stage
-        }
-        return candidate;
-      });
+  //     // Find the candidate to update
+  //     const updatedCandidates = storedCandidates.map((candidate: any) => {
+  //       if (candidate.id === this.activeItem.id) {
+  //         return { ...candidate, stage: 'Shortlisted' };  // Update the stage
+  //       }
+  //       return candidate;
+  //     });
   
-      // Update localStorage with the modified candidates
-      localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
+  //     // Update localStorage with the modified candidates
+  //     localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
       
-      const scheduledInterview = JSON.parse(localStorage.getItem('scheduledCandidate') || '[]');
-       const newInterview =    { id: this.activeItem.id, candidate: this.activeItem.candidate, position: this.activeItem.position, email: this.activeItem.email, contactNo: this.activeItem.contactNo, dateApplied: this.activeItem.dateApplied, stage: 'Scheduled', resume: this.activeItem.resume, coverLetter: this.activeItem.coverLetter, interviewStage: 1 }
+  //     const scheduledInterview = JSON.parse(localStorage.getItem('scheduledCandidate') || '[]');
+  //      const newInterview =    { id: this.activeItem.id, candidate: this.activeItem.candidate, position: this.activeItem.position, email: this.activeItem.email, contactNo: this.activeItem.contactNo, dateApplied: this.activeItem.dateApplied, stage: 'Scheduled', resume: this.activeItem.resume, coverLetter: this.activeItem.coverLetter, interviewStage: 1 }
 
-      scheduledInterview.push(newInterview)
-      localStorage.setItem('scheduledCandidate', JSON.stringify(scheduledInterview));
+  //     scheduledInterview.push(newInterview)
+  //     localStorage.setItem('scheduledCandidate', JSON.stringify(scheduledInterview));
 
 
-      // Optionally, show a success message
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Candidate Shortlisted',
-        detail: `${this.activeItem.candidate} has been successfully shortlisted and invited for interview.`
-      });
-    }
-    this.closeInterviewInvite();
-  }
+  //     // Optionally, show a success message
+  //     this.messageService.add({
+  //       severity: 'success',
+  //       summary: 'Candidate Shortlisted',
+  //       detail: `${this.activeItem.candidate} has been successfully shortlisted and invited for interview.`
+  //     });
+  //   }
+  //   this.closeInterviewInvite();
+  // }
+  sendInvite(inviteData: any) {
+    // 'inviteData' will contain the form data from the child component
+    console.log('Received invite data:', inviteData);
   
-
+    // Do whatever you need with the inviteData, for example:
+    if (inviteData) {
+      // Update the interview status, save data, etc.
+      inviteData.candidate.stage = 'Scheduled';
+  
+      // Call your logic to update local storage or server
+      this.updateInterviewStatus(inviteData);
+    }
+  }
+  updateInterviewStatus(inviteData: any) {
+    // Your logic to save or handle the interview data
+    console.log('Updating interview status:', inviteData);
+  }
 }
