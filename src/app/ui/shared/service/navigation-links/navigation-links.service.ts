@@ -47,7 +47,6 @@ export class NavigationLinksService {
 
     this.links['posLink'] = '/admin/pos/' +uuidV4();
     this.links['crmLink'] = '/admin/crm/' +uuidV4();
-    this.links['settingsLink'] = '/admin/settings/' +uuidV4();
     this.links['expensesLink'] = '/admin/expenses/' + uuidV4();
     this.links['orderDetails'] = '/user/checkout/order/' + uuidV4();
 
@@ -73,6 +72,13 @@ export class NavigationLinksService {
     this.links['requestDetails'] = '/user/checkout/refund-request/' +uuidV4();
     this.links['openRegister'] = '/user/checkout/openRegister/' +uuidV4();
     this.links['closeRegister'] = '/user/checkout/closeRegister/' +uuidV4();
+
+// settings links ============================================================================================================
+    this.links['settingsLink'] = '/admin/settings/general-settings/' +uuidV4();
+    this.links['generalSettings'] = 'general-settings/' +uuidV4();
+    this.links['HRSettings'] = 'HR-settings/' +uuidV4();
+
+
   }
 
   getLink(linkName: string): string {

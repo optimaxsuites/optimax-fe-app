@@ -209,6 +209,10 @@ import { ScheduledInterviewComponent } from './ui/hr/view/scheduled-interview/sc
 import { InterviewInviteComponent } from './ui/hr/view/candidate/interview-invite/interview-invite.component';
 import { ViewComponent } from './ui/hr/view/candidate/view/view.component';
 import { AttendanceSheetsComponent } from './ui/hr/view/attendance-sheet/attendance-sheet.component';
+import { GeneralSettingsComponent } from './ui/settings/view/general/general-settings/general-settings.component';
+import { HrSettingsComponent } from './ui/settings/view/hr/hr-settings/hr-settings.component';
+import { SalaryComponent } from './ui/settings/view/hr/salary/salary.component';
+import { LargeSideModalComponent } from './ui/shared/view/large-side-modal/large-side-modal.component';
 
 
 
@@ -357,7 +361,14 @@ import { AttendanceSheetsComponent } from './ui/hr/view/attendance-sheet/attenda
     ScheduledInterviewComponent,
     InterviewInviteComponent,
     ViewComponent,
+<<<<<<< HEAD
   
+=======
+    GeneralSettingsComponent,
+    HrSettingsComponent,
+    SalaryComponent,
+    LargeSideModalComponent,
+>>>>>>> 80f25a60499f56d1effcc0c56f94c924ee05162c
   ],
   imports: [
   CommonModule,

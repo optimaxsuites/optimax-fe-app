@@ -6,10 +6,13 @@ import { Component } from '@angular/core';
   styleUrl: './scheduled-interview.component.scss'
 })
 export class ScheduledInterviewComponent {
-
+  activeItem: any = {};
   searchTerm: string = '';
+  interviews:any[] = [];
+  showInterviewList: boolean = true;
+  showInterviewInvite: boolean = false;
 
-interviews:any = []
+
   getStatusClass(stage: string) {
     switch (stage) {
       case 'Scheduled':
@@ -35,31 +38,45 @@ interviews:any = []
     this.interviews = [...storedCandidates]
     this.positions = [...new Set(this.filteredCandidates.map(c => c.position))];
   }
-  candidates:any[] = [];
+
+  openInterviewInvite(interview: any){
+    this.activeItem = interview
+    // console.log(interview)
+    this.showInterviewList = false;
+    this.showInterviewInvite = true;
+  }
+
+  closeInterviewInvite() {
+    this.showInterviewList = true;
+    this.showInterviewInvite = false;
+  }
+  sendInvite(){
+
+  }
 
 
-  positions = [...new Set(this.candidates.map(c => c.position))]; // Extract unique positions
+  positions: any[] =[]; // Extract unique positions
   selectedPositions: string[] = [];
-  filteredCandidates: any[] = [...this.candidates];
+  filteredCandidates: any[] = [...this.interviews];
 
   // Function to filter candidates by selected positions
   filterCandidatesByPosition() {
     if (this.selectedPositions.length > 0) {
-      this.filteredCandidates = this.candidates.filter(candidate =>
-        this.selectedPositions.includes(candidate.position)
+      this.filteredCandidates = this.interviews.filter(interview =>
+        this.selectedPositions.includes(interview.position)
       );
     } else {
-      this.filteredCandidates = [...this.candidates]; // Show all if no position is selected
+      this.filteredCandidates = [...this.interviews]; // Show all if no position is selected
     }
   }
   
   filterCandidates() {
-    this.filteredCandidates = this.candidates.filter(candidate => {
+    this.filteredCandidates = this.interviews.filter(interview => {
       // Check if the candidate matches the search term
-      const matchesSearchTerm = candidate.candidate.toLowerCase().includes(this.searchTerm.toLowerCase());
+      const matchesSearchTerm = interview.candidate.toLowerCase().includes(this.searchTerm.toLowerCase());
   
       // Check if the candidate matches one of the selected positions (if any)
-      const matchesPosition = this.selectedPositions.length === 0 || this.selectedPositions.includes(candidate.position);
+      const matchesPosition = this.selectedPositions.length === 0 || this.selectedPositions.includes(interview.position);
   
       return matchesSearchTerm && matchesPosition;
     });
@@ -70,15 +87,15 @@ interviews:any = []
   }
 
 
-  startInterview(candidate: { stage: string; }){
-    if (candidate) {
-      candidate.stage = 'In-Progress';
+  startInterview(interview: { stage: string; }){
+    if (interview) {
+      interview.stage = 'In-Progress';
       this.updateLocalStorage()
     }
   }
-  endInterview(candidate: any){
-    if (candidate) {
-      candidate.stage = `Completed Stage-${candidate.interviewStage}-Interview`;
+  endInterview(interview: any){
+    if (interview) {
+      interview.stage = `Completed`;
       this.updateLocalStorage()
     }
   }

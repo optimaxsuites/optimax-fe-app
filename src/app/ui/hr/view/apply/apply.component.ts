@@ -37,6 +37,7 @@ leaveTypes: string[] = [
 comment: any;
 selectedLeaveType: any;
 attachment: any;
+docUploadStatus: string = "Upload file"
 constructor(
   private messageService: MessageService,
  private token: RandomTokenService,
@@ -69,7 +70,9 @@ constructor(
     const file = event.target.files[0];
     if (file) {
       this.attachment = file;
+      this.docUploadStatus = "File attached"
     }
+
   }
   resetForm() {
     this.comment = '';

@@ -1,0 +1,51 @@
+
+<div class="flex gap-4 items-center">
+    <i class="pi pi-receipt text-4xl text-customBlue"></i>
+    <div>
+        <p class="text-customBlue/60">Human Resources</p>
+        <p class="text-customBlue font-semibold text-[17px]">Salary configuration</p>
+    </div>
+</div>
+<hr>
+
+<p class="mb-3">Salary Structures</p>
+
+<mat-accordion>
+    <mat-expansion-panel *ngFor="let salary of salaryStructure" #panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          {{ salary.level }}
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <div *ngIf="panel.expanded">
+        <button mat-button color="primary" (click)="editSalary(salary)">Edit</button>
+        <button mat-button color="warn" (click)="deleteSalary(salary)">Delete</button>
+      </div>
+  
+      <div>
+        <p><strong>Base Salary:</strong> {{ salary.baseSalary | currency:'NGN' }}</p>
+        <p><strong>Allowances:</strong></p>
+        <ul>
+          <li *ngFor="let allowance of getAllowanceKeys(salary.allowances)">
+            {{ allowance | titlecase }}: 0
+          </li>
+        </ul>
+        <p><strong>Deductions:</strong></p>
+        <ul>
+          <li *ngFor="let deduction of getDeductionKeys(salary.deductions)">
+            {{ deduction | titlecase }}: 0
+          </li>
+        </ul>
+        <p><strong>Bonuses:</strong></p>
+        <ul>
+          <li *ngFor="let bonus of getBonusKeys(salary.bonuses)">
+            {{ bonus | titlecase }}: 0
+          </li>
+        </ul>
+        <p><strong>Overtime:</strong> {{ salary.overtime.hourlyRate | currency:'NGN' }} per hour (Max {{ salary.overtime.maxOvertimeHours }} hours)</p>
+        <p><strong>Net Salary:</strong> {{ salary.netSalary() | currency:'NGN' }}</p>
+      </div>
+    </mat-expansion-panel>
+  </mat-accordion>
+  
+  
