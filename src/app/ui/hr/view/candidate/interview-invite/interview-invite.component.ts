@@ -7,8 +7,11 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 })
 export class InterviewInviteComponent {
   @Output() back = new EventEmitter<void>();
-  @Output() shortlisted = new EventEmitter<void>();
+  @Input() interview: any; // Ensure this input property is set
+  @Output() sendInterviewInvite = new EventEmitter<any>();
   @Input() candidate: any;
+  // Selected interview type(s)
+  selectedInterviewType: any;
 
   ngOnInit(): void {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
@@ -17,8 +20,14 @@ export class InterviewInviteComponent {
   }
 
   sendInvite() {
-    // Emit the shortlisted event when the button is clicked
-    this.shortlisted.emit();
+    const inviteData = {
+      candidate: this.candidate,
+      interviewType: this.selectedInterviewType,
+      inviteTemplate: this.processedTemplate
+    };
+
+    // Emit the form data
+    this.sendInterviewInvite.emit(inviteData);
   }
 
   // Method to trigger back button event
@@ -133,7 +142,17 @@ Best,
     return templateNames[index];
   }
 
+  // Define all interview types
+  interviewType = [
+    { id: 1, type: 'Virtual Interview' },
+    { id: 2, type: 'Physical Interview' },
+  ];
 
+
+
+  interviewTypeChange() {
+    console.log('Selected Interview Type(s):', this.selectedInterviewType);
+  }
 
 
 }

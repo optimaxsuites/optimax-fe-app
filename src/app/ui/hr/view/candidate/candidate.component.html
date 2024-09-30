@@ -102,7 +102,7 @@
 
 
 <div *ngIf="showInterviewInvite">
-  <app-interview-invite [candidate]="activeItem" (back)="closeInterviewInvite()" (shortlisted)="markCandidateAsShortlisted()"></app-interview-invite>
+  <app-interview-invite [candidate]="activeItem" (back)="closeInterviewInvite()" (sendInterviewInvite)="sendInvite($event)"></app-interview-invite>
 </div>
 
 <app-modal 

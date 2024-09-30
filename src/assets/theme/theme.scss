@@ -18,6 +18,10 @@
     --badge-red: rgb(233, 55, 55);
     --badge-lightblue: rgb(101, 199, 231);
     --badge-green: rgb(112, 231, 101);
+    --badge-yellow: rgb(231, 222, 101);
+    --badge-purple: rgb(129, 101, 231);
+
+
 
     
     --sky-blue: #f8feff;
@@ -170,6 +174,19 @@
 
 .badge-lightblue {
   background-color: var(--badge-lightblue);
+}
+.badge-lightred {
+  background-color: var(--badge-red);
+}
+
+.badge-lightgreen {
+  background-color: var(--badge-green);
+}
+.badge-lightyellow {
+  background-color: var(--badge-yellow);
+}
+.badge-lightpurple {
+  background-color: var(--badge-purple);
 }
 
 
@@ -818,11 +835,10 @@ body {
   justify-content: space-between;
   border: 1px solid lightgrey;
   padding: 1rem;
-  width: 50%;
-
-
+  // width: 50%;
 }
 .invite-template-wrapper{
+  // width: 100%;
   h3{
     margin: 0;
   }

@@ -27,10 +27,24 @@
                 </div>
             </div>
         </div>
-        <div class="invite-template-wrapper">
-            <h3><strong>Template</strong></h3>
-            <div class="invite-template">
-                <div class="template-card" *ngFor="let template of templates; let i = index" (click)="setTemplate(i)" [ngClass]="{'active': activeTemplateIndex === i}" >{{ getTemplateName(i) }}</div>
+        <div class="d-flex gap-4 my-2">
+            <div class="input-container-50">
+                <div class="invite-template-wrapper">
+                    <h3><strong>Template</strong></h3>
+                    <div class="invite-template">
+                        <div class="template-card" *ngFor="let template of templates; let i = index" (click)="setTemplate(i)" [ngClass]="{'active': activeTemplateIndex === i}" >{{ getTemplateName(i) }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="input-container-50">
+                <label for="interview-type">Interview Type</label>
+                <ng-select 
+                    [items]="interviewType"
+                    bindLabel="type"
+                    bindValue="id"
+                    placeholder="Filter by position"
+                    [(ngModel)]="selectedInterviewType">
+                </ng-select>
             </div>
         </div>
         <div class="invite-template-wrapper">
