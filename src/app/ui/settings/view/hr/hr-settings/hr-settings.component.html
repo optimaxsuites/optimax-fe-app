@@ -1,1 +1,18 @@
-<p>hr-settings works!</p>
+<div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-10 p-10" > 
+    <div *ngFor="let setting of settings" class=" bg-gray-50 transition ease-linear hover:scale-105 hover:border-2 text-customBlue text-center rounded-xl cursor-pointer flex flex-col  items-center  justify-center w-[23rem] p-3"  (click)="openSideBar(setting)">
+        <i *ngIf="setting.icon" [class]="setting.icon" class="text-5xl"></i>
+        <p class="text-[16px] font-bold my-3">{{setting.name}}</p>
+        <span *ngFor="let sub of setting.subSetting" class="test-[14px]">{{sub}},</span>
+
+    </div>
+</div>
+
+
+<app-large-side-modal *ngIf="sidebar" (close)="sidebar = false">
+    <ng-container *ngIf="selectedComp; else noComponent">
+        <ng-container *ngComponentOutlet="selectedComp"></ng-container>
+      </ng-container>
+      <ng-template #noComponent>
+        <p>Coming soon!!</p>
+      </ng-template>
+</app-large-side-modal>

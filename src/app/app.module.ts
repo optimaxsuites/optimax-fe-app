@@ -211,6 +211,8 @@ import { ViewComponent } from './ui/hr/view/candidate/view/view.component';
 import { AttendanceSheetsComponent } from './ui/hr/view/attendance-sheet/attendance-sheet.component';
 import { GeneralSettingsComponent } from './ui/settings/view/general/general-settings/general-settings.component';
 import { HrSettingsComponent } from './ui/settings/view/hr/hr-settings/hr-settings.component';
+import { SalaryComponent } from './ui/settings/view/hr/salary/salary.component';
+import { LargeSideModalComponent } from './ui/shared/view/large-side-modal/large-side-modal.component';
 
 
 
@@ -360,6 +362,8 @@ import { HrSettingsComponent } from './ui/settings/view/hr/hr-settings/hr-settin
     ViewComponent,
     GeneralSettingsComponent,
     HrSettingsComponent,
+    SalaryComponent,
+    LargeSideModalComponent,
   ],
   imports: [
   CommonModule,
