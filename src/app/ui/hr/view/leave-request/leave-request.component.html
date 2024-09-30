@@ -104,8 +104,10 @@
 
 
   <app-modal *ngIf="acceptModal" (close)="closeModal()" >
-
-    <p class="mb-3 text-gray-800 pt-2 text-3xl">Comment</p>
+    <div class="flex justify-between items-center">
+      <p class="mb-3 text-gray-800 pt-2 text-3xl">Comment</p>
+    <span (click)="closeModal()" class="cursor-pointer ">x</span>
+    </div>
     <textarea name="comment" id="comment" class="border-0 outline-none border-b-2 placeholder:text-gray-400 w-full" rows="5" cols="50" placeholder="enter message here" [(ngModel)]="comment"></textarea>
 
     <div class="flex justify-around my-6 px-3 items-center w-full ">
