@@ -9,6 +9,7 @@ export class MyAttendanceComponent {
   // Days of the week for the right-side attendance boxes
   days: string[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   attendanceStatus: { [key: string]: string } = {};
+  isClockedIn: boolean = false;
 
   // For the period selection (Left Side)
   selectedPeriodStart: string = '2024-09-22';
@@ -32,10 +33,17 @@ export class MyAttendanceComponent {
     });
   }
 
+  toggleClockIn() {
+    this.isClockedIn = !this.isClockedIn;
+    // Add your specific logic here (e.g., update state, make API calls)
+  }
+
   // Get the class for attendance boxes (Right Side)
   getAttendanceClass(day: string): string {
     return this.attendanceStatus[day]; // Return 'present' or 'absent' based on attendance
   }
+
+
 
   // Get the current status for a given day (Right Side)
   getStatus(day: string): string {

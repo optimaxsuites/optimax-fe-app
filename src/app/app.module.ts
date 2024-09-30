@@ -212,6 +212,7 @@ import { AttendanceSheetsComponent } from './ui/hr/view/attendance-sheet/attenda
 
 
 
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -356,6 +357,7 @@ import { AttendanceSheetsComponent } from './ui/hr/view/attendance-sheet/attenda
     ScheduledInterviewComponent,
     InterviewInviteComponent,
     ViewComponent,
+  
   ],
   imports: [
   CommonModule,
