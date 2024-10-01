@@ -8,44 +8,158 @@
 </div>
 <hr>
 
-<p class="mb-3">Salary Structures</p>
+<div class="mb-4 mt-3 px-3 flex justify-between items-center ">
+  <p class=" text-2xl font-semibold text-customBlue">Salary Structures</p>
+  <button class="bg-customBlue text-white font-bold p-3 rounded-xl" (click)="showAddForm = true">Create new</button>
+</div>
 
-<mat-accordion>
-    <mat-expansion-panel *ngFor="let salary of salaryStructure" #panel>
-      <mat-expansion-panel-header>
-        <mat-panel-title>
-          {{ salary.level }}
-        </mat-panel-title>
-      </mat-expansion-panel-header>
-      <div *ngIf="panel.expanded">
-        <button mat-button color="primary" (click)="editSalary(salary)">Edit</button>
-        <button mat-button color="warn" (click)="deleteSalary(salary)">Delete</button>
+<mat-accordion *ngIf="showAddForm == false">
+  <mat-expansion-panel *ngFor="let salary of salaryStructure" #panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <p class="text-gray-600 font-bold text-[14px]">{{ salary.level }}</p>
+      </mat-panel-title>
+      <mat-panel-description  class="action-buttons">
+        <button (click)="editSalary(salary, $event)" class="text-customGreen hover:bg-green-50 p-3 rounded-xl"><i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2 "></i><span *ngIf="panel.expanded" >Edit</span></button>
+        <button (click)="deleteSalary(salary, $event)" class="text-red-500 hover:bg-red-50 p-3 rounded-xl "><i class="fa-solid fa-trash text-2xl pr-2"></i><span *ngIf="panel.expanded">Delete</span></button>
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+    <!-- <div *ngIf="panel.expanded">
+      <button mat-button color="primary" (click)="editSalary(salary)">Edit</button>
+      <button mat-button color="warn" (click)="deleteSalary(salary)">Delete</button>
+    </div> -->
+
+    <div class="text-gray-700 flex flex-col gap-2">
+      <p><strong>Base Salary:</strong> {{ salary.baseSalary | currency:'NGN' }}</p>
+      <p><strong>Allowances:</strong></p>
+      <ul>
+        <li *ngFor="let allowance of getAllowanceKeys(salary.allowances)">
+          {{ toTitleCaseWithSpace(allowance) | titlecase }}: 0
+        </li>
+      </ul>
+      <p><strong>Deductions:</strong></p>
+      <ul>
+        <li *ngFor="let deduction of getDeductionKeys(salary.deductions)">
+          {{ toTitleCaseWithSpace(deduction) | titlecase }}: 0 
+        </li>
+      </ul>
+      <p><strong>Bonuses:</strong></p>
+      <ul>
+        <li *ngFor="let bonus of getBonusKeys(salary.bonuses)">
+          {{ toTitleCaseWithSpace(bonus) | titlecase }}: 0
+        </li>
+      </ul>
+      <p><strong>Overtime:</strong> {{ salary.overtime.hourlyRate | currency:'NGN' }} per hour (Max {{ salary.overtime.maxOvertimeHours }} hours)</p>
+      <p><strong>Net Salary:</strong> {{ salary.netSalary() | currency:'NGN' }}</p>
+    </div>
+  </mat-expansion-panel>
+</mat-accordion>
+  
+
+<div *ngIf="showAddForm">
+  <form [formGroup]="salaryForm" (ngSubmit)="onSubmit()" class="p-4 w-[80%] mx-auto shadow-lg rounded-xl bg-white/80">
+    <!-- <h2 class="text-2xl font-bold mb-4">Add New Salary Structure</h2> -->
+  
+    <div class="mb-4">
+      <label for="level" class="block text-[14px] font-medium">Level</label>
+      <input formControlName="level" id="level" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="text" placeholder="Enter Level" />
+      <!-- <div *ngIf="salaryForm.get('level').invalid && salaryForm.get('level').touched" class="text-red-500 text-[14px]">Level is required.</div> -->
+    </div>
+  
+    <div class="mb-4">
+      <label for="baseSalary" class="block text-[14px] font-medium">Base Salary</label>
+      <input formControlName="baseSalary" id="baseSalary" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="number" placeholder="Enter Base Salary" />
+      <!-- <div *ngIf="salaryForm.get('baseSalary').invalid && salaryForm.get('baseSalary').touched" class="text-red-500 text-[14px]">Base Salary is required and must be a positive number.</div> -->
+    </div>
+  
+    <fieldset class="mb-4">
+      <legend class="text-lg font-medium">Allowances</legend>
+      <div class="mt-2 grid grid-cols-1 gap-2">
+        <div>
+          <label for="transportationAllowance" class="block text-[14px] font-medium">Transportation Allowance</label>
+          <input formControlName="transportationAllowance" id="transportationAllowance" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="number" placeholder="Enter Transportation Allowance" />
+        </div>
+  
+        <div>
+          <label for="mealAllowance" class="block text-[14px] font-medium">Meal Allowance</label>
+          <input formControlName="mealAllowance" id="mealAllowance" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="number" placeholder="Enter Meal Allowance" />
+        </div>
+  
+        <div>
+          <label for="housingAllowance" class="block text-[14px] font-medium">Housing Allowance</label>
+          <input formControlName="housingAllowance" id="housingAllowance" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="number" placeholder="Enter Housing Allowance" />
+        </div>
+      </div>
+    </fieldset>
+  
+    <fieldset class="mb-4">
+      <legend class="text-lg font-medium">Custom Allowances</legend>
+      <div *ngFor="let allowance of customAllowances.controls; let i = index" [formGroupName]="i" class="grid grid-cols-1 gap-2 mt-2">
+        <div>
+          <label for="customName-{{i}}" class="block text-[14px] font-medium">Allowance Name</label>
+          <input formControlName="name" id="customName-{{i}}" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="text" placeholder="Custom Allowance Name" />
+        </div>
+  
+        <div>
+          <label for="customAmount-{{i}}" class="block text-[14px] font-medium">Allowance Amount</label>
+          <input formControlName="amount" id="customAmount-{{i}}" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="number" placeholder="Allowance Amount" />
+        </div>
+  
+        <div class="text-right">
+          <button type="button" (click)="removeCustomAllowance(i)" class="bg-red-500 text-white px-4 py-1 mt-2 rounded-lg hover:bg-red-700">Remove</button>
+        </div>
       </div>
   
-      <div>
-        <p><strong>Base Salary:</strong> {{ salary.baseSalary | currency:'NGN' }}</p>
-        <p><strong>Allowances:</strong></p>
-        <ul>
-          <li *ngFor="let allowance of getAllowanceKeys(salary.allowances)">
-            {{ allowance | titlecase }}: 0
-          </li>
-        </ul>
-        <p><strong>Deductions:</strong></p>
-        <ul>
-          <li *ngFor="let deduction of getDeductionKeys(salary.deductions)">
-            {{ deduction | titlecase }}: 0
-          </li>
-        </ul>
-        <p><strong>Bonuses:</strong></p>
-        <ul>
-          <li *ngFor="let bonus of getBonusKeys(salary.bonuses)">
-            {{ bonus | titlecase }}: 0
-          </li>
-        </ul>
-        <p><strong>Overtime:</strong> {{ salary.overtime.hourlyRate | currency:'NGN' }} per hour (Max {{ salary.overtime.maxOvertimeHours }} hours)</p>
-        <p><strong>Net Salary:</strong> {{ salary.netSalary() | currency:'NGN' }}</p>
+      <div class="mt-4">
+        <button type="button" (click)="addCustomAllowance()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Add Custom Allowance</button>
       </div>
-    </mat-expansion-panel>
-  </mat-accordion>
+    </fieldset>
   
+    <fieldset class="mb-4">
+      <legend class="text-lg font-medium">Deductions</legend>
+      <div class="mt-2 grid grid-cols-1 gap-2">
+        <div>
+          <label for="tax" class="block text-[14px] font-medium">Tax</label>
+          <input formControlName="tax" id="tax" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="number" placeholder="Enter Tax Amount" />
+        </div>
+  
+        <div>
+          <label for="pension" class="block text-[14px] font-medium">Pension</label>
+          <input formControlName="pension" id="pension" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="number" placeholder="Enter Pension Amount" />
+        </div>
+      </div>
+    </fieldset>
+  
+    <fieldset class="mb-4">
+      <legend class="text-lg font-medium">Bonuses</legend>
+      <div class="mt-2">
+        <label for="internshipCompletionBonus" class="block text-[14px] font-medium">Internship Completion Bonus</label>
+        <input formControlName="internshipCompletionBonus" id="internshipCompletionBonus" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="number" placeholder="Enter Completion Bonus" />
+      </div>
+    </fieldset>
+  
+    <fieldset class="mb-4">
+      <legend class="text-lg font-medium">Overtime</legend>
+      <div class="mt-2 grid grid-cols-1 gap-2">
+        <div>
+          <label for="hourlyRate" class="block text-[14px] font-medium">Hourly Rate</label>
+          <input formControlName="hourlyRate" id="hourlyRate" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="number" placeholder="Enter Hourly Rate" />
+        </div>
+  
+        <div>
+          <label for="maxOvertimeHours" class="block text-[14px] font-medium">Max Overtime Hours</label>
+          <input formControlName="maxOvertimeHours" id="maxOvertimeHours" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="number" placeholder="Enter Max Overtime Hours" />
+        </div>
+      </div>
+    </fieldset>
+  
+    <div class="text-right">
+      <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-700" [disabled]="salaryForm.invalid">Submit</button>
+    </div>
+  </form>
+</div>
+
+
+
+
   
