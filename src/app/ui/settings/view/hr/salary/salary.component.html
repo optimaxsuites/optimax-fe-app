@@ -73,7 +73,7 @@
     </div>
   
     <fieldset class="mb-4">
-      <legend class="text-lg font-medium">Allowances</legend>
+      <legend class="text-[16px] font-medium">Allowances</legend>
       <div class="mt-2 grid grid-cols-1 gap-2">
         <div>
           <label for="transportationAllowance" class="block text-[14px] font-medium">Transportation Allowance</label>
@@ -93,7 +93,7 @@
     </fieldset>
   
     <fieldset class="mb-4">
-      <legend class="text-lg font-medium">Custom Allowances</legend>
+      <legend class="text-[16px] font-medium">Custom Allowances</legend>
       <div *ngFor="let allowance of customAllowances.controls; let i = index" [formGroupName]="i" class="grid grid-cols-1 gap-2 mt-2">
         <div>
           <label for="customName-{{i}}" class="block text-[14px] font-medium">Allowance Name</label>
@@ -111,12 +111,12 @@
       </div>
   
       <div class="mt-4">
-        <button type="button" (click)="addCustomAllowance()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Add Custom Allowance</button>
+        <button type="button" (click)="addCustomAllowance()" class="text-customGreen text-[12px]"> + Add Custom Allowance</button>
       </div>
     </fieldset>
   
     <fieldset class="mb-4">
-      <legend class="text-lg font-medium">Deductions</legend>
+      <legend class="text-[15px] font-medium">Deductions</legend>
       <div class="mt-2 grid grid-cols-1 gap-2">
         <div>
           <label for="tax" class="block text-[14px] font-medium">Tax</label>
@@ -131,7 +131,7 @@
     </fieldset>
   
     <fieldset class="mb-4">
-      <legend class="text-lg font-medium">Bonuses</legend>
+      <legend class="text-[16px] font-medium">Bonuses</legend>
       <div class="mt-2">
         <label for="internshipCompletionBonus" class="block text-[14px] font-medium">Internship Completion Bonus</label>
         <input formControlName="internshipCompletionBonus" id="internshipCompletionBonus" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="number" placeholder="Enter Completion Bonus" />
