@@ -11,7 +11,7 @@ export class InterviewInviteComponent {
   @Output() sendInterviewInvite = new EventEmitter<any>();
   @Input() candidate: any;
   // Selected interview type(s)
-  selectedInterviewType: any;
+  selectedInterviewType!: string;
 
   ngOnInit(): void {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
@@ -25,6 +25,7 @@ export class InterviewInviteComponent {
       interviewType: this.selectedInterviewType,
       inviteTemplate: this.processedTemplate
     };
+    console.log("info", inviteData)
 
     // Emit the form data
     this.sendInterviewInvite.emit(inviteData);
