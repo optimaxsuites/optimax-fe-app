@@ -320,10 +320,14 @@ export class SalaryComponent {
       }),
       deductions: this.fb.group({
         tax: ['', [Validators.required, Validators.min(0)]],
-        pension: ['', [Validators.required, Validators.min(0)]]
+        pension: ['', [Validators.required, Validators.min(0)]],
+        customDeductions: this.fb.array([]) 
+
       }),
       bonuses: this.fb.group({
-        internshipCompletionBonus: ['', [Validators.required, Validators.min(0)]]
+        internshipCompletionBonus: ['', [Validators.required, Validators.min(0)]],
+        customBonuses: this.fb.array([]) 
+
       }),
       overtime: this.fb.group({
         hourlyRate: ['', [Validators.required, Validators.min(0)]],
@@ -334,6 +338,14 @@ export class SalaryComponent {
 
   get customAllowances(): FormArray {
     return this.salaryForm.get('allowances')?.get('customAllowances') as FormArray || this.fb.array([]);
+  }
+
+  get customDeductions(): FormArray {
+    return this.salaryForm.get('deductions')?.get('customDeductions') as FormArray || this.fb.array([]);
+  }
+
+  get customBonuses(): FormArray {
+    return this.salaryForm.get('bonuses')?.get('customBonuses') as FormArray || this.fb.array([]);
   }
 
   addCustomAllowance() {
@@ -348,6 +360,29 @@ export class SalaryComponent {
     this.customAllowances.removeAt(index);
   }
 
+  addCustomDeduction() {
+    const deductionGroup = this.fb.group({
+      name: ['', Validators.required], 
+      amount: ['', [Validators.required, Validators.min(0)]]
+    });
+    this.customDeductions.push(deductionGroup);
+  }
+
+  removeCustomDeduction(index: number) {
+    this.customDeductions.removeAt(index);
+  } 
+  
+  addCustomBonus() {
+    const bonusGroup = this.fb.group({
+      name: ['', Validators.required], 
+      amount: ['', [Validators.required, Validators.min(0)]]
+    });
+    this.customBonuses.push(bonusGroup);
+  }
+
+  removeCustomBonus(index: number) {
+    this.customBonuses.removeAt(index);
+  }
   onSubmit() {
     if (this.salaryForm.valid) {
       const newSalaryStructure = this.salaryForm.value;
