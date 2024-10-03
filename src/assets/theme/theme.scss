@@ -151,6 +151,12 @@
 // delete
 
 
+.input-label-flex{
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
 
 
 .invite{
@@ -262,12 +268,15 @@ td {
   cursor: pointer;
   font-size: var(--l-font);
   padding: .8rem 1rem;
+  display: flex;
+  align-items: center;
 }
 
 .table-item-panel:hover{
   color: var(--white);
   background-color: var(--celadon-green);
 }
+
 
 .table-item {
   font-size: 1.3em; /* Adjust the font size as needed */

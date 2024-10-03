@@ -1,0 +1,28 @@
+<div *ngIf="showRecruitmentList">
+    <div class="card">
+      <p-toolbar styleClass="mb-4 gap-2">
+        <ng-template pTemplate="left">
+          <!-- <app-button text="Delete" class="btn-delete"></app-button> -->
+        </ng-template>
+  
+        <ng-template pTemplate="right">
+            <app-button text="Add New" class="btn-navigate" (click)="openForm()"></app-button>
+        </ng-template>
+      </p-toolbar>
+
+      <div>
+        <div class="card" *ngFor="let job of jobpostings">
+            <h3>{{job.title}}</h3>
+            <p>{{job.company}}</p>
+            <p>{{job.location}}</p>
+            <p>{{job.postedDate}}</p>
+            <p>{{job.expiryDate}}</p>
+        </div>
+      </div>
+    </div>
+</div>
+
+<div *ngIf="showRecruitmentForm">
+    <!-- <app-recruitment-form [candidate]="activeItem" (back)="close()" (submitFrom)="createJob()"></app-recruitment-form> -->
+     <app-recuitment-form (back)="close()" (submitFrom)="createJob()"></app-recuitment-form>
+</div>

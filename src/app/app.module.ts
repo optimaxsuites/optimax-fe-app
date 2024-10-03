@@ -193,7 +193,7 @@ import { VendorRfqListComponent } from './ui/vendor/view/vendor-rfq-list/vendor-
 import { VendorRfqFormComponent } from './ui/vendor/view/vendor-rfq-form/vendor-rfq-form.component';
 import { VendorQuoteFormComponent } from './ui/vendor/view/vendor-quote-form/vendor-quote-form.component';
 import { RecuitmentComponent } from './ui/hr/view/recuitment/recuitment.component';
-import { RecuitmentFormComponent } from './ui/hr/view/recuitment-form/recuitment-form.component';
+import { RecuitmentFormComponent } from './ui/hr/view/recuitment/recuitment-form/recuitment-form.component';
 import { CandidateComponent } from './ui/hr/view/candidate/candidate.component';
 import { VacancyComponent } from './ui/hr/view/vacancy/vacancy.component';
 import { LeaveComponent } from './ui/hr/view/leave/leave.component';
@@ -214,6 +214,7 @@ import { HrSettingsComponent } from './ui/settings/view/hr/hr-settings/hr-settin
 import { SalaryComponent } from './ui/settings/view/hr/salary/salary.component';
 import { LargeSideModalComponent } from './ui/shared/view/large-side-modal/large-side-modal.component';
 import { InterviewScoreSheetComponent } from './ui/hr/view/interview-score-sheet/interview-score-sheet.component';
+import { RecruitmentListComponent } from './ui/hr/view/recuitment/recruitment-list/recruitment-list.component';
 
 
 
@@ -366,6 +367,7 @@ import { InterviewScoreSheetComponent } from './ui/hr/view/interview-score-sheet
     SalaryComponent,
     LargeSideModalComponent,
     InterviewScoreSheetComponent,
+    RecruitmentListComponent,
   ],
   imports: [
   CommonModule,

@@ -77,17 +77,17 @@
                 <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event)" ></i>
                 <p-overlayPanel #op ngClass="padding: 0;">
                         <div>
-                            <li class="table-item-panel"> <i class="pi pi-eye table-item me-2"></i> View</li>
+                            <li class="table-item-panel"> <i class="pi pi-eye table-item me-2"></i> <span>View</span></li>
                             <li class="table-item-panel" *ngIf="interview.stage !== 'In-Progress' && interview.stage !== 'Completed' && interview.stage !== 'Cancled' && interview.stage !== 'Offer Sent'" (click)="startInterview(interview)"> <i class="pi pi-user-plus table-item me-2"></i> Start Interview</li>
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'Cancled' && interview.stage !== 'Offer Sent'"> <i class="pi pi-download table-item me-2"></i>New Score Sheet</li>
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'Cancled' && interview.stage !== 'Offer Sent'" (click)="endInterview(interview)"> <i class="pi pi-send table-item me-2"></i>End Interview</li>
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancled' && interview.stage !== 'Offer Sent'" (click)="openInterviewInvite(interview)"> <i class="pi pi-send table-item me-2"></i>Move to Next Stage</li>
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancled' && interview.stage !== 'Offer Sent'" (click)="sendOffer(interview)"> <i class="pi pi-users table-item me-2"></i>Offer Letter</li>
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancled'"> <i class="pi pi-users table-item me-2"></i>Employment Letter</li>
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancled'"> <i class="pi pi-users table-item me-2"></i>Add as Employee</li>
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress'"> <i class="pi pi-trash table-item me-2"></i>Download Score Sheet</li>
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancled'" (click)="sendRejected(interview)"> <i class="pi pi-trash table-item me-2"></i>Offer Rejected</li>
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'Cancled'" (click)="decline(interview)"> <i class="pi pi-users table-item me-2"></i>Declined</li>
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'Cancled' && interview.stage !== 'Offer Sent'" (click)="openScoreSheet(interview)"> <i class="pi pi-download table-item me-2"></i>New Score Sheet</li>
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'Cancled' && interview.stage !== 'Offer Sent'" (click)="endInterview(interview)"> <i class="pi pi-stop-circle table-item me-2"></i>End Interview</li>
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancled' && interview.stage !== 'Offer Sent'" (click)="openInterviewInvite(interview)"> <i class="pi pi-angle-double-right table-item me-2"></i>Move to Next Stage</li>
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancled' && interview.stage !== 'Offer Sent'" (click)="sendOffer(interview)"> <i class="pi pi-file-arrow-up table-item me-2"></i>Offer Letter</li>
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancled'"> <i class="pi pi-file-arrow-up table-item me-2"></i>Employment Letter</li>
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancled'"> <i class="pi pi-user-plus table-item me-2"></i>Add as Employee</li>
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress'"> <i class="pi pi-file-pdf table-item me-2"></i>Download Score Sheet</li>
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancled'" (click)="sendRejected(interview)"> <i class="pi pi-delete-left table-item me-2"></i>Offer Rejected</li>
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'Cancled'" (click)="decline(interview)"> <i class="pi pi-delete-left table-item me-2"></i>Declined</li>
                         </div>
                       </p-overlayPanel>
                 </td>
@@ -106,5 +106,10 @@
 
 
 <div *ngIf="showInterviewInvite">
-    <app-interview-invite [candidate]="activeItem" (back)="closeInterviewInvite()" (sendInterviewInvite)="sendInvite()"></app-interview-invite>
+    <app-interview-invite [candidate]="activeItem" (back)="close()" (sendInterviewInvite)="sendInvite()"></app-interview-invite>
 </div>
+
+<div *ngIf="showScoreSheet">
+  <app-interview-score-sheet [candidate]="activeItem" (back)="close()" (submitFrom)="SaveScoreSheet()"></app-interview-score-sheet>
+</div>
+

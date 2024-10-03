@@ -1,0 +1,20 @@
+/* Main container for flex layout */
+.form-container {
+    margin-bottom: 1rem;
+  }
+
+  .flex-item{
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  
+  
+  /* Responsive design for small screens */
+//   @media (max-width: 768px) {
+//     .input-container-50 {
+//       flex: 1 1 100%; /* Takes full width on small screens */
+//     }
+//   }
+  

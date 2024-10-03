@@ -13,6 +13,7 @@ export class ScheduledInterviewComponent {
   interviews:any[] = [];
   showInterviewList: boolean = true;
   showInterviewInvite: boolean = false;
+  showScoreSheet: boolean = false;
 
   constructor(
     private confirmationService: ConfirmationService,
@@ -58,9 +59,22 @@ export class ScheduledInterviewComponent {
     this.showInterviewInvite = true;
   }
 
-  closeInterviewInvite() {
+  close() {
     this.showInterviewList = true;
     this.showInterviewInvite = false;
+    this.showScoreSheet = false;
+
+  }
+
+  openScoreSheet(interview: any){
+    this.activeItem = interview
+    // console.log(interview)
+    this.showInterviewList = false;
+    this.showScoreSheet = true;
+  }
+
+  SaveScoreSheet(){
+    this.close();
   }
 
   sendInvite(): void {
@@ -96,7 +110,7 @@ export class ScheduledInterviewComponent {
         detail: `${this.activeItem.candidate} has been successfully scheduled for next interview stage.`
       });
     }
-    this.closeInterviewInvite();
+    this.close();
   }
 
   decline(interview: any){
