@@ -1,0 +1,34 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  table {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  
+  thead th {
+    text-align: center;
+    background-color: #f8f9fa;
+  }
+  
+  td {
+    padding: 10px;
+  }
+  
+  label {
+    margin-right: 10px;
+  }
+  
+  button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+  }
+  
+
+  .text-center, input{
+    cursor: pointer;
+  }
