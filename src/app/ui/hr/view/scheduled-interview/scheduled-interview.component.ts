@@ -48,6 +48,7 @@ export class ScheduledInterviewComponent {
     }
     this.positions = [...new Set(this.interviews.map(c => c.position))];
     this.filteredCandidates = [...this.interviews];
+    console.log(this.filteredCandidates)
   }
 
   openInterviewInvite(interview: any){

@@ -37,14 +37,20 @@ interface SalaryStructure {
 }
 
 import { Component } from '@angular/core';
+import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ConfirmationService, MessageService } from 'primeng/api';
 
 
 @Component({
   selector: 'app-salary',
   templateUrl: './salary.component.html',
-  styleUrl: './salary.component.scss'
+  styleUrl: './salary.component.scss',
+  providers: [MessageService, ConfirmationService],
 })
 export class SalaryComponent {
+  showAddForm: boolean = false 
+  isEditMode = false; 
+  editIndex: number | null = null
   salaryStructure: SalaryStructure[] = [
     {
       level: 'Intern',
@@ -302,13 +308,238 @@ export class SalaryComponent {
       },
     }
   ];
-  editSalary(salary: SalaryStructure) {
-    console.log('Edit clicked for:', salary);
+
+  salaryForm: FormGroup;
+
+  constructor(private fb: FormBuilder, private confirmationService: ConfirmationService,
+    private messageService: MessageService  ) {
+    this.salaryForm = this.fb.group({
+      level: ['', Validators.required],
+      baseSalary: ['', [Validators.required, Validators.min(0)]],
+      allowances: this.fb.group({
+        transportationAllowance: ['',  [Validators.min(0)]],
+        mealAllowance: ['', [ Validators.min(0)]],
+        housingAllowance: ['', [ Validators.min(0)]],
+        customAllowances: this.fb.array([]) 
+      }),
+      deductions: this.fb.group({
+        tax: ['', [ Validators.min(0)]],
+        pension: ['', [ Validators.min(0)]],
+        customDeductions: this.fb.array([]) 
+
+      }),
+      bonuses: this.fb.group({
+        internshipCompletionBonus: ['', [ Validators.min(0)]],
+        customBonuses: this.fb.array([]) 
+
+      }),
+      overtime: this.fb.group({
+        hourlyRate: ['', [, Validators.min(0)]],
+        maxOvertimeHours: ['', [ Validators.min(0)]]
+      })
+    });
+  }
+  ngOnInit() {
+  }
+  
+  get customAllowances(): FormArray {
+    return this.salaryForm.get('allowances')?.get('customAllowances') as FormArray || this.fb.array([]);
   }
 
-  // Placeholder for the delete action
-  deleteSalary(salary: SalaryStructure) {
-    console.log('Delete clicked for:', salary);
+  get customDeductions(): FormArray {
+    return this.salaryForm.get('deductions')?.get('customDeductions') as FormArray || this.fb.array([]);
+  }
+
+  get customBonuses(): FormArray {
+    return this.salaryForm.get('bonuses.customBonuses') as FormArray || this.fb.array([]);
+  }
+
+  addCustomAllowance() {
+ 
+    const allowanceGroup = this.fb.group({
+      name: ['', Validators.required], 
+      amount: ['', [Validators.required, Validators.min(0)]]
+    });
+    this.customAllowances.push(allowanceGroup);
+  }
+
+  removeCustomAllowance(index: number) {
+    this.customAllowances.removeAt(index);
+  }
+
+  addCustomDeduction() {
+    const deductionGroup = this.fb.group({
+      name: ['', Validators.required], 
+      amount: ['', [Validators.required, Validators.min(0)]]
+    });
+    this.customDeductions.push(deductionGroup);
+  }
+
+  removeCustomDeduction(index: number) {
+    this.customDeductions.removeAt(index);
+  } 
+  
+  addCustomBonus() {
+
+    const bonusGroup = this.fb.group({
+      name: ['', Validators.required], 
+      amount: ['', [Validators.required, Validators.min(0)]]
+    });
+    
+    this.customBonuses.push(bonusGroup);
+
+  }
+
+  removeCustomBonus(index: number) {
+    this.customBonuses.removeAt(index);
+  }
+
+  onSubmit() {
+    console.log('New Salary Structure:', this.salaryForm.value);
+
+    if (this.salaryForm.valid) {
+      const formValue = this.salaryForm.value;
+  
+      const mergedAllowances = {
+        transportationAllowance: formValue.allowances.transportationAllowance,
+      mealAllowance: formValue.allowances.mealAllowance,
+      housingAllowance: formValue.allowances.housingAllowance,
+        ...formValue.allowances.customAllowances.reduce((acc: { [x: string]: any; }, customAllowance: { name: string | number; amount: any; }) => {
+          acc[customAllowance.name] = customAllowance.amount;
+          return acc;
+        }, {})
+      };
+  
+
+      const mergedDeductions = {
+        tax: formValue.deductions.tax,
+      pension: formValue.deductions.pension,
+        ...formValue.deductions.customDeductions.reduce((acc: { [x: string]: any; }, customDeduction: { name: string | number; amount: any; }) => {
+          acc[customDeduction.name] = customDeduction.amount;
+          return acc;
+        }, {})
+      };
+  
+   
+      const mergedBonuses = {
+        internshipCompletionBonus: formValue.bonuses.internshipCompletionBonus, 
+        ...formValue.bonuses.customBonuses.reduce((acc: { [x: string]: any; }, customBonus: { name: string | number; amount: any; }) => {
+          acc[customBonus.name] = customBonus.amount;
+          return acc;
+        }, {})
+      };
+  
+      const newSalaryStructure = {
+        level: formValue.level,
+        baseSalary: formValue.baseSalary,
+        allowances: mergedAllowances,
+        deductions: mergedDeductions,
+        bonuses: mergedBonuses,
+        overtime: formValue.overtime,
+        netSalary: function() {
+          const grossSalary = this.baseSalary
+            + this.allowances.transportationAllowance
+            + this.allowances.mealAllowance
+            + (this.bonuses.internshipCompletionBonus || 0);
+          return grossSalary - this.deductions.tax;
+        }
+      };
+  
+      if (this.isEditMode && this.editIndex !== null) {
+        this.salaryStructure[this.editIndex] = newSalaryStructure;
+      } else {
+        this.salaryStructure.push(newSalaryStructure);
+      }
+      this.salaryForm.reset();
+      this.showAddForm = false;
+      this.isEditMode = false;
+      this.editIndex = null;
+  
+      console.log('New Salary Structure:', newSalaryStructure);
+    } else {
+      console.error('Form is invalid');
+    }
+  }
+
+  populateForm(salaryStructure: any, index: number) {
+    this.isEditMode = true;
+    this.editIndex = index;
+    this.salaryForm.patchValue({
+      level: salaryStructure.level,
+      baseSalary: salaryStructure.baseSalary,
+      allowances: {
+        transportationAllowance: salaryStructure.allowances.transportationAllowance,
+        mealAllowance: salaryStructure.allowances.mealAllowance,
+        housingAllowance: salaryStructure.allowances.housingAllowance,
+      },
+      deductions: {
+        tax: salaryStructure.deductions.tax,
+        pension: salaryStructure.deductions.pension,
+      },
+      bonuses: {
+        internshipCompletionBonus: salaryStructure.bonuses.internshipCompletionBonus,
+      },
+      overtime:  {
+        hourlyRate: salaryStructure.overtime.hourlyRate,
+        maxOvertimeHours: salaryStructure.overtime.maxOvertimeHours,
+      },
+    });
+
+    this.customAllowances.clear(); 
+    salaryStructure.allowances.customAllowances.forEach((allowance: any) => {
+      this.customAllowances.push(this.createCustomAllowance(allowance));
+    });
+
+    this.customDeductions.clear();
+    salaryStructure.deductions.customDeductions.forEach((deduction: any) => {
+      this.customDeductions.push(this.createCustomDeduction(deduction));
+    });
+
+    this.customBonuses.clear(); 
+    salaryStructure.bonuses.customBonuses.forEach((bonus: any) => {
+      this.customBonuses.push(this.createCustomBonus(bonus));
+    });
+
+  }
+
+  createCustomAllowance(allowance: any): FormGroup {
+    return this.fb.group({
+      name: [allowance.name || '', Validators.required],
+      amount: [allowance.amount || 0, [Validators.required, Validators.min(0)]],
+    });
+  }
+
+  createCustomDeduction(deduction: any): FormGroup {
+    return this.fb.group({
+      name: [deduction.name || '', Validators.required],
+      amount: [deduction.amount || 0, [Validators.required, Validators.min(0)]],
+    });
+  }
+
+  createCustomBonus(bonus: any): FormGroup {
+    return this.fb.group({
+      name: [bonus.name || '', Validators.required],
+      amount: [bonus.amount || 0, [Validators.required, Validators.min(0)]],
+    });
+  }
+
+  toTitleCaseWithSpace(key: string): string {
+    return key
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, str => str.toUpperCase());
+  }
+  
+  editSalary(salary: SalaryStructure, index:number, event: Event) {
+   
+    event.stopPropagation();
+    this.showAddForm = true
+    this.editIndex = index
+    this.populateForm(salary, index)
+  }
+
+  deleteSalary(salary: SalaryStructure, index:number, event: Event) {
+
+    this.salaryStructure.splice(index, 1);
   }
   getAllowanceKeys(allowances: object): string[] {
     return Object.keys(allowances);
@@ -320,5 +551,36 @@ export class SalaryComponent {
 
   getBonusKeys(bonuses: object): string[] {
     return Object.keys(bonuses);
+  }
+
+  confirmSalaryDelete(salary: SalaryStructure, i: number , event: Event): void {
+    event.stopPropagation();
+
+    this.confirmationService.confirm({
+      message: `Are You sure you want to carry out this action?  Clicking on DELETE, would lead to permanent removal of ${salary.level}'s salary structure`,
+      header: `Delete Salary Structure - ${salary.level}`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass:"p-btn-danger p-button-text",
+      rejectButtonStyleClass:"p-btn-cancle p-button-text",
+      acceptIcon:"none",
+      rejectIcon:"none",
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      // styleClass: 'custom-confirm-dialog',
+      accept: () => {
+        this.deleteSalary(salary, i , event);
+      },
+      reject: () => {
+
+      }
+    });
+  }
+
+  toogleForm() {
+    
+    this.showAddForm = !this.showAddForm
+    if(this.isEditMode && this.showAddForm){
+      this.salaryForm.reset();
+    }
   }
 }

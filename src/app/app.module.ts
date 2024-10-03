@@ -215,6 +215,7 @@ import { LargeSideModalComponent } from './ui/shared/view/large-side-modal/large
 import { ClockInClockOutComponent } from './ui/hr/view/attendance/clock-in-clock-out/clock-in-clock-out.component';
 import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.component';
 
+import { InterviewScoreSheetComponent } from './ui/hr/view/interview-score-sheet/interview-score-sheet.component';
 
 
 
@@ -366,8 +367,9 @@ import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.
     SalaryComponent,
     LargeSideModalComponent,
     ClockInClockOutComponent,
-    MyAttendanceComponent
+    MyAttendanceComponent,
 
+    InterviewScoreSheetComponent,
   ],
   imports: [
   CommonModule,

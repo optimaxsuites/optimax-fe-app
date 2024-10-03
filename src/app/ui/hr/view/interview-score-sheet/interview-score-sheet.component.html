@@ -1,0 +1,166 @@
+<div class="card">
+    <div class="move-back">
+        <app-back-button ></app-back-button>
+    </div>
+    <div class="invite-main">
+        <h2>Interview Score Sheet</h2>
+  
+        <!-- Interviewer Info Section -->
+        <div class="interviewer-info mb-4">
+          <h4>Interviewer Information</h4>
+          <div class="input-container-50">
+            <label for="interviewerName">Name:</label>
+            <input
+              type="text"
+              id="interviewerName"
+              class="editInput"
+              [(ngModel)]="interviewer.name"
+              placeholder="Eniola Johnson"
+              required
+            />
+          </div>
+          <div class="input-container-50">
+            <label for="interviewerPosition">Position:</label>
+            <input
+              type="text"
+              id="interviewerPosition"
+              class="editInput"
+              [(ngModel)]="interviewer.position"
+              placeholder="Project Manager"
+              required
+            />
+          </div>
+          <div class="input-container-50">
+            <label for="interviewerEmail">Email:</label>
+            <input
+              type="email"
+              id="interviewerEmail"
+              class="editInput"
+              [(ngModel)]="interviewer.email"
+              placeholder="eniolajohnson@gmail.com"
+              required
+            />
+          </div>
+          <div class="input-container-50">
+            <label for="interviewerPhone">Phone Number:</label>
+            <input
+              type="tel"
+              id="interviewerPhone"
+              class="editInput"
+              [(ngModel)]="interviewer.phone"
+              placeholder="08144685954"
+              required
+            />
+          </div>
+          <div class="input-container-50">
+            <label for="interviewerDepartment">Department:</label>
+            <input
+              type="text"
+              id="interviewerDepartment"
+              class="editInput"
+              [(ngModel)]="interviewer.department"
+              placeholder="IT"
+              required
+            />
+          </div>
+          <div class="input-container-50 gap-4 d-flex">
+            <div class="input-container-50">
+                <label for="interviewDate">Interview Date:</label>
+                <input
+                  type="date"
+                  id="interviewDate"
+                  class="editInput"
+                  [(ngModel)]="interviewer.interviewDate"
+                  required
+                />
+              </div>
+              <div class="input-container-50">
+                <label for="interviewTime">Interview Time:</label>
+                <input
+                  type="time"
+                  id="interviewTime"
+                  class="editInput"
+                  [(ngModel)]="interviewer.interviewTime"
+                  required
+                />
+              </div>
+          </div>
+        </div>
+      
+        <!-- Interview Score Sheet -->
+        <form (ngSubmit)="submitForm()">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Question</th>
+                <th class="text-center">1</th>
+                <th class="text-center">2</th>
+                <th class="text-center">3</th>
+                <th class="text-center">4</th>
+                <th class="text-center">5</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let question of questions; let i = index">
+                <td>{{ question.id }}</td>
+                <td>{{ question.question }}</td>
+                <td class="text-center">
+                  <label>
+                    <input
+                      type="radio"
+                      [name]="'question_' + i"
+                      [(ngModel)]="question.score"
+                      [value]="1"
+                    >
+                  </label>
+                </td>
+                <td class="text-center">
+                  <label>
+                    <input
+                      type="radio"
+                      [name]="'question_' + i"
+                      [(ngModel)]="question.score"
+                      [value]="2"
+                    >
+                  </label>
+                </td>
+                <td class="text-center">
+                  <label>
+                    <input
+                      type="radio"
+                      [name]="'question_' + i"
+                      [(ngModel)]="question.score"
+                      [value]="3"
+                    >
+                  </label>
+                </td>
+                <td class="text-center">
+                  <label>
+                    <input
+                      type="radio"
+                      [name]="'question_' + i"
+                      [(ngModel)]="question.score"
+                      [value]="4"
+                    >
+                  </label>
+                </td>
+                <td class="text-center">
+                  <label>
+                    <input
+                      type="radio"
+                      [name]="'question_' + i"
+                      [(ngModel)]="question.score"
+                      [value]="5"
+                    >
+                  </label>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+      
+          <button type="submit" class="btn-save">Submit</button>
+        </form>
+    </div>
+  </div>
+  
