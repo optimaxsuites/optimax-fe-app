@@ -1,48 +1,77 @@
-<div class="container flex flex-row justify-between">
-  <div class="attendance-container flex-1">
-    <div class="attendance-boxes">
-      <div *ngFor="let day of days" class="attendance-box" [ngClass]="getAttendanceClass(day)">
-        <div class="day">{{ day }}</div>
-        <div class="status">{{ getStatus(day) }}</div>
-        <button (click)="markAttendance(day)">Mark Attendance</button>
-      </div>
-    </div>
+<div  class="w-full bg-white/90 my-3 rounded-2xl  p-8 text-gray-800">
+  <h2 class="font-bold text-gray-700">Apply For Leave</h2>
+  <hr>
+
+  <div class=" flex gap-28 mb-5 items-center">
+      <div class="flex gap-2 justify-center flex-col text-center">
+          <img src="https://cdn.vectorstock.com/i/500p/53/42/user-member-avatar-face-profile-icon-vector-22965342.jpg" alt="" class="w-72 h-72"/>
+          <p class="font-bold text-gray-700 text-[18px] capitalize">{{ userRegData.fullname }}</p>
+        </div>
+
+        <div class="flex gap-12 items-center">
+          <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white ">
+              <p>Total Days</p>
+              <p class="text-[24px] pt-4 font-semibold">10.00 day(s)</p>
+            </div>
+
+            <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white ">
+              <p>Regular Time(Hrs</p>
+              <p class="text-[24px] pt-4 font-semibold">11.00 day(s)</p>
+            </div>
+
+            <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white ">
+              <p>Over Time(Hrs)</p>
+              <p class="text-[24px] pt-4 font-semibold">21.00 day(s)</p>
+            </div>
+        </div>
+
+
   </div>
 
-  <div class="left-container flex-1">
-    <div class="employee-info">
-      <img src="https://cdn.vectorstock.com/i/500p/53/42/user-member-avatar-face-profile-icon-vector-22965342.jpg" alt="" class="w-72 h-72"/>
-      <p class="font-bold text-gray-700 text-[18px] capitalize">{{ userRegData?.fullname }}</p>
+  <hr>
+  <div class="my-5 justify-between gap-6 flex w-full">
+  <div class="w-[58%] flex flex-col gap-4">
+    <div class="label-value" style="display: flex; align-items: center; margin-bottom: 10px;">
+      <label style="flex: 0 0 120px; font-weight: bold;">Clocked In Time:</label>
+      <p style="flex: 1 0 auto;">{{ clockedInTime }}</p>
+    </div>
+    <div class="label-value" style="display: flex; align-items: center; margin-bottom: 10px;">
+      <label style="flex: 0 0 120px; font-weight: bold;">Date:</label>
+      <p style="flex: 1 0 auto;">{{ currentDate }}</p>
+    </div>
+    <div class="label-value" style="display: flex; align-items: center; margin-bottom: 10px;">
+      <label style="flex: 0 0 120px; font-weight: bold;">Time:</label>
+      <p style="flex: 1 0 auto;">{{ currentTime }}</p>
     </div>
 
-    <div class="time-info">
-      <div class="time-today">
-        <button (click)="toggleClockIn()" text="" class="btn-save">{{isClockedIn ? "Clock Out" : "Clock In"}}</button>
-      </div>
 
-      <div class="input-container-100 my-4">
-        <label for="name">Period</label>
-        <ng-select bindLabel="from" bindValue="from" placeholder="Select period"></ng-select>
-      </div>
-    </div>
+    <textarea [(ngModel)]="note" placeholder="Enter note" style="width: 100%; height: 100px; border: 1px solid #ccc; padding: 10px;"></textarea>
 
-    <div class="grid grid-row-2 gap-12 items-center">
-      <div class="flex flex-col justify-center text-center bg-customBlue px-3 py-2 rounded-xl text-white">
-        <p>Total Time </p>
-        <p class="text-[24px] pt-4 font-semibold">10.00 day(s)</p>
-      </div>
-      <div class="flex flex-col justify-center text-center bg-customBlue px-3 py-2 rounded-xl text-white">
-        <p>Regular Time</p>
-        <p class="text-[24px] pt-4 font-semibold">10.00 day(s)</p>
-      </div>
-      <div class="flex flex-col justify-center text-center bg-customBlue px-3 py-2 rounded-xl text-white">
-        <p>Over Time </p>
-        <p class="text-[24px] pt-4 font-semibold">10.00 day(s)</p>
-      </div>
-      <div class="flex flex-col justify-center text-center bg-customBlue px-3 py-2 rounded-xl text-white">
-        <p>Double Time </p>
-        <p class="text-[24px] pt-4 font-semibold">10.00 day(s)</p>
-      </div>
-    </div>
   </div>
+
+
+  </div>
+
+  <div class="flex items-center justify-end ">
+    <button (click)="toggleClockInOut()" style="padding: 10px 20px; background-color: #2f6276; color: #fff; border: none; border-radius: 5px; cursor: pointer;">{{ isClockedIn ? 'Clock Out' : 'Clock In' }}</button>
+
+    </div>
+
+
+    <div class=" flex ">
+      <div *ngFor="let day of days; let i = index"
+           class="attendance-box"
+           [ngClass]="getAttendanceClass(day)"
+           style="background-color: #f9f9f9; border: 1px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); width: 150px; transition: transform 0.2s; cursor: pointer;">
+        <div class="day" style="font-weight: bold; font-size: 1.2em;">{{ day }}</div>
+        <div class="status" style="margin: 10px 0;">{{ getStatus(day) }}</div>
+        <button (click)="markAttendance(day)" style="padding: 5px 10px; border: none; background-color: #2f6276; color: white; border-radius: 5px; cursor: pointer;">Mark Attendance</button>
+      </div>
+
+      <!-- Last Card -->
+
+    </div>
+
+
 </div>
+

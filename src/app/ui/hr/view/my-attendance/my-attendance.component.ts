@@ -7,10 +7,14 @@ import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 })
 export class MyAttendanceComponent implements OnChanges {
   @Input() clockedInTime: string | null = null; // Expect clockedInTime from parent
-  @Input() userRegData: { fullname: string } | null = null; // Add user data from parent
-
+  // @Input() userRegData: { fullname: string } | null = null; // Add user data from parent
+  userInfoRegData: any[] = [];
+  userRegData: any = { };
   displayMessage: string = '';
   isClockedIn: boolean = false; // Track clock-in status
+  note: string = ''; // For storing notes
+  currentDate: string; // Store the current date
+  currentTime: string; // Store the current time
 
   // Days of the week for attendance
   days: string[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -21,12 +25,24 @@ export class MyAttendanceComponent implements OnChanges {
     this.days.forEach(day => {
       this.attendanceStatus[day] = 'absent';
     });
-  }
 
+    // Initialize current date and time
+    this.currentDate = new Date().toLocaleDateString(); // Current date
+    this.currentTime = new Date().toLocaleTimeString(); // Current time
+  }
+  ngOnInit() {
+    this.userInfoRegData = JSON.parse(sessionStorage["userPrimaryInfoRegData"]);
+    this.userRegData = this.userInfoRegData;
+
+    }
   ngOnChanges(changes: SimpleChanges) {
     if (changes['clockedInTime']) {
       this.updateDisplayMessage(changes['clockedInTime'].currentValue);
     }
+
+    // Update current date and time if necessary
+    this.currentDate = new Date().toLocaleDateString(); // Update current date
+    this.currentTime = new Date().toLocaleTimeString(); // Update current time
   }
 
   updateDisplayMessage(time: string | null) {
@@ -54,8 +70,8 @@ export class MyAttendanceComponent implements OnChanges {
   }
 
   // Toggle clock-in/clock-out (for button click)
-  toggleClockIn() {
+  toggleClockInOut() { // Renamed here
     this.isClockedIn = !this.isClockedIn;
+    this.note = ''; // Reset note when toggling
   }
 }
-
