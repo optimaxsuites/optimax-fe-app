@@ -1,57 +1,61 @@
-import { Component } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 
 @Component({
   selector: 'app-my-attendance',
   templateUrl: './my-attendance.component.html',
   styleUrls: ['./my-attendance.component.scss']
 })
-export class MyAttendanceComponent {
-  // Days of the week for the right-side attendance boxes
+export class MyAttendanceComponent implements OnChanges {
+  @Input() clockedInTime: string | null = null; // Expect clockedInTime from parent
+  @Input() userRegData: { fullname: string } | null = null; // Add user data from parent
+
+  displayMessage: string = '';
+  isClockedIn: boolean = false; // Track clock-in status
+
+  // Days of the week for attendance
   days: string[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   attendanceStatus: { [key: string]: string } = {};
-  isClockedIn: boolean = false;
-
-  // For the period selection (Left Side)
-  selectedPeriodStart: string = '2024-09-22';
-  selectedPeriodEnd: string = '2024-09-28';
-
-  // Sample week data for the chart (Left Side)
-  weekData = [
-    { day: 'Sun', hoursWorked: 0 },
-    { day: 'Mon', hoursWorked: 42 },
-    { day: 'Tue', hoursWorked: 95 },
-    { day: 'Wed', hoursWorked: 100 },
-    { day: 'Thu', hoursWorked: 64 },
-    { day: 'Fri', hoursWorked: 0 },
-    { day: 'Sat', hoursWorked: 0 }
-  ];
 
   constructor() {
-    // Initialize attendance status for each day to 'absent' by default (Right Side)
+    // Initialize attendance status for each day to 'absent' by default
     this.days.forEach(day => {
       this.attendanceStatus[day] = 'absent';
     });
   }
 
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['clockedInTime']) {
+      this.updateDisplayMessage(changes['clockedInTime'].currentValue);
+    }
+  }
+
+  updateDisplayMessage(time: string | null) {
+    if (time) {
+      this.displayMessage = `Clocked in at: ${time}`;
+      this.markAttendance(new Date().toLocaleDateString('en-US', { weekday: 'long' })); // Mark attendance for today
+    } else {
+      this.displayMessage = `Not clocked in yet.`;
+    }
+  }
+
+  // Mark attendance for a specific day
+  markAttendance(dayName: string) {
+    this.attendanceStatus[dayName] = 'present'; // Mark present for the day
+  }
+
+  // Get attendance status for a specific day
+  getStatus(day: string): string {
+    return this.attendanceStatus[day] || 'absent'; // Default to 'absent' if not found
+  }
+
+  // Get dynamic class for attendance status
+  getAttendanceClass(day: string): string {
+    return this.attendanceStatus[day] === 'present' ? 'present-class' : 'absent-class';
+  }
+
+  // Toggle clock-in/clock-out (for button click)
   toggleClockIn() {
     this.isClockedIn = !this.isClockedIn;
-    // Add your specific logic here (e.g., update state, make API calls)
-  }
-
-  // Get the class for attendance boxes (Right Side)
-  getAttendanceClass(day: string): string {
-    return this.attendanceStatus[day]; // Return 'present' or 'absent' based on attendance
-  }
-
-
-
-  // Get the current status for a given day (Right Side)
-  getStatus(day: string): string {
-    return this.attendanceStatus[day]; // Return the current status (present/absent)
-  }
-
-  // Toggle attendance status (Right Side)
-  markAttendance(day: string): void {
-    this.attendanceStatus[day] = this.attendanceStatus[day] === 'present' ? 'absent' : 'present'; // Toggle attendance status
   }
 }
+

@@ -37,7 +37,7 @@
 }
 
 .absent {
-  background-color: #2fab72; /* Red for absent */
+  background-color: #2f6276; /* Red for absent */
 }
 
 .day {
@@ -79,7 +79,7 @@
   }
   p {
     margin: 0;
-    color: #2fab72;
+    color: #2f6276;
     font-size: 14px;
   }
 }
@@ -132,7 +132,7 @@
       text-align: center;
 
       div {
-        background-color: #2fab72;
+        background-color: #2f6276;
         width: 100%;
         transition: height 0.3s ease;
       }
