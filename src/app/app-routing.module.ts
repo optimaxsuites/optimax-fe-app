@@ -60,9 +60,12 @@ import { VendorRfqComponent } from './ui/vendor/view/vendor-rfq/vendor-rfq.compo
 import { RecuitmentComponent } from './ui/hr/view/recuitment/recuitment.component';
 import { LeaveComponent } from './ui/hr/view/leave/leave.component';
 import { AttendanceComponent } from './ui/hr/view/attendance/attendance.component';
+import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.component';
+
 import { InterviewComponent } from './ui/hr/view/interview/interview.component';
 import { GeneralSettingsComponent } from './ui/settings/view/general/general-settings/general-settings.component';
 import { HrSettingsComponent } from './ui/settings/view/hr/hr-settings/hr-settings.component';
+import { EmployeeManagementComponent } from './ui/hr/view/employee-management/employee-management.component';
 
 const routes: Routes = [
   {
@@ -246,7 +249,7 @@ const routes: Routes = [
             path: 'HR-settings/:uuid',
             component: HrSettingsComponent,
           },
-      
+
         ]
       },
       {
@@ -322,7 +325,13 @@ const routes: Routes = [
         path: 'admin/hr/interview/:uuid',
         component: InterviewComponent,
       },
-    
+      {
+        path: 'admin/hr/employee-management/:uuid',
+        component: EmployeeManagementComponent,
+      },
+
+
+
     ],
   },
 

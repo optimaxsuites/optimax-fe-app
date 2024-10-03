@@ -1,0 +1,221 @@
+<div class="flex w-full justify-between gap-4 px-3 my-2">
+    <div class="flex gap-4 items-center">
+      <div class="w-full">
+        <ng-select 
+          [items]="uniqueLevels"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by level type"
+          [(ngModel)]="selectedEmployeeType"
+          (ngModelChange)="filterBySelectedEmployeeType()">
+        </ng-select>
+      </div>
+
+      <div class="w-full">
+        <ng-select 
+          [items]="uniquePositions"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by position"
+          [(ngModel)]="selectedPosition"
+          (ngModelChange)="filterBySelectedPosition()"
+          >
+        </ng-select>
+      </div>
+      <input 
+      type="text" 
+      placeholder="Search" 
+      [(ngModel)]="searchTerm"
+      (ngModelChange)="filterEmployees()"
+      class="editInput bg-gray-50 w-full outline-none"
+    />
+    </div>
+    <div class="flex items-end">
+        <Button  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3">Add new employee</Button>
+       </div>
+</div>
+
+<div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8 p-8 " > 
+    <div *ngFor="let employee of employees" class=" bg-gray-50 transition ease-linear hover:scale-105 hover:border-2 text-customBlue text-center rounded-xl cursor-pointer flex flex-col  items-center  justify-center w-[20rem] p-2"  (click)="viewThisEmployee(employee)">
+         <img [src]="employee.profileImage" alt="" class="rounded-full w-36 h-36">
+        <p class="text-[15px] font-bold mt-3 mb-2">{{employee.lastName}}{{' '}}{{employee.firstName}}</p>
+        <p class="text-[14px]">{{employee.position}}</p>
+    </div>
+  </div>
+
+
+  <app-large-side-modal *ngIf="viewEmployee" (close)="viewEmployee = false" class="flex flex-col gap-8">
+<div class="flex gap-5 p-4">
+    
+<div class="w-[60%]  bg-white/80 rounded-xl">
+    <p class="text-gray-50 font-semibold text-2xl text-center py-2 bg-customBlue w-36 rounded-tl-xl rounded-br-xl">About</p>
+    <!-- <hr> -->
+    <div class="flex justify-between w-full gap-4  px-5 py-3">
+
+        <div class="text-customBlue w-1/2 text-center flex flex-col items-center">
+            <img [src]="employeeInView.profileImage" alt="" class="rounded-full w-96 h-96" >
+            <p class="text-[15px] font-bold mt-3 mb-2">{{employeeInView.lastName}}{{' '}}{{employeeInView.firstName}}</p>
+            <p class="text-[14px] bg-customBlueHover/10 p-2 text-customBlue rounded-md">{{employeeInView.position}}</p>
+        </div>
+    
+        <div class="w-1/2 flex flex-col gap-4 items-start text-customBlue">
+            <div class="flex gap-4">
+                <i class="fa-solid fa-circle-user text-[3rem]"></i>
+                <div class="flex flex-col gap-1">
+                    <p class="text-[16px] font-semibold tracking-wider mb-2">Basic Info</p>
+                    <p class="font-bold text-customBlue/70">Full name: <span class="ml-1 font-normal text-customBlue">{{employeeInView.lastName}}{{' '}}{{employeeInView.firstName}}</span></p>
+                    <p class="font-bold text-customBlue/70">Employee Id: <span class="ml-1 font-normal text-customBlue">{{employeeInView.id}}</span></p>
+                    <p class="font-bold text-customBlue/70">D.O.B: <span class="ml-1 font-normal text-customBlue">09 AUG</span></p>
+                    <p class="font-bold text-customBlue/70">Gender: <span class="ml-1 font-normal text-customBlue">{{employeeInView.gender}}</span></p>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <i class="fa-solid fa-briefcase text-[3rem]"></i>
+                <div class="flex flex-col gap-1">
+                    <p class="text-[16px] font-semibold tracking-wider mb-2">Job</p>
+                    <p class="font-bold text-customBlue/70">Date Joined: <span class="ml-1 font-normal text-customBlue">{{employeeInView.hireDate}}</span></p>
+                    <p class="font-bold text-customBlue/70">Status: <span class="ml-1 font-normal text-customGreen bg-customGreenHover/30 animate-pulse py-1 px-2 rounded-md"><i class="fa-solid fa-circle animate-pulse mr-2"></i>Active</span></p>
+                    <p class="font-bold text-customBlue/70">Department <span class="ml-1 font-normal text-customBlue">{{employeeInView.department}}</span></p>
+                    <p class="font-bold text-customBlue/70">Level <span class="ml-1 font-normal text-customBlue">{{employeeInView.level}}</span></p>
+                </div>
+            </div>
+
+            <div class="flex gap-4">
+                <i class="fa-solid fa-address-book text-[3rem]"></i>
+                <div class="flex flex-col gap-1">
+                    <p class="text-[16px] font-semibold tracking-wider mb-2">Contact</p>
+                    <p class="font-bold text-customBlue/70">Email: <span class="ml-1 font-normal text-customBlue">{{employeeInView.email}}</span></p>
+                    <p class="font-bold text-customBlue/70">Phone: <span class="ml-1 font-normal text-customBlue">{{employeeInView.phone}}</span></p>
+                    <p class="font-bold text-customBlue/70">Location: <span class="ml-1 font-normal text-customBlue">{{employeeInView.location}}</span></p>
+              
+                </div>
+            </div>
+        </div>
+    </div>
+   
+</div>
+
+<div class="w-[40%]  bg-white/80 rounded-xl ">
+    <p class="text-gray-50 font-semibold text-2xl text-center py-2 bg-customBlue w-36 rounded-tl-xl rounded-br-xl">Salary</p>
+
+    <div class="p-3  ">
+        <div class="flex justify-between items-center">
+            <div class="flex gap-3 items-center my-2 text-customBlue">
+                <i class="fa-solid fa-wallet text-[2rem]"></i>
+                <p class="text-[15px] font-semibold tracking-wider mb-2">Base salary: <span class="ml-1 text-[14px] font-normal text-customBlue">₦{{employeeInView.salaryDetails.baseSalary}}</span></p>
+            </div>
+
+            <div class="flex gap-3 items-center my-2 text-customBlue">
+                <i class="fa-solid fa-wallet text-[2rem]"></i>
+                <p class="text-[15px] font-semibold tracking-wider mb-2">Net salary: <span class="ml-1 text-[14px] font-normal text-customBlue">₦{{employeeInView.salaryDetails.netSalary}}</span></p>
+            </div>
+        </div>
+       
+
+        <div class="flex gap-3 text-customBlue">
+            
+            <div class="flex flex-col gap-3">
+                <!-- <i class="fa-solid fa-hand-holding-dollar text-[2rem]"></i> -->
+                <div class="flex flex-col gap-1">
+                    <p class="text-[15px] font-semibold tracking-wider mb-2">Alowances</p>
+                   
+                    <div *ngIf="employeeInView?.salaryDetails?.allowances; else noAllowances"> 
+                        <p *ngFor="let allowance of getAllowanceKeys(employeeInView.salaryDetails.allowances)">
+                          {{ toTitleCaseWithSpace(allowance) | titlecase }}: ₦{{ employeeInView.salaryDetails.allowances[allowance] }}
+                        </p>
+                    </div>
+                    
+                      <ng-template #noAllowances>
+                        <p class="text-gray-500">No allowances available</p>
+                      </ng-template>
+                      
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <p class="text-[15px] font-semibold tracking-wider mb-2">Bonuses</p>
+                   
+                    <div *ngIf="employeeInView?.salaryDetails?.bonuses && getAllowanceKeys(employeeInView.salaryDetails.bonuses).length > 0; else noBonuses">
+                        <p *ngFor="let bonus of getAllowanceKeys(employeeInView.salaryDetails.bonuses)">
+                          {{ toTitleCaseWithSpace(bonus) | titlecase }}: ₦{{ employeeInView.salaryDetails.bonuses[bonus] }}
+                        </p>
+                      </div>
+                    
+                      <ng-template #noBonuses>
+                        <p class="text-gray-500">No bonuses available</p>
+                      </ng-template>
+                      
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <p class="text-[15px] font-semibold tracking-wider mb-2">Deductions</p>
+                   
+                    <div *ngIf="employeeInView?.salaryDetails?.deductions && getAllowanceKeys(employeeInView.salaryDetails.deductions).length > 0; else noDeduction">
+                        <p *ngFor="let deduction of getAllowanceKeys(employeeInView.salaryDetails.deductions)">
+                          {{ toTitleCaseWithSpace(deduction) | titlecase }}: ₦{{ employeeInView.salaryDetails.deductions[deduction] }}
+                        </p>
+                      </div>
+                    
+                      <ng-template #noDeduction>
+                        <p class="text-customBlue">No deductions available</p>
+                      </ng-template>
+                      
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <p class="text-[15px] font-semibold tracking-wider mb-2">OverTime </p>
+                   
+                    <div *ngIf="employeeInView?.salaryDetails?.overtime && getAllowanceKeys(employeeInView.salaryDetails.overtime).length > 0; else noOvertime">
+                        <p *ngFor="let overtime of getAllowanceKeys(employeeInView.salaryDetails.overtime)">
+                          {{ toTitleCaseWithSpace(overtime) | titlecase }}: ₦{{ employeeInView.salaryDetails.overtime[overtime] }}
+                        </p>
+                      </div>
+                    
+                      <ng-template #noOvertime>
+                        <p class="text-customBlue">No overtime option available</p>
+                      </ng-template>
+                      
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+</div>
+<div class="flex gap-5 p-4">
+    
+    <div class="w-1/3  bg-white/80 rounded-xl ">
+        <p class="text-gray-50 font-semibold text-2xl text-center py-2 bg-customBlue w-36 rounded-tl-xl rounded-br-xl">Leave</p>
+    
+        <div class="flex flex-col gap-8 w-full p-5">
+            <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-3 rounded-xl text-white ">
+                <p>Available days left</p>
+                <p class="text-[24px] pt-4 font-semibold">{{employeeInView.leaveDetails.leavesRemaining}} day(s)</p>
+              </div>
+    
+              <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-3 rounded-xl text-white ">
+                <p>Days used</p>
+                <p class="text-[24px] pt-4 font-semibold">{{employeeInView.leaveDetails.usedLeaves}} day(s)</p>
+              </div>
+    
+              <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-3 rounded-xl text-white ">
+                <p>Total days accrued</p>
+                <p class="text-[24px] pt-4 font-semibold">{{employeeInView.leaveDetails.assignedLeaves}} day(s)</p>
+              </div>
+          </div>
+
+        
+    </div>
+    
+    <div class="w-1/3  bg-white/80 rounded-xl ">
+        <p class="text-gray-50 font-semibold text-2xl text-center py-2 bg-customBlue w-48 rounded-tl-xl rounded-br-xl">Leave Usage</p>  
+    </div>
+
+    <div class="w-1/3  bg-white/80 rounded-xl ">
+        <p class="text-gray-50 font-semibold text-2xl text-center py-2 bg-customBlue w-44 rounded-tl-xl rounded-br-xl">Attendance</p>
+    </div>
+
+
+    </div>
+  </app-large-side-modal>
+  

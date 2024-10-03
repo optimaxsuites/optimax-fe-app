@@ -8,15 +8,36 @@ import { SalaryComponent } from '../salary/salary.component';
  
 })
 export class HrSettingsComponent {
+
   sidebar: boolean = false
 
   settings = [{name: "Salary", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt', component: SalaryComponent  }, {name: "Employee management", subSetting: ["Salary Structure", "Deductions and Overtime"],  icon: 'pi pi-receipt', component: null},
-  {name: "Attendance", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt',component: null }, {name: "Leave", subSetting: ["Salary Structure", "Deductions and Overtime"],  icon: 'pi pi-receipt', component: null},{name: "Recruitment", subSetting: ["Salary Structure", "Payslip"],  icon: 'pi pi-receipt',component: null }, {name: "Employee management", subSetting: ["Salary Structure", "Deductions and Overtime"],  icon: 'pi pi-receipt', component: null},{name: "Salary", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt', component: null}, {name: "Salary", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt', component: null} ]
+  {name: "Attendance", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt',component: null }, {name: "Leave", subSetting: ["Salary Structure", "Deductions and Overtime"],  icon: 'pi pi-receipt', component: null},{name: "Recruitment", subSetting: ["Salary Structure", "Payslip", "Score Sheet"],  icon: 'pi pi-receipt',component: null }, {name: "Employee management", subSetting: ["Salary Structure", "Deductions and Overtime"],  icon: 'pi pi-receipt', component: null},{name: "Salary", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt', component: null}, {name: "Salary", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt', component: null} ]
 
 selectedComp = null
 openSideBar = (setting: any) => {
   this.sidebar = true
   this.selectedComp = setting.component
 }
+searchTerm: string = ''
+
+
+filteredSettings = [...this.settings]; 
+
+  ngOnInit(): void {
+    this.filteredSettings = [...this.settings];
+  }
+
+  filterSettings(): void {
+    const term = this.searchTerm.toLowerCase();
+
+    this.filteredSettings = this.settings.filter(setting => {
+      const nameMatch = setting.name.toLowerCase().includes(term);
+      const subSettingMatch = setting.subSetting.some(sub => sub.toLowerCase().includes(term));
+      return nameMatch || subSettingMatch;
+    });
+
+    console.log(this.filteredSettings)
+  }
 }
  

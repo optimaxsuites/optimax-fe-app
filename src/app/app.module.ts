@@ -203,7 +203,6 @@ import { LeaveUsageComponent } from './ui/hr/view/leave-usage/leave-usage.compon
 import { ApplyComponent } from './ui/hr/view/apply/apply.component';
 import { VacancyFormComponent } from './ui/hr/view/vacancy-form/vacancy-form.component';
 import { AttendanceComponent } from './ui/hr/view/attendance/attendance.component';
-import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.component';
 import { InterviewComponent } from './ui/hr/view/interview/interview.component';
 import { ScheduledInterviewComponent } from './ui/hr/view/scheduled-interview/scheduled-interview.component';
 import { InterviewInviteComponent } from './ui/hr/view/candidate/interview-invite/interview-invite.component';
@@ -213,8 +212,14 @@ import { GeneralSettingsComponent } from './ui/settings/view/general/general-set
 import { HrSettingsComponent } from './ui/settings/view/hr/hr-settings/hr-settings.component';
 import { SalaryComponent } from './ui/settings/view/hr/salary/salary.component';
 import { LargeSideModalComponent } from './ui/shared/view/large-side-modal/large-side-modal.component';
+import { ClockInClockOutComponent } from './ui/hr/view/attendance/clock-in-clock-out/clock-in-clock-out.component';
+import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.component';
+
 import { InterviewScoreSheetComponent } from './ui/hr/view/interview-score-sheet/interview-score-sheet.component';
 import { RecruitmentListComponent } from './ui/hr/view/recuitment/recruitment-list/recruitment-list.component';
+import { EmployeeManagementComponent } from './ui/hr/view/employee-management/employee-management.component';
+import { EmployeeComponent } from './ui/hr/view/employee/employee.component';
+
 
 
 
@@ -357,7 +362,6 @@ import { RecruitmentListComponent } from './ui/hr/view/recuitment/recruitment-li
     VacancyFormComponent,
     AttendanceComponent,
     AttendanceSheetsComponent,
-    MyAttendanceComponent,
     InterviewComponent,
     ScheduledInterviewComponent,
     InterviewInviteComponent,
@@ -366,8 +370,14 @@ import { RecruitmentListComponent } from './ui/hr/view/recuitment/recruitment-li
     HrSettingsComponent,
     SalaryComponent,
     LargeSideModalComponent,
+    ClockInClockOutComponent,
+    MyAttendanceComponent,
+
     InterviewScoreSheetComponent,
     RecruitmentListComponent,
+    EmployeeManagementComponent,
+    EmployeeComponent,
+
   ],
   imports: [
   CommonModule,
