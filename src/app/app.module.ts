@@ -216,6 +216,9 @@ import { LargeSideModalComponent } from './ui/shared/view/large-side-modal/large
 import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.component';
 
 import { InterviewScoreSheetComponent } from './ui/hr/view/interview-score-sheet/interview-score-sheet.component';
+import { EmployeeManagementComponent } from './ui/hr/view/employee-management/employee-management.component';
+import { EmployeeComponent } from './ui/hr/view/employee/employee.component';
+
 
 
 
@@ -370,6 +373,9 @@ import { InterviewScoreSheetComponent } from './ui/hr/view/interview-score-sheet
     MyAttendanceComponent,
 
     InterviewScoreSheetComponent,
+    EmployeeManagementComponent,
+    EmployeeComponent,
+
   ],
   imports: [
   CommonModule,
