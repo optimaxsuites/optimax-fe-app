@@ -31,6 +31,8 @@ export class AttendanceSheetsComponent {
     this.showCheckAttendance = true; // Show check attendance
   }
 
+
+
   closeViewModal() {
     this.viewModal = false;
     this.showAttendanceSheets = true; // Show attendance sheets again when modal closes
