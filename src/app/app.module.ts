@@ -214,6 +214,9 @@ import { HrSettingsComponent } from './ui/settings/view/hr/hr-settings/hr-settin
 import { SalaryComponent } from './ui/settings/view/hr/salary/salary.component';
 import { LargeSideModalComponent } from './ui/shared/view/large-side-modal/large-side-modal.component';
 import { InterviewScoreSheetComponent } from './ui/hr/view/interview-score-sheet/interview-score-sheet.component';
+import { EmployeeManagementComponent } from './ui/hr/view/employee-management/employee-management.component';
+import { EmployeeComponent } from './ui/hr/view/employee/employee.component';
+
 
 
 
@@ -366,6 +369,9 @@ import { InterviewScoreSheetComponent } from './ui/hr/view/interview-score-sheet
     SalaryComponent,
     LargeSideModalComponent,
     InterviewScoreSheetComponent,
+    EmployeeManagementComponent,
+    EmployeeComponent,
+
   ],
   imports: [
   CommonModule,
