@@ -4,15 +4,16 @@ import { Component, HostListener, ViewEncapsulation } from '@angular/core';
   selector: 'app-root',
   templateUrl: './app.component.html',
   encapsulation: ViewEncapsulation.None,
-  styleUrl: './app.component.scss'
+  styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
   title = 'ERP-FE';
-
   sidebarVisible2: boolean = false;
 
-
   screenWidth: number;
+
+  // Ensure this property exists and is initialized
+  clockedInTime: string | null = null;
 
   constructor() {
     this.screenWidth = window.innerWidth;
@@ -24,4 +25,10 @@ export class AppComponent {
     console.log('Screen width:', this.screenWidth);
     // Apply logic based on screen width
   }
+
+  // This method should correctly capture the event emitted by ClockInClockOutComponent
+  // onClockInTime(time: string | null) {
+  //   console.log("Received clock-in time:", time);
+  //   this.clockedInTime = time; // Assign the emitted clock-in time
+  // }
 }

@@ -1,77 +1,48 @@
-
 <div class="container flex flex-row justify-between">
-
   <div class="attendance-container flex-1">
-
-  <div class="attendance-boxes">
-    <div *ngFor="let day of days" class="attendance-box" [ngClass]="getAttendanceClass(day)">
-      <div class="day">{{ day }}</div>
-      <div class="status">{{ getStatus(day) }}</div>
-      <button (click)="markAttendance(day)">Mark Attendance</button>
-    </div>
-  </div>
-</div>
-
-
-
-<div class="left-container flex-1">
-  <!-- Employee Information -->
-  <div class="employee-info">
-    <img src="path-to-profile-picture.jpg" alt="Profile Picture" class="profile-picture">
-    <div class="employee-details">
-      <h3>Akinola Ifeoluwa</h3>
-      <p>Punched Out: Today at 03:20 PM (GMT 1.0)</p>
+    <div class="attendance-boxes">
+      <div *ngFor="let day of days" class="attendance-box" [ngClass]="getAttendanceClass(day)">
+        <div class="day">{{ day }}</div>
+        <div class="status">{{ getStatus(day) }}</div>
+        <button (click)="markAttendance(day)">Mark Attendance</button>
+      </div>
     </div>
   </div>
 
-  <!-- Time Information -->
-  <div class="time-info">
-    <div class="time-today">
+  <div class="left-container flex-1">
+    <div class="employee-info">
+      <img src="https://cdn.vectorstock.com/i/500p/53/42/user-member-avatar-face-profile-icon-vector-22965342.jpg" alt="" class="w-72 h-72"/>
+      <p class="font-bold text-gray-700 text-[18px] capitalize">{{ userRegData?.fullname }}</p>
+    </div>
 
-
-
+    <div class="time-info">
+      <div class="time-today">
         <button (click)="toggleClockIn()" text="" class="btn-save">{{isClockedIn ? "Clock Out" : "Clock In"}}</button>
+      </div>
 
+      <div class="input-container-100 my-4">
+        <label for="name">Period</label>
+        <ng-select bindLabel="from" bindValue="from" placeholder="Select period"></ng-select>
+      </div>
     </div>
 
-    <div class="input-container-100 my-4">
-      <label for="name">period</label>
-      <ng-select
-        bindLabel= "from"
-        bindValue= "from"
-        placeholder="Select period">
-      </ng-select>
-    </div>
-
-
-
-  </div>
-
-  <!-- Weekly Time Chart -->
-  <div class="grid grid-row-2 gap-12 items-center">
-      <div class="flex flex-col justify-center text-center bg-customBlue px-3 py-2 rounded-xl text-white ">
+    <div class="grid grid-row-2 gap-12 items-center">
+      <div class="flex flex-col justify-center text-center bg-customBlue px-3 py-2 rounded-xl text-white">
         <p>Total Time </p>
         <p class="text-[24px] pt-4 font-semibold">10.00 day(s)</p>
       </div>
-      <div class="flex flex-col justify-center text-center bg-customBlue px-3 py-2 rounded-xl text-white ">
+      <div class="flex flex-col justify-center text-center bg-customBlue px-3 py-2 rounded-xl text-white">
         <p>Regular Time</p>
         <p class="text-[24px] pt-4 font-semibold">10.00 day(s)</p>
       </div>
-      <div class="flex flex-col justify-center text-center bg-customBlue px-3 py-2 rounded-xl text-white ">
+      <div class="flex flex-col justify-center text-center bg-customBlue px-3 py-2 rounded-xl text-white">
         <p>Over Time </p>
         <p class="text-[24px] pt-4 font-semibold">10.00 day(s)</p>
       </div>
-      <div class="flex flex-col justify-center text-center bg-customBlue px-3 py-2 rounded-xl text-white ">
+      <div class="flex flex-col justify-center text-center bg-customBlue px-3 py-2 rounded-xl text-white">
         <p>Double Time </p>
         <p class="text-[24px] pt-4 font-semibold">10.00 day(s)</p>
       </div>
-
-
-
-
+    </div>
   </div>
 </div>
-</div>
-
-
-
