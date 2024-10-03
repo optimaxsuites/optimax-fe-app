@@ -10,14 +10,39 @@
         </ng-template>
       </p-toolbar>
 
-      <div>
-        <div class="card" *ngFor="let job of jobpostings">
+      <hr>
+
+      <div class="list-card-container">
+
+        <div  class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8 " > 
+            
+            <div *ngFor="let job of jobpostings" class=" bg-gray-50 transition ease-linear hover:scale-105 hover:border-2 text-customBlue text-center rounded-xl cursor-pointer flex flex-col  items-center  justify-center w-[20rem] p-2 editInput" >
+                 <!-- <img [src]="employee.profileImage" alt="" class="rounded-full w-36 h-36"> -->
+                <!-- <p class="text-[15px] font-bold mt-3 mb-2">{{employee.lastName}}{{' '}}{{employee.firstName}}</p>
+                <p class="text-[14px]">{{employee.position}}</p> -->
+
+                <h3>{{job.title}}</h3>
+                <p>{{job.company}}</p>
+                <p>{{job.location}}</p>
+                <p>{{job.postedDate}}</p>
+                <p>{{job.expiryDate}}</p>
+            </div>
+        </div>
+
+        <div *ngIf="jobpostings.length == 0" class="input-container-100 nothing">
+            <span>
+                no Job posting yet
+            </span>
+        </div>
+
+
+        <!-- <div class="card" *ngFor="let job of jobpostings">
             <h3>{{job.title}}</h3>
             <p>{{job.company}}</p>
             <p>{{job.location}}</p>
             <p>{{job.postedDate}}</p>
             <p>{{job.expiryDate}}</p>
-        </div>
+        </div> -->
       </div>
     </div>
 </div>
