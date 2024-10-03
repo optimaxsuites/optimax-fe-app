@@ -51,7 +51,7 @@ export class SalaryComponent {
   showAddForm: boolean = false 
   isEditMode = false; 
   editIndex: number | null = null
-  salaryStructure: SalaryStructure[] = [
+  salaries: SalaryStructure[] = [
     {
       level: 'Intern',
       baseSalary: 20000,
@@ -308,7 +308,7 @@ export class SalaryComponent {
       },
     }
   ];
-
+salaryStructure: SalaryStructure[] = []
   salaryForm: FormGroup;
 
   constructor(private fb: FormBuilder, private confirmationService: ConfirmationService,
@@ -340,6 +340,26 @@ export class SalaryComponent {
     });
   }
   ngOnInit() {
+    const salariesFromStorage = localStorage.getItem("salaryStructure");
+    
+    if (salariesFromStorage) {
+
+      const storedSalaries = JSON.parse(salariesFromStorage);
+  
+
+      this.salaryStructure = storedSalaries.map((salary: any) => ({
+        ...salary,
+        netSalary: function () {
+          const grossSalary = this.baseSalary + this.allowances.transportationAllowance + this.allowances.mealAllowance + (this.bonuses.internshipCompletionBonus || 0);
+          return grossSalary - (this.deductions.tax + (this.deductions.pension || 0));
+        }
+      }));
+  
+    }
+  
+  else {
+    localStorage.setItem("salaryStructure", JSON.stringify(this.salaries))
+  }
   }
   
   get customAllowances(): FormArray {
@@ -450,6 +470,8 @@ export class SalaryComponent {
       } else {
         this.salaryStructure.push(newSalaryStructure);
       }
+
+      localStorage.setItem('salaryStructure', JSON.stringify(this.salaryStructure));
       this.salaryForm.reset();
       this.showAddForm = false;
       this.isEditMode = false;
@@ -540,6 +562,8 @@ export class SalaryComponent {
   deleteSalary(salary: SalaryStructure, index:number, event: Event) {
 
     this.salaryStructure.splice(index, 1);
+    localStorage.setItem('salaryStructure', JSON.stringify(this.salaryStructure));
+
   }
   getAllowanceKeys(allowances: object): string[] {
     return Object.keys(allowances);

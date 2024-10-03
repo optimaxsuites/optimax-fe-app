@@ -65,6 +65,7 @@ import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.
 import { InterviewComponent } from './ui/hr/view/interview/interview.component';
 import { GeneralSettingsComponent } from './ui/settings/view/general/general-settings/general-settings.component';
 import { HrSettingsComponent } from './ui/settings/view/hr/hr-settings/hr-settings.component';
+import { EmployeeManagementComponent } from './ui/hr/view/employee-management/employee-management.component';
 
 const routes: Routes = [
   {
@@ -323,6 +324,10 @@ const routes: Routes = [
       {
         path: 'admin/hr/interview/:uuid',
         component: InterviewComponent,
+      },
+      {
+        path: 'admin/hr/employee-management/:uuid',
+        component: EmployeeManagementComponent,
       },
 
 
