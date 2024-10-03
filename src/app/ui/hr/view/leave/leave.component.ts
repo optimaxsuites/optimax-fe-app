@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { TabConfig } from 'src/app/ui/shared/service/interface/data';
-import { RecuitmentFormComponent } from '../recuitment-form/recuitment-form.component';
+import { RecuitmentFormComponent } from '../recuitment/recuitment-form/recuitment-form.component';
 import { LeaveRequestComponent } from '../leave-request/leave-request.component';
 import { AssignLeaveComponent } from '../assign-leave/assign-leave.component';
 import { LeaveUsageComponent } from '../leave-usage/leave-usage.component';

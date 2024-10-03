@@ -1,10 +1,8 @@
 import { Component } from '@angular/core';
 import { TabConfig } from 'src/app/ui/shared/service/interface/data';
-import { RecuitmentFormComponent } from '../recuitment-form/recuitment-form.component';
 import { CandidateComponent } from '../candidate/candidate.component';
-import { VacancyComponent } from '../vacancy/vacancy.component';
 import { ScheduledInterviewComponent } from '../scheduled-interview/scheduled-interview.component';
-import { InterviewScoreSheetComponent } from '../interview-score-sheet/interview-score-sheet.component';
+import { RecruitmentListComponent } from './recruitment-list/recruitment-list.component';
 
 @Component({
   selector: 'app-recuitment',
@@ -14,10 +12,10 @@ import { InterviewScoreSheetComponent } from '../interview-score-sheet/interview
 export class RecuitmentComponent {
   
   tabsConfig: TabConfig[] = [
-    { name: 'Job Posting', component: RecuitmentFormComponent },
+    { name: 'Job Posting', component: RecruitmentListComponent },
     { name: 'Candidate', component: CandidateComponent },
     { name: 'Scheduled Interview', component: ScheduledInterviewComponent },
-    { name: 'Score Sheet', component: InterviewScoreSheetComponent },
+    // { name: 'Score Sheet', component: InterviewScoreSheetComponent },
   ];
 
 }
