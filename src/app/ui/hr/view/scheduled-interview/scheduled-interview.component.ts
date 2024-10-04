@@ -30,7 +30,7 @@ export class ScheduledInterviewComponent {
         return 'badge badge-lightgreen';
       case `Offer Sent`:
         return 'badge badge-lightgreen';  
-      case 'Cancled':
+      case 'Cancelled':
         return 'badge badge-lightred';
       case 'Next-Stage':
         return 'badge badge-lightblue';
@@ -115,7 +115,7 @@ export class ScheduledInterviewComponent {
 
   decline(interview: any){
     if (interview) {
-      interview.stage = 'Cancled';
+      interview.stage = 'Cancelled';
       this.updateLocalStorage()
     }
   }
@@ -127,7 +127,7 @@ export class ScheduledInterviewComponent {
   }
   sendRejected(interview: any){
     if (interview) {
-      interview.stage = 'Cancled';
+      interview.stage = 'Cancelled';
       this.updateLocalStorage()
     }
   }

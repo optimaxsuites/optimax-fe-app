@@ -14,18 +14,26 @@
 
       <div class="list-card-container">
 
-        <div  class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8 " > 
-            
-            <div *ngFor="let job of jobpostings" class=" bg-gray-50 transition ease-linear hover:scale-105 hover:border-2 text-customBlue text-center rounded-xl cursor-pointer flex flex-col  items-center  justify-center w-[20rem] p-2 editInput" >
-                 <!-- <img [src]="employee.profileImage" alt="" class="rounded-full w-36 h-36"> -->
-                <!-- <p class="text-[15px] font-bold mt-3 mb-2">{{employee.lastName}}{{' '}}{{employee.firstName}}</p>
-                <p class="text-[14px]">{{employee.position}}</p> -->
+        <div  class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 " > 
 
-                <h3>{{job.title}}</h3>
-                <p>{{job.company}}</p>
-                <p>{{job.location}}</p>
-                <p>{{job.postedDate}}</p>
-                <p>{{job.expiryDate}}</p>
+            <div *ngFor="let job of jobpostings; let i = index" class=" bg-gray-50 transition ease-linear hover:scale-105 hover:border-2 text-customBlue rounded-xl flex flex-col w-[50%] p-2 editInput" >
+                <div class="list-card-wrapper">
+                    <div class="list-card-right">
+                        <h2><strong>{{job.title}}</strong></h2>
+                        <p> <i class="pi pi-map-marker table-item me-2 "></i> {{job.location}}</p>
+                        <p> <i class="pi pi-clock table-item me-2"></i> {{job.employmentType}}</p>
+                        <!-- <p> <i class="pi pi-clock"></i> {{job.category}}</p> -->
+                        <p> <i class="pi pi-calendar-clock table-item me-2"></i> {{job.postedDate}}</p>
+                        <p> <i class="pi pi-calendar-times table-item me-2"></i> {{job.expiryDate}}</p>
+                    </div>
+                    <div class="list-card-left">
+                        <div class="flex space-x-2 mt-2">
+                            <button pButton icon="pi pi-pencil table-item" (click)="editJob(job)" class="p-button-rounded p-button-info" title="Edit"></button>
+                            <button pButton icon="pi pi-trash table-item" (click)="deleteJob(i)" class="p-button-rounded p-button-danger" title="Delete"></button>
+                        </div>
+                    </div>
+                </div>
+                <!-- <div class="editInput" style="width: 700px; height: 400px; overflow-y: scroll; font-size: 14px;" [innerHTML]="safeHtmlDescriptions[i]"></div> -->
             </div>
         </div>
 
@@ -34,20 +42,10 @@
                 no Job posting yet
             </span>
         </div>
-
-
-        <!-- <div class="card" *ngFor="let job of jobpostings">
-            <h3>{{job.title}}</h3>
-            <p>{{job.company}}</p>
-            <p>{{job.location}}</p>
-            <p>{{job.postedDate}}</p>
-            <p>{{job.expiryDate}}</p>
-        </div> -->
       </div>
     </div>
 </div>
 
 <div *ngIf="showRecruitmentForm">
-    <!-- <app-recruitment-form [candidate]="activeItem" (back)="close()" (submitFrom)="createJob()"></app-recruitment-form> -->
-     <app-recuitment-form (back)="close()" (submitFrom)="createJob()"></app-recuitment-form>
+     <app-recuitment-form [jobData]="activeItem" (back)="close()" (submitFrom)="createJob()" (isEdit)="isEdit"></app-recuitment-form>
 </div>

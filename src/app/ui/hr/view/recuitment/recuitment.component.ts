@@ -13,8 +13,8 @@ export class RecuitmentComponent {
   
   tabsConfig: TabConfig[] = [
     { name: 'Job Posting', component: RecruitmentListComponent },
-    { name: 'Candidate', component: CandidateComponent },
-    { name: 'Scheduled Interview', component: ScheduledInterviewComponent },
+    { name: 'Job Applications', component: CandidateComponent },
+    { name: 'Interview', component: ScheduledInterviewComponent },
     // { name: 'Score Sheet', component: InterviewScoreSheetComponent },
   ];
 
