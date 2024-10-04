@@ -416,7 +416,7 @@ import { EmployeeComponent } from './ui/hr/view/employee/employee.component';
     StepperModule,
     InputTextModule,
     FloatLabelModule,
-    // EditorModule,
+    EditorModule,
     // MessagesModule,
     // MessageModule,
     RippleModule,
