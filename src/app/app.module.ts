@@ -410,7 +410,7 @@ import { FullCalendarModule } from '@fullcalendar/angular';
       StepperModule,
       InputTextModule,
       FloatLabelModule,
-      // EditorModule,
+      EditorModule,
       // MessagesModule,
       // MessageModule,
       RippleModule,

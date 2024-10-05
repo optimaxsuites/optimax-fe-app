@@ -16,6 +16,10 @@
 @import "assets/theme/theme.scss";
 @import "assets/layout/layout.css";
 
+// QUILL CSS
+@import "../node_modules/quill/dist/quill.core.css";
+@import "../node_modules/quill/dist/quill.snow.css";
+
 
 
 //tailwind style

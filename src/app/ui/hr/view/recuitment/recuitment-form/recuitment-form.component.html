@@ -32,40 +32,54 @@
             <input type="text" id="jobLocation" class="editInput" name="jobLocation" [(ngModel)]="jobData.location" required>
         </div>
       </div>
-        <div class="input-container-50">
+      <div class="input-container-100 flex-item">
+        <div class="input-container-50 d-flex gap-2">
+          <div class="input-container-100">
+            <!-- Posted Date -->
+            <label for="postedDate">Poosted Date:</label>
+            <input type="text" id="postedDate" class="editInput mb-4" name="postedDate" [ngModel]="jobData.postedDate | date: 'MM/dd/yyyy'" disabled required>
+          </div>
+          <div class="input-container-100">
             <!-- Expiry Date -->
             <label for="expiryDate">Expiry Date:</label>
             <input type="date" id="expiryDate" class="editInput mb-4" name="expiryDate" [(ngModel)]="jobData.expiryDate" required>
+          </div>
         </div>
-
-      <div class="input-container-100 flex-item">
         <div class="input-container-50">
-            <!-- Company Overview -->
+          <div class="input-container-100">
+            <label for="specification">Specification:</label>
+            <input type="text" id="specification" class="editInput mb-4" name="specification" [ngModel]="jobData.specification"  required>
+          </div>
+        </div>
+      </div>
+      <div class="input-container-100 flex-item">
+        <div class="card">
+          <p-editor [(ngModel)]="jobData.description"  [style]="{ height: '350px' }" />
+          <!-- <textarea [innerHTML]="jobData.description" ></textarea> -->
+        </div>
+        <!-- <div class="input-container-50">
             <label for="companyOverview">Company Overview:</label>
             <textarea id="companyOverview" class="editInput" name="companyOverview" rows="4" [(ngModel)]="jobData.companyOverview"></textarea>
         </div>
       
         <div class="input-container-50 ">
-            <!-- Position Overview -->
             <label for="positionOverview">Position Overview:</label>
             <textarea id="positionOverview" class="editInput" name="positionOverview" rows="4" [(ngModel)]="jobData.positionOverview"></textarea>
-        </div>
+        </div> -->
       </div>
-      <div class="input-container-100 flex-item">
+      <!-- <div class="input-container-100 flex-item">
         <div class="input-container-50">
-            <!-- Key Responsibilities -->
             <label for="keyResponsibilities">Key Responsibilities:</label>
             <textarea id="keyResponsibilities" class="editInput" name="keyResponsibilities" rows="4" [(ngModel)]="jobData.keyResponsibilities"></textarea>
         </div>
       
         <div class="input-container-50 ">
-            <!-- Qualifications -->
             <label for="qualifications">Qualifications:</label>
             <textarea id="qualifications" class="editInput" name="qualifications" rows="4" [(ngModel)]="jobData.qualifications"></textarea>
         </div>
-      </div>
+      </div> -->
       <div class="btn-wrapper">
-        <app-button (click)="submitForm()" type="submit" class="btn-save">Submit Job</app-button>
+        <app-button (click)="submitForm()" text="{{ isEdit ? 'Update' : 'Create' }}" type="submit" class="btn-save"></app-button>
       </div>
     </div>
   </div>
