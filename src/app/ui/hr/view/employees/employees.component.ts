@@ -1,14 +1,17 @@
 import { Component } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { RandomTokenService } from 'src/app/ui/shared/service/random-token/random-token.service';
+import { CalendarOptions } from '@fullcalendar/core';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 @Component({
-  selector: 'app-employee',
-  templateUrl: './employee.component.html',
-  styleUrl: './employee.component.scss',
+  selector: 'app-employees',
+  templateUrl: './employees.component.html',
+  styleUrl: './employees.component.scss',
   providers: [MessageService]
 
 })
-export class EmployeeComponent {
+export class EmployeesComponent {
   uniqueLevels: any;
   uniquePositions: any;
 
@@ -17,7 +20,7 @@ employeeInView: any = {}
 searchTerm: any;
 
 selectedPosition: any;
-
+openAddForm: boolean = false
 employeeList = [
   {
     id: 1,
@@ -426,9 +429,18 @@ employeeList = [
     }
   }
 ];
-
+salaryStructure: any[] = [];
 employees: any = []
+filteredEmployees: any[] = [];
 selectedEmployeeType: any;
+calendarOptions: CalendarOptions = {}
+
+handleDateClick(arg: DateClickArg) {
+  alert('date click! ' + arg.dateStr)
+}
+
+
+
 
   constructor(
     private messageService: MessageService,
@@ -437,6 +449,47 @@ selectedEmployeeType: any;
   }
   ngOnInit() {
 
+    const employeesFromStorage = localStorage.getItem("employeesList");
+    const salaryStructureFromStorage = localStorage.getItem("salaryStructure");
+    if (salaryStructureFromStorage) {
+      this.salaryStructure = JSON.parse(salaryStructureFromStorage);
+    }
+    if (employeesFromStorage) {
+      const storedEmployees = JSON.parse(employeesFromStorage);
+      let salaryStructure: any[] = [];
+      if (salaryStructureFromStorage) {
+        salaryStructure = JSON.parse(salaryStructureFromStorage);
+      }
+      
+      const calculateNetSalary = (salaryDetails: any) => {
+        const grossSalary = salaryDetails.baseSalary +
+          (salaryDetails.allowances.transportationAllowance || 0) +
+          (salaryDetails.allowances.mealAllowance || 0) + (salaryDetails.allowances.housingAllowance || 0) +
+          (salaryDetails.bonuses.internshipCompletionBonus || 0);
+        return grossSalary - (salaryDetails.deductions.tax + (salaryDetails.deductions.pension || 0));
+      };
+      this.employees = storedEmployees.map((employee: any) => {
+        const salaryDetails = salaryStructure.find(s => s.level === employee.level);
+        return {
+          ...employee,
+          salaryDetails: salaryDetails ? {
+            baseSalary: salaryDetails.baseSalary,
+            allowances: salaryDetails.allowances,
+            deductions: salaryDetails.deductions,
+            bonuses: salaryDetails.bonuses,
+            overtime: salaryDetails.overtime,
+            netSalary: calculateNetSalary(salaryDetails)
+          } : null 
+        };
+      });
+      this.uniqueLevels = [...new Set(this.employees.map((employee: { level: any; }) => employee.level))];
+      this.uniquePositions = [...new Set(this.employees.map((employee: { position: any; }) => employee.position))];
+      this.filteredEmployees = this.employees;
+
+    }
+  
+  else {
+    localStorage.setItem("employeesList", JSON.stringify(this.employeeList))
     const employeesFromStorage = localStorage.getItem("employeesList");
     const salaryStructureFromStorage = localStorage.getItem("salaryStructure");
     if (employeesFromStorage) {
@@ -473,26 +526,31 @@ selectedEmployeeType: any;
       console.log(this.employees[0].salaryDetails)
 
     }
-  
-  else {
-    localStorage.setItem("employeesList", JSON.stringify(this.employeeList))
   }
 
   }
-
-  filterBySelectedEmployeeType() {
-    throw new Error('Method not implemented.');
-    }
-  filterBySelectedPosition() {
-      throw new Error('Method not implemented.');
-      }
-  filterEmployees() {
-        throw new Error('Method not implemented.');
-        }
+  generateLeaveEvents(leaveDetails: { leavesSpent: any[]; }) {
+    return leaveDetails.leavesSpent.map(leave => {
+      return {
+        title: `${leave.type} Leave`,
+        start: leave.from,
+        end: leave.to,
+        backgroundColor:  '#2EB270'   
+      };
+    });
+  }
+ 
 
   viewThisEmployee(employee: any){
   this.viewEmployee = true
   this.employeeInView = employee
+  this.calendarOptions = {
+    initialView: 'dayGridMonth',
+    plugins: [dayGridPlugin, interactionPlugin],
+    dateClick: (arg) => this.handleDateClick(arg),
+    events:  this.generateLeaveEvents(this.employeeInView.leaveDetails)
+  };
+
     }    
     closeViewEmployee() {
   this.viewEmployee = false
@@ -512,4 +570,39 @@ selectedEmployeeType: any;
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, str => str.toUpperCase());
   }
+
+  applyFilters() {
+    this.filteredEmployees = this.employees.filter((employee: { level: any; position: string; firstName: string; lastName: string; }) => {
+      const matchesLevelType = this.selectedEmployeeType.length === 0 || 
+                               this.selectedEmployeeType.includes(employee.level);
+
+      const matchesPosition = this.selectedPosition.length === 0 || 
+                              this.selectedPosition.includes(employee.position);
+
+      const matchesSearchTerm = this.searchTerm === '' || 
+                                employee.firstName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                                employee.lastName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                                employee.position.toLowerCase().includes(this.searchTerm.toLowerCase());
+
+      return matchesLevelType && matchesPosition && matchesSearchTerm;
+    });
+  }
+  filterBySelectedEmployeeType() {
+    this.filteredEmployees = this.employees.filter((employee: { level: any; position: string; firstName: string; lastName: string; }) => {
+      return this.selectedEmployeeType.length === 0 || 
+                               this.selectedEmployeeType.includes(employee.level);
+    })
+    }
+
+
+  filterBySelectedPosition() {
+     this.filteredEmployees = this.employees.filter((employee: { level: any; position: string; firstName: string; lastName: string; }) => {
+      return this.selectedPosition.length === 0 || 
+      this.selectedPosition.includes(employee.position);
+    })
+      }
+
+  filterEmployees() {
+        throw new Error('Method not implemented.');
+        }
 }
