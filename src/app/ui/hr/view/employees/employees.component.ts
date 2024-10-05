@@ -431,6 +431,7 @@ employeeList = [
 ];
 
 employees: any = []
+filteredEmployees: any[] = [];
 selectedEmployeeType: any;
 calendarOptions: CalendarOptions = {}
 
@@ -481,7 +482,7 @@ handleDateClick(arg: DateClickArg) {
       });
       this.uniqueLevels = [...new Set(this.employees.map((employee: { level: any; }) => employee.level))];
       this.uniquePositions = [...new Set(this.employees.map((employee: { position: any; }) => employee.position))];
-      console.log(this.employees[0])
+      this.filteredEmployees = this.employees;
 
     }
   
@@ -536,15 +537,7 @@ handleDateClick(arg: DateClickArg) {
       };
     });
   }
-  filterBySelectedEmployeeType() {
-    throw new Error('Method not implemented.');
-    }
-  filterBySelectedPosition() {
-      throw new Error('Method not implemented.');
-      }
-  filterEmployees() {
-        throw new Error('Method not implemented.');
-        }
+ 
 
   viewThisEmployee(employee: any){
   this.viewEmployee = true
@@ -575,4 +568,39 @@ handleDateClick(arg: DateClickArg) {
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, str => str.toUpperCase());
   }
+
+  applyFilters() {
+    this.filteredEmployees = this.employees.filter((employee: { level: any; position: string; firstName: string; lastName: string; }) => {
+      const matchesLevelType = this.selectedEmployeeType.length === 0 || 
+                               this.selectedEmployeeType.includes(employee.level);
+
+      const matchesPosition = this.selectedPosition.length === 0 || 
+                              this.selectedPosition.includes(employee.position);
+
+      const matchesSearchTerm = this.searchTerm === '' || 
+                                employee.firstName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                                employee.lastName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                                employee.position.toLowerCase().includes(this.searchTerm.toLowerCase());
+
+      return matchesLevelType && matchesPosition && matchesSearchTerm;
+    });
+  }
+  filterBySelectedEmployeeType() {
+    this.filteredEmployees = this.employees.filter((employee: { level: any; position: string; firstName: string; lastName: string; }) => {
+      return this.selectedEmployeeType.length === 0 || 
+                               this.selectedEmployeeType.includes(employee.level);
+    })
+    }
+
+
+  filterBySelectedPosition() {
+     this.filteredEmployees = this.employees.filter((employee: { level: any; position: string; firstName: string; lastName: string; }) => {
+      return this.selectedPosition.length === 0 || 
+      this.selectedPosition.includes(employee.position);
+    })
+      }
+      
+  filterEmployees() {
+        throw new Error('Method not implemented.');
+        }
 }
