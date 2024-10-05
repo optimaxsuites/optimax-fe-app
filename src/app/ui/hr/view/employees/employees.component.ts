@@ -1,14 +1,17 @@
 import { Component } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { RandomTokenService } from 'src/app/ui/shared/service/random-token/random-token.service';
+import { CalendarOptions } from '@fullcalendar/core';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 @Component({
-  selector: 'app-employee',
-  templateUrl: './employee.component.html',
-  styleUrl: './employee.component.scss',
+  selector: 'app-employees',
+  templateUrl: './employees.component.html',
+  styleUrl: './employees.component.scss',
   providers: [MessageService]
 
 })
-export class EmployeeComponent {
+export class EmployeesComponent {
   uniqueLevels: any;
   uniquePositions: any;
 
@@ -429,6 +432,14 @@ employeeList = [
 
 employees: any = []
 selectedEmployeeType: any;
+calendarOptions: CalendarOptions = {}
+
+handleDateClick(arg: DateClickArg) {
+  alert('date click! ' + arg.dateStr)
+}
+
+
+
 
   constructor(
     private messageService: MessageService,
@@ -470,16 +481,61 @@ selectedEmployeeType: any;
       });
       this.uniqueLevels = [...new Set(this.employees.map((employee: { level: any; }) => employee.level))];
       this.uniquePositions = [...new Set(this.employees.map((employee: { position: any; }) => employee.position))];
-      console.log(this.employees[0].salaryDetails)
+      console.log(this.employees[0])
 
     }
   
   else {
     localStorage.setItem("employeesList", JSON.stringify(this.employeeList))
+    const employeesFromStorage = localStorage.getItem("employeesList");
+    const salaryStructureFromStorage = localStorage.getItem("salaryStructure");
+    if (employeesFromStorage) {
+
+      const storedEmployees = JSON.parse(employeesFromStorage);
+      let salaryStructure: any[] = [];
+      if (salaryStructureFromStorage) {
+        salaryStructure = JSON.parse(salaryStructureFromStorage);
+      }
+      
+      const calculateNetSalary = (salaryDetails: any) => {
+        const grossSalary = salaryDetails.baseSalary +
+          (salaryDetails.allowances.transportationAllowance || 0) +
+          (salaryDetails.allowances.mealAllowance || 0) + (salaryDetails.allowances.housingAllowance || 0) +
+          (salaryDetails.bonuses.internshipCompletionBonus || 0);
+        return grossSalary - (salaryDetails.deductions.tax + (salaryDetails.deductions.pension || 0));
+      };
+      this.employees = storedEmployees.map((employee: any) => {
+        const salaryDetails = salaryStructure.find(s => s.level === employee.level);
+        return {
+          ...employee,
+          salaryDetails: salaryDetails ? {
+            baseSalary: salaryDetails.baseSalary,
+            allowances: salaryDetails.allowances,
+            deductions: salaryDetails.deductions,
+            bonuses: salaryDetails.bonuses,
+            overtime: salaryDetails.overtime,
+            netSalary: calculateNetSalary(salaryDetails)
+          } : null 
+        };
+      });
+      this.uniqueLevels = [...new Set(this.employees.map((employee: { level: any; }) => employee.level))];
+      this.uniquePositions = [...new Set(this.employees.map((employee: { position: any; }) => employee.position))];
+      console.log(this.employees[0].salaryDetails)
+
+    }
   }
 
   }
-
+  generateLeaveEvents(leaveDetails: { leavesSpent: any[]; }) {
+    return leaveDetails.leavesSpent.map(leave => {
+      return {
+        title: `${leave.type} Leave`,
+        start: leave.from,
+        end: leave.to,
+        backgroundColor:  '#2EB270'   
+      };
+    });
+  }
   filterBySelectedEmployeeType() {
     throw new Error('Method not implemented.');
     }
@@ -493,6 +549,13 @@ selectedEmployeeType: any;
   viewThisEmployee(employee: any){
   this.viewEmployee = true
   this.employeeInView = employee
+  this.calendarOptions = {
+    initialView: 'dayGridMonth',
+    plugins: [dayGridPlugin, interactionPlugin],
+    dateClick: (arg) => this.handleDateClick(arg),
+    events:  this.generateLeaveEvents(this.employeeInView.leaveDetails)
+  };
+
     }    
     closeViewEmployee() {
   this.viewEmployee = false

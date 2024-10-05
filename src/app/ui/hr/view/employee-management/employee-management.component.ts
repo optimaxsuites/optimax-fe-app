@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { TabConfig } from 'src/app/ui/shared/service/interface/data';
-import { EmployeeComponent } from '../employee/employee.component';
+import { EmployeesComponent } from '../employees/employees.component';
 
 @Component({
   selector: 'app-employee-management',
@@ -9,7 +9,7 @@ import { EmployeeComponent } from '../employee/employee.component';
 })
 export class EmployeeManagementComponent {
   tabsConfig: TabConfig[] = [
-    { name: 'Employees', component: EmployeeComponent, role: 'ROLE_ADMIN' },
+    { name: 'Employees', component: EmployeesComponent, role: 'ROLE_ADMIN' },
 
 
   

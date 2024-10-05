@@ -897,3 +897,83 @@ body {
   min-height: 500px;
   max-height: fit-content;
 }
+/* Change background color of days with events */
+.fc-daygrid-day.fc-day-with-event {
+  background-color: #f3f4f6;
+}
+
+/* Customize the event appearance */
+.fc-event {
+  color:  var(--blue-green); /* Event text color */
+  border: none; /* Remove event border */
+  border-radius: 5px; /* Rounded corners */
+  font-size: 0.9rem; /* Adjust event font size */
+  padding: 5px;
+}
+
+/* Change the header styles */
+.fc-toolbar {
+ /* Toolbar background color */
+  color: var(--blue-green); /* Toolbar text color */
+  padding: 5px 5px 0 5px;
+  /* Toolbar padding */
+  font-size: 0.9rem; /* Adjust event font size */
+
+}
+
+.fc-button {
+  background-color: #007bff; /* Button color */
+  color: white; /* Button text color */
+  border-radius: 4px;
+  margin: 0 5px;
+}
+
+.fc-button:hover {
+  background-color: #0056b3; /* Button hover color */
+}
+
+.fc-button-primary {
+  border: none; /* Remove button border */
+}
+
+.fc-button-primary:hover {
+  background-color: #00408a; /* Darken button on hover */
+}
+
+/* Style the calendar days */
+.fc-daygrid-day-number {
+  font-size: 1rem;
+  color: var(--blue-green);
+}
+
+.fc-day-today {
+  background-color: #f0f8ff;
+}
+.fc-col-header-cell {
+  background-color: var(--celadon-green);  
+  font-weight: bold; 
+  padding: 10px;  
+  border-radius: 5px;
+  text-transform: uppercase; 
+  color: whitesmoke;
+  text-decoration: none;
+
+}
+
+.fc-col-header-cell .fc-day {
+  text-transform: uppercase; 
+}
+.fc-col-header-cell a {
+  color: whitesmoke !important;  
+  text-decoration: none !important;  
+  font-size: 12px !important; 
+
+}
+
+
+.fc-col-header-cell .fc-day-sun {
+  background-color: var(--celadon-green); 
+
+}
+ 
+

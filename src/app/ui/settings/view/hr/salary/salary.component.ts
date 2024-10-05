@@ -359,6 +359,22 @@ salaryStructure: SalaryStructure[] = []
   
   else {
     localStorage.setItem("salaryStructure", JSON.stringify(this.salaries))
+    const salariesFromStorage = localStorage.getItem("salaryStructure");
+    
+    if (salariesFromStorage) {
+
+      const storedSalaries = JSON.parse(salariesFromStorage);
+  
+
+      this.salaryStructure = storedSalaries.map((salary: any) => ({
+        ...salary,
+        netSalary: function () {
+          const grossSalary = this.baseSalary + this.allowances.transportationAllowance + this.allowances.mealAllowance + (this.bonuses.internshipCompletionBonus || 0);
+          return grossSalary - (this.deductions.tax + (this.deductions.pension || 0));
+        }
+      }));
+  
+    }
   }
   }
   
