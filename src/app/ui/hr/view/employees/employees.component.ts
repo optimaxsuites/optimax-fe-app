@@ -20,7 +20,7 @@ employeeInView: any = {}
 searchTerm: any;
 
 selectedPosition: any;
-
+openAddForm: boolean = false
 employeeList = [
   {
     id: 1,
@@ -429,7 +429,7 @@ employeeList = [
     }
   }
 ];
-
+salaryStructure: any[] = [];
 employees: any = []
 filteredEmployees: any[] = [];
 selectedEmployeeType: any;
@@ -451,8 +451,10 @@ handleDateClick(arg: DateClickArg) {
 
     const employeesFromStorage = localStorage.getItem("employeesList");
     const salaryStructureFromStorage = localStorage.getItem("salaryStructure");
+    if (salaryStructureFromStorage) {
+      this.salaryStructure = JSON.parse(salaryStructureFromStorage);
+    }
     if (employeesFromStorage) {
-
       const storedEmployees = JSON.parse(employeesFromStorage);
       let salaryStructure: any[] = [];
       if (salaryStructureFromStorage) {
@@ -599,7 +601,7 @@ handleDateClick(arg: DateClickArg) {
       this.selectedPosition.includes(employee.position);
     })
       }
-      
+
   filterEmployees() {
         throw new Error('Method not implemented.');
         }

@@ -1,0 +1,35 @@
+<p class="text-customBlue text-[18px] font-bold text-center py-7 capitalize">create new employee</p>
+
+<form [formGroup]="employeeForm" (ngSubmit)="onSubmit()" class="p-4 w-[80%] mx-auto shadow-md rounded-xl bg-white/70">
+    <div class="mb-4">
+      <label for="firstName" class="block text-[14px] font-medium">First Name</label>
+      <input type="text" formControlName="firstName" id="firstName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+    </div>
+  
+    <div class="mb-4">
+      <label for="lastName" class="block text-[14px] font-medium">Last Name</label>
+      <input type="text" formControlName="lastName" id="lastName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+    </div>
+  
+    <div class="mb-4">
+      <label for="email" class="block text-[14px] font-medium">Email</label>
+      <input type="email" formControlName="email" id="email" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+    </div>
+  
+    <div class="mb-4">
+      <label for="level" class="block text-[14px] font-medium">Level</label>
+      <ng-select 
+        [items]="salaryStructure" 
+        bindLabel="level"
+        bindValue="level"
+        placeholder="Select Level"
+        formControlName="level"
+        class="w-full mt-1 p-2 border border-gray-300 rounded-md"
+      ></ng-select>
+    </div>
+  
+    <div class="text-right">
+      <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-700" [disabled]="employeeForm.invalid">Add Employee</button>
+    </div>
+  </form>
+  

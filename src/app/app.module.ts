@@ -218,6 +218,7 @@ import { RecruitmentListComponent } from './ui/hr/view/recuitment/recruitment-li
 import { EmployeesComponent } from './ui/hr/view/employees/employees.component';
 import { EmployeeManagementComponent } from './ui/hr/view/employee-management/employee-management.component';
 import { FullCalendarModule } from '@fullcalendar/angular';
+import { AddEmployeeFormComponent } from './ui/hr/view/add-employee-form/add-employee-form.component';
 
 
 @NgModule({
@@ -371,7 +372,8 @@ import { FullCalendarModule } from '@fullcalendar/angular';
     InterviewScoreSheetComponent,
     RecruitmentListComponent,
     EmployeesComponent,
-    EmployeeManagementComponent
+    EmployeeManagementComponent,
+    AddEmployeeFormComponent
   ],
   imports: [
     CommonModule,

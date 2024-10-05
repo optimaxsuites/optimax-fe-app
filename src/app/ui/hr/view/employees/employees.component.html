@@ -31,7 +31,7 @@
     />
     </div>
     <div class="flex items-end">
-        <Button  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3">Add new employee</Button>
+        <Button  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3" (click)="openAddForm = true">Add new employee</Button>
        </div>
 </div>
 
@@ -252,5 +252,9 @@
 
 
     </div>
+  </app-large-side-modal>
+
+  <app-large-side-modal *ngIf="openAddForm" (close)="openAddForm = false">
+ <app-add-employee-form></app-add-employee-form>
   </app-large-side-modal>
   
