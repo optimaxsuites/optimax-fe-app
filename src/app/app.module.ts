@@ -205,7 +205,7 @@ import { VacancyFormComponent } from './ui/hr/view/vacancy-form/vacancy-form.com
 import { AttendanceComponent } from './ui/hr/view/attendance/attendance.component';
 import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.component';
 import { InterviewComponent } from './ui/hr/view/interview/interview.component';
-import { ScheduledInterviewComponent } from './ui/hr/view/scheduled-interview/scheduled-interview.component';
+import { ScheduledInterviewComponent } from './ui/hr/view/interview/scheduled-interview/scheduled-interview.component';
 import { InterviewInviteComponent } from './ui/hr/view/candidate/interview-invite/interview-invite.component';
 import { ViewComponent } from './ui/hr/view/candidate/view/view.component';
 import { AttendanceSheetsComponent } from './ui/hr/view/attendance-sheet/attendance-sheet.component';
@@ -213,7 +213,7 @@ import { GeneralSettingsComponent } from './ui/settings/view/general/general-set
 import { HrSettingsComponent } from './ui/settings/view/hr/hr-settings/hr-settings.component';
 import { SalaryComponent } from './ui/settings/view/hr/salary/salary.component';
 import { LargeSideModalComponent } from './ui/shared/view/large-side-modal/large-side-modal.component';
-import { InterviewScoreSheetComponent } from './ui/hr/view/interview-score-sheet/interview-score-sheet.component';
+import { InterviewScoreSheetComponent } from './ui/hr/view/interview/interview-score-sheet/interview-score-sheet.component';
 import { RecruitmentListComponent } from './ui/hr/view/recuitment/recruitment-list/recruitment-list.component';
 import { EmployeesComponent } from './ui/hr/view/employees/employees.component';
 import { EmployeeManagementComponent } from './ui/hr/view/employee-management/employee-management.component';
@@ -438,7 +438,7 @@ import { AddEmployeeFormComponent } from './ui/hr/view/add-employee-form/add-emp
       MatMenuModule,
       FullCalendarModule
       // ToastrModule.forRoot(),
-    ],
+  ],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,

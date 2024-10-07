@@ -1,27 +1,38 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { JobDTO } from '../../../domain/job.dto';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { ConfirmationService, MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-recruitment-list',
   templateUrl: './recruitment-list.component.html',
-  styleUrl: './recruitment-list.component.scss'
+  styleUrl: './recruitment-list.component.scss',
+  providers: [MessageService, ConfirmationService],
+
 })
-export class RecruitmentListComponent {
+export class RecruitmentListComponent implements OnInit {
   showRecruitmentList: boolean = true;
   showRecruitmentForm: boolean = false;
   activeItem: JobDTO = {};
   jobpostings: JobDTO[] = [];
-  isEdit: boolean = false;
+  isEdit?: boolean;
 
-  safeHtmlDescriptions: SafeHtml[] = [];
+  showListView: boolean = true;
 
-  constructor(private sanitizer: DomSanitizer) {}
+
+
+  constructor(
+    private sanitizer: DomSanitizer,
+    private confirmationService: ConfirmationService,
+    private messageService: MessageService 
+  ) {}
 
   ngOnInit() {
     this.getJobPostings();
   }
-
+  toggleView() {
+    this.showListView = !this.showListView;
+  }
   
 
   getJobPostings() {
@@ -32,22 +43,42 @@ export class RecruitmentListComponent {
       // Parse and assign the job data to the jobpostings array
       this.jobpostings = JSON.parse(storedJobData);
       console.log("jobpostingsData", this.jobpostings);
-      
-      // // Sanitize the HTML descriptions for all job postings
-      // this.safeHtmlDescriptions = this.jobpostings.map(posting => 
-      //   this.sanitizeHtml(posting.description || '')
-      // );
+
+    // Sort the jobpostings array in FILO order
+    this.jobpostings.reverse();
+
     } else {
       this.jobpostings = []; // Initialize as an empty array if no data found
     }
   }
 
+  
 
 
 
 
 
 
+  confirmJobDelete(job: any): void {
+    this.confirmationService.confirm({
+      message: `Are You sure you want to carry out this action?  Clicking on DELETE, would lead to permanent removal of ${job.title} job posting.`,
+      header: `Delete Candidate - ${job.id}`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass:"p-btn-danger p-button-text",
+      rejectButtonStyleClass:"p-btn-cancle p-button-text",
+      acceptIcon:"none",
+      rejectIcon:"none",
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      // styleClass: 'custom-confirm-dialog',
+      accept: () => {
+        this.deleteJob(job);
+      },
+      reject: () => {
+
+      }
+    });
+  }
 
 
 
@@ -109,7 +140,7 @@ deleteJob(index: number) {
   }
 
   editJob(job: JobDTO) {
-    // console.log("job info", job)
+    console.log("job info", job)
     this.activeItem = { ...job }; // Set the active item to the job being edited
     this.isEdit = true;  // Set to false for create mode
     this.showRecruitmentList = false;
@@ -120,5 +151,7 @@ deleteJob(index: number) {
     this.showRecruitmentList = true;
     this.showRecruitmentForm = false;
     this.activeItem = {}; // Reset the active item
+
+    this.getJobPostings();
   }
 }
