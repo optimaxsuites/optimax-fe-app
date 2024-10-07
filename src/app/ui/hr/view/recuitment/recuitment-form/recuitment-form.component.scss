@@ -10,11 +10,9 @@
   }
 
   
-  
-  /* Responsive design for small screens */
-//   @media (max-width: 768px) {
-//     .input-container-50 {
-//       flex: 1 1 100%; /* Takes full width on small screens */
-//     }
-//   }
-  
+.note{
+  font-size: var(--sm-font);
+}
+.remove-mb{
+  margin: 0;
+}

@@ -20,7 +20,13 @@
     --badge-lightblue: rgb(101, 199, 231);
     --badge-green: rgb(112, 231, 101);
     --badge-yellow: rgb(231, 222, 101);
-    --badge-purple: rgb(129, 101, 231);
+    --badge-purple: rgb(158, 138, 231);
+    --badge-pink: rgb(192, 118, 174);
+
+    // icons
+    --icon-edit: #2EB270;
+    --icon-delete: red;
+    --icon-view: var(--badge-lightblue);
 
 
 
@@ -41,6 +47,10 @@
     --border-5px: 5px;
     /* --font-size: 10px; */
     --font-family: 'Roboto Slab', serif;
+}
+
+h1,h2,h3,h4,h5,h6{
+  color: var(--text-gray);
 }
 
 // delete
@@ -194,6 +204,18 @@
 }
 .badge-lightpurple {
   background-color: var(--badge-purple);
+}
+.badge-lightpink {
+  background-color: var(--badge-pink);
+}
+.icon-view{
+  color: var(--icon-view);
+}
+.icon-edit{
+  color: var(--icon-edit);
+}
+.icon-delete{
+  color: var(--icon-delete);
 }
 
 

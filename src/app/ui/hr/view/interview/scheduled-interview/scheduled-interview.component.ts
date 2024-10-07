@@ -28,20 +28,27 @@ export class ScheduledInterviewComponent {
         return 'badge badge-lightyellow';
       case `Completed`:
         return 'badge badge-lightgreen';
-      case `Offer Sent`:
-        return 'badge badge-lightgreen';  
-      case 'Cancelled':
+
+      case `Offer-Sent`:
+        return 'badge badge-lightpurple'; 
+      case `Offer-Accepted`:
+        return 'badge badge-lightblue'; 
+      case `Offer-Rejected`:
         return 'badge badge-lightred';
-      case 'Next-Stage':
-        return 'badge badge-lightblue';
-      case 'Offer-Rejected':
-        return 'badge badge-lightpurple';
+
+      case 'Employement-Letter-Sent':
+        return 'badge badge-lightpink';
+
       default:
         return '';
     }
   }
 
   ngOnInit(): void {
+    this.getCandidateData();
+  }
+
+  getCandidateData(){
     // Retrieve candidates from localStorage
     const storedCandidates = localStorage.getItem('scheduledCandidate');
     if (storedCandidates) {
@@ -121,13 +128,19 @@ export class ScheduledInterviewComponent {
   }
   sendOffer(interview: any){
     if (interview) {
-      interview.stage = 'Offer Sent';
+      interview.stage = 'Offer-Sent';
       this.updateLocalStorage()
     }
   }
   sendRejected(interview: any){
     if (interview) {
       interview.stage = 'Cancelled';
+      this.updateLocalStorage()
+    }
+  }
+  sendEmploymentLetter(interview: any){
+    if (interview) {
+      interview.stage = 'Employement-Letter-Sent';
       this.updateLocalStorage()
     }
   }

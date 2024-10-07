@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { TabConfig } from 'src/app/ui/shared/service/interface/data';
 import { CandidateComponent } from '../candidate/candidate.component';
-import { ScheduledInterviewComponent } from '../scheduled-interview/scheduled-interview.component';
+import { ScheduledInterviewComponent } from '../interview/scheduled-interview/scheduled-interview.component';
 import { RecruitmentListComponent } from './recruitment-list/recruitment-list.component';
 
 @Component({
