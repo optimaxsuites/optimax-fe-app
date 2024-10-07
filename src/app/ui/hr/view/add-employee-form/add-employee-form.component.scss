@@ -1,0 +1,25 @@
+p{
+    margin-bottom: 0;
+}
+
+
+:host ::ng-deep .ng-select {
+    // background-color: lightgray;
+    @apply bg-gray-50
+}
+
+:host ::ng-deep .ng-select .ng-select-container {
+    @apply bg-gray-50
+}
+
+:host ::ng-deep .ng-select .ng-option {
+    @apply bg-gray-50 text-gray-600
+}
+
+:host ::ng-deep .ng-select .ng-option:hover {
+    @apply bg-gray-100 text-gray-700
+}
+
+.form-input{
+    @apply outline-none
+}
