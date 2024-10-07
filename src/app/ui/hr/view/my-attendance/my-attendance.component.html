@@ -99,22 +99,24 @@
       <div class="flex gap-5 p-4">
         <!-- Attendance Information Section -->
         <div class="w-full bg-white/80 rounded-xl">
-          <p class="text-gray-50 font-semibold text-2xl text-center py-2 bg-customBlue w-36 rounded-tl-xl rounded-br-xl">Attendance Details</p>
+          <p class="text-gray-50 font-semibold text-2xl text-center py-2 bg-customBlue w-600 rounded-tl-xl rounded-br-xl">Attendance Details</p>
 
           <!-- Employee Information -->
           <div class="flex justify-between w-full gap-4 px-5 py-3">
             <div class="text-customBlue w-1/2 text-center flex flex-col items-center">
-              <img [src]="employeeInView.profileImage" alt="Employee Image" class="rounded-full w-36 h-36">
-              <p class="text-[15px] font-bold mt-3 mb-2">{{ employeeInView.lastName }} {{ employeeInView.firstName }}</p>
-              <p class="text-[14px] bg-customBlueHover/10 p-2 text-customBlue rounded-md">{{ employeeInView.position }}</p>
+             <img src="https://cdn.vectorstock.com/i/500p/53/42/user-member-avatar-face-profile-icon-vector-22965342.jpg" alt="Employee Image" class="w-72 h-72"/>
+             <p class="font-bold text-gray-700 text-[18px] capitalize">{{ userRegData.fullname }}</p>
+
+             <!-- <p class="text-[15px] font-bold mt-3 mb-2">{{ employeeInView.lastName }} {{ employeeInView.firstName }}</p>
+             <p class="text-[14px] bg-customBlueHover/10 p-2 text-customBlue rounded-md">{{ employeeInView.position }}</p> -->
             </div>
 
             <div class="w-1/2 flex flex-col gap-4 items-start text-customBlue">
               <div class="flex gap-4">
                 <i class="fa-solid fa-circle-user text-[3rem]"></i>
                 <div class="flex flex-col gap-1">
-                  <p class="font-bold text-customBlue/70">ID: <span class="ml-1 font-normal text-customBlue">{{ employeeInView.id }}</span></p>
-                  <p class="font-bold text-customBlue/70">Gender: <span class="ml-1 font-normal text-customBlue">{{ employeeInView.gender }}</span></p>
+                  <p class="font-bold text-customBlue/70">ID: <span class="ml-1 font-normal text-customBlue">{{ currentAttendanceData.id }}</span></p>
+                  <!-- <p class="font-bold text-customBlue/70">Gender: <span class="ml-1 font-normal text-customBlue">{{ employeeInView.gender }}</span></p> -->
                 </div>
               </div>
 
@@ -156,16 +158,22 @@
           <!-- Additional Attendance Stats -->
           <div class="flex justify-between px-5 py-3">
             <div class="flex flex-col items-center bg-customBlue px-5 py-3 rounded-xl text-white">
-              <p>Total Days Present</p>
-              <p class="text-[24px] pt-4 font-semibold">{{ currentAttendanceData.daysPresent }}</p>
+              <button class="w-full h-full flex flex-col items-center" (click)="openTotalDaysPresentPage()">
+                <p>Total Days Present</p>
+                <p class="text-[24px] pt-4 font-semibold">{{ currentAttendanceData.daysPresent }}</p>
+              </button>
             </div>
             <div class="flex flex-col items-center bg-customBlue px-5 py-3 rounded-xl text-white">
-              <p>Total Days Absent</p>
-              <p class="text-[24px] pt-4 font-semibold">{{ currentAttendanceData.daysAbsent }}</p>
+              <button class="w-full h-full flex flex-col items-center" (click)="viewAbsentDetails()">
+                <p>Total Days Absent</p>
+                <p class="text-[24px] pt-4 font-semibold">{{ currentAttendanceData.daysAbsent }}</p>
+              </button>
             </div>
             <div class="flex flex-col items-center bg-customBlue px-5 py-3 rounded-xl text-white">
-              <p>Overtime Hours</p>
-              <p class="text-[24px] pt-4 font-semibold">{{ currentAttendanceData.overtimeHours }}</p>
+              <button class="w-full h-full flex flex-col items-center" (click)="viewOvertimeDetails()">
+                <p>Overtime Hours</p>
+                <p class="text-[24px] pt-4 font-semibold">{{ currentAttendanceData.overtimeHours }}</p>
+              </button>
             </div>
           </div>
         </div>
