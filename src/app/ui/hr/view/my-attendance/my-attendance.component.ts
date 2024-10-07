@@ -16,7 +16,7 @@ export class MyAttendanceComponent implements OnChanges {
   currentTime: string;
   searchTerm: string = '';
   totalAttendance: number = 0;
-  attendanceData: any[] = []; 
+  attendanceData: any[] = [];
 
   days: string[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   attendanceStatus: { [key: string]: string } = {};
@@ -35,8 +35,17 @@ export class MyAttendanceComponent implements OnChanges {
   selectedDay: string = '';
   filteredAttendanceRecords: any[] = [];
   viewAttendanceModal: boolean = false;  // Control the visibility of the modal
-  currentAttendanceData: any = {};  // Holds the current attendance data to display in the modal
+  currentAttendanceData: any = {
+   
+
+  };  // Holds the current attendance data to display in the modal
   employeeInView: any = null;
+
+
+
+  openTotalDaysPresentPage() {
+    console.log('Open total days present page functionality not yet implemented');
+  }
 
   constructor() {
     this.days.forEach(day => {
@@ -66,6 +75,12 @@ export class MyAttendanceComponent implements OnChanges {
     this.currentTime = new Date().toLocaleTimeString();
   }
 
+
+
+
+
+
+
   updateDisplayMessage(time: string | null) {
     if (time) {
       this.displayMessage = `Clocked in at: ${time}`;
@@ -74,6 +89,26 @@ export class MyAttendanceComponent implements OnChanges {
       this.displayMessage = `Not clocked in yet.`;
     }
   }
+
+  viewOvertimeDetails() {
+    // Check if overtimeDetails property exists in currentAttendanceData
+    if (this.currentAttendanceData && this.currentAttendanceData.overtimeDetails) {
+      console.log('Overtime details:', this.currentAttendanceData.overtimeDetails);
+      // Implement your modal display logic here
+      this.viewAttendanceModal = true; // Set modal visibility to true (use viewAttendanceModal)
+    } else {
+      console.log('No overtime details available');
+      // Handle the case where no overtime details are present
+    }
+  }
+
+  viewAbsentDetails() {
+    // Implement your logic to display details about absent days
+    console.log('Displaying details about absent days');
+    // You can use a modal or any other suitable method to display details
+  }
+
+
 
   markAttendance(day: string) {
     this.attendanceStatus[day] = 'present';
@@ -91,6 +126,7 @@ export class MyAttendanceComponent implements OnChanges {
   getAttendanceForDay(day: string) {
     return {
       type: 'Annual',
+      id:'000 45B',
       daysUsed: 10,
       from: '2023-09-01',
       to: '2023-09-10',
