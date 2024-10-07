@@ -1,64 +1,87 @@
 <div  class="w-full bg-white/90 my-3 rounded-2xl  p-8 text-gray-800">
-  
+
   <hr>
 
   <div class=" flex gap-28 mb-5 items-center">
+    <div class="flex gap-2 justify-center items-center">
+      <!-- Search bar on the left -->
+
+
+      <!-- User profile info (username and avatar) in the center -->
       <div class="flex gap-2 justify-center flex-col text-center">
-          <img src="https://cdn.vectorstock.com/i/500p/53/42/user-member-avatar-face-profile-icon-vector-22965342.jpg" alt="" class="w-72 h-72"/>
-          <p class="font-bold text-gray-700 text-[18px] capitalize">{{ userRegData.fullname }}</p>
-        </div>
+        <img src="https://cdn.vectorstock.com/i/500p/53/42/user-member-avatar-face-profile-icon-vector-22965342.jpg" alt="" class="w-72 h-72"/>
+        <p class="font-bold text-gray-700 text-[18px] capitalize">{{ userRegData.fullname }}</p>
+      </div>
+    </div>
 
-        <div class="flex gap-12 items-center">
-          <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white ">
-              <p>Total Days</p>
-              <p class="text-[24px] pt-4 font-semibold">10.00 day(s)</p>
-            </div>
+    <!-- Existing layout for total days, regular time, and overtime -->
+    <div class="flex gap-12 items-center">
+      <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white">
+        <p>Total Days</p>
+        <p class="text-[24px] pt-4 font-semibold">7.00 Day(s)</p>
+      </div>
 
-            <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white ">
-              <p>Regular Time(Hrs</p>
-              <p class="text-[24px] pt-4 font-semibold">11.00 day(s)</p>
-            </div>
+      <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white">
+        <p>Regular Time</p>
+        <p class="text-[24px] pt-4 font-semibold">8.00 Hr(s)</p>
+      </div>
 
-            <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white ">
-              <p>Over Time(Hrs)</p>
-              <p class="text-[24px] pt-4 font-semibold">21.00 day(s)</p>
-            </div>
-        </div>
+      <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white">
+        <p>Over Time</p>
+        <p class="text-[24px] pt-4 font-semibold">21.00 Hr(s)</p>
+      </div>
+    </div>
+
+
 
 
   </div>
 
   <hr>
   <div class="my-5 justify-between gap-6 flex w-full">
-  <div class="w-[58%] flex flex-col gap-4">
-    <div class="label-value" style="display: flex; align-items: center; margin-bottom: 10px;">
-      <label style="flex: 0 0 120px; font-weight: bold;">Clocked In Time:</label>
-      <p style="flex: 1 0 auto;">{{ clockedInTime }}</p>
-    </div>
-    <div class="label-value" style="display: flex; align-items: center; margin-bottom: 10px;">
-      <label style="flex: 0 0 120px; font-weight: bold;">Date:</label>
-      <p style="flex: 1 0 auto;">{{ currentDate }}</p>
-    </div>
-    <div class="label-value" style="display: flex; align-items: center; margin-bottom: 10px;">
-      <label style="flex: 0 0 120px; font-weight: bold;">Time:</label>
-      <p style="flex: 1 0 auto;">{{ currentTime }}</p>
+    <!-- Left side content -->
+    <div class="w-[58%] flex flex-col gap-4">
+      <div class="label-value" style="display: flex; align-items: center; margin-bottom: 10px;">
+        <label style="flex: 0 0 120px; font-weight: bold;">Clocked In Time:</label>
+        <p style="flex: 1 0 auto;">{{ clockedInTime }}</p>
+      </div>
+      <div class="label-value" style="display: flex; align-items: center; margin-bottom: 10px;">
+        <label style="flex: 0 0 120px; font-weight: bold;">Date:</label>
+        <p style="flex: 1 0 auto;">{{ currentDate }}</p>
+      </div>
+      <div class="label-value" style="display: flex; align-items: center; margin-bottom: 10px;">
+        <label style="flex: 0 0 120px; font-weight: bold;">Time:</label>
+        <p style="flex: 1 0 auto;">{{ currentTime }}</p>
+      </div>
     </div>
 
-
-    <textarea [(ngModel)]="note" placeholder="Enter note" style="width: 100%; height: 100px; border: 1px solid #ccc; padding: 10px;"></textarea>
-
+    <!-- Right side content (textarea) -->
+    <div class="w-[40%]">
+      <textarea [(ngModel)]="note" placeholder="Enter note"
+                style="width: 100%; height: 100px; border: 1px solid #ccc; padding: 10px; resize: none;"></textarea>
+    </div>
   </div>
 
 
-  </div>
-
-  <div class="flex items-center justify-end ">
+  <div class="flex items-center justify-end mb-6">
     <button (click)="toggleClockInOut()" style="padding: 10px 20px; background-color: #2f6276; color: #fff; border: none; border-radius: 5px; cursor: pointer;">{{ isClockedIn ? 'Clock Out' : 'Clock In' }}</button>
 
     </div>
 
+    <div class="flex justify-end mb-6">
+      <div class="search-bar w-[40%]">
+        <input
+          type="text"
+          placeholder="Search by Period"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="filterCandidates()"
+          class="editInput w-full"
+        />
+      </div>
+    </div>
 
-    <div class=" flex ">
+
+    <div class=" flex gap-28 mb-6 items-center">
       <div *ngFor="let day of days; let i = index"
            class="attendance-box"
            [ngClass]="getAttendanceClass(day)"
@@ -71,6 +94,84 @@
       <!-- Last Card -->
 
     </div>
+
+    <app-large-side-modal *ngIf="viewAttendanceModal" (close)="viewAttendanceModal = false" class="flex flex-col gap-8">
+      <div class="flex gap-5 p-4">
+        <!-- Attendance Information Section -->
+        <div class="w-full bg-white/80 rounded-xl">
+          <p class="text-gray-50 font-semibold text-2xl text-center py-2 bg-customBlue w-36 rounded-tl-xl rounded-br-xl">Attendance Details</p>
+
+          <!-- Employee Information -->
+          <div class="flex justify-between w-full gap-4 px-5 py-3">
+            <div class="text-customBlue w-1/2 text-center flex flex-col items-center">
+              <img [src]="employeeInView.profileImage" alt="Employee Image" class="rounded-full w-36 h-36">
+              <p class="text-[15px] font-bold mt-3 mb-2">{{ employeeInView.lastName }} {{ employeeInView.firstName }}</p>
+              <p class="text-[14px] bg-customBlueHover/10 p-2 text-customBlue rounded-md">{{ employeeInView.position }}</p>
+            </div>
+
+            <div class="w-1/2 flex flex-col gap-4 items-start text-customBlue">
+              <div class="flex gap-4">
+                <i class="fa-solid fa-circle-user text-[3rem]"></i>
+                <div class="flex flex-col gap-1">
+                  <p class="font-bold text-customBlue/70">ID: <span class="ml-1 font-normal text-customBlue">{{ employeeInView.id }}</span></p>
+                  <p class="font-bold text-customBlue/70">Gender: <span class="ml-1 font-normal text-customBlue">{{ employeeInView.gender }}</span></p>
+                </div>
+              </div>
+
+              <!-- Date & Time Information -->
+              <div class="flex gap-4">
+                <i class="fa-solid fa-calendar-alt text-[3rem]"></i>
+                <div class="flex flex-col gap-1">
+                  <p class="font-bold text-customBlue/70">Date: <span class="ml-1 font-normal text-customBlue">{{ currentAttendanceData.date }}</span></p>
+                  <p class="font-bold text-customBlue/70">Time: <span class="ml-1 font-normal text-customBlue">{{ currentAttendanceData.time }}</span></p>
+                </div>
+              </div>
+
+              <!-- Location Information -->
+              <div class="flex gap-4">
+                <i class="fa-solid fa-map-marker-alt text-[3rem]"></i>
+                <div class="flex flex-col gap-1">
+                  <p class="font-bold text-customBlue/70">Location: <span class="ml-1 font-normal text-customBlue">{{ currentAttendanceData.location }}</span></p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Attendance Period -->
+          <div class="flex flex-col gap-4 items-start px-5 py-3">
+            <div class="flex gap-4">
+              <i class="fa-solid fa-calendar-alt text-[3rem]"></i>
+              <div class="flex flex-col gap-1">
+                <p class="font-semibold text-customBlue/70">Attendance Period</p>
+                <p class="font-bold text-customBlue/70">From: <span class="ml-1 font-normal text-customBlue">{{ currentAttendanceData.from }}</span></p>
+                <p class="font-bold text-customBlue/70">To: <span class="ml-1 font-normal text-customBlue">{{ currentAttendanceData.to }}</span></p>
+              </div>
+            </div>
+            <div class="flex gap-4">
+              <p class="font-bold text-customBlue/70">Type: <span class="ml-1 font-normal text-customBlue">{{ currentAttendanceData.type }}</span></p>
+              <p class="font-bold text-customBlue/70">Days Used: <span class="ml-1 font-normal text-customBlue">{{ currentAttendanceData.daysUsed }}</span></p>
+            </div>
+          </div>
+
+          <!-- Additional Attendance Stats -->
+          <div class="flex justify-between px-5 py-3">
+            <div class="flex flex-col items-center bg-customBlue px-5 py-3 rounded-xl text-white">
+              <p>Total Days Present</p>
+              <p class="text-[24px] pt-4 font-semibold">{{ currentAttendanceData.daysPresent }}</p>
+            </div>
+            <div class="flex flex-col items-center bg-customBlue px-5 py-3 rounded-xl text-white">
+              <p>Total Days Absent</p>
+              <p class="text-[24px] pt-4 font-semibold">{{ currentAttendanceData.daysAbsent }}</p>
+            </div>
+            <div class="flex flex-col items-center bg-customBlue px-5 py-3 rounded-xl text-white">
+              <p>Overtime Hours</p>
+              <p class="text-[24px] pt-4 font-semibold">{{ currentAttendanceData.overtimeHours }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </app-large-side-modal>
+
 
 
 </div>

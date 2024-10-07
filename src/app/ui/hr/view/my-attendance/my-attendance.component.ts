@@ -6,72 +6,127 @@ import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
   styleUrls: ['./my-attendance.component.scss']
 })
 export class MyAttendanceComponent implements OnChanges {
-  @Input() clockedInTime: string | null = null; // Expect clockedInTime from parent
-  // @Input() userRegData: { fullname: string } | null = null; // Add user data from parent
+  @Input() clockedInTime: string | null = null;
   userInfoRegData: any[] = [];
-  userRegData: any = { };
+  userRegData: any = {};
   displayMessage: string = '';
-  isClockedIn: boolean = false; // Track clock-in status
-  note: string = ''; // For storing notes
-  currentDate: string; // Store the current date
-  currentTime: string; // Store the current time
+  isClockedIn: boolean = false;
+  note: string = '';
+  currentDate: string;
+  currentTime: string;
+  searchTerm: string = '';
+  totalAttendance: number = 0;
+  attendanceData: any[] = []; 
 
-  // Days of the week for attendance
   days: string[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   attendanceStatus: { [key: string]: string } = {};
 
+  // Mock data for attendance records
+  candidates = [
+    { name: 'John Doe', days: 7, regularTime: 8, overtime: 21, attendanceDay: 'Monday' },
+    { name: 'Jane Smith', days: 5, regularTime: 7, overtime: 15, attendanceDay: 'Monday' },
+    { name: 'Bob Johnson', days: 6, regularTime: 8, overtime: 20, attendanceDay: 'Tuesday' }
+  ];
+
+  filteredCandidates = [...this.candidates];
+
+  // New variables for pop-up and modal logic
+  showPopup: boolean = false;
+  selectedDay: string = '';
+  filteredAttendanceRecords: any[] = [];
+  viewAttendanceModal: boolean = false;  // Control the visibility of the modal
+  currentAttendanceData: any = {};  // Holds the current attendance data to display in the modal
+  employeeInView: any = null;
+
   constructor() {
-    // Initialize attendance status for each day to 'absent' by default
     this.days.forEach(day => {
       this.attendanceStatus[day] = 'absent';
     });
 
-    // Initialize current date and time
-    this.currentDate = new Date().toLocaleDateString(); // Current date
-    this.currentTime = new Date().toLocaleTimeString(); // Current time
+    this.currentDate = new Date().toLocaleDateString();
+    this.currentTime = new Date().toLocaleTimeString();
   }
+
   ngOnInit() {
-    this.userInfoRegData = JSON.parse(sessionStorage["userPrimaryInfoRegData"]);
+    this.userInfoRegData = JSON.parse(sessionStorage['userPrimaryInfoRegData']);
     this.userRegData = this.userInfoRegData;
 
-    }
+
+    this.totalAttendance = this.attendanceData.reduce((acc, day) => {
+      return acc + (day.status === 'Present' ? 1 : 0);
+    }, 0);
+  }
+
   ngOnChanges(changes: SimpleChanges) {
     if (changes['clockedInTime']) {
       this.updateDisplayMessage(changes['clockedInTime'].currentValue);
     }
 
-    // Update current date and time if necessary
-    this.currentDate = new Date().toLocaleDateString(); // Update current date
-    this.currentTime = new Date().toLocaleTimeString(); // Update current time
+    this.currentDate = new Date().toLocaleDateString();
+    this.currentTime = new Date().toLocaleTimeString();
   }
 
   updateDisplayMessage(time: string | null) {
     if (time) {
       this.displayMessage = `Clocked in at: ${time}`;
-      this.markAttendance(new Date().toLocaleDateString('en-US', { weekday: 'long' })); // Mark attendance for today
+      this.markAttendance(new Date().toLocaleDateString('en-US', { weekday: 'long' }));
     } else {
       this.displayMessage = `Not clocked in yet.`;
     }
   }
 
-  // Mark attendance for a specific day
-  markAttendance(dayName: string) {
-    this.attendanceStatus[dayName] = 'present'; // Mark present for the day
+  markAttendance(day: string) {
+    this.attendanceStatus[day] = 'present';
+
+    // Retrieve attendance data for the selected day (e.g., all Mondays)
+    const attendanceData = this.getAttendanceForDay(day);
+
+    // Assign the retrieved data to a variable for display in the modal
+    this.currentAttendanceData = attendanceData;
+
+    // Show the modal
+    this.viewAttendanceModal = true;
   }
 
-  // Get attendance status for a specific day
+  getAttendanceForDay(day: string) {
+    return {
+      type: 'Annual',
+      daysUsed: 10,
+      from: '2023-09-01',
+      to: '2023-09-10',
+      date: '2024-09-30',
+      time: '08:00 AM',
+      location: 'Office HQ',
+      daysPresent: 190,
+      daysAbsent: 10,
+      overtimeHours: 25,
+    };
+  }
+
   getStatus(day: string): string {
-    return this.attendanceStatus[day] || 'absent'; // Default to 'absent' if not found
+    return this.attendanceStatus[day] || 'absent';
   }
 
-  // Get dynamic class for attendance status
   getAttendanceClass(day: string): string {
     return this.attendanceStatus[day] === 'present' ? 'present-class' : 'absent-class';
   }
 
-  // Toggle clock-in/clock-out (for button click)
-  toggleClockInOut() { // Renamed here
+  toggleClockInOut() {
     this.isClockedIn = !this.isClockedIn;
-    this.note = ''; // Reset note when toggling
+    this.note = '';
+  }
+
+  filterCandidates() {
+    if (this.searchTerm.trim()) {
+      this.filteredCandidates = this.candidates.filter(candidate =>
+        candidate.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+      );
+    } else {
+      this.filteredCandidates = [...this.candidates];
+    }
+  }
+
+  closePopup() {
+    this.showPopup = false;
   }
 }
