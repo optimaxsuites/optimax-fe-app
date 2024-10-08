@@ -1,0 +1,95 @@
+
+<div class="">
+    <div class="form-container">
+      <!-- Left Video Advert -->
+      <div class="advert">
+        <iframe class="video-portrait" width="100%" height="auto"
+          src="https://www.youtube.com/embed/De_YujJ9rtE?autoplay=1&mute=1&controls=0&showinfo=0&modestbranding=1&rel=0&loop=1&playlist=De_YujJ9rtE"
+          frameborder="0"
+          allow="autoplay; encrypted-media"
+          allowfullscreen>
+        </iframe>
+      </div>
+      <div class="job-application-form card p-4">
+          <h2>Job Application Form</h2>
+          
+          <!-- Applicant's Name -->
+          <label for="name">Name:</label>
+          <input
+            type="text"
+            id="name"
+            class="editInput"
+            [(ngModel)]="applicant.candidate"
+            placeholder="Enter your name"
+          />
+          <br>
+        
+          <!-- Applicant's Email -->
+          <label for="email">Email:</label>
+          <input
+            type="email"
+            id="email"
+            class="editInput"
+            [(ngModel)]="applicant.email"
+            placeholder="Enter your email"
+          />
+          <br>
+        
+          <!-- Applicant's Phone Number -->
+          <label for="phone">Phone:</label>
+          <input
+            type="tel"
+            id="phone"
+            class="editInput"
+            [(ngModel)]="applicant.contactNo"
+            placeholder="Enter your phone number"
+          />
+          <br>
+        
+          <!-- Job Position -->
+          <label for="position">Position Applied For:</label>
+          <input
+            type="text"
+            id="position"
+            class="editInput"
+            [(ngModel)]="applicant.position"
+            placeholder="Enter the job position"
+          />
+          <br>
+
+          <!-- Resume/CV Upload -->
+          <label for="resume">Upload Resume/CV:</label>
+          <input
+            type="file"
+            id="resume"
+            (change)="onFileSelected($event)"
+            accept=".pdf, .doc, .docx"
+          />
+
+          <br>
+        
+          <!-- Cover Letter -->
+          <label for="coverLetter">Cover Letter:</label>
+          <textarea
+            id="coverLetter"
+            class="editInput cover-letter"
+            [(ngModel)]="applicant.coverLetter"
+            placeholder="Write your cover letter"
+
+          ></textarea>
+          <br>
+        
+          <!-- Submit Button -->
+          <app-button text="Submit Application" class="btn-save" (click)="submitApplication()"></app-button>
+      </div>
+      <!-- Right Video Advert -->
+      <div class="advert">
+        <iframe class="video-portrait" width="100%" height="auto"
+          src="https://www.youtube.com/embed/22IrsEoKHZ8?autoplay=1&mute=1&controls=0&showinfo=0&modestbranding=1&rel=0&loop=1&playlist=22IrsEoKHZ8"
+          frameborder="0"
+          allow="autoplay; encrypted-media"
+          allowfullscreen>
+        </iframe>
+      </div> 
+    </div>
+</div>

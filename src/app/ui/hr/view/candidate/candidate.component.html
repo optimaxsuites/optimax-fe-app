@@ -141,15 +141,14 @@
       </div>
       <div class="input-container-50">
           <label for="resume">Resume:</label> <br>
-          <button text="Download Resume" class="btn-download" (click)="downloadResume(activeItem.resume)">
+          <button text="Download Resume" class="btn-download" (click)="downloadResume(activeItem.resume || '')">
             <i class="pi pi-download resume me-2"></i> Download Resume
           </button>
       </div>
     </div>
     <div class="">
-      <label for="cover-letter">Cover Letter:</label><br>
-      <span class="input-container-100 editInput">{{activeItem.coverLetter}}</span>
-      <!-- <textarea class="cover-letter editInput" name="cover-letter" [(ngModel)]="activeItem.coverLetter" disabled></textarea> -->
+      <label for="cover-letter">Cover Letter:</label>
+      <textarea class="cover-letter editInput" name="cover-letter" [(ngModel)]="activeItem.coverLetter" disabled></textarea>
     </div>
     </div>
 </app-modal>

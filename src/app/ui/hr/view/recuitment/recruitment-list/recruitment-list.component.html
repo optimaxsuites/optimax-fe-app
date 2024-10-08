@@ -1,5 +1,5 @@
 <p-confirmDialog header="Confirm Deletion" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
-
+<p-toast></p-toast>
 <div *ngIf="showRecruitmentList">
     <div class="card">
         <p-toolbar styleClass="mb-4 gap-2">
@@ -70,7 +70,7 @@
             </div>
         </div>
 
-        <div *ngIf="jobpostings.length == 0" class="input-container-100 nothing">
+        <div *ngIf="filteredJobPostings.length == 0" class="input-container-100 nothing">
             <span>
                 No Job posting(s) yet
             </span>
@@ -131,3 +131,42 @@
 <div *ngIf="showRecruitmentForm">
      <app-recuitment-form [jobData]="activeItem" (back)="close()" (submitFrom)="createJob()" [isEdit]="isEdit"></app-recuitment-form>
 </div>
+
+<!-- <app-modal 
+  *ngIf="viewModal"
+  [header]="'Viewing ' + activeItem.title + ' information'"
+  [title]="'Cancel'"
+  (close)="closeViewModal()">
+    <div class="view-wrapper">
+    <div class="d-flex gap-4 my-2">
+      <div class="input-container-50">
+          <label for="name">Name:</label><br>
+          <span>{{activeItem.candidate}}</span>
+      </div>
+      <div class="input-container-50">
+          <label for="phone-number">Phone Number:</label><br>
+          <span>{{activeItem.contactNo}}</span>
+      </div>
+    </div>
+    <div class="d-flex gap-4 my-2">
+      <div class="input-container-50">
+          <label for="email">Email:</label><br>
+          <span>{{activeItem.email}}</span>
+      </div>
+      <div class="input-container-50">
+          <label for="position">Position:</label><br>
+          <span>{{activeItem.position}}</span>
+      </div>
+    </div>
+    <div class="d-flex gap-4 my-2">
+      <div class="input-container-50">
+          <label for="date">Date Applied:</label><br>
+          <span>{{activeItem.dateApplied}}</span>
+      </div>
+    </div>
+    <div class="">
+      <label for="cover-letter">Cover Letter:</label>
+      <textarea class="cover-letter editInput" name="cover-letter" [(ngModel)]="activeItem.coverLetter" disabled></textarea>
+    </div>
+    </div>
+</app-modal> -->

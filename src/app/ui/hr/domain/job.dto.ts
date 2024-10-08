@@ -15,7 +15,7 @@ export interface JobDTO {
 
     positionOverview?: string;
     keyResponsibilities?: string;
-    qualifications?: string;
+    // qualifications?: string;
 
 }
 

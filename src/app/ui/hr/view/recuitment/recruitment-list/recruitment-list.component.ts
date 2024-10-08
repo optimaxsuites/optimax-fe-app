@@ -17,7 +17,7 @@ export class RecruitmentListComponent implements OnInit {
   jobpostings: JobDTO[] = [];
   isEdit?: boolean;
   searchTerm?: string;
-  filteredJobPostings = this.jobpostings;
+  filteredJobPostings: JobDTO[] = [];
   showListView: boolean = true;
 
 
@@ -29,11 +29,13 @@ export class RecruitmentListComponent implements OnInit {
 
   ngOnInit() {
     this.getJobPostings();
-    this.filteredJobPostings = this.jobpostings;
+    // console.log("jobpostingsData", this.jobpostings);
+
   }
   toggleView() {
     this.showListView = !this.showListView;
   }
+
   
   getJobPostings() {
     // Retrieve job data from localStorage
@@ -42,13 +44,17 @@ export class RecruitmentListComponent implements OnInit {
     if (storedJobData) {
       // Parse and assign the job data to the jobpostings array
       this.jobpostings = JSON.parse(storedJobData);
-      console.log("jobpostingsData", this.jobpostings);
+      
+      // Sort the jobpostings array in FILO order
+      this.jobpostings.reverse();
 
-    // Sort the jobpostings array in FILO order
-    this.jobpostings.reverse();
+      this.filteredJobPostings = [...this.jobpostings];
+
+      // this.filteredJobPostings.reverse();
 
     } else {
       this.jobpostings = []; // Initialize as an empty array if no data found
+      this.filteredJobPostings = [];// Initialize as an empty array if no data found
     }
   }
 
@@ -73,15 +79,21 @@ export class RecruitmentListComponent implements OnInit {
     });
   }
 
-  deleteJob(index: number) {
+  deleteJob(job: any) {
       // Logic to handle deleting the job
-      this.jobpostings.splice(index, 1); // Remove the job from the list
-      localStorage.setItem('jobData', JSON.stringify(this.jobpostings)); // Update localStorage
-      console.log('Deleted job at index:', index);
+      this.filteredJobPostings.splice(job.id); // Remove the job from the list
+      localStorage.setItem('jobData', JSON.stringify(this.filteredJobPostings)); // Update localStorage
+      console.log('Deleted job at index:', job.id);
+      
+      this.messageService.add({
+        severity: 'success', 
+        summary: `Delete`,
+        detail: `${job.title} job posting has been successfully deleted` 
+      }); 
   }  
 
   createJob(){
-    this.close(); // Close the form after submission
+    this.close();
   }
 
   openForm() {
@@ -110,12 +122,21 @@ export class RecruitmentListComponent implements OnInit {
   }
 
   searchJobs() {
+    // const term = this.searchTerm!.toLowerCase();
+    // this.filteredJobPostings = this.jobpostings.filter(job =>
+    //   job.title!.toLowerCase().includes(term) ||
+    //   job.location!.toLowerCase().includes(term) ||
+    //   job.employmentType!.toLowerCase().includes(term) ||
+    //   job.postedDate!.includes(term)
+    // );
+
     const term = this.searchTerm!.toLowerCase();
+
     this.filteredJobPostings = this.jobpostings.filter(job =>
-      job.title!.toLowerCase().includes(term) ||
-      job.location!.toLowerCase().includes(term) ||
-      job.employmentType!.toLowerCase().includes(term) ||
-      job.postedDate!.includes(term)
+      (job.title && job.title.toLowerCase().includes(term)) ||
+      (job.location && job.location.toLowerCase().includes(term)) ||
+      (job.employmentType && job.employmentType.toLowerCase().includes(term)) ||
+      (job.postedDate && job.postedDate.includes(term))
     );
   }
 }
