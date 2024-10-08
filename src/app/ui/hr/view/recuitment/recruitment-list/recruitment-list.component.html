@@ -4,7 +4,7 @@
     <div class="card">
         <p-toolbar styleClass="mb-4 gap-2">
             <ng-template pTemplate="left">
-                <!-- <app-button text="Delete" class="btn-delete"></app-button> -->
+                <app-button *ngIf="!showListView" text="Delete" class="btn-delete"></app-button>
             </ng-template>
 
             <ng-template pTemplate="right">
@@ -20,11 +20,35 @@
             </ng-template>
         </p-toolbar>
 
+        <div class="flex w-full justify-between ">
+            <div class="w-1/1">
+              <!-- <ng-select 
+                [items]="positions"
+                class="px-3"
+                bindLabel="position"
+                [multiple]="true"
+                placeholder="Filter by position"
+                [(ngModel)]="selectedPositions"
+                (ngModelChange)="filterCandidatesByPosition()">
+              </ng-select> -->
+            </div>
+      
+            <div class="search-bar w-[40%]">
+              <input 
+                type="text" 
+                placeholder="Search" 
+                class="editInput"
+                [(ngModel)]="searchTerm"
+                (ngModelChange)="searchJobs()"
+              />
+            </div>
+          </div>
+
       <div class="list-card-container" *ngIf="showListView">
         <hr>
         <div  class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 " > 
 
-            <div *ngFor="let job of jobpostings; let i = index" class=" bg-gray-50 transition ease-linear hover:scale-105 hover:border-2 text-customBlue rounded-xl flex flex-col w-[50%] p-2 editInput" >
+            <div *ngFor="let job of filteredJobPostings; let i = index" class=" bg-gray-50 transition ease-linear hover:scale-105 hover:border-2 text-customBlue rounded-xl flex flex-col w-[50%] p-2 editInput" >
                 <div class="list-card-wrapper">
                     <div class="list-card-right">
                         <h3><strong>{{job.title}}</strong></h3>
@@ -36,6 +60,7 @@
                     </div>
                     <div class="list-card-left">
                         <div class="flex space-x-2 mt-2">
+                            <button pButton icon="pi pi-eye cursor-pointer table-item" (click)="viewJob(job)" class="icon-view" title="View"></button>
                             <button pButton icon="pi pi-pen-to-square cursor-pointer table-item" (click)="editJob(job)" class="icon-edit" title="Edit"></button>
                             <button pButton icon="pi pi-trash cursor-pointer table-item" (click)="confirmJobDelete(job)" class="icon-delete" title="Delete"></button>
                         </div>
@@ -54,7 +79,7 @@
 
       <!-- Table View -->
         <p-table *ngIf="!showListView"
-            [value]="jobpostings" 
+            [value]="filteredJobPostings" 
             [paginator]="true" 
             styleClass="p-datatable-striped" 
             [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"

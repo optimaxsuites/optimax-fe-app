@@ -16,9 +16,9 @@ export class RecruitmentListComponent implements OnInit {
   activeItem: JobDTO = {};
   jobpostings: JobDTO[] = [];
   isEdit?: boolean;
-
+  searchTerm?: string;
+  filteredJobPostings = this.jobpostings;
   showListView: boolean = true;
-
 
 
   constructor(
@@ -29,12 +29,12 @@ export class RecruitmentListComponent implements OnInit {
 
   ngOnInit() {
     this.getJobPostings();
+    this.filteredJobPostings = this.jobpostings;
   }
   toggleView() {
     this.showListView = !this.showListView;
   }
   
-
   getJobPostings() {
     // Retrieve job data from localStorage
     const storedJobData = localStorage.getItem('jobData');
@@ -51,13 +51,6 @@ export class RecruitmentListComponent implements OnInit {
       this.jobpostings = []; // Initialize as an empty array if no data found
     }
   }
-
-  
-
-
-
-
-
 
   confirmJobDelete(job: any): void {
     this.confirmationService.confirm({
@@ -80,57 +73,16 @@ export class RecruitmentListComponent implements OnInit {
     });
   }
 
-
-
-deleteJob(index: number) {
-    // Logic to handle deleting the job
-    this.jobpostings.splice(index, 1); // Remove the job from the list
-    localStorage.setItem('jobData', JSON.stringify(this.jobpostings)); // Update localStorage
-    console.log('Deleted job at index:', index);
-}
-
-
-
-
-
-
-
-
-
-
-  sanitizeHtml(html: string): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(html);
-  }
-  
+  deleteJob(index: number) {
+      // Logic to handle deleting the job
+      this.jobpostings.splice(index, 1); // Remove the job from the list
+      localStorage.setItem('jobData', JSON.stringify(this.jobpostings)); // Update localStorage
+      console.log('Deleted job at index:', index);
+  }  
 
   createJob(){
-    // console.log("close is to work")
-    // this.close();
-
-
-    // // Save the job postings to localStorage or any other logic
-    // if (this.activeItem.id) {
-    //   // Edit existing job
-    //   const index = this.jobpostings.findIndex(job => job.id === this.activeItem.id);
-    //   if (index !== -1) {
-    //     this.jobpostings[index] = this.activeItem; // Update the job
-    //   }
-    // } else {
-    //   // Create new job
-    //   this.activeItem.id = this.jobpostings.length + 1; // Generate an ID or use a better way to generate unique IDs
-    //   this.jobpostings.push(this.activeItem); // Add the new job
-    // }
-    
-    // // Save updated jobs to localStorage
-    // localStorage.setItem('jobData', JSON.stringify(this.jobpostings));
-
-    // this.close(); // Close the form after submission
-
-
     this.close(); // Close the form after submission
-  
   }
-
 
   openForm() {
     this.activeItem = {}; // Reset the active item for new job creation
@@ -138,6 +90,8 @@ deleteJob(index: number) {
     this.showRecruitmentList = false;
     this.showRecruitmentForm = true;
   }
+
+  viewJob(job: JobDTO){}
 
   editJob(job: JobDTO) {
     console.log("job info", job)
@@ -153,5 +107,15 @@ deleteJob(index: number) {
     this.activeItem = {}; // Reset the active item
 
     this.getJobPostings();
+  }
+
+  searchJobs() {
+    const term = this.searchTerm!.toLowerCase();
+    this.filteredJobPostings = this.jobpostings.filter(job =>
+      job.title!.toLowerCase().includes(term) ||
+      job.location!.toLowerCase().includes(term) ||
+      job.employmentType!.toLowerCase().includes(term) ||
+      job.postedDate!.includes(term)
+    );
   }
 }
