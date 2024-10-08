@@ -49,7 +49,6 @@ export class AddEmployeeFormComponent {
   guarantorForm!: FormGroup
   NOKForm!: FormGroup
 
-
   salaryStructure: any = [];
   departments = [
     "Human Resources",
@@ -155,6 +154,7 @@ export class AddEmployeeFormComponent {
       email: ['', [Validators.required, Validators.email]],
       phone: ['', [Validators.required]],
       gender: ['', [Validators.required]],
+      DOB: ['', [Validators.required]],
       maritalStatus: ['', [Validators.required]],
       religion: ['', [Validators.required]],
       address: ['', [Validators.required]],
@@ -177,18 +177,29 @@ export class AddEmployeeFormComponent {
       phone: ['', [Validators.required]],
       address: ['', [Validators.required]],
       relationship: ['', [Validators.required]],
+      DOB: ['', [Validators.required]],
+      emergencyContact: ['', [Validators.required]],
 
     });
 
     this.guarantorForm = this.fb.group({
-      guarantorName: ['', Validators.required],
-      guarantorPhone: ['', Validators.required],
-      // Add other fields
+      fullName: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      phone: ['', [Validators.required]],
+      address: ['', [Validators.required]],
+      relationship: ['', [Validators.required]],
+      DOB: ['', [Validators.required]],
+      idNumber: ['', [Validators.required]],
+      signature: ['', [Validators.required]],
+      passportPhoto: ['', [Validators.required]],
+      idCard: ['', [Validators.required]],
+      yearsKnown: ['', [Validators.required]],
     });
+
   }
 
   nextTab() {
-    if (this.currentTab < 3) {
+    if (this.currentTab < 5) {
       this.currentTab++;
     }
   }

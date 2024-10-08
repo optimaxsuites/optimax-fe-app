@@ -1,17 +1,18 @@
-<div class="flex justify-between items-center px-4">
+
+  <div class="flex justify-between items-center px-4">
   <p class="text-customBlue text-[18px] font-bold">Create New Employee</p>
   <button class="bg-customBlue text-white font-bold p-3 rounded-xl"  >Cancel</button>
 </div>
 
 <hr>
-<div class="flex justify-between gap-5 items-center mb-1 relative">
-  <div *ngFor="let tab of tabs; let i = index" class="relative flex-1 text-center py-2" [ngClass]="{
+<div class="flex justify-between gap-5 items-center relative">
+  <div *ngFor="let tab of tabs; let i = index" class="relative flex-1 text-center pt-3" [ngClass]="{
     'text-gray-400': currentTab < i + 1, 
     'text-green-600 font-bold': currentTab > i + 1, 
     'text-customBlue font-bold': currentTab === i + 1
   }">
     <div class="flex items-center flex-col gap-1 justify-center relative">
-      <span *ngIf="i < tabs.length - 1"  class="h-1 w-40 bg-customBlue absolute -right-[6.5rem] top-1" [ngClass]="{
+      <span *ngIf="i < tabs.length - 1"  class="h-1 w-80 bg-customBlue absolute -right-[11rem] top-1" [ngClass]="{
         'bg-gray-400 text-gray-700': currentTab !== i + 1, 
         'text-white font-bold bg-customBlue': currentTab === i + 1,
         ' bg-green-600': currentTab > i + 1
@@ -27,77 +28,82 @@
   </div>
 </div>
 
-<form [formGroup]="basicForm" (ngSubmit)="onSubmit()" *ngIf="currentTab === 1">
+<form [formGroup]="basicForm" (ngSubmit)="onSubmit()" *ngIf="currentTab === 1"  class="flex w-full flex-col ">
+  
 
-    <div class="p-4 mx-auto shadow-md rounded-xl text-gray-600 bg-white/60">
+  <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
 
-      <div class="mb-4">
-        <label for="firstName" class="block text-[13px] font-medium">First Name</label>
-        <input type="text" formControlName="firstName" id="firstName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
-      </div>
-
-      <div class="mb-4">
-        <label for="lastName" class="block text-[13px] font-medium">Last Name</label>
-        <input type="text" formControlName="lastName" id="lastName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
-      </div>
-
-      <div class="mb-4">
-        <label for="email" class="block text-[13px] font-medium">Email</label>
-        <input type="email" formControlName="email" id="email" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
-      </div>
-
-      <div class="mb-4">
-        <label for="phone" class="block text-[13px] font-medium">Phone</label>
-        <input type="phone" formControlName="phone" id="phone" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
-      </div> 
-
-      <div class="mb-4">
-        <label for="address" class="block text-[13px] font-medium">Home Address</label>
-        <textarea type="text" formControlName="address" col="2" id="address" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" ></textarea>
-      </div> 
-      <div class="mb-4">
-        <label for="gender" class="block text-[13px] font-medium">Gender</label>
-        <ng-select 
-        [items]="gender" 
-        bindLabel="gender"
-        bindValue="gender"
-        placeholder="Select Gender"
-        formControlName="gender"
-        class="w-full mt-1 rounded-md"></ng-select>
-      </div> 
-
-      <div class="mb-4">
-        <label for="gender" class="block text-[13px] font-medium">Marital Status</label>
-        <ng-select 
-        [items]="maritalStatuses" 
-        bindLabel="maritalStatus"
-        bindValue="maritalStatus"
-        placeholder="Select marital status"
-        formControlName="maritalStatus"
-        class="w-full mt-1 rounded-md"></ng-select>
-      </div> 
-
-      <div class="mb-4">
-        <label for="gender" class="block text-[13px] font-medium">Religion</label>
-        <ng-select 
-        [items]="religions" 
-        bindLabel="religion"
-        bindValue="religion"
-        placeholder="Select Religion"
-        formControlName="religion"
-        class="w-full mt-1 rounded-md"></ng-select>
-      </div> 
-
-      <div class="text-right">
-        <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg" [disabled]="!basicForm.valid">
-          Next
-        </button>
-      </div>
+    <div class="mb-4">
+      <label for="firstName" class="block text-[13px] font-medium">First Name</label>
+      <input type="text" formControlName="firstName" id="firstName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
     </div>
+
+    <div class="mb-4">
+      <label for="lastName" class="block text-[13px] font-medium">Last Name</label>
+      <input type="text" formControlName="lastName" id="lastName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+    </div>
+
+    <div class="mb-4">
+      <label for="email" class="block text-[13px] font-medium">Email</label>
+      <input type="email" formControlName="email" id="email" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+    </div>
+
+    <div class="mb-4">
+      <label for="phone" class="block text-[13px] font-medium">Phone</label>
+      <input type="phone" formControlName="phone" id="phone" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+    </div> 
+
+    <div class="mb-4">
+      <label for="address" class="block text-[13px] font-medium">Home Address</label>
+      <textarea type="text" formControlName="address" col="2" id="address" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" ></textarea>
+    </div> 
+    <div class="mb-4">
+      <label for="DOB" class="block text-[13px] font-medium">Date of Birth</label>
+      <input type="date" formControlName="DOB" id="DOB" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+    </div> 
+    <div class="mb-4">
+      <label for="gender" class="block text-[13px] font-medium">Gender</label>
+      <ng-select 
+      [items]="gender" 
+      bindLabel="gender"
+      bindValue="gender"
+      placeholder="Select Gender"
+      formControlName="gender"
+      class="w-full mt-1 rounded-md"></ng-select>
+    </div> 
+
+    <div class="mb-4">
+      <label for="gender" class="block text-[13px] font-medium">Marital Status</label>
+      <ng-select 
+      [items]="maritalStatuses" 
+      bindLabel="maritalStatus"
+      bindValue="maritalStatus"
+      placeholder="Select marital status"
+      formControlName="maritalStatus"
+      class="w-full mt-1 rounded-md"></ng-select>
+    </div> 
+
+    <div class="mb-4">
+      <label for="gender" class="block text-[13px] font-medium">Religion</label>
+      <ng-select 
+      [items]="religions" 
+      bindLabel="religion"
+      bindValue="religion"
+      placeholder="Select Religion"
+      formControlName="religion"
+      class="w-full mt-1 rounded-md"></ng-select>
+    </div> 
+
+    <div class="text-right">
+      <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg" [disabled]="!basicForm.valid">
+        Next
+      </button>
+    </div>
+  </div>
 </form>
 
-<form [formGroup]="employeeForm"   *ngIf="currentTab === 2">
-  <div class="p-4 mx-auto shadow-md rounded-xl text-gray-600 bg-white/60">
+<form [formGroup]="employeeForm"   *ngIf="currentTab === 2" class="flex w-full flex-col justify-center item-center">
+  <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
 
     <div class="mb-4">
       <label for="title" class="block text-[13px] font-medium">Job Title</label>
@@ -167,8 +173,8 @@
   </div>
 </form>
 
-<form [formGroup]="NOKForm"  *ngIf="currentTab === 3">
-  <div class="p-4 mx-auto shadow-md rounded-xl text-gray-600 bg-white/60">
+<form [formGroup]="NOKForm"  *ngIf="currentTab === 3" class="flex w-full flex-col justify-center item-center">
+  <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
 
     <div class="mb-4">
       <label for="fullName" class="block text-[13px] font-medium">Full Name</label>
@@ -190,6 +196,10 @@
       <textarea type="text" formControlName="address" col="2" id="address" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" ></textarea>
     </div> 
     <div class="mb-4">
+      <label for="DOB" class="block text-[13px] font-medium">Date of Birth</label>
+      <input type="date" formControlName="DOB" id="DOB" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+    </div> 
+    <div class="mb-4">
       <label for="gender" class="block text-[13px] font-medium">Relationship</label>
       <ng-select 
       [items]="nextOfKinRelationships" 
@@ -200,26 +210,94 @@
       class="w-full mt-1 rounded-md"></ng-select>
     </div> 
 
+    <div class="mb-4 flex gap-3 items-center">
+      <input type="checkbox" formControlName="emergencyContact" id="emergencyContact" class=" h-7 w-7 accent-customGreen border border-gray-300 rounded-md" />
+      <label for="emergencyContact" class="block text-[13px] font-medium cursor-pointer">Emergency contact</label>
+    </div> 
 
+    <div class="text-right">
+      <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
+      <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg" [disabled]="!NOKForm.valid">
+        Next
+      </button>
+    </div>
    
   </div>
 </form>
 
 
-<form [formGroup]="NOKForm" *ngIf="currentTab === 4">
-    <div >
-     
+<form [formGroup]="guarantorForm" *ngIf="currentTab === 4" class="flex w-full flex-col justify-center item-center">
+  <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
+
+    <div class="mb-4">
+      <label for="fullName" class="block text-[13px] font-medium">Full Name</label>
+      <input type="text" formControlName="fullName" id="fullName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
     </div>
+
+    <div class="mb-4">
+      <label for="email" class="block text-[13px] font-medium">Email</label>
+      <input type="email" formControlName="email" id="email" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+    </div>
+
+    <div class="mb-4">
+      <label for="phone" class="block text-[13px] font-medium">Phone</label>
+      <input type="phone" formControlName="phone" id="phone" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+    </div> 
+
+    <div class="mb-4">
+      <label for="address" class="block text-[13px] font-medium">Home Address</label>
+      <textarea type="text" formControlName="address" col="2" id="address" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" ></textarea>
+    </div> 
+    <div class="mb-4">
+      <label for="DOB" class="block text-[13px] font-medium">Date of Birth</label>
+      <input type="date" formControlName="DOB" id="DOB" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+    </div> 
+    <div class="mb-4">
+      <label for="gender" class="block text-[13px] font-medium">Relationship</label>
+      <ng-select 
+      [items]="nextOfKinRelationships" 
+      bindLabel="gender"
+      bindValue="gender"
+      placeholder="Select relationship"
+      formControlName="relationship"
+      class="w-full mt-1 rounded-md"></ng-select>
+    </div> 
+    <div class="mb-4">
+      <label for="signature" class="block text-[13px] font-medium">Signature</label>
+      <input type="file" formControlName="signature" id="signature" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+    </div> 
+    <div class="mb-4">
+      <label for="passportPhoto" class="block text-[13px] font-medium">Passport Photograph</label>
+      <input type="file" formControlName="passportPhoto" id="passportPhoto" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+    </div>
+    <div class="mb-4">
+      <label for="idCard" class="block text-[13px] font-medium">ID Card</label>
+      <input type="file" formControlName="idCard" id="idCard" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+    </div>
+    <div class="mb-4">
+      <label for="idNumber" class="block text-[13px] font-medium">ID Number</label>
+      <input type="text" formControlName="idNumber" id="idNumber" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+    </div>
+    <div class="mb-4">
+      <label for="yearsKnown" class="block text-[13px] font-medium">Years Known</label>
+      <input type="text" formControlName="yearsKnown" id="yearsKnown" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+    </div>
+    <div class="text-right">
+      <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
+      <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg" [disabled]="!guarantorForm.valid">
+        Next
+      </button>
+    </div>
+   
+  </div>
 </form>
 
 
-<form [formGroup]="employeeForm" (ngSubmit)="onSubmit()" *ngIf="currentTab === 5">
+<form [formGroup]="employeeForm" (ngSubmit)="onSubmit()" *ngIf="currentTab === 5" class="flex w-full flex-col justify-center item-center">
 
-<div >
-  <!-- Final Tab -->
+<div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
   <div class="p-4 mx-auto shadow-md rounded-xl text-gray-600 bg-white/60">
 
-    <!-- Display form data for review -->
     <p><strong>First Name:</strong> {{ employeeForm.get('firstName')?.value }}</p>
     <p><strong>Last Name:</strong> {{ employeeForm.get('lastName')?.value }}</p>
     <p><strong>Email:</strong> {{ employeeForm.get('email')?.value }}</p>
