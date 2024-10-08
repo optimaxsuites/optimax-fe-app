@@ -153,11 +153,6 @@ export class RecuitmentFormComponent {
     // Initialize jobData with a default string
   }
 
-
-  get sanitizedDescription(): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(this.jobData.description!);
-  }
-
   // In your ngOnInit or constructor, set the current date as the posted date
   ngOnInit() {
     if (!this.jobData.postedDate) {
@@ -183,19 +178,16 @@ export class RecuitmentFormComponent {
   
   submitForm() {
     // Check if all required fields are filled
-    const isValid = this.validateForm();
-    if (!isValid) {
-      this.messageService.add({
-        severity: 'error', 
-        summary: 'Validation Failed',
-        detail: 'Please fill out all fields before submitting the form.' 
-      });    
-      return; 
-    }
+    // const isValid = this.validateForm();
+    // if (!isValid) {
+    //   this.messageService.add({
+    //     severity: 'error', 
+    //     summary: 'Validation Failed',
+    //     detail: 'Please fill out all fields before submitting the form.' 
+    //   });    
+    //   return; 
+    // }
     
-
-
-
     // Retrieve the existing job postings from localStorage (if any)
     const storedJobs = localStorage.getItem('jobData');
     const jobArray = storedJobs ? JSON.parse(storedJobs) : [];
@@ -213,7 +205,6 @@ export class RecuitmentFormComponent {
       }
     } else {
       // Generate a random token and append it to the job ID for new job submissions
-      // const randomToken = this.randomToken.generateToken(); // Assuming this method generates a token
       this.jobData.id = this.randomToken.getRandomToken();; // Add token to the ID
   
       // Add the new job data to the array

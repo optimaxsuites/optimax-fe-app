@@ -66,6 +66,7 @@ import { InterviewComponent } from './ui/hr/view/interview/interview.component';
 import { GeneralSettingsComponent } from './ui/settings/view/general/general-settings/general-settings.component';
 import { HrSettingsComponent } from './ui/settings/view/hr/hr-settings/hr-settings.component';
 import { EmployeeManagementComponent } from './ui/hr/view/employee-management/employee-management.component';
+import { JopOpeningsComponent } from './jop.openings.component';
 
 const routes: Routes = [
   {
@@ -335,11 +336,10 @@ const routes: Routes = [
     ],
   },
 
-  // {
-  //   path: 'settings', // General settings path
-  //   component: GeneralSettingsComponent, // The component containing your sidebar and router-outlet
-  //   c
-  // },
+  {
+    path: 'job-application',
+    component: JopOpeningsComponent, 
+  },
 ];
 
 

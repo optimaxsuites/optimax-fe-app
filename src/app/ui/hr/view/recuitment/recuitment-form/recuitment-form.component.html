@@ -7,108 +7,71 @@
       <h3 class="remove-mb"><strong>Job Posting Form</strong></h3>
       <p class="note">All fields are required</p><br>
 
-  
-      <div class="input-container-100 flex-item">
-        <div class="input-container-50 ">
-           <!-- Job Title -->
-           <label for="jobTitle">Job Title:</label>
-           <input type="text" id="jobTitle" class="editInput" name="jobTitle" [(ngModel)]="jobData.title" required>
-        </div>
-      
-        <div class="input-container-50 ">
-           <!-- Job Category -->
-           <label for="jobCategory">Category:</label>
 
-           <ng-select 
-           bindLabel="name"
-           placeholder="Select Category"
-           [(ngModel)]="jobData.category"
-           [items]="jobCategories">
-         </ng-select>
-           <!-- <input type="text" id="jobCategory" class="editInput" name="jobCategory" [(ngModel)]="jobData.category" required> -->
-        </div>
-      </div>
       <div class="input-container-100 flex-item">
-        <div class="input-container-50 ">
-            <!-- Job Type -->
-            <label for="jobType">Job Type:</label>
-
-            <ng-select 
+        <div class="input-container-50">
+          <!-- Job Title -->
+          <label for="jobTitle">Job Title:</label>
+          <input type="text" id="jobTitle" placeholder="Job Title" class="editInput" name="jobTitle" [(ngModel)]="jobData.title" required>
+          <!-- Job Category -->
+          <label for="jobCategory">Category:</label>
+          <ng-select 
+            bindLabel="name"
+            placeholder="Select Category"
+            [(ngModel)]="jobData.category"
+            [items]="jobCategories">
+          </ng-select>
+          <!-- Job Type -->
+          <label for="jobType">Job Type:</label>
+          <ng-select 
             bindLabel="name"
             placeholder="Select Job Type"
             [(ngModel)]="jobData.employmentType"
             [items]="jobTypes">
           </ng-select>
-            <!-- <input type="text" id="jobType" class="editInput" name="jobType" [(ngModel)]="jobData.employmentType" required> -->
-        </div>
-      
-        <div class="input-container-50 ">
-            <!-- Job Location -->
-            <label for="jobLocation">Location:</label>
-            <input type="text" id="jobLocation" class="editInput" name="jobLocation" [(ngModel)]="jobData.location" required>
-        </div>
-      </div>
-      <div class="input-container-100 flex-item">
-        <div class="input-container-50 ">
-            <!-- Experience -->
-            <label for="experience">Experience:</label>
-            <ng-select 
+          <!-- Job Location -->
+          <label for="jobLocation">Location:</label>
+          <input type="text" id="jobLocation" placeholder="Location" class="editInput" name="jobLocation" [(ngModel)]="jobData.location" required>
+          <!-- Experience -->
+          <label for="experience">Experience:</label>
+          <ng-select 
             bindLabel="name"
             placeholder="Select Experience Year"
             [(ngModel)]="jobData.experience"
             [items]="experienceLevels">
           </ng-select>
-
-
-
-
-            <!-- <input type="text" id="experience" class="editInput" name="experience" [(ngModel)]="jobData.experience" required> -->
-        </div>
-      
-        <div class="input-container-50 ">
-            <!-- Qualification -->
-            <label for="qualification">Qualification:</label>
-            <ng-select 
+          <!-- Qualification -->
+          <label for="qualification">Qualification:</label>
+          <ng-select 
             bindLabel="name"
-            placeholder="Select qualification"
+            placeholder="Select Qualification"
             [(ngModel)]="jobData.qualification"
             [items]="jobQualification">
           </ng-select>
-
-
-            <!-- <input type="text" id="qualification" class="editInput" name="qualification" [(ngModel)]="jobData.qualification" required> -->
-        </div>
-      </div>
-      <div class="input-container-100 flex-item">
-        <div class="input-container-50 d-flex gap-2">
-          <div class="input-container-100">
-            <!-- Posted Date -->
-            <label for="postedDate">Poosted Date:</label>
-            <input type="text" id="postedDate" class="editInput mb-4" name="postedDate" [ngModel]="jobData.postedDate | date: 'MM/dd/yyyy'" disabled required>
-          </div>
-          <div class="input-container-100">
-            <!-- Expiry Date -->
-            <label for="expiryDate">Expiry Date:</label>
-            <input type="date" id="expiryDate" class="editInput mb-4" name="expiryDate" [(ngModel)]="jobData.expiryDate" required>
-          </div>
-        </div>
-        <div class="input-container-50">
-          <div class="input-container-100">
-            <label for="specification">Specification:</label>
-            <ng-select 
+          <!-- specification -->
+          <label for="specification">Specification:</label>
+          <ng-select 
             bindLabel="name"
             placeholder="Select Specification"
             [(ngModel)]="jobData.specification"
             [items]="jobSpecifications">
           </ng-select>
-            <!-- <input type="text" id="specification" class="editInput mb-4" name="specification" [(ngModel)]="jobData.specification"  required> -->
+          <div class="input-container-100 d-flex gap-2">
+            <div class="input-container-50">
+              <!-- Posted Date -->
+              <label for="postedDate">Poosted Date:</label>
+              <input type="text" id="postedDate" class="editInput mb-4" name="postedDate" [ngModel]="jobData.postedDate | date: 'MM/dd/yyyy'" disabled required>
+            </div>
+            <div class="input-container-50">
+              <!-- Expiry Date -->
+              <label for="expiryDate">Expiry Date:</label>
+              <input type="date" id="expiryDate" class="editInput mb-4" name="expiryDate" [(ngModel)]="jobData.expiryDate" required>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="input-container-50">
-        <div class="">
+        <div class="input-container-50">
           <label for="">Overview & Description:</label>
-          <p-editor [(ngModel)]="jobData.description"  [style]="{ height: '350px' }" />
+          <p-editor [(ngModel)]="jobData.description" placeholder="Overview & Description..."  [style]="{ height: '400px' }" />
         </div>
       </div>
       <div class="btn-wrapper">

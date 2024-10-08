@@ -219,6 +219,7 @@ import { EmployeesComponent } from './ui/hr/view/employees/employees.component';
 import { EmployeeManagementComponent } from './ui/hr/view/employee-management/employee-management.component';
 import { FullCalendarModule } from '@fullcalendar/angular';
 import { AddEmployeeFormComponent } from './ui/hr/view/add-employee-form/add-employee-form.component';
+import { JopOpeningsComponent } from './jop.openings.component';
 
 
 @NgModule({
@@ -373,7 +374,8 @@ import { AddEmployeeFormComponent } from './ui/hr/view/add-employee-form/add-emp
     RecruitmentListComponent,
     EmployeesComponent,
     EmployeeManagementComponent,
-    AddEmployeeFormComponent
+    AddEmployeeFormComponent,
+    JopOpeningsComponent,
   ],
   imports: [
     CommonModule,
