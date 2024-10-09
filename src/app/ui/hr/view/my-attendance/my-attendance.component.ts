@@ -1,5 +1,6 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 
+
 @Component({
   selector: 'app-my-attendance',
   templateUrl: './my-attendance.component.html',
@@ -36,7 +37,7 @@ export class MyAttendanceComponent implements OnChanges {
   filteredAttendanceRecords: any[] = [];
   viewAttendanceModal: boolean = false;  // Control the visibility of the modal
   currentAttendanceData: any = {
-   
+
 
   };  // Holds the current attendance data to display in the modal
   employeeInView: any = null;
