@@ -53,7 +53,8 @@
                 <th class="table-item" pSortableColumn="contactNumber">Contact Number</th>
                 <th class="table-item" pSortableColumn="contactNumber">Position</th>
                 <th class="table-item" pSortableColumn="dateApplied">Date Applied</th>
-                <th class="table-item" pSortableColumn="dateApplied">Interview Type</th>
+                <th class="table-item" pSortableColumn="interviewType">Interview Type</th>
+                <th class="table-item" pSortableColumn="interviewStage">Interview Stage</th>
                 <th class="table-item" pSortableColumn="stage">Stage</th>
                 <th class="table-item"></th>
             </tr>
@@ -67,7 +68,8 @@
                 <td class="table-item">{{ interview.contactNo }}</td>
                 <td class="table-item">{{ interview.position }}</td>
                 <td class="table-item">{{ interview.dateApplied }}</td>
-                <td class="table-item">{{ interview.selectedInterviewType }}</td>
+                <td class="table-item">{{ interview.interviewType }}</td>
+                <td class="table-item">Interview {{ interview.interviewStage }}</td>
                 <td class="table-item">
                     <span [ngClass]="getStatusClass(interview.stage)">
                       {{ interview.stage }} 
@@ -85,7 +87,7 @@
                             <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent' && interview.stage !== 'Employement-Letter-Sent'" (click)="openInterviewInvite(interview)"> <i class="pi pi-angle-double-right table-item me-2"></i>Move to Next Stage</li>
                             <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent' && interview.stage !== 'Employement-Letter-Sent'" (click)="sendOffer(interview)"> <i class="pi pi-file-arrow-up table-item me-2"></i>Offer Letter</li>
                             <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Employement-Letter-Sent'" (click)="sendEmploymentLetter(interview)" > <i class="pi pi-file-arrow-up table-item me-2"></i>Employment Letter</li>
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled'"> <i class="pi pi-user-plus table-item me-2"></i>Add as Employee</li>
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent'"> <i class="pi pi-user-plus table-item me-2"></i>Add as Employee</li>
                             <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress'"> <i class="pi pi-file-pdf table-item me-2"></i>Download Score Sheet</li>
                             <!-- <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled'" (click)="sendRejected(interview)"> <i class="pi pi-delete-left table-item me-2"></i>Offer Rejected</li> -->
                             <!-- <li class="table-item-panel" *ngIf="interview.stage !== 'Cancelled'" (click)="decline(interview)"> <i class="pi pi-delete-left table-item me-2"></i>Declined</li> -->
@@ -107,7 +109,7 @@
 
 
 <div *ngIf="showInterviewInvite">
-    <app-interview-invite [candidate]="activeItem" (back)="close()" (sendInterviewInvite)="sendInvite()"></app-interview-invite>
+    <app-interview-invite [candidate]="activeItem" (back)="close()" (sendInterviewInvite)="sendInvite($event)"></app-interview-invite>
 </div>
 
 <div *ngIf="showScoreSheet">
