@@ -205,7 +205,7 @@ export class RecuitmentFormComponent {
       }
     } else {
       // Generate a random token and append it to the job ID for new job submissions
-      this.jobData.id = this.randomToken.getRandomToken();; // Add token to the ID
+      this.jobData.id = this.randomToken.getRandomToken(); // Add token to the ID
   
       // Add the new job data to the array
       jobArray.push(this.jobData);

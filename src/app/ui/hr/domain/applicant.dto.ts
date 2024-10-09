@@ -1,5 +1,5 @@
 export interface ApplicantDTO{
-    id?: number;
+    id?: string;
     candidate?: string;
     contactNo?: string;
     email?: string;
@@ -8,6 +8,7 @@ export interface ApplicantDTO{
     resume?: string | null;
     coverLetter?: string;
     stage?: string;
+    interviewStage?: number;
     interviewInvite?: string;
     interviewType?: string;
 }

@@ -109,7 +109,7 @@
                         <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event)" ></i>
                         <p-overlayPanel #op ngClass="padding: 0;">
                             <div>
-                                <li class="table-item-panel" > <i class="pi pi-eye table-item  me-2"></i> View</li>
+                                <li class="table-item-panel" (click)="viewJob(job)"> <i class="pi pi-eye table-item  me-2"></i> View</li>
                                 <li class="table-item-panel" (click)="editJob(job)"> <i class="pi pi-pen-to-square table-item me-2"></i>Edit </li>
                                 <li class="table-item-panel" (click)="confirmJobDelete(job)"> <i class="pi pi-trash table-item icon-delete me-2"></i>Delete</li>
                             </div>
@@ -132,41 +132,62 @@
      <app-recuitment-form [jobData]="activeItem" (back)="close()" (submitFrom)="createJob()" [isEdit]="isEdit"></app-recuitment-form>
 </div>
 
-<!-- <app-modal 
+<app-modal 
   *ngIf="viewModal"
-  [header]="'Viewing ' + activeItem.title + ' information'"
+  [header]="'Viewing ' + activeItem.title + ' job posting information'"
   [title]="'Cancel'"
   (close)="closeViewModal()">
     <div class="view-wrapper">
-    <div class="d-flex gap-4 my-2">
-      <div class="input-container-50">
-          <label for="name">Name:</label><br>
-          <span>{{activeItem.candidate}}</span>
-      </div>
-      <div class="input-container-50">
-          <label for="phone-number">Phone Number:</label><br>
-          <span>{{activeItem.contactNo}}</span>
-      </div>
+        <div class="d-flex gap-4 my-2">
+            <div class="input-container-50">
+                <label for="name">Title:</label>
+                <span> {{activeItem.title}}</span>
+            </div>
+            <div class="input-container-50">
+                <label for="phone-number">Category:</label>
+                <span> {{activeItem.category}}</span>
+            </div>
+        </div>
+        <div class="d-flex gap-4 my-2">
+            <div class="input-container-50">
+                <label for="email">Job Type:</label>
+                <span> {{activeItem.employmentType}}</span>
+            </div>
+            <div class="input-container-50">
+                <label for="position">Specification:</label>
+                <span> {{activeItem.specification}}</span>
+            </div>
+        </div>
+        <div class="d-flex gap-4 my-2">
+            <div class="input-container-50">
+                <label for="email">Qualification:</label>
+                <span> {{activeItem.qualification}}</span>
+            </div>
+            <div class="input-container-50">
+                <label for="position">Experience:</label>
+                <span> {{activeItem.experience}}</span>
+            </div>
+        </div>
+        <div class="d-flex gap-4 my-2">
+            <div class="input-container-50">
+                <label for="date">Date Applied:</label>
+                <span> {{activeItem.postedDate}}</span>
+            </div>
+            <div class="input-container-50">
+                <label for="date">Location:</label>
+                <span> {{activeItem.location}}</span>
+            </div>
+        </div>
+        <div class="d-flex gap-4 my-2">
+            <div class="input-container-50">
+                <label for="date">Expiry Date:</label>
+                <span> {{activeItem.expiryDate}}</span>
+            </div>
+        </div>
+        <div class="">
+            <label for="cover-letter">Overview:</label>
+            <!-- <textarea class="cover-letter editInput" name="cover-letter" [(ngModel)]="activeItem.description" disabled></textarea> -->
+            <div class="input-container-100 editInput" [innerHTML]="activeItem.description"></div>
+        </div>
     </div>
-    <div class="d-flex gap-4 my-2">
-      <div class="input-container-50">
-          <label for="email">Email:</label><br>
-          <span>{{activeItem.email}}</span>
-      </div>
-      <div class="input-container-50">
-          <label for="position">Position:</label><br>
-          <span>{{activeItem.position}}</span>
-      </div>
-    </div>
-    <div class="d-flex gap-4 my-2">
-      <div class="input-container-50">
-          <label for="date">Date Applied:</label><br>
-          <span>{{activeItem.dateApplied}}</span>
-      </div>
-    </div>
-    <div class="">
-      <label for="cover-letter">Cover Letter:</label>
-      <textarea class="cover-letter editInput" name="cover-letter" [(ngModel)]="activeItem.coverLetter" disabled></textarea>
-    </div>
-    </div>
-</app-modal> -->
+</app-modal>

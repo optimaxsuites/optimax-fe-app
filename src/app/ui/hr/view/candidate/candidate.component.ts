@@ -65,6 +65,10 @@ export class CandidateComponent implements OnInit {
     //   localStorage.setItem('candidates', JSON.stringify(this.myCandidates));
     // }
 
+    this.getCandidate();
+  }
+
+  getCandidate(){
     // Retrieve candidates from localStorage
     const storedCandidates = localStorage.getItem('candidates');
     if (storedCandidates) {
@@ -72,12 +76,11 @@ export class CandidateComponent implements OnInit {
     }
 
     // Initialize positions and filteredCandidates after candidates are loaded
-  this.positions = [...new Set(this.candidates.map(c => c.position))]; // Extract unique positions
-  this.filteredCandidates = [...this.candidates]; // Initially, show all candidates
+    this.positions = [...new Set(this.candidates.map(c => c.position))]; // Extract unique positions
+    this.filteredCandidates = [...this.candidates].reverse(); // Initially, show all candidates
 
     console.log(this.candidates)
   }
-
 
 
   // stages = ['Application Received', 'Shortlisted'];
@@ -96,7 +99,7 @@ export class CandidateComponent implements OnInit {
 
   // positions = [...new Set(this.candidates.map(c => c.position))]; // Extract unique positions
   selectedPositions: string[] = [];
-  filteredCandidates: ApplicantDTO[] = [...this.candidates];
+  filteredCandidates: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
 
   // Function to filter candidates by selected positions
   filterCandidatesByPosition() {
@@ -168,110 +171,89 @@ export class CandidateComponent implements OnInit {
     });
   }
 
-  // sendInvite(): void {
-  //   if (this.activeItem) {
-  //     // Update the candidate's stage to "shortlisted"
-  //     this.activeItem.stage = 'Shortlisted';
-  
-  //     // Retrieve candidates from localStorage
-  //     const storedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-  
-  //     // Find the candidate to update
-  //     const updatedCandidates = storedCandidates.map((candidate: any) => {
-  //       if (candidate.id === this.activeItem.id) {
-  //         return { ...candidate, stage: 'Shortlisted' };  // Update the stage
-  //       }
-  //       return candidate;
-  //     });
-  
-  //     // Update localStorage with the modified candidates
-  //     localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
-      
-  //     const scheduledInterview = JSON.parse(localStorage.getItem('scheduledCandidate') || '[]');
-  //      const newInterview =    { id: this.activeItem.id, candidate: this.activeItem.candidate, position: this.activeItem.position, email: this.activeItem.email, contactNo: this.activeItem.contactNo, dateApplied: this.activeItem.dateApplied, stage: 'Scheduled', resume: this.activeItem.resume, coverLetter: this.activeItem.coverLetter, interviewStage: 1 }
 
-  //     scheduledInterview.push(newInterview)
-  //     localStorage.setItem('scheduledCandidate', JSON.stringify(scheduledInterview));
+  // sendInvite(inviteData: any): void {
+  //   // // 'inviteData' will contain the form data from the child component
+  //   // console.log('Received invite data:', inviteData);
+  
+  //   // if (this.activeItem) {
+  //   //   // Update the candidate's stage to "Shortlisted"
+  //   //   this.activeItem.stage = 'Shortlisted';
+  //   //   this.activeItem.interviewInvite = inviteData.processedTemplate;
+  //   //   this.activeItem.interviewType = inviteData.selectedInterviewType;
+  
+  //   //   // Retrieve candidates from localStorage
+  //   //   const storedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+  
+  //   //   // Find the candidate to update
+  //   //   const updatedCandidates = storedCandidates.map((candidate: any) => {
+  //   //     if (candidate.id === this.activeItem.id) {
+  //   //       return { ...candidate, stage: 'Shortlisted', interviewInvite: inviteData.processedTemplate, interviewType: inviteData.selectedInterviewType };  // Update the stage
+  //   //     }
+  //   //     return candidate;
+  //   //   });
+  
+  //   //   // Update localStorage with the modified candidates
+  //   //   localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
 
+  
 
-  //     // Optionally, show a success message
-  //     this.messageService.add({
-  //       severity: 'success',
-  //       summary: 'Candidate Shortlisted',
-  //       detail: `${this.activeItem.candidate} has been successfully shortlisted and invited for interview.`
-  //     });
-  //   }
+  //   // }
+
+  //   // Optionally, show a success message
+  //   this.messageService.add({
+  //     severity: 'success',
+  //     summary: 'Candidate Invited',
+  //     detail: `${this.activeItem.candidate} has been successfully invited for the interview.`
+  //   });
+  
+  //   // Close the interview invite view
   //   this.closeInterviewInvite();
   // }
-  // sendInvite(inviteData: any) {
-  //   // 'inviteData' will contain the form data from the child component
-  //   console.log('Received invite data:', inviteData);
-  
-  //   // Do whatever you need with the inviteData, for example:
-  //   if (inviteData) {
-  //     // Update the interview status, save data, etc.
-  //     inviteData.candidate.stage = 'Scheduled';
-  
-  //     // Call your logic to update local storage or server
-  //     this.updateInterviewStatus(inviteData);
-  //   }
-  // }
 
-  sendInvite(inviteData: any): void {
-    // 'inviteData' will contain the form data from the child component
-    console.log('Received invite data:', inviteData);
+
+
+    // Function to handle sending interview invite
   
-    if (this.activeItem) {
-      // Update the candidate's stage to "Shortlisted"
-      this.activeItem.stage = 'Shortlisted';
-      this.activeItem.interviewInvite = inviteData.processedTemplate;
-      this.activeItem.interviewType = inviteData.selectedInterviewType;
   
-      // Retrieve candidates from localStorage
-      const storedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-  
-      // Find the candidate to update
-      const updatedCandidates = storedCandidates.map((candidate: any) => {
-        if (candidate.id === this.activeItem.id) {
-          return { ...candidate, stage: 'Shortlisted', interviewInvite: inviteData.processedTemplate, interviewType: inviteData.selectedInterviewType };  // Update the stage
-        }
-        return candidate;
-      });
-  
-      // Update localStorage with the modified candidates
-      localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
-  
-      // Prepare the new interview data
-      const scheduledInterview = JSON.parse(localStorage.getItem('scheduledCandidate') || '[]');
-      const newInterview = {
-        id: this.activeItem.id,
-        candidate: this.activeItem.candidate,
-        position: this.activeItem.position,
-        email: this.activeItem.email,
-        contactNo: this.activeItem.contactNo,
-        dateApplied: this.activeItem.dateApplied,
+  sendInvite(interviewDetails: ApplicantDTO) {
+    // Update the candidate's stage to "Scheduled"
+    const interviewCandidate: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
+    const scheduledInterview: ApplicantDTO[] = JSON.parse(localStorage.getItem('scheduledCandidate') || '[]');
+    
+    // Find the candidate to update
+    const index = interviewCandidate.findIndex((c: ApplicantDTO) => c.id === this.activeItem?.id);
+    if (index !== -1 && this.activeItem) {
+      // Increment the interviewStage
+      const currentStage = this.activeItem.interviewStage || 0; // Default to 0 if undefined
+      const updatedCandidate: ApplicantDTO = {
+        ...interviewCandidate[index],
         stage: 'Scheduled',
-        resume: this.activeItem.resume,
-        coverLetter: this.activeItem.coverLetter,
-        interviewStage: 1,
-        interviewType: inviteData.selectedInterviewType, // Use the selected interview type from inviteData
-        processedTemplate: inviteData.processedTemplate // Use the processed template from inviteData
+        interviewStage: currentStage + 1,  // Increment the interview stage
+        interviewInvite: interviewDetails.interviewInvite,
+        interviewType: interviewDetails.interviewType,
       };
-  
-      // Add the new interview to the scheduled interviews
-      scheduledInterview.push(newInterview);
+
+      // Remove the candidate from the candidates array
+      interviewCandidate.splice(index, 1);
+      
+      // Update local storage
+      localStorage.setItem('candidates', JSON.stringify(interviewCandidate));
+      scheduledInterview.push(updatedCandidate);
+      console.log("candidate-Job Application Info", updatedCandidate.interviewInvite, updatedCandidate.interviewType)
       localStorage.setItem('scheduledCandidate', JSON.stringify(scheduledInterview));
-  
-      // Optionally, show a success message
+
+          // Optionally, show a success message
       this.messageService.add({
         severity: 'success',
         summary: 'Candidate Invited',
         detail: `${this.activeItem.candidate} has been successfully invited for the interview.`
       });
+      
+      // Close the interview invite component
+      this.closeInterviewInvite();
+      this.getCandidate();
     }
-  
-    // Close the interview invite view
-    this.closeInterviewInvite();
   }
   
   updateInterviewStatus(inviteData: any) {

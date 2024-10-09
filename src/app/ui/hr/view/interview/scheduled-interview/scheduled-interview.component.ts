@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { ApplicantDTO } from '../../../domain/applicant.dto';
 
 @Component({
   selector: 'app-scheduled-interview',
@@ -10,7 +11,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 export class ScheduledInterviewComponent {
   activeItem: any = {};
   searchTerm: string = '';
-  interviews:any[] = [];
+  interviews:ApplicantDTO[] = [];
   showInterviewList: boolean = true;
   showInterviewInvite: boolean = false;
   showScoreSheet: boolean = false;
@@ -54,9 +55,14 @@ export class ScheduledInterviewComponent {
     if (storedCandidates) {
       this.interviews = JSON.parse(storedCandidates);
     }
+
+    // Extract unique positions
     this.positions = [...new Set(this.interviews.map(c => c.position))];
-    this.filteredCandidates = [...this.interviews];
-    console.log(this.filteredCandidates)
+
+    // Reverse the order of candidates to implement LIFO
+    this.filteredCandidates = [...this.interviews].reverse();
+
+    console.log(this.filteredCandidates);
   }
 
   openInterviewInvite(interview: any){
@@ -84,40 +90,43 @@ export class ScheduledInterviewComponent {
     this.close();
   }
 
-  sendInvite(): void {
-    if (this.activeItem) {
-      // Update the candidate's stage to "shortlisted"
-      this.activeItem.stage = 'Scheduled';
-  
-      // Retrieve scheduledCandidate from localStorage
-      const storedCandidates = JSON.parse(localStorage.getItem('scheduledCandidate') || '[]');
-  
-      // Find the candidate to update
-      const updatedCandidates = storedCandidates.map((candidate: any) => {
-        if (candidate.id === this.activeItem.id) {
-          return { ...candidate, stage: 'Scheduled' };  // Update the stage
-        }
-        return candidate;
-      });
-  
-      // Update localStorage with the modified candidates
-      // localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
-      
-      // const scheduledInterview = JSON.parse(localStorage.getItem('scheduledCandidate') || '[]');
-      //  const newInterview =    { id: this.activeItem.id, candidate: this.activeItem.candidate, position: this.activeItem.position, email: this.activeItem.email, contactNo: this.activeItem.contactNo, dateApplied: this.activeItem.dateApplied, stage: 'Scheduled', resume: this.activeItem.resume, coverLetter: this.activeItem.coverLetter, interviewStage: 1 }
+  sendInvite(interviewDetails: { interviewType: string; interviewInvite: string }) {
+    // Update the candidate's stage to "Scheduled"
+    // const candidates: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
+    const scheduledCandidates: ApplicantDTO[] = JSON.parse(localStorage.getItem('scheduledCandidate') || '[]');
+    
+    // Find the candidate to update
+    const index = scheduledCandidates.findIndex((c: ApplicantDTO) => c.id === this.activeItem?.id);
+    if (index !== -1 && this.activeItem) {
+      // Increment the interviewStage
+      const currentStage = this.activeItem.interviewStage || 0; // Default to 0 if undefined
+      const updatedCandidate: ApplicantDTO = {
+        ...scheduledCandidates[index],
+        stage: 'Scheduled',
+        interviewStage: currentStage + 1,  // Increment the interview stage
+        interviewInvite: interviewDetails.interviewInvite,
+        interviewType: interviewDetails.interviewType,
+      };
 
-      // scheduledInterview.push(newInterview)
-      // localStorage.setItem('scheduledCandidate', JSON.stringify(scheduledInterview));
-
+      // Update the existing candidate at the found index
+      scheduledCandidates[index] = updatedCandidate;
+      console.log("Inteview-Candidate Info", scheduledCandidates)
+      localStorage.setItem('scheduledCandidate', JSON.stringify(scheduledCandidates));
 
       // Optionally, show a success message
       this.messageService.add({
         severity: 'success',
-        summary: 'Scheduled For Interview',
-        detail: `${this.activeItem.candidate} has been successfully scheduled for next interview stage.`
+        summary: 'Candidate Invited',
+        detail: `${this.activeItem.candidate} has been successfully invited for the interview.`
       });
+      
     }
+      
+    
+    // Close the interview invite component
     this.close();
+    this.getCandidateData();
+
   }
 
   decline(interview: any){
@@ -147,13 +156,13 @@ export class ScheduledInterviewComponent {
 
   positions: any[] =[]; // Extract unique positions
   selectedPositions: string[] = [];
-  filteredCandidates: any[] = [];
+  filteredCandidates: ApplicantDTO[] = [];
 
   // Function to filter candidates by selected positions
   filterCandidatesByPosition() {
     if (this.selectedPositions.length > 0) {
       this.filteredCandidates = this.interviews.filter(interview =>
-        this.selectedPositions.includes(interview.position)
+        this.selectedPositions.includes(interview.position!)
       );
     } else {
       this.filteredCandidates = [...this.interviews]; // Show all if no position is selected
@@ -163,10 +172,10 @@ export class ScheduledInterviewComponent {
   filterCandidates() {
     this.filteredCandidates = this.interviews.filter(interview => {
       // Check if the candidate matches the search term
-      const matchesSearchTerm = interview.candidate.toLowerCase().includes(this.searchTerm.toLowerCase());
+      const matchesSearchTerm = interview.candidate!.toLowerCase().includes(this.searchTerm.toLowerCase());
   
       // Check if the candidate matches one of the selected positions (if any)
-      const matchesPosition = this.selectedPositions.length === 0 || this.selectedPositions.includes(interview.position);
+      const matchesPosition = this.selectedPositions.length === 0 || this.selectedPositions.includes(interview.position!);
   
       return matchesSearchTerm && matchesPosition;
     });
