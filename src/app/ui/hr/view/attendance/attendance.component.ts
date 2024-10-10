@@ -12,8 +12,9 @@ import { MyAttendanceComponent } from '../my-attendance/my-attendance.component'
 })
 export class AttendanceComponent {
   tabsConfig: TabConfig[] = [
-    { name: 'Attendance Sheet', component: AttendanceSheetsComponent },
     { name: 'My attendance', component: MyAttendanceComponent },
+    { name: 'Attendance Sheet', component: AttendanceSheetsComponent },
+
 
   ];
 }
