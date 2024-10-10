@@ -1,7 +1,7 @@
 
   <div class="flex justify-between items-center px-4">
   <p class="text-customBlue text-[18px] font-bold">Create New Employee</p>
-  <button class="bg-customBlue text-white font-bold p-3 rounded-xl"  >Cancel</button>
+  <button class="bg-customBlue text-white font-bold p-3 rounded-xl" (click)="close()" >Cancel</button>
 </div>
 
 <hr>
@@ -38,6 +38,9 @@
         <label for="firstName" class="block text-[13px] font-medium">First Name <span class="ml-1 font-bold text-red-600">*</span></label>
 
       <input type="text" formControlName="firstName" id="firstName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+      <small *ngIf="basicForm.get('firstName')?.touched && basicForm.get('firstName')?.invalid" class="text-red-600">
+        First name is required.
+      </small>
     </div>
 
     <div class="mb-4">
@@ -49,7 +52,10 @@
       <label for="email" class="block text-[13px] font-medium">Email <span class="ml-1 font-bold text-red-600">*</span></label>
       <input type="email" formControlName="email" id="email" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
     </div>
-
+    <div class="mb-4">
+      <label for="profilePhoto" class="block text-[13px] font-medium">Profile Photo <span class="ml-1 font-bold text-red-600">*</span></label>
+      <input type="file" (change)="onProfilePhotoChange($event, 'profilePhoto')" formControlName="profilePhoto" id="profilePhoto" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+    </div> 
     <div class="mb-4">
       <label for="phone" class="block text-[13px] font-medium">Phone <span class="ml-1 font-bold text-red-600">*</span></label>
       <input type="phone" formControlName="phone" id="phone" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
@@ -129,10 +135,8 @@
   
 
     <div class="text-right" >
-      <button type="button" (click)="nextAndCreate()" class="bg-customBlue text-white px-4 py-3 rounded-lg disabled:cursor-not-allowed" [disabled]="!basicForm.valid ">
-        <span [ngClass]="loading ? 'animate-ping' : ''"  >
-        {{loading ? "Loading..." : "Next"}}
-        </span>
+      <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg disabled:cursor-not-allowed" [disabled]="!basicForm.valid ">
+       Next
       </button>
     </div>
   </div>
@@ -377,13 +381,15 @@
 </form>
 
 
-<form [formGroup]="employeeForm" (ngSubmit)="onSubmit()" *ngIf="currentTab === 5" class="flex w-full flex-col justify-center item-center">
+<form  (ngSubmit)="onSubmit()" *ngIf="currentTab === 5" class="flex w-full flex-col justify-center item-center">
 <div>
 
 <div class="p-4 mx-auto w-1/2  rounded-xl text-customBlue gap-10 grid grid-cols-1">
 
 <div class="p-4 w-full shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-1">
   <p class="font-bold text-[16px] mb-3">Basic Information</p>
+  <img [src]="imageURL" alt="profileImage" class="h-64 w-64 mx-auto  object-cover rounded-full"/>
+
     <div *ngFor="let control of getFormControls('basicForm')" >
       <p class="capitalize"><strong>{{ toTitleCaseWithSpace(control.key) }}:</strong> <span class="ml-1">{{ control.value }}</span></p>
     </div>
@@ -400,7 +406,7 @@
   <p class="font-bold text-[16px] mb-3">Next Of Kin Information</p>
   <div class="grid grid-cols-2">
     <div *ngFor="let kin of nextOfKinList; let i =index" class="flex flex-col gap-2">
-      <p class="my-2">Next Of Kin {{i+1}}</p>
+      <p class="my-2 text-[15px]">Next Of Kin {{i+1}}</p>
       <p *ngFor="let key of getKeys(kin)">
         <strong>{{ toTitleCaseWithSpace(key) | titlecase }}:</strong> {{ kin[key] }}
       </p>
@@ -411,24 +417,38 @@
 
 <div class="p-4 w-full shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-1">
   <p class="font-bold text-[16px] mb-3">Guarantor's Information</p>
-    <!-- <div *ngFor="let control of getFormControls('guarantorForm')">
-      <p class=""><strong>{{ control.key }}:</strong> <span class=" ml-1">{{ control.value }} </span></p>
-    </div>
-    <div class="grid grid-cols-2"> -->
-      <div *ngFor="let kin of guarantorList; let i =index" class="flex flex-col gap-2">
-        <p class="my-2">Guarantor {{i+1}}</p>
+  <div class="grid grid-cols-2">
+      <div *ngFor="let kin of guarantorList; let i =index"  class="flex flex-col gap-2">
+        <p class="my-2 text-[15px]">Guarantor {{i+1}}</p>
         <p *ngFor="let key of getKeys(kin)">
-          <strong>{{ toTitleCaseWithSpace(key) | titlecase }}:</strong> {{ kin[key] }}
+          <strong>{{ toTitleCaseWithSpace(key) | titlecase }}:</strong>
+          <ng-container *ngIf="isFile(kin[key]); else textField">
+        
+            <button (click)="previewFile(kin[key])" class="text-customGreen  text-nowrap text-[14px] ml-2">
+              View File
+            </button>
+          </ng-container>
+          
+          <ng-template #textField>
+            {{ kin[key] }}
+          </ng-template>
         </p>
       </div>
+    </div>
 </div>
 
 </div>
   
     <div class="text-right">
       <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
-      <button type="submit" class="bg-green-500 text-white px-4 py-3 rounded-lg" [disabled]="employeeForm.invalid">Submit</button>
+      <button type="submit" class="bg-green-500 text-white px-4 py-3 rounded-lg" [disabled]="employeeForm.invalid"><span [ngClass]="loading ? 'animate-ping' : ''"  >
+        {{loading ? "Loading..." : "Submit"}}
+        </span></button>
     </div>
 </div>
 </form>
+
+<app-modal *ngIf="showModal" (close)="closeModal()"  class="fixed top-0 left-0 w-full h-[100vh] bg-black/50 flex justify-center items-center">
+    <img [src]="fileDataUrl" class="w-full max-h-[80vh]"/>
+</app-modal>
 <p-toast></p-toast>
