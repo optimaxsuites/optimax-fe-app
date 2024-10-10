@@ -1,99 +1,63 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-attendance-sheet',
   templateUrl: './attendance-sheet.component.html',
-  styleUrls: ['./attendance-sheet.component.scss']
+  styleUrls: ['./attendance-sheet.component.scss'] // if you have any styles
 })
 export class AttendanceSheetsComponent {
-  showAttendanceSheets: boolean = true;
-  showCheckAttendance: boolean = false; // New flag to control visibility
-  activeItem: any = {};
-  viewModal: boolean = false;
+  title: string = 'Viewing Attendance Information';
+  showAttendanceSheets: boolean = true; // Initially show the attendance sheets
+  showCheckAttendance: boolean = false; // Initially hide the detailed attendance view
+  activeItem: any = {}; // To store the currently active employee item
+  viewModal: boolean = false; // Controls visibility of the attendance modal
 
+  // Sample data for attendance sheets
   attendanceSheets: any[] = [
-    { employeeID: 'EMP001', employeeName: 'Akinola Ifeoluwa', department: 'IT', date: '2023-11-20', inTime: '07:00', outTime: '14:00' },
-    { employeeID: 'EMP002', employeeName: 'Damilola Awe', department: 'CEO', date: '2023-11-20', inTime: '07:00', outTime: '14:00' },
-    { employeeID: 'EMP003', employeeName: 'Babalola Oni', department: 'Accounting', date: '2023-11-20', inTime: '09:00', outTime: '17:00' },
-    { employeeID: 'EMP004', employeeName: 'Akeredolu Oyinlola', department: 'Sales', date: '2023-11-20', inTime: '07:00', outTime: '14:00' }
+    { employeeID: 'EMP001', employeeName: 'Akinola Ifeoluwa', department: 'IT', date: '2023-11-20', inTime: '07:00', outTime: '14:00', regularizationStatus: 'Pending' },
+    { employeeID: 'EMP002', employeeName: 'Damilola Awe', department: 'CEO', date: '2023-11-20', inTime: '07:00', outTime: '14:00', regularizationStatus: 'Pending' },
+    { employeeID: 'EMP003', employeeName: 'Babalola Oni', department: 'Accounting', date: '2023-11-20', inTime: '09:00', outTime: '17:00', regularizationStatus: 'Pending' },
+    { employeeID: 'EMP004', employeeName: 'Akeredolu Oyinlola', department: 'Sales', date: '2023-11-20', inTime: '07:00', outTime: '14:00', regularizationStatus: 'Pending' }
   ];
 
-  attendanceDetails: any[] = [
-    // Dummy data for punch in/out details
-    { date: '2023-11-20', inTime: '07:00', outTime: '14:00', remarks: 'None' },
-    { date: '2023-11-20', inTime: '08:00', outTime: '16:00', remarks: 'None' },
-    // Add more entries as needed
-  ];
+  attendanceDetails: any[] = []; // Your array of detailed attendance data
 
-  goToCheckAttendance(employeeID: any) {
-    this.activeItem = employeeID;
-    this.showAttendanceSheets = false; // Hide attendance sheets
-    this.showCheckAttendance = true; // Show check attendance
+  // Method to toggle the view of attendance sheets and check attendance
+  toggleAttendanceView() {
+    this.showAttendanceSheets = !this.showAttendanceSheets; // Optionally toggle attendance sheets visibility
+    this.viewModal = false; // Close modal if toggling views
   }
 
+  // Method to navigate to check attendance for a specific employee and open the modal
+  goToCheckAttendance(employeeID: string) {
+    this.activeItem = this.attendanceSheets.find(sheet => sheet.employeeID === employeeID) || {};
+    this.viewModal = true; // Open the modal to view attendance
+    this.loadAttendanceDetails(); // Load attendance details for the selected employee
+  }
+
+  // Load attendance details - this can be replaced with actual data fetching logic
+  loadAttendanceDetails() {
+    // Load the details based on the selected employeeID (you can replace this with actual logic)
+    this.attendanceDetails = [
+      { date: '2023-11-20', inTime: '07:00', outTime: '14:00', remarks: 'None' },
+      { date: '2023-11-21', inTime: '08:00', outTime: '16:00', remarks: 'None' },
+
+    ];
+  }
 
 
   closeViewModal() {
-    this.viewModal = false;
+    this.viewModal = false; // Close the modal
     this.showAttendanceSheets = true; // Show attendance sheets again when modal closes
     this.showCheckAttendance = false; // Hide check attendance
   }
+
+  // Method to approve regularization
+  
+
+  // Method to reject leave
+  rejectLeave() {
+    // Logic for rejecting leave (you can add your actual logic here)
+    console.log("Leave rejected.");
+  }
 }
-
-
-  // constructor(private changeDetectorRef: ChangeDetectorRef) {}
-
-  // // Function to filter attendance sheets
-  // filterAttendanceSheets() {
-  //   this.filteredAttendanceSheets = this.attendanceSheets.filter(attendanceSheets => {
-  //     const matchesSearchTerm = attendanceSheets.employeeName.toLowerCase().includes(this.searchTerm.toLowerCase());
-  //     // Add more filtering criteria as needed (e.g., date range, department)
-
-  //     return matchesSearchTerm;
-  //   });
-  // }
-
-  // // Function to open the view modal
-  // openViewModal(attendanceSheets: any, op: any) {
-  //   this.activeItem = attendanceSheets;
-  //   this.viewModal = true;
-  //   op.hide();
-  // }
-
-  // // Function to close the view modal
-  // closeViewModal() {
-  //   this.viewModal = false;
-  // }
-
-  // // Function to add a new attendance sheet entry
-  // addNewAttendanceSheets() {
-  //   // Implement logic to add a new entry
-  //   // ...
-  // }
-
-  // // Function to edit an existing attendance sheet entry
-  // editAttendanceSheets(attendanceSheets: any) {
-  //   // Update the attendanceSheet object with the new values
-  //   attendanceSheets.employeeName = 'Updated Name';
-  //   attendanceSheets.department = 'Updated Department';
-
-  //   // Update the filteredAttendanceSheets array
-  //   this.filteredAttendanceSheets = [...this.filteredAttendanceSheets];
-
-  //   // Trigger UI updates if necessary
-  //   this.changeDetectorRef.detectChanges();
-  // }
-
-  // // Function to delete an attendance sheet entry
-  // deleteAttendanceSheets(attendanceSheets: any) {
-  //   const index = this.attendanceSheets.indexOf(attendanceSheets);
-  //   if (index !== -1) {
-  //     this.attendanceSheets.splice(index, 1);
-  //     this.filteredAttendanceSheets = [...this.filteredAttendanceSheets];
-
-  //     // Trigger UI updates if necessary
-  //     this.changeDetectorRef.detectChanges();
-  //   }
-  // }
-
-  // Other methods as needed
