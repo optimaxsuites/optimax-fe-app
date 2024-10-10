@@ -49,10 +49,10 @@
         </div>
         <div class="invite-template-wrapper">
             <h3><strong>Interview Invite</strong></h3>
-            <textarea name="invite" id="invite" class="invite editInput" [(ngModel)]="processedTemplate" (input)="onTemplateEdit(processedTemplate)"></textarea>
+            <textarea name="invite" id="invite" class="invite editInput" [(ngModel)]="processedTemplate" (input)="onTemplateEdit(processedTemplate!)"></textarea>
         </div>
         <div class="btn-wrapper">
-            <app-button text="Send Invite" class="btn-save" (click)="sendInvite()" ></app-button>
+            <app-button text="Send Invite" class="btn-save" (click)="handleSendInvite()" ></app-button>
         </div>
     </div>
 </div>

@@ -19,6 +19,7 @@ export class RecruitmentListComponent implements OnInit {
   searchTerm?: string;
   filteredJobPostings: JobDTO[] = [];
   showListView: boolean = true;
+  viewModal?: boolean;
 
 
   constructor(
@@ -36,7 +37,6 @@ export class RecruitmentListComponent implements OnInit {
     this.showListView = !this.showListView;
   }
 
-  
   getJobPostings() {
     // Retrieve job data from localStorage
     const storedJobData = localStorage.getItem('jobData');
@@ -71,7 +71,7 @@ export class RecruitmentListComponent implements OnInit {
       rejectLabel: 'Cancel',
       // styleClass: 'custom-confirm-dialog',
       accept: () => {
-        this.deleteJob(job);
+        this.deleteJob();
       },
       reject: () => {
 
@@ -79,16 +79,16 @@ export class RecruitmentListComponent implements OnInit {
     });
   }
 
-  deleteJob(job: any) {
+  deleteJob(index?: number) {
       // Logic to handle deleting the job
-      this.filteredJobPostings.splice(job.id); // Remove the job from the list
+      this.filteredJobPostings.splice(index!, 1); // Remove the job from the list
       localStorage.setItem('jobData', JSON.stringify(this.filteredJobPostings)); // Update localStorage
-      console.log('Deleted job at index:', job.id);
+      console.log('Deleted job at index:', index);
       
       this.messageService.add({
         severity: 'success', 
         summary: `Delete`,
-        detail: `${job.title} job posting has been successfully deleted` 
+        detail: `Job posting has been successfully deleted` 
       }); 
   }  
 
@@ -103,7 +103,14 @@ export class RecruitmentListComponent implements OnInit {
     this.showRecruitmentForm = true;
   }
 
-  viewJob(job: JobDTO){}
+  viewJob(job: JobDTO){
+    this.activeItem = { ...job };
+    this.viewModal = true;
+  }
+
+  closeViewModal(){
+    this.viewModal = false;
+  }
 
   editJob(job: JobDTO) {
     console.log("job info", job)
@@ -122,13 +129,6 @@ export class RecruitmentListComponent implements OnInit {
   }
 
   searchJobs() {
-    // const term = this.searchTerm!.toLowerCase();
-    // this.filteredJobPostings = this.jobpostings.filter(job =>
-    //   job.title!.toLowerCase().includes(term) ||
-    //   job.location!.toLowerCase().includes(term) ||
-    //   job.employmentType!.toLowerCase().includes(term) ||
-    //   job.postedDate!.includes(term)
-    // );
 
     const term = this.searchTerm!.toLowerCase();
 
@@ -139,4 +139,6 @@ export class RecruitmentListComponent implements OnInit {
       (job.postedDate && job.postedDate.includes(term))
     );
   }
+
+
 }

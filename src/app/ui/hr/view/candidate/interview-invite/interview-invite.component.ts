@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ApplicantDTO } from '../../../domain/applicant.dto';
 
 @Component({
   selector: 'app-interview-invite',
@@ -9,26 +10,28 @@ export class InterviewInviteComponent {
   @Output() back = new EventEmitter<void>();
   @Input() interview: any; // Ensure this input property is set
   @Output() sendInterviewInvite = new EventEmitter<any>();
-  @Input() candidate: any;
-  // Selected interview type(s)
-  selectedInterviewType!: string;
+  @Input() candidate: ApplicantDTO = {};
+  activeTemplateIndex: number | null = null;
+  selectedTemplate?: string;
+  processedTemplate?: string;
+  selectedInterviewType?: string;
 
   ngOnInit(): void {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
     //Add 'implements OnInit' to the class.
     this.setTemplate(0)
+    console.log("active candidate", this.candidate)
   }
 
-  sendInvite() {
-    const inviteData = {
-      candidate: this.candidate,
+  handleSendInvite() {
+    const inviteDetails = {
       interviewType: this.selectedInterviewType,
-      inviteTemplate: this.processedTemplate
+      interviewInvite: this.processedTemplate,
     };
-    console.log("info", inviteData)
 
-    // Emit the form data
-    this.sendInterviewInvite.emit(inviteData);
+    console.log("invite info from interview-Invite-component", inviteDetails)
+
+    this.sendInterviewInvite.emit(inviteDetails);
   }
 
   // Method to trigger back button event
@@ -109,9 +112,7 @@ Best,
 [Contact Information] `
   ];
 
-  activeTemplateIndex: number | null = null;
-  selectedTemplate: string = '';
-  processedTemplate: string = '';
+
 
   // Function to replace placeholders with actual data
   replacePlaceholders(template: string, candidate: any): string {
