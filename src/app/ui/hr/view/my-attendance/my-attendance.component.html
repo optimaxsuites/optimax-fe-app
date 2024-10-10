@@ -1,20 +1,16 @@
-<div  class="w-full bg-white/90 my-3 rounded-2xl  p-8 text-gray-800">
-
+<div class="w-full bg-white/90 my-3 rounded-2xl p-8 text-gray-800">
   <hr>
 
-  <div class=" flex gap-28 mb-5 items-center">
+  <div class="flex gap-28 mb-5 items-center">
     <div class="flex gap-2 justify-center items-center">
-      <!-- Search bar on the left -->
-
-
-      <!-- User profile info (username and avatar) in the center -->
+      <!-- User profile info -->
       <div class="flex gap-2 justify-center flex-col text-center">
         <img src="https://cdn.vectorstock.com/i/500p/53/42/user-member-avatar-face-profile-icon-vector-22965342.jpg" alt="" class="w-72 h-72"/>
         <p class="font-bold text-gray-700 text-[18px] capitalize">{{ userRegData.fullname }}</p>
       </div>
     </div>
 
-    <!-- Existing layout for total days, regular time, and overtime -->
+    <!-- Layout for total days, regular time, and overtime -->
     <div class="flex gap-12 items-center">
       <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white">
         <p>Total Days</p>
@@ -31,13 +27,10 @@
         <p class="text-[24px] pt-4 font-semibold">21.00 Hr(s)</p>
       </div>
     </div>
-
-
-
-
   </div>
 
   <hr>
+
   <div class="my-5 justify-between gap-6 flex w-full">
     <!-- Left side content -->
     <div class="w-[58%] flex flex-col gap-4">
@@ -53,39 +46,21 @@
         <label style="flex: 0 0 120px; font-weight: bold;">Time:</label>
         <p style="flex: 1 0 auto;">{{ currentTime }}</p>
       </div>
-    </div>
 
-    <!-- Right side content (textarea) -->
-    <div class="w-[40%]">
-      <textarea [(ngModel)]="note" placeholder="Enter note"
-                style="width: 100%; height: 100px; border: 1px solid #ccc; padding: 10px; resize: none;"></textarea>
-    </div>
-  </div>
+      <!-- Welcome message instead of note input -->
+      <div class="mt-4 w-full h-40 border border-gray-300 p-2 resize-none rounded-md flex items-center justify-center">
+        <p class="text-center">Welcome to the office</p>
+      </div>
 
+      <button (click)="toggleClockInOut()"
+              class="mt-4 w-32 h-16 bg-[#2f6276] text-white rounded-md">
+        {{ isClockedIn ? 'Clock Out' : 'Clock In' }}
+      </button>
 
-  <div class="flex items-center justify-end mb-6">
-    <button (click)="toggleClockInOut()" style="padding: 10px 20px; background-color: #2f6276; color: #fff; border: none; border-radius: 5px; cursor: pointer;">{{ isClockedIn ? 'Clock Out' : 'Clock In' }}</button>
-
-    </div>
-
-    <div class="flex justify-end mb-6">
-      <div class="search-bar w-[40%]">
-        <input
-          type="text"
-          placeholder="Search by Period"
-          [(ngModel)]="searchTerm"
-          (ngModelChange)="filterCandidates()"
-          class="editInput w-full"
-        />
+      <!-- Calendar Section -->
+      <div class="w-full bg-white/80 rounded-xl mt-4">
+        <full-calendar [options]="calendarOptions" class="w-full h-auto" style="width: 173%;"></full-calendar> <!-- Expanded width of calendar -->
       </div>
     </div>
-
-
-
-
-
-
-
-
+  </div>
 </div>
-
