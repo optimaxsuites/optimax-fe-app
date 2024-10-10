@@ -12,7 +12,7 @@ import { RecruitmentListComponent } from './recruitment-list/recruitment-list.co
 export class RecuitmentComponent {
   
   tabsConfig: TabConfig[] = [
-    { name: 'Job Posting', component: RecruitmentListComponent },
+    { name: 'Job Vacancy', component: RecruitmentListComponent },
     { name: 'Job Applications', component: CandidateComponent },
     { name: 'Interview', component: ScheduledInterviewComponent },
     // { name: 'Score Sheet', component: InterviewScoreSheetComponent },

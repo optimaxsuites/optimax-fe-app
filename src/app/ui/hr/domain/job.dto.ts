@@ -10,7 +10,14 @@ export interface JobDTO {
     specification?: string;
     experience?: string;
     qualification?: string;
+    customiseInput?: customiseInputDTO[]; 
+}
 
+export interface customiseInputDTO{
+    id?: string;
+    title?: string;
+    type?: string;
+    required?: boolean;
 }
 
 export interface JobExperienceDTO{
