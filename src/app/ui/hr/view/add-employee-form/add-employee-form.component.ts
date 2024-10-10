@@ -1,11 +1,13 @@
-import { Component, OnInit  } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { Component, OnInit , Input } from '@angular/core';
+import { AbstractControl, FormBuilder, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { AuthenticationService } from 'src/app/ui/auth/service/authentication.service';
 import { MyErrorStateMatcher } from 'src/app/ui/auth/view/register/register.component';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 import { environment } from 'src/environments/environment.prod';
+import { RandomTokenService } from 'src/app/ui/shared/service/random-token/random-token.service';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 
 interface Employee {
   id: number;
@@ -50,18 +52,20 @@ interface Employee {
   providers: [MessageService]
 })
 export class AddEmployeeFormComponent {
-
+  @Input() close: () => void = () => {};
 
   basicForm!: FormGroup;      
   employeeForm!: FormGroup;
   guarantorForm!: FormGroup
   NOKForm!: FormGroup
   registerInfo!: FormGroup
-
+  showModal: boolean = false;
+  currentFile: string = '';
   hide = true;
   hideConfirm = true;
   loading = false
-
+  fileDataUrl: SafeUrl = '';
+  imageURL: string =''
   salaryStructure: any = [];
   departments = [
     "Human Resources",
@@ -156,7 +160,7 @@ export class AddEmployeeFormComponent {
   
   constructor(private fb: FormBuilder,  private authenticationService: AuthenticationService,
     private messageService: MessageService,
-    private router: Router,) {  
+    private router: Router, private token: RandomTokenService, private sanitizer: DomSanitizer) {  
 }
 
   ngOnInit(): void {
@@ -166,8 +170,8 @@ export class AddEmployeeFormComponent {
     }
 
     this.basicForm = this.fb.group({
-      firstName: ['', Validators.required],
-      lastName: ['', Validators.required],
+      firstName: ['',Validators.required ],
+      lastName: ['',Validators.required ],
       email: ['', [Validators.required, Validators.email]],
       phone: ['', [Validators.required]],
       gender: ['', [Validators.required]],
@@ -175,7 +179,8 @@ export class AddEmployeeFormComponent {
       maritalStatus: ['', [Validators.required]],
       religion: ['', [Validators.required]],
       address: ['', [Validators.required]],
-      createLogin: ['', []]
+      createLogin: [''],
+      profilePhoto: ['',[ Validators.required, this.imageFileValidator()]]
     });
 
     this.employeeForm = this.fb.group({
@@ -209,10 +214,10 @@ export class AddEmployeeFormComponent {
       relationship: ['', [Validators.required]],
       DOB: ['', [Validators.required]],
       idNumber: ['', [Validators.required]],
-      yearsKnown: ['', [Validators.required]],
-      signature: ['', []],
-      passportPhoto: ['', []],
-      idCard: ['', []],
+      yearsKnown: ['', [Validators.required, ]],
+      signature: ['', [Validators.required, this.imageFileValidator()]],
+      passportPhoto: ['', [Validators.required, this.imageFileValidator()]],
+      idCard: ['', [Validators.required, this.imageFileValidator()]],
     });
 
     this.registerInfo = this.fb.group( {
@@ -221,7 +226,27 @@ export class AddEmployeeFormComponent {
       confirmPassword: ['', [Validators.required]],
     })
   }
-
+ imageFileValidator(): ValidatorFn {
+    return (control: AbstractControl): { [key: string]: any } | null => {
+      const file = control.value;
+      
+      if (!file) {
+        return null; 
+      }
+  
+      if (typeof file === 'string') {
+        return null; 
+      }
+  
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+  
+      if (file && file instanceof File && !allowedTypes.includes(file.type)) {
+        return { invalidFileType: true };
+      }
+  
+      return null;
+    };
+  }
   nextTab() {
 
     if (this.currentTab < 5) {
@@ -248,17 +273,88 @@ export class AddEmployeeFormComponent {
   }
 
   onSubmit() {
-    if (this.employeeForm.valid) {
-      console.log('Form Submitted', this.employeeForm.value);
-    }
-  }
-
-  nextAndCreate() {
   this.loading = true;
 
+    if (this.basicForm.get('createLogin')?.value) {
+      this.nextAndCreate()
+    }else {
+      this.addNewEmployee()
+    }
+
+   
+  }
+addNewEmployee(){
+  const currentDate = new Date();  
+  const currentYear = currentDate.getFullYear();  
+  const formattedDate = currentDate.toISOString().split('T')[0];
+  const employeesFromStorage = localStorage.getItem("employeesList");
+  const employeesList = employeesFromStorage ? JSON.parse(employeesFromStorage) : [];
+  const newEmployee = {
+    id: this.token.getRandomToken(),
+    firstName: this.basicForm.get('firstName')?.value,
+    lastName: this.basicForm.get('lastName')?.value,
+    dob: this.basicForm.get('DOB')?.value,
+    gender: this.basicForm.get('gender')?.value,
+    email: this.basicForm.get('email')?.value,
+    phone: this.basicForm.get('phone')?.value,
+    maritalStstus: this.basicForm.get('maritalStatus')?.value,
+    religion: this.basicForm.get('religion')?.value,
+    address: this.basicForm.get('address')?.value,
+    jobTitle: this.employeeForm.get('title')?.value,
+    department: this.employeeForm.get('department')?.value,
+    level: this.employeeForm.get('level')?.value,
+    employmentType: this.employeeForm.get('employmentType')?.value,
+    supervisor: this.employeeForm.get('supervisor')?.value,
+    bankName: this.employeeForm.get('bankName')?.value,
+    accountNumber: this.employeeForm.get('accountNumber')?.value,
+    nin: this.employeeForm.get('nin')?.value,
+    bvn: this.employeeForm.get('bvn')?.value,
+    nextOfKin: [...this.nextOfKinList],
+    guarantor: [... this.guarantorList],
+    hireDate: formattedDate,
+    profileImage: this.imageURL, 
+    leaveDetails: {
+      assignedLeaves: 20,
+      usedLeaves: 0,
+      leavesRemaining: 20,
+      leavesSpent: [
+      ]
+    },
+    attendance: {
+      year: currentYear,
+      daysPresent: 1,
+      daysAbsent: 0,
+      lateArrivals: 0,
+      overtimeHours: 0,
+      lastPresent: formattedDate,
+      day2DayAttendance: [
+        {
+          date: formattedDate,
+          clockIn: "9:00 AM",
+          clockOut: "5:00 PM",
+          comment: "First day in"
+        },
+      ]
+    }
+  }
+  employeesList.push(newEmployee);
+
+  localStorage.setItem("employeesList", JSON.stringify(employeesList));
+  this.loading = false;
+  this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Employee added successfully!' }); 
+  this.basicForm.reset()
+  this.guarantorForm.reset()
+  this.NOKForm.reset()
+  this.employeeForm.reset()
+  this.nextOfKinList = []
+  this.guarantorList = []
+  this.imageURL =''
+  this.fileDataUrl =''
+  this.currentTab = 1
+}
 
 
-
+  nextAndCreate() {
   const signupDetails = {
       username: this.basicForm.get('firstName')?.value,
       password: this.basicForm.get('firstName')?.value,
@@ -272,7 +368,7 @@ export class AddEmployeeFormComponent {
     async (data) => {
           this.loading = false;
           this.messageService.add({ severity: 'success', summary: 'Success', detail: 'User account created successfully!' }); 
-          this.nextTab()
+          this.addNewEmployee()
       },
       (error) => {
 
@@ -331,7 +427,6 @@ export class AddEmployeeFormComponent {
   addGuarantor() {
     if (this.guarantorForm.valid) {
       this.guarantorList.push(this.guarantorForm.value);
-      console.log(this.guarantorList)
 
       this.guarantorForm.reset(); 
     } else {
@@ -364,9 +459,22 @@ export class AddEmployeeFormComponent {
   onFileChange(event: Event, controlName: string) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length) {
-      const file = input.files;
+      const file = input.files[0];
       this.guarantorForm.patchValue({ [controlName]: file }); 
     }
+  }
+  onProfilePhotoChange(event: Event, controlName: string) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length) {
+    this.previewImageFile(input.files[0])
+
+      const file = input.files;
+      console.log(file[0])
+      this.basicForm.patchValue({ [controlName]: file }); 
+      
+   
+    }
+
   }
   getFormControls(control: string) {
     const formGroup = this[control as keyof this] as FormGroup;
@@ -382,6 +490,83 @@ export class AddEmployeeFormComponent {
     return key
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, str => str.toUpperCase());
+  }
+  isFile(value: any): boolean {
+    return value instanceof File;
+  }
+
+  openFileInModal(fileUrl: string) {
+    this.currentFile = fileUrl;
+    this.showModal = true;
+  }
+
+  closeModal() {
+    this.showModal = false;
+    this.fileDataUrl = '';
+  }
+
+  previewFile(file: File) {
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event: any) => {
+        
+          this.fileDataUrl = event.target.result;
+         
+          this.showModal = true;           
+      };
+      reader.readAsDataURL(file);
+  }
+  }
+
+  previewImageFile(file: File){
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event: any) => {
+        
+          this.imageURL = event.target.result;
+         
+      };
+      reader.readAsDataURL(file);
+  }
+  }
+
+  getFormValidationErrors() {
+    const errors: any[] = [];
+    
+    Object.keys(this.basicForm.controls).forEach(key => {
+      const controlErrors = this.basicForm.get(key)?.errors;
+      if (controlErrors) {
+        Object.keys(controlErrors).forEach(errorKey => {
+          errors.push(this.getErrorMessage(key, errorKey));
+        });
+      }
+    });
+  
+    return errors;
+  }
+  
+  // Define error messages for different form controls
+  getErrorMessage(controlName: string, errorKey: string): string {
+    const controlLabelMap: { [key: string]: string } = {
+      firstName: 'First Name',
+      lastName: 'Last Name',
+      email: 'Email',
+      profilePhoto: 'Profile Photo',
+      phone: 'Phone',
+      address: 'Home Address',
+      DOB: 'Date of Birth',
+      gender: 'Gender',
+      maritalStatus: 'Marital Status',
+      religion: 'Religion'
+    };
+  
+    const messages: { [key: string]: string } = {
+      required: `${controlLabelMap[controlName]} is required.`,
+      email: `Please enter a valid ${controlLabelMap[controlName]}.`,
+      invalidFileType: `${controlLabelMap[controlName]} must be an image file (PNG, JPEG).`
+    };
+  
+    return messages[errorKey] || `Invalid ${controlLabelMap[controlName]}.`;
   }
   
 }
