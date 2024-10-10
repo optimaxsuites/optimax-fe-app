@@ -1,17 +1,18 @@
 <p-toast></p-toast>
 <div *ngIf="showInterviewList">
     <div class="card">
+      <br>
         <!-- <app-back-button></app-back-button> -->
     
-        <p-toolbar styleClass="mb-4 gap-2">
+        <!-- <p-toolbar styleClass="mb-4 gap-2">
           <ng-template pTemplate="left">
-            <!-- <app-button text="Delete" class="btn-delete"></app-button> -->
+            <app-button text="Delete" class="btn-delete"></app-button>
           </ng-template>
     
           <ng-template pTemplate="right">
             
           </ng-template>
-        </p-toolbar>
+        </p-toolbar> -->
     
         <div class="flex w-full justify-between ">
           <div class="w-1/1">
@@ -85,7 +86,7 @@
                             <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent' && interview.stage !== 'Employement-Letter-Sent'" (click)="openScoreSheet(interview)"> <i class="pi pi-download table-item me-2"></i>New Score Sheet</li>
                             <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent' && interview.stage !== 'Employement-Letter-Sent'" (click)="endInterview(interview)"> <i class="pi pi-stop-circle table-item me-2"></i>End Interview</li>
                             <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent' && interview.stage !== 'Employement-Letter-Sent'" (click)="openInterviewInvite(interview)"> <i class="pi pi-angle-double-right table-item me-2"></i>Move to Next Stage</li>
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent' && interview.stage !== 'Employement-Letter-Sent'" (click)="sendOffer(interview)"> <i class="pi pi-file-arrow-up table-item me-2"></i>Offer Letter</li>
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent' && interview.stage !== 'Employement-Letter-Sent'" (click)="ShowOfferLetter(interview)"> <i class="pi pi-file-arrow-up table-item me-2"></i>Offer Letter</li>
                             <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Employement-Letter-Sent'" (click)="sendEmploymentLetter(interview)" > <i class="pi pi-file-arrow-up table-item me-2"></i>Employment Letter</li>
                             <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent'"> <i class="pi pi-user-plus table-item me-2"></i>Add as Employee</li>
                             <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress'"> <i class="pi pi-file-pdf table-item me-2"></i>Download Score Sheet</li>
@@ -114,5 +115,9 @@
 
 <div *ngIf="showScoreSheet">
   <app-interview-score-sheet [candidate]="activeItem" (back)="close()" (submitFrom)="SaveScoreSheet()"></app-interview-score-sheet>
+</div>
+
+<div *ngIf="showOfferLetter">
+  <app-offer-letter [candidate]="activeItem" (back)="close()" (submitFrom)="sendOffer($event)"></app-offer-letter>
 </div>
 

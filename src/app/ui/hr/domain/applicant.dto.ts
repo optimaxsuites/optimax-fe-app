@@ -11,4 +11,6 @@ export interface ApplicantDTO{
     interviewStage?: number;
     interviewInvite?: string;
     interviewType?: string;
+    offerSubject?: string;
+    offerLetter?: string;
 }

@@ -220,6 +220,7 @@ import { EmployeeManagementComponent } from './ui/hr/view/employee-management/em
 import { FullCalendarModule } from '@fullcalendar/angular';
 import { AddEmployeeFormComponent } from './ui/hr/view/add-employee-form/add-employee-form.component';
 import { JopOpeningsComponent } from './jop.openings.component';
+import { OfferLetterComponent } from './ui/hr/view/interview/scheduled-interview/offer-letter/offer-letter.component';
 
 
 @NgModule({
@@ -376,6 +377,7 @@ import { JopOpeningsComponent } from './jop.openings.component';
     EmployeeManagementComponent,
     AddEmployeeFormComponent,
     JopOpeningsComponent,
+    OfferLetterComponent,
   ],
   imports: [
     CommonModule,
