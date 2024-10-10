@@ -16,3 +16,15 @@
 .remove-mb{
   margin: 0;
 }
+
+.btn-container-btn{
+  display: flex;
+  justify-content: end;
+}
+.btn-container{
+  display: flex;
+  justify-content: end;
+  position: fixed;
+  bottom: 0;
+  margin-bottom: 1rem;
+}

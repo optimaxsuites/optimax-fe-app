@@ -71,7 +71,7 @@ export class RecruitmentListComponent implements OnInit {
       rejectLabel: 'Cancel',
       // styleClass: 'custom-confirm-dialog',
       accept: () => {
-        this.deleteJob();
+        this.deleteJob(job.id);
       },
       reject: () => {
 
@@ -79,18 +79,25 @@ export class RecruitmentListComponent implements OnInit {
     });
   }
 
-  deleteJob(index?: number) {
-      // Logic to handle deleting the job
-      this.filteredJobPostings.splice(index!, 1); // Remove the job from the list
-      localStorage.setItem('jobData', JSON.stringify(this.filteredJobPostings)); // Update localStorage
-      console.log('Deleted job at index:', index);
-      
-      this.messageService.add({
-        severity: 'success', 
-        summary: `Delete`,
-        detail: `Job posting has been successfully deleted` 
-      }); 
-  }  
+  deleteJob(jobId: JobDTO) {
+    // Find the index of the job with the matching id
+    const index = this.filteredJobPostings.findIndex(job => job.id === jobId);
+    
+    if (index !== -1) {
+        this.filteredJobPostings.splice(index, 1); // Remove the job from the list
+        localStorage.setItem('jobData', JSON.stringify(this.filteredJobPostings)); // Update localStorage
+        console.log('Deleted job with id:', jobId);
+        
+        this.messageService.add({
+            severity: 'success', 
+            summary: `Delete`,
+            detail: `Job posting with ${jobId} ID has been successfully deleted`
+        });
+    } else {
+        console.log('Job not found with id:', jobId);
+    }
+}
+  
 
   createJob(){
     this.close();
