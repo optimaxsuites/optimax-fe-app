@@ -29,7 +29,7 @@ export class JopOpeningsComponent {
     },
     {
       image: 'assets/svg/job-interview-in-the-office.svg',
-      text: 'Tip 2: Prepare for the interview by researching the company and practicing common interview questions.'
+      text: `Tip 2: Prepare for the interview by researching the company \n\ and practicing common interview questions.`
     },
     {
       image: 'assets/svg/man-with-join-us-sign-for-open-recruitment.svg',
