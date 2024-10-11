@@ -72,8 +72,15 @@
           <div class="" *ngIf="jobData.customiseInput && jobData.customiseInput.length > 0">
             <hr>
             <h4><strong>Customised input field(s)</strong></h4>
-            <div class="card p-4 m-2" *ngFor="let item of jobData.customiseInput">
-              <span>{{ item.title }} - {{ item.type }} - {{ item.required ? 'Required' : 'Optional' }}</span>
+            <div class="card list-card-wrapper p-4 m-2" *ngFor="let item of jobData.customiseInput; let i = index">
+              <div class="list-card-right">
+                <span>{{ item.title }} - {{ item.type }} - {{ item.required ? 'Required' : 'Optional' }}</span>
+              </div>
+              <div class="list-card-left">
+                <div class="flex space-x-2 mt-2">
+                    <button pButton icon="pi pi-trash cursor-pointer table-item" (click)="onDeleteCustomiseInput(i)" class="icon-delete" title="Delete"></button>
+                </div>
+            </div>
             </div>
           </div>
           
