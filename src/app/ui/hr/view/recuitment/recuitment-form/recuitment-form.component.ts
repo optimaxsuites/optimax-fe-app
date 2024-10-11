@@ -176,7 +176,10 @@ export class RecuitmentFormComponent {
     // Initialize jobData with a default string
   }
 
-
+  onDeleteCustomiseInput(index: number): void {
+    this.jobData.customiseInput?.splice(index, 1);
+  }
+  
 
   // Method to add a new input to the list
   addCustomiseInput() {
