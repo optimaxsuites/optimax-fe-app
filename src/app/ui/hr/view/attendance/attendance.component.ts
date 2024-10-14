@@ -4,6 +4,7 @@ import { AttendanceSheetsComponent } from '../attendance-sheet/attendance-sheet.
 // import { MyAttendanceComponent } from '../my-attendance/my-attendance.component';
 
 import { MyAttendanceComponent } from '../my-attendance/my-attendance.component';
+import { TimeSheetComponent } from './time-sheet/time-sheet.component';
 
 @Component({
   selector: 'app-attendance',
@@ -15,6 +16,7 @@ export class AttendanceComponent {
     { name: 'My attendance', component: MyAttendanceComponent },
     { name: 'Attendance Sheet', component: AttendanceSheetsComponent },
 
+    { name: 'Time Sheet', component: TimeSheetComponent },
 
   ];
 }

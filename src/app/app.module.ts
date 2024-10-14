@@ -221,6 +221,8 @@ import { FullCalendarModule } from '@fullcalendar/angular';
 import { AddEmployeeFormComponent } from './ui/hr/view/add-employee-form/add-employee-form.component';
 import { JopOpeningsComponent } from './jop.openings.component';
 import { OfferLetterComponent } from './ui/hr/view/interview/scheduled-interview/offer-letter/offer-letter.component';
+import { NotificationComponent } from './ui/hr/view/my-attendance/notification/notification.component';
+import { TimeSheetComponent } from './ui/hr/view/attendance/time-sheet/time-sheet.component';
 
 
 @NgModule({
@@ -378,6 +380,8 @@ import { OfferLetterComponent } from './ui/hr/view/interview/scheduled-interview
     AddEmployeeFormComponent,
     JopOpeningsComponent,
     OfferLetterComponent,
+    NotificationComponent,
+    TimeSheetComponent,
   ],
   imports: [
     CommonModule,
