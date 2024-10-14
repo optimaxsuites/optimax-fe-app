@@ -4,7 +4,16 @@
     <div class="card">
         <p-toolbar styleClass="mb-4 gap-2">
             <ng-template pTemplate="left">
-                <app-button *ngIf="!showListView" text="Delete" class="btn-delete"></app-button>
+                <app-button [disabled]="showListView" text="Delete" class="btn-delete"></app-button>
+                <div class=" table-item col-12">
+                    <input 
+                      type="text" 
+                      placeholder="Search" 
+                      class="editInput"
+                      [(ngModel)]="searchTerm"
+                      (ngModelChange)="searchJobs()"
+                    />
+                  </div>
             </ng-template>
 
             <ng-template pTemplate="right">
@@ -20,20 +29,8 @@
             </ng-template>
         </p-toolbar>
 
-        <div class="flex w-full justify-between ">
-            <div class="w-1/1">
-              <!-- <ng-select 
-                [items]="positions"
-                class="px-3"
-                bindLabel="position"
-                [multiple]="true"
-                placeholder="Filter by position"
-                [(ngModel)]="selectedPositions"
-                (ngModelChange)="filterCandidatesByPosition()">
-              </ng-select> -->
-            </div>
-      
-            <div class="search-bar w-[40%]">
+        <div class="flex w-full justify-between ">      
+            <!-- <div class="search-bar w-full">
               <input 
                 type="text" 
                 placeholder="Search" 
@@ -41,7 +38,7 @@
                 [(ngModel)]="searchTerm"
                 (ngModelChange)="searchJobs()"
               />
-            </div>
+            </div> -->
           </div>
 
       <div class="list-card-container" *ngIf="showListView">
@@ -52,7 +49,7 @@
                 <div class="list-card-wrapper">
                     <div class="list-card-right">
                         <h3><strong>{{job.title}}</strong></h3>
-                        <p> <i class="pi pi-map-marker table-item me-2 "></i> {{job.location}}</p>
+                        <p *ngIf="job.location"> <i class="pi pi-map-marker table-item me-2 "></i> {{job.location}}</p>
                         <p> <i class="pi pi-clock table-item me-2"></i> {{job.employmentType}}</p>
                         <!-- <p> <i class="pi pi-clock"></i> {{job.category}}</p> -->
                         <p> <i class="pi pi-calendar-clock table-item me-2"></i> {{job.postedDate}}</p>
@@ -138,54 +135,54 @@
   [title]="'Cancel'"
   (close)="closeViewModal()">
     <div class="view-wrapper">
-        <div class="d-flex gap-4 my-2">
+        <div class="d-flex gap-4 my-4">
             <div class="input-container-50">
-                <label for="name">Title:</label>
+                <label for="name"><strong>Title:</strong></label>
                 <span> {{activeItem.title}}</span>
             </div>
             <div class="input-container-50">
-                <label for="phone-number">Category:</label>
+                <label for="phone-number"><strong>Category:</strong></label>
                 <span> {{activeItem.category}}</span>
             </div>
         </div>
-        <div class="d-flex gap-4 my-2">
+        <div class="d-flex gap-4 my-4">
             <div class="input-container-50">
-                <label for="email">Job Type:</label>
+                <label for="email"><strong>Job Type:</strong></label>
                 <span> {{activeItem.employmentType}}</span>
             </div>
             <div class="input-container-50">
-                <label for="position">Specification:</label>
+                <label for="position"><strong>Specification:</strong></label>
                 <span> {{activeItem.specification}}</span>
             </div>
         </div>
-        <div class="d-flex gap-4 my-2">
+        <div class="d-flex gap-4 my-4">
             <div class="input-container-50">
-                <label for="email">Qualification:</label>
+                <label for="email"><strong>Qualification:</strong></label>
                 <span> {{activeItem.qualification}}</span>
             </div>
             <div class="input-container-50">
-                <label for="position">Experience:</label>
+                <label for="position"><strong>Experience:</strong></label>
                 <span> {{activeItem.experience}}</span>
             </div>
         </div>
-        <div class="d-flex gap-4 my-2">
+        <div class="d-flex gap-4 my-4">
             <div class="input-container-50">
-                <label for="date">Date Applied:</label>
+                <label for="date"><strong>Date Applied:</strong></label>
                 <span> {{activeItem.postedDate}}</span>
             </div>
             <div class="input-container-50">
-                <label for="date">Location:</label>
+                <label for="date"><strong>Location:</strong></label>
                 <span> {{activeItem.location}}</span>
             </div>
         </div>
-        <div class="d-flex gap-4 my-2">
+        <div class="d-flex gap-4 my-4">
             <div class="input-container-50">
-                <label for="date">Expiry Date:</label>
+                <label for="date"><strong>Expiry Date:</strong></label>
                 <span> {{activeItem.expiryDate}}</span>
             </div>
         </div>
         <div class="">
-            <label for="cover-letter">Overview:</label>
+            <label for="cover-letter"><strong>Overview:</strong></label>
             <!-- <textarea class="cover-letter editInput" name="cover-letter" [(ngModel)]="activeItem.description" disabled></textarea> -->
             <div class="input-container-100 editInput" [innerHTML]="activeItem.description"></div>
         </div>

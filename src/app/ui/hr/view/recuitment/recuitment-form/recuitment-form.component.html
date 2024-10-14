@@ -5,16 +5,16 @@
   <div class="invite-main">
     <div>
       <h3 class="remove-mb"><strong>Job Posting Form</strong></h3>
-      <p class="note">All fields are required</p><br>
+      <!-- <p class="note">All fields are required</p><br> -->
 
 
-      <div class="input-container-100 flex-item">
+      <div class="input-container-100 flex-item justify-center">
         <div class="input-container-50">
           <!-- Job Title -->
-          <label for="jobTitle">Job Title:</label>
+          <label for="jobTitle">Job Title: <span style="color: red;">*</span></label>
           <input type="text" id="jobTitle" placeholder="Job Title" class="editInput" name="jobTitle" [(ngModel)]="jobData.title" required>
           <!-- Job Category -->
-          <label for="jobCategory">Category:</label>
+          <label for="jobCategory">Category: <span style="color: red;">*</span></label>
           <ng-select 
             bindLabel="name"
             placeholder="Select Category"
@@ -22,7 +22,7 @@
             [items]="jobCategories">
           </ng-select>
           <!-- Job Type -->
-          <label for="jobType">Job Type:</label>
+          <label for="jobType">Job Type: <span style="color: red;">*</span></label>
           <ng-select 
             bindLabel="name"
             placeholder="Select Job Type"
@@ -64,14 +64,29 @@
             </div>
             <div class="input-container-50">
               <!-- Expiry Date -->
-              <label for="expiryDate">Expiry Date:</label>
+              <label for="expiryDate">Expiry Date: <span style="color: red;">*</span></label>
               <input type="date" id="expiryDate" class="editInput mb-4" name="expiryDate" [(ngModel)]="jobData.expiryDate" required>
             </div>
           </div>
+
+          <div class="" *ngIf="jobData.customiseInput && jobData.customiseInput.length > 0">
+            <hr>
+            <h4><strong>Customised input field(s)</strong></h4>
+            <div class="card p-4 m-2" *ngFor="let item of jobData.customiseInput">
+              <span>{{ item.title }} - {{ item.type }} - {{ item.required ? 'Required' : 'Optional' }}</span>
+            </div>
+          </div>
+          
+          <!-- <hr> -->
+          <div class="btn-wrapper" >
+            <button class="add-btn" (click)="toogleSideModal()">
+              <i class="fas fa-plus me-2"></i> Add Customize Input
+            </button>
+          </div>
         </div>
         <div class="input-container-50">
-          <label for="">Overview & Description:</label>
-          <p-editor [(ngModel)]="jobData.description" placeholder="Overview & Description..."  [style]="{ height: '400px' }" />
+          <label for="">Overview & Description: <span style="color: red;">*</span></label>
+          <p-editor [(ngModel)]="jobData.description" placeholder="Overview & Description..."  [style]="{ height: '100vh' }" />
         </div>
       </div>
       <div class="btn-wrapper">
@@ -82,3 +97,52 @@
 
 
 </div>
+
+
+<app-side-modal *ngIf="openSideModal" (close)="openSideModal = false">
+  <div class="modal-header flex justify-between items-center text-gray-700">
+    <h2 class="font-semibold pb-0 mb-0">Add Customise Input</h2>
+    <div class="flex gap-3">
+      <button class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold" (click)="openSideModal = false">Cancel</button>
+    </div>
+  </div>
+<br>
+
+  <div class="input-container-100 d-flex gap-2">
+    <div class="input-container-50">
+      <!-- Posted Date -->
+      <label for="postedDate">Title:</label>
+      <input type="text" id="" class="editInput mb-4" name="" [(ngModel)]="customiseInput.title"  required>
+    </div>
+    <div class="input-container-50">
+      <!-- Expiry Date -->
+      <label for="expiryDate">Type:</label>
+      <ng-select 
+        bindLabel="label"
+        bindValue="value"
+        placeholder="Select Input Type"
+        [(ngModel)]="customiseInput.type"
+        [items]="customiseInputType">
+      </ng-select>
+    </div> 
+  </div>
+  <div class="flex gap-3 items-center">
+    <input type="checkbox" [(ngModel)]="customiseInput.required" id="" class=" h-7 w-7 accent-customGreen border border-gray-300 rounded-md" />
+    <label for="" class="block text-[13px] font-medium cursor-pointer">Required</label>
+  </div>
+  <div class="btn-container-btn">
+    <app-button text="Add Input" class="btn-save" (click)="addCustomiseInput()"></app-button>
+  </div>
+  <div class="show-added-customisedInputs">
+    <ul>
+      <li *ngFor="let input of customiseInputList">
+        <div class="card p-4 m-2">
+          <span>{{ input.title }} - {{ input.type }} - {{ input.required ? 'Required' : 'Optional' }}</span>
+        </div>
+      </li>
+    </ul>
+  </div>
+  <div class="btn-container">
+    <app-button text="Save" class="btn-save" (click)="saveCustomiseInputs()"></app-button>
+  </div>
+</app-side-modal>

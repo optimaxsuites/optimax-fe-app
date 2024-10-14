@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { JobDTO } from '../../../domain/job.dto';
+import { customiseInputDTO, JobDTO } from '../../../domain/job.dto';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { RandomTokenService } from 'src/app/ui/shared/service/random-token/random-token.service';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -13,8 +13,31 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 export class RecuitmentFormComponent {
   @Output() back = new EventEmitter<void>();
   @Output() submitFrom = new EventEmitter<JobDTO>();
-  @Input() jobData: JobDTO = {}
-  @Input() isEdit?: boolean;  // New input to differentiate between create and edit modes
+  @Input() jobData: JobDTO = {};
+  @Input() isEdit?: boolean; 
+  openSideModal?: boolean;
+  customiseInput: customiseInputDTO = {};
+  customiseInputList: customiseInputDTO[] = [];
+
+  customiseInputType = [
+    { value: 'text', label: 'Text' },
+    { value: 'number', label: 'Number' },
+    { value: 'file', label: 'File' },
+    { value: 'email', label: 'Email' },
+    { value: 'password', label: 'Password' },
+    { value: 'date', label: 'Date' },
+    { value: 'datetime-local', label: 'Date & Time' },
+    { value: 'time', label: 'Time' },
+    { value: 'month', label: 'Month' },
+    { value: 'week', label: 'Week' },
+    { value: 'url', label: 'URL' },
+    { value: 'tel', label: 'Telephone' },
+    { value: 'color', label: 'Color' },
+    { value: 'range', label: 'Range' },
+    { value: 'checkbox', label: 'Checkbox' },
+    { value: 'radio', label: 'Radio' },
+    { value: 'textarea', label: 'Textarea' },
+  ];
 
   jobCategories = [
     'Accounting',
@@ -153,6 +176,38 @@ export class RecuitmentFormComponent {
     // Initialize jobData with a default string
   }
 
+
+
+  // Method to add a new input to the list
+  addCustomiseInput() {
+    this.customiseInputList.push({ ...this.customiseInput });
+    this.customiseInput = {}; // Reset input fields
+  }
+
+  // Method to save inputs to localStorage
+  saveCustomiseInputs() {
+    localStorage.setItem('customiseInputs', JSON.stringify(this.customiseInputList));
+    
+    // Clear the list after saving
+    this.customiseInputList = []; 
+    
+    // Load the saved customiseInputs from local storage and parse them
+    const savedCustomiseInputs = localStorage.getItem('customiseInputs');
+    
+    // Check if saved data exists and parse it
+    if (savedCustomiseInputs) {
+        this.jobData.customiseInput = JSON.parse(savedCustomiseInputs);
+    } else {
+        this.jobData.customiseInput = []; // Initialize as an empty array if nothing is found
+    }
+    this.openSideModal = false;
+}
+
+
+  toogleSideModal(){
+    this.openSideModal = true;
+  }
+
   // In your ngOnInit or constructor, set the current date as the posted date
   ngOnInit() {
     if (!this.jobData.postedDate) {
@@ -178,15 +233,15 @@ export class RecuitmentFormComponent {
   
   submitForm() {
     // Check if all required fields are filled
-    // const isValid = this.validateForm();
-    // if (!isValid) {
-    //   this.messageService.add({
-    //     severity: 'error', 
-    //     summary: 'Validation Failed',
-    //     detail: 'Please fill out all fields before submitting the form.' 
-    //   });    
-    //   return; 
-    // }
+    const isValid = this.validateForm();
+    if (!isValid) {
+      this.messageService.add({
+        severity: 'error', 
+        summary: 'Validation Failed',
+        detail: 'Please fill out all fields before submitting the form.' 
+      });    
+      return; 
+    }
     
     // Retrieve the existing job postings from localStorage (if any)
     const storedJobs = localStorage.getItem('jobData');
@@ -229,9 +284,6 @@ export class RecuitmentFormComponent {
       this.jobData.title,
       this.jobData.category,
       this.jobData.employmentType,
-      this.jobData.location,
-      this.jobData.experience,
-      this.jobData.qualification,
       this.jobData.expiryDate,
       this.jobData.description
     ];

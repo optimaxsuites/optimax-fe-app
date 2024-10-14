@@ -15,6 +15,7 @@ export class ScheduledInterviewComponent {
   showInterviewList: boolean = true;
   showInterviewInvite: boolean = false;
   showScoreSheet: boolean = false;
+  showOfferLetter: boolean = false;
 
   constructor(
     private confirmationService: ConfirmationService,
@@ -76,14 +77,61 @@ export class ScheduledInterviewComponent {
     this.showInterviewList = true;
     this.showInterviewInvite = false;
     this.showScoreSheet = false;
-
+    this.showOfferLetter = false;
   }
 
   openScoreSheet(interview: any){
     this.activeItem = interview
-    // console.log(interview)
     this.showInterviewList = false;
+    this.showOfferLetter = false;
     this.showScoreSheet = true;
+    this.showInterviewInvite = false;
+  }
+
+  ShowOfferLetter(interview: any){
+    this.activeItem = interview;
+    this.showOfferLetter = true;
+    this.showInterviewList = false;
+    this.showInterviewInvite = false;
+    this.showScoreSheet = false;
+  }
+
+  sendOffer(offerDetails: any){
+    // if (interview) {
+    //   interview.stage = 'Offer-Sent';
+    //   this.updateLocalStorage()
+    // }
+    const offerLetterSent: ApplicantDTO[] = JSON.parse(localStorage.getItem('scheduledCandidate') || '[]');
+    
+    // Find the candidate to update
+    const index = offerLetterSent.findIndex((c: ApplicantDTO) => c.id === this.activeItem?.id);
+    if (index !== -1 && this.activeItem) {
+      const updatedOfferLetterSent: ApplicantDTO = {
+        ...offerLetterSent[index],
+        stage: 'Offer-Sent',
+        offerSubject: offerDetails.offerSubject,
+        offerLetter: offerDetails.offerLetter,
+      };
+
+      // Update the existing candidate at the found index
+      offerLetterSent[index] = updatedOfferLetterSent;
+      console.log("Inteview-Candidate Info", offerLetterSent)
+      localStorage.setItem('scheduledCandidate', JSON.stringify(offerLetterSent));
+
+      // Optionally, show a success message
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Offer Letter Sent',
+        detail: `${this.activeItem.candidate} has successfully been sent an offer letter.`
+      });
+      
+    }
+      
+    
+    // Close the interview invite component
+    this.close();
+    this.getCandidateData();
+
   }
 
   SaveScoreSheet(){
@@ -135,12 +183,10 @@ export class ScheduledInterviewComponent {
       this.updateLocalStorage()
     }
   }
-  sendOffer(interview: any){
-    if (interview) {
-      interview.stage = 'Offer-Sent';
-      this.updateLocalStorage()
-    }
-  }
+
+
+
+
   sendRejected(interview: any){
     if (interview) {
       interview.stage = 'Cancelled';
