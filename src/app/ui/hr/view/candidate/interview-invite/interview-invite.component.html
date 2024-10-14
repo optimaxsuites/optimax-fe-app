@@ -39,10 +39,10 @@
             <div class="input-container-50">
                 <label for="interview-type">Interview Type</label>
                 <ng-select 
-                    [items]="interviewType"
+                    [items]="interviewType || []"
                     bindLabel="type"
                     bindValue="type"
-                    placeholder="Filter by position"
+                    placeholder="Select Invite Type"
                     [(ngModel)]="selectedInterviewType">
                 </ng-select>
 
@@ -53,11 +53,9 @@
                     <!-- Display attachments -->
                     <div *ngIf="attachments?.length">
                         <h4><strong>Attachement(s)</strong></h4>
-                        <!-- <ul> -->
                             <span *ngFor="let attachment of attachments">
                                 <a [href]="attachment.url" target="_blank">{{ attachment.name }}</a><br>
                             </span>
-                        <!-- </ul> -->
                     </div>
                 </div>
             </div>

@@ -20,7 +20,7 @@
     <div class="flex w-full justify-between ">
       <div class="w-1/1">
         <ng-select 
-          [items]="positions"
+          [items]="positions || []"
           class="px-3"
           bindLabel="position"
           [multiple]="true"

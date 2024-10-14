@@ -17,6 +17,11 @@ export class ScheduledInterviewComponent {
   showScoreSheet: boolean = false;
   showOfferLetter: boolean = false;
   viewModal: boolean = false;
+  showAppointment: boolean = false;
+
+  positions: any[] =[]; // Extract unique positions
+  selectedPositions: string[] = [];
+  filteredCandidates: ApplicantDTO[] = [];
 
   constructor(
     private confirmationService: ConfirmationService,
@@ -39,7 +44,7 @@ export class ScheduledInterviewComponent {
       case `Offer-Rejected`:
         return 'badge badge-lightred';
 
-      case 'Employement-Letter-Sent':
+      case 'Appointment-Letter-Sent':
         return 'badge badge-lightpink';
 
       default:
@@ -51,6 +56,7 @@ export class ScheduledInterviewComponent {
     this.getCandidateData();
   }
 
+// ==============================================get candidate
   getCandidateData(){
     // Retrieve candidates from localStorage
     const storedCandidates = localStorage.getItem('scheduledCandidate');
@@ -65,53 +71,21 @@ export class ScheduledInterviewComponent {
     this.filteredCandidates = [...this.interviews].reverse();
 
     console.log(this.filteredCandidates);
-  }
 
-  openViewModal(candidate: any, op: any) {
-    this.activeItem = candidate
-    // this.tableSection =!this.tableSection
-    this.viewModal = !this.viewModal;
-    op.hide();
   }
-  closeViewModal() {
-    this.viewModal = false;
-  }
+// ============================================================
 
-  openInterviewInvite(interview: any){
-    this.activeItem = interview
-    // console.log(interview)
-    this.showInterviewList = false;
-    this.showInterviewInvite = true;
-  }
-
-  close() {
-    this.showInterviewList = true;
-    this.showInterviewInvite = false;
-    this.showScoreSheet = false;
-    this.showOfferLetter = false;
-  }
-
-  openScoreSheet(interview: any){
-    this.activeItem = interview
-    this.showInterviewList = false;
-    this.showOfferLetter = false;
-    this.showScoreSheet = true;
-    this.showInterviewInvite = false;
-  }
-
-  ShowOfferLetter(interview: any){
+// ===============================================Offer Letter
+  openOfferLetter(interview: any){
     this.activeItem = interview;
-    this.showOfferLetter = true;
     this.showInterviewList = false;
     this.showInterviewInvite = false;
+    this.viewModal = false;
     this.showScoreSheet = false;
+    this.showOfferLetter = true;
+    this.showAppointment = false;
   }
-
-  sendOffer(offerDetails: any){
-    // if (interview) {
-    //   interview.stage = 'Offer-Sent';
-    //   this.updateLocalStorage()
-    // }
+  sendOffer(offerDetails: ApplicantDTO){
     const offerLetterSent: ApplicantDTO[] = JSON.parse(localStorage.getItem('scheduledCandidate') || '[]');
     
     // Find the candidate to update
@@ -145,16 +119,35 @@ export class ScheduledInterviewComponent {
     this.getCandidateData();
 
   }
+// ============================================================
 
-  SaveScoreSheet(){
-    this.close();
+// ====================================================view modal
+  openViewModal(candidate: any, op: any) {
+    this.activeItem = candidate
+    this.showInterviewList = false;
+    this.showInterviewInvite = false;
+    this.viewModal = true;
+    this.showScoreSheet = false;
+    this.showOfferLetter = false;
+    this.showAppointment = false;
+    op.hide();
   }
-
-  viewResume(resumeFile: string){
-
+  closeViewModal() {
+    this.viewModal = false;
   }
+// ================================================================
 
-  sendInvite(interviewDetails: { interviewType: string; interviewInvite: string }) {
+// ======================================================Interview Invite
+  openInterviewInvite(interview: any){
+    this.activeItem = interview
+    this.showInterviewList = false;
+    this.showInterviewInvite = true;
+    this.viewModal = false;
+    this.showScoreSheet = false;
+    this.showOfferLetter = false;
+    this.showAppointment = false;
+  }
+  sendInvite(interviewDetails: ApplicantDTO) {
     // Update the candidate's stage to "Scheduled"
     // const candidates: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
     const scheduledCandidates: ApplicantDTO[] = JSON.parse(localStorage.getItem('scheduledCandidate') || '[]');
@@ -170,6 +163,7 @@ export class ScheduledInterviewComponent {
         interviewStage: currentStage + 1,  // Increment the interview stage
         interviewInvite: interviewDetails.interviewInvite,
         interviewType: interviewDetails.interviewType,
+        inviteAttachments: interviewDetails.inviteAttachments
       };
 
       // Update the existing candidate at the found index
@@ -192,62 +186,69 @@ export class ScheduledInterviewComponent {
     this.getCandidateData();
 
   }
+// ==========================================================================
 
-  decline(interview: any){
-    if (interview) {
-      interview.stage = 'Cancelled';
-      this.updateLocalStorage()
+// ==============================================================Score Sheet
+  openScoreSheet(interview: any){
+    this.activeItem = interview
+    this.showInterviewList = false;
+    this.showInterviewInvite = false;
+    this.viewModal = false;
+    this.showScoreSheet = true;
+    this.showOfferLetter = false;
+    this.showAppointment = false;
+  }
+  SaveScoreSheet(){
+    this.close();
+  }
+// ========================================================================
+
+// ==========================================================Appointment Letter
+  openAppointmentLetter(interview: any){
+    this.activeItem = interview
+    this.showInterviewList = false;
+    this.showInterviewInvite = false;
+    this.viewModal = false;
+    this.showScoreSheet = false;
+    this.showOfferLetter = false;
+    this.showAppointment = true;
+  }
+  sendAppointment(appointmentDetails: ApplicantDTO){
+    const offerLetterSent: ApplicantDTO[] = JSON.parse(localStorage.getItem('scheduledCandidate') || '[]');
+    
+    // Find the candidate to update
+    const index = offerLetterSent.findIndex((c: ApplicantDTO) => c.id === this.activeItem?.id);
+    if (index !== -1 && this.activeItem) {
+      const updatedOfferLetterSent: ApplicantDTO = {
+        ...offerLetterSent[index],
+        stage:  ApplicationStage.AppointmentLetterSent,
+        appointmentSubject: appointmentDetails.appointmentSubject,
+        appointmentLetter: appointmentDetails.appointmentLetter,
+        appointmentAttachments: appointmentDetails.appointmentAttachments
+      };
+
+      // Update the existing candidate at the found index
+      offerLetterSent[index] = updatedOfferLetterSent;
+      console.log("Inteview-Candidate Info", offerLetterSent)
+      localStorage.setItem('scheduledCandidate', JSON.stringify(offerLetterSent));
+
+      // Optionally, show a success message
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Offer Letter Sent',
+        detail: `${this.activeItem.candidate} has successfully been sent an offer letter.`
+      });
+      
     }
+      
+    
+    // Close the interview invite component
+    this.close();
+    this.getCandidateData();
   }
+// ===============================================================================
 
-
-
-
-  sendRejected(interview: any){
-    if (interview) {
-      interview.stage = 'Cancelled';
-      this.updateLocalStorage()
-    }
-  }
-  sendEmploymentLetter(interview: any){
-    if (interview) {
-      interview.stage = 'Employement-Letter-Sent';
-      this.updateLocalStorage()
-    }
-  }
-
-  positions: any[] =[]; // Extract unique positions
-  selectedPositions: string[] = [];
-  filteredCandidates: ApplicantDTO[] = [];
-
-  // Function to filter candidates by selected positions
-  filterCandidatesByPosition() {
-    if (this.selectedPositions.length > 0) {
-      this.filteredCandidates = this.interviews.filter(interview =>
-        this.selectedPositions.includes(interview.position!)
-      );
-    } else {
-      this.filteredCandidates = [...this.interviews]; // Show all if no position is selected
-    }
-  }
-  
-  filterCandidates() {
-    this.filteredCandidates = this.interviews.filter(interview => {
-      // Check if the candidate matches the search term
-      const matchesSearchTerm = interview.candidate!.toLowerCase().includes(this.searchTerm.toLowerCase());
-  
-      // Check if the candidate matches one of the selected positions (if any)
-      const matchesPosition = this.selectedPositions.length === 0 || this.selectedPositions.includes(interview.position!);
-  
-      return matchesSearchTerm && matchesPosition;
-    });
-  }
-
-  updateLocalStorage() {
-    localStorage.setItem('scheduledCandidate', JSON.stringify(this.interviews));
-  }
-
-
+// ===========================================================Start/End Interview
   startInterview(interview: any){
     if (interview) {
       interview.stage = 'In-Progress';
@@ -260,4 +261,45 @@ export class ScheduledInterviewComponent {
       this.updateLocalStorage()
     }
   }
+// ======================================================================================
+
+  close() {
+    this.showInterviewList = true;
+    this.showInterviewInvite = false;
+    this.showScoreSheet = false;
+    this.showOfferLetter = false;
+    this.showAppointment = false;
+    this.viewModal = false;
+  }
+
+  viewResume(resumeFile: string){
+
+  }
+
+  updateLocalStorage() {
+    localStorage.setItem('scheduledCandidate', JSON.stringify(this.interviews));
+  }
+
+// =========================Function to filter candidates by selected positions
+  filterCandidatesByPosition() {
+    if (this.selectedPositions.length > 0) {
+      this.filteredCandidates = this.interviews.filter(interview =>
+        this.selectedPositions.includes(interview.position!)
+      );
+    } else {
+      this.filteredCandidates = [...this.interviews]; // Show all if no position is selected
+    }
+  }
+  filterCandidates() {
+    this.filteredCandidates = this.interviews.filter(interview => {
+      // Check if the candidate matches the search term
+      const matchesSearchTerm = interview.candidate!.toLowerCase().includes(this.searchTerm.toLowerCase());
+  
+      // Check if the candidate matches one of the selected positions (if any)
+      const matchesPosition = this.selectedPositions.length === 0 || this.selectedPositions.includes(interview.position!);
+  
+      return matchesSearchTerm && matchesPosition;
+    });
+  }
+//====================================================================================== 
 }
