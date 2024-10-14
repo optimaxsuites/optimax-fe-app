@@ -46,6 +46,21 @@
             <div class="input-container-50">
                 <label for="interviewSubject"><strong>Offer Letter Subject</strong></label>
                 <input type="" id="interviewSubject" name="interviewSubject" [(ngModel)]="offerSubject" class="editInput" >
+
+                <div class="add-attachment mt-4">
+                    <!-- File upload input -->
+                    <input type="file" (change)="onFileSelected($event)" />
+
+                    <!-- Display attachments -->
+                    <div *ngIf="attachments?.length">
+                        <h4><strong>Attachement(s)</strong></h4>
+                        <!-- <ul> -->
+                            <span *ngFor="let attachment of attachments">
+                                <a [href]="attachment.url" target="_blank">{{ attachment.name }}</a><br>
+                            </span>
+                        <!-- </ul> -->
+                    </div>
+                </div>
             </div>
         </div>
         <div class="invite-template-wrapper">

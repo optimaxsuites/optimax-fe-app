@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { ApplicantDTO } from 'src/app/ui/hr/domain/applicant.dto';
+import { AttachmentDTO } from 'src/app/ui/sales/domain/quotation.dto';
 
 @Component({
   selector: 'app-offer-letter',
@@ -15,6 +16,8 @@ export class OfferLetterComponent {
   selectedTemplate?: string;
   processedTemplate?: string;
   offerSubject?: string;
+  attachments?: AttachmentDTO[] = [];
+
 
 
   ngOnInit(): void {
@@ -30,6 +33,7 @@ export class OfferLetterComponent {
     const offerDetails = {
       offerSubject: this.offerSubject,
       offerLetter: this.processedTemplate,
+      offerAttachments: this.attachments,
     };
 
     console.log("sending the offer from offer-component", offerDetails)
@@ -129,4 +133,28 @@ export class OfferLetterComponent {
     ];
     return templateNames[index];
   }
+
+  onFileSelected(event: any) {
+    const file = event.target.files[0]; // Get the selected file
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+            const attachment: AttachmentDTO = {
+                name: file.name,
+                url: e.target.result, // Create a URL for the file
+                size: file.size, // Add the file size
+                type: file.type  // Add the file type
+            };
+
+            // Initialize attachments if it is undefined
+            if (!this.attachments) {
+                this.attachments = []; // Initialize as an empty array
+            }
+
+            this.attachments.push(attachment); // Add attachment to the array
+            console.log("this is the attached file", this.attachments); // This should show the correct value
+        };
+        reader.readAsDataURL(file); // Read the file as a data URL
+    }
+  } 
 }
