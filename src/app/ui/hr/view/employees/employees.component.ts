@@ -12,6 +12,9 @@ import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 
 })
 export class EmployeesComponent {
+  closeAddForm() {
+    this.openAddForm = false;
+  }
   uniqueLevels: any;
   uniquePositions: any;
 
@@ -23,241 +26,33 @@ selectedPosition: any;
 openAddForm: boolean = false
 employeeList = [
   {
-    id: 1,
-    firstName: 'Oluwaseun',
-    lastName: 'Adesanya',
-    age: 24,
+    id: 'tok12345abc', // Example token value
+    firstName: 'Chukwuemeka',
+    lastName: 'Okafor',
+    dob: '1990-02-15',
     gender: 'Male',
-    position: 'Software Developer',
-    level: 'Junior Staff',
-    department: 'Technology',
-    salary: 35000,
-    hireDate: '2022-03-15',
-    email: 'seun.adesanya@company.com',
-    phone: '+2347012345678',
-    location: 'Lagos, Nigeria',
-    profileImage: 'https://randomuser.me/api/portraits/men/1.jpg', // Sample image
-    leaveDetails: {
-      assignedLeaves: 20,
-      usedLeaves: 10,
-      leavesRemaining: 10,
-      leavesSpent: [
-        {
-          type: 'Annual',
-          daysUsed: 5,
-          from: '2023-05-10',
-          to: '2023-05-15',
-        },
-        {
-          type: 'Sick',
-          daysUsed: 3,
-          from: '2023-08-01',
-          to: '2023-08-03',
-        },
-        {
-          type: 'Annual',
-          daysUsed: 2,
-          from: '2023-10-01',
-          to: '2023-10-02',
-        }
-      ]
-    },
-    attendance: {
-      year: 2024,
-      daysPresent: 190,
-      daysAbsent: 10,
-      lateArrivals: 5,
-      overtimeHours: 20,
-      lastPresent: '2024-09-30',
-    }
-  },
-  {
-    id: 2,
-    firstName: 'Ngozi',
-    lastName: 'Okeke',
-    age: 28,
-    gender: 'Female',
-    position: 'Human Resources Manager',
-    level: 'Mid Level 1',
-    department: 'Human Resources',
-    salary: 70000,
-    hireDate: '2020-06-20',
-    email: 'ngozi.okeke@company.com',
-    phone: '+2348023456789',
-    location: 'Abuja, Nigeria',
-    profileImage: 'https://randomuser.me/api/portraits/women/2.jpg', // Sample image
-    leaveDetails: {
-      assignedLeaves: 25,
-      usedLeaves: 8,
-      leavesRemaining: 17,
-      leavesSpent: [
-        {
-          type: 'Annual',
-          daysUsed: 4,
-          from: '2023-06-15',
-          to: '2023-06-18',
-        },
-        {
-          type: 'Sick',
-          daysUsed: 4,
-          from: '2023-09-05',
-          to: '2023-09-08',
-        }
-      ]
-    },
-    attendance: {
-      year: 2024,
-      daysPresent: 200,
-      daysAbsent: 8,
-      lateArrivals: 2,
-      overtimeHours: 15,
-      lastPresent: '2024-09-29',
-    }
-  },
-  {
-    id: 3,
-    firstName: 'Emeka',
-    lastName: 'Nwosu',
-    age: 32,
-    gender: 'Male',
-    position: 'Finance Analyst',
-    level: 'Mid Level 2',
-    department: 'Finance',
-    salary: 85000,
-    hireDate: '2019-11-05',
-    email: 'emeka.nwosu@company.com',
-    phone: '+2347034567890',
-    location: 'Enugu, Nigeria',
-    profileImage: 'https://randomuser.me/api/portraits/men/3.jpg', // Sample image
-    leaveDetails: {
-      assignedLeaves: 22,
-      usedLeaves: 12,
-      leavesRemaining: 10,
-      leavesSpent: [
-        {
-          type: 'Annual',
-          daysUsed: 6,
-          from: '2023-04-10',
-          to: '2023-04-15',
-        },
-        {
-          type: 'Sick',
-          daysUsed: 6,
-          from: '2023-07-20',
-          to: '2023-07-25',
-        }
-      ]
-    },
-    attendance: {
-      year: 2024,
-      daysPresent: 180,
-      daysAbsent: 15,
-      lateArrivals: 3,
-      overtimeHours: 10,
-      lastPresent: '2024-09-25',
-    }
-  },
-  {
-    id: 4,
-    firstName: 'Amina',
-    lastName: 'Bello',
-    age: 29,
-    gender: 'Female',
-    position: 'Marketing Specialist',
-    level: 'Entry Level',
-    department: 'Marketing',
-    salary: 50000,
-    hireDate: '2021-09-10',
-    email: 'amina.bello@company.com',
-    phone: '+2349045678901',
-    location: 'Kano, Nigeria',
-    profileImage: 'https://randomuser.me/api/portraits/women/4.jpg', // Sample image
-    leaveDetails: {
-      assignedLeaves: 18,
-      usedLeaves: 10,
-      leavesRemaining: 8,
-      leavesSpent: [
-        {
-          type: 'Annual',
-          daysUsed: 8,
-          from: '2023-08-15',
-          to: '2023-08-22',
-        },
-        {
-          type: 'Sick',
-          daysUsed: 2,
-          from: '2023-09-25',
-          to: '2023-09-26',
-        }
-      ]
-    },
-    attendance: {
-      year: 2024,
-      daysPresent: 195,
-      daysAbsent: 5,
-      lateArrivals: 1,
-      overtimeHours: 18,
-      lastPresent: '2024-09-28',
-    }
-  },
-  {
-    id: 5,
-    firstName: 'Chidi',
-    lastName: 'Ibe',
-    age: 42,
-    gender: 'Male',
-    position: 'Chief Financial Officer',
-    level: 'C-Level',
-    department: 'Executive',
-    salary: 250000,
-    hireDate: '2016-01-25',
-    email: 'chidi.ibe@company.com',
-    phone: '+2348156789012',
-    location: 'Port Harcourt, Nigeria',
-    profileImage: 'https://randomuser.me/api/portraits/men/5.jpg', // Sample image
-    leaveDetails: {
-      assignedLeaves: 30,
-      usedLeaves: 20,
-      leavesRemaining: 10,
-      leavesSpent: [
-        {
-          type: 'Paternity',
-          daysUsed: 10,
-          from: '2023-03-01',
-          to: '2023-03-10',
-        },
-        {
-          type: 'Annual',
-          daysUsed: 10,
-          from: '2023-09-01',
-          to: '2023-09-10',
-        }
-      ]
-    },
-    attendance: {
-      year: 2024,
-      daysPresent: 190,
-      daysAbsent: 10,
-      lateArrivals: 0,
-      overtimeHours: 25,
-      lastPresent: '2024-09-30',
-    }
-  },
-  {
-    id: 6,
-    firstName: 'Blessing',
-    lastName: 'Eze',
-    age: 30,
-    gender: 'Female',
-    position: 'Software Tester',
-    level: 'Junior Staff',
-    department: 'Quality Assurance',
-    salary: 45000,
-    hireDate: '2021-11-01',
-    email: 'blessing.eze@company.com',
-    phone: '+2349012345678',
-    location: 'Ibadan, Nigeria',
-    profileImage: 'https://randomuser.me/api/portraits/women/6.jpg', // Sample image
+    email: 'chukwuemeka.okafor@example.com',
+    phone: '+2348012345678',
+    maritalStatus: 'Married',
+    religion: 'Christianity',
+    address: '12, Adeola Avenue, Lagos, Nigeria',
+    jobTitle: 'Software Engineer',
+    department: 'IT',
+    level: 'Senior Level 1',
+    employmentType: 'Full-Time',
+    supervisor: 'John Doe',
+    bankName: 'GTBank',
+    accountNumber: '1234567890',
+    nin: '9876543210',
+    bvn: '12345678901',
+    nextOfKin: [
+      { name: 'Ngozi Okafor', relationship: 'Wife', phone: '+2348012345679' }
+    ],
+    guarantor: [
+      { name: 'Ifeanyi Nwankwo', relationship: 'Friend', phone: '+2348012345670' }
+    ],
+    hireDate: '2023-01-10',
+    profileImage: 'https://randomuser.me/api/portraits/men/1.jpg', // Example profile image
     leaveDetails: {
       assignedLeaves: 20,
       usedLeaves: 5,
@@ -266,166 +61,160 @@ employeeList = [
         {
           type: 'Annual',
           daysUsed: 5,
-          from: '2023-07-10',
-          to: '2023-07-15',
+          from: '2023-05-10',
+          to: '2023-05-15',
         }
       ]
     },
     attendance: {
-      year: 2024,
-      daysPresent: 185,
+      year: '2023',
+      daysPresent: 200,
       daysAbsent: 10,
-      lateArrivals: 4,
-      overtimeHours: 12,
-      lastPresent: '2024-09-26',
+      lateArrivals: 5,
+      overtimeHours: 15,
+      lastPresent: '2023-10-10',
+      day2DayAttendance: [
+        {
+          date: '2023-10-09',
+          clockIn: '9:00 AM',
+          clockOut: '5:00 PM',
+          comment: 'Meeting with clients'
+        },
+        {
+          date: '2023-10-08',
+          clockIn: '9:15 AM',
+          clockOut: '5:05 PM',
+          comment: 'Came in late'
+        }
+      ]
     }
   },
   {
-    id: 7,
-    firstName: 'Tunde',
-    lastName: 'Adeyemi',
-    age: 35,
-    gender: 'Male',
-    position: 'Project Manager',
-    level: 'Mid Level 1',
-    department: 'Project Management',
-    salary: 95000,
-    hireDate: '2018-02-15',
-    email: 'tunde.adeyemi@company.com',
-    phone: '+2348065432109',
-    location: 'Lagos, Nigeria',
-    profileImage: 'https://randomuser.me/api/portraits/men/7.jpg', // Sample image
+    id: 'tok56789def',
+    firstName: 'Aisha',
+    lastName: 'Abdullahi',
+    dob: '1992-07-20',
+    gender: 'Female',
+    email: 'aisha.abdullahi@example.com',
+    phone: '+2348076543210',
+    maritalStatus: 'Single',
+    religion: 'Islam',
+    address: '25, Sultan Bello Road, Abuja, Nigeria',
+    jobTitle: 'HR Manager',
+    department: 'Human Resources',
+    level: 'Junior Staff',
+    employmentType: 'Full-Time',
+    supervisor: 'Maryam Bello',
+    bankName: 'Access Bank',
+    accountNumber: '1098765432',
+    nin: '5678901234',
+    bvn: '98765432109',
+    nextOfKin: [
+      { name: 'Fatima Abdullahi', relationship: 'Sister', phone: '+2348076543211' }
+    ],
+    guarantor: [
+      { name: 'Suleiman Ahmed', relationship: 'Uncle', phone: '+2348076543212' }
+    ],
+    hireDate: '2023-02-05',
+    profileImage: 'https://randomuser.me/api/portraits/women/4.jpg', // Example profile image
     leaveDetails: {
-      assignedLeaves: 22,
+      assignedLeaves: 20,
       usedLeaves: 7,
-      leavesRemaining: 15,
+      leavesRemaining: 13,
       leavesSpent: [
         {
           type: 'Annual',
           daysUsed: 7,
-          from: '2023-05-01',
-          to: '2023-05-07',
+          from: '2023-06-01',
+          to: '2023-06-08',
         }
       ]
     },
     attendance: {
-      year: 2024,
-      daysPresent: 175,
-      daysAbsent: 15,
-      lateArrivals: 5,
-      overtimeHours: 20,
-      lastPresent: '2024-09-29',
-    }
-  },
-  {
-    id: 8,
-    firstName: 'Chinonso',
-    lastName: 'Obinna',
-    age: 26,
-    gender: 'Female',
-    position: 'Sales Associate',
-    level: 'Entry Level',
-    department: 'Sales',
-    salary: 40000,
-    hireDate: '2023-04-20',
-    email: 'chinonso.obinna@company.com',
-    phone: '+2349012345679',
-    location: 'Abuja, Nigeria',
-    profileImage: 'https://randomuser.me/api/portraits/women/8.jpg', // Sample image
-    leaveDetails: {
-      assignedLeaves: 18,
-      usedLeaves: 3,
-      leavesRemaining: 15,
-      leavesSpent: [
-        {
-          type: 'Annual',
-          daysUsed: 3,
-          from: '2023-06-10',
-          to: '2023-06-12',
-        }
-      ]
-    },
-    attendance: {
-      year: 2024,
-      daysPresent: 180,
-      daysAbsent: 10,
+      year: '2023',
+      daysPresent: 190,
+      daysAbsent: 20,
       lateArrivals: 3,
-      overtimeHours: 8,
-      lastPresent: '2024-09-30',
+      overtimeHours: 10,
+      lastPresent: '2023-10-09',
+      day2DayAttendance: [
+        {
+          date: '2023-10-09',
+          clockIn: '9:10 AM',
+          clockOut: '5:00 PM',
+          comment: 'Team meeting'
+        },
+        {
+          date: '2023-10-08',
+          clockIn: '9:00 AM',
+          clockOut: '5:00 PM',
+          comment: 'Reviewed employee reports'
+        }
+      ]
     }
   },
   {
-    id: 9,
-    firstName: 'Ibrahim',
-    lastName: 'Adebayo',
-    age: 31,
+    id: 'tok67890ghi',
+    firstName: 'Babatunde',
+    lastName: 'Balogun',
+    dob: '1985-12-30',
     gender: 'Male',
-    position: 'IT Support Specialist',
+    email: 'babatunde.balogun@example.com',
+    phone: '+2348032109876',
+    maritalStatus: 'Divorced',
+    religion: 'Christianity',
+    address: '15, Ajose Adeogun Street, Victoria Island, Lagos',
+    jobTitle: 'Accountant',
+    department: 'Finance',
     level: 'Mid Level 1',
-    department: 'IT',
-    salary: 60000,
-    hireDate: '2022-01-10',
-    email: 'ibrahim.adebayo@company.com',
-    phone: '+2347034567891',
-    location: 'Kaduna, Nigeria',
-    profileImage: 'https://randomuser.me/api/portraits/men/9.jpg', // Sample image
+    employmentType: 'Contract',
+    supervisor: 'Omotola Adebayo',
+    bankName: 'UBA',
+    accountNumber: '6543210987',
+    nin: '3456789012',
+    bvn: '23456789012',
+    nextOfKin: [
+      { name: 'Yewande Balogun', relationship: 'Ex-Wife', phone: '+2348032109877' }
+    ],
+    guarantor: [
+      { name: 'Adeyemi Johnson', relationship: 'Brother', phone: '+2348032109878' }
+    ],
+    hireDate: '2023-03-20',
+    profileImage: 'https://randomuser.me/api/portraits/men/5.jpg', // Example profile image
     leaveDetails: {
       assignedLeaves: 20,
-      usedLeaves: 4,
-      leavesRemaining: 16,
+      usedLeaves: 10,
+      leavesRemaining: 10,
       leavesSpent: [
         {
           type: 'Annual',
-          daysUsed: 4,
-          from: '2023-03-01',
-          to: '2023-03-05',
+          daysUsed: 10,
+          from: '2023-07-01',
+          to: '2023-07-10',
         }
       ]
     },
     attendance: {
-      year: 2024,
-      daysPresent: 185,
-      daysAbsent: 5,
+      year: '2023',
+      daysPresent: 180,
+      daysAbsent: 25,
       lateArrivals: 2,
-      overtimeHours: 10,
-      lastPresent: '2024-09-30',
-    }
-  },
-  {
-    id: 10,
-    firstName: 'Fatimah',
-    lastName: 'Alabi',
-    age: 27,
-    gender: 'Female',
-    position: 'Data Analyst',
-    level: 'Entry Level',
-    department: 'Data Science',
-    salary: 50000,
-    hireDate: '2023-08-01',
-    email: 'fatimah.alabi@company.com',
-    phone: '+2349012345680',
-    location: 'Oyo, Nigeria',
-    profileImage: 'https://randomuser.me/api/portraits/women/10.jpg', // Sample image
-    leaveDetails: {
-      assignedLeaves: 18,
-      usedLeaves: 2,
-      leavesRemaining: 16,
-      leavesSpent: [
+      overtimeHours: 25,
+      lastPresent: '2023-10-08',
+      day2DayAttendance: [
         {
-          type: 'Annual',
-          daysUsed: 2,
-          from: '2023-09-15',
-          to: '2023-09-16',
+          date: '2023-10-08',
+          clockIn: '8:45 AM',
+          clockOut: '5:00 PM',
+          comment: 'Monthly finance meeting'
+        },
+        {
+          date: '2023-10-07',
+          clockIn: '9:00 AM',
+          clockOut: '5:15 PM',
+          comment: 'Reviewed financial statements'
         }
       ]
-    },
-    attendance: {
-      year: 2024,
-      daysPresent: 190,
-      daysAbsent: 5,
-      lateArrivals: 1,
-      overtimeHours: 12,
-      lastPresent: '2024-09-30',
     }
   }
 ];
@@ -438,8 +227,6 @@ calendarOptions: CalendarOptions = {}
 handleDateClick(arg: DateClickArg) {
   alert('date click! ' + arg.dateStr)
 }
-
-
 
 
   constructor(

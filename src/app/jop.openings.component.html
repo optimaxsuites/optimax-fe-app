@@ -1,15 +1,6 @@
 <p-toast></p-toast>
 <div class="">
     <div class="form-container">
-      <!-- Left Video Advert -->
-      <div class="advert">
-        <iframe class="video-portrait" width="100%" height="auto"
-          src="https://www.youtube.com/embed/De_YujJ9rtE?autoplay=1&mute=1&controls=0&showinfo=0&modestbranding=1&rel=0&loop=1&playlist=De_YujJ9rtE"
-          frameborder="0"
-          allow="autoplay; encrypted-media"
-          allowfullscreen>
-        </iframe>
-      </div>
       <div class="job-application-form card p-4">
           <h2>Job Application Form</h2>
           
@@ -81,15 +72,21 @@
         
           <!-- Submit Button -->
           <app-button text="Submit Application" class="btn-save" (click)="submitApplication()"></app-button>
+
+
       </div>
-      <!-- Right Video Advert -->
-      <div class="advert">
-        <iframe class="video-portrait" width="100%" height="auto"
-          src="https://www.youtube.com/embed/22IrsEoKHZ8?autoplay=1&mute=1&controls=0&showinfo=0&modestbranding=1&rel=0&loop=1&playlist=22IrsEoKHZ8"
-          frameborder="0"
-          allow="autoplay; encrypted-media"
-          allowfullscreen>
-        </iframe>
-      </div> 
+      <div class="aside-container">
+    <!-- Display the current tip with fade-in animation -->
+    <div *ngIf="tips.length" class="tip-content fade-in">
+      <img [src]="tips[currentIndex].image" alt="Job Application Tip" class="tip-image">
+      <p class="tip-text">{{ tips[currentIndex].text }}</p>
+    </div>
+
+    <!-- Optional: Carousel navigation buttons -->
+    <div class="carousel-controls">
+      <!-- <button (click)="previousTip()">Previous</button> -->
+      <!-- <button (click)="nextTip()">Next</button> -->
+    </div>
+      </div>
     </div>
 </div>

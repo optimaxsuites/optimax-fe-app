@@ -22,8 +22,41 @@ export class JopOpeningsComponent {
     private randomToken: RandomTokenService,
   ){}
 
-  ngOnInit(): void {
+  tips = [
+    {
+      image: 'assets/svg/career.svg',
+      text: 'Tip 1: Tailor your resume to the job description. Highlight relevant skills and experience.'
+    },
+    {
+      image: 'assets/svg/job-interview-in-the-office.svg',
+      text: `Tip 2: Prepare for the interview by researching the company \n\ and practicing common interview questions.`
+    },
+    {
+      image: 'assets/svg/man-with-join-us-sign-for-open-recruitment.svg',
+      text: 'Tip 3: Follow up with a thank-you email after the interview to reiterate your interest.'
+    }
+  ];
 
+  currentIndex = 0;
+  carouselInterval: any;
+
+  ngOnInit(): void {
+    // Set up the timer to change the tip every 5 seconds
+    this.carouselInterval = setInterval(() => {
+      this.nextTip();
+    }, 5000);
+  }
+
+  nextTip(): void {
+    this.currentIndex = (this.currentIndex + 1) % this.tips.length;
+  }
+
+  previousTip(): void {
+    this.currentIndex = (this.currentIndex - 1 + this.tips.length) % this.tips.length;
+  }
+
+  ngOnDestroy(): void {
+    clearInterval(this.carouselInterval);
   }
 
 
