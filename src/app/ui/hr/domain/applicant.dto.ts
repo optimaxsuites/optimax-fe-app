@@ -11,12 +11,20 @@ export interface ApplicantDTO{
     coverLetter?: string;
     stage?: ApplicationStage;
     interviewStage?: number;
+
+    interviewSubject?: string
     interviewInvite?: string;
     interviewType?: string;
+    inviteAttachments?: AttachmentDTO[];
+
+
     offerSubject?: string;
     offerLetter?: string;
-    inviteAttachments?: AttachmentDTO[];
     offerAttachments?: AttachmentDTO[];
+
+
+    appointmentSubject?: string;
+    appointmentLetter?: string;
     appointmentAttachments?: AttachmentDTO[];
 }
 
@@ -35,7 +43,7 @@ export enum ApplicationStage {
     OfferSent = "Offer-Sent",
     OfferAccepted = "Offer-Accepted",
     OfferRejected = "Offer-Rejected",
-    EmployementLetterSent = 'Employement-Letter-Sent',
-    EmployementAccepted = 'Employement-Accepted',
-    EmployementRejected = 'Employement-Rejected'
+    AppointmentLetterSent = 'Appointment-Letter-Sent',
+    AppointmentAccepted = 'Appointment-Accepted',
+    AppointmentRejected = 'Appointment-Rejected'
 }

@@ -54,11 +54,9 @@
                     <!-- Display attachments -->
                     <div *ngIf="attachments?.length">
                         <h4><strong>Attachement(s)</strong></h4>
-                        <!-- <ul> -->
                             <span *ngFor="let attachment of attachments">
                                 <a [href]="attachment.url" target="_blank">{{ attachment.name }}</a><br>
                             </span>
-                        <!-- </ul> -->
                     </div>
                 </div>
             </div>
