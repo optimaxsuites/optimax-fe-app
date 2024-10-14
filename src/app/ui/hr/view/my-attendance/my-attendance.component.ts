@@ -1,6 +1,8 @@
-import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
-import { CalendarOptions } from '@fullcalendar/core'; // Correct import for CalendarOptions
+import { Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@angular/core';
+import { CalendarOptions } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid'; // Import the dayGrid plugin
+import { HttpClient } from '@angular/common/http'; // For API integration
+import { NotificationComponent } from './notification/notification.component'; // Import the Notification Component
 
 @Component({
   selector: 'app-my-attendance',
@@ -9,6 +11,13 @@ import dayGridPlugin from '@fullcalendar/daygrid'; // Import the dayGrid plugin
 })
 export class MyAttendanceComponent implements OnInit, OnChanges {
   @Input() clockedInTime: string | null = null;
+  @ViewChild(NotificationComponent) notification!: NotificationComponent;
+
+  // New property for notification message
+  notificationMessage: string = ''; // Default value for notification message
+
+  // New property for notification type
+  notificationType: string = 'info'; // Default value
 
   // Existing variables
   userInfoRegData: any[] = [];
@@ -20,12 +29,12 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
   currentTime: string;
   searchTerm: string = '';
   totalAttendance: number = 0;
-  attendanceData: any[] = []; // This will hold attendance data
+  attendanceData: any[] = []; // This will hold real attendance data
   attendanceStatus: { [key: string]: string } = {};
 
   days: string[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-  // Mock data for attendance records
+  // Mock data for candidates
   candidates = [
     { name: 'John Doe', days: 7, regularTime: 8, overtime: 21, attendanceDay: 'Monday' },
     { name: 'Jane Smith', days: 5, regularTime: 7, overtime: 15, attendanceDay: 'Monday' },
@@ -42,10 +51,10 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
   currentAttendanceData: any = {};
   employeeInView: any = null;
 
-  // Calendar options (new)
-  calendarOptions: CalendarOptions = {}; // Initialize calendar options
+  // Calendar options
+  calendarOptions: CalendarOptions = {};
 
-  constructor() {
+  constructor(private http: HttpClient) {
     // Initialize attendance status for each day of the week
     this.days.forEach(day => {
       this.attendanceStatus[day] = 'absent';
@@ -60,13 +69,8 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
     this.userInfoRegData = JSON.parse(sessionStorage['userPrimaryInfoRegData']);
     this.userRegData = this.userInfoRegData;
 
-    // Mock attendance data - Replace this with actual data
-    this.attendanceData = [
-      { date: '2024-10-01', status: 'Present' },
-      { date: '2024-10-03', status: 'Absent' },
-      { date: '2024-10-05', status: 'Leave' },
-      { date: '2024-10-07', status: 'Present' }
-    ];
+    // Fetch attendance data from sessionStorage or API
+    this.loadAttendanceData();
 
     // Calculate total days present
     this.totalAttendance = this.attendanceData.reduce((acc, day) => {
@@ -74,25 +78,7 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
     }, 0);
 
     // Map attendance data to calendar events
-    const events = this.attendanceData.map(record => {
-      return {
-        title: record.status,
-        start: record.date,
-        color: record.status === 'Present' ? 'green' : record.status === 'Absent' ? 'red' : 'orange'
-      };
-    });
-
-    // Configure calendar options
-    this.calendarOptions = {
-      initialView: 'dayGridMonth',
-      plugins: [dayGridPlugin], // Add the dayGrid plugin
-      events: events, // Dynamic events based on attendance
-      headerToolbar: {
-        left: 'prev,next today',
-        center: 'title',
-        right: 'dayGridMonth,timeGridWeek,timeGridDay'
-      }
-    };
+    this.updateCalendarEvents();
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -105,6 +91,45 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
     this.currentTime = new Date().toLocaleTimeString();
   }
 
+  // Function to load real attendance data from API or sessionStorage
+  loadAttendanceData() {
+    if (sessionStorage.getItem('attendanceData')) {
+      // Load from sessionStorage if available
+      this.attendanceData = JSON.parse(sessionStorage.getItem('attendanceData') || '[]');
+    } else {
+      // Optionally load attendance data from an API
+      this.http.get<any[]>('https://your-api-url/attendance')
+        .subscribe(data => {
+          this.attendanceData = data;
+          this.updateCalendarEvents(); // Update calendar with new data
+        }, error => {
+          console.error('Failed to load attendance data', error);
+        });
+    }
+  }
+
+  // Function to update calendar events based on attendance data
+  updateCalendarEvents() {
+    const events = this.attendanceData.map(record => {
+      return {
+        title: record.status,
+        start: record.date,
+        color: record.status === 'Present' ? 'green' : record.status === 'Absent' ? 'red' : 'orange'
+      };
+    });
+
+    this.calendarOptions = {
+      initialView: 'dayGridMonth',
+      plugins: [dayGridPlugin],
+      events: events, // Use the dynamically created events
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+      }
+    };
+  }
+
   // Function to update the display message based on clock-in time
   updateDisplayMessage(time: string | null) {
     if (time) {
@@ -115,10 +140,33 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
     }
   }
 
-  // Function to toggle Clock-In/Out and reset the note
+  // Toggle Clock-In/Out functionality
   toggleClockInOut() {
+    const alreadyClockedIn = this.isClockedIn; // Check current status
     this.isClockedIn = !this.isClockedIn;
     this.note = '';
+
+    if (alreadyClockedIn) {
+      this.notificationMessage = 'You have already clocked in/out today!'; // Set notification message
+      this.notification.display(this.notificationMessage); // Display notification
+    } else {
+      // Save the attendance data after clock-in/out
+      this.storeAttendanceData();
+      this.updateCalendarEvents(); // Update the calendar events with the new attendance data
+      this.notificationMessage = 'Successfully clocked in/out!'; // Set notification message
+      this.notification.display(this.notificationMessage); // Display notification
+    }
+  }
+
+  // Save attendance data to sessionStorage after clock-in/out
+  storeAttendanceData() {
+    const newRecord = {
+      date: new Date().toISOString().split('T')[0], // Capture today's date
+      status: this.isClockedIn ? 'Present' : 'Absent'  // Update based on clock-in status
+    };
+
+    this.attendanceData.push(newRecord);
+    sessionStorage.setItem('attendanceData', JSON.stringify(this.attendanceData));
   }
 
   // Filter candidates based on search term
@@ -146,7 +194,7 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
     this.viewAttendanceModal = true;
   }
 
-  // Retrieve attendance data for a specific day (mock data)
+  // Retrieve attendance data for a specific day (mock data for now)
   getAttendanceForDay(day: string) {
     return {
       type: 'Annual',

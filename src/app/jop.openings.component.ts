@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { JobDTO } from './ui/hr/domain/job.dto';
-import { ApplicantDTO } from './ui/hr/domain/applicant.dto';
+import { ApplicantDTO, ApplicationStage } from './ui/hr/domain/applicant.dto';
 import { MessageService } from 'primeng/api';
 import { RandomTokenService } from './ui/shared/service/random-token/random-token.service';
 
@@ -25,17 +25,18 @@ export class JopOpeningsComponent {
   tips = [
     {
       image: 'assets/svg/career.svg',
-      text: 'Tip 1: Tailor your resume to the job description. Highlight relevant skills and experience.'
+      text: 'Tip 1: Tailor your resume to the job description.\nHighlight relevant skills and experience.'
     },
     {
       image: 'assets/svg/job-interview-in-the-office.svg',
-      text: `Tip 2: Prepare for the interview by researching the company \n\ and practicing common interview questions.`
+      text: 'Tip 2: Prepare for the interview by researching the company.\nPractice common interview questions.'
     },
     {
       image: 'assets/svg/man-with-join-us-sign-for-open-recruitment.svg',
-      text: 'Tip 3: Follow up with a thank-you email after the interview to reiterate your interest.'
+      text: 'Tip 3: Follow up with a thank-you email after the interview.\nReiterate your interest.'
     }
   ];
+  
 
   currentIndex = 0;
   carouselInterval: any;
@@ -75,7 +76,7 @@ export class JopOpeningsComponent {
     // Add the current date and stage to the applicant object
     const applicationDate = new Date().toLocaleDateString(); // Format date as needed
     this.applicant.dateApplied = applicationDate;
-    this.applicant.stage = 'Application Received';
+    this.applicant.stage = ApplicationStage.ApplicationReceived;
     this.applicant.id = this.randomToken.getRandomToken();
 
     // Add the new applicant to the candidates array

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { ApplicantDTO } from '../../domain/applicant.dto';
+import { ApplicantDTO, ApplicationStage } from '../../domain/applicant.dto';
 
 @Component({
   selector: 'app-candidate',
@@ -42,7 +42,7 @@ export class CandidateComponent implements OnInit {
     this.showInterviewInvite = false;
   }
 
-  downloadResume(resumeFile: string){
+  viewResume(resumeFile: string){
 
   }
 
@@ -93,13 +93,13 @@ export class CandidateComponent implements OnInit {
   //   { id: 5, candidate: 'Christopher Awe', position: 'CEO', email: 'christopher.Awe@gmail.com', contactNo: '+49800600600', dateApplied: '2023-06-02', stage: 'Application Received', resume: 'resume 5', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru' }
   // ];
 
-  candidates: ApplicantDTO[] = [];
+  candidates: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
 
   positions: any[] =[]; // Extract unique positions
 
   // positions = [...new Set(this.candidates.map(c => c.position))]; // Extract unique positions
   selectedPositions: string[] = [];
-  filteredCandidates: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
+  filteredCandidates: ApplicantDTO[] = [];
 
   // Function to filter candidates by selected positions
   filterCandidatesByPosition() {
@@ -149,6 +149,7 @@ export class CandidateComponent implements OnInit {
       }
     });
   }
+
   deleteCandidate(candidate: any): void {
   // Retrieve the candidates from localStorage
   const storedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
@@ -171,51 +172,7 @@ export class CandidateComponent implements OnInit {
     });
   }
 
-
-  // sendInvite(inviteData: any): void {
-  //   // // 'inviteData' will contain the form data from the child component
-  //   // console.log('Received invite data:', inviteData);
-  
-  //   // if (this.activeItem) {
-  //   //   // Update the candidate's stage to "Shortlisted"
-  //   //   this.activeItem.stage = 'Shortlisted';
-  //   //   this.activeItem.interviewInvite = inviteData.processedTemplate;
-  //   //   this.activeItem.interviewType = inviteData.selectedInterviewType;
-  
-  //   //   // Retrieve candidates from localStorage
-  //   //   const storedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-  
-  //   //   // Find the candidate to update
-  //   //   const updatedCandidates = storedCandidates.map((candidate: any) => {
-  //   //     if (candidate.id === this.activeItem.id) {
-  //   //       return { ...candidate, stage: 'Shortlisted', interviewInvite: inviteData.processedTemplate, interviewType: inviteData.selectedInterviewType };  // Update the stage
-  //   //     }
-  //   //     return candidate;
-  //   //   });
-  
-  //   //   // Update localStorage with the modified candidates
-  //   //   localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
-
-  
-
-  //   // }
-
-  //   // Optionally, show a success message
-  //   this.messageService.add({
-  //     severity: 'success',
-  //     summary: 'Candidate Invited',
-  //     detail: `${this.activeItem.candidate} has been successfully invited for the interview.`
-  //   });
-  
-  //   // Close the interview invite view
-  //   this.closeInterviewInvite();
-  // }
-
-
-
-    // Function to handle sending interview invite
-  
-  
+  // Function to handle sending interview invite  
   sendInvite(interviewDetails: ApplicantDTO) {
     // Update the candidate's stage to "Scheduled"
     const interviewCandidate: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
@@ -228,10 +185,11 @@ export class CandidateComponent implements OnInit {
       const currentStage = this.activeItem.interviewStage || 0; // Default to 0 if undefined
       const updatedCandidate: ApplicantDTO = {
         ...interviewCandidate[index],
-        stage: 'Scheduled',
+        stage: ApplicationStage.Scheduled,
         interviewStage: currentStage + 1,  // Increment the interview stage
         interviewInvite: interviewDetails.interviewInvite,
         interviewType: interviewDetails.interviewType,
+        inviteAttachments: interviewDetails.inviteAttachments,
       };
 
       // Remove the candidate from the candidates array
