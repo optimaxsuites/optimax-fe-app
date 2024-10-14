@@ -1,5 +1,5 @@
 import { Component, OnInit , Input } from '@angular/core';
-import { AbstractControl, FormBuilder, FormControl, FormGroup, ValidatorFn, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl,  FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { AuthenticationService } from 'src/app/ui/auth/service/authentication.service';
@@ -53,6 +53,7 @@ interface Employee {
 })
 export class AddEmployeeFormComponent {
   @Input() close: () => void = () => {};
+  @Input() admin: boolean = true
 
   basicForm!: FormGroup;      
   employeeForm!: FormGroup;
@@ -157,13 +158,18 @@ export class AddEmployeeFormComponent {
   ];
   nextOfKinList: any[] = []
   guarantorList: any[] = []
-  
+  formErrors: string[] = [];
+  userInfoRegData: any[] = [];
+  userRegData: any = { };
   constructor(private fb: FormBuilder,  private authenticationService: AuthenticationService,
     private messageService: MessageService,
     private router: Router, private token: RandomTokenService, private sanitizer: DomSanitizer) {  
 }
 
   ngOnInit(): void {
+    
+    this.userInfoRegData = JSON.parse(sessionStorage["userRegData"]);
+    this.userRegData = this.userInfoRegData;
     const salaryStructure = localStorage.getItem("salaryStructure");
     if (salaryStructure) {
       this.salaryStructure = JSON.parse(salaryStructure);
@@ -172,7 +178,7 @@ export class AddEmployeeFormComponent {
     this.basicForm = this.fb.group({
       firstName: ['',Validators.required ],
       lastName: ['',Validators.required ],
-      email: ['', [Validators.required, Validators.email]],
+      email: [!this.admin ? this.userRegData.email : "", [Validators.required, Validators.email]],
       phone: ['', [Validators.required]],
       gender: ['', [Validators.required]],
       DOB: ['', [Validators.required]],
@@ -217,7 +223,7 @@ export class AddEmployeeFormComponent {
       yearsKnown: ['', [Validators.required, ]],
       signature: ['', [Validators.required, this.imageFileValidator()]],
       passportPhoto: ['', [Validators.required, this.imageFileValidator()]],
-      idCard: ['', [Validators.required, this.imageFileValidator()]],
+      idCard: ['', [ this.imageFileValidator()]],
     });
 
     this.registerInfo = this.fb.group( {
@@ -227,34 +233,60 @@ export class AddEmployeeFormComponent {
     })
   }
  imageFileValidator(): ValidatorFn {
-    return (control: AbstractControl): { [key: string]: any } | null => {
-      const file = control.value;
-      
-      if (!file) {
-        return null; 
-      }
-  
-      if (typeof file === 'string') {
-        return null; 
-      }
-  
+  return (control: AbstractControl): { [key: string]: any } | null => {
+    const file = control.value;
+
+
+    if (!file) {
+      return null; 
+    }
+    if(file instanceof File){
       const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-  
-      if (file && file instanceof File && !allowedTypes.includes(file.type)) {
+      console.log(file)
+      if (!allowedTypes.includes(file.type )) {
         return { invalidFileType: true };
+      }else{
+       return null
       }
-  
-      return null;
-    };
+    }
+    else if(typeof(file) == "string"){
+      const allowedTypes = ['.png', '.jpeg', '.jpg'];
+      const fileExtension = file.slice(file.lastIndexOf('.')).toLowerCase();
+      console.log(file)
+    console.log(fileExtension)
+      if (!allowedTypes.includes(fileExtension )) {
+        return { invalidFileType: true };
+      }else{
+       return null
+      }
+    } 
+    else {return {invalidFileType: true}}
+  };
   }
   nextTab() {
-
+  
+  if(this.currentTab == 1){
+    this.basicForm.markAllAsTouched()
+    if(this.basicForm.invalid) return
+  }
+  if(this.currentTab == 2){
+    this.employeeForm.markAllAsTouched()
+    if(this.employeeForm.invalid) return
+  }
+  if(this.currentTab == 3){
+    this.NOKForm.markAllAsTouched()
+    if(this.NOKForm.invalid && this.nextOfKinList.length == 0) return
+  }
+  if(this.currentTab == 4){
+    this.guarantorForm.markAllAsTouched()
+    if(this.guarantorForm.invalid && this.guarantorList.length == 0) return
+  }
     if (this.currentTab < 5) {
       this.currentTab++;
     }
   }
   nextTabFromNok(){
-    if(this.NOKForm.valid) {
+    if(this.guarantorForm.valid) {
     this.addNextOfKin()
     }
     this.nextTab()
@@ -460,19 +492,20 @@ addNewEmployee(){
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length) {
       const file = input.files[0];
+     console.log(`${controlName} file:`, file);
       this.guarantorForm.patchValue({ [controlName]: file }); 
+      this.guarantorForm.get(controlName)?.updateValueAndValidity();
+
+console.log(this.guarantorForm.value)
     }
   }
   onProfilePhotoChange(event: Event, controlName: string) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length) {
-    this.previewImageFile(input.files[0])
-
+      this.previewImageFile(input.files[0])
       const file = input.files;
-      console.log(file[0])
       this.basicForm.patchValue({ [controlName]: file }); 
-      
-   
+      this.basicForm.get('profilePhoto')?.updateValueAndValidity();
     }
 
   }
@@ -530,43 +563,46 @@ addNewEmployee(){
   }
   }
 
-  getFormValidationErrors() {
-    const errors: any[] = [];
+  // getFormValidationErrors() {
+  //   const errors: any[] = [];
     
-    Object.keys(this.basicForm.controls).forEach(key => {
-      const controlErrors = this.basicForm.get(key)?.errors;
-      if (controlErrors) {
-        Object.keys(controlErrors).forEach(errorKey => {
-          errors.push(this.getErrorMessage(key, errorKey));
-        });
-      }
-    });
+  //   Object.keys(this.basicForm.controls).forEach(key => {
+  //     const controlErrors = this.basicForm.get(key)?.errors;
+  //     if (controlErrors) {
+  //       Object.keys(controlErrors).forEach(errorKey => {
+  //         errors.push(this.getErrorMessage(control, key));
+  //       });
+  //     }
+  //   });
   
-    return errors;
-  }
+  //   return errors;
+  // }
+
+  getErrorMessage(control: AbstractControl | null, controlName: string): string {
+    // const control = this.basicForm.get(controlName);
+    if (control?.hasError('required')) {
+      return `${this.toTitleCaseWithSpace(controlName)} is required.`;
+    }
   
-  // Define error messages for different form controls
-  getErrorMessage(controlName: string, errorKey: string): string {
-    const controlLabelMap: { [key: string]: string } = {
-      firstName: 'First Name',
-      lastName: 'Last Name',
-      email: 'Email',
-      profilePhoto: 'Profile Photo',
-      phone: 'Phone',
-      address: 'Home Address',
-      DOB: 'Date of Birth',
-      gender: 'Gender',
-      maritalStatus: 'Marital Status',
-      religion: 'Religion'
-    };
+    if (control?.hasError('email')) {
+      return 'Enter a valid email address.';
+    }
   
-    const messages: { [key: string]: string } = {
-      required: `${controlLabelMap[controlName]} is required.`,
-      email: `Please enter a valid ${controlLabelMap[controlName]}.`,
-      invalidFileType: `${controlLabelMap[controlName]} must be an image file (PNG, JPEG).`
-    };
+    if (control?.hasError('minlength')) {
+      const requiredLength = control.getError('minlength').requiredLength;
+      return `${this.toTitleCaseWithSpace(controlName)} must be at least ${requiredLength} characters long.`;
+    }
   
-    return messages[errorKey] || `Invalid ${controlLabelMap[controlName]}.`;
+    if (control?.hasError('maxlength')) {
+      const maxLength = control.getError('maxlength').requiredLength;
+      return `${this.toTitleCaseWithSpace(controlName)} cannot be more than ${maxLength} characters long.`;
+    }
+  
+    if (control?.hasError('invalidFileType')) {
+      return `${this.toTitleCaseWithSpace(controlName)} must be a valid image file (PNG, JPG, JPEG).`;
+    }
+  
+    return '';
   }
   
 }

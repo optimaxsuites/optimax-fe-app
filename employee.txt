@@ -20,16 +20,13 @@ EmployeeDTO = {
     bvn?: string;
     status: string;
     createAccount: boolean
-    nextOfKin: {
-      fullName: string;
-      email: string;
-      phone: string;
-      address: string;
-      relationship: string;
-      DOB: string;
-      emergencyContact?: boolean;
-    }[];
-    guarantor: {
+    nextOfKin: NextOfKinDTO
+    guarantor: GuarantorDTO
+    hireDate: string;
+    profileImage: string;
+  }
+
+GuarantorDTO: {
       fullName: string;
       email: string;
       phone: string;
@@ -41,32 +38,14 @@ EmployeeDTO = {
       signature: string;
       passportPhoto: string;
       idCard: string;
-    }[];
-    hireDate: string;
-    profileImage: string;
-    leaveDetails: {
-      assignedLeaves: number;
-      usedLeaves: number;
-      leavesRemaining: number;
-      leavesSpent: {
-        type: string;
-        daysUsed: number;
-        from: string;
-        to: string;
-      }[];
-    };
-    attendance: {
-      year: string;
-      daysPresent: number;
-      daysAbsent: number;
-      lateArrivals: number;
-      overtimeHours: number;
-      lastPresent: string;
-      day2DayAttendance: {
-        date: string;
-        clockIn: string;
-        clockOut: string;
-        comment: string;
-      }[];
-    };
-  }
+    }
+
+NextOfKinDTO: [
+      fullName: string;
+      email: string;
+      phone: string;
+      address: string;
+      relationship: string;
+      DOB: string;
+      emergencyContact?: boolean;
+    ];
