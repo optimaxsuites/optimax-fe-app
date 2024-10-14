@@ -255,6 +255,6 @@
   </app-large-side-modal>
 
   <app-large-side-modal *ngIf="openAddForm" (close)="openAddForm = false">
-    <app-add-employee-form [close]="closeAddForm.bind(this)"></app-add-employee-form>
+    <app-add-employee-form [close]="closeAddForm.bind(this)" [admin]="true"></app-add-employee-form>
   </app-large-side-modal>
   

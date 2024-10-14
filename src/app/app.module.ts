@@ -215,13 +215,17 @@ import { SalaryComponent } from './ui/settings/view/hr/salary/salary.component';
 import { LargeSideModalComponent } from './ui/shared/view/large-side-modal/large-side-modal.component';
 import { InterviewScoreSheetComponent } from './ui/hr/view/interview/interview-score-sheet/interview-score-sheet.component';
 import { RecruitmentListComponent } from './ui/hr/view/recuitment/recruitment-list/recruitment-list.component';
-import { EmployeesComponent } from './ui/hr/view/employees/employees.component';
-import { EmployeeManagementComponent } from './ui/hr/view/employee-management/employee-management.component';
+
 import { FullCalendarModule } from '@fullcalendar/angular';
-import { AddEmployeeFormComponent } from './ui/hr/view/add-employee-form/add-employee-form.component';
+import { AddEmployeeFormComponent } from './ui/hr/view/employee/add-employee-form/add-employee-form.component';
 import { JopOpeningsComponent } from './jop.openings.component';
 import { OfferLetterComponent } from './ui/hr/view/interview/scheduled-interview/offer-letter/offer-letter.component';
 import { AppointmentLetterComponent } from './ui/hr/view/interview/scheduled-interview/appointment-letter/appointment-letter.component';
+import { EmployeesComponent } from './ui/hr/view/employee/employees/employees.component';
+import { EmployeeManagementComponent } from './ui/hr/view/employee/employee-management/employee-management.component';
+import { EmployeeOnboardingFormComponent } from './ui/hr/view/employee/employee-onboarding-form/employee-onboarding-form.component';
+import { NotificationComponent } from './ui/hr/view/my-attendance/notification/notification.component';
+import { TimeSheetComponent } from './ui/hr/view/attendance/time-sheet/time-sheet.component';
 
 
 @NgModule({
@@ -380,9 +384,9 @@ import { AppointmentLetterComponent } from './ui/hr/view/interview/scheduled-int
     JopOpeningsComponent,
     OfferLetterComponent,
     AppointmentLetterComponent,
+    NotificationComponent,
   ],
   imports: [
-    CommonModule,
       BrowserModule,
       AppRoutingModule,
       MatTabGroup,

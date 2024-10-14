@@ -65,8 +65,9 @@ import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.
 import { InterviewComponent } from './ui/hr/view/interview/interview.component';
 import { GeneralSettingsComponent } from './ui/settings/view/general/general-settings/general-settings.component';
 import { HrSettingsComponent } from './ui/settings/view/hr/hr-settings/hr-settings.component';
-import { EmployeeManagementComponent } from './ui/hr/view/employee-management/employee-management.component';
 import { JopOpeningsComponent } from './jop.openings.component';
+import { EmployeeManagementComponent } from './ui/hr/view/employee/employee-management/employee-management.component';
+import { EmployeeOnboardingFormComponent } from './ui/hr/view/employee/employee-onboarding-form/employee-onboarding-form.component';
 
 const routes: Routes = [
   {
@@ -152,6 +153,10 @@ const routes: Routes = [
       {
         path: 'user/checkout/closeRegister/:uuid',
         component: CloseRegisterComponent,
+      },
+      {
+        path: 'user/onboarding/:id/:uuid',
+        component: EmployeeOnboardingFormComponent,
       },
     ],
   },
