@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { ApplicantDTO } from '../../../domain/applicant.dto';
+import { ApplicantDTO, ApplicationStage } from '../../../domain/applicant.dto';
 
 @Component({
   selector: 'app-scheduled-interview',
@@ -16,6 +16,7 @@ export class ScheduledInterviewComponent {
   showInterviewInvite: boolean = false;
   showScoreSheet: boolean = false;
   showOfferLetter: boolean = false;
+  viewModal: boolean = false;
 
   constructor(
     private confirmationService: ConfirmationService,
@@ -66,6 +67,16 @@ export class ScheduledInterviewComponent {
     console.log(this.filteredCandidates);
   }
 
+  openViewModal(candidate: any, op: any) {
+    this.activeItem = candidate
+    // this.tableSection =!this.tableSection
+    this.viewModal = !this.viewModal;
+    op.hide();
+  }
+  closeViewModal() {
+    this.viewModal = false;
+  }
+
   openInterviewInvite(interview: any){
     this.activeItem = interview
     // console.log(interview)
@@ -108,9 +119,10 @@ export class ScheduledInterviewComponent {
     if (index !== -1 && this.activeItem) {
       const updatedOfferLetterSent: ApplicantDTO = {
         ...offerLetterSent[index],
-        stage: 'Offer-Sent',
+        stage:  ApplicationStage.OfferSent,
         offerSubject: offerDetails.offerSubject,
         offerLetter: offerDetails.offerLetter,
+        offerAttachments: offerDetails.offerAttachments
       };
 
       // Update the existing candidate at the found index
@@ -138,6 +150,10 @@ export class ScheduledInterviewComponent {
     this.close();
   }
 
+  viewResume(resumeFile: string){
+
+  }
+
   sendInvite(interviewDetails: { interviewType: string; interviewInvite: string }) {
     // Update the candidate's stage to "Scheduled"
     // const candidates: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
@@ -150,7 +166,7 @@ export class ScheduledInterviewComponent {
       const currentStage = this.activeItem.interviewStage || 0; // Default to 0 if undefined
       const updatedCandidate: ApplicantDTO = {
         ...scheduledCandidates[index],
-        stage: 'Scheduled',
+        stage: ApplicationStage.Scheduled,
         interviewStage: currentStage + 1,  // Increment the interview stage
         interviewInvite: interviewDetails.interviewInvite,
         interviewType: interviewDetails.interviewType,

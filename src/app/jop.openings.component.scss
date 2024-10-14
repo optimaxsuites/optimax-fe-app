@@ -7,7 +7,7 @@
   flex: 1;
   max-height: 100vh;
   overflow-y: auto;
-  margin-right: 20px;
+
 
   /* Hide scrollbar for WebKit browsers */
   -webkit-overflow-scrolling: touch;
@@ -17,6 +17,20 @@
 /* Hide scrollbar for WebKit browsers (Chrome, Safari) */
 .job-application-form::-webkit-scrollbar {
   display: none;
+}
+
+.job-application-wrapper{
+  display: flex;
+  justify-content: center;
+}
+
+.job-application-container{
+  width: 60%;
+  height: 100vh;
+  margin: 2rem 0 !important;
+}
+.card{
+  border: none !important;
 }
 
 .aside-container {
@@ -77,7 +91,4 @@
 
 .carousel-controls button:hover {
   background-color: #0056b3;
-}
-.card{
-  border: none !important;
 }

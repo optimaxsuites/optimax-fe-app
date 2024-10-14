@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { ApplicantDTO } from '../../domain/applicant.dto';
+import { ApplicantDTO, ApplicationStage } from '../../domain/applicant.dto';
 
 @Component({
   selector: 'app-candidate',
@@ -42,7 +42,7 @@ export class CandidateComponent implements OnInit {
     this.showInterviewInvite = false;
   }
 
-  downloadResume(resumeFile: string){
+  viewResume(resumeFile: string){
 
   }
 
@@ -93,13 +93,13 @@ export class CandidateComponent implements OnInit {
   //   { id: 5, candidate: 'Christopher Awe', position: 'CEO', email: 'christopher.Awe@gmail.com', contactNo: '+49800600600', dateApplied: '2023-06-02', stage: 'Application Received', resume: 'resume 5', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru' }
   // ];
 
-  candidates: ApplicantDTO[] = [];
+  candidates: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
 
   positions: any[] =[]; // Extract unique positions
 
   // positions = [...new Set(this.candidates.map(c => c.position))]; // Extract unique positions
   selectedPositions: string[] = [];
-  filteredCandidates: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
+  filteredCandidates: ApplicantDTO[] = [];
 
   // Function to filter candidates by selected positions
   filterCandidatesByPosition() {
@@ -149,6 +149,7 @@ export class CandidateComponent implements OnInit {
       }
     });
   }
+
   deleteCandidate(candidate: any): void {
   // Retrieve the candidates from localStorage
   const storedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
@@ -213,9 +214,7 @@ export class CandidateComponent implements OnInit {
 
 
 
-    // Function to handle sending interview invite
-  
-  
+  // Function to handle sending interview invite  
   sendInvite(interviewDetails: ApplicantDTO) {
     // Update the candidate's stage to "Scheduled"
     const interviewCandidate: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
@@ -228,10 +227,11 @@ export class CandidateComponent implements OnInit {
       const currentStage = this.activeItem.interviewStage || 0; // Default to 0 if undefined
       const updatedCandidate: ApplicantDTO = {
         ...interviewCandidate[index],
-        stage: 'Scheduled',
+        stage: ApplicationStage.Scheduled,
         interviewStage: currentStage + 1,  // Increment the interview stage
         interviewInvite: interviewDetails.interviewInvite,
         interviewType: interviewDetails.interviewType,
+        inviteAttachments: interviewDetails.inviteAttachments,
       };
 
       // Remove the candidate from the candidates array
