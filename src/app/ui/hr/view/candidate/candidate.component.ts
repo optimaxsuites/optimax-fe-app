@@ -172,48 +172,6 @@ export class CandidateComponent implements OnInit {
     });
   }
 
-
-  // sendInvite(inviteData: any): void {
-  //   // // 'inviteData' will contain the form data from the child component
-  //   // console.log('Received invite data:', inviteData);
-  
-  //   // if (this.activeItem) {
-  //   //   // Update the candidate's stage to "Shortlisted"
-  //   //   this.activeItem.stage = 'Shortlisted';
-  //   //   this.activeItem.interviewInvite = inviteData.processedTemplate;
-  //   //   this.activeItem.interviewType = inviteData.selectedInterviewType;
-  
-  //   //   // Retrieve candidates from localStorage
-  //   //   const storedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-  
-  //   //   // Find the candidate to update
-  //   //   const updatedCandidates = storedCandidates.map((candidate: any) => {
-  //   //     if (candidate.id === this.activeItem.id) {
-  //   //       return { ...candidate, stage: 'Shortlisted', interviewInvite: inviteData.processedTemplate, interviewType: inviteData.selectedInterviewType };  // Update the stage
-  //   //     }
-  //   //     return candidate;
-  //   //   });
-  
-  //   //   // Update localStorage with the modified candidates
-  //   //   localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
-
-  
-
-  //   // }
-
-  //   // Optionally, show a success message
-  //   this.messageService.add({
-  //     severity: 'success',
-  //     summary: 'Candidate Invited',
-  //     detail: `${this.activeItem.candidate} has been successfully invited for the interview.`
-  //   });
-  
-  //   // Close the interview invite view
-  //   this.closeInterviewInvite();
-  // }
-
-
-
   // Function to handle sending interview invite  
   sendInvite(interviewDetails: ApplicantDTO) {
     // Update the candidate's stage to "Scheduled"
