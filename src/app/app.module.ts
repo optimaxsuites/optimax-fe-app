@@ -226,6 +226,7 @@ import { EmployeeManagementComponent } from './ui/hr/view/employee/employee-mana
 import { NotificationComponent } from './ui/hr/view/my-attendance/notification/notification.component';
 import { TimeSheetComponent } from './ui/hr/view/attendance/time-sheet/time-sheet.component';
 import { EmployeeOnboardingFormComponent } from './ui/hr/view/employee/employee-onboarding-form/employee-onboarding-form.component';
+import { ScoresheetConfigComponent } from './ui/settings/view/hr/scoresheet-config/scoresheet-config.component';
 
 
 @NgModule({
@@ -386,7 +387,8 @@ import { EmployeeOnboardingFormComponent } from './ui/hr/view/employee/employee-
     AppointmentLetterComponent,
     NotificationComponent,
     TimeSheetComponent,
-    EmployeeOnboardingFormComponent
+    EmployeeOnboardingFormComponent,
+    ScoresheetConfigComponent
     
   ],
   imports: [

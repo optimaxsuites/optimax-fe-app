@@ -47,53 +47,54 @@ export class AppointmentLetterComponent {
 
 
   templates: string[] = [
-    `Dear [Candidate Name],
-    
-    We are delighted to offer you the position of [Job Title] at [Company Name]. After careful consideration, we believe that your skills and experience align perfectly with our team, and we are excited to have you join us.
-
-    Instructions
-    Use the link below to complete your paperwork and get setup.
-    Use your firstname and lastname as credentials to login and get started on the paperwork. Opon completeion of your paperwork you are strongly advised to change you login credentials.
-    
-    Please find attached your formal appointment letter, which outlines the details of your role and other relevant information. We look forward to a positive response from you.
-    
-    Warm regards,
-    [Your Name]
-    [Your Job Title]
-    [Company Name]
-    [Contact Information]`,
+    `<p>Dear <b>[Candidate Name]</b>,</p>
+    <p>We are pleased to inform you that you have been shortlisted for an interview for the position of <b>[Job Title]</b> at <b>[Company Name]</b>.</p>
+    <p><b>Interview Details:</b><br />
+    Date: <b>[Interview Date]</b><br />
+    Time: <b>[Interview Time]</b><br />
+    Location: <b>[Interview Location] / [Online Meeting Link]</b><br />
+    Interview Type: <b>[In-person/Virtual]</b></p>
+    <p>Please let us know if the scheduled time works for you or if you need to reschedule.</p>
+    <p>If the interview is virtual, kindly ensure you have a stable internet connection and the necessary software installed. Attached are instructions for joining the online meeting.</p>
+    <p>We look forward to speaking with you and learning more about your qualifications.</p>
+    <p>Best regards,<br />
+    [Your Name]<br />
+    [Your Job Title]<br />
+    [Company Name]<br />
+    [Contact Information]</p>`,
   
-    `Dear [Candidate Name],
-    
-    Congratulations! We are pleased to extend an offer for the [Job Title] role at [Company Name]. We were impressed with your background and are confident you will make valuable contributions to our team.
-    
-    Instructions
-    Use the link below to complete your paperwork and get setup.
-    Use your firstname and lastname as credentials to login and get started on the paperwork. Opon completeion of your paperwork you are strongly advised to change you login credentials.
-
-    Enclosed is your official appointment letter as an attachment. We look forward to welcoming you to the team!
-    
-    Best regards,
-    [Your Name]
-    [Your Job Title]
-    [Company Name]
-    [Contact Information]`,
+    `<p>Dear <b>[Candidate Name]</b>,</p>
+    <p>We are excited to invite you to an interview for the position of <b>[Job Title]</b> at <b>[Company Name]</b>. Your application has impressed us, and we are eager to learn more about you.</p>
+    <p><b>Interview Details:</b><br />
+    Date: <b>[Interview Date]</b><br />
+    Time: <b>[Interview Time]</b><br />
+    Location: <b>[Interview Location] / [Online Meeting Link]</b><br />
+    Interview Format: <b>[In-person/Virtual]</b><br />
+    Duration: <b>[Estimated Interview Duration]</b></p>
+    <p>Please confirm your availability for this date and time. If you are unable to attend, let us know as soon as possible, and we will do our best to accommodate a rescheduled interview.</p>
+    <p>If this is a virtual interview, please ensure your setup includes a quiet environment and a reliable internet connection. Further instructions will be provided in a follow-up email.</p>
+    <p>We look forward to speaking with you soon!</p>
+    <p>Best regards,<br />
+    [Your Name]<br />
+    [Your Job Title]<br />
+    [Company Name]<br />
+    [Contact Information]</p>`,
   
-    `Hi [Candidate Name],
-    
-    We’re thrilled to offer you the position of [Job Title] at [Company Name]! We can’t wait to see how your skills and energy will bring a new dynamic to our team.
-    
-    Instructions
-    Use the link below to complete your paperwork and get setup.
-    Use your firstname and lastname as credentials to login and get started on the paperwork. Opon completeion of your paperwork you are strongly advised to change you login credentials.
-
-    Find the attached file the official appointment letter. Welcome to the team!
-    
-    Cheers,
-    [Your Name]
-    [Your Job Title]
-    [Company Name]
-    [Contact Information]`
+    `<p>Hi <b>[Candidate Name]</b>,</p>
+    <p>Great news! We’d love to get to know you better and chat about the <b>[Job Title]</b> role at <b>[Company Name]</b>. Your application stood out, and we think you could be a great fit for the team.</p>
+    <p><b>Here are the interview details:</b><br />
+    Date: <b>[Interview Date]</b><br />
+    Time: <b>[Interview Time]</b><br />
+    Location: <b>[Interview Location] / [Online Meeting Link]</b><br />
+    Interview Style: <b>[In-person/Virtual]</b></p>
+    <p>We’re excited to hear more about your experience and what you’d bring to the team. If the time doesn’t work for you, no worries! Just let us know, and we’ll find another time that suits you.</p>
+    <p>For virtual interviews, make sure you’re in a quiet space with a good internet connection. We’ll send any necessary links and instructions ahead of time.</p>
+    <p>Looking forward to our chat!</p>
+    <p>Best,<br />
+    [Your Name]<br />
+    [Your Job Title]<br />
+    [Company Name]<br />
+    [Contact Information]</p>`
   ];
   
   
@@ -103,7 +104,7 @@ export class AppointmentLetterComponent {
   // Function to replace placeholders with actual data
   replacePlaceholders(template: string, candidate: any): string {
     return template
-      .replace(/\[Candidate Name\]/g, candidate.candidate)
+      .replace(/\[Candidate Name\]/g, `${candidate.firstName} ${candidate.lastName}`)
       .replace(/\[Job Title\]/g, candidate.position)
       .replace(/\[Company Name\]/g, 'Centrifuge Info Tech'); // You can dynamically set company name if needed
   }
@@ -123,9 +124,9 @@ export class AppointmentLetterComponent {
 
   getTemplateName(index: number): string {
     const templateNames = [
-      'Formal Offer Letter',
-      'Congratulatory Offer Letter',
-      'Casual Offer Letter'
+      'Formal Appointment Letter',
+      'Congratulatory Appointment Letter',
+      'Casual Appointment Letter'
     ];
     return templateNames[index];
   }

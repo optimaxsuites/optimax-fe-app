@@ -47,57 +47,54 @@ export class OfferLetterComponent {
 
 
   templates: string[] = [
-    `Dear [Candidate Name],
+    `<p>Dear <b>[Candidate Name]</b>,</p>
+    <p>We are pleased to inform you that you have been shortlisted for an interview for the position of <b>[Job Title]</b> at <b>[Company Name]</b>.</p>
+    <p><b>Interview Details:</b><br />
+    Date: <b>[Interview Date]</b><br />
+    Time: <b>[Interview Time]</b><br />
+    Location: <b>[Interview Location] / [Online Meeting Link]</b><br />
+    Interview Type: <b>[In-person/Virtual]</b></p>
+    <p>Please let us know if the scheduled time works for you or if you need to reschedule.</p>
+    <p>If the interview is virtual, kindly ensure you have a stable internet connection and the necessary software installed. Attached are instructions for joining the online meeting.</p>
+    <p>We look forward to speaking with you and learning more about your qualifications.</p>
+    <p>Best regards,<br />
+    [Your Name]<br />
+    [Your Job Title]<br />
+    [Company Name]<br />
+    [Contact Information]</p>`,
   
-  We are delighted to offer you the position of [Job Title] at [Company Name]. After careful consideration, we believe that your skills and experience align perfectly with our team, and we are excited to have you join us.
+    `<p>Dear <b>[Candidate Name]</b>,</p>
+    <p>We are excited to invite you to an interview for the position of <b>[Job Title]</b> at <b>[Company Name]</b>. Your application has impressed us, and we are eager to learn more about you.</p>
+    <p><b>Interview Details:</b><br />
+    Date: <b>[Interview Date]</b><br />
+    Time: <b>[Interview Time]</b><br />
+    Location: <b>[Interview Location] / [Online Meeting Link]</b><br />
+    Interview Format: <b>[In-person/Virtual]</b><br />
+    Duration: <b>[Estimated Interview Duration]</b></p>
+    <p>Please confirm your availability for this date and time. If you are unable to attend, let us know as soon as possible, and we will do our best to accommodate a rescheduled interview.</p>
+    <p>If this is a virtual interview, please ensure your setup includes a quiet environment and a reliable internet connection. Further instructions will be provided in a follow-up email.</p>
+    <p>We look forward to speaking with you soon!</p>
+    <p>Best regards,<br />
+    [Your Name]<br />
+    [Your Job Title]<br />
+    [Company Name]<br />
+    [Contact Information]</p>`,
   
-  Position: [Job Title]
-  Start Date: [Start Date]
-  Salary: [Salary]
-  Benefits: [List of Benefits]
-  
-  Please review the details of this offer, and if you accept, we can proceed with the necessary documentation. We look forward to a positive response from you.
-  
-  Warm regards,
-  [Your Name]
-  [Your Job Title]
-  [Company Name]
-  [Contact Information]`,
-  
-    `Dear [Candidate Name],
-  
-  Congratulations! We are pleased to extend an offer for the [Job Title] role at [Company Name]. We were impressed with your background and are confident you will make valuable contributions to our team.
-  
-  Job Title: [Job Title]
-  Starting Salary: [Salary]
-  Start Date: [Start Date]
-  Benefits: [List of Benefits]
-  
-  Please confirm your acceptance of this offer by [Response Deadline]. We look forward to welcoming you to the team!
-  
-  Best regards,
-  [Your Name]
-  [Your Job Title]
-  [Company Name]
-  [Contact Information]`,
-  
-    `Hi [Candidate Name],
-  
-  We’re thrilled to offer you the position of [Job Title] at [Company Name]! We can’t wait to see how your skills and energy will bring a new dynamic to our team.
-  
-  Here are the details of the offer:
-  Position: [Job Title]
-  Salary: [Salary]
-  Start Date: [Start Date]
-  Perks: [List of Benefits]
-  
-  Let us know if you’re on board by [Response Deadline]. Once confirmed, we’ll send over the paperwork and get you all set up. Welcome to the team!
-  
-  Cheers,
-  [Your Name]
-  [Your Job Title]
-  [Company Name]
-  [Contact Information]`
+    `<p>Hi <b>[Candidate Name]</b>,</p>
+    <p>Great news! We’d love to get to know you better and chat about the <b>[Job Title]</b> role at <b>[Company Name]</b>. Your application stood out, and we think you could be a great fit for the team.</p>
+    <p><b>Here are the interview details:</b><br />
+    Date: <b>[Interview Date]</b><br />
+    Time: <b>[Interview Time]</b><br />
+    Location: <b>[Interview Location] / [Online Meeting Link]</b><br />
+    Interview Style: <b>[In-person/Virtual]</b></p>
+    <p>We’re excited to hear more about your experience and what you’d bring to the team. If the time doesn’t work for you, no worries! Just let us know, and we’ll find another time that suits you.</p>
+    <p>For virtual interviews, make sure you’re in a quiet space with a good internet connection. We’ll send any necessary links and instructions ahead of time.</p>
+    <p>Looking forward to our chat!</p>
+    <p>Best,<br />
+    [Your Name]<br />
+    [Your Job Title]<br />
+    [Company Name]<br />
+    [Contact Information]</p>`
   ];
   
 
@@ -106,7 +103,7 @@ export class OfferLetterComponent {
   // Function to replace placeholders with actual data
   replacePlaceholders(template: string, candidate: any): string {
     return template
-      .replace(/\[Candidate Name\]/g, candidate.candidate)
+      .replace(/\[Candidate Name\]/g, `${candidate.firstName} ${candidate.lastName}`)
       .replace(/\[Job Title\]/g, candidate.position)
       .replace(/\[Company Name\]/g, 'Centrifuge Info Tech'); // You can dynamically set company name if needed
   }

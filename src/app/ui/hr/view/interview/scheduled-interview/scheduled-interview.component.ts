@@ -124,7 +124,7 @@ export class ScheduledInterviewComponent {
 // ====================================================view modal
   openViewModal(candidate: any, op: any) {
     this.activeItem = candidate
-    this.showInterviewList = false;
+    this.showInterviewList = true;
     this.showInterviewInvite = false;
     this.viewModal = true;
     this.showScoreSheet = false;

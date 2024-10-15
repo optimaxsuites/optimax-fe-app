@@ -47,4 +47,14 @@
   .milestone.active + .milestone-container::before {
     background-color: var(--celadon-green);
   }
-  
+
+  .scorsheet-container {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .scoresheet-total{
+    display: flex;
+    justify-content: space-between;
+    padding: 0 .8rem;
+  }

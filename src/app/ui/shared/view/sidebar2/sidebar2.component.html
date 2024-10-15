@@ -39,7 +39,7 @@
             <a [routerLink]="subItem.route"
                routerLinkActive="active"
                [routerLinkActiveOptions]="{ exact: true }">
-              <i *ngIf="subItem.icon" class="pi pi-arrow-right"></i> 
+              <i *ngIf="subItem.icon" [class]="subItem.icon"></i> 
               {{ subItem.label }}
             </a>
           </li>
