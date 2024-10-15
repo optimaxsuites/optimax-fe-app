@@ -68,6 +68,7 @@ import { HrSettingsComponent } from './ui/settings/view/hr/hr-settings/hr-settin
 import { JopOpeningsComponent } from './jop.openings.component';
 import { EmployeeManagementComponent } from './ui/hr/view/employee/employee-management/employee-management.component';
 import { EmployeeOnboardingFormComponent } from './ui/hr/view/employee/employee-onboarding-form/employee-onboarding-form.component';
+import { EmployeePayrollComponent } from './ui/hr/view/payroll/employee-payroll/employee-payroll.component';
 
 const routes: Routes = [
   {
@@ -336,9 +337,10 @@ const routes: Routes = [
         path: 'admin/hr/employee-management/:uuid',
         component: EmployeeManagementComponent,
       },
-
-
-
+      {
+        path: 'admin/hr/payroll/:uuid',
+        component: EmployeePayrollComponent,
+      },
     ],
   },
 
