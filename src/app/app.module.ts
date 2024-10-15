@@ -223,9 +223,9 @@ import { OfferLetterComponent } from './ui/hr/view/interview/scheduled-interview
 import { AppointmentLetterComponent } from './ui/hr/view/interview/scheduled-interview/appointment-letter/appointment-letter.component';
 import { EmployeesComponent } from './ui/hr/view/employee/employees/employees.component';
 import { EmployeeManagementComponent } from './ui/hr/view/employee/employee-management/employee-management.component';
-import { EmployeeOnboardingFormComponent } from './ui/hr/view/employee/employee-onboarding-form/employee-onboarding-form.component';
 import { NotificationComponent } from './ui/hr/view/my-attendance/notification/notification.component';
 import { TimeSheetComponent } from './ui/hr/view/attendance/time-sheet/time-sheet.component';
+import { EmployeeOnboardingFormComponent } from './ui/hr/view/employee/employee-onboarding-form/employee-onboarding-form.component';
 
 
 @NgModule({
@@ -385,6 +385,9 @@ import { TimeSheetComponent } from './ui/hr/view/attendance/time-sheet/time-shee
     OfferLetterComponent,
     AppointmentLetterComponent,
     NotificationComponent,
+    TimeSheetComponent,
+    EmployeeOnboardingFormComponent
+    
   ],
   imports: [
       BrowserModule,

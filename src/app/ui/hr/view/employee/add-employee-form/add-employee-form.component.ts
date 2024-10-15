@@ -273,25 +273,19 @@ export class AddEmployeeFormComponent {
     this.employeeForm.markAllAsTouched()
     if(this.employeeForm.invalid) return
   }
-  if(this.currentTab == 3){
-    this.NOKForm.markAllAsTouched()
-    if(this.NOKForm.invalid && this.nextOfKinList.length == 0) return
-  }
-  if(this.currentTab == 4){
-    this.guarantorForm.markAllAsTouched()
-    if(this.guarantorForm.invalid && this.guarantorList.length == 0) return
-  }
     if (this.currentTab < 5) {
       this.currentTab++;
     }
   }
   nextTabFromNok(){
-    if(this.guarantorForm.valid) {
+    this.NOKForm.markAllAsTouched()
+    if(this.NOKForm.valid) {
     this.addNextOfKin()
     }
     this.nextTab()
   }
   nextTabFromGuarantor(){
+    this.guarantorForm.markAllAsTouched()
     if(this.guarantorForm.valid) {
     this.addGuarantor()
     }
