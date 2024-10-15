@@ -1,10 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { ApplicantDTO, AttachmentDTO } from '../../../domain/applicant.dto';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-interview-invite',
   templateUrl: './interview-invite.component.html',
-  styleUrl: './interview-invite.component.scss'
+  styleUrl: './interview-invite.component.scss',
+  providers: [MessageService]
 })
 export class InterviewInviteComponent {
   @Output() back = new EventEmitter<void>();
@@ -17,6 +19,10 @@ export class InterviewInviteComponent {
   selectedInterviewType?: string;
   attachments?: AttachmentDTO[] = [];
 
+  constructor(
+    private messageService: MessageService,
+  ){}
+
   ngOnInit(): void {
     //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
     //Add 'implements OnInit' to the class.
@@ -26,6 +32,15 @@ export class InterviewInviteComponent {
 
 
   handleSendInvite() {
+    const isValid = this.validateForm();
+    if (!isValid) {
+      this.messageService.add({
+        severity: 'error', 
+        summary: 'Validation Failed',
+        detail: 'Please fill out all fields before submitting the form.' 
+      });    
+      return; 
+    }
     const inviteDetails = {
       interviewType: this.selectedInterviewType,
       interviewInvite: this.processedTemplate,
@@ -37,6 +52,15 @@ export class InterviewInviteComponent {
     this.sendInterviewInvite.emit(inviteDetails);
   }
 
+  // Validation function
+  validateForm(): boolean {
+    const requiredFields = [
+      this.processedTemplate,
+      this.selectedInterviewType
+    ];
+
+    return requiredFields.every(field => field);
+  }
 
 
   // Method to trigger back button event
@@ -101,9 +125,9 @@ export class InterviewInviteComponent {
   // Function to replace placeholders with actual data
   replacePlaceholders(template: string, candidate: any): string {
     return template
-      .replace(/\[Candidate Name\]/g, candidate.candidate)
+      .replace(/\[Candidate Name\]/g, `${candidate.firstName} ${candidate.lastName}`)
       .replace(/\[Job Title\]/g, candidate.position)
-      .replace(/\[Company Name\]/g, 'Centrifuge Info Tech'); // You can dynamically set company name if needed
+      // .replace(/\[Company Name\]/g, 'Centrifuge Info Tech'); // You can dynamically set company name if needed
   }
 
   // Call this when initializing or changing template

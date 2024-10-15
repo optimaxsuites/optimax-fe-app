@@ -1,0 +1,103 @@
+<div class="flex gap-4 items-center">
+    <i class="fas fa-clipboard-list text-4xl text-customBlue"></i>
+    <div>
+        <p class="text-customBlue/60">Human Resources</p>
+        <p class="text-customBlue font-semibold text-[17px]">Score Sheet</p>
+    </div>
+</div>
+<hr>
+
+<div class="mb-4 mt-3 px-3 flex justify-between items-center ">
+    <p class=" text-2xl font-semibold text-customBlue"><span *ngIf="showAddForm">New</span> Questions</p>
+    <button class="bg-customBlue text-white font-bold p-3 rounded-xl"  (click)="toogleForm()">{{showAddForm ? "Cancel" : "Create New"}}</button>
+</div>
+
+<p-accordion [activeIndex]="0" *ngIf="showAddForm == false">
+    <p-accordionTab *ngFor="let question of questions; let i = index" [header]="question.title">
+      <ng-template pTemplate="header">
+        <div class="flex justify-between">
+          <p class="text-gray-600 font-bold text-[14px]">{{ question.title }}</p>
+          <div class="action-buttons">
+            <button (click)="editQuestion(question)" class="text-customGreen hover:bg-green-50 p-3 rounded-xl">
+              <i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2"></i>
+              Edit
+            </button>
+            <button (click)="confirmQuestionDelete(question)" class="text-red-500 hover:bg-red-50 p-3 rounded-xl">
+              <i class="fa-solid fa-trash text-2xl pr-2"></i>
+              Delete
+            </button>
+          </div>
+        </div>
+      </ng-template>
+  
+      <div class="text-gray-700 flex flex-col gap-2">
+        <!-- <p><strong>Base Salary:</strong> {{ salary.baseSalary | currency:'NGN' }}</p>
+        <p><strong>Allowances:</strong></p>
+        <ul>
+          <li *ngFor="let allowance of getAllowanceKeys(salary.allowances)">
+            {{ toTitleCaseWithSpace(allowance) | titlecase }}: 0
+          </li>
+        </ul>
+        <p><strong>Deductions:</strong></p>
+        <ul>
+          <li *ngFor="let deduction of getDeductionKeys(salary.deductions)">
+            {{ toTitleCaseWithSpace(deduction) | titlecase }}: 0 
+          </li>
+        </ul>
+        <p><strong>Bonuses:</strong></p>
+        <ul>
+          <li *ngFor="let bonus of getBonusKeys(salary.bonuses)">
+            {{ toTitleCaseWithSpace(bonus) | titlecase }}: 0
+          </li>
+        </ul>
+        <p><strong>Overtime:</strong> {{ salary.overtime.hourlyRate | currency:'NGN' }} per hour (Max {{ salary.overtime.maxOvertimeHours }} hours)</p>
+        <p><strong>Net Salary:</strong> {{ salary.netSalary() | currency:'NGN' }}</p> -->
+      </div>
+    </p-accordionTab>
+  </p-accordion>
+  
+
+
+<div *ngIf="showAddForm">
+    <div class="p-4 w-[80%] mx-auto shadow-md rounded-xl text-customBlue bg-white/70">
+        <div class="mb-4">
+            <label for="title" class="block text-[14px] font-medium capitalize">Title</label>
+            <input 
+                [(ngModel)]="questionData.title" 
+                id="title" 
+                class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" 
+                type="text" 
+                placeholder="Enter title" 
+            />
+        </div>
+
+
+        <div>
+            <form (ngSubmit)="addQuestion()" class="mb-4">
+                <label for="question" class="block text-[14px] font-medium">Question</label>
+                <input 
+                    [(ngModel)]="currentQuestion" 
+                    class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" 
+                    placeholder="Enter question"
+                    name="currentQuestion"
+                />
+                <button type="submit"  class="text-customGreen text-nowrap text-[12px] mt-2"> + Add Question</button>
+            </form>
+        </div>
+    
+        <div class="mb-4">
+            <label class="block text-[14px] font-medium">Questions List</label>
+            <ul>
+                <li *ngFor="let question of questionData.questions; let i = index">
+                    {{ question }}
+                    <button type="button" (click)="deleteQuestionArray(i)" class="text-red-500 text-[12px] mt-1 ml-2">Delete</button>
+                </li>
+            </ul>
+        </div>
+    
+        <div class="text-right">
+            <button type="submit" (click)="onSubmit()" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-700">Submit</button>
+        </div>
+    </div>
+    
+</div>

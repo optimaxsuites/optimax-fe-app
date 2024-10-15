@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { SalaryComponent } from '../salary/salary.component';
+import { ScoresheetConfigComponent } from '../scoresheet-config/scoresheet-config.component';
 
 @Component({
   selector: 'app-hr-settings',
@@ -11,8 +12,17 @@ export class HrSettingsComponent {
 
   sidebar: boolean = false
 
-  settings = [{name: "Salary", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt', component: SalaryComponent  }, {name: "Employee management", subSetting: ["Salary Structure", "Deductions and Overtime"],  icon: 'pi pi-receipt', component: null},
-  {name: "Attendance", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt',component: null }, {name: "Leave", subSetting: ["Salary Structure", "Deductions and Overtime"],  icon: 'pi pi-receipt', component: null},{name: "Recruitment", subSetting: ["Salary Structure", "Payslip", "Score Sheet"],  icon: 'pi pi-receipt',component: null }, {name: "Employee management", subSetting: ["Salary Structure", "Deductions and Overtime"],  icon: 'pi pi-receipt', component: null},{name: "Salary", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt', component: null}, {name: "Salary", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt', component: null} ]
+  settings = [
+    {name: "Salary", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt', component: SalaryComponent  }, 
+    {name: "Employee management", subSetting: ["Salary Structure", "Deductions and Overtime"],  icon: 'pi pi-receipt', component: null},
+    {name: "Attendance", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt',component: null }, 
+    {name: "Leave", subSetting: ["Salary Structure", "Deductions and Overtime"],  icon: 'pi pi-receipt', component: null},
+    {name: "Score Sheet", subSetting: ["The scoresheet configuration allows for the creation and customization of interview questions for structured candidate evaluation."],  icon: 'fas fa-clipboard-list',component: ScoresheetConfigComponent }, 
+    {name: "Employee management", subSetting: ["Salary Structure", "Deductions and Overtime"],  icon: 'pi pi-receipt', component: null},
+    {name: "Salary", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt', component: null}, 
+    {name: "Salary", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt', component: null},
+
+  ]
 
 selectedComp = null
 openSideBar = (setting: any) => {

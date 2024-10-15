@@ -9,7 +9,7 @@
             <div class="d-flex gap-4 my-2">
                 <div class="input-container-50">
                     <label for="name"><strong>Name:</strong> </label>
-                    <span>  {{candidate.candidate}}</span>
+                    <span>  {{candidate.firstName + ' ' + candidate.lastName}}</span>
                     <!-- <input type="text" id="name" name="name" [(ngModel)]="candidate.candidate" class="editInput" disabled> -->
                 </div>
                 <div class="input-container-50">
@@ -49,7 +49,7 @@
 
                 <div class="add-attachment mt-4">
                     <!-- File upload input -->
-                    <input type="file" (change)="onFileSelected($event)" />
+                    <input type="file" class="editInput" (change)="onFileSelected($event)" />
 
                     <!-- Display attachments -->
                     <div *ngIf="attachments?.length">
@@ -63,7 +63,8 @@
         </div>
         <div class="invite-template-wrapper">
             <label><strong>Offer Letter</strong></label>
-            <textarea name="invite" id="invite" class="invite editInput" [(ngModel)]="processedTemplate" (input)="onTemplateEdit(processedTemplate!)"></textarea>
+            <!-- <textarea name="invite" id="invite" class="invite editInput" [(ngModel)]="processedTemplate" (input)="onTemplateEdit(processedTemplate!)"></textarea> -->
+            <p-editor [(ngModel)]="processedTemplate" (input)="onTemplateEdit(processedTemplate!)" [style]="{ height: '400px' }" />
         </div>
         <div class="btn-wrapper">
             <app-button text="Send Invite" class="btn-save" (click)="handleSendOffer()" ></app-button>
