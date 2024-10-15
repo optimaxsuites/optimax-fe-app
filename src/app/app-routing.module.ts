@@ -103,6 +103,7 @@ const routes: Routes = [
         path: 'users/auth/verify',
         component: VerifyTokenComponent,
       },
+    
     ],
   },
 
@@ -116,7 +117,10 @@ const routes: Routes = [
     component: BusinessRegComponent,
     // canActivate: [AuthGuard],
   },
-
+  {
+    path: 'user/onboarding/:id/:uuid',
+    component: EmployeeOnboardingFormComponent,
+  },
   {
     path: '',
     component: UserComponent,
@@ -154,10 +158,7 @@ const routes: Routes = [
         path: 'user/checkout/closeRegister/:uuid',
         component: CloseRegisterComponent,
       },
-      {
-        path: 'user/onboarding/:id/:uuid',
-        component: EmployeeOnboardingFormComponent,
-      },
+      
     ],
   },
 
