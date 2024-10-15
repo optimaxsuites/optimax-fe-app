@@ -226,11 +226,8 @@ import { EmployeeManagementComponent } from './ui/hr/view/employee/employee-mana
 import { NotificationComponent } from './ui/hr/view/my-attendance/notification/notification.component';
 import { TimeSheetComponent } from './ui/hr/view/attendance/time-sheet/time-sheet.component';
 import { EmployeeOnboardingFormComponent } from './ui/hr/view/employee/employee-onboarding-form/employee-onboarding-form.component';
-<<<<<<< HEAD
 import { ScoresheetConfigComponent } from './ui/settings/view/hr/scoresheet-config/scoresheet-config.component';
-=======
 import { EmployeePayrollComponent } from './ui/hr/view/payroll/employee-payroll/employee-payroll.component';
->>>>>>> 5f800b3898907ce4630067269e206c298709e449
 
 
 @NgModule({
@@ -392,11 +389,8 @@ import { EmployeePayrollComponent } from './ui/hr/view/payroll/employee-payroll/
     NotificationComponent,
     TimeSheetComponent,
     EmployeeOnboardingFormComponent,
-<<<<<<< HEAD
-    ScoresheetConfigComponent
-=======
+    ScoresheetConfigComponent,
     EmployeePayrollComponent
->>>>>>> 5f800b3898907ce4630067269e206c298709e449
     
   ],
   imports: [
