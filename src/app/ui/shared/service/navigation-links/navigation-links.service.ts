@@ -35,21 +35,18 @@ export class NavigationLinksService {
     this.links['accountingLink'] = '/admin/accounting/' +uuidV4();
 
 
-    // human resources ================================================================================================================
+// human resources ================================================================================================================
     this.links['hrLink'] = '/admin/hr/' +uuidV4();
     this.links['recuitmentLink'] = '/admin/hr/recuitment/' +uuidV4();
     this.links['leaveLink'] = '/admin/hr/leave/' +uuidV4();
     this.links['attendanceLink'] = '/admin/hr/attendance/' +uuidV4();
     this.links['interviewLink'] = '/admin/hr/interview/' +uuidV4();
     this.links['employeeManagementLink'] = '/admin/hr/employee-management/' +uuidV4();
+    this.links['payroll'] = '/admin/hr/payroll/' +uuidV4();
 
 
 
-
-
-
-
-
+// human resources ================================================================================================================
     this.links['posLink'] = '/admin/pos/' +uuidV4();
     this.links['crmLink'] = '/admin/crm/' +uuidV4();
     this.links['expensesLink'] = '/admin/expenses/' + uuidV4();
