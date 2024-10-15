@@ -1,0 +1,32 @@
+
+
+:host ::ng-deep .ng-select {
+    background-color: lightgray;
+    // @apply bg-white/90
+}
+
+:host ::ng-deep .ng-select .ng-select-container {
+    @apply bg-gray-50
+ 
+}
+
+:host ::ng-deep .ng-select .ng-option {
+    @apply bg-gray-50 text-gray-600
+
+}
+
+:host ::ng-deep .ng-select .ng-option:hover {
+    @apply bg-gray-100 text-gray-700
+
+}
+
+p{
+    margin-bottom: 0;
+}
+
+.title {
+    @apply px-3 py-5 w-72 text-gray-50 rounded-t-md bg-customGreen text-center
+}
+.titleLight {
+    @apply px-3 py-7 w-72 text-gray-50 rounded-b-md bg-green-300 font-semibold text-center capitalize
+}
