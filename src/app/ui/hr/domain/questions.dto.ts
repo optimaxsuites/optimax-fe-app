@@ -1,10 +1,11 @@
 export interface QuestionDTO {
     id?: string;
     title?: string;
-    questions?: string[];
-    score?: number | null;  // Will store the selected score
+    questions?: QuestionItemDTO[];
+    totalScore?: number;
 }
 
-// export interface QuestionItemDTO{
-//     question
-// }
+export interface QuestionItemDTO {
+    text: string;
+    score?: number[] | null;  // Will store the selected score
+}
