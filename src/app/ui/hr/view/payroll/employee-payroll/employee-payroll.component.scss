@@ -30,3 +30,36 @@ p{
 .titleLight {
     @apply px-3 py-7 w-72 text-gray-50 rounded-b-md bg-green-300 font-semibold text-center capitalize
 }
+
+.calendar-modal {
+
+    border-radius: 8px;
+    
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+select {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-right: 10px; 
+}
+
+button {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #45a049;
+}
