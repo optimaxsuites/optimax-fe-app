@@ -11,13 +11,14 @@ import { ScoresheetConfigComponent } from '../scoresheet-config/scoresheet-confi
 export class HrSettingsComponent {
 
   sidebar: boolean = false
+  hoveredIndex: number = -1
 
   settings = [
     {name: "Salary", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt', component: SalaryComponent  }, 
     {name: "Employee management", subSetting: ["Salary Structure", "Deductions and Overtime"],  icon: 'pi pi-receipt', component: null},
     {name: "Attendance", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt',component: null }, 
     {name: "Leave", subSetting: ["Salary Structure", "Deductions and Overtime"],  icon: 'pi pi-receipt', component: null},
-    {name: "Score Sheet", subSetting: ["The scoresheet configuration allows for the creation and customization of interview questions for structured candidate evaluation."],  icon: 'fas fa-clipboard-list',component: ScoresheetConfigComponent }, 
+    {name: "Score Sheet", subSetting: ["Score Sheet Criteria, Grade Setting"],  icon: 'fas fa-clipboard-list',component: ScoresheetConfigComponent }, 
     {name: "Employee management", subSetting: ["Salary Structure", "Deductions and Overtime"],  icon: 'pi pi-receipt', component: null},
     {name: "Salary", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt', component: null}, 
     {name: "Salary", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt', component: null},
