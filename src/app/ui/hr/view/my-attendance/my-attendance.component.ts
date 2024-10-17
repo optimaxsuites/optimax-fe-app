@@ -2,7 +2,8 @@ import { Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from '@
 import { CalendarOptions } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid'; // Import the dayGrid plugin
 import { HttpClient } from '@angular/common/http'; // For API integration
-import { NotificationComponent } from './notification/notification.component'; // Import the Notification Component
+import { NotificationComponent } from './notification/notification.component';
+import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 
 @Component({
   selector: 'app-my-attendance',
@@ -13,11 +14,9 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
   @Input() clockedInTime: string | null = null;
   @ViewChild(NotificationComponent) notification!: NotificationComponent;
 
-  // New property for notification message
-  notificationMessage: string = ''; // Default value for notification message
-
-  // New property for notification type
-  notificationType: string = 'info'; // Default value
+  // Notification properties
+  notificationMessage: string = '';
+  notificationType: string = 'info';
 
   // Existing variables
   userInfoRegData: any[] = [];
@@ -31,36 +30,43 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
   totalAttendance: number = 0;
   attendanceData: any[] = []; // This will hold real attendance data
   attendanceStatus: { [key: string]: string } = {};
-
   days: string[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-  // Mock data for candidates
-  candidates = [
-    { name: 'John Doe', days: 7, regularTime: 8, overtime: 21, attendanceDay: 'Monday' },
-    { name: 'Jane Smith', days: 5, regularTime: 7, overtime: 15, attendanceDay: 'Monday' },
-    { name: 'Bob Johnson', days: 6, regularTime: 8, overtime: 20, attendanceDay: 'Tuesday' }
+  // Updated properties for TO DO List
+  isTodoVisible: boolean = false;
+  todoTasks: { name: string; priority: string; dueDate: string; status: string; assignedBy: string }[] = [
+    { name: 'Submit attendance report', priority: 'High', dueDate: '17th Oct 2024', status: 'Pending', assignedBy: 'John Doe' },
+    { name: 'Check for late clock-ins', priority: 'Medium', dueDate: '18th Oct 2024', status: 'In Progress', assignedBy: 'Jane Smith' },
+    { name: 'Prepare monthly summary', priority: 'Low', dueDate: '20th Oct 2024', status: 'Completed ', assignedBy: 'Yourself' },
+    { name: 'Submit attendance report', priority: 'High', dueDate: '17th Oct 2024', status: 'Pending', assignedBy: 'John Doe' },
+    { name: 'Check for late clock-ins', priority: 'Medium', dueDate: '18th Oct 2024', status: 'In Progress', assignedBy: 'Jane Smith' },
+    { name: 'Prepare monthly summary', priority: 'Low', dueDate: '20th Oct 2024', status: 'Completed ', assignedBy: 'Yourself' }
+
   ];
 
-  filteredCandidates = [...this.candidates];
-
-  // New variables for pop-up and modal logic
+  // Modal and popup logic
   showPopup: boolean = false;
   selectedDay: string = '';
+  selectedDate: string = '';
+  actionsVisible: boolean = false;
   filteredAttendanceRecords: any[] = [];
   viewAttendanceModal: boolean = false;
   currentAttendanceData: any = {};
   employeeInView: any = null;
 
+  // Modal visibility properties
+  showAddEventModal: boolean = false;
+  showReviewModal: boolean = false;
+  showToDoModal: boolean = false;
+
   // Calendar options
   calendarOptions: CalendarOptions = {};
 
   constructor(private http: HttpClient) {
-    // Initialize attendance status for each day of the week
     this.days.forEach(day => {
       this.attendanceStatus[day] = 'absent';
     });
 
-    // Set current date and time
     this.currentDate = new Date().toLocaleDateString();
     this.currentTime = new Date().toLocaleTimeString();
   }
@@ -69,16 +75,10 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
     this.userInfoRegData = JSON.parse(sessionStorage['userPrimaryInfoRegData']);
     this.userRegData = this.userInfoRegData;
 
-    // Fetch attendance data from sessionStorage or API
     this.loadAttendanceData();
-
-    // Calculate total days present
     this.totalAttendance = this.attendanceData.reduce((acc, day) => {
       return acc + (day.status === 'Present' ? 1 : 0);
     }, 0);
-
-    // Map attendance data to calendar events
-    this.updateCalendarEvents();
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -86,29 +86,25 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
       this.updateDisplayMessage(changes['clockedInTime'].currentValue);
     }
 
-    // Update current date and time dynamically
     this.currentDate = new Date().toLocaleDateString();
     this.currentTime = new Date().toLocaleTimeString();
   }
 
-  // Function to load real attendance data from API or sessionStorage
   loadAttendanceData() {
     if (sessionStorage.getItem('attendanceData')) {
-      // Load from sessionStorage if available
       this.attendanceData = JSON.parse(sessionStorage.getItem('attendanceData') || '[]');
+      this.updateCalendarEvents();
     } else {
-      // Optionally load attendance data from an API
       this.http.get<any[]>('https://your-api-url/attendance')
         .subscribe(data => {
           this.attendanceData = data;
-          this.updateCalendarEvents(); // Update calendar with new data
+          this.updateCalendarEvents();
         }, error => {
           console.error('Failed to load attendance data', error);
         });
     }
   }
 
-  // Function to update calendar events based on attendance data
   updateCalendarEvents() {
     const events = this.attendanceData.map(record => {
       return {
@@ -120,108 +116,104 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
 
     this.calendarOptions = {
       initialView: 'dayGridMonth',
-      plugins: [dayGridPlugin],
-      events: events, // Use the dynamically created events
+      plugins: [dayGridPlugin, interactionPlugin],
+      dateClick: (arg) => this.handleDateClick(arg),
+      events: events,
       headerToolbar: {
         left: 'prev,next today',
         center: 'title',
         right: 'dayGridMonth,timeGridWeek,timeGridDay'
-      }
+      },
     };
   }
 
-  // Function to update the display message based on clock-in time
   updateDisplayMessage(time: string | null) {
-    if (time) {
-      this.displayMessage = `Clocked in at: ${time}`;
-      this.markAttendance(new Date().toLocaleDateString('en-US', { weekday: 'long' }));
-    } else {
-      this.displayMessage = `Not clocked in yet.`;
-    }
+    this.displayMessage = time ? `Clocked in at: ${time}` : `Not clocked in yet.`;
   }
 
-  // Toggle Clock-In/Out functionality
   toggleClockInOut() {
-    const alreadyClockedIn = this.isClockedIn; // Check current status
-    this.isClockedIn = !this.isClockedIn;
-    this.note = '';
+    const currentDay = new Date().toISOString().split('T')[0];
+    const alreadyClockedIn = this.attendanceData.some(record => record.date === currentDay && record.status === 'Present');
 
     if (alreadyClockedIn) {
-      this.notificationMessage = 'You have already clocked in/out today!'; // Set notification message
-      this.notification.display(this.notificationMessage); // Display notification
-    } else {
-      // Save the attendance data after clock-in/out
-      this.storeAttendanceData();
-      this.updateCalendarEvents(); // Update the calendar events with the new attendance data
-      this.notificationMessage = 'Successfully clocked in/out!'; // Set notification message
-      this.notification.display(this.notificationMessage); // Display notification
+      this.notificationMessage = 'You have already clocked in today!';
+      this.notificationType = 'error';
+      this.notification.display(this.notificationMessage);
+      return;
     }
-  }
 
-  // Save attendance data to sessionStorage after clock-in/out
-  storeAttendanceData() {
+    this.isClockedIn = !this.isClockedIn;
     const newRecord = {
-      date: new Date().toISOString().split('T')[0], // Capture today's date
-      status: this.isClockedIn ? 'Present' : 'Absent'  // Update based on clock-in status
+      date: currentDay,
+      status: this.isClockedIn ? 'Present' : 'Absent'
     };
 
     this.attendanceData.push(newRecord);
     sessionStorage.setItem('attendanceData', JSON.stringify(this.attendanceData));
+    this.updateCalendarEvents();
+
+    this.notificationMessage = this.isClockedIn ? 'Successfully clocked in!' : 'Successfully clocked out!';
+    this.notificationType = 'success';
+    this.notification.display(this.notificationMessage);
   }
 
-  // Filter candidates based on search term
-  filterCandidates() {
-    if (this.searchTerm.trim()) {
-      this.filteredCandidates = this.candidates.filter(candidate =>
-        candidate.name.toLowerCase().includes(this.searchTerm.toLowerCase())
-      );
+  handleDateClick(arg: DateClickArg) {
+    this.showActionItems(arg.date);
+  }
+
+  showActionItems(currentDay: Date) {
+    this.selectedDate = currentDay.toISOString().split('T')[0];
+    this.actionsVisible = true; // Show action options when a valid date is clicked
+  }
+
+  performAction(action: string) {
+    if (this.selectedDate) {
+      switch (action) {
+        case 'To Do':
+          this.isTodoVisible = true; // Ensure the TO DO list is visible
+          this.showToDoModal = true; // Show ToDo modal popup
+          break;
+        case 'Review':
+          this.showReviewModal = true; // Show Review modal
+          break;
+        case 'Add Event':
+          this.showAddEventModal = true; // Show Add Event modal
+          break;
+        default:
+          this.notificationMessage = 'Unknown action';
+          this.notificationType = 'error';
+          this.notification.display(this.notificationMessage);
+      }
     } else {
-      this.filteredCandidates = [...this.candidates];
+      this.notificationMessage = 'Please select a day first.';
+      this.notificationType = 'error';
+      this.notification.display(this.notificationMessage);
     }
   }
 
-  // Mark attendance for a specific day
-  markAttendance(day: string) {
-    this.attendanceStatus[day] = 'present';
-
-    // Retrieve attendance data for the selected day
-    const attendanceData = this.getAttendanceForDay(day);
-
-    // Assign the retrieved data for the modal
-    this.currentAttendanceData = attendanceData;
-
-    // Show the modal
-    this.viewAttendanceModal = true;
+  // Method to close the TO DO popup
+  closeTodoPopup() {
+    this.showToDoModal = false;
+    this.isTodoVisible = false;
   }
 
-  // Retrieve attendance data for a specific day (mock data for now)
-  getAttendanceForDay(day: string) {
-    return {
-      type: 'Annual',
-      id: '000 45B',
-      daysUsed: 10,
-      from: '2023-09-01',
-      to: '2023-09-10',
-      date: '2024-09-30',
-      time: '08:00 AM',
-      location: 'Office HQ',
-      daysPresent: 190,
-      daysAbsent: 10,
-      overtimeHours: 25
-    };
+  // Method to close other modals
+  closeModal(modalType: string) {
+    switch (modalType) {
+      case 'AddEvent':
+        this.showAddEventModal = false;
+        break;
+      case 'Review':
+        this.showReviewModal = false;
+        break;
+      case 'ToDo':
+        this.closeTodoPopup();
+        break;
+      default:
+        console.warn('Unknown modal type');
+    }
   }
 
-  // Get attendance status (present/absent) for a day
-  getStatus(day: string): string {
-    return this.attendanceStatus[day] || 'absent';
-  }
-
-  // Get CSS class for attendance (present/absent)
-  getAttendanceClass(day: string): string {
-    return this.attendanceStatus[day] === 'present' ? 'present-class' : 'absent-class';
-  }
-
-  // Function to handle closing the popup
   closePopup() {
     this.showPopup = false;
   }

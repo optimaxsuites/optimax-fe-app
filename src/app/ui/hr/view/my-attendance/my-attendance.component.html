@@ -1,5 +1,4 @@
 <div class="my-attendance-container">
-  <h1>My Attendance</h1>
   <p>{{ displayMessage }}</p>
 
   <div class="flex gap-28 mb-5 items-center">
@@ -15,7 +14,7 @@
     <div class="flex gap-12 items-center">
       <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white">
         <p>Total Days</p>
-        <p class="text-[24px] pt-4 font-semibold">7.00 Day(s)</p>
+        <p class="text-[24px] pt-4 font-semibold">{{ totalAttendance }} Day(s)</p>
       </div>
 
       <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white">
@@ -34,84 +33,67 @@
 
   <div class="my-5 justify-between gap-6 flex w-full">
     <!-- Left side content -->
-    <div class="w-[58%] flex flex-col gap-4">
+    <div class="w-full flex flex-col gap-4">
       <div class="label-value" style="display: flex; align-items: center; margin-bottom: 10px;">
-        <label style="flex: 0 0 120px; font-weight: bold;">Clocked In Time:</label>
-        <p style="flex: 1 0 auto;">{{ clockedInTime }}</p>
-      </div>
-      <div class="label-value" style="display: flex; align-items: center; margin-bottom: 10px;">
-        <label style="flex: 0 0 120px; font-weight: bold;">Date:</label>
-        <p style="flex: 1 0 auto;">{{ currentDate }}</p>
-      </div>
-      <div class="label-value" style="display: flex; align-items: center; margin-bottom: 10px;">
-        <label style="flex: 0 0 120px; font-weight: bold;">Time:</label>
-        <p style="flex: 1 0 auto;">{{ currentTime }}</p>
+        <label for="note" class="mr-2">Note:</label>
+        <input id="note" type="text" [(ngModel)]="note" class="border border-gray-300 rounded-md px-2" />
       </div>
 
-      <!-- Welcome message instead of note input -->
-      <div class="mt-4 w-full h-40 border border-gray-300 p-2 resize-none rounded-md flex items-center justify-center">
-        <p class="text-center">Welcome to the office</p>
-      </div>
-
-      <button (click)="toggleClockInOut()" class="mt-4 w-32 h-16 bg-[#2f6276] text-white rounded-md">
+      <button (click)="toggleClockInOut()" class="bg-blue-600 text-white rounded-md px-4 py-2">
         {{ isClockedIn ? 'Clock Out' : 'Clock In' }}
       </button>
 
-      <!-- Attendance Records Section -->
-      <div *ngIf="attendanceData.length">
-        <h2 class="mt-4">Attendance Records</h2>
-        <ul>
-          <li *ngFor="let record of attendanceData">
-            {{ record.date }}: {{ record.status }}
+      <full-calendar [options]="calendarOptions"></full-calendar>
+
+      <!-- TO DO List Section -->
+      <div class="todo-list mt-4" *ngIf="isTodoVisible">
+        <h2 class="text-lg font-bold">To Do List</h2>
+        <ul class="list-disc list-inside">
+          <li *ngFor="let task of todoTasks">
+            {{ task.name }} - <span class="text-gray-600">{{ task.status }}</span>
           </li>
         </ul>
       </div>
-
-      <!-- Calendar Section -->
-      <div class="w-full bg-white/80 rounded-xl mt-4">
-        <full-calendar [options]="calendarOptions" class="w-full h-auto" style="width: 100%;"></full-calendar> <!-- Expanded width of calendar -->
-      </div>
     </div>
 
-    <!-- Notification Component -->
-    <app-notification
-      [message]="notificationMessage"
-      [type]="notificationType"
-      [duration]="5000">
-    </app-notification>
+    <!-- Right side content (optional, adjust as necessary) -->
+    <div class="flex flex-col gap-4 w-1/4">
+      <!-- Additional content can go here -->
+    </div>
   </div>
+
+  <!-- Show action items when a date is clicked -->
+  <app-side-modal *ngIf="actionsVisible" (close)="actionsVisible = false" class="action-buttons mt-4">
+    <button (click)="performAction('To Do')" class="mt-4 w-32 h-12 bg-blue-600 text-white rounded-md">To Do</button>
+    <button (click)="performAction('Review')" class="mt-4 w-32 h-12 bg-green-600 text-white rounded-md">Review</button>
+    <button (click)="performAction('Add Event')" class="mt-4 w-32 h-12 bg-orange-600 text-white rounded-md">Add Event</button>
+  </app-side-modal>
+
+  <!-- TO DO Popup Modal -->
+  <app-side-modal *ngIf="showToDoModal" (close)="closeTodoPopup()" class="todo-popup mt-4">
+    <div class="p-4 bg-white rounded-md shadow-md">
+      <h2 class="text-lg font-bold mb-2">TO DO List</h2>
+      <table class="table-auto w-full">
+        <thead>
+          <tr>
+            <th class="px-4 py-2">Task Name</th>
+            <th class="px-4 py-2">Priority</th>
+            <th class="px-4 py-2">Due Date</th>
+            <th class="px-4 py-2">Status</th>
+            <th class="px-4 py-2">Assigned By</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let task of todoTasks">
+            <td class="border px-4 py-2">{{ task.name }}</td>
+            <td class="border px-4 py-2">{{ task.priority }}</td>
+            <td class="border px-4 py-2">{{ task.dueDate }}</td>
+            <td class="border px-4 py-2">{{ task.status }}</td>
+            <td class="border px-4 py-2">{{ task.assignedBy }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <button (click)="closeTodoPopup()" class="bg-red-500 text-white px-4 py-2 rounded-md mt-2">Close</button>
+    </div>
+  </app-side-modal>
 </div>
-
-<style>
-  .my-attendance-container {
-    background-color: white; /* Set the background color to white */
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  button {
-    padding: 10px 20px;
-    font-size: 16px; /* Adjusted font size */
-    background-color: #2f6276; /* Button color */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  h1,
-  h2 {
-    color: #333; /* Darker heading color */
-  }
-
-  ul {
-    list-style-type: none; /* Remove bullets */
-    padding: 0; /* Remove padding */
-  }
-
-  li {
-    margin: 5px 0; /* Space between list items */
-    font-size: 14px; /* Adjust font size for records */
-  }
-</style>
