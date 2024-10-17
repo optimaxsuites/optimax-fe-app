@@ -228,6 +228,10 @@ import { TimeSheetComponent } from './ui/hr/view/attendance/time-sheet/time-shee
 import { EmployeeOnboardingFormComponent } from './ui/hr/view/employee/employee-onboarding-form/employee-onboarding-form.component';
 import { ScoresheetConfigComponent } from './ui/settings/view/hr/scoresheet-config/scoresheet-config.component';
 import { EmployeePayrollComponent } from './ui/hr/view/payroll/employee-payroll/employee-payroll.component';
+import { CareerJobPostingComponent } from './ui/shared/view/career-job-posting/career-job-posting.component';
+import { JobApplicationFormComponent } from './ui/shared/view/job-application-form/job-application-form.component';
+import { JobApplicationFormKeepComponent } from './ui/shared/view/job-application-form-keep/job-application-form-keep.component';
+import { DashboardFooterComponent } from './ui/shared/view/dashboard-footer/dashboard-footer.component';
 import { PayslipViewComponent } from './ui/hr/view/payroll/payslip-view/payslip-view.component';
 import { EmployeePayslipListComponent } from './ui/hr/view/payroll/employee-payslip-list/employee-payslip-list.component';
 
@@ -393,6 +397,10 @@ import { EmployeePayslipListComponent } from './ui/hr/view/payroll/employee-pays
     EmployeeOnboardingFormComponent,
     ScoresheetConfigComponent,
     EmployeePayrollComponent,
+    CareerJobPostingComponent,
+    JobApplicationFormComponent,
+    JobApplicationFormKeepComponent,
+    DashboardFooterComponent,
     PayslipViewComponent,
     EmployeePayslipListComponent
     

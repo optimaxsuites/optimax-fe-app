@@ -69,12 +69,12 @@
             </div>
           </div>
 
-          <div class="" *ngIf="jobData.customiseInput && jobData.customiseInput.length > 0">
+          <div class="" *ngIf="jobData.fields && jobData.fields.length > 0">
             <hr>
             <h4><strong>Customised input field(s)</strong></h4>
-            <div class="card list-card-wrapper p-4 m-2" *ngFor="let item of jobData.customiseInput; let i = index">
+            <div class="card list-card-wrapper p-4 m-2" *ngFor="let item of jobData.fields; let i = index">
               <div class="list-card-right">
-                <span>{{ item.title }} - {{ item.type }} - {{ item.required ? 'Required' : 'Optional' }}</span>
+                <span>{{ item.label }} - {{ item.type }} - {{ item.required ? 'Required' : 'Optional' }}</span>
               </div>
               <div class="list-card-left">
                 <div class="flex space-x-2 mt-2">
@@ -118,8 +118,8 @@
   <div class="input-container-100 d-flex gap-2">
     <div class="input-container-50">
       <!-- Posted Date -->
-      <label for="postedDate">Title:</label>
-      <input type="text" id="" class="editInput mb-4" name="" [(ngModel)]="customiseInput.title"  required>
+      <label for="postedDate">Label:</label>
+      <input type="text" id="" class="editInput mb-4" name="" [(ngModel)]="customField.label"  required>
     </div>
     <div class="input-container-50">
       <!-- Expiry Date -->
@@ -128,13 +128,13 @@
         bindLabel="label"
         bindValue="value"
         placeholder="Select Input Type"
-        [(ngModel)]="customiseInput.type"
-        [items]="customiseInputType">
+        [(ngModel)]="customField.type"
+        [items]="customType">
       </ng-select>
     </div> 
   </div>
   <div class="flex gap-3 items-center">
-    <input type="checkbox" [(ngModel)]="customiseInput.required" id="" class=" h-7 w-7 accent-customGreen border border-gray-300 rounded-md" />
+    <input type="checkbox" [(ngModel)]="customField.required" class=" h-7 w-7 accent-customGreen border border-gray-300 rounded-md" />
     <label for="" class="block text-[13px] font-medium cursor-pointer">Required</label>
   </div>
   <div class="btn-container-btn">
@@ -142,9 +142,9 @@
   </div>
   <div class="show-added-customisedInputs">
     <ul>
-      <li *ngFor="let input of customiseInputList">
+      <li *ngFor="let input of customFieldList">
         <div class="card p-4 m-2">
-          <span>{{ input.title }} - {{ input.type }} - {{ input.required ? 'Required' : 'Optional' }}</span>
+          <span>{{ input.label }} - {{ input.type }} - {{ input.required ? 'Required' : 'Optional' }}</span>
         </div>
       </li>
     </ul>

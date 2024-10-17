@@ -137,7 +137,7 @@
     <div class="view-wrapper">
         <div class="d-flex gap-4 my-4">
             <div class="input-container-50">
-                <label for="name"><strong>Title:</strong></label>
+                <label for="name"><strong>Job Title:</strong></label>
                 <span> {{activeItem.title}}</span>
             </div>
             <div class="input-container-50">
@@ -181,10 +181,15 @@
                 <span> {{activeItem.expiryDate}}</span>
             </div>
         </div>
-        <div class="">
-            <label for="cover-letter"><strong>Overview:</strong></label>
-            <!-- <textarea class="cover-letter editInput" name="cover-letter" [(ngModel)]="activeItem.description" disabled></textarea> -->
-            <div class="input-container-100 editInput" [innerHTML]="activeItem.description"></div>
+        <div class="d-flex gap-4 my-4">
+            <div class="input-container-50">
+                <label for="cover-letter"><strong>Overview:</strong></label>
+                <!-- <textarea class="cover-letter editInput" name="cover-letter" [(ngModel)]="activeItem.description" disabled></textarea> -->
+                <div class="input-container-100 editInput" style="text-align: justify;" [innerHTML]="activeItem.description"></div>
+            </div>
+            <div class="input-container-50">
+
+            </div>
         </div>
     </div>
 </app-modal>

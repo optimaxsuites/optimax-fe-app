@@ -69,6 +69,8 @@ import { JopOpeningsComponent } from './jop.openings.component';
 import { EmployeeManagementComponent } from './ui/hr/view/employee/employee-management/employee-management.component';
 import { EmployeeOnboardingFormComponent } from './ui/hr/view/employee/employee-onboarding-form/employee-onboarding-form.component';
 import { EmployeePayrollComponent } from './ui/hr/view/payroll/employee-payroll/employee-payroll.component';
+import { CareerJobPostingComponent } from './ui/shared/view/career-job-posting/career-job-posting.component';
+import { JobApplicationFormComponent } from './ui/shared/view/job-application-form/job-application-form.component';
 import { EmployeePayslipListComponent } from './ui/hr/view/payroll/employee-payslip-list/employee-payslip-list.component';
 
 const routes: Routes = [
@@ -350,8 +352,18 @@ const routes: Routes = [
   },
 
   {
-    path: 'job-application',
+    path: 'career',
     component: JopOpeningsComponent, 
+    children:[
+      {
+        path:'job-posting',
+        component: CareerJobPostingComponent,
+      },
+      {
+        path: 'job-posting/:id',
+        component: JobApplicationFormComponent,
+      }   
+    ]
   },
 ];
 
