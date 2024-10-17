@@ -23,15 +23,15 @@ export class TimeSheetComponent {
       return day === 'Friday' ? '02:30 PM' : '05:30 PM';
     }
 
-    calculateHoursWorked(day: string): string {
+    calculateHoursWorked(day: string): number {
       const clockIn = this.actualClockInTimes[day];
       const clockOut = this.actualClockOutTimes[day];
       if (clockIn && clockOut) {
-        const hoursWorked = this.calculateTimeDifference(clockIn, clockOut);
-        return `${hoursWorked} hours`;
+        return this.calculateTimeDifference(clockIn, clockOut);  // Return only the numeric value
       }
-      return '0 hours';
+      return 0;  // Return 0 for cases where there's no clock-in or clock-out time
     }
+
 
     calculateTimeDifference(start: string, end: string): number {
       const [startHour, startMinute] = start.split(':').map(Number);

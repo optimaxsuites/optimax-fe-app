@@ -20,7 +20,27 @@ export class AttendanceSheetsComponent {
     { employeeID: 'EMP004', employeeName: 'Akeredolu Oyinlola', department: 'Sales', date: '2023-11-20', inTime: '07:00', outTime: '14:00', regularizationStatus: 'Pending' }
   ];
 
-  attendanceDetails: any[] = []; // Your array of detailed attendance data
+  attendanceDetails: any[] = []; // Array of detailed attendance data
+
+  // Arrays for dropdown filter
+  employees: any[] = this.attendanceSheets.map(sheet => ({ name: sheet.employeeName }));
+  departments: string[] = [...new Set(this.attendanceSheets.map(sheet => sheet.department))]; // Extract unique departments
+
+  // Variables to hold selected dropdown values
+  selectedEmployeeName: string = '';
+  selectedEmployeeDepartment: string = '';
+
+  filteredAttendanceSheets: any[] = [...this.attendanceSheets]; // Array to hold filtered results
+
+  // Method to filter attendance sheets based on dropdown selection
+  filterAttendance() {
+    this.filteredAttendanceSheets = this.attendanceSheets.filter(sheet => {
+      return (
+        (this.selectedEmployeeName ? sheet.employeeName === this.selectedEmployeeName : true) &&
+        (this.selectedEmployeeDepartment ? sheet.department === this.selectedEmployeeDepartment : true)
+      );
+    });
+  }
 
   // Method to toggle the view of attendance sheets and check attendance
   toggleAttendanceView() {
@@ -37,15 +57,13 @@ export class AttendanceSheetsComponent {
 
   // Load attendance details - this can be replaced with actual data fetching logic
   loadAttendanceDetails() {
-    // Load the details based on the selected employeeID (you can replace this with actual logic)
     this.attendanceDetails = [
       { date: '2023-11-20', inTime: '07:00', outTime: '14:00', remarks: 'None' },
       { date: '2023-11-21', inTime: '08:00', outTime: '16:00', remarks: 'None' },
-
     ];
   }
 
-
+  // Close the modal and reset views
   closeViewModal() {
     this.viewModal = false; // Close the modal
     this.showAttendanceSheets = true; // Show attendance sheets again when modal closes
@@ -53,11 +71,12 @@ export class AttendanceSheetsComponent {
   }
 
   // Method to approve regularization
-  
+  approveRegularization() {
+    console.log('Regularization approved.');
+  }
 
   // Method to reject leave
   rejectLeave() {
-    // Logic for rejecting leave (you can add your actual logic here)
-    console.log("Leave rejected.");
+    console.log('Leave rejected.');
   }
 }
