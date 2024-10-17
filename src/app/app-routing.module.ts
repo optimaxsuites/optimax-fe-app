@@ -71,6 +71,7 @@ import { EmployeeOnboardingFormComponent } from './ui/hr/view/employee/employee-
 import { EmployeePayrollComponent } from './ui/hr/view/payroll/employee-payroll/employee-payroll.component';
 import { CareerJobPostingComponent } from './ui/shared/view/career-job-posting/career-job-posting.component';
 import { JobApplicationFormComponent } from './ui/shared/view/job-application-form/job-application-form.component';
+import { EmployeePayslipListComponent } from './ui/hr/view/payroll/employee-payslip-list/employee-payslip-list.component';
 
 const routes: Routes = [
   {
@@ -342,6 +343,10 @@ const routes: Routes = [
       {
         path: 'admin/hr/payroll/:uuid',
         component: EmployeePayrollComponent,
+      },
+      {
+        path: 'admin/employee-payslip/:uuid',
+        component: EmployeePayslipListComponent,
       },
     ],
   },

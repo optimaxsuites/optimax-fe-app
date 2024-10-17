@@ -232,6 +232,8 @@ import { CareerJobPostingComponent } from './ui/shared/view/career-job-posting/c
 import { JobApplicationFormComponent } from './ui/shared/view/job-application-form/job-application-form.component';
 import { JobApplicationFormKeepComponent } from './ui/shared/view/job-application-form-keep/job-application-form-keep.component';
 import { DashboardFooterComponent } from './ui/shared/view/dashboard-footer/dashboard-footer.component';
+import { PayslipViewComponent } from './ui/hr/view/payroll/payslip-view/payslip-view.component';
+import { EmployeePayslipListComponent } from './ui/hr/view/payroll/employee-payslip-list/employee-payslip-list.component';
 
 
 @NgModule({
@@ -398,7 +400,9 @@ import { DashboardFooterComponent } from './ui/shared/view/dashboard-footer/dash
     CareerJobPostingComponent,
     JobApplicationFormComponent,
     JobApplicationFormKeepComponent,
-    DashboardFooterComponent
+    DashboardFooterComponent,
+    PayslipViewComponent,
+    EmployeePayslipListComponent
     
   ],
   imports: [

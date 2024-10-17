@@ -104,3 +104,7 @@ nav::-webkit-scrollbar-thumb:hover {
     margin-right: 8px;
     box-sizing: border-box;
   }
+  nav {
+    scrollbar-width: thin;
+    scrollbar-color: lightgray #f1f1f1; 
+}

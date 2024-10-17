@@ -149,3 +149,103 @@
     }
 }
 
+
+.container-sales{
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+
+    .sales{
+        flex: 20%;
+        display: flex;
+        position: relative;
+        // border: 1px solid #224957;
+        background-color: #fff;
+        border-radius: 10px;
+        margin-right: 1rem;
+        // color: white;
+        padding: 2rem 1rem;
+        box-sizing: border-box;
+        box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.05) 0px 8px 32px;
+
+        .img{
+            position: absolute;
+            z-index: 2;
+            top: 47%;
+            left: 70%;
+            height: 70px;
+            width: 70px;
+            background-color: #224957;
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            display: flex;
+           
+
+            i{
+                font-size: 2.5em;
+                color: #fff;
+                padding: 0.5rem;
+                box-sizing: border-box;
+            }
+        }
+
+
+        .sales-no{
+            font-size: x-large;
+            font-weight: bolder;
+            margin-bottom: 1rem;
+            color: #224957;
+        }
+        .sales-tittle{
+            font-weight: 500;
+            color: #25925B;
+        }
+    }
+    .sales:hover{
+        background: rgb(34,73,87);
+        background: linear-gradient(0deg, rgba(34,73,87,1) 12%, rgba(37,146,91,1) 42%, rgba(255,255,255,1) 100%);
+
+        .sales-no, .sales-tittle{
+            color: #fff;
+        }
+    }
+    
+
+}
+@media screen and (max-width: 992px){
+    .container-sales {
+        .sales {
+            flex: 0 0 calc(50% - 1rem); 
+            margin-bottom: 1rem; 
+        
+          }
+      }
+}
+
+@media screen and (max-width: 767px){
+    .container-sales {
+        .sales {
+            flex: 0 0 100%;
+            margin-bottom: 1rem;
+          }
+      }
+
+}
+
+
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: lightgray #f1f1f1; 
+}
+
+
+p{
+    margin-bottom: 0;
+}
+
+a{
+    list-style: none;
+    text-decoration: none;
+}
