@@ -228,6 +228,10 @@ import { TimeSheetComponent } from './ui/hr/view/attendance/time-sheet/time-shee
 import { EmployeeOnboardingFormComponent } from './ui/hr/view/employee/employee-onboarding-form/employee-onboarding-form.component';
 import { ScoresheetConfigComponent } from './ui/settings/view/hr/scoresheet-config/scoresheet-config.component';
 import { EmployeePayrollComponent } from './ui/hr/view/payroll/employee-payroll/employee-payroll.component';
+import { CareerJobPostingComponent } from './ui/shared/view/career-job-posting/career-job-posting.component';
+import { JobApplicationFormComponent } from './ui/shared/view/job-application-form/job-application-form.component';
+import { JobApplicationFormKeepComponent } from './ui/shared/view/job-application-form-keep/job-application-form-keep.component';
+import { DashboardFooterComponent } from './ui/shared/view/dashboard-footer/dashboard-footer.component';
 
 
 @NgModule({
@@ -390,7 +394,11 @@ import { EmployeePayrollComponent } from './ui/hr/view/payroll/employee-payroll/
     TimeSheetComponent,
     EmployeeOnboardingFormComponent,
     ScoresheetConfigComponent,
-    EmployeePayrollComponent
+    EmployeePayrollComponent,
+    CareerJobPostingComponent,
+    JobApplicationFormComponent,
+    JobApplicationFormKeepComponent,
+    DashboardFooterComponent
     
   ],
   imports: [
