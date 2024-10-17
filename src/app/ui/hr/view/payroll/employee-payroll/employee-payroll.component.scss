@@ -28,7 +28,7 @@ p{
     @apply px-3 py-5 w-72 text-gray-50 rounded-t-md bg-customGreen text-center
 }
 .titleLight {
-    @apply px-3 py-7 w-72 text-gray-50 rounded-b-md bg-green-300 font-semibold text-center capitalize
+    @apply px-3 py-7 w-72 text-gray-500 rounded-b-md  bg-gray-100 font-semibold text-center capitalize
 }
 
 .calendar-modal {
@@ -62,4 +62,8 @@ button {
 
 button:hover {
     background-color: #45a049;
+}
+
+ul{
+    @apply pl-0 mb-0
 }
