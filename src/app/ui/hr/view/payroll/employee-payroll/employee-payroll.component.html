@@ -23,7 +23,7 @@
           </ng-template>
       <ng-template pTemplate="right">
         <app-button  [text]="'View ' + selectedMonth + ' ' + selectedYear + ' Summary'"  class="btn-navigate gap-2"  (click)="viewSummary()"></app-button>
-        <app-button  text="Download CSV"  class="btn-navigate gap-2" (click)="generateCSV()"></app-button>
+        <app-button  text="Download CSV"  class="btn-navigate gap-2" (click)="generateCSV()"><i class="fa-solid fa-download mr-2 text-[18px]"></i></app-button>
       </ng-template>
     </p-toolbar>
 
@@ -97,7 +97,7 @@
         </ng-template>
 
         <ng-template pTemplate="body" let-employee let-i="rowIndex">
-        <tr class="p-table-row bg-gray-50 cursor-pointer" (click)="viewEmployeePaySLip(employee)"> 
+        <tr class="p-table-row bg-gray-50 cursor-pointer" (click)="viewEmployeePaySLip(employee, op)"> 
             <td><p-tableCheckbox [value]="employee" /></td>
             <td class="table-item capitalize" >{{ employee.name }}</td>
             <td class="table-item capitalize">{{ employee.level }}</td>
@@ -106,10 +106,10 @@
             <td class="table-item capitalize"><span class="text-2xl">₦</span>{{ employee.netPayable }}</td>
 
             <td class="actions table-item">
-            <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event)" ></i>
+            <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event); $event.stopPropagation()" ></i>
             <p-overlayPanel #op ngClass="padding: 0;">
                     <div>
-                      <li class="table-item-panel" > <i class="pi pi-eye table-item me-2"></i> View</li>
+                      <li class="table-item-panel" (click)="viewEmployeePaySLip(employee, op)"> <i class="pi pi-eye table-item me-2"></i> View</li>
                       <li class="table-item-panel" > <i class="pi pi-download table-item me-2"></i> Send Payslip</li>
                         <!-- <li class="table-item-panel"> <i class="pi pi-trash table-item me-2"></i> Reject</li> -->
                     </div>
@@ -222,26 +222,26 @@
         <tr *ngIf="employee.type == 'salaried'"  class="p-table-row bg-gray-50 "> 
             <td class="table-item capitalize" style="width: 60%;">Base Salary</td>
             <td class="table-item capitalize" style="width: 20%;"><span class="text-2xl">₦</span>{{ employee.salary | number: '1.2-2' }}</td>
-            <td class="table-item capitalize  bg-green-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ employee.salary | number: '1.2-2'}}</td>
+            <td class="table-item capitalize  bg-gray-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ employee.salary | number: '1.2-2'}}</td>
         </tr>
         <ng-container *ngIf="employee.type === 'project-based'">
             <ng-container *ngFor="let project of employee.projects">
                 <tr class="p-table-row bg-gray-50">
                     <td class="table-item capitalize" style="width: 60%;">{{ project.projectName }}</td>
                     <td class="table-item capitalize" style="width: 20%;"><span class="text-2xl">₦</span>{{ project.projectPay | number: '1.2-2' }}</td>
-                    <td class="table-item capitalize  bg-green-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ project.projectPay | number: '1.2-2' }}</td>
+                    <td class="table-item capitalize  bg-gray-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ project.projectPay | number: '1.2-2' }}</td>
                 </tr>
             </ng-container>
         </ng-container>
             <tr  *ngFor="let allowance of employee.allowances | keyvalue" class="p-table-row bg-gray-50 " >
             <td class="table-item capitalize" style="width: 60%;">{{ toTitleCaseWithSpace(allowance.key) }}</td>
             <td class="table-item capitalize" style="width: 20%;"><span class="text-2xl">₦</span>{{ allowance.value }}</td>
-            <td class="table-item capitalize bg-green-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ allowance.value }}</td>
+            <td class="table-item capitalize bg-gray-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ allowance.value }}</td>
         </tr>
         <tr *ngFor="let bonus of employee.bonuses" class="p-table-row bg-gray-50 ">
             <td class="table-item capitalize" style="width: 60%;">{{ bonus.reason }}</td>
             <td class="table-item capitalize" style="width: 20%;"><span class="text-2xl">₦</span>{{ bonus.amount | number: '1.2-2'}}</td>
-            <td class="table-item capitalize  bg-green-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ bonus.amount | number: '1.2-2'}}</td>
+            <td class="table-item capitalize  bg-gray-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ bonus.amount | number: '1.2-2'}}</td>
         </tr>
         <tr   class="p-table-row bg-green-300 font-bold text-[12px] "> 
             <td class="table-item capitalize" style="width: 60%;"></td>
@@ -277,7 +277,7 @@
             <tr  *ngFor="let deduction of employee.deductions " class="p-table-row bg-gray-50 " >
             <td class="table-item capitalize" style="width: 60%;">{{ deduction.reason }}</td>
             <td class="table-item capitalize" style="width: 20%;"><span class="text-2xl">₦</span>{{ deduction.amount | number: '1.2-2'}}</td>
-            <td class="table-item capitalize bg-green-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ deduction.amount| number: '1.2-2' }}</td>
+            <td class="table-item capitalize bg-gray-100  font-semiBold" style="width: 20%;"><span class="text-2xl">₦</span>{{ deduction.amount| number: '1.2-2' }}</td>
         </tr>
         <tr   class="p-table-row bg-green-300 font-bold text-[12px] "> 
             <td class="table-item capitalize" style="width: 60%;"></td>
@@ -337,13 +337,12 @@
     <div class="py-3 text-customBlue">
         <div class="flex relative justify-between items-center px-5">
             <p class="text-center text-[20px] font-semibold">Pay Summary for {{selectedMonth}} {{selectedYear}}</p>
-            <div   class="btn-navigate rounded-md cursor-pointer relative bg-customBlue text-[14px]" (click)="toggleDropdown()">Download Summary</div>
+            <div   class="btn-navigate rounded-md cursor-pointer relative bg-customBlue text-[14px]" (click)="toggleDropdown()"><i class="fa-solid fa-download  m-2"></i> Download Summary</div>
 
             <div *ngIf="showDropdown" class="absolute z-10 right-12 top-[80%] bg-white border border-gray-300 mt-2 rounded-md shadow-md">
-                <ul class="flex flex-col">
-                    <li class="p-2 hover:bg-gray-200 cursor-pointer" (click)="download('pdf')">Download as PDF</li>
-                    <li class="p-2 hover:bg-gray-200 cursor-pointer" (click)="download('csv')">Download as CSV</li>
-                    <!-- Add more formats as needed -->
+                <ul class="flex flex-col w-full">
+                    <li class="p-2 hover:bg-gray-200 cursor-pointer" (click)="download('pdf')"><i class="fa-solid fa-download m-2"></i>Download as PDF</li>
+                    <li class="p-2 hover:bg-gray-200 cursor-pointer" (click)="download('csv')"><i class="fa-solid fa-download m-2"></i>Download as CSV</li>
                 </ul>
             </div>
         </div>

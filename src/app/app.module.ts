@@ -228,6 +228,8 @@ import { TimeSheetComponent } from './ui/hr/view/attendance/time-sheet/time-shee
 import { EmployeeOnboardingFormComponent } from './ui/hr/view/employee/employee-onboarding-form/employee-onboarding-form.component';
 import { ScoresheetConfigComponent } from './ui/settings/view/hr/scoresheet-config/scoresheet-config.component';
 import { EmployeePayrollComponent } from './ui/hr/view/payroll/employee-payroll/employee-payroll.component';
+import { PayslipViewComponent } from './ui/hr/view/payroll/payslip-view/payslip-view.component';
+import { EmployeePayslipListComponent } from './ui/hr/view/payroll/employee-payslip-list/employee-payslip-list.component';
 
 
 @NgModule({
@@ -390,7 +392,9 @@ import { EmployeePayrollComponent } from './ui/hr/view/payroll/employee-payroll/
     TimeSheetComponent,
     EmployeeOnboardingFormComponent,
     ScoresheetConfigComponent,
-    EmployeePayrollComponent
+    EmployeePayrollComponent,
+    PayslipViewComponent,
+    EmployeePayslipListComponent
     
   ],
   imports: [

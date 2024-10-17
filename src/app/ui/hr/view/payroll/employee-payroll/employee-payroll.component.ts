@@ -1599,7 +1599,8 @@ ngOnInit(){
     document.body.removeChild(link);
   }
 
-  viewEmployeePaySLip(employee: any){
+  viewEmployeePaySLip(employee: any, op:any){
+    op.hide()
     this.viewEmployee = true
     this.currentEmployeeInView = employee
   }
@@ -1682,7 +1683,7 @@ ngOnInit(){
   }
   
   
-  toTitleCaseWithSpace(key: any): string {
+toTitleCaseWithSpace(key: any): string {
     return key
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, (str: string) => str.toUpperCase());
