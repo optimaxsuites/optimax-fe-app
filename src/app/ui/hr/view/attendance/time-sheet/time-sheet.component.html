@@ -6,6 +6,8 @@
     <thead>
       <tr>
         <th>Day</th>
+        <th>Project</th>
+        <th>Task</th>
         <th>Resumption Time</th>
         <th>Closing Time</th>
         <th>Actual Clock-In</th>
@@ -17,6 +19,19 @@
       <!-- Loop through the days and display timesheet information -->
       <tr *ngFor="let day of days">
         <td>{{ day }}</td>
+
+        <!-- Project selection dropdown -->
+        <td>
+          <select [(ngModel)]="projectAssignments[day]">
+            <option *ngFor="let project of projects" [value]="project">{{ project }}</option>
+          </select>
+        </td>
+
+        <!-- Task input field -->
+        <td>
+          <input type="text" [(ngModel)]="taskAssignments[day]" placeholder="Task description">
+        </td>
+
         <td>{{ day === 'Friday' ? '08:30' : '08:30' }}</td>
         <td>{{ day === 'Friday' ? '14:30' : '17:30' }}</td>
         <td>
@@ -25,7 +40,7 @@
         <td>
           <input type="time" [(ngModel)]="actualClockOutTimes[day]" placeholder="Clock-out Time">
         </td>
-        <td>{{ calculateHoursWorked(day) | number: '1.2-2' }} </td>
+        <td>{{ calculateHoursWorked(day) | number: '1.2-2' }}</td>
       </tr>
     </tbody>
   </table>
@@ -36,18 +51,16 @@
     <textarea [(ngModel)]="employeeSignature" placeholder="Enter your signature"></textarea>
   </div>
 
-  <!-- Supervisor Signature -->
+  <!-- Supervisor Signature
   <div class="signature-section">
     <h3>Supervisor Signature</h3>
     <textarea [(ngModel)]="supervisorSignature" placeholder="Supervisor's signature"></textarea>
-  </div>
+  </div> -->
 
   <!-- Submit to Supervisor Button -->
   <div class="submit-section">
     <button (click)="submitTimesheetToSupervisor()">Submit to Supervisor</button>
   </div>
-
-  
 
   <!-- HR Submission Notification -->
   <div *ngIf="status === 'Submitted to HR'" class="notification">
@@ -55,6 +68,9 @@
   </div>
 </div>
 
+<style>
+  /* ... Your existing styles */
+</style>
 <style>
   html, body {
     height: 100%;
