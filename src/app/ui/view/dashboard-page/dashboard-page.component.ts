@@ -1,8 +1,7 @@
 import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-// import { NavigationLinksService } from '../../shared/service/navigation-links/navigation-links.service';
-// import { DataService } from '../../hr/service/data.service';
-import { borderRightStyle } from 'html2canvas/dist/types/css/property-descriptors/border-style';
+import { NavigationLinksService } from '../../sharedComponent/src/app/ui/service/navigation-links/navigation-links.service';
+import { LargeSideModalComponent } from '../../sharedComponent/src/app/ui/view/large-side-modal/large-side-modal.component';
 
 
 @Component({
@@ -327,7 +326,7 @@ monthNames = [
   "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
 ];
 fullname: string = ""
-  constructor(private route: ActivatedRoute, private router: Router,  
+  constructor(private route: ActivatedRoute, private router: Router,  public navigationLink: NavigationLinksService 
 
   ) {}
 data =  [
