@@ -336,9 +336,10 @@ data =  [
   {salesno: '60,000', title: 'Inventory', icon: 'fas fa-boxes'},
   
 ];
-  // ngOnInit(): void {
-  //   this.dataService.setData(this.employeePayslipHistory)
-  // }
+  ngOnInit(): void {
+    localStorage.setItem('sharedData', JSON.stringify(this.employeePayslipHistory));
+
+  }
 
   openViewSlip(slip:any){
     this.viewSlip = true
