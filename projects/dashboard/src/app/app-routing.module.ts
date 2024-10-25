@@ -9,7 +9,7 @@ const routes: Routes = [
     component: DashboardPageComponent,
   },
   {
-      path: 'employee-payslip/:uuid',
+      path: 'employee-payslip',
       component: EmployeePayslipsListComponent,
   },
 ];
