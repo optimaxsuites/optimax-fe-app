@@ -5,6 +5,7 @@ import { Component, EventEmitter, Output } from '@angular/core';
   selector: 'app-large-side-modal',
   templateUrl: './large-side-modal.component.html',
   styleUrl: './large-side-modal.component.scss',
+  standalone: true,
   animations: [
     trigger('openClose', [
       state('open', style({

@@ -5,6 +5,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { CommonModule } from '@angular/common';
 import { DashboardPageComponent } from './ui/view/dashboard-page/dashboard-page.component';
+import { LargeSideModalComponent } from './ui/sharedComponent/src/app/ui/view/large-side-modal/large-side-modal.component';
 
 @NgModule({
   declarations: [
@@ -14,7 +15,8 @@ import { DashboardPageComponent } from './ui/view/dashboard-page/dashboard-page.
   imports: [
     // BrowserModule,
     CommonModule,
-    AppRoutingModule
+    AppRoutingModule,
+    LargeSideModalComponent
   ],
   providers: [],
   bootstrap: [AppComponent]
