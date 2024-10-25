@@ -6,6 +6,8 @@
     <thead>
       <tr>
         <th>Day</th>
+        <th>Project</th>
+        <th>Task</th>
         <th>Resumption Time</th>
         <th>Closing Time</th>
         <th>Actual Clock-In</th>
@@ -17,6 +19,19 @@
       <!-- Loop through the days and display timesheet information -->
       <tr *ngFor="let day of days">
         <td>{{ day }}</td>
+
+        <!-- Project selection dropdown -->
+        <td>
+          <select [(ngModel)]="projectAssignments[day]">
+            <option *ngFor="let project of projects" [value]="project">{{ project }}</option>
+          </select>
+        </td>
+
+        <!-- Task input field -->
+        <td>
+          <input type="text" [(ngModel)]="taskAssignments[day]" placeholder="Task description">
+        </td>
+
         <td>{{ day === 'Friday' ? '08:30' : '08:30' }}</td>
         <td>{{ day === 'Friday' ? '14:30' : '17:30' }}</td>
         <td>
@@ -25,7 +40,7 @@
         <td>
           <input type="time" [(ngModel)]="actualClockOutTimes[day]" placeholder="Clock-out Time">
         </td>
-        <td>{{ calculateHoursWorked(day) | number: '1.2-2' }} hrs</td>
+        <td>{{ calculateHoursWorked(day) | number: '1.2-2' }}</td>
       </tr>
     </tbody>
   </table>
@@ -36,11 +51,11 @@
     <textarea [(ngModel)]="employeeSignature" placeholder="Enter your signature"></textarea>
   </div>
 
-  <!-- Supervisor Signature -->
+  <!-- Supervisor Signature
   <div class="signature-section">
     <h3>Supervisor Signature</h3>
     <textarea [(ngModel)]="supervisorSignature" placeholder="Supervisor's signature"></textarea>
-  </div>
+  </div> -->
 
   <!-- Submit to Supervisor Button -->
   <div class="submit-section">
@@ -52,3 +67,114 @@
     <p>Timesheet has been submitted to HR for approval.</p>
   </div>
 </div>
+
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+    font-family: Arial, sans-serif;
+  }
+
+  .timesheet-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+    background-color: #f9f9f9;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+
+  h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+  }
+
+  .timesheet-table {
+    width: 100%;
+    max-width: 1200px;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+
+  .timesheet-table th, .timesheet-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+  }
+
+  .timesheet-table th {
+    background-color: #2f6276;
+    color: white;
+  }
+
+  .timesheet-table tr:nth-child(even) {
+    background-color: #f2f2f2;
+  }
+
+  .timesheet-table input[type="time"] {
+    width: 90%;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 14px;
+  }
+
+  .signature-section {
+    width: 100%;
+    max-width: 800px;
+    margin-bottom: 20px;
+  }
+
+  .signature-section h3 {
+    margin-bottom: 10px;
+    color: #2f6276;
+  }
+
+  .signature-section textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    box-sizing: border-box;
+    min-height: 100px;
+  }
+
+  .submit-section {
+    text-align: center;
+    width: 100%;
+    max-width: 800px;
+    margin-bottom: 20px;
+  }
+
+  .submit-section button {
+    background-color: #2f6276;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .submit-section button:hover {
+    background-color: #2f6276;
+  }
+
+  .notification {
+    background-color: #e7f4e7;
+    padding: 10px;
+    border: 1px solid #2f6276;
+    color: #2f6276;
+    border-radius: 5px;
+    text-align: center;
+    width: 100%;
+    max-width: 800px;
+  }
+</style>
