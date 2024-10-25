@@ -1,7 +1,6 @@
 <div class="timesheet-container">
   <h2>Employee Timesheet</h2>
 
-  <!-- Table to display timesheet data -->
   <table class="timesheet-table">
     <thead>
       <tr>
@@ -16,18 +15,15 @@
       </tr>
     </thead>
     <tbody>
-      <!-- Loop through the days and display timesheet information -->
       <tr *ngFor="let day of days">
         <td>{{ day }}</td>
 
-        <!-- Project selection dropdown -->
         <td>
           <select [(ngModel)]="projectAssignments[day]">
             <option *ngFor="let project of projects" [value]="project">{{ project }}</option>
           </select>
         </td>
 
-        <!-- Task input field -->
         <td>
           <input type="text" [(ngModel)]="taskAssignments[day]" placeholder="Task description">
         </td>
@@ -45,28 +41,26 @@
     </tbody>
   </table>
 
-  <!-- Employee Signature -->
   <div class="signature-section">
     <h3>Employee Signature</h3>
     <textarea [(ngModel)]="employeeSignature" placeholder="Enter your signature"></textarea>
   </div>
 
-  <!-- Supervisor Signature
+  Supervisor Signature
   <div class="signature-section">
     <h3>Supervisor Signature</h3>
     <textarea [(ngModel)]="supervisorSignature" placeholder="Supervisor's signature"></textarea>
-  </div> -->
+  </div>
 
-  <!-- Submit to Supervisor Button -->
   <div class="submit-section">
     <button (click)="submitTimesheetToSupervisor()">Submit to Supervisor</button>
   </div>
 
-  <!-- HR Submission Notification -->
   <div *ngIf="status === 'Submitted to HR'" class="notification">
     <p>Timesheet has been submitted to HR for approval.</p>
   </div>
 </div>
+
 
 <style>
   html, body {

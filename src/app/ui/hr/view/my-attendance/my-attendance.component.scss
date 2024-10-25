@@ -4,6 +4,360 @@
   margin-left: auto;
 }
 
+.attendance-boxes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attendance-wrapper {
+  display: flex;
+  height: 100vh; /* Ensure the wrapper takes the full height of the viewport */
+  align-items: stretch;
+}
+
+.attendance-box {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: left;
+  transition: background-color 0.3s;
+}
+
+.attendance-box:hover {
+  background-color: #f0f0f0;
+}
+
+.present {
+  background-color: #c8e6c9; /* Green for present */
+}
+
+.absent {
+  background-color: #2f6276; /* Red for absent */
+}
+
+.day {
+  font-weight: bold;
+}
+
+.status {
+  margin: 10px 0;
+}
+
+/* Notification styles */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 14px;
+  display: none; /* Initially hidden */
+  z-index: 1000;
+}
+
+.notification.info {
+  background-color: #2196f3;
+  color: white;
+}
+
+.notification.success {
+  background-color: #4caf50;
+  color: white;
+}
+
+.notification.error {
+  background-color: #f44336;
+  color: white;
+}
+
+/* Modal styling */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 600px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.modal-close {
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.modal-body {
+  padding: 10px 0;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+}
+
+.modal-footer button {
+  padding: 5px 10px;
+  background-color: #2f6276;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* Action buttons styling */
+.action-buttons {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 10px;
+}
+
+.action-buttons button {
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.action-buttons .todo {
+  background-color: #fbc02d;
+  color: white;
+}
+
+.action-buttons .review {
+  background-color: #03a9f4;
+  color: white;
+}
+
+.action-buttons .add-event {
+  background-color: #4caf50;
+  color: white;
+}
+
+.action-buttons .click-event {
+  background-color: #e91e63;
+  color: white;
+}
+
+/* Left container styles */
+.left-container {
+  width: 35%; /* Takes up 1/3 of the page */
+  padding: 10px;
+  background-color: #f9fafb;
+}
+
+.employee-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.profile-picture {
+  border-radius: 70%;
+  width: 100px;
+  height: 100px;
+  margin-right: 15px;
+  -webkit-border-radius: 70%;
+  -moz-border-radius: 70%;
+  -ms-border-radius: 70%;
+  -o-border-radius: 70%;
+}
+
+.employee-details h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.employee-details p {
+  margin: 0;
+  color: #2f6276;
+  font-size: 14px;
+}
+
+/* Time information section */
+.time-info {
+  margin-bottom: 30px;
+}
+
+.time-today {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.status p {
+  font-weight: bold;
+  margin: 0;
+}
+
+.status .not-submitted {
+  color: red;
+}
+
+.period {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+/* Weekly time section */
+.weekly-time {
+  margin-top: 20px;
+}
+
+.weekly-time h4 {
+  margin-bottom: 10px;
+}
+
+.chart {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  height: 100px;
+  background-color: #eee;
+  padding: 10px;
+}
+
+.chart-bar {
+  width: 20px;
+  background-color: #2f6276;
+  text-align: center;
+}
+
+.chart-bar div {
+  background-color: #2f6276;
+  width: 100%;
+  transition: height 0.3s ease;
+}
+
+.chart-bar span {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+}
+
+.total-week-time {
+  margin-top: 10px;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* Popup styling */
+.popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.popup-header h3 {
+  margin: 0;
+}
+
+.popup-close {
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.popup-body {
+  margin-top: 20px;
+}
+
+.popup-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.popup-footer button {
+  padding: 5px 10px;
+  background-color: #2f6276;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+  .my-attendance-container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
+  }
+
+  .w-full {
+    width: 100%;
+  }
+
+  button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #2f6276;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  h1, h2 {
+    color: #333;
+  }
+
+  ul {
+    list-style-type: none;
+    padding: 0;
+  }
+
+  li {
+    margin: 5px 0;
+    font-size: 14px;
+  }
+
+
+.attendance-container {
+  padding: 20px;
+  width: 75.67%;
+  margin-left: auto;
+}
+
 
 
 
@@ -127,7 +481,7 @@
 
     .chart-bar {
       width: 20px;
-      background-color: #2fab72;
+      background-color: #2f6276;
       text-align: center;
 
       div {

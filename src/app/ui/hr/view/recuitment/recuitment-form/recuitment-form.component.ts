@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { customiseInputDTO, JobDTO } from '../../../domain/job.dto';
+import { CustomField, JobDTO } from '../../../domain/job.dto';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { RandomTokenService } from 'src/app/ui/shared/service/random-token/random-token.service';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -16,10 +16,10 @@ export class RecuitmentFormComponent {
   @Input() jobData: JobDTO = {};
   @Input() isEdit?: boolean; 
   openSideModal?: boolean;
-  customiseInput: customiseInputDTO = {};
-  customiseInputList: customiseInputDTO[] = [];
+  customField: CustomField = {};
+  customFieldList: CustomField[] = [];
 
-  customiseInputType = [
+  customType = [
     { value: 'text', label: 'Text' },
     { value: 'number', label: 'Number' },
     { value: 'file', label: 'File' },
@@ -176,32 +176,40 @@ export class RecuitmentFormComponent {
     // Initialize jobData with a default string
   }
 
+  ngOnInit() {
+    if (!this.jobData.postedDate) {
+      this.getTodayDate(); // Set today's date if not already set
+    }
+
+    console.log("Check if isEdit is working",this.isEdit)
+  }
+
   onDeleteCustomiseInput(index: number): void {
-    this.jobData.customiseInput?.splice(index, 1);
+    this.jobData.fields?.splice(index, 1);
   }
   
 
   // Method to add a new input to the list
   addCustomiseInput() {
-    this.customiseInputList.push({ ...this.customiseInput });
-    this.customiseInput = {}; // Reset input fields
+    this.customFieldList.push({ ...this.customField });
+    this.customField = {}; // Reset input fields
   }
 
   // Method to save inputs to localStorage
   saveCustomiseInputs() {
-    localStorage.setItem('customiseInputs', JSON.stringify(this.customiseInputList));
+    localStorage.setItem('customiseInputs', JSON.stringify(this.customFieldList));
     
     // Clear the list after saving
-    this.customiseInputList = []; 
+    this.customFieldList = []; 
     
     // Load the saved customiseInputs from local storage and parse them
     const savedCustomiseInputs = localStorage.getItem('customiseInputs');
     
     // Check if saved data exists and parse it
     if (savedCustomiseInputs) {
-        this.jobData.customiseInput = JSON.parse(savedCustomiseInputs);
+        this.jobData.fields = JSON.parse(savedCustomiseInputs);
     } else {
-        this.jobData.customiseInput = []; // Initialize as an empty array if nothing is found
+        this.jobData.fields = []; // Initialize as an empty array if nothing is found
     }
     this.openSideModal = false;
 }
@@ -211,14 +219,6 @@ export class RecuitmentFormComponent {
     this.openSideModal = true;
   }
 
-  // In your ngOnInit or constructor, set the current date as the posted date
-  ngOnInit() {
-    if (!this.jobData.postedDate) {
-      this.getTodayDate(); // Set today's date if not already set
-    }
-
-    console.log("Check if isEdit is working",this.isEdit)
-  }
 
   getTodayDate(){
     const today = new Date();
@@ -293,4 +293,91 @@ export class RecuitmentFormComponent {
 
     return requiredFields.every(field => field); // Ensure all required fields are truthy
   }
+
+
+
+
+
+
+
+// jobData: any = {
+//   title: '',
+//   category: '',
+//   employmentType: '',
+//   location: '',
+//   experience: '',
+//   qualification: '',
+//   specification: '',
+//   postedDate: new Date(),
+//   expiryDate: '',
+//   description: '',
+//   customiseInput: []
+// };
+// customiseInput: any = { title: '', type: '', required: false };
+// customiseInputList: any[] = [];
+// jobCategories = []; // Your job categories here
+// jobTypes = [];      // Your job types here
+// experienceLevels = []; // Experience levels here
+// jobQualification = []; // Job qualifications here
+// jobSpecifications = []; // Job specifications here
+// customiseInputType = [
+//   { label: 'Text', value: 'text' },
+//   { label: 'Textarea', value: 'textarea' },
+//   { label: 'Select', value: 'select' }
+// ];
+// openSideModal = false;
+// isEdit = false;
+
+// ngOnInit(): void {
+//   this.loadJobData();
+// }
+
+// submitForm(): void {
+//   // Save job data to local storage
+//   localStorage.setItem('jobData', JSON.stringify(this.jobData));
+//   this.showSuccessMessage("Job vacancy info saved successfully!");
+// }
+
+// loadJobData(): void {
+//   const savedJobData = localStorage.getItem('jobData');
+//   if (savedJobData) {
+//     this.jobData = JSON.parse(savedJobData);
+//   }
+// }
+
+// addCustomiseInput(): void {
+//   this.jobData.customiseInput.push({...this.customiseInput});
+//   this.customiseInput = { title: '', type: '', required: false }; // Reset input field after adding
+// }
+
+// toogleSideModal(): void {
+//   this.openSideModal = !this.openSideModal;
+// }
+
+// onDeleteCustomiseInput(index: number): void {
+//   this.jobData.customiseInput.splice(index, 1);
+// }
+
+// saveCustomiseInputs(): void {
+//   // Save the customize input list and close the modal
+//   this.customiseInputList = [...this.jobData.customiseInput];
+//   this.openSideModal = false;
+// }
+
+// showSuccessMessage(message: string): void {
+//   // Display a success message (You can implement this using a Toast or Snackbar)
+//   console.log(message);
+// }
+
+
+
 }
+
+
+
+
+
+
+
+
+

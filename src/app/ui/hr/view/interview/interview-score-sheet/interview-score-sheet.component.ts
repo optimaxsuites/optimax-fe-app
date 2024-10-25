@@ -65,11 +65,11 @@ export class InterviewScoreSheetComponent implements OnInit {
   calculateTotalScore(): number {
     const sumOfScores = this.allCriteria.reduce((total, question) => {
         if (question.questions) {
-            const questionScore = question.questions.reduce((subTotal, questionItem) => {
-                return subTotal + (questionItem.score ? Number(questionItem.score) : 0); // Sum of individual question scores
-            }, 0);
+          const questionScore = question.questions.reduce((subTotal, questionItem) => {
+              return subTotal + (questionItem.score ? Number(questionItem.score) : 0); // Sum of individual question scores
+          }, 0);
 
-            return total + questionScore; // Add the question score to the total
+          return total + questionScore; // Add the question score to the total
         }
         return total; // If there are no questions, return the current total
     }, 0);
@@ -90,7 +90,6 @@ export class InterviewScoreSheetComponent implements OnInit {
 
 
   // Call this method whenever a score is changed
-  
   
 //   calculateTotalScore(): number {
 //     // Array to hold each individual question score

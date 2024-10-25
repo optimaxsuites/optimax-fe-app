@@ -38,24 +38,48 @@ export class RecruitmentListComponent implements OnInit {
   }
 
   getJobPostings() {
-    // Retrieve job data from localStorage
+    // // Retrieve job data from localStorage
+    // const storedJobData = localStorage.getItem('jobData');
+
+    // if (storedJobData) {
+    //   // Parse and assign the job data to the jobpostings array
+    //   this.jobpostings = JSON.parse(storedJobData);
+      
+    //   // Sort the jobpostings array in FILO order
+    //   this.jobpostings!.reverse();
+
+    //   this.filteredJobPostings = [...this.jobpostings];
+
+    //   // this.filteredJobPostings.reverse();
+
+    // } else {
+    //   this.jobpostings = []; // Initialize as an empty array if no data found
+    //   this.filteredJobPostings = [];// Initialize as an empty array if no data found
+    // }
+
+
     const storedJobData = localStorage.getItem('jobData');
 
     if (storedJobData) {
-      // Parse and assign the job data to the jobpostings array
-      this.jobpostings = JSON.parse(storedJobData);
+      const parsedData = JSON.parse(storedJobData);
+
+      // Check if parsedData is an array
+      if (Array.isArray(parsedData)) {
+        this.jobpostings = parsedData;
+        this.jobpostings.reverse();
+      } else {
+        console.error('Parsed data is not an array:', parsedData);
+        this.jobpostings = [];
+      }
       
-      // Sort the jobpostings array in FILO order
-      this.jobpostings.reverse();
-
+      // Copy the jobpostings to filteredJobPostings
       this.filteredJobPostings = [...this.jobpostings];
-
-      // this.filteredJobPostings.reverse();
 
     } else {
       this.jobpostings = []; // Initialize as an empty array if no data found
-      this.filteredJobPostings = [];// Initialize as an empty array if no data found
+      this.filteredJobPostings = []; // Initialize as an empty array if no data found
     }
+
   }
 
   confirmJobDelete(job: any): void {
