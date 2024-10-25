@@ -6,56 +6,43 @@ import { Component } from '@angular/core';
   styleUrl: './time-sheet.component.scss'
 })
 export class TimeSheetComponent {
+  days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  projects = ['Project A', 'Project B', 'Project C'];  // Example projects
+  projectAssignments: { [key: string]: string } = {};  // Track projects assigned for each day
+  taskAssignments: { [key: string]: string } = {};     // Track task descriptions for each day
+  actualClockInTimes: { [key: string]: string } = {};
+  actualClockOutTimes: { [key: string]: string } = {};
+  employeeSignature: string = '';
+  supervisorSignature: string = '';
+  status: string = '';
 
-
-    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-    actualClockInTimes: { [key: string]: string } = {};
-    actualClockOutTimes: { [key: string]: string } = {};
-    employeeSignature: string = '';
-    supervisorSignature: string = '';
-    status:string = ''
-
-    getResumptionTime(day: string): string {
-      return '08:30 AM';
+  calculateHoursWorked(day: string): number {
+    const clockIn = this.actualClockInTimes[day];
+    const clockOut = this.actualClockOutTimes[day];
+    if (clockIn && clockOut) {
+      return this.calculateTimeDifference(clockIn, clockOut);
     }
-
-    getClosingTime(day: string): string {
-      return day === 'Friday' ? '02:30 PM' : '05:30 PM';
-    }
-
-    calculateHoursWorked(day: string): number {
-      const clockIn = this.actualClockInTimes[day];
-      const clockOut = this.actualClockOutTimes[day];
-      if (clockIn && clockOut) {
-        return this.calculateTimeDifference(clockIn, clockOut);  // Return only the numeric value
-      }
-      return 0;  // Return 0 for cases where there's no clock-in or clock-out time
-    }
-
-
-    calculateTimeDifference(start: string, end: string): number {
-      const [startHour, startMinute] = start.split(':').map(Number);
-      const [endHour, endMinute] = end.split(':').map(Number);
-
-      const startDate = new Date(0, 0, 0, startHour, startMinute);
-      const endDate = new Date(0, 0, 0, endHour, endMinute);
-
-      const diff = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60); // Hours
-      return diff;
-    }
-
-    submitTimesheetToSupervisor() {
-      if (this.employeeSignature && this.supervisorSignature) {
-        console.log('Time sheet submitted to HR');
-        // Logic to submit the timesheet to the HR system
-      } else {
-        console.log('Please ensure both employee and supervisor have signed');
-      }
-    }
+    return 0;
   }
 
+  calculateTimeDifference(start: string, end: string): number {
+    const [startHour, startMinute] = start.split(':').map(Number);
+    const [endHour, endMinute] = end.split(':').map(Number);
 
+    const startDate = new Date(0, 0, 0, startHour, startMinute);
+    const endDate = new Date(0, 0, 0, endHour, endMinute);
 
+    const diff = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60); // Hours
+    return diff;
+  }
 
-
+  submitTimesheetToSupervisor() {
+    if (this.employeeSignature && this.supervisorSignature) {
+      console.log('Timesheet submitted to HR');
+      // Logic to submit timesheet
+    } else {
+      console.log('Please ensure both employee and supervisor have signed');
+    }
+  }
+}
 

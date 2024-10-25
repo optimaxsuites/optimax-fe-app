@@ -5,7 +5,11 @@
     <div class="flex gap-2 justify-center items-center">
       <!-- User profile info -->
       <div class="flex gap-2 justify-center flex-col text-center">
-        <img src="https://cdn.vectorstock.com/i/500p/53/42/user-member-avatar-face-profile-icon-vector-22965342.jpg" alt="User Avatar" class="w-72 h-72" />
+        <img
+          src="https://cdn.vectorstock.com/i/500p/53/42/user-member-avatar-face-profile-icon-vector-22965342.jpg"
+          alt="User Avatar"
+          class="w-72 h-72 rounded-full"
+        />
         <p class="font-bold text-gray-700 text-[18px] capitalize">{{ userRegData.fullname }}</p>
       </div>
     </div>
@@ -34,7 +38,7 @@
   <div class="my-5 justify-between gap-6 flex w-full">
     <!-- Left side content -->
     <div class="w-full flex flex-col gap-4">
-      <div class="label-value" style="display: flex; align-items: center; margin-bottom: 10px;">
+      <div class="label-value flex items-center mb-2">
         <label for="note" class="mr-2">Note:</label>
         <input id="note" type="text" [(ngModel)]="note" class="border border-gray-300 rounded-md px-2" />
       </div>
@@ -45,55 +49,115 @@
 
       <full-calendar [options]="calendarOptions"></full-calendar>
 
-      <!-- TO DO List Section -->
-      <div class="todo-list mt-4" *ngIf="isTodoVisible">
-        <h2 class="text-lg font-bold">To Do List</h2>
-        <ul class="list-disc list-inside">
-          <li *ngFor="let task of todoTasks">
-            {{ task.name }} - <span class="text-gray-600">{{ task.status }}</span>
-          </li>
-        </ul>
+      <!-- Action Buttons after Date Click -->
+      <div *ngIf="actionsVisible" class="flex gap-2 mt-4">
+        <button (click)="performAction('Add Event')" class="bg-blue-500 text-white rounded-md px-4 py-2">
+          Event
+        </button>
+        <button (click)="performAction('Review')" class="bg-blue-500 text-white rounded-md px-4 py-2">
+          Review
+        </button>
+        <button (click)="performAction('To Do')" class="bg-blue-500 text-white rounded-md px-4 py-2">
+          To Do
+        </button>
       </div>
-    </div>
 
-    <!-- Right side content (optional, adjust as necessary) -->
-    <div class="flex flex-col gap-4 w-1/4">
-      <!-- Additional content can go here -->
-    </div>
-  </div>
+      <!-- Side Modal -->
+     <!-- Side Modal -->
+<app-side-modal *ngIf="isModalOpen" (close)="closeModal()" class="action-buttons mt-4">
+  <div class="modal-content bg-white rounded-lg shadow-lg p-6 w-[80%] mx-auto">
+    <button class="close-btn font-semibold text-xs bg-red-500 text-white rounded px-1 py-0.5" (click)="closeModal()">Close</button>
+    <h2 class="text-xl font-bold mb-4">{{ modalTitle }}</h2>
 
-  <!-- Show action items when a date is clicked -->
-  <app-side-modal *ngIf="actionsVisible" (close)="actionsVisible = false" class="action-buttons mt-4">
-    <button (click)="performAction('To Do')" class="mt-4 w-32 h-12 bg-blue-600 text-white rounded-md">To Do</button>
-    <button (click)="performAction('Review')" class="mt-4 w-32 h-12 bg-green-600 text-white rounded-md">Review</button>
-    <button (click)="performAction('Add Event')" class="mt-4 w-32 h-12 bg-orange-600 text-white rounded-md">Add Event</button>
-  </app-side-modal>
-
-  <!-- TO DO Popup Modal -->
-  <app-side-modal *ngIf="showToDoModal" (close)="closeTodoPopup()" class="todo-popup mt-4">
-    <div class="p-4 bg-white rounded-md shadow-md">
-      <h2 class="text-lg font-bold mb-2">TO DO List</h2>
-      <table class="table-auto w-full">
+    <!-- Render based on Modal Type -->
+    <ng-container *ngIf="modalType === 'todo'">
+      <table class="w-full table-auto border-collapse border border-gray-800">
         <thead>
           <tr>
-            <th class="px-4 py-2">Task Name</th>
-            <th class="px-4 py-2">Priority</th>
-            <th class="px-4 py-2">Due Date</th>
-            <th class="px-4 py-2">Status</th>
-            <th class="px-4 py-2">Assigned By</th>
+            <th class="border border-gray-300 px-4 py-2">Task</th>
+            <th class="border border-gray-300 px-4 py-2">Due Date</th>
+            <th class="border border-gray-300 px-4 py-2">Status</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let task of todoTasks">
-            <td class="border px-4 py-2">{{ task.name }}</td>
-            <td class="border px-4 py-2">{{ task.priority }}</td>
-            <td class="border px-4 py-2">{{ task.dueDate }}</td>
-            <td class="border px-4 py-2">{{ task.status }}</td>
-            <td class="border px-4 py-2">{{ task.assignedBy }}</td>
+            <td class="border border-gray-300 px-4 py-2">{{ task.name }}</td>
+            <td class="border border-gray-300 px-4 py-2">{{ task.dueDate }}</td>
+            <td class="border border-gray-300 px-4 py-2">{{ task.status }}</td>
           </tr>
         </tbody>
       </table>
-      <button (click)="closeTodoPopup()" class="bg-red-500 text-white px-4 py-2 rounded-md mt-2">Close</button>
+    </ng-container>
+
+    <ng-container *ngIf="modalType === 'review'">
+      <table class="w-full table-auto border-collapse border border-gray-800 mt-4">
+        <thead>
+          <tr>
+            <th class="border border-gray-300 px-4 py-2">Review Title</th>
+            <th class="border border-gray-300 px-4 py-2">Employee</th>
+            <th class="border border-gray-300 px-4 py-2">Date</th>
+            <th class="border border-gray-300 px-4 py-2">Comments</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let review of reviewData">
+            <td class="border border-gray-300 px-4 py-2">{{ review.title }}</td>
+            <td class="border border-gray-300 px-4 py-2">{{ review.employee }}</td>
+            <td class="border border-gray-300 px-4 py-2">{{ review.date }}</td>
+            <td class="border border-gray-300 px-4 py-2">{{ review.comments }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </ng-container>
+
+    <ng-container *ngIf="modalType === 'addEvent'">
+      <table class="w-full table-auto border-collapse border border-gray-800 mt-4">
+        <thead>
+          <tr>
+            <th class="border border-gray-300 px-4 py-2">Event Name</th>
+            <th class="border border-gray-300 px-4 py-2">Date</th>
+            <th class="border border-gray-300 px-4 py-2">Location</th>
+            <th class="border border-gray-300 px-4 py-2">Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let event of events">
+            <td class="border border-gray-300 px-4 py-2">{{ event.name }}</td>
+            <td class="border border-gray-300 px-4 py-2">{{ event.date }}</td>
+            <td class="border border-gray-300 px-4 py-2">{{ event.location }}</td>
+            <td class="border border-gray-300 px-4 py-2">{{ event.notes }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </ng-container>
+  </div>
+</app-side-modal>
+
     </div>
-  </app-side-modal>
+
+    <!-- Right side content (optional, adjust as necessary) -->
+   <!-- Right side content (optional, adjust as necessary) -->
+<div class="flex flex-col gap-4 w-1/4">
+  <h3 class="font-bold text-lg">Upcoming Events</h3>
+  <table class="w-full table-auto border-collapse border border-gray-300" style="border-collapse: collapse; width: 100%;">
+    <thead>
+      <tr style="background-color: #3b82f6; color: white;">
+        <th class="border border-gray-300 px-4 py-2" style="padding: 8px; text-align: left;">Event Name</th>
+        <th class="border border-gray-300 px-4 py-2" style="padding: 8px; text-align: left;">Date</th>
+        <th class="border border-gray-300 px-4 py-2" style="padding: 8px; text-align: left;">Location</th>
+        <th class="border border-gray-300 px-4 py-2" style="padding: 8px; text-align: left;">Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let event of events" style="border-bottom: 1px solid #e2e8f0;">
+        <td class="border border-gray-300 px-4 py-2" style="padding: 8px;">{{ event.name }}</td>
+        <td class="border border-gray-300 px-4 py-2" style="padding: 8px;">{{ event.date }}</td>
+        <td class="border border-gray-300 px-4 py-2" style="padding: 8px;">{{ event.location }}</td>
+        <td class="border border-gray-300 px-4 py-2" style="padding: 8px;">{{ event.notes }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+  </div>
 </div>

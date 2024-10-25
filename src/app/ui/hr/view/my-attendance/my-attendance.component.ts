@@ -8,7 +8,7 @@ import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 @Component({
   selector: 'app-my-attendance',
   templateUrl: './my-attendance.component.html',
-  styleUrls: ['./my-attendance.component.scss']
+  styleUrls: ['./my-attendance.component.scss'],
 })
 export class MyAttendanceComponent implements OnInit, OnChanges {
   @Input() clockedInTime: string | null = null;
@@ -37,11 +37,46 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
   todoTasks: { name: string; priority: string; dueDate: string; status: string; assignedBy: string }[] = [
     { name: 'Submit attendance report', priority: 'High', dueDate: '17th Oct 2024', status: 'Pending', assignedBy: 'John Doe' },
     { name: 'Check for late clock-ins', priority: 'Medium', dueDate: '18th Oct 2024', status: 'In Progress', assignedBy: 'Jane Smith' },
-    { name: 'Prepare monthly summary', priority: 'Low', dueDate: '20th Oct 2024', status: 'Completed ', assignedBy: 'Yourself' },
+    { name: 'Prepare monthly summary', priority: 'Low', dueDate: '20th Oct 2024', status: 'Completed', assignedBy: 'Yourself' },
+    { name: 'Finish report', priority: 'High', dueDate: '2024-10-25', status: 'Pending', assignedBy: 'Alice' },
+    { name: 'Prepare presentation', priority: 'Medium', dueDate: '2024-10-28', status: 'In Progress', assignedBy: 'Bob' },
+    { name: 'Email project update', priority: 'Low', dueDate: '2024-10-23', status: 'Completed', assignedBy: 'Charlie' },
     { name: 'Submit attendance report', priority: 'High', dueDate: '17th Oct 2024', status: 'Pending', assignedBy: 'John Doe' },
     { name: 'Check for late clock-ins', priority: 'Medium', dueDate: '18th Oct 2024', status: 'In Progress', assignedBy: 'Jane Smith' },
-    { name: 'Prepare monthly summary', priority: 'Low', dueDate: '20th Oct 2024', status: 'Completed ', assignedBy: 'Yourself' }
+    { name: 'Prepare monthly summary', priority: 'Low', dueDate: '20th Oct 2024', status: 'Completed', assignedBy: 'Yourself' },
+    { name: 'Finish report', priority: 'High', dueDate: '2024-10-25', status: 'Pending', assignedBy: 'Alice' },
+    { name: 'Prepare presentation', priority: 'Medium', dueDate: '2024-10-28', status: 'In Progress', assignedBy: 'Bob' },
+    { name: 'Email project update', priority: 'Low', dueDate: '2024-10-23', status: 'Completed', assignedBy: 'Charlie' }
+  ];
 
+  reviewData = [
+    { title: 'Quarterly Review', employee: 'John Doe', date: '2024-10-20', comments: 'Great performance!' },
+    { title: 'Annual Review', employee: 'Jane Smith', date: '2024-11-15', comments: 'Needs improvement in communication.' },
+    { title: 'Mid-Year Review', employee: 'Jim Brown', date: '2024-07-30', comments: 'Excellent team player.' },
+    { title: 'Quarterly Review', employee: 'John Doe', date: '2024-10-20', comments: 'Great performance!' },
+    { title: 'Annual Review', employee: 'Jane Smith', date: '2024-11-15', comments: 'Needs improvement in communication.' },
+    { title: 'Mid-Year Review', employee: 'Jim Brown', date: '2024-07-30', comments: 'Excellent team player.' },
+    { title: 'Quarterly Review', employee: 'John Doe', date: '2024-10-20', comments: 'Great performance!' },
+    { title: 'Annual Review', employee: 'Jane Smith', date: '2024-11-15', comments: 'Needs improvement in communication.' },
+    { title: 'Mid-Year Review', employee: 'Jim Brown', date: '2024-07-30', comments: 'Excellent team player.' },
+    { title: 'Quarterly Review', employee: 'John Doe', date: '2024-10-20', comments: 'Great performance!' },
+    { title: 'Annual Review', employee: 'Jane Smith', date: '2024-11-15', comments: 'Needs improvement in communication.' },
+    { title: 'Mid-Year Review', employee: 'Jim Brown', date: '2024-07-30', comments: 'Excellent team player.' }
+  ];
+
+  events = [
+    { name: 'Team Meeting', date: '2024-10-22', location: 'Conference Room', notes: 'Discuss project updates' },
+    { name: 'Workshop', date: '2024-11-05', location: 'Online', notes: 'Skills development workshop' },
+    { name: 'Client Presentation', date: '2024-10-30', location: 'Client Office', notes: 'Present final project' },
+    { name: 'Team Meeting', date: '2024-10-22', location: 'Conference Room', notes: 'Discuss project updates' },
+    { name: 'Workshop', date: '2024-11-05', location: 'Online', notes: 'Skills development workshop' },
+    { name: 'Client Presentation', date: '2024-10-30', location: 'Client Office', notes: 'Present final project' },
+    { name: 'Team Meeting', date: '2024-10-22', location: 'Conference Room', notes: 'Discuss project updates' },
+    { name: 'Workshop', date: '2024-11-05', location: 'Online', notes: 'Skills development workshop' },
+    { name: 'Client Presentation', date: '2024-10-30', location: 'Client Office', notes: 'Present final project' },
+    { name: 'Team Meeting', date: '2024-10-22', location: 'Conference Room', notes: 'Discuss project updates' },
+    { name: 'Workshop', date: '2024-11-05', location: 'Online', notes: 'Skills development workshop' },
+    { name: 'Client Presentation', date: '2024-10-30', location: 'Client Office', notes: 'Present final project' },
   ];
 
   // Modal and popup logic
@@ -59,8 +94,13 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
   showReviewModal: boolean = false;
   showToDoModal: boolean = false;
 
+  // Additional properties for modal management
+  isModalOpen: boolean = false; // To control modal visibility
+  modalType: string = ''; // To store the type of the modal (todo, review, addEvent)
+  modalTitle: string = ''; // To store the title of the modal
+
   // Calendar options
-  calendarOptions: CalendarOptions = {};
+  calendarOptions: CalendarOptions = {}; // Initialize this property
 
   constructor(private http: HttpClient) {
     this.days.forEach(day => {
@@ -82,7 +122,7 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['clockedInTime']) {
+    if (changes['clockedInTime']) { // Use bracket notation
       this.updateDisplayMessage(changes['clockedInTime'].currentValue);
     }
 
@@ -158,26 +198,28 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
   }
 
   handleDateClick(arg: DateClickArg) {
+    console.log("Date clicked:", arg.date);
     this.showActionItems(arg.date);
   }
 
   showActionItems(currentDay: Date) {
     this.selectedDate = currentDay.toISOString().split('T')[0];
+    console.log("Selected date:", this.selectedDate);
     this.actionsVisible = true; // Show action options when a valid date is clicked
   }
 
   performAction(action: string) {
     if (this.selectedDate) {
+      console.log("Performing action:", action);
       switch (action) {
         case 'To Do':
-          this.isTodoVisible = true; // Ensure the TO DO list is visible
-          this.showToDoModal = true; // Show ToDo modal popup
+          this.openModal('todo'); // Update to call openModal
           break;
         case 'Review':
-          this.showReviewModal = true; // Show Review modal
+          this.openModal('review'); // Update to call openModal
           break;
         case 'Add Event':
-          this.showAddEventModal = true; // Show Add Event modal
+          this.openModal('addEvent'); // Update to call openModal
           break;
         default:
           this.notificationMessage = 'Unknown action';
@@ -191,14 +233,31 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
     }
   }
 
-  // Method to close the TO DO popup
-  closeTodoPopup() {
-    this.showToDoModal = false;
-    this.isTodoVisible = false;
+  // Method to open a modal
+  openModal(modalType: string) {
+    this.isModalOpen = true;
+    this.modalType = modalType;
+
+    // Set the modal title based on the type
+    switch (modalType) {
+      case 'todo':
+        this.modalTitle = 'To Do';
+        break;
+      case 'review':
+        this.modalTitle = 'Review';
+        break;
+      case 'addEvent':
+        this.modalTitle = 'Add Event';
+        break;
+    }
   }
 
-  // Method to close other modals
-  closeModal(modalType: string) {
+  // Method to close a modal
+  closeModal(modalType: string = '') {
+    this.isModalOpen = false;
+    this.modalType = '';
+    this.modalTitle = '';
+
     switch (modalType) {
       case 'AddEvent':
         this.showAddEventModal = false;
@@ -210,8 +269,16 @@ export class MyAttendanceComponent implements OnInit, OnChanges {
         this.closeTodoPopup();
         break;
       default:
-        console.warn('Unknown modal type');
+        this.isModalOpen = false;
+        this.modalType = '';
+        this.modalTitle = '';
     }
+  }
+
+  // Method to close the TO DO popup
+  closeTodoPopup() {
+    this.showToDoModal = false;
+    this.isTodoVisible = false;
   }
 
   closePopup() {
