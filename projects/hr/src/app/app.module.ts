@@ -68,7 +68,7 @@ import { DashboardFooterComponent } from './ui/shared-component/view/dashboard-f
     DashboardFooterComponent,
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
