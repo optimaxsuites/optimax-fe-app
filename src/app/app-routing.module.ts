@@ -176,9 +176,10 @@ const routes: Routes = [
         loadChildren: () => import('../../projects/dashboard/src/app/app.module').then(m => m.AppDashboardModule),
       },
       {
-        path: 'admin/hr/recuitment/:uuid',
+        path: 'admin/hr',
         loadChildren: () => import('../../projects/hr/src/app/app.module').then(m => m.AppHrModule),
       },
+      
       // {
       //   path: 'admin/sales/:uuid',
       //   component: SalesPageComponent,
@@ -355,24 +356,24 @@ const routes: Routes = [
     ],
   },
 
-  {
-    path: 'career',
-    component: JopOpeningsComponent, 
-    children:[
-      {
-        path:'job-posting',
-        component: CareerJobPostingComponent,
-      },
-      {
-        path: 'job-posting/:id',
-        component: JobApplicationFormComponent,
-      }   
-    ]
-  },
   // {
-  //   path: 'job-application',
+  //   path: 'career',
   //   component: JopOpeningsComponent, 
+  //   children:[
+  //     {
+  //       path:'job-posting',
+  //       component: CareerJobPostingComponent,
+  //     },
+  //     {
+  //       path: 'job-posting/:id',
+  //       component: JobApplicationFormComponent,
+  //     }   
+  //   ]
   // },
+  {
+    path: 'job-application',
+    component: JopOpeningsComponent, 
+  },
 ];
 
 

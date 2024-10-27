@@ -37,11 +37,11 @@ export class NavigationLinksService {
 
 // human resources ================================================================================================================
     this.links['hrLink'] = '/admin/hr/' +uuidV4();
-    this.links['recuitmentLink'] = '/admin/hr/recuitment/' +uuidV4();
+    this.links['recuitmentLink'] = `/admin/hr/recruitment/${uuidV4()}`;
     this.links['leaveLink'] = '/admin/hr/leave/' +uuidV4();
     this.links['attendanceLink'] = '/admin/hr/attendance/' +uuidV4();
     this.links['interviewLink'] = '/admin/hr/interview/' +uuidV4();
-    this.links['employeeManagementLink'] = '/admin/hr/employee-management/' +uuidV4();
+    this.links['employeeManagementLink'] = `/admin/hr/employee-management/${uuidV4()}`;
     this.links['payroll'] = '/admin/hr/payroll/' +uuidV4();
     this.links['allPayslip'] = '/admin/employee-payslip/' +uuidV4();
 
