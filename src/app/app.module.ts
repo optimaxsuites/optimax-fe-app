@@ -47,6 +47,10 @@ import { BackButtonComponent } from './ui/shared-component/view/back-button/back
 import { ButtonComponent } from './ui/shared-component/view/button/button.component';
 import { CareerJobPostingComponent } from './ui/shared-component/view/career-job-posting/career-job-posting.component';
 import { DashboardFooterComponent } from './ui/shared-component/view/dashboard-footer/dashboard-footer.component';
+import { InterviewInviteComponent } from './ui/view/recruitment/interview-invite/interview-invite.component';
+import { OfferLetterComponent } from './ui/view/recruitment/offer-letter/offer-letter.component';
+import { AppointmentLetterComponent } from './ui/view/recruitment/appointment-letter/appointment-letter.component';
+import { InterviewScoreSheetComponent } from './ui/view/recruitment/interview-score-sheet/interview-score-sheet.component';
 
 @NgModule({
   declarations: [
@@ -66,6 +70,10 @@ import { DashboardFooterComponent } from './ui/shared-component/view/dashboard-f
     ButtonComponent,
     CareerJobPostingComponent,
     DashboardFooterComponent,
+    InterviewInviteComponent,
+    OfferLetterComponent,
+    AppointmentLetterComponent,
+    InterviewScoreSheetComponent
   ],
   imports: [
     // BrowserModule,

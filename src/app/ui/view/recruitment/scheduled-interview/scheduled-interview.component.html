@@ -1,1 +1,207 @@
-<p>scheduled-interview works!</p>
+<p-toast></p-toast>
+<div *ngIf="showInterviewList">
+    <div class="card">
+      <br>
+        <!-- <app-back-button></app-back-button> -->
+    
+        <!-- <p-toolbar styleClass="mb-4 gap-2">
+          <ng-template pTemplate="left">
+            <app-button text="Delete" class="btn-delete"></app-button>
+          </ng-template>
+    
+          <ng-template pTemplate="right">
+            
+          </ng-template>
+        </p-toolbar> -->
+    
+        <div class="flex w-full justify-between ">
+          <div class="w-1/1">
+            <ng-select 
+              [items]="positions || []"
+              class="px-3"
+              bindLabel="position"
+              [multiple]="true"
+              placeholder="Filter by position"
+              [(ngModel)]="selectedPositions"
+              (ngModelChange)="filterCandidatesByPosition()">
+            </ng-select>
+          </div>
+    
+          <div class="search-bar w-[90%]">
+            <input 
+              type="text" 
+              placeholder="Search" 
+              class="editInput"
+              [(ngModel)]="searchTerm"
+              (ngModelChange)="filterCandidates()"
+            />
+          </div>
+        </div>
+    
+        <p-table 
+            [value]="filteredCandidates" 
+            [paginator]="true" 
+            styleClass="p-datatable-striped" 
+            [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+            [rows]="15"
+            >
+            
+            <ng-template pTemplate="header">
+            <tr>
+                <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+                <th class="table-item" pSortableColumn="candidate">Candidate</th>
+                <th class="table-item" pSortableColumn="email">Email</th>
+                <th class="table-item" pSortableColumn="contactNumber">Contact Number</th>
+                <th class="table-item" pSortableColumn="contactNumber">Position</th>
+                <th class="table-item" pSortableColumn="dateApplied">Date Applied</th>
+                <th class="table-item" pSortableColumn="interviewType">Interview Type</th>
+                <th class="table-item" pSortableColumn="interviewStage">Interview Stage</th>
+                <th class="table-item" pSortableColumn="stage">Stage</th>
+                <th class="table-item"></th>
+            </tr>
+            </ng-template>
+    
+            <ng-template pTemplate="body" let-interview let-i="rowIndex">
+            <tr class="p-table-row">
+                <td><p-tableCheckbox [value]="interview" /></td>
+                <td class="table-item">{{ interview.firstName + ' ' + interview.lastName }}</td>
+                <td class="table-item">{{ interview.email }}</td>
+                <td class="table-item">{{ interview.contactNo }}</td>
+                <td class="table-item">{{ interview.position }}</td>
+                <td class="table-item">{{ interview.dateApplied }}</td>
+                <td class="table-item">{{ interview.interviewType }}</td>
+                <td class="table-item">Interview {{ interview.interviewStage }}</td>
+                <td class="table-item">
+                    <span [ngClass]="getStatusClass(interview.stage)">
+                      {{ interview.stage }} 
+                    </span>
+                </td>
+
+                <td class="actions">
+                  <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event)" ></i>
+                      <p-overlayPanel #op ngClass="padding: 0;">
+                        <div>
+                            <li class="table-item-panel" (click)="openViewModal(interview, op)"> <i class="pi pi-eye table-item me-2"></i> <span>View</span></li>
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'In-Progress' && interview.stage !== 'Completed' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent' && interview.stage !== 'Employement-Letter-Sent'" (click)="startInterview(interview)"> <i class="pi pi-user-plus table-item me-2"></i> Start Interview</li>
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent' && interview.stage !== 'Employement-Letter-Sent'" (click)="openScoreSheet(interview)"> <i class="pi pi-download table-item me-2"></i>New Score Sheet</li>
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent' && interview.stage !== 'Employement-Letter-Sent'" (click)="endInterview(interview)"> <i class="pi pi-stop-circle table-item me-2"></i>End Interview</li>
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent' && interview.stage !== 'Employement-Letter-Sent'" (click)="openInterviewInvite(interview)"> <i class="pi pi-angle-double-right table-item me-2"></i>Move to Next Stage</li>
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent' && interview.stage !== 'Employement-Letter-Sent'" (click)="openOfferLetter(interview)"> <i class="pi pi-file-arrow-up table-item me-2"></i>Offer Letter</li>
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Employement-Letter-Sent'" (click)="openAppointmentLetter(interview)" > <i class="pi pi-file-arrow-up table-item me-2"></i>Appointment Letter</li>
+                            <!-- <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent'"> <i class="pi pi-user-plus table-item me-2"></i>Add as Employee</li> -->
+                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress'"> <i class="pi pi-file-pdf table-item me-2"></i>Download Score Sheet</li>
+                            <!-- <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled'" (click)="sendRejected(interview)"> <i class="pi pi-delete-left table-item me-2"></i>Offer Rejected</li> -->
+                            <!-- <li class="table-item-panel" *ngIf="interview.stage !== 'Cancelled'" (click)="decline(interview)"> <i class="pi pi-delete-left table-item me-2"></i>Declined</li> -->
+                        </div>
+                      </p-overlayPanel>
+                </td>
+            </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="8" class="text-center text-[14px] py-4"> 
+                  No scheduled interview yet.
+                </td>
+              </tr>
+            </ng-template>
+        </p-table>
+    </div>
+</div>
+
+
+<div *ngIf="showInterviewInvite">
+    <app-interview-invite [candidate]="activeItem" (back)="close()" (sendInterviewInvite)="sendInvite($event)"></app-interview-invite>
+</div>
+
+<div *ngIf="showScoreSheet">
+  <app-interview-score-sheet [candidate]="activeItem" (back)="close()" (submitFrom)="SaveScoreSheet()"></app-interview-score-sheet>
+</div>
+
+<div *ngIf="showOfferLetter">
+  <app-offer-letter [candidate]="activeItem" (back)="close()" (submitFrom)="sendOffer($event)"></app-offer-letter>
+</div>
+
+<div *ngIf="showAppointment">
+  <app-appointment-letter [candidate]="activeItem" (back)="close()" (submitFrom)="sendAppointment($event)"></app-appointment-letter>
+</div>
+
+<app-modal 
+  *ngIf="viewModal"
+  [header]="'Viewing ' + activeItem.candidate + '\'s information'"
+  [title]="'Cancel'"
+  (close)="closeViewModal()">
+    <div class="view-wrapper">
+      <div class="d-flex gap-4 my-2">
+        <div class="input-container-50">
+            <label for="name"><strong>Name:</strong></label>
+            <span>  {{activeItem.firstName + ' ' + activeItem.lastName}}</span>
+        </div>
+        <div class="input-container-50">
+            <label for="phone-number"><strong>Phone Number:</strong></label>
+            <span>  {{activeItem.contactNo}}</span>
+        </div>
+      </div>
+      <div class="d-flex gap-4 my-2">
+        <div class="input-container-50">
+            <label for="email"><strong>Email:</strong></label>
+            <span>  {{activeItem.email}}</span>
+        </div>
+        <div class="input-container-50">
+            <label for="position"><strong>Position:</strong></label>
+            <span>  {{activeItem.position}}</span>
+        </div>
+      </div>
+      <div class="d-flex gap-4 my-2 ">
+        <div class="input-container-50 ">
+            <label for="email" class="me-2"><strong>Stage:</strong></label>
+            <span [ngClass]="getStatusClass(activeItem.stage)">
+              {{ activeItem.stage }}
+            </span>
+            <!-- <span>  {{activeItem.stage}}</span> -->
+        </div>
+        <div class="input-container-50">
+            <label for="position"><strong>Interview Stage:</strong></label>
+            <span>  {{activeItem.interviewStage}}</span>
+        </div>
+      </div>
+      <div class="d-flex gap-4 my-2">
+        <div class="input-container-50">
+            <label for="email"><strong>Interview Type:</strong></label>
+            <span>  {{activeItem.interviewType}}</span>
+        </div>
+        <div class="input-container-50">
+            <!-- <label for="position"><strong>Interview Stage:</strong></label>
+            <span>  {{activeItem.interviewStage}}</span> -->
+        </div>
+      </div>
+      <div class="d-flex gap-4 my-2">
+        <div class="input-container-50">
+            <label for="date"><strong>Date Applied:</strong></label>
+            <span>  {{activeItem.dateApplied}}</span>
+        </div>
+        <div class="input-container-50">
+            <label for="resume"><strong>Resume:</strong></label>
+            <span class="" style="color: var(--celadon-green); font-size: var(--md-font); cursor: pointer;" (click)="viewResume(activeItem.resume || '')">
+                View Resume
+            </span>
+        </div>
+      </div>
+      <div class="d-flex gap-4 my-2">
+        <div class="input-container-50">
+          <label for="cover-letter"><strong>Cover Letter:</strong></label>
+          <textarea class="cover-letter editInput" name="cover-letter" [(ngModel)]="activeItem.coverLetter" disabled></textarea>
+        </div>
+        <div class="input-container-50">
+          <label for="cover-letter" class="mb-2"><strong>Interview Score:</strong></label>
+          <div class="scorsheet-container editInput mb-2">
+            <span class="scorelabel">Interview {{activeItem.interviewStage}}</span>
+            <span class="scorevalue"> 30</span>
+          </div>
+          <div class="scoresheet-total">
+            <span class="scorelabel">Total</span>
+            <span class="scorevalue"> 30</span>
+          </div>
+        </div>
+      </div>
+    </div>
+</app-modal>
