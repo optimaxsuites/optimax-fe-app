@@ -13,19 +13,19 @@ const routes: Routes = [
   // }
 
   {
-    path: "recruitment",
+    path: "admin/hr/recruitment/:uuid",
     component: RecruitmentComponent
   },
   {
-    path: "leave",
+    path: "admin/hr/leave/:uuid",
     component: LeaveComponent
   },
   {
-    path: "attendance",
+    path: "admin/hr/attendance/:uuid",
     component: AttendanceComponent
   },
   {
-    path: "employee-management",
+    path: "admin/hr/employee-management/:uuid",
     component: EmployeeManagementComponent
   }
 
