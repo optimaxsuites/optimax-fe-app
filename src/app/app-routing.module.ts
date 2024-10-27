@@ -365,6 +365,10 @@ const routes: Routes = [
   //     }   
   //   ]
   // },
+  {
+    path: 'job-application',
+    component: JopOpeningsComponent, 
+  },
 ];
 
 

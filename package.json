@@ -9,7 +9,9 @@
     "test": "ng test",
     "build:prod": "ng build --configuration production",
     "pull-hr": "git subtree pull --prefix=projects/hr https://gitlab.com/Simeon0001/erp-hr.git master --squash",
-    "push-hr": "git subtree push --prefix=projects/hr https://gitlab.com/Simeon0001/erp-hr.git master"
+    "push-hr": "git subtree push --prefix=projects/hr https://gitlab.com/Simeon0001/erp-hr.git master",
+    "pullDashboard": "git subtree pull --prefix=projects/dashboard https://gitlab.com/queensheba/erp-dashboard.git master --squash",
+    "pushDashboard": "git subtree push --prefix=projects/dashboard https://gitlab.com/queensheba/erp-dashboard.git master"
 
   },
   "private": true,
