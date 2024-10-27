@@ -1,5 +1,8 @@
 import { Component } from '@angular/core';
 import { TabConfig } from '../../shared-component/service/interface/data';
+import { RecruitmentListComponent } from './recruitment-list/recruitment-list.component';
+import { CandidateComponent } from './candidate/candidate.component';
+import { ScheduledInterviewComponent } from './scheduled-interview/scheduled-interview.component';
 
 @Component({
   selector: 'app-recruitment',
@@ -11,6 +14,5 @@ export class RecruitmentComponent {
     { name: 'Job Vacancy', component: RecruitmentListComponent },
     { name: 'Job Applications', component: CandidateComponent },
     { name: 'Interview', component: ScheduledInterviewComponent },
-    // { name: 'Score Sheet', component: InterviewScoreSheetComponent },
   ];
 }
