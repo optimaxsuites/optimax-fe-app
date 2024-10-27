@@ -237,6 +237,7 @@ import { EmployeePayslipListComponent } from './ui/hr/view/payroll/employee-pays
 
 import { AppDashboardModule } from 'projects/dashboard/src/app/app.module';
 import { ToastrModule } from 'ngx-toastr';
+import { AppHrModule } from 'projects/hr/src/app/app.module';
 
 
 @NgModule({
@@ -412,6 +413,7 @@ import { ToastrModule } from 'ngx-toastr';
       BrowserModule,
       AppRoutingModule,
       AppDashboardModule,
+      AppHrModule,
       MatTabGroup,
       FormsModule, 
       MatTooltip,

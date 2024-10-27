@@ -175,6 +175,10 @@ const routes: Routes = [
         path: 'admin/dashboard/:uuid',
         loadChildren: () => import('../../projects/dashboard/src/app/app.module').then(m => m.AppDashboardModule),
       },
+      {
+        path: 'admin/hr/recuitment/:uuid',
+        loadChildren: () => import('../../projects/hr/src/app/app.module').then(m => m.AppHrModule),
+      },
       // {
       //   path: 'admin/sales/:uuid',
       //   component: SalesPageComponent,
