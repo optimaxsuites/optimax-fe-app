@@ -11,16 +11,18 @@ const routes: Routes = [
       children: [
         // { path: '', redirectTo: 'admin/settings/general-settings/:uuid', pathMatch: 'full' },
         {
-          path: 'general-settings',
+          path: 'general-settings/:uuid',
           component: GeneralSettingsComponent,
         },
         {
-          path: 'HR-settings',
+          path: 'HR-settings/:uuid',
           component: HrSettingsComponent,
         },
 
       ]
     },
+
+ 
 ];
 
 @NgModule({

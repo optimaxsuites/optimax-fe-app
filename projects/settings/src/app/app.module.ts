@@ -50,6 +50,9 @@ import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { SettingsPageComponent } from './ui/view/settings-page.component';
 import { ScoresheetConfigComponent } from './ui/view/hr/scoresheet-config/scoresheet-config.component';
+import { NavigationLinksService } from './ui/sharedComponents/service/navigation-links/navigation-links.service';
+import { MenuItemsService } from './ui/sharedComponents/service/menue-items/menu-items.service';
+import { GeneralSettingsComponent } from './ui/view/general/general-settings/general-settings.component';
 
 
 //
@@ -61,7 +64,8 @@ import { ScoresheetConfigComponent } from './ui/view/hr/scoresheet-config/scores
     HrSettingsComponent,
     SalaryComponent,
     SettingsPageComponent,
-    ScoresheetConfigComponent
+    ScoresheetConfigComponent,
+    GeneralSettingsComponent
   ],
   imports: [
     // BrowserModule,
@@ -111,9 +115,12 @@ import { ScoresheetConfigComponent } from './ui/view/hr/scoresheet-config/scores
       MatTooltip,
       MatTabGroup,
       MatMenuModule,
-    LargeSideModalComponent
+    LargeSideModalComponent,
   ],
-  providers: [],
+  providers: [
+    NavigationLinksService,
+    MenuItemsService
+  ],
   bootstrap: [AppComponent]
 })
 export class AppSettingsModule { }

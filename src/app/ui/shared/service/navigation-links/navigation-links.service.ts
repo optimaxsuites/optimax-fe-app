@@ -76,8 +76,8 @@ export class NavigationLinksService {
     this.links['closeRegister'] = '/user/checkout/closeRegister/' +uuidV4();
 
 // settings links ============================================================================================================
-    this.links['settingsLink'] = '/admin/settings/general-settings/' +uuidV4();
-    this.links['generalSettings'] = 'general-settings/' +uuidV4();
+    this.links['settingsLink'] = 'admin/settings/general-settings/' +uuidV4();
+    this.links['generalSettings'] = '/admin/settings/general-settings/' +uuidV4();
     this.links['HRSettings'] = 'HR-settings/' +uuidV4();
 
 
