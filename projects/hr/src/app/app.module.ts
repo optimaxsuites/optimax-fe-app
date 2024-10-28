@@ -96,7 +96,7 @@ import { Navbar2Component } from './ui/shared-component/view/navbar/navbar2.comp
 
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
