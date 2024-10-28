@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, isDevMode } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
-import { environment } from 'src/environments/environment.prod';
+import { environment } from '../shared-component/service/environments/environment.prod';
 
 
 @Injectable({

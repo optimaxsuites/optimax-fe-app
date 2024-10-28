@@ -15,9 +15,7 @@ export class InterviewScoreSheetComponent implements OnInit {
   interviewer: any = {};
   // candidate:any = {}
   allCriteria: QuestionDTO[] = [];
-  criteriaScore: QuestionDTO= {
-    
-  };
+  criteriaScore: QuestionDTO= {};
   selectedCriterias: QuestionItemDTO[] = [];
 
 
