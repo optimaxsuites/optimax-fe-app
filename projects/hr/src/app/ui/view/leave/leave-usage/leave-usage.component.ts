@@ -117,5 +117,5 @@ openViewRequest: boolean = false
         this.requestInView = request
         this.openViewRequest = true
         op.hide();
-        }
+      }
 }
