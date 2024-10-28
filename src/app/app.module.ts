@@ -5,7 +5,6 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { CommonModule } from '@angular/common';
 import { DashboardPageComponent } from './ui/view/dashboard-page/dashboard-page.component';
-import { LargeSideModalComponent } from './ui/sharedComponent/src/app/ui/view/large-side-modal/large-side-modal.component';
 
 
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -37,13 +36,13 @@ import { RippleModule } from 'primeng/ripple';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { PayslipViewComponent } from './ui/view/dashboard-page/payslip-view/payslip-view.component';
 import { EmployeePayslipsListComponent } from './ui/view/employee-payslips-list/employee-payslips-list.component';
+import { LargeSideModalComponent } from './ui/sharedComponent/view/large-side-modal/large-side-modal.component';
 
 
 
 @NgModule({
   declarations: [
     AppComponent,
-    DashboardPageComponent,
     PayslipViewComponent,
     EmployeePayslipsListComponent
   ],
