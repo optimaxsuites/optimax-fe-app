@@ -58,6 +58,11 @@ import { AppointmentLetterComponent } from './ui/view/recruitment/appointment-le
 import { InterviewScoreSheetComponent } from './ui/view/recruitment/interview-score-sheet/interview-score-sheet.component';
 import { AddEmployeeFormComponent } from './ui/view/employee-management/add-employee-form/add-employee-form.component';
 import { EmployeeOnboardingFormComponent } from './ui/view/employee-management/employee-onboarding-form/employee-onboarding-form.component';
+import { LeaveUsageComponent } from './ui/view/leave/leave-usage/leave-usage.component';
+import { LeaveRequestComponent } from './ui/view/leave/leave-request/leave-request.component';
+import { AssignLeaveComponent } from './ui/view/leave/assign-leave/assign-leave.component';
+import { ApplyComponent } from './ui/view/leave/apply/apply.component';
+import { Navbar2Component } from './ui/shared-component/view/navbar/navbar2.component';
 
 @NgModule({
   declarations: [
@@ -83,6 +88,12 @@ import { EmployeeOnboardingFormComponent } from './ui/view/employee-management/e
     InterviewScoreSheetComponent,
     AddEmployeeFormComponent,
     EmployeeOnboardingFormComponent,
+    LeaveUsageComponent,
+    LeaveRequestComponent,
+    AssignLeaveComponent,
+    ApplyComponent,
+    Navbar2Component
+
   ],
   imports: [
     // BrowserModule,

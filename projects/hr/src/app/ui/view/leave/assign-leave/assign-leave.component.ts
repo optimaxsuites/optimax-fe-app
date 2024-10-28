@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Component } from '@angular/core';
 import { MessageService } from 'primeng/api';
-import { RandomTokenService } from 'src/app/ui/shared/service/random-token/random-token.service';
-import { LeaveServiceService } from '../../service/leave-service.service';
+import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
+import { LeaveServiceService } from '../../../service/leave-service.service';
 
 @Component({
   selector: 'app-assign-leave',

@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { MessageService } from 'primeng/api';
-import { RandomTokenService } from 'src/app/ui/shared/service/random-token/random-token.service';
+import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
 
 @Component({
   selector: 'app-leave-request',
