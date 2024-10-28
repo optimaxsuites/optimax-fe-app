@@ -176,7 +176,7 @@ const routes: Routes = [
         loadChildren: () => import('../../projects/dashboard/src/app/app.module').then(m => m.AppDashboardModule),
       },
       {
-        path: 'admin/hr',
+        path: '',
         loadChildren: () => import('../../projects/hr/src/app/app.module').then(m => m.AppHrModule),
       },
       
