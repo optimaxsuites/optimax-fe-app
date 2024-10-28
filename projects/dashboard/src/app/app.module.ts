@@ -44,7 +44,8 @@ import { DashboardPageComponent } from './ui/view/dashboard-page/dashboard-page.
   declarations: [
     AppComponent,
     PayslipViewComponent,
-    EmployeePayslipsListComponent
+    EmployeePayslipsListComponent,
+    DashboardPageComponent
   ],
   imports: [
     // BrowserModule,
