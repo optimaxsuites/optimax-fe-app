@@ -356,20 +356,20 @@ const routes: Routes = [
     ],
   },
 
-  // {
-  //   path: 'career',
-  //   component: JopOpeningsComponent, 
-  //   children:[
-  //     {
-  //       path:'job-posting',
-  //       component: CareerJobPostingComponent,
-  //     },
-  //     {
-  //       path: 'job-posting/:id',
-  //       component: JobApplicationFormComponent,
-  //     }   
-  //   ]
-  // },
+  {
+    path: 'career',
+    component: JopOpeningsComponent, 
+    children:[
+      {
+        path:'job-posting',
+        component: CareerJobPostingComponent,
+      },
+      {
+        path: 'job-posting/:id',
+        component: JobApplicationFormComponent,
+      }   
+    ]
+  },
   {
     path: 'job-application',
     component: JopOpeningsComponent, 
