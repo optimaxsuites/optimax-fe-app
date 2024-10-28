@@ -7,8 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "pullDashboard": "git subtree pull --prefix=projects/dashboard https://gitlab.com/queensheba/erp-dashboard.git master --squash",
-    "pushDashboard": "git subtree push --prefix=projects/dashboard https://gitlab.com/queensheba/erp-dashboard.git master"
+    "pullShared": "git subtree pull --prefix=src/app/ui/shared-component https://gitlab.com/queensheba/erp-shared-component.git master --squash",
+    "pushShared": "git subtree push --prefix=src/app/ui/shared-component https://gitlab.com/queensheba/erp-shared-component.git master"
   },
   "private": true,
   "dependencies": {
