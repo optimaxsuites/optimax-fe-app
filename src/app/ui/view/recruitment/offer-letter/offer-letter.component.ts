@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { ApplicantDTO, AttachmentDTO } from 'src/app/ui/hr/domain/applicant.dto';
+import { ApplicantDTO, AttachmentDTO } from '../../../domain/applicant.dto';
+// import { ApplicantDTO, AttachmentDTO } from 'src/app/ui/hr/domain/applicant.dto';
 
 @Component({
   selector: 'app-offer-letter',
