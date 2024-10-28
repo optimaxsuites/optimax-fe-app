@@ -304,7 +304,7 @@ table{
 
 }
 th{
-    padding: 1rem;
+    padding: .5rem;
     box-sizing: border-box;
     background-color: var(--celadon-green);
     color: var(--white) ;
@@ -314,11 +314,8 @@ th{
 }
 
 td {
-    // padding: 0.6rem;
-    box-sizing: border-box;
-    /* background-color: #f1f1f1; */
-    /* color: #25925B ; */
-    
+    padding: 0.5rem;
+    box-sizing: border-box; 
 }
 
 .table-item-panel{
@@ -336,7 +333,7 @@ td {
 
 
 .table-item {
-  font-size: 1.3em; /* Adjust the font size as needed */
+  // font-size: 1.3em; /* Adjust the font size as needed */
 }
 
 
@@ -471,7 +468,7 @@ td {
     justify-content: end;
     display: flex;
     .pi-ellipsis-v{
-      padding: 1rem;
+      padding: .7rem;
       margin: 0;
       border-radius: 50%;
       background-color: #e0e0e0;
@@ -800,7 +797,7 @@ body {
   /* @apply border border-gray-300 rounded-lg p-3 w-full placeholder:text-gray-500 */
   border: 1px solid lightgrey;
   border-radius: 5px;
-  padding: .7rem;
+  padding: .4rem;
   width: 100%;
 
 }
