@@ -2,6 +2,9 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
+
+
 
 ////primeng
 import { ButtonModule } from 'primeng/button';
@@ -26,6 +29,8 @@ import { MessageModule } from 'primeng/message';
 import { RippleModule } from 'primeng/ripple';
 
 import { NgSelectModule } from '@ng-select/ng-select';
+import { FullCalendarModule } from '@fullcalendar/angular';
+
 
 
 import { AppHrRoutingModule } from './app-routing.module';
@@ -51,6 +56,8 @@ import { InterviewInviteComponent } from './ui/view/recruitment/interview-invite
 import { OfferLetterComponent } from './ui/view/recruitment/offer-letter/offer-letter.component';
 import { AppointmentLetterComponent } from './ui/view/recruitment/appointment-letter/appointment-letter.component';
 import { InterviewScoreSheetComponent } from './ui/view/recruitment/interview-score-sheet/interview-score-sheet.component';
+import { AddEmployeeFormComponent } from './ui/view/employee-management/add-employee-form/add-employee-form.component';
+import { EmployeeOnboardingFormComponent } from './ui/view/employee-management/employee-onboarding-form/employee-onboarding-form.component';
 
 @NgModule({
   declarations: [
@@ -73,7 +80,9 @@ import { InterviewScoreSheetComponent } from './ui/view/recruitment/interview-sc
     InterviewInviteComponent,
     OfferLetterComponent,
     AppointmentLetterComponent,
-    InterviewScoreSheetComponent
+    InterviewScoreSheetComponent,
+    AddEmployeeFormComponent,
+    EmployeeOnboardingFormComponent,
   ],
   imports: [
     // BrowserModule,
@@ -87,27 +96,34 @@ import { InterviewScoreSheetComponent } from './ui/view/recruitment/interview-sc
     ReactiveFormsModule,
     SidebarModule,
     TabViewModule,
-      ToolbarModule,
-      ConfirmDialogModule,
-      SplitButtonModule,
-      PanelModule,
-      DividerModule,
-      OverlayPanelModule,
-      StepperModule,
-      InputTextModule,
-      FloatLabelModule,
-      EditorModule,
-      MessagesModule,
-      MessageModule,
-      RippleModule,
-      TableModule,
-      PasswordModule,
-      ButtonModule,
-      NgSelectModule,
-
-    LargeSideModalComponent
+    ToolbarModule,
+    ConfirmDialogModule,
+    SplitButtonModule,
+    PanelModule,
+    DividerModule,
+    OverlayPanelModule,
+    StepperModule,
+    InputTextModule,
+    FloatLabelModule,
+    EditorModule,
+    MessagesModule,
+    MessageModule,
+    RippleModule,
+    TableModule,
+    PasswordModule,
+    ButtonModule,
+    NgSelectModule,
+    FullCalendarModule, 
+    LargeSideModalComponent,
+    
   ],
-  providers: [],
+  providers: [
+    {
+      provide: JWT_OPTIONS,
+      useValue: JWT_OPTIONS
+    },
+    JwtHelperService
+  ],
   bootstrap: [AppHrComponent]
 })
 export class AppHrModule { }
