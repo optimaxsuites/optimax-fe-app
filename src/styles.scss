@@ -13,8 +13,8 @@
 @import "node_modules/primeng/resources/primeng.min.css";
 
 /* Custom css */
-@import "assets/theme/theme.scss";
-@import "assets/layout/layout.css";
+// @import "assets/theme/theme.scss";
+// @import "assets/layout/layout.css";
 
 // QUILL CSS
 @import "../node_modules/quill/dist/quill.core.css";
@@ -64,22 +64,6 @@ $ERP-FE-theme: mat.define-light-theme(
 
 
 
-// // regular style toast
-// @import 'ngx-toastr/toastr';
-
-// // bootstrap style toast
-// // or import a bootstrap 4 alert styled design (SASS ONLY)
-// // should be after your bootstrap imports, it uses bs4 variables, mixins, functions
-// @import 'ngx-toastr/toastr-bs4-alert';
-
-// // if you'd like to use it without importing all of bootstrap it requires
-// @import 'bootstrap/scss/functions';
-// @import 'bootstrap/scss/variables';
-// @import 'bootstrap/scss/mixins';
-// // bootstrap 4
-// @import 'ngx-toastr/toastr-bs4-alert';
-// // boostrap 5
-// @import 'ngx-toastr/toastr-bs5-alert';
 
 
 
@@ -87,9 +71,56 @@ $ERP-FE-theme: mat.define-light-theme(
 
 
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+:root {
+    --celadon-green: #2EB270;
+    --celadon-green-hover: #47e797;
+    --blue-green: #2E6276;
+    --blue-green-hover: #4291b1;
+    --mint-green: #D6FFFE;
+    --anti-flash-white: #EEEEEE;
+    --light-blue: #B6D6E2;
+    --white: #fff;
+    --red: red;
+
+    // badge
+    --badge-grey: rgb(182, 182, 182);
+    --badge-red: rgb(233, 55, 55);
+    --badge-lightblue: rgb(101, 199, 231);
+    --badge-green: rgb(112, 231, 101);
+    --badge-yellow: rgb(231, 222, 101);
+    --badge-purple: rgb(158, 138, 231);
+    --badge-pink: rgb(192, 118, 174);
+
+    // icons
+    --icon-edit: #2EB270;
+    --icon-delete: red;
+    --icon-view: var(--badge-lightblue);
 
 
 
+    
+    --sky-blue: #f8feff;
+    --sky-blue-2: #e3eef0;
+    --gray-light: #f0f0f0;  /* Light gray for even rows */
+    --gray-dark: #e2e2e2;   /* Darker gray for odd rows */
+
+    --text-gray: #495057;
+    --sm-font: .8em;
+    --md-font: 1em;
+    --l-font: 1.2em;
+    --xl-font: 1.3em;
+    --xxl-font: 1.5em;
+
+
+    --border-5px: 5px;
+    /* --font-size: 10px; */
+    --font-family: 'Roboto Slab', serif;
+}
 
 // /* You can add global styles to this file, and also import other style files */
 // *, h1,h2,h3,h4,h5,h6{
@@ -104,72 +135,72 @@ $ERP-FE-theme: mat.define-light-theme(
   font-family: "Roboto Slab", serif;
   
 }
-html,
-body {
-  height: 100%;
-  font-size: 10px;
-}
-body {
-  // margin: 0;
-  font-family: "Roboto Slab", serif;
-}
+// html,
+// body {
+//   height: 100%;
+//   // font-size: 10px;
+// }
+// body {
+//   // margin: 0;
+//   font-family: "Roboto Slab", serif;
+// }
 
-h1,h2,h3,h4,h5,h6{
-  font-family: "Roboto Slab", serif;
-}
+// h1,h2,h3,h4,h5,h6{
+//   font-family: "Roboto Slab", serif;
+// }
 
-@media screen and (min-width: 1200px){
-  html,
-body {
-  font-size: 10px;
-}
-}
+// @media screen and (min-width: 1200px){
+//   html,
+// body {
+//   // font-size: 10px;
+// }
+// }
 
-.p-toast{
-  font-size: 1em;
-}
-.p-dialog{
-  font-size: 1em;
-}
-.p-panel{
-  font-size: 1.1em;
-}
+// .p-toast{
+//   font-size: 1em;
+// }
+// .p-dialog{
+//   font-size: 1em;
+// }
+// .p-panel{
+//   font-size: 1.1em;
+// }
 
 
 
-.p-divider{
-  margin: 0;
-  padding: 0;
-}
+// .p-divider{
+//   margin: 0;
+//   padding: 0;
+// }
 
-.pi{
-  cursor: pointer;
-}
+// .pi{
+//   cursor: pointer;
+// }
 
-.pi-times-circle, .pi-trash{
-  color: red;
-}
+// .pi-times-circle, .pi-trash{
+//   color: red;
+// }
 
-.button{
-  background-color: red;
-  font-size: 5em;
-}
+// .button{
+//   background-color: red;
+//   font-size: 5em;
+// }
 
-.custom-header {
-  font-size: 2rem; 
-  color: purple; 
-  font-weight: bold;
-  text-decoration: none ;
-  margin-bottom: 1rem;
-  padding: 0;
-}
-.custom-header > a {
-  color: #224957; 
-  font-weight: bold;
-  text-decoration: none ;
-}
-.custom-header > a[aria-selected="true"] {
-  background-color: rgb(37 146 91 / 0.6);
-  color: white;
-  border-radius: 1rem;
-}
+// .custom-header {
+//   font-size: 2rem; 
+//   color: purple; 
+//   font-weight: bold;
+//   text-decoration: none ;
+//   margin-bottom: 1rem;
+//   padding: 0;
+// }
+// .custom-header > a {
+//   color: #224957; 
+//   font-weight: bold;
+//   text-decoration: none ;
+// }
+// .custom-header > a[aria-selected="true"] {
+//   background-color: rgb(37 146 91 / 0.6);
+//   color: white;
+//   border-radius: 1rem;
+// }
