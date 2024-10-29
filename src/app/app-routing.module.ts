@@ -183,7 +183,10 @@ const routes: Routes = [
         path: 'admin/settings',
         loadChildren: () => import('../../projects/settings/src/app/app.module').then(m => m.AppSettingsModule),
       },
-      
+      {
+        path: '',
+        loadChildren: () => import('../../projects/POS/src/app/app.module').then(m => m.AppPOSModule),
+      },
       // {
       //   path: 'admin/sales/:uuid',
       //   component: SalesPageComponent,

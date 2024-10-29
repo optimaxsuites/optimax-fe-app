@@ -125,7 +125,7 @@ import { HttpClientModule } from '@angular/common/http';
       PasswordModule,
       ButtonModule,
       NgSelectModule,
-      BrowserAnimationsModule,
+      // BrowserAnimationsModule,
     LargeSideModalComponent,
     ButtonComponent,
     ModalComponent,
