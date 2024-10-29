@@ -8,11 +8,11 @@ import { EmployeeManagementComponent } from './ui/view/employee-management/emplo
 
 const routes: Routes = [
 
-  {
-    path:'',
-    redirectTo: 'admin/hr/recruitment/uu',
-    pathMatch:'full'
-  },
+  // {
+  //   path:'',
+  //   redirectTo: 'admin/hr/recruitment/uu',
+  //   pathMatch:'full'
+  // },
   {
     path: "admin/hr/recruitment/:uuid",
     component: RecruitmentComponent
