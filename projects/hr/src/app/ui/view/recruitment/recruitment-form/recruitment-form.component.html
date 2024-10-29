@@ -9,53 +9,67 @@
 
 
       <div class="input-container-100 flex-item justify-center text-xl">
-        <div class="input-container-50 space-y-2">
+        <div class="input-container-50 space-y-20">
           <!-- Job Title -->
-          <label for="jobTitle">Job Title: <span style="color: red;">*</span></label>
-          <input type="text" id="jobTitle" placeholder="Job Title" class="editInput h-[36px]" name="jobTitle" [(ngModel)]="jobData.title" required>
+           <div>
+            <label for="jobTitle">Job Title: <span style="color: red;">*</span></label>
+            <input type="text" id="jobTitle" placeholder="Job Title" class="editInput h-[36px]" name="jobTitle" [(ngModel)]="jobData.title" required>
+           </div>
           <!-- Job Category -->
-          <label for="jobCategory">Category: <span style="color: red;">*</span></label>
-          <ng-select 
-            bindLabel="name"
-            placeholder="Select Category"
-            [(ngModel)]="jobData.category"
-            [items]="jobCategories">
-          </ng-select>
+           <div>
+            <label for="jobCategory">Category: <span style="color: red;">*</span></label>
+            <ng-select 
+              bindLabel="name"
+              placeholder="Select Category"
+              [(ngModel)]="jobData.category"
+              [items]="jobCategories">
+            </ng-select>
+           </div>
           <!-- Job Type -->
-          <label for="jobType">Job Type: <span style="color: red;">*</span></label>
-          <ng-select 
-            bindLabel="name"
-            placeholder="Select Job Type"
-            [(ngModel)]="jobData.employmentType"
-            [items]="jobTypes">
-          </ng-select>
+           <div>
+            <label for="jobType">Job Type: <span style="color: red;">*</span></label>
+            <ng-select 
+              bindLabel="name"
+              placeholder="Select Job Type"
+              [(ngModel)]="jobData.employmentType"
+              [items]="jobTypes">
+            </ng-select>
+           </div>
           <!-- Job Location -->
-          <label for="jobLocation">Location:</label>
+          <div>
+            <label for="jobLocation">Location:</label>
           <input type="text" id="jobLocation" placeholder="Location" class="editInput h-[36px]" name="jobLocation" [(ngModel)]="jobData.location" required>
+          </div>
           <!-- Experience -->
-          <label for="experience">Experience:</label>
-          <ng-select 
-            bindLabel="name"
-            placeholder="Select Experience Year"
-            [(ngModel)]="jobData.experience"
-            [items]="experienceLevels">
-          </ng-select>
+           <div>
+            <label for="experience">Experience:</label>
+            <ng-select 
+              bindLabel="name"
+              placeholder="Select Experience Year"
+              [(ngModel)]="jobData.experience"
+              [items]="experienceLevels">
+            </ng-select>
+           </div>
           <!-- Qualification -->
-          <label for="qualification">Qualification:</label>
-          <ng-select 
-            bindLabel="name"
-            placeholder="Select Qualification"
-            [(ngModel)]="jobData.qualification"
-            [items]="jobQualification">
-          </ng-select>
+           <div>
+            <label for="qualification">Qualification:</label>
+            <ng-select 
+              bindLabel="name"
+              placeholder="Select Qualification"
+              [(ngModel)]="jobData.qualification"
+              [items]="jobQualification">
+            </ng-select>
+           </div>
           <!-- specification -->
-          <label for="specification">Specification:</label>
-          <ng-select 
-            bindLabel="name"
-            placeholder="Select Specification"
-            [(ngModel)]="jobData.specification"
-            [items]="jobSpecifications">
-          </ng-select>
+           <div>
+            <label for="specification">Specification:</label>
+            <ng-select 
+              bindLabel="name"
+              placeholder="Select Specification"
+              [(ngModel)]="jobData.specification"
+              [items]="jobSpecifications">
+            </ng-select>
+           </div>
           <div class="input-container-100 d-flex gap-2">
             <div class="input-container-50 space-y-2">
               <!-- Posted Date -->
@@ -97,7 +111,7 @@
         </div>
       </div>
       <div class="btn-wrapper">
-        <app-button (click)="submitForm()" text="{{ isEdit ? 'Update' : 'Create' }}" type="submit" class="btn-save"></app-button>
+        <app-button (click)="submitForm()" text="{{ isEdit ? 'Update' : 'Create' }}" type="submit" class="bg-customBlue text-white hover:bg-customBlueHover"></app-button>
       </div>
     </div>
   </div>
