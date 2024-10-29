@@ -7,11 +7,12 @@ import { AttendanceComponent } from './ui/view/attendance/attendance.component';
 import { EmployeeManagementComponent } from './ui/view/employee-management/employee-management.component';
 
 const routes: Routes = [
-  // {
-  //   path: "",
-  //   component: AppHrComponent
-  // }
 
+  {
+    path:'',
+    redirectTo: 'admin/hr/recruitment/uu',
+    pathMatch:'full'
+  },
   {
     path: "admin/hr/recruitment/:uuid",
     component: RecruitmentComponent

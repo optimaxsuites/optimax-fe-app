@@ -1,5 +1,7 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+
 
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
@@ -97,6 +99,7 @@ import { Navbar2Component } from './ui/shared-component/view/navbar/navbar2.comp
   ],
   imports: [
     // BrowserModule,
+    // BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,

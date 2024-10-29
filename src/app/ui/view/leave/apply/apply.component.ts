@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
 
@@ -9,7 +9,7 @@ import { RandomTokenService } from '../../../shared-component/service/random-tok
   providers: [MessageService]
 
 })
-export class ApplyComponent {
+export class ApplyComponent implements OnInit {
 
   userInfoRegData: any[] = [];
   userRegData: any = { };
@@ -45,7 +45,7 @@ constructor(
 ) {
 }
   ngOnInit() {
-  this.userInfoRegData = JSON.parse(sessionStorage["userPrimaryInfoRegData"]);
+  // this.userInfoRegData = JSON.parse(sessionStorage["userPrimaryInfoRegData"]);
   this.userRegData = this.userInfoRegData;
 
   }
