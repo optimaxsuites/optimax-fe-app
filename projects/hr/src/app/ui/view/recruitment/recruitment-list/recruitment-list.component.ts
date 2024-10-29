@@ -2,12 +2,21 @@ import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { JobDTO } from '../../../domain/job.dto';
 import { DomSanitizer } from '@angular/platform-browser';
+import { animate, state, style, transition, trigger } from '@angular/animations';
 
 @Component({
   selector: 'app-recruitment-list',
   templateUrl: './recruitment-list.component.html',
   styleUrl: './recruitment-list.component.scss',
   providers: [MessageService, ConfirmationService],
+  // animations: [
+  //   trigger('animation', [
+  //     state('start', style({ opacity: 1 })),
+  //     state('end', style({ opacity: 0 })),
+  //     transition('start => end', [animate('500ms ease-out')]),
+  //     transition('end => start', [animate('500ms ease-in')])
+  //   ])
+  // ]
 
 })
 export class RecruitmentListComponent implements OnInit {
@@ -137,6 +146,10 @@ export class RecruitmentListComponent implements OnInit {
   viewJob(job: JobDTO){
     this.activeItem = { ...job };
     this.viewModal = true;
+  }
+
+  console(){
+    console.log('clicked')
   }
 
   closeViewModal(){

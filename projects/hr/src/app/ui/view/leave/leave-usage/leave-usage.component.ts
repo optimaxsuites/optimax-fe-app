@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { OverlayPanel } from 'primeng/overlaypanel';
 
 @Component({
@@ -6,7 +6,7 @@ import { OverlayPanel } from 'primeng/overlaypanel';
   templateUrl: './leave-usage.component.html',
   styleUrl: './leave-usage.component.scss'
 })
-export class LeaveUsageComponent {
+export class LeaveUsageComponent implements OnInit {
 
   statuses: string[] = ['Pending Approval', 'Approved', 'Rejected']
 
@@ -41,11 +41,11 @@ openViewRequest: boolean = false
 
 
   ngOnInit() {
-    this.userInfoRegData = JSON.parse(sessionStorage["userPrimaryInfoRegData"]);
+    // this.userInfoRegData = JSON.parse(sessionStorage["userPrimaryInfoRegData"]);
     this.userRegData = this.userInfoRegData;
 
     this.allRequests = JSON.parse(localStorage.getItem("leaveRequest") || '[]');
-
+    console.log(this.allRequests)
     this.filteredRequests = this.allRequests.filter((request: any) => request.Employee === this.userRegData.fullname);
     this.myRequests = [...this.filteredRequests]
   this.sortByStatus()
