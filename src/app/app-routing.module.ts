@@ -179,7 +179,14 @@ const routes: Routes = [
         path: '',
         loadChildren: () => import('../../projects/hr/src/app/app.module').then(m => m.AppHrModule),
       },
-      
+      {
+        path: 'admin/settings',
+        loadChildren: () => import('../../projects/settings/src/app/app.module').then(m => m.AppSettingsModule),
+      },
+      {
+        path: '',
+        loadChildren: () => import('../../projects/POS/src/app/app.module').then(m => m.AppPOSModule),
+      },
       // {
       //   path: 'admin/sales/:uuid',
       //   component: SalesPageComponent,

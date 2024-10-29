@@ -12,7 +12,13 @@
     "push-hr": "git subtree push --prefix=projects/hr https://gitlab.com/Simeon0001/erp-hr.git master",
     
     "pullDashboard": "git subtree pull --prefix=projects/dashboard https://gitlab.com/queensheba/erp-dashboard.git master --squash",
-    "pushDashboard": "git subtree push --prefix=projects/dashboard https://gitlab.com/queensheba/erp-dashboard.git master"
+    "pushDashboard": "git subtree push --prefix=projects/dashboard https://gitlab.com/queensheba/erp-dashboard.git master",
+
+    "pullSettings": "git subtree pull --prefix=projects/settings https://gitlab.com/queensheba/erp-settings.git master --squash",
+    "pushSettings": "git subtree push --prefix=projects/settings https://gitlab.com/queensheba/erp-settings.git master",
+
+    "pullPOS": "git subtree pull --prefix=projects/POS https://gitlab.com/queensheba/erp-POS.git master --squash",
+    "pushPOS": "git subtree push --prefix=projects/POS https://gitlab.com/queensheba/erp-POS.git master"
 
   },
   "private": true,
