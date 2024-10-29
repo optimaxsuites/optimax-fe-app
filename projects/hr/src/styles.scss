@@ -2,10 +2,52 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-// Custom Theming for Angular Material
-// For more information: https://material.angular.io/guide/theming
-// @use "../node_modules/@angular/material/index" as mat;
-// Plus imports for other components in your app.
+
+:root {
+  --celadon-green: #2EB270;
+  --celadon-green-hover: #47e797;
+  --blue-green: #2E6276;
+  --blue-green-hover: #4291b1;
+  --mint-green: #D6FFFE;
+  --anti-flash-white: #EEEEEE;
+  --light-blue: #B6D6E2;
+  --white: #fff;
+  --red: red;
+
+  // badge
+  --badge-grey: rgb(182, 182, 182);
+  --badge-red: rgb(233, 55, 55);
+  --badge-lightblue: rgb(101, 199, 231);
+  --badge-green: rgb(112, 231, 101);
+  --badge-yellow: rgb(231, 222, 101);
+  --badge-purple: rgb(158, 138, 231);
+  --badge-pink: rgb(192, 118, 174);
+
+  // icons
+  --icon-edit: #2EB270;
+  --icon-delete: red;
+  --icon-view: var(--badge-lightblue);
+
+
+
+  
+  --sky-blue: #f8feff;
+  --sky-blue-2: #e3eef0;
+  --gray-light: #f0f0f0;  /* Light gray for even rows */
+  --gray-dark: #e2e2e2;   /* Darker gray for odd rows */
+
+  --text-gray: #495057;
+  --sm-font: .8em;
+  --md-font: 1em;
+  --l-font: 1.2em;
+  --xl-font: 1.3em;
+  --xxl-font: 1.5em;
+
+
+  --border-5px: 5px;
+  /* --font-size: 10px; */
+  --font-family: 'Roboto Slab', serif;
+}
 
 @import "../node_modules/@ng-select/ng-select/themes/default.theme.css";
 
@@ -22,24 +64,10 @@
 
 
 
-//tailwind style
-// @import "assets/theme/theme.css";
-
-// Include the common styles for Angular Material. We include this here so that you only
-// have to load a single css file for Angular Material in your app.
-// Be sure that you only ever include this mixin once!
-// @include mat.core();
-
-.my-outlined-dialog {
-  outline: 2px solid rgb(28, 0, 128);
-}
 
 
-
-
-
-@import "app/ui/shared-component/assets/layout/layout.css";
-@import "app/ui/shared-component/assets/theme/theme.scss";
+// @import "app/ui/shared-component/assets/layout/layout.css";
+// @import "app/ui/shared-component/assets/theme/theme.scss";
 
 
 
@@ -52,6 +80,153 @@
     font-family: "Roboto Slab", serif;
     
   }
+
+
+  table{
+    text-align: left;
+    width: 100%;
+    table-layout: auto;
+    overflow-x: auto;
+
+}
+// th{
+//     padding: 1rem;
+//     box-sizing: border-box;
+//     background-color: var(--celadon-green);
+//     color: var(--white) ;
+// }
+.p-table-row{
+  border-bottom: 1px solid rgb(238, 238, 238);
+}
+
+td {
+    // padding: 0.6rem;
+    box-sizing: border-box;
+    /* background-color: #f1f1f1; */
+    /* color: #25925B ; */
+    
+}
+
+.table-item-panel{
+  cursor: pointer;
+  font-size: var(--l-font);
+  padding: .8rem 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.table-item-panel:hover{
+  color: var(--white);
+  background-color: var(--celadon-green);
+}
+
+
+// badge
+.badge {
+  padding: .7rem 2rem !important;
+  border-radius: 5px !important;
+  color: #fff !important;
+  font-weight: 300 !important;
+  font-size: var(--md-font) !important;
+}
+
+.badge-lightgrey {
+  background-color: var(--badge-grey);
+}
+
+.badge-lightblue {
+  background-color: var(--badge-lightblue);
+}
+.badge-lightred {
+  background-color: var(--badge-red);
+}
+
+.badge-lightgreen {
+  background-color: var(--badge-green);
+}
+.badge-lightyellow {
+  background-color: var(--badge-yellow);
+}
+.badge-lightpurple {
+  background-color: var(--badge-purple);
+}
+.badge-lightpink {
+  background-color: var(--badge-pink);
+}
+.icon-view{
+  color: var(--icon-view);
+}
+.icon-edit{
+  color: var(--icon-edit);
+}
+.icon-delete{
+  color: var(--icon-delete);
+}
+
+
+.search-bar{
+  padding: 0rem 1rem 1rem 1rem;
+}
+.editInput {
+  /* @apply border border-gray-300 rounded-lg p-3 w-full placeholder:text-gray-500 */
+  border: 1px solid lightgrey;
+  border-radius: 5px;
+  padding: .4rem;
+  width: 100%;
+
+}
+
+
+
+.custom-ng-select {
+  width: 100%;
+  // min-width: 50%;
+  // max-width: fit-content;
+}
+
+.ng-select {
+  border: none;
+}
+
+
+.ng-select .ng-option {
+  white-space: nowrap;
+}
+
+.ng-select .ng-dropdown-panel {
+  overflow: visible !important; /* Ensure dropdown options overflow properly */
+  z-index: 1000; /* Ensure dropdown is above table and other elements */
+}
+
+.ng-dropdown-panel {
+  position: absolute;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //   html,
 //   body {
 //     height: 100%;
@@ -122,3 +297,4 @@
 //     border-radius: 1rem;
 //   }
   
+/* You can add global styles to this file, and also import other style files */
