@@ -1,62 +1,20 @@
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+// Custom Theming for Angular Material
+// For more information: https://material.angular.io/guide/theming
+@use "@angular/material" as mat;
+// Plus imports for other components in your app.
 
-:root {
-  --celadon-green: #2EB270;
-  --celadon-green-hover: #47e797;
-  --blue-green: #2E6276;
-  --blue-green-hover: #4291b1;
-  --mint-green: #D6FFFE;
-  --anti-flash-white: #EEEEEE;
-  --light-blue: #B6D6E2;
-  --white: #fff;
-  --red: red;
-
-  // badge
-  --badge-grey: rgb(182, 182, 182);
-  --badge-red: rgb(233, 55, 55);
-  --badge-lightblue: rgb(101, 199, 231);
-  --badge-green: rgb(112, 231, 101);
-  --badge-yellow: rgb(231, 222, 101);
-  --badge-purple: rgb(158, 138, 231);
-  --badge-pink: rgb(192, 118, 174);
-
-  // icons
-  --icon-edit: #2EB270;
-  --icon-delete: red;
-  --icon-view: var(--badge-lightblue);
-
-
-
-  
-  --sky-blue: #f8feff;
-  --sky-blue-2: #e3eef0;
-  --gray-light: #f0f0f0;  /* Light gray for even rows */
-  --gray-dark: #e2e2e2;   /* Darker gray for odd rows */
-
-  --text-gray: #495057;
-  --sm-font: .8em;
-  --md-font: 1em;
-  --l-font: 1.2em;
-  --xl-font: 1.3em;
-  --xxl-font: 1.5em;
-
-
-  --border-5px: 5px;
-  /* --font-size: 10px; */
-  --font-family: 'Roboto Slab', serif;
-}
-
-@import "../node_modules/@ng-select/ng-select/themes/default.theme.css";
+@import "@ng-select/ng-select/themes/default.theme.css";
 
 
 // custom primeUI
-@import "../node_modules/primeng/resources/themes/saga-green/theme.css";
-@import "../node_modules/primeng/resources/primeng.css";
-@import "../node_modules/primeng/resources/primeng.min.css";
+// @import "primeng/resources/themes/saga-green/theme.css";
+// @import "primeng/resources/primeng.css";
+// @import "node_modules/primeng/resources/primeng.min.css";
 
+/* Custom css */
+@import "app/ui/shared-component/assets/theme/theme.scss";
+@import "app/ui/shared-component/assets/layout/layout.css";
 
 // QUILL CSS
 @import "../node_modules/quill/dist/quill.core.css";
@@ -64,249 +22,152 @@
 
 
 
+//tailwind style
+// @import "assets/theme/theme.css";
 
+// Include the common styles for Angular Material. We include this here so that you only
+// have to load a single css file for Angular Material in your app.
+// Be sure that you only ever include this mixin once!
+@include mat.core();
 
-// @import "app/ui/shared-component/assets/layout/layout.css";
-// @import "app/ui/shared-component/assets/theme/theme.scss";
+// Define the palettes for your theme using the Material Design palettes available in palette.scss
+// (imported above). For each palette, you can optionally specify a default, lighter, and darker
+// hue. Available color palettes: https://material.io/design/color/
+$ERP-FE-primary: mat.define-palette(mat.$green-palette, 700);
+$ERP-FE-accent: mat.define-palette(mat.$cyan-palette, 900);
 
+// // The warn palette is optional (defaults to red).
+$ERP-FE-warn: mat.define-palette(mat.$red-palette);
 
+// // Create the theme object. A theme consists of configurations for individual
+// // theming systems such as "color" or "typography".
+$ERP-FE-theme: mat.define-light-theme(
+  (
+    color: (
+      primary: $ERP-FE-primary,
+      accent: $ERP-FE-accent,
+      warn: $ERP-FE-warn,
+    ),
+    typography: mat.define-typography-config(),
+    density: 0,
+  )
+);
 
-* {
-    // padding: 0;
-    // margin: 0;
-    list-style: none;
-    outline: none;
-    text-decoration: none;
-    font-family: "Roboto Slab", serif;
-    
-  }
-
-
-  table{
-    text-align: left;
-    width: 100%;
-    table-layout: auto;
-    overflow-x: auto;
-
+// // Include theme styles for core and each component used in your app.
+// // Alternatively, you can import and @include the theme mixins for each component
+// // that you are using.
+@include mat.all-component-themes($ERP-FE-theme);
+.my-outlined-dialog {
+  outline: 2px solid rgb(28, 0, 128);
 }
-// th{
-//     padding: 1rem;
-//     box-sizing: border-box;
-//     background-color: var(--celadon-green);
-//     color: var(--white) ;
+
+
+
+
+// // regular style toast
+// @import 'ngx-toastr/toastr';
+
+// // bootstrap style toast
+// // or import a bootstrap 4 alert styled design (SASS ONLY)
+// // should be after your bootstrap imports, it uses bs4 variables, mixins, functions
+// @import 'ngx-toastr/toastr-bs4-alert';
+
+// // if you'd like to use it without importing all of bootstrap it requires
+// @import 'bootstrap/scss/functions';
+// @import 'bootstrap/scss/variables';
+// @import 'bootstrap/scss/mixins';
+// // bootstrap 4
+// @import 'ngx-toastr/toastr-bs4-alert';
+// // boostrap 5
+// @import 'ngx-toastr/toastr-bs5-alert';
+
+
+
+
+
+
+
+
+
+
+
+// /* You can add global styles to this file, and also import other style files */
+// *, h1,h2,h3,h4,h5,h6{
+//   font-family: "Roboto Slab", serif;
 // }
-.p-table-row{
-  border-bottom: 1px solid rgb(238, 238, 238);
+* {
+  // padding: 0;
+  // margin: 0;
+  list-style: none;
+  outline: none;
+  text-decoration: none;
+  font-family: "Roboto Slab", serif;
+  
+}
+html{
+  height: 100%;
+  font-size: 10px;
+}
+body {
+  // margin: 0;
+  font-family: "Roboto Slab", serif;
 }
 
-td {
-    // padding: 0.6rem;
-    box-sizing: border-box;
-    /* background-color: #f1f1f1; */
-    /* color: #25925B ; */
-    
+h1,h2,h3,h4,h5,h6{
+  font-family: "Roboto Slab", serif;
 }
 
-.actions {
-  justify-content: end;
+@media screen and (min-width: 1200px){
+  html {
+  font-size: 10px;
+}
+}
+
+.p-toast{
+  font-size: 1em;
+}
+.p-dialog{
+  font-size: 1em;
+}
+.p-panel{
+  font-size: 1.1em;
+}
+
+
+
+.p-divider{
+  margin: 0;
+  padding: 0;
+}
+
+.pi{
   cursor: pointer;
-  display: flex;
-  .pi-ellipsis-v{
-    padding: .5rem;
-    margin: 0;
-    border-radius: 50%;
-    background-color: #e0e0e0;
-  }
 }
 
-.table-item-panel{
-  cursor: pointer;
-  font-size: var(--l-font);
-  padding: .8rem 1rem;
-  display: flex;
-  align-items: center;
+.pi-times-circle, .pi-trash{
+  color: red;
 }
 
-.table-item-panel:hover{
-  color: var(--white);
-  background-color: var(--celadon-green);
+.button{
+  background-color: red;
+  font-size: 5em;
 }
 
-
-// badge
-.badge {
-  padding: .7rem 2rem !important;
-  border-radius: 5px !important;
-  color: #fff !important;
-  font-weight: 300 !important;
-  font-size: var(--md-font) !important;
+.custom-header {
+  font-size: 2rem; 
+  color: purple; 
+  font-weight: bold;
+  text-decoration: none ;
+  margin-bottom: 1rem;
+  padding: 0;
 }
-
-.badge-lightgrey {
-  background-color: var(--badge-grey);
+.custom-header > a {
+  color: #224957; 
+  font-weight: bold;
+  text-decoration: none ;
 }
-
-.badge-lightblue {
-  background-color: var(--badge-lightblue);
+.custom-header > a[aria-selected="true"] {
+  background-color: rgb(37 146 91 / 0.6);
+  color: white;
+  border-radius: 1rem;
 }
-.badge-lightred {
-  background-color: var(--badge-red);
-}
-
-.badge-lightgreen {
-  background-color: var(--badge-green);
-}
-.badge-lightyellow {
-  background-color: var(--badge-yellow);
-}
-.badge-lightpurple {
-  background-color: var(--badge-purple);
-}
-.badge-lightpink {
-  background-color: var(--badge-pink);
-}
-.icon-view{
-  color: var(--icon-view);
-}
-.icon-edit{
-  color: var(--icon-edit);
-}
-.icon-delete{
-  color: var(--icon-delete);
-}
-
-
-.search-bar{
-  padding: 0rem 1rem 1rem 1rem;
-}
-.editInput {
-  /* @apply border border-gray-300 rounded-lg p-3 w-full placeholder:text-gray-500 */
-  border: 1px solid lightgrey;
-  border-radius: 5px;
-  padding: .4rem;
-  width: 100%;
-
-}
-
-
-
-.custom-ng-select {
-  width: 100%;
-  // min-width: 50%;
-  // max-width: fit-content;
-}
-
-.ng-select {
-  border: none;
-}
-
-
-.ng-select .ng-option {
-  white-space: nowrap;
-}
-
-.ng-select .ng-dropdown-panel {
-  overflow: visible !important; /* Ensure dropdown options overflow properly */
-  z-index: 1000; /* Ensure dropdown is above table and other elements */
-}
-
-.ng-dropdown-panel {
-  position: absolute;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//   html,
-//   body {
-//     height: 100%;
-//     // font-size: 10px;
-//   }
-//   body {
-//     // margin: 0;
-//     font-family: "Roboto Slab", serif;
-//   }
-  
-//   h1,h2,h3,h4,h5,h6{
-//     font-family: "Roboto Slab", serif;
-//   }
-  
-//   @media screen and (min-width: 1200px){
-//     html,
-//   body {
-//     // font-size: 10px;
-//   }
-//   }
-  
-//   .p-toast{
-//     font-size: 1em;
-//   }
-//   .p-dialog{
-//     font-size: 1em;
-//   }
-//   .p-panel{
-//     font-size: 1.1em;
-//   }
-  
-  
-  
-//   .p-divider{
-//     margin: 0;
-//     padding: 0;
-//   }
-  
-//   .pi{
-//     cursor: pointer;
-//   }
-  
-//   .pi-times-circle, .pi-trash{
-//     color: red;
-//   }
-  
-//   .button{
-//     background-color: red;
-//     font-size: 5em;
-//   }
-  
-//   .custom-header {
-//     font-size: 2rem; 
-//     color: purple; 
-//     font-weight: bold;
-//     text-decoration: none ;
-//     margin-bottom: 1rem;
-//     padding: 0;
-//   }
-//   .custom-header > a {
-//     color: #224957; 
-//     font-weight: bold;
-//     text-decoration: none ;
-//   }
-//   .custom-header > a[aria-selected="true"] {
-//     background-color: rgb(37 146 91 / 0.6);
-//     color: white;
-//     border-radius: 1rem;
-//   }
-  
-/* You can add global styles to this file, and also import other style files */

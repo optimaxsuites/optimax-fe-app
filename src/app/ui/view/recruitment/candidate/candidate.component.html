@@ -17,11 +17,11 @@
       </ng-template>
     </p-toolbar> -->
 
-    <div class="flex w-full justify-between ">
-      <div class="w-1/1">
+    <div class="flex w-full justify-between px-3">
+      <div class="input-container-100">
         <ng-select 
           [items]="positions || []"
-          class="px-3"
+          class="input-container-100"
           bindLabel="position"
           [multiple]="true"
           placeholder="Filter by position"
@@ -30,11 +30,11 @@
         </ng-select>
       </div>
 
-      <div class="search-bar w-[90%]">
+      <div class="search-bar w-full">
         <input 
           type="text" 
           placeholder="Search" 
-          class="editInput"
+          class="editInput h-[36px]"
           [(ngModel)]="searchTerm"
           (ngModelChange)="filterCandidates()"
         />
@@ -49,7 +49,7 @@
       [rows]="15"
       >
         <ng-template pTemplate="header">
-          <tr class="text-[13px]">
+          <tr>
             <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
             <th class="table-item" pSortableColumn="candidate">Candidate</th>
             <th class="table-item" pSortableColumn="email">Email</th>
