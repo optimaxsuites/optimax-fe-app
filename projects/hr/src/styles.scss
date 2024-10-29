@@ -107,6 +107,18 @@ td {
     
 }
 
+.actions {
+  justify-content: end;
+  cursor: pointer;
+  display: flex;
+  .pi-ellipsis-v{
+    padding: .5rem;
+    margin: 0;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+  }
+}
+
 .table-item-panel{
   cursor: pointer;
   font-size: var(--l-font);
