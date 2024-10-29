@@ -32,6 +32,11 @@ const routes: Routes = [
 
 ];
 
+// @NgModule({
+//   imports: [RouterModule.forRoot(routes)],
+//   exports: [RouterModule]
+// })
+
 @NgModule({
   imports: [RouterModule.forChild(routes)],
   exports: [RouterModule]
