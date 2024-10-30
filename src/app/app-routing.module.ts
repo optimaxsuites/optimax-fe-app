@@ -11,19 +11,19 @@ const routes: Routes = [
         component: ExpensesComponent,
       },
       {
-        path: 'expenses/expensesForm',
+        path: 'admin/expenses/expensesForm',
         component: ExpenseFormsModalComponent,
       },
       {
-        path: 'expenses/expensesApproval/:id',
+        path: 'expensesApproval/:id',
         component: ExpenseApprovalComponent,
       },
       {
-        path: 'expenses/uploadReciept',
+        path: 'uploadReciept',
         component: UploadRecieptComponent,
       },
       {
-        path: 'expenses/Addperdiem',
+        path: 'Addperdiem',
         component: AddPerDiemComponent,
       },
 ];

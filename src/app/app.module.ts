@@ -64,6 +64,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-button.component';
 import { ButtonComponent } from './ui/sharedComponent/view/button/button.component';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { CommonModule } from '@angular/common';
 
 
 @NgModule({
@@ -81,6 +82,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
   imports: [
     // BrowserModule,
     // BrowserAnimationsModule,
+    CommonModule,
     AppRoutingModule,
     FormsModule,
     ReactiveFormsModule,
