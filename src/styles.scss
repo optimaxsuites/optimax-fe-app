@@ -21,6 +21,8 @@
 @import "../node_modules/quill/dist/quill.snow.css";
 
 @import '../projects/hr/src/app/ui/shared-component/assets/theme/theme.scss';
+@import '../projects/POS/src/assets/theme/theme.scss';
+
 
 
 // //tailwind style
@@ -104,8 +106,8 @@
   
 }
 html{
-  height: 100%;
-  // font-size: 10px;
+  // height: 100%;
+  font-size: 14px;
 }
 // body {
 //   // margin: 0;
@@ -118,10 +120,71 @@ html{
 
 @media screen and (min-width: 1200px){
   html {
-  // font-size: 10px;
+  font-size: 14px;
 }
 }
 
+
+/* Apply a background color and text color to all PrimeNG tables */
+.p-datatable {
+  font-size: 14px !important;
+}
+
+/* Style header row */
+.p-datatable .p-datatable-thead > tr > th {
+
+  font-size: 14px !important;
+
+}
+
+/* Style rows */
+.p-datatable .p-datatable-tbody > tr > td {
+  font-size: 14px !important;
+
+}
+
+/* Style hover effect */
+.p-datatable .p-datatable-tbody > tr:hover {
+  background-color: #e0f7fa;
+}
+
+/* Styling p-toolbar globally */
+.p-toolbar {
+
+  font-size: 14px !important;
+
+}
+
+
+
+.btn-delete{
+  background-color: red;
+  color: var(--white);
+  font-size: 1em;
+  padding: 0.6rem 0.8rem;
+}
+
+.btn-export{
+  background-color: var(--celadon-green);
+  color: var(--white);
+  font-size: 1em;
+  padding: 0.6rem 0.8rem;
+  
+}
+.btn-export:hover{
+  background-color: var(--celadon-green-hover);
+}
+
+.btn-navigate{
+  background-color: var(--blue-green);
+  color: var(--white);
+  font-size: 1em;
+  padding: 0.6rem 0.8rem;
+
+}
+.btn-navigate:hover{
+  background-color: var(--blue-green-hover);
+}
 // .p-toast{
 //   font-size: 1em;
 // }
