@@ -4,15 +4,16 @@
 
   <div class="invite-main">
     <div>
-      <h3 class="remove-mb"><strong>Job Posting Form</strong></h3>
+      <h3 class="remove-mb mb-3"><strong>Job Posting Form</strong></h3>
       <!-- <p class="note">All fields are required</p><br> -->
 
 
-      <div class="input-container-100 flex-item justify-center">
-        <div class="input-container-50">
+      <div class="input-container-100 flex-item justify-center text-xl">
+        <div class="input-container-50 space-y-2">
           <!-- Job Title -->
           <label for="jobTitle">Job Title: <span style="color: red;">*</span></label>
-          <input type="text" id="jobTitle" placeholder="Job Title" class="editInput" name="jobTitle" [(ngModel)]="jobData.title" required>
+          <input type="text" id="jobTitle" placeholder="Job Title" class="editInput h-[36px]" name="jobTitle" [(ngModel)]="jobData.title" required>
+          
           <!-- Job Category -->
           <label for="jobCategory">Category: <span style="color: red;">*</span></label>
           <ng-select 
@@ -21,6 +22,7 @@
             [(ngModel)]="jobData.category"
             [items]="jobCategories">
           </ng-select>
+          
           <!-- Job Type -->
           <label for="jobType">Job Type: <span style="color: red;">*</span></label>
           <ng-select 
@@ -29,9 +31,12 @@
             [(ngModel)]="jobData.employmentType"
             [items]="jobTypes">
           </ng-select>
+          
           <!-- Job Location -->
-          <label for="jobLocation">Location:</label>
-          <input type="text" id="jobLocation" placeholder="Location" class="editInput" name="jobLocation" [(ngModel)]="jobData.location" required>
+          <div>
+            <label for="jobLocation">Location:</label>
+          <input type="text" id="jobLocation" placeholder="Location" class="editInput h-[36px]" name="jobLocation" [(ngModel)]="jobData.location" required>
+          
           <!-- Experience -->
           <label for="experience">Experience:</label>
           <ng-select 
@@ -40,6 +45,7 @@
             [(ngModel)]="jobData.experience"
             [items]="experienceLevels">
           </ng-select>
+          
           <!-- Qualification -->
           <label for="qualification">Qualification:</label>
           <ng-select 
@@ -48,6 +54,7 @@
             [(ngModel)]="jobData.qualification"
             [items]="jobQualification">
           </ng-select>
+          
           <!-- specification -->
           <label for="specification">Specification:</label>
           <ng-select 
@@ -56,16 +63,17 @@
             [(ngModel)]="jobData.specification"
             [items]="jobSpecifications">
           </ng-select>
+          
           <div class="input-container-100 d-flex gap-2">
-            <div class="input-container-50">
+            <div class="input-container-50 space-y-2">
               <!-- Posted Date -->
-              <label for="postedDate">Poosted Date:</label>
-              <input type="text" id="postedDate" class="editInput mb-4" name="postedDate" [ngModel]="jobData.postedDate | date: 'MM/dd/yyyy'" disabled required>
+              <label for="postedDate">Posted Date:</label>
+              <input type="text" id="postedDate" class="editInput h-[36px] mb-4" name="postedDate" [ngModel]="jobData.postedDate | date: 'MM/dd/yyyy'" disabled required>
             </div>
-            <div class="input-container-50">
+            <div class="input-container-50 space-y-2">
               <!-- Expiry Date -->
               <label for="expiryDate">Expiry Date: <span style="color: red;">*</span></label>
-              <input type="date" id="expiryDate" class="editInput mb-4" name="expiryDate" [(ngModel)]="jobData.expiryDate" required>
+              <input type="date" id="expiryDate" class="editInput h-[36px] mb-4" name="expiryDate" [(ngModel)]="jobData.expiryDate" required>
             </div>
           </div>
 
@@ -97,7 +105,7 @@
         </div>
       </div>
       <div class="btn-wrapper">
-        <app-button (click)="submitForm()" text="{{ isEdit ? 'Update' : 'Create' }}" type="submit" class="btn-save"></app-button>
+        <app-button (click)="submitForm()" text="{{ isEdit ? 'Update' : 'Create' }}" type="submit" class="bg-customBlue text-white hover:bg-customBlueHover"></app-button>
       </div>
     </div>
   </div>
@@ -110,18 +118,18 @@
   <div class="modal-header flex justify-between items-center text-gray-700">
     <h2 class="font-semibold pb-0 mb-0">Add Customise Input</h2>
     <div class="flex gap-3">
-      <button class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold" (click)="openSideModal = false">Cancel</button>
+      <button class="border-2 border-customBlue py-2 px-4 rounded-xl  font-semibold" (click)="openSideModal = false">Cancel</button>
     </div>
   </div>
 <br>
 
-  <div class="input-container-100 d-flex gap-2">
-    <div class="input-container-50">
+  <div class="input-container-100 d-flex gap-2 ">
+    <div class="input-container-50 space-y-2">
       <!-- Posted Date -->
       <label for="postedDate">Label:</label>
-      <input type="text" id="" class="editInput mb-4" name="" [(ngModel)]="customField.label"  required>
+      <input type="text" id="" class="editInput h-[36px] mb-4" name="" [(ngModel)]="customField.label"  required>
     </div>
-    <div class="input-container-50">
+    <div class="input-container-50 space-y-2">
       <!-- Expiry Date -->
       <label for="expiryDate">Type:</label>
       <ng-select 
