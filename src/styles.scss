@@ -104,8 +104,7 @@ $ERP-FE-theme: mat.define-light-theme(
   font-family: "Roboto Slab", serif;
   
 }
-html,
-body {
+html{
   height: 100%;
   font-size: 10px;
 }
@@ -119,8 +118,7 @@ h1,h2,h3,h4,h5,h6{
 }
 
 @media screen and (min-width: 1200px){
-  html,
-body {
+  html {
   font-size: 10px;
 }
 }

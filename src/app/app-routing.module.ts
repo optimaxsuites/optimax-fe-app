@@ -184,7 +184,7 @@ const routes: Routes = [
         loadChildren: () => import('../../projects/settings/src/app/app.module').then(m => m.AppSettingsModule),
       },
       {
-        path: '',
+        path: 'admin/pos/:uuid',
         loadChildren: () => import('../../projects/POS/src/app/app.module').then(m => m.AppPOSModule),
       },
       // {
