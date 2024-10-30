@@ -73,8 +73,7 @@
   font-family: "Roboto Slab", serif;
   
 }
-html,
-body {
+html{
   height: 100%;
   font-size: 16px;
 }
@@ -90,7 +89,7 @@ h1,h2,h3,h4,h5,h6{
 @media screen and (min-width: 1200px){
 
 html {
-  font-size: 10px;
+  font-size: 16px;
 }
 }
 
@@ -141,4 +140,70 @@ html {
   background-color: rgb(37 146 91 / 0.6);
   color: white;
   border-radius: 1rem;
+}
+
+
+/* Apply a background color and text color to all PrimeNG tables */
+.p-datatable {
+  font-size: 14px !important;
+}
+
+/* Style header row */
+.p-datatable .p-datatable-thead > tr > th {
+
+  font-size: 14px !important;
+
+}
+
+/* Style rows */
+.p-datatable .p-datatable-tbody > tr > td {
+  font-size: 14px !important;
+
+}
+
+/* Style hover effect */
+.p-datatable .p-datatable-tbody > tr:hover {
+  background-color: #e0f7fa;
+}
+
+/* Styling p-toolbar globally */
+.p-toolbar {
+  background-color: #f8f9fa;
+
+  font-size: 14px !important;
+
+}
+
+.p-toolbar .p-button {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.btn-delete{
+  background-color: red;
+  color: var(--white);
+  font-size: 1em;
+  padding: 0.6rem 0.8rem;
+}
+
+.btn-export{
+  background-color: var(--celadon-green);
+  color: var(--white);
+  font-size: 1em;
+  padding: 0.6rem 0.8rem;
+  
+}
+.btn-export:hover{
+  background-color: var(--celadon-green-hover);
+}
+
+.btn-navigate{
+  background-color: var(--blue-green);
+  color: var(--white);
+  font-size: 1em;
+  padding: 0.6rem 0.8rem;
+
+}
+.btn-navigate:hover{
+  background-color: var(--blue-green-hover);
 }

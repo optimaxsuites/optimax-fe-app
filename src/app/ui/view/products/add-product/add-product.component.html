@@ -5,8 +5,8 @@
     
       <div class="details">
        
-        <div class="permissionDiv text-gray-700 flex flex-col gap-6 p-5 my-2 bg-white rounded-2xl border">
-          <p class="text-2xl text-gray-700 font-semibold pb-0 mb-0">General Information</p>
+        <div class="permissionDiv text-gray-700 flex flex-col gap-3 p-3 my-2 bg-white rounded-lg border">
+          <p class=" text-gray-700 font-semibold pb-0 mb-0">General Information</p>
           <div class="ml-3"> 
             <div class="flex items-center justify-between">
             <label for="name">Name <span style="color: red;">*</span></label >
@@ -64,7 +64,7 @@
     
          
     
-          <p class="text-2xl text-gray-700 font-semibold pb-0 mb-0 mt-2">Pricing</p>
+          <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">Pricing</p>
           <div class="flex gap-4 items-center w-full" >
     
           <div class=" detailDiv w-full" >
@@ -107,7 +107,7 @@
         
         
   
-          <button class="btn create-invoice-btn mt-3" type="button" (click)="openAddDiscount = true">Add</button>
+          <button class="btn create-invoice-btn mt-1.5" type="button" (click)="openAddDiscount = true">Add</button>
         </div>
       </div>
         
@@ -125,7 +125,7 @@
         </div>
       </div>
       
-      <p class="text-2xl text-gray-700 font-semibold pb-0 mb-0 mt-2">Inventory</p>
+      <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">Inventory</p>
       
       <div class="flex gap-4 items-center w-full">
 
@@ -190,9 +190,9 @@
         </div>
       </div>
     
-      <div class="text-gray-700 flex flex-col gap-6 p-5 my-5 bg-white rounded-2xl border">
+      <div class="text-gray-700 flex flex-col gap-6 p-5 my-5 bg-white rounded-lg border">
 
-        <p class="text-2xl text-gray-700 font-semibold pb-0 mb-0 mt-2">Category <span style="color: red;">*</span></p>
+        <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">Category <span style="color: red;">*</span></p>
         <div class="flex gap-3 items-center">
           <ng-select 
             [items]="categories"
@@ -207,7 +207,7 @@
         </div>
     
         <!-- Product Variants -->
-        <p class="text-2xl text-gray-700 font-semibold pb-0 mb-0 mt-2">Variant</p>
+        <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">Variant</p>
         <div class="editInput">
           <div class="ml-3 flex justify-between items-center">
             <p class="pb-0 mb-0">Product Variants</p>
@@ -241,7 +241,7 @@
         </div>
     
 
-        <p class="text-2xl text-gray-700 font-semibold pb-0 mb-0 mt-2">Shipping and delivery</p>
+        <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">Shipping and delivery</p>
         <div class="ml-3">
           <label for="weight">Item's weight (in KG)</label>
           <input class="name editInput" formControlName="weight" placeholder="Weight in kg" id="weight" />
@@ -389,7 +389,7 @@
 
   
         <div  *ngIf="discountData.discountType.includes(2)">
-        <p class="text-2xl text-gray-700 ml-3 pb-0 mb-0 mt-2">Discount validity period</p>
+        <p class="text-lg text-gray-700 ml-3 pb-0 mb-0 mt-2">Discount validity period</p>
   
         <div  class="flex gap-4 items-center w-full">
           
