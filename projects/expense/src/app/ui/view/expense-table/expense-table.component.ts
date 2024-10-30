@@ -53,11 +53,11 @@ export class ExpenseTableComponent implements OnInit {
   }
 
   navigateToForm(): void {
-    this.router.navigate(['/expenses/expensesForm']);
+    this.router.navigate(['admin/expenses/expensesForm']);
   }
 
   editExpense(expense: Expense): void {
-    this.router.navigate(['/expenses/expensesForm'], {
+    this.router.navigate(['admin/expenses/expensesForm'], {
       queryParams: { id: expense.id }
     });
   }
