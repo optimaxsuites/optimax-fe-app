@@ -21,7 +21,7 @@
 @import "../node_modules/quill/dist/quill.snow.css";
 
 @import '../projects/hr/src/app/ui/shared-component/assets/theme/theme.scss';
-@import '../projects/POS/src/assets/theme/theme.scss';
+// @import '../projects/POS/src/assets/theme/theme.scss';
 
 
 
@@ -108,6 +108,8 @@
 html{
   // height: 100%;
   font-size: 14px;
+  
+
 }
 // body {
 //   // margin: 0;
@@ -121,6 +123,8 @@ html{
 @media screen and (min-width: 1200px){
   html {
   font-size: 14px;
+
+
 }
 }
 
