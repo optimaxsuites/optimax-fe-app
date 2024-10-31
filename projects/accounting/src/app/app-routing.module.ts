@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AccountingPageComponent } from './ui/view/accounting-page.component';
+import { QuotationModalComponent } from './ui/view/quotation-modal/quotation-modal.component';
 
 const routes: Routes = [
   {
@@ -8,7 +9,14 @@ const routes: Routes = [
       component: AccountingPageComponent,
     },
     
-    
+     {
+        path: 'sales/quotation/quotation-form',
+        component: QuotationModalComponent,
+      },
+      {
+        path: 'sales/quotation/quotation-form/:id',
+        component: QuotationModalComponent,
+      },
 ];
 
 @NgModule({
