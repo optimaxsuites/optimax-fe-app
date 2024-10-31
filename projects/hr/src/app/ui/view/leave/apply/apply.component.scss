@@ -1,0 +1,15 @@
+p {
+    margin-bottom:  0;
+}
+
+.editInput {
+    @apply  h-16 outline-none bg-transparent text-gray-700 cursor-pointer
+}
+label {
+    @apply font-semibold text-gray-700 outline-none mb-2
+}
+
+::ng-deep .custom-ng-select .ng-select-container {
+    background-color: transparent;
+    
+  }

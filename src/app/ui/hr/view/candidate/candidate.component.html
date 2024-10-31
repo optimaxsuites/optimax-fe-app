@@ -1,0 +1,155 @@
+
+<p-confirmDialog header="Confirm Deletion" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
+<p-toast></p-toast>
+
+<div *ngIf="showCandidate">
+  <div class="card">
+    <br>
+    <!-- <app-back-button></app-back-button> -->
+
+    <!-- <p-toolbar styleClass="mb-4 gap-2">
+      <ng-template pTemplate="left">
+        <app-button text="Delete" class="btn-delete"></app-button>
+      </ng-template>
+
+      <ng-template pTemplate="right">
+        
+      </ng-template>
+    </p-toolbar> -->
+
+    <div class="flex w-full justify-between ">
+      <div class="w-1/1">
+        <ng-select 
+          [items]="positions || []"
+          class="px-3"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by position"
+          [(ngModel)]="selectedPositions"
+          (ngModelChange)="filterCandidatesByPosition()">
+        </ng-select>
+      </div>
+
+      <div class="search-bar w-[90%]">
+        <input 
+          type="text" 
+          placeholder="Search" 
+          class="editInput"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="filterCandidates()"
+        />
+      </div>
+    </div>
+
+    <p-table 
+      [value]="filteredCandidates" 
+      [paginator]="true" 
+      styleClass="p-datatable-striped" 
+      [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+      [rows]="15"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+            <th class="table-item" pSortableColumn="candidate">Candidate</th>
+            <th class="table-item" pSortableColumn="email">Email</th>
+            <th class="table-item" pSortableColumn="contactNumber">Contact Number</th>
+            <th class="table-item" pSortableColumn="contactNumber">Position</th>
+            <th class="table-item" pSortableColumn="dateApplied">Date Applied</th>
+            <th class="table-item" pSortableColumn="stage">Stage</th>
+            <th class="table-item"></th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-candidate let-i="rowIndex">
+        <tr class="p-table-row">
+            <td><p-tableCheckbox [value]="candidate" /></td>
+            <td class="table-item">{{ candidate.candidate }}</td>
+            <td class="table-item">{{ candidate.email }}</td>
+            <td class="table-item">{{ candidate.contactNo }}</td>
+            <td class="table-item">{{ candidate.position }}</td>
+            <td class="table-item">{{ candidate.dateApplied }}</td>
+            <td class="table-item">
+                <span [ngClass]="getStatusClass(candidate.stage)">
+                  {{ candidate.stage }} 
+                </span>
+            </td>
+            <td class="actions">
+              <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event)" ></i>
+              <p-overlayPanel #op ngClass="padding: 0;">
+                <div>
+                  <!-- <li class="table-item-panel"> <i class="pi pi-user-plus table-item me-2"></i> Add as Employee</li> -->
+                  <li class="table-item-panel" (click)="openViewModal(candidate, op)"> <i class="pi pi-eye table-item me-2"></i> View</li>
+                  <li class="table-item-panel"> <i class="pi pi-download table-item me-2"></i> Download Resume</li>
+                  <li class="table-item-panel" *ngIf="candidate.stage == 'Application Received'" (click)="openInterviewInvite(candidate)"> <i class="pi pi-send table-item me-2"></i> Send Invite</li>
+                  <!-- <li class="table-item-panel"> <i class="pi pi-users table-item me-2"></i> Compare with Other Candidates </li> -->
+                  <!-- <li class="table-item-panel" (click)="confirmCandidateDelete(candidate)"> <i class="pi pi-trash table-item me-2"></i> Delete</li> -->
+                </div>
+              </p-overlayPanel>
+            </td>
+        </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="8" class="text-center text-[14px] py-4"> 
+              No candidate(s) application yet.
+            </td>
+          </tr>
+        </ng-template>
+    </p-table>
+  </div>
+</div>
+
+
+<div *ngIf="showInterviewInvite">
+  <app-interview-invite [candidate]="activeItem" (back)="closeInterviewInvite()" (sendInterviewInvite)="sendInvite($event)"></app-interview-invite>
+</div>
+
+<app-modal 
+  *ngIf="viewModal"
+  [header]="'Viewing ' + activeItem.candidate + ' information'"
+  [title]="'Cancel'"
+  (close)="closeViewModal()">
+    <div class="view-wrapper">
+    <div class="d-flex gap-4 my-2">
+      <div class="input-container-50">
+          <label for="name"><strong>Name:</strong></label>
+          <span>  {{activeItem.candidate}}</span>
+      </div>
+      <div class="input-container-50">
+          <label for="phone-number"><strong>Phone Number:</strong></label>
+          <span>  {{activeItem.contactNo}}</span>
+      </div>
+    </div>
+    <div class="d-flex gap-4 my-2">
+      <div class="input-container-50">
+          <label for="email"><strong>Email:</strong></label>
+          <span>  {{activeItem.email}}</span>
+          <!-- <input type="text" id="email" name="email" class="editInput" [(ngModel)]="activeItem.email" required disabled> -->
+      </div>
+      <div class="input-container-50">
+          <label for="position"><strong>Position:</strong></label>
+          <span>  {{activeItem.position}}</span>
+          <!-- <input type="text" id="position" name="position" class="editInput" [(ngModel)]="activeItem.position" required disabled> -->
+      </div>
+    </div>
+    <div class="d-flex gap-4 my-2">
+      <div class="input-container-50">
+          <label for="date"><strong>Date Applied:</strong></label>
+          <span>  {{activeItem.dateApplied}}</span>
+          <!-- <input type="text" id="date" name="date" class="editInput" [(ngModel)]="activeItem.dateApplied" required disabled> -->
+      </div>
+      <div class="input-container-50">
+          <label for="resume"><strong>Resume:</strong></label>
+          <span class="" style="color: var(--celadon-green); font-size: var(--md-font); cursor: pointer;" (click)="viewResume(activeItem.resume || '')">
+            <!-- <i class="pi pi-download resume me-2"></i> -->
+              View Resume
+          </span>
+      </div>
+    </div>
+    <div class="">
+      <label for="cover-letter"><strong>Cover Letter:</strong></label>
+      <textarea class="cover-letter editInput" name="cover-letter" [(ngModel)]="activeItem.coverLetter" disabled></textarea>
+    </div>
+    </div>
+</app-modal>

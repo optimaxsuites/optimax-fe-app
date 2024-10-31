@@ -1,0 +1,65 @@
+
+<div>
+  <div class="">
+    <p-toolbar styleClass="mb-4 gap-2">
+      <ng-template pTemplate="left">
+        <app-button text="Delete"  class="btn-delete" ></app-button>
+      </ng-template>
+
+      <ng-template pTemplate="right">
+        <app-button text="Add New" (btnClick)="addRfq()" class="btn-navigate" ></app-button>
+        <app-button text="Import"  class="btn-export" ></app-button>
+      </ng-template>
+    </p-toolbar>
+    <p-table 
+      [value]="rfqTableData"
+      [paginator]="true" 
+      [(selection)]="selectedItems" 
+      dataKey="id"
+      responsiveLayout="stack" 
+      [breakpoint]="'960px'"
+      styleClass="p-datatable-striped"
+      [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+      [rows]="15"
+      >
+        <ng-template pTemplate="header" class="header" let-columns>
+          <tr>
+            <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+            <th class="table-item">RFQ No</th>
+            <th class="table-item">Project Title</th>
+            <th class="table-item">Date</th>
+            <th class="table-item">Due Date</th>
+            <th class="table-item">Prepared By</th>
+            <th class="table-item">Status</th>
+            <th class="table-item">Action</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-item let-i="rowIndex" let-columns="columns">
+            <tr>
+              <td>
+                <p-tableCheckbox [value]="item" class="custom-checkbox"/>
+              </td>
+              <td class="table-item"><span class="p-column-title">Quotation No</span>{{ item.qNo}}</td>
+              <td class="table-item"><span class="p-column-title">Project Title</span>{{ item.projectTitle }}</td>
+              <td class="table-item"><span class="p-column-title">Date</span>{{ item.qDate }}</td>
+              <td class="table-item"><span class="p-column-title">Due Date</span>{{ item.qDueDate }}</td>
+              <td class="table-item"><span class="p-column-title">Amount</span> ₦{{ item.preparedBy }}</td>
+              <td class="table-item">
+                <!-- {{item.status}} -->
+                <span class="p-column-title">Status</span>
+                <p-tag [value]="item.status" [severity]="getSeverity(item.status)" />
+              </td>
+              <td class="actions table-item">
+                <span class="p-column-title">Action</span>
+                <i (click)="viewItem(item)" class="pi pi-eye table-item" ></i>
+                <i (click)="editRfq(item.id)" class="pi pi-pen-to-square table-item" ></i>
+                <i (click)="deleteItem(item.id)" class="pi pi-times-circle table-item" ></i>
+              </td>
+            </tr>                            
+        </ng-template>
+    </p-table>
+  </div>
+</div>
+
+
+<!-- <ng-template #container></ng-template> -->
