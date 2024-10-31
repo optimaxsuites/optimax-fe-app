@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import {countriesData} from '../../../shared/service/country-data';
-import { City, Country, State } from 'src/app/ui/shared/domain/country-data.model';
+// 
 import { CustomerDTO, QuotationDTO } from '../../domain/quotation.dto';
 import { QuotationService } from '../../service/quotation/quotation.service';
+import { Country, State, City } from '../../sharedComponent/domain/country-data.model';
+import { countriesData } from '../../sharedComponent/service/country-data';
 
 
 @Component({

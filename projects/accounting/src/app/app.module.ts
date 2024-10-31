@@ -71,6 +71,11 @@ import { QuotationComponent } from './ui/view/quotation/quotation.component';
 import { ButtonComponent } from './ui/sharedComponent/view/button/button.component';
 import { QuotationModalComponent } from './ui/view/quotation-modal/quotation-modal.component';
 import { AddNewClientComponent } from './ui/view/add-new-client/add-new-client.component';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { SideModalComponent } from './ui/sharedComponent/view/side-modal/side-modal.component';
+import { AddQuotationItemComponent } from './ui/view/add-quotation-item/add-quotation-item.component';
+import { AddShippingDetailsComponent } from './ui/view/add-shipping-details/add-shipping-details.component';
+import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-button.component';
 
 @NgModule({
   declarations: [
@@ -85,7 +90,9 @@ import { AddNewClientComponent } from './ui/view/add-new-client/add-new-client.c
     SalesOrderComponent,
     QuotationComponent,
     QuotationModalComponent,
-    AddNewClientComponent
+    AddNewClientComponent,
+    AddQuotationItemComponent,
+    AddShippingDetailsComponent
   ],
   imports: [
     // BrowserModule,
@@ -120,7 +127,7 @@ import { AddNewClientComponent } from './ui/view/add-new-client/add-new-client.c
     MatMenuModule,
     SidebarModule,
     TabViewModule,
-    
+    NgSelectModule,
     ToolbarModule,
     ConfirmDialogModule,
     SplitButtonModule,
@@ -139,7 +146,9 @@ import { AddNewClientComponent } from './ui/view/add-new-client/add-new-client.c
     PasswordModule,
     ToastModule,
     ButtonModule,
-    ButtonComponent
+    ButtonComponent,
+    SideModalComponent,
+    BackButtonComponent
   ],
   providers: [],
   bootstrap: [AppComponent]
