@@ -49,7 +49,7 @@ import { DashboardPageComponent } from './ui/view/dashboard-page/dashboard-page.
   ],
   imports: [
     // BrowserModule,
-    // CommonModule,
+    CommonModule,
     AppRoutingModule,
     TableModule,
     RippleModule,
