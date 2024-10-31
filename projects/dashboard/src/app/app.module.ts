@@ -59,7 +59,7 @@ import { DashboardPageComponent } from './ui/view/dashboard-page/dashboard-page.
     ReactiveFormsModule,
     SidebarModule,
     TabViewModule,
-    ToolbarModule,
+      ToolbarModule,
       ConfirmDialogModule,
       SplitButtonModule,
       PanelModule,
