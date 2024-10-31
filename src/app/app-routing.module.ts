@@ -7,16 +7,19 @@ const routes: Routes = [
   {
       path: '',
       component: AccountingPageComponent,
+      children: [
+        {
+          path: 'quotation-form',
+          component: QuotationModalComponent,
+        },
+        {
+          path: 'quotation-form/:id',
+          component: QuotationModalComponent,
+        },
+      ]
     },
     
-     {
-        path: 'quotation-form',
-        component: QuotationModalComponent,
-      },
-      {
-        path: 'quotation-form/:id',
-        component: QuotationModalComponent,
-      },
+    
 ];
 
 @NgModule({
