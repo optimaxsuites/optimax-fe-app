@@ -55,10 +55,10 @@ export class QuotationComponent implements OnInit {
 }
 
   navigateToForm(){
-    this.router.navigate(['/admin/accounting/234567thj/quotation-form']);
+    this.router.navigate(['/quotation-form']);
   }
   editItem(id: string) {
-    this.router.navigate(['/admin/accounting/234567thj/quotation-form', id]);
+    this.router.navigate(['/quotation-form', id]);
   }
 
   deleteItem(id: string) {
