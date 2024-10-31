@@ -36,9 +36,39 @@ import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCardModule } from '@angular/material/card';
 import { MatGridListModule } from '@angular/material/grid-list';
+
+
+///////primeng
+import { ButtonModule } from 'primeng/button';
+import { EditorModule } from 'primeng/editor';
+import { PasswordModule } from 'primeng/password';
+import { TableModule } from 'primeng/table';
+import { ToastModule } from 'primeng/toast';
+import { SidebarModule } from 'primeng/sidebar';
+import { DialogModule } from 'primeng/dialog';
+import { TabViewModule } from 'primeng/tabview';
+import { ToolbarModule } from 'primeng/toolbar';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { SplitButtonModule } from 'primeng/splitbutton';
+import { PanelModule } from 'primeng/panel';
+import { DividerModule } from 'primeng/divider';
+import { OverlayPanelModule } from 'primeng/overlaypanel';
+import { StepperModule } from 'primeng/stepper';
+import { InputTextModule } from 'primeng/inputtext';
+import { FloatLabelModule } from 'primeng/floatlabel';
+import { MessagesModule } from 'primeng/messages';
+import { MessageModule } from 'primeng/message';
+import { RippleModule } from 'primeng/ripple';
+import { TagModule } from 'primeng/tag';
+
+
+
+
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AngularEditorModule } from '@kolkov/angular-editor';
+import { QuotationComponent } from './ui/view/quotation/quotation.component';
+import { ButtonComponent } from './ui/sharedComponent/view/button/button.component';
 
 @NgModule({
   declarations: [
@@ -50,7 +80,8 @@ import { AngularEditorModule } from '@kolkov/angular-editor';
     PaymentReceiptsComponent,
     PaymentReceiptsModalComponent,
     PaymentRecordReceivedComponent,
-    SalesOrderComponent
+    SalesOrderComponent,
+    QuotationComponent
   ],
   imports: [
     // BrowserModule,
@@ -83,6 +114,28 @@ import { AngularEditorModule } from '@kolkov/angular-editor';
     MatTableModule,
     MatRadioModule,
     MatMenuModule,
+    SidebarModule,
+    TabViewModule,
+    
+    ToolbarModule,
+    ConfirmDialogModule,
+    SplitButtonModule,
+    PanelModule,
+    DividerModule,
+    OverlayPanelModule,
+    StepperModule,
+    TagModule,
+    InputTextModule,
+    FloatLabelModule,
+    EditorModule,
+    MessagesModule,
+    MessageModule,
+    RippleModule,
+    TableModule,
+    PasswordModule,
+    ToastModule,
+    ButtonModule,
+    ButtonComponent
   ],
   providers: [],
   bootstrap: [AppComponent]
