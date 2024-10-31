@@ -10,11 +10,11 @@ const routes: Routes = [
     },
     
      {
-        path: 'sales/quotation/quotation-form',
+        path: 'admin/accounting/quotation-form',
         component: QuotationModalComponent,
       },
       {
-        path: 'sales/quotation/quotation-form/:id',
+        path: 'admin/accounting/quotation-form/:id',
         component: QuotationModalComponent,
       },
 ];
