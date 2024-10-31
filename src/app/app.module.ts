@@ -69,6 +69,8 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AngularEditorModule } from '@kolkov/angular-editor';
 import { QuotationComponent } from './ui/view/quotation/quotation.component';
 import { ButtonComponent } from './ui/sharedComponent/view/button/button.component';
+import { QuotationModalComponent } from './ui/view/quotation-modal/quotation-modal.component';
+import { AddNewClientComponent } from './ui/view/add-new-client/add-new-client.component';
 
 @NgModule({
   declarations: [
@@ -81,7 +83,9 @@ import { ButtonComponent } from './ui/sharedComponent/view/button/button.compone
     PaymentReceiptsModalComponent,
     PaymentRecordReceivedComponent,
     SalesOrderComponent,
-    QuotationComponent
+    QuotationComponent,
+    QuotationModalComponent,
+    AddNewClientComponent
   ],
   imports: [
     // BrowserModule,
