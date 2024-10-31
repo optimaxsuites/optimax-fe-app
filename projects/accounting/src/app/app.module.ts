@@ -1,0 +1,90 @@
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+
+import { AppRoutingModule } from './app-routing.module';
+import { AppComponent } from './app.component';
+import { BudgetingForecastingComponent } from './ui/view/budgeting-forecasting/budgeting-forecasting.component';
+import { AccountReceivableManagementComponent } from './ui/view/account-receivable-management/account-receivable-management.component';
+// import { AccountPayabaleManagementComponent } from './ui/sharedComponent/view/account-payabale-management/account-payabale-management.component';
+import { AccountingPageComponent } from './ui/view/accounting-page.component';
+import { BookKeepingComponent } from './ui/view/book-keeping/book-keeping.component';
+import { PaymentReceiptsComponent } from './ui/view/payment-receipts/payment-receipts.component';
+import { PaymentReceiptsModalComponent } from './ui/view/payment-receipts-modal/payment-receipts-modal.component';
+import { PaymentRecordReceivedComponent } from './ui/view/payment-record-received/payment-record-received.component';
+import { SalesOrderComponent } from './ui/view/sales-order/sales-order.component';
+
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+
+
+/////////////mat
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
+import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatTabGroup, MatTabsModule } from '@angular/material/tabs';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatRadioModule } from '@angular/material/radio';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatTableModule } from '@angular/material/table';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatCardModule } from '@angular/material/card';
+import { MatGridListModule } from '@angular/material/grid-list';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { AngularEditorModule } from '@kolkov/angular-editor';
+
+@NgModule({
+  declarations: [
+    AppComponent,
+    BudgetingForecastingComponent,
+    AccountReceivableManagementComponent,
+    AccountingPageComponent,
+    BookKeepingComponent,
+    PaymentReceiptsComponent,
+    PaymentReceiptsModalComponent,
+    PaymentRecordReceivedComponent,
+    SalesOrderComponent
+  ],
+  imports: [
+    // BrowserModule,
+    // BrowserAnimationsModule,
+    CommonModule,
+    AppRoutingModule,
+    FormsModule,
+    ReactiveFormsModule,
+    AngularEditorModule,
+    MatTabGroup,
+    MatTooltip,
+    MatGridListModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule,
+    MatTabsModule,
+    MatDatepickerModule,
+    MatSelectModule,
+    MatTooltipModule,
+    MatButtonModule,
+    MatTabsModule,
+    MatDividerModule,
+    MatProgressSpinnerModule,
+    MatCardModule,
+    MatAutocompleteModule,
+    MatExpansionModule,
+    MatRadioModule,
+    MatPaginatorModule,
+    MatTableModule,
+    MatRadioModule,
+    MatMenuModule,
+  ],
+  providers: [],
+  bootstrap: [AppComponent]
+})
+export class AppAccountingModule { }
