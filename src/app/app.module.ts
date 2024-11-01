@@ -98,8 +98,8 @@ import { Navbar2Component } from './ui/shared-component/view/navbar/navbar2.comp
 
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
