@@ -41,7 +41,7 @@
                     <div class="list-card-right">
                         <h1><strong>{{job.title}}</strong></h1>
                         <div class="table-item">
-                            <p *ngIf="job.location"> <i class="pi pi-map-marker me-2 "></i> {{job.location}}</p>
+                            <p *ngIf="job.location"> <i class="pi pi-map-marker  me-2 "></i> {{job.location}}</p>
                             <p *ngIf="job.employmentType" > <i class="pi pi-clock  me-2"></i> {{job.employmentType}}</p>
                             <!-- <p> <i class="pi pi-clock"></i> {{job.category}}</p> -->
                             <p *ngIf="job.postedDate"> <i class="pi pi-calendar-clock me-2"></i> {{job.postedDate}}</p>
@@ -50,9 +50,9 @@
                     </div>
                     <div class="list-card-left ">
                         <div class="flex space-x-2 mt-2 table-item ">
-                            <button pButton icon="pi pi-eye cursor-pointer table-item" (click)="viewJob(job)" class="icon-view " title="View"></button>
-                            <button pButton icon="pi pi-pen-to-square cursor-pointer table-item" (click)="editJob(job)" class="icon-edit" title="Edit"></button>
-                            <button pButton icon="pi pi-trash cursor-pointer table-item" (click)="confirmJobDelete(job)" class="icon-delete" title="Delete"></button>
+                            <button pButton icon="pi pi-eye cursor-pointer" (click)="viewJob(job)" class="icon-view " title="View"></button>
+                            <button pButton icon="pi pi-pen-to-square cursor-pointer" (click)="editJob(job)" class="icon-edit" title="Edit"></button>
+                            <button pButton icon="pi pi-trash cursor-pointer" (click)="confirmJobDelete(job)" class="icon-delete" title="Delete"></button>
                         </div>
                     </div>
                 </div>
