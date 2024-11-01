@@ -13,8 +13,8 @@
 @import "node_modules/primeng/resources/primeng.min.css";
 
 // /* Custom css */
-// @import "assets/theme/theme.scss";
-// @import "assets/layout/layout.css";
+@import "assets/theme/theme.scss";
+@import "assets/layout/layout.css";
 
 // QUILL CSS
 @import "../node_modules/quill/dist/quill.core.css";
@@ -107,7 +107,7 @@ $ERP-FE-theme: mat.define-light-theme(
 }
 html{
   // height: 100%;
-  font-size: 14px;
+  font-size: 10px;
   
 
 }
@@ -122,7 +122,7 @@ html{
 
 @media screen and (min-width: 1200px){
   html {
-  font-size: 14px;
+  font-size: 10px;
 
 
 }
