@@ -41,28 +41,23 @@
             </div>
           </div> -->
 
-          <div class="list-card-container" *ngIf="showListView">
-            <hr>
-            <div  class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 text-xl" > 
-    
-                <div *ngFor="let job of filteredJobPostings; let i = index" class=" bg-gray-50 transition ease-linear hover:scale-105 hover:border-2 text-customBlue rounded-xl flex flex-col w-[50%] p-2 editInput" >
-                    <div class="list-card-wrapper">
-                        <div class="list-card-right">
-                            <h3><strong>{{job.title}}</strong></h3>
-                            <div class="">
-                                <p *ngIf="job.location"> <i class="pi pi-map-marker table-item me-2 "></i> {{job.location}}</p>
-                                <p> <i class="pi pi-clock table-item me-2"></i> {{job.employmentType}}</p>
-                                <!-- <p> <i class="pi pi-clock"></i> {{job.category}}</p> -->
-                                <p> <i class="pi pi-calendar-clock table-item me-2"></i> {{job.postedDate}}</p>
-                                <p> <i class="pi pi-calendar-times table-item me-2"></i> {{job.expiryDate}}</p>
-                            </div>
+            <div *ngFor="let job of filteredJobPostings; let i = index" class=" bg-gray-50 transition ease-linear hover:scale-105 hover:border-2 text-customBlue rounded-xl flex flex-col w-[50%] p-2 editInput" >
+                <div class="list-card-wrapper">
+                    <div class="list-card-right">
+                        <h1><strong>{{job.title}}</strong></h1>
+                        <div class="table-item">
+                            <p *ngIf="job.location"> <i class="pi pi-map-marker  me-2 "></i> {{job.location}}</p>
+                            <p *ngIf="job.employmentType" > <i class="pi pi-clock  me-2"></i> {{job.employmentType}}</p>
+                            <!-- <p> <i class="pi pi-clock"></i> {{job.category}}</p> -->
+                            <p *ngIf="job.postedDate"> <i class="pi pi-calendar-clock me-2"></i> {{job.postedDate}}</p>
+                            <p *ngIf="job.expiryDate"> <i class="pi pi-calendar-times me-2"></i> {{job.expiryDate}}</p>
                         </div>
-                        <div class="list-card-left ">
-                            <div class="flex space-x-2 mt-2">
-                                <button pButton icon="pi pi-eye cursor-pointer table-item" (click)="viewJob(job)" class="icon-view" title="View"></button>
-                                <button pButton icon="pi pi-pen-to-square cursor-pointer table-item" (click)="editJob(job)" class="icon-edit" title="Edit"></button>
-                                <button pButton icon="pi pi-trash cursor-pointer table-item" (click)="confirmJobDelete(job)" class="icon-delete" title="Delete"></button>
-                            </div>
+                    </div>
+                    <div class="list-card-left ">
+                        <div class="flex space-x-2 mt-2 table-item ">
+                            <button pButton icon="pi pi-eye cursor-pointer" (click)="viewJob(job)" class="icon-view " title="View"></button>
+                            <button pButton icon="pi pi-pen-to-square cursor-pointer" (click)="editJob(job)" class="icon-edit" title="Edit"></button>
+                            <button pButton icon="pi pi-trash cursor-pointer" (click)="confirmJobDelete(job)" class="icon-delete" title="Delete"></button>
                         </div>
                     </div>
                     <!-- <div class="editInput" style="width: 700px; height: 400px; overflow-y: scroll; font-size: 14px;" [innerHTML]="safeHtmlDescriptions[i]"></div> -->
