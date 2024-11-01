@@ -1,10 +1,10 @@
 <p-confirmDialog header="Confirm Deletion" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
 <p-toast></p-toast>
-<div *ngIf="showRecruitmentList" class="text-xl">
+<div *ngIf="showRecruitmentList" class="table-container">
     <div class="card">
         <p-toolbar styleClass="mb-4 gap-2">
             <ng-template pTemplate="left">
-                <app-button [disabled]="showListView" text="Delete" class="bg-red-500 text-white"></app-button>
+                <app-button [disabled]="showListView" text="Delete" class="btn-delete"></app-button>
                 <div class=" table-item col-12">
                     <input 
                       type="text" 
@@ -24,22 +24,17 @@
                     </i>
                 </span>
                 <div class="flex flex-col items-center">
-                    <app-button text="Add New" class="bg-customBlue hover:bg-customBlueHover text-white" (click)="openForm()"></app-button>
+                    <app-button text="Add New" class="btn-navigate" (click)="openForm()"></app-button>
                 </div>
             </ng-template>
         </p-toolbar>
 
-        <!-- <div class="flex w-full justify-between ">      
-            <div class="search-bar w-full">
-              <input 
-                type="text" 
-                placeholder="Search" 
-                class="editInput"
-                [(ngModel)]="searchTerm"
-                (ngModelChange)="searchJobs()"
-              />
-            </div>
-          </div> -->
+     
+
+
+      <div class="list-card-container" *ngIf="showListView">
+        <hr>
+        <div  class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 " > 
 
             <div *ngFor="let job of filteredJobPostings; let i = index" class=" bg-gray-50 transition ease-linear hover:scale-105 hover:border-2 text-customBlue rounded-xl flex flex-col w-[50%] p-2 editInput" >
                 <div class="list-card-wrapper">
@@ -60,16 +55,17 @@
                             <button pButton icon="pi pi-trash cursor-pointer" (click)="confirmJobDelete(job)" class="icon-delete" title="Delete"></button>
                         </div>
                     </div>
-                    <!-- <div class="editInput" style="width: 700px; height: 400px; overflow-y: scroll; font-size: 14px;" [innerHTML]="safeHtmlDescriptions[i]"></div> -->
                 </div>
+                <!-- <div class="editInput" style="width: 700px; height: 400px; overflow-y: scroll; font-size: 14px;" [innerHTML]="safeHtmlDescriptions[i]"></div> -->
             </div>
-    
-            <div *ngIf="filteredJobPostings.length == 0" class="input-container-100 nothing">
-                <span>
-                    No Job posting(s) yet
-                </span>
-            </div>
-          </div>
+        </div>
+
+        <div *ngIf="filteredJobPostings.length == 0" class="input-container-100 nothing">
+            <span>
+                No Job posting(s) yet
+            </span>
+        </div>
+      </div>
 
       <!-- Table View -->
         <p-table *ngIf="!showListView"
@@ -80,32 +76,32 @@
             [rows]="15">
             <ng-template pTemplate="header">
             <!-- Table header here -->
-                <tr class="text-[13px]">
-                    <th class="bg-customGreen text-white " style="width: 4rem"><p-tableHeaderCheckbox /></th>
-                    <th class="bg-customGreen text-white " pSortableColumn="title">Title</th>
-                    <th class="bg-customGreen text-white " pSortableColumn="location">Location</th>
-                    <th class="bg-customGreen text-white " pSortableColumn="jobType">Job Type</th>
-                    <th class="bg-customGreen text-white " pSortableColumn="postedDate">Posted Date</th>
-                    <th class="bg-customGreen text-white " pSortableColumn="expiryDate">Expiry Date</th>
-                    <th class="bg-customGreen text-white "></th>
+                <tr class="text-xl">
+                    <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+                    <th class="" pSortableColumn="title">Title</th>
+                    <th class="" pSortableColumn="location">Location</th>
+                    <th class="" pSortableColumn="jobType">Job Type</th>
+                    <th class="" pSortableColumn="postedDate">Posted Date</th>
+                    <th class="" pSortableColumn="expiryDate">Expiry Date</th>
+                    <th class=""></th>
                 </tr>
             </ng-template>
             <ng-template pTemplate="body" let-job>
-                <tr class="p-table-row">
+                <tr class="text-xl p-table-row">
                     <td><p-tableCheckbox [value]="job" /></td>
-                    <td class="text-[13px]">{{ job.title }}</td>
-                    <td class="text-[13px]">{{ job.location }}</td>
-                    <td class="text-[13px]">{{ job.employmentType }}</td>
-                    <td class="text-[13px]">{{ job.postedDate }}</td>
-                    <td class="text-[13px]">{{ job.expiryDate }}</td>
+                    <td class="">{{ job.title }}</td>
+                    <td class="">{{ job.location }}</td>
+                    <td class="">{{ job.employmentType }}</td>
+                    <td class="">{{ job.postedDate }}</td>
+                    <td class="">{{ job.expiryDate }}</td>
 
                     <td class="actions">
                         <i class="pi pi-ellipsis-v "(click)="op.toggle($event)" ></i>
                         <p-overlayPanel #op ngClass="padding: 0;">
-                            <div>
-                                <li class="text-[13px] cursor-pointer" (click)="viewJob(job)"> <i class="pi pi-eye   me-2"></i> View</li>
-                                <li class="text-[13px] my-3 cursor-pointer" (click)="editJob(job)"> <i class="pi pi-pen-to-square  me-2"></i>Edit </li>
-                                <li class="text-[13px] cursor-pointer" (click)="confirmJobDelete(job)"> <i class="pi pi-trash  icon-delete me-2"></i>Delete</li>
+                            <div class="text-xl">
+                                <li class="table-item-panel" (click)="viewJob(job)"> <i class="pi pi-eye  me-2"></i> View</li>
+                                <li class="table-item-panel" (click)="editJob(job)"> <i class="pi pi-pen-to-square me-2"></i>Edit </li>
+                                <li class="table-item-panel" (click)="confirmJobDelete(job)"> <i class="pi pi-trash icon-delete me-2"></i>Delete</li>
                             </div>
                         </p-overlayPanel>
                     </td>
