@@ -195,6 +195,14 @@ const routes: Routes = [
         path: 'admin/accounting/:uuid',
         loadChildren: () => import('../../projects/accounting/src/app/app.module').then(m => m.AppAccountingModule),
       },
+      {
+        path: 'admin/procurement/rfq/:uuid',
+        loadChildren: () => import('../../projects/procurement/src/app/app.module').then(m => m.AppModule),
+      },
+      {
+        path: 'admin/purchase/:uuid',
+        loadChildren: () => import('../../projects/purchase/src/app/app.module').then(m => m.AppModule),
+      },
       // {
       //   path: 'admin/sales/:uuid',
       //   component: SalesPageComponent,
