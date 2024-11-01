@@ -33,8 +33,7 @@
           </ng-select>
           
           <!-- Job Location -->
-          <div>
-            <label for="jobLocation">Location:</label>
+          <label for="jobLocation">Location:</label>
           <input type="text" id="jobLocation" placeholder="Location" class="editInput h-[36px]" name="jobLocation" [(ngModel)]="jobData.location" required>
           
           <!-- Experience -->
@@ -118,12 +117,12 @@
   <div class="modal-header flex justify-between items-center text-gray-700">
     <h2 class="font-semibold pb-0 mb-0">Add Customise Input</h2>
     <div class="flex gap-3">
-      <button class="border-2 border-customBlue py-2 px-4 rounded-xl  font-semibold" (click)="openSideModal = false">Cancel</button>
+      <button class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold" (click)="openSideModal = false">Cancel</button>
     </div>
   </div>
 <br>
 
-  <div class="input-container-100 d-flex gap-2 ">
+  <div class="input-container-100 d-flex gap-2 text-xl">
     <div class="input-container-50 space-y-2">
       <!-- Posted Date -->
       <label for="postedDate">Label:</label>
