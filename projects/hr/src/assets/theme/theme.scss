@@ -231,6 +231,34 @@ h1,h2,h3,h4,h5,h6{
 
 
 
+.master-container {
+  display: flex;
+  height: 100vh;
+  background-color: rgb(237, 241, 241);
+}
+
+.main-container {
+  display: flex;
+  flex-direction: column; /* Arrange elements vertically */
+  min-height: 100vh;
+  width: 100%;
+  overflow-y: auto; /* Enable vertical scrolling */
+}
+
+.main {
+  flex: 1; /* Take up remaining space between navbar and footer */
+  // padding: 1rem;
+  box-sizing: border-box;
+}
+
+.main-container-footer {
+  padding: 1rem;
+  background-color: lightgray;
+  text-align: center;
+  width: 100%;
+  // overflow-x: hidden; 
+  margin-top: auto; /* Push footer to the bottom */
+}
 
 
 
@@ -372,15 +400,15 @@ td {
   .btn-delete{
     background-color: red;
     color: var(--white);
-    font-size: 1.3em;
-    padding: 1.5rem;
+    font-size: 1.15em;
+    padding: .8rem 1rem;
   }
   
   .btn-export{
     background-color: var(--celadon-green);
     color: var(--white);
-    font-size: 1.3em;
-    padding: 1.5rem;
+    font-size: 1.15em;
+    padding: .8rem 1rem;
   }
   .btn-export:hover{
     background-color: var(--celadon-green-hover);
@@ -389,8 +417,8 @@ td {
   .btn-navigate{
     background-color: var(--blue-green);
     color: var(--white);
-    font-size: 1.3em;
-    padding: 1.5rem;
+    font-size: 1.15em;
+    padding: .8rem 1rem;
   }
   .btn-navigate:hover{
     background-color: var(--blue-green-hover);
@@ -409,8 +437,7 @@ td {
     width: fit-content;
     background-color: var(--blue-green);
     color: var(--white);
-    font-size: 1.3em;
-    padding: 1.5rem 2rem;
+    padding: .8rem 2rem;
   }
   .btn-save:hover{
     background-color: var(--blue-green-hover);
@@ -775,6 +802,7 @@ body {
   border-radius: 5px;
   padding: .7rem;
   width: 100%;
+
 }
 
 .contain{
