@@ -21,7 +21,10 @@
     "pushPOS": "git subtree push --prefix=projects/POS https://gitlab.com/queensheba/erp-POS.git master",
 
     "pullExpenses": "git subtree pull --prefix=projects/expense https://gitlab.com/queensheba/erp-expenses.git master --squash",
-    "pushExpenses": "git subtree push --prefix=projects/expense https://gitlab.com/queensheba/erp-expenses.git master"
+    "pushExpenses": "git subtree push --prefix=projects/expense https://gitlab.com/queensheba/erp-expenses.git master",
+
+    "pullAccounting": "git subtree pull --prefix=projects/accounting https://gitlab.com/queensheba/eep-accounting.git master --squash",
+    "pushAccounting": "git subtree push --prefix=projects/accounting https://gitlab.com/queensheba/eep-accounting.git master"
 
   },
   "private": true,

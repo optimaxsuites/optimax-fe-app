@@ -191,6 +191,10 @@ const routes: Routes = [
         path: 'admin/expenses/:uuid',
         loadChildren: () => import('../../projects/expense/src/app/app.module').then(m => m.AppExpensesModule),
       },
+      {
+        path: 'admin/accounting/:uuid',
+        loadChildren: () => import('../../projects/accounting/src/app/app.module').then(m => m.AppAccountingModule),
+      },
       // {
       //   path: 'admin/sales/:uuid',
       //   component: SalesPageComponent,

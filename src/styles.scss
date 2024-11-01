@@ -8,12 +8,77 @@
 @import "../node_modules/quill/dist/quill.snow.css";
 
 @import '../projects/hr/src/app/ui/shared-component/assets/theme/theme.scss';
-@import '../projects/POS/src/assets/theme/theme.scss';
+// @import '../projects/POS/src/assets/theme/theme.scss';
 
 
 
 @include mat.core();
 
+// // Define the palettes for your theme using the Material Design palettes available in palette.scss
+// // (imported above). For each palette, you can optionally specify a default, lighter, and darker
+// // hue. Available color palettes: https://material.io/design/color/
+$ERP-FE-primary: mat.define-palette(mat.$green-palette, 700);
+$ERP-FE-accent: mat.define-palette(mat.$cyan-palette, 900);
+
+// // The warn palette is optional (defaults to red).
+$ERP-FE-warn: mat.define-palette(mat.$red-palette);
+
+// // Create the theme object. A theme consists of configurations for individual
+// // theming systems such as "color" or "typography".
+$ERP-FE-theme: mat.define-light-theme(
+  (
+    color: (
+      primary: $ERP-FE-primary,
+      accent: $ERP-FE-accent,
+      warn: $ERP-FE-warn,
+    ),
+    typography: mat.define-typography-config(),
+    density: 0,
+  )
+);
+
+// // Include theme styles for core and each component used in your app.
+// // Alternatively, you can import and @include the theme mixins for each component
+// // that you are using.
+@include mat.all-component-themes($ERP-FE-theme);
+.my-outlined-dialog {
+  outline: 2px solid rgb(28, 0, 128);
+}
+
+
+
+
+// // // regular style toast
+// // @import 'ngx-toastr/toastr';
+
+// // // bootstrap style toast
+// // // or import a bootstrap 4 alert styled design (SASS ONLY)
+// // // should be after your bootstrap imports, it uses bs4 variables, mixins, functions
+// // @import 'ngx-toastr/toastr-bs4-alert';
+
+// // // if you'd like to use it without importing all of bootstrap it requires
+// // @import 'bootstrap/scss/functions';
+// // @import 'bootstrap/scss/variables';
+// // @import 'bootstrap/scss/mixins';
+// // // bootstrap 4
+// // @import 'ngx-toastr/toastr-bs4-alert';
+// // // boostrap 5
+// // @import 'ngx-toastr/toastr-bs5-alert';
+
+
+
+
+
+
+
+
+
+
+
+// // /* You can add global styles to this file, and also import other style files */
+// // *, h1,h2,h3,h4,h5,h6{
+// //   font-family: "Roboto Slab", serif;
+// // }
 * {
   list-style: none;
   outline: none;
@@ -24,6 +89,8 @@
 html{
   // height: 100%;
   font-size: 14px;
+  
+
 }
 // body {
 //   // margin: 0;
@@ -37,6 +104,8 @@ html{
 @media screen and (min-width: 1200px){
   html {
   font-size: 14px;
+
+
 }
 }
 
