@@ -203,6 +203,10 @@ const routes: Routes = [
         path: 'admin/purchase/:uuid',
         loadChildren: () => import('../../projects/purchase/src/app/app.module').then(m => m.AppModule),
       },
+      {
+        path: 'admin/inventory/:uuid',
+        loadChildren: () => import('../../projects/inventory/src/app/app.module').then(m => m.AppModule),
+      },
       // {
       //   path: 'admin/sales/:uuid',
       //   component: SalesPageComponent,

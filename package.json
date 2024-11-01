@@ -31,7 +31,10 @@
     "pushProcurement": "git subtree push --prefix=projects/procurement https://gitlab.com/queensheba/erp-procurement.git master",
 
     "pullPurchase": "git subtree pull --prefix=projects/purchase https://gitlab.com/queensheba/erp-purchase.git master --squash",
-    "pushPurchase": "git subtree push --prefix=projects/purchase https://gitlab.com/queensheba/erp-purchase.git master"
+    "pushPurchase": "git subtree push --prefix=projects/purchase https://gitlab.com/queensheba/erp-purchase.git master",
+
+    "pullInventory": "git subtree pull --prefix=projects/inventory https://gitlab.com/queensheba/eep-inventory.git master --squash",
+    "pushInventory": "git subtree push --prefix=projects/inventory https://gitlab.com/queensheba/eep-inventory.git master"
 
   },
   "private": true,
