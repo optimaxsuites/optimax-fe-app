@@ -5,7 +5,7 @@
         <p-toolbar styleClass="mb-4 gap-2">
             <ng-template pTemplate="left">
                 <app-button [disabled]="showListView" text="Delete" class="bg-customRed text-white py-1 px-3 rounded cursor-pointer hover:bg-red-500"></app-button>
-                <div class=" table-item col-12">
+                <div class=" table-item col-12 ms-2">
                     <input 
                       type="text" 
                       placeholder="Search" 
@@ -24,7 +24,7 @@
                     </i>
                 </span>
                 <div class="flex flex-col items-center">
-                    <app-button text="Add New" class="btn-navigate" (click)="openForm()"></app-button>
+                    <app-button text="Add New" class="bg-customBlue text-white py-1 px-3 rounded cursor-pointer hover:bg-customBlueHover" (click)="openForm()"></app-button>
                 </div>
             </ng-template>
         </p-toolbar>
