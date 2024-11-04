@@ -6,7 +6,7 @@ import { ViewProductAsideComponent } from './ui/sharedComponent/view/view-produc
 
 const routes: Routes = [
    {
-        path: '',
+        path: 'admin/inventory/:uuid',
         component: InventoryPageComponent,
       },
       {

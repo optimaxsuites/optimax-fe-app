@@ -204,7 +204,7 @@ const routes: Routes = [
         loadChildren: () => import('../../projects/purchase/src/app/app.module').then(m => m.AppModule),
       },
       {
-        path: 'admin/inventory/:uuid',
+        path: '',
         loadChildren: () => import('../../projects/inventory/src/app/app.module').then(m => m.AppModule),
       },
       {
