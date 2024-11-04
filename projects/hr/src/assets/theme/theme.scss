@@ -387,10 +387,10 @@ td {
 //     color: inherit;
 //   }
   
-  // .r-btn:disabled {
-  //   cursor: not-allowed;
-  //   opacity: 0.5;
-  // }
+  .r-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
 
   app-button{
     border-radius: 5px;
