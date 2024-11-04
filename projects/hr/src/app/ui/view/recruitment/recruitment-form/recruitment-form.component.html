@@ -1,6 +1,6 @@
 <p-toast></p-toast>
 <div class="card">
-  <app-back-button (click)="goBack()"></app-back-button>
+  <app-back-button class="table-item" (click)="goBack()"></app-back-button>
 
   <div class="invite-main">
     <div>
@@ -123,7 +123,7 @@
 <br>
 
   <div class="input-container-100 d-flex gap-2 text-xl">
-    <div class="input-container-50 space-y-2">
+    <div class="input-container-50 space-y-2 ">
       <!-- Posted Date -->
       <label for="postedDate">Label:</label>
       <input type="text" id="" class="editInput h-[36px] mb-4" name="" [(ngModel)]="customField.label"  required>
