@@ -208,7 +208,7 @@ const routes: Routes = [
         loadChildren: () => import('../../projects/inventory/src/app/app.module').then(m => m.AppModule),
       },
       {
-        path: 'admin/crm/:uuid',
+        path: '',
         loadChildren: () => import('../../projects/CRM/src/app/app.module').then(m => m.AppModule),
       },
       {

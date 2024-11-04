@@ -8,7 +8,7 @@ import { CrmPageComponent } from './ui/view/crm-page.component';
 
 const routes: Routes = [
       {
-        path: '',
+        path: 'admin/crm/:uuid',
         component: CrmPageComponent,
       },
      {
