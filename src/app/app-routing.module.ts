@@ -196,7 +196,7 @@ const routes: Routes = [
         loadChildren: () => import('../../projects/accounting/src/app/app.module').then(m => m.AppAccountingModule),
       },
       {
-        path: 'admin/procurement/rfq/:uuid',
+        path: '',
         loadChildren: () => import('../../projects/procurement/src/app/app.module').then(m => m.AppModule),
       },
       {
