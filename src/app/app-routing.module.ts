@@ -211,6 +211,10 @@ const routes: Routes = [
         path: 'admin/crm/:uuid',
         loadChildren: () => import('../../projects/CRM/src/app/app.module').then(m => m.AppModule),
       },
+      {
+        path: '',
+        loadChildren: () => import('../../projects/vendor/src/app/app.module').then(m => m.AppModule),
+      },
       // {
       //   path: 'admin/sales/:uuid',
       //   component: SalesPageComponent,
