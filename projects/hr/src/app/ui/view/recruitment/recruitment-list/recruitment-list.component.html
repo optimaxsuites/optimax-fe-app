@@ -4,8 +4,8 @@
     <div class="card">
         <p-toolbar styleClass="mb-4 gap-2">
             <ng-template pTemplate="left">
-                <app-button [disabled]="showListView" text="Delete" class="bg-customRed text-white py-1 px-3 rounded cursor-pointer hover:bg-red-500"></app-button>
-                <div class=" table-item col-12 ms-2">
+                <app-button [disabled]="showListView" text="Delete" class="bg-red-600 text-white text-xl py-3 px-4 rounded cursor-pointer hover:bg-red-500"></app-button>
+                <div class="table-item col-12 ms-2">
                     <input 
                       type="text" 
                       placeholder="Search" 
@@ -24,7 +24,7 @@
                     </i>
                 </span>
                 <div class="flex flex-col items-center">
-                    <app-button text="Add New" class="bg-customBlue text-white py-1 px-3 rounded cursor-pointer hover:bg-customBlueHover" (click)="openForm()"></app-button>
+                    <app-button text="Add New" class="bg-customBlue text-white text-xl py-3 px-4 rounded cursor-pointer hover:bg-customBlueHover" (click)="openForm()"></app-button>
                 </div>
             </ng-template>
         </p-toolbar>
@@ -35,20 +35,20 @@
             <div *ngFor="let job of filteredJobPostings; let i = index" class=" bg-gray-50 transition ease-linear hover:scale-105 hover:border-2 text-customBlue rounded-xl flex flex-col w-[50%] p-2 editInput" >
                 <div class="list-card-wrapper">
                     <div class="list-card-right">
-                        <h3><strong>{{job.title}}</strong></h3>
+                        <h2><strong>{{job.title}}</strong></h2>
                         <div class="table-item">
-                            <p *ngIf="job.location"> <i class="pi pi-map-marker  me-2 "></i> {{job.location}}</p>
-                            <p *ngIf="job.employmentType" > <i class="pi pi-clock  me-2"></i> {{job.employmentType}}</p>
+                            <p *ngIf="job.location"> <i class="pi pi-map-marker table-item me-2 "></i> {{job.location}}</p>
+                            <p *ngIf="job.employmentType" > <i class="pi pi-clock table-item  me-2"></i> {{job.employmentType}}</p>
                             <!-- <p> <i class="pi pi-clock"></i> {{job.category}}</p> -->
-                            <p *ngIf="job.postedDate"> <i class="pi pi-calendar-clock me-2"></i> {{job.postedDate}}</p>
-                            <p *ngIf="job.expiryDate"> <i class="pi pi-calendar-times me-2"></i> {{job.expiryDate}}</p>
+                            <p *ngIf="job.postedDate"> <i class="pi pi-calendar-clock table-item me-2"></i> {{job.postedDate}}</p>
+                            <p *ngIf="job.expiryDate"> <i class="pi pi-calendar-times table-item me-2"></i> {{job.expiryDate}}</p>
                         </div>
                     </div>
                     <div class="list-card-left ">
                         <div class="flex space-x-2 mt-2 table-item ">
-                            <button pButton icon="pi pi-eye cursor-pointer" (click)="viewJob(job)" class="icon-view " title="View"></button>
-                            <button pButton icon="pi pi-pen-to-square cursor-pointer" (click)="editJob(job)" class="icon-edit" title="Edit"></button>
-                            <button pButton icon="pi pi-trash cursor-pointer" (click)="confirmJobDelete(job)" class="icon-delete" title="Delete"></button>
+                            <button pButton icon="pi pi-eye cursor-pointer table-item" (click)="viewJob(job)" class="icon-view " title="View"></button>
+                            <button pButton icon="pi pi-pen-to-square cursor-pointer table-item" (click)="editJob(job)" class="icon-edit" title="Edit"></button>
+                            <button pButton icon="pi pi-trash cursor-pointer table-item" (click)="confirmJobDelete(job)" class="icon-delete" title="Delete"></button>
                         </div>
                     </div>
                 </div>
