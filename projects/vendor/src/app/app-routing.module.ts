@@ -4,10 +4,10 @@ import { VendorPageComponent } from './ui/view/vendor-page.component';
 import { VendorRfqComponent } from './ui/view/vendor-rfq/vendor-rfq.component';
 
 const routes: Routes = [
-     {path: '',
-        component: VendorPageComponent,
-      },
-      {path: 'admin/vendor/rfq/:uuid', component:VendorRfqComponent },
+  {path: 'admin/vendor/:uuid',
+    component: VendorPageComponent,
+  },
+  {path: 'admin/vendor/rfq/:uuid', component:VendorRfqComponent },
       
 ];
 
