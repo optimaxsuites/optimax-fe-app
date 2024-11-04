@@ -17,7 +17,7 @@
       </ng-template>
     </p-toolbar> -->
 
-    <div class="flex w-full justify-between px-3 text-xl">
+    <div class="flex w-full justify-between px-3 table-item">
       <div class="input-container-100">
         <ng-select 
           [items]="positions || []"
@@ -49,7 +49,7 @@
       [rows]="15"
       >
         <ng-template pTemplate="header">
-          <tr class="text-[13px]">
+          <tr class="">
             <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
             <th class="table-item" pSortableColumn="candidate">Candidate</th>
             <th class="table-item" pSortableColumn="email">Email</th>
