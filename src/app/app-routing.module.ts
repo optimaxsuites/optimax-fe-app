@@ -200,7 +200,7 @@ const routes: Routes = [
         loadChildren: () => import('../../projects/procurement/src/app/app.module').then(m => m.AppModule),
       },
       {
-        path: 'admin/purchase/:uuid',
+        path: '',
         loadChildren: () => import('../../projects/purchase/src/app/app.module').then(m => m.AppModule),
       },
       {

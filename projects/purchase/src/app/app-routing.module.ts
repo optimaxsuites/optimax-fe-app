@@ -6,7 +6,7 @@ import { RfqModalComponent } from './ui/view/rfq-modal/rfq-modal.component';
 const routes: Routes = [
 
    {
-        path: '',
+        path: 'admin/purchase/:uuid',
         component: PurchasePageComponent,
       },
 
