@@ -37,7 +37,10 @@
     "pushInventory": "git subtree push --prefix=projects/inventory https://gitlab.com/queensheba/eep-inventory.git master",
 
     "pullCRM": "git subtree pull --prefix=projects/CRM https://gitlab.com/queensheba/erp-crm.git master --squash",
-    "pushCRM": "git subtree push --prefix=projects/CRM https://gitlab.com/queensheba/erp-crm.git master"
+    "pushCRM": "git subtree push --prefix=projects/CRM https://gitlab.com/queensheba/erp-crm.git master",
+
+    "pullVendor": "git subtree pull --prefix=projects/vendor https://gitlab.com/queensheba/erp-vendor.git master --squash",
+    "pushVendor": "git subtree push --prefix=projects/vendor https://gitlab.com/queensheba/erp-vendor.git master"
 
   },
   "private": true,
