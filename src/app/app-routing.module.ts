@@ -184,16 +184,36 @@ const routes: Routes = [
         loadChildren: () => import('../../projects/settings/src/app/app.module').then(m => m.AppSettingsModule),
       },
       {
-        path: 'admin/pos/:uuid',
+        path: '',
         loadChildren: () => import('../../projects/POS/src/app/app.module').then(m => m.AppPOSModule),
       },
       {
-        path: 'admin/expenses/:uuid',
+        path: '',
         loadChildren: () => import('../../projects/expense/src/app/app.module').then(m => m.AppExpensesModule),
       },
       {
-        path: 'admin/accounting/:uuid',
+        path: '',
         loadChildren: () => import('../../projects/accounting/src/app/app.module').then(m => m.AppAccountingModule),
+      },
+      {
+        path: '',
+        loadChildren: () => import('../../projects/procurement/src/app/app.module').then(m => m.AppModule),
+      },
+      {
+        path: '',
+        loadChildren: () => import('../../projects/purchase/src/app/app.module').then(m => m.AppModule),
+      },
+      {
+        path: '',
+        loadChildren: () => import('../../projects/inventory/src/app/app.module').then(m => m.AppModule),
+      },
+      {
+        path: '',
+        loadChildren: () => import('../../projects/CRM/src/app/app.module').then(m => m.AppModule),
+      },
+      {
+        path: '',
+        loadChildren: () => import('../../projects/vendor/src/app/app.module').then(m => m.AppModule),
       },
       // {
       //   path: 'admin/sales/:uuid',

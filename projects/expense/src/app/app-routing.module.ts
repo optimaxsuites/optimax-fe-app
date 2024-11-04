@@ -7,7 +7,7 @@ import { UploadRecieptComponent } from './ui/view/upload-reciept/upload-reciept.
 import { AddPerDiemComponent } from './ui/view/add-per-diem/add-per-diem.component';
 
 const routes: Routes = [
-   { path: '',
+   { path: 'admin/expenses/:uuid',
         component: ExpensesComponent,
       },
       {

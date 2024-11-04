@@ -5,7 +5,7 @@ import { QuotationModalComponent } from './ui/view/quotation-modal/quotation-mod
 
 const routes: Routes = [
   {
-      path: '',
+      path: 'admin/accounting/:uuid',
       component: AccountingPageComponent,
     },
     {
