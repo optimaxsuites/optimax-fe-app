@@ -49,7 +49,7 @@
             <ng-template pTemplate="header">
             <tr>
                 <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
-                <th class="table-item" pSortableColumn="candidate">Candidate</th>
+                <th class="table-item" pSortableColumn="candidate">Name</th>
                 <th class="table-item" pSortableColumn="email">Email</th>
                 <th class="table-item" pSortableColumn="contactNumber">Contact Number</th>
                 <th class="table-item" pSortableColumn="contactNumber">Position</th>
@@ -64,7 +64,7 @@
             <ng-template pTemplate="body" let-interview let-i="rowIndex">
             <tr class="p-table-row">
                 <td><p-tableCheckbox [value]="interview" /></td>
-                <td class="table-item">{{ interview.firstName + ' ' + interview.lastName }}</td>
+                <td class="table-item">{{ interview.candidateName }}</td>
                 <td class="table-item">{{ interview.email }}</td>
                 <td class="table-item">{{ interview.contactNo }}</td>
                 <td class="table-item">{{ interview.position }}</td>

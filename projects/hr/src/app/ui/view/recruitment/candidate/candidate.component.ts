@@ -120,7 +120,7 @@ export class CandidateComponent implements OnInit {
   filterCandidates() {
     this.filteredCandidates = this.candidates.filter(candidate => {
       // Check if the candidate matches the search term
-      const matchesSearchTerm = candidate.candidate!.toLowerCase().includes(this.searchTerm.toLowerCase());
+      const matchesSearchTerm = candidate.candidateName!.toLowerCase().includes(this.searchTerm.toLowerCase());
   
       // Check if the candidate matches one of the selected positions (if any)
       const matchesPosition = this.selectedPositions.length === 0 || this.selectedPositions.includes(candidate.position!);
@@ -131,8 +131,8 @@ export class CandidateComponent implements OnInit {
 
   confirmCandidateDelete(candidate: any): void {
     this.confirmationService.confirm({
-      message: `Are You sure you want to carry out this action?  Clicking on DELETE, would lead to permanent removal of ${candidate.candidate}'s application`,
-      header: `Delete Candidate - ${candidate.candidate}`,
+      message: `Are You sure you want to carry out this action?  Clicking on DELETE, would lead to permanent removal of ${candidate.candidateName}'s application`,
+      header: `Delete Candidate - ${candidate.candidateName}`,
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass:"p-btn-danger p-button-text",
       rejectButtonStyleClass:"p-btn-cancle p-button-text",
@@ -205,7 +205,7 @@ export class CandidateComponent implements OnInit {
       this.messageService.add({
         severity: 'success',
         summary: 'Candidate Invited',
-        detail: `${this.activeItem.candidate} has been successfully invited for the interview.`
+        detail: `${this.activeItem.candidateName} has been successfully invited for the interview.`
       });
       
       // Close the interview invite component
