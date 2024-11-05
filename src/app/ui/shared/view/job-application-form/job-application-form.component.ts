@@ -65,14 +65,23 @@ export class JobApplicationFormComponent {
 
   // Save entire form to localStorage on submit
   saveFormData() {
+    const candidateName = this.formData.fullName 
+        || (this.formData.firstName && this.formData.lastName 
+            ? `${this.formData.firstName} ${this.formData.lastName}`
+            : '');
+
     const applicantInfo: ApplicantDTO = { 
       ...this.formData, 
-      candidateName: this.formData.fullName || (this.formData.firstName ? `${this.formData.firstName} ${this.formData.lastName}` : ''),
+      candidateName,
       id: this.randomToken.getRandomToken(), 
       position: this.job.category,
       dateApplied: new Date().toISOString(), // Capture the current date
       stage: ApplicationStage.ApplicationReceived,
     };
+
+    // delete applicantInfo.firstName;
+    // delete applicantInfo.lastName;
+    // delete applicantInfo.fullName;
 
     // Retrieve existing candidates from localStorage or initialize an empty array
     const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
