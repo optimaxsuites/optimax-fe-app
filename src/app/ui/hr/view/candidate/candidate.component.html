@@ -107,14 +107,14 @@
 
 <app-modal 
   *ngIf="viewModal"
-  [header]="'Viewing ' + activeItem.candidate + ' information'"
+  [header]="'Viewing ' + activeItem.candidateName + ' information'"
   [title]="'Cancel'"
   (close)="closeViewModal()">
     <div class="view-wrapper">
     <div class="d-flex gap-4 my-2">
       <div class="input-container-50">
           <label for="name"><strong>Name:</strong></label>
-          <span>  {{activeItem.candidate}}</span>
+          <span>  {{activeItem.candidateName}}</span>
       </div>
       <div class="input-container-50">
           <label for="phone-number"><strong>Phone Number:</strong></label>
