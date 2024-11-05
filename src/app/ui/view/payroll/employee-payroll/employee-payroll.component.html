@@ -1,4 +1,4 @@
-<div class="border-2  rounded-3xl m-4">
+<div class="border-2  rounded-3xl m-4 table-item">
     <p-toolbar styleClass="mb-4 gap-2">
         <ng-template pTemplate="left">
         <div class="flex gap-3 text-gray-700 items-center">
@@ -6,7 +6,7 @@
             <div class="flex items-center gap-4">
                 <label for="calendar" (click)="toggleCalendar()"><i class="fa-solid fa-calendar-days text-[20px] text-gray-500 cursor-pointer "></i></label>
                 <div *ngIf="showCalendar" class="calendar-modal">
-                    <div class="calendar-header">
+                    <div class="calendar-header table-item">
                         <select [(ngModel)]="selectedMonth" (change)="onMonthChange($event)" class="bg-transparent">
                             <option *ngFor="let month of months; let i = index" [value]="month" >
                                 {{ month }}
@@ -127,11 +127,11 @@
         </ng-template>
     </p-table>
   
-  </div>
+</div>
 
 
   <app-large-side-modal *ngIf="viewEmployee" (close)="viewEmployee = false">
-    <div class="py-3 text-customBlue">
+    <div class="py-3 text-customBlue table-item">
         <p class="text-center text-[20px] font-semibold">Payslip for the period of {{selectedMonth}} {{selectedYear}}</p>
         <div class="my-5 px-5 flex justify-between w-full gap-10">
         <div class="w-1/2">
@@ -334,7 +334,7 @@
   </app-large-side-modal>
 
   <app-large-side-modal *ngIf="openSummary" (close)="openSummary = false">
-    <div class="py-3 text-customBlue">
+    <div class="py-3 text-customBlue table-item">
         <div class="flex relative justify-between items-center px-5">
             <p class="text-center text-[20px] font-semibold">Pay Summary for {{selectedMonth}} {{selectedYear}}</p>
             <div   class="btn-navigate rounded-md cursor-pointer relative bg-customBlue text-[14px]" (click)="toggleDropdown()"><i class="fa-solid fa-download  m-2"></i> Download Summary</div>
