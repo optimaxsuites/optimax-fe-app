@@ -1,3 +1,5 @@
+<p-toast class="table-item"></p-toast>
+
 <nav>
   <div class="card">
     <div class="logo-wrapper">
@@ -6,7 +8,7 @@
   </div>
 </nav>
 
-<div class="---">
+<div class="table-item">
   <div class="container card">
     <div class="d-flex justify-between" *ngIf="job">
       <div class="job-info">
@@ -30,10 +32,50 @@
           <h2><strong>Apply for this position</strong></h2>
           <div *ngFor="let field of job.fields">
             <label>{{ field.label }}:</label>
-            <input class="editInput" [type]="field.type" [required]="field.required">
+            <!-- <input class="editInput" [type]="field.type" [required]="field.required"> -->
+
+            <input 
+              *ngIf="['text', 'tel', 'email', 'password', 'url', 'file', 'number'].includes(field.type)"
+              class="editInput"
+              [type]="field.type"
+              [(ngModel)]="formData[transformLabelToKey(field.label)]"
+              [required]="field.required">
+   
+            <textarea 
+              *ngIf="field.type === 'textarea'"
+              class="editInput h-80"
+              [(ngModel)]="formData[transformLabelToKey(field.label)]"
+              [required]="field.required">
+            </textarea>
+
+            <input *ngIf="field.type === 'checkbox'"
+              type="checkbox"
+              class="editInput"
+              [(ngModel)]="formData[transformLabelToKey(field.label)]"
+              [required]="field.required">
+
+            <div *ngIf="field.type === 'radio'">
+              <label *ngFor="let option of field.options">
+                <input 
+                  type="radio" 
+                  [value]="option.value" 
+                  [(ngModel)]="formData[transformLabelToKey(field.label)]"
+                  name="{{field.label}}"> {{ option.label }}
+              </label>
+            </div>
+
+            <ng-select 
+              *ngIf="field.type === 'select'"
+              [items]="field.options"
+              bindLabel="label"
+              bindValue="value"
+              [required]="field.required"
+              [(ngModel)]="formData[transformLabelToKey(field.label)]"
+              placeholder="Select an option">
+            </ng-select>
           </div>
           <div class="btn-wrapper">
-          <app-button text="Submit" class="btn-save" ></app-button>
+          <app-button text="Submit" class="btn-save" (click)="saveFormData()"></app-button>
           </div>
         </div>
       </div>

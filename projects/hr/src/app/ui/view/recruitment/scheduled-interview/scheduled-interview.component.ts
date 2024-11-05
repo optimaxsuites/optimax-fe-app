@@ -108,7 +108,7 @@ export class ScheduledInterviewComponent {
       this.messageService.add({
         severity: 'success',
         summary: 'Offer Letter Sent',
-        detail: `${this.activeItem.candidate} has successfully been sent an offer letter.`
+        detail: `${this.activeItem.candidateName} has successfully been sent an offer letter.`
       });
       
     }
@@ -293,7 +293,7 @@ export class ScheduledInterviewComponent {
   filterCandidates() {
     this.filteredCandidates = this.interviews.filter(interview => {
       // Check if the candidate matches the search term
-      const matchesSearchTerm = interview.candidate!.toLowerCase().includes(this.searchTerm.toLowerCase());
+      const matchesSearchTerm = interview.candidateName!.toLowerCase().includes(this.searchTerm.toLowerCase());
   
       // Check if the candidate matches one of the selected positions (if any)
       const matchesPosition = this.selectedPositions.length === 0 || this.selectedPositions.includes(interview.position!);

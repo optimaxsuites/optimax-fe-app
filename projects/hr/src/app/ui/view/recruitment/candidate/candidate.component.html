@@ -17,7 +17,7 @@
       </ng-template>
     </p-toolbar> -->
 
-    <div class="flex w-full justify-between ps-3 table-item">
+    <div class="flex w-full justify-between p-3 table-item">
       <div class="w-1/1">
         <ng-select 
           [items]="positions || []"
@@ -51,7 +51,7 @@
         <ng-template pTemplate="header">
           <tr class="">
             <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
-            <th class="table-item" pSortableColumn="candidate">Candidate</th>
+            <th class="table-item" pSortableColumn="candidate">Name</th>
             <th class="table-item" pSortableColumn="email">Email</th>
             <th class="table-item" pSortableColumn="contactNumber">Contact Number</th>
             <th class="table-item" pSortableColumn="contactNumber">Position</th>
@@ -64,7 +64,7 @@
         <ng-template pTemplate="body" let-candidate let-i="rowIndex">
         <tr class="p-table-row">
             <td><p-tableCheckbox [value]="candidate" /></td>
-            <td class="table-item">{{ candidate.candidate }}</td>
+            <td class="table-item">{{ candidate.candidateName }}</td>
             <td class="table-item">{{ candidate.email }}</td>
             <td class="table-item">{{ candidate.contactNo }}</td>
             <td class="table-item">{{ candidate.position }}</td>
@@ -107,14 +107,14 @@
 
 <app-modal 
   *ngIf="viewModal"
-  [header]="'Viewing ' + activeItem.candidate + ' information'"
+  [header]="'Viewing ' + activeItem.candidateName + ' information'"
   [title]="'Cancel'"
   (close)="closeViewModal()">
     <div class="view-wrapper">
     <div class="d-flex gap-4 my-2">
       <div class="input-container-50">
           <label for="name"><strong>Name:</strong></label>
-          <span>  {{activeItem.candidate}}</span>
+          <span>  {{activeItem.candidateName}}</span>
       </div>
       <div class="input-container-50">
           <label for="phone-number"><strong>Phone Number:</strong></label>
