@@ -1,5 +1,5 @@
 
-<div  class="w-auto bg-white/90 my-3 rounded-2xl  px-8 text-gray-800">
+<div  class="w-auto bg-white/90 my-3 rounded-2xl  px-8 text-gray-800 table-item">
 
     <div class=" flex gap-28 mb-5 items-center">
         <div class="flex gap-2 justify-center flex-col text-center">
@@ -9,7 +9,7 @@
 
           <div class="flex gap-12 items-center">
             <div class="flex flex-col justify-center text-center bg-customBlue px-5 py-4 rounded-xl text-white ">
-                <p>Available days left</p>
+                <p class="text-">Available days left</p>
                 <p class="text-[24px] pt-4 font-semibold">10.00 day(s)</p>
               </div>
     
@@ -32,7 +32,7 @@
 <div class="card">
 
     <div class="flex w-full  py-4 items-center justify-between gap-4 px-3">
-    <div class="flex gap-4 items-center w-1/2">
+    <div class="flex gap-4 items-center w-1/2 table-item">
       <div class="w-full">
         <ng-select
           [items]="leaveTypes"
@@ -55,13 +55,13 @@
         </ng-select>
       </div>
     </div>
-      <div class="search-bar w-[70%]">
+      <div class=" w-[70%] table-item">
         <input 
           type="text" 
           placeholder="Search" 
           [(ngModel)]="searchTerm"
           (ngModelChange)="filterCandidates()"
-          class="editInput w-full"
+          class="editInput w-full h-[36px]"
         />
       </div>
     </div>
@@ -112,7 +112,7 @@
 
         <ng-template pTemplate="emptymessage">
           <tr>
-            <td colspan="8" class="text-center text-[14px] py-4"> 
+            <td colspan="12" class="text-center table-item py-4"> 
               No request made yet
             </td>
           </tr>
