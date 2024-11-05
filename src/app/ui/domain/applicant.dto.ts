@@ -1,6 +1,6 @@
 export interface ApplicantDTO{
     id?: string;
-    candidate?: string;
+    candidateName?: string;
     firstName?: string;
     lastName?: string;
     contactNo?: string;
