@@ -5,6 +5,8 @@ import { RecruitmentComponent } from './ui/view/recruitment/recruitment.componen
 import { LeaveComponent } from './ui/view/leave/leave.component';
 import { AttendanceComponent } from './ui/view/attendance/attendance.component';
 import { EmployeeManagementComponent } from './ui/view/employee-management/employee-management.component';
+import { EmployeePayrollComponent } from './ui/view/payroll/employee-payroll/employee-payroll.component';
+import { EmployeePayslipListComponent } from './ui/view/payroll/employee-payslip-list/employee-payslip-list.component';
 
 const routes: Routes = [
 
@@ -28,6 +30,18 @@ const routes: Routes = [
   {
     path: "admin/hr/employee-management/:uuid",
     component: EmployeeManagementComponent
+  },
+    {
+      path: 'admin/hr/payroll/:uuid',
+      component: EmployeePayrollComponent
+    },
+    {
+      path: 'admin/employee-payslip/:uuid',
+      component: EmployeePayslipListComponent
+    },
+  {
+    path: "admin/hr/attendance/:uuid",
+    component: AttendanceComponent
   }
 
 ];
