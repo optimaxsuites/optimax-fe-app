@@ -33,6 +33,11 @@ export class JobApplicationFormComponent {
       this.job = jobData.find((job: any) => job.id === jobId);
     }
     console.log('job info', this.job)
+
+    this.job.fields.forEach((field: { label: string; }) => {
+      const transformedLabel = this.transformLabelToKey(field.label);
+      console.log('Original Label:', field.label, '| Transformed Key:', transformedLabel);
+    });
   }
 
   formData: any = {};
@@ -55,7 +60,7 @@ export class JobApplicationFormComponent {
     return label
         .replace(/\s+(.)/g, (match, char) => char.toUpperCase()) // Convert spaces to camelCase
         .replace(/\s+/g, '') // Remove any remaining spaces
-        .charAt(0).toLowerCase() + label.slice(1); // Ensure the first letter is lowercase
+        .replace(/^./, char => char.toLowerCase()); // Ensure the first letter is lowercase
   }
 
   // Save entire form to localStorage on submit
