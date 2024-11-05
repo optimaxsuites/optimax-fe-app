@@ -1,4 +1,4 @@
-<div class="card">
+<div class="card table-item">
     <p-toolbar styleClass="mb-4 gap-2">
       <ng-template pTemplate="left">
         <app-button text="Reject" class="btn-delete" (click)="bulkReject()"></app-button>
@@ -40,7 +40,7 @@
           placeholder="Search" 
           [(ngModel)]="searchTerm"
           (ngModelChange)="filterCandidates()"
-          class="editInput w-full"
+          class="editInput w-full h-[36px]"
         />
       </div>
     </div>

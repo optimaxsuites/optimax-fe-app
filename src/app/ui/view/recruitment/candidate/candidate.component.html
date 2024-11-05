@@ -17,8 +17,8 @@
       </ng-template>
     </p-toolbar> -->
 
-    <div class="flex w-full justify-between px-3 table-item">
-      <div class="input-container-100">
+    <div class="flex w-full justify-between ps-3 table-item">
+      <div class="w-1/1">
         <ng-select 
           [items]="positions || []"
           class="input-container-100"
@@ -30,7 +30,7 @@
         </ng-select>
       </div>
 
-      <div class="search-bar w-full">
+      <div class="search-bar w-[90%]">
         <input 
           type="text" 
           placeholder="Search" 
@@ -91,7 +91,7 @@
         </ng-template>
         <ng-template pTemplate="emptymessage">
           <tr>
-            <td colspan="8" class="text-center text-[14px] py-4"> 
+            <td colspan="8" class="text-center table-item py-4"> 
               No candidate(s) application yet.
             </td>
           </tr>

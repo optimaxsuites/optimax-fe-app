@@ -62,9 +62,10 @@ import { AddEmployeeFormComponent } from './ui/view/employee-management/add-empl
 import { EmployeeOnboardingFormComponent } from './ui/view/employee-management/employee-onboarding-form/employee-onboarding-form.component';
 import { LeaveUsageComponent } from './ui/view/leave/leave-usage/leave-usage.component';
 import { LeaveRequestComponent } from './ui/view/leave/leave-request/leave-request.component';
-import { AssignLeaveComponent } from './ui/view/leave/assign-leave/assign-leave.component';
 import { ApplyComponent } from './ui/view/leave/apply/apply.component';
 import { Navbar2Component } from './ui/shared-component/view/navbar/navbar2.component';
+import { AssignLeaveComponent } from './ui/view/leave/assign-leave/assign-leave.component';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 @NgModule({
   declarations: [
@@ -136,7 +137,8 @@ import { Navbar2Component } from './ui/shared-component/view/navbar/navbar2.comp
       provide: JWT_OPTIONS,
       useValue: JWT_OPTIONS
     },
-    JwtHelperService
+    JwtHelperService,
+    provideHttpClient(withInterceptorsFromDi())
   ],
   bootstrap: [AppHrComponent]
 })
