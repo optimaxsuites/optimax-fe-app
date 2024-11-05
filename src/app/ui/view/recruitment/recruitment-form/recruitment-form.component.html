@@ -8,7 +8,7 @@
       <!-- <p class="note">All fields are required</p><br> -->
 
 
-      <div class="input-container-100 flex-item justify-center text-xl">
+      <div class="input-container-100 flex-item justify-center table-item">
         <div class="input-container-50 space-y-2 ">
           <!-- Job Title -->
           <label for="jobTitle">Job Title: <span style="color: red;">*</span></label>
@@ -104,7 +104,7 @@
         </div>
       </div>
       <div class="btn-wrapper">
-        <app-button (click)="submitForm()" text="{{ isEdit ? 'Update' : 'Create' }}" type="submit" class="bg-customBlue text-white hover:bg-customBlueHover"></app-button>
+        <app-button (click)="submitForm()" text="{{ isEdit ? 'Update' : 'Create' }}" type="submit" class="btn-navigate"></app-button>
       </div>
     </div>
   </div>
@@ -145,7 +145,7 @@
     <label for="" class="block text-[13px] font-medium cursor-pointer">Required</label>
   </div>
   <div class="btn-container-btn">
-    <app-button text="Add Input" class="btn-save" (click)="addCustomiseInput()"></app-button>
+    <app-button text="Add Input" class="btn-navigate" (click)="addCustomiseInput()"></app-button>
   </div>
   <div class="show-added-customisedInputs">
     <ul>
@@ -157,6 +157,6 @@
     </ul>
   </div>
   <div class="btn-container">
-    <app-button text="Save" class="btn-save" (click)="saveCustomiseInputs()"></app-button>
+    <app-button text="Save" class="btn-navigate" (click)="saveCustomiseInputs()"></app-button>
   </div>
 </app-side-modal>
