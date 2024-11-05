@@ -1,5 +1,5 @@
 
-<div>
+<div class="table-item">
     <div class="container-fluid p-4">
         <div class="flex gap-4 w-1/2">
             <div class="w-full">
@@ -43,9 +43,9 @@
                     <div class="list-card-wrapper" (click)="navigateToJob(job.id!)">
                         <div class="list-card-right">
                             <h3><strong>{{job.title}}</strong></h3>
-                            <p> <i class="pi pi-bars table-item me-2"></i> <span>{{job.category}}</span></p>
-                            <p> <i class="pi pi-clock table-item me-2"></i> <span>{{job.employmentType}}</span></p>
-                            <p> <i class="pi pi-map-marker table-item me-2 "></i> <span>{{job.location}}</span></p>
+                            <p *ngIf="job.category"> <i class="pi pi-bars table-item me-2"></i> <span>{{job.category}}</span></p>
+                            <p *ngIf="job.employmentType"> <i class="pi pi-clock table-item me-2"></i> <span>{{job.employmentType}}</span></p>
+                            <p *ngIf="job.location"> <i class="pi pi-map-marker table-item me-2 "></i> <span>{{job.location}}</span></p>
                             <br>
                             <p><span>View More</span><i class="pi pi-arrow-right table-item ms-2 "></i></p>
                         </div>
