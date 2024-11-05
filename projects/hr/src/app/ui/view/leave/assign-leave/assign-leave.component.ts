@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import { Component } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
@@ -15,7 +14,6 @@ export class AssignLeaveComponent {
   constructor(
     private messageService: MessageService,
    private token: RandomTokenService,
-   private http: HttpClient,
    private leaveService: LeaveServiceService
   ) {
   }
@@ -120,5 +118,4 @@ assignLeave() {
   }
 
 }
-
 }

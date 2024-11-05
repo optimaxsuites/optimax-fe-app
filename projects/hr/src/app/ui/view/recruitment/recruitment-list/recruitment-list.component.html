@@ -1,5 +1,5 @@
-<p-confirmDialog header="Confirm Deletion" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
-<p-toast></p-toast>
+<p-confirmDialog class="table-item" header="Confirm Deletion" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
+<p-toast class="table-item"></p-toast>
 <div *ngIf="showRecruitmentList" class="table-container">
     <div class="card">
         <p-toolbar styleClass="mb-4 gap-2">
@@ -56,7 +56,7 @@
             </div>
         </div>
 
-        <div *ngIf="filteredJobPostings.length == 0" class="input-container-100 nothing">
+        <div *ngIf="filteredJobPostings.length == 0" class="input-container-100 nothing table-item">
             <span>
                 No Job posting(s) yet
             </span>
@@ -105,7 +105,7 @@
             </ng-template>
             <ng-template pTemplate="emptymessage">
                 <tr>
-                    <td colspan="8" class="text-center  py-4"> 
+                    <td colspan="8" class="text-center table-item py-4"> 
                         No Job posting(s) yet
                     </td>
                   </tr>
@@ -114,7 +114,7 @@
     </div>
 
 <div *ngIf="showRecruitmentForm">
-     <app-recruitment-form [jobData]="activeItem" (back)="close()" (submitFrom)="createJob()" [isEdit]="isEdit"></app-recruitment-form>
+    <app-recruitment-form [jobData]="activeItem" (back)="close()" (submitFrom)="createJob()" [isEdit]="isEdit"></app-recruitment-form>
 </div>
 
 <app-modal 
