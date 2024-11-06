@@ -570,8 +570,12 @@ handleDateClick(arg: DateClickArg) {
           } : null 
         };
       });
+
       this.uniqueLevels = [...new Set(this.employees.map((employee: { level: any; }) => employee.level))];
-      this.uniquePositions = [...new Set(this.employees.map((employee: { position: any; }) => employee.position))];
+
+      this.uniquePositions = [...new Set(this.employees.map((employee: {jobTitle: string} ) => employee.jobTitle))];
+      console.log(this.uniquePositions)
+
       this.filteredEmployees = this.employees;
 
     }
@@ -611,6 +615,7 @@ handleDateClick(arg: DateClickArg) {
       });
       this.uniqueLevels = [...new Set(this.employees.map((employee: { level: any; }) => employee.level))];
       this.uniquePositions = [...new Set(this.employees.map((employee: { position: any; }) => employee.position))];
+
       console.log(this.employees[0].salaryDetails)
 
     }
@@ -684,9 +689,9 @@ handleDateClick(arg: DateClickArg) {
 
 
   filterBySelectedPosition() {
-     this.filteredEmployees = this.employees.filter((employee: { level: any; position: string; firstName: string; lastName: string; }) => {
+     this.filteredEmployees = this.employees.filter((employee: { level: any; jobTitle: string; firstName: string; lastName: string; }) => {
       return this.selectedPosition.length === 0 || 
-      this.selectedPosition.includes(employee.position);
+      this.selectedPosition.includes(employee.jobTitle);
     })
       }
 
