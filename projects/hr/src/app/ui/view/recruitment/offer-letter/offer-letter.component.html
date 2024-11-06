@@ -1,5 +1,5 @@
 
-<div class="card">
+<div class="card table-item">
     <div class="move-back">
         <app-back-button (click)="goBack()"></app-back-button>
     </div>
@@ -9,7 +9,7 @@
             <div class="d-flex gap-4 my-2">
                 <div class="input-container-50">
                     <label for="name"><strong>Name:</strong> </label>
-                    <span>  {{candidate.firstName + ' ' + candidate.lastName}}</span>
+                    <span>  {{candidate.candidateName}}</span>
                     <!-- <input type="text" id="name" name="name" [(ngModel)]="candidate.candidate" class="editInput" disabled> -->
                 </div>
                 <div class="input-container-50">
