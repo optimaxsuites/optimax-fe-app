@@ -2,11 +2,8 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
-
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
-
-
 
 ////primeng
 import { ButtonModule } from 'primeng/button';
@@ -32,8 +29,6 @@ import { RippleModule } from 'primeng/ripple';
 
 import { NgSelectModule } from '@ng-select/ng-select';
 import { FullCalendarModule } from '@fullcalendar/angular';
-
-
 
 import { AppHrRoutingModule } from './app-routing.module';
 import { AppHrComponent } from './app.component';
@@ -64,8 +59,14 @@ import { LeaveUsageComponent } from './ui/view/leave/leave-usage/leave-usage.com
 import { LeaveRequestComponent } from './ui/view/leave/leave-request/leave-request.component';
 import { ApplyComponent } from './ui/view/leave/apply/apply.component';
 import { Navbar2Component } from './ui/shared-component/view/navbar/navbar2.component';
+import { PerformanceComponent } from './ui/view/performance/performance.component';
+import { AppraisallistComponent } from './ui/view/performance/appraisallist/appraisallist.component';
+import { AppraisalcycleComponent } from './ui/view/performance/appraisalcycle/appraisalcycle.component';
 import { AssignLeaveComponent } from './ui/view/leave/assign-leave/assign-leave.component';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import {
+  provideHttpClient,
+  withInterceptorsFromDi,
+} from '@angular/common/http';
 import { AttendanceSheetsComponent } from './ui/view/attendance/attendance-sheet/attendance-sheet.component';
 import { NotificationComponent } from './ui/view/attendance/notification/notification.component';
 import { TimeSheetComponent } from './ui/view/attendance/time-sheet/time-sheet.component';
@@ -103,25 +104,27 @@ import { PayslipViewComponent } from './ui/view/payroll/payslip-view/payslip-vie
     AssignLeaveComponent,
     ApplyComponent,
     Navbar2Component,
+    PerformanceComponent,
+    AppraisallistComponent,
+    AppraisalcycleComponent,
     AttendanceSheetsComponent,
     NotificationComponent,
     TimeSheetComponent,
     MyAttendanceComponent,
     EmployeePayrollComponent,
     EmployeePayslipListComponent,
-    PayslipViewComponent
-
+    PayslipViewComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
     RippleModule,
     DialogModule,
     ToastModule,
-    FormsModule, 
+    FormsModule,
     ReactiveFormsModule,
     SidebarModule,
     TabViewModule,
@@ -142,18 +145,17 @@ import { PayslipViewComponent } from './ui/view/payroll/payslip-view/payslip-vie
     PasswordModule,
     ButtonModule,
     NgSelectModule,
-    FullCalendarModule, 
+    FullCalendarModule,
     LargeSideModalComponent,
-    
   ],
   providers: [
     {
       provide: JWT_OPTIONS,
-      useValue: JWT_OPTIONS
+      useValue: JWT_OPTIONS,
     },
     JwtHelperService,
-    provideHttpClient(withInterceptorsFromDi())
+    provideHttpClient(withInterceptorsFromDi()),
   ],
-  bootstrap: [AppHrComponent]
+  bootstrap: [AppHrComponent],
 })
-export class AppHrModule { }
+export class AppHrModule {}
