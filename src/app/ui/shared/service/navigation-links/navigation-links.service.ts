@@ -44,6 +44,7 @@ export class NavigationLinksService {
     this.links['employeeManagementLink'] = `/admin/hr/employee-management/${uuidV4()}`;
     this.links['payroll'] = '/admin/hr/payroll/' +uuidV4();
     this.links['allPayslip'] = '/admin/employee-payslip/' +uuidV4();
+    this.links['performanceLink'] = '/admin/hr/performance/' +uuidV4();
 
 
 //  resources ================================================================================================================
