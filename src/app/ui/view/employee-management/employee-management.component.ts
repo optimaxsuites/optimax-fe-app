@@ -665,23 +665,28 @@ handleDateClick(arg: DateClickArg) {
   }
 
   applyFilters() {
-    this.filteredEmployees = this.employees.filter((employee: { level: any; position: string; firstName: string; lastName: string; }) => {
-      const matchesLevelType = this.selectedEmployeeType.length === 0 || 
+    this.filteredEmployees = this.employees.filter((employee: { level: any; jobTitle: string; firstName: string; lastName: string; }) => {
+      const matchesLevelType = !this.selectedEmployeeType || 
+                               this.selectedEmployeeType.length === 0 || 
                                this.selectedEmployeeType.includes(employee.level);
-
-      const matchesPosition = this.selectedPosition.length === 0 || 
-                              this.selectedPosition.includes(employee.position);
-
-      const matchesSearchTerm = this.searchTerm === '' || 
+  
+      const matchesPosition = !this.selectedPosition || 
+                              this.selectedPosition.length === 0 || 
+                              this.selectedPosition.includes(employee.jobTitle);
+  
+      const matchesSearchTerm = !this.searchTerm || 
                                 employee.firstName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
                                 employee.lastName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-                                employee.position.toLowerCase().includes(this.searchTerm.toLowerCase());
+                                employee.jobTitle.toLowerCase().includes(this.searchTerm.toLowerCase());
 
+  
       return matchesLevelType && matchesPosition && matchesSearchTerm;
     });
+  
   }
+  
   filterBySelectedEmployeeType() {
-    this.filteredEmployees = this.employees.filter((employee: { level: any; position: string; firstName: string; lastName: string; }) => {
+    this.filteredEmployees = this.employees.filter((employee: { level: any; jobTitle: string; firstName: string; lastName: string; }) => {
       return this.selectedEmployeeType.length === 0 || 
                                this.selectedEmployeeType.includes(employee.level);
     })
