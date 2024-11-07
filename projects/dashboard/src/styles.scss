@@ -1,0 +1,209 @@
+
+// Custom Theming for Angular Material
+// For more information: https://material.angular.io/guide/theming
+// Plus imports for other components in your app.
+@use "@angular/material" as mat;
+@import "@ng-select/ng-select/themes/default.theme.css";
+
+
+// custom primeUI
+@import "../node_modules/primeng/resources/themes/saga-green/theme.css";
+@import "../node_modules/primeng/resources/primeng.css";
+@import "../node_modules/primeng/resources/primeng.min.css";
+
+/* Custom css */
+@import "assets/theme/theme.scss";
+
+// QUILL CSS
+@import "../node_modules/quill/dist/quill.core.css";
+@import "../node_modules/quill/dist/quill.snow.css";
+@import '../node_modules/@fortawesome/fontawesome-free/css/all.css';
+
+
+
+//tailwind style
+// @import "assets/theme/theme.css";
+
+// Include the common styles for Angular Material. We include this here so that you only
+// have to load a single css file for Angular Material in your app.
+// Be sure that you only ever include this mixin once!
+
+// Define the palettes for your theme using the Material Design palettes available in palette.scss
+// (imported above). For each palette, you can optionally specify a default, lighter, and darker
+// hue. Available color palettes: https://material.io/design/color/
+
+
+
+// // regular style toast
+// @import 'ngx-toastr/toastr';
+
+// // bootstrap style toast
+// // or import a bootstrap 4 alert styled design (SASS ONLY)
+// // should be after your bootstrap imports, it uses bs4 variables, mixins, functions
+// @import 'ngx-toastr/toastr-bs4-alert';
+
+// // if you'd like to use it without importing all of bootstrap it requires
+// @import 'bootstrap/scss/functions';
+// @import 'bootstrap/scss/variables';
+// @import 'bootstrap/scss/mixins';
+// // bootstrap 4
+// @import 'ngx-toastr/toastr-bs4-alert';
+// // boostrap 5
+// @import 'ngx-toastr/toastr-bs5-alert';
+
+
+
+
+
+
+
+
+
+
+// /* You can add global styles to this file, and also import other style files */
+// *, h1,h2,h3,h4,h5,h6{
+//   font-family: "Roboto Slab", serif;
+// }
+* {
+  // padding: 0;
+  // margin: 0;
+  list-style: none;
+  outline: none;
+  text-decoration: none;
+  font-family: "Roboto Slab", serif;
+  
+}
+html{
+  height: 100%;
+  font-size: 14px;
+}
+body {
+  // margin: 0;
+  font-family: "Roboto Slab", serif;
+}
+
+h1,h2,h3,h4,h5,h6{
+  font-family: "Roboto Slab", serif;
+}
+
+@media screen and (min-width: 1200px){
+
+html {
+  font-size: 14px;
+}
+}
+
+.p-toast{
+  font-size: 1em;
+}
+.p-dialog{
+  font-size: 1em;
+}
+.p-panel{
+  font-size: 1.1em;
+}
+
+
+
+.p-divider{
+  margin: 0;
+  padding: 0;
+}
+
+.pi{
+  cursor: pointer;
+}
+
+.pi-times-circle, .pi-trash{
+  color: red;
+}
+
+.button{
+  background-color: red;
+  font-size: 5em;
+}
+
+.custom-header {
+  font-size: 2rem; 
+  color: purple; 
+  font-weight: bold;
+  text-decoration: none ;
+  margin-bottom: 1rem;
+  padding: 0;
+}
+.custom-header > a {
+  color: #224957; 
+  font-weight: bold;
+  text-decoration: none ;
+}
+.custom-header > a[aria-selected="true"] {
+  background-color: rgb(37 146 91 / 0.6);
+  color: white;
+  border-radius: 1rem;
+}
+
+
+/* Apply a background color and text color to all PrimeNG tables */
+.p-datatable {
+  font-size: 14px !important;
+}
+
+/* Style header row */
+.p-datatable .p-datatable-thead > tr > th {
+
+  font-size: 14px !important;
+
+}
+
+/* Style rows */
+.p-datatable .p-datatable-tbody > tr > td {
+  font-size: 14px !important;
+
+}
+
+/* Style hover effect */
+.p-datatable .p-datatable-tbody > tr:hover {
+  background-color: #e0f7fa;
+}
+
+/* Styling p-toolbar globally */
+.p-toolbar {
+  background-color: #f8f9fa;
+
+  font-size: 14px !important;
+
+}
+
+.p-toolbar .p-button {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.btn-delete{
+  background-color: red;
+  color: var(--white);
+  font-size: 1em;
+  padding: 0.6rem 0.8rem;
+}
+
+.btn-export{
+  background-color: var(--celadon-green);
+  color: var(--white);
+  font-size: 1em;
+  padding: 0.6rem 0.8rem;
+  
+}
+.btn-export:hover{
+  background-color: var(--celadon-green-hover);
+}
+
+.btn-navigate{
+  background-color: var(--blue-green);
+  color: var(--white);
+  font-size: 1em;
+  padding: 0.6rem 0.8rem;
+
+}
+.btn-navigate:hover{
+  background-color: var(--blue-green-hover);
+}

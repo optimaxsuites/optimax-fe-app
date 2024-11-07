@@ -1,0 +1,132 @@
+<p-toast></p-toast>
+<div class="container">
+    <div class="modal-wrapper">
+        <form #inventoryForm="ngForm">
+          <div class="header-section">
+            <section class="title-section">
+              <p class="form-title">{{ isEdit ? 'Edit Product' : 'Add Product' }}</p>
+            </section>
+          </div>
+          <div class="form-group">
+            <label for="item-name">Product Image</label>
+            <p class="sub-text">Only 5 images can be added</p>
+            <section class="logo-section">
+              <div class="logo-upload-container">
+                <div class="wrapper" *ngFor="let image of inventoryItem.images; let i = index">
+                  <div class="btn-remove-image" (click)="removeImage(i)">
+                    <i class="fa-solid fa-trash"></i>
+                  </div>
+                  <div class="logo-wrapper">
+                    <img
+                      *ngIf="image"
+                      [src]="image"
+                      alt="Item Image {{i + 1}}"
+                      class="logo"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="add-logo-toggle">
+                <input
+                  type="file"
+                  #fileInput
+                  style="display: none"
+                  (change)="onLogoSelected($event)"
+                  multiple
+                />
+                <div class="btn-add-image" (click)="fileInput.click()">
+                  <i class="fas fa-plus me-2"></i>Add Product Image
+                </div>
+              </div>
+            </section>
+          </div>
+          
+
+
+
+
+          <!-- <input type="hidden" [(ngModel)]="inventoryItem.id" name="id"> -->
+
+          <div class="d-flex">
+            <div class="form-group-2">
+              <label for="item-part-number">Product Part Number</label>
+              <input type="text" id="item-part-number" required [(ngModel)]="inventoryItem.partNo" name="partNo" appNumberOnly>
+            </div>
+
+            <div class="form-group-2">
+              <label for="item-name">Product Name</label>
+              <input type="text" id="item-name" required [(ngModel)]="inventoryItem.itemName" name="nitemName">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="item-description">Product Description</label>
+            <angular-editor placeholder="'Enter text here...'" [config]="editorConfig" id="item-description" required [(ngModel)]="inventoryItem.description" name="description" ></angular-editor>
+          </div>
+
+          <div class="d-flex">
+            <div class="form-group-2">
+              <label for="initial-stock">Initial Stock</label>
+              <p class="sub-text">The stock available for sale at the beginning of accounting period</p>
+              <input type="text" id="initial-stock" required [(ngModel)]="inventoryItem.initialStock" name="initialStock">
+            </div>
+  
+            <div class="form-group-2 mt-10">
+              <label for="tax-rate">Tax Rate (in %)</label>
+              <input type="text" id="tax-rate" required [(ngModel)]="inventoryItem.taxRate" name="tax-rate" appNumberOnly>
+            </div>
+          </div>
+
+          <div class="d-flex">
+            <div class="form-group-2">
+              <label for="currency">Currency</label>
+              <div class="currency-selector">
+                <div class="custom-dropdown">
+                  <span class="btn flat-btn" (click)="toggleDropdown('currency')">
+                    {{ (getSelectedItem$("currency") | async) || "Select Currency" }}
+                  </span>
+                  <ul
+                    class="custom-options"
+                    *ngIf="isDropdownOpen$('currency') | async"
+                  >
+                    <li
+                      class="custom-option"
+                      *ngFor="let item of currency"
+                      (click)="selectItem('currency', item)"
+                    >
+                    {{ item.name }} ({{ item.code }})
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="form-group-2">
+              <label for="currency-format">Currency Format</label>
+              <div class="tax-btn">
+                <span class="btn flat-btn" (click)="openNumberCurrencyDialog()">
+                  Number/Currency Format
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex">
+            <div class="form-group-2">
+            <label for="buying-price">Buying Price</label>
+            <p class="sub-text">Rate at which you purchased this item</p>
+            <input type="text" id="buying-price" required [(ngModel)]="inventoryItem.buyingPrice" name="buyingPrice" appNumberOnly>
+            </div>
+            <div class="form-group-2">
+            <label for="selling-price">Selling Price</label>
+            <p class="sub-text">Rate at which you are going to sell this item</p>
+            <input type="text" id="selling-price" required [(ngModel)]="inventoryItem.sellingPrice" name="sellingPrice" appNumberOnly>
+            </div>
+          </div>
+          <div class="btn-center">
+            <app-button text="{{ isEdit ? 'Update' : 'Save' }}" (click)="onSubmit()" class="btn-save"></app-button>
+          </div>
+        </form>
+        <!-- <app-button (click)="navigateToTable()">Back to Product Table</app-button> -->
+      </div>
+</div>
+  

@@ -1,0 +1,86 @@
+<p-toast></p-toast>
+<!-- <p-messages 
+[(value)]="messages" 
+[enableService]="false" 
+[closable]="false" /> -->
+
+<div class="login">
+  <div class="logo-img">
+    <img src="../../../assets/Logo-green.png" alt="Logo" />
+  </div>
+  <p class="text-center mt-3 mb-4">Welcome to OPTIMAX</p>
+  <form (ngSubmit)="userLoginAction()">
+    <div class="content">
+      <p class="text-center mt-3 mb-4" style="color: red;" *ngIf="loggedOutMessage1">{{ loggedOutMessage1 }}</p>
+
+      <div class="form">
+        <mat-form-field class="example-full-width">
+          <mat-label>Username</mat-label>
+          <input
+            type="email"
+            name="email"
+            matInput
+            [errorStateMatcher]="matcher"
+            [(ngModel)]="loginInfo.username"
+            placeholder="Username"
+          />
+          @if (emailFormControl.hasError('email') &&
+          !emailFormControl.hasError('required')) {
+          <mat-error>Please enter a valid email address</mat-error>
+          } @if (emailFormControl.hasError('required')) {
+          <mat-error>Email or Username is <strong>required</strong></mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <div class="form">
+        <mat-form-field class="example-full-width">
+          <mat-label>Password</mat-label>
+          <input
+            type="password"
+            name="password"
+            matInput
+            [type]="hide ? 'password' : 'text'"
+            [(ngModel)]="loginInfo.password"
+            [errorStateMatcher]="matcher"
+          />
+          <span
+            class="px-4"
+            mat-icon-button
+            matSuffix
+            (click)="hide = !hide"
+            [attr.aria-label]="'Hide password'"
+            [attr.aria-pressed]="hide"
+          >
+            <mat-icon>{{ hide ? "visibility_off" : "visibility" }}</mat-icon>
+          </span>
+          @if (passwordFormControl.hasError('required')) {
+          <mat-error>Password is <strong>required</strong></mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <div class="wrapper mt-3">
+        <div class="d-flex">
+          <div class="me-2"><input id="Paddword" type="checkbox" /></div>
+          <label for="Paddword">Remember me</label>
+        </div>
+
+        <p class="pointer text-lg">Forgot password?</p>
+      </div>
+    </div>
+    <div class="login-btn-container mt-3">
+      <!-- <button (click)="userLoginAction()">Login</button> -->
+      <button type="submit">
+        <mat-spinner *ngIf="loading" diameter="20" class="custom-spinner"></mat-spinner>
+        <span class="text-2xl" *ngIf="!loading">Login</span>
+      </button>
+    </div>
+  </form>
+
+  <div class="bottom ">
+
+    <span class="text-lg">New to Oprimax? <span (click)="navigateToSignup()" class="text-customGreen cursor-pointer mx-1">sign-up</span>here</span>
+    <!-- <p>New to Oprimax? <span routerLink="/signup">sign-up</span> here</p> -->
+  </div>
+</div>
