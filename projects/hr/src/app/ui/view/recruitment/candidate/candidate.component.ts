@@ -286,29 +286,31 @@ export class CandidateComponent implements OnInit {
   downloadFile(candidate: any) {
     // Retrieve existing candidates from localStorage
     const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-  
+    
     // Find the applicant by ID
     const applicant = existingCandidates.find((c: any) => c.id === candidate.id);
+    
+    if (applicant && applicant.resume) {
+      // Extract the resume data
+      const resumeData = applicant.resume;
   
-    if (applicant && applicant.file) {
-      // Convert the base64 string to a Blob
-      const byteString = atob(applicant.file.split(',')[1]); // Remove the 'data:application/octet-stream;base64,' part
-      const arrayBuffer = new ArrayBuffer(byteString.length);
-      const uintArray = new Uint8Array(arrayBuffer);
-  
-      for (let i = 0; i < byteString.length; i++) {
-        uintArray[i] = byteString.charCodeAt(i);
-      }
-  
-      const blob = new Blob([uintArray], { type: 'application/octet-stream' });
+      // Create a link element
       const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `applicant-${applicant.id}-file`; // You can customize the filename
-      link.click(); // Trigger the download
+      link.href = resumeData;  // Base64 data URI
+      link.download = `${applicant.candidateName}_Resume.pdf`;  // Suggested file name
+  
+      // Trigger the download
+      link.click();
     } else {
-      alert('File not found for the given applicant ID.');
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Download Failed',
+        detail: `Resume not found for ${candidate.candidateName}.`
+      });
+      // console.error('');
     }
   }
+  
   
   
 }
