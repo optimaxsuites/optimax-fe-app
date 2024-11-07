@@ -283,52 +283,32 @@ export class CandidateComponent implements OnInit {
   //     console.error('Candidates not found in localStorage');
   //   }
   // }
-
-  downloadResume(candidate: any): void {
-    // Retrieve the array of candidates from localStorage
-    const candidatesData = localStorage.getItem('candidates');  // 'candidates' is the key where the array is stored
+  downloadFile(candidate: any) {
+    // Retrieve existing candidates from localStorage
+    const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
   
-    if (candidatesData) {
-      // Parse the stored JSON string into an array of candidates
-      const candidatesArray = JSON.parse(candidatesData);
+    // Find the applicant by ID
+    const applicant = existingCandidates.find((c: any) => c.id === candidate.id);
   
-      // Find the candidate by matching properties (e.g., candidateName or email)
-      const foundCandidate = candidatesArray.find((storedCandidate: any) => storedCandidate.email === candidate.email);
+    if (applicant && applicant.file) {
+      // Convert the base64 string to a Blob
+      const byteString = atob(applicant.file.split(',')[1]); // Remove the 'data:application/octet-stream;base64,' part
+      const arrayBuffer = new ArrayBuffer(byteString.length);
+      const uintArray = new Uint8Array(arrayBuffer);
   
-      if (foundCandidate && foundCandidate.resume) {
-        // Retrieve the base64 string of the CV file from the candidate object
-        const resumeBase64 = foundCandidate.resume;
-  
-        // Create a Blob from the base64 string
-        const byteCharacters = atob(resumeBase64.split(',')[1]);  // Remove the base64 prefix (data:application/pdf;base64,)
-        const byteArrays = [];
-  
-        for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
-          const slice = byteCharacters.slice(offset, offset + 1024);
-          const byteNumbers = new Array(slice.length);
-  
-          for (let i = 0; i < slice.length; i++) {
-            byteNumbers[i] = slice.charCodeAt(i);
-          }
-  
-          const byteArray = new Uint8Array(byteNumbers);
-          byteArrays.push(byteArray);
-        }
-  
-        // Create a Blob object from the byte array
-        const blob = new Blob(byteArrays, { type: 'application/pdf' });
-  
-        // Create a download link and trigger the download
-        const downloadLink = document.createElement('a');
-        downloadLink.href = URL.createObjectURL(blob); // Create a URL for the Blob
-        downloadLink.download = `${foundCandidate.candidateName}_resume.pdf`; // Set the file name
-        downloadLink.click(); // Trigger the download
-      } else {
-        console.error('No CV found for this candidate.');
+      for (let i = 0; i < byteString.length; i++) {
+        uintArray[i] = byteString.charCodeAt(i);
       }
+  
+      const blob = new Blob([uintArray], { type: 'application/octet-stream' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `applicant-${applicant.id}-file`; // You can customize the filename
+      link.click(); // Trigger the download
     } else {
-      console.error('Candidates not found in localStorage');
+      alert('File not found for the given applicant ID.');
     }
   }
+  
   
 }
