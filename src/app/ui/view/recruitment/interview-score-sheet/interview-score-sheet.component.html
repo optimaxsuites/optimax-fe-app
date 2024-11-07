@@ -3,7 +3,6 @@
         <app-back-button class="" (click)="goBack()" ></app-back-button>
     </div>
     <div class="invite-main">
-        <!-- <h2>Interview Score Sheet</h2> -->
   
         <!-- Interviewer Info Section -->
          <div class="input-container-100 gap-4 d-flex">
@@ -15,7 +14,7 @@
                     type="text"
                     id="interviewerName"
                     class="editInput"
-                    [(ngModel)]="interviewer.name"
+                    [(ngModel)]="interviewer.fullname"
                     placeholder="Eniola Johnson"
                     disabled
                   />
@@ -224,7 +223,7 @@
         </div>
         </div>
     </div>
-  </div>
+</div>
   
 
 <!-- Step-by-step Calculation

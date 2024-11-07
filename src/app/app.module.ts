@@ -74,6 +74,7 @@ import { MyAttendanceComponent } from './ui/view/attendance/my-attendance/my-att
 import { EmployeePayrollComponent } from './ui/view/payroll/employee-payroll/employee-payroll.component';
 import { EmployeePayslipListComponent } from './ui/view/payroll/employee-payslip-list/employee-payslip-list.component';
 import { PayslipViewComponent } from './ui/view/payroll/payslip-view/payslip-view.component';
+import { AdminCreationFormComponent } from './ui/view/employee-management/admin-creation-form/admin-creation-form.component';
 
 @NgModule({
   declarations: [
@@ -114,10 +115,11 @@ import { PayslipViewComponent } from './ui/view/payroll/payslip-view/payslip-vie
     EmployeePayrollComponent,
     EmployeePayslipListComponent,
     PayslipViewComponent,
+    AdminCreationFormComponent,
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
