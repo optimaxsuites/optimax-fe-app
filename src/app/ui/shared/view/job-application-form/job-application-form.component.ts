@@ -16,6 +16,7 @@ export class JobApplicationFormComponent {
   job: any; // Define a property to hold job data
   applicantId?: string;
   fileURL: any;
+  errorMessage?: string;
 
   constructor(
     private route: ActivatedRoute,
@@ -76,13 +77,31 @@ export class JobApplicationFormComponent {
   //   }
   // }
 
-  onFileChange(event: Event) {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length) {
-      this.onFilePreview(input.files[0])
-    }
 
+  onFileChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+  
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      const allowedTypes = [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ];
+  
+      if (!allowedTypes.includes(file.type)) {
+        this.errorMessage = 'Only PDF and DOCX files are allowed.';
+        input.value = ''; // Clear the input value
+      } else {
+        this.errorMessage = '';
+        // Handle valid file (e.g., upload logic)
+        // console.log('Selected file:', file);
+  
+        // Call preview or further handling method
+        this.onFilePreview(file);
+      }
+    }
   }
+  
   onFilePreview(file: File){
     if (file) {
       const reader = new FileReader();

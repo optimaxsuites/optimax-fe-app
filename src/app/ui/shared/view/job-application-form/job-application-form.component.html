@@ -47,6 +47,9 @@
               type="file"
               (change)="onFileChange($event)"
               [required]="field.required">
+              <p *ngIf="field.type === 'file' && errorMessage" class="text-customRed">
+                {{ errorMessage }}
+              </p>
    
             <textarea 
               *ngIf="field.type === 'textarea'"
