@@ -259,6 +259,9 @@ private setProbationValidators(): void {
     this.guarantorForm.markAllAsTouched()
     if(this.guarantorForm.invalid) return
   }
+  
+   
+
     if (this.currentTab < 5) {
       this.currentTab++;
     }
