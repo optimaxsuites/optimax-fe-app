@@ -118,8 +118,8 @@ import { AdminCreationFormComponent } from './ui/view/employee-management/admin-
     AdminCreationFormComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
