@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { QuestionDTO, QuestionItemDTO } from '../../../domain/questions.dto';
+import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
 
 @Component({
   selector: 'app-interview-score-sheet',
@@ -17,21 +18,37 @@ export class InterviewScoreSheetComponent implements OnInit {
   allCriteria: QuestionDTO[] = [];
   criteriaScore: QuestionDTO= {};
   selectedCriterias: QuestionItemDTO[] = [];
+  userId: any;
 
 
-
-
-  constructor() {}
+  constructor(
+    private authenticationService: AuthenticationService,
+  ) {}
 
   ngOnInit(): void {
-    
-    this.getCriteria(); 
-    // const criteria = localStorage.getItem('allQuestions');
-    // if (criteria) {
-    //   this.allCriteria = JSON.parse(criteria);
-    //   console.log("criteria", this.allCriteria)
-    // }
-    // console.log('----', criteria)
+    this.getCriteria();
+    this.getUserId(); 
+  }
+
+  getUserId(): void {
+    this.userId = sessionStorage.getItem('userid'); // Retrieve userId from sessionStorage
+    if (this.userId) {
+      this.getUserInfo();
+    } else {
+      console.error('User ID not found in sessionStorage');
+    }
+  }
+
+  getUserInfo(): void {
+    this.authenticationService.getUserPrimaryInfoById(this.userId).subscribe({
+      next: (data) => {
+        this.interviewer = data;
+        console.log('User Info:', this.interviewer);
+      },
+      error: (error) => {
+        console.error('Error fetching user info:', error);
+      }
+    });
   }
 
   goBack() {
@@ -56,9 +73,9 @@ export class InterviewScoreSheetComponent implements OnInit {
     question.score = score; // Update the score of the question
   }
 
-    sumOfScore: number = 0;
-    totalScoreOver100: number = 0;
-    maximumScore: number = 0;
+  sumOfScore: number = 0;
+  totalScoreOver100: number = 0;
+  maximumScore: number = 0;
 
   calculateTotalScore(): number {
     const sumOfScores = this.allCriteria.reduce((total, question) => {
@@ -86,63 +103,20 @@ export class InterviewScoreSheetComponent implements OnInit {
     return this.totalScoreOver100; 
 }
 
-
-  // Call this method whenever a score is changed
-  
-//   calculateTotalScore(): number {
-//     // Array to hold each individual question score
-//     let individualScores: number[] = [];
-
-//     // Calculate the sum of scores from all criteria
-//     const sumOfScores = this.allCriteria.reduce((total, question) => {
-//         if (question.questions) {
-//             const questionScore = question.questions.reduce((subTotal, questionItem) => {
-//                 const score = questionItem.score ? Number(questionItem.score) : 0;
-//                 individualScores.push(score); // Store each question's score in the array
-//                 return subTotal + score; 
-//             }, 0);
-//             return total + questionScore; 
-//         }
-//         return total; 
-//     }, 0);
-
-//     this.sumOfScore = sumOfScores;
-
-//     // Calculate the maximum score based on allCriteria
-//     const maximumScore = this.allCriteria.reduce((count, question) => {
-//         return count + (question.questions ? question.questions.length : 0);
-//     }, 0) * 5; // Assuming each question can score a maximum of 5 points
-
-//     this.maximumScore = maximumScore;
-
-//     // Calculate the score as a percentage
-//     this.totalScoreOver100 = (sumOfScores / maximumScore) * 100;
-
-//     // Assign individual question scores to criteriaScore
-//     this.criteriaScore.questions.score = individualScores;
-
-//     // Save criteriaScore to local storage
-//     localStorage.setItem('criteriaScore', JSON.stringify(this.criteriaScore));
-
-//     console.log("Individual Scores:", this.criteriaScore.questions.score);
-//     console.log("Criteria Score saved to local storage:", this.criteriaScore);
-
-//     return this.totalScoreOver100; 
-// }
   
   onScoreChange() {
     this.calculateTotalScore();
   }
 
-      // Method to handle form submission or display total score
-      submitForm(): void {
-        const total = this.calculateTotalScore();
-        console.log('Total Score:', total);
-        console.log('new criterial:', this.allCriteria);
-        // You can display the total score or perform other actions as needed
-  
-        // this.submitFrom.emit();
-      }
+  // Method to handle form submission or display total score
+  submitForm(): void {
+    const total = this.calculateTotalScore();
+    console.log('Total Score:', total);
+    console.log('new criterial:', this.allCriteria);
+    // You can display the total score or perform other actions as needed
+
+    // this.submitFrom.emit();
+  }
 
 
 }

@@ -19,7 +19,7 @@ export class AdminCreationFormComponent {
   basicForm!: FormGroup;      
   employeeForm!: FormGroup;
   guarantorForm!: FormGroup
-  NOKForm!: FormGroup
+  leaveForm!: FormGroup
   registerInfo!: FormGroup
   showModal: boolean = false;
   currentFile: string = '';
@@ -154,19 +154,16 @@ export class AdminCreationFormComponent {
 
     this.employeeForm = this.fb.group({
       status: ['', Validators.required],
-      endDate: ['', [Validators.required]],
+      endDate: ['', []],
       startDate: ['', [Validators.required]],
+      isProbation: [false],
+      probationStartDate: [''],
+      probationEndDate: [''],
+      appraisalDueDate: ['', Validators.required]
     });
 
-    this.NOKForm = this.fb.group({
-      fullName: ['', [Validators.required]],
-      email: ['', [Validators.required, Validators.email]],
-      phone: ['', [Validators.required]],
-      address: ['', [Validators.required]],
-      relationship: ['', [Validators.required]],
-      DOB: ['', [Validators.required]],
-      emergencyContact: ['', []],
-
+    this.leaveForm = this.fb.group({
+      leaveDays: [null, Validators.required],
     });
 
     this.guarantorForm = this.fb.group({
@@ -188,7 +185,35 @@ export class AdminCreationFormComponent {
       password: ['', [Validators.required]],
       confirmPassword: ['', [Validators.required]],
     })
+
+    this.setProbationValidators();
+
+    this.employeeForm.get('isProbation')?.valueChanges.subscribe(isProbation => {
+      if (isProbation) {
+        this.employeeForm.get('probationStartDate')?.setValidators(Validators.required);
+        this.employeeForm.get('probationEndDate')?.setValidators(Validators.required);
+      } else {
+        this.employeeForm.get('probationStartDate')?.clearValidators();
+        this.employeeForm.get('probationEndDate')?.clearValidators();
+      }
+      this.employeeForm.get('probationStartDate')?.updateValueAndValidity();
+      this.employeeForm.get('probationEndDate')?.updateValueAndValidity();
+    });
   }
+
+
+private setProbationValidators(): void {
+  const isProbation = this.employeeForm.get('isProbation')?.value;
+  if (isProbation) {
+    this.employeeForm.get('probationStartDate')?.setValidators(Validators.required);
+    this.employeeForm.get('probationEndDate')?.setValidators(Validators.required);
+  } else {
+    this.employeeForm.get('probationStartDate')?.clearValidators();
+    this.employeeForm.get('probationEndDate')?.clearValidators();
+  }
+  this.employeeForm.get('probationStartDate')?.updateValueAndValidity();
+  this.employeeForm.get('probationEndDate')?.updateValueAndValidity();
+}
  imageFileValidator(): ValidatorFn {
   return (control: AbstractControl): { [key: string]: any } | null => {
     const file = control.value;
@@ -230,17 +255,15 @@ export class AdminCreationFormComponent {
     this.employeeForm.markAllAsTouched()
     if(this.employeeForm.invalid) return
   }
+  if(this.currentTab == 3){
+    this.leaveForm.markAllAsTouched()
+    if(this.leaveForm.invalid) return
+  }
     if (this.currentTab < 5) {
       this.currentTab++;
     }
   }
-  nextTabFromNok(){
-    this.NOKForm.markAllAsTouched()
-    if(this.NOKForm.valid) {
-    this.addNextOfKin()
-    }
-    this.nextTab()
-  }
+  
   nextTabFromGuarantor(){
     this.guarantorForm.markAllAsTouched()
     if(this.guarantorForm.valid) {
@@ -327,7 +350,7 @@ addNewEmployee(){
   this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Employee added successfully!' }); 
   this.basicForm.reset()
   this.guarantorForm.reset()
-  this.NOKForm.reset()
+  this.leaveForm.reset()
   this.employeeForm.reset()
   this.nextOfKinList = []
   this.guarantorList = []
@@ -388,25 +411,8 @@ addNewEmployee(){
       }
   );
   }
-  addNextOfKin() {
-    if (this.NOKForm.valid) {
-      this.nextOfKinList.push(this.NOKForm.value);
-      this.NOKForm.reset(); 
-    } else {
-    }
-  }
+ 
 
-  editNextOfKin(index: number) {
-    const kin = this.nextOfKinList[index];
-    this.NOKForm.patchValue(kin); 
-    this.nextOfKinList.splice(index, 1);
-  }
-
-  deleteNextOfKin(index: number) {
-    if (confirm('Are you sure you want to remove this next of kin?')) {
-      this.nextOfKinList.splice(index, 1); 
-    }
-  }
   addGuarantor() {
     if (this.guarantorForm.valid) {
       this.guarantorList.push(this.guarantorForm.value);

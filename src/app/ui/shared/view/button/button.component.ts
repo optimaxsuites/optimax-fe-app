@@ -9,7 +9,7 @@ export class ButtonComponent {
 
   @Input() text: string = 'Button';
   @Input() type: 'button' | 'submit' | 'reset' = 'button';
-  @Input() disabled: boolean = false; 
+  @Input() disabled: any; 
   @Input() class: string = '';
 
   @Output() btnClick = new EventEmitter<void>();

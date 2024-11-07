@@ -7,10 +7,11 @@ export interface ApplicantDTO{
     email?: string;
     position?: string;
     dateApplied?: string;
-    resume?: string | null;
-    coverLetter?: string;
+    resume?: any;
+    coverLetter?: any;
     stage?: ApplicationStage;
     interviewStage?: number;
+    [key: string]: any; 
 
     interviewSubject?: string
     interviewInvite?: string;

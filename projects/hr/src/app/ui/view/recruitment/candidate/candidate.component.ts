@@ -42,9 +42,46 @@ export class CandidateComponent implements OnInit {
     this.showInterviewInvite = false;
   }
 
-  viewResume(resumeFile: string){
-
+  viewResume(resume: string | File): void {
+    if (!resume) {
+      console.error('No resume found.');
+      return;
+    }
+  
+    if (typeof resume === 'string') {
+      // If resume is a base64 string
+      const base64String = resume.split(',')[1];  // Strip the base64 prefix
+      const blob = this.base64ToBlob(base64String, 'application/pdf');  // Assuming resume is a PDF
+  
+      // Open the file in a new window
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } else if (resume instanceof File) {
+      // If resume is a File object, create a URL from it
+      const fileUrl = URL.createObjectURL(resume);
+      window.open(fileUrl, '_blank');
+    }
   }
+  
+  // Helper function to convert base64 to a Blob
+  base64ToBlob(base64: string, mimeType: string): Blob {
+    const byteCharacters = atob(base64);  // Decode the base64 string
+    const byteArrays = [];
+  
+    for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
+      const slice = byteCharacters.slice(offset, offset + 1024);
+      const byteNumbers = new Array(slice.length);
+  
+      for (let i = 0; i < slice.length; i++) {
+        byteNumbers[i] = slice.charCodeAt(i);
+      }
+  
+      byteArrays.push(new Uint8Array(byteNumbers));
+    }
+  
+    return new Blob(byteArrays, { type: mimeType });
+  }
+  
 
   getStatusClass(stage: string) {
     switch (stage) {
@@ -61,9 +98,9 @@ export class CandidateComponent implements OnInit {
 
   ngOnInit(): void {
     // Store myCandidates in localStorage if not already present
-    if (!localStorage.getItem('candidates')) {
-      localStorage.setItem('candidates', JSON.stringify(this.myCandidates));
-    }
+    // if (!localStorage.getItem('candidates')) {
+    //   localStorage.setItem('candidates', JSON.stringify(this.myCandidates));
+    // }
 
     this.getCandidate();
   }
@@ -85,13 +122,13 @@ export class CandidateComponent implements OnInit {
 
   stages = ['Application Received', 'Shortlisted'];
   
-  myCandidates: any[] = [
-    { id: 1, candidateName: 'Damilola Awe', position: 'Frontend Dev', email: 'damilola.awe@hotmail.com', contactNo: '202-555-0181', dateApplied: '2023-06-04', stage: 'Application Received', resume: 'resume 1', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. luptatum cumque,',  },
-    { id: 2, candidateName: 'Awe Williams', position: 'Sales Personel', email: 'Awe.williams@gmail.com', contactNo: '+1(970)333-3833', dateApplied: '2023-06-04', stage: 'Application Received', resume: 'resume 2', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. quam, ' },
-    { id: 3, candidateName: 'Anthony Awe', position: 'Frontend Dev', email: 'anthony.Awe@gmail.com', contactNo: '+1(970)888-3866', dateApplied: '2023-06-03', stage: 'Application Received', resume: 'resume 3', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluia voluptas ' },
-    { id: 4, candidateName: 'Kevin Awe', position: 'Backend Dev', email: 'kevin.Awe@gmail.com', contactNo: '202-555-0120', dateApplied: '2023-06-02', stage: 'Application Received', resume: 'resume 4', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas, ' },
-    { id: 5, candidateName: 'Christopher Awe', position: 'CEO', email: 'christopher.Awe@gmail.com', contactNo: '+49800600600', dateApplied: '2023-06-02', stage: 'Application Received', resume: 'resume 5', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru' }
-  ];
+  // myCandidates: any[] = [
+  //   { id: 1, candidateName: 'Damilola Awe', position: 'Frontend Dev', email: 'damilola.awe@hotmail.com', contactNo: '202-555-0181', dateApplied: '2023-06-04', stage: 'Application Received', resume: 'resume 1', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. luptatum cumque,',  },
+  //   { id: 2, candidateName: 'Awe Williams', position: 'Sales Personel', email: 'Awe.williams@gmail.com', contactNo: '+1(970)333-3833', dateApplied: '2023-06-04', stage: 'Application Received', resume: 'resume 2', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. quam, ' },
+  //   { id: 3, candidateName: 'Anthony Awe', position: 'Frontend Dev', email: 'anthony.Awe@gmail.com', contactNo: '+1(970)888-3866', dateApplied: '2023-06-03', stage: 'Application Received', resume: 'resume 3', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluia voluptas ' },
+  //   { id: 4, candidateName: 'Kevin Awe', position: 'Backend Dev', email: 'kevin.Awe@gmail.com', contactNo: '202-555-0120', dateApplied: '2023-06-02', stage: 'Application Received', resume: 'resume 4', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas, ' },
+  //   { id: 5, candidateName: 'Christopher Awe', position: 'CEO', email: 'christopher.Awe@gmail.com', contactNo: '+49800600600', dateApplied: '2023-06-02', stage: 'Application Received', resume: 'resume 5', coverLetter: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loruLorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas,loru' }
+  // ];
 
   candidates: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
 
@@ -218,4 +255,62 @@ export class CandidateComponent implements OnInit {
     // Your logic to save or handle the interview data
     console.log('Updating interview status:', inviteData);
   }
+
+  // downloadResume(candidate: any): void {
+  //   // Retrieve the array of candidates from localStorage
+  //   const candidatesData = localStorage.getItem('candidates');  // 'candidates' is the key where the array is stored
+
+  //   if (candidatesData) {
+  //     // Parse the stored JSON string into an array of candidates
+  //     const candidatesArray = JSON.parse(candidatesData);
+
+  //     // Find the candidate by matching properties (e.g., candidateName or email)
+  //     const foundCandidate = candidatesArray.find((storedCandidate: any) => storedCandidate.email === candidate.email);
+
+  //     if (foundCandidate && foundCandidate.resume) {
+  //       // Retrieve the CV file path from the candidate object
+  //       const resumePath = foundCandidate.resume;
+
+  //       // If the resume path is a URL or accessible file location
+  //       const downloadLink = document.createElement('a');
+  //       downloadLink.href = resumePath;  // Assuming the resume is available via a URL or path
+  //       downloadLink.download = `${foundCandidate.candidateName}_resume.pdf`; // Set the file name
+  //       downloadLink.click(); // Trigger the download
+  //     } else {
+  //       console.error('No CV found for this candidate.');
+  //     }
+  //   } else {
+  //     console.error('Candidates not found in localStorage');
+  //   }
+  // }
+  downloadFile(candidate: any) {
+    // Retrieve existing candidates from localStorage
+    const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+    
+    // Find the applicant by ID
+    const applicant = existingCandidates.find((c: any) => c.id === candidate.id);
+    
+    if (applicant && applicant.resume) {
+      // Extract the resume data
+      const resumeData = applicant.resume;
+  
+      // Create a link element
+      const link = document.createElement('a');
+      link.href = resumeData;  // Base64 data URI
+      link.download = `${applicant.candidateName} Resume`;  // Suggested file name
+  
+      // Trigger the download
+      link.click();
+    } else {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Download Failed',
+        detail: `Resume not found for ${candidate.candidateName}.`
+      });
+      // console.error('');
+    }
+  }
+  
+  
+  
 }
