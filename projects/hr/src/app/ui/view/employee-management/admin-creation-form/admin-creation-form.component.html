@@ -29,7 +29,7 @@
       </div>
     </div>
   
-    <form [formGroup]="basicForm" (ngSubmit)="onSubmit()" *ngIf="currentTab === 4"  class="flex w-full px-10  gap-10">
+    <form [formGroup]="basicForm" (ngSubmit)="onSubmit()" *ngIf="currentTab === 1"  class="flex w-full px-10  gap-10">
         <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
           <div class="mb-4">
           <label for="firstName" class="block text-[13px] font-medium">First Name <span class="ml-1 font-bold text-red-600">*</span></label>
@@ -146,10 +146,10 @@
             <fieldset class="mb-4">
                 <legend class="block text-[13px] font-medium">Employee Status <span class="ml-1 font-bold text-red-600">*</span></legend>
                 
-                <input type="radio" id="joining" formControlName="status" value="K" class="mr-2"/>
+                <input type="radio" id="joining" formControlName="status" value="joining" class="mr-2"/>
                 <label for="joining">Joining</label><br />
                 
-                <input type="radio" id="active" formControlName="status" value="S" class="mr-2"/>
+                <input type="radio" id="active" formControlName="status" value="active" class="mr-2"/>
                 <label for="active">Active</label><br />
 
                 <small *ngIf="employeeForm.get('status')?.touched && employeeForm.get('status')?.invalid" class="text-red-600">
@@ -231,7 +231,7 @@
     </form>
   
   
-    <form [formGroup]="guarantorForm" *ngIf="currentTab === 1" class="flex w-full flex-col justify-center item-center" >
+    <form [formGroup]="guarantorForm" *ngIf="currentTab === 4" class="flex w-full flex-col justify-center item-center" >
       <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-2">
         <label class="block text-[13px] font-medium">Grant Access</label>
 
@@ -241,9 +241,6 @@
         </div>
         <div>
           <input type="checkbox" formControlName="emailAccess" /> Email Access
-        </div>
-        <div>
-          <input type="checkbox" formControlName="vpnAccess" /> Remote Access/VPN
         </div>
       
         <!-- Software and Application Access -->
@@ -263,17 +260,17 @@
 
         <!-- System Access Levels -->
         <div>
-          <input type="checkbox" formControlName="employeePortalAccess" /> Managerial Access
+          <input type="checkbox" formControlName="managerialAccess" /> Managerial Access
         </div>
         <div>
-          <input type="checkbox" formControlName="emailAccess" /> Administrative Access
+          <input type="checkbox" formControlName="adminAccess" /> Administrative Access
         </div>
        
     
   
         <div class="text-right">
           <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
-          <button type="button" (click)="nextTabFromGuarantor()" class="bg-customBlue text-white px-4 py-3 rounded-lg" >
+          <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg" >
             Next
           </button>
         </div>
@@ -288,7 +285,6 @@
   
           <div class="p-4 w-full shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-1">
             <p class="font-bold text-[16px] mb-3">Basic Information</p>
-            <img [src]="imageURL" alt="profileImage" class="h-64 w-64 mx-auto  object-cover rounded-full"/>
   
               <div *ngFor="let control of getFormControls('basicForm')" >
                 <p class="capitalize"><strong>{{ toTitleCaseWithSpace(control.key) }}:</strong> <span class="ml-1">{{ control.value }}</span></p>
@@ -303,37 +299,18 @@
           </div>
         
           <div class="p-4 w-auto shadow-md rounded-xl text-gray-600 bg-white/60 ">
-            <p class="font-bold text-[16px] mb-3">Next Of Kin Information</p>
-            <div class="grid grid-cols-2">
-              <div *ngFor="let kin of nextOfKinList; let i =index" class="flex flex-col gap-2">
-                <p class="my-2 text-[15px]">Next Of Kin {{i+1}}</p>
-                <p *ngFor="let key of getKeys(kin)">
-                  <strong>{{ toTitleCaseWithSpace(key) | titlecase }}:</strong> {{ kin[key] }}
-                </p>
+            <p class="font-bold text-[16px] mb-3">Leave Information</p>
+            <div *ngFor="let control of getFormControls('leaveForm')">
+                <p class="capitalize"><strong>{{ toTitleCaseWithSpace(control.key) }}:</strong>  <span class=" ml-1">{{ control.value }}</span></p>
               </div>
-            </div>
             
           </div>
   
           <div class="p-4 w-full shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-1">
-            <p class="font-bold text-[16px] mb-3">Guarantor's Information</p>
-            <div class="grid grid-cols-2">
-                <div *ngFor="let kin of guarantorList; let i =index"  class="flex flex-col gap-2">
-                  <p class="my-2 text-[15px]">Guarantor {{i+1}}</p>
-                  <p *ngFor="let key of getKeys(kin)">
-                    <strong>{{ toTitleCaseWithSpace(key) | titlecase }}:</strong>
-                    <ng-container *ngIf="isFile(kin[key]); else textField">
-                      <button (click)="previewFile(kin[key])" class="text-customGreen  text-nowrap text-[14px] ml-2">
-                        View File
-                      </button>
-                    </ng-container>
-                    
-                    <ng-template #textField>
-                      {{ kin[key] }}
-                    </ng-template>
-                  </p>
-                </div>
-            </div>
+            <p class="font-bold text-[16px] mb-3">Access Information</p>
+            <div *ngFor="let control of getFormControls('guarantorForm')">
+                <p class="capitalize"><strong>{{ toTitleCaseWithSpace(control.key) }}:</strong>  <span class=" ml-1">{{ control.value }}</span></p>
+              </div>
           </div>
   
         </div>

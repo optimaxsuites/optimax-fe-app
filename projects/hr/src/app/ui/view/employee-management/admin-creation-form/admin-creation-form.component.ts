@@ -167,17 +167,13 @@ export class AdminCreationFormComponent {
     });
 
     this.guarantorForm = this.fb.group({
-      fullName: ['', [Validators.required]],
-      email: ['', [Validators.required, Validators.email]],
-      phone: ['', [Validators.required]],
-      address: ['', [Validators.required]],
-      relationship: ['', [Validators.required]],
-      DOB: ['', [Validators.required]],
-      idNumber: ['', [Validators.required]],
-      yearsKnown: ['', [Validators.required, ]],
-      signature: ['', [Validators.required, this.imageFileValidator()]],
-      passportPhoto: ['', [Validators.required, this.imageFileValidator()]],
-      idCard: ['', [ this.imageFileValidator()]],
+      employeePortalAccess: [false],
+      emailAccess: [false],
+      hrSystemAccess: [false],
+      projectManagementAccess: [false],
+      buildingAccess: [false],
+      managerialAccess: [false],
+      adminAccess: [false]
     });
 
     this.registerInfo = this.fb.group( {
@@ -259,19 +255,16 @@ private setProbationValidators(): void {
     this.leaveForm.markAllAsTouched()
     if(this.leaveForm.invalid) return
   }
+  if(this.currentTab == 4){
+    this.guarantorForm.markAllAsTouched()
+    if(this.guarantorForm.invalid) return
+  }
     if (this.currentTab < 5) {
       this.currentTab++;
     }
   }
   
-  nextTabFromGuarantor(){
-    this.guarantorForm.markAllAsTouched()
-    if(this.guarantorForm.valid) {
-    this.addGuarantor()
-    }
-    this.nextTab()
-  }
-
+ 
   previousTab() {
     if (this.currentTab > 1) {
       this.currentTab--;
@@ -280,68 +273,48 @@ private setProbationValidators(): void {
 
   onSubmit() {
   this.loading = true;
-
-    if (this.basicForm.get('createLogin')?.value) {
-      this.nextAndCreate()
-    }else {
-      this.addNewEmployee()
-    }
-
-   
+  this.addNewEmployee()
   }
-addNewEmployee(){
+
+  addNewEmployee(){
   const currentDate = new Date();  
   const currentYear = currentDate.getFullYear();  
   const formattedDate = currentDate.toISOString().split('T')[0];
   const employeesFromStorage = localStorage.getItem("employeesList");
   const employeesList = employeesFromStorage ? JSON.parse(employeesFromStorage) : [];
   const newEmployee = {
-    id: this.token.getRandomToken(),
+    id: this.token.getRandomToken(),  // Generate a random ID for the employee
     firstName: this.basicForm.get('firstName')?.value,
     lastName: this.basicForm.get('lastName')?.value,
-    dob: this.basicForm.get('DOB')?.value,
-    gender: this.basicForm.get('gender')?.value,
     email: this.basicForm.get('email')?.value,
-    phone: this.basicForm.get('phone')?.value,
-    maritalStstus: this.basicForm.get('maritalStatus')?.value,
-    religion: this.basicForm.get('religion')?.value,
-    address: this.basicForm.get('address')?.value,
-    jobTitle: this.employeeForm.get('title')?.value,
-    department: this.employeeForm.get('department')?.value,
-    level: this.employeeForm.get('level')?.value,
-    employmentType: this.employeeForm.get('employmentType')?.value,
-    supervisor: this.employeeForm.get('supervisor')?.value,
-    bankName: this.employeeForm.get('bankName')?.value,
-    accountNumber: this.employeeForm.get('accountNumber')?.value,
-    nin: this.employeeForm.get('nin')?.value,
-    bvn: this.employeeForm.get('bvn')?.value,
-    nextOfKin: [...this.nextOfKinList],
-    guarantor: [... this.guarantorList],
-    hireDate: formattedDate,
-    profileImage: this.imageURL, 
-    leaveDetails: {
-      assignedLeaves: 20,
-      usedLeaves: 0,
-      leavesRemaining: 20,
-      leavesSpent: [
-      ]
-    },
-    attendance: {
-      year: currentYear,
-      daysPresent: 1,
-      daysAbsent: 0,
-      lateArrivals: 0,
-      overtimeHours: 0,
-      lastPresent: formattedDate,
-      day2DayAttendance: [
-        {
-          date: formattedDate,
-          clockIn: "9:00 AM",
-          clockOut: "5:00 PM",
-          comment: "First day in"
-        },
-      ]
-    }
+    workemail: this.basicForm.get('workemail')?.value,
+    jobTitle: this.basicForm.get('title')?.value,
+    department: this.basicForm.get('department')?.value,
+    level: this.basicForm.get('level')?.value,
+    employmentType: this.basicForm.get('employmentType')?.value,
+    supervisor: this.basicForm.get('supervisor')?.value,
+
+    // Employment Information
+    status: this.employeeForm.get('status')?.value,
+    startDate: this.employeeForm.get('startDate')?.value,
+    endDate: this.employeeForm.get('endDate')?.value,
+    isProbation: this.employeeForm.get('isProbation')?.value,
+    probationStartDate: this.employeeForm.get('probationStartDate')?.value,
+    probationEndDate: this.employeeForm.get('probationEndDate')?.value,
+    appraisalDueDate: this.employeeForm.get('appraisalDueDate')?.value,
+
+    // Leave Information
+    leaveDays: this.leaveForm.get('leaveDays')?.value,
+
+    // Access Information
+    employeePortalAccess: this.guarantorForm.get('employeePortalAccess')?.value,
+    emailAccess: this.guarantorForm.get('emailAccess')?.value,
+    hrSystemAccess: this.guarantorForm.get('hrSystemAccess')?.value,
+    projectManagementAccess: this.guarantorForm.get('projectManagementAccess')?.value,
+    buildingAccess: this.guarantorForm.get('buildingAccess')?.value,
+    managerialAccess: this.guarantorForm.get('managerialAccess')?.value,
+    adminAccess: this.guarantorForm.get('adminAccess')?.value,
+   
   }
   employeesList.push(newEmployee);
 
@@ -352,98 +325,15 @@ addNewEmployee(){
   this.guarantorForm.reset()
   this.leaveForm.reset()
   this.employeeForm.reset()
-  this.nextOfKinList = []
-  this.guarantorList = []
-  this.imageURL =''
-  this.fileDataUrl =''
   this.currentTab = 1
 }
 
 
-  nextAndCreate() {
-  const signupDetails = {
-      username: this.basicForm.get('firstName')?.value,
-      password: this.basicForm.get('firstName')?.value,
-      email: this.basicForm.get('email')?.value,
-      role: ['user'],
-      project : `${environment.project}`,
-      apiKey : `${environment.apiKey}`
-  };
 
-  this.authenticationService.userRegistration(signupDetails).subscribe(
-    async (data) => {
-          this.loading = false;
-          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'User account created successfully!' }); 
-          this.addNewEmployee()
-      },
-      (error) => {
-
-        if (error.toString() == '400') {
-          // Client-side validation error (invalid input)
-          this.messageService.add({ 
-              severity: 'error', 
-              summary: 'Registration Failed', 
-              detail: 'Account with email address already exists. Check your mail to verify!' 
-          });
-      } else if (error.toString() == '409') {
-          // Conflict error (e.g., email already registered)
-          this.messageService.add({ 
-              severity: 'error', 
-              summary: 'Registration Failed', 
-              detail: 'Email address is already registered. Please use a different email or login.' 
-          });
-      } else if (error.toString() == '0') {
-          // Network error or server unreachable
-          this.messageService.add({ 
-              severity: 'error', 
-              summary: 'Registration Failed', 
-              detail: 'Unable to connect to the server. Please check your internet connection.' 
-          });
-      } else {
-          // Other server errors
-          this.messageService.add({ 
-              severity: 'error', 
-              summary: 'Registration Failed', 
-              detail: 'An unexpected error occurred. Please try again later.' 
-          });
-      }
-          this.loading = false;
-      }
-  );
-  }
  
 
-  addGuarantor() {
-    if (this.guarantorForm.valid) {
-      this.guarantorList.push(this.guarantorForm.value);
 
-      this.guarantorForm.reset(); 
-    } else {
-    }
-  }
-  editGuarantor(index: number) {
-    const guarantor = this.guarantorList[index];
-    this.guarantorForm.patchValue({
-      fullName: guarantor.fullName,
-      email: guarantor.email,
-      phone: guarantor.phone,
-      address: guarantor.address,
-      relationship: guarantor.relationship,
-      DOB: guarantor.DOB,
-      idNumber: guarantor.idNumber,
-      yearsKnown: guarantor.yearsKnown,
-      signature: null, 
-      passportPhoto: null, 
-      idCard: null, 
-    });
-    this.guarantorList.splice(index, 1);
-  }
 
-  deleteGuarantor(index: number) {
-    if (confirm('Are you sure you want to remove this guarantoor?')) {
-      this.guarantorList.splice(index, 1); 
-    }
-  }
 
   onFileChange(event: Event, controlName: string) {
     const input = event.target as HTMLInputElement;

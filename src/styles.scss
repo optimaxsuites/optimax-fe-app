@@ -179,3 +179,14 @@ fieldset {
   padding: 10px;          
   margin-bottom: 1rem;       
 }
+
+
+
+input[type="checkbox"]{
+  @apply accent-customBlue
+
+}
+input[type="radio"]{
+  @apply accent-customBlue
+
+}
