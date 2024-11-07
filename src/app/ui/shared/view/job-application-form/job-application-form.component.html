@@ -1,96 +1,104 @@
 <p-toast class="table-item"></p-toast>
 
-<nav>
-  <div class="card">
-    <div class="logo-wrapper">
-      <img src="../../../../../assets/Logo-green.png" alt="Logo" />
-    </div>
-  </div>
-</nav>
 
-<div class="table-item">
-  <div class="container card">
-    <div class="d-flex justify-between" *ngIf="job">
-      <div class="job-info">
-        <h1 class="h1-color" style="font-size: 3.5rem;"><strong>{{ job.title }}</strong></h1>
-        <p class="color-pdate"><span>By Admin</span> - {{ job.postedDate }}</p>
-        <br>
-        <p *ngIf="job.expiryDate"><strong>Expiring on:</strong> {{ job.expiryDate }}</p>
-        <br>
-        <p *ngIf="job.category"><strong>Category:</strong> {{ job.category }}</p>
-        <p *ngIf="job.emplomentType"><strong>Employment Type:</strong> {{ job.employmentType }}</p>
-        <p *ngIf="job.experience"><strong>Experience:</strong> {{ job.experience }}</p>
-        <p *ngIf="job.location"><strong>Location:</strong> {{ job.location }}</p>
-        <!-- <p><strong>Posted Date:</strong> {{ job.postedDate }}</p> -->
-        <p *ngIf="job.qualification"><strong>Qualification:</strong> {{ job.qualification }}</p>
-        <p *ngIf="job.specification"><strong>Specification:</strong> {{ job.specification }}</p>
-        <p><strong>Description:</strong></p>
-        <div style="text-align: justify;" [innerHTML]="job.description"></div>
+
+<div class="min-h-screen flex flex-col">
+  <nav>
+    <div class="card">
+      <div class="logo-wrapper">
+        <img src="../../../../../assets/Logo-green.png" alt="Logo" />
       </div>
-      <div class="job-form d-flex justify-center item-center" >
-        <div class="card p-4">
-          <h2><strong>Apply for this position</strong></h2>
-          <div *ngFor="let field of job.fields">
-            <label>{{ field.label }}:</label>
-            <!-- <input class="editInput" [type]="field.type" [required]="field.required"> -->
-
-            <input 
-              *ngIf="['text', 'tel', 'email', 'password', 'url', 'number'].includes(field.type)"
-              class="editInput"
-              [type]="field.type"
-              [(ngModel)]="formData[transformLabelToKey(field.label)]"
-              [required]="field.required">
-
-            <input 
-              *ngIf="field.type === 'file'"
-              class="editInput"
-              type="file"
-              (change)="onFileChange($event)"
-              [required]="field.required">
-              <p *ngIf="field.type === 'file' && errorMessage" class="text-customRed">
-                {{ errorMessage }}
-              </p>
-   
-            <textarea 
-              *ngIf="field.type === 'textarea'"
-              class="editInput h-80"
-              [(ngModel)]="formData[transformLabelToKey(field.label)]"
-              [required]="field.required">
-            </textarea>
-
-            <input *ngIf="field.type === 'checkbox'"
-              type="checkbox"
-              class="editInput"
-              [(ngModel)]="formData[transformLabelToKey(field.label)]"
-              [required]="field.required">
-
-            <div *ngIf="field.type === 'radio'">
-              <label *ngFor="let option of field.options">
-                <input 
-                  type="radio" 
-                  [value]="option.value" 
-                  [(ngModel)]="formData[transformLabelToKey(field.label)]"
-                  name="{{field.label}}"> {{ option.label }}
-              </label>
+    </div>
+  </nav>
+  
+  <div class="table-item flex-grow">
+    <div class="container card mt-5 mb-5">
+      <div class="d-flex justify-between" *ngIf="job">
+        <div class="job-info">
+          <h1 class="h1-color" style="font-size: 3.5rem;"><strong>{{ job.title }}</strong></h1>
+          <p class="color-pdate"><span>By Admin</span> - {{ job.postedDate }}</p>
+          <br>
+          <p *ngIf="job.expiryDate"><strong>Expiring on:</strong> {{ job.expiryDate }}</p>
+          <br>
+          <p *ngIf="job.category"><strong>Category:</strong> {{ job.category }}</p>
+          <p *ngIf="job.emplomentType"><strong>Employment Type:</strong> {{ job.employmentType }}</p>
+          <p *ngIf="job.experience"><strong>Experience:</strong> {{ job.experience }}</p>
+          <p *ngIf="job.location"><strong>Location:</strong> {{ job.location }}</p>
+          <!-- <p><strong>Posted Date:</strong> {{ job.postedDate }}</p> -->
+          <p *ngIf="job.qualification"><strong>Qualification:</strong> {{ job.qualification }}</p>
+          <p *ngIf="job.specification"><strong>Specification:</strong> {{ job.specification }}</p>
+          <p><strong>Description:</strong></p>
+          <div style="text-align: justify;" [innerHTML]="job.description"></div>
+        </div>
+        <div class="job-form d-flex justify-center item-center" >
+          <div class="card p-4">
+            <h2><strong>Apply for this position</strong></h2>
+            <br>
+            <div *ngFor="let field of job.fields" class="">
+              <label class="my-2">{{ field.label }}:</label>
+              <!-- <input class="editInput" [type]="field.type" [required]="field.required"> -->
+  
+              <input 
+                *ngIf="['text', 'tel', 'email', 'password', 'url', 'number'].includes(field.type)"
+                class="editInput"
+                [type]="field.type"
+                [(ngModel)]="formData[transformLabelToKey(field.label)]"
+                [required]="field.required">
+  
+              <input 
+                *ngIf="field.type === 'file'"
+                class="editInput"
+                type="file"
+                (change)="onFileChange($event)"
+                [required]="field.required">
+                <p *ngIf="field.type === 'file' && errorMessage" class="text-customRed">
+                  {{ errorMessage }}
+                </p>
+     
+              <textarea 
+                *ngIf="field.type === 'textarea'"
+                class="editInput h-80"
+                [(ngModel)]="formData[transformLabelToKey(field.label)]"
+                [required]="field.required">
+              </textarea>
+  
+              <input *ngIf="field.type === 'checkbox'"
+                type="checkbox"
+                class="editInput"
+                [(ngModel)]="formData[transformLabelToKey(field.label)]"
+                [required]="field.required">
+  
+              <div *ngIf="field.type === 'radio'">
+                <label *ngFor="let option of field.options">
+                  <input 
+                    type="radio" 
+                    [value]="option.value" 
+                    [(ngModel)]="formData[transformLabelToKey(field.label)]"
+                    name="{{field.label}}"> {{ option.label }}
+                </label>
+              </div>
+  
+              <ng-select 
+                *ngIf="field.type === 'select'"
+                [items]="field.options"
+                bindLabel="label"
+                bindValue="value"
+                [required]="field.required"
+                [(ngModel)]="formData[transformLabelToKey(field.label)]"
+                placeholder="Select an option">
+              </ng-select>
+  
             </div>
-
-            <ng-select 
-              *ngIf="field.type === 'select'"
-              [items]="field.options"
-              bindLabel="label"
-              bindValue="value"
-              [required]="field.required"
-              [(ngModel)]="formData[transformLabelToKey(field.label)]"
-              placeholder="Select an option">
-            </ng-select>
-          </div>
-          <div class="btn-wrapper">
-          <app-button text="Submit" class="btn-save" (click)="saveFormData()"></app-button>
+            <div class="btn-wrapper">
+            <app-button text="Submit" class="btn-save" (click)="saveFormData()"></app-button>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
+  
+  <div class="mt-auto">
+    <app-dashboard-footer></app-dashboard-footer>
+  </div>
 </div>
-
-<app-dashboard-footer></app-dashboard-footer>

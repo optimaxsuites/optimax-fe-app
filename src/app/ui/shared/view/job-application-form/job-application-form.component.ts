@@ -15,7 +15,7 @@ import { MessageService } from 'primeng/api';
 export class JobApplicationFormComponent {
   job: any; // Define a property to hold job data
   applicantId?: string;
-  fileURL: any;
+  fileURL: any[] = [];
   errorMessage?: string;
 
   constructor(
@@ -78,46 +78,102 @@ export class JobApplicationFormComponent {
   // }
 
 
-  onFileChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
+  // onFileChange(event: Event): void {
+  //   const input = event.target as HTMLInputElement;
   
-    if (input.files && input.files[0]) {
-      const file = input.files[0];
+  //   if (input.files && input.files[0]) {
+  //     const file = input.files[0];
+  //     const allowedTypes = [
+  //       'application/pdf',
+  //       'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  //     ];
+  
+  //     if (!allowedTypes.includes(file.type)) {
+  //       this.errorMessage = 'Only PDF and DOCX files are allowed.';
+  //       input.value = ''; // Clear the input value
+  //     } else {
+  //       this.errorMessage = '';
+  //       // Handle valid file (e.g., upload logic)
+  //       console.log('Selected file:', file);
+  
+  //       // Call preview or further handling method
+  //       this.onFilePreview(file);
+  //     }
+  //   }
+  // }
+  
+  // onFilePreview(file: File){
+  //   if (file) {
+  //     const reader = new FileReader();
+  //     reader.onload = (event: any) => {
+        
+  //         this.fileURL = event.target.result;
+  //         console.log("----", this.fileURL)
+         
+  //     };
+  //     reader.readAsDataURL(file);
+  //   }
+  // }
+
+  uploadedFiles: File[] = []; // To store uploaded files
+fileURLs: string[] = [];    // To store URLs of the uploaded files
+
+onFileChange(event: Event): void {
+  const input = event.target as HTMLInputElement;
+
+  if (input.files) {
+    Array.from(input.files).forEach(file => {
       const allowedTypes = [
         'application/pdf',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       ];
-  
+
       if (!allowedTypes.includes(file.type)) {
-        this.errorMessage = 'Only PDF and DOCX files are allowed.';
-        input.value = ''; // Clear the input value
+        this.errorMessage = `Invalid file type: ${file.name}. Only PDF and DOCX are allowed.`;
       } else {
         this.errorMessage = '';
-        // Handle valid file (e.g., upload logic)
-        // console.log('Selected file:', file);
-  
-        // Call preview or further handling method
-        this.onFilePreview(file);
+        this.uploadedFiles.push(file); // Store valid file
+        this.onFilePreview(file);      // Preview the file
       }
-    }
+    });
   }
-  
-  onFilePreview(file: File){
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event: any) => {
-        
-          this.fileURL = event.target.result;
-          console.log("----", this.fileURL)
-         
-      };
-      reader.readAsDataURL(file);
-    }
+}
+
+onFilePreview(file: File): void {
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (event: any) => {
+      this.fileURLs.push(event.target.result); // Store file URL
+    };
+    reader.readAsDataURL(file);
   }
+}
+
   
 
   // Save entire form to localStorage on submit
   saveFormData() {
+
+  let isFormValid = true;
+  let missingFields: string[] = [];
+
+  // Validate required fields
+  this.job.fields.forEach((field: { required: any; label: string; }) => {
+    if (field.required && !this.formData[this.transformLabelToKey(field.label)]) {
+      isFormValid = false;
+      missingFields.push(field.label);
+    }
+  });
+  // If validation fails, show an error message and stop submission
+  if (!isFormValid) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Validation Error',
+      detail: `Please fill in the required field(s): ${missingFields.join(', ')}`
+    });
+    return;
+  }
+
     const candidateName = this.formData.fullName 
         || (this.formData.firstName && this.formData.lastName 
             ? `${this.formData.firstName} ${this.formData.lastName}`
@@ -150,7 +206,9 @@ export class JobApplicationFormComponent {
     localStorage.setItem('candidates', JSON.stringify(existingCandidates));
 
     // Optionally reset the formData
-    this.formData = {}; // Or set it back to its initial state
+    this.formData = {}; 
+    this.uploadedFiles = [];
+    this.fileURLs = [];
 
     this.messageService.add({
         severity: 'success', 
