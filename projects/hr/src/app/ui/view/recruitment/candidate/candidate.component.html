@@ -5,18 +5,6 @@
 <div *ngIf="showCandidate">
   <div class="card">
     <br>
-    <!-- <app-back-button></app-back-button> -->
-
-    <!-- <p-toolbar styleClass="mb-4 gap-2">
-      <ng-template pTemplate="left">
-        <app-button text="Delete" class="btn-delete"></app-button>
-      </ng-template>
-
-      <ng-template pTemplate="right">
-        
-      </ng-template>
-    </p-toolbar> -->
-
     <div class="flex w-full justify-between p-3 table-item">
       <div class="w-1/1">
         <ng-select 
@@ -80,7 +68,7 @@
                 <div>
                   <!-- <li class="table-item-panel"> <i class="pi pi-user-plus table-item me-2"></i> Add as Employee</li> -->
                   <li class="table-item-panel" (click)="openViewModal(candidate, op)"> <i class="pi pi-eye table-item me-2"></i> View</li>
-                  <li class="table-item-panel"> <i class="pi pi-download table-item me-2"></i> Download Resume</li>
+                  <li class="table-item-panel" (click)="downloadFile(candidate)"> <i class="pi pi-download table-item me-2"></i> Download Resume</li>
                   <li class="table-item-panel" *ngIf="candidate.stage == 'Application Received'" (click)="openInterviewInvite(candidate)"> <i class="pi pi-send table-item me-2"></i> Send Invite</li>
                   <!-- <li class="table-item-panel"> <i class="pi pi-users table-item me-2"></i> Compare with Other Candidates </li> -->
                   <!-- <li class="table-item-panel" (click)="confirmCandidateDelete(candidate)"> <i class="pi pi-trash table-item me-2"></i> Delete</li> -->
@@ -141,7 +129,7 @@
       </div>
       <div class="input-container-50">
           <label for="resume"><strong>Resume:</strong></label>
-          <span class="" style="color: var(--celadon-green); font-size: var(--md-font); cursor: pointer;" (click)="viewResume(activeItem.resume || '')">
+          <span class="" style="color: var(--celadon-green); font-size: var(--md-font); cursor: pointer;" (click)="viewResume(activeItem.resume)">
             <!-- <i class="pi pi-download resume me-2"></i> -->
               View Resume
           </span>
