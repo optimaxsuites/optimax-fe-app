@@ -297,7 +297,7 @@ export class CandidateComponent implements OnInit {
       // Create a link element
       const link = document.createElement('a');
       link.href = resumeData;  // Base64 data URI
-      link.download = `${applicant.candidateName}_Resume.pdf`;  // Suggested file name
+      link.download = `${applicant.candidateName}_Resume`;  // Suggested file name
   
       // Trigger the download
       link.click();
