@@ -1,34 +1,18 @@
-import { Component, HostListener, ViewEncapsulation } from '@angular/core';
+import { Component } from '@angular/core';
+import { TabConfig } from './ui/shared-component/service/interface/data';
+import { RecruitmentListComponent } from './ui/view/recruitment/recruitment-list/recruitment-list.component';
+import { CandidateComponent } from './ui/view/recruitment/candidate/candidate.component';
+import { ScheduledInterviewComponent } from './ui/view/recruitment/scheduled-interview/scheduled-interview.component';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  encapsulation: ViewEncapsulation.None,
-  styleUrls: ['./app.component.scss']
+  styleUrl: './app.component.scss'
 })
-export class AppComponent {
-  title = 'ERP-FE';
-  sidebarVisible2: boolean = false;
-
-  screenWidth: number;
-
-  // Ensure this property exists and is initialized
-  clockedInTime: string | null = null;
-
-  constructor() {
-    this.screenWidth = window.innerWidth;
-  }
-
-  @HostListener('window:resize', ['$event'])
-  onResize(event: any) {
-    this.screenWidth = window.innerWidth;
-    console.log('Screen width:', this.screenWidth);
-    // Apply logic based on screen width
-  }
-
-  // This method should correctly capture the event emitted by ClockInClockOutComponent
-  // onClockInTime(time: string | null) {
-  //   console.log("Received clock-in time:", time);
-  //   this.clockedInTime = time; // Assign the emitted clock-in time
-  // }
+export class AppHrComponent {
+  tabsConfig: TabConfig[] = [
+    { name: 'Job Vacancy', component: RecruitmentListComponent },
+    { name: 'Job Applications', component: CandidateComponent },
+    { name: 'Interview', component: ScheduledInterviewComponent },
+  ];
 }
