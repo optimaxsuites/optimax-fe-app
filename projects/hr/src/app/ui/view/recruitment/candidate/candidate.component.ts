@@ -42,9 +42,46 @@ export class CandidateComponent implements OnInit {
     this.showInterviewInvite = false;
   }
 
-  viewResume(resumeFile: string){
-
+  viewResume(resume: string | File): void {
+    if (!resume) {
+      console.error('No resume found.');
+      return;
+    }
+  
+    if (typeof resume === 'string') {
+      // If resume is a base64 string
+      const base64String = resume.split(',')[1];  // Strip the base64 prefix
+      const blob = this.base64ToBlob(base64String, 'application/pdf');  // Assuming resume is a PDF
+  
+      // Open the file in a new window
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } else if (resume instanceof File) {
+      // If resume is a File object, create a URL from it
+      const fileUrl = URL.createObjectURL(resume);
+      window.open(fileUrl, '_blank');
+    }
   }
+  
+  // Helper function to convert base64 to a Blob
+  base64ToBlob(base64: string, mimeType: string): Blob {
+    const byteCharacters = atob(base64);  // Decode the base64 string
+    const byteArrays = [];
+  
+    for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
+      const slice = byteCharacters.slice(offset, offset + 1024);
+      const byteNumbers = new Array(slice.length);
+  
+      for (let i = 0; i < slice.length; i++) {
+        byteNumbers[i] = slice.charCodeAt(i);
+      }
+  
+      byteArrays.push(new Uint8Array(byteNumbers));
+    }
+  
+    return new Blob(byteArrays, { type: mimeType });
+  }
+  
 
   getStatusClass(stage: string) {
     switch (stage) {
@@ -219,28 +256,79 @@ export class CandidateComponent implements OnInit {
     console.log('Updating interview status:', inviteData);
   }
 
+  // downloadResume(candidate: any): void {
+  //   // Retrieve the array of candidates from localStorage
+  //   const candidatesData = localStorage.getItem('candidates');  // 'candidates' is the key where the array is stored
+
+  //   if (candidatesData) {
+  //     // Parse the stored JSON string into an array of candidates
+  //     const candidatesArray = JSON.parse(candidatesData);
+
+  //     // Find the candidate by matching properties (e.g., candidateName or email)
+  //     const foundCandidate = candidatesArray.find((storedCandidate: any) => storedCandidate.email === candidate.email);
+
+  //     if (foundCandidate && foundCandidate.resume) {
+  //       // Retrieve the CV file path from the candidate object
+  //       const resumePath = foundCandidate.resume;
+
+  //       // If the resume path is a URL or accessible file location
+  //       const downloadLink = document.createElement('a');
+  //       downloadLink.href = resumePath;  // Assuming the resume is available via a URL or path
+  //       downloadLink.download = `${foundCandidate.candidateName}_resume.pdf`; // Set the file name
+  //       downloadLink.click(); // Trigger the download
+  //     } else {
+  //       console.error('No CV found for this candidate.');
+  //     }
+  //   } else {
+  //     console.error('Candidates not found in localStorage');
+  //   }
+  // }
+
   downloadResume(candidate: any): void {
-    // Retrieve the entire candidate object from localStorage
-    const candidateData = localStorage.getItem(`candidates_${candidate.id}`); // Assuming the candidate is stored with a key like `candidate_<candidateId>`
-
-    if (candidateData) {
-      // Parse the stored JSON string into an object
-      const candidateObject = JSON.parse(candidateData);
-
-      // Retrieve the CV file path from the candidate object
-      const resumePath = candidateObject?.cV;  // Assuming 'cv' is the key holding the file path
-
-      if (resumePath) {
-        // If the resume path is a URL or accessible file location
+    // Retrieve the array of candidates from localStorage
+    const candidatesData = localStorage.getItem('candidates');  // 'candidates' is the key where the array is stored
+  
+    if (candidatesData) {
+      // Parse the stored JSON string into an array of candidates
+      const candidatesArray = JSON.parse(candidatesData);
+  
+      // Find the candidate by matching properties (e.g., candidateName or email)
+      const foundCandidate = candidatesArray.find((storedCandidate: any) => storedCandidate.email === candidate.email);
+  
+      if (foundCandidate && foundCandidate.resume) {
+        // Retrieve the base64 string of the CV file from the candidate object
+        const resumeBase64 = foundCandidate.resume;
+  
+        // Create a Blob from the base64 string
+        const byteCharacters = atob(resumeBase64.split(',')[1]);  // Remove the base64 prefix (data:application/pdf;base64,)
+        const byteArrays = [];
+  
+        for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
+          const slice = byteCharacters.slice(offset, offset + 1024);
+          const byteNumbers = new Array(slice.length);
+  
+          for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+          }
+  
+          const byteArray = new Uint8Array(byteNumbers);
+          byteArrays.push(byteArray);
+        }
+  
+        // Create a Blob object from the byte array
+        const blob = new Blob(byteArrays, { type: 'application/pdf' });
+  
+        // Create a download link and trigger the download
         const downloadLink = document.createElement('a');
-        downloadLink.href = resumePath;  // Assuming the resume is available via a URL or path
-        downloadLink.download = `${candidateObject.candidateName}_resume.pdf`; // Set the file name
+        downloadLink.href = URL.createObjectURL(blob); // Create a URL for the Blob
+        downloadLink.download = `${foundCandidate.candidateName}_resume.pdf`; // Set the file name
         downloadLink.click(); // Trigger the download
       } else {
         console.error('No CV found for this candidate.');
       }
     } else {
-      console.error('Candidate not found in localStorage');
+      console.error('Candidates not found in localStorage');
     }
   }
+  
 }
