@@ -15,8 +15,8 @@ import { MessageService } from 'primeng/api';
 export class JobApplicationFormComponent {
   job: any; // Define a property to hold job data
   applicantId?: string;
-  fileURL: any[] = [];
-  errorMessage?: string;
+  fileURL: any;
+  errorMessage: any;
 
   constructor(
     private route: ActivatedRoute,
@@ -78,111 +78,126 @@ export class JobApplicationFormComponent {
   // }
 
 
-  // onFileChange(event: Event): void {
+  // onFileChange(event: Event) {
   //   const input = event.target as HTMLInputElement;
-  
-  //   if (input.files && input.files[0]) {
-  //     const file = input.files[0];
-  //     const allowedTypes = [
-  //       'application/pdf',
-  //       'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-  //     ];
-  
-  //     if (!allowedTypes.includes(file.type)) {
-  //       this.errorMessage = 'Only PDF and DOCX files are allowed.';
-  //       input.value = ''; // Clear the input value
-  //     } else {
-  //       this.errorMessage = '';
-  //       // Handle valid file (e.g., upload logic)
-  //       console.log('Selected file:', file);
-  
-  //       // Call preview or further handling method
-  //       this.onFilePreview(file);
-  //     }
+  //   if (input.files && input.files.length) {
+  //     this.onFilePreview(input.files[0])
   //   }
+
   // }
-  
   // onFilePreview(file: File){
   //   if (file) {
   //     const reader = new FileReader();
   //     reader.onload = (event: any) => {
-        
-  //         this.fileURL = event.target.result;
-  //         console.log("----", this.fileURL)
-         
+  //       this.fileURL = event.target.result;
+  //       console.log("----", this.fileURL)
   //     };
   //     reader.readAsDataURL(file);
   //   }
   // }
-
-  uploadedFiles: File[] = []; // To store uploaded files
-fileURLs: string[] = [];    // To store URLs of the uploaded files
-
-onFileChange(event: Event): void {
-  const input = event.target as HTMLInputElement;
-
-  if (input.files) {
-    Array.from(input.files).forEach(file => {
-      const allowedTypes = [
-        'application/pdf',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      ];
-
-      if (!allowedTypes.includes(file.type)) {
-        this.errorMessage = `Invalid file type: ${file.name}. Only PDF and DOCX are allowed.`;
-      } else {
-        this.errorMessage = '';
-        this.uploadedFiles.push(file); // Store valid file
-        this.onFilePreview(file);      // Preview the file
-      }
-    });
-  }
-}
-
-onFilePreview(file: File): void {
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = (event: any) => {
-      this.fileURLs.push(event.target.result); // Store file URL
-    };
-    reader.readAsDataURL(file);
-  }
-}
-
   
 
-  // Save entire form to localStorage on submit
+  // // Save entire form to localStorage on submit
+  // saveFormData() {
+  //   const candidateName = this.formData.fullName 
+  //       || (this.formData.firstName && this.formData.lastName 
+  //           ? `${this.formData.firstName} ${this.formData.lastName}`
+  //           : '');
+
+  //   const applicantInfo: ApplicantDTO = { 
+  //     ...this.formData, 
+  //     candidateName,
+  //     resume: this.fileURL,
+  //     id: this.applicantId, 
+  //     position: this.job.category,
+  //     dateApplied: new Date().toISOString(), // Capture the current date
+  //     stage: ApplicationStage.ApplicationReceived,
+  //   };
+  //   console.log("candidate-info", applicantInfo)
+
+
+  //   // Retrieve existing candidates from localStorage or initialize an empty array
+  //   const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+
+  //   // Push the new applicant info into the existing candidates array
+  //   existingCandidates.push(applicantInfo);
+  //   // console.log("candidate-file", existingCandidates)
+
+  //   // Save the updated candidates array back to localStorage
+  //   localStorage.setItem('candidates', JSON.stringify(existingCandidates));
+
+  //   // Optionally reset the formData
+  //   this.formData = {}; // Or set it back to its initial state
+
+  //   this.messageService.add({
+  //       severity: 'success', 
+  //       summary: `Application Successful`,
+  //       detail: `You have successfully applied for ${this.job.category}`
+  //   });
+
+  // // this.formData = []
+  //   // alert(`Form data saved successfully with ID: ${id} and Position: ${position}`);
+  // }
+
+
+
+
+
+
+
+    // Handles file input change dynamically
+  onFileChange(event: Event, label: string) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length) {
+      // Process the selected file for the specific input field (by label)
+      this.onFilePreview(input.files[0], label);
+    }
+  }
+
+  // Previews the file and stores it in the correct form data entry
+  onFilePreview(file: File, label: string) {
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event: any) => {
+        const fileURL = event.target.result;
+        
+        // Dynamically store the file URL for each label
+        this.formData[this.transformLabelToKey(label)] = fileURL;
+        console.log(`File for ${label}:`, fileURL);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  // Save form data (including multiple files) to localStorage
   saveFormData() {
 
-  let isFormValid = true;
-  let missingFields: string[] = [];
-
-  // Validate required fields
-  this.job.fields.forEach((field: { required: any; label: string; }) => {
-    if (field.required && !this.formData[this.transformLabelToKey(field.label)]) {
-      isFormValid = false;
-      missingFields.push(field.label);
+    // Validate required fields
+    for (let field of this.job.fields) {
+      const fieldKey = this.transformLabelToKey(field.label);
+      const fieldValue = this.formData[fieldKey];
+      
+      // Check if the field is required and if its value is empty
+      if (field.required && (fieldValue === undefined || fieldValue === null || fieldValue === '')) {
+        // Handle the validation error (e.g., display a message or prevent form submission)
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Validation Error',
+          detail: `${field.label} is required.`,
+        });
+        return; // Stop execution if any required field is missing
+      }
     }
-  });
-  // If validation fails, show an error message and stop submission
-  if (!isFormValid) {
-    this.messageService.add({
-      severity: 'error',
-      summary: 'Validation Error',
-      detail: `Please fill in the required field(s): ${missingFields.join(', ')}`
-    });
-    return;
-  }
+
 
     const candidateName = this.formData.fullName 
         || (this.formData.firstName && this.formData.lastName 
-            ? `${this.formData.firstName} ${this.formData.lastName}`
+            ? `${this.formData.firstName} ${this.formData.lastName}` 
             : '');
 
     const applicantInfo: ApplicantDTO = { 
       ...this.formData, 
       candidateName,
-      resume: this.fileURL,
       id: this.applicantId, 
       position: this.job.category,
       dateApplied: new Date().toISOString(), // Capture the current date
@@ -190,35 +205,26 @@ onFilePreview(file: File): void {
     };
     console.log("candidate-info", applicantInfo)
 
-
-    // delete applicantInfo.firstName;
-    // delete applicantInfo.lastName;
-    // delete applicantInfo.fullName;
-
     // Retrieve existing candidates from localStorage or initialize an empty array
     const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
 
     // Push the new applicant info into the existing candidates array
     existingCandidates.push(applicantInfo);
-    // console.log("candidate-file", existingCandidates)
 
     // Save the updated candidates array back to localStorage
     localStorage.setItem('candidates', JSON.stringify(existingCandidates));
 
     // Optionally reset the formData
-    this.formData = {}; 
-    this.uploadedFiles = [];
-    this.fileURLs = [];
+    this.formData = {};
+    this.fileURL = '';
 
     this.messageService.add({
-        severity: 'success', 
-        summary: `Application Successful`,
-        detail: `You have successfully applied for ${this.job.category}`
+      severity: 'success', 
+      summary: `Application Successful`,
+      detail: `You have successfully applied for ${this.job.category}`
     });
-
-  // this.formData = []
-    // alert(`Form data saved successfully with ID: ${id} and Position: ${position}`);
   }
+
   
 
 

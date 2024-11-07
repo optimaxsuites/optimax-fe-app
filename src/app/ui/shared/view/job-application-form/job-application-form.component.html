@@ -49,7 +49,7 @@
                 *ngIf="field.type === 'file'"
                 class="editInput"
                 type="file"
-                (change)="onFileChange($event)"
+                (change)="onFileChange($event, field.label)"
                 [required]="field.required">
                 <p *ngIf="field.type === 'file' && errorMessage" class="text-customRed">
                   {{ errorMessage }}
