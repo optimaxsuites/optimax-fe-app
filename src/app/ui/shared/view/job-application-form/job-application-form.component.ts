@@ -15,6 +15,7 @@ import { MessageService } from 'primeng/api';
 export class JobApplicationFormComponent {
   job: any; // Define a property to hold job data
   applicantId?: string;
+  fileURL: any;
 
   constructor(
     private route: ActivatedRoute,
@@ -75,6 +76,25 @@ export class JobApplicationFormComponent {
   //   }
   // }
 
+  onFileChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length) {
+      this.onFilePreview(input.files[0])
+    }
+
+  }
+  onFilePreview(file: File){
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event: any) => {
+        
+          this.fileURL = event.target.result;
+          console.log("----", this.fileURL)
+         
+      };
+      reader.readAsDataURL(file);
+    }
+  }
   
 
   // Save entire form to localStorage on submit
@@ -87,11 +107,14 @@ export class JobApplicationFormComponent {
     const applicantInfo: ApplicantDTO = { 
       ...this.formData, 
       candidateName,
+      resume: this.fileURL,
       id: this.applicantId, 
       position: this.job.category,
       dateApplied: new Date().toISOString(), // Capture the current date
       stage: ApplicationStage.ApplicationReceived,
     };
+    console.log("candidate-info", applicantInfo)
+
 
     // delete applicantInfo.firstName;
     // delete applicantInfo.lastName;
@@ -102,6 +125,7 @@ export class JobApplicationFormComponent {
 
     // Push the new applicant info into the existing candidates array
     existingCandidates.push(applicantInfo);
+    // console.log("candidate-file", existingCandidates)
 
     // Save the updated candidates array back to localStorage
     localStorage.setItem('candidates', JSON.stringify(existingCandidates));
@@ -118,110 +142,7 @@ export class JobApplicationFormComponent {
   // this.formData = []
     // alert(`Form data saved successfully with ID: ${id} and Position: ${position}`);
   }
-
-  // saveFormData() {
-  //   // Combine first name and last name or use full name
-  //   const candidateName = this.formData.fullName || 
-  //     (this.formData.firstName && this.formData.lastName ? `${this.formData.firstName} ${this.formData.lastName}` : '');
   
-  //   // Create applicant info (excluding the CV file for now)
-  //   const applicantInfo: ApplicantDTO = { 
-  //     ...this.formData, 
-  //     candidateName,
-  //     id: this.randomToken.getRandomToken(),  // Unique ID
-  //     position: this.job.category,  // The job category
-  //     dateApplied: new Date().toISOString(),  // Capture current date as ISO string
-  //     stage: ApplicationStage.ApplicationReceived,  // Stage when application is received
-  //   };
-  
-  // // Loop through the form fields to check for file input fields (such as resume)
-  // const filePromises: Promise<void>[] = []; // Array to hold file conversion promises
-
-  // for (const field of this.job.fields) {
-  //   if (field.type === 'file' && this.formData[this.transformLabelToKey(field.label)]) {
-  //     const file = this.formData[this.transformLabelToKey(field.label)];  // Get the file from formData
-
-  //     if (file instanceof File) {
-  //       console.log('File detected:', file);  // Log the file to see if it's valid
-  //     } else {
-  //       console.error('Expected a File object, but got:', file);
-  //     }
-
-  //     // If a file is present and it's a CV (resume), convert it to base64
-  //     if (field.label.toLowerCase() === 'cV' || field.label.toLowerCase() === 'resume') {
-  //       const filePromise = this.convertFileToBase64(file).then((base64File) => {
-  //         applicantInfo.resume = base64File; // Store the base64 file in the resume field
-  //       });
-  //       filePromises.push(filePromise);
-  //     }
-  //   }
-  // }
-  
-  //   // Wait for all file conversions to finish
-  //   Promise.all(filePromises).then(() => {
-  //     // Retrieve existing candidates from localStorage or initialize an empty array if none exists
-  //     const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-  
-  //     // Push the new applicant info into the existing candidates array
-  //     existingCandidates.push(applicantInfo);
-  
-  //     // Save the updated candidates array back to localStorage
-  //     localStorage.setItem('candidates', JSON.stringify(existingCandidates));
-  
-  //     // Optionally, reset the formData
-  //     this.formData = {};  // Clears form data after submission
-  
-  //     // Notify the user of successful submission
-  //     this.messageService.add({
-  //       severity: 'success', 
-  //       summary: 'Application Successful',
-  //       detail: `You have successfully applied for ${this.job.category}`
-  //     });
-  //   });
-  // }
-  
-  // Method to convert file to base64 string
-  // convertFileToBase64(file: File): Promise<string> {
-  //   return new Promise((resolve, reject) => {
-  //     const reader = new FileReader();
-  //     reader.onloadend = () => {
-  //       resolve(reader.result as string);  // Return base64 string
-  //     };
-  //     reader.onerror = reject;
-  //     reader.readAsDataURL(file);  // Convert file to base64
-  //   });
-  // }
 
 
-  
-  handleFileInput(event: any) {
-    const file = event.target.files[0];
-
-    if (file) {
-      const reader = new FileReader();
-      
-      reader.onloadend = () => {
-        const base64File = reader.result as string;
-        
-        // Retrieve existing candidates from localStorage
-        const existingCandidates: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
-        
-        // Find the applicant by ID and add the file data
-        const applicantIndex = existingCandidates.findIndex((candidate) => candidate.id === this.applicantId);
-
-        if (applicantIndex !== -1) {
-          existingCandidates[applicantIndex]['file'] = base64File; // Save file to the correct applicant
-          localStorage.setItem('candidates', JSON.stringify(existingCandidates)); // Update in localStorage
-        }
-
-        this.messageService.add({
-          severity: 'success',
-          summary: 'File Uploaded Successfully',
-          detail: 'The file has been successfully uploaded for the applicant.'
-        });
-      };
-
-      reader.readAsDataURL(file);  // Convert file to base64
-    }
-  }
 }

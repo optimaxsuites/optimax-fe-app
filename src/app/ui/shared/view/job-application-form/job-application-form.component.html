@@ -45,7 +45,7 @@
               *ngIf="field.type === 'file'"
               class="editInput"
               type="file"
-              (change)="handleFileInput($event)"
+              (change)="onFileChange($event)"
               [required]="field.required">
    
             <textarea 
