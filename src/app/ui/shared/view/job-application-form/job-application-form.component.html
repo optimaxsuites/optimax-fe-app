@@ -35,10 +35,17 @@
             <!-- <input class="editInput" [type]="field.type" [required]="field.required"> -->
 
             <input 
-              *ngIf="['text', 'tel', 'email', 'password', 'url', 'file', 'number'].includes(field.type)"
+              *ngIf="['text', 'tel', 'email', 'password', 'url', 'number'].includes(field.type)"
               class="editInput"
               [type]="field.type"
               [(ngModel)]="formData[transformLabelToKey(field.label)]"
+              [required]="field.required">
+
+            <input 
+              *ngIf="field.type === 'file'"
+              class="editInput"
+              type="file"
+              (change)="handleFileInput($event)"
               [required]="field.required">
    
             <textarea 

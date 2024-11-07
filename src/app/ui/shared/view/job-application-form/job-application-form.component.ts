@@ -14,6 +14,7 @@ import { MessageService } from 'primeng/api';
 })
 export class JobApplicationFormComponent {
   job: any; // Define a property to hold job data
+  applicantId?: string;
 
   constructor(
     private route: ActivatedRoute,
@@ -38,6 +39,9 @@ export class JobApplicationFormComponent {
       const transformedLabel = this.transformLabelToKey(field.label);
       console.log('Original Label:', field.label, '| Transformed Key:', transformedLabel);
     });
+
+
+    this.applicantId = this.randomToken.getRandomToken();
   }
 
   formData: any = {};
@@ -63,113 +67,161 @@ export class JobApplicationFormComponent {
         .replace(/^./, char => char.toLowerCase()); // Ensure the first letter is lowercase
   }
 
-  // Save entire form to localStorage on submit
-  // saveFormData() {
-  //   const candidateName = this.formData.fullName 
-  //       || (this.formData.firstName && this.formData.lastName 
-  //           ? `${this.formData.firstName} ${this.formData.lastName}`
-  //           : '');
-
-  //   const applicantInfo: ApplicantDTO = { 
-  //     ...this.formData, 
-  //     candidateName,
-  //     id: this.randomToken.getRandomToken(), 
-  //     position: this.job.category,
-  //     dateApplied: new Date().toISOString(), // Capture the current date
-  //     stage: ApplicationStage.ApplicationReceived,
-  //   };
-
-  //   // delete applicantInfo.firstName;
-  //   // delete applicantInfo.lastName;
-  //   // delete applicantInfo.fullName;
-
-  //   // Retrieve existing candidates from localStorage or initialize an empty array
-  //   const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-
-  //   // Push the new applicant info into the existing candidates array
-  //   existingCandidates.push(applicantInfo);
-
-  //   // Save the updated candidates array back to localStorage
-  //   localStorage.setItem('candidates', JSON.stringify(existingCandidates));
-
-  //   // Optionally reset the formData
-  //   this.formData = {}; // Or set it back to its initial state
-
-  //   this.messageService.add({
-  //       severity: 'success', 
-  //       summary: `Application Successful`,
-  //       detail: `You have successfully applied for ${this.job.category}`
-  //   });
-
-  // // this.formData = []
-  //   // alert(`Form data saved successfully with ID: ${id} and Position: ${position}`);
+  // onFileChange(event: any, field: any): void {
+  //   const file = event.target.files[0];  // Get the first selected file
+  //   if (file) {
+  //     // Dynamically store the file in formData using the transformed field label as the key
+  //     this.formData[this.transformLabelToKey(field.label)] = file;
+  //   }
   // }
 
-  saveFormData() {
-    // Combine first name and last name or use full name
-    const candidateName = this.formData.fullName || 
-      (this.formData.firstName && this.formData.lastName ? `${this.formData.firstName} ${this.formData.lastName}` : '');
   
-    // Create applicant info (excluding the CV file for now)
+
+  // Save entire form to localStorage on submit
+  saveFormData() {
+    const candidateName = this.formData.fullName 
+        || (this.formData.firstName && this.formData.lastName 
+            ? `${this.formData.firstName} ${this.formData.lastName}`
+            : '');
+
     const applicantInfo: ApplicantDTO = { 
       ...this.formData, 
       candidateName,
-      id: this.randomToken.getRandomToken(),  // Unique ID
-      position: this.job.category,  // The job category
-      dateApplied: new Date().toISOString(),  // Capture current date as ISO string
-      stage: ApplicationStage.ApplicationReceived,  // Stage when application is received
+      id: this.applicantId, 
+      position: this.job.category,
+      dateApplied: new Date().toISOString(), // Capture the current date
+      stage: ApplicationStage.ApplicationReceived,
     };
-  
-  // Loop through the form fields to check for file input fields (such as resume)
-  const filePromises: Promise<void>[] = []; // Array to hold file conversion promises
 
-  for (const field of this.job.fields) {
-    if (field.type === 'file' && this.formData[this.transformLabelToKey(field.label)]) {
-      const file = this.formData[this.transformLabelToKey(field.label)];  // Get the file from formData
+    // delete applicantInfo.firstName;
+    // delete applicantInfo.lastName;
+    // delete applicantInfo.fullName;
 
-      // If a file is present and it's a CV (resume), convert it to base64
-      if (field.label.toLowerCase() === 'cv' || field.label.toLowerCase() === 'resume') {
-        const filePromise = this.convertFileToBase64(file).then((base64File) => {
-          applicantInfo.resume = base64File; // Store the base64 file in the resume field
-        });
-        filePromises.push(filePromise);
-      }
-    }
-  }
-  
-    // Wait for all file conversions to finish
-    Promise.all(filePromises).then(() => {
-      // Retrieve existing candidates from localStorage or initialize an empty array if none exists
-      const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-  
-      // Push the new applicant info into the existing candidates array
-      existingCandidates.push(applicantInfo);
-  
-      // Save the updated candidates array back to localStorage
-      localStorage.setItem('candidates', JSON.stringify(existingCandidates));
-  
-      // Optionally, reset the formData
-      this.formData = {};  // Clears form data after submission
-  
-      // Notify the user of successful submission
-      this.messageService.add({
+    // Retrieve existing candidates from localStorage or initialize an empty array
+    const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+
+    // Push the new applicant info into the existing candidates array
+    existingCandidates.push(applicantInfo);
+
+    // Save the updated candidates array back to localStorage
+    localStorage.setItem('candidates', JSON.stringify(existingCandidates));
+
+    // Optionally reset the formData
+    this.formData = {}; // Or set it back to its initial state
+
+    this.messageService.add({
         severity: 'success', 
-        summary: 'Application Successful',
+        summary: `Application Successful`,
         detail: `You have successfully applied for ${this.job.category}`
-      });
     });
+
+  // this.formData = []
+    // alert(`Form data saved successfully with ID: ${id} and Position: ${position}`);
   }
+
+  // saveFormData() {
+  //   // Combine first name and last name or use full name
+  //   const candidateName = this.formData.fullName || 
+  //     (this.formData.firstName && this.formData.lastName ? `${this.formData.firstName} ${this.formData.lastName}` : '');
+  
+  //   // Create applicant info (excluding the CV file for now)
+  //   const applicantInfo: ApplicantDTO = { 
+  //     ...this.formData, 
+  //     candidateName,
+  //     id: this.randomToken.getRandomToken(),  // Unique ID
+  //     position: this.job.category,  // The job category
+  //     dateApplied: new Date().toISOString(),  // Capture current date as ISO string
+  //     stage: ApplicationStage.ApplicationReceived,  // Stage when application is received
+  //   };
+  
+  // // Loop through the form fields to check for file input fields (such as resume)
+  // const filePromises: Promise<void>[] = []; // Array to hold file conversion promises
+
+  // for (const field of this.job.fields) {
+  //   if (field.type === 'file' && this.formData[this.transformLabelToKey(field.label)]) {
+  //     const file = this.formData[this.transformLabelToKey(field.label)];  // Get the file from formData
+
+  //     if (file instanceof File) {
+  //       console.log('File detected:', file);  // Log the file to see if it's valid
+  //     } else {
+  //       console.error('Expected a File object, but got:', file);
+  //     }
+
+  //     // If a file is present and it's a CV (resume), convert it to base64
+  //     if (field.label.toLowerCase() === 'cV' || field.label.toLowerCase() === 'resume') {
+  //       const filePromise = this.convertFileToBase64(file).then((base64File) => {
+  //         applicantInfo.resume = base64File; // Store the base64 file in the resume field
+  //       });
+  //       filePromises.push(filePromise);
+  //     }
+  //   }
+  // }
+  
+  //   // Wait for all file conversions to finish
+  //   Promise.all(filePromises).then(() => {
+  //     // Retrieve existing candidates from localStorage or initialize an empty array if none exists
+  //     const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+  
+  //     // Push the new applicant info into the existing candidates array
+  //     existingCandidates.push(applicantInfo);
+  
+  //     // Save the updated candidates array back to localStorage
+  //     localStorage.setItem('candidates', JSON.stringify(existingCandidates));
+  
+  //     // Optionally, reset the formData
+  //     this.formData = {};  // Clears form data after submission
+  
+  //     // Notify the user of successful submission
+  //     this.messageService.add({
+  //       severity: 'success', 
+  //       summary: 'Application Successful',
+  //       detail: `You have successfully applied for ${this.job.category}`
+  //     });
+  //   });
+  // }
   
   // Method to convert file to base64 string
-  convertFileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        resolve(reader.result as string);  // Return base64 string
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);  // Convert file to base64
-    });
-  }
+  // convertFileToBase64(file: File): Promise<string> {
+  //   return new Promise((resolve, reject) => {
+  //     const reader = new FileReader();
+  //     reader.onloadend = () => {
+  //       resolve(reader.result as string);  // Return base64 string
+  //     };
+  //     reader.onerror = reject;
+  //     reader.readAsDataURL(file);  // Convert file to base64
+  //   });
+  // }
+
+
   
+  handleFileInput(event: any) {
+    const file = event.target.files[0];
+
+    if (file) {
+      const reader = new FileReader();
+      
+      reader.onloadend = () => {
+        const base64File = reader.result as string;
+        
+        // Retrieve existing candidates from localStorage
+        const existingCandidates: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
+        
+        // Find the applicant by ID and add the file data
+        const applicantIndex = existingCandidates.findIndex((candidate) => candidate.id === this.applicantId);
+
+        if (applicantIndex !== -1) {
+          existingCandidates[applicantIndex]['file'] = base64File; // Save file to the correct applicant
+          localStorage.setItem('candidates', JSON.stringify(existingCandidates)); // Update in localStorage
+        }
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'File Uploaded Successfully',
+          detail: 'The file has been successfully uploaded for the applicant.'
+        });
+      };
+
+      reader.readAsDataURL(file);  // Convert file to base64
+    }
+  }
 }
