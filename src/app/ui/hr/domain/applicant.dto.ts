@@ -8,7 +8,7 @@ export interface ApplicantDTO{
     position?: string;
     dateApplied?: string;
     resume?: any;
-    coverLetter?: string;
+    coverLetter?: any;
     stage?: ApplicationStage;
     interviewStage?: number;
     [key: string]: any; 
