@@ -221,7 +221,7 @@ export class CandidateComponent implements OnInit {
 
   downloadResume(candidate: any): void {
     // Retrieve the entire candidate object from localStorage
-    const candidateData = localStorage.getItem(`candidate_${candidate.id}`); // Assuming the candidate is stored with a key like `candidate_<candidateId>`
+    const candidateData = localStorage.getItem(`candidates_${candidate.id}`); // Assuming the candidate is stored with a key like `candidate_<candidateId>`
 
     if (candidateData) {
       // Parse the stored JSON string into an object
