@@ -31,7 +31,7 @@ export class InterviewScoreSheetComponent implements OnInit {
   }
 
   getUserId(): void {
-    this.userId = sessionStorage.getItem('userId'); // Retrieve userId from sessionStorage
+    this.userId = sessionStorage.getItem('userid'); // Retrieve userId from sessionStorage
     if (this.userId) {
       this.getUserInfo();
     } else {
