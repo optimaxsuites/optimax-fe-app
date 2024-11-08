@@ -118,3 +118,11 @@ fieldset {
   color: white;
   border-radius: 1rem;
 }
+input[type="checkbox"]{
+  @apply accent-customBlue
+
+}
+input[type="radio"]{
+  @apply accent-customBlue
+
+}

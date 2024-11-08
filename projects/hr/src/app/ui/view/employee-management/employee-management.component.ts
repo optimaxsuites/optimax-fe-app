@@ -4,6 +4,12 @@ import { CalendarOptions } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import { RandomTokenService } from '../../shared-component/service/random-token/random-token.service';
+import { ViewEmployeeComponent } from './view-employee/view-employee.component';
+import { AdminCreationFormComponent } from './admin-creation-form/admin-creation-form.component';
+import { TabConfig } from '../../shared-component/service/interface/data';
+import { EmployeeNokComponent } from './employee-nok/employee-nok.component';
+import { EmployeeGuarantorComponent } from './employee-guarantor/employee-guarantor.component';
+import { EmployeeOffboardingComponent } from './employee-offboarding/employee-offboarding.component';
 
 interface Allowances {
   transportationAllowance: number;
@@ -55,6 +61,14 @@ export class EmployeeManagementComponent {
   closeAddForm() {
     this.openAddForm = false;
   }
+  tabsConfig: TabConfig[] = [
+    { name: 'Basic Information', component: ViewEmployeeComponent, role: 'ROLE_ADMIN' },
+    { name: 'Next of Kin Information', component:  EmployeeNokComponent, role: 'ROLE_ADMIN' },
+    { name: 'Guarantor(s) Information', component:  EmployeeGuarantorComponent, role: 'ROLE_ADMIN' },
+    { name: 'Offboarding', component:  EmployeeOffboardingComponent, role: 'ROLE_ADMIN' },
+
+    
+  ];
   uniqueLevels: any;
   uniquePositions: any;
 
@@ -574,7 +588,6 @@ handleDateClick(arg: DateClickArg) {
       this.uniqueLevels = [...new Set(this.employees.map((employee: { level: any; }) => employee.level))];
 
       this.uniquePositions = [...new Set(this.employees.map((employee: {jobTitle: string} ) => employee.jobTitle))];
-      console.log(this.uniquePositions)
 
       this.filteredEmployees = this.employees;
 
@@ -614,9 +627,14 @@ handleDateClick(arg: DateClickArg) {
         };
       });
       this.uniqueLevels = [...new Set(this.employees.map((employee: { level: any; }) => employee.level))];
-      this.uniquePositions = [...new Set(this.employees.map((employee: { position: any; }) => employee.position))];
+      console.log(this.uniqueLevels)
 
-      console.log(this.employees[0].salaryDetails)
+
+      this.uniquePositions = [...new Set(this.employees.map((employee: {jobTitle: string} ) => employee.jobTitle))];
+      console.log(this.uniquePositions)
+
+      this.filteredEmployees = this.employees;
+
 
     }
   }
@@ -635,6 +653,9 @@ handleDateClick(arg: DateClickArg) {
  
 
   viewThisEmployee(employee: any){
+    console.log(employee)
+    localStorage.setItem('employeeInView', JSON.stringify(employee))
+
   this.viewEmployee = true
   this.employeeInView = employee
   this.calendarOptions = {
@@ -643,7 +664,6 @@ handleDateClick(arg: DateClickArg) {
     dateClick: (arg) => this.handleDateClick(arg),
     events:  this.generateLeaveEvents(this.employeeInView.leaveDetails)
   };
-
     }    
     closeViewEmployee() {
   this.viewEmployee = false

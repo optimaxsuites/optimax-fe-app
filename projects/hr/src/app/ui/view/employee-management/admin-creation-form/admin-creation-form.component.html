@@ -1,357 +1,334 @@
 
 <div class="table-item">
-    <div *ngIf="admin == true"  class="flex justify-between items-center px-4">
-        <p class="text-customBlue text-[18px] font-bold">Create New Employee</p>
-        <button class="bg-customBlue text-white font-bold p-3 rounded-xl" (click)="close()" >Cancel</button>
-    </div>
-  
-    <hr *ngIf="admin == true">
-  
-    <div class="flex justify-between gap-5 items-center relative">
-      <div *ngFor="let tab of tabs; let i = index" class="relative flex-1 text-center pt-3" [ngClass]="{
-        'text-gray-400': currentTab < i + 1, 
-        'text-green-600 font-bold': currentTab > i + 1, 
-        'text-customBlue font-bold': currentTab === i + 1}">
-        <div class="flex items-center flex-col gap-1 justify-center relative">
-          <span *ngIf="i < tabs.length - 1"  class="h-1 w-80 bg-customBlue absolute -right-[11rem] top-1" [ngClass]="{
-            'bg-gray-400 text-gray-700': currentTab !== i + 1, 
-            'text-white font-bold bg-customBlue': currentTab === i + 1,
-            ' bg-green-600': currentTab > i + 1}">
-          </span>
-          <span class="p-2 rounded-full" [ngClass]="{
-              'bg-gray-400 text-gray-700': currentTab < i + 1,
-            'bg-green-600 text-white': currentTab > i + 1,
-            'bg-customBlue text-white': currentTab === i + 1}">
-          </span>
-          <span class="ml-1 h-24">{{tab}}</span>
-        </div>
-        
+  <div *ngIf="admin == true"  class="flex justify-between items-center px-4">
+      <p class="text-customBlue text-[18px] font-bold">Create New Employee</p>
+      <button class="bg-customBlue text-white font-bold p-3 rounded-xl" (click)="close()" >Cancel</button>
+  </div>
+
+  <hr *ngIf="admin == true">
+
+  <div class="flex justify-between gap-5 items-center relative">
+    <div *ngFor="let tab of tabs; let i = index" class="relative flex-1 text-center pt-3" [ngClass]="{
+      'text-gray-400': currentTab < i + 1, 
+      'text-green-600 font-bold': currentTab > i + 1, 
+      'text-customBlue font-bold': currentTab === i + 1}">
+      <div class="flex items-center flex-col gap-1 justify-center relative">
+        <span *ngIf="i < tabs.length - 1"  class="h-1 w-80 bg-customBlue absolute -right-[11rem] top-1" [ngClass]="{
+          'bg-gray-400 text-gray-700': currentTab !== i + 1, 
+          'text-white font-bold bg-customBlue': currentTab === i + 1,
+          ' bg-green-600': currentTab > i + 1}">
+        </span>
+        <span class="p-2 rounded-full" [ngClass]="{
+            'bg-gray-400 text-gray-700': currentTab < i + 1,
+          'bg-green-600 text-white': currentTab > i + 1,
+          'bg-customBlue text-white': currentTab === i + 1}">
+        </span>
+        <span class="ml-1 h-24">{{tab}}</span>
       </div>
+      
     </div>
-  
-    <form [formGroup]="basicForm" (ngSubmit)="onSubmit()" *ngIf="currentTab === 1"  class="flex w-full px-10  gap-10">
-        <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
-          <div class="mb-4">
-          <label for="firstName" class="block text-[13px] font-medium">First Name <span class="ml-1 font-bold text-red-600">*</span></label>
-          <input type="text" formControlName="firstName" id="firstName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" readonly />
-          <small *ngIf="basicForm.get('firstName')?.touched && basicForm.get('firstName')?.invalid" class="text-red-600">
-            {{ getErrorMessage(basicForm.get("firstName"),'firstName') }}
-          </small>
-          </div>
-    
-          <div class="mb-4">
-          <label for="lastName" class="block text-[13px] font-medium">Last Name <span class="ml-1 font-bold text-red-600">*</span></label>
-          <input type="text" formControlName="lastName" id="lastName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" readonly />
-          <small *ngIf="basicForm.get('lastName')?.touched && basicForm.get('lastName')?.invalid" class="text-red-600">
-            {{ getErrorMessage(basicForm.get("lastName"),'lastName') }}
-          </small>
-          </div>
-    
-          <div class="mb-4">
-          <label for="email" class="block text-[13px] font-medium">Email <span class="ml-1 font-bold text-red-600">*</span></label>
-          <input type="email" formControlName="email" id="email" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" readonly/>
-          <small *ngIf="basicForm.get('email')?.touched && basicForm.get('email')?.invalid" class="text-red-600">
-            {{ getErrorMessage(basicForm.get("email"),'email') }}
-          </small>
-          </div>
-  
-          <div class="mb-4">
-              <label for="workemail" class="block text-[13px] font-medium">Work Email Address <span class="ml-1 font-bold text-red-600">*</span></label>
-              <input type="workemail" formControlName="workemail" id="workemail" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
-              <small *ngIf="basicForm.get('workemail')?.touched && basicForm.get('workemail')?.invalid" class="text-red-600">
-                {{ getErrorMessage(basicForm.get("workemail"),'workemail') }}
-              </small>
-              </div>
-  
-           
-    
-                  <div class="mb-4">
-                    <label for="title" class="block text-[13px] font-medium">Job Title <span class="ml-1 font-bold text-red-600">*</span></label>
-                    <input type="text" formControlName="title" id="title" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
-                    <small *ngIf="basicForm.get('title')?.touched && basicForm.get('title')?.invalid" class="text-red-600">
-                      {{ getErrorMessage(basicForm.get("title"), 'title') }}
-                    </small>
-                  </div>
-            
-                  <div class="mb-4">
-                    <label for="department" class="block text-[13px] font-medium">Departments <span class="ml-1 font-bold text-red-600">*</span></label>
-                    <ng-select 
-                    [items]="departments" 
-                    bindLabel="department"
-                    bindValue="department"
-                    placeholder="Select Department"
-                    formControlName="department"
-                    class="w-full mt-1 rounded-md"></ng-select>
-                    <small *ngIf="basicForm.get('department')?.touched && basicForm.get('department')?.invalid" class="text-red-600">
-                      {{ getErrorMessage(basicForm.get("department"),'department') }}
-                    </small>
-                  </div>
-            
-                  <div class="mb-4">
-                    <label for="department" class="block text-[13px] font-medium">Employment Type <span class="ml-1 font-bold text-red-600">*</span></label>
-                    <ng-select 
-                    [items]="employments" 
-                    bindLabel="employmentType"
-                    bindValue="employmentType"
-                    placeholder="Select Employment Type"
-                    formControlName="employmentType"
-                    class="w-full mt-1 rounded-md"></ng-select>
-                    <small *ngIf="basicForm.get('employmentType')?.touched && basicForm.get('employmentType')?.invalid" class="text-red-600">
-                      {{ getErrorMessage(basicForm.get("employmentType"),'employmentType') }}
-                    </small>
-                  </div>
-            
-                  <div class="mb-4">
-                    <label for="department" class="block text-[13px] font-medium">Level <span class="ml-1 font-bold text-red-600">*</span></label>
-                    <ng-select 
-                    [items]="salaryStructure" 
-                    bindLabel="level"
-                    bindValue="level"
-                    placeholder="Select Level"
-                    formControlName="level"
-                    class="w-full mt-1 rounded-md"></ng-select>
-                    <small *ngIf="basicForm.get('level')?.touched && basicForm.get('level')?.invalid" class="text-red-600">
-                      {{ getErrorMessage(basicForm.get("level"),'level') }}
-                    </small>
-                  </div>
-            
-                  <div class="mb-4">
-                    <label for="department" class="block text-[13px] font-medium">Supervisor/Manager <span class="ml-1 font-bold text-red-600">*</span></label>
-                    <ng-select 
-                    [items]="salaryStructure" 
-                    bindLabel="level"
-                    bindValue="level"
-                    placeholder="Select Supervisor"
-                    formControlName="supervisor"
-                    class="w-full mt-1 rounded-md"></ng-select>
-                    <small *ngIf="basicForm.get('supervisor')?.touched && basicForm.get('supervisor')?.invalid" class="text-red-600">
-                      {{ getErrorMessage(basicForm.get("supervisor"),'supervisor') }}
-                    </small>
-                  </div>
-  
-     
-     
-    
-          <div class="text-right" *ngIf="!basicForm.get('createLogin')?.value">
-          <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg disabled:cursor-not-allowed" >
-            Next
-          </button>
-          </div>
-    </div>
-    </form>  
- 
-  
-    <form [formGroup]="employeeForm"   *ngIf="currentTab === 2" class="flex w-full flex-col justify-center item-center">
-        <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
-            <fieldset class="mb-4">
-                <legend class="block text-[13px] font-medium">Employee Status <span class="ml-1 font-bold text-red-600">*</span></legend>
-                
-                <input type="radio" id="joining" formControlName="status" value="K" class="mr-2"/>
-                <label for="joining">Joining</label><br />
-                
-                <input type="radio" id="active" formControlName="status" value="S" class="mr-2"/>
-                <label for="active">Active</label><br />
+  </div>
 
-                <small *ngIf="employeeForm.get('status')?.touched && employeeForm.get('status')?.invalid" class="text-red-600">
-                    {{ getErrorMessage(employeeForm.get("status"), 'Employee Status') }}
-                  </small>
-              </fieldset>
-
-              <div class="mb-4">
-                <label for="startDate" class="block text-[13px] font-medium">Employment Start Date<span class="ml-1 font-bold text-red-600">*</span></label>
-                <input type="date" formControlName="startDate" id="startDate" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
-                <!-- <small *ngIf="employeeForm.get('startDate')?.touched && employeeForm.get('startDate')?.invalid" class="text-red-600">
-                  {{ getErrorMessage(employeeForm.get("startDate"),'startDate') }}
-                </small> -->
-                </div> 
-
-
-                <div class="mb-4">
-                    <label for="endDate" class="block text-[13px] font-medium">Employment End date </label>
-                    <input type="date" formControlName="endDate" id="endDate" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
-                    <small *ngIf="employeeForm.get('endDate')?.touched && employeeForm.get('endDate')?.invalid" class="text-red-600">
-                      {{ getErrorMessage(employeeForm.get("endDate"),'endDate') }}
-                    </small>
-                </div> 
-         
-                <div class="mb-4">
-                    <input type="checkbox" id="isProbation" formControlName="isProbation" class="mr-2 cursor-pointer"/>
-                    <label class="cursor-pointer text-[13px] font-medium" for="isProbation">On Probation</label>
-                  </div>
-              
-                  <div *ngIf="employeeForm.get('isProbation')?.value" class="mb-4">
-                    <label for="probationStartDate" class="block text-[13px] font-medium">Probation Start Date<span class="ml-1 font-bold text-red-600">*</span></label>
-                    <input type="date" formControlName="probationStartDate" id="probationStartDate" class="form-input w-full mt-1 mb-3 p-2 border border-gray-300 rounded-md" />
-                    <small *ngIf="employeeForm.get('probationStartDate')?.touched && employeeForm.get('probationStartDate')?.invalid" class="text-red-600">
-                      {{ getErrorMessage(employeeForm.get("probationStartDate"), 'Probation Start Date') }}
-                    </small>
-              
-                    <label for="probationEndDate" class="block text-[13px] font-medium">Probation End Date<span class="ml-1 font-bold text-red-600">*</span></label>
-                    <input type="date" formControlName="probationEndDate" id="probationEndDate" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
-                    <small *ngIf="employeeForm.get('probationEndDate')?.touched && employeeForm.get('probationEndDate')?.invalid" class="text-red-600">
-                      {{ getErrorMessage(employeeForm.get("probationEndDate"), 'Probation End Date') }}
-                    </small>
-                  </div>
-              
-                  <div class="mb-4">
-                    <label for="appraisalDueDate" class="block text-[13px] font-medium">Appraisal Due Date<span class="ml-1 font-bold text-red-600">*</span></label>
-                    <input type="date" formControlName="appraisalDueDate" id="appraisalDueDate" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
-                    <small *ngIf="employeeForm.get('appraisalDueDate')?.touched && employeeForm.get('appraisalDueDate')?.invalid" class="text-red-600">
-                      {{ getErrorMessage(employeeForm.get("appraisalDueDate"), 'Appraisal Due Date') }}
-                    </small>
-                  </div>
-        <div class="text-right">
-          <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
-          <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg" >
-            Next
-          </button>
-        </div>
-    </div>
-     
-    </form>
-  
-    <form [formGroup]="leaveForm"  *ngIf="currentTab === 3" class="flex w-full flex-col justify-center item-center">
-  
+  <form [formGroup]="basicForm" (ngSubmit)="onSubmit()" *ngIf="currentTab === 1"  class="flex w-full px-10  gap-10">
       <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
         <div class="mb-4">
-            <label for="leaveDays" class="block text-[13px] font-medium">Leave Days Entitlement (Annually)<span class="ml-1 font-bold text-red-600">*</span></label>
-            <input type="number" formControlName="leaveDays" id="leaveDays" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" min="0"/>
-            <small *ngIf="leaveForm.get('leaveDays')?.touched && leaveForm.get('leaveDays')?.invalid" class="text-red-600">
-            {{ getErrorMessage(leaveForm.get("leaveDays"), 'Leave Days Entitlement') }}
+        <label for="firstName" class="block text-[13px] font-medium">First Name <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="text" formControlName="firstName" id="firstName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" readonly />
+        <small *ngIf="basicForm.get('firstName')?.touched && basicForm.get('firstName')?.invalid" class="text-red-600">
+          {{ getErrorMessage(basicForm.get("firstName"),'firstName') }}
+        </small>
+        </div>
+  
+        <div class="mb-4">
+        <label for="lastName" class="block text-[13px] font-medium">Last Name <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="text" formControlName="lastName" id="lastName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" readonly />
+        <small *ngIf="basicForm.get('lastName')?.touched && basicForm.get('lastName')?.invalid" class="text-red-600">
+          {{ getErrorMessage(basicForm.get("lastName"),'lastName') }}
+        </small>
+        </div>
+  
+        <div class="mb-4">
+        <label for="email" class="block text-[13px] font-medium">Email <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="email" formControlName="email" id="email" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" readonly/>
+        <small *ngIf="basicForm.get('email')?.touched && basicForm.get('email')?.invalid" class="text-red-600">
+          {{ getErrorMessage(basicForm.get("email"),'email') }}
+        </small>
+        </div>
+
+        <div class="mb-4">
+            <label for="workemail" class="block text-[13px] font-medium">Work Email Address <span class="ml-1 font-bold text-red-600">*</span></label>
+            <input type="workemail" formControlName="workemail" id="workemail" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+            <small *ngIf="basicForm.get('workemail')?.touched && basicForm.get('workemail')?.invalid" class="text-red-600">
+              {{ getErrorMessage(basicForm.get("workemail"),'workemail') }}
             </small>
-        </div>
-        <div class="text-right">
-          <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
-          <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg" [disabled]="nextOfKinList.length === 0 && !leaveForm.valid">
-            Next
-          </button>
-        </div>
-      
-      </div>
-    </form>
-  
-  
-    <form [formGroup]="guarantorForm" *ngIf="currentTab === 1" class="flex w-full flex-col justify-center item-center" >
-      <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-2">
-        <label class="block text-[13px] font-medium">Grant Access</label>
+            </div>
 
-        <!-- System Access Levels -->
-        <div>
-          <input type="checkbox" formControlName="employeePortalAccess" /> Employee Portal Access
-        </div>
-        <div>
-          <input type="checkbox" formControlName="emailAccess" /> Email Access
-        </div>
-        <div>
-          <input type="checkbox" formControlName="vpnAccess" /> Remote Access/VPN
-        </div>
-      
-        <!-- Software and Application Access -->
-        <div>
-          <input type="checkbox" formControlName="hrSystemAccess" /> HR Management System
-        </div>
-        <div>
-          <input type="checkbox" formControlName="projectManagementAccess" /> Project Management Tools
-        </div>
-        
-        <!-- Physical Access -->
-        <div>
-          <input type="checkbox" formControlName="buildingAccess" /> Facility Access
-        </div>
-      
-        <label class="block text-[13px] mt-3 font-medium">Grant Role-based Access</label>
+         
+  
+                <div class="mb-4">
+                  <label for="title" class="block text-[13px] font-medium">Job Title <span class="ml-1 font-bold text-red-600">*</span></label>
+                  <input type="text" formControlName="title" id="title" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+                  <small *ngIf="basicForm.get('title')?.touched && basicForm.get('title')?.invalid" class="text-red-600">
+                    {{ getErrorMessage(basicForm.get("title"), 'title') }}
+                  </small>
+                </div>
+          
+                <div class="mb-4">
+                  <label for="department" class="block text-[13px] font-medium">Departments <span class="ml-1 font-bold text-red-600">*</span></label>
+                  <ng-select 
+                  [items]="departments" 
+                  bindLabel="department"
+                  bindValue="department"
+                  placeholder="Select Department"
+                  formControlName="department"
+                  class="w-full mt-1 rounded-md"></ng-select>
+                  <small *ngIf="basicForm.get('department')?.touched && basicForm.get('department')?.invalid" class="text-red-600">
+                    {{ getErrorMessage(basicForm.get("department"),'department') }}
+                  </small>
+                </div>
+          
+                <div class="mb-4">
+                  <label for="department" class="block text-[13px] font-medium">Employment Type <span class="ml-1 font-bold text-red-600">*</span></label>
+                  <ng-select 
+                  [items]="employments" 
+                  bindLabel="employmentType"
+                  bindValue="employmentType"
+                  placeholder="Select Employment Type"
+                  formControlName="employmentType"
+                  class="w-full mt-1 rounded-md"></ng-select>
+                  <small *ngIf="basicForm.get('employmentType')?.touched && basicForm.get('employmentType')?.invalid" class="text-red-600">
+                    {{ getErrorMessage(basicForm.get("employmentType"),'employmentType') }}
+                  </small>
+                </div>
+          
+                <div class="mb-4">
+                  <label for="department" class="block text-[13px] font-medium">Level <span class="ml-1 font-bold text-red-600">*</span></label>
+                  <ng-select 
+                  [items]="salaryStructure" 
+                  bindLabel="level"
+                  bindValue="level"
+                  placeholder="Select Level"
+                  formControlName="level"
+                  class="w-full mt-1 rounded-md"></ng-select>
+                  <small *ngIf="basicForm.get('level')?.touched && basicForm.get('level')?.invalid" class="text-red-600">
+                    {{ getErrorMessage(basicForm.get("level"),'level') }}
+                  </small>
+                </div>
+          
+                <div class="mb-4">
+                  <label for="department" class="block text-[13px] font-medium">Supervisor/Manager <span class="ml-1 font-bold text-red-600">*</span></label>
+                  <ng-select 
+                  [items]="salaryStructure" 
+                  bindLabel="level"
+                  bindValue="level"
+                  placeholder="Select Supervisor"
+                  formControlName="supervisor"
+                  class="w-full mt-1 rounded-md"></ng-select>
+                  <small *ngIf="basicForm.get('supervisor')?.touched && basicForm.get('supervisor')?.invalid" class="text-red-600">
+                    {{ getErrorMessage(basicForm.get("supervisor"),'supervisor') }}
+                  </small>
+                </div>
 
-        <!-- System Access Levels -->
-        <div>
-          <input type="checkbox" formControlName="employeePortalAccess" /> Managerial Access
+   
+   
+  
+        <div class="text-right" *ngIf="!basicForm.get('createLogin')?.value">
+        <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg disabled:cursor-not-allowed" >
+          Next
+        </button>
         </div>
-        <div>
-          <input type="checkbox" formControlName="emailAccess" /> Administrative Access
-        </div>
+  </div>
+  </form>  
+
+
+  <form [formGroup]="employeeForm"   *ngIf="currentTab === 2" class="flex w-full flex-col justify-center item-center">
+      <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
+          <fieldset class="mb-4">
+              <legend class="block text-[13px] font-medium">Employee Status <span class="ml-1 font-bold text-red-600">*</span></legend>
+              
+              <input type="radio" id="joining" formControlName="status" value="joining" class="mr-2"/>
+              <label for="joining">Joining</label><br />
+              
+              <input type="radio" id="active" formControlName="status" value="active" class="mr-2"/>
+              <label for="active">Active</label><br />
+
+              <small *ngIf="employeeForm.get('status')?.touched && employeeForm.get('status')?.invalid" class="text-red-600">
+                  {{ getErrorMessage(employeeForm.get("status"), 'Employee Status') }}
+                </small>
+            </fieldset>
+
+            <div class="mb-4">
+              <label for="startDate" class="block text-[13px] font-medium">Employment Start Date<span class="ml-1 font-bold text-red-600">*</span></label>
+              <input type="date" formControlName="startDate" id="startDate" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+              <!-- <small *ngIf="employeeForm.get('startDate')?.touched && employeeForm.get('startDate')?.invalid" class="text-red-600">
+                {{ getErrorMessage(employeeForm.get("startDate"),'startDate') }}
+              </small> -->
+              </div> 
+
+
+              <div class="mb-4">
+                  <label for="endDate" class="block text-[13px] font-medium">Employment End date </label>
+                  <input type="date" formControlName="endDate" id="endDate" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+                  <small *ngIf="employeeForm.get('endDate')?.touched && employeeForm.get('endDate')?.invalid" class="text-red-600">
+                    {{ getErrorMessage(employeeForm.get("endDate"),'endDate') }}
+                  </small>
+              </div> 
        
-    
-  
-        <div class="text-right">
-          <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
-          <button type="button" (click)="nextTabFromGuarantor()" class="bg-customBlue text-white px-4 py-3 rounded-lg" >
-            Next
-          </button>
-        </div>
+              <div class="mb-4">
+                  <input type="checkbox" id="isProbation" formControlName="isProbation" class="mr-2 cursor-pointer"/>
+                  <label class="cursor-pointer text-[13px] font-medium" for="isProbation">On Probation</label>
+                </div>
+            
+                <div *ngIf="employeeForm.get('isProbation')?.value" class="mb-4">
+                  <label for="probationStartDate" class="block text-[13px] font-medium">Probation Start Date<span class="ml-1 font-bold text-red-600">*</span></label>
+                  <input type="date" formControlName="probationStartDate" id="probationStartDate" class="form-input w-full mt-1 mb-3 p-2 border border-gray-300 rounded-md" />
+                  <small *ngIf="employeeForm.get('probationStartDate')?.touched && employeeForm.get('probationStartDate')?.invalid" class="text-red-600">
+                    {{ getErrorMessage(employeeForm.get("probationStartDate"), 'Probation Start Date') }}
+                  </small>
+            
+                  <label for="probationEndDate" class="block text-[13px] font-medium">Probation End Date<span class="ml-1 font-bold text-red-600">*</span></label>
+                  <input type="date" formControlName="probationEndDate" id="probationEndDate" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+                  <small *ngIf="employeeForm.get('probationEndDate')?.touched && employeeForm.get('probationEndDate')?.invalid" class="text-red-600">
+                    {{ getErrorMessage(employeeForm.get("probationEndDate"), 'Probation End Date') }}
+                  </small>
+                </div>
+            
+                <div class="mb-4">
+                  <label for="appraisalDueDate" class="block text-[13px] font-medium">Appraisal Due Date<span class="ml-1 font-bold text-red-600">*</span></label>
+                  <input type="date" formControlName="appraisalDueDate" id="appraisalDueDate" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+                  <small *ngIf="employeeForm.get('appraisalDueDate')?.touched && employeeForm.get('appraisalDueDate')?.invalid" class="text-red-600">
+                    {{ getErrorMessage(employeeForm.get("appraisalDueDate"), 'Appraisal Due Date') }}
+                  </small>
+                </div>
+      <div class="text-right">
+        <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
+        <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg" >
+          Next
+        </button>
       </div>
-    </form>
-  
-  
-    <form  (ngSubmit)="onSubmit()" *ngIf="currentTab === 5" class="flex w-full flex-col justify-center item-center">
+  </div>
+   
+  </form>
+
+  <form [formGroup]="leaveForm"  *ngIf="currentTab === 3" class="flex w-full flex-col justify-center item-center">
+
+    <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
+      <div class="mb-4">
+          <label for="leaveDays" class="block text-[13px] font-medium">Leave Days Entitlement (Annually)<span class="ml-1 font-bold text-red-600">*</span></label>
+          <input type="number" formControlName="leaveDays" id="leaveDays" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" min="0"/>
+          <small *ngIf="leaveForm.get('leaveDays')?.touched && leaveForm.get('leaveDays')?.invalid" class="text-red-600">
+          {{ getErrorMessage(leaveForm.get("leaveDays"), 'Leave Days Entitlement') }}
+          </small>
+      </div>
+      <div class="text-right">
+        <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
+        <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg" [disabled]="nextOfKinList.length === 0 && !leaveForm.valid">
+          Next
+        </button>
+      </div>
+    
+    </div>
+  </form>
+
+
+  <form [formGroup]="guarantorForm" *ngIf="currentTab === 4" class="flex w-full flex-col justify-center item-center" >
+    <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-2">
+      <label class="block text-[13px] font-medium">Grant Access</label>
+
+      <!-- System Access Levels -->
       <div>
+        <input type="checkbox" formControlName="employeePortalAccess" /> Employee Portal Access
+      </div>
+      <div>
+        <input type="checkbox" formControlName="emailAccess" /> Email Access
+      </div>
+    
+      <!-- Software and Application Access -->
+      <div>
+        <input type="checkbox" formControlName="hrSystemAccess" /> HR Management System
+      </div>
+      <div>
+        <input type="checkbox" formControlName="projectManagementAccess" /> Project Management Tools
+      </div>
+      
+      <!-- Physical Access -->
+      <div>
+        <input type="checkbox" formControlName="buildingAccess" /> Facility Access
+      </div>
+    
+      <label class="block text-[13px] mt-3 font-medium">Grant Role-based Access</label>
+
+      <!-- System Access Levels -->
+      <div>
+        <input type="checkbox" formControlName="managerialAccess" /> Managerial Access
+      </div>
+      <div>
+        <input type="checkbox" formControlName="adminAccess" /> Administrative Access
+      </div>
+     
   
-        <div class="p-4 mx-auto w-1/2  rounded-xl text-customBlue gap-10 grid grid-cols-1">
-  
-          <div class="p-4 w-full shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-1">
-            <p class="font-bold text-[16px] mb-3">Basic Information</p>
-            <img [src]="imageURL" alt="profileImage" class="h-64 w-64 mx-auto  object-cover rounded-full"/>
-  
-              <div *ngFor="let control of getFormControls('basicForm')" >
-                <p class="capitalize"><strong>{{ toTitleCaseWithSpace(control.key) }}:</strong> <span class="ml-1">{{ control.value }}</span></p>
-              </div>
+
+      <div class="text-right">
+        <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
+        <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg" >
+          Next
+        </button>
+      </div>
+    </div>
+  </form>
+
+
+  <form  (ngSubmit)="onSubmit()" *ngIf="currentTab === 5" class="flex w-full flex-col justify-center item-center">
+    <div>
+
+      <div class="p-4 mx-auto w-1/2  rounded-xl text-customBlue gap-10 grid grid-cols-1">
+
+        <div class="p-4 w-full shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-1">
+          <p class="font-bold text-[16px] mb-3">Basic Information</p>
+
+            <div *ngFor="let control of getFormControls('basicForm')" >
+              <p class="capitalize"><strong>{{ toTitleCaseWithSpace(control.key) }}:</strong> <span class="ml-1">{{ control.value }}</span></p>
+            </div>
+        </div>
+
+        <div class="p-4 w-full shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-1">
+          <p class="font-bold text-[16px] mb-3">Employment Information</p>
+          <div *ngFor="let control of getFormControls('employeeForm')">
+            <p class="capitalize"><strong>{{ toTitleCaseWithSpace(control.key) }}:</strong>  <span class=" ml-1">{{ control.value }}</span></p>
           </div>
-  
-          <div class="p-4 w-full shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-1">
-            <p class="font-bold text-[16px] mb-3">Employment Information</p>
-            <div *ngFor="let control of getFormControls('employeeForm')">
+        </div>
+      
+        <div class="p-4 w-auto shadow-md rounded-xl text-gray-600 bg-white/60 ">
+          <p class="font-bold text-[16px] mb-3">Leave Information</p>
+          <div *ngFor="let control of getFormControls('leaveForm')">
               <p class="capitalize"><strong>{{ toTitleCaseWithSpace(control.key) }}:</strong>  <span class=" ml-1">{{ control.value }}</span></p>
             </div>
-          </div>
-        
-          <div class="p-4 w-auto shadow-md rounded-xl text-gray-600 bg-white/60 ">
-            <p class="font-bold text-[16px] mb-3">Next Of Kin Information</p>
-            <div class="grid grid-cols-2">
-              <div *ngFor="let kin of nextOfKinList; let i =index" class="flex flex-col gap-2">
-                <p class="my-2 text-[15px]">Next Of Kin {{i+1}}</p>
-                <p *ngFor="let key of getKeys(kin)">
-                  <strong>{{ toTitleCaseWithSpace(key) | titlecase }}:</strong> {{ kin[key] }}
-                </p>
-              </div>
-            </div>
-            
-          </div>
-  
-          <div class="p-4 w-full shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-1">
-            <p class="font-bold text-[16px] mb-3">Guarantor's Information</p>
-            <div class="grid grid-cols-2">
-                <div *ngFor="let kin of guarantorList; let i =index"  class="flex flex-col gap-2">
-                  <p class="my-2 text-[15px]">Guarantor {{i+1}}</p>
-                  <p *ngFor="let key of getKeys(kin)">
-                    <strong>{{ toTitleCaseWithSpace(key) | titlecase }}:</strong>
-                    <ng-container *ngIf="isFile(kin[key]); else textField">
-                      <button (click)="previewFile(kin[key])" class="text-customGreen  text-nowrap text-[14px] ml-2">
-                        View File
-                      </button>
-                    </ng-container>
-                    
-                    <ng-template #textField>
-                      {{ kin[key] }}
-                    </ng-template>
-                  </p>
-                </div>
-            </div>
-          </div>
-  
+          
         </div>
-      
-        <div class="text-right">
-          <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
-          <button type="submit" class="bg-green-500 text-white px-4 py-3 rounded-lg" [disabled]="employeeForm.invalid"><span [ngClass]="loading ? 'animate-ping' : ''"  >
-            {{loading ? "Loading..." : "Submit"}}
-            </span></button>
+
+        <div class="p-4 w-full shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-1">
+          <p class="font-bold text-[16px] mb-3">Access Information</p>
+          <div *ngFor="let control of getFormControls('guarantorForm')">
+              <p class="capitalize"><strong>{{ toTitleCaseWithSpace(control.key) }}:</strong>  <span class=" ml-1">{{ control.value }}</span></p>
+            </div>
         </div>
-  
+
       </div>
-    </form>
-  
-    <app-modal *ngIf="showModal" (close)="closeModal()"  class="fixed top-0 left-0 w-full h-[100vh] bg-black/50 flex justify-center items-center">
-        <img [src]="fileDataUrl" class="w-full max-h-[80vh]"/>
-    </app-modal>
     
-    <p-toast></p-toast>
-  </div>
+      <div class="text-right">
+        <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
+        <button type="submit" class="bg-green-500 text-white px-4 py-3 rounded-lg" [disabled]="employeeForm.invalid"><span [ngClass]="loading ? 'animate-ping' : ''"  >
+          {{loading ? "Loading..." : "Submit"}}
+          </span></button>
+      </div>
+
+    </div>
+  </form>
+
+  <app-modal *ngIf="showModal" (close)="closeModal()"  class="fixed top-0 left-0 w-full h-[100vh] bg-black/50 flex justify-center items-center">
+      <img [src]="fileDataUrl" class="w-full max-h-[80vh]"/>
+  </app-modal>
+  
+  <p-toast></p-toast>
+</div>
 
