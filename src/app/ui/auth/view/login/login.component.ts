@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
 import {
   FormControl,
   FormGroupDirective,
@@ -31,7 +31,8 @@ export class MyErrorStateMatcher implements ErrorStateMatcher {
   selector: 'app-login',
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
-  providers:[MessageService]
+  providers:[MessageService],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
 export class LoginComponent implements OnInit {
@@ -45,7 +46,12 @@ export class LoginComponent implements OnInit {
   messages: Message[] | undefined;
 
   public token!: string; 
-  hide = true;
+  hide = signal(true);
+  clickEvent(event: MouseEvent) {
+    this.hide.set(!this.hide());
+    event.stopPropagation();
+  }
+
 
   emailFormControl = new FormControl('', [Validators.required, Validators.email]);
   passwordFormControl = new FormControl('', [Validators.required]);
