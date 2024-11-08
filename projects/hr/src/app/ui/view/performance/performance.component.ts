@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { AppraisallistComponent } from './appraisallist/appraisallist.component';
 import { TabConfig } from '../../shared-component/service/interface/data';
 import { AppraisalcycleComponent } from './appraisalcycle/appraisalcycle.component';
+import { GoalComponent } from './goal/goal.component';
 
 @Component({
   selector: 'app-performance',
@@ -10,7 +11,8 @@ import { AppraisalcycleComponent } from './appraisalcycle/appraisalcycle.compone
 })
 export class PerformanceComponent {
   tabsConfig: TabConfig[] = [
-    { name: 'Appraisal list', component: AppraisallistComponent },
+    { name: 'Appraisal List', component: AppraisallistComponent },
     { name: 'Appraisal Cycle', component: AppraisalcycleComponent },
+    { name: 'Goal', component: GoalComponent },
   ];
 }

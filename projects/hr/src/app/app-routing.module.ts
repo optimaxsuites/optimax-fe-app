@@ -8,6 +8,7 @@ import { EmployeeManagementComponent } from './ui/view/employee-management/emplo
 import { PerformanceComponent } from './ui/view/performance/performance.component';
 import { EmployeePayrollComponent } from './ui/view/payroll/employee-payroll/employee-payroll.component';
 import { EmployeePayslipListComponent } from './ui/view/payroll/employee-payslip-list/employee-payslip-list.component';
+import { MygoalComponent } from './ui/view/performance/mygoal/mygoal.component';
 
 const routes: Routes = [
   {
@@ -51,10 +52,11 @@ const routes: Routes = [
     path: 'admin/hr/attendance/:uuid',
     component: AttendanceComponent,
   },
+  { path: 'mygoal', component: MygoalComponent },
 ];
 
 @NgModule({
-  // imports: [RouterModule.forRoot(routes)],
+  //imports: [RouterModule.forRoot(routes)],
   imports: [RouterModule.forChild(routes)],
   exports: [RouterModule],
 })

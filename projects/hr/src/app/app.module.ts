@@ -79,6 +79,8 @@ import { ViewEmployeeComponent } from './ui/view/employee-management/view-employ
 import { EmployeeNokComponent } from './ui/view/employee-management/employee-nok/employee-nok.component';
 import { EmployeeGuarantorComponent } from './ui/view/employee-management/employee-guarantor/employee-guarantor.component';
 import { EmployeeOffboardingComponent } from './ui/view/employee-management/employee-offboarding/employee-offboarding.component';
+import { GoalComponent } from './ui/view/performance/goal/goal.component';
+import { MygoalComponent } from './ui/view/performance/mygoal/mygoal.component';
 
 @NgModule({
   declarations: [
@@ -124,10 +126,12 @@ import { EmployeeOffboardingComponent } from './ui/view/employee-management/empl
     EmployeeNokComponent,
     EmployeeGuarantorComponent,
     EmployeeOffboardingComponent,
+    GoalComponent,
+    MygoalComponent,
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
