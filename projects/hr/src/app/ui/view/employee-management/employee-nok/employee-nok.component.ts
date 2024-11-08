@@ -8,6 +8,7 @@ import { Component } from '@angular/core';
 export class EmployeeNokComponent {
   employeeInView: any; 
   onboardingStatus: any;
+  emergencyContacts: any;
 
   ngOnInit(): void {
     const employee = localStorage.getItem("employeeInView");
@@ -17,6 +18,8 @@ export class EmployeeNokComponent {
 console.log(this.employeeInView)
     if(this.employeeInView.nextOfKin){
       this.onboardingStatus = "completed"
+      this.emergencyContacts = this.employeeInView.nextOfKin.filter((kin: any) => kin.emergencyContact === true);
+
     }
     else{
       this.onboardingStatus = 'inProgress'
