@@ -126,8 +126,8 @@ import { EmployeeOffboardingComponent } from './ui/view/employee-management/empl
     EmployeeOffboardingComponent,
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,

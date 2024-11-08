@@ -256,61 +256,83 @@ export class CandidateComponent implements OnInit {
     console.log('Updating interview status:', inviteData);
   }
 
-  // downloadResume(candidate: any): void {
-  //   // Retrieve the array of candidates from localStorage
-  //   const candidatesData = localStorage.getItem('candidates');  // 'candidates' is the key where the array is stored
-
-  //   if (candidatesData) {
-  //     // Parse the stored JSON string into an array of candidates
-  //     const candidatesArray = JSON.parse(candidatesData);
-
-  //     // Find the candidate by matching properties (e.g., candidateName or email)
-  //     const foundCandidate = candidatesArray.find((storedCandidate: any) => storedCandidate.email === candidate.email);
-
-  //     if (foundCandidate && foundCandidate.resume) {
-  //       // Retrieve the CV file path from the candidate object
-  //       const resumePath = foundCandidate.resume;
-
-  //       // If the resume path is a URL or accessible file location
-  //       const downloadLink = document.createElement('a');
-  //       downloadLink.href = resumePath;  // Assuming the resume is available via a URL or path
-  //       downloadLink.download = `${foundCandidate.candidateName}_resume.pdf`; // Set the file name
-  //       downloadLink.click(); // Trigger the download
-  //     } else {
-  //       console.error('No CV found for this candidate.');
-  //     }
+  // downloadFile(candidate: any) {
+  //   // Retrieve existing candidates from localStorage
+  //   const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+    
+  //   // Find the applicant by ID
+  //   const applicant = existingCandidates.find((c: any) => c.id === candidate.id);
+    
+  //   if (applicant && applicant.resume) {
+  //     // Extract the resume data
+  //     const resumeData = applicant.resume;
+  
+  //     // Create a link element
+  //     const link = document.createElement('a');
+  //     link.href = resumeData;  // Base64 data URI
+  //     link.download = `${applicant.candidateName} Resume`;  // Suggested file name
+  
+  //     // Trigger the download
+  //     link.click();
   //   } else {
-  //     console.error('Candidates not found in localStorage');
+  //     this.messageService.add({
+  //       severity: 'error',
+  //       summary: 'Download Failed',
+  //       detail: `Resume not found for ${candidate.candidateName}.`
+  //     });
+  //     // console.error('');
   //   }
   // }
+  
+  
   downloadFile(candidate: any) {
     // Retrieve existing candidates from localStorage
     const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-    
+  
     // Find the applicant by ID
     const applicant = existingCandidates.find((c: any) => c.id === candidate.id);
-    
-    if (applicant && applicant.resume) {
-      // Extract the resume data
-      const resumeData = applicant.resume;
   
-      // Create a link element
-      const link = document.createElement('a');
-      link.href = resumeData;  // Base64 data URI
-      link.download = `${applicant.candidateName} Resume`;  // Suggested file name
+    if (applicant) {
+      const keywords = ['resume', 'cv', 'curriculum vitae'];
   
-      // Trigger the download
-      link.click();
+      // Filter out potential resume-related Base64 data
+      const cvFiles = Object.entries(applicant).filter(([key, value]) => {
+        if (typeof value === 'string' && value.startsWith('data:')) {
+          // Attempt to decode Base64 metadata
+          try {
+            const decodedValue = atob(value.split(',')[1]);
+            return keywords.some(keyword =>
+              key.toLowerCase().includes(keyword) || decodedValue.toLowerCase().includes(keyword)
+            );
+          } catch {
+            return false; // Skip if decoding fails
+          }
+        }
+        return false;
+      });
+  
+      if (cvFiles.length > 0) {
+        cvFiles.forEach(([key, base64Data]) => {
+          const link = document.createElement('a');
+          link.href = base64Data as string; // Base64 data URI
+          link.download = `${applicant.candidateName || 'Candidate'} - ${key}`; // Generate a meaningful filename
+          link.click();
+        });
+      } else {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Download Failed',
+          detail: `No CV or resume found for ${candidate.candidateName}.`
+        });
+      }
     } else {
       this.messageService.add({
         severity: 'error',
         summary: 'Download Failed',
-        detail: `Resume not found for ${candidate.candidateName}.`
+        detail: `Candidate not found.`
       });
-      // console.error('');
     }
   }
-  
   
   
 }
