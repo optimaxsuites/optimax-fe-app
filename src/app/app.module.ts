@@ -469,7 +469,7 @@ import { AppHrModule } from 'projects/hr/src/app/app.module';
       CheckboxModule,
       NgSelectModule,
       MatMenuModule,
-      FullCalendarModule,      
+      FullCalendarModule,   
       // ToastrModule.forRoot(),
   ],
   providers: [

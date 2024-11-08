@@ -141,3 +141,12 @@ input{
     width: 100%;
   }
 
+span{
+
+    mat-icon{
+        display: flex;
+    align-items: center;
+    justify-content: center;
+        font-size: 1.5em;
+    }
+}

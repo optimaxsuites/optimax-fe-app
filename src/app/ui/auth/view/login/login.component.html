@@ -40,7 +40,7 @@
             type="password"
             name="password"
             matInput
-            [type]="hide ? 'password' : 'text'"
+            [type]="hide() ? 'password' : 'text'"
             [(ngModel)]="loginInfo.password"
             [errorStateMatcher]="matcher"
           />
@@ -48,11 +48,13 @@
             class="px-4"
             mat-icon-button
             matSuffix
-            (click)="hide = !hide"
+            (click)="clickEvent($event)"
             [attr.aria-label]="'Hide password'"
-            [attr.aria-pressed]="hide"
+            [attr.aria-pressed]="hide()"
           >
-            <mat-icon>{{ hide ? "visibility_off" : "visibility" }}</mat-icon>
+            <i [ngClass]="hide() ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+
+            <!-- <mat-icon>{{ hide() ? "visibility_off" : "visibility" }}</mat-icon> -->
           </span>
           @if (passwordFormControl.hasError('required')) {
           <mat-error>Password is <strong>required</strong></mat-error>
