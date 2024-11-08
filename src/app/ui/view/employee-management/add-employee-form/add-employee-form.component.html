@@ -1,11 +1,6 @@
 
 <div class="table-item">
-  <div *ngIf="admin == true"  class="flex justify-between items-center px-4">
-      <p class="text-customBlue text-[18px] font-bold">Create New Employee</p>
-      <button class="bg-customBlue text-white font-bold p-3 rounded-xl" (click)="close()" >Cancel</button>
-  </div>
 
-  <hr *ngIf="admin == true">
 
   <div class="flex justify-between gap-5 items-center relative">
     <div *ngFor="let tab of tabs; let i = index" class="relative flex-1 text-center pt-3" [ngClass]="{
@@ -33,7 +28,7 @@
     <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
       <div class="mb-4">
       <label for="firstName" class="block text-[13px] font-medium">First Name <span class="ml-1 font-bold text-red-600">*</span></label>
-      <input type="text" formControlName="firstName" id="firstName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+      <input type="text" formControlName="firstName" id="firstName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" readonly/>
       <small *ngIf="basicForm.get('firstName')?.touched && basicForm.get('firstName')?.invalid" class="text-red-600">
         {{ getErrorMessage(basicForm.get("firstName"),'firstName') }}
       </small>
@@ -41,7 +36,7 @@
 
       <div class="mb-4">
       <label for="lastName" class="block text-[13px] font-medium">Last Name <span class="ml-1 font-bold text-red-600">*</span></label>
-      <input type="text" formControlName="lastName" id="lastName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+      <input type="text" formControlName="lastName" id="lastName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" readonly/>
       <small *ngIf="basicForm.get('lastName')?.touched && basicForm.get('lastName')?.invalid" class="text-red-600">
         {{ getErrorMessage(basicForm.get("lastName"),'lastName') }}
       </small>
@@ -129,13 +124,6 @@
       </small>
       </div> 
 
-      <div *ngIf="admin == true" class="mb-4 flex gap-3 items-center">
-      <label class="switch">
-        <input id="createLogin" type="checkbox" formControlName="createLogin">
-        <span class="slider round"></span>
-      </label>
-      <label for="createLogin" class="block text-[13px] font-medium cursor-pointer capitalize">Create login details</label>
-      </div> 
 
       <div class="text-right" *ngIf="!basicForm.get('createLogin')?.value">
       <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg disabled:cursor-not-allowed" >
@@ -144,93 +132,13 @@
       </div>
     </div>
 
-    <div class="p-4 mx-auto h-[30vh] w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60" *ngIf="basicForm.get('createLogin')?.value" >
-      <div class="mb-4">
-        <label for="userName" class="block text-[13px] font-medium">Username</label>
-        <input type="text" [value]="basicForm.get('firstName')?.value" id="userName" [disabled]=true  class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md disabled:cursor-not-allowed" />
-      </div>
 
-      <div class="mb-4 relative">
-        <label for="password" class="block text-[13px] font-medium">Password</label>
-        <input [type]="hide ? 'password' : 'text'"  [value]="basicForm.get('firstName')?.value" [disabled]=true id="password" class="form-input w-full mt-1 p-2 border disabled:cursor-not-allowed border-gray-300 rounded-md" />
-        <i [ngClass]="hide ? 'fa-eye' : 'fa-eye-slash'" (click)="hide = !hide" class="absolute top-[55%] right-4 cursor-pointer fa-solid text-gray-400"></i>
-      </div>
-
-      <div class="text-right" >
-        <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg disabled:cursor-not-allowed" [disabled]="!basicForm.valid ">
-        Next
-        </button>
-      </div>
-    </div>
   </form>
 
   <form [formGroup]="employeeForm"   *ngIf="currentTab === 2" class="flex w-full flex-col justify-center item-center">
     <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
 
-      <div class="mb-4">
-        <label for="title" class="block text-[13px] font-medium">Job Title <span class="ml-1 font-bold text-red-600">*</span></label>
-        <input type="text" formControlName="title" id="title" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
-        <small *ngIf="employeeForm.get('title')?.touched && employeeForm.get('title')?.invalid" class="text-red-600">
-          {{ getErrorMessage(employeeForm.get("title"), 'title') }}
-        </small>
-      </div>
-
-      <div class="mb-4">
-        <label for="department" class="block text-[13px] font-medium">Depatments <span class="ml-1 font-bold text-red-600">*</span></label>
-        <ng-select 
-        [items]="departments" 
-        bindLabel="department"
-        bindValue="department"
-        placeholder="Select Department"
-        formControlName="department"
-        class="w-full mt-1 rounded-md"></ng-select>
-        <small *ngIf="employeeForm.get('department')?.touched && employeeForm.get('department')?.invalid" class="text-red-600">
-          {{ getErrorMessage(employeeForm.get("department"),'department') }}
-        </small>
-      </div>
-
-      <div class="mb-4">
-        <label for="department" class="block text-[13px] font-medium">Employment Type <span class="ml-1 font-bold text-red-600">*</span></label>
-        <ng-select 
-        [items]="employments" 
-        bindLabel="employmentType"
-        bindValue="employmentType"
-        placeholder="Select Employment Type"
-        formControlName="employmentType"
-        class="w-full mt-1 rounded-md"></ng-select>
-        <small *ngIf="employeeForm.get('employmentType')?.touched && employeeForm.get('employmentType')?.invalid" class="text-red-600">
-          {{ getErrorMessage(employeeForm.get("employmentType"),'employmentType') }}
-        </small>
-      </div>
-
-      <div class="mb-4">
-        <label for="department" class="block text-[13px] font-medium">Level <span class="ml-1 font-bold text-red-600">*</span></label>
-        <ng-select 
-        [items]="salaryStructure" 
-        bindLabel="level"
-        bindValue="level"
-        placeholder="Select Level"
-        formControlName="level"
-        class="w-full mt-1 rounded-md"></ng-select>
-        <small *ngIf="employeeForm.get('level')?.touched && employeeForm.get('level')?.invalid" class="text-red-600">
-          {{ getErrorMessage(employeeForm.get("level"),'level') }}
-        </small>
-      </div>
-
-      <div class="mb-4">
-        <label for="department" class="block text-[13px] font-medium">Supervisor/Manager <span class="ml-1 font-bold text-red-600">*</span></label>
-        <ng-select 
-        [items]="salaryStructure" 
-        bindLabel="level"
-        bindValue="level"
-        placeholder="Select Supervisor"
-        formControlName="supervisor"
-        class="w-full mt-1 rounded-md"></ng-select>
-        <small *ngIf="employeeForm.get('supervisor')?.touched && employeeForm.get('supervisor')?.invalid" class="text-red-600">
-          {{ getErrorMessage(employeeForm.get("supervisor"),'supervisor') }}
-        </small>
-      </div>
-
+     
       <div class="mb-4">
         <label for="department" class="block text-[13px] font-medium">Bank Name <span class="ml-1 font-bold text-red-600">*</span></label>
         <ng-select 

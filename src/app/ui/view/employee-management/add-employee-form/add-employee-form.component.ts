@@ -6,6 +6,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
 import { environment } from '../../../shared-component/service/environments/environment';
 import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
+import { ActivatedRoute } from '@angular/router';
 
 interface Employee {
   id: number;
@@ -159,19 +160,21 @@ export class AddEmployeeFormComponent {
   formErrors: string[] = [];
   userInfoRegData: any[] = [];
   userRegData: any = { };
+  employeeId:string = ""
+  employeeData: any;
   constructor(
     private fb: FormBuilder,  
     private authenticationService: AuthenticationService,
     private messageService: MessageService,
     private router: Router, 
     private token: RandomTokenService, 
-    private sanitizer: DomSanitizer
+    private route: ActivatedRoute
   ) {  }
 
   ngOnInit(): void {
-    
-    this.userInfoRegData = JSON.parse(sessionStorage["userRegData"]);
-    this.userRegData = this.userInfoRegData;
+    this.employeeId = this.route.snapshot.paramMap.get('id') as string;
+
+   
     const salaryStructure = localStorage.getItem("salaryStructure");
     if (salaryStructure) {
       this.salaryStructure = JSON.parse(salaryStructure);
@@ -180,23 +183,18 @@ export class AddEmployeeFormComponent {
     this.basicForm = this.fb.group({
       firstName: ['',Validators.required ],
       lastName: ['',Validators.required ],
-      email: [!this.admin ? this.userRegData.email : "", [Validators.required, Validators.email]],
+      email: ['', [Validators.required, Validators.email]],
       phone: ['', [Validators.required]],
       gender: ['', [Validators.required]],
       DOB: ['', [Validators.required]],
       maritalStatus: ['', [Validators.required]],
       religion: ['', [Validators.required]],
       address: ['', [Validators.required]],
-      createLogin: [''],
       profilePhoto: ['',[ Validators.required, this.imageFileValidator()]]
     });
 
     this.employeeForm = this.fb.group({
-      title: ["", [Validators.required]],
-      department: ["", [Validators.required]],
-      level: ["", [Validators.required]],
-      employmentType: ["", [Validators.required]],
-      supervisor: ["", [Validators.required]],
+     
       bankName: ["", [Validators.required]],
       accountNumber: ["", [Validators.required]],
       bvn: ["",],
@@ -233,6 +231,23 @@ export class AddEmployeeFormComponent {
       password: ['', [Validators.required]],
       confirmPassword: ['', [Validators.required]],
     })
+    this.fetchEmployeeData(this.employeeId);
+
+  }
+
+  fetchEmployeeData(employeeId: string): void {
+    const employeesFromStorage = localStorage.getItem("employeesList");
+    const employeesList = employeesFromStorage ? JSON.parse(employeesFromStorage) : [];
+    
+    this.employeeData = employeesList.find((employee: { id: string; }) => employee.id === employeeId);
+    console.log(this.employeeData)
+    if (this.employeeData) {
+      this.basicForm.patchValue({
+        firstName: this.employeeData.firstName,
+        lastName: this.employeeData.lastName,
+        email: this.employeeData.email,
+      });
+    }
   }
  imageFileValidator(): ValidatorFn {
   return (control: AbstractControl): { [key: string]: any } | null => {
@@ -302,137 +317,81 @@ export class AddEmployeeFormComponent {
 
   onSubmit() {
   this.loading = true;
-
-    if (this.basicForm.get('createLogin')?.value) {
-      this.nextAndCreate()
-    }else {
-      this.addNewEmployee()
-    }
-
-   
+  this.addNewEmployee()
   }
 addNewEmployee(){
-  const currentDate = new Date();  
-  const currentYear = currentDate.getFullYear();  
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
   const formattedDate = currentDate.toISOString().split('T')[0];
+  
   const employeesFromStorage = localStorage.getItem("employeesList");
   const employeesList = employeesFromStorage ? JSON.parse(employeesFromStorage) : [];
-  const newEmployee = {
-    id: this.token.getRandomToken(),
-    firstName: this.basicForm.get('firstName')?.value,
-    lastName: this.basicForm.get('lastName')?.value,
-    dob: this.basicForm.get('DOB')?.value,
-    gender: this.basicForm.get('gender')?.value,
-    email: this.basicForm.get('email')?.value,
-    phone: this.basicForm.get('phone')?.value,
-    maritalStstus: this.basicForm.get('maritalStatus')?.value,
-    religion: this.basicForm.get('religion')?.value,
-    address: this.basicForm.get('address')?.value,
-    jobTitle: this.employeeForm.get('title')?.value,
-    department: this.employeeForm.get('department')?.value,
-    level: this.employeeForm.get('level')?.value,
-    employmentType: this.employeeForm.get('employmentType')?.value,
-    supervisor: this.employeeForm.get('supervisor')?.value,
-    bankName: this.employeeForm.get('bankName')?.value,
-    accountNumber: this.employeeForm.get('accountNumber')?.value,
-    nin: this.employeeForm.get('nin')?.value,
-    bvn: this.employeeForm.get('bvn')?.value,
-    nextOfKin: [...this.nextOfKinList],
-    guarantor: [... this.guarantorList],
-    hireDate: formattedDate,
-    profileImage: this.imageURL, 
-    leaveDetails: {
-      assignedLeaves: 20,
-      usedLeaves: 0,
-      leavesRemaining: 20,
-      leavesSpent: [
-      ]
-    },
-    attendance: {
-      year: currentYear,
-      daysPresent: 1,
-      daysAbsent: 0,
-      lateArrivals: 0,
-      overtimeHours: 0,
-      lastPresent: formattedDate,
-      day2DayAttendance: [
-        {
-          date: formattedDate,
-          clockIn: "9:00 AM",
-          clockOut: "5:00 PM",
-          comment: "First day in"
-        },
-      ]
-    }
-  }
-  employeesList.push(newEmployee);
 
-  localStorage.setItem("employeesList", JSON.stringify(employeesList));
-  this.loading = false;
-  this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Employee added successfully!' }); 
-  this.basicForm.reset()
-  this.guarantorForm.reset()
-  this.NOKForm.reset()
-  this.employeeForm.reset()
-  this.nextOfKinList = []
-  this.guarantorList = []
-  this.imageURL =''
-  this.fileDataUrl =''
-  this.currentTab = 1
+  
+  const employeeIndex = employeesList.findIndex((emp: { id: string; }) => emp.id === this.employeeId);
+  
+  if (employeeIndex !== -1) {
+    const existingEmployee = employeesList[employeeIndex];
+
+    // Update employee details with form values
+    existingEmployee.dob = this.basicForm.get('DOB')?.value,
+    existingEmployee.phone= this.basicForm.get('phone')?.value,
+    existingEmployee.maritalStatus= this.basicForm.get('maritalStatus')?.value,
+    existingEmployee.religion= this.basicForm.get('religion')?.value,
+    existingEmployee.address= this.basicForm.get('address')?.value,
+    existingEmployee.gender= this.basicForm.get('gender')?.value,
+    existingEmployee.bankName = this.employeeForm.get('bankName')?.value;
+    existingEmployee.accountNumber = this.employeeForm.get('accountNumber')?.value;
+    existingEmployee.nin = this.employeeForm.get('nin')?.value;
+    existingEmployee.bvn = this.employeeForm.get('bvn')?.value;
+    existingEmployee.nextOfKin = [...this.nextOfKinList];
+    existingEmployee.guarantor = [...this.guarantorList];
+    existingEmployee.profileImage = this.imageURL;
+    // existingEmployee.leaveDetails = {
+    //   assignedLeaves: 20,
+    //   usedLeaves: 0,
+    //   leavesRemaining: 20,
+    //   leavesSpent: []
+    // };
+    // existingEmployee.attendance = {
+    //   year: currentYear,
+    //   daysPresent: 1,
+    //   daysAbsent: 0,
+    //   lateArrivals: 0,
+    //   overtimeHours: 0,
+    //   lastPresent: formattedDate,
+    //   day2DayAttendance: [{
+    //     date: formattedDate,
+    //     clockIn: "9:00 AM",
+    //     clockOut: "5:00 PM",
+    //     comment: "First day in"
+    //   }
+    // ]
+    // };
+
+    employeesList[employeeIndex] = existingEmployee;
+    localStorage.setItem("employeesList", JSON.stringify(employeesList));
+
+    this.loading = false;
+    this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Employee updated successfully!' });
+
+    this.basicForm.reset();
+    this.guarantorForm.reset();
+    this.NOKForm.reset();
+    this.employeeForm.reset();
+    this.nextOfKinList = [];
+    this.guarantorList = [];
+    this.imageURL = '';
+    this.fileDataUrl = '';
+    this.currentTab = 1;
+  } else {
+    this.loading = false;
+    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Employee not found!' });
+  }
 }
 
 
-  nextAndCreate() {
-  const signupDetails = {
-      username: this.basicForm.get('firstName')?.value,
-      password: this.basicForm.get('firstName')?.value,
-      email: this.basicForm.get('email')?.value,
-      role: ['user'],
-      project : `${environment.project}`,
-      apiKey : `${environment.apiKey}`
-  };
-
-  this.authenticationService.userRegistration(signupDetails).subscribe(
-    async (data) => {
-          this.loading = false;
-          this.messageService.add({ severity: 'success', summary: 'Success', detail: 'User account created successfully!' }); 
-          this.addNewEmployee()
-      },
-      (error) => {
-
-        if (error.toString() == '400') {
-          // Client-side validation error (invalid input)
-          this.messageService.add({ 
-              severity: 'error', 
-              summary: 'Registration Failed', 
-              detail: 'Account with email address already exists. Check your mail to verify!' 
-          });
-      } else if (error.toString() == '409') {
-          // Conflict error (e.g., email already registered)
-          this.messageService.add({ 
-              severity: 'error', 
-              summary: 'Registration Failed', 
-              detail: 'Email address is already registered. Please use a different email or login.' 
-          });
-      } else if (error.toString() == '0') {
-          // Network error or server unreachable
-          this.messageService.add({ 
-              severity: 'error', 
-              summary: 'Registration Failed', 
-              detail: 'Unable to connect to the server. Please check your internet connection.' 
-          });
-      } else {
-          // Other server errors
-          this.messageService.add({ 
-              severity: 'error', 
-              summary: 'Registration Failed', 
-              detail: 'An unexpected error occurred. Please try again later.' 
-          });
-      }
-          this.loading = false;
-      }
-  );
-  }
+ 
   addNextOfKin() {
     if (this.NOKForm.valid) {
       this.nextOfKinList.push(this.NOKForm.value);
@@ -479,7 +438,7 @@ addNewEmployee(){
   }
 
   deleteGuarantor(index: number) {
-    if (confirm('Are you sure you want to remove this guarantoor?')) {
+    if (confirm('Are you sure you want to remove this guarantor?')) {
       this.guarantorList.splice(index, 1); 
     }
   }
