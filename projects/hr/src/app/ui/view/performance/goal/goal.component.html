@@ -1,0 +1,185 @@
+<div class="flex min-h-screen p-15">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-white rounded-lg p-5 shadow-md text-lg mr-1">
+    <ul>
+      <li
+        class="flex items-center justify-between p-5 text-gray-800 hover:bg-gray-100 rounded-lg"
+      >
+        <span class="text-lg">All</span>
+        <span class="text-gray-500 bg-gray-200 rounded-full px-2">{{
+          filteredGoals.length
+        }}</span>
+      </li>
+      <li
+        class="flex items-center justify-between p-5 text-gray-800 hover:bg-gray-100 rounded-lg"
+      >
+        <span>Created</span>
+        <span class="text-gray-500 bg-gray-200 rounded-full px-2">
+          {{ getGoalsByStatus("Pending").length }}
+        </span>
+      </li>
+      <li
+        class="flex items-center justify-between p-5 text-gray-800 hover:bg-gray-100 rounded-lg"
+      >
+        <span>In Progress</span>
+        <span class="text-gray-500 bg-gray-200 rounded-full px-2">
+          {{ getGoalsByStatus("In Progress").length }}
+        </span>
+      </li>
+      <li
+        class="flex items-center justify-between p-5 text-gray-800 hover:bg-gray-100 rounded-lg"
+      >
+        <span>Completed</span>
+        <span class="text-gray-500 bg-gray-200 rounded-full px-2">
+          {{ getGoalsByStatus("Completed").length }}
+        </span>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="flex-1">
+    <div class="card">
+      <p-toolbar styleClass="mb-4 gap-2">
+        <ng-template pTemplate="right">
+          <app-button
+            (click)="navigateToCreateGoal()"
+            text="Add Goal"
+            class="btn-navigate gap-2"
+          ></app-button>
+        </ng-template>
+
+        <ng-template pTemplate="left">
+          <div class="flex w-full justify-between gap-4 px-3">
+            <div class="flex gap-4 w-1/1">
+              <div class="w-[100%]">
+                <ng-select
+                  [items]="statusOptions"
+                  [multiple]="true"
+                  placeholder="Filter by status"
+                  [(ngModel)]="selectedStatus"
+                  (ngModelChange)="filterGoals()"
+                >
+                </ng-select>
+              </div>
+            </div>
+            <div class="search-bar w-[100%]">
+              <input
+                type="text"
+                placeholder="Search goals"
+                [(ngModel)]="searchTerm"
+                (ngModelChange)="filterGoals()"
+                class="editInput w-full"
+              />
+            </div>
+          </div>
+        </ng-template>
+      </p-toolbar>
+
+      <p-table
+        [value]="filteredGoals"
+        [paginator]="true"
+        [rows]="10"
+        styleClass="p-datatable-gridlines"
+        [tableStyle]="{ 'min-width': '50rem' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Goal Name</th>
+            <th>Assigned To</th>
+            <th>Start Date</th>
+            <th>Due Date</th>
+            <th>Priority</th>
+            <th>Progress Status</th>
+            <th>Actions</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-goal>
+          <tr>
+            <td>{{ goal.goalName }}</td>
+            <td>{{ goal.assignedTo }}</td>
+            <td>{{ goal.startDate | date }}</td>
+            <td>{{ goal.endDate | date }}</td>
+            <td>
+              <span [class]="getPriorityBadgeClass(goal.priority)">
+                {{ goal.priority }}
+              </span>
+            </td>
+            <td>
+              <span [class]="getStatusBadgeClass(goal.progressStatus)">
+                {{ goal.progressStatus }}
+              </span>
+            </td>
+            <td>
+              <div class="flex gap-2">
+                <button
+                  pButton
+                  icon="pi pi-eye"
+                  class="p-button-rounded p-button-text"
+                  (click)="viewGoal(goal)"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-pencil"
+                  class="p-button-rounded p-button-text p-button-success"
+                  (click)="editGoal(goal)"
+                ></button>
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  class="p-button-rounded p-button-text p-button-danger"
+                  (click)="deleteGoal(goal)"
+                ></button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="7" class="text-center p-4">No goals found</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- View Goal Modal -->
+    <p-dialog
+      [(visible)]="viewModalVisible"
+      [style]="{ width: '50vw' }"
+      [modal]="true"
+      header="Goal Details"
+    >
+      <div *ngIf="selectedGoal" class="p-4 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <h3 class="font-semibold">Goal Name</h3>
+            <p>{{ selectedGoal.goalName }}</p>
+          </div>
+          <div>
+            <h3 class="font-semibold">Assigned To</h3>
+            <p>{{ selectedGoal.assignedTo }}</p>
+          </div>
+          <div>
+            <h3 class="font-semibold">Description</h3>
+            <p>{{ selectedGoal.goalDescription }}</p>
+          </div>
+          <div>
+            <h3 class="font-semibold">Target Metrics</h3>
+            <p>{{ selectedGoal.targetMetrics }}</p>
+          </div>
+          <div>
+            <h3 class="font-semibold">Actual Metrics</h3>
+            <p>{{ selectedGoal.actualMetrics || "Not yet recorded" }}</p>
+          </div>
+          <div>
+            <h3 class="font-semibold">Timeline</h3>
+            <p>
+              {{ selectedGoal.startDate | date }} -
+              {{ selectedGoal.endDate | date }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </p-dialog>
+  </div>
+</div>
