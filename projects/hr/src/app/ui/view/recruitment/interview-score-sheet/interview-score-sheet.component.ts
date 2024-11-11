@@ -11,17 +11,12 @@ import { MessageService } from 'primeng/api';
 })
 export class InterviewScoreSheetComponent implements OnInit {
   @Output() back = new EventEmitter<void>();
-  // @Input() interview: any; // Ensure this input property is set
   @Output() submitFrom = new EventEmitter<any>();
   @Input() candidate: any;
-  // questions: QuestionDTO[] = [];
   interviewer: any = {};
-  // candidate:any = {}
-  // allCriteria: QuestionDTO[] = [];
   criteriaScore: QuestionDTO= {};
   selectedCriterias: QuestionItemDTO[] = [];
   userId: any;
-
   allCriteria: QuestionDTO[] = [
     {
       id: 'ertyu',
@@ -187,53 +182,115 @@ export class InterviewScoreSheetComponent implements OnInit {
   //   }
   // }
   
-  submitForm(): void {
-    // Calculate the total score before saving
-    const total = this.calculateTotalScore();
-    console.log('Total Score:', total);
-  
-    // Find the selected criteria based on the selected questions
-    const selectedCriteria = this.allCriteria.find(criteria => 
-      criteria.questions === this.selectedCriterias
+//   submitForm(): void {
+//   // Calculate the total score before saving
+//   const total = this.calculateTotalScore();
+//   console.log('Total Score:', total);
+
+//   // Find the selected criteria based on the selected questions
+//   const selectedCriteria = this.allCriteria.find(criteria => 
+//     criteria.questions === this.selectedCriterias
+//   );
+
+//   if (selectedCriteria) {
+//     const savedData = localStorage.getItem('submittedCriteria');
+//     const submittedCriteria = savedData ? JSON.parse(savedData) : [];
+
+//     // Check if the selected criteria has already been submitted
+//     const isAlreadySubmitted = submittedCriteria.some(
+//       (criteria: QuestionDTO) => criteria.id === selectedCriteria.id
+//     );
+
+//     if (isAlreadySubmitted) {
+//       // Show a message if the criteria has been submitted before
+//       this.messageService.add({
+//         severity: 'warn',
+//         summary: 'Duplicate Submission',
+//         detail: 'This scoresheet has already been submitted.'
+//       });
+//     } else {
+//       // Save the new selected criteria to localStorage
+//       submittedCriteria.push(selectedCriteria);
+//       localStorage.setItem('submittedCriteria', JSON.stringify(submittedCriteria));
+
+//       console.log('Selected criteria saved to localStorage:', selectedCriteria);
+
+//       this.messageService.add({
+//         severity: 'success',
+//         summary: 'Submission Successful',
+//         detail: 'Selected scoresheet submitted and saved successfully.'
+//       });
+//     }
+//   } else {
+//     // Error handling if no criteria is selected
+//     this.messageService.add({
+//       severity: 'error',
+//       summary: 'Submission Failed',
+//       detail: 'No criteria selected. Please select and try again.'
+//     });
+//   }
+// }
+
+
+submitForm(): void {
+  // Calculate the total score before saving
+  const total = this.calculateTotalScore();
+  console.log('Total Score:', total);
+
+  // Find the selected criteria based on the selected questions
+  const selectedCriteria = this.allCriteria.find(criteria => 
+    criteria.questions === this.selectedCriterias
+  );
+
+  if (selectedCriteria) {
+    // Get the saved submissions from localStorage, or initialize an empty array if none exist
+    const savedData = localStorage.getItem('submittedCriteria');
+    const submittedCriteria = savedData ? JSON.parse(savedData) : [];
+
+    // Check if the criteria has already been submitted by this candidate
+    const isAlreadySubmitted = submittedCriteria.some(
+      (submission: any) => submission.candidateId === this.candidate.id && submission.criteriaId === selectedCriteria.id
     );
-  
-    if (selectedCriteria) {
-      const savedData = localStorage.getItem('submittedCriteria');
-      const submittedCriteria = savedData ? JSON.parse(savedData) : [];
-  
-      // Check if the selected criteria has already been submitted
-      const isAlreadySubmitted = submittedCriteria.some(
-        (criteria: QuestionDTO) => criteria.id === selectedCriteria.id
-      );
-  
-      if (isAlreadySubmitted) {
-        // Show a message if the criteria has been submitted before
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Duplicate Submission',
-          detail: 'This scoresheet has already been submitted.'
-        });
-      } else {
-        // Save the new selected criteria to localStorage
-        submittedCriteria.push(selectedCriteria);
-        localStorage.setItem('submittedCriteria', JSON.stringify(submittedCriteria));
-  
-        console.log('Selected criteria saved to localStorage:', selectedCriteria);
-  
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Submission Successful',
-          detail: 'Selected scoresheet submitted and saved successfully.'
-        });
-      }
-    } else {
-      // Error handling if no criteria is selected
+
+    if (isAlreadySubmitted) {
+      // Show a message if the criteria has already been submitted for this candidate
       this.messageService.add({
-        severity: 'error',
-        summary: 'Submission Failed',
-        detail: 'No criteria selected. Please select and try again.'
+        severity: 'warn',
+        summary: 'Duplicate Submission',
+        detail: 'This scoresheet has already been submitted for this candidate.'
+      });
+    } else {
+      // Save the new selected criteria to localStorage along with the candidate info
+      submittedCriteria.push({
+        candidateId: this.candidate.id,
+        criteriaId: selectedCriteria.id,
+        submittedAt: new Date().toISOString(),
+        criteria: selectedCriteria
+      });
+      
+      // Save the updated list to localStorage
+      localStorage.setItem('submittedCriteria', JSON.stringify(submittedCriteria));
+
+      console.log('Selected criteria saved to localStorage:', selectedCriteria);
+      console.log('-------------------')
+      console.log('submitted criteria saved to localStorage:', submittedCriteria);
+
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Submission Successful',
+        detail: 'Selected scoresheet submitted and saved successfully.'
       });
     }
+  } else {
+    // Error handling if no criteria is selected
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Submission Failed',
+      detail: 'No criteria selected. Please select and try again.'
+    });
   }
-  
+}
+
+
 }
