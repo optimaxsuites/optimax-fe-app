@@ -11,8 +11,8 @@ import { GoalComponent } from './goal/goal.component';
 })
 export class PerformanceComponent {
   tabsConfig: TabConfig[] = [
-    { name: 'Appraisal List', component: AppraisallistComponent },
-    { name: 'Appraisal Cycle', component: AppraisalcycleComponent },
-    { name: 'Goal', component: GoalComponent },
+    { name: ' Assessment List', component: AppraisallistComponent },
+    { name: ' Assessment Cycle', component: AppraisalcycleComponent },
+    { name: 'Target', component: GoalComponent },
   ];
 }

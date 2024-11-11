@@ -5,4 +5,25 @@
 
     </div>
 </div>
-<div *ngIf="onboardingStatus == 'completed'"></div>
+<div *ngIf="onboardingStatus == 'completed'">
+    <div *ngFor="let kin of employeeInView.guarantor; let i =index"  class="flex flex-col gap-2">
+        <!-- <p class="my-2 text-[15px]">Guarantor {{i+1}}</p> -->
+        <p *ngFor="let key of getKeys(kin)">
+          <strong>{{ toTitleCaseWithSpace(key) | titlecase }}:</strong>
+          <ng-container *ngIf="isFile(kin[key]); else textField">
+            <button (click)="previewFile(kin[key])" class="text-customGreen  text-nowrap text-[14px] ml-2">
+              View File
+            </button>
+          </ng-container>
+          
+          <ng-template #textField>
+            {{ kin[key] }}
+          </ng-template>
+        </p>
+      </div>
+
+
+      <app-modal *ngIf="showModal" (close)="closeModal()"  class="fixed top-0 left-0 w-full h-[100vh] bg-black/50 flex justify-center items-center">
+        <img [src]="fileDataUrl" class="w-full max-h-[80vh]"/>
+    </app-modal>
+</div>

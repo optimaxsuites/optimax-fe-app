@@ -130,8 +130,8 @@ import { MygoalComponent } from './ui/view/performance/mygoal/mygoal.component';
     MygoalComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
