@@ -7,5 +7,5 @@ export interface QuestionDTO {
 
 export interface QuestionItemDTO {
     text: string;
-    score?: number[] | null;  // Will store the selected score
+    score?: number | null;  // Will store the selected score
 }

@@ -15,10 +15,25 @@ export class InterviewScoreSheetComponent implements OnInit {
   // questions: QuestionDTO[] = [];
   interviewer: any = {};
   // candidate:any = {}
-  allCriteria: QuestionDTO[] = [];
+  // allCriteria: QuestionDTO[] = [];
   criteriaScore: QuestionDTO= {};
   selectedCriterias: QuestionItemDTO[] = [];
   userId: any;
+
+  allCriteria: QuestionDTO[] = [
+    {
+      id: 'ertyu',
+      title: 'Technical Skills',
+      questions: [
+        { text: 'Rate the candidate’s proficiency in coding.', score: undefined },
+        { text: 'Evaluate problem-solving skills.', score: undefined },
+        { text: 'Assess knowledge of system design.', score: undefined },
+        { text: 'Rate familiarity with algorithms.', score: undefined },
+        { text: 'Evaluate debugging capabilities.', score: undefined },
+      ],
+      totalScore: 50
+    }
+  ];
 
 
   constructor(
@@ -98,7 +113,7 @@ export class InterviewScoreSheetComponent implements OnInit {
 
 
     this.totalScoreOver100 = (sumOfScores / maximumScore) * 100; 
-    console.log("totalsore------",this.criteriaScore.totalScore )
+    console.log("totalsore------",this.totalScoreOver100)
 
     return this.totalScoreOver100; 
 }
@@ -108,15 +123,21 @@ export class InterviewScoreSheetComponent implements OnInit {
     this.calculateTotalScore();
   }
 
-  // Method to handle form submission or display total score
   submitForm(): void {
+    // Calculate the total score before saving
     const total = this.calculateTotalScore();
     console.log('Total Score:', total);
-    console.log('new criterial:', this.allCriteria);
-    // You can display the total score or perform other actions as needed
-
-    // this.submitFrom.emit();
+  
+    // Save allCriteria as an array in localStorage under the key 'allQuestions'
+    const allQuestions = [...this.allCriteria]; // Ensure it's an array
+    localStorage.setItem('allQuestions', JSON.stringify(allQuestions));
+  
+    console.log('New criteria saved to localStorage:', allQuestions);
+  
+    // Optional: Show a success message or handle post-save actions
+    alert('Criteria saved successfully!');
   }
+  
 
 
 }
