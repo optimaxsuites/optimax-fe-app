@@ -1,11 +1,13 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { QuestionDTO, QuestionItemDTO } from '../../../domain/questions.dto';
 import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-interview-score-sheet',
   templateUrl: './interview-score-sheet.component.html',
-  styleUrl: './interview-score-sheet.component.scss'
+  styleUrl: './interview-score-sheet.component.scss',
+  providers: [MessageService]
 })
 export class InterviewScoreSheetComponent implements OnInit {
   @Output() back = new EventEmitter<void>();
@@ -31,13 +33,26 @@ export class InterviewScoreSheetComponent implements OnInit {
         { text: 'Rate familiarity with algorithms.', score: undefined },
         { text: 'Evaluate debugging capabilities.', score: undefined },
       ],
-      totalScore: 50
+      totalScore: undefined
+    },
+    {
+      id: '8908',
+      title: 'Mental Skills',
+      questions: [
+        { text: 'Evaluate verbal communication.', score: undefined },
+        { text: 'Assess written communication.', score: undefined },
+        { text: 'Rate clarity of expression.', score: undefined },
+        { text: 'Assess active listening skills.', score: undefined },
+        { text: 'Evaluate ability to explain complex ideas.', score: undefined },
+      ],
+      totalScore: undefined
     }
   ];
 
 
   constructor(
     private authenticationService: AuthenticationService,
+    private messageService: MessageService,
   ) {}
 
   ngOnInit(): void {
@@ -134,10 +149,11 @@ export class InterviewScoreSheetComponent implements OnInit {
   
     console.log('New criteria saved to localStorage:', allQuestions);
   
-    // Optional: Show a success message or handle post-save actions
-    alert('Criteria saved successfully!');
+    this.messageService.add({
+      severity: 'success', 
+      summary: 'Success',
+      detail: 'Scoresheet submitted successfully.' 
+    }); 
   }
   
-
-
 }
