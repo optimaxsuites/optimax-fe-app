@@ -58,9 +58,7 @@ interface Overtime {
 
 })
 export class EmployeeManagementComponent {
-  closeAddForm() {
-    this.openAddForm = false;
-  }
+  
   tabsConfig: TabConfig[] = [
     { name: 'Basic Information', component: ViewEmployeeComponent, role: 'ROLE_ADMIN' },
     { name: 'Next of Kin Information', component:  EmployeeNokComponent, role: 'ROLE_ADMIN' },
@@ -547,6 +545,11 @@ handleDateClick(arg: DateClickArg) {
   }
   ngOnInit() {
 
+   this.fetchEmployees()
+
+  }
+
+  fetchEmployees(){
     const employeesFromStorage = localStorage.getItem("employeesList");
     const salaryStructureFromStorage = localStorage.getItem("salaryStructure");
     if (salaryStructureFromStorage) {
@@ -638,6 +641,11 @@ handleDateClick(arg: DateClickArg) {
 
     }
   }
+  }
+
+  closeAddForm() {
+    this.openAddForm = false;
+   this.fetchEmployees()
 
   }
   generateLeaveEvents(leaveDetails: { leavesSpent: any[]; }) {

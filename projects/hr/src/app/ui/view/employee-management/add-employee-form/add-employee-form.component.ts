@@ -290,6 +290,7 @@ export class AddEmployeeFormComponent {
     this.employeeForm.markAllAsTouched()
     if(this.employeeForm.invalid) return
   }
+
     if (this.currentTab < 5) {
       this.currentTab++;
     }
@@ -302,6 +303,9 @@ export class AddEmployeeFormComponent {
     this.nextTab()
   }
   nextTabFromGuarantor(){
+    console.log(this.guarantorForm.value)
+
+    
     this.guarantorForm.markAllAsTouched()
     if(this.guarantorForm.valid) {
     this.addGuarantor()
@@ -320,6 +324,7 @@ export class AddEmployeeFormComponent {
   this.addNewEmployee()
   }
 addNewEmployee(){
+  console.log(this.guarantorList)
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
   const formattedDate = currentDate.toISOString().split('T')[0];
@@ -368,8 +373,9 @@ addNewEmployee(){
     //   }
     // ]
     // };
-
+console.log(existingEmployee)
     employeesList[employeeIndex] = existingEmployee;
+    console.log(employeesList)
     localStorage.setItem("employeesList", JSON.stringify(employeesList));
 
     this.loading = false;
@@ -413,12 +419,33 @@ addNewEmployee(){
   }
   addGuarantor() {
     if (this.guarantorForm.valid) {
-      this.guarantorList.push(this.guarantorForm.value);
-
-      this.guarantorForm.reset(); 
-    } else {
+      const guarantor = { ...this.guarantorForm.value };
+  
+      // Convert files to base64 if they are present
+      this.convertFileToBase64(guarantor.signature).then(base64 => guarantor.signature = base64);
+      this.convertFileToBase64(guarantor.passportPhoto).then(base64 => guarantor.passportPhoto = base64);
+      this.convertFileToBase64(guarantor.idCard).then(base64 => guarantor.idCard = base64);
+  
+      // Push to the guarantorList
+      this.guarantorList.push(guarantor);
+  
+      // Reset the form
+      this.guarantorForm.reset();
     }
   }
+  convertFileToBase64(file: File | null): Promise<string | null> {
+    return new Promise((resolve, reject) => {
+      if (!file) {
+        resolve(null);
+      } else {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = error => reject(error);
+      }
+    });
+  }
+  
   editGuarantor(index: number) {
     const guarantor = this.guarantorList[index];
     this.guarantorForm.patchValue({
@@ -449,9 +476,9 @@ addNewEmployee(){
       const file = input.files[0];
      console.log(`${controlName} file:`, file);
       this.guarantorForm.patchValue({ [controlName]: file }); 
+
       this.guarantorForm.get(controlName)?.updateValueAndValidity();
 
-console.log(this.guarantorForm.value)
     }
   }
   onProfilePhotoChange(event: Event, controlName: string) {
@@ -480,7 +507,7 @@ console.log(this.guarantorForm.value)
       .replace(/^./, str => str.toUpperCase());
   }
   isFile(value: any): boolean {
-    return value instanceof File;
+    return typeof value === 'string' && value.startsWith('data:image/');
   }
 
   openFileInModal(fileUrl: string) {
@@ -493,17 +520,12 @@ console.log(this.guarantorForm.value)
     this.fileDataUrl = '';
   }
 
-  previewFile(file: File) {
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event: any) => {
-        
-          this.fileDataUrl = event.target.result;
-         
-          this.showModal = true;           
-      };
-      reader.readAsDataURL(file);
-  }
+  previewFile(fileUrl: string) {
+    if (fileUrl) {
+      this.fileDataUrl = fileUrl;
+      this.showModal = true;
+    }
+  
   }
 
   previewImageFile(file: File){
