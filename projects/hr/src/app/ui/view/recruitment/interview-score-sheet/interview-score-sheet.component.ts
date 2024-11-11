@@ -138,22 +138,54 @@ export class InterviewScoreSheetComponent implements OnInit {
     this.calculateTotalScore();
   }
 
+  // submitForm(): void {
+  //   // Calculate the total score before saving
+  //   const total = this.calculateTotalScore();
+  //   console.log('Total Score:', total);
+  
+  //   // Save allCriteria as an array in localStorage under the key 'allQuestions'
+  //   const allQuestions = [...this.allCriteria]; // Ensure it's an array
+  //   localStorage.setItem('interviewScoreSheet', JSON.stringify(allQuestions));
+  
+  //   console.log('New criteria saved to localStorage:', allQuestions);
+  
+  //   this.messageService.add({
+  //     severity: 'success', 
+  //     summary: 'Success',
+  //     detail: 'Scoresheet submitted successfully.' 
+  //   }); 
+  // }
+
   submitForm(): void {
     // Calculate the total score before saving
     const total = this.calculateTotalScore();
     console.log('Total Score:', total);
   
-    // Save allCriteria as an array in localStorage under the key 'allQuestions'
-    const allQuestions = [...this.allCriteria]; // Ensure it's an array
-    localStorage.setItem('interviewScoreSheet', JSON.stringify(allQuestions));
+    // Find the selected criteria based on the selected questions
+    const selectedCriteria = this.allCriteria.find(criteria => 
+      criteria.questions === this.selectedCriterias
+    );
   
-    console.log('New criteria saved to localStorage:', allQuestions);
-  
-    this.messageService.add({
-      severity: 'success', 
-      summary: 'Success',
-      detail: 'Scoresheet submitted successfully.' 
-    }); 
+    if (selectedCriteria) {
+      // Save only the selected criteria to localStorage
+      localStorage.setItem('interviewScoreSheet', JSON.stringify(selectedCriteria));
+      console.log('Selected criteria saved to localStorage:', selectedCriteria);
+    
+      // Success message
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Submission Successful',
+        detail: 'Selected scoresheet submitted and saved successfully.'
+      });
+    } else {
+      // Error handling if no criteria is selected
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Submission Failed',
+        detail: 'No criteria selected. Please select and try again.'
+      });
+    }
   }
+  
   
 }
