@@ -145,7 +145,7 @@ export class InterviewScoreSheetComponent implements OnInit {
   
     // Save allCriteria as an array in localStorage under the key 'allQuestions'
     const allQuestions = [...this.allCriteria]; // Ensure it's an array
-    localStorage.setItem('allQuestions', JSON.stringify(allQuestions));
+    localStorage.setItem('interviewScoreSheet', JSON.stringify(allQuestions));
   
     console.log('New criteria saved to localStorage:', allQuestions);
   
