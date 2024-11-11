@@ -5,18 +5,21 @@
 
     </div>
 </div>
-<div *ngIf="onboardingStatus == 'completed'">
-    <div *ngFor="let kin of employeeInView.guarantor; let i =index"  class="flex flex-col gap-2">
-        <!-- <p class="my-2 text-[15px]">Guarantor {{i+1}}</p> -->
-        <p *ngFor="let key of getKeys(kin)">
-          <strong>{{ toTitleCaseWithSpace(key) | titlecase }}:</strong>
+<div *ngIf="onboardingStatus == 'completed'" class="grid grid-cols-2 gap-3">
+    <div *ngFor="let kin of employeeInView.guarantor; let i =index"  class="flex flex-col gap-2 bg-white shadow-sm rounded-xl">
+        <p class="text-gray-50 font-semibold text-lg text-center py-2 bg-customBlue w-36 rounded-tl-xl rounded-br-xl">Guarantor {{i+1}}</p>
+        <p *ngFor="let key of getKeys(kin)" class="ml-1 font-normal text-customBlue pt-2 px-3">
+          <strong >{{ toTitleCaseWithSpace(key) | titlecase }}:</strong>
           <ng-container *ngIf="isFile(kin[key]); else textField">
-            <button (click)="previewFile(kin[key])" class="text-customGreen  text-nowrap text-[14px] ml-2">
-              View File
+            <button (click)="previewFile(kin[key])" class="text-customGreen  text-nowrap text-[12px] ml-2">
+              View
             </button>
+            <a [href]="kin[key]" download="{{employeeInView.firstName}}-guarantor-{{i+1}}-{{key}}.png" class="text-customGreen no-underline text-nowrap text-[12px] ml-2">
+              Download
+            </a>
           </ng-container>
           
-          <ng-template #textField>
+          <ng-template #textField class="font-bold text-customBlue/70">
             {{ kin[key] }}
           </ng-template>
         </p>
