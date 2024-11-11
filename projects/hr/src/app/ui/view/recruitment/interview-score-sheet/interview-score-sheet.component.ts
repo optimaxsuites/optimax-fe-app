@@ -156,37 +156,6 @@ export class InterviewScoreSheetComponent implements OnInit {
   //   }); 
   // }
 
-  // submitForm(): void {
-  //   // Calculate the total score before saving
-  //   const total = this.calculateTotalScore();
-  //   console.log('Total Score:', total);
-  
-  //   // Find the selected criteria based on the selected questions
-  //   const selectedCriteria = this.allCriteria.find(criteria => 
-  //     criteria.questions === this.selectedCriterias
-  //   );
-  
-  //   if (selectedCriteria) {
-  //     // Save only the selected criteria to localStorage
-  //     localStorage.setItem('interviewScoreSheet', JSON.stringify(selectedCriteria));
-  //     console.log('Selected criteria saved to localStorage:', selectedCriteria);
-    
-  //     // Success message
-  //     this.messageService.add({
-  //       severity: 'success',
-  //       summary: 'Submission Successful',
-  //       detail: 'Selected scoresheet submitted and saved successfully.'
-  //     });
-  //   } else {
-  //     // Error handling if no criteria is selected
-  //     this.messageService.add({
-  //       severity: 'error',
-  //       summary: 'Submission Failed',
-  //       detail: 'No criteria selected. Please select and try again.'
-  //     });
-  //   }
-  // }
-  
   submitForm(): void {
     // Calculate the total score before saving
     const total = this.calculateTotalScore();
@@ -198,34 +167,16 @@ export class InterviewScoreSheetComponent implements OnInit {
     );
   
     if (selectedCriteria) {
-      const savedData = localStorage.getItem('submittedCriteria');
-      const submittedCriteria = savedData ? JSON.parse(savedData) : [];
-  
-      // Check if the selected criteria has already been submitted
-      const isAlreadySubmitted = submittedCriteria.some(
-        (criteria: QuestionDTO) => criteria.id === selectedCriteria.id
-      );
-  
-      if (isAlreadySubmitted) {
-        // Show a message if the criteria has been submitted before
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Duplicate Submission',
-          detail: 'This scoresheet has already been submitted.'
-        });
-      } else {
-        // Save the new selected criteria to localStorage
-        submittedCriteria.push(selectedCriteria);
-        localStorage.setItem('submittedCriteria', JSON.stringify(submittedCriteria));
-  
-        console.log('Selected criteria saved to localStorage:', selectedCriteria);
-  
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Submission Successful',
-          detail: 'Selected scoresheet submitted and saved successfully.'
-        });
-      }
+      // Save only the selected criteria to localStorage
+      localStorage.setItem('interviewScoreSheet', JSON.stringify(selectedCriteria));
+      console.log('Selected criteria saved to localStorage:', selectedCriteria);
+    
+      // Success message
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Submission Successful',
+        detail: 'Selected scoresheet submitted and saved successfully.'
+      });
     } else {
       // Error handling if no criteria is selected
       this.messageService.add({
@@ -235,5 +186,54 @@ export class InterviewScoreSheetComponent implements OnInit {
       });
     }
   }
+  
+  // submitForm(): void {
+  //   // Calculate the total score before saving
+  //   const total = this.calculateTotalScore();
+  //   console.log('Total Score:', total);
+  
+  //   // Find the selected criteria based on the selected questions
+  //   const selectedCriteria = this.allCriteria.find(criteria => 
+  //     criteria.questions === this.selectedCriterias
+  //   );
+  
+  //   if (selectedCriteria) {
+  //     const savedData = localStorage.getItem('submittedCriteria');
+  //     const submittedCriteria = savedData ? JSON.parse(savedData) : [];
+  
+  //     // Check if the selected criteria has already been submitted
+  //     const isAlreadySubmitted = submittedCriteria.some(
+  //       (criteria: QuestionDTO) => criteria.id === selectedCriteria.id
+  //     );
+  
+  //     if (isAlreadySubmitted) {
+  //       // Show a message if the criteria has been submitted before
+  //       this.messageService.add({
+  //         severity: 'warn',
+  //         summary: 'Duplicate Submission',
+  //         detail: 'This scoresheet has already been submitted.'
+  //       });
+  //     } else {
+  //       // Save the new selected criteria to localStorage
+  //       submittedCriteria.push(selectedCriteria);
+  //       localStorage.setItem('submittedCriteria', JSON.stringify(submittedCriteria));
+  
+  //       console.log('Selected criteria saved to localStorage:', selectedCriteria);
+  
+  //       this.messageService.add({
+  //         severity: 'success',
+  //         summary: 'Submission Successful',
+  //         detail: 'Selected scoresheet submitted and saved successfully.'
+  //       });
+  //     }
+  //   } else {
+  //     // Error handling if no criteria is selected
+  //     this.messageService.add({
+  //       severity: 'error',
+  //       summary: 'Submission Failed',
+  //       detail: 'No criteria selected. Please select and try again.'
+  //     });
+  //   }
+  // }
   
 }
