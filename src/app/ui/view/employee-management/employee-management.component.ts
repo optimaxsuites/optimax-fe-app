@@ -66,8 +66,6 @@ export class EmployeeManagementComponent {
     { name: 'Next of Kin Information', component:  EmployeeNokComponent, role: 'ROLE_ADMIN' },
     { name: 'Guarantor(s) Information', component:  EmployeeGuarantorComponent, role: 'ROLE_ADMIN' },
     { name: 'Offboarding', component:  EmployeeOffboardingComponent, role: 'ROLE_ADMIN' },
-
-    
   ];
   uniqueLevels: any;
   uniquePositions: any;
