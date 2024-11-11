@@ -247,9 +247,9 @@ submitForm(): void {
     const savedData = localStorage.getItem('submittedCriteria');
     const submittedCriteria = savedData ? JSON.parse(savedData) : [];
 
-    // Check if the criteria has already been submitted by this candidate
-    const isAlreadySubmitted = submittedCriteria.some(
-      (submission: any) => submission.candidateId === this.candidate.id && submission.criteriaId === selectedCriteria.id
+    // Check if the selected criteria has already been submitted for the candidate
+    const isAlreadySubmitted = submittedCriteria[this.candidate.id]?.some(
+      (criteria: any) => criteria.id === selectedCriteria.id
     );
 
     if (isAlreadySubmitted) {
@@ -260,10 +260,14 @@ submitForm(): void {
         detail: 'This scoresheet has already been submitted for this candidate.'
       });
     } else {
+
+      // Add the new selected criteria to the candidate's submission
+      if (!submittedCriteria[this.candidate.id]) {
+        submittedCriteria[this.candidate.id] = []; // Initialize the array if it doesn't exist
+      }
+
       // Save the new selected criteria to localStorage along with the candidate info
-      submittedCriteria.push({
-        candidateId: this.candidate.id,
-        criteriaId: selectedCriteria.id,
+      submittedCriteria[this.candidate.id].push({
         submittedAt: new Date().toISOString(),
         criteria: selectedCriteria
       });
