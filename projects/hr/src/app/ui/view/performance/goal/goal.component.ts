@@ -28,6 +28,7 @@ export class GoalComponent implements OnInit {
   statusOptions: string[] = ['Pending', 'In Progress', 'Completed'];
   viewModalVisible: boolean = false;
   selectedGoal: Goal | null = null;
+  openAddGoal: boolean = false;
 
   constructor(private router: Router, private messageService: MessageService) {}
 
@@ -73,7 +74,7 @@ export class GoalComponent implements OnInit {
   }
 
   getPriorityBadgeClass(priority: string): string {
-    const baseClasses = 'px-2 py-1 rounded-full text-xs font-semibold';
+    const baseClasses = 'px-2 py-1 rounded-full text-lg font-semibold';
     switch (priority.toLowerCase()) {
       case 'high':
         return `${baseClasses} bg-red-100 text-red-800`;
@@ -87,10 +88,10 @@ export class GoalComponent implements OnInit {
   }
 
   getStatusBadgeClass(status: string): string {
-    const baseClasses = 'px-2 py-1 rounded-full text-xs font-semibold';
+    const baseClasses = 'px-2 py-1 rounded-full text-lg font-semibold';
     switch (status.toLowerCase()) {
       case 'pending':
-        return `${baseClasses} bg-gray-100 text-gray-800`;
+        return `${baseClasses} bg-gray-100  text-gray-800`;
       case 'in progress':
         return `${baseClasses} bg-blue-100 text-blue-800`;
       case 'completed':
@@ -127,6 +128,7 @@ export class GoalComponent implements OnInit {
   }
 
   navigateToCreateGoal() {
-    this.router.navigate(['/mygoal']);
+    // this.router.navigate(['/mygoal']);
+    this.openAddGoal = !this.openAddGoal;
   }
 }

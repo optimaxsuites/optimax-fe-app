@@ -1,36 +1,55 @@
-<div class="flex min-h-screen p-15">
-  <!-- Sidebar -->
-  <aside class="w-64 bg-white rounded-lg p-5 shadow-md text-lg mr-1">
-    <ul>
+<div class="flex min-h-screen" *ngIf="openAddGoal == false">
+  <aside class="w-65 bg-white rounded-lg p-0 shadow-lg text-lg space-y-4">
+    <ul class="space-y-10 mt-10 mr-7">
       <li
-        class="flex items-center justify-between p-5 text-gray-800 hover:bg-gray-100 rounded-lg"
+        class="flex items-center justify-between mt-12 bg-blue-50 p-6 rounded-lg shadow-sm hover:bg-blue-100"
       >
-        <span class="text-lg">All</span>
-        <span class="text-gray-500 bg-gray-200 rounded-full px-2">{{
-          filteredGoals.length
-        }}</span>
+        <div class="flex items-center space-x-3">
+          <i class="text-blue-600 pi pi-list"></i>
+          <span class="text-blue-800 font-medium text-lg">All</span>
+        </div>
+        <span
+          class="bg-blue-200 text-blue-700 font-semibold ml-5 rounded-full px-3 py-1 text-lg"
+        >
+          {{ filteredGoals.length }}
+        </span>
       </li>
       <li
-        class="flex items-center justify-between p-5 text-gray-800 hover:bg-gray-100 rounded-lg"
+        class="flex items-center justify-between bg-green-50 p-6 rounded-lg shadow-sm hover:bg-green-100"
       >
-        <span>Created</span>
-        <span class="text-gray-500 bg-gray-200 rounded-full px-2">
+        <div class="flex items-center space-x-3">
+          <i class="text-green-600 pi pi-pencil"></i>
+          <span class="text-green-800 font-medium text-lg">Created</span>
+        </div>
+        <span
+          class="bg-green-200 text-green-700 ml-5 font-semibold rounded-full px-3 py-1 text-lg"
+        >
           {{ getGoalsByStatus("Pending").length }}
         </span>
       </li>
       <li
-        class="flex items-center justify-between p-5 text-gray-800 hover:bg-gray-100 rounded-lg"
+        class="flex items-center justify-between bg-yellow-50 p-6 rounded-lg shadow-sm hover:bg-yellow-100"
       >
-        <span>In Progress</span>
-        <span class="text-gray-500 bg-gray-200 rounded-full px-2">
+        <div class="flex items-center space-x-2">
+          <i class="text-yellow-600 pi pi-spinner"></i>
+          <span class="text-yellow-800 font-medium text-lg">In Progress</span>
+        </div>
+        <span
+          class="bg-yellow-200 text-yellow-700 font-semibold rounded-full px-3 py-1 text-lg"
+        >
           {{ getGoalsByStatus("In Progress").length }}
         </span>
       </li>
       <li
-        class="flex items-center justify-between p-5 text-gray-800 hover:bg-gray-100 rounded-lg"
+        class="flex items-center justify-between bg-purple-50 p-4 rounded-lg shadow-sm hover:bg-purple-100"
       >
-        <span>Completed</span>
-        <span class="text-gray-500 bg-gray-200 rounded-full px-2">
+        <div class="flex items-center space-x-2">
+          <i class="text-purple-600 pi pi-check"></i>
+          <span class="text-purple-800 font-medium text-lg">Completed</span>
+        </div>
+        <span
+          class="bg-purple-200 text-purple-700 font-semibold rounded-full px-3 py-1 text-lg"
+        >
           {{ getGoalsByStatus("Completed").length }}
         </span>
       </li>
@@ -85,32 +104,54 @@
       >
         <ng-template pTemplate="header">
           <tr>
-            <th>Goal Name</th>
-            <th>Assigned To</th>
-            <th>Start Date</th>
-            <th>Due Date</th>
-            <th>Priority</th>
-            <th>Progress Status</th>
-            <th>Actions</th>
+            <th class="table-item" pSortableColumn="RequestedDuration">
+              Goal Name
+            </th>
+            <th class="table-item" pSortableColumn="RequestedDuration">
+              Assigned To
+            </th>
+            <th class="table-item" pSortableColumn="RequestedDuration">
+              Start Date
+            </th>
+            <th class="table-item" pSortableColumn="RequestedDuration">
+              Due Date
+            </th>
+            <th class="table-item" pSortableColumn="RequestedDuration">
+              Priority
+            </th>
+            <th class="table-item" pSortableColumn="RequestedDuration">
+              Progress Status
+            </th>
+            <th class="table-item" pSortableColumn="RequestedDuration">
+              Actions
+            </th>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-goal>
           <tr>
-            <td>{{ goal.goalName }}</td>
-            <td>{{ goal.assignedTo }}</td>
-            <td>{{ goal.startDate | date }}</td>
-            <td>{{ goal.endDate | date }}</td>
-            <td>
+            <td class="table-item" pSortableColumn="RequestedDuration">
+              {{ goal.goalName }}
+            </td>
+            <td class="table-item" pSortableColumn="RequestedDuration">
+              {{ goal.assignedTo }}
+            </td>
+            <td class="table-item" pSortableColumn="RequestedDuration">
+              {{ goal.startDate | date }}
+            </td>
+            <td class="table-item" pSortableColumn="RequestedDuration">
+              {{ goal.endDate | date }}
+            </td>
+            <td class="table-item" pSortableColumn="RequestedDuration">
               <span [class]="getPriorityBadgeClass(goal.priority)">
                 {{ goal.priority }}
               </span>
             </td>
-            <td>
+            <td class="table-item" pSortableColumn="RequestedDuration">
               <span [class]="getStatusBadgeClass(goal.progressStatus)">
                 {{ goal.progressStatus }}
               </span>
             </td>
-            <td>
+            <td class="table-item" pSortableColumn="RequestedDuration">
               <div class="flex gap-2">
                 <button
                   pButton
@@ -182,4 +223,8 @@
       </div>
     </p-dialog>
   </div>
+</div>
+
+<div *ngIf="openAddGoal">
+  <app-mygoal (back)="navigateToCreateGoal()"></app-mygoal>
 </div>
