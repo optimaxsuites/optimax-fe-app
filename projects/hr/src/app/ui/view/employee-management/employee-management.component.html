@@ -1,38 +1,38 @@
 <div class="flex w-full justify-between gap-4 px-3 my-2 table-item">
-    <div class="flex gap-4 items-center">
-      <div class="w-full">
-        <ng-select
-          [items]="uniqueLevels"
-          bindLabel="position"
-          [multiple]="true"
-          placeholder="Filter by level type"
-          [(ngModel)]="selectedEmployeeType"
-          (ngModelChange)="filterBySelectedEmployeeType()">
-        </ng-select>
-      </div>
-
-      <div class="w-full">
-        <ng-select
-          [items]="uniquePositions"
-          bindLabel="position"
-          [multiple]="true"
-          placeholder="Filter by position"
-          [(ngModel)]="selectedPosition"
-          (ngModelChange)="filterBySelectedPosition()"
-          >
-        </ng-select>
-      </div>
-      <input
-      type="text"
-      placeholder="Search"
-      [(ngModel)]="searchTerm"
-      (ngModelChange)="applyFilters()"
-      class="editInput bg-gray-50 w-full outline-none"
-    />
+  <div class="flex gap-4 items-center">
+    <div class="w-full">
+      <ng-select
+        [items]="uniqueLevels"
+        bindLabel="position"
+        [multiple]="true"
+        placeholder="Filter by level type"
+        [(ngModel)]="selectedEmployeeType"
+        (ngModelChange)="filterBySelectedEmployeeType()">
+      </ng-select>
     </div>
-    <div class="flex items-end">
-        <Button  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3" (click)="openAddForm = true">Add new employee</Button>
-       </div>
+
+    <div class="w-full">
+      <ng-select
+        [items]="uniquePositions"
+        bindLabel="position"
+        [multiple]="true"
+        placeholder="Filter by position"
+        [(ngModel)]="selectedPosition"
+        (ngModelChange)="filterBySelectedPosition()"
+        >
+      </ng-select>
+    </div>
+    <input
+    type="text"
+    placeholder="Search"
+    [(ngModel)]="searchTerm"
+    (ngModelChange)="applyFilters()"
+    class="editInput bg-gray-50 w-full outline-none"
+  />
+  </div>
+  <div class="flex items-end">
+      <Button  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3" (click)="openAddForm = true">Add new employee</Button>
+     </div>
 </div>
 
 <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-8 p-8" >
@@ -44,14 +44,11 @@
     </div>
 </div>
 
-
 <app-large-side-modal *ngIf="viewEmployee" (close)="viewEmployee = false" class="flex flex-col gap-8 table-item">
-<!-- <app-view-employee [employeeInView]="employeeInView"></app-view-employee> -->
-<app-nav-tab [tabsConfig]="tabsConfig"></app-nav-tab>
+<app-nav-tab [tabsConfig]="tabsConfig"></app-nav-tab> 
 </app-large-side-modal>
 
 <app-large-side-modal *ngIf="openAddForm" (close)="closeAddForm()">
   <!-- <app-add-employee-form [close]="closeAddForm.bind(this)" [admin]="true"></app-add-employee-form> -->
    <app-admin-creation-form></app-admin-creation-form>
 </app-large-side-modal>
-  
