@@ -6,7 +6,7 @@ import { RfqModalComponent } from './ui/view/rfq-modal/rfq-modal.component';
 const routes: Routes = [
 
    {
-        path: '',
+        path: 'admin/purchase/:uuid',
         component: PurchasePageComponent,
       },
 
@@ -21,7 +21,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forChild(routes)],
   exports: [RouterModule]
 })
 export class AppRoutingModule { }

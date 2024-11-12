@@ -71,8 +71,8 @@ import { PurchasePageComponent } from './ui/view/purchase-page.component';
     PurchasePageComponent
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     CommonModule,
     AppRoutingModule,
     FormsModule,
