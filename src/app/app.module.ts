@@ -81,6 +81,10 @@ import { EmployeeNokComponent } from './ui/view/employee-management/employee-nok
 import { EmployeeOffboardingComponent } from './ui/view/employee-management/employee-offboarding/employee-offboarding.component';
 import { ViewEmployeeComponent } from './ui/view/employee-management/view-employee/view-employee.component';
 import { AdminCreationFormComponent } from './ui/view/employee-management/admin-creation-form/admin-creation-form.component';
+import { TargetComponent } from './ui/view/performance/target/target.component';
+import { TargetformComponent } from './ui/view/performance/targetform/targetform.component';
+
+
 
 @NgModule({
   declarations: [
