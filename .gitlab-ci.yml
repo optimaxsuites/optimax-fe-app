@@ -24,6 +24,6 @@ update_subtrees:
         - git remote set-url origin "https://gitlab.com/j2yemi/optimax_fe_app.git"
         - git push origin mod || echo "Failed to push changes"
 
-rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-      when: always
+    rules:
+        - if: '$CI_PIPELINE_SOURCE == "schedule"'
+          when: always
