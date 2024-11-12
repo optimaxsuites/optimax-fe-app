@@ -134,8 +134,8 @@ import { TargetformComponent } from './ui/view/performance/targetform/targetform
     TargetformComponent,
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
