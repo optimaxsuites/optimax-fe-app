@@ -61,19 +61,19 @@
             </tr>
             </ng-template>
     
-            <ng-template pTemplate="body" let-interview let-i="rowIndex">
+            <ng-template pTemplate="body" let-candidate let-i="rowIndex">
             <tr class="p-table-row">
-                <td><p-tableCheckbox [value]="interview" /></td>
-                <td class="table-item">{{ interview.candidateName }}</td>
-                <td class="table-item">{{ interview.email }}</td>
-                <td class="table-item">{{ interview.contactNo }}</td>
-                <td class="table-item">{{ interview.position }}</td>
-                <td class="table-item">{{ interview.dateApplied }}</td>
-                <td class="table-item">{{ interview.interviewType }}</td>
-                <td class="table-item">Interview {{ interview.interviewStage }}</td>
+                <td><p-tableCheckbox [value]="candidate" /></td>
+                <td class="table-item">{{ candidate.candidateName }}</td>
+                <td class="table-item">{{ candidate.email }}</td>
+                <td class="table-item">{{ candidate.contactNo }}</td>
+                <td class="table-item">{{ candidate.position }}</td>
+                <td class="table-item">{{ candidate.dateApplied }}</td>
+                <td class="table-item">{{ candidate.interviewType }}</td>
+                <td class="table-item">Interview {{ candidate.interviewStage }}</td>
                 <td class="table-item">
-                    <span [ngClass]="getStatusClass(interview.stage)">
-                      {{ interview.stage }} 
+                    <span [ngClass]="getStatusClass(candidate.stage)">
+                      {{ candidate.stage }} 
                     </span>
                 </td>
 
@@ -81,15 +81,15 @@
                   <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event)" ></i>
                       <p-overlayPanel #op ngClass="padding: 0;">
                         <div>
-                            <li class="table-item-panel" (click)="openViewModal(interview, op)"> <i class="pi pi-eye table-item me-2"></i> <span>View</span></li>
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'In-Progress' && interview.stage !== 'Completed' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent' && interview.stage !== 'Appointment-Letter-Sent'" (click)="startInterview(interview)"> <i class="pi pi-user-plus table-item me-2"></i> Start Interview</li>
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent' && interview.stage !== 'Appointment-Letter-Sent'" (click)="openScoreSheet(interview)"> <i class="pi pi-download table-item me-2"></i>New Score Sheet</li>
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent' && interview.stage !== 'Appointment-Letter-Sent'" (click)="endInterview(interview)"> <i class="pi pi-stop-circle table-item me-2"></i>End Interview</li>
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent' && interview.stage !== 'Appointment-Letter-Sent'" (click)="openInterviewInvite(interview)"> <i class="pi pi-angle-double-right table-item me-2"></i>Move to Next Stage</li>
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent' && interview.stage !== 'Appointment-Letter-Sent'" (click)="openOfferLetter(interview)"> <i class="pi pi-file-arrow-up table-item me-2"></i>Offer Letter</li>
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Appointment-Letter-Sent'" (click)="openAppointmentLetter(interview)" > <i class="pi pi-file-arrow-up table-item me-2"></i>Appointment Letter</li>
+                            <li class="table-item-panel" (click)="openViewModal(candidate, op)"> <i class="pi pi-eye table-item me-2"></i> <span>View</span></li>
+                            <li class="table-item-panel" *ngIf="candidate.stage !== 'In-Progress' && candidate.stage !== 'Completed' && candidate.stage !== 'Cancelled' && candidate.stage !== 'Offer-Sent' && candidate.stage !== 'Appointment-Letter-Sent'" (click)="startInterview(candidate)"> <i class="pi pi-user-plus table-item me-2"></i> Start Interview</li>
+                            <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'Completed' && candidate.stage !== 'Cancelled' && candidate.stage !== 'Offer-Sent' && candidate.stage !== 'Appointment-Letter-Sent'" (click)="openScoreSheet(candidate)"> <i class="pi pi-download table-item me-2"></i>New Score Sheet</li>
+                            <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'Completed' && candidate.stage !== 'Cancelled' && candidate.stage !== 'Offer-Sent' && candidate.stage !== 'Appointment-Letter-Sent'" (click)="endInterview(candidate)"> <i class="pi pi-stop-circle table-item me-2"></i>End Interview</li>
+                            <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'In-Progress' && candidate.stage !== 'Cancelled' && candidate.stage !== 'Offer-Sent' && candidate.stage !== 'Appointment-Letter-Sent'" (click)="openInterviewInvite(candidate)"> <i class="pi pi-angle-double-right table-item me-2"></i>Move to Next Stage</li>
+                            <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'In-Progress' && candidate.stage !== 'Cancelled' && candidate.stage !== 'Offer-Sent' && candidate.stage !== 'Appointment-Letter-Sent'" (click)="openOfferLetter(candidate)"> <i class="pi pi-file-arrow-up table-item me-2"></i>Offer Letter</li>
+                            <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'Completed' && candidate.stage !== 'In-Progress' && candidate.stage !== 'Cancelled' && candidate.stage !== 'Appointment-Letter-Sent'" (click)="openAppointmentLetter(candidate)" > <i class="pi pi-file-arrow-up table-item me-2"></i>Appointment Letter</li>
                             <!-- <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled' && interview.stage !== 'Offer-Sent'"> <i class="pi pi-user-plus table-item me-2"></i>Add as Employee</li> -->
-                            <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'In-Progress'"> <i class="pi pi-file-pdf table-item me-2"></i>Download Score Sheet</li>
+                            <li class="table-item-panel" *ngIf="candidate.stage !== 'Scheduled' && candidate.stage !== 'In-Progress'" (click)="downloadScoresheet(candidate.id)"> <i class="pi pi-file-pdf table-item me-2"></i>Download Score Sheet</li>
                             <!-- <li class="table-item-panel" *ngIf="interview.stage !== 'Scheduled' && interview.stage !== 'Completed' && interview.stage !== 'In-Progress' && interview.stage !== 'Cancelled'" (click)="sendRejected(interview)"> <i class="pi pi-delete-left table-item me-2"></i>Offer Rejected</li> -->
                             <!-- <li class="table-item-panel" *ngIf="interview.stage !== 'Cancelled'" (click)="decline(interview)"> <i class="pi pi-delete-left table-item me-2"></i>Declined</li> -->
                         </div>
