@@ -331,8 +331,8 @@ candidateData: any = {};
     if (!candidateData) {
       this.messageService.add({
         severity: 'error',
-        summary: 'Candidate Not Found',
-        detail: `Candidate does not exist or as not been created yet`
+        summary: 'No Interview Found',
+        detail: `Candidate has not been interviewed yet`
       });
       return;  // Exit if no data is found for the candidate
     }
