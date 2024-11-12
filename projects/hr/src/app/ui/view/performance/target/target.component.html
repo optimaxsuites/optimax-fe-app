@@ -202,7 +202,7 @@
               </span>
             </td>
             <td class="table-item" pSortableColumn="RequestedDuration">
-              <div class="flex gap-2">
+              <div class="flex text-lg gap-2">
                 <button
                   pButton
                   icon="pi pi-eye"
@@ -268,6 +268,20 @@
             <p class="text-gray-600 text-2xl">
               {{ selectedGoal.startDate | date }} -
               {{ selectedGoal.endDate | date }}
+            </p>
+          </div>
+
+          <div class="col-span-2">
+            <h3 class="font-semibold text-gray-700">Level</h3>
+            <p class="text-gray-600 text-2xl">
+              {{ selectedGoal.level }}
+            </p>
+          </div>
+
+          <div class="col-span-2">
+            <h3 class="font-semibold text-gray-700">Evaluators</h3>
+            <p class="text-gray-600 text-2xl">
+              {{ selectedGoal.evaluator }}
             </p>
           </div>
 

@@ -1,10 +1,5 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import {
-  AbstractControl,
-  FormBuilder,
-  FormGroup,
-  Validators,
-} from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 
@@ -13,7 +8,7 @@ interface Metric {
   completed: boolean;
 }
 
-interface Goal {
+interface TargetGoal {
   goalName: string;
   employeeName: string;
   goalDescription: string;
@@ -23,6 +18,8 @@ interface Goal {
   assignedTo: string;
   targetMetrics: Metric[];
   progressStatus: string;
+  [key: string]: any;
+  isTarget?: boolean;
 }
 
 @Component({
@@ -36,6 +33,7 @@ export class MygoalComponent implements OnInit {
   goalForm: FormGroup;
   metricString: string = '';
   metricsArray: Metric[] = [];
+  user_id?: number;
 
   constructor(
     private fb: FormBuilder,
@@ -53,27 +51,42 @@ export class MygoalComponent implements OnInit {
       progressStatus: ['Pending', Validators.required],
     });
   }
-
   ngOnInit(): void {
     const savedData = localStorage.getItem('goalFormData');
     if (savedData) {
       this.goalForm.patchValue(JSON.parse(savedData));
     }
-  }
 
+    this.user_id = sessionStorage.getItem('userid')
+      ? Number(sessionStorage.getItem('userid'))
+      : undefined;
+  }
   onSubmit(): void {
     if (this.goalForm.valid && this.metricsArray.length > 0) {
-      const newGoal: Goal = {
+      const newGoal: TargetGoal = {
         ...this.goalForm.value,
         targetMetrics: this.metricsArray,
+        user_id: this.user_id,
+        isTarget: false, // Mark as regular goal
       };
 
+      // Log the new goal to check the data
+      console.log('New Goal:', newGoal);
+
       // Save to employee goals
-      const existingGoals: Goal[] = JSON.parse(
+      const existingGoals: TargetGoal[] = JSON.parse(
         localStorage.getItem('employeeGoals') || '[]'
       );
+      console.log('Existing Goals:', existingGoals);
+
       existingGoals.push(newGoal);
       localStorage.setItem('employeeGoals', JSON.stringify(existingGoals));
+
+      // Log the updated localStorage
+      console.log(
+        'Updated Goals in LocalStorage:',
+        JSON.parse(localStorage.getItem('employeeGoals') || '[]')
+      );
 
       this.messageService.add({
         severity: 'success',

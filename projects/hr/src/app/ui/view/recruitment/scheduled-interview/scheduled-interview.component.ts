@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ApplicantDTO, ApplicationStage } from '../../../domain/applicant.dto';
-import jsPDF from 'jspdf';
+import {jsPDF} from 'jspdf';
 import 'jspdf-autotable';
 // import autoTable from "jspdf-autotable";
 
@@ -21,10 +21,11 @@ export class ScheduledInterviewComponent {
   showOfferLetter: boolean = false;
   viewModal: boolean = false;
   showAppointment: boolean = false;
-
   positions: any[] =[]; // Extract unique positions
   selectedPositions: string[] = [];
   filteredCandidates: ApplicantDTO[] = [];
+  candidateData: any = {};
+
 
   constructor(
     private confirmationService: ConfirmationService,
@@ -309,54 +310,196 @@ export class ScheduledInterviewComponent {
 //====================================================================================== 
 
 
-candidateData: any = {};
 
   getCandidateScore() {
-    // Retrieve the data from localStorage
     const storedData = localStorage.getItem('submittedCriteria');
-    
-    // If data exists in localStorage, parse it, otherwise use an empty object
     if (storedData) {
       this.candidateData = JSON.parse(storedData);
     }
   }
 
+
+  // score on a single page
+  // downloadScoresheet(candidateId: string) {
+  //   const pdf = new jsPDF({
+  //     orientation: 'portrait',
+  //     unit: 'px',
+  //     format: 'a4'
+  //   });
+  
+  //   const pdfWidth = pdf.internal.pageSize.getWidth();
+  //   const pdfHeight = pdf.internal.pageSize.getHeight();
+  //   const padding = 20;
+  //   let currentX = padding;
+  //   let currentY = padding;
+  
+  //   // Add Title
+  //   pdf.setFont('times', 'bold');
+  //   pdf.setFontSize(18);
+  //   pdf.text('Candidate Interview Scoresheet', pdfWidth / 2, currentY, { align: 'center' });
+  //   currentY += 30;
+  
+  //   const candidateData = this.candidateData[candidateId];
+  //   if (!candidateData) {
+  //     this.messageService.add({
+  //       severity: 'error',
+  //       summary: 'No Interview Found',
+  //       detail: `Candidate has not been interviewed yet`
+  //     });
+  //     return;
+  //   }
+  
+  //   pdf.setFont('times', 'normal');
+  //   pdf.setFontSize(12);
+  
+  //   for (const { criteria, submittedAt, totalScore } of candidateData) {
+  //     // Check if there’s enough space for a new criteria section
+  //     if (currentY + 50 > pdfHeight) {
+  //       pdf.addPage();
+  //       currentY = padding; // Reset for new page
+  //     }
+  
+  //     // Add Criteria Title
+  //     pdf.setFont('times', 'bold');
+  //     pdf.text(`Criteria: ${criteria.title}`, currentX, currentY);
+  //     currentY += 20;
+  
+  //     // Add Submitted Date and Total Score
+  //     pdf.setFont('times', 'normal');
+  //     pdf.text(`Submitted At: ${submittedAt}`, currentX, currentY);
+  //     currentY += 15;
+  
+  //     // Add table if questions exist
+  //     if (Array.isArray(criteria.questions) && criteria.questions.length > 0) {
+  //       const columns = ['Question', 'Score'];
+  //       const data = criteria.questions.map((q: { text: string; score: number; }) => [q.text, q.score]);
+  
+  //       (pdf as any).autoTable({
+  //         startY: currentY,
+  //         head: [columns],
+  //         body: data,
+  //         theme: 'grid',
+  //         headStyles: { fillColor: [0, 0, 255], textColor: [255, 255, 255], fontSize: 12 },
+  //         bodyStyles: { fontSize: 10 },
+  //         columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 'auto' } }
+  //       });
+  
+  //       // Update Y position after table
+  //       currentY = (pdf as any).lastAutoTable.finalY + 10;
+  //     }
+  
+  //     pdf.text(`Total Score: ${totalScore}`, currentX, currentY);
+  //     currentY += 20;
+  //   }
+  
+  //   // Footer: Add page numbers
+  //   const totalPages = (pdf as any).internal.getNumberOfPages();
+  //   for (let i = 1; i <= totalPages; i++) {
+  //     pdf.setPage(i);
+  //     pdf.setFont('times', 'italic');
+  //     pdf.setFontSize(10);
+  //     pdf.text(`Page ${i} of ${totalPages}`, pdfWidth - 50, pdfHeight - 10);
+  //   }
+  
+  //   pdf.save(`${this.candidateData.candidateName} scoresheet.pdf`);
+
+  //   this.messageService.add({
+  //     severity: 'success',
+  //     summary: 'Download Complete',
+  //     detail: `Scoresheet for ${this.candidateData.candidateName} has been downloaded successfully.`,
+  //   });
+  // }
+  
+
+  // every score loop on a new page
   downloadScoresheet(candidateId: string) {
-    const doc = new jsPDF();
-
-    // Check if candidate data exists for the given candidateId
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'px',
+      format: 'a4',
+    });
+  
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const padding = 20;
+    let currentX = padding;
+    let currentY = padding;
+  
+    // Add Title
+    pdf.setFont('times', 'bold');
+    pdf.setFontSize(18);
+    pdf.text('Candidate Interview Scoresheet', pdfWidth / 2, currentY, { align: 'center' });
+    currentY += 30;
+  
     const candidateData = this.candidateData[candidateId];
-    console.log('candidate', candidateData)
-
     if (!candidateData) {
       this.messageService.add({
         severity: 'error',
         summary: 'No Interview Found',
-        detail: `Candidate has not been interviewed yet`
+        detail: `Candidate has not been interviewed yet`,
       });
-      return;  // Exit if no data is found for the candidate
+      return;
     }
-
-    candidateData.forEach((criteriaData: { criteria: { title: any; }; submittedAt: any; totalScore: any; questions: any[]; }, index: number) => {
-      // Add criteria title
-      doc.text(`Criteria: ${criteriaData.criteria.title}`, 20, 30 + (index * 20));
-      doc.text(`Submitted At: ${criteriaData.submittedAt}`, 20, 35 + (index * 20));
-      doc.text(`Total Score: ${criteriaData.totalScore}`, 20, 40 + (index * 20));
-
-      // Create a table for the criteria questions and scores
-      const columns = ['Question', 'Score'];
-      const data = criteriaData.questions.map(q => [q.text, q.score]);
-
-      // Use jsPDF's autoTable method to create the table
-      (doc as any).autoTable({
-        startY: 45 + (index * 20),
-        head: [columns],
-        body: data
-      });
+  
+    pdf.setFont('times', 'normal');
+    pdf.setFontSize(12);
+  
+    candidateData.forEach((entry: { criteria: any; submittedAt: any; totalScore: any; }, index: number) => {
+      const { criteria, submittedAt, totalScore } = entry;
+  
+      if (index > 0) {
+        pdf.addPage(); // Start a new page for each subsequent iteration
+        currentY = padding; // Reset Y position for new page
+      }
+  
+      // Add Criteria Title
+      pdf.setFont('times', 'bold');
+      pdf.text(`Criteria: ${criteria.title}`, currentX, currentY);
+      currentY += 20;
+  
+      // Add Submitted Date and Total Score
+      pdf.setFont('times', 'normal');
+      pdf.text(`Submitted At: ${submittedAt}`, currentX, currentY);
+      currentY += 15;
+  
+      // Add table if questions exist
+      if (Array.isArray(criteria.questions) && criteria.questions.length > 0) {
+        const columns = ['Question', 'Score'];
+        const data = criteria.questions.map((q: { text: string; score: number }) => [q.text, q.score]);
+  
+        (pdf as any).autoTable({
+          startY: currentY,
+          head: [columns],
+          body: data,
+          theme: 'grid',
+          headStyles: { fillColor: [0, 0, 255], textColor: [255, 255, 255], fontSize: 12 },
+          bodyStyles: { fontSize: 10 },
+          columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 'auto' } },
+        });
+  
+        currentY = (pdf as any).lastAutoTable.finalY + 10;
+      }
+  
+      pdf.text(`Total Score: ${totalScore}`, currentX, currentY);
+      currentY += 20;
     });
+  
+    // Footer: Add page numbers
+    const totalPages = (pdf as any).internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      pdf.setPage(i);
+      pdf.setFont('times', 'italic');
+      pdf.setFontSize(10);
+      pdf.text(`Page ${i} of ${totalPages}`, pdfWidth - 50, pdfHeight - 10);
+    }
+  
+    pdf.save(`${this.candidateData.candidateName} scoresheet.pdf`);
 
-    // Save the generated PDF with a dynamic name
-    doc.save('scoresheet.pdf');
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Download Complete',
+      detail: `Scoresheet for ${this.candidateData.candidateName} has been downloaded successfully.`,
+    });
   }
-
+  
 }
