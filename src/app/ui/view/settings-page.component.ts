@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
 
 import { NavigationEnd, Router } from '@angular/router';
-import { MenuItemsService } from '../sharedComponents/service/menue-items/menu-items.service';
 import { MenuItem } from '../sharedComponents/domain/menuItem.dto';
+import { CloseScrollStrategy } from '@angular/cdk/overlay';
+import { MenuItemsService } from '../sharedComponents/service/menue-items/menu-items.service';
 
 @Component({
   selector: 'app-settings-page',
@@ -11,19 +12,25 @@ import { MenuItem } from '../sharedComponents/domain/menuItem.dto';
 })
 export class SettingsPageComponent {
   menuItems: MenuItem[] = [];
-  role: string | null = null;
+  role: string = "";
 
   constructor(private menuService: MenuItemsService,  private router: Router) {}
 
   ngOnInit(): void {
-    this.role = sessionStorage.getItem('role');
- 
+    this.role = JSON.stringify(sessionStorage.getItem('role'))
+    const fetchedItems = this.menuService.getSettingsMenuItemsForRole(this.role);
+    console.log('Fetched Menu Items:', fetchedItems);
+
     if (this.role) {
       this.menuItems = this.menuService.getSettingsMenuItemsForRole(this.role).map(item => ({
         ...item,
         open: false
       }));
+      console.log(this.menuItems)
     }
+
+    this.menuItems = [...this.menuService.settingsMenuItems]
+    console.log(this.menuService.settingsMenuItems)
     this.router.events.subscribe(event => {
       if (event instanceof NavigationEnd) {
         this.updateActiveState();
