@@ -2,10 +2,11 @@ export interface QuestionDTO {
     id?: string;
     title?: string;
     questions?: QuestionItemDTO[];
-    totalScore?: number;
+    totalScore?: number | null;
 }
 
 export interface QuestionItemDTO {
     text: string;
-    score?: number | null;  // Will store the selected score
+    score: number | undefined; 
+    previousScore?: number;
 }
