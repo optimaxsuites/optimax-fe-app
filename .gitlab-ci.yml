@@ -8,9 +8,9 @@ update_subtrees:
         - git config user.name "queensheba"
         - git config user.email "q.oluwadare@centrifugegroup.com"
         - git subtree pull --prefix=projects/hr https://oauth2:${LOGIN_TOKEN}@gitlab.com/Simeon0001/erp-hr.git master --squash
-        - echo "updating subtrees"
-        - git subtree pull --prefix=projects/accounting https://oauth2:${ACCOUNTING_ACCESS_TOKEN}@gitlab.com/queensheba/eep-accounting.git
-        - echo "pulled hr"
+        - echo pilled hr"
+        - git subtree pull --prefix=projects/accounting https://oauth2:${LOGIN_ACCESS_TOKEN}@gitlab.com/queensheba/eep-accounting.git
+        - echo "pulled accounting"
         - git subtree pull --prefix=projects/CRM https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-crm.git master --squash
         - echo "pulled CRM"
         - git subtree pull --prefix=projects/dashboard https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-dashboard.git master --squash
