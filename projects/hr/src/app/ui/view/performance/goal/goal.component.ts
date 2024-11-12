@@ -4,12 +4,13 @@ import { MessageService } from 'primeng/api';
 
 interface Goal {
   goalName: string;
+  employeeName: string;
   goalDescription: string;
   startDate: string;
   endDate: string;
   priority: string;
   assignedTo: string;
-  targetMetrics: string;
+  targetMetrics: { name: string; completed: boolean }[];
   actualMetrics: string;
   progressStatus: string;
 }
@@ -25,15 +26,24 @@ export class GoalComponent implements OnInit {
   filteredGoals: Goal[] = [];
   selectedStatus: string[] = [];
   searchTerm: string = '';
-  statusOptions: string[] = ['Pending', 'In Progress', 'Completed'];
+  statusOptions: string[] = [
+    'Pending',
+    'In Progress',
+    'Not Achieved',
+    'On Hold',
+    'Completed',
+  ];
+
   viewModalVisible: boolean = false;
   selectedGoal: Goal | null = null;
   openAddGoal: boolean = false;
+  confirmationMessage: string | null = null;
 
   constructor(private router: Router, private messageService: MessageService) {}
 
   ngOnInit() {
     this.loadGoals();
+    //this.loadMetricsFromLocalStorage();
   }
 
   loadGoals() {
@@ -48,7 +58,13 @@ export class GoalComponent implements OnInit {
   sortGoals() {
     this.filteredGoals.sort((a, b) => {
       // Sort by status priority (Pending -> In Progress -> Completed)
-      const statusOrder = { Pending: 0, 'In Progress': 1, Completed: 2 };
+      const statusOrder = {
+        Pending: 0,
+        'In Progress': 1,
+        'Not Achieved': 2,
+        'On Hold': 3,
+        Completed: 4,
+      };
       return (
         statusOrder[a.progressStatus as keyof typeof statusOrder] -
         statusOrder[b.progressStatus as keyof typeof statusOrder]
@@ -94,6 +110,10 @@ export class GoalComponent implements OnInit {
         return `${baseClasses} bg-gray-100  text-gray-800`;
       case 'in progress':
         return `${baseClasses} bg-blue-100 text-blue-800`;
+      case 'Not Archieved':
+        return `${baseClasses} bg-red-100 text-red-80`;
+      case 'On Hold':
+        return `${baseClasses} bg-yellow-100 text-yellow-80`;
       case 'completed':
         return `${baseClasses} bg-green-100 text-green-800`;
       default:
@@ -104,6 +124,7 @@ export class GoalComponent implements OnInit {
   viewGoal(goal: Goal) {
     this.selectedGoal = goal;
     this.viewModalVisible = true;
+    console.log('Selected Goal:', this.selectedGoal); // Debugging line
   }
 
   editGoal(goal: Goal) {
@@ -125,6 +146,22 @@ export class GoalComponent implements OnInit {
         life: 3000,
       });
     }
+  }
+
+  toggleMetricCompletion(metric: { name: string; completed: boolean }) {
+    if (!metric.completed) {
+      metric.completed = true;
+
+      // Show confirmation message for the completed task
+      this.confirmationMessage = `Task "${metric.name}" completed successfully!`;
+
+      // Clear the message after a short delay
+      setTimeout(() => {
+        this.confirmationMessage = null;
+      }, 2000); // Adjust the delay as needed
+    }
+    // Save the updated goals to local storage
+    localStorage.setItem('goals', JSON.stringify(this.goals));
   }
 
   navigateToCreateGoal() {
