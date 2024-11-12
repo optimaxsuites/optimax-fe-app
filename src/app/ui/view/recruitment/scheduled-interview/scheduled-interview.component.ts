@@ -325,6 +325,7 @@ candidateData: any = {};
 
     // Check if candidate data exists for the given candidateId
     const candidateData = this.candidateData[candidateId];
+    console.log('candidate-id', candidateData)
 
     if (!candidateData) {
       console.error('Candidate not found!');
