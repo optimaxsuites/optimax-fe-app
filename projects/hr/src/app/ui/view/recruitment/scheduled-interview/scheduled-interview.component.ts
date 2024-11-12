@@ -328,10 +328,14 @@ candidateData: any = {};
     const candidateData = this.candidateData[candidateId];
     console.log('candidate', candidateData)
 
-    // if (!candidateData) {
-    //   console.error('Candidate not found!');
-    //   return;  // Exit if no data is found for the candidate
-    // }
+    if (!candidateData) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'No Interview Found',
+        detail: `Candidate has not been interviewed yet`
+      });
+      return;  // Exit if no data is found for the candidate
+    }
 
     candidateData.forEach((criteriaData: { criteria: { title: any; }; submittedAt: any; totalScore: any; questions: any[]; }, index: number) => {
       // Add criteria title
