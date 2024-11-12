@@ -12,7 +12,7 @@ import { PosCheckoutPageComponent } from './ui/view/pos-checkout-page/pos-checko
 
 const routes: Routes = [
    {
-        path: '',
+        path: 'admin/pos/:uuid',
         component: PosPageComponent,
       },
 
