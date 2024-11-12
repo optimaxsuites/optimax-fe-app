@@ -1,6 +1,9 @@
 import { Component } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ApplicantDTO, ApplicationStage } from '../../../domain/applicant.dto';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+// import autoTable from "jspdf-autotable";
 
 @Component({
   selector: 'app-scheduled-interview',
@@ -26,7 +29,9 @@ export class ScheduledInterviewComponent {
   constructor(
     private confirmationService: ConfirmationService,
     private messageService: MessageService 
-  ) {}
+  ) {
+    this.getCandidateScore()
+  }
 
   getStatusClass(stage: string) {
     switch (stage) {
@@ -302,4 +307,52 @@ export class ScheduledInterviewComponent {
     });
   }
 //====================================================================================== 
+
+
+candidateData: any = {};
+
+  getCandidateScore() {
+    // Retrieve the data from localStorage
+    const storedData = localStorage.getItem('submittedCriteria');
+    
+    // If data exists in localStorage, parse it, otherwise use an empty object
+    if (storedData) {
+      this.candidateData = JSON.parse(storedData);
+    }
+  }
+
+  downloadScoresheet(candidateId: string) {
+    const doc = new jsPDF();
+
+    // Check if candidate data exists for the given candidateId
+    const candidateData = this.candidateData[candidateId];
+    console.log('candidate', candidateData)
+
+    // if (!candidateData) {
+    //   console.error('Candidate not found!');
+    //   return;  // Exit if no data is found for the candidate
+    // }
+
+    candidateData.forEach((criteriaData: { criteria: { title: any; }; submittedAt: any; totalScore: any; questions: any[]; }, index: number) => {
+      // Add criteria title
+      doc.text(`Criteria: ${criteriaData.criteria.title}`, 20, 30 + (index * 20));
+      doc.text(`Submitted At: ${criteriaData.submittedAt}`, 20, 35 + (index * 20));
+      doc.text(`Total Score: ${criteriaData.totalScore}`, 20, 40 + (index * 20));
+
+      // Create a table for the criteria questions and scores
+      const columns = ['Question', 'Score'];
+      const data = criteriaData.questions.map(q => [q.text, q.score]);
+
+      // Use jsPDF's autoTable method to create the table
+      (doc as any).autoTable({
+        startY: 45 + (index * 20),
+        head: [columns],
+        body: data
+      });
+    });
+
+    // Save the generated PDF with a dynamic name
+    doc.save('scoresheet.pdf');
+  }
+
 }

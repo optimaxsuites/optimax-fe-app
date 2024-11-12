@@ -92,46 +92,98 @@ export class InterviewScoreSheetComponent implements OnInit {
     const selectedCriteria = this.allCriteria.find(criteria => criteria.id === selectedId);
     // Assign questions or an empty array if undefined
     this.selectedCriterias = selectedCriteria ? selectedCriteria.questions || [] : [];
+
+    this.sumOfScore = 0;
+    this.totalScoreOver100 = 0;
+    this.maximumScore = 0;
   }
 
   updateScore(question: QuestionItemDTO, score: any) {
     question.score = score; // Update the score of the question
   }
 
-  sumOfScore: number = 0;
-  totalScoreOver100: number = 0;
-  maximumScore: number = 0;
+  sumOfScore?: number;
+  totalScoreOver100?: number;
+  maximumScore?: number;
+  calculateTotalScore(): void {
+    this.sumOfScore = this.selectedCriterias.reduce((total, question) => total + (question.score || 0), 0);
+    this.maximumScore = this.selectedCriterias.length * 5; // Assuming max score for each question is 5
+    this.totalScoreOver100 = this.maximumScore ? (this.sumOfScore / this.maximumScore) * 100 : 0;
+  
+    console.log(`Maximum Score: ${this.maximumScore}, Total Over 100: ${this.totalScoreOver100}`);
+  }
 
-  calculateTotalScore(): number {
-    const sumOfScores = this.allCriteria.reduce((total, question) => {
-        if (question.questions) {
-          const questionScore = question.questions.reduce((subTotal, questionItem) => {
-              return subTotal + (questionItem.score ? Number(questionItem.score) : 0); // Sum of individual question scores
-          }, 0);
+  previousScore?: number;
+  
+  onScoreChange(changedQuestion: QuestionItemDTO): void {
+    const previousScore = this.previousScore || 0;
+    const currentScore = changedQuestion.score || 0;
+  
+    // Update sumOfScore based on the score delta
+    this.sumOfScore! += currentScore - previousScore;
+  
+    // Update the previous score reference
+    this.previousScore = currentScore;
+  
+    // Recalculate the scores
+    this.calculateTotalScore(); // Ensure maxScore and percentage are updated here
+  
+    console.log(`Sum of Scores: ${this.sumOfScore}, Total Over 100: ${this.totalScoreOver100}`);
+  }
 
-          return total + questionScore; // Add the question score to the total
-        }
-        return total; // If there are no questions, return the current total
-    }, 0);
-    this.sumOfScore = sumOfScores;
-    // console.log("total score", this.sumOfScore )
+  // calculateTotalScore() {
+  //   this.sumOfScore = this.selectedCriterias.reduce((total, question) => total + (question.score || 0), 0);
+  //   this.maximumScore = this.selectedCriterias.length * 5;
+  //   this.totalScoreOver100 = (this.sumOfScore / this.maximumScore) * 100;
 
-    const maximumScore = this.selectedCriterias.length * 5;
+  // }
+
+  // onScoreChange(changedQuestion: any) {
+  //   const previousScore = changedQuestion.previousScore || 0;
+  //   const currentScore = changedQuestion.score;
+
+  //   // Update the running sum based on the delta
+  //   this.sumOfScore! += currentScore - previousScore;
+
+  //   // Update the previous score reference
+  //   changedQuestion.previousScore = currentScore;
+
+  //   // Recalculate the total score percentage
+  //   this.totalScoreOver100 = (this.sumOfScore! / this.maximumScore!) * 100;
+
+  //   console.log(`Sum of Scores: ${this.sumOfScore}, Total Over 100: ${this.totalScoreOver100}`);
+  // }
+
+//   calculateTotalScore(): number {
+//     const sumOfScores = this.allCriteria.reduce((total, question) => {
+//         if (question.questions) {
+//           const questionScore = question.questions.reduce((subTotal, questionItem) => {
+//               return subTotal + (questionItem.score ? Number(questionItem.score) : 0); // Sum of individual question scores
+//           }, 0);
+
+//           return total + questionScore; // Add the question score to the total
+//         }
+//         return total; // If there are no questions, return the current total
+//     }, 0);
+//     this.sumOfScore = sumOfScores;
+//     // console.log("total score", this.sumOfScore )
+
+//     const maximumScore = this.selectedCriterias.length * 5;
     
-    this.maximumScore = maximumScore;
-    // console.log("maximum score", this.maximumScore )
+//     this.maximumScore = maximumScore;
+//     // console.log("maximum score", this.maximumScore )
 
 
-    this.totalScoreOver100 = (sumOfScores / maximumScore) * 100; 
-    console.log("totalsore------",this.totalScoreOver100)
+//     this.totalScoreOver100 = (sumOfScores / maximumScore) * 100; 
+//     console.log("totalsore------",this.totalScoreOver100)
 
-    return this.totalScoreOver100; 
-}
+//     return this.totalScoreOver100; 
+// }
 
   
-  onScoreChange() {
-    this.calculateTotalScore();
-  }
+//   onScoreChange() {
+//     this.calculateTotalScore();
+//   }
 
   // submitForm(): void {
   //   // Calculate the total score before saving
@@ -294,6 +346,20 @@ export class InterviewScoreSheetComponent implements OnInit {
 //       detail: 'No criteria selected. Please select and try again.'
 //     });
 //   }
+
+//     // Reset scores for all questions in all criteria
+//     this.allCriteria.forEach(criteria => {
+//       if (criteria.questions) { // Ensure questions is defined
+//         criteria.questions.forEach(question => {
+//           question.score = undefined;
+//         });
+//       }
+//     });
+    
+  
+//     this.sumOfScore = 0;
+//     this.totalScoreOver100 = 0;
+//     this.maximumScore = 0;
 // }
 
 
@@ -304,8 +370,8 @@ export class InterviewScoreSheetComponent implements OnInit {
 
 submitForm(): void {
   // Calculate the total score before saving
-  const total = this.calculateTotalScore();
-  console.log('Total Score:', total);
+  // const total = this.calculateTotalScore();
+  console.log('Total Score:', this.totalScoreOver100);
 
   // Find the selected criteria based on the selected questions
   const selectedCriteria = this.allCriteria.find(criteria => 
@@ -320,7 +386,8 @@ submitForm(): void {
     // Create the new criteria object to be appended
     const newCriteriaSubmission = {
       submittedAt: new Date().toISOString(),
-      criteria: selectedCriteria
+      criteria: selectedCriteria,
+      totalScore: this.totalScoreOver100
     };
 
     // Check if the candidate ID already exists in the submittedCriteria object
@@ -364,6 +431,20 @@ submitForm(): void {
       detail: 'No criteria selected. Please select and try again.'
     });
   }
+
+  // Reset scores for all questions in all criteria
+  this.allCriteria.forEach(criteria => {
+    if (criteria.questions) { // Ensure questions is defined
+      criteria.questions.forEach(question => {
+        question.score = undefined;
+      });
+    }
+  });
+  
+
+  this.sumOfScore = 0;
+  this.totalScoreOver100 = 0;
+  this.maximumScore = 0;
 }
 
 
