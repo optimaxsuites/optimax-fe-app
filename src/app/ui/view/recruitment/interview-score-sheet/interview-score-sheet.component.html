@@ -149,7 +149,25 @@
               </tr>
             </thead>
               <tbody>
+
                 <tr *ngFor="let question of selectedCriterias; let j = index">
+                  <td>{{ j + 1 }}</td>
+                  <td>{{ question.text }}</td>
+                  <td class="text-center" *ngFor="let value of [1, 2, 3, 4, 5]">
+                    <label class="custom-radio">
+                      <input
+                        type="radio"
+                        [name]="'question_' + j"
+                        [(ngModel)]="question.score"
+                        [value]="value"
+                        (change)="onScoreChange(question)"
+                      />
+                      <span class="custom-radio-checkmark"></span>
+                    </label>
+                  </td>
+                </tr>
+                
+                <!-- <tr *ngFor="let question of selectedCriterias; let j = index">
                   <td>{{ j + 1 }}</td>
                   <td>{{ question.text }}</td>
                   <td class="text-center">
@@ -159,8 +177,7 @@
                         [name]="'question.text_' + j"
                         [(ngModel)]="question.score"
                         [value]="1"
-                        (change)="onScoreChange()"
-                        (input)="onScoreChange()"
+                        (change)="onScoreChange(question)"
                       />
                       <span class="custom-radio-checkmark"></span>
                     </label>
@@ -172,8 +189,7 @@
                         [name]="'question.text_' + j"
                         [(ngModel)]="question.score"
                         [value]="2"
-                        (change)="onScoreChange()"
-                        (input)="onScoreChange()"
+                        (change)="onScoreChange(question)"
                       />
                       <span class="custom-radio-checkmark"></span>
                     </label>
@@ -185,8 +201,7 @@
                         [name]="'question.text_' + j"
                         [(ngModel)]="question.score"
                         [value]="3"
-                        (change)="onScoreChange()"
-                        (input)="onScoreChange()"
+                        (change)="onScoreChange(question)"
                       />
                       <span class="custom-radio-checkmark"></span>
                     </label>
@@ -198,8 +213,7 @@
                         [name]="'question.text_' + j"
                         [(ngModel)]="question.score"
                         [value]="4"
-                        (change)="onScoreChange()"
-                        (input)="onScoreChange()"
+                        (change)="onScoreChange(question)"
                       />
                       <span class="custom-radio-checkmark"></span>
                     </label>
@@ -211,13 +225,12 @@
                         [name]="'question.text_' + j"
                         [(ngModel)]="question.score"
                         [value]="5"
-                        (change)="onScoreChange()"
-                        (input)="onScoreChange()"
+                        (change)="onScoreChange(question)"
                       />
                       <span class="custom-radio-checkmark"></span>
                     </label>
                   </td>
-                </tr>
+                </tr> -->
               </tbody>
           </table>
           <div>
