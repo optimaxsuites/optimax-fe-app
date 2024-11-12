@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ApplicantDTO, ApplicationStage } from '../../../domain/applicant.dto';
 import jsPDF from 'jspdf';
-// import 'jspdf-autotable';
+import 'jspdf-autotable';
 
 @Component({
   selector: 'app-scheduled-interview',
@@ -325,7 +325,6 @@ candidateData: any = {};
 
     // Check if candidate data exists for the given candidateId
     const candidateData = this.candidateData[candidateId];
-    console.log('candidate-id', candidateData)
 
     if (!candidateData) {
       console.error('Candidate not found!');
