@@ -162,6 +162,7 @@ export class AddEmployeeFormComponent {
   userRegData: any = { };
   employeeId:string = ""
   employeeData: any;
+  maxDate: string ="";
   constructor(
     private fb: FormBuilder,  
     private authenticationService: AuthenticationService,
@@ -173,7 +174,9 @@ export class AddEmployeeFormComponent {
 
   ngOnInit(): void {
     this.employeeId = this.route.snapshot.paramMap.get('id') as string;
-
+    const today = new Date();
+    const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());  // 18 years ago
+    this.maxDate = maxDate.toISOString().split('T')[0];  
    
     const salaryStructure = localStorage.getItem("salaryStructure");
     if (salaryStructure) {
