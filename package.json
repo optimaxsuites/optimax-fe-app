@@ -8,40 +8,28 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "build:prod": "ng build --configuration production",
-
     "pullHr": "git subtree pull --prefix=projects/hr https://gitlab.com/Simeon0001/erp-hr.git master --squash",
     "pushHr": "git subtree push --prefix=projects/hr https://gitlab.com/Simeon0001/erp-hr.git master",
-    
     "pullDashboard": "git subtree pull --prefix=projects/dashboard https://gitlab.com/queensheba/erp-dashboard.git master --squash",
     "pushDashboard": "git subtree push --prefix=projects/dashboard https://gitlab.com/queensheba/erp-dashboard.git master",
-
     "pullSettings": "git subtree pull --prefix=projects/settings https://gitlab.com/queensheba/erp-settings.git master --squash",
     "pushSettings": "git subtree push --prefix=projects/settings https://gitlab.com/queensheba/erp-settings.git master",
-
     "pullPOS": "git subtree pull --prefix=projects/POS https://gitlab.com/queensheba/erp-POS.git master --squash",
     "pushPOS": "git subtree push --prefix=projects/POS https://gitlab.com/queensheba/erp-POS.git master",
-
     "pullExpenses": "git subtree pull --prefix=projects/expense https://gitlab.com/queensheba/erp-expenses.git master --squash",
     "pushExpenses": "git subtree push --prefix=projects/expense https://gitlab.com/queensheba/erp-expenses.git master",
-
     "pullAccounting": "git subtree pull --prefix=projects/accounting https://gitlab.com/queensheba/eep-accounting.git master --squash",
     "pushAccounting": "git subtree push --prefix=projects/accounting https://gitlab.com/queensheba/eep-accounting.git master",
-
     "pullProcurement": "git subtree pull --prefix=projects/procurement https://gitlab.com/queensheba/erp-procurement.git master --squash",
     "pushProcurement": "git subtree push --prefix=projects/procurement https://gitlab.com/queensheba/erp-procurement.git master",
-
     "pullPurchase": "git subtree pull --prefix=projects/purchase https://gitlab.com/queensheba/erp-purchase.git master --squash",
     "pushPurchase": "git subtree push --prefix=projects/purchase https://gitlab.com/queensheba/erp-purchase.git master",
-
     "pullInventory": "git subtree pull --prefix=projects/inventory https://gitlab.com/queensheba/eep-inventory.git master --squash",
     "pushInventory": "git subtree push --prefix=projects/inventory https://gitlab.com/queensheba/eep-inventory.git master",
-
     "pullCRM": "git subtree pull --prefix=projects/CRM https://gitlab.com/queensheba/erp-crm.git master --squash",
     "pushCRM": "git subtree push --prefix=projects/CRM https://gitlab.com/queensheba/erp-crm.git master",
-
     "pullVendor": "git subtree pull --prefix=projects/vendor https://gitlab.com/queensheba/erp-vendor.git master --squash",
     "pushVendor": "git subtree push --prefix=projects/vendor https://gitlab.com/queensheba/erp-vendor.git master"
-
   },
   "private": true,
   "dependencies": {
@@ -86,7 +74,8 @@
     "fullcalendar": "^6.1.15",
     "html2canvas": "^1.4.1",
     "jsbarcode": "^3.11.0",
-    "jspdf": "^2.5.1",
+    "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.4",
     "ng-apexcharts": "^1.10.0",
     "ngx-toastr": "^19.0.0",
     "primeicons": "^7.0.0",
