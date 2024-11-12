@@ -7,7 +7,7 @@ import { ProcurementSettingsComponent } from './ui/view/procurement-settings/pro
 
 const routes: Routes = [
       
-      {path: '', component: RfqListComponent},
+      {path: 'admin/procurement/rfq/:uuid', component: RfqListComponent},
       {path: 'admin/procurement/rfq-form/:uuid', component:RfqFormComponent },
       {path: 'admin/procurement/settings/:uuid', component:ProcurementSettingsComponent },
       {path: 'admin/procurement', component: ProcurementPageComponent},
