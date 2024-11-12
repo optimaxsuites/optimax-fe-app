@@ -8,5 +8,5 @@ export interface QuestionDTO {
 export interface QuestionItemDTO {
     text: string;
     score: number | undefined; 
-    previousScore?: number;
+    // previousScore?: number;
 }

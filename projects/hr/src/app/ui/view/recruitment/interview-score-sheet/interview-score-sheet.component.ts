@@ -105,27 +105,29 @@ export class InterviewScoreSheetComponent implements OnInit {
   sumOfScore?: number;
   totalScoreOver100?: number;
   maximumScore?: number;
-
-
   calculateTotalScore(): void {
     this.sumOfScore = this.selectedCriterias.reduce((total, question) => total + (question.score || 0), 0);
-    this.maximumScore = this.selectedCriterias.length * 5;
+    this.maximumScore = this.selectedCriterias.length * 5; // Assuming max score for each question is 5
     this.totalScoreOver100 = this.maximumScore ? (this.sumOfScore / this.maximumScore) * 100 : 0;
+  
+    console.log(`Maximum Score: ${this.maximumScore}, Total Over 100: ${this.totalScoreOver100}`);
   }
 
+  previousScore?: number;
+  
   onScoreChange(changedQuestion: QuestionItemDTO): void {
-    const previousScore = changedQuestion.previousScore || 0;
+    const previousScore = this.previousScore || 0;
     const currentScore = changedQuestion.score || 0;
-
+  
     // Update sumOfScore based on the score delta
     this.sumOfScore! += currentScore - previousScore;
-
+  
     // Update the previous score reference
-    changedQuestion.previousScore = currentScore;
-
-    // Recalculate total score percentage
-    this.totalScoreOver100 = this.maximumScore ? (this.sumOfScore! / this.maximumScore) * 100 : 0;
-
+    this.previousScore = currentScore;
+  
+    // Recalculate the scores
+    this.calculateTotalScore(); // Ensure maxScore and percentage are updated here
+  
     console.log(`Sum of Scores: ${this.sumOfScore}, Total Over 100: ${this.totalScoreOver100}`);
   }
 
@@ -368,8 +370,8 @@ export class InterviewScoreSheetComponent implements OnInit {
 
 submitForm(): void {
   // Calculate the total score before saving
-  const total = this.calculateTotalScore();
-  console.log('Total Score:', total);
+  // const total = this.calculateTotalScore();
+  console.log('Total Score:', this.totalScoreOver100);
 
   // Find the selected criteria based on the selected questions
   const selectedCriteria = this.allCriteria.find(criteria => 
@@ -384,7 +386,8 @@ submitForm(): void {
     // Create the new criteria object to be appended
     const newCriteriaSubmission = {
       submittedAt: new Date().toISOString(),
-      criteria: selectedCriteria
+      criteria: selectedCriteria,
+      totalScore: this.totalScoreOver100
     };
 
     // Check if the candidate ID already exists in the submittedCriteria object
