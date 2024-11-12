@@ -4,10 +4,10 @@
   <form
     [formGroup]="goalForm"
     (ngSubmit)="onSubmit()"
-    class="space-y-8 flex justify-between items-start p-10"
+    class="space-y-8 flex mb-5 justify-between items-start p-12"
   >
     <div class="w-[48%]">
-      <div class="space-y-4">
+      <div class="space-y-4 mb-4 mt-3">
         <label class="text-lg font-semibold">Goal Name*</label>
         <input
           type="text"
@@ -26,7 +26,7 @@
         </div>
       </div>
 
-      <div class="space-y-4">
+      <div class="space-y-4 mb-4">
         <label class="text-lg font-semibold">Employee Name*</label>
         <input
           type="text"
@@ -65,24 +65,32 @@
         </div> -->
 
       <!-- Start and End Date -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 mb-4 md:grid-cols-2 gap-6">
         <div>
-          <label class="text-lg font-semibold">Start Date*</label>
-          <input
-            type="date"
-            formControlName="startDate"
-            class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
-          />
+          <label class="text-lg font-semibold">Evaluators*</label>
+          <ng-select
+            name="evaluator"
+            [items]="evaluator"
+            [multiple]="true"
+            bindLabel="option"
+            bindValue="option"
+            formControlName="level"
+            placeholder="select evaluator"
+          ></ng-select>
         </div>
 
         <div>
-          <label class="text-lg font-semibold">Start Date*</label>
-          <input
-            type="date"
-            formControlName="startDate"
-            class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
-          />
+          <label class="text-lg font-semibold">Level*</label>
+          <ng-select
+            name="level"
+            [items]="level"
+            bindLabel="option"
+            bindValue="option"
+            formControlName="level"
+            placeholder="select Individual"
+          ></ng-select>
         </div>
+
         <div>
           <label class="text-lg font-semibold">Start Date*</label>
           <input
@@ -103,7 +111,7 @@
       </div>
 
       <!-- Priority, Assigned To, Target and Actual Metrics -->
-      <div class="space-y-4">
+      <div class="space-y-4 mb-4">
         <label class="text-lg font-semibold">Priority*</label>
         <select
           formControlName="priority"
@@ -116,7 +124,7 @@
         </select>
       </div>
 
-      <div class="space-y-4">
+      <div class="space-y-4 mb-4">
         <label class="text-lg font-semibold">Assigned To*</label>
         <input
           type="text"
@@ -126,7 +134,7 @@
         />
       </div>
 
-      <div class="space-y-4">
+      <div class="space-y-4 mb-4">
         <label class="text-lg font-semibold">Progress Status*</label>
         <select
           formControlName="progressStatus"
@@ -141,7 +149,7 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex justify-end space-x-6">
+      <div class="flex justify-end mt-4 space-x-6">
         <button
           type="button"
           (click)="onCancel()"

@@ -1,3 +1,4 @@
+// targetform.component.ts
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import {
   AbstractControl,
@@ -8,12 +9,12 @@ import {
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 
-interface Metric {
+export interface Metric {
   name: string;
   completed: boolean;
 }
 
-interface Goal {
+interface TargetGoal {
   goalName: string;
   employeeName: string;
   goalDescription: string;
@@ -23,6 +24,10 @@ interface Goal {
   assignedTo: string;
   targetMetrics: Metric[];
   progressStatus: string;
+  user_id?: number;
+  isTarget?: boolean;
+  level: string[];
+  evaluator: string[];
 }
 
 @Component({
@@ -35,6 +40,7 @@ export class TargetformComponent implements OnInit {
   goalForm: FormGroup;
   metricString: string = '';
   metricsArray: Metric[] = [];
+  user_id?: number | undefined;
 
   constructor(
     private fb: FormBuilder,
@@ -43,52 +49,57 @@ export class TargetformComponent implements OnInit {
   ) {
     this.goalForm = this.fb.group({
       goalName: ['', Validators.required],
-      goalOwner: ['', Validators.required], // Updated from employeeName
       employeeName: ['', Validators.required],
       goalDescription: ['', Validators.required],
       startDate: ['', Validators.required],
       endDate: ['', Validators.required],
       priority: ['Medium', Validators.required],
       assignedTo: ['', Validators.required],
-      targetAssigner: ['', Validators.required], // Updated from assignedTo
       progressStatus: ['Pending', Validators.required],
+      level: ['Individual', Validators.required],
+      evaluator: ['All', Validators.required],
     });
   }
 
+  level = [{ option: 'Individual' }, { option: 'Organization' }];
+
+  evaluator = [
+    { option: 'All' },
+    { option: 'Supervisor' },
+    { option: 'Peer' },
+    { option: 'Self' },
+  ];
+
   ngOnInit(): void {
-    const savedData = localStorage.getItem('goalFormData');
+    const savedData = localStorage.getItem('targetFormData');
     if (savedData) {
       this.goalForm.patchValue(JSON.parse(savedData));
     }
-  }
 
+    this.user_id = sessionStorage.getItem('userid')
+      ? Number(sessionStorage.getItem('userid'))
+      : undefined;
+  }
   onSubmit(): void {
     if (this.goalForm.valid && this.metricsArray.length > 0) {
-      const newGoal: Goal = {
+      const newGoal: TargetGoal = {
         ...this.goalForm.value,
         targetMetrics: this.metricsArray,
+        user_id: this.user_id,
+        isTarget: true, // Mark as target goal
       };
 
-      // Save to employee goals
-      const existingGoals: Goal[] = JSON.parse(
-        localStorage.getItem('employeeGoals') || '[]'
+      // Save to target goals
+      const existingTargetGoals: TargetGoal[] = JSON.parse(
+        localStorage.getItem('targetGoals') || '[]'
       );
-      existingGoals.push(newGoal);
-      localStorage.setItem('employeeGoals', JSON.stringify(existingGoals));
-
-      // Save to HR targets
-      const hrTargets: Goal[] = JSON.parse(
-        localStorage.getItem('hrTargets') || '[]'
-      );
-      hrTargets.push(newGoal);
-      localStorage.setItem('hrTargets', JSON.stringify(hrTargets));
-
-      localStorage.removeItem('goalFormData');
+      existingTargetGoals.push(newGoal);
+      localStorage.setItem('targetGoals', JSON.stringify(existingTargetGoals));
 
       this.messageService.add({
         severity: 'success',
         summary: 'Success',
-        detail: 'Goal saved successfully',
+        detail: 'Target goal saved successfully',
         life: 3000,
       });
 
@@ -99,7 +110,7 @@ export class TargetformComponent implements OnInit {
       this.metricsArray = [];
 
       setTimeout(() => {
-        this.router.navigate(['/goals']);
+        this.router.navigate(['/targets']);
       }, 1000);
     } else {
       this.markFormGroupTouched(this.goalForm);
