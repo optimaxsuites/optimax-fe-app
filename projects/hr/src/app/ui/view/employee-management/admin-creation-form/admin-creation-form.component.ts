@@ -141,8 +141,8 @@ export class AdminCreationFormComponent {
     }
 
     this.basicForm = this.fb.group({
-      firstName: ['Employee',Validators.required ],
-      lastName: ['Employee',Validators.required ],
+      firstName: ['',Validators.required ],
+      lastName: ['',Validators.required ],
       email: [ "employee@gmail.com", [Validators.required, Validators.email]],
       workemail:[ "", [Validators.required, Validators.email]],
       title: ["", [Validators.required]],
@@ -163,7 +163,8 @@ export class AdminCreationFormComponent {
     });
 
     this.leaveForm = this.fb.group({
-      leaveDays: [null, Validators.required],
+      // leaveDays: [null, Validators.required],
+      leaveTypes: this.fb.array([]) 
     });
 
     this.guarantorForm = this.fb.group({
@@ -274,12 +275,12 @@ private setProbationValidators(): void {
     }
   }
 
-  onSubmit() {
+  onSubmit(shouldRedirect: boolean = false) {
   this.loading = true;
-  this.addNewEmployee()
+  this.addNewEmployee(shouldRedirect)
   }
 
-  addNewEmployee(){
+  addNewEmployee(shouldRedirect: boolean){
   const currentDate = new Date();  
   const currentYear = currentDate.getFullYear();  
   const formattedDate = currentDate.toISOString().split('T')[0];
@@ -320,8 +321,10 @@ private setProbationValidators(): void {
    
   }
   employeesList.push(newEmployee);
-
   localStorage.setItem("employeesList", JSON.stringify(employeesList));
+  if (shouldRedirect) {
+  this.router.navigate([`/user/onboarding/${newEmployee.id}/wer23456fghi367ghj`]);
+  }
   this.loading = false;
   this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Employee added successfully!' }); 
   this.basicForm.reset()

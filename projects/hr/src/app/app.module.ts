@@ -74,13 +74,15 @@ import { MyAttendanceComponent } from './ui/view/attendance/my-attendance/my-att
 import { EmployeePayrollComponent } from './ui/view/payroll/employee-payroll/employee-payroll.component';
 import { EmployeePayslipListComponent } from './ui/view/payroll/employee-payslip-list/employee-payslip-list.component';
 import { PayslipViewComponent } from './ui/view/payroll/payslip-view/payslip-view.component';
-import { AdminCreationFormComponent } from './ui/view/employee-management/admin-creation-form/admin-creation-form.component';
-import { ViewEmployeeComponent } from './ui/view/employee-management/view-employee/view-employee.component';
-import { EmployeeNokComponent } from './ui/view/employee-management/employee-nok/employee-nok.component';
-import { EmployeeGuarantorComponent } from './ui/view/employee-management/employee-guarantor/employee-guarantor.component';
-import { EmployeeOffboardingComponent } from './ui/view/employee-management/employee-offboarding/employee-offboarding.component';
 import { GoalComponent } from './ui/view/performance/goal/goal.component';
 import { MygoalComponent } from './ui/view/performance/mygoal/mygoal.component';
+import { EmployeeGuarantorComponent } from './ui/view/employee-management/employee-guarantor/employee-guarantor.component';
+import { EmployeeNokComponent } from './ui/view/employee-management/employee-nok/employee-nok.component';
+import { EmployeeOffboardingComponent } from './ui/view/employee-management/employee-offboarding/employee-offboarding.component';
+import { ViewEmployeeComponent } from './ui/view/employee-management/view-employee/view-employee.component';
+import { AdminCreationFormComponent } from './ui/view/employee-management/admin-creation-form/admin-creation-form.component';
+import { TargetComponent } from './ui/view/performance/target/target.component';
+import { TargetformComponent } from './ui/view/performance/targetform/targetform.component';
 
 @NgModule({
   declarations: [
@@ -128,6 +130,8 @@ import { MygoalComponent } from './ui/view/performance/mygoal/mygoal.component';
     EmployeeOffboardingComponent,
     GoalComponent,
     MygoalComponent,
+    TargetComponent,
+    TargetformComponent,
   ],
   imports: [
     // BrowserModule,

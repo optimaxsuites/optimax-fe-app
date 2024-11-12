@@ -1,16 +1,27 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 
+interface Metric {
+  name: string;
+  completed: boolean;
+}
+
 interface Goal {
   goalName: string;
+  employeeName: string;
   goalDescription: string;
   startDate: string;
   endDate: string;
   priority: string;
   assignedTo: string;
-  targetMetrics: string[];
+  targetMetrics: Metric[];
   progressStatus: string;
 }
 
@@ -24,7 +35,7 @@ export class MygoalComponent implements OnInit {
   @Output() back = new EventEmitter<void>();
   goalForm: FormGroup;
   metricString: string = '';
-  metricsArray: string[] = [];
+  metricsArray: Metric[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -33,6 +44,7 @@ export class MygoalComponent implements OnInit {
   ) {
     this.goalForm = this.fb.group({
       goalName: ['', Validators.required],
+      employeeName: ['', Validators.required],
       goalDescription: ['', Validators.required],
       startDate: ['', Validators.required],
       endDate: ['', Validators.required],
@@ -43,7 +55,6 @@ export class MygoalComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Load saved form data if any
     const savedData = localStorage.getItem('goalFormData');
     if (savedData) {
       this.goalForm.patchValue(JSON.parse(savedData));
@@ -51,28 +62,19 @@ export class MygoalComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.goalForm.valid) {
-      // Create a new goal object including metrics
+    if (this.goalForm.valid && this.metricsArray.length > 0) {
       const newGoal: Goal = {
         ...this.goalForm.value,
-        targetMetrics: this.metricsArray, // Include metrics
+        targetMetrics: this.metricsArray,
       };
 
-      // Get existing goals from localStorage
+      // Save to employee goals
       const existingGoals: Goal[] = JSON.parse(
-        localStorage.getItem('goals') || '[]'
+        localStorage.getItem('employeeGoals') || '[]'
       );
-
-      // Add new goal to the array
       existingGoals.push(newGoal);
+      localStorage.setItem('employeeGoals', JSON.stringify(existingGoals));
 
-      // Save updated goals array back to localStorage
-      localStorage.setItem('goals', JSON.stringify(existingGoals));
-
-      // Clear the form data from localStorage since it's now saved
-      localStorage.removeItem('goalFormData');
-
-      // Show success message
       this.messageService.add({
         severity: 'success',
         summary: 'Success',
@@ -80,25 +82,24 @@ export class MygoalComponent implements OnInit {
         life: 3000,
       });
 
-      // Reset form and metrics
       this.goalForm.reset({
         priority: 'Medium',
         progressStatus: 'Pending',
       });
-      this.metricsArray = []; // Clear metrics array
+      this.metricsArray = [];
 
-      // Navigate back to goals list
       setTimeout(() => {
         this.router.navigate(['/goals']);
       }, 1000);
     } else {
       this.markFormGroupTouched(this.goalForm);
-
-      // Show error message
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'Please fill in all required fields',
+        detail:
+          this.metricsArray.length === 0
+            ? 'At least one metric is required'
+            : 'Please fill in all required fields',
         life: 3000,
       });
     }
@@ -106,7 +107,12 @@ export class MygoalComponent implements OnInit {
 
   addMetrics(inputElement: HTMLInputElement) {
     if (this.metricString.trim()) {
-      this.metricsArray.push(this.metricString.trim());
+      // Create a new metric object
+      const newMetric: Metric = {
+        name: this.metricString.trim(),
+        completed: false, // Default to not completed
+      };
+      this.metricsArray.push(newMetric);
       this.metricString = ''; // Clear the internal value
       inputElement.value = ''; // Clear the input field display
     }
@@ -134,8 +140,10 @@ export class MygoalComponent implements OnInit {
     this.router.navigate(['/goals']);
   }
 
-  OnDelete(metric: string) {
-    let index = this.metricsArray.indexOf(metric);
-    this.metricsArray.splice(index, 1);
+  OnDelete(metric: Metric) {
+    const index = this.metricsArray.indexOf(metric);
+    if (index > -1) {
+      this.metricsArray.splice(index, 1);
+    }
   }
 }

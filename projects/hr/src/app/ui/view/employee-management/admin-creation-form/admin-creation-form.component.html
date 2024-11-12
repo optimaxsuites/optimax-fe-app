@@ -33,7 +33,7 @@
       <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
         <div class="mb-4">
         <label for="firstName" class="block text-[13px] font-medium">First Name <span class="ml-1 font-bold text-red-600">*</span></label>
-        <input type="text" formControlName="firstName" id="firstName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" readonly />
+        <input type="text" formControlName="firstName" id="firstName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md"  />
         <small *ngIf="basicForm.get('firstName')?.touched && basicForm.get('firstName')?.invalid" class="text-red-600">
           {{ getErrorMessage(basicForm.get("firstName"),'firstName') }}
         </small>
@@ -41,7 +41,7 @@
   
         <div class="mb-4">
         <label for="lastName" class="block text-[13px] font-medium">Last Name <span class="ml-1 font-bold text-red-600">*</span></label>
-        <input type="text" formControlName="lastName" id="lastName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" readonly />
+        <input type="text" formControlName="lastName" id="lastName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md"  />
         <small *ngIf="basicForm.get('lastName')?.touched && basicForm.get('lastName')?.invalid" class="text-red-600">
           {{ getErrorMessage(basicForm.get("lastName"),'lastName') }}
         </small>
@@ -317,7 +317,11 @@
     
       <div class="text-right">
         <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
-        <button type="submit" class="bg-green-500 text-white px-4 py-3 rounded-lg" [disabled]="employeeForm.invalid"><span [ngClass]="loading ? 'animate-ping' : ''"  >
+
+        <button type="button" (click)="onSubmit(true)" class="bg-green-500 text-white px-4 py-3 rounded-lg mr-2" [disabled]="employeeForm.invalid"><span [ngClass]="loading ? 'animate-ping' : ''"  >
+          {{loading ? "Loading..." : "Submit and Continue"}}
+          </span></button>   
+        <button type="button" (click)="onSubmit()" class="bg-green-500 text-white px-4 py-3 rounded-lg"  [disabled]="employeeForm.invalid"><span [ngClass]="loading ? 'animate-ping' : ''"  >
           {{loading ? "Loading..." : "Submit"}}
           </span></button>
       </div>
