@@ -312,7 +312,7 @@ candidateData: any = {};
 
   getCandidateScore() {
     // Retrieve the data from localStorage
-    const storedData = localStorage.getItem('candidateData');
+    const storedData = localStorage.getItem('submittedCriteria');
     
     // If data exists in localStorage, parse it, otherwise use an empty object
     if (storedData) {
