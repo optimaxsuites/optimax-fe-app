@@ -122,6 +122,7 @@ export class AdminCreationFormComponent {
   formErrors: string[] = [];
   userInfoRegData: any[] = [];
   userRegData: any = { };
+totalLeaveDays: number = 0;
   constructor(
     private fb: FormBuilder,  
     private authenticationService: AuthenticationService,
@@ -164,7 +165,11 @@ export class AdminCreationFormComponent {
 
     this.leaveForm = this.fb.group({
       // leaveDays: [null, Validators.required],
-      leaveTypes: this.fb.array([]) 
+      annual: [0, [ Validators.pattern("^[0-9]*$"), Validators.min(0)]],
+      sick: [0, [ Validators.pattern("^[0-9]*$"), Validators.min(0)]],
+      holiday: [0, [ Validators.pattern("^[0-9]*$"), Validators.min(0)]],
+      bereavement: [0, [ Validators.pattern("^[0-9]*$"), Validators.min(0)]],
+      casual: [0, [ Validators.pattern("^[0-9]*$"), Validators.min(0)]]
     });
 
     this.guarantorForm = this.fb.group({
@@ -196,9 +201,13 @@ export class AdminCreationFormComponent {
       this.employeeForm.get('probationStartDate')?.updateValueAndValidity();
       this.employeeForm.get('probationEndDate')?.updateValueAndValidity();
     });
+
+    this.leaveForm.valueChanges.subscribe(() => this.calculateTotalLeaveDays());
   }
 
-
+  calculateTotalLeaveDays(): void {
+    this.totalLeaveDays = Object.values(this.leaveForm.value).reduce((sum: number, value) => sum + Number(value || 0), 0);
+  }
 private setProbationValidators(): void {
   const isProbation = this.employeeForm.get('isProbation')?.value;
   if (isProbation) {

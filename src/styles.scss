@@ -187,3 +187,27 @@ input[type="radio"]{
   @apply accent-customBlue
 
 }
+
+.styled-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 12px;
+  text-align: left;
+}
+
+.styled-table thead tr {
+  background-color: #009879;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.styled-table th,
+.styled-table td {
+  padding: 8px;
+  border: 1px solid #dddddd;
+}
+
+.styled-table tbody tr:hover {
+  background-color: #f1f1f1;
+}
