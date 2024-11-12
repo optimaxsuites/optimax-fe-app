@@ -2,7 +2,8 @@ import { Component } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ApplicantDTO, ApplicationStage } from '../../../domain/applicant.dto';
 import jsPDF from 'jspdf';
-// import 'jspdf-autotable';
+import 'jspdf-autotable';
+// import autoTable from "jspdf-autotable";
 
 @Component({
   selector: 'app-scheduled-interview',
@@ -325,12 +326,12 @@ candidateData: any = {};
 
     // Check if candidate data exists for the given candidateId
     const candidateData = this.candidateData[candidateId];
-    console.log('candidate-id', candidateData)
+    console.log('candidate', candidateData)
 
-    if (!candidateData) {
-      console.error('Candidate not found!');
-      return;  // Exit if no data is found for the candidate
-    }
+    // if (!candidateData) {
+    //   console.error('Candidate not found!');
+    //   return;  // Exit if no data is found for the candidate
+    // }
 
     candidateData.forEach((criteriaData: { criteria: { title: any; }; submittedAt: any; totalScore: any; questions: any[]; }, index: number) => {
       // Add criteria title
