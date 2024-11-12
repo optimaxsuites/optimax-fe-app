@@ -9,14 +9,6 @@ import { animate, state, style, transition, trigger } from '@angular/animations'
   templateUrl: './recruitment-list.component.html',
   styleUrl: './recruitment-list.component.scss',
   providers: [MessageService, ConfirmationService],
-  // animations: [
-  //   trigger('animation', [
-  //     state('start', style({ opacity: 1 })),
-  //     state('end', style({ opacity: 0 })),
-  //     transition('start => end', [animate('500ms ease-out')]),
-  //     transition('end => start', [animate('500ms ease-in')])
-  //   ])
-  // ]
 
 })
 export class RecruitmentListComponent implements OnInit {
@@ -47,26 +39,6 @@ export class RecruitmentListComponent implements OnInit {
   }
 
   getJobPostings() {
-    // // Retrieve job data from localStorage
-    // const storedJobData = localStorage.getItem('jobData');
-
-    // if (storedJobData) {
-    //   // Parse and assign the job data to the jobpostings array
-    //   this.jobpostings = JSON.parse(storedJobData);
-      
-    //   // Sort the jobpostings array in FILO order
-    //   this.jobpostings!.reverse();
-
-    //   this.filteredJobPostings = [...this.jobpostings];
-
-    //   // this.filteredJobPostings.reverse();
-
-    // } else {
-    //   this.jobpostings = []; // Initialize as an empty array if no data found
-    //   this.filteredJobPostings = [];// Initialize as an empty array if no data found
-    // }
-
-
     const storedJobData = localStorage.getItem('jobData');
 
     if (storedJobData) {

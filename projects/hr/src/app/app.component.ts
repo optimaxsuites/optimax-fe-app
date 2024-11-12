@@ -10,9 +10,4 @@ import { ScheduledInterviewComponent } from './ui/view/recruitment/scheduled-int
   styleUrl: './app.component.scss'
 })
 export class AppHrComponent {
-  tabsConfig: TabConfig[] = [
-    { name: 'Job Vacancy', component: RecruitmentListComponent },
-    { name: 'Job Applications', component: CandidateComponent },
-    { name: 'Interview', component: ScheduledInterviewComponent },
-  ];
 }
