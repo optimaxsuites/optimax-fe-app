@@ -38,20 +38,15 @@ console.log(this.employeeInView)
       .replace(/^./, str => str.toUpperCase());
   }
   isFile(value: any): boolean {
-    return value instanceof File;
+    return typeof value === 'string' && value.startsWith('data:image/');
   }
 
-  previewFile(file: File) {
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event: any) => {
-        
-          this.fileDataUrl = event.target.result;
-         
-          this.showModal = true;           
-      };
-      reader.readAsDataURL(file);
-  }
+  previewFile(fileUrl: string) {
+    if (fileUrl) {
+      this.fileDataUrl = fileUrl;
+      this.showModal = true;
+    }
+  
   }
   openFileInModal(fileUrl: string) {
     this.currentFile = fileUrl;

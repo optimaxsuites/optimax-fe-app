@@ -26,6 +26,25 @@
         </div>
       </div>
 
+      <div class="space-y-4">
+        <label class="text-lg font-semibold">Employee Name*</label>
+        <input
+          type="text"
+          formControlName="employeeName"
+          placeholder="Enter employee name"
+          class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
+        />
+        <div
+          *ngIf="
+            goalForm.get('employeeName')?.touched &&
+            goalForm.get('employeeName')?.invalid
+          "
+          class="text-red-500 text-sm"
+        >
+          Employee name is required
+        </div>
+      </div>
+
       <!-- Goal Description Section -->
       <!-- <div class="space-y-4">
         <label class="text-lg font-semibold">Goal Description*</label>
@@ -98,6 +117,8 @@
         >
           <option value="Pending">Pending</option>
           <option value="In Progress">In Progress</option>
+          <option value="Not Archieved">Not Completed</option>
+          <option value="On Hold">On Hold</option>
           <option value="Completed">Completed</option>
         </select>
       </div>
@@ -155,7 +176,7 @@
             *ngFor="let metric of metricsArray"
             class="flex justify-between items-center p-3 border border-gray-200 rounded-md"
           >
-            <span class="text-gray-800 text-lg">{{ metric }}</span>
+            <span class="text-gray-800 text-lg">{{ metric.name }}</span>
             <button
               class="text-red-500 hover:text-red-700 transition duration-200"
               (click)="OnDelete(metric)"
