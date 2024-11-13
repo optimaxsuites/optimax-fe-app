@@ -23,7 +23,7 @@ export class CandidateComponent implements OnInit {
   getDynamicKeys(): string[] {
     const predefinedKeys = [
       'id', 'candidateName', 'contactNo', 'email', 'position',
-      'dateApplied', 'stage', 'interviewStage', 'firstName', 'lastName', 'fullName',
+      'dateApplied', 'stage', 'interviewStage', 'firstName', 'firstname', 'lastName', 'lastname', 'fullName', 'fullname',
       'interviewSubject', 'interviewInvite', 'interviewType', 'inviteAttachments',
       'offerSubject', 'offerLetter', 'offerAttachments',
       'appointmentSubject', 'appointmentLetter', 'appointmentAttachments'
