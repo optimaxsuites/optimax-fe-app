@@ -41,7 +41,6 @@
             <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
             <th class="table-item" pSortableColumn="candidate">Name</th>
             <th class="table-item" pSortableColumn="email">Email</th>
-            <th class="table-item" pSortableColumn="contactNumber">Contact Number</th>
             <th class="table-item" pSortableColumn="contactNumber">Position</th>
             <th class="table-item" pSortableColumn="dateApplied">Date Applied</th>
             <th class="table-item" pSortableColumn="stage">Stage</th>
@@ -54,7 +53,6 @@
             <td><p-tableCheckbox [value]="candidate" /></td>
             <td class="table-item">{{ candidate.candidateName }}</td>
             <td class="table-item">{{ candidate.email }}</td>
-            <td class="table-item">{{ candidate.contactNo }}</td>
             <td class="table-item">{{ candidate.position }}</td>
             <td class="table-item">{{ candidate.dateApplied }}</td>
             <td class="table-item">
@@ -104,10 +102,6 @@
           <label for="name"><strong>Name:</strong></label>
           <span>  {{activeItem.candidateName}}</span>
       </div>
-      <div class="input-container-50">
-          <label for="phone-number"><strong>Phone Number:</strong></label>
-          <span>  {{activeItem.contactNo}}</span>
-      </div>
     </div>
     <div class="d-flex gap-4 my-2">
       <div class="input-container-50">
@@ -134,10 +128,31 @@
               View Resume
           <!-- </span> -->
       </div>
+      <div *ngFor="let key of getDynamicKeys()" class="d-flex gap-4 my-2">
+        <div class="input-container-50">
+          <label><strong>{{ key | titlecase }}:</strong></label>
+          
+          <!-- Check if the value is a file (assumed to be a URL or Blob) -->
+          <span *ngIf="isFile(activeItem[key]); else textValue">
+            <a 
+              [href]="activeItem[key]" 
+              target="_blank" 
+              download 
+              class="file-link">
+              View/Download File
+            </a>
+          </span>
+          
+          <!-- Non-file values -->
+          <ng-template #textValue>
+            <span>{{ activeItem[key] }}</span>
+          </ng-template>
+        </div>
+      </div>
     </div>
-    <div class="">
+    <!-- <div class="">
       <label for="cover-letter"><strong>Cover Letter:</strong></label>
       <textarea class="cover-letter editInput" name="cover-letter" [(ngModel)]="activeItem.coverLetter" disabled></textarea>
-    </div>
+    </div> -->
     </div>
 </app-modal>
