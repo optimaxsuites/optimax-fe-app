@@ -4,6 +4,9 @@ export interface ApplicantDTO{
     firstName?: string;
     lastName?: string;
     fullName?: string;
+    firstname?: string;
+    lastname?: string;
+    fullname?: string;
     contactNo?: string;
     email?: string;
     position?: string;
