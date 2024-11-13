@@ -113,9 +113,9 @@ export class JobApplicationFormComponent {
     }
 
 
-    const candidateName = this.formData.fullName 
-        || (this.formData.firstName && this.formData.lastName 
-            ? `${this.formData.firstName} ${this.formData.lastName}` 
+    const candidateName = this.formData.fullName || this.formData.fullname
+        || (this.formData.firstName || this.formData.firstname && this.formData.lastame || this.formData.lastname
+            ? `${this.formData.firstName || this.formData.firstname} ${this.formData.lastName || this.formData.lastname}` 
             : '');
 
     const applicantInfo: ApplicantDTO = { 
