@@ -39,6 +39,8 @@ import { LargeSideModalComponent } from './ui/sharedComponent/view/large-side-mo
 import { DashboardPageComponent } from './ui/view/dashboard-page/dashboard-page.component';
 
 
+import { DragDropModule } from '@angular/cdk/drag-drop';
+
 
 @NgModule({
   declarations: [
@@ -55,6 +57,7 @@ import { DashboardPageComponent } from './ui/view/dashboard-page/dashboard-page.
     RippleModule,
     DialogModule,
     ToastModule,
+    DragDropModule,
     FormsModule, 
     ReactiveFormsModule,
     SidebarModule,
