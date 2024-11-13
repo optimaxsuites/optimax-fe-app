@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
-
+import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 
 
 @Component({
@@ -339,6 +339,11 @@ data =  [
   ngOnInit(): void {
     localStorage.setItem('sharedData', JSON.stringify(this.employeePayslipHistory));
 
+  }
+  cards = ['About', 'Attendance', 'Payslip', 'Leave Usage', 'Projects']; // Example for managing positions
+
+  drop(event: CdkDragDrop<string[]>) {
+    moveItemInArray(this.cards, event.previousIndex, event.currentIndex);
   }
 
   openViewSlip(slip:any){
