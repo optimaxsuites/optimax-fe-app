@@ -1034,8 +1034,15 @@ body {
 
 }
  
+.cdk-drag-preview {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
 
-.subHeader {
-  @apply text-gray-50 font-semibold text-lg text-center py-1.5 bg-customBlue w-36 rounded-tl-xl rounded-br-xl
-  
+.cdk-drag {
+  cursor: grab;
+}
+
+.cdk-drag-dragging {
+  cursor: grabbing;
+  opacity: 0.8;
 }
