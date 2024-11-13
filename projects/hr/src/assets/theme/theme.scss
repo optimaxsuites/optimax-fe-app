@@ -1058,3 +1058,9 @@ body {
 .styled-table tbody tr:hover {
   background-color: #f1f1f1;
 }
+.editInputDashed{
+  border: 1px dashed lightgrey;
+  border-radius: 5px;
+  padding: .7rem;
+  width: 100%;
+}
