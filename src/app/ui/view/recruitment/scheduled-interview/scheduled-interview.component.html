@@ -262,33 +262,28 @@
           </div>
         </div>
 
-        <!-- <div class="input-container-50">
-          <label for="cover-letter" class="mb-2"><strong>Interview Scores:</strong></label>
-        
-          <div *ngFor="let score of getSubmittedCriteria()" class="scorsheet-container editInput mb-2">
-            <span class="scorelabel">Interview: {{ score.criteria }}</span>
-            <span class="scorevalue">{{ score.totalScore }}</span>
-          </div>
-        
-          <div class="scoresheet-total">
-            <span class="scorelabel">Average Score</span>
-            <span class="scorevalue">{{ calculateAverageScore(getSubmittedCriteria()) | number:'1.2-2' }}</span>
-          </div>
-        </div> -->
-
         <div class="input-container-50">
           <label for="cover-letter" class="mb-2"><strong>Interview Scores:</strong></label>
         
-          <div *ngFor="let score of getSubmittedCriteria()" class="scorsheet-container editInput mb-2">
-            <span class="scorelabel">Interview {{ score.stage }}</span>
-            <span class="scorevalue">{{ score.totalScore }}</span>
+          <!-- Loop through the interview stages by index -->
+          <div *ngFor="let interview of activeItem.interviewStage; let i = index">
+            <p>{{ 'Interview ' + (i + 1) }}</p> <!-- Display Interview Stage number -->
+        
+            <!-- Loop through the criteria for the current interview stage and display the score -->
+            <div *ngFor="let score of getSubmittedCriteria(i)" class="scorsheet-container editInput mb-2">
+              <span class="scorelabel">{{ score.criteria }}</span>
+              <span class="scorevalue">{{ score.totalScore }}</span>
+            </div>
           </div>
         
+          <!-- Calculate and display the average score -->
           <div class="scoresheet-total">
             <span class="scorelabel">Average Score</span>
-            <span class="scorevalue">{{ calculateAverageScore(getSubmittedCriteria()) | number:'1.2-2' }}</span>
+            <span class="scorevalue">{{ calculateAverageScore(getSubmittedCriteria(0)) | number:'1.2-2' }}</span>
           </div>
         </div>
+        
+        
         
         
 
@@ -308,3 +303,23 @@
     </div>
   </div>
 </app-modal>
+
+
+<!-- <div class="input-container-50">
+  <label for="cover-letter" class="mb-2"><strong>Interview Scores:</strong></label>
+
+  loop through all interiewsatage
+  <div loop through the activeitem.interviewstage>
+    <p>item.interview</p>
+    <div *ngFor="let score of getSubmittedCriteria()" class="scorsheet-container editInput mb-2">
+      <span class="scorelabel">criteria.title</span>
+      <span class="scorevalue">{{ criteria.totalScore }}</span>
+    </div>
+  </div>
+
+
+  <div class="scoresheet-total">
+    <span class="scorelabel">Average Score</span>
+    <span class="scorevalue">{{ calculateAverageScore(getSubmittedCriteria()) | number:'1.2-2' }}</span>
+  </div>
+</div> -->

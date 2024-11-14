@@ -541,22 +541,25 @@ export class ScheduledInterviewComponent {
   }
 
 
-  getSubmittedCriteria() {
+  getSubmittedCriteria(index: number) {
     const activeItemId = this.activeItem.id; // Get the active item's ID
     
-    // Step 1: Retrieve all the submitted criteria data from localStorage
+    // Retrieve all the submitted criteria data from localStorage
     const allSubmittedCriteria = JSON.parse(localStorage.getItem('submittedCriteria') || '{}');
     
-    // Step 2: Retrieve the candidate's submissions for the activeItem.id
+    // Retrieve the candidate's submissions for the activeItem.id
     const candidateData = allSubmittedCriteria[activeItemId] || [];
   
-    // Step 3: Check if there is any data for the candidate
-    if (candidateData.length === 0) {
+    // Step 1: Filter the submitted criteria for the current interview stage (based on index)
+    const filteredCriteria = candidateData.filter((item: any) => item.interviewStageIndex === index);
+  
+    // Step 2: Check if there is any data for the interview stage
+    if (filteredCriteria.length === 0) {
       return []; // Return empty array if no data found
     }
   
-    // Step 4: Map the data to return the relevant criteria and totalScore
-    return candidateData.map((item: any) => ({
+    // Step 3: Map the data to return the relevant criteria and totalScore
+    return filteredCriteria.map((item: any) => ({
       criteria: item.criteria ? item.criteria.title : 'Unknown Criteria',
       totalScore: item.totalScore || 0,
     }));
@@ -565,12 +568,13 @@ export class ScheduledInterviewComponent {
   calculateAverageScore(scores: { totalScore: number }[]): number {
     if (!scores.length) return 0; // Return 0 if no scores are provided
     
-    // Step 1: Calculate the total sum of all totalScores
+    // Calculate the total sum of all totalScores
     const totalSum = scores.reduce((sum, score) => sum + score.totalScore, 0);
     
-    // Step 2: Calculate and return the average score
+    // Calculate and return the average score
     return totalSum / scores.length;
   }
+  
   
   
   
