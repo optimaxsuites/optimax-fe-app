@@ -154,7 +154,7 @@
         </span> -->
 
                 <!-- Check if value is a document -->
-                <span *ngIf="viewResume(activeItem[key]); else textValue">
+                <span *ngIf="isDocument(activeItem[key]); else textValue">
                   <a [href]="activeItem[key]" target="_blank" class="file-link">View Document</a>
                 </span>
         
