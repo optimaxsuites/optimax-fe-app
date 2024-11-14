@@ -177,7 +177,14 @@
                 <div class="input-container-100 editInput" style="text-align: justify;" [innerHTML]="activeItem.description"></div>
             </div>
             <div class="input-container-50">
-
+                <!-- <div class="" *ngIf="activeItem.fields && activeItem.fields.length > 0"> -->
+                    <label><strong>Customised Input Field(s)</strong></label>
+                    <div class="card list-card-wrapper p-4 m-2" *ngFor="let item of activeItem.fields">
+                      <div class="list-card-right">
+                        <span>{{ item.label }} - {{ item.type }} - {{ item.required ? 'Required' : 'Optional' }}</span>
+                      </div>
+                    </div>
+                  <!-- </div> -->
             </div>
         </div>
     </div>

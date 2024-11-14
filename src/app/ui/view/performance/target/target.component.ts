@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 
-interface Goal {
+interface TargetGoal {
   goalName: string;
   employeeName: string;
   goalDescription: string;
@@ -11,18 +11,23 @@ interface Goal {
   priority: string;
   assignedTo: string;
   targetMetrics: { name: string; completed: boolean }[];
+  actualMetrics: string;
   progressStatus: string;
+  user_id?: number;
+  isTarget?: boolean;
+  level: string[];
+  evaluator: string[];
 }
 
 @Component({
   selector: 'app-target',
   templateUrl: './target.component.html',
-  styleUrl: './target.component.scss',
+  styleUrls: ['./target.component.scss'],
   providers: [MessageService],
 })
 export class TargetComponent implements OnInit {
-  goals: Goal[] = [];
-  filteredGoals: Goal[] = [];
+  goals: TargetGoal[] = [];
+  filteredGoals: TargetGoal[] = [];
   selectedStatus: string[] = [];
   searchTerm: string = '';
   statusOptions: string[] = [
@@ -34,28 +39,44 @@ export class TargetComponent implements OnInit {
   ];
 
   viewModalVisible: boolean = false;
-  selectedGoal: Goal | null = null;
+  selectedGoal: TargetGoal | null = null;
   openTargetForm: boolean = false;
   confirmationMessage: string | null = null;
+  user_id: number | undefined;
 
   constructor(private router: Router, private messageService: MessageService) {}
 
   ngOnInit() {
     this.loadGoals();
     this.loadMetricsFromLocalStorage();
-  }
 
+    this.user_id = sessionStorage.getItem('userid')
+      ? Number(sessionStorage.getItem('userid'))
+      : undefined;
+  }
   loadGoals() {
-    const savedGoals = localStorage.getItem('goals');
-    if (savedGoals) {
-      this.goals = JSON.parse(savedGoals);
-      this.filteredGoals = [...this.goals];
-      this.sortGoals();
-    }
+    const savedEmployeeGoals = localStorage.getItem('employeeGoals');
+    const savedTargetGoals = localStorage.getItem('targetGoals');
+
+    const employeeGoals = savedEmployeeGoals
+      ? JSON.parse(savedEmployeeGoals)
+      : [];
+    const targetGoals = savedTargetGoals ? JSON.parse(savedTargetGoals) : [];
+
+    // Combine both employee and target goals
+    this.goals = [...employeeGoals, ...targetGoals];
+    this.filteredGoals = [...this.goals];
+
+    this.sortGoals();
   }
 
   sortGoals() {
+    // Sort by user_id, then by progress status
     this.filteredGoals.sort((a, b) => {
+      if (this.user_id && a.user_id && b.user_id) {
+        return a.user_id - b.user_id;
+      }
+
       const statusOrder = {
         Pending: 0,
         'In Progress': 1,
@@ -83,7 +104,7 @@ export class TargetComponent implements OnInit {
     this.sortGoals();
   }
 
-  getGoalsByStatus(status: string): Goal[] {
+  getGoalsByStatus(status: string): TargetGoal[] {
     return this.goals.filter((goal) => goal.progressStatus === status);
   }
 
@@ -119,28 +140,47 @@ export class TargetComponent implements OnInit {
     }
   }
 
-  viewGoal(goal: Goal) {
+  viewGoal(goal: TargetGoal) {
     this.selectedGoal = goal;
     this.viewModalVisible = true;
   }
 
-  editGoal(goal: Goal) {
+  editGoal(goal: TargetGoal) {
     console.log('Edit goal:', goal);
   }
 
-  deleteGoal(goal: Goal) {
+  deleteGoal(goal: TargetGoal) {
+    // Delete from targetGoals
+    const targetGoals = JSON.parse(localStorage.getItem('targetGoals') || '[]');
+    const updatedTargetGoals = targetGoals.filter(
+      (g: TargetGoal) =>
+        g.goalName !== goal.goalName || g.user_id !== goal.user_id
+    );
+    localStorage.setItem('targetGoals', JSON.stringify(updatedTargetGoals));
+
+    // Also delete from employeeGoals if it exists there
+    const employeeGoals = JSON.parse(
+      localStorage.getItem('employeeGoals') || '[]'
+    );
+    const updatedEmployeeGoals = employeeGoals.filter(
+      (g: TargetGoal) =>
+        g.goalName !== goal.goalName || g.user_id !== goal.user_id
+    );
+    localStorage.setItem('employeeGoals', JSON.stringify(updatedEmployeeGoals));
+
+    // Update local arrays
     const index = this.goals.findIndex((g) => g === goal);
     if (index > -1) {
       this.goals.splice(index, 1);
-      localStorage.setItem('goals', JSON.stringify(this.goals));
-      this.loadGoals();
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Success',
-        detail: 'Goal deleted successfully',
-        life: 3000,
-      });
+      this.filteredGoals = this.filteredGoals.filter((g) => g !== goal);
     }
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Target goal deleted successfully',
+      life: 3000,
+    });
   }
 
   toggleMetricCompletion(metric: { name: string; completed: boolean }) {
@@ -153,14 +193,13 @@ export class TargetComponent implements OnInit {
         this.confirmationMessage = null;
       }, 2000);
     }
-    localStorage.setItem('goals', JSON.stringify(this.goals));
+    localStorage.setItem('employeeGoals', JSON.stringify(this.goals));
   }
 
   navigateToCreateGoal() {
     this.openTargetForm = !this.openTargetForm;
   }
 
-  // Save metrics to localStorage
   saveMetricsToLocalStorage(): void {
     if (this.selectedGoal) {
       localStorage.setItem(
@@ -170,7 +209,6 @@ export class TargetComponent implements OnInit {
     }
   }
 
-  // Load metrics from localStorage
   loadMetricsFromLocalStorage(): void {
     const savedMetrics = localStorage.getItem('targetMetrics');
     if (savedMetrics && this.selectedGoal) {
