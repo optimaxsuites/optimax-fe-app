@@ -13,9 +13,11 @@ import { AuthenticationService } from '../../../shared-component/service/auth-se
   styleUrl: './admin-creation-form.component.scss'
 })
 export class AdminCreationFormComponent {
+
   @Input() close: () => void = () => {};
   @Input() admin: boolean = true
 
+  openInfoModal: boolean = false
   basicForm!: FormGroup;      
   employeeForm!: FormGroup;
   guarantorForm!: FormGroup
@@ -53,7 +55,7 @@ export class AdminCreationFormComponent {
   ];
   gender = ["Male", "Female", "Other"]
   currentTab = 1;
-  tabs = ["Employment Information", "Employment Status", "Leave", "Acesss", "Summary"]
+  tabs = ["Employment Information", "Employment Status", "Leave", "Access", "Summary"]
    maritalStatuses = [
     "Single",
     "Married",
@@ -134,8 +136,8 @@ totalLeaveDays: number = 0;
 
   ngOnInit(): void {
     
-    this.userInfoRegData = JSON.parse(sessionStorage["userRegData"]);
-    this.userRegData = this.userInfoRegData;
+    // this.userInfoRegData = JSON.parse(sessionStorage["userRegData"]);
+    // this.userRegData = this.userInfoRegData;
     const salaryStructure = localStorage.getItem("salaryStructure");
     if (salaryStructure) {
       this.salaryStructure = JSON.parse(salaryStructure);
@@ -288,6 +290,10 @@ private setProbationValidators(): void {
   this.loading = true;
   this.addNewEmployee(shouldRedirect)
   }
+  openBulkInstruction() {
+      this.openInfoModal = true
+  }
+
 
   addNewEmployee(shouldRedirect: boolean){
   const currentDate = new Date();  

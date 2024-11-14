@@ -57,6 +57,7 @@
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",
     "ng-apexcharts": "^1.10.0",
+    "ngx-file-drop": "^16.0.0",
     "ngx-toastr": "^19.0.0",
     "primeicons": "^7.0.0",
     "primeng": "^17.18.11",
