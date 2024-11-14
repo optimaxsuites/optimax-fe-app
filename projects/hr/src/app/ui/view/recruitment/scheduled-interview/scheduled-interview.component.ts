@@ -501,5 +501,43 @@ export class ScheduledInterviewComponent {
       detail: `Scoresheet for ${this.candidateData.candidateName} has been downloaded successfully.`,
     });
   }
+
+
+
+
+
+  getDynamicKeys(): string[] {
+    const predefinedKeys = [
+      'id', 'candidateName', 'contactNo', 'email', 'position',
+      'dateApplied', 'stage', 'interviewStage', 'firstName', 'firstname', 'lastName', 'lastname', 'fullName', 'fullname',
+      'interviewSubject', 'interviewInvite', 'interviewType', 'inviteAttachments',
+      'offerSubject', 'offerLetter', 'offerAttachments',
+      'appointmentSubject', 'appointmentLetter', 'appointmentAttachments'
+    ];
+    
+    return Object.keys(this.activeItem).filter(key => !predefinedKeys.includes(key));
+  }
+  generateBlobUrl(dataUrl: string): string {
+    const byteString = atob(dataUrl.split(',')[1]);
+    const mimeType = dataUrl.split(';')[0].split(':')[1];
+  
+    const byteNumbers = new Array(byteString.length);
+    for (let i = 0; i < byteString.length; i++) {
+      byteNumbers[i] = byteString.charCodeAt(i);
+    }
+  
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: mimeType });
+    return URL.createObjectURL(blob);
+  }
+  
+  isDocument(value: any): boolean {
+    return typeof value === 'string' && 
+           (value.startsWith('data:application/pdf') || value.startsWith('data:application/vnd.openxmlformats-officedocument.wordprocessingml.document'));
+  }
+  
+  getDocumentUrl(key: string): string {
+    return this.isDocument(this.activeItem[key]) ? this.generateBlobUrl(this.activeItem[key]) : '';
+  }
   
 }
