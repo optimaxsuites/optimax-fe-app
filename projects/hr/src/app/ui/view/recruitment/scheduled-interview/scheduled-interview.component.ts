@@ -541,29 +541,38 @@ export class ScheduledInterviewComponent {
   }
 
 
-  getInterviewScoresByStage() {
-    const candidateId = this.activeItem.id;
-    const storedData = JSON.parse(localStorage.getItem(candidateId) || '[]');
+  getSubmittedCriteria() {
+    const activeItemId = this.activeItem.id; // Get the active item's ID
+    
+    // Step 1: Retrieve all the submitted criteria data from localStorage
+    const allSubmittedCriteria = JSON.parse(localStorage.getItem('submittedCriteria') || '{}');
+    
+    // Step 2: Retrieve the candidate's submissions for the activeItem.id
+    const candidateData = allSubmittedCriteria[activeItemId] || [];
   
-    if (!Array.isArray(storedData) || storedData.length === 0) {
-      return [];
+    // Step 3: Check if there is any data for the candidate
+    if (candidateData.length === 0) {
+      return []; // Return empty array if no data found
     }
   
-    // Group scores by interview stage from activeItem
-    return storedData
-      .filter((item: any) => item.interviewStage) // Ensure interviewStage exists
-      .map((item: any) => ({
-        stage: item.interviewStage,
-        totalScore: item.totalScore || 0,
-      }));
+    // Step 4: Map the data to return the relevant criteria and totalScore
+    return candidateData.map((item: any) => ({
+      criteria: item.criteria ? item.criteria.title : 'Unknown Criteria',
+      totalScore: item.totalScore || 0,
+    }));
   }
   
   calculateAverageScore(scores: { totalScore: number }[]): number {
-    if (!scores.length) return 0;
-  
+    if (!scores.length) return 0; // Return 0 if no scores are provided
+    
+    // Step 1: Calculate the total sum of all totalScores
     const totalSum = scores.reduce((sum, score) => sum + score.totalScore, 0);
+    
+    // Step 2: Calculate and return the average score
     return totalSum / scores.length;
   }
+  
+  
   
   
 }

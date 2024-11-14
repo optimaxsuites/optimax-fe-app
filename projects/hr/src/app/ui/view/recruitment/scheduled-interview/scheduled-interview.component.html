@@ -265,16 +265,17 @@
         <div class="input-container-50">
           <label for="cover-letter" class="mb-2"><strong>Interview Scores:</strong></label>
         
-          <div *ngFor="let score of getInterviewScoresByStage()" class="scorsheet-container editInput mb-2">
-            <span class="scorelabel">Interview {{ score.stage }}</span>
+          <div *ngFor="let score of getSubmittedCriteria()" class="scorsheet-container editInput mb-2">
+            <span class="scorelabel">Interview: {{ score.criteria }}</span>
             <span class="scorevalue">{{ score.totalScore }}</span>
           </div>
         
           <div class="scoresheet-total">
             <span class="scorelabel">Average Score</span>
-            <span class="scorevalue">{{ calculateAverageScore(getInterviewScoresByStage()) | number:'1.2-2' }}</span>
+            <span class="scorevalue">{{ calculateAverageScore(getSubmittedCriteria()) | number:'1.2-2' }}</span>
           </div>
         </div>
+        
         
 
 
