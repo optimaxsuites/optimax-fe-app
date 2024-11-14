@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { QuestionDTO, QuestionItemDTO } from '../../../domain/questions.dto';
 import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
 import { MessageService } from 'primeng/api';
+import { ApplicantDTO } from '../../../domain/applicant.dto';
 
 @Component({
   selector: 'app-interview-score-sheet',
@@ -262,8 +263,75 @@ export class InterviewScoreSheetComponent implements OnInit {
   }
 
 
+// submitForm(): void {
+//   // const total = this.calculateTotalScore();
+//   console.log('Total Score:', this.totalScoreOver100);
+
+//   const selectedCriteria = this.allCriteria.find(criteria => 
+//     criteria.questions === this.selectedCriterias
+//   );
+
+//   if (selectedCriteria) {
+//     const savedData = localStorage.getItem('scheduledCandidate');
+//     const submittedCriteria: any = savedData ? JSON.parse(savedData) : {};
+
+//     const newCriteriaSubmission = {
+//       submittedAt: new Date().toISOString(),
+//       criteria: selectedCriteria,
+//       totalScore: this.totalScoreOver100
+//     };
+
+//     if (!submittedCriteria[this.candidate.id]) {
+//       submittedCriteria[this.candidate.id] = [];
+//     }
+
+//     const isAlreadySubmitted = submittedCriteria[this.candidate.id].some(
+//       (submission: any) => submission.criteria.id === selectedCriteria.id
+//     );
+
+//     if (isAlreadySubmitted) {
+//       this.messageService.add({
+//         severity: 'warn',
+//         summary: 'Duplicate Submission',
+//         detail: 'This scoresheet has already been submitted.'
+//       });
+//     } else {
+//       submittedCriteria[this.candidate.id].push(newCriteriaSubmission);
+
+//       console.log('submitted', )
+
+//       localStorage.setItem('scheduledCandidate', JSON.stringify(submittedCriteria));
+
+//       console.log('Selected criteria saved to localStorage:', selectedCriteria);
+
+//       this.messageService.add({
+//         severity: 'success',
+//         summary: 'Submission Successful',
+//         detail: 'Selected scoresheet submitted and saved successfully.'
+//       });
+//     }
+//   } else {
+//     this.messageService.add({
+//       severity: 'error',
+//       summary: 'Submission Failed',
+//       detail: 'No criteria selected. Please select and try again.'
+//     });
+//   }
+//   this.allCriteria.forEach(criteria => {
+//     if (criteria.questions) { // Ensure questions is defined
+//       criteria.questions.forEach(question => {
+//         question.score = undefined;
+//       });
+//     }
+//   });
+  
+
+//   this.sumOfScore = 0;
+//   this.totalScoreOver100 = 0;
+//   this.maximumScore = 0;
+// }
+
 submitForm(): void {
-  // const total = this.calculateTotalScore();
   console.log('Total Score:', this.totalScoreOver100);
 
   const selectedCriteria = this.allCriteria.find(criteria => 
@@ -272,19 +340,19 @@ submitForm(): void {
 
   if (selectedCriteria) {
     const savedData = localStorage.getItem('scheduledCandidate');
-    const submittedCriteria: any = savedData ? JSON.parse(savedData) : {};
+    const submittedData: Record<any, ApplicantDTO> = savedData ? JSON.parse(savedData) : {};
 
-    const newCriteriaSubmission = {
+    const newInterviewSubmission = {
       submittedAt: new Date().toISOString(),
       criteria: selectedCriteria,
       totalScore: this.totalScoreOver100
     };
 
-    if (!submittedCriteria[this.candidate.id]) {
-      submittedCriteria[this.candidate.id] = [];
+    if (!submittedData[this.candidate.id]) {
+      submittedData[this.candidate.id] = { interviewInfo: [] };
     }
 
-    const isAlreadySubmitted = submittedCriteria[this.candidate.id].some(
+    const isAlreadySubmitted = submittedData[this.candidate.id].interviewInfo?.some(
       (submission: any) => submission.criteria.id === selectedCriteria.id
     );
 
@@ -295,11 +363,11 @@ submitForm(): void {
         detail: 'This scoresheet has already been submitted.'
       });
     } else {
-      submittedCriteria[this.candidate.id].push(newCriteriaSubmission);
+      submittedData[this.candidate.id].interviewInfo?.push(newInterviewSubmission);
 
-      localStorage.setItem('scheduledCandidate', JSON.stringify(submittedCriteria));
+      localStorage.setItem('scheduledCandidate', JSON.stringify(submittedData));
 
-      console.log('Selected criteria saved to localStorage:', selectedCriteria);
+      console.log('Submitted data saved to localStorage:', submittedData);
 
       this.messageService.add({
         severity: 'success',
@@ -308,7 +376,6 @@ submitForm(): void {
       });
     }
   } else {
-    // Error handling if no criteria is selected
     this.messageService.add({
       severity: 'error',
       summary: 'Submission Failed',
@@ -316,20 +383,18 @@ submitForm(): void {
     });
   }
 
-  // Reset scores for all questions in all criteria
+  // Reset scores and totals
   this.allCriteria.forEach(criteria => {
-    if (criteria.questions) { // Ensure questions is defined
-      criteria.questions.forEach(question => {
-        question.score = undefined;
-      });
-    }
+    criteria.questions?.forEach(question => {
+      question.score = undefined;
+    });
   });
-  
 
   this.sumOfScore = 0;
   this.totalScoreOver100 = 0;
   this.maximumScore = 0;
 }
+
 
 
 }
