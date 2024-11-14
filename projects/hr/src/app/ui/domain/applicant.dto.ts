@@ -31,6 +31,8 @@ export interface ApplicantDTO{
     appointmentSubject?: string;
     appointmentLetter?: string;
     appointmentAttachments?: AttachmentDTO[];
+
+    interviewInfo?: any[];
 }
 
 export interface AttachmentDTO {
