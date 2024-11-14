@@ -248,7 +248,7 @@
     <hr class="divider">
     <div class="dynamic-section">
       <h3 class="section-title">Additional Information</h3>
-      <div class="flex space-x-3">
+      <div class="flex flex-row gap-3">
         <div class="input-container-50">
           <div *ngFor="let key of getDynamicKeys()" class="info-item mb-4"> 
             <label><strong>{{ key | splitAndTitleCase }}:</strong></label>
@@ -261,7 +261,24 @@
             </ng-template>
           </div>
         </div>
+
         <div class="input-container-50">
+          <label for="cover-letter" class="mb-2"><strong>Interview Scores:</strong></label>
+        
+          <div *ngFor="let score of getInterviewScoresByStage()" class="scorsheet-container editInput mb-2">
+            <span class="scorelabel">Interview {{ score.stage }}</span>
+            <span class="scorevalue">{{ score.totalScore }}</span>
+          </div>
+        
+          <div class="scoresheet-total">
+            <span class="scorelabel">Average Score</span>
+            <span class="scorevalue">{{ calculateAverageScore(getInterviewScoresByStage()) | number:'1.2-2' }}</span>
+          </div>
+        </div>
+        
+
+
+        <!-- <div class="input-container-50">
           <label for="cover-letter" class="mb-2"><strong>Interview Score:</strong></label>
           <div class="scorsheet-container editInput mb-2">
             <span class="scorelabel">Interview {{activeItem.interviewStage}}</span>
@@ -271,7 +288,7 @@
             <span class="scorelabel">Total</span>
             <span class="scorevalue"> 30</span>
           </div>
-        </div>
+        </div> -->
       </div>
     </div>
   </div>

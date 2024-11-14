@@ -539,5 +539,31 @@ export class ScheduledInterviewComponent {
   getDocumentUrl(key: string): string {
     return this.isDocument(this.activeItem[key]) ? this.generateBlobUrl(this.activeItem[key]) : '';
   }
+
+
+  getInterviewScoresByStage() {
+    const candidateId = this.activeItem.id;
+    const storedData = JSON.parse(localStorage.getItem(candidateId) || '[]');
+  
+    if (!Array.isArray(storedData) || storedData.length === 0) {
+      return [];
+    }
+  
+    // Group scores by interview stage from activeItem
+    return storedData
+      .filter((item: any) => item.interviewStage) // Ensure interviewStage exists
+      .map((item: any) => ({
+        stage: item.interviewStage,
+        totalScore: item.totalScore || 0,
+      }));
+  }
+  
+  calculateAverageScore(scores: { totalScore: number }[]): number {
+    if (!scores.length) return 0;
+  
+    const totalSum = scores.reduce((sum, score) => sum + score.totalScore, 0);
+    return totalSum / scores.length;
+  }
+  
   
 }
