@@ -20,6 +20,22 @@ export class CandidateComponent implements OnInit {
     private messageService: MessageService 
   ) {}
 
+  getDynamicKeys(): string[] {
+    const predefinedKeys = [
+      'id', 'candidateName', 'contactNo', 'email', 'position',
+      'dateApplied', 'stage', 'interviewStage', 'firstName', 'firstname', 'lastName', 'lastname', 'fullName', 'fullname',
+      'interviewSubject', 'interviewInvite', 'interviewType', 'inviteAttachments',
+      'offerSubject', 'offerLetter', 'offerAttachments',
+      'appointmentSubject', 'appointmentLetter', 'appointmentAttachments'
+    ];
+    
+    return Object.keys(this.activeItem).filter(key => !predefinedKeys.includes(key));
+  }
+  
+  isFile(value: any): boolean {
+    return typeof value === 'string' && (value.startsWith('http') || value.startsWith('blob:'));
+  }
+
 
   openViewModal(candidate: any, op: any) {
     this.activeItem = candidate

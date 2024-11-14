@@ -14,7 +14,7 @@ export class PerformanceComponent {
   tabsConfig: TabConfig[] = [
     { name: ' Assessment List', component: AppraisallistComponent },
     { name: ' Assessment Cycle', component: AppraisalcycleComponent },
-    { name: 'Target', component: TargetComponent },
+    { name: 'Target', component: TargetComponent }, // role: 'ROLE_ADMIN'
     { name: 'My Target', component: GoalComponent },
   ];
 }
