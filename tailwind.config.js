@@ -36,13 +36,13 @@ module.exports = {
         grayDark: '#e2e2e2',   // Darker gray for odd rows
         textGray: '#495057',
       },
-      // fontSize: {
-      //   customsm: '.8em',
-      //   custommd: '1em',
-      //   customl: '1.2em',
-      //   customxl: '1.3em',
-      //   customxxl: '1.5em',
-      // },
+      fontSize: {
+        sm: '.8em',
+        md: '1em',
+        l: '1.2em',
+        xl: '1.3em',
+        xxl: '1.5em',
+      },
     },
   },
   plugins: [],
