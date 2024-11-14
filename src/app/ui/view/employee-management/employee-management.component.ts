@@ -60,10 +60,10 @@ interface Overtime {
 export class EmployeeManagementComponent {
   
   tabsConfig: TabConfig[] = [
-    { name: 'Basic Information', component: ViewEmployeeComponent, role: 'ROLE_ADMIN' },
-    { name: 'Next of Kin Information', component:  EmployeeNokComponent, role: 'ROLE_ADMIN' },
-    { name: 'Guarantor(s) Information', component:  EmployeeGuarantorComponent, role: 'ROLE_ADMIN' },
-    { name: 'Offboarding', component:  EmployeeOffboardingComponent, role: 'ROLE_ADMIN' },
+    { name: 'Basic Information', component: ViewEmployeeComponent },
+    { name: 'Next of Kin Information', component:  EmployeeNokComponent, },
+    { name: 'Guarantor(s) Information', component:  EmployeeGuarantorComponent, },
+    { name: 'Offboarding', component:  EmployeeOffboardingComponent, },
   ];
   uniqueLevels: any;
   uniquePositions: any;

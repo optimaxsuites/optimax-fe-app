@@ -1,11 +1,14 @@
 
 <div class="table-item">
-  <div *ngIf="admin == true"  class="flex justify-between items-center px-4">
+  <div   class="flex justify-between items-center px-4">
       <p class="text-customBlue text-[18px] font-bold">Create New Employee</p>
-      <button class="bg-customBlue text-white font-bold p-3 rounded-xl" (click)="close()" >Cancel</button>
+      <div class="flex gap-3">
+        <button class="bg-customBlue text-white font-bold p-3 rounded-xl" (click)="openBulkInstruction()" >Bulk Add</button>
+        <button class="bg-customBlue text-white font-bold p-3 rounded-xl" (click)="close()" >Cancel</button>
+      </div>
   </div>
 
-  <hr *ngIf="admin == true">
+  <hr >
 
   <div class="flex justify-between gap-5 items-center relative">
     <div *ngFor="let tab of tabs; let i = index" class="relative flex-1 text-center pt-3" [ngClass]="{
@@ -387,3 +390,7 @@
   <p-toast></p-toast>
 </div>
 
+
+<app-modal *ngIf="openInfoModal" (close)="openInfoModal = false">
+  <app-bulk-employee-instruction></app-bulk-employee-instruction>
+</app-modal>

@@ -83,6 +83,7 @@ import { ViewEmployeeComponent } from './ui/view/employee-management/view-employ
 import { AdminCreationFormComponent } from './ui/view/employee-management/admin-creation-form/admin-creation-form.component';
 import { TargetComponent } from './ui/view/performance/target/target.component';
 import { TargetformComponent } from './ui/view/performance/targetform/targetform.component';
+import { BulkEmployeeInstructionComponent } from './ui/view/employee-management/bulk-employee-instruction/bulk-employee-instruction.component';
 import { SplitAndTitleCasePipe } from './ui/shared-component/service/split-and-title-case.pipe';
 
 @NgModule({
@@ -133,6 +134,7 @@ import { SplitAndTitleCasePipe } from './ui/shared-component/service/split-and-t
     MygoalComponent,
     TargetComponent,
     TargetformComponent,
+    BulkEmployeeInstructionComponent,
     SplitAndTitleCasePipe,
   ],
   imports: [

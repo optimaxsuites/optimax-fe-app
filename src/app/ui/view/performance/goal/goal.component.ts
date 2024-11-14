@@ -1,4 +1,3 @@
-// goal.component.ts
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -36,42 +35,46 @@ export class GoalComponent implements OnInit {
     'On Hold',
     'Completed',
   ];
-
   viewModalVisible: boolean = false;
   selectedGoal: TargetGoal | null = null;
   openAddGoal: boolean = false;
   confirmationMessage: string | null = null;
   user_id: number | undefined;
+  openTargetForm: boolean = false;
+  userRole: string | null = null;
 
   constructor(private router: Router, private messageService: MessageService) {}
 
   ngOnInit() {
+    this.user_id = Number(sessionStorage.getItem('userid'));
+    this.userRole = sessionStorage.getItem('role');
     this.loadGoals();
     this.loadMetricsFromLocalStorage();
 
-    this.user_id = sessionStorage.getItem('userid')
-      ? Number(sessionStorage.getItem('userid'))
-      : undefined;
+    window.addEventListener('storage', () => this.loadGoals());
   }
 
   loadGoals() {
-    const savedGoals = localStorage.getItem('employeeGoals');
-    if (savedGoals) {
-      console.log('Loaded Goals:', savedGoals);
-      this.goals = JSON.parse(savedGoals).filter(
-        (goal: TargetGoal) => !goal.isTarget
+    const savedTargetGoals = JSON.parse(
+      localStorage.getItem('targetGoals') || '[]'
+    );
+    const savedEmployeeGoals = JSON.parse(
+      localStorage.getItem('employeeGoals') || '[]'
+    );
+
+    if (this.userRole === 'ROLE_ADMIN') {
+      this.goals = [...savedTargetGoals, ...savedEmployeeGoals];
+    } else {
+      this.goals = savedEmployeeGoals.filter(
+        (goal: TargetGoal) => goal.user_id === this.user_id
       );
-      this.filteredGoals = [...this.goals];
-      this.sortGoals();
     }
+    this.filteredGoals = [...this.goals];
+    this.sortGoals();
   }
 
   sortGoals() {
     this.filteredGoals.sort((a, b) => {
-      if (this.user_id && a.user_id && b.user_id) {
-        return a.user_id - b.user_id;
-      }
-
       const statusOrder = {
         Pending: 0,
         'In Progress': 1,
@@ -145,7 +148,6 @@ export class GoalComponent implements OnInit {
   }
 
   deleteGoal(goal: TargetGoal) {
-    // Only delete from employeeGoals
     const employeeGoals = JSON.parse(
       localStorage.getItem('employeeGoals') || '[]'
     );
@@ -154,11 +156,8 @@ export class GoalComponent implements OnInit {
         !(g.goalName === goal.goalName && g.user_id === goal.user_id)
     );
     localStorage.setItem('employeeGoals', JSON.stringify(updatedGoals));
-
-    // Only update the local arrays for this component
     this.goals = updatedGoals;
     this.filteredGoals = this.goals;
-
     this.messageService.add({
       severity: 'success',
       summary: 'Success',
@@ -166,12 +165,11 @@ export class GoalComponent implements OnInit {
       life: 3000,
     });
   }
+
   toggleMetricCompletion(metric: { name: string; completed: boolean }) {
     if (!metric.completed) {
       metric.completed = true;
-
       this.confirmationMessage = `Task "${metric.name}" completed successfully!`;
-
       setTimeout(() => {
         this.confirmationMessage = null;
       }, 2000);
@@ -180,7 +178,7 @@ export class GoalComponent implements OnInit {
   }
 
   navigateToCreateGoal() {
-    this.openAddGoal = !this.openAddGoal;
+    this.openTargetForm = !this.openTargetForm;
   }
 
   saveMetricsToLocalStorage(): void {
@@ -190,10 +188,6 @@ export class GoalComponent implements OnInit {
         JSON.stringify(this.selectedGoal.targetMetrics)
       );
     }
-  }
-
-  toggleAddGoal() {
-    this.openAddGoal = !this.openAddGoal;
   }
 
   loadMetricsFromLocalStorage(): void {
