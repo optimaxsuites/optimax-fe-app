@@ -2,7 +2,6 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { QuestionDTO, QuestionItemDTO } from '../../../domain/questions.dto';
 import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
 import { MessageService } from 'primeng/api';
-import { ApplicantDTO } from '../../../domain/applicant.dto';
 
 @Component({
   selector: 'app-interview-score-sheet',
@@ -236,7 +235,6 @@ export class InterviewScoreSheetComponent implements OnInit {
   sumOfScore?: number;
   totalScoreOver100?: number;
   maximumScore?: number;
-
   calculateTotalScore(): void {
     this.sumOfScore = this.selectedCriterias.reduce((total, question) => total + (question.score || 0), 0);
     this.maximumScore = this.selectedCriterias.length * 5; // Assuming max score for each question is 5
@@ -263,111 +261,90 @@ export class InterviewScoreSheetComponent implements OnInit {
     console.log(`Sum of Scores: ${this.sumOfScore}, Total Over 100: ${this.totalScoreOver100}`);
   }
 
-  applicantData: ApplicantDTO = { interviewData: [] }; // Ensure interviewData is initialized as an array.
 
-  
-  submitForm(): void {
-    console.log('Total Score:', this.totalScoreOver100);
-  
-    const selectedCriteria = this.allCriteria.find(criteria =>
-      criteria.questions === this.selectedCriterias
+
+
+
+
+
+submitForm(): void {
+  // Calculate the total score before saving
+  // const total = this.calculateTotalScore();
+  console.log('Total Score:', this.totalScoreOver100);
+
+  // Find the selected criteria based on the selected questions
+  const selectedCriteria = this.allCriteria.find(criteria => 
+    criteria.questions === this.selectedCriterias
+  );
+
+  if (selectedCriteria) {
+    // Retrieve existing submitted criteria from localStorage
+    const savedData = localStorage.getItem('submittedCriteria');
+    const submittedCriteria: any = savedData ? JSON.parse(savedData) : {};
+
+    // Create the new criteria object to be appended
+    const newCriteriaSubmission = {
+      submittedAt: new Date().toISOString(),
+      criteria: selectedCriteria,
+      totalScore: this.totalScoreOver100
+    };
+
+    // Check if the candidate ID already exists in the submittedCriteria object
+    if (!submittedCriteria[this.candidate.id]) {
+      // If the candidate does not have any submitted criteria, initialize an empty array for them
+      submittedCriteria[this.candidate.id] = [];
+    }
+
+    // Check if this specific criteria has already been submitted by this candidate
+    const isAlreadySubmitted = submittedCriteria[this.candidate.id].some(
+      (submission: any) => submission.criteria.id === selectedCriteria.id
     );
-  
-    if (selectedCriteria) {
-      console.log('selected criteria', selectedCriteria)
-      const savedData = localStorage.getItem('submittedCriteria');
-      const submittedCriteria: any[] = savedData ? JSON.parse(savedData) : []; // Ensure it's an array.
-  
-      const newCriteriaSubmission = {
-        submittedAt: new Date().toISOString(),
-        criteria: selectedCriteria,
-        totalScore: this.totalScoreOver100,
-      };
-      console.log('newCriteriaSubmission', newCriteriaSubmission)
-  
-      this.applicantData['interviewData'].push(newCriteriaSubmission); // Push the new submission to interviewData.
-  
-      console.log('applicat info', this.applicantData)
 
-      submittedCriteria.push(this.applicantData); // Add the updated applicant data to the submitted criteria list.
-  console.log('submitted criterial', submittedCriteria)
-      localStorage.setItem('scheduledCandidate', JSON.stringify(submittedCriteria)); // Save back to localStorage.
-  
+    if (isAlreadySubmitted) {
+      // Show a message if the criteria has been submitted before
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Duplicate Submission',
+        detail: 'This scoresheet has already been submitted.'
+      });
+    } else {
+      // Append the new criteria submission for the candidate
+      submittedCriteria[this.candidate.id].push(newCriteriaSubmission);
+
+      // Save the updated list to localStorage
+      localStorage.setItem('submittedCriteria', JSON.stringify(submittedCriteria));
+
       console.log('Selected criteria saved to localStorage:', selectedCriteria);
-  
+
       this.messageService.add({
         severity: 'success',
         summary: 'Submission Successful',
-        detail: 'Selected scoresheet submitted and saved successfully.',
+        detail: 'Selected scoresheet submitted and saved successfully.'
       });
     }
-  
-    // Reset scores and total values for all criteria
-    this.allCriteria.forEach(criteria => {
-      if (criteria.questions) {
-        criteria.questions.forEach(question => {
-          question.score = undefined; // Reset each score.
-        });
-      }
+  } else {
+    // Error handling if no criteria is selected
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Submission Failed',
+      detail: 'No criteria selected. Please select and try again.'
     });
-  
-    this.sumOfScore = 0;
-    this.totalScoreOver100 = 0;
-    this.maximumScore = 0;
   }
+
+  // Reset scores for all questions in all criteria
+  this.allCriteria.forEach(criteria => {
+    if (criteria.questions) { // Ensure questions is defined
+      criteria.questions.forEach(question => {
+        question.score = undefined;
+      });
+    }
+  });
   
 
-
-
+  this.sumOfScore = 0;
+  this.totalScoreOver100 = 0;
+  this.maximumScore = 0;
 }
 
 
-// submitForm(): void {
-//   console.log('Total Score:', this.totalScoreOver100);
-
-//   const selectedCriteria = this.allCriteria.find(criteria =>
-//     criteria.questions === this.selectedCriterias
-//   );
-
-//   if (selectedCriteria) {
-//     console.log('selected criteria', selectedCriteria)
-//     const savedData = localStorage.getItem('submittedCriteria');
-//     const submittedCriteria: any[] = savedData ? JSON.parse(savedData) : []; // Ensure it's an array.
-
-//     const newCriteriaSubmission = {
-//       submittedAt: new Date().toISOString(),
-//       criteria: selectedCriteria,
-//       totalScore: this.totalScoreOver100,
-//     };
-//     console.log('newCriteriaSubmission', newCriteriaSubmission)
-
-//     this.applicantData['interviewData'].push(newCriteriaSubmission); // Push the new submission to interviewData.
-
-//     console.log('applicat info', this.applicantData)
-
-//     submittedCriteria.push(this.applicantData); // Add the updated applicant data to the submitted criteria list.
-// console.log('submitted criterial', submittedCriteria)
-//     localStorage.setItem('scheduledCandidate', JSON.stringify(submittedCriteria)); // Save back to localStorage.
-
-//     console.log('Selected criteria saved to localStorage:', selectedCriteria);
-
-//     this.messageService.add({
-//       severity: 'success',
-//       summary: 'Submission Successful',
-//       detail: 'Selected scoresheet submitted and saved successfully.',
-//     });
-//   }
-
-//   // Reset scores and total values for all criteria
-//   this.allCriteria.forEach(criteria => {
-//     if (criteria.questions) {
-//       criteria.questions.forEach(question => {
-//         question.score = undefined; // Reset each score.
-//       });
-//     }
-//   });
-
-//   this.sumOfScore = 0;
-//   this.totalScoreOver100 = 0;
-//   this.maximumScore = 0;
-// }
+}
