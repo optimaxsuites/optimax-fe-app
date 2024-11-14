@@ -310,10 +310,6 @@ export class InterviewScoreSheetComponent implements OnInit {
 //     return this.totalScoreOver100; 
 // }
 
-  
-//   onScoreChange() {
-//     this.calculateTotalScore();
-//   }
 
   // submitForm(): void {
   //   // Calculate the total score before saving

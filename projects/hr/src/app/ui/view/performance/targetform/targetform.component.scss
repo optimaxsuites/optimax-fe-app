@@ -7,27 +7,4 @@
   background-color: #fff;
 }
 
-/* Set default border color */
-:host ::ng-deep .ng-select .ng-select-container {
-  background-color: #fff;
-  border: solid 1px #d1d1d1; /* Update to your desired default border color */
-  font-size: 13px;
-  transition: border-color 0.3s; /* Smooth transition for border color */
-}
 
-/* Green background or text color for the selected item in the dropdown */
-:host ::ng-deep .ng-select .ng-option-selected {
-  background-color: #1d7731 !important; /* Green background for selected item */
-  color: #fff !important; /* White text for contrast */
-}
-
-/* Optional: Customize hover color on list items */
-:host ::ng-deep .ng-select .ng-option:hover {
-  background-color: #c3e6cb; /* Light green background on hover */
-  color: #23853a; /* Darker green text */
-}
-
-/* Green border when an item is selected */
-:host ::ng-deep .ng-select.ng-select-single .ng-select-container.ng-has-value {
-  border-color: #28a745 !important; /* Green border when item is selected */
-}
