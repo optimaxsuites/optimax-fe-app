@@ -265,6 +265,7 @@ export class InterviewScoreSheetComponent implements OnInit {
 
   applicantData: ApplicantDTO = { interviewData: [] }; // Ensure interviewData is initialized as an array.
 
+  
   submitForm(): void {
     console.log('Total Score:', this.totalScoreOver100);
   
@@ -315,8 +316,58 @@ export class InterviewScoreSheetComponent implements OnInit {
     this.maximumScore = 0;
   }
   
-  
 
 
 
 }
+
+
+// submitForm(): void {
+//   console.log('Total Score:', this.totalScoreOver100);
+
+//   const selectedCriteria = this.allCriteria.find(criteria =>
+//     criteria.questions === this.selectedCriterias
+//   );
+
+//   if (selectedCriteria) {
+//     console.log('selected criteria', selectedCriteria)
+//     const savedData = localStorage.getItem('submittedCriteria');
+//     const submittedCriteria: any[] = savedData ? JSON.parse(savedData) : []; // Ensure it's an array.
+
+//     const newCriteriaSubmission = {
+//       submittedAt: new Date().toISOString(),
+//       criteria: selectedCriteria,
+//       totalScore: this.totalScoreOver100,
+//     };
+//     console.log('newCriteriaSubmission', newCriteriaSubmission)
+
+//     this.applicantData['interviewData'].push(newCriteriaSubmission); // Push the new submission to interviewData.
+
+//     console.log('applicat info', this.applicantData)
+
+//     submittedCriteria.push(this.applicantData); // Add the updated applicant data to the submitted criteria list.
+// console.log('submitted criterial', submittedCriteria)
+//     localStorage.setItem('scheduledCandidate', JSON.stringify(submittedCriteria)); // Save back to localStorage.
+
+//     console.log('Selected criteria saved to localStorage:', selectedCriteria);
+
+//     this.messageService.add({
+//       severity: 'success',
+//       summary: 'Submission Successful',
+//       detail: 'Selected scoresheet submitted and saved successfully.',
+//     });
+//   }
+
+//   // Reset scores and total values for all criteria
+//   this.allCriteria.forEach(criteria => {
+//     if (criteria.questions) {
+//       criteria.questions.forEach(question => {
+//         question.score = undefined; // Reset each score.
+//       });
+//     }
+//   });
+
+//   this.sumOfScore = 0;
+//   this.totalScoreOver100 = 0;
+//   this.maximumScore = 0;
+// }
