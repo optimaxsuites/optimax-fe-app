@@ -71,23 +71,19 @@ export class CandidateComponent implements OnInit {
     }
   
     if (typeof resume === 'string') {
-      // If resume is a base64 string
-      const base64String = resume.split(',')[1];  // Strip the base64 prefix
-      const blob = this.base64ToBlob(base64String, 'application');  // Assuming resume is a PDF
+      const base64String = resume.split(',')[1];  
+      const blob = this.base64ToBlob(base64String, 'application'); 
   
-      // Open the file in a new window
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
     } else if (resume instanceof File) {
-      // If resume is a File object, create a URL from it
       const fileUrl = URL.createObjectURL(resume);
       window.open(fileUrl, '_blank');
     }
   }
   
-  // Helper function to convert base64 to a Blob
   base64ToBlob(base64: string, mimeType: string): Blob {
-    const byteCharacters = atob(base64);  // Decode the base64 string
+    const byteCharacters = atob(base64);  
     const byteArrays = [];
   
     for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
@@ -128,15 +124,13 @@ export class CandidateComponent implements OnInit {
   }
 
   getCandidate(){
-    // Retrieve candidates from localStorage
     const storedCandidates = localStorage.getItem('candidates');
     if (storedCandidates) {
       this.candidates = JSON.parse(storedCandidates);
     }
 
-    // Initialize positions and filteredCandidates after candidates are loaded
-    this.positions = [...new Set(this.candidates.map(c => c.position))]; // Extract unique positions
-    this.filteredCandidates = [...this.candidates].reverse(); // Initially, show all candidates
+    this.positions = [...new Set(this.candidates.map(c => c.position))]; 
+    this.filteredCandidates = [...this.candidates].reverse(); 
 
     console.log(this.candidates)
   }
