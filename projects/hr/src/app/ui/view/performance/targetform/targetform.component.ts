@@ -43,15 +43,14 @@ export class TargetformComponent implements OnInit {
   metricString: string = '';
   metricsArray: Metric[] = [];
   user_id?: number | undefined;
-  userRole: 'admin' | 'user' = 'user';
+  userRole: any = 'ROLE_USER';
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
     private messageService: MessageService
   ) {
-    this.userRole =
-      (sessionStorage.getItem('userRole') as 'admin' | 'user') || 'user';
+    this.userRole = sessionStorage.getItem('role');
     this.initializeForm();
   }
 
