@@ -43,9 +43,20 @@ export class CandidateComponent implements OnInit {
     this.viewModal = !this.viewModal;
     op.hide();
   }
+  // closeViewModal() {
+  //   this.viewModal = false;
+  // }
+
   closeViewModal() {
+    // Revoke Blob URLs
+    for (const key of this.getDynamicKeys()) {
+      if (this.isDocument(this.activeItem[key])) {
+        URL.revokeObjectURL(this.getDocumentUrl(key));
+      }
+    }
     this.viewModal = false;
   }
+  
 
   openInterviewInvite(candidate: any){
     this.activeItem = candidate
@@ -350,8 +361,27 @@ export class CandidateComponent implements OnInit {
     }
   }
   
+  generateBlobUrl(dataUrl: string): string {
+    const byteString = atob(dataUrl.split(',')[1]); // Decode base64
+    const mimeType = dataUrl.split(';')[0].split(':')[1]; // Extract MIME type
+  
+    const byteNumbers = new Array(byteString.length);
+    for (let i = 0; i < byteString.length; i++) {
+      byteNumbers[i] = byteString.charCodeAt(i);
+    }
+  
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: mimeType });
+    return URL.createObjectURL(blob);
+  }
+  
   isDocument(value: any): boolean {
     return typeof value === 'string' && value.startsWith('data:application');
   }
+
+  getDocumentUrl(key: string): string {
+    return this.isDocument(this.activeItem[key]) ? this.generateBlobUrl(this.activeItem[key]) : '';
+  }
+  
   
 }

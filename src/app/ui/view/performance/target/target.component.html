@@ -2,7 +2,7 @@
   <aside class="w-65 bg-white rounded-lg p-0 shadow-lg text-lg space-y-4">
     <ul class="space-y-10 mt-10 mr-7">
       <li
-        class="flex items-center justify-between mt-12 bg-blue-50 p-6 rounded-lg shadow-sm hover:bg-blue-100"
+        class="flex items-center justify-between mt-12 bg-skyBlue p-6 rounded-lg shadow-sm hover:bg-skyBlue2"
       >
         <div class="flex items-center space-x-3">
           <i class="text-blue-600 pi pi-list"></i>
@@ -64,7 +64,7 @@
           <span class="text-yellow-500 font-medium text-lg">On Hold</span>
         </div>
         <span
-          class="bg-yellow-200 text-yellow-600 font-semibold rounded-full px-3 py-1 text-lg"
+          class="bg-yellow-200 text-yellow-600 font-semibold rounded-full px-3 py-2 text-lg"
         >
           {{ getGoalsByStatus("On Hold").length }}
         </span>
@@ -99,7 +99,6 @@
       </li>
     </ul>
   </aside>
-
   <!-- Main Content -->
   <div class="flex-1">
     <div class="card">
@@ -196,11 +195,21 @@
                 {{ goal.priority }}
               </span>
             </td>
+            <!-- Table Cell with Dropdown for Progress Status -->
             <td class="table-item" pSortableColumn="RequestedDuration">
-              <span [class]="getStatusBadgeClass(goal.progressStatus)">
-                {{ goal.progressStatus }}
-              </span>
+              <select
+                class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
+                [ngModel]="goal.progressStatus"
+                (ngModelChange)="onStatusChange(goal, $event)"
+              >
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Not Completed">Not Completed</option>
+                <option value="On Hold">On Hold</option>
+                <option value="Completed">Completed</option>
+              </select>
             </td>
+
             <td class="table-item" pSortableColumn="RequestedDuration">
               <div class="flex text-lg gap-2">
                 <button
@@ -246,9 +255,10 @@
           <div>
             <h3 class="font-semibold text-gray-700">Employee Name</h3>
             <p class="text-gray-600 text-2xl">
-              {{ selectedGoal.employeeName }}
+              {{ selectedGoal.user_id }}
             </p>
           </div>
+
           <div>
             <h3 class="font-semibold text-gray-700">Assigned To</h3>
             <p class="text-gray-600 text-2xl">{{ selectedGoal.assignedTo }}</p>
@@ -278,11 +288,13 @@
             </p>
           </div>
 
-          <div class="col-span-2">
-            <h3 class="font-semibold text-gray-700">Evaluators</h3>
-            <p class="text-gray-600 text-2xl">
-              {{ selectedGoal.evaluator }}
-            </p>
+          <div *ngIf="userRole === 'admin'">
+            <div class="col-span-2">
+              <h3 class="font-semibold text-gray-700">Evaluators</h3>
+              <p class="text-gray-600 text-2xl">
+                {{ selectedGoal.evaluator }}
+              </p>
+            </div>
           </div>
 
           <div class="col-span-2 bg-gray-50 p-4 rounded-lg shadow-md">
