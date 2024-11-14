@@ -156,7 +156,7 @@
           <!-- Check if value is a document -->
           <span *ngIf="isDocument(activeItem[key]); else textValue">
             <a [href]="getDocumentUrl(key)" target="_blank" class="file-link ms-2">View Document</a>
-            <a [href]="getDocumentUrl(key)" download="{{ activeItem.candidateName }}.pdf" class="file-link ms-2">Download</a>
+            <a [href]="getDocumentUrl(key)" download="{{ activeItem.candidateName}} {{key}}.pdf" class="file-link ms-2">Download</a>
           </span>
         
         
