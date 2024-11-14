@@ -71,19 +71,23 @@ export class CandidateComponent implements OnInit {
     }
   
     if (typeof resume === 'string') {
-      const base64String = resume.split(',')[1];  
-      const blob = this.base64ToBlob(base64String, 'application'); 
+      // If resume is a base64 string
+      const base64String = resume.split(',')[1];  // Strip the base64 prefix
+      const blob = this.base64ToBlob(base64String, 'application');  // Assuming resume is a PDF
   
+      // Open the file in a new window
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
     } else if (resume instanceof File) {
+      // If resume is a File object, create a URL from it
       const fileUrl = URL.createObjectURL(resume);
       window.open(fileUrl, '_blank');
     }
   }
   
+  // Helper function to convert base64 to a Blob
   base64ToBlob(base64: string, mimeType: string): Blob {
-    const byteCharacters = atob(base64);  
+    const byteCharacters = atob(base64);  // Decode the base64 string
     const byteArrays = [];
   
     for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
@@ -124,13 +128,15 @@ export class CandidateComponent implements OnInit {
   }
 
   getCandidate(){
+    // Retrieve candidates from localStorage
     const storedCandidates = localStorage.getItem('candidates');
     if (storedCandidates) {
       this.candidates = JSON.parse(storedCandidates);
     }
 
-    this.positions = [...new Set(this.candidates.map(c => c.position))]; 
-    this.filteredCandidates = [...this.candidates].reverse(); 
+    // Initialize positions and filteredCandidates after candidates are loaded
+    this.positions = [...new Set(this.candidates.map(c => c.position))]; // Extract unique positions
+    this.filteredCandidates = [...this.candidates].reverse(); // Initially, show all candidates
 
     console.log(this.candidates)
   }
@@ -258,8 +264,7 @@ export class CandidateComponent implements OnInit {
   
   updateInterviewStatus(inviteData: any) {
     console.log('Updating interview status:', inviteData);
-  }
-  
+  }  
   
   downloadFile(candidate: any) {
     const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
@@ -304,32 +309,9 @@ export class CandidateComponent implements OnInit {
     }
   }
   
-  // generateBlobUrl(dataUrl: string): string {
-  //   const byteString = atob(dataUrl.split(',')[1]); 
-  //   const mimeType = dataUrl.split(';')[0].split(':')[1]; 
-  
-  //   const byteNumbers = new Array(byteString.length);
-  //   for (let i = 0; i < byteString.length; i++) {
-  //     byteNumbers[i] = byteString.charCodeAt(i);
-  //   }
-  
-  //   const byteArray = new Uint8Array(byteNumbers);
-  //   const blob = new Blob([byteArray], { type: mimeType });
-  //   return URL.createObjectURL(blob);
-  // }
-  
-  // isDocument(value: any): boolean {
-  //   return typeof value === 'string' && value.startsWith('data:application');
-  // }
-
-  // getDocumentUrl(key: string): string {
-  //   return this.isDocument(this.activeItem[key]) ? this.generateBlobUrl(this.activeItem[key]) : '';
-  // }
-  
-
   generateBlobUrl(dataUrl: string): string {
-    const byteString = atob(dataUrl.split(',')[1]);
-    const mimeType = dataUrl.split(';')[0].split(':')[1];
+    const byteString = atob(dataUrl.split(',')[1]); 
+    const mimeType = dataUrl.split(';')[0].split(':')[1]; 
   
     const byteNumbers = new Array(byteString.length);
     for (let i = 0; i < byteString.length; i++) {
@@ -342,10 +324,9 @@ export class CandidateComponent implements OnInit {
   }
   
   isDocument(value: any): boolean {
-    return typeof value === 'string' && 
-           (value.startsWith('data:application/pdf') || value.startsWith('data:application/vnd.openxmlformats-officedocument.wordprocessingml.document'));
+    return typeof value === 'string' && value.startsWith('data:application');
   }
-  
+
   getDocumentUrl(key: string): string {
     return this.isDocument(this.activeItem[key]) ? this.generateBlobUrl(this.activeItem[key]) : '';
   }
