@@ -1,11 +1,11 @@
 <div class="flex h-[80vh]" *ngIf="openTargetForm == false">
-  <aside class="w-80 bg-white rounded-lg p-0 shadow-lg text-lg flex flex-col gap-4">
-    <ul class="space-y-10 mt-10 mr-7">
+  <aside class="w-80 bg-white items-center rounded-lg p-0 shadow-lg text-lg ">
+    <ul class="mt-10 p-0 flex flex-col gap-6 items-center">
       <li
-        class="flex items-center justify-between mt-12 bg-skyBlue p-6 rounded-lg shadow-sm hover:bg-skyBlue2"
+        class="flex items-center justify-between mt-12 bg-blue-50 w-64 p-6 rounded-lg shadow-sm hover:bg-blue-100"
       >
         <div class="flex items-center space-x-3">
-          <i class="text-blue-600 pi pi-list"></i>
+          <i class="text-blue-600 mr-2 pi pi-list"></i>
           <span class="text-blue-800 font-medium text-lg">All</span>
         </div>
         <span
@@ -29,7 +29,7 @@
           </span>
          </li> -->
       <li
-        class="flex items-center justify-between bg-gray-50 p-4 rounded-lg shadow-sm hover:bg-gray-100"
+        class="flex items-center w-64 justify-between bg-gray-50 p-4 rounded-lg shadow-sm hover:bg-gray-100"
       >
         <div class="flex items-center space-x-2">
           <i class="text-gray-400 pi pi-clock"></i>
@@ -43,7 +43,7 @@
       </li>
 
       <li
-        class="flex items-center justify-between bg-green-150 p-6 rounded-lg shadow-sm hover:bg-green-100"
+        class="flex w-64 items-center justify-between bg-green-150 p-6 rounded-lg shadow-sm hover:bg-green-100"
       >
         <div class="flex items-center space-x-2">
           <i class="text-green-700 pi pi-spinner"></i>
@@ -57,7 +57,7 @@
       </li>
 
       <li
-        class="flex items-center justify-between bg-yellow-50 p-4 rounded-lg shadow-sm hover:bg-yellow-100"
+        class="flex w-64 items-center justify-between bg-yellow-50 p-4 rounded-lg shadow-sm hover:bg-yellow-100"
       >
         <div class="flex items-center space-x-2">
           <i class="text-yellow-400 pi pi-pause"></i>
@@ -71,7 +71,7 @@
       </li>
 
       <li
-        class="flex items-center justify-between bg-red-50 p-4 rounded-lg shadow-sm hover:bg-red-100"
+        class="flex w-64 items-center justify-between bg-red-50 p-4 rounded-lg shadow-sm hover:bg-red-100"
       >
         <div class="flex items-center space-x-2">
           <i class="text-red-400 pi pi-times"></i>
@@ -80,12 +80,12 @@
         <span
           class="bg-red-200 text-red-600 font-semibold rounded-full px-3 py-1 text-lg"
         >
-          {{ getGoalsByStatus("Not Archieved").length }}
+          {{ getGoalsByStatus("Not Achieved").length }}
         </span>
       </li>
 
       <li
-        class="flex items-center justify-between bg-purple-50 p-4 rounded-lg shadow-sm hover:bg-purple-100"
+        class="flex w-64 items-center justify-between bg-purple-50 p-4 rounded-lg shadow-sm hover:bg-purple-100"
       >
         <div class="flex items-center space-x-2">
           <i class="text-purple-600 pi pi-check"></i>
