@@ -1,3 +1,5 @@
+import { QuestionDTO } from "./questions.dto";
+
 export interface ApplicantDTO{
     id?: string;
     candidateName?: string;
@@ -32,7 +34,7 @@ export interface ApplicantDTO{
     appointmentLetter?: string;
     appointmentAttachments?: AttachmentDTO[];
 
-    interviewInfo?: any[];
+    interviewInfo?: InterviewDataDTO[];
 }
 
 export interface AttachmentDTO {
@@ -53,4 +55,8 @@ export enum ApplicationStage {
     AppointmentLetterSent = 'Appointment-Letter-Sent',
     AppointmentAccepted = 'Appointment-Accepted',
     AppointmentRejected = 'Appointment-Rejected'
+}
+
+export interface InterviewDataDTO{
+    questionData: QuestionDTO
 }
