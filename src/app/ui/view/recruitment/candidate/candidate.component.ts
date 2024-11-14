@@ -43,9 +43,6 @@ export class CandidateComponent implements OnInit {
     this.viewModal = !this.viewModal;
     op.hide();
   }
-  // closeViewModal() {
-  //   this.viewModal = false;
-  // }
 
   closeViewModal() {
     // Revoke Blob URLs
@@ -282,34 +279,6 @@ export class CandidateComponent implements OnInit {
     // Your logic to save or handle the interview data
     console.log('Updating interview status:', inviteData);
   }
-
-  // downloadFile(candidate: any) {
-  //   // Retrieve existing candidates from localStorage
-  //   const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-    
-  //   // Find the applicant by ID
-  //   const applicant = existingCandidates.find((c: any) => c.id === candidate.id);
-    
-  //   if (applicant && applicant.resume) {
-  //     // Extract the resume data
-  //     const resumeData = applicant.resume;
-  
-  //     // Create a link element
-  //     const link = document.createElement('a');
-  //     link.href = resumeData;  // Base64 data URI
-  //     link.download = `${applicant.candidateName} Resume`;  // Suggested file name
-  
-  //     // Trigger the download
-  //     link.click();
-  //   } else {
-  //     this.messageService.add({
-  //       severity: 'error',
-  //       summary: 'Download Failed',
-  //       detail: `Resume not found for ${candidate.candidateName}.`
-  //     });
-  //     // console.error('');
-  //   }
-  // }
   
   
   downloadFile(candidate: any) {
@@ -355,9 +324,32 @@ export class CandidateComponent implements OnInit {
     }
   }
   
+  // generateBlobUrl(dataUrl: string): string {
+  //   const byteString = atob(dataUrl.split(',')[1]); 
+  //   const mimeType = dataUrl.split(';')[0].split(':')[1]; 
+  
+  //   const byteNumbers = new Array(byteString.length);
+  //   for (let i = 0; i < byteString.length; i++) {
+  //     byteNumbers[i] = byteString.charCodeAt(i);
+  //   }
+  
+  //   const byteArray = new Uint8Array(byteNumbers);
+  //   const blob = new Blob([byteArray], { type: mimeType });
+  //   return URL.createObjectURL(blob);
+  // }
+  
+  // isDocument(value: any): boolean {
+  //   return typeof value === 'string' && value.startsWith('data:application');
+  // }
+
+  // getDocumentUrl(key: string): string {
+  //   return this.isDocument(this.activeItem[key]) ? this.generateBlobUrl(this.activeItem[key]) : '';
+  // }
+  
+
   generateBlobUrl(dataUrl: string): string {
-    const byteString = atob(dataUrl.split(',')[1]); 
-    const mimeType = dataUrl.split(';')[0].split(':')[1]; 
+    const byteString = atob(dataUrl.split(',')[1]);
+    const mimeType = dataUrl.split(';')[0].split(':')[1];
   
     const byteNumbers = new Array(byteString.length);
     for (let i = 0; i < byteString.length; i++) {
@@ -370,9 +362,10 @@ export class CandidateComponent implements OnInit {
   }
   
   isDocument(value: any): boolean {
-    return typeof value === 'string' && value.startsWith('data:application');
+    return typeof value === 'string' && 
+           (value.startsWith('data:application/pdf') || value.startsWith('data:application/vnd.openxmlformats-officedocument.wordprocessingml.document'));
   }
-
+  
   getDocumentUrl(key: string): string {
     return this.isDocument(this.activeItem[key]) ? this.generateBlobUrl(this.activeItem[key]) : '';
   }
