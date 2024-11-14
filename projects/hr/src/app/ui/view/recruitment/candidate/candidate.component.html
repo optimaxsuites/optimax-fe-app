@@ -66,7 +66,7 @@
                 <div>
                   <!-- <li class="table-item-panel"> <i class="pi pi-user-plus table-item me-2"></i> Add as Employee</li> -->
                   <li class="table-item-panel" (click)="openViewModal(candidate, op)"> <i class="pi pi-eye table-item me-2"></i> View</li>
-                  <li class="table-item-panel" (click)="downloadFile(candidate)"> <i class="pi pi-download table-item me-2"></i> Download Resume</li>
+                  <!-- <li class="table-item-panel" (click)="downloadFile(candidate)"> <i class="pi pi-download table-item me-2"></i> Download Resume</li> -->
                   <li class="table-item-panel" *ngIf="candidate.stage == 'Application Received'" (click)="openInterviewInvite(candidate)"> <i class="pi pi-send table-item me-2"></i> Send Invite</li>
                   <!-- <li class="table-item-panel"> <i class="pi pi-users table-item me-2"></i> Compare with Other Candidates </li> -->
                   <!-- <li class="table-item-panel" (click)="confirmCandidateDelete(candidate)"> <i class="pi pi-trash table-item me-2"></i> Delete</li> -->
@@ -140,7 +140,7 @@
     <div class="dynamic-section">
       <h3 class="section-title">Additional Information</h3>
       <div *ngFor="let key of getDynamicKeys()" class="info-item mb-4">
-        <label><strong>{{ key | titlecase }}: </strong></label>
+        <label><strong>{{ key | splitAndTitleCase }}:</strong></label>
         
         <!-- File or URL Handling -->
         <!-- <span *ngIf="isFile(activeItem[key]); else textValue">
@@ -153,10 +153,11 @@
           </a>
         </span> -->
 
-                <!-- Check if value is a document -->
-                <span *ngIf="isDocument(activeItem[key]); else textValue">
-                  <a [href]="activeItem[key]" target="_blank" class="file-link">View Document</a>
-                </span>
+          <!-- Check if value is a document -->
+          <span *ngIf="isDocument(activeItem[key]); else textValue">
+            <a [href]="getDocumentUrl(key)" target="_blank" class="file-link ms-2">View Document</a>
+            <a [href]="getDocumentUrl(key)" download="{{ activeItem.candidateName}} {{key}}" class="file-link ms-2">Download</a>
+          </span>
         
         
         <!-- Non-file Values -->
