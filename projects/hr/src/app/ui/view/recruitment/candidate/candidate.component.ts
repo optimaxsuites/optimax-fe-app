@@ -350,5 +350,8 @@ export class CandidateComponent implements OnInit {
     }
   }
   
+  isDocument(value: any): boolean {
+    return typeof value === 'string' && value.startsWith('data:application');
+  }
   
 }

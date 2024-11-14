@@ -15,5 +15,6 @@ export class PerformanceComponent {
     { name: ' Assessment List', component: AppraisallistComponent },
     { name: ' Assessment Cycle', component: AppraisalcycleComponent },
     { name: 'Target', component: TargetComponent }, // role: 'ROLE_ADMIN'
+    { name: 'My Target', component: GoalComponent },
   ];
 }
