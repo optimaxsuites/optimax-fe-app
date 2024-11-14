@@ -10,7 +10,7 @@
     <div class="w-1/2">
       <!-- Goal Name -->
       <div class="space-y-4 mb-4 mt-3">
-        <label class="text-lg font-semibold">Goal Name*</label>
+        <label class="a">Goal Name*</label>
         <input
           type="text"
           formControlName="goalName"
@@ -31,7 +31,7 @@
       <!-- Level and Priority -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
         <!-- <div class="space-y-2">
-          <label class="text-lg font-semibold">Level*</label>
+          <label class="a">Level*</label>
           <ng-select
             [items]="levelUser"
             bindLabel="option"
@@ -52,7 +52,7 @@
         </div> -->
 
         <div class="space-y-2">
-          <label class="text-lg font-semibold">Level*</label>
+          <label class="a">Level*</label>
           <select
             formControlName="priority"
             class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
@@ -62,7 +62,7 @@
         </div>
 
         <div class="space-y-2">
-          <label class="text-lg font-semibold">Priority*</label>
+          <label class="a">Priority*</label>
           <select
             formControlName="priority"
             class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
@@ -78,7 +78,7 @@
       <!-- Dates -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
         <div>
-          <label class="mb-2 text-lg font-semibold">Start Date*</label>
+          <label class="mb-2 a">Start Date*</label>
           <input
             type="date"
             formControlName="startDate"
@@ -86,7 +86,7 @@
           />
         </div>
         <div>
-          <label class="mb-2 text-lg font-semibold">End Date*</label>
+          <label class="mb-2 a">End Date*</label>
           <input
             type="date"
             formControlName="endDate"
@@ -98,7 +98,7 @@
       <!-- Admin Only Controls -->
       <div *ngIf="userRole === 'admin'" class="space-y-4">
         <div>
-          <label class="text-lg font-semibold">Evaluators*</label>
+          <label class="a">Evaluators*</label>
           <ng-select
             [items]="evaluator"
             [multiple]="true"
