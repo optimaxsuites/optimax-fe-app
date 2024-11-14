@@ -1,11 +1,5 @@
-// targetform.component.ts
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import {
-  AbstractControl,
-  FormBuilder,
-  FormGroup,
-  Validators,
-} from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 
@@ -76,7 +70,6 @@ export class TargetformComponent implements OnInit {
 
   ngOnInit(): void {
     this.userRole = sessionStorage.getItem('role');
-    console.log(this.userRole);
     const savedData = localStorage.getItem('targetFormData');
     if (savedData) {
       this.goalForm.patchValue(JSON.parse(savedData));
@@ -116,10 +109,6 @@ export class TargetformComponent implements OnInit {
   }
 
   onSubmit(): void {
-    console.log('Form submission initiated');
-    console.log('Form validity:', this.goalForm.valid);
-    console.log('Metrics array length:', this.metricsArray.length);
-
     if (this.goalForm.valid && this.metricsArray.length > 0) {
       const formValue = this.goalForm.getRawValue();
 
@@ -137,8 +126,6 @@ export class TargetformComponent implements OnInit {
           evaluator: ['Self'],
         }),
       };
-
-      console.log('New goal to save:', newGoal);
 
       const storageKey =
         this.userRole === 'ROLE_ADMIN' ? 'targetGoals' : 'employeeGoals';
@@ -163,6 +150,8 @@ export class TargetformComponent implements OnInit {
 
       existingGoals.push(newGoal);
       localStorage.setItem(storageKey, JSON.stringify(existingGoals));
+
+      window.dispatchEvent(new Event('storage'));
 
       this.messageService.add({
         severity: 'success',
@@ -193,7 +182,7 @@ export class TargetformComponent implements OnInit {
   private resetForm(): void {
     const defaultValues = {
       progressStatus: 'Pending',
-      ...(this.userRole === 'admin' && {
+      ...(this.userRole === 'ROLE_ADMIN' && {
         priority: 'Medium',
       }),
     };
@@ -201,7 +190,7 @@ export class TargetformComponent implements OnInit {
     this.goalForm.reset(defaultValues);
     this.metricsArray = [];
 
-    if (this.userRole !== 'admin') {
+    if (this.userRole !== 'ROLE_ADMIN') {
       const currentUserName = sessionStorage.getItem('userName') || '';
       this.goalForm.patchValue({ employeeName: currentUserName });
     }
@@ -216,7 +205,6 @@ export class TargetformComponent implements OnInit {
       this.metricsArray.push(newMetric);
       this.metricString = '';
       inputElement.value = '';
-      console.log('Added metric:', newMetric);
     }
   }
 
@@ -245,7 +233,6 @@ export class TargetformComponent implements OnInit {
     const index = this.metricsArray.indexOf(metric);
     if (index > -1) {
       this.metricsArray.splice(index, 1);
-      console.log('Deleted metric:', metric);
     }
   }
 }

@@ -120,17 +120,6 @@
           <label><strong>Date Applied:</strong></label>
           <span> {{ activeItem.dateApplied || 'N/A' }}</span>
         </div>
-        <!-- <div class="info-item">
-          <label><strong>Resume:</strong></label>
-          <a *ngIf="activeItem.resume" 
-             [href]="activeItem.resume" 
-             target="_blank" 
-             download 
-             class="file-link">
-            View/Download Resume
-          </a>
-          <span *ngIf="!activeItem.resume">No Resume Uploaded</span>
-        </div> -->
       </div>
     </div>
 
@@ -141,24 +130,12 @@
       <h3 class="section-title">Additional Information</h3>
       <div *ngFor="let key of getDynamicKeys()" class="info-item mb-4">
         <label><strong>{{ key | splitAndTitleCase }}:</strong></label>
-        
-        <!-- File or URL Handling -->
-        <!-- <span *ngIf="isFile(activeItem[key]); else textValue">
-          <a 
-            [href]="activeItem[key]" 
-            target="_blank" 
-            download 
-            class="file-link">
-            View/Download File
-          </a>
-        </span> -->
 
-          <!-- Check if value is a document -->
-          <span *ngIf="isDocument(activeItem[key]); else textValue">
-            <a [href]="getDocumentUrl(key)" target="_blank" class="file-link ms-2">View Document</a>
-            <a [href]="getDocumentUrl(key)" download="{{ activeItem.candidateName}} {{key}}" class="file-link ms-2">Download</a>
-          </span>
-        
+        <!-- Check if value is a document -->
+        <span *ngIf="isDocument(activeItem[key]); else textValue">
+          <a [href]="getDocumentUrl(key)" target="_blank" class="file-link ms-2">View Document</a>
+          <a [href]="getDocumentUrl(key)" download="{{ activeItem.candidateName}} {{key}}" class="file-link ms-2">Download</a>
+        </span>
         
         <!-- Non-file Values -->
         <ng-template #textValue>

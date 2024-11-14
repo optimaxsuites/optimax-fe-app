@@ -501,5 +501,78 @@ export class ScheduledInterviewComponent {
       detail: `Scoresheet for ${this.candidateData.candidateName} has been downloaded successfully.`,
     });
   }
+
+
+
+
+
+  getDynamicKeys(): string[] {
+    const predefinedKeys = [
+      'id', 'candidateName', 'contactNo', 'email', 'position',
+      'dateApplied', 'stage', 'interviewStage', 'firstName', 'firstname', 'lastName', 'lastname', 'fullName', 'fullname',
+      'interviewSubject', 'interviewInvite', 'interviewType', 'inviteAttachments',
+      'offerSubject', 'offerLetter', 'offerAttachments',
+      'appointmentSubject', 'appointmentLetter', 'appointmentAttachments'
+    ];
+    
+    return Object.keys(this.activeItem).filter(key => !predefinedKeys.includes(key));
+  }
+  generateBlobUrl(dataUrl: string): string {
+    const byteString = atob(dataUrl.split(',')[1]);
+    const mimeType = dataUrl.split(';')[0].split(':')[1];
+  
+    const byteNumbers = new Array(byteString.length);
+    for (let i = 0; i < byteString.length; i++) {
+      byteNumbers[i] = byteString.charCodeAt(i);
+    }
+  
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: mimeType });
+    return URL.createObjectURL(blob);
+  }
+  
+  isDocument(value: any): boolean {
+    return typeof value === 'string' && 
+           (value.startsWith('data:application/pdf') || value.startsWith('data:application/vnd.openxmlformats-officedocument.wordprocessingml.document'));
+  }
+  
+  getDocumentUrl(key: string): string {
+    return this.isDocument(this.activeItem[key]) ? this.generateBlobUrl(this.activeItem[key]) : '';
+  }
+
+
+  getSubmittedCriteria() {
+    const activeItemId = this.activeItem.id; // Get the active item's ID
+    
+    // Step 1: Retrieve all the submitted criteria data from localStorage
+    const allSubmittedCriteria = JSON.parse(localStorage.getItem('submittedCriteria') || '{}');
+    
+    // Step 2: Retrieve the candidate's submissions for the activeItem.id
+    const candidateData = allSubmittedCriteria[activeItemId] || [];
+  
+    // Step 3: Check if there is any data for the candidate
+    if (candidateData.length === 0) {
+      return []; // Return empty array if no data found
+    }
+  
+    // Step 4: Map the data to return the relevant criteria and totalScore
+    return candidateData.map((item: any) => ({
+      criteria: item.criteria ? item.criteria.title : 'Unknown Criteria',
+      totalScore: item.totalScore || 0,
+    }));
+  }
+  
+  calculateAverageScore(scores: { totalScore: number }[]): number {
+    if (!scores.length) return 0; // Return 0 if no scores are provided
+    
+    // Step 1: Calculate the total sum of all totalScores
+    const totalSum = scores.reduce((sum, score) => sum + score.totalScore, 0);
+    
+    // Step 2: Calculate and return the average score
+    return totalSum / scores.length;
+  }
+  
+  
+  
   
 }
