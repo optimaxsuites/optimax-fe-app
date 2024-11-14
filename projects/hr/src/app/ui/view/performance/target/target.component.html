@@ -1,6 +1,9 @@
-<div class="flex h-[80vh]" *ngIf="openTargetForm == false">
-  <aside class="w-80 bg-white items-center rounded-lg p-0 shadow-lg text-lg ">
-    <ul class="mt-10 p-0 flex flex-col gap-6 items-center">
+<div
+  class="flex min-h-screen"
+  *ngIf="openTargetForm == false && opengoal == false"
+>
+  <aside class="w-65 bg-white rounded-lg p-0 shadow-lg text-lg space-y-4">
+    <ul class="space-y-10 mt-10 mr-7">
       <li
         class="flex items-center justify-between mt-12 bg-blue-50 w-64 p-6 rounded-lg shadow-sm hover:bg-blue-100"
       >
@@ -105,6 +108,14 @@
     <div class="card">
       <p-toolbar styleClass="mb-4 gap-2">
         <ng-template pTemplate="right">
+          <!-- <div *ngIf="userRole === 'ROLE_ADMIN'" class=""> -->
+          <app-button
+            (click)="loadAllTargets()"
+            text="View All"
+            class="btn-navigate gap-2"
+          ></app-button>
+          <!-- </div> -->
+
           <app-button
             (click)="navigateToCreateGoal()"
             text="Add Goal"
@@ -175,31 +186,31 @@
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-goal>
-          <tr>
-            <td class="table-item" pSortableColumn="RequestedDuration">
+          <tr class="text-xl">
+            <td>
               {{ goal.goalName }}
             </td>
-            <td class="table-item" pSortableColumn="RequestedDuration">
+            <td>
               {{ goal.employeeName }}
             </td>
-            <td class="table-item" pSortableColumn="RequestedDuration">
+            <td>
               {{ goal.assignedTo }}
             </td>
-            <td class="table-item" pSortableColumn="RequestedDuration">
+            <td>
               {{ goal.startDate | date }}
             </td>
-            <td class="table-item" pSortableColumn="RequestedDuration">
+            <td>
               {{ goal.endDate | date }}
             </td>
-            <td class="table-item" pSortableColumn="RequestedDuration">
+            <td>
               <span [class]="getPriorityBadgeClass(goal.priority)">
                 {{ goal.priority }}
               </span>
             </td>
             <!-- Table Cell with Dropdown for Progress Status -->
-            <td class="table-item" pSortableColumn="RequestedDuration">
+            <td>
               <select
-                class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
+                class="w-[75%] px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
                 [ngModel]="goal.progressStatus"
                 (ngModelChange)="onStatusChange(goal, $event)"
               >
@@ -211,7 +222,7 @@
               </select>
             </td>
 
-            <td class="table-item" pSortableColumn="RequestedDuration">
+            <td>
               <div class="flex text-lg gap-2">
                 <button
                   pButton
@@ -334,4 +345,8 @@
 
 <div *ngIf="openTargetForm">
   <app-targetform (back)="navigateToCreateGoal()"></app-targetform>
+</div>
+
+<div *ngIf="opengoal">
+  <app-goal (back)="navigateCreateGoal()"></app-goal>
 </div>
