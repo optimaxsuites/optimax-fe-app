@@ -20,6 +20,8 @@ export class RecruitmentFormComponent {
   customField: CustomField = {};
   customFieldList: CustomField[] = [];
 
+  editIndex: number | null = null;
+
   customType = [
     { value: 'text', label: 'Text' },
     { value: 'number', label: 'Number' },
@@ -174,69 +176,89 @@ export class RecruitmentFormComponent {
     private confirmationService: ConfirmationService,
     private messageService: MessageService
   ) {
-    // Initialize jobData with a default string
+
   }
 
   ngOnInit() {
     if (!this.jobData.postedDate) {
-      this.getTodayDate(); // Set today's date if not already set
+      this.getTodayDate(); 
     }
+
 
     console.log("Check if isEdit is working",this.isEdit)
   }
 
   onDeleteCustomiseInput(index: number): void {
-    this.jobData.fields?.splice(index, 1);
+    this.customFieldList?.splice(index, 1);
+  }
+ 
+  toggleSideModal(field?: CustomField, index?: number): void {
+    this.openSideModal = true;
+    if (!this.jobData.fields) {
+      this.customFieldList = [...(this.jobData.fields || [])]; 
+    }
+    if (field && index !== undefined) {
+      this.customField = { ...field }; 
+      this.editIndex = index;
+    } else {
+      this.resetCustomField(); 
+      this.editIndex = null; 
+    }
   }
   
-
-  // Method to add a new input to the list
-  addCustomiseInput() {
-    this.customFieldList.push({ ...this.customField });
-    this.customField = {}; // Reset input fields
+  onEditCustomInput(index: number): void {
+    this.customField = { ...this.customFieldList[index] };
+    this.editIndex = index; 
+    this.openSideModal = true; 
   }
-
-  // Method to save inputs to localStorage
-  saveCustomiseInputs() {
-    localStorage.setItem('customiseInputs', JSON.stringify(this.customFieldList));
-    
-    // Clear the list after saving
-    this.customFieldList = []; 
-    
-    // Load the saved customiseInputs from local storage and parse them
-    const savedCustomiseInputs = localStorage.getItem('customiseInputs');
-    
-    // Check if saved data exists and parse it
-    if (savedCustomiseInputs) {
-        this.jobData.fields = JSON.parse(savedCustomiseInputs);
+  addOrUpdateCustomField(): void {
+    if (this.isValidCustomField(this.customField)) {
+      if (this.editIndex !== null) {
+        this.customFieldList[this.editIndex] = { ...this.customField };
+      } else {
+        this.customFieldList.push({ ...this.customField });
+      }
+      this.resetCustomField();
+      this.editIndex = null; 
     } else {
-        this.jobData.fields = []; // Initialize as an empty array if nothing is found
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Validation Failed',
+        detail: 'Please fill out all fields correctly.',
+      });
     }
-    this.openSideModal = false;
-}
-
-
-  toogleSideModal(){
-    this.openSideModal = true;
   }
-
+  isValidCustomField(field: CustomField): boolean {
+    return (
+      !!field.label?.trim() && 
+      !!field.type?.trim()
+    );
+  }
+  resetCustomField(): void {
+    this.customField = { label: '', type: '', required: false }; 
+  }
+  
+  saveCustomiseInputs(): void {
+      this.jobData.fields = [...this.customFieldList]; 
+      localStorage.setItem('customiseInputs', JSON.stringify(this.jobData.fields));
+  
+      this.openSideModal = false; 
+  }
 
   getTodayDate(){
     const today = new Date();
-    const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are zero-based, so add 1
-    const day = String(today.getDate()).padStart(2, '0'); // Get the day
-    const year = today.getFullYear(); // Get the year
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const year = today.getFullYear();
   
-    this.jobData.postedDate = `${month}/${day}/${year}`; // Format as MM/DD/YYYY
+    this.jobData.postedDate = `${month}/${day}/${year}`; // MM/DD/YYYY
   }
 
   goBack() {
     this.back.emit();
   }
-
   
   submitForm() {
-    // Check if all required fields are filled
     const isValid = this.validateForm();
     if (!isValid) {
       this.messageService.add({
@@ -246,44 +268,31 @@ export class RecruitmentFormComponent {
       });    
       return; 
     }
-    
-    // Retrieve the existing job postings from localStorage (if any)
     const storedJobs = localStorage.getItem('jobData');
     const jobArray = storedJobs ? JSON.parse(storedJobs) : [];
   
     if (this.isEdit) {
-      // Find the index of the job to be edited
       const jobIndex = jobArray.findIndex((jobData: { id: number | undefined; }) => jobData.id === this.jobData.id);
   
       if (jobIndex > -1) {
-        // Update the existing job data
         jobArray[jobIndex] = this.jobData;
         console.log('Job updated:', this.jobData);
       } else {
         console.error('Job not found for editing.');
       }
     } else {
-      // Generate a random token and append it to the job ID for new job submissions
-      this.jobData.id = this.randomToken.getRandomToken(); // Add token to the ID
-  
-      // Add the new job data to the array
+      this.jobData.id = this.randomToken.getRandomToken(); 
       jobArray.push(this.jobData);
       console.log('Job added:', this.jobData);
     }
-  
-    // Save the updated array back to localStorage
     localStorage.setItem('jobData', JSON.stringify(jobArray));
   
-    // Emit the form submission event (if required)
     this.submitFrom.emit(this.jobData);
-  
-    // Optionally, reset the form after submission
-    this.jobData = {}; // Reset the job data
+    this.jobData = {}; 
   }
 
-  // Validation function
+
   validateForm(): boolean {
-    // Check if required fields are filled
     const requiredFields = [
       this.jobData.title,
       this.jobData.category,
@@ -292,7 +301,7 @@ export class RecruitmentFormComponent {
       this.jobData.description
     ];
 
-    return requiredFields.every(field => field); // Ensure all required fields are truthy
+    return requiredFields.every(field => field); 
   }
 
 
