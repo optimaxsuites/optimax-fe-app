@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 
@@ -15,14 +16,8 @@ interface TargetGoal {
   progressStatus: string;
   user_id?: number;
   isTarget?: boolean;
-  level: string[];
-  evaluator: string[];
-  userRole: string | undefined;
-  pendingCount: number;
-  inProgressCount: number;
-  notCompletedCount: number;
-  onHoldCount: number;
-  completedCount: number;
+  level: string;
+  evaluator: string;
 }
 
 @Component({
@@ -32,7 +27,9 @@ interface TargetGoal {
   providers: [MessageService],
 })
 export class TargetComponent implements OnInit {
-  goals: TargetGoal[] = [];
+  goalForm: FormGroup;
+  targetGoals: TargetGoal[] = [];
+  employeeGoals: TargetGoal[] = [];
   filteredGoals: TargetGoal[] = [];
   selectedStatus: string[] = [];
   searchTerm: string = '';
@@ -43,73 +40,76 @@ export class TargetComponent implements OnInit {
     'On Hold',
     'Completed',
   ];
-
   viewModalVisible: boolean = false;
-
+  currentGoalId: number | null = null;
   selectedGoal: TargetGoal | null = null;
   openTargetForm: boolean = false;
   user_id?: number;
-  userRole: 'admin' | 'user' = 'user';
+  userRole: string | undefined;
   confirmationMessage: string | null = null;
   pendingCount: number = 0;
   inProgressCount: number = 0;
   notCompletedCount: number = 0;
   onHoldCount: number = 0;
   completedCount: number = 0;
+  opengoal: boolean = false;
 
-  constructor(private router: Router, private messageService: MessageService) {
-    this.userRole =
-      (sessionStorage.getItem('userRole') as 'admin' | 'user') || 'user';
-    this.user_id = sessionStorage.getItem('userid')
-      ? Number(sessionStorage.getItem('userid'))
-      : undefined;
+  constructor(
+    private router: Router,
+    private messageService: MessageService,
+    private fb: FormBuilder
+  ) {
+    this.userRole = sessionStorage.getItem('role') || undefined;
+    this.user_id = Number(sessionStorage.getItem('userid'));
+    this.goalForm = this.fb.group({
+      name: [''],
+      description: [''],
+      deadline: [''],
+    });
   }
 
   ngOnInit() {
     this.loadGoals();
+
+    window.addEventListener('storage', () => this.loadGoals());
   }
 
   calculateScores(): void {
     this.pendingCount = this.getGoalsByStatus('Pending').length;
     this.inProgressCount = this.getGoalsByStatus('In Progress').length;
-    this.notCompletedCount = this.getGoalsByStatus('Not Completed').length;
+    this.notCompletedCount = this.getGoalsByStatus('Not Achieved').length;
     this.onHoldCount = this.getGoalsByStatus('On Hold').length;
     this.completedCount = this.getGoalsByStatus('Completed').length;
   }
 
+  loadAllTargets() {}
+
   loadGoals() {
-    // Get both types of goals from localStorage
-    const employeeGoals = JSON.parse(
+    const savedTargetGoals = JSON.parse(
+      localStorage.getItem('targetGoals') || '[]'
+    );
+    const savedEmployeeGoals = JSON.parse(
       localStorage.getItem('employeeGoals') || '[]'
     );
-    const targetGoals = JSON.parse(localStorage.getItem('targetGoals') || '[]');
 
-    if (this.userRole === 'admin') {
-      // Admin sees all goals
-      this.goals = [...employeeGoals, ...targetGoals];
-    } else {
-      // Regular users only see their goals
-      this.goals = [
-        ...employeeGoals.filter(
-          (goal: TargetGoal) => goal.user_id === this.user_id
-        ),
-        ...targetGoals.filter(
-          (goal: TargetGoal) => goal.user_id === this.user_id
-        ),
-      ];
-    }
+    // if (this.userRole === 'ROLE_ADMIN') {
+    this.targetGoals = savedTargetGoals;
+    this.employeeGoals = savedEmployeeGoals;
+    // } else {
+    //   this.targetGoals = savedTargetGoals.filter(
+    //     (goal: TargetGoal) => goal.user_id === this.user_id
+    //   );
+    //   this.employeeGoals = savedEmployeeGoals.filter(
+    //     (goal: TargetGoal) => goal.user_id === this.user_id
+    //   );
+    // }
 
-    this.filteredGoals = [...this.goals];
+    this.filteredGoals = [...this.targetGoals, ...this.employeeGoals];
     this.sortGoals();
   }
 
   sortGoals() {
-    // Sort by user_id, then by progress status
     this.filteredGoals.sort((a, b) => {
-      if (this.user_id && a.user_id && b.user_id) {
-        return a.user_id - b.user_id;
-      }
-
       const statusOrder = {
         Pending: 0,
         'In Progress': 1,
@@ -125,21 +125,23 @@ export class TargetComponent implements OnInit {
   }
 
   filterGoals() {
-    this.filteredGoals = this.goals.filter((goal) => {
-      const matchesSearch =
-        goal.goalName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        goal.employeeName.toLowerCase().includes(this.searchTerm.toLowerCase());
-
-      const matchesStatus =
-        this.selectedStatus.length === 0 ||
-        this.selectedStatus.includes(goal.progressStatus);
-
-      return matchesSearch && matchesStatus;
-    });
+    this.filteredGoals = [...this.targetGoals, ...this.employeeGoals].filter(
+      (goal) => {
+        const matchesSearch =
+          goal.goalName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+          goal.employeeName
+            .toLowerCase()
+            .includes(this.searchTerm.toLowerCase());
+        const matchesStatus =
+          this.selectedStatus.length === 0 ||
+          this.selectedStatus.includes(goal.progressStatus);
+        return matchesSearch && matchesStatus;
+      }
+    );
   }
 
   getGoalsByStatus(status: string): TargetGoal[] {
-    return this.goals.filter((goal) => goal.progressStatus === status);
+    return this.filteredGoals.filter((goal) => goal.progressStatus === status);
   }
 
   getPriorityBadgeClass(priority: string): string {
@@ -174,11 +176,8 @@ export class TargetComponent implements OnInit {
     }
   }
 
-  onStatusChange(goal: any, newStatus: string): void {
-    // Update the status for the selected goal
+  onStatusChange(goal: TargetGoal, newStatus: string): void {
     goal.progressStatus = newStatus;
-
-    // Recalculate scores
     this.calculateScores();
   }
 
@@ -188,14 +187,17 @@ export class TargetComponent implements OnInit {
   }
 
   editGoal(goal: TargetGoal) {
-    console.log('Edit goal:', goal);
+    this.goalForm.patchValue({
+      name: goal.goalName,
+      description: goal.goalDescription,
+      deadline: goal.endDate,
+    });
+    this.currentGoalId = goal.user_id ?? null;
   }
 
   deleteGoal(goal: TargetGoal) {
     const confirmDelete = confirm('Are you sure you want to delete this goal?');
-
     if (confirmDelete) {
-      // Remove from both storages to ensure it's deleted
       ['targetGoals', 'employeeGoals'].forEach((key) => {
         const goals = JSON.parse(localStorage.getItem(key) || '[]');
         const updatedGoals = goals.filter(
@@ -204,10 +206,7 @@ export class TargetComponent implements OnInit {
         );
         localStorage.setItem(key, JSON.stringify(updatedGoals));
       });
-
-      // Update the current view
       this.loadGoals();
-
       this.messageService.add({
         severity: 'success',
         summary: 'Success',
@@ -220,18 +219,20 @@ export class TargetComponent implements OnInit {
   toggleMetricCompletion(metric: { name: string; completed: boolean }) {
     if (!metric.completed) {
       metric.completed = true;
-
       this.confirmationMessage = `Task "${metric.name}" completed successfully!`;
-
       setTimeout(() => {
         this.confirmationMessage = null;
       }, 2000);
     }
-    localStorage.setItem('employeeGoals', JSON.stringify(this.goals));
+    localStorage.setItem('employeeGoals', JSON.stringify(this.filteredGoals));
   }
 
   navigateToCreateGoal() {
     this.openTargetForm = !this.openTargetForm;
+  }
+
+  navigateCreateGoal() {
+    this.opengoal = !this.opengoal;
   }
 
   saveMetricsToLocalStorage(): void {
