@@ -143,7 +143,7 @@
         <label><strong>{{ key | titlecase }}: </strong></label>
         
         <!-- File or URL Handling -->
-        <span *ngIf="isFile(activeItem[key]); else textValue">
+        <!-- <span *ngIf="isFile(activeItem[key]); else textValue">
           <a 
             [href]="activeItem[key]" 
             target="_blank" 
@@ -151,7 +151,13 @@
             class="file-link">
             View/Download File
           </a>
-        </span>
+        </span> -->
+
+                <!-- Check if value is a document -->
+                <span *ngIf="isDocument(activeItem[key]); else textValue">
+                  <a [href]="activeItem[key]" target="_blank" class="file-link">View Document</a>
+                </span>
+        
         
         <!-- Non-file Values -->
         <ng-template #textValue>
