@@ -50,7 +50,6 @@ export class TargetformComponent implements OnInit {
     private router: Router,
     private messageService: MessageService
   ) {
-    this.userRole = sessionStorage.getItem('role');
     this.initializeForm();
   }
 
@@ -76,6 +75,8 @@ export class TargetformComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    this.userRole = sessionStorage.getItem('role');
+    console.log(this.userRole);
     const savedData = localStorage.getItem('targetFormData');
     if (savedData) {
       this.goalForm.patchValue(JSON.parse(savedData));
@@ -84,7 +85,7 @@ export class TargetformComponent implements OnInit {
       ? Number(sessionStorage.getItem('userid'))
       : undefined;
 
-    if (this.userRole !== 'admin') {
+    if (this.userRole !== 'ROLE_ADMIN') {
       const currentUserName = sessionStorage.getItem('userName') || '';
       this.goalForm.patchValue({ employeeName: currentUserName });
       this.goalForm.get('employeeName')?.disable();
@@ -109,7 +110,7 @@ export class TargetformComponent implements OnInit {
     };
 
     this.goalForm =
-      this.userRole === 'admin'
+      this.userRole === 'ROLE_ADMIN'
         ? this.fb.group({ ...baseControls, ...adminControls })
         : this.fb.group(baseControls);
   }
@@ -128,7 +129,7 @@ export class TargetformComponent implements OnInit {
         user_id: this.user_id,
         isTarget: true,
         userRole: this.userRole,
-        ...(this.userRole !== 'admin' && {
+        ...(this.userRole !== 'ROLE_ADMIN' && {
           priority: 'Medium',
           assignedTo: formValue.employeeName,
           progressStatus: 'Pending',
@@ -140,7 +141,7 @@ export class TargetformComponent implements OnInit {
       console.log('New goal to save:', newGoal);
 
       const storageKey =
-        this.userRole === 'admin' ? 'targetGoals' : 'employeeGoals';
+        this.userRole === 'ROLE_ADMIN' ? 'targetGoals' : 'employeeGoals';
       const existingGoals: TargetGoal[] = JSON.parse(
         localStorage.getItem(storageKey) || '[]'
       );
