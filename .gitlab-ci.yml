@@ -32,10 +32,9 @@ update_subtrees:
         - git checkout -b temp-branch
         - git checkout mod
         - git merge temp-branch
-        - git remote set-url origin "https://gitlab.com/j2yemi/optimax_fe_app.git"
-        - git push origin mod || echo "Failed to push changes"
+        - git remote set-url origin "https://oauth2:${LOGIN_TOKEN}@gitlab.com/j2yemi/optimax_fe_app.git"
+        - git push origin mod || (echo "Retrying push" && git push origin mod)
 
     rules:
-        - if: '$CI_PIPELINE_SOURCE == "schedule"'
-          when: always
+      
          

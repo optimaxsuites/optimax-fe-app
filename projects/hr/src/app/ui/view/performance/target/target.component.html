@@ -196,11 +196,21 @@
                 {{ goal.priority }}
               </span>
             </td>
+            <!-- Table Cell with Dropdown for Progress Status -->
             <td class="table-item" pSortableColumn="RequestedDuration">
-              <span [class]="getStatusBadgeClass(goal.progressStatus)">
-                {{ goal.progressStatus }}
-              </span>
+              <select
+                class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
+                [ngModel]="goal.progressStatus"
+                (ngModelChange)="onStatusChange(goal, $event)"
+              >
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Not Completed">Not Completed</option>
+                <option value="On Hold">On Hold</option>
+                <option value="Completed">Completed</option>
+              </select>
             </td>
+
             <td class="table-item" pSortableColumn="RequestedDuration">
               <div class="flex text-lg gap-2">
                 <button
@@ -246,9 +256,10 @@
           <div>
             <h3 class="font-semibold text-gray-700">Employee Name</h3>
             <p class="text-gray-600 text-2xl">
-              {{ selectedGoal.employeeName }}
+              {{ selectedGoal.user_id }}
             </p>
           </div>
+
           <div>
             <h3 class="font-semibold text-gray-700">Assigned To</h3>
             <p class="text-gray-600 text-2xl">{{ selectedGoal.assignedTo }}</p>
@@ -278,11 +289,13 @@
             </p>
           </div>
 
-          <div class="col-span-2">
-            <h3 class="font-semibold text-gray-700">Evaluators</h3>
-            <p class="text-gray-600 text-2xl">
-              {{ selectedGoal.evaluator }}
-            </p>
+          <div *ngIf="userRole === 'admin'">
+            <div class="col-span-2">
+              <h3 class="font-semibold text-gray-700">Evaluators</h3>
+              <p class="text-gray-600 text-2xl">
+                {{ selectedGoal.evaluator }}
+              </p>
+            </div>
           </div>
 
           <div class="col-span-2 bg-gray-50 p-4 rounded-lg shadow-md">
