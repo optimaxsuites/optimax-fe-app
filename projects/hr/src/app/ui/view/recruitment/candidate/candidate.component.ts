@@ -39,16 +39,11 @@ export class CandidateComponent implements OnInit {
 
   openViewModal(candidate: any, op: any) {
     this.activeItem = candidate
-    // this.tableSection =!this.tableSection
     this.viewModal = !this.viewModal;
     op.hide();
   }
-  // closeViewModal() {
-  //   this.viewModal = false;
-  // }
 
   closeViewModal() {
-    // Revoke Blob URLs
     for (const key of this.getDynamicKeys()) {
       if (this.isDocument(this.activeItem[key])) {
         URL.revokeObjectURL(this.getDocumentUrl(key));
@@ -204,7 +199,6 @@ export class CandidateComponent implements OnInit {
       rejectIcon:"none",
       acceptLabel: 'Delete',
       rejectLabel: 'Cancel',
-      // styleClass: 'custom-confirm-dialog',
       accept: () => {
         this.deleteCandidate(candidate);
       },
@@ -215,19 +209,10 @@ export class CandidateComponent implements OnInit {
   }
 
   deleteCandidate(candidate: any): void {
-  // Retrieve the candidates from localStorage
   const storedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-
-  // Filter out the candidate to delete
   const updatedCandidates = storedCandidates.filter((c: any) => c.id !== candidate.id);
-
-  // Update the localStorage with the new candidates array
   localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
-
-  // Update the table data to reflect the deletion
   this.filteredCandidates = updatedCandidates;
-
-  // Update the localStorage with the new candidates array
   localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
     this.messageService.add({
       severity: 'success',
@@ -236,7 +221,6 @@ export class CandidateComponent implements OnInit {
     });
   }
 
-  // Function to handle sending interview invite  
   sendInvite(interviewDetails: ApplicantDTO) {
     // Update the candidate's stage to "Scheduled"
     const interviewCandidate: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
@@ -279,38 +263,8 @@ export class CandidateComponent implements OnInit {
   }
   
   updateInterviewStatus(inviteData: any) {
-    // Your logic to save or handle the interview data
     console.log('Updating interview status:', inviteData);
-  }
-
-  // downloadFile(candidate: any) {
-  //   // Retrieve existing candidates from localStorage
-  //   const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-    
-  //   // Find the applicant by ID
-  //   const applicant = existingCandidates.find((c: any) => c.id === candidate.id);
-    
-  //   if (applicant && applicant.resume) {
-  //     // Extract the resume data
-  //     const resumeData = applicant.resume;
-  
-  //     // Create a link element
-  //     const link = document.createElement('a');
-  //     link.href = resumeData;  // Base64 data URI
-  //     link.download = `${applicant.candidateName} Resume`;  // Suggested file name
-  
-  //     // Trigger the download
-  //     link.click();
-  //   } else {
-  //     this.messageService.add({
-  //       severity: 'error',
-  //       summary: 'Download Failed',
-  //       detail: `Resume not found for ${candidate.candidateName}.`
-  //     });
-  //     // console.error('');
-  //   }
-  // }
-  
+  }  
   
   downloadFile(candidate: any) {
     // Retrieve existing candidates from localStorage
