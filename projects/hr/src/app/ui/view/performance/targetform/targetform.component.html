@@ -1,18 +1,21 @@
-<div class="card rounded-2xl">
+<div class="card rounded-2xl p-10">
   <app-back-button class="table-item" (click)="goBack()"></app-back-button>
 
   <form
     [formGroup]="goalForm"
     (ngSubmit)="onSubmit()"
-    class="space-y-8 flex mb-5 justify-between gap-10 items-start px-5 py-3 outline-none"  >
-    <div class="w-1/2">
-      <div class=" mb-4 mt-3">
-        <label class="mb-2 text-lg font-semibold">Goal Name*</label>
+    class="space-y-8 flex flex-col lg:flex-row justify-between items-start"
+  >
+    <!-- Left Column -->
+    <div class="w-full lg:w-[48%]">
+      <!-- Goal Name -->
+      <div class="space-y-4 mb-4 mt-3">
+        <label class="text-lg font-semibold">Goal Name*</label>
         <input
           type="text"
           formControlName="goalName"
           placeholder="Enter goal name"
-          class="w-full px-4 py-3 border border-gray-300 rounded-md  transition duration-200"
+          class="w-full px-4 py-3 border border-gray-300 rounded-md transition duration-200"
         />
         <div
           *ngIf="
@@ -25,130 +28,125 @@
         </div>
       </div>
 
-      <div class=" mb-4">
-        <label class="mb-2 text-lg font-semibold">Employee Name*</label>
-        <input
-          type="text"
-          formControlName="employeeName"
-          placeholder="Enter employee name"
-          class="w-full px-4 py-3 border border-gray-300 rounded-md  transition duration-200"
-        />
-        <div
-          *ngIf="
-            goalForm.get('employeeName')?.touched &&
-            goalForm.get('employeeName')?.invalid
-          "
-          class="text-red-500 text-sm"
-        >
-          Employee name is required
-        </div>
-      </div>
-
-      <!-- Goal Description Section -->
-      <!-- <div class="">
-          <label class="mb-2 text-lg font-semibold">Goal Description*</label>
-          <textarea
-            formControlName="goalDescription"
-            placeholder="Describe the goal"
-            class="w-full px-4 py-3 border border-gray-300 rounded-md  transition duration-200"
-          ></textarea>
+      <!-- Level and Priority -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+        <!-- <div class="space-y-2">
+          <label class="text-lg font-semibold">Level*</label>
+          <ng-select
+            [items]="levelUser"
+            bindLabel="option"
+            bindValue="option"
+            formControlName="levelUser"
+            placeholder="Select level"
+            class="w-full"
+          ></ng-select>
           <div
             *ngIf="
-              goalForm.get('goalDescription')?.touched &&
-              goalForm.get('goalDescription')?.invalid
+              goalForm.get('levelUser')?.touched &&
+              goalForm.get('levelUser')?.invalid
             "
             class="text-red-500 text-sm"
           >
-            Goal description is required
+            Level is required
           </div>
         </div> -->
 
-      <!-- Start and End Date -->
-      <div class="grid grid-cols-1 mb-4 md:grid-cols-2 gap-6">
-        <div>
-          <label class="mb-2 text-lg font-semibold">Evaluators*</label>
-          <ng-select
-            name="evaluator"
-            [items]="evaluator"
-            [multiple]="true"
-            bindLabel="option"
-            bindValue="option"
-            formControlName="level"
-            placeholder="select evaluator"
-          ></ng-select>
+        <div class="space-y-2">
+          <label class="text-lg font-semibold">Level*</label>
+          <select
+            formControlName="priority"
+            class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
+          >
+            <option value="Critical">Individual</option>
+          </select>
         </div>
 
-        <div>
-          <label class="mb-2 text-lg font-semibold">Level*</label>
-          <ng-select
-            name="level"
-            [items]="level"
-            bindLabel="option"
-            bindValue="option"
-            formControlName="level"
-            placeholder="select Individual"
-          ></ng-select>
+        <div class="space-y-2">
+          <label class="text-lg font-semibold">Priority*</label>
+          <select
+            formControlName="priority"
+            class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
+          >
+            <option value="Critical">Critical</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
         </div>
+      </div>
 
+      <!-- Dates -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
         <div>
           <label class="mb-2 text-lg font-semibold">Start Date*</label>
           <input
             type="date"
             formControlName="startDate"
-            class="w-full px-4 py-3 border border-gray-300 rounded-md  transition duration-200"
+            class="w-full px-4 py-3 border border-gray-300 rounded-md transition duration-200"
           />
         </div>
-
         <div>
           <label class="mb-2 text-lg font-semibold">End Date*</label>
           <input
             type="date"
             formControlName="endDate"
-            class="w-full px-4 py-3 border border-gray-300 rounded-md  transition duration-200"
+            class="w-full px-4 py-3 border border-gray-300 rounded-md transition duration-200"
           />
         </div>
       </div>
 
-      <!-- Priority, Assigned To, Target and Actual Metrics -->
-      <div class=" mb-4">
-        <label class="mb-2 text-lg font-semibold">Priority*</label>
-        <select
-          formControlName="priority"
-          class="w-full px-4 py-3 border border-gray-300 rounded-md  transition duration-200"
-        >
-          <option value="Low">Critical</option>
-          <option value="High">High</option>
-          <option value="Medium">Medium</option>
-          <option value="Low">Low</option>
-        </select>
+      <!-- Admin Only Controls -->
+      <div *ngIf="userRole === 'admin'" class="space-y-4">
+        <div>
+          <label class="text-lg font-semibold">Evaluators*</label>
+          <ng-select
+            [items]="evaluator"
+            [multiple]="true"
+            bindLabel="option"
+            bindValue="option"
+            formControlName="evaluator"
+            placeholder="Select evaluator"
+            class="w-full"
+          ></ng-select>
+        </div>
+
+        <div>
+          <label class="text-lg font-semibold">Level*</label>
+          <ng-select
+            [items]="level"
+            bindLabel="option"
+            bindValue="option"
+            formControlName="level"
+            placeholder="Select level"
+            class="w-full"
+          ></ng-select>
+        </div>
       </div>
 
-      <div class=" mb-4">
-        <label class="mb-2 text-lg font-semibold">Assigned To*</label>
+      <!-- Assigned To -->
+      <div class="space-y-4">
+        <label class="text-lg font-semibold">Assigned To*</label>
         <input
           type="text"
           formControlName="assignedTo"
           placeholder="Enter assignee name"
-          class="w-full px-4 py-3 border border-gray-300 rounded-md  transition duration-200"
+          class="w-full px-4 py-3 border border-gray-300 rounded-md transition duration-200"
         />
       </div>
 
-      <div class=" mb-4">
-        <label class="mb-2 text-lg font-semibold">Progress Status*</label>
+      <!-- Progress Status -->
+      <div class="space-y-4">
+        <label class="text-lg font-semibold">Progress Status*</label>
         <select
           formControlName="progressStatus"
-          class="w-full px-4 py-3 border border-gray-300 rounded-md  transition duration-200"
+          class="w-full px-4 py-3 border border-gray-300 rounded-md transition duration-200"
         >
           <option value="Pending">Pending</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Not Archieved">Not Completed</option>
-          <option value="On Hold">On Hold</option>
-          <option value="Completed">Completed</option>
         </select>
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex justify-end mt-4 space-x-6">
+      <div class="flex justify-end mt-6 space-x-6">
         <button
           type="button"
           (click)="onCancel()"
@@ -165,26 +163,25 @@
       </div>
     </div>
 
-    <div class="w-1/2 flex flex-col gap-3">
-      <div class="">
-        <label for=""  class="mb-2 text-lg font-semibold"
-          >Overview & Description: <span style="color: red">*</span></label
-        >
+    <!-- Right Column -->
+    <div class="w-full lg:w-[48%] space-y-6">
+      <div>
+        <label class="text-lg font-semibold">Overview & Description*</label>
         <p-editor
           formControlName="goalDescription"
           placeholder="Overview & Description..."
-        />
+          class="w-full"
+        ></p-editor>
       </div>
-      <div class="">
-        <label for="" class="mb-2 text-lg font-semibold"
-          >Metrics: <span style="color: red">*</span></label
-        >
+
+      <div class="space-y-4">
+        <label class="text-lg font-semibold">Metrics*</label>
         <div class="flex items-center">
           <input
             type="text"
             #metricInput
             (input)="onInputChange($event)"
-            class="flex-grow px-4 py-3 border border-gray-300 rounded-md  transition duration-200"
+            class="flex-grow px-4 py-3 border border-gray-300 rounded-md transition duration-200"
             placeholder="Enter metric"
           />
           <span
@@ -194,14 +191,14 @@
             + Add Metric
           </span>
         </div>
-
-        <ul class="flex flex-col p-2 space-y-12">
+        <ul class="flex flex-col space-y-4 p-2">
           <li
             *ngFor="let metric of metricsArray"
-            class="flex justify-between items-center p-3 border border-gray-200 rounded-md"
+            class="flex justify-between items-center p-3 border border-gray-210 rounded-md"
           >
             <span class="text-gray-800 text-lg">{{ metric.name }}</span>
             <button
+              type="button"
               class="text-red-500 hover:text-red-700 transition duration-200"
               (click)="OnDelete(metric)"
             >

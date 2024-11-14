@@ -28,6 +28,8 @@ interface TargetGoal {
   isTarget?: boolean;
   level: string[];
   evaluator: string[];
+  userRole: string | undefined;
+  levelUser: string;
 }
 
 @Component({
@@ -37,37 +39,41 @@ interface TargetGoal {
 })
 export class TargetformComponent implements OnInit {
   @Output() back = new EventEmitter<void>();
-  goalForm: FormGroup;
+  goalForm!: FormGroup;
   metricString: string = '';
   metricsArray: Metric[] = [];
   user_id?: number | undefined;
+  userRole: 'admin' | 'user' = 'user';
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
     private messageService: MessageService
   ) {
-    this.goalForm = this.fb.group({
-      goalName: ['', Validators.required],
-      employeeName: ['', Validators.required],
-      goalDescription: ['', Validators.required],
-      startDate: ['', Validators.required],
-      endDate: ['', Validators.required],
-      priority: ['Medium', Validators.required],
-      assignedTo: ['', Validators.required],
-      progressStatus: ['Pending', Validators.required],
-      level: ['Individual', Validators.required],
-      evaluator: ['All', Validators.required],
-    });
+    this.userRole =
+      (sessionStorage.getItem('userRole') as 'admin' | 'user') || 'user';
+    this.initializeForm();
   }
 
-  level = [{ option: 'Individual' }, { option: 'Organization' }];
+  levelUser = [
+    {
+      option: 'Individual',
+    },
+  ];
+
+  level = [
+    {
+      option: 'Individual',
+    },
+    { option: 'Organization' },
+  ];
 
   evaluator = [
-    { option: 'All' },
+    {
+      option: 'All',
+    },
     { option: 'Supervisor' },
     { option: 'Peer' },
-    { option: 'Self' },
   ];
 
   ngOnInit(): void {
@@ -75,26 +81,88 @@ export class TargetformComponent implements OnInit {
     if (savedData) {
       this.goalForm.patchValue(JSON.parse(savedData));
     }
-
     this.user_id = sessionStorage.getItem('userid')
       ? Number(sessionStorage.getItem('userid'))
       : undefined;
+
+    if (this.userRole !== 'admin') {
+      const currentUserName = sessionStorage.getItem('userName') || '';
+      this.goalForm.patchValue({ employeeName: currentUserName });
+      this.goalForm.get('employeeName')?.disable();
+    }
   }
+
+  private initializeForm(): void {
+    const baseControls = {
+      goalName: ['', Validators.required],
+      goalDescription: ['', Validators.required],
+      startDate: ['', Validators.required],
+      endDate: ['', Validators.required],
+      level: ['Individual', Validators.required],
+      progressStatus: ['Pending', Validators.required],
+      priority: ['Medium', Validators.required],
+      assignedTo: ['', Validators.required],
+    };
+
+    const adminControls = {
+      level: ['Individual', Validators.required],
+      evaluator: ['', Validators.required],
+    };
+
+    this.goalForm =
+      this.userRole === 'admin'
+        ? this.fb.group({ ...baseControls, ...adminControls })
+        : this.fb.group(baseControls);
+  }
+
   onSubmit(): void {
+    console.log('Form submission initiated');
+    console.log('Form validity:', this.goalForm.valid);
+    console.log('Metrics array length:', this.metricsArray.length);
+
     if (this.goalForm.valid && this.metricsArray.length > 0) {
+      const formValue = this.goalForm.getRawValue();
+
       const newGoal: TargetGoal = {
-        ...this.goalForm.value,
+        ...formValue,
         targetMetrics: this.metricsArray,
         user_id: this.user_id,
-        isTarget: true, // Mark as target goal
+        isTarget: true,
+        userRole: this.userRole,
+        ...(this.userRole !== 'admin' && {
+          priority: 'Medium',
+          assignedTo: formValue.employeeName,
+          progressStatus: 'Pending',
+          level: ['Individual'],
+          evaluator: ['Self'],
+        }),
       };
 
-      // Save to target goals
-      const existingTargetGoals: TargetGoal[] = JSON.parse(
-        localStorage.getItem('targetGoals') || '[]'
+      console.log('New goal to save:', newGoal);
+
+      const storageKey =
+        this.userRole === 'admin' ? 'targetGoals' : 'employeeGoals';
+      const existingGoals: TargetGoal[] = JSON.parse(
+        localStorage.getItem(storageKey) || '[]'
       );
-      existingTargetGoals.push(newGoal);
-      localStorage.setItem('targetGoals', JSON.stringify(existingTargetGoals));
+
+      const isDuplicate = existingGoals.some(
+        (goal) =>
+          goal.goalName === newGoal.goalName && goal.user_id === newGoal.user_id
+      );
+
+      if (isDuplicate) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'A goal with this name already exists',
+          life: 3000,
+        });
+        return;
+      }
+
+      existingGoals.push(newGoal);
+      localStorage.setItem(storageKey, JSON.stringify(existingGoals));
 
       this.messageService.add({
         severity: 'success',
@@ -103,11 +171,7 @@ export class TargetformComponent implements OnInit {
         life: 3000,
       });
 
-      this.goalForm.reset({
-        priority: 'Medium',
-        progressStatus: 'Pending',
-      });
-      this.metricsArray = [];
+      this.resetForm();
 
       setTimeout(() => {
         this.router.navigate(['/targets']);
@@ -126,16 +190,33 @@ export class TargetformComponent implements OnInit {
     }
   }
 
+  private resetForm(): void {
+    const defaultValues = {
+      progressStatus: 'Pending',
+      ...(this.userRole === 'admin' && {
+        priority: 'Medium',
+      }),
+    };
+
+    this.goalForm.reset(defaultValues);
+    this.metricsArray = [];
+
+    if (this.userRole !== 'admin') {
+      const currentUserName = sessionStorage.getItem('userName') || '';
+      this.goalForm.patchValue({ employeeName: currentUserName });
+    }
+  }
+
   addMetrics(inputElement: HTMLInputElement) {
     if (this.metricString.trim()) {
-      // Create a new metric object
       const newMetric: Metric = {
         name: this.metricString.trim(),
-        completed: false, // Default to not completed
+        completed: false,
       };
       this.metricsArray.push(newMetric);
-      this.metricString = ''; // Clear the internal value
-      inputElement.value = ''; // Clear the input field display
+      this.metricString = '';
+      inputElement.value = '';
+      console.log('Added metric:', newMetric);
     }
   }
 
@@ -155,7 +236,6 @@ export class TargetformComponent implements OnInit {
   }
 
   onCancel(): void {
-    // Clear the form data from localStorage
     localStorage.removeItem('goalFormData');
     this.goalForm.reset();
     this.router.navigate(['/goals']);
@@ -165,6 +245,7 @@ export class TargetformComponent implements OnInit {
     const index = this.metricsArray.indexOf(metric);
     if (index > -1) {
       this.metricsArray.splice(index, 1);
+      console.log('Deleted metric:', metric);
     }
   }
 }
