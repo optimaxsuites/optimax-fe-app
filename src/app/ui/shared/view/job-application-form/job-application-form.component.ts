@@ -69,83 +69,6 @@ export class JobApplicationFormComponent {
         .replace(/^./, char => char.toLowerCase()); // Ensure the first letter is lowercase
   }
 
-  // onFileChange(event: any, field: any): void {
-  //   const file = event.target.files[0];  // Get the first selected file
-  //   if (file) {
-  //     // Dynamically store the file in formData using the transformed field label as the key
-  //     this.formData[this.transformLabelToKey(field.label)] = file;
-  //   }
-  // }
-
-
-  // onFileChange(event: Event) {
-  //   const input = event.target as HTMLInputElement;
-  //   if (input.files && input.files.length) {
-  //     this.onFilePreview(input.files[0])
-  //   }
-
-  // }
-  // onFilePreview(file: File){
-  //   if (file) {
-  //     const reader = new FileReader();
-  //     reader.onload = (event: any) => {
-  //       this.fileURL = event.target.result;
-  //       console.log("----", this.fileURL)
-  //     };
-  //     reader.readAsDataURL(file);
-  //   }
-  // }
-  
-
-  // // Save entire form to localStorage on submit
-  // saveFormData() {
-  //   const candidateName = this.formData.fullName 
-  //       || (this.formData.firstName && this.formData.lastName 
-  //           ? `${this.formData.firstName} ${this.formData.lastName}`
-  //           : '');
-
-  //   const applicantInfo: ApplicantDTO = { 
-  //     ...this.formData, 
-  //     candidateName,
-  //     resume: this.fileURL,
-  //     id: this.applicantId, 
-  //     position: this.job.category,
-  //     dateApplied: new Date().toISOString(), // Capture the current date
-  //     stage: ApplicationStage.ApplicationReceived,
-  //   };
-  //   console.log("candidate-info", applicantInfo)
-
-
-  //   // Retrieve existing candidates from localStorage or initialize an empty array
-  //   const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-
-  //   // Push the new applicant info into the existing candidates array
-  //   existingCandidates.push(applicantInfo);
-  //   // console.log("candidate-file", existingCandidates)
-
-  //   // Save the updated candidates array back to localStorage
-  //   localStorage.setItem('candidates', JSON.stringify(existingCandidates));
-
-  //   // Optionally reset the formData
-  //   this.formData = {}; // Or set it back to its initial state
-
-  //   this.messageService.add({
-  //       severity: 'success', 
-  //       summary: `Application Successful`,
-  //       detail: `You have successfully applied for ${this.job.category}`
-  //   });
-
-  // // this.formData = []
-  //   // alert(`Form data saved successfully with ID: ${id} and Position: ${position}`);
-  // }
-
-
-
-
-
-
-
-    // Handles file input change dynamically
   onFileChange(event: Event, label: string) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length) {
@@ -190,9 +113,9 @@ export class JobApplicationFormComponent {
     }
 
 
-    const candidateName = this.formData.fullName 
-        || (this.formData.firstName && this.formData.lastName 
-            ? `${this.formData.firstName} ${this.formData.lastName}` 
+    const candidateName = this.formData.fullName || this.formData.fullname
+        || (this.formData.firstName || this.formData.firstname && this.formData.lastame || this.formData.lastname
+            ? `${this.formData.firstName || this.formData.firstname} ${this.formData.lastName || this.formData.lastname}` 
             : '');
 
     const applicantInfo: ApplicantDTO = { 
