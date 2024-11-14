@@ -273,6 +273,7 @@ export class InterviewScoreSheetComponent implements OnInit {
     );
   
     if (selectedCriteria) {
+      console.log('selected criteria', selectedCriteria)
       const savedData = localStorage.getItem('submittedCriteria');
       const submittedCriteria: any[] = savedData ? JSON.parse(savedData) : []; // Ensure it's an array.
   
@@ -281,12 +282,15 @@ export class InterviewScoreSheetComponent implements OnInit {
         criteria: selectedCriteria,
         totalScore: this.totalScoreOver100,
       };
+      console.log('newCriteriaSubmission', newCriteriaSubmission)
   
       this.applicantData['interviewData'].push(newCriteriaSubmission); // Push the new submission to interviewData.
   
+      console.log('applicat info', this.applicantData)
+
       submittedCriteria.push(this.applicantData); // Add the updated applicant data to the submitted criteria list.
-  
-      localStorage.setItem('submittedCriteria', JSON.stringify(submittedCriteria)); // Save back to localStorage.
+  console.log('submitted criterial', submittedCriteria)
+      localStorage.setItem('scheduledCandidate', JSON.stringify(submittedCriteria)); // Save back to localStorage.
   
       console.log('Selected criteria saved to localStorage:', selectedCriteria);
   
