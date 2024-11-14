@@ -213,12 +213,63 @@
   <form [formGroup]="leaveForm"  *ngIf="currentTab === 3" class="flex w-full flex-col justify-center item-center">
 
     <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
-      <div class="mb-4">
+      <!-- <div class="mb-4">
           <label for="leaveDays" class="block text-[13px] font-medium">Leave Days Entitlement (Annually)<span class="ml-1 font-bold text-red-600">*</span></label>
           <input type="number" formControlName="leaveDays" id="leaveDays" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" min="0"/>
           <small *ngIf="leaveForm.get('leaveDays')?.touched && leaveForm.get('leaveDays')?.invalid" class="text-red-600">
           {{ getErrorMessage(leaveForm.get("leaveDays"), 'Leave Days Entitlement') }}
           </small>
+      </div> -->
+
+      <div class="mb-4">
+          <table class="styled-table">
+            <thead class="bg-customBlue text-white">
+              <td>Leave Types</td>
+              <td>Assigned number of day(s)</td>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Annual leave <span class="ml-1 font-bold text-red-600">*</span></td>
+                <td>
+                  <input type="number" min="0"  class="outline-none p-1" placeholder="0" formControlName="annual">
+                </td>
+              </tr>
+              <tr>
+                <td>Sick leave</td>
+                <td>
+                  <input type="number" min="0"  class="outline-none p-1" placeholder="0" formControlName="sick">
+                </td>
+              </tr>
+              <tr>
+                <td>Public Holiday</td>
+                <td>
+                  <input type="number" min="0"  class="outline-none p-1" placeholder="0" formControlName="holiday">
+                </td>
+              </tr>
+              <tr>
+                <td>Casual leave</td>
+                <td>
+                  <input type="number" min="0"  class="outline-none p-1" placeholder="0" formControlName="casual">
+                </td>
+              </tr>
+              <tr>
+                <td>Bereavement leave</td>
+                <td>
+                  <input type="number" min="0"  class="outline-none p-1" placeholder="0" formControlName="bereavement">
+                </td>
+              </tr>
+              <tr>
+                <td>Total</td>
+                <td>
+                  {{totalLeaveDays}}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <small *ngIf="leaveForm.get('annual')?.touched && leaveForm.get('annual')?.invalid" class="text-red-600">
+            {{ getErrorMessage(leaveForm.get("annual"), 'Annual Days Entitlement') }}
+            </small>
       </div>
       <div class="text-right">
         <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
