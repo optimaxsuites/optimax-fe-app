@@ -78,7 +78,7 @@ export class CandidateComponent implements OnInit {
     if (typeof resume === 'string') {
       // If resume is a base64 string
       const base64String = resume.split(',')[1];  // Strip the base64 prefix
-      const blob = this.base64ToBlob(base64String, 'application/pdf');  // Assuming resume is a PDF
+      const blob = this.base64ToBlob(base64String, 'application');  // Assuming resume is a PDF
   
       // Open the file in a new window
       const url = URL.createObjectURL(blob);
@@ -313,26 +313,20 @@ export class CandidateComponent implements OnInit {
   
   
   downloadFile(candidate: any) {
-    // Retrieve existing candidates from localStorage
     const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
-  
-    // Find the applicant by ID
     const applicant = existingCandidates.find((c: any) => c.id === candidate.id);
   
     if (applicant) {
       const keywords = ['resume', 'cv', 'curriculum vitae'];
-  
-      // Filter out potential resume-related Base64 data
       const cvFiles = Object.entries(applicant).filter(([key, value]) => {
         if (typeof value === 'string' && value.startsWith('data:')) {
-          // Attempt to decode Base64 metadata
           try {
             const decodedValue = atob(value.split(',')[1]);
             return keywords.some(keyword =>
               key.toLowerCase().includes(keyword) || decodedValue.toLowerCase().includes(keyword)
             );
           } catch {
-            return false; // Skip if decoding fails
+            return false;
           }
         }
         return false;
@@ -341,7 +335,7 @@ export class CandidateComponent implements OnInit {
       if (cvFiles.length > 0) {
         cvFiles.forEach(([key, base64Data]) => {
           const link = document.createElement('a');
-          link.href = base64Data as string; // Base64 data URI
+          link.href = base64Data as string;
           link.download = `${applicant.candidateName || 'Candidate'} - ${key}`; // Generate a meaningful filename
           link.click();
         });
@@ -362,8 +356,8 @@ export class CandidateComponent implements OnInit {
   }
   
   generateBlobUrl(dataUrl: string): string {
-    const byteString = atob(dataUrl.split(',')[1]); // Decode base64
-    const mimeType = dataUrl.split(';')[0].split(':')[1]; // Extract MIME type
+    const byteString = atob(dataUrl.split(',')[1]); 
+    const mimeType = dataUrl.split(';')[0].split(':')[1]; 
   
     const byteNumbers = new Array(byteString.length);
     for (let i = 0; i < byteString.length; i++) {
