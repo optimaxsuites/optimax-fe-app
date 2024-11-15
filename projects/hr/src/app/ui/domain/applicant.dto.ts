@@ -15,30 +15,29 @@ export interface ApplicantDTO{
     coverLetter?: any;
     stage?: ApplicationStage;
     interviewStage?: number;
-    [key: string]: any; 
 
     interviewSubject?: string
     interviewInvite?: string;
     interviewType?: string;
     inviteAttachments?: AttachmentDTO[];
 
-
     offerSubject?: string;
     offerLetter?: string;
     offerAttachments?: AttachmentDTO[];
 
-
     appointmentSubject?: string;
     appointmentLetter?: string;
     appointmentAttachments?: AttachmentDTO[];
+
+    [key: string]: any; 
 }
 
 export interface AttachmentDTO {
     name?: string;
     url?: string;
-    size?: number; // Add size property
-    type?: string; // Add type property
-  }
+    size?: number; 
+    type?: string; 
+}
 
 export enum ApplicationStage {
     ApplicationReceived = 'Application Received',
