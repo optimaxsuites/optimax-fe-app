@@ -71,23 +71,18 @@ export class CandidateComponent implements OnInit {
     }
   
     if (typeof resume === 'string') {
-      // If resume is a base64 string
-      const base64String = resume.split(',')[1];  // Strip the base64 prefix
-      const blob = this.base64ToBlob(base64String, 'application');  // Assuming resume is a PDF
-  
-      // Open the file in a new window
+      const base64String = resume.split(',')[1];  
+      const blob = this.base64ToBlob(base64String, 'application'); 
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
     } else if (resume instanceof File) {
-      // If resume is a File object, create a URL from it
       const fileUrl = URL.createObjectURL(resume);
       window.open(fileUrl, '_blank');
     }
   }
   
-  // Helper function to convert base64 to a Blob
   base64ToBlob(base64: string, mimeType: string): Blob {
-    const byteCharacters = atob(base64);  // Decode the base64 string
+    const byteCharacters = atob(base64);  
     const byteArrays = [];
   
     for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
@@ -128,15 +123,13 @@ export class CandidateComponent implements OnInit {
   }
 
   getCandidate(){
-    // Retrieve candidates from localStorage
     const storedCandidates = localStorage.getItem('candidates');
     if (storedCandidates) {
       this.candidates = JSON.parse(storedCandidates);
     }
 
-    // Initialize positions and filteredCandidates after candidates are loaded
-    this.positions = [...new Set(this.candidates.map(c => c.position))]; // Extract unique positions
-    this.filteredCandidates = [...this.candidates].reverse(); // Initially, show all candidates
+    this.positions = [...new Set(this.candidates.map(c => c.position))]; 
+    this.filteredCandidates = [...this.candidates].reverse(); 
 
     console.log(this.candidates)
   }
@@ -154,13 +147,11 @@ export class CandidateComponent implements OnInit {
 
   candidates: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
 
-  positions: any[] =[]; // Extract unique positions
-
-  // positions = [...new Set(this.candidates.map(c => c.position))]; // Extract unique positions
+  positions: any[] =[]; 
+  // positions = [...new Set(this.candidates.map(c => c.position))]; 
   selectedPositions: string[] = [];
   filteredCandidates: ApplicantDTO[] = [];
 
-  // Function to filter candidates by selected positions
   filterCandidatesByPosition() {
     if (this.selectedPositions.length > 0) {
       this.filteredCandidates = this.candidates.filter(candidate =>
@@ -171,17 +162,14 @@ export class CandidateComponent implements OnInit {
     }
   }
 
-  // Function to handle stage selection
+
   updateStage(candidate: any, newStage: string) {
     candidate.stage = newStage;
   }
   
   filterCandidates() {
     this.filteredCandidates = this.candidates.filter(candidate => {
-      // Check if the candidate matches the search term
       const matchesSearchTerm = candidate.candidateName!.toLowerCase().includes(this.searchTerm.toLowerCase());
-  
-      // Check if the candidate matches one of the selected positions (if any)
       const matchesPosition = this.selectedPositions.length === 0 || this.selectedPositions.includes(candidate.position!);
   
       return matchesSearchTerm && matchesPosition;
@@ -199,6 +187,7 @@ export class CandidateComponent implements OnInit {
       rejectIcon:"none",
       acceptLabel: 'Delete',
       rejectLabel: 'Cancel',
+      // styleClass: 'custom-confirm-dialog',
       accept: () => {
         this.deleteCandidate(candidate);
       },
@@ -210,9 +199,13 @@ export class CandidateComponent implements OnInit {
 
   deleteCandidate(candidate: any): void {
   const storedCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
+
   const updatedCandidates = storedCandidates.filter((c: any) => c.id !== candidate.id);
+
   localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
+
   this.filteredCandidates = updatedCandidates;
+
   localStorage.setItem('candidates', JSON.stringify(updatedCandidates));
     this.messageService.add({
       severity: 'success',
@@ -222,41 +215,34 @@ export class CandidateComponent implements OnInit {
   }
 
   sendInvite(interviewDetails: ApplicantDTO) {
-    // Update the candidate's stage to "Scheduled"
     const interviewCandidate: ApplicantDTO[] = JSON.parse(localStorage.getItem('candidates') || '[]');
     const scheduledInterview: ApplicantDTO[] = JSON.parse(localStorage.getItem('scheduledCandidate') || '[]');
     
-    // Find the candidate to update
     const index = interviewCandidate.findIndex((c: ApplicantDTO) => c.id === this.activeItem?.id);
     if (index !== -1 && this.activeItem) {
-      // Increment the interviewStage
-      const currentStage = this.activeItem.interviewStage || 0; // Default to 0 if undefined
+      const currentStage = this.activeItem.interviewStage || 0; 
       const updatedCandidate: ApplicantDTO = {
         ...interviewCandidate[index],
         stage: ApplicationStage.Scheduled,
-        interviewStage: currentStage + 1,  // Increment the interview stage
+        interviewStage: currentStage + 1,  
         interviewInvite: interviewDetails.interviewInvite,
         interviewType: interviewDetails.interviewType,
         inviteAttachments: interviewDetails.inviteAttachments,
       };
 
-      // Remove the candidate from the candidates array
       interviewCandidate.splice(index, 1);
       
-      // Update local storage
       localStorage.setItem('candidates', JSON.stringify(interviewCandidate));
       scheduledInterview.push(updatedCandidate);
       console.log("candidate-Job Application Info", updatedCandidate.interviewInvite, updatedCandidate.interviewType)
       localStorage.setItem('scheduledCandidate', JSON.stringify(scheduledInterview));
 
-          // Optionally, show a success message
       this.messageService.add({
         severity: 'success',
         summary: 'Candidate Invited',
         detail: `${this.activeItem.candidateName} has been successfully invited for the interview.`
       });
       
-      // Close the interview invite component
       this.closeInterviewInvite();
       this.getCandidate();
     }
@@ -264,7 +250,8 @@ export class CandidateComponent implements OnInit {
   
   updateInterviewStatus(inviteData: any) {
     console.log('Updating interview status:', inviteData);
-  }  
+  }
+  
   
   downloadFile(candidate: any) {
     const existingCandidates = JSON.parse(localStorage.getItem('candidates') || '[]');
@@ -290,7 +277,7 @@ export class CandidateComponent implements OnInit {
         cvFiles.forEach(([key, base64Data]) => {
           const link = document.createElement('a');
           link.href = base64Data as string;
-          link.download = `${applicant.candidateName || 'Candidate'} - ${key}`; // Generate a meaningful filename
+          link.download = `${applicant.candidateName || 'Candidate'} - ${key}`; 
           link.click();
         });
       } else {
@@ -309,9 +296,32 @@ export class CandidateComponent implements OnInit {
     }
   }
   
+  // generateBlobUrl(dataUrl: string): string {
+  //   const byteString = atob(dataUrl.split(',')[1]); 
+  //   const mimeType = dataUrl.split(';')[0].split(':')[1]; 
+  
+  //   const byteNumbers = new Array(byteString.length);
+  //   for (let i = 0; i < byteString.length; i++) {
+  //     byteNumbers[i] = byteString.charCodeAt(i);
+  //   }
+  
+  //   const byteArray = new Uint8Array(byteNumbers);
+  //   const blob = new Blob([byteArray], { type: mimeType });
+  //   return URL.createObjectURL(blob);
+  // }
+  
+  // isDocument(value: any): boolean {
+  //   return typeof value === 'string' && value.startsWith('data:application');
+  // }
+
+  // getDocumentUrl(key: string): string {
+  //   return this.isDocument(this.activeItem[key]) ? this.generateBlobUrl(this.activeItem[key]) : '';
+  // }
+  
+
   generateBlobUrl(dataUrl: string): string {
-    const byteString = atob(dataUrl.split(',')[1]); 
-    const mimeType = dataUrl.split(';')[0].split(':')[1]; 
+    const byteString = atob(dataUrl.split(',')[1]);
+    const mimeType = dataUrl.split(';')[0].split(':')[1];
   
     const byteNumbers = new Array(byteString.length);
     for (let i = 0; i < byteString.length; i++) {
@@ -324,9 +334,10 @@ export class CandidateComponent implements OnInit {
   }
   
   isDocument(value: any): boolean {
-    return typeof value === 'string' && value.startsWith('data:application');
+    return typeof value === 'string' && 
+           (value.startsWith('data:application/pdf') || value.startsWith('data:application/vnd.openxmlformats-officedocument.wordprocessingml.document'));
   }
-
+  
   getDocumentUrl(key: string): string {
     return this.isDocument(this.activeItem[key]) ? this.generateBlobUrl(this.activeItem[key]) : '';
   }
