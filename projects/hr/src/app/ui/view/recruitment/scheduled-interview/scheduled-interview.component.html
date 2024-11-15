@@ -281,12 +281,12 @@
         
           <div *ngFor="let score of getSubmittedCriteria()" class="scorsheet-container editInput mb-2">
             <span class="scorelabel">{{ score.criteria }}</span>
-            <span class="scorevalue">{{ score.totalScore }}</span>
+            <span class="scorevalue">{{ score.totalScore | number:'1.1-1' }}</span>
           </div>
         
           <div class="scoresheet-total">
             <span class="scorelabel"></span>
-            <span class="scorevalue">Average Score: {{ calculateAverageScore(getSubmittedCriteria()) | number:'1.2-2' }}</span>
+            <span class="scorevalue">Average Score: {{ calculateAverageScore(getSubmittedCriteria()) | number:'1.1-1' }}</span>
           </div>
         </div>
         

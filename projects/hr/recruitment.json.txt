@@ -1,0 +1,85 @@
+JobDTO {
+    id?: string;
+    title?: string;
+    category?: string;
+    description?: string;
+    location?: string;
+    employmentType?: string;
+    postedDate?: string;
+    expiryDate?: Date;
+    specification?: string;
+    experience?: string;
+    qualification?: string;
+    fields?: CustomField[]; 
+}
+CustomField {
+    label?: string;
+    type?: string; 
+    options?: string[];
+    required?: boolean;
+}
+JobExperienceDTO{
+    id?: number;
+    name?: string;
+    des?: string;
+}
+JobCategoryDTO{
+    id?: number;
+    name?: string;
+    des?: string;
+}
+JobTypeDTO{
+    id?: number;
+    name?: string;
+    des?: string;
+}
+JobSpecificationDTO{
+    id?: number;
+    name?: string;
+    des?: string;
+}
+
+ApplicantDTO{
+    id?: string;
+    candidateName?: string;
+    email?: string;
+    position?: string;
+    dateApplied?: string;
+    stage?: ApplicationStage;
+    interviewStage?: number;
+
+    interviewSubject?: string
+    interviewInvite?: string;
+    interviewType?: string;
+    inviteAttachments?: AttachmentDTO[];
+
+    offerSubject?: string;
+    offerLetter?: string;
+    offerAttachments?: AttachmentDTO[];
+
+    appointmentSubject?: string;
+    appointmentLetter?: string;
+    appointmentAttachments?: AttachmentDTO[];
+
+    [key: string]: any; 
+}
+
+AttachmentDTO {
+    name?: string;
+    url?: string;
+    size?: number; 
+    type?: string; 
+}
+
+ApplicationStage {
+    ApplicationReceived = 'Application Received',
+    Scheduled = "Scheduled",
+    InProgress = 'In-Progress',
+    Completed = "Completed",
+    OfferSent = "Offer-Sent",
+    OfferAccepted = "Offer-Accepted",
+    OfferRejected = "Offer-Rejected",
+    AppointmentLetterSent = 'Appointment-Letter-Sent',
+    AppointmentAccepted = 'Appointment-Accepted',
+    AppointmentRejected = 'Appointment-Rejected'
+}

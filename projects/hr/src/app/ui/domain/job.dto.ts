@@ -4,7 +4,7 @@ export interface JobDTO {
     category?: string;
     description?: string;
     location?: string;
-    employmentType?: string; // e.g., Full-time, Part-time
+    employmentType?: string;
     postedDate?: string;
     expiryDate?: Date;
     specification?: string;
@@ -15,8 +15,8 @@ export interface JobDTO {
   
   export interface CustomField {
     label?: string;
-    type?: string; // e.g., 'text', 'textarea', 'select', etc.
-    options?: string[]; // for dropdown/select fields
+    type?: string; 
+    options?: string[];
     required?: boolean;
   }
 
