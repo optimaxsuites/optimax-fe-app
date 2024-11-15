@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { QuestionDTO, QuestionItemDTO } from '../../../domain/questions.dto';
+import { QuestionDTO, QuestionItemDTO, ScoreSheetByIdDTO, ScoreSheetDTO } from '../../../domain/questions.dto';
 import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
 import { MessageService } from 'primeng/api';
 
@@ -55,7 +55,6 @@ export class InterviewScoreSheetComponent implements OnInit {
         { text: 'Assess ability to write efficient algorithms.', score: undefined },
         { text: 'Evaluate understanding of the software development lifecycle (SDLC).', score: undefined },
       ],
-      totalScore: undefined
     },
     {
       id: '8908',
@@ -93,7 +92,6 @@ export class InterviewScoreSheetComponent implements OnInit {
         { text: 'Rate the ability to summarize discussions and decisions clearly.', score: undefined },
         { text: 'Assess the ability to adapt communication style based on audience feedback.', score: undefined },
       ],
-      totalScore: undefined
     },
     {
       id: 'n98ji',
@@ -131,8 +129,7 @@ export class InterviewScoreSheetComponent implements OnInit {
         { text: 'Rate familiarity with front-end frameworks (e.g., Angular, React, Vue).', score: 4 },
         { text: 'Assess ability to write efficient algorithms.', score: 3 },
         { text: 'Evaluate understanding of the software development lifecycle (SDLC).', score: 5 },
-      ],      
-      totalScore: undefined
+      ],
     },
     {
       id: 'uuidgett5',
@@ -169,8 +166,7 @@ export class InterviewScoreSheetComponent implements OnInit {
         { text: 'Evaluate ability to give detailed and thoughtful answers during interviews or meetings.', score: 4 },
         { text: 'Rate the ability to summarize discussions and decisions clearly.', score: 3 },
         { text: 'Assess the ability to adapt communication style based on audience feedback.', score: 5 },
-      ],      
-      totalScore: undefined
+      ],
     }
   ];
 
@@ -267,9 +263,86 @@ export class InterviewScoreSheetComponent implements OnInit {
 
 
 
+// submitForm(): void {
+//   // Calculate the total score before saving
+//   // const total = this.calculateTotalScore();
+//   console.log('Total Score:', this.totalScoreOver100);
+
+//   // Find the selected criteria based on the selected questions
+//   const selectedCriteria = this.allCriteria.find(criteria => 
+//     criteria.questions === this.selectedCriterias
+//   );
+
+//   if (selectedCriteria) {
+//     // Retrieve existing submitted criteria from localStorage
+//     const savedData = localStorage.getItem('submittedCriteria');
+//     const submittedCriteria: any = savedData ? JSON.parse(savedData) : {};
+
+//     // Create the new criteria object to be appended
+//     const newCriteriaSubmission = {
+//       submittedAt: new Date().toISOString(),
+//       criteria: selectedCriteria,
+//       totalScore: this.totalScoreOver100
+//     };
+
+//     // Check if the candidate ID already exists in the submittedCriteria object
+//     if (!submittedCriteria[this.candidate.id]) {
+//       // If the candidate does not have any submitted criteria, initialize an empty array for them
+//       submittedCriteria[this.candidate.id] = [];
+//     }
+
+//     // Check if this specific criteria has already been submitted by this candidate
+//     const isAlreadySubmitted = submittedCriteria[this.candidate.id].some(
+//       (submission: any) => submission.criteria.id === selectedCriteria.id
+//     );
+
+//     if (isAlreadySubmitted) {
+//       // Show a message if the criteria has been submitted before
+//       this.messageService.add({
+//         severity: 'warn',
+//         summary: 'Duplicate Submission',
+//         detail: 'This scoresheet has already been submitted.'
+//       });
+//     } else {
+//       // Append the new criteria submission for the candidate
+//       submittedCriteria[this.candidate.id].push(newCriteriaSubmission);
+
+//       // Save the updated list to localStorage
+//       localStorage.setItem('submittedCriteria', JSON.stringify(submittedCriteria));
+
+//       console.log('Selected criteria saved to localStorage:', selectedCriteria);
+
+//       this.messageService.add({
+//         severity: 'success',
+//         summary: 'Submission Successful',
+//         detail: 'Selected scoresheet submitted and saved successfully.'
+//       });
+//     }
+//   } else {
+//     // Error handling if no criteria is selected
+//     this.messageService.add({
+//       severity: 'error',
+//       summary: 'Submission Failed',
+//       detail: 'No criteria selected. Please select and try again.'
+//     });
+//   }
+
+//   // Reset scores for all questions in all criteria
+//   this.allCriteria.forEach(criteria => {
+//     if (criteria.questions) { // Ensure questions is defined
+//       criteria.questions.forEach(question => {
+//         question.score = undefined;
+//       });
+//     }
+//   });
+  
+
+//   this.sumOfScore = 0;
+//   this.totalScoreOver100 = 0;
+//   this.maximumScore = 0;
+// }
+
 submitForm(): void {
-  // Calculate the total score before saving
-  // const total = this.calculateTotalScore();
   console.log('Total Score:', this.totalScoreOver100);
 
   // Find the selected criteria based on the selected questions
@@ -280,28 +353,32 @@ submitForm(): void {
   if (selectedCriteria) {
     // Retrieve existing submitted criteria from localStorage
     const savedData = localStorage.getItem('submittedCriteria');
-    const submittedCriteria: any = savedData ? JSON.parse(savedData) : {};
+    const submittedCriteria: ScoreSheetByIdDTO = savedData 
+      ? JSON.parse(savedData) 
+      : {};
 
     // Create the new criteria object to be appended
-    const newCriteriaSubmission = {
+    const newCriteriaSubmission: ScoreSheetDTO = {
       submittedAt: new Date().toISOString(),
-      criteria: selectedCriteria,
+      criteria: {
+        id: selectedCriteria.id!,
+        title: selectedCriteria.title!,
+        questions: selectedCriteria.questions!
+      },
       totalScore: this.totalScoreOver100
     };
 
-    // Check if the candidate ID already exists in the submittedCriteria object
+    // Initialize an array for this candidate if not present
     if (!submittedCriteria[this.candidate.id]) {
-      // If the candidate does not have any submitted criteria, initialize an empty array for them
       submittedCriteria[this.candidate.id] = [];
     }
 
     // Check if this specific criteria has already been submitted by this candidate
     const isAlreadySubmitted = submittedCriteria[this.candidate.id].some(
-      (submission: any) => submission.criteria.id === selectedCriteria.id
+      submission => submission.criteria?.id === selectedCriteria.id
     );
 
     if (isAlreadySubmitted) {
-      // Show a message if the criteria has been submitted before
       this.messageService.add({
         severity: 'warn',
         summary: 'Duplicate Submission',
@@ -333,13 +410,10 @@ submitForm(): void {
 
   // Reset scores for all questions in all criteria
   this.allCriteria.forEach(criteria => {
-    if (criteria.questions) { // Ensure questions is defined
-      criteria.questions.forEach(question => {
-        question.score = undefined;
-      });
-    }
+    criteria.questions?.forEach(question => {
+      question.score = undefined; // Reset each question's score
+    });
   });
-  
 
   this.sumOfScore = 0;
   this.totalScoreOver100 = 0;
