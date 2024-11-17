@@ -1,0 +1,161 @@
+<div class="container-fluid" *ngIf="tableSection" >
+    <div class="container-header">
+      <button class="btn create-invoice-btn"  (click)="openForm()" >
+        Add New User
+      </button>
+    </div>
+    <section class="selectClients" >
+      <div class="asd">
+        <div class="top-products-container">
+          <div class="top-products">
+            <div class="top-products-table-container">
+              <table class="top-products-table w3-table w3-striped">
+                <thead>
+                  <tr class="top-products-table-row" >
+                    <th class="top-products-table-head col-1">
+                      Name
+                    </th>
+                    <th class="top-products-table-head col-1">Role</th>
+                    <th class="top-products-table-head col-1">Email</th>
+                    <th class="top-products-table-head col-1">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                    <tr style="cursor: pointer;" (click)="openViewUser()">
+                <td>Ogechi</td>
+                <td>Cashier</td>
+                <td>Ogechi&#64;gmail.com</td>
+                <td>
+                    <div class="actionDiv">
+                        <div class="image-container" (click)="openEditform()">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                          <span class="tooltip">Edit</span>
+                        </div>
+  
+                        <div class="image-container" (click)="openDeleteModal()">
+                            <i class="fa-solid fa-trash" style="color: red;"></i>
+                          <span class="tooltip">Delete</span>
+                        </div>
+                      </div>
+                </td>
+            </tr>
+                
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <form class="createVendor" *ngIf="formSection">
+    <p class="back" (click)="openForm()"><i class="fa-solid fa-arrow-left"></i> Back</p>
+
+    <app-manage-user-form></app-manage-user-form>
+  </form>
+  
+  <app-modal *ngIf="deleteModal"
+    [header]="'Delete Ogechi '"
+    [title]="'Cancel'"
+    (close)="openDeleteModal()">
+    <p class="modalText">Are You sure you want to carry out this action? <br>
+      Clicking on <span style="color: red; font-weight: bold;">DELETE </span>, would lead to permanent removal of <span style="font-weight: bold;">Ogechi</span></p>
+
+      <div class="modalBtn">
+        <button class="btn create-invoice-btn" (click)="openDeleteModal()" >
+        Cancel
+        </button>
+
+        <button class="btn create-invoice-btn" style="background-color: red !important;"    >
+        Delete
+        </button>
+      </div>
+  </app-modal>
+  
+<form class="createVendor" *ngIf="editUser">
+  <p class="back" (click)="openEditform()"><i class="fa-solid fa-arrow-left"></i> Back</p>
+<p class="back" style="font-weight: bold; justify-content: center; margin-bottom: 1.5rem !important;">Edit Ogechi details</p>
+<app-manage-user-form></app-manage-user-form>
+</form>
+ 
+
+<div class="createVendor"  *ngIf="viewUser">
+  <p style="cursor: pointer;" (click)="openViewUser()"><i class="fa-solid fa-arrow-left"></i> Back</p>
+  <div class="container-header" style="padding: 0.5rem 1rem !important;">
+  <button class="btn create-invoice-btn"  (click)="openViewEditForm()" >
+    Edit
+  </button>
+</div>
+  <div class="details">
+    <div>
+      <div class=" detailDiv" >
+        <p>Full Name</p>
+        <p class="name">Ogechi Mariam Lucas</p>
+        </div>
+        <div class=" detailDiv" >
+          <p>Email Addressc</p>
+          <p class="name">Ogechi Mariam Lucas</p>
+          </div><div class=" detailDiv" >
+              <p>Role</p>
+              <p class="name">Cashier</p>
+              </div><div class=" detailDiv" >
+                <p>Password</p>
+                <p class="name"> ******</p>
+                </div>
+    </div>
+
+    <div class="permissionDiv">
+      <p class="back">Permisions</p>
+      <div class="permissionCategory">
+        <input
+        id="takeOrder"
+          class=""
+          type="checkbox"
+        />
+        <label for="takeOrder" style="cursor: pointer; margin-bottom: 5px;">Take orders</label>
+
+      </div>  
+      <div class="permissionCategory">
+        <input
+        id="removeOrderItem"
+          class=""
+          type="checkbox"
+        />
+        <label for="removeOrderItem" style="cursor: pointer; margin-bottom: 5px;">Remove order item</label>
+
+      </div> 
+      <div class="permissionCategory">
+        <input
+        id="takeOrder"
+          class=""
+          type="checkbox"
+        />
+        <label for="takeOrder" style="cursor: pointer; margin-bottom: 5px;">Take orders</label>
+
+      </div> 
+      <div class="permissionCategory">
+        <input
+        id="takeOrder"
+          class=""
+          type="checkbox"
+        />
+        <label for="takeOrder" style="cursor: pointer; margin-bottom: 5px;">Take orders</label>
+
+      </div> 
+      <div class="permissionCategory">
+        <input
+        id="takeOrder"
+          class=""
+          type="checkbox"
+        />
+        <label for="takeOrder" style="cursor: pointer; margin-bottom: 5px;">Take orders</label>
+
+      </div> 
+    </div>
+
+  </div>
+
+  
+
+</div>

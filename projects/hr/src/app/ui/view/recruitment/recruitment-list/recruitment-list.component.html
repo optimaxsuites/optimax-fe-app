@@ -1,0 +1,191 @@
+<p-confirmDialog class="table-item" header="Confirm Deletion" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
+<p-toast class="table-item"></p-toast>
+<div *ngIf="showRecruitmentList" class="table-container">
+    <div class="card">
+        <p-toolbar styleClass="mb-4 gap-2">
+            <ng-template pTemplate="left">
+                <app-button [disabled]="showListView" text="Delete" class="btn-delete"></app-button>
+                <div class="table-item col-12 ms-2">
+                    <input 
+                      type="text" 
+                      placeholder="Search" 
+                      class="editInput h-[36px]"
+                      [(ngModel)]="searchTerm"
+                      (ngModelChange)="searchJobs()"
+                    />
+                  </div>
+            </ng-template>
+
+            <ng-template pTemplate="right">
+                <span (click)="toggleView()" class="cursor-pointer btn-wrapper mt-2">
+                    <i 
+                        [ngClass]="showListView ? 'pi pi-table' : 'pi pi-th-large'" 
+                        style="font-size: 20px;">
+                    </i>
+                </span>
+                <div class="flex flex-col items-center">
+                    <app-button text="Add New" class="btn-navigate" (click)="openForm()"></app-button>
+                </div>
+            </ng-template>
+        </p-toolbar>
+
+      <div class="list-card-container" *ngIf="showListView">
+        <hr>
+        <div  class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 " > 
+            <div *ngFor="let job of filteredJobPostings; let i = index" class=" bg-gray-50 transition ease-linear hover:scale-105 hover:border-2 text-customBlue rounded-xl flex flex-col w-[50%] p-2 editInput" >
+                <div class="list-card-wrapper">
+                    <div class="list-card-right">
+                        <h3><strong>{{job.title}}</strong></h3>
+                        <div class="table-item">
+                            <p *ngIf="job.location"> <i class="pi pi-map-marker table-item me-2 "></i> {{job.location}}</p>
+                            <p *ngIf="job.employmentType" > <i class="pi pi-clock table-item  me-2"></i> {{job.employmentType}}</p>
+                            <!-- <p> <i class="pi pi-clock"></i> {{job.category}}</p> -->
+                            <p *ngIf="job.postedDate"> <i class="pi pi-calendar-clock table-item me-2"></i> {{job.postedDate}}</p>
+                            <p *ngIf="job.expiryDate"> <i class="pi pi-calendar-times table-item me-2"></i> {{job.expiryDate}}</p>
+                        </div>
+                    </div>
+                    <div class="list-card-left ">
+                        <div class="flex space-x-2 mt-2 table-item ">
+                            <button pButton icon="pi pi-eye cursor-pointer table-item" (click)="viewJob(job)" class="icon-view " title="View"></button>
+                            <button pButton icon="pi pi-pen-to-square cursor-pointer table-item" (click)="editJob(job)" class="icon-edit" title="Edit"></button>
+                            <button pButton icon="pi pi-trash cursor-pointer table-item" (click)="confirmJobDelete(job)" class="icon-delete" title="Delete"></button>
+                        </div>
+                    </div>
+                </div>
+                <!-- <div class="editInput" style="width: 700px; height: 400px; overflow-y: scroll; font-size: 14px;" [innerHTML]="safeHtmlDescriptions[i]"></div> -->
+            </div>
+        </div>
+
+        <div *ngIf="filteredJobPostings.length == 0" class="input-container-100 nothing table-item">
+            <span>
+                No Job posting(s) yet
+            </span>
+        </div>
+      </div>
+
+      <!-- Table View -->
+        <p-table *ngIf="!showListView"
+            [value]="filteredJobPostings" 
+            [paginator]="true" 
+            styleClass="p-datatable-striped" 
+            [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+            [rows]="15">
+            <ng-template pTemplate="header">
+            <!-- Table header here -->
+                <tr class="">
+                    <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+                    <th class="table-item" pSortableColumn="title">Title</th>
+                    <th class="table-item" pSortableColumn="location">Location</th>
+                    <th class="table-item" pSortableColumn="jobType">Job Type</th>
+                    <th class="table-item" pSortableColumn="postedDate">Posted Date</th>
+                    <th class="table-item" pSortableColumn="expiryDate">Expiry Date</th>
+                    <th class=""></th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-job>
+                <tr class="p-table-row">
+                    <td><p-tableCheckbox [value]="job" /></td>
+                    <td class="table-item">{{ job.title }}</td>
+                    <td class="table-item">{{ job.location }}</td>
+                    <td class="table-item">{{ job.employmentType }}</td>
+                    <td class="table-item">{{ job.postedDate }}</td>
+                    <td class="table-item">{{ job.expiryDate }}</td>
+
+                    <td class="actions">
+                        <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event)" ></i>
+                        <p-overlayPanel #op ngClass="padding: 0;">
+                            <div>
+                                <li class="table-item-panel" (click)="viewJob(job)"> <i class="pi pi-eye table-item me-2"></i> View</li>
+                                <li class="table-item-panel" (click)="editJob(job)"> <i class="pi pi-pen-to-square table-item me-2"></i>Edit </li>
+                                <li class="table-item-panel" (click)="confirmJobDelete(job)"> <i class="pi pi-trash table-item me-2"></i>Delete</li>
+                            </div>
+                        </p-overlayPanel>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="8" class="text-center table-item py-4"> 
+                        No Job posting(s) yet
+                    </td>
+                  </tr>
+            </ng-template>
+        </p-table>
+    </div>
+</div>
+
+<div *ngIf="showRecruitmentForm">
+    <app-recruitment-form [jobData]="activeItem" (back)="close()" (submitFrom)="createJob()" [isEdit]="isEdit"></app-recruitment-form>
+</div>
+
+<app-modal 
+  *ngIf="viewModal"
+  [header]="'Viewing ' + activeItem.title + ' job posting information'"
+  [title]="'Cancel'"
+  (close)="closeViewModal()">
+    <div class="view-wrapper">
+        <div class="d-flex gap-4 my-4">
+            <div class="input-container-50">
+                <label for="name"><strong>Job Title:</strong></label>
+                <span> {{activeItem.title}}</span>
+            </div>
+            <div class="input-container-50">
+                <label for="phone-number"><strong>Category:</strong></label>
+                <span> {{activeItem.category}}</span>
+            </div>
+        </div>
+        <div class="d-flex gap-4 my-4">
+            <div class="input-container-50">
+                <label for="email"><strong>Job Type:</strong></label>
+                <span> {{activeItem.employmentType}}</span>
+            </div>
+            <div class="input-container-50">
+                <label for="position"><strong>Specification:</strong></label>
+                <span> {{activeItem.specification}}</span>
+            </div>
+        </div>
+        <div class="d-flex gap-4 my-4">
+            <div class="input-container-50">
+                <label for="email"><strong>Qualification:</strong></label>
+                <span> {{activeItem.qualification}}</span>
+            </div>
+            <div class="input-container-50">
+                <label for="position"><strong>Experience:</strong></label>
+                <span> {{activeItem.experience}}</span>
+            </div>
+        </div>
+        <div class="d-flex gap-4 my-4">
+            <div class="input-container-50">
+                <label for="date"><strong>Date Applied:</strong></label>
+                <span> {{activeItem.postedDate}}</span>
+            </div>
+            <div class="input-container-50">
+                <label for="date"><strong>Location:</strong></label>
+                <span> {{activeItem.location}}</span>
+            </div>
+        </div>
+        <div class="d-flex gap-4 my-4">
+            <div class="input-container-50">
+                <label for="date"><strong>Expiry Date:</strong></label>
+                <span> {{activeItem.expiryDate}}</span>
+            </div>
+        </div>
+        <div class="d-flex gap-4 my-4">
+            <div class="input-container-50">
+                <label for="cover-letter"><strong>Overview:</strong></label>
+                <!-- <textarea class="cover-letter editInput" name="cover-letter" [(ngModel)]="activeItem.description" disabled></textarea> -->
+                <div class="input-container-100 editInput" style="text-align: justify;" [innerHTML]="activeItem.description"></div>
+            </div>
+            <div class="input-container-50">
+                <!-- <div class="" *ngIf="activeItem.fields && activeItem.fields.length > 0"> -->
+                    <label><strong>Customised Input Field(s)</strong></label>
+                    <div class="card list-card-wrapper p-4 m-2" *ngFor="let item of activeItem.fields">
+                      <div class="list-card-right">
+                        <span>{{ item.label }} - {{ item.type }} - {{ item.required ? 'Required' : 'Optional' }}</span>
+                      </div>
+                    </div>
+                  <!-- </div> -->
+            </div>
+        </div>
+    </div>
+</app-modal>
