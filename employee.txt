@@ -21,18 +21,18 @@ Employee = {
     accountNumber: string;
     nin?: string;
     bvn?: string;
-    employmentStatus: EmploymentStatus;
+    employmentStatus: string;
     employementStartDate: date;
     employementEndDate?: date;
     onProbation: boolean;
     probationStartDate?: date;
     probationEndDate?: date;
     appraisalDueDate: date;
-    nextOfKin: NextOfKinDTO[];
-    guarantor: GuarantorDTO[];
+    nextOfKin: NextOfKinDTO;
+    guarantor: GuarantorDTO;
     access: AccessDTO;
-    leave: LeaveDTO[];
-    profileImage: file;
+    leave: LeaveDTO;
+    profileImage: string;
   }
 
 GuarantorDTO: {
@@ -69,18 +69,13 @@ LeaveDTO: {
 
 AccessDTO: {
     employeeId: int; 
-    roles?: string[];
     permissions: string[];
 }
 
-LeaveTypeDTO: {
+
+LeaveTypeDTO = {
     id: int; 
     name: string; 
     defaultDays: int;
     description?: string;
-}
-
-EmploymentStatus {
-    Joining = 'joining'
-    Active = 'active'
 }
