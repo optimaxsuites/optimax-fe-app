@@ -53,6 +53,7 @@ import { ScoresheetConfigComponent } from './ui/view/hr/scoresheet-config/scores
 import { NavigationLinksService } from './ui/sharedComponents/service/navigation-links/navigation-links.service';
 import { MenuItemsService } from './ui/sharedComponents/service/menue-items/menu-items.service';
 import { GeneralSettingsComponent } from './ui/view/general/general-settings/general-settings.component';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 
 //
@@ -115,6 +116,7 @@ import { GeneralSettingsComponent } from './ui/view/general/general-settings/gen
       MatTooltip,
       MatTabGroup,
       MatMenuModule,
+      // BrowserAnimationsModule,
     LargeSideModalComponent,
   ],
   providers: [

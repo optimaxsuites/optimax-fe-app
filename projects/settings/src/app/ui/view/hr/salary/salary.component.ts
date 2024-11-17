@@ -26,7 +26,7 @@ interface Overtime {
   maxOvertimeHours: number;
 }
 
- interface SalaryStructure {
+interface SalaryStructure {
   level: string;
   baseSalary: number;
   allowances: Allowances;
@@ -34,7 +34,6 @@ interface Overtime {
   bonuses: Bonuses;
   overtime: Overtime;
   netSalary: () => number;
-
 }
 
 import { Component } from '@angular/core';
