@@ -85,6 +85,7 @@ import { TargetComponent } from './ui/view/performance/target/target.component';
 import { TargetformComponent } from './ui/view/performance/targetform/targetform.component';
 import { BulkEmployeeInstructionComponent } from './ui/view/employee-management/bulk-employee-instruction/bulk-employee-instruction.component';
 import { SplitAndTitleCasePipe } from './ui/shared-component/service/split-and-title-case.pipe';
+import { AppraisalformComponent } from './ui/view/performance/appraisalform/appraisalform.component';
 
 @NgModule({
   declarations: [
@@ -136,6 +137,7 @@ import { SplitAndTitleCasePipe } from './ui/shared-component/service/split-and-t
     TargetformComponent,
     BulkEmployeeInstructionComponent,
     SplitAndTitleCasePipe,
+    AppraisalformComponent,
   ],
   imports: [
     BrowserModule,
