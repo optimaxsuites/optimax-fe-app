@@ -1,5 +1,5 @@
 <div class="p-10">
-    <p class="text-center">Kindly fill out <span class="font-bold text-[14px] text-customGreen cursor-pointer uppercase" (click)="createExcelSheet()">this</span>  CSV file provided, following the format outlined in the template. <br> Please ensure all required fields are filled correctly before uploading.</p>
+    <p class="text-center">Kindly fill out <span class="font-bold text-[14px] text-customGreen cursor-pointer uppercase" (click)="createExcelSheet()">this</span>  excel sheet provided, following the format outlined in the template. <br> Please ensure all required fields are filled correctly before uploading.</p>
 
     <div
     class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center mt-5"
@@ -24,13 +24,16 @@
     />
     <button
       class="mt-4 px-4 py-2 text-white bg-customGreen rounded"
+      (click)="readExcelFile()"
     >
-      Submit
+      {{buttonText}}
     </button>
   </div>
 
   <p *ngIf="alert.length > 0" class="text-center mt-4 text-customRed">
    {{alert}}
   </p>
+<p-toast position="top-right" key="tl" />
  
 </div>
+
