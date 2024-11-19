@@ -177,36 +177,64 @@ export class BulkEmployeeInstructionComponent {
 
   // Validate the extracted data
   validateData(data: any[]): void {
-    // Example validation: check for required fields
     const requiredFields = [
       'First Name', 'Last Name', 'Email', 'Job Title', 'Department'
     ];
-    const missingFields = data.some(row =>
-      requiredFields.some(field => !row[field])
-    );
-
-    if (missingFields) {
-      this.alert = 'Some required fields are missing in the uploaded file.';
-    } else {
-      this.alert = '';
-      this.buttonText = "Loading..."
-     data.forEach(row => {
-        this.addNewEmployee(row)
-     })
-     this.fileName = ""
-     
-    this.messageService.add({ severity:'success', summary: 'Success', detail: 'Employees added successfully!', key: 'tl', life: 3000  });
-    this.buttonText = "Submit"
-
-    setTimeout(() => {this.close.emit()}, 2000);
-    }
-  }
-
+    
+    // Track validation results
+    let skippedCount = 0; // Number of employees skipped
+    let successfullyAddedCount = 0; // Number of employees successfully added
   
-  addNewEmployee(data: any) {
+    // Validate each row
+    data.forEach(row => {
+      const isMissingFields = requiredFields.some(field => !row[field]);
+      
+      if (isMissingFields) {
+        skippedCount++;
+        console.warn(`Skipped row due to missing fields:`, row);
+      } else if (!this.addNewEmployee(row)) {
+        // If `addNewEmployee` returns `false`, it means the employee was not added
+        skippedCount++;
+      } else {
+        successfullyAddedCount++;
+      }
+    });
+  
+    this.fileName = "";
+  
+    // Display appropriate message
+    if (successfullyAddedCount > 0) {
+      const message = skippedCount > 0 
+        ? `${successfullyAddedCount} employees added successfully. ${skippedCount} rows were skipped due to errors or duplicates.`
+        : 'Employees added successfully!';
+      this.messageService.add({ severity: 'success', summary: 'Success', detail: message, key: 'tl', life: 3000 });
+    } else {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No employees were added due to errors or duplicates. Please check your file.', key: 'tl', life: 3000 });
+    }
+  
+    this.buttonText = "Submit";
+    setTimeout(() => { this.close.emit() }, 2000);
+  }
+  
+  
+  addNewEmployee(data: any): boolean {
     const employeesFromStorage = localStorage.getItem("employeesList");
     const employeesList = employeesFromStorage ? JSON.parse(employeesFromStorage) : [];
-  console.log(data)
+  
+    // Check if employee already exists (based on unique fields like Email or Employee ID)
+    const existingEmployee = employeesList.find(
+      (employee: any) =>
+        employee.email === data['Email'] || 
+        (data['Employee ID'] && employee.id === data['Employee ID'])
+    );
+  
+    if (existingEmployee) {
+    // this.messageService.add({ severity:'warn', summary: 'warning', detail: `Employee with Email: ${data['Email']} or ID: ${data['Employee ID']} already exists and is being skipped.`, key: 'tl', life: 5000  });
+
+      return false; 
+    }
+  
+    // Create new employee object
     const newEmployee = {
       id: data['Employee ID'] && !isNaN(Number(data['Employee ID'])) && Number(data['Employee ID']) > 0
         ? data['Employee ID']
@@ -227,7 +255,6 @@ export class BulkEmployeeInstructionComponent {
       probationStartDate: this.validateDate(data['Probation Start Date']),
       probationEndDate: this.validateDate(data['Probation End Date']),
       appraisalDueDate: this.validateDate(data['Appraisal Due Date']),
-  
       leave: {
         annual: data['Annual Leave'],
         sick: data['Sick leave'],
@@ -235,7 +262,6 @@ export class BulkEmployeeInstructionComponent {
         bereavement: data['Bereavement leave'],
         casual: data['Casual leave']
       },
-  
       employeePortalAccess: false,
       emailAccess: false,
       hrSystemAccess: false,
@@ -245,12 +271,13 @@ export class BulkEmployeeInstructionComponent {
       adminAccess: data['Administrative Access']?.toLowerCase() === 'yes',
     };
   
-    console.log(newEmployee);
-  
+    // Add new employee
+    console.log(`Adding new employee:`, newEmployee);
     employeesList.push(newEmployee);
     localStorage.setItem("employeesList", JSON.stringify(employeesList));
-
+    return true
   }
+  
   
   validateDate(date: string): string | null {
     const parsedDate = new Date(date);
