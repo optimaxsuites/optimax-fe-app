@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { JobDTO } from '../../../domain/job.dto';
 import { DomSanitizer } from '@angular/platform-browser';
 import { animate, state, style, transition, trigger } from '@angular/animations';
+import { JobPostingDTO } from '../../../domain/job.dto';
 
 @Component({
   selector: 'app-recruitment-list',
@@ -14,11 +14,11 @@ import { animate, state, style, transition, trigger } from '@angular/animations'
 export class RecruitmentListComponent implements OnInit {
   showRecruitmentList: boolean = true;
   showRecruitmentForm: boolean = false;
-  activeItem: JobDTO = {};
-  jobpostings: JobDTO[] = [];
+  activeItem: JobPostingDTO = {};
+  jobpostings: JobPostingDTO[] = [];
   isEdit?: boolean;
   searchTerm?: string;
-  filteredJobPostings: JobDTO[] = [];
+  filteredJobPostings: JobPostingDTO[] = [];
   showListView: boolean = true;
   viewModal?: boolean;
 
@@ -84,7 +84,7 @@ export class RecruitmentListComponent implements OnInit {
     });
   }
 
-  deleteJob(jobId: JobDTO) {
+  deleteJob(jobId: JobPostingDTO) {
     // Find the index of the job with the matching id
     const index = this.filteredJobPostings.findIndex(job => job.id === jobId);
     
@@ -115,7 +115,7 @@ export class RecruitmentListComponent implements OnInit {
     this.showRecruitmentForm = true;
   }
 
-  viewJob(job: JobDTO){
+  viewJob(job: JobPostingDTO){
     this.activeItem = { ...job };
     this.viewModal = true;
   }
@@ -128,7 +128,7 @@ export class RecruitmentListComponent implements OnInit {
     this.viewModal = false;
   }
 
-  editJob(job: JobDTO) {
+  editJob(job: JobPostingDTO) {
     console.log("job info", job)
     this.activeItem = { ...job }; // Set the active item to the job being edited
     this.isEdit = true;  // Set to false for create mode

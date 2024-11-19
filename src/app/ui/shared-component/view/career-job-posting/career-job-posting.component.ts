@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { JobDTO } from '../../../domain/job.dto';
+import { JobPostingDTO } from '../../../domain/job.dto';
 
 @Component({
   selector: 'app-career-job-posting',
@@ -9,8 +9,8 @@ import { JobDTO } from '../../../domain/job.dto';
 })
 export class CareerJobPostingComponent {
   
-  jobpostings: JobDTO[] = [];
-  filteredJobPostings: JobDTO[] = [];
+  jobpostings: JobPostingDTO[] = [];
+  filteredJobPostings: JobPostingDTO[] = [];
   
   categories: string[] = []; // Add categories here
   employmentTypes: string[] = []; // Add employment types here

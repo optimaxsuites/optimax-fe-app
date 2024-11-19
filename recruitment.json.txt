@@ -1,4 +1,4 @@
-JobDTO {
+JobVacancyDTO {
     id?: string;
     title?: string;
     category?: string;
@@ -10,30 +10,30 @@ JobDTO {
     specification?: string;
     experience?: string;
     qualification?: string;
-    fields?: CustomField[]; 
+    fields?: JobVacancyCustomField[];
 }
-CustomField {
+JobVacancyCustomField {
     label?: string;
     type?: string; 
     options?: string[];
     required?: boolean;
 }
-JobExperienceDTO{
+JobVacancyExperienceDTO{
     id?: number;
     name?: string;
     des?: string;
 }
-JobCategoryDTO{
+JobVacancyCategoryDTO{
     id?: number;
     name?: string;
     des?: string;
 }
-JobTypeDTO{
+JobVacancyTypeDTO{
     id?: number;
     name?: string;
     des?: string;
 }
-JobSpecificationDTO{
+JobVacancySpecificationDTO{
     id?: number;
     name?: string;
     des?: string;
@@ -83,3 +83,22 @@ ApplicationStage {
     AppointmentAccepted = 'Appointment-Accepted',
     AppointmentRejected = 'Appointment-Rejected'
 }
+
+
+QuestionItemDTO {
+    text: string;
+    score: number | undefined;
+  }
+  
+  QuestionDTO {
+    id?: string;
+    title?: string;
+    questions?: QuestionItemDTO[];
+  }
+  
+  ScoreSheetDTO {
+    applicantid: string;
+    submittedAt: string; 
+    criteria?: QuestionDTO;
+    totalScore?: number | null;
+  }
