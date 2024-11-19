@@ -10,7 +10,8 @@ import { AuthenticationService } from '../../../shared-component/service/auth-se
 @Component({
   selector: 'app-admin-creation-form',
   templateUrl: './admin-creation-form.component.html',
-  styleUrl: './admin-creation-form.component.scss'
+  styleUrl: './admin-creation-form.component.scss',
+  providers: [MessageService]
 })
 export class AdminCreationFormComponent {
 
@@ -82,7 +83,7 @@ export class AdminCreationFormComponent {
     "Bahá'í",
     "Other"
   ];
-  employments = ["Contractor", "Full Time", "Part Time", "Internship", "Seasonal", "Temporary"]
+  employments = ["Contract", "Full Time", "Part Time", "Internship", "Seasonal", "Temporary"]
   nigerianBanks = [
     "Access Bank",
     "Citibank Nigeria",
@@ -341,7 +342,7 @@ private setProbationValidators(): void {
   this.router.navigate([`/user/onboarding/${newEmployee.id}/wer23456fghi367ghj`]);
   }
   this.loading = false;
-  this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Employee added successfully!' }); 
+  this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Employee added successfully!', key: 'tl', life: 3000  }); 
   this.basicForm.reset()
   this.guarantorForm.reset()
   this.leaveForm.reset()
