@@ -1,4 +1,4 @@
-export interface JobDTO {
+export interface JobPostingDTO {
     id?: string;
     title?: string;
     category?: string;
@@ -10,34 +10,31 @@ export interface JobDTO {
     specification?: string;
     experience?: string;
     qualification?: string;
-    fields?: CustomField[]; 
+    fields?: JobPostingCustomFieldDTO[]; 
 }
-  
-  export interface CustomField {
+export interface JobPostingCustomFieldDTO {
     label?: string;
     type?: string; 
     options?: string[];
     required?: boolean;
-  }
-
-
-export interface JobExperienceDTO{
-    id?: number;
-    name?: string;
-    des?: string;
 }
-export interface JobCategoryDTO{
+export interface JobVacancyExperienceDTO{
     id?: number;
     name?: string;
-    des?: string;
+    description?: string;
 }
-export interface JobTypeDTO{
+export interface JobVacancyCategoryDTO{
     id?: number;
     name?: string;
-    des?: string;
+    description?: string;
 }
-export interface JobSpecificationDTO{
+export interface JobVacancyTypeDTO{
     id?: number;
     name?: string;
-    des?: string;
+    description?: string;
+}
+export interface JobVacancySpecificationDTO{
+    id?: number;
+    name?: string;
+    description?: string;
 }

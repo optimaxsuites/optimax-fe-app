@@ -359,6 +359,7 @@ submitForm(): void {
 
     // Create the new criteria object to be appended
     const newCriteriaSubmission: ScoreSheetDTO = {
+      applicantid: this.candidate.id,
       submittedAt: new Date().toISOString(),
       criteria: {
         id: selectedCriteria.id!,

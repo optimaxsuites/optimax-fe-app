@@ -1,9 +1,9 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { CustomField, JobDTO } from '../../../domain/job.dto';
 import { DomSanitizer } from '@angular/platform-browser';
 import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
 import { BackButtonComponent } from '../../../shared-component/view/back-button/back-button.component';
+import { JobPostingCustomFieldDTO, JobPostingDTO } from '../../../domain/job.dto';
 
 @Component({
   selector: 'app-recruitment-form',
@@ -13,12 +13,12 @@ import { BackButtonComponent } from '../../../shared-component/view/back-button/
 })
 export class RecruitmentFormComponent {
   @Output() back = new EventEmitter<void>();
-  @Output() submitFrom = new EventEmitter<JobDTO>();
-  @Input() jobData: JobDTO = {};
+  @Output() submitFrom = new EventEmitter<JobPostingDTO>();
+  @Input() jobData: JobPostingDTO = {};
   @Input() isEdit?: boolean; 
   openSideModal?: boolean;
-  customField: CustomField = {};
-  customFieldList: CustomField[] = [];
+  customField: JobPostingCustomFieldDTO = {};
+  customFieldList: JobPostingCustomFieldDTO[] = [];
 
   editIndex: number | null = null;
 
@@ -192,7 +192,7 @@ export class RecruitmentFormComponent {
     this.customFieldList?.splice(index, 1);
   }
  
-  toggleSideModal(field?: CustomField, index?: number): void {
+  toggleSideModal(field?: JobPostingCustomFieldDTO, index?: number): void {
     this.openSideModal = true;
     if (!this.jobData.fields) {
       this.customFieldList = [...(this.jobData.fields || [])]; 
@@ -228,7 +228,7 @@ export class RecruitmentFormComponent {
       });
     }
   }
-  isValidCustomField(field: CustomField): boolean {
+  isValidCustomField(field: JobPostingCustomFieldDTO): boolean {
     return (
       !!field.label?.trim() && 
       !!field.type?.trim()
