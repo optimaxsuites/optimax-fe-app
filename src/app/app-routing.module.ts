@@ -215,10 +215,10 @@ const routes: Routes = [
         path: '',
         loadChildren: () => import('../../projects/vendor/src/app/app.module').then(m => m.AppModule),
       },
-      // {
-      //   path: 'admin/sales/:uuid',
-      //   component: SalesPageComponent,
-      // },
+      {
+        path: 'admin/sales/:uuid',
+        component: SalesPageComponent,
+      },
       // {
       //   path: 'admin/procurement/',
       //   component: ProcurementPageComponent,
@@ -226,14 +226,14 @@ const routes: Routes = [
       // {path: 'admin/procurement/rfq/:uuid', component: RfqListComponent},
       // {path: 'admin/procurement/rfq-form/:uuid', component:RfqFormComponent },
       // {path: 'admin/procurement/settings/:uuid', component:ProcurementSettingsComponent },
-      // {
-      //   path: 'sales/quotation/quotation-form',
-      //   component: QuotationModalComponent,
-      // },
-      // {
-      //   path: 'sales/quotation/quotation-form/:id',
-      //   component: QuotationModalComponent,
-      // },
+      {
+        path: 'sales/quotation/quotation-form',
+        component: QuotationModalComponent,
+      },
+      {
+        path: 'sales/quotation/quotation-form/:id',
+        component: QuotationModalComponent,
+      },
       // {
       //   path: 'sales/proformer-invoice/proformer-invoice-form',
       //   component: ProformaInvoiceModalComponent,
