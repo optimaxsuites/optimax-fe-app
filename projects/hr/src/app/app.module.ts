@@ -140,8 +140,8 @@ import { AppraisalformComponent } from './ui/view/performance/appraisalform/appr
     AppraisalformComponent,
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
