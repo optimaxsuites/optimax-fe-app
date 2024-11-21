@@ -14,7 +14,7 @@
         <div 
           class="absolute bg-white p-3 gap-3 shadow-sm text-left" 
           *ngIf="tab.hasDropdown &&  selectedDropdownTab == tab.name && isDropdownOpen">
-          <button *ngFor="let option of tab.dropdownOptions" class="pb-3" (click)="selectDropdownOption(tab.name, option)">
+          <button *ngFor="let option of tab.dropdownOptions" class="tab-btn" (click)="selectDropdownOption(tab.name, option)">
             {{ option.label }}
           </button>
         </div>
@@ -33,7 +33,7 @@
           <div *ngIf="tab.hasDropdown">
             <div *ngFor="let option of tab.dropdownOptions">
               <div *ngIf="selectedSetting === option.action">
-                <ng-container *ngComponentOutlet="getComponentForOption(option.action)"></ng-container>
+                <ng-container *ngComponentOutlet="getComponentForOption(option.action!)"></ng-container>
               </div>
             </div>
           </div>
