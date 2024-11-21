@@ -135,11 +135,7 @@ export class BulkEmployeeInstructionComponent {
       };
     }
   
-<<<<<<< HEAD
-    workbook.xlsx.writeBuffer().then((buffer) => {
-=======
     workbook.xlsx.writeBuffer().then((buffer: BlobPart) => {
->>>>>>> d5503a6bf9e0895c8b072f96e2b4fedf3c7425a7
       const blob = new Blob([buffer], { type: 'application/octet-stream' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
@@ -166,16 +162,6 @@ export class BulkEmployeeInstructionComponent {
       const data = new Uint8Array(event.target?.result as ArrayBuffer);
       const workbook = XLSX.read(data, { type: 'array' });
       
-<<<<<<< HEAD
-      // Get the first sheet's data
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-
-      // Convert the sheet to JSON
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-
-    console.log(jsonData)
-=======
     //   Get the first sheet's data
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
@@ -184,7 +170,6 @@ export class BulkEmployeeInstructionComponent {
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
     // console.log(jsonData)
->>>>>>> d5503a6bf9e0895c8b072f96e2b4fedf3c7425a7
       this.validateData(jsonData);
     };
     reader.readAsArrayBuffer(this.file);
@@ -208,6 +193,19 @@ export class BulkEmployeeInstructionComponent {
         skippedCount++;
         console.warn(`Skipped row due to missing fields:`, row);
       } else if (!this.addNewEmployee(row)) {
+        // If `addNewEmployee` returns `false`, it means the employee was not added
+        skippedCount++;
+      } else {
+        successfullyAddedCount++;
+      }
+    });
+  
+    this.fileName = "";
+  
+    // Display appropriate message
+    if (successfullyAddedCount > 0) {
+      const message = skippedCount > 0 
+        ? `${successfullyAddedCount} employees added successfully. ${skippedCount} rows were skipped due to errors or duplicates.`
         : 'Employees added successfully!';
       this.messageService.add({ severity: 'success', summary: 'Success', detail: message, key: 'tl', life: 3000 });
     } else {
@@ -219,6 +217,7 @@ export class BulkEmployeeInstructionComponent {
   }
   
   
+  addNewEmployee(data: any): boolean {
     const employeesFromStorage = localStorage.getItem("employeesList");
     const employeesList = employeesFromStorage ? JSON.parse(employeesFromStorage) : [];
   
