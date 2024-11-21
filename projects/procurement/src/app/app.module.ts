@@ -93,8 +93,8 @@ import { AddQuotationItemComponent } from './ui/view/quotation/add-quotation-ite
     AddQuotationItemComponent
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     CommonModule,
     AppRoutingModule,
     FormsModule,

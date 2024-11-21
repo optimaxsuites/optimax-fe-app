@@ -50,11 +50,12 @@ export class MenuItemsService {
     {
       label: 'Procurement',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      route: this.navigationLink.getLink('procurementLink'),
       icon: 'fas fa-shopping-cart',
-      submenu: [
-        { label: 'Request For Quotation', route: this.navigationLink.getLink('rfqLink'), roles: ['ROLE_USER'], icon: 'fas fa-file-alt' },
-        // { label: 'Settings', route: this.navigationLink.getLink('procurementSettingsLink'), roles: ['ROLE_USER'], icon: 'pi pi-cog' },
-      ],
+      // submenu: [
+      //   // { label: 'Request For Quotation', route: this.navigationLink.getLink('rfqLink'), roles: ['ROLE_USER'], icon: 'fas fa-file-alt' },
+      //   // { label: 'Settings', route: this.navigationLink.getLink('procurementSettingsLink'), roles: ['ROLE_USER'], icon: 'pi pi-cog' },
+      // ],
     },
     {
       label: 'Accounting',
