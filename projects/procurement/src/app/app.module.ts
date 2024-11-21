@@ -3,17 +3,10 @@ import { BrowserModule } from '@angular/platform-browser';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { AddRfqItemComponent } from './ui/view/add-rfq-item/add-rfq-item.component';
-import { ProcurementSettingsComponent } from './ui/view/procurement-settings/procurement-settings.component';
-import { RfqCategoryFormComponent } from './ui/view/rfq-category-form/rfq-category-form.component';
-import { RfqCategoryListComponent } from './ui/view/rfq-category-list/rfq-category-list.component';
-import { RfqFormComponent } from './ui/view/rfq-form/rfq-form.component';
-import { RfqListComponent } from './ui/view/rfq-list/rfq-list.component';
 import { ProcurementPageComponent } from './ui/view/procurement.page.component';
 import { NavTabComponent } from './ui/sharedComponent/view/nav-tab/nav-tab.component';
 import { ButtonComponent } from './ui/sharedComponent/view/button/button.component';
 import { SideModalComponent } from './ui/sharedComponent/view/side-modal/side-modal.component';
-import { LargeSideModalComponent } from './ui/sharedComponent/view/large-side-modal/large-side-modal.component';
 
 import { ButtonModule } from 'primeng/button';
 import { EditorModule } from 'primeng/editor';
@@ -68,18 +61,36 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from './ui/sharedComponent/view/modal/modal.component';
 import { HttpClientModule } from '@angular/common/http';
+import { LargeSideModalComponent } from './ui/sharedComponent/view/large-side-modal/large-side-modal.component';
+import { RfqComponent } from './ui/view/rfq/rfq.component';
+import { QuotationComponent } from './ui/view/quotation/quotation.component';
+import { ProformaInvoiceComponent } from './ui/view/proforma-invoice/proforma-invoice.component';
+import { InvoiceComponent } from './ui/view/invoice/invoice.component';
+import { DispatchNoteComponent } from './ui/view/dispatch-note/dispatch-note.component';
+import { IncomingComponent } from './ui/view/lpo/incoming/incoming.component';
+import { OutgoingComponent } from './ui/view/lpo/outgoing/outgoing.component';
+import { RfqFormComponent } from './ui/view/rfq/rfq-form/rfq-form.component';
+import { AddQuotationItemComponent } from './ui/view/quotation/add-quotation-item/add-quotation-item.component';
 
 
 @NgModule({
   declarations: [
     AppComponent,
-    AddRfqItemComponent,
-    ProcurementSettingsComponent,
-    RfqCategoryFormComponent,
-    RfqCategoryListComponent,
-    RfqFormComponent,
-    RfqListComponent,
     ProcurementPageComponent,
+    RfqComponent,
+    QuotationComponent,
+    ProformaInvoiceComponent,
+    InvoiceComponent,
+    DispatchNoteComponent,
+    IncomingComponent,
+    OutgoingComponent,
+    BackButtonComponent,
+    ButtonComponent,
+    SideModalComponent,
+    ModalComponent,
+    NavTabComponent,
+    RfqFormComponent,
+    AddQuotationItemComponent
   ],
   imports: [
     // BrowserModule,
@@ -133,11 +144,7 @@ import { HttpClientModule } from '@angular/common/http';
     PasswordModule,
     ToastModule,
     ButtonModule,
-    BackButtonComponent,
-    ButtonComponent,
-    SideModalComponent,
-    ModalComponent,
-    NavTabComponent
+    LargeSideModalComponent
   ],
   providers: [],
   bootstrap: [AppComponent]

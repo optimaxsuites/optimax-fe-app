@@ -2,7 +2,6 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { DomSanitizer } from '@angular/platform-browser';
 import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
-import { BackButtonComponent } from '../../../shared-component/view/back-button/back-button.component';
 import { JobPostingCustomFieldDTO, JobPostingDTO } from '../../../domain/job.dto';
 
 @Component({
@@ -27,18 +26,8 @@ export class RecruitmentFormComponent {
     { value: 'number', label: 'Number' },
     { value: 'file', label: 'File' },
     { value: 'email', label: 'Email' },
-    { value: 'password', label: 'Password' },
-    { value: 'date', label: 'Date' },
-    { value: 'datetime-local', label: 'Date & Time' },
-    { value: 'time', label: 'Time' },
-    { value: 'month', label: 'Month' },
-    { value: 'week', label: 'Week' },
     { value: 'url', label: 'URL' },
     { value: 'tel', label: 'Telephone' },
-    { value: 'color', label: 'Color' },
-    { value: 'range', label: 'Range' },
-    { value: 'checkbox', label: 'Checkbox' },
-    { value: 'radio', label: 'Radio' },
     { value: 'textarea', label: 'Textarea' },
   ];
 

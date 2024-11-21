@@ -21,20 +21,24 @@ export interface JobPostingCustomFieldDTO {
 export interface JobVacancyExperienceDTO{
     id?: number;
     name?: string;
+    code?: string;
     description?: string;
 }
 export interface JobVacancyCategoryDTO{
     id?: number;
     name?: string;
+    code?: string;
     description?: string;
 }
 export interface JobVacancyTypeDTO{
     id?: number;
     name?: string;
+    code?: string;
     description?: string;
 }
 export interface JobVacancySpecificationDTO{
     id?: number;
     name?: string;
+    code?: string;
     description?: string;
 }

@@ -1,6 +1,6 @@
 import { Component, Output, EventEmitter, Input } from '@angular/core';
 import { Router } from '@angular/router';
-import { AuthenticationService } from 'src/app/ui/auth/service/authentication.service';
+import { AuthenticationService } from '../../service/auth-service/authentication.service';
 
 @Component({
   selector: 'app-navbar',

@@ -1,66 +1,32 @@
 /* You can add global styles to this file, and also import other style files */
 
-@import "@ng-select/ng-select/themes/default.theme.css";
-
-
-// custom primeUI
-@import "../node_modules/primeng/resources/themes/saga-green/theme.css";
+@import "../node_modules/primeng/resources/themes/lara-light-blue/theme.css";
 @import "../node_modules/primeng/resources/primeng.css";
-@import "../node_modules/primeng/resources/primeng.min.css";
+@import "../node_modules/primeicons/primeicons.css";
 
-/* Custom css */
 @import "assets/theme/theme.scss";
 
-// QUILL CSS
+
+
+@import "@ng-select/ng-select/themes/default.theme.css";
+
 @import "../node_modules/quill/dist/quill.core.css";
 @import "../node_modules/quill/dist/quill.snow.css";
 
 
-
-//tailwind style
-// @import "assets/theme/theme.css";
-
-// Include the common styles for Angular Material. We include this here so that you only
-// have to load a single css file for Angular Material in your app.
-// Be sure that you only ever include this mixin once!
-
-// Define the palettes for your theme using the Material Design palettes available in palette.scss
-// (imported above). For each palette, you can optionally specify a default, lighter, and darker
-// hue. Available color palettes: https://material.io/design/color/
+html{
+  font-size: 10px;
+}
 
 
-
-// // regular style toast
-// @import 'ngx-toastr/toastr';
-
-// // bootstrap style toast
-// // or import a bootstrap 4 alert styled design (SASS ONLY)
-// // should be after your bootstrap imports, it uses bs4 variables, mixins, functions
-// @import 'ngx-toastr/toastr-bs4-alert';
-
-// // if you'd like to use it without importing all of bootstrap it requires
-// @import 'bootstrap/scss/functions';
-// @import 'bootstrap/scss/variables';
-// @import 'bootstrap/scss/mixins';
-// // bootstrap 4
-// @import 'ngx-toastr/toastr-bs4-alert';
-// // boostrap 5
-// @import 'ngx-toastr/toastr-bs5-alert';
+.card{
+border: 1px solid rgb(224, 224, 224);
+border-radius: 5px;
+background-color: #fff;
+}
 
 
 
-
-
-
-
-
-
-
-
-// /* You can add global styles to this file, and also import other style files */
-// *, h1,h2,h3,h4,h5,h6{
-//   font-family: "Roboto Slab", serif;
-// }
 * {
   // padding: 0;
   // margin: 0;
@@ -70,10 +36,9 @@
   font-family: "Roboto Slab", serif;
   
 }
-html,
-body {
+html{
   height: 100%;
-  font-size: 16px;
+  font-size: 10px;
 }
 body {
   // margin: 0;
@@ -85,11 +50,18 @@ h1,h2,h3,h4,h5,h6{
 }
 
 @media screen and (min-width: 1200px){
+  html,
+body {
+  // font-size: 10px;
+}
+}
+fieldset {
+  border: 2px solid #4A4A4A;
+  border-radius: 8px;       
+  padding: 10px;          
+  margin-bottom: 1rem;       
+}
 
-html {
-  font-size: 10px;
-}
-}
 
 .p-toast{
   font-size: 1em;
@@ -138,4 +110,12 @@ html {
   background-color: rgb(37 146 91 / 0.6);
   color: white;
   border-radius: 1rem;
+}
+input[type="checkbox"]{
+  @apply accent-customBlue
+
+}
+input[type="radio"]{
+  @apply accent-customBlue
+
 }

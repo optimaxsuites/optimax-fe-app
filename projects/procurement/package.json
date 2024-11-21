@@ -7,7 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "pullSharedComponent": "git subtree add --prefix=src/app/ui/sharedComponent https://gitlab.com/queensheba/erp-shared-component.git master --squash",
+    "pullSharedComponent": "git subtree pull --prefix=src/app/ui/sharedComponent https://gitlab.com/queensheba/erp-shared-component.git master --squash",
     "pushSharedComponent": "git subtree push --prefix=src/app/ui/sharedComponent https://gitlab.com/queensheba/erp-shared-component.git master"
   },
   "private": true,

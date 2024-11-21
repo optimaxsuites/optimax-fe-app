@@ -51,6 +51,7 @@
     "apexcharts": "^3.49.0",
     "bootstrap": "^5.3.3",
     "currency-codes": "^2.1.0",
+    "exceljs": "^4.4.0",
     "fullcalendar": "^6.1.15",
     "html2canvas": "^1.4.1",
     "jsbarcode": "^3.11.0",

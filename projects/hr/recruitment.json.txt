@@ -21,22 +21,33 @@ JobVacancyCustomField {
 JobVacancyExperienceDTO{
     id?: number;
     name?: string;
-    des?: string;
+    code?: string;
+    description?: string;
 }
 JobVacancyCategoryDTO{
     id?: number;
     name?: string;
-    des?: string;
+    code?: string;
+    description?: string;
 }
 JobVacancyTypeDTO{
     id?: number;
     name?: string;
-    des?: string;
+    code?: string;
+    description?: string;
 }
 JobVacancySpecificationDTO{
     id?: number;
     name?: string;
-    des?: string;
+    code?: string;
+    description?: string;
+}
+
+JobVacancyQualificationDTO{
+    id?: number;
+    name?: string;
+    code?: string;
+    description?: string;
 }
 
 ApplicantDTO{
@@ -101,4 +112,8 @@ QuestionItemDTO {
     submittedAt: string; 
     criteria?: QuestionDTO;
     totalScore?: number | null;
+<<<<<<< HEAD
   }
+=======
+  }
+>>>>>>> 234142a4416011f732b4f2547cb8de4405873e1f

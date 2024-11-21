@@ -1,21 +1,17 @@
 import { Component, Input, Type } from '@angular/core';
 import { DropdownOption, TabConfig } from '../../service/interface/data';
-import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-nav-tab',
   templateUrl: './nav-tab.component.html',
-  styleUrl: './nav-tab.component.scss',
-  standalone: true,
-  imports: [CommonModule]
-
+  styleUrl: './nav-tab.component.scss'
 })
 export class NavTabComponent {
   @Input() tabsConfig: TabConfig[] = []; 
 
   isDropdownOpen = false;
   selectedTab: string = ""; 
-  selectedSetting: string | null = null;
+  selectedSetting?: string | null = null;
   selectedDropdownTab: string = '';
   user_role:any = ''
   ngOnInit(): void{
