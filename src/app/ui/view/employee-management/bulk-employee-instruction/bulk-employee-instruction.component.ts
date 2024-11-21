@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Output } from '@angular/core';
-// import * as XLSX from 'xlsx';
-// import ExcelJS from 'exceljs';
+import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
 import { MessageService } from 'primeng/api';
 
@@ -81,8 +81,8 @@ export class BulkEmployeeInstructionComponent {
     const levelList = [`"${salaryStructureMAP.join(',')}"`];
     console.log("Level List:", levelList); 
   
-    // const workbook = new ExcelJS.Workbook();
-    // const worksheet = workbook.addWorksheet('Employees');
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Employees');
   
     const headers = [
       'Employee ID', 'First Name', 'Last Name', 'Email', 'Work Email',
@@ -92,56 +92,56 @@ export class BulkEmployeeInstructionComponent {
       'Sick leave', 'Public Holiday', 'Casual leave', 'Bereavement leave', 
       'Managerial Access', 'Administrative Access'
     ];
-    // worksheet.addRow(headers);
+    worksheet.addRow(headers);
   
     const rows = [
       [1, 'John', 'Doe', 'john@email.com', 'john.work@email', 'HR Manager', 'HR', 'Contract', 'Senior', 'Jon Bellion', 
       'Active', '2022-01-01', '2022-12-31', 'No', '2022-01-01', '2022-12-31', '2022-12-31', 5, 0, 8, 9, 8, 'Yes', 'Yes']
     ];
-    // rows.forEach(row => worksheet.addRow(row));
+    rows.forEach(row => worksheet.addRow(row));
   
     for (let i = 2; i <= 100; i++) {
-      // worksheet.getCell(`G${i}`).dataValidation = {
-      //   type: 'list',
-      //   allowBlank: true,
-      //   formulae: ['"Human Resources,Finance,Marketing,Sales,Operations,IT,Customer Service,Legal,Procurement,Administration,Product Development,Research Development,Quality Assurance"'],
-      //   showErrorMessage: true,
-      //   errorTitle: 'Invalid Selection',
-      //   error: 'Please select a value from the dropdown.',
-      // };
-      // worksheet.getCell(`H${i}`).dataValidation = {
-      //   type: 'list',
-      //   allowBlank: true,
-      //   formulae: ['"Contract,Full Time,Part Time,Internship,Seasonal,Temporary"'],
-      //   showErrorMessage: true,
-      //   errorTitle: 'Invalid Selection',
-      //   error: 'Please select a value from the dropdown.',
-      // };
-      // worksheet.getCell(`I${i}`).dataValidation = {
-      //   type: 'list',
-      //   allowBlank: true,
-      //   formulae: levelList,
-      //   showErrorMessage: true,
-      //   errorTitle: 'Invalid Selection',
-      //   error: 'Please select a value from the dropdown.',
-      // };
-      // worksheet.getCell(`K${i}`).dataValidation = {
-      //   type: 'list',
-      //   allowBlank: true,
-      //   formulae: ['"Joining, Active,"'],
-      //   showErrorMessage: true,
-      //   errorTitle: 'Invalid Selection',
-      //   error: 'Please select a value from the dropdown.',
-      // };
+      worksheet.getCell(`G${i}`).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        formulae: ['"Human Resources,Finance,Marketing,Sales,Operations,IT,Customer Service,Legal,Procurement,Administration,Product Development,Research Development,Quality Assurance"'],
+        showErrorMessage: true,
+        errorTitle: 'Invalid Selection',
+        error: 'Please select a value from the dropdown.',
+      };
+      worksheet.getCell(`H${i}`).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        formulae: ['"Contract,Full Time,Part Time,Internship,Seasonal,Temporary"'],
+        showErrorMessage: true,
+        errorTitle: 'Invalid Selection',
+        error: 'Please select a value from the dropdown.',
+      };
+      worksheet.getCell(`I${i}`).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        formulae: levelList,
+        showErrorMessage: true,
+        errorTitle: 'Invalid Selection',
+        error: 'Please select a value from the dropdown.',
+      };
+      worksheet.getCell(`K${i}`).dataValidation = {
+        type: 'list',
+        allowBlank: true,
+        formulae: ['"Joining, Active,"'],
+        showErrorMessage: true,
+        errorTitle: 'Invalid Selection',
+        error: 'Please select a value from the dropdown.',
+      };
     }
   
-    // workbook.xlsx.writeBuffer().then((buffer: BlobPart) => {
-    //   const blob = new Blob([buffer], { type: 'application/octet-stream' });
-    //   const link = document.createElement('a');
-    //   link.href = URL.createObjectURL(blob);
-    //   link.download = 'employee_data.xlsx';
-    //   link.click();
-    // });
+    workbook.xlsx.writeBuffer().then((buffer: BlobPart) => {
+      const blob = new Blob([buffer], { type: 'application/octet-stream' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'employee_data.xlsx';
+      link.click();
+    });
   }
   
 
@@ -160,17 +160,17 @@ export class BulkEmployeeInstructionComponent {
     const reader = new FileReader();
     reader.onload = (event) => {
       const data = new Uint8Array(event.target?.result as ArrayBuffer);
-      // const workbook = XLSX.read(data, { type: 'array' });
+      const workbook = XLSX.read(data, { type: 'array' });
       
-      // Get the first sheet's data
-      // const sheetName = workbook.SheetNames[0];
-      // const worksheet = workbook.Sheets[sheetName];
+    //   Get the first sheet's data
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
 
-      // Convert the sheet to JSON
-      // const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+    //   Convert the sheet to JSON
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
     // console.log(jsonData)
-    //   this.validateData(jsonData);
+      this.validateData(jsonData);
     };
     reader.readAsArrayBuffer(this.file);
   }
@@ -229,7 +229,7 @@ export class BulkEmployeeInstructionComponent {
     );
   
     if (existingEmployee) {
-    // this.messageService.add({ severity:'warn', summary: 'warning', detail: `Employee with Email: ${data['Email']} or ID: ${data['Employee ID']} already exists and is being skipped.`, key: 'tl', life: 5000  });
+    this.messageService.add({ severity:'warn', summary: 'warning', detail: `Employee with Email: ${data['Email']} or ID: ${data['Employee ID']} already exists and is being skipped.`, key: 'tl', life: 5000  });
 
       return false; 
     }

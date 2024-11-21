@@ -10,6 +10,8 @@ import { TabConfig } from '../../shared-component/service/interface/data';
 import { EmployeeNokComponent } from './employee-nok/employee-nok.component';
 import { EmployeeGuarantorComponent } from './employee-guarantor/employee-guarantor.component';
 import { EmployeeOffboardingComponent } from './employee-offboarding/employee-offboarding.component';
+import { EmployeeService } from '../../service/employee.service';
+import { DataService } from '../../service/data.service';
 
 interface Allowances {
   transportationAllowance: number;
@@ -538,14 +540,31 @@ handleDateClick(arg: DateClickArg) {
 
   constructor(
     private messageService: MessageService,
-   private token: RandomTokenService
+   private token: RandomTokenService,
+   private employeeService: EmployeeService,
+   private dataService: DataService
   ) {
   }
-  ngOnInit() {
+  async ngOnInit() {
 
    this.fetchEmployees()
 
+      
+   try{
+    await this.employeeService.getAllEmployee().toPromise()
+     .then((res: any) => {
+        this.employees = res.data;
+        console.log(this.employees)
+        // this.filteredEmployees = [...this.employees];
+        // this.fetchSalaryStructure();
+      })
+     .catch((err: any) => {
+        console.log('Error fetching employees', err);
+      });
+
+    }catch(err) {}
   }
+
 
   fetchEmployees(){
     const employeesFromStorage = localStorage.getItem("employeesList");

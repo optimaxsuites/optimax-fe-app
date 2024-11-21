@@ -64,6 +64,7 @@ import { AppraisallistComponent } from './ui/view/performance/appraisallist/appr
 import { AppraisalcycleComponent } from './ui/view/performance/appraisalcycle/appraisalcycle.component';
 import { AssignLeaveComponent } from './ui/view/leave/assign-leave/assign-leave.component';
 import {
+  HTTP_INTERCEPTORS,
   provideHttpClient,
   withInterceptorsFromDi,
 } from '@angular/common/http';
@@ -94,6 +95,7 @@ import { NavbarComponent } from './ui/shared-component/view/navbar/navbar.compon
 import { FooterComponent } from './ui/shared-component/view/footer/footer.component';
 import { EditableLabelComponent } from './ui/shared-component/view/editable-label/editable-label.component';
 import { DropdownComponent } from './ui/shared-component/view/dropdown/dropdown.component';
+import { AuthInterceptor } from './ui/shared-component/service/auth-service/auth.interceptor.service';
 
 @NgModule({
   declarations: [
@@ -159,8 +161,8 @@ import { DropdownComponent } from './ui/shared-component/view/dropdown/dropdown.
     DropdownComponent
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
@@ -192,6 +194,11 @@ import { DropdownComponent } from './ui/shared-component/view/dropdown/dropdown.
     LargeSideModalComponent,
   ],
   providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true,
+    },
     {
       provide: JWT_OPTIONS,
       useValue: JWT_OPTIONS,
