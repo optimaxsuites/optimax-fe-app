@@ -86,7 +86,6 @@ import { TargetformComponent } from './ui/view/performance/targetform/targetform
 import { BulkEmployeeInstructionComponent } from './ui/view/employee-management/bulk-employee-instruction/bulk-employee-instruction.component';
 import { SplitAndTitleCasePipe } from './ui/shared-component/service/split-and-title-case.pipe';
 import { AppraisalformComponent } from './ui/view/performance/appraisalform/appraisalform.component';
-<<<<<<< HEAD
 import { JobApplicationFormComponent } from './ui/shared-component/view/job-application-form/job-application-form.component';
 import { Sidebar2Component } from './ui/shared-component/view/sidebar2/sidebar2.component';
 import { SidebarComponent } from './ui/shared-component/view/sidebar/sidebar.component';
@@ -95,8 +94,6 @@ import { NavbarComponent } from './ui/shared-component/view/navbar/navbar.compon
 import { FooterComponent } from './ui/shared-component/view/footer/footer.component';
 import { EditableLabelComponent } from './ui/shared-component/view/editable-label/editable-label.component';
 import { DropdownComponent } from './ui/shared-component/view/dropdown/dropdown.component';
-=======
->>>>>>> 234142a4416011f732b4f2547cb8de4405873e1f
 
 @NgModule({
   declarations: [
