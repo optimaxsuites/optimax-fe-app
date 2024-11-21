@@ -138,8 +138,8 @@ import { SplitAndTitleCasePipe } from './ui/shared-component/service/split-and-t
     SplitAndTitleCasePipe,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
