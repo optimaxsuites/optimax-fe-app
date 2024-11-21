@@ -6,6 +6,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
 import { environment } from '../../../shared-component/service/environments/environment';
 import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
+import { DataService } from '../../../service/data.service';
 
 @Component({
   selector: 'app-admin-creation-form',
@@ -32,29 +33,8 @@ export class AdminCreationFormComponent {
   fileDataUrl: SafeUrl = '';
   imageURL: string =''
   salaryStructure: any = [];
-  departments = [
-    "Human Resources",
-    "Finance",
-    "Marketing",
-    "Sales",
-    "Operations",
-    "IT",
-    "Customer Service",
-    "Legal",
-    "Procurement",
-    "Administration",
-    "Product Development",
-    "Research & Development",
-    "Quality Assurance",
-    "Public Relations",
-    "Engineering",
-    "Logistics",
-    "Health and Safety",
-    "Security",
-    "Compliance",
-    "Training & Development"
-  ];
-  gender = ["Male", "Female", "Other"]
+  departments: any[] = [];
+  gender: any[] = []
   currentTab = 1;
   tabs = ["Employment Information", "Employment Status", "Leave", "Access", "Summary"]
    maritalStatuses = [
@@ -83,7 +63,7 @@ export class AdminCreationFormComponent {
     "Bahá'í",
     "Other"
   ];
-  employments = ["Contract", "Full Time", "Part Time", "Internship", "Seasonal", "Temporary"]
+  employments: any[] = []
   nigerianBanks = [
     "Access Bank",
     "Citibank Nigeria",
@@ -132,11 +112,31 @@ totalLeaveDays: number = 0;
     private messageService: MessageService,
     private router: Router, 
     private token: RandomTokenService, 
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private dataService: DataService
   ) {  }
 
   ngOnInit(): void {
-    
+    this.dataService.getDepartment().subscribe(departments => {
+       this.departments = departments.map((d: any) => ({
+        label: d.name,
+        value: d.id,
+      }));
+    });
+    this.dataService.getGender().subscribe(gender => {
+      this.gender = gender.map((g: any) => ({
+       label: g.name,
+       value: g.id,
+     }));
+   });
+   this.dataService.getJobType().subscribe(jobType => {
+    this.employments = jobType.map((j: any) => ({
+     label: j.name,
+     value: j.id,
+   }));
+ });
+   
+     
     // this.userInfoRegData = JSON.parse(sessionStorage["userRegData"]);
     // this.userRegData = this.userInfoRegData;
     const salaryStructure = localStorage.getItem("salaryStructure");

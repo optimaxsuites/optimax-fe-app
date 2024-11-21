@@ -80,8 +80,8 @@
                   <label for="department" class="block text-[13px] font-medium">Departments <span class="ml-1 font-bold text-red-600">*</span></label>
                   <ng-select 
                   [items]="departments" 
-                  bindLabel="department"
-                  bindValue="department"
+                  bindLabel="label"
+                  bindValue="value"
                   placeholder="Select Department"
                   formControlName="department"
                   class="w-full mt-1 rounded-md"></ng-select>
@@ -94,8 +94,8 @@
                   <label for="department" class="block text-[13px] font-medium">Employment Type <span class="ml-1 font-bold text-red-600">*</span></label>
                   <ng-select 
                   [items]="employments" 
-                  bindLabel="employmentType"
-                  bindValue="employmentType"
+                  bindLabel="label"
+                  bindValue="value"
                   placeholder="Select Employment Type"
                   formControlName="employmentType"
                   class="w-full mt-1 rounded-md"></ng-select>
