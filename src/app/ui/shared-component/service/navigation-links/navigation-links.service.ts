@@ -34,6 +34,8 @@ export class NavigationLinksService {
 
     this.links['accountingLink'] = '/admin/accounting/' +uuidV4();
 
+// links =========================================================================================================================
+    this.links['']
 
 // human resources ================================================================================================================
     this.links['hrLink'] = '/admin/hr/' +uuidV4();
@@ -76,9 +78,10 @@ export class NavigationLinksService {
     this.links['closeRegister'] = '/user/checkout/closeRegister/' +uuidV4();
 
 // settings links ============================================================================================================
-    this.links['settingsLink'] = '/admin/settings/general-settings/' +uuidV4();
-    this.links['generalSettings'] = 'general-settings/' +uuidV4();
-    this.links['HRSettings'] = 'HR-settings/' +uuidV4();
+this.links['settingsLink'] = '/admin/settings/general-settings/' +uuidV4();
+this.links['generalSettings'] = 'general-settings/' +uuidV4();
+this.links['HRSettings'] = 'HR-settings/' +uuidV4();
+
 
 
   }

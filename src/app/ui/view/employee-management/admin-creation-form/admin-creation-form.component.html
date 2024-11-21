@@ -387,10 +387,22 @@
       <img [src]="fileDataUrl" class="w-full max-h-[80vh]"/>
   </app-modal>
   
-  <p-toast></p-toast>
+  
+
+  <div 
+  class="w-[75vw] bg-black/50 h-full fixed top-0 bottom-0 right-0 z-50 flex items-center justify-center" 
+  *ngIf="openInfoModal" 
+  (click)="openInfoModal = false">
+  
+  <div 
+    class="bg-white p-4 rounded shadow-md" 
+    (click)="$event.stopPropagation()">
+    <app-bulk-employee-instruction (close)="openInfoModal =false"></app-bulk-employee-instruction>
+  </div>
 </div>
 
 
-<app-modal *ngIf="openInfoModal" (close)="openInfoModal = false">
-  <app-bulk-employee-instruction></app-bulk-employee-instruction>
-</app-modal>
+</div>
+
+
+<p-toast position="top-right" key="tl" />

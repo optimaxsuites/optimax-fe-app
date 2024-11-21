@@ -585,7 +585,7 @@ handleDateClick(arg: DateClickArg) {
           } : null 
         };
       });
-
+console.log(this.employees)
       this.uniqueLevels = [...new Set(this.employees.map((employee: { level: any; }) => employee.level))];
 
       this.uniquePositions = [...new Set(this.employees.map((employee: {jobTitle: string} ) => employee.jobTitle))];
