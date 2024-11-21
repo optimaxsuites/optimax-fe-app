@@ -34,6 +34,8 @@ export class NavigationLinksService {
 
     this.links['accountingLink'] = '/admin/accounting/' +uuidV4();
 
+// links =========================================================================================================================
+    this.links['']
 
 // human resources ================================================================================================================
     this.links['hrLink'] = '/admin/hr/' +uuidV4();

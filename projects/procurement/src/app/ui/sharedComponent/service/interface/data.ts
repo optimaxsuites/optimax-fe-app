@@ -40,6 +40,6 @@ export interface TabConfig {
 
 export interface DropdownOption {
   label: string; 
-  action: string; 
+  action?: string; 
   component: Type<any>;
 }
