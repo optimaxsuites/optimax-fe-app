@@ -82,6 +82,20 @@ AttachmentDTO {
     type?: string; 
 }
 
+ApplicationStage {
+    ApplicationReceived = 'Application Received',
+    Scheduled = "Scheduled",
+    InProgress = 'In-Progress',
+    Completed = "Completed",
+    OfferSent = "Offer-Sent",
+    OfferAccepted = "Offer-Accepted",
+    OfferRejected = "Offer-Rejected",
+    AppointmentLetterSent = 'Appointment-Letter-Sent',
+    AppointmentAccepted = 'Appointment-Accepted',
+    AppointmentRejected = 'Appointment-Rejected'
+}
+
+
 QuestionItemDTO {
     text: string;
     score: number | undefined;
@@ -98,4 +112,8 @@ QuestionItemDTO {
     submittedAt: string; 
     criteria?: QuestionDTO;
     totalScore?: number | null;
+<<<<<<< HEAD
   }
+=======
+  }
+>>>>>>> 234142a4416011f732b4f2547cb8de4405873e1f
