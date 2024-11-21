@@ -27,7 +27,7 @@ import { MessagesModule } from 'primeng/messages';
 import { MessageModule } from 'primeng/message';
 import { RippleModule } from 'primeng/ripple';
 
-import { NgSelectModule } from '@ng-select/ng-select';
+import { NgSelectComponent, NgSelectModule } from '@ng-select/ng-select';
 import { FullCalendarModule } from '@fullcalendar/angular';
 
 import { AppHrRoutingModule } from './app-routing.module';
@@ -85,6 +85,15 @@ import { TargetComponent } from './ui/view/performance/target/target.component';
 import { TargetformComponent } from './ui/view/performance/targetform/targetform.component';
 import { BulkEmployeeInstructionComponent } from './ui/view/employee-management/bulk-employee-instruction/bulk-employee-instruction.component';
 import { SplitAndTitleCasePipe } from './ui/shared-component/service/split-and-title-case.pipe';
+import { AppraisalformComponent } from './ui/view/performance/appraisalform/appraisalform.component';
+import { JobApplicationFormComponent } from './ui/shared-component/view/job-application-form/job-application-form.component';
+import { Sidebar2Component } from './ui/shared-component/view/sidebar2/sidebar2.component';
+import { SidebarComponent } from './ui/shared-component/view/sidebar/sidebar.component';
+import { SearchbarComponent } from './ui/shared-component/view/searchbar/searchbar.component';
+import { NavbarComponent } from './ui/shared-component/view/navbar/navbar.component';
+import { FooterComponent } from './ui/shared-component/view/footer/footer.component';
+import { EditableLabelComponent } from './ui/shared-component/view/editable-label/editable-label.component';
+import { DropdownComponent } from './ui/shared-component/view/dropdown/dropdown.component';
 
 @NgModule({
   declarations: [
@@ -97,13 +106,7 @@ import { SplitAndTitleCasePipe } from './ui/shared-component/service/split-and-t
     RecruitmentFormComponent,
     CandidateComponent,
     ScheduledInterviewComponent,
-    NavTabComponent,
-    SideModalComponent,
-    ModalComponent,
     BackButtonComponent,
-    ButtonComponent,
-    CareerJobPostingComponent,
-    DashboardFooterComponent,
     InterviewInviteComponent,
     OfferLetterComponent,
     AppointmentLetterComponent,
@@ -114,7 +117,6 @@ import { SplitAndTitleCasePipe } from './ui/shared-component/service/split-and-t
     LeaveRequestComponent,
     AssignLeaveComponent,
     ApplyComponent,
-    Navbar2Component,
     PerformanceComponent,
     AppraisallistComponent,
     AppraisalcycleComponent,
@@ -136,6 +138,25 @@ import { SplitAndTitleCasePipe } from './ui/shared-component/service/split-and-t
     TargetformComponent,
     BulkEmployeeInstructionComponent,
     SplitAndTitleCasePipe,
+    AppraisalformComponent,
+    AppraisallistComponent,
+    AppraisalcycleComponent,
+    CareerJobPostingComponent,
+
+    DashboardFooterComponent,
+    ButtonComponent,
+    NavTabComponent,
+    Navbar2Component,
+    JobApplicationFormComponent,
+    ModalComponent,
+    SideModalComponent,
+    Sidebar2Component,
+    SidebarComponent,
+    SearchbarComponent,
+    NavbarComponent,
+    FooterComponent,
+    EditableLabelComponent,
+    DropdownComponent
   ],
   imports: [
     // BrowserModule,

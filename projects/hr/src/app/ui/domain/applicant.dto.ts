@@ -33,6 +33,7 @@ export interface ApplicantDTO{
 }
 
 export interface AttachmentDTO {
+    id?: number;
     name?: string;
     url?: string;
     size?: number; 
