@@ -25,7 +25,11 @@ import { InputTextModule } from 'primeng/inputtext';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { MessagesModule } from 'primeng/messages';
 import { MessageModule } from 'primeng/message';
+import { MessageService } from 'primeng/api';
 import { RippleModule } from 'primeng/ripple';
+import { DropdownModule } from 'primeng/dropdown';
+import { TagModule } from 'primeng/tag';
+
 
 import { NgSelectComponent, NgSelectModule } from '@ng-select/ng-select';
 import { FullCalendarModule } from '@fullcalendar/angular';
@@ -88,14 +92,16 @@ import { BulkEmployeeInstructionComponent } from './ui/view/employee-management/
 import { SplitAndTitleCasePipe } from './ui/shared-component/service/split-and-title-case.pipe';
 import { AppraisalformComponent } from './ui/view/performance/appraisalform/appraisalform.component';
 import { JobApplicationFormComponent } from './ui/shared-component/view/job-application-form/job-application-form.component';
-import { Sidebar2Component } from './ui/shared-component/view/sidebar2/sidebar2.component';
-import { SidebarComponent } from './ui/shared-component/view/sidebar/sidebar.component';
 import { SearchbarComponent } from './ui/shared-component/view/searchbar/searchbar.component';
 import { NavbarComponent } from './ui/shared-component/view/navbar/navbar.component';
 import { FooterComponent } from './ui/shared-component/view/footer/footer.component';
 import { EditableLabelComponent } from './ui/shared-component/view/editable-label/editable-label.component';
 import { DropdownComponent } from './ui/shared-component/view/dropdown/dropdown.component';
 import { AuthInterceptor } from './ui/shared-component/service/auth-service/auth.interceptor.service';
+import { MasterComponent } from './master.component';
+import { RouterModule } from '@angular/router';
+import { SidebarComponent } from './ui/view/sidebar/sidebar.component';
+
 
 @NgModule({
   declarations: [
@@ -144,28 +150,28 @@ import { AuthInterceptor } from './ui/shared-component/service/auth-service/auth
     AppraisallistComponent,
     AppraisalcycleComponent,
     CareerJobPostingComponent,
-
     DashboardFooterComponent,
     ButtonComponent,
     NavTabComponent,
     Navbar2Component,
+    NavbarComponent,
     JobApplicationFormComponent,
     ModalComponent,
     SideModalComponent,
-    Sidebar2Component,
     SidebarComponent,
     SearchbarComponent,
-    NavbarComponent,
-    FooterComponent,
     EditableLabelComponent,
-    DropdownComponent
+    DropdownComponent,
+    MasterComponent,
+
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
+    RouterModule,
     RippleModule,
     DialogModule,
     ToastModule,
@@ -178,6 +184,8 @@ import { AuthInterceptor } from './ui/shared-component/service/auth-service/auth
     SplitButtonModule,
     PanelModule,
     DividerModule,
+    TagModule,
+    DropdownModule,
     OverlayPanelModule,
     StepperModule,
     InputTextModule,
@@ -192,7 +200,8 @@ import { AuthInterceptor } from './ui/shared-component/service/auth-service/auth
     NgSelectModule,
     FullCalendarModule,
     LargeSideModalComponent,
-  ],
+    FooterComponent ,
+],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,
