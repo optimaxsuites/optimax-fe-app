@@ -166,8 +166,8 @@ import { SidebarComponent } from './ui/view/sidebar/sidebar.component';
 
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,
