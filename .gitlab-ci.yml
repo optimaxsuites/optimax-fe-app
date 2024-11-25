@@ -29,7 +29,7 @@ update_subtrees:
         - echo "pulled settings"
         # - git subtree pull --prefix=projects/vendor https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-vendor.git master --squash
         # - echo "pulled vendor"
-        # - git checkout -b temp-branch
+        - git checkout -b temp-branch
         - git checkout mod
         - git merge temp-branch
         - git remote set-url origin "https://oauth2:${LOGIN_TOKEN}@gitlab.com/j2yemi/optimax_fe_app.git"
