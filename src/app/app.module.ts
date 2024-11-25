@@ -54,6 +54,7 @@ import { NavigationLinksService } from './ui/sharedComponents/service/navigation
 import { MenuItemsService } from './ui/sharedComponents/service/menue-items/menu-items.service';
 import { GeneralSettingsComponent } from './ui/view/general/general-settings/general-settings.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { LevelComponent } from './ui/view/hr/level/level.component';
 
 
 //
@@ -66,10 +67,12 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
     SalaryComponent,
     SettingsPageComponent,
     ScoresheetConfigComponent,
-    GeneralSettingsComponent
+    GeneralSettingsComponent,
+    LevelComponent
   ],
   imports: [
     // BrowserModule,
+    // BrowserAnimationsModule,
     AppRoutingModule,
     CommonModule,
     AppRoutingModule,
