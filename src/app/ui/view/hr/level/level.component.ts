@@ -8,6 +8,8 @@ interface LevelStructure {
 import { Component } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { LevelService } from '../../../service/level.service';
+import { LevelDTO } from '../../../domain/level.dto';
 
 @Component({
   selector: 'app-level',
@@ -21,96 +23,25 @@ export class LevelComponent {
   editIndex: number | null = null
   
   levelForm: FormGroup;
-  levelStructure: LevelStructure[] = []
-   levels = [
-    {
-      level: 'Intern',
-      description: 'Entry-level position for gaining industry experience. Often involves learning and assisting with tasks under supervision.',
-    },
-    {
-      level: 'Junior Staff',
-      description: 'Performs basic tasks and supports team operations. Requires some supervision and basic skill levels.',
-    },
-    {
-      level: 'Entry Level',
-      description: 'The starting position for professionals in a specific field. Responsible for individual tasks and deliverables.',
-    },
-    {
-      level: 'Mid Level 1',
-      description: 'Handles more complex responsibilities, often requiring some decision-making and independent work.',
-    },
-    {
-      level: 'Mid Level 2',
-      description: 'Experienced professional with advanced responsibilities, including mentoring junior staff.',
-    },
-    {
-      level: 'Senior Level 1',
-      description: 'High-level professional who oversees key tasks and projects. Often involved in strategic decision-making.',
-    },
-    {
-      level: 'Senior Level 2',
-      description: 'Seasoned expert managing teams, projects, and contributing to organizational strategy and growth.',
-    },
-    {
-      level: 'Executive Level 1',
-      description: 'Leadership position with responsibilities for managing departments and driving organizational goals.',
-    },
-    {
-      level: 'Executive Level 2',
-      description: 'Senior leadership role overseeing critical areas of the business with significant decision-making authority.',
-    },
-    {
-      level: 'C-Level',
-      description: 'Top executive role responsible for the overall strategy, vision, and direction of the organization.',
-    },
-  ];
-  
+  levelStructure: LevelDTO[] = []
+  loading: boolean = false
 
-  constructor(private fb: FormBuilder, private confirmationService: ConfirmationService,
+  constructor(private fb: FormBuilder, private confirmationService: ConfirmationService, private levelService: LevelService,
     private messageService: MessageService  ) {
     this.levelForm = this.fb.group({
       level: ['', Validators.required],
       description: ['', [Validators.required, Validators.min(0)]],
-     
+     code: ['', Validators.required]
     });
   }
   ngOnInit() {
-    const levelsFromStorage = localStorage.getItem("levelStructure");
-    
-    if (levelsFromStorage) {
+    this.loading = true
+    this.levelService.getAllLevels().subscribe(levels => {
+      this.levelStructure = levels
+    this.loading = false
 
-      const storedSalaries = JSON.parse(levelsFromStorage);
+   });
   
-
-      this.levelStructure = storedSalaries.map((salary: any) => ({
-        ...salary,
-        netSalary: function () {
-          const grossSalary = this.baseSalary + this.allowances.transportationAllowance + this.allowances.mealAllowance + (this.bonuses.internshipCompletionBonus || 0);
-          return grossSalary - (this.deductions.tax + (this.deductions.pension || 0));
-        }
-      }));
-  
-    }
-  
-  else {
-    localStorage.setItem("levelStructure", JSON.stringify(this.levels))
-    const salariesFromStorage = localStorage.getItem("levelStructure");
-    
-    if (salariesFromStorage) {
-
-      const storedSalaries = JSON.parse(salariesFromStorage);
-  
-
-      this.levelStructure = storedSalaries.map((salary: any) => ({
-        ...salary,
-        netSalary: function () {
-          const grossSalary = this.baseSalary + this.allowances.transportationAllowance + this.allowances.mealAllowance + (this.bonuses.internshipCompletionBonus || 0);
-          return grossSalary - (this.deductions.tax + (this.deductions.pension || 0));
-        }
-      }));
-  
-    }
-  }
   }
   
  
@@ -123,22 +54,36 @@ export class LevelComponent {
   
       
       const newlevelStructure = {
-        level: formValue.level,
+        name: formValue.level,
         description: formValue.description,
-   
+        code: formValue.code,
       };
   
       if (this.isEditMode && this.editIndex !== null) {
-        this.levelStructure[this.editIndex] = newlevelStructure;
+        this.levelStructure[this.editIndex] = {
+          id: this.levelStructure[this.editIndex].id,
+          ...newlevelStructure
+        };
+       const id = this.levelStructure[this.editIndex].id
+        
+      this.levelService.updateLevelById(id, newlevelStructure).subscribe(() => {
+       this.messageService.add({ severity: 'success', summary: 'Success', detail: "Level updated successfully!", key: 'tl', life: 3000  }); 
+       this.levelForm.reset();
+       this.isEditMode = false;
+      });
+
       } else {
         this.levelStructure.push(newlevelStructure);
+      this.levelService.addLevel(newlevelStructure).subscribe(() => {
+       this.messageService.add({ severity: 'success', summary: 'Success', detail: "Leave added successfully!", key: 'tl', life: 3000  }); 
+       this.levelForm.reset();
+
+      });
       }
 
-      localStorage.setItem('levelStructure', JSON.stringify(this.levelStructure));
-      this.levelForm.reset();
-      this.showAddForm = false;
-      this.isEditMode = false;
-      this.editIndex = null;
+
+
+     
   
       console.log('New Salary Structure:', newlevelStructure);
     } else {
@@ -150,8 +95,9 @@ export class LevelComponent {
     this.isEditMode = true;
     this.editIndex = index;
     this.levelForm.patchValue({
-      level: levelStructure.level,
-      description: levelStructure.baseSalary,
+      level: levelStructure.name,
+      code: levelStructure.code,
+      description: levelStructure.description,
     });
 
  
@@ -164,7 +110,7 @@ export class LevelComponent {
       .replace(/^./, str => str.toUpperCase());
   }
   
-  editSalary(level: LevelStructure, index:number, event: Event) {
+  editSalary(level: LevelDTO, index:number, event: Event) {
    
     event.stopPropagation();
     this.showAddForm = true
@@ -172,20 +118,21 @@ export class LevelComponent {
     this.populateForm(level, index)
   }
 
-  deleteSalary(salary: LevelStructure, index:number, event: Event) {
-
+  deleteSalary(level: LevelDTO, index:number, event: Event) {
     this.levelStructure.splice(index, 1);
-    localStorage.setItem('levelStructure', JSON.stringify(this.levelStructure));
-
+    
+    this.levelService.deleteLevel(level.id).subscribe(() => {
+      this.messageService.add({ severity: 'success', summary: 'Success', detail: "Leave deleted successfully!", key: 'tl', life: 3000  }); 
+    });
   }
 
 
-  confirmSalaryDelete(level: LevelStructure, i: number , event: Event): void {
+  confirmSalaryDelete(level: LevelDTO, i: number , event: Event): void {
     event.stopPropagation();
 
     this.confirmationService.confirm({
-      message: `Are You sure you want to carry out this action?  Clicking on DELETE, would lead to permanent removal of ${level.level}'s salary structure`,
-      header: `Delete Salary Structure - ${level.level}`,
+      message: `Are You sure you want to carry out this action?  Clicking on DELETE, would lead to permanent removal of ${level.name}'s salary structure`,
+      header: `Delete Salary Structure - ${level.name}`,
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass:"p-btn-danger p-button-text",
       rejectButtonStyleClass:"p-btn-cancle p-button-text",

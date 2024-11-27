@@ -55,6 +55,10 @@ import { MenuItemsService } from './ui/sharedComponents/service/menue-items/menu
 import { GeneralSettingsComponent } from './ui/view/general/general-settings/general-settings.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { LevelComponent } from './ui/view/hr/level/level.component';
+import { LeaveComponent } from './ui/view/hr/leave/leave.component';
+import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { AuthInterceptor } from './ui/sharedComponents/service/auth-service/auth.interceptor.service';
+import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
 
 
 //
@@ -68,7 +72,8 @@ import { LevelComponent } from './ui/view/hr/level/level.component';
     SettingsPageComponent,
     ScoresheetConfigComponent,
     GeneralSettingsComponent,
-    LevelComponent
+    LevelComponent,
+    LeaveComponent
   ],
   imports: [
     // BrowserModule,
@@ -119,12 +124,22 @@ import { LevelComponent } from './ui/view/hr/level/level.component';
       MatTooltip,
       MatTabGroup,
       MatMenuModule,
-      // BrowserAnimationsModule,
     LargeSideModalComponent,
   ],
   providers: [
     NavigationLinksService,
-    MenuItemsService
+    MenuItemsService,
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true,
+    },
+    {
+      provide: JWT_OPTIONS,
+      useValue: JWT_OPTIONS,
+    },
+    JwtHelperService,
+    provideHttpClient(withInterceptorsFromDi()),
   ],
   bootstrap: [AppComponent]
 })
