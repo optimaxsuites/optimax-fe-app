@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { SalaryComponent } from '../salary/salary.component';
 import { ScoresheetConfigComponent } from '../scoresheet-config/scoresheet-config.component';
 import { LevelComponent } from '../level/level.component';
+import { LeaveComponent } from '../leave/leave.component';
 
 @Component({
   selector: 'app-hr-settings',
@@ -18,7 +19,7 @@ export class HrSettingsComponent {
     {name: "Salary", subSetting: ["Salary Structure", "Deductions and Overtime", "Bonuses and Benefits", "Payslip"],  icon: 'pi pi-receipt', component: SalaryComponent  }, 
     {name: "Employee management", subSetting: ["Salary Structure", "Deductions and Overtime"],  icon: 'pi pi-receipt', component: null},
     {name: "Level", subSetting: ["Level Structure", "Level Management", "Add Level", "Update Level"],  icon: 'pi pi-receipt',component: LevelComponent }, 
-    {name: "Leave", subSetting: ["Salary Structure", "Deductions and Overtime"],  icon: 'pi pi-receipt', component: null},
+    {name: "Leave", subSetting: ["Leave Configuration", "Update Leave Policies, Leave Allocation"],  icon: 'pi pi-receipt', component: LeaveComponent},
     {name: "Score Sheet", subSetting: ["Score Sheet Criteria, Grade Setting"],  icon: 'fas fa-clipboard-list',component: ScoresheetConfigComponent }, 
   ]
 

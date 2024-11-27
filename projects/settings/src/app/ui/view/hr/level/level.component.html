@@ -10,48 +10,76 @@
 <hr>
 
 <div class="mb-4 mt-3 px-3 flex justify-between items-center ">
-  <p class="text-2xl font-semibold text-customBlue"><span *ngIf="showAddForm">New</span> Level Structures</p>
+  <p class="text-xl font-semibold text-customBlue"><span *ngIf="showAddForm">New</span> Level Structures</p>
   <button class="bg-customBlue text-white font-bold p-3 rounded-xl"  (click)="toogleForm()">{{showAddForm ? "Cancel" : "Create New"}}</button>
 </div>
 
-<mat-accordion *ngIf="showAddForm == false">
-  <mat-expansion-panel *ngFor="let level of levelStructure, let i = index" #panel>
-    <mat-expansion-panel-header>
-      <mat-panel-title>
-        <p class="text-gray-600 font-bold text-[14px]">{{ level.level }}</p>
-      </mat-panel-title>
-      <mat-panel-description  class="action-buttons">
-        <button (click)="editSalary(level, i , $event)" class="text-customGreen hover:bg-green-50 p-3 rounded-xl"><i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2 "></i><span *ngIf="panel.expanded" >Edit</span></button>
-        <button (click)="confirmSalaryDelete(level, i , $event)" class="text-red-500 hover:bg-red-50 p-3 rounded-xl "><i class="fa-solid fa-trash text-2xl pr-2"></i><span *ngIf="panel.expanded">Delete</span></button>
-      </mat-panel-description>
-    </mat-expansion-panel-header>
-    <!-- <div *ngIf="panel.expanded">
-      <button mat-button color="primary" (click)="editSalary(salary)">Edit</button>
-      <button mat-button color="warn" (click)="deleteSalary(salary)">Delete</button>
-    </div> -->
+<ng-container *ngIf="!showAddForm && !levelStructure || levelStructure.length === 0; else showLevels">
+  <div *ngIf="loading && !showAddForm" class="flex flex-col gap-3 mx-2">
+    <div class="p-6 w-full animate-pulse bg-gray-200 rounded-sm"></div>
+    <div class="p-6 w-full animate-pulse bg-gray-200 rounded-sm"></div>
+    <div class="p-6 w-full animate-pulse bg-gray-200 rounded-sm"></div>
 
-    <div class="text-gray-700 flex flex-col gap-2">
-      <p><strong>Description:</strong> {{ level.description }}</p>
-    
-    </div>
-  </mat-expansion-panel>
-</mat-accordion>
+  </div>
+  <div *ngIf="!loading && !showAddForm" class="text-center font-bold  text-xl text-customBlue">
+    <p>No levels available to display.</p>
+  </div>
+</ng-container>
+
+
+<ng-template #showLevels>
+  <mat-accordion *ngIf="!showAddForm">
+    <mat-expansion-panel *ngFor="let level of levelStructure; let i = index" #panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <p class="text-gray-600 font-bold text-[14px] capitalize">{{ level.name }}</p>
+        </mat-panel-title>
+        <mat-panel-description class="action-buttons">
+          <button 
+            (click)="editSalary(level, i , $event)" 
+            class="text-customGreen hover:bg-green-50 p-3 rounded-xl">
+            <i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2"></i>
+            <span *ngIf="panel.expanded">Edit</span>
+          </button>
+          <button 
+            (click)="confirmSalaryDelete(level, i , $event)" 
+            class="text-red-500 hover:bg-red-50 p-3 rounded-xl">
+            <i class="fa-solid fa-trash text-2xl pr-2"></i>
+            <span *ngIf="panel.expanded">Delete</span>
+          </button>
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+      <div class="text-gray-700 flex flex-col gap-2">
+        <p><strong>Code:</strong> {{ level.code }}</p>
+      </div>
+      <div class="text-gray-700 flex flex-col gap-2">
+        <p><strong>Description:</strong> {{ level.description }}</p>
+      </div>
+    </mat-expansion-panel>
+  </mat-accordion>
+</ng-template>
+
   
 
 <div *ngIf="showAddForm">
   <form [formGroup]="levelForm" (ngSubmit)="onSubmit()" class="p-4 w-[80%] mx-auto shadow-md rounded-xl text-customBlue bg-white/70">
-    <!-- <h2 class="text-2xl font-bold mb-4">Add New Salary Structure</h2> -->
   
     <div class="mb-4">
-      <label for="level" class="block text-[14px] font-medium capitalize">Level</label>
+      <label for="level" class="block text-[14px] font-medium capitalize">Level <span class="ml-1 font-bold text-red-600">*</span></label>
       <input formControlName="level" id="level" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="text" placeholder="Enter Level" />
-      <!-- <div *ngIf="salaryForm.get('level').invalid && salaryForm.get('level').touched" class="text-red-500 text-[14px]">Level is required.</div> -->
+      <div *ngIf="levelForm.get('level')?.invalid && levelForm.get('level')?.touched" class="text-red-500 text-[14px]">Level is required.</div>
+    </div>
+
+    <div class="mb-4">
+      <label for="code" class="block text-[14px] font-medium capitalize">Code <span class="ml-1 font-bold text-red-600">*</span></label>
+      <input formControlName="code" id="code" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" type="text" placeholder="Enter Code" />
+      <div *ngIf="levelForm.get('code')?.invalid && levelForm.get('code')?.touched" class="text-red-500 text-[14px]">Code is required.</div>
     </div>
   
     <div class="mb-4">
-      <label for="description" class="block text-[14px] font-medium">Description</label>
+      <label for="description" class="block text-[14px] font-medium">Description <span class="ml-1 font-bold text-red-600">*</span></label>
       <textarea formControlName="description" id="Description" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md"  placeholder="Enter Description" ></textarea>
-      <!-- <div *ngIf="salaryForm.get('baseSalary').invalid && salaryForm.get('baseSalary').touched" class="text-red-500 text-[14px]">Base Salary is required and must be a positive number.</div> -->
+      <div *ngIf="levelForm.get('description')?.invalid && levelForm.get('description')?.touched" class="text-red-500 text-[14px]">Description is required.</div>
     </div>
   
     
@@ -65,4 +93,5 @@
 
 
 
+<p-toast position="top-right" key="tl" />
   
