@@ -63,6 +63,7 @@ import {
 } from '@angular/common/http';
 import { AuthInterceptor } from './ui/sharedComponents/service/auth-service/auth.interceptor.service';
 import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
+import { AppraisalassessmentComponent } from './ui/view/hr/appraisalassessment/appraisalassessment.component';
 
 //
 
@@ -76,6 +77,7 @@ import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
     GeneralSettingsComponent,
     LevelComponent,
     LeaveComponent,
+    AppraisalassessmentComponent,
   ],
   imports: [
     // BrowserModule,
