@@ -23,8 +23,8 @@ export interface QuotationDTO {
     size: number;
     type: string; // 'image' or 'document'
     url: string; // path to the uploaded file
-    progress?: number;
-    status?: string; // 'completed', 'uploading', 'failed'
+    progress: number;
+    status: 'uploading' | 'completed'; // 'completed', 'uploading', 'failed'
   }
 
   export interface FieldDTO{
