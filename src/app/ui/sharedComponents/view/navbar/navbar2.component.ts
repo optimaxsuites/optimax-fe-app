@@ -18,7 +18,7 @@ export class Navbar2Component {
   @Output() toggleSidebar = new EventEmitter<void>();
 
   userInfoRegData: any[] = [];
-  userRegData: any = { };
+  userRegData: any = {};
   
 
   constructor(
