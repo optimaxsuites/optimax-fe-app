@@ -71,7 +71,6 @@ import { IncomingComponent } from './ui/view/lpo/incoming/incoming.component';
 import { OutgoingComponent } from './ui/view/lpo/outgoing/outgoing.component';
 import { RfqFormComponent } from './ui/view/rfq/rfq-form/rfq-form.component';
 import { AddQuotationItemComponent } from './ui/view/quotation/add-quotation-item/add-quotation-item.component';
-import { NgProgressModule } from '@ngx-progressbar/core';
 
 
 @NgModule({
