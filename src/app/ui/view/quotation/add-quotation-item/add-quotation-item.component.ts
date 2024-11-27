@@ -19,28 +19,28 @@ constructor(
 ){
 
 }
-  // onInputChange() {
-  //   this.calculateValues();
-  // }
+  onInputChange() {
+    this.calculateValues();
+  }
 
   // Method to calculate amount, tax, and total based on user inputs
-  // calculateValues() {
-  //   if (this.itemData.qty && this.itemData.rate) {
-  //     this.itemData.amount = this.itemData.qty * this.itemData.rate;
-  //   } else {
-  //     this.itemData.amount = 0;
-  //   }
+  calculateValues() {
+    if (this.itemData.qty && this.itemData.rate) {
+      this.itemData.amount = this.itemData.qty * this.itemData.rate;
+    } else {
+      this.itemData.amount = 0;
+    }
 
-  //   if (this.itemData.amount && this.itemData.taxRate) {
-  //     this.itemData.tax = (this.itemData.amount * this.itemData.taxRate) / 100;
-  //   } else {
-  //     this.itemData.tax = 0;
-  //   }
+    if (this.itemData.amount && this.itemData.taxRate) {
+      this.itemData.tax = (this.itemData.amount * this.itemData.taxRate) / 100;
+    } else {
+      this.itemData.tax = 0;
+    }
 
-  //   this.itemData.total = this.itemData.amount + this.itemData.tax || 0;
-  // }
+    this.itemData.total = this.itemData.amount + this.itemData.tax || 0;
+  }
 
-  // // Method to handle item addition and logging
+  // Method to handle item addition and logging
   // addItem() {
   //   this.calculateValues();
 
@@ -50,6 +50,9 @@ constructor(
   //   // Optionally, reset the form after adding the item
   //   this.itemData = {};
   // }
+
+  @Input() isRfq? : boolean;
+  @Input() isQuote? : boolean;
 
   @Input() isEdit: boolean | undefined;
   @Input() itemToEdit: any = null;
@@ -66,10 +69,22 @@ constructor(
   }
 
   addItem() {
-    if (!this.itemData.name || !this.itemData.serialNo || !this.itemData.qty) {
-      alert('Please fill all required fields.');
-      return;
+
+    if(this.isRfq){
+      if (!this.itemData.name || !this.itemData.qty) {
+        alert('Please fill all required fields.');
+        return;
+      }
     }
+    else if(this.isQuote){
+      if (!this.itemData.qty || !this.itemData.taxRate || !this.itemData.amount) {
+        alert('Please fill all required fields.');
+        return;
+      }
+    }
+
+    this.calculateValues();
+
 
 
     if (this.isEdit) {
