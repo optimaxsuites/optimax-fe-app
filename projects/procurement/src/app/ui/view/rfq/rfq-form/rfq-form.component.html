@@ -165,7 +165,7 @@
         </div>
     
         <div class="card mb-4">
-          <p-toolbar styleClass="mb-4 gap-2">
+          <p-toolbar styleClass="mb-4 gap-2" *ngIf="isRfq">
             <ng-template pTemplate="left">
             </ng-template>
       
@@ -228,7 +228,7 @@
                     <td class="actions gap-8 table-item" *ngIf="!isView">
                       <span class="p-column-title">Action</span>
                       <i class="pi pi-pen-to-square table-item" (click)="editItem(item)"></i>
-                      <i class="pi pi-trash table-item" (click)="deleteItem(item)"></i>
+                      <i class="pi pi-trash table-item" *ngIf="isRfq" (click)="deleteItem(item)"></i>
                     </td>
                   </tr>   
               </ng-template>
@@ -599,7 +599,7 @@
         </section>
 
         <!-- shipping-details-container -->
-        <section class="shipping-details-container" *ngIf="isQuote">
+        <section class="shipping-details-container" *ngIf="isQuote && !isView">
           <div class="shipping-wrapper editInput mb-8">
             <button class="add-btn" (click)="toggleForm()" >
               <i class="fas fa-plus me-2"></i> Add Shipping Details

@@ -16,3 +16,9 @@ export interface RfqItemDTO{
     budget?: number;
     description?: string;
 }
+
+export enum QuotationStage {
+    Pending = 'Pending',
+    Converted = 'Converted',
+
+}
