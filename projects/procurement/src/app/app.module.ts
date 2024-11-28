@@ -71,6 +71,10 @@ import { IncomingComponent } from './ui/view/lpo/incoming/incoming.component';
 import { OutgoingComponent } from './ui/view/lpo/outgoing/outgoing.component';
 import { RfqFormComponent } from './ui/view/rfq/rfq-form/rfq-form.component';
 import { AddQuotationItemComponent } from './ui/view/quotation/add-quotation-item/add-quotation-item.component';
+import { VendorPageComponent } from './ui/view/vendor/vendor-page.component';
+import { VendorQuoteFormComponent } from './ui/view/vendor/vendor-quote-form/vendor-quote-form.component';
+import { VendorQuoteListComponent } from './ui/view/vendor/vendor-quote-list/vendor-quote-list.component';
+import { VendorRfqListComponent } from './ui/view/vendor/vendor-rfq-list/vendor-rfq-list.component';
 
 
 @NgModule({
@@ -91,6 +95,10 @@ import { AddQuotationItemComponent } from './ui/view/quotation/add-quotation-ite
     NavTabComponent,
     RfqFormComponent,
     AddQuotationItemComponent,
+    VendorPageComponent,
+    VendorQuoteFormComponent,
+    VendorQuoteListComponent,
+    VendorRfqListComponent
   ],
   imports: [
     // BrowserModule,
