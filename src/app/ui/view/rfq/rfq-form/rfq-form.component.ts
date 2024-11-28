@@ -160,6 +160,11 @@ onItemAdded(item: any) {
   this.calculateTotal();
 }
 
+close() {
+  this.openAddItem= false
+  this.selectedItem = {}; 
+}
+
 editItem(item: any) {
   this.openAddItem = true;
   this.selectedItem = { ...item }; // Copy item to avoid mutation
