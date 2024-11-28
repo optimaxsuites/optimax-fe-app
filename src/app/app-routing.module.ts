@@ -6,13 +6,13 @@ import { VendorPageComponent } from './ui/view/vendor/vendor-page.component';
 const routes: Routes = [
   // {
   //   path: '',
-  //   redirectTo: 'admin/procurement',
+  //   redirectTo: 'admin/procurement/i',
   //   pathMatch: 'full',
   // },
   // {path: 'admin/procurement/rfq/:uuid', component: RfqListComponent},
   // {path: 'admin/procurement/rfq-form/:uuid', component:RfqFormComponent },
   // {path: 'admin/procurement/settings/:uuid', component:ProcurementSettingsComponent },
-  {path: 'admin/procurement', component: ProcurementPageComponent},
+  {path: 'admin/procurement/:uuid', component: ProcurementPageComponent},
 
   {
     path: '',
