@@ -5,6 +5,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AddressDTO, AttachmentDTO, BanksDTO, CompanyDTO, CustomerDTO, DiscountAndChargesDTO, FieldDTO, IndustryDTO, ItemDTO, ProjectDTO, QuotationDTO, ShippingDTO } from '../../../domain/quotation.dto';
 import { QuotationService } from '../../../service/quotation.service';
 import { NavigationLinksService } from '../../../sharedComponent/service/navigation-links/navigation-links.service';
+import { RandomTokenService } from '../../../sharedComponent/service/random-token/random-token.service';
+import { QuotationStage } from '../../../domain/procurement.dto';
 // import { map } from 'rxjs/operators';
 // import { MatDialog } from '@angular/material/dialog';
 
@@ -82,6 +84,7 @@ showViewing: boolean = false;
     private navigationLink: NavigationLinksService,
     private router: Router,
     private route: ActivatedRoute,
+    private randomToken: RandomTokenService
   ) { }
 
   @Output() back = new EventEmitter<void>();
@@ -184,6 +187,7 @@ resetEditState() {
 
 // ===================================================================================
   ngOnInit(): void {
+    this.rfqData.id = this.rfqData.id || this.randomToken.getRandomToken();
     this.rfqData.rfqNo = this.rfqData.rfqNo || `Q-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     this.rfqData.date = this.rfqData.date || new Date().toISOString().split('T')[0];
     this.getCompanyInfo();
@@ -310,31 +314,168 @@ resetEditState() {
 
 //   console.log("Data saved to localStorage:", storedData);
 // }
+// onSubmit() {
+//   console.log("Form data:", this.rfqData);
+//   const storedData: any[] = JSON.parse(localStorage.getItem('rfqDataArray') || '[]');
+
+//   const storedQuoteData: any[] = JSON.parse(localStorage.getItem('QuoteDataArray') || '[]');
+
+
+
+//   if(this.isRfq){
+
+//     if (this.isEdit) {
+//       // Find the index of the existing entry by ID and update it
+//       const index = storedData.findIndex(item => item.id === this.rfqData.id);
+//       if (index !== -1) {
+//         storedData[index] = { ...this.rfqData };
+//         console.log("Data updated in localStorage:", storedData);
+//       } else {
+//         console.error("Edit failed: Entry not found for RFQ.");
+//       }
+//     } else {
+//       // Assign a new ID and add the data
+//       // this.rfqData.id = this.idCounter++;
+//       storedData.push({ ...this.rfqData });
+//       console.log("Data added to localStorage:", this.rfqData);
+//     }
+  
+//     localStorage.setItem('rfqDataArray', JSON.stringify(storedData));
+
+//   }
+
+//   if(this.isQuote){
+
+//     if (this.isEdit) {
+//       const index = storedQuoteData.findIndex(item => item.id === this.rfqData.id);
+//       if (index !== -1) {
+//         storedQuoteData.push({ ...this.rfqData });
+//         console.log("Data updated in localStorage:", storedQuoteData);
+//       } else {
+//         console.error("Edit failed: Entry not found for Quotation.");
+//       }
+//     }
+  
+//     localStorage.setItem('QuoteDataArray', JSON.stringify(storedQuoteData));
+
+//   }
+
+
+
+//   this.goBack();
+// }
+
+// onSubmit() {
+//   console.log("Form data:", this.rfqData);
+
+//   const storedData: any[] = JSON.parse(localStorage.getItem('rfqDataArray') || '[]');
+//   const storedQuoteData: any[] = JSON.parse(localStorage.getItem('QuoteDataArray') || '[]');
+
+//   if (this.isRfq) {
+//     if (this.isEdit) {
+//       const index = storedData.findIndex(item => item.id === this.rfqData.id);
+//       if (index !== -1) {
+//         storedData[index] = { ...this.rfqData };
+//         console.log("Data updated in rfqDataArray localStorage:", storedData);
+//       } else {
+//         console.error("Edit failed: Entry not found for RFQ.");
+//       }
+//     } else {
+//       const createRfq: any = {
+//         ...storedData
+//       }
+//       storedData.push({ ...this.rfqData, ...this.rfqData.status: QuotationStage.Completed });
+//       console.log("Data added to rfqDataArray in localStorage:", this.rfqData);
+//     }
+
+//     localStorage.setItem('rfqDataArray', JSON.stringify(storedData));
+//   }
+
+//   if (this.isQuote) {
+//     // Find the entry in storedData by id
+//     const existingEntry = storedData.find(item => item.id === this.rfqData.id);
+
+//     if (existingEntry) {
+//       // Update the entry and save it to storedQuoteData
+//       const updatedEntry = { ...existingEntry, ...this.rfqData }; // Merge updates
+//       const quoteIndex = storedQuoteData.findIndex(item => item.id === updatedEntry.id);
+
+//       if (quoteIndex !== -1) {
+//         storedQuoteData[quoteIndex] = updatedEntry; // Update existing entry in QuoteDataArray
+//         console.log("Updated entry in QuoteDataArray:", storedQuoteData);
+//       } else {
+//         storedQuoteData.push(updatedEntry); // Add new entry to QuoteDataArray
+//         console.log("Added new entry to QuoteDataArray:", storedQuoteData);
+//       }
+
+//       localStorage.setItem('QuoteDataArray', JSON.stringify(storedQuoteData));
+//     } else {
+//       console.error("Save failed: Entry not found in rfqDataArray.");
+//     }
+//   }
+
+//   this.goBack();
+// }
+
 onSubmit() {
   console.log("Form data:", this.rfqData);
-  const storedData: any[] = JSON.parse(localStorage.getItem('rfqDataArray') || '[]');
 
-  if (this.isEdit) {
-    // Find the index of the existing entry by ID and update it
-    const index = storedData.findIndex(item => item.id === this.rfqData.id);
-    if (index !== -1) {
-      storedData[index] = { ...this.rfqData };
-      console.log("Data updated in localStorage:", storedData);
+  const storedData: any[] = JSON.parse(localStorage.getItem('rfqDataArray') || '[]');
+  const storedQuoteData: any[] = JSON.parse(localStorage.getItem('QuoteDataArray') || '[]');
+
+  if (this.isRfq) {
+    if (this.isEdit) {
+      // Editing an RFQ
+      const index = storedData.findIndex(item => item.id === this.rfqData.id);
+      if (index !== -1) {
+        storedData[index] = { ...this.rfqData };
+        console.log("Data updated in rfqDataArray localStorage:", storedData);
+      } else {
+        console.error("Edit failed: Entry not found for RFQ.");
+      }
     } else {
-      console.error("Edit failed: Entry not found.");
+      // Creating a new RFQ
+      const newRfq = { ...this.rfqData, stage: QuotationStage.Pending }; // Set stage to pending
+      storedData.push(newRfq);
+      console.log("Data added to rfqDataArray in localStorage:", newRfq);
     }
-  } else {
-    // Assign a new ID and add the data
-    this.rfqData.id = this.idCounter++;
-    storedData.push({ ...this.rfqData });
-    console.log("Data added to localStorage:", this.rfqData);
+
+    localStorage.setItem('rfqDataArray', JSON.stringify(storedData));
   }
 
-  // Save the updated data array back to localStorage
-  localStorage.setItem('rfqDataArray', JSON.stringify(storedData));
+  if (this.isQuote) {
+    // Converting an RFQ to a quotation
+    const existingEntryIndex = storedData.findIndex(item => item.id === this.rfqData.id);
+  
+    if (existingEntryIndex !== -1) {
+      // Update the stage in storedData
+      storedData[existingEntryIndex].stage = QuotationStage.Converted; // Update only the stage
+      localStorage.setItem('rfqDataArray', JSON.stringify(storedData));
+      console.log("Stage updated to 'converted' in rfqDataArray:", storedData);
+  
+      // Save the updated RFQ to QuoteDataArray
+      const updatedEntry = { ...storedData[existingEntryIndex], ...this.rfqData }; // Merge with rfqData
+      const quoteIndex = storedQuoteData.findIndex(item => item.id === updatedEntry.id);
+  
+      if (quoteIndex !== -1) {
+        storedQuoteData[quoteIndex] = updatedEntry; // Update existing entry in QuoteDataArray
+        console.log("Updated entry in QuoteDataArray:", storedQuoteData);
+      } else {
+        storedQuoteData.push(updatedEntry); // Add new entry to QuoteDataArray
+        console.log("Added new entry to QuoteDataArray:", storedQuoteData);
+      }
+  
+      localStorage.setItem('QuoteDataArray', JSON.stringify(storedQuoteData));
+    } else {
+      console.error("Save failed: Entry not found in rfqDataArray.");
+    }
+  }
+  
 
   this.goBack();
 }
+
+
 
 
 
