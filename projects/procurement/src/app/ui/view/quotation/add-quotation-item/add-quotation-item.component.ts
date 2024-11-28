@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, input, Output, SimpleChanges } from '@angular/core';
 import { ItemDTO } from '../../../domain/quotation.dto';
+import { RandomTokenService } from '../../../sharedComponent/service/random-token/random-token.service';
 
 @Component({
   selector: 'app-add-quotation-item',
@@ -8,6 +9,7 @@ import { ItemDTO } from '../../../domain/quotation.dto';
 })
 export class AddQuotationItemComponent {
   itemIdCounter: number = 1;
+  itemId?: string;
   // @Input() isEdit: boolean = false; // To handle Edit mode
   // @Input() itemData: any = {}; // The item data to edit, if any
   // @Output() itemAdded = new EventEmitter<any>();
@@ -15,10 +17,15 @@ export class AddQuotationItemComponent {
   // @Output() itemAdded = new EventEmitter<any>();
   // itemData: any = {}; 
 
-constructor(
-){
+  constructor(
+    private randomToken: RandomTokenService
+  ){}
 
-}
+  ngOnInit(): void {
+    //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
+    //Add 'implements OnInit' to the class.
+    this.itemId = this.randomToken.getRandomToken();
+  }
   onInputChange() {
     this.calculateValues();
   }
@@ -59,6 +66,8 @@ constructor(
   @Output() itemEdited = new EventEmitter<{ item: any }>();
 
   @Output() itemAdded = new EventEmitter<any>();
+  @Output() back = new EventEmitter<void>();
+
 
   itemData?: any = {};
 
@@ -90,11 +99,15 @@ constructor(
     if (this.isEdit) {
       // Emit the edited item with its index
       this.itemEdited.emit({ item: { ...this.itemData } });
+      console.log('edited', this.itemEdited)
     } else {
       // Emit a new item
-      this.itemAdded.emit({ ...this.itemData, id: this.itemIdCounter++ });
+      this.itemAdded.emit({ ...this.itemData, id: this.itemId });
+      console.log('added', this.itemAdded)
+
     } // Emit a copy of the item data
     this.resetForm();
+this.back.emit();
   }
 
   resetForm() {
