@@ -25,41 +25,9 @@
             </ng-template>
         </p-toolbar>
 
-    <!-- <div class="list-card-container" *ngIf="showListView">
-        <hr>
-        <div  class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 " > 
-            <div *ngFor="let job of filteredJobPostings; let i = index" class=" bg-gray-50 transition ease-linear hover:scale-105 hover:border-2 text-customBlue rounded-xl flex flex-col w-[50%] p-2 editInput" >
-                <div class="list-card-wrapper">
-                    <div class="list-card-right">
-                        <h3><strong>{{job.title}}</strong></h3>
-                        <div class="table-item">
-                            <p *ngIf="job.location"> <i class="pi pi-map-marker table-item me-2 "></i> {{job.location}}</p>
-                            <p *ngIf="job.employmentType" > <i class="pi pi-clock table-item  me-2"></i> {{job.employmentType}}</p>
-                            <p *ngIf="job.postedDate"> <i class="pi pi-calendar-clock table-item me-2"></i> {{job.postedDate}}</p>
-                            <p *ngIf="job.expiryDate"> <i class="pi pi-calendar-times table-item me-2"></i> {{job.expiryDate}}</p>
-                        </div>
-                    </div>
-                    <div class="list-card-left ">
-                        <div class="flex space-x-2 mt-2 table-item ">
-                            <button pButton icon="pi pi-eye cursor-pointer table-item" (click)="viewJob(job)" class="icon-view " title="View"></button>
-                            <button pButton icon="pi pi-pen-to-square cursor-pointer table-item" (click)="editJob(job)" class="icon-edit" title="Edit"></button>
-                            <button pButton icon="pi pi-trash cursor-pointer table-item" (click)="confirmJobDelete(job)" class="icon-delete" title="Delete"></button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div *ngIf="filteredJobPostings.length == 0" class="input-container-100 nothing table-item">
-            <span>
-                No Job posting(s) yet
-            </span>
-        </div>
-    </div> -->
-
       <!-- Table View -->
         <p-table
-            [value]="rfqlist" 
+            [value]="rfqList" 
             [paginator]="true" 
             styleClass="p-datatable-striped" 
             [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
@@ -92,9 +60,9 @@
                         <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event)" ></i>
                         <p-overlayPanel #op ngClass="padding: 0;">
                             <div>
-                                <li class="table-item-panel"> <i class="pi pi-eye table-item me-2"></i> View</li>
+                                <li class="table-item-panel" (click)="viewRfq(item)"> <i class="pi pi-eye table-item me-2"></i> View</li>
                                 <li class="table-item-panel" (click)="editRfq(item)"> <i class="pi pi-pen-to-square table-item me-2"></i>Edit </li>
-                                <li class="table-item-panel"> <i class="pi pi-trash table-item me-2"></i>Delete</li>
+                                <li class="table-item-panel" (click)="deleteRfq(item.id)"> <i class="pi pi-trash table-item me-2"></i>Delete</li>
                             </div>
                         </p-overlayPanel>
                     </td>
@@ -112,5 +80,5 @@
 </div>
 
 <div class="rfq-form-container" *ngIf="rfqForm">
-    <app-rfq-form [rfqData]="activeItem" (back)="close()" [isEdit]="isEdit"></app-rfq-form>
+    <app-rfq-form [rfqData]="activeItem" (back)="close()" [isView]="isView" [isCreate]="isCreate" [isEdit]="isEdit" [isRfq]="true" [isQuote]="false"></app-rfq-form>
 </div>

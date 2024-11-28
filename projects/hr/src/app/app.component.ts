@@ -1,9 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { TabConfig } from './ui/shared-component/service/interface/data';
 import { RecruitmentListComponent } from './ui/view/recruitment/recruitment-list/recruitment-list.component';
 import { CandidateComponent } from './ui/view/recruitment/candidate/candidate.component';
 import { ScheduledInterviewComponent } from './ui/view/recruitment/scheduled-interview/scheduled-interview.component';
-import { environment } from './ui/shared-component/environments/environment.prod';
 import { MessageService } from 'primeng/api';
 import { AuthenticationService } from './ui/shared-component/service/auth-service/authentication.service';
 
@@ -17,12 +16,15 @@ export class AppHrComponent {
   messageService: any;
   navigationLink: any;
   router: any;
+  sidebarHidden: boolean = true;
 constructor(
   private authenticationService: AuthenticationService 
 ){
 this.userLoginAction()
 
 }
+
+
 
 ngOnInit(): void {
 }
@@ -66,6 +68,8 @@ ngOnInit(): void {
     sessionStorage["userRegData"] = JSON.stringify(data);
   }
   
-  
+  toggleSidebar() {
+    this.sidebarHidden = !this.sidebarHidden;  // Toggle sidebar visibility
+  }
 }
 

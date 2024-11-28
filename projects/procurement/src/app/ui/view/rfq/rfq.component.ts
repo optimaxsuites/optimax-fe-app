@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
 @Component({
@@ -7,22 +7,29 @@ import { ConfirmationService, MessageService } from 'primeng/api';
   styleUrl: './rfq.component.scss',
   providers: [MessageService, ConfirmationService]
 })
-export class RfqComponent {
+export class RfqComponent implements OnInit {
   activeItem: any = {}
-  isEdit?: boolean;
+  isEdit!: boolean;
+  isCreate!: boolean;
   searchTerm: any;
-  rfqlist: any[] = [
-    {id: 1, projectTitle: 'For Weekend deals', rfqNo: "dhddj47584h", date: '23-04-2024', dueDate: '02-05-2024' },
-    {id: 2, projectTitle: 'For weekday deals', rfqNo: "56789oihgd6e", date: '09-04-2024', dueDate: '15-04-2024' }
-
-  ];
+  rfqList: any[] = [];
   rfqTable: boolean = true;
   rfqForm: boolean = false;
+  isView: boolean = false;
 
   constructor(
     private messageService: MessageService,
     private confirmationService: ConfirmationService
-  ){}
+  ){
+  }
+
+  ngOnInit(): void {
+    //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
+    //Add 'implements OnInit' to the class.
+    this.getRfqList();
+    
+    
+  }
 
   getStatusClass(stage: string) {
     switch (stage) {
@@ -35,12 +42,44 @@ export class RfqComponent {
     }
   }
 
+  getRfqList(){
+    // Retrieve the 'rfqDataList' from localStorage
+    const storedData = localStorage.getItem('rfqDataArray');
+    console.log('this is stored data')
+
+
+    // Check if data exists in localStorage and parse it into an array
+    if (storedData) {
+      this.rfqList = JSON.parse(storedData);
+    }
+  }
+
   editRfq(item: any) {
     console.log("rfq info", item)
     this.activeItem = { ...item };
     this.isEdit = true; 
-    this.rfqTable = false
+    this.isView = false;
+    this.isCreate = false
+    this.rfqTable = false;
     this.rfqForm = true
+  }
+  viewRfq(item: any){
+    console.log("rfq info", item)
+    this.activeItem = { ...item };
+    this.isView = true; 
+    this.rfqTable = false
+    this.isCreate = false
+    this.rfqForm = true
+  }
+  deleteRfq(id: number) {
+    // Filter out the RFQ with the given id
+    this.rfqList = this.rfqList.filter((item: any) => item.id !== id);
+  
+    // Update localStorage with the new rfqList
+    localStorage.setItem('rfqDataArray', JSON.stringify(this.rfqList));
+  
+    // Reload the list (optional if getRfqList is used elsewhere)
+    this.getRfqList();
   }
   search() {
     throw new Error('Method not implemented.');
@@ -48,6 +87,11 @@ export class RfqComponent {
   openForm() {
     this.rfqTable = false
     this.rfqForm = true
+    this.isCreate = true
+    this.isEdit = false; 
+    this.isView = false;
+
+    console.log()
   }
 
   close() {

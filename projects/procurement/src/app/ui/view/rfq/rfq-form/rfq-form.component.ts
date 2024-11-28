@@ -26,10 +26,10 @@ export class RfqFormComponent implements OnInit {
 
   showSecondComponent = false;
   showSignatureButton: boolean = false;
-  showTermsConditionButton = false;
+  showTermsCondition: boolean = false;
   showAmountWord = false;
-  showNotes = false;
-  showAttachments = false;
+  showNotes: boolean = false;
+  showAttachments: boolean = false;
   showDiscount = false;
   showAdditionalCharges = false;
   showLogo = false;
@@ -40,11 +40,11 @@ export class RfqFormComponent implements OnInit {
   logoUrl: string | ArrayBuffer | null = null;
   discounts: any[] = [];
   terms: any[] = [];
-  termsGroup: any[] = [ this.terms];
+  
   charges: any[] = [];
   moreFields: any[] = [];
   // isEdit: boolean = false
-  itemsData: ItemDTO[] = [];
+  itemsData: ItemDTO[] = [ ];
   industryData: IndustryDTO[] = [];
   discountChargesData: DiscountAndChargesDTO[] = [];
   bankData: BanksDTO[] = [];
@@ -57,18 +57,26 @@ export class RfqFormComponent implements OnInit {
   
   openAddItem: boolean = false;
 
-
+  @Input() isCreate? : boolean;
+  @Input() isRfq? : boolean;
+  @Input() isQuote? : boolean;
   @Output() submitFrom = new EventEmitter<any>();
   @Input() rfqData: any = {
-    items: [],
+    vendor: [] = [],
+    // items: [],
+    termsGroup: [] = [ this.terms],
+    attachments: [] as AttachmentDTO[]
   };
-  @Input() isEdit?: boolean; 
+  @Input() isEdit!: boolean; 
+  @Input() isView!: boolean; 
+  idCounter: number = 1;
+showCreate: boolean = true;
+showViewing: boolean = false;
 
   constructor(
     private renderer: Renderer2, 
     private el: ElementRef,
-    private http: HttpClient, 
-    // private dropdownService: DropdownService, 
+    private http: HttpClient,
     private dialogRef:MatDialog,
     private quotationService: QuotationService,
     private navigationLink: NavigationLinksService,
@@ -78,10 +86,24 @@ export class RfqFormComponent implements OnInit {
 
   @Output() back = new EventEmitter<void>();
 
-  goBack() {
-    this.back.emit();
+  resetState() {
+    this.showCreate = true;
+    this.showViewing = false;
+    this.showTermsCondition = false;
+    this.showNotes = false;
+    this.showAttachments = false;
+    this.isEdit = false;
+    this.isCreate = false;
   }
 
+  goBack() {
+    this.back.emit();
+    this.resetState()
+  }
+  get hasSerialNo(): boolean {
+    return this.rfqData.items?.some((item: { serialNo: any; }) => item.serialNo) ?? false;
+
+  }
   // selectedItem: any = null;
   // isItemEdit = false;
 
@@ -126,13 +148,21 @@ onItemEdited(event: { item: any }) {
     this.rfqData.items = [...this.rfqData.items]; // Trigger change detection
   }
   this.resetEditState();
+  this.calculateTotal();
 }
 
 onItemAdded(item: any) {
+  console.log(item)
   if (!this.rfqData.items) {
     this.rfqData.items = []; // Initialize if undefined
   }
   this.rfqData.items = [...this.rfqData.items, item];
+  this.calculateTotal();
+}
+
+close() {
+  this.openAddItem= false
+  this.selectedItem = {}; 
 }
 
 editItem(item: any) {
@@ -143,6 +173,7 @@ editItem(item: any) {
 
 deleteItem(item: any) {
   this.rfqData.items = this.rfqData.items.filter((i: any) => i.id !== item.id);
+  this.calculateTotal();
 }
 
 resetEditState() {
@@ -153,9 +184,40 @@ resetEditState() {
 
 // ===================================================================================
   ngOnInit(): void {
-    this.addTerm();
+    this.rfqData.rfqNo = this.rfqData.rfqNo || `Q-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    this.rfqData.date = this.rfqData.date || new Date().toISOString().split('T')[0];
     this.getCompanyInfo();
     this.loadVendors();
+
+    console.log("is rfq = ",this.isRfq)
+    console.log("is quote = ",this.isQuote)
+
+    if (this.isEdit) {
+      this.showViewing = false;
+      this.showTermsCondition = true;
+      this.showNotes = true;
+      this.showAttachments = true;
+    } 
+    
+    if (this.isCreate) {
+      this.showViewing = false;
+      this.showTermsCondition = false;
+      this.showNotes = false;
+      this.showAttachments = false;
+    }
+
+
+    if(this.isView){
+      this.showCreate = false
+      this.showViewing = true
+      this.showTermsCondition = true;
+      this.showNotes = true;
+      this.showAttachments = true
+    }
+
+    // this.resetState()
+
+
   }
 // ===================================================================================
   companyOptions: { name: string }[] = [];
@@ -234,9 +296,47 @@ resetEditState() {
 
 // SUBMIT QUOTATION ACTION============================================================================
 
-  onSubmit(){
-    console.log("quotation into", this.rfqData)
+// onSubmit() {
+//   console.log("quotation into", this.rfqData);
+
+//   // Retrieve existing data from localStorage
+//   const storedData = JSON.parse(localStorage.getItem('rfqDataArray') || '[]');
+//   // this.rfqData.id = this.idCounter++
+//   // Add the current rfqData to the array
+//   storedData.push({...this.rfqData, id: this.idCounter++});
+
+//   // Save the updated array back to localStorage
+//   localStorage.setItem('rfqDataArray', JSON.stringify(storedData));
+
+//   console.log("Data saved to localStorage:", storedData);
+// }
+onSubmit() {
+  console.log("Form data:", this.rfqData);
+  const storedData: any[] = JSON.parse(localStorage.getItem('rfqDataArray') || '[]');
+
+  if (this.isEdit) {
+    // Find the index of the existing entry by ID and update it
+    const index = storedData.findIndex(item => item.id === this.rfqData.id);
+    if (index !== -1) {
+      storedData[index] = { ...this.rfqData };
+      console.log("Data updated in localStorage:", storedData);
+    } else {
+      console.error("Edit failed: Entry not found.");
+    }
+  } else {
+    // Assign a new ID and add the data
+    this.rfqData.id = this.idCounter++;
+    storedData.push({ ...this.rfqData });
+    console.log("Data added to localStorage:", this.rfqData);
   }
+
+  // Save the updated data array back to localStorage
+  localStorage.setItem('rfqDataArray', JSON.stringify(storedData));
+
+  this.goBack();
+}
+
+
 
 // NAVIGATE TO TABLE====================================================================================
 navigateToTable() {
@@ -261,25 +361,10 @@ removeField(index: number) {
 }
 
 // TERMS AND CONDITION=================================================================================
-  addTerm() {
-    this.terms.push({ term_des: '' });
-  }
-
-  removeTerm(index: number) {
-    this.terms.splice(index, 1);
-  }
-
-  addTermGroup() {
-    this.terms = [];
-    this.termsGroup = [this.terms];
-    this.addTerm(); // Add initial term
-    this.showTermsConditionButton = true;
-  }
-
-  removeTermGroup(index: number) {
-    this.termsGroup.splice(index, 1);
-    this.showTermsConditionButton = false;
-  }
+cancelTermsCondition(){
+  this.showTermsCondition = false;
+  this.rfqData.terms = ''; 
+}
 
 // NOTE==================================================================================================
   cancelNotes() {
@@ -296,23 +381,23 @@ removeField(index: number) {
 
 // DISCOUNT==================================================================================================
 
-  addDiscount() {
-    this.discounts.push({});
-  }
+//   addDiscount() {
+//     this.discounts.push({});
+//   }
 
-  removeDiscount(index: number) {
-    this.discounts.splice(index, 1);
-  }
+//   removeDiscount(index: number) {
+//     this.discounts.splice(index, 1);
+//   }
 
-// CHARGES=================================================================================================
+// // CHARGES=================================================================================================
 
-  addCharge() {
-    this.charges.push({});
-  }
+//   addCharge() {
+//     this.charges.push({});
+//   }
 
-  removeCharge(index: number) {
-    this.charges.splice(index, 1);
-  }
+//   removeCharge(index: number) {
+//     this.charges.splice(index, 1);
+//   }
 
   totalAmount: number = 0;
   totalAmountInWords: string = '';
@@ -320,73 +405,216 @@ removeField(index: number) {
   grandTotal: number = 0;
 
 
-  onInputChange(item: any): void {
-    item.amount = item.quantity * item.rate;
-    item.tax = (item.taxRate / 100) * item.amount;
-    item.total = item.amount + item.tax;
+  // onInputChange(item: any): void {
+  //   item.amount = item.quantity * item.rate;
+  //   item.tax = (item.taxRate / 100) * item.amount;
+  //   item.total = item.amount + item.tax;
 
-    this.calculateTotal();
+  //   this.calculateTotal();
+  // }
+
+  // calculateTotal(): void {
+  //   this.totalAmountInWords = this.numberToWords(this.grandTotal);
+
+  //   this.totalAmount = this.rfqData.items.reduce((sum: any, item: { amount: any; }) => sum + item.amount!, 0);
+  //   this.totalTax = this.rfqData.items.reduce((sum: any, item: { tax: any; }) => sum + item.tax!, 0);
+  //   this.grandTotal = this.rfqData.items.reduce((sum: any, item: { total: any; }) => sum + item.total!, 0);
+  // }
+
+  // This method will be called on discount/charge value change
+onDiscountChange(): void {
+  this.calculateTotal();  // Recalculate total after a discount value change
+}
+
+onChargeChange(): void {
+  this.calculateTotal();  // Recalculate total after a charge value change
+}
+
+  addDiscount(): void {
+    this.discounts.push({ value: 0 });
+    console.log(this.discounts)
+    this.calculateTotal();  // Recalculate after adding a discount
+  }
+  
+  removeDiscount(index: number): void {
+    this.discounts.splice(index, 1);
+    this.calculateTotal();  // Recalculate after removing a discount
+  }
+  
+  addCharge(): void {
+    this.charges.push({ value: 0 });
+    this.calculateTotal();  // Recalculate after adding a charge
+  }
+  
+  removeCharge(index: number): void {
+    this.charges.splice(index, 1);
+    this.calculateTotal();  // Recalculate after removing a charge
   }
 
   calculateTotal(): void {
-    this.totalAmountInWords = this.convertToWords(this.grandTotal);
+    // Convert the grand total to words
+    this.totalAmountInWords = this.numberToWords(this.grandTotal);
+  
+    // Calculate the total amount by summing the 'amount' of each item
+    this.totalAmount = this.rfqData.items.reduce((sum: any, item: { amount: any; }) => sum + item.amount!, 0);
 
-    this.totalAmount = this.itemsData.reduce((sum, item) => sum + item.amount!, 0);
-    this.totalTax = this.itemsData.reduce((sum, item) => sum + item.tax!, 0);
-    this.grandTotal = this.itemsData.reduce((sum, item) => sum + item.total!, 0);
+    // Calculate the total tax by summing the 'tax' of each item
+    this.totalTax = this.rfqData.items.reduce((sum: any, item: { tax: any; }) => sum + item.tax!, 0);
+  
+    // Calculate the grand total by summing the 'total' of each item
+    this.grandTotal = this.rfqData.items.reduce((sum: any, item: { total: any; }) => sum + item.total!, 0);
+
+        // Calculate the total discount and subtract from grand total
+    const totalDiscount = this.discounts.reduce((sum, discount) => sum + discount.value, 0);
+    this.grandTotal -= totalDiscount;
+
+    // Calculate the total additional charges and add to grand total
+    const totalCharges = this.charges.reduce((sum, charge) => sum + charge.value, 0);
+    this.grandTotal += totalCharges;
   }
 
-  convertToWords(grandTotal: number): string {
-    return this.convertNumberToWords(grandTotal);
+  convertToWords(grandTotal: number): void {
+    const [naira, kobo] = grandTotal.toString().split('.');  // Split the total into naira and kobo parts
+    this.totalAmountInWords = this.numberToWords(Number(naira)) + ' naira';
+  
+    // If there is a decimal part (kobo)
+    if (kobo) {
+      const koboAmount = Number(kobo.slice());  // Take only the first two digits as kobo
+      if (koboAmount > 0) {
+        this.totalAmountInWords += ' ' + this.numberToWords(koboAmount) + ' kobo';
+      }
+    }
+  
+    this.totalAmountInWords += ' only';  // Append 'only' at the end
   }
-
-  convertNumberToWords(amount: number): string {
-    const ones = [
-      '', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'
+  
+  numberToWords(num: number): string {
+    if (num === 0) return "zero";
+  
+    const belowTwenty = [
+      "", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+      "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+      "seventeen", "eighteen", "nineteen"
     ];
-    const teens = [
-      'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'
-    ];
+  
     const tens = [
-      '', 'ten', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'
+      "", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"
     ];
-    const thousands = [
-      '', 'thousand', 'million', 'billion', 'trillion'
-    ];
-
-    if (amount === 0) return 'zero';
-
-    let words = '';
-
-    const numToWords = (num: number, index: number): string => {
-      if (num === 0) return '';
-      let str = '';
-      if (num > 99) {
-        str += ones[Math.floor(num / 100)] + ' hundred ';
-        num %= 100;
-      }
-      if (num > 10 && num < 20) {
-        str += teens[num - 11] + ' ';
-      } else {
-        str += tens[Math.floor(num / 10)] + ' ';
-        num %= 10;
-        str += ones[num] + ' ';
-      }
-      return str.trim() + ' ' + thousands[index] + ' ';
-    };
-
+  
+    const thousands = ["", "thousand", "million", "billion", "trillion"];
+  
+    function helper(n: number): string {
+      if (n === 0) return "";
+      if (n < 20) return belowTwenty[n] + " ";
+      if (n < 100) return tens[Math.floor(n / 10)] + " " + helper(n % 10);
+      // Adding 'and' when we have hundreds
+      return belowTwenty[Math.floor(n / 100)] + " hundred " + (n % 100 > 0 ? "and " : "") + helper(n % 100);
+    }
+  
+    let word = "";
     let index = 0;
-    while (amount > 0) {
-      const chunk = amount % 1000;
-      if (chunk > 0) {
-        words = numToWords(chunk, index) + words;
+  
+    while (num > 0) {
+      if (num % 1000 !== 0) {
+        word = helper(num % 1000) + thousands[index] + " " + word;
       }
-      amount = Math.floor(amount / 1000);
+      num = Math.floor(num / 1000);
       index++;
     }
-
-    return words.trim();
+  
+    return word.trim();
   }
+  
+  
+
+  // convertToWords(grandTotal: number): void {
+  //   this.totalAmountInWords = this.numberToWords(grandTotal)+ ' naira only';
+  // }
+
+  // numberToWords(num: number): string {
+  //   if (num === 0) return "zero";
+  
+  //   const belowTwenty = [
+  //     "", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+  //     "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+  //     "seventeen", "eighteen", "nineteen"
+  //   ];
+  
+  //   const tens = [
+  //     "", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"
+  //   ];
+  
+  //   const thousands = ["", "thousand", "million", "billion", "trillion"];
+  
+  //   function helper(n: number): string {
+  //     if (n === 0) return "";
+  //     if (n < 20) return belowTwenty[n] + " ";
+  //     if (n < 100) return tens[Math.floor(n / 10)] + " " + helper(n % 10);
+  //     return belowTwenty[Math.floor(n / 100)] + " hundred " + helper(n % 100);
+  //   }
+  
+  //   let word = "";
+  //   let index = 0;
+  
+  //   while (num > 0) {
+  //     if (num % 1000 !== 0) {
+  //       word = helper(num % 1000) + thousands[index] + " " + word;
+  //     }
+  //     num = Math.floor(num / 1000);
+  //     index++;
+  //   }
+  
+  //   return word.trim();
+  // }
+  
+
+  // convertNumberToWords(amount: number): string {
+  //   const ones = [
+  //     '', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'
+  //   ];
+  //   const teens = [
+  //     'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'
+  //   ];
+  //   const tens = [
+  //     '', 'ten', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'
+  //   ];
+  //   const thousands = [
+  //     '', 'thousand', 'million', 'billion', 'trillion'
+  //   ];
+
+  //   if (amount === 0) return 'zero';
+
+  //   let words = '';
+
+  //   const numToWords = (num: number, index: number): string => {
+  //     if (num === 0) return '';
+  //     let str = '';
+  //     if (num > 99) {
+  //       str += ones[Math.floor(num / 100)] + ' hundred ';
+  //       num %= 100;
+  //     }
+  //     if (num > 10 && num < 20) {
+  //       str += teens[num - 11] + ' ';
+  //     } else {
+  //       str += tens[Math.floor(num / 10)] + ' ';
+  //       num %= 10;
+  //       str += ones[num] + ' ';
+  //     }
+  //     return str.trim() + ' ' + thousands[index] + ' ';
+  //   };
+
+  //   let index = 0;
+  //   while (amount > 0) {
+  //     const chunk = amount % 1000;
+  //     if (chunk > 0) {
+  //       words = numToWords(chunk, index) + words;
+  //     }
+  //     amount = Math.floor(amount / 1000);
+  //     index++;
+  //   }
+
+  //   return words.trim();
+  // }
 
   calculateAmount(item: any): void {
     const quantity = parseFloat(item.quantity);
@@ -444,43 +672,53 @@ removeField(index: number) {
     this.showLogo = false;
   }
 
+
   fileInputChange(event: any) {
     const files = event.target.files;
+
+    if (!this.rfqData.attachments) {
+      this.rfqData.attachments = [];
+    }
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const attachment: AttachmentDTO = {
         name: file.name,
         size: file.size,
         type: file.type.includes('image') ? 'image' : 'document',
-        url: '', // This will be set after upload
+        url: '', // URL will be set after upload
         progress: 0,
         status: 'uploading',
       };
 
-      this.rfqData.attachments?.push(attachment);
+      this.rfqData.attachments.push(attachment); // Add attachment to the array
       this.uploadFile(file, attachment);
     }
+
+    // Debugging log to ensure attachments are added
+    console.log('Attachments after change:', this.rfqData.attachments);
   }
 
   uploadFile(file: File, attachment: AttachmentDTO) {
     const uploadSimulation = setInterval(() => {
-      if (attachment.progress! >= 100) {
+      if (attachment.progress >= 100) {
         attachment.status = 'completed';
-        attachment.url = ''; 
+        attachment.url = `https://example.com/uploads/${attachment.name}`; // Simulated URL
         clearInterval(uploadSimulation);
       } else {
-        attachment.progress! += 10; 
+        attachment.progress += 10; // Simulate upload progress
       }
-    }, 200);
+    }, 200); // Simulate every 200ms
   }
 
   cancelUpload(index: number) {
-    if (this.rfqData.attachments && this.rfqData.attachments[index]) {
+    if (index >= 0 && index < this.rfqData.attachments.length) {
       this.rfqData.attachments.splice(index, 1);
     }
+
+    // Debugging log to confirm removal
+    console.log('Attachments after cancel:', this.rfqData.attachments);
   }
-
-
 }
 
 
