@@ -94,31 +94,31 @@
                     <p><b>Shipped From</b></p>
                   </div>
                   <div class="">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="Business / Freelancer Name" class="editInput" />
+                    <input type="text" [(ngModel)]="shippingData.fromName" placeholder="Business / Freelancer Name" class="editInput" />
                   </div>
                   <div class="">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="Phone No" class="editInput my-2" />
+                    <input type="text" [(ngModel)]="shippingData.fromNo" placeholder="Phone No" class="editInput my-2" />
                   </div>
                   <div class="">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="Email" class="editInput" />
+                    <input type="text" [(ngModel)]="shippingData.fromEmail" placeholder="Email" class="editInput" />
                   </div>
                   <div class="">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="Address" class="editInput my-2" />
+                    <input type="text" [(ngModel)]="shippingData.fromAddress" placeholder="Address" class="editInput my-2" />
                   </div>
                   <div class="flex gap-2">
                     <div class="input-container-50">
-                      <input type="text" [(ngModel)]="shippingData" placeholder="Country" class="editInput" />
+                      <input type="text" [(ngModel)]="shippingData.fromCountry" placeholder="Country" class="editInput" />
                     </div>
                     <div class="input-container-50">
-                      <input type="text" [(ngModel)]="shippingData" placeholder="State" class="editInput" />
+                      <input type="text" [(ngModel)]="shippingData.fromState" placeholder="State" class="editInput" />
                     </div>
                   </div>
                   <div class="flex gap-2 my-2">
                     <div class="input-container-50">
-                      <input type="text" [(ngModel)]="shippingData" placeholder="City" class="editInput" />
+                      <input type="text" [(ngModel)]="shippingData.fromCity" placeholder="City" class="editInput" />
                     </div>
                     <div class="input-container-50">
-                      <input type="text" [(ngModel)]="shippingData" placeholder="Postal Code / Zip Code" class="editInput" />
+                      <input type="text" [(ngModel)]="shippingData.fromPostalCode" placeholder="Postal Code / Zip Code" class="editInput" />
                     </div>
                   </div>
                 </div>
@@ -130,31 +130,31 @@
                     <p><b>Shipped To</b></p>
                   </div>
                   <div class="">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="Client's Business Name" class="editInput" />
+                    <input type="text" [(ngModel)]="shippingData.toName" placeholder="Client's Business Name" class="editInput" />
                   </div>
                   <div class="">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="Phone No" class="editInput my-2" />
+                    <input type="text" [(ngModel)]="shippingData.toNo" placeholder="Phone No" class="editInput my-2" />
                   </div>
                   <div class="">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="Email" class="editInput" />
+                    <input type="text" [(ngModel)]="shippingData.toEmail" placeholder="Email" class="editInput" />
                   </div>
                   <div class="">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="Address" class="editInput my-2" />
+                    <input type="text" [(ngModel)]="shippingData.toAddress" placeholder="Address" class="editInput my-2" />
                   </div>
                   <div class="flex gap-2">
                     <div class="input-container-50">
-                      <input type="text" [(ngModel)]="shippingData" placeholder="Country" class="editInput" />
+                      <input type="text" [(ngModel)]="shippingData.toCountry" placeholder="Country" class="editInput" />
                     </div>
                     <div class="input-container-50">
-                      <input type="text" [(ngModel)]="shippingData" placeholder="State" class="editInput" />
+                      <input type="text" [(ngModel)]="shippingData.toState" placeholder="State" class="editInput" />
                     </div>
                   </div>
                   <div class="flex gap-2 my-2">
                     <div class="input-container-50">
-                      <input type="text" [(ngModel)]="shippingData" placeholder="City" class="editInput" />
+                      <input type="text" [(ngModel)]="shippingData.toCity" placeholder="City" class="editInput" />
                     </div>
                     <div class="input-container-50">
-                      <input type="text" [(ngModel)]="shippingData" placeholder="Postal Code / Zip Code" class="editInput" />
+                      <input type="text" [(ngModel)]="shippingData.toPostalCode" placeholder="Postal Code / Zip Code" class="editInput" />
                     </div>
                   </div>
                 </div>
@@ -162,10 +162,11 @@
               </div>
             </div>
           </section>
+
         </div>
     
         <div class="card mb-4">
-          <p-toolbar styleClass="mb-4 gap-2">
+          <p-toolbar styleClass="mb-4 gap-2" *ngIf="isRfq">
             <ng-template pTemplate="left">
             </ng-template>
       
@@ -228,7 +229,7 @@
                     <td class="actions gap-8 table-item" *ngIf="!isView">
                       <span class="p-column-title">Action</span>
                       <i class="pi pi-pen-to-square table-item" (click)="editItem(item)"></i>
-                      <i class="pi pi-trash table-item" (click)="deleteItem(item)"></i>
+                      <i class="pi pi-trash table-item" *ngIf="isRfq" (click)="deleteItem(item)"></i>
                     </td>
                   </tr>   
               </ng-template>
@@ -254,76 +255,74 @@
               <div class="amount-total editInput mb-3">
                 <p><b>Amount</b></p>
                 <p>
-                  <span style="font-size: 1.1em; font-weight: 500">{{ totalAmount }} NGN</span>
+                  <span style="font-size: 1.1em; font-weight: 500">{{ rfqData.totalAmount }} NGN</span>
                 </p>
               </div>
               <div class="amount-total editInput mb-3">
                 <p><b>Tax</b></p>
                 <p>
-                  <span style="font-size: 1.1em; font-weight: 500">{{ totalTax }} NGN</span>
+                  <span style="font-size: 1.1em; font-weight: 500">{{ rfqData.totalTax }} NGN</span>
                 </p>
               </div>
-    
+              
               <div class="discount-container editInput mb-3">
-                <div class="amount-total mb-2" *ngFor="let discount of discounts; let i = index">
+                <div class="amount-total mb-2" *ngFor="let discount of rfqData.discounts; let i = index">
                   <p><b>Discount Amount</b></p>
                   <div class="value">
                     <p class="me-2">NGN</p>
                     <div class="d-flex gap-4">
-                      <input type="number" name="any" [(ngModel)]="discount.value" (ngModelChange)="onDiscountChange()" class="editInput" />
+                      <input type="number" [(ngModel)]="discount.value" (ngModelChange)="onDiscountChange()" class="editInput" />
                     </div>
                     <i (click)="removeDiscount(i)" class="pi pi-times-circle table-item p-2"></i>
                   </div>
                 </div>
-                
                 <div class="discount-btn-wrapper d-block">
                   <button class="add-btn" (click)="addDiscount()">
                     <i class="fas fa-plus me-2"></i>Add Discount
                   </button>
                 </div>
               </div>
-  
-  
+              
               <div class="discount-container editInput mb-3">
-                <div class="amount-total" *ngFor="let charge of charges; let i = index">
+                <div class="amount-total" *ngFor="let charge of rfqData.charges; let i = index">
                   <p><b>Additional Charges Amount</b></p>
                   <div class="value d-flex">
                     <p class="me-2">NGN</p>
                     <div class="d-flex">
-                      <input type="number" name="any" [(ngModel)]="charge.value" (ngModelChange)="onChargeChange()" class="editInput"/>
+                      <input type="number" [(ngModel)]="charge.value" (ngModelChange)="onChargeChange()" class="editInput" />
                     </div>
                     <i (click)="removeCharge(i)" class="pi pi-times-circle table-item p-2"></i>
                   </div>
                 </div>
-  
                 <div class="discount-btn-wrapper d-block">
                   <button class="add-btn" (click)="addCharge()">
                     <i class="fas fa-plus me-2"></i>Add Additional Charges
                   </button>
                 </div>
               </div>
-  
+              
               <div class="amount-total editInput mb-3">
                 <p><b>Total</b></p>
                 <p>
-                  <span style="font-size: 1.1em; font-weight: 500">{{ grandTotal }} NGN</span>
+                  <span style="font-size: 1.1em; font-weight: 500">{{ rfqData.grandTotal }} NGN</span>
                 </p>
               </div>
-    
+              
               <div class="editInput my-4" *ngIf="showAmountWord">
                 <div class="flex justify-between">
                   <p><b>Amount In Words</b></p>
                   <i (click)="showAmountWord = false" class="pi pi-times-circle table-item p-2"></i>
                 </div>
-                <div class="capitalize">
-                  <p>{{ totalAmountInWords }}</p>
+                <div class="uppercase">
+                  {{ rfqData.totalAmountInWords }}
                 </div>
               </div>
               <div class="editInput d-block my-4" *ngIf="!showAmountWord">
-                <button class="add-btn" (click)="showAmountWord = true; convertToWords(grandTotal)">
+                <button class="add-btn" (click)="showAmountInWord()">
                   <i class="fas fa-plus me-2"></i>Add Amount In Words
                 </button>
               </div>
+              
     
               <div class="signature-upload-container editInput mb-4">
                 <div class="wrapper" *ngIf="showSignatureButton">
@@ -599,11 +598,12 @@
         </section>
 
         <!-- shipping-details-container -->
-        <section class="shipping-details-container" *ngIf="isQuote">
+        <section class="shipping-details-container" *ngIf="isQuote && rfqData.shippingInfo && rfqData.shippingInfo.fromNo" >
           <div class="shipping-wrapper editInput mb-8">
-            <button class="add-btn" (click)="toggleForm()" >
+            <p><b>Shipping Information</b></p>
+            <!-- <button class="add-btn" (click)="toggleForm()" >
               <i class="fas fa-plus me-2"></i> Add Shipping Details
-            </button>
+            </button> -->
   
             <div *ngIf="isFormVisible" class="second-info-section mt-4">
               <div class="right">
@@ -611,31 +611,31 @@
                   <p><b>Shipped From</b></p>
                 </div>
                 <div class="">
-                  <input type="text" [(ngModel)]="shippingData" placeholder="Business / Freelancer Name" class="editInput" />
+                  <input type="text" [(ngModel)]="rfqData.shippingInfo.fromName" placeholder="Business / Freelancer Name" class="editInput" disabled />
                 </div>
                 <div class="">
-                  <input type="text" [(ngModel)]="shippingData" placeholder="Phone No" class="editInput my-2" />
+                  <input type="text" [(ngModel)]="rfqData.shippingInfo.fromNo" placeholder="Phone No" class="editInput my-2" disabled />
                 </div>
                 <div class="">
-                  <input type="text" [(ngModel)]="shippingData" placeholder="Email" class="editInput" />
+                  <input type="text" [(ngModel)]="rfqData.shippingInfo.fromEmail" placeholder="Email" class="editInput" disabled />
                 </div>
                 <div class="">
-                  <input type="text" [(ngModel)]="shippingData" placeholder="Address" class="editInput my-2" />
+                  <input type="text" [(ngModel)]="rfqData.shippingInfo.fromAddress" placeholder="Address" class="editInput my-2" disabled />
                 </div>
                 <div class="flex gap-2">
                   <div class="input-container-50">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="Country" class="editInput" />
+                    <input type="text" [(ngModel)]="rfqData.shippingInfo.fromCountry" placeholder="Country" class="editInput" disabled />
                   </div>
                   <div class="input-container-50">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="State" class="editInput" />
+                    <input type="text" [(ngModel)]="rfqData.shippingInfo.fromState" placeholder="State" class="editInput" disabled />
                   </div>
                 </div>
                 <div class="flex gap-2 my-2">
                   <div class="input-container-50">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="City" class="editInput" />
+                    <input type="text" [(ngModel)]="rfqData.shippingInfo.fromCity" placeholder="City" class="editInput" disabled />
                   </div>
                   <div class="input-container-50">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="Postal Code / Zip Code" class="editInput" />
+                    <input type="text" [(ngModel)]="rfqData.shippingInfo.fromPostalCode" placeholder="Postal Code / Zip Code" class="editInput" disabled />
                   </div>
                 </div>
               </div>
@@ -646,31 +646,31 @@
                   <p><b>Shipped To</b></p>
                 </div>
                 <div class="">
-                  <input type="text" [(ngModel)]="shippingData" placeholder="Client's Business Name" class="editInput" />
+                  <input type="text" [(ngModel)]="rfqData.shippingInfo.toName" placeholder="Client's Business Name" class="editInput" disabled />
                 </div>
                 <div class="">
-                  <input type="text" [(ngModel)]="shippingData" placeholder="Phone No" class="editInput my-2" />
+                  <input type="text" [(ngModel)]="rfqData.shippingInfo.toNo" placeholder="Phone No" class="editInput my-2" disabled />
                 </div>
                 <div class="">
-                  <input type="text" [(ngModel)]="shippingData" placeholder="Email" class="editInput" />
+                  <input type="text" [(ngModel)]="rfqData.shippingInfo.toEmail" placeholder="Email" class="editInput" disabled />
                 </div>
                 <div class="">
-                  <input type="text" [(ngModel)]="shippingData" placeholder="Address" class="editInput my-2" />
+                  <input type="text" [(ngModel)]="rfqData.shippingInfo.toAddress" placeholder="Address" class="editInput my-2" disabled />
                 </div>
                 <div class="flex gap-2">
                   <div class="input-container-50">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="Country" class="editInput" />
+                    <input type="text" [(ngModel)]="rfqData.shippingInfo.toCountry" placeholder="Country" class="editInput" disabled />
                   </div>
                   <div class="input-container-50">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="State" class="editInput" />
+                    <input type="text" [(ngModel)]="rfqData.shippingInfo.toState" placeholder="State" class="editInput" disabled />
                   </div>
                 </div>
                 <div class="flex gap-2 my-2">
                   <div class="input-container-50">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="City" class="editInput" />
+                    <input type="text" [(ngModel)]="rfqData.shippingInfo.toCity" placeholder="City" class="editInput" disabled />
                   </div>
                   <div class="input-container-50">
-                    <input type="text" [(ngModel)]="shippingData" placeholder="Postal Code / Zip Code" class="editInput" />
+                    <input type="text" [(ngModel)]="rfqData.shippingInfo.toPostalCode" placeholder="Postal Code / Zip Code" class="editInput" disabled />
                   </div>
                 </div>
               </div>
@@ -680,12 +680,12 @@
       </div>
   
       <div class="card mb-4">
-        <p-toolbar styleClass="mb-4 gap-2">
+        <p-toolbar styleClass="mb-4 gap-2" *ngIf="!isView">
           <ng-template pTemplate="left">
           </ng-template>
     
           <ng-template pTemplate="right">
-            <!-- <app-button  (click)="openAddItem=true" text="Add New Item" class="btn-navigate" ></app-button> -->
+            <app-button  (click)="openAddItem=true" text="Add New Item" class="btn-navigate" ></app-button>
           </ng-template>
         </p-toolbar>
         <div>
@@ -758,106 +758,108 @@
         </div>
       </div>
 
-      <!-- <div *ngIf="isQuote">
+      <div *ngIf="isQuote && rfqData.totalAmount">
         <div class="calculated-container">
           <div class="calculated-wrapper " >
             <div class="amount-total editInput mb-3">
               <p><b>Amount</b></p>
               <p>
-                <span style="font-size: 1.1em; font-weight: 500">{{ totalAmount }} NGN</span>
+                <span style="font-size: 1.1em; font-weight: 500">{{ rfqData.totalAmount }} NGN</span>
               </p>
             </div>
             <div class="amount-total editInput mb-3">
               <p><b>Tax</b></p>
               <p>
-                <span style="font-size: 1.1em; font-weight: 500">{{ totalTax }} NGN</span>
+                <span style="font-size: 1.1em; font-weight: 500">{{ rfqData.totalTax }} NGN</span>
               </p>
             </div>
   
-            <div class="discount-container editInput mb-3">
-              <div class="amount-total mb-2" *ngFor="let discount of discounts; let i = index">
+            <div class="discount-container editInput mb-3" *ngIf="rfqData.discounts">
+              <div class="amount-total mb-2" *ngFor="let discount of rfqData.discounts; let i = index">
                 <p><b>Discount Amount</b></p>
                 <div class="value">
                   <p class="me-2">NGN</p>
                   <div class="d-flex gap-4">
-                    <input type="number" name="any" [(ngModel)]="discount.value" (ngModelChange)="onDiscountChange()" class="editInput" />
+                    <input type="number" name="any" [(ngModel)]="discount.value" (ngModelChange)="onDiscountChange()" class="editInput" disabled />
                   </div>
-                  <i (click)="removeDiscount(i)" class="pi pi-times-circle table-item p-2"></i>
+                  <!-- <i (click)="removeDiscount(i)" class="pi pi-times-circle table-item p-2"></i> -->
                 </div>
               </div>
               
-              <div class="discount-btn-wrapper d-block">
+              <!-- <div class="discount-btn-wrapper d-block">
                 <button class="add-btn" (click)="addDiscount()">
                   <i class="fas fa-plus me-2"></i>Add Discount
                 </button>
-              </div>
+              </div> -->
             </div>
 
 
-            <div class="discount-container editInput mb-3">
-              <div class="amount-total" *ngFor="let charge of charges; let i = index">
+            <div class="discount-container editInput mb-3" *ngIf="rfqData.charges">
+              <div class="amount-total" *ngFor="let charge of rfqData.charges; let i = index">
                 <p><b>Additional Charges Amount</b></p>
                 <div class="value d-flex">
                   <p class="me-2">NGN</p>
                   <div class="d-flex">
-                    <input type="number" name="any" [(ngModel)]="charge.value" (ngModelChange)="onChargeChange()" class="editInput"/>
+                    <input type="number" name="any" [(ngModel)]="charge.value" (ngModelChange)="onChargeChange()" class="editInput" disabled />
                   </div>
-                  <i (click)="removeCharge(i)" class="pi pi-times-circle table-item p-2"></i>
+                  <!-- <i (click)="removeCharge(i)" class="pi pi-times-circle table-item p-2"></i> -->
                 </div>
               </div>
 
-              <div class="discount-btn-wrapper d-block">
+              <!-- <div class="discount-btn-wrapper d-block">
                 <button class="add-btn" (click)="addCharge()">
                   <i class="fas fa-plus me-2"></i>Add Additional Charges
                 </button>
-              </div>
+              </div> -->
             </div>
 
             <div class="amount-total editInput mb-3">
               <p><b>Total</b></p>
               <p>
-                <span style="font-size: 1.1em; font-weight: 500">{{ grandTotal }} NGN</span>
+                <span style="font-size: 1.1em; font-weight: 500">{{ rfqData.grandTotal }} NGN</span>
               </p>
             </div>
   
             <div class="editInput my-4" *ngIf="showAmountWord">
               <div class="flex justify-between">
                 <p><b>Amount In Words</b></p>
-                <i (click)="showAmountWord = false" class="pi pi-times-circle table-item p-2"></i>
+                <!-- <i (click)="showAmountWord = false" class="pi pi-times-circle table-item p-2"></i> -->
               </div>
-              <div class="capitalize">
-                <p>{{ totalAmountInWords }}</p>
+              <div class="uppercase">
+                <br>
+                <p>{{ rfqData.totalAmountInWords }}</p>
               </div>
             </div>
-            <div class="editInput d-block my-4" *ngIf="!showAmountWord">
-              <button class="add-btn" (click)="showAmountWord = true; convertToWords(grandTotal)">
+            <!-- <div class="editInput d-block my-4" *ngIf="!showAmountWord">
+              <button class="add-btn" (click)="showAmountWord = true; convertToWords(rfqData.grandTotal)">
                 <i class="fas fa-plus me-2"></i>Add Amount In Words
               </button>
-            </div>
+            </div> -->
   
-            <div class="signature-upload-container editInput mb-4">
+            <div class="signature-upload-container editInput mb-4" *ngIf="isView">
               <div class="wrapper" *ngIf="showSignatureButton">
-                <div class="btn-sign">
+                <p><b>Uploaded Signature</b></p>
+                <!-- <div class="btn-sign">
                   <input type="file" name="any" #fileInput style="display: none" (change)="onSignatureSelected($event)" />
                   <button class="add-btn" (click)="fileInput.click()">
                     <i class="fas fa-plus me-2"></i>Upload Signature
                   </button>
-                </div>
+                </div> -->
                 <div class="signature-wrapper">
                   <img *ngIf="signatureUrl" [src]="signatureUrl" [(ngModel)]="rfqData.signature" alt="Signature" class="signature" />
                 </div>
-                <i (click)="clearSignature()" class="pi pi-times-circle table-item p-2"></i>
+                <!-- <i (click)="clearSignature()" class="pi pi-times-circle table-item p-2"></i> -->
               </div>
 
-              <div class="" *ngIf="!showSignatureButton" >
+              <!-- <div class="" *ngIf="!showSignatureButton" >
                 <button class="add-btn"  (click)="showSignatureButton = true" >
                   <i class="fas fa-plus me-2"></i>Add Signature
                 </button>
-              </div>
+              </div> -->
             </div>
           </div>
         </div>
-      </div> -->
+      </div>
   
   
       <div class="form-buttom-section editInput mb-2" *ngIf="rfqData.terms && rfqData.terms.length > 0">

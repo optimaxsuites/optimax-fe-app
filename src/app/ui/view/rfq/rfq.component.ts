@@ -50,7 +50,7 @@ export class RfqComponent implements OnInit {
 
     // Check if data exists in localStorage and parse it into an array
     if (storedData) {
-      this.rfqList = JSON.parse(storedData);
+      this.rfqList = JSON.parse(storedData).reverse();
     }
   }
 
@@ -62,6 +62,9 @@ export class RfqComponent implements OnInit {
     this.isCreate = false
     this.rfqTable = false;
     this.rfqForm = true
+
+    this.getRfqList();
+
   }
   viewRfq(item: any){
     console.log("rfq info", item)
@@ -70,6 +73,9 @@ export class RfqComponent implements OnInit {
     this.rfqTable = false
     this.isCreate = false
     this.rfqForm = true
+
+    this.getRfqList();
+
   }
   deleteRfq(id: number) {
     // Filter out the RFQ with the given id
@@ -91,13 +97,14 @@ export class RfqComponent implements OnInit {
     this.isEdit = false; 
     this.isView = false;
 
-    console.log()
+    this.getRfqList();
   }
 
   close() {
     this.rfqTable = true
     this.rfqForm = false
     this.activeItem = {}; 
+    this.getRfqList();
   }
 
 }
