@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { QuotationStage } from '../../../domain/procurement.dto';
 
 @Component({
   selector: 'app-vendor-quote-list',
@@ -36,27 +37,39 @@ export class VendorQuoteListComponent {
       case 'Pending':
         return 'badge badge-lightgrey';
       case 'Converted':
+        return 'badge badge-lightblue';
+      case 'Sent':
         return 'badge badge-lightgreen';
       default:
         return '';
     }
   }
 
-  getQuoteList(){
-    // Retrieve the 'rfqDataList' from localStorage
+  getQuoteList() {
+    // Retrieve the 'QuoteDataArray' from localStorage
     const storedData = localStorage.getItem('QuoteDataArray');
-    console.log('this is stored data')
-
-
+  
+    console.log('This is stored data:', storedData);
+  
     // Check if data exists in localStorage and parse it into an array
     if (storedData) {
-      this.quoteList = JSON.parse(storedData).reverse();
+      // Parse the data and reverse the array
+      this.quoteList = JSON.parse(storedData)
+        .map((quote: any) => {
+          // Check if the stage is 'Converted' and change it to 'Pending'
+          if (quote.stage === QuotationStage.Converted) {
+            quote.stage = QuotationStage.Pending;
+          }
+          return quote;
+        })
+        .reverse();
     }
   }
+  
 
-  convertToQuotation(item: any) {
-    console.log("rfq info", item)
-    this.activeItem = { ...item };
+  convertToQuotation(SelectedItem: any) {
+    console.log("rfq info", SelectedItem)
+    this.activeItem = { ...SelectedItem };
     this.isEdit = true; 
     this.isView = false;
     this.isCreate = false
@@ -66,9 +79,12 @@ export class VendorQuoteListComponent {
     this.getQuoteList();
 
   }
-  viewRfq(item: any){
-    console.log("rfq info", item)
-    this.activeItem = { ...item };
+  sendQuotation(SelectedItem: any){
+
+  }
+  viewRfq(SelectedItem: any){
+    console.log("rfq info", SelectedItem)
+    this.activeItem = { ...SelectedItem };
     this.isView = true; 
     this.rfqTable = false
     this.isCreate = false

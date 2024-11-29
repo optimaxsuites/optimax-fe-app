@@ -39,6 +39,8 @@ export class VendorRfqListComponent {
       case 'Pending':
         return 'badge badge-lightgrey';
       case 'Converted':
+        return 'badge badge-lightblue';
+      case 'Sent':
         return 'badge badge-lightgreen';
       default:
         return '';
