@@ -130,11 +130,12 @@ export class MenuItemsService {
     {
       label: 'Vendor',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'fas fa-user-tie', // PrimeNG icon class
-      submenu: [
-        { label: 'Registration', route: this.navigationLink.getLink('vendorLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-plus' },
-        { label: 'Incoming RFQ ', route: this.navigationLink.getLink('vendorRfqLink'), roles: ['ROLE_USER'], icon: 'fas fa-inbox' },
-      ],
+      icon: 'fas fa-user-tie',
+      route: this.navigationLink.getLink('vendorLink'),
+      // submenu: [
+      //   { label: 'Registration', route: this.navigationLink.getLink('vendorLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-plus' },
+      //   { label: 'Incoming RFQ ', route: this.navigationLink.getLink('vendorRfqLink'), roles: ['ROLE_USER'], icon: 'fas fa-inbox' },
+      // ],
     },
     {
       label: 'Settings',

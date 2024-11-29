@@ -51,7 +51,7 @@ export class RfqFormComponent implements OnInit {
   discountChargesData: DiscountAndChargesDTO[] = [];
   bankData: BanksDTO[] = [];
   addressData: AddressDTO[] = [];
-  shippingData: ShippingDTO[] = [];
+  shippingData: any = {};
   projectData: ProjectDTO = {};
   // customerData: CustomerDTO = {};
   vendorData: any = {}
@@ -64,8 +64,9 @@ export class RfqFormComponent implements OnInit {
   @Input() isQuote? : boolean;
   @Output() submitFrom = new EventEmitter<any>();
   @Input() rfqData: any = {
+    discounts: [],
+    charges: [],
     vendor: [] = [],
-    // items: [],
     termsGroup: [] = [ this.terms],
     attachments: [] as AttachmentDTO[]
   };
@@ -97,6 +98,7 @@ showViewing: boolean = false;
     this.showAttachments = false;
     this.isEdit = false;
     this.isCreate = false;
+    this.isFormVisible = false;
   }
 
   goBack() {
@@ -217,8 +219,10 @@ resetEditState() {
       this.showTermsCondition = true;
       this.showNotes = true;
       this.showAttachments = true
+      this.isFormVisible = true;
+      this.showAmountWord = true;
+      this.showSignatureButton = true
     }
-
     // this.resetState()
 
 
@@ -296,6 +300,8 @@ resetEditState() {
 
   toggleForm() {
     this.isFormVisible = !this.isFormVisible;
+    this.isRfq = false;
+    this.isQuote = true;
   }
 
 // SUBMIT QUOTATION ACTION============================================================================
@@ -418,7 +424,7 @@ resetEditState() {
 // }
 
 onSubmit() {
-  console.log("Form data:", this.rfqData);
+  console.log("Shipping Form data:", this.shippingData);
 
   const storedData: any[] = JSON.parse(localStorage.getItem('rfqDataArray') || '[]');
   const storedQuoteData: any[] = JSON.parse(localStorage.getItem('QuoteDataArray') || '[]');
@@ -454,7 +460,7 @@ onSubmit() {
       console.log("Stage updated to 'converted' in rfqDataArray:", storedData);
   
       // Save the updated RFQ to QuoteDataArray
-      const updatedEntry = { ...storedData[existingEntryIndex], ...this.rfqData }; // Merge with rfqData
+      const updatedEntry = { ...storedData[existingEntryIndex], ...this.rfqData, stage: QuotationStage.Converted, shippingInfo: this.shippingData }; // Merge with rfqData
       const quoteIndex = storedQuoteData.findIndex(item => item.id === updatedEntry.id);
   
       if (quoteIndex !== -1) {
@@ -540,10 +546,10 @@ cancelTermsCondition(){
 //     this.charges.splice(index, 1);
 //   }
 
-  totalAmount: number = 0;
-  totalAmountInWords: string = '';
-  totalTax: number = 0;
-  grandTotal: number = 0;
+  // totalAmount: number = 0;
+  // totalAmountInWords: string = '';
+  // totalTax: number = 0;
+  // grandTotal: number = 0;
 
 
   // onInputChange(item: any): void {
@@ -563,71 +569,154 @@ cancelTermsCondition(){
   // }
 
   // This method will be called on discount/charge value change
+// onDiscountChange(): void {
+//   this.calculateTotal();  // Recalculate total after a discount value change
+// }
+
+// onChargeChange(): void {
+//   this.calculateTotal();  // Recalculate total after a charge value change
+// }
+
+//   addDiscount(): void {
+//     this.rfqData.discounts.push({ value: 0 });
+//     console.log(this.rfqData.discounts)
+//     this.calculateTotal();  // Recalculate after adding a discount
+//   }
+  
+//   removeDiscount(index: number): void {
+//     this.rfqData.discounts.splice(index, 1);
+//     this.calculateTotal();  // Recalculate after removing a discount
+//   }
+  
+//   addCharge(): void {
+//     this.rfqData.charges.push({ value: 0 });
+//     this.calculateTotal();  // Recalculate after adding a charge
+//   }
+  
+//   removeCharge(index: number): void {
+//     this.rfqData.charges.splice(index, 1);
+//     this.calculateTotal();  // Recalculate after removing a charge
+//   }
+
+//   calculateTotal(): void {
+//     // Convert the grand total to words
+//     this.rfqData.totalAmountInWords = this.numberToWords(this.grandTotal);
+  
+//     // Calculate the total amount by summing the 'amount' of each item
+//     this.rfqData.totalAmount = this.rfqData.items.reduce((sum: any, item: { amount: any; }) => sum + item.amount!, 0);
+
+//     // Calculate the total tax by summing the 'tax' of each item
+//     this.rfqData.totalTax = this.rfqData.items.reduce((sum: any, item: { tax: any; }) => sum + item.tax!, 0);
+  
+//     // Calculate the grand total by summing the 'total' of each item
+//     this.rfqData.grandTotal = this.rfqData.items.reduce((sum: any, item: { total: any; }) => sum + item.total!, 0);
+
+//     // Calculate the total discount and subtract from grand total
+//     this.rfqData.totalDiscount = this.rfqData.discounts.reduce((sum: any, discount: { value: any; }) => sum + discount.value, 0);
+//     this.rfqData.grandTotal -= this.rfqData.totalDiscount;
+
+//     // Calculate the total additional charges and add to grand total
+//     this.rfqData.totalCharges = this.rfqData.charges.reduce((sum: any, charge: { value: any; }) => sum + charge.value, 0);
+//     this.rfqData.grandTotal += this.rfqData.totalDiscount;
+//   }
+
+//   convertToWords(grandTotal: number): void {
+//     const [naira, kobo] = grandTotal.toString().split('.');  // Split the total into naira and kobo parts
+//     this.rfqData.totalAmountInWords = this.numberToWords(Number(naira)) + ' naira';
+  
+//     // If there is a decimal part (kobo)
+//     if (kobo) {
+//       const koboAmount = Number(kobo.slice());  // Take only the first two digits as kobo
+//       if (koboAmount > 0) {
+//         this.totalAmountInWords += ' ' + this.numberToWords(koboAmount) + ' kobo';
+//       }
+//     }
+  
+//     this.totalAmountInWords += ' only';  // Append 'only' at the end
+//   }
+
 onDiscountChange(): void {
-  this.calculateTotal();  // Recalculate total after a discount value change
+  this.calculateTotal();
+  this.convertToWords(this.rfqData.grandTotal)
 }
 
 onChargeChange(): void {
-  this.calculateTotal();  // Recalculate total after a charge value change
+  this.calculateTotal();
+  this.convertToWords(this.rfqData.grandTotal)
 }
 
-  addDiscount(): void {
-    this.discounts.push({ value: 0 });
-    console.log(this.discounts)
-    this.calculateTotal();  // Recalculate after adding a discount
+addDiscount(): void {
+  if (!this.rfqData.discounts) {
+    this.rfqData.discounts = []; // Ensure the array is defined
   }
-  
-  removeDiscount(index: number): void {
-    this.discounts.splice(index, 1);
-    this.calculateTotal();  // Recalculate after removing a discount
-  }
-  
-  addCharge(): void {
-    this.charges.push({ value: 0 });
-    this.calculateTotal();  // Recalculate after adding a charge
-  }
-  
-  removeCharge(index: number): void {
-    this.charges.splice(index, 1);
-    this.calculateTotal();  // Recalculate after removing a charge
-  }
+  this.rfqData.discounts.push({ value: 0 });
+  console.log(this.rfqData.discounts);
+  this.calculateTotal(); // Recalculate after adding a discount
+  this.convertToWords(this.rfqData.grandTotal)
+}
 
-  calculateTotal(): void {
-    // Convert the grand total to words
-    this.totalAmountInWords = this.numberToWords(this.grandTotal);
-  
-    // Calculate the total amount by summing the 'amount' of each item
-    this.totalAmount = this.rfqData.items.reduce((sum: any, item: { amount: any; }) => sum + item.amount!, 0);
-
-    // Calculate the total tax by summing the 'tax' of each item
-    this.totalTax = this.rfqData.items.reduce((sum: any, item: { tax: any; }) => sum + item.tax!, 0);
-  
-    // Calculate the grand total by summing the 'total' of each item
-    this.grandTotal = this.rfqData.items.reduce((sum: any, item: { total: any; }) => sum + item.total!, 0);
-
-        // Calculate the total discount and subtract from grand total
-    const totalDiscount = this.discounts.reduce((sum, discount) => sum + discount.value, 0);
-    this.grandTotal -= totalDiscount;
-
-    // Calculate the total additional charges and add to grand total
-    const totalCharges = this.charges.reduce((sum, charge) => sum + charge.value, 0);
-    this.grandTotal += totalCharges;
+removeDiscount(index: number): void {
+  if (this.rfqData.discounts && this.rfqData.discounts.length > index) {
+    this.rfqData.discounts.splice(index, 1);
+    this.calculateTotal(); // Recalculate after removing a discount
   }
+  this.convertToWords(this.rfqData.grandTotal)
+}
 
-  convertToWords(grandTotal: number): void {
-    const [naira, kobo] = grandTotal.toString().split('.');  // Split the total into naira and kobo parts
-    this.totalAmountInWords = this.numberToWords(Number(naira)) + ' naira';
-  
-    // If there is a decimal part (kobo)
-    if (kobo) {
-      const koboAmount = Number(kobo.slice());  // Take only the first two digits as kobo
-      if (koboAmount > 0) {
-        this.totalAmountInWords += ' ' + this.numberToWords(koboAmount) + ' kobo';
-      }
-    }
-  
-    this.totalAmountInWords += ' only';  // Append 'only' at the end
+addCharge(): void {
+  if (!this.rfqData.charges) {
+    this.rfqData.charges = []; // Ensure the array is defined
   }
+  this.rfqData.charges.push({ value: 0 });
+  console.log(this.rfqData.charges);
+  this.calculateTotal(); // Recalculate after adding a charge
+  this.convertToWords(this.rfqData.grandTotal)
+}
+
+removeCharge(index: number): void {
+  if (this.rfqData.charges && this.rfqData.charges.length > index) {
+    this.rfqData.charges.splice(index, 1);
+    this.calculateTotal(); // Recalculate after removing a charge
+  }
+  this.convertToWords(this.rfqData.grandTotal)
+}
+
+
+calculateTotal(): void {
+  this.rfqData.totalAmount = this.rfqData.items.reduce((sum: any, item: { amount: any; }) => sum + (item.amount || 0), 0);
+  this.rfqData.totalTax = this.rfqData.items.reduce((sum: any, item: { tax: any; }) => sum + (item.tax || 0), 0);
+  this.rfqData.grandTotal = this.rfqData.items.reduce((sum: any, item: { total: any; }) => sum + (item.total || 0), 0);
+
+  // Subtract total discounts
+  this.rfqData.totalDiscount = this.rfqData.discounts.reduce((sum: any, discount: { value: any; }) => sum + (discount.value || 0), 0);
+  this.rfqData.grandTotal -= this.rfqData.totalDiscount;
+
+  // Add total charges
+  this.rfqData.totalCharges = this.rfqData.charges.reduce((sum: any, charge: { value: any; }) => sum + (charge.value || 0), 0);
+  this.rfqData.grandTotal += this.rfqData.totalCharges;
+
+  // Convert grand total to words
+  this.convertToWords(this.rfqData.grandTotal);
+}
+showAmountInWord(){
+  this.showAmountWord = true;
+  this.convertToWords(this.rfqData.grandTotal)
+}
+convertToWords(grandTotal: number) {
+  const [naira, kobo] = grandTotal.toFixed(2).split('.');
+  this.rfqData.totalAmountInWords = this.numberToWords(Number(naira)) + ' naira';
+  if (kobo && Number(kobo) > 0) {
+    this.rfqData.totalAmountInWords += ' ' + this.numberToWords(Number(kobo)) + ' kobo';
+  }
+  this.rfqData.totalAmountInWords += ' only';
+
+  // return this.rfqData.totalAmountInWords
+
+}
+
+// get amountInWords(): string {
+//   return this.convertToWords(this.rfqData.grandTotal || 0);
+// }
   
   numberToWords(num: number): string {
     if (num === 0) return "zero";

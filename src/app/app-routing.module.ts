@@ -201,7 +201,7 @@ const routes: Routes = [
       },
       {
         path: '',
-        loadChildren: () => import('../../projects/purchase/src/app/app.module').then(m => m.AppModule),
+        loadChildren: () => import('../../projects/procurement/src/app/app.module').then(m => m.AppModule),
       },
       {
         path: '',
