@@ -20,5 +20,6 @@ export interface RfqItemDTO{
 export enum QuotationStage {
     Pending = 'Pending',
     Converted = 'Converted',
+    Sent = 'Sent',
 
 }

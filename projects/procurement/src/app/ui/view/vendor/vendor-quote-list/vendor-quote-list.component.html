@@ -59,7 +59,7 @@
                         <p-overlayPanel #op ngClass="padding: 0;">
                             <div>
                                 <li class="table-item-panel" (click)="viewRfq(item)"> <i class="pi pi-eye table-item me-2"></i> View</li>
-                                <!-- <li class="table-item-panel" *ngIf="item.stage !== 'Converted'" (click)="convertToQuotation(item)"> <i class="pi pi-file-edit table-item me-2"></i>Convert to Quotation </li> -->
+                                <li class="table-item-panel" (click)="sendQuotation(item)"> <i class="pi pi-file-edit table-item me-2"></i>Send Quotation </li>
                                 <li class="table-item-panel" (click)="deleteRfq(item.id)"> <i class="pi pi-trash table-item me-2"></i>Delete</li>
                             </div>
                         </p-overlayPanel>
