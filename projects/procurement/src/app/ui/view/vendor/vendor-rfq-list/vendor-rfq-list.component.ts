@@ -36,9 +36,9 @@ export class VendorRfqListComponent {
 
   getStatusClass(stage: string) {
     switch (stage) {
-      case 'Created':
+      case 'Pending':
         return 'badge badge-lightgrey';
-      case 'Sent':
+      case 'Converted':
         return 'badge badge-lightgreen';
       default:
         return '';
@@ -53,11 +53,11 @@ export class VendorRfqListComponent {
 
     // Check if data exists in localStorage and parse it into an array
     if (storedData) {
-      this.rfqList = JSON.parse(storedData);
+      this.rfqList = JSON.parse(storedData).reverse();
     }
   }
 
-  editRfq(item: any) {
+  convertToQuotation(item: any) {
     console.log("rfq info", item)
     this.activeItem = { ...item };
     this.isEdit = true; 
@@ -65,6 +65,9 @@ export class VendorRfqListComponent {
     this.isCreate = false
     this.rfqTable = false;
     this.rfqForm = true
+
+    this.getRfqList();
+
   }
   viewRfq(item: any){
     console.log("rfq info", item)
@@ -73,6 +76,8 @@ export class VendorRfqListComponent {
     this.rfqTable = false
     this.isCreate = false
     this.rfqForm = true
+    
+    this.getRfqList();
   }
   deleteRfq(id: number) {
     // Filter out the RFQ with the given id
@@ -94,13 +99,15 @@ export class VendorRfqListComponent {
     this.isEdit = false; 
     this.isView = false;
 
-    console.log()
+    this.getRfqList();
   }
 
   close() {
     this.rfqTable = true
     this.rfqForm = false
     this.activeItem = {}; 
+
+    this.getRfqList();
   }
 
 }

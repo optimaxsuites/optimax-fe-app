@@ -38,7 +38,7 @@
                     <th class="table-item" pSortableColumn="location">RFQ No</th>
                     <th class="table-item" pSortableColumn="postedDate">Date</th>
                     <th class="table-item" pSortableColumn="expiryDate">Due Date</th>
-                    <!-- <th class="table-item" pSortableColumn="expiryDate">Status</th> -->
+                    <th class="table-item" pSortableColumn="expiryDate">Stage</th>
                     <th class=""></th>
                 </tr>
             </ng-template>
@@ -49,18 +49,18 @@
                     <td class="table-item">{{ item.rfqNo }}</td>
                     <td class="table-item">{{ item.date }}</td>
                     <td class="table-item">{{ item.dueDate }}</td>
-                    <!-- <td class="table-item">
-                        <span [ngClass]="getStatusClass(item.status)">
-                          {{ item.status }} 
+                    <td class="table-item">
+                        <span [ngClass]="getStatusClass(item.stage)">
+                          {{ item.stage }} 
                         </span>
-                    </td> -->
+                    </td>
                     <td class="actions">
                         <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event)" ></i>
                         <p-overlayPanel #op ngClass="padding: 0;">
                             <div>
                                 <li class="table-item-panel" (click)="viewRfq(item)"> <i class="pi pi-eye table-item me-2"></i> View</li>
-                                <li class="table-item-panel" (click)="editRfq(item)"> <i class="pi pi-file-edit table-item me-2"></i>Convert to Quotation </li>
-                                <li class="table-item-panel" (click)="deleteRfq(item.id)"> <i class="pi pi-trash table-item me-2"></i>Delete</li>
+                                <li class="table-item-panel" *ngIf="item.stage !== 'Converted'" (click)="convertToQuotation(item)"> <i class="pi pi-file-edit table-item me-2"></i>Convert to Quotation </li>
+                                <!-- <li class="table-item-panel" (click)="deleteRfq(item.id)"> <i class="pi pi-trash table-item me-2"></i>Delete</li> -->
                             </div>
                         </p-overlayPanel>
                     </td>
