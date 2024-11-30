@@ -64,6 +64,10 @@ import {
 import { AuthInterceptor } from './ui/sharedComponents/service/auth-service/auth.interceptor.service';
 import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
 import { AppraisalassessmentComponent } from './ui/view/hr/appraisalassessment/appraisalassessment.component';
+import { SideModalComponent } from './ui/sharedComponents/view/side-modal/side-modal.component';
+import { CompensationComponent } from './ui/view/hr/compensation/compensation.component';
+import { NavTabComponent } from './ui/sharedComponents/view/nav-tab/nav-tab.component';
+
 
 //
 
@@ -78,6 +82,9 @@ import { AppraisalassessmentComponent } from './ui/view/hr/appraisalassessment/a
     LevelComponent,
     LeaveComponent,
     AppraisalassessmentComponent,
+    CompensationComponent,
+    NavTabComponent,
+    
   ],
   imports: [
     // BrowserModule,
@@ -129,6 +136,7 @@ import { AppraisalassessmentComponent } from './ui/view/hr/appraisalassessment/a
     MatTabGroup,
     MatMenuModule,
     LargeSideModalComponent,
+    SideModalComponent,
   ],
   providers: [
     NavigationLinksService,

@@ -4,6 +4,7 @@ import { SalaryComponent } from '../salary/salary.component';
 import { ScoresheetConfigComponent } from '../scoresheet-config/scoresheet-config.component';
 import { LevelComponent } from '../level/level.component';
 import { LeaveComponent } from '../leave/leave.component';
+import { CompensationComponent } from '../compensation/compensation.component';
 
 @Component({
   selector: 'app-hr-settings',
@@ -25,6 +26,17 @@ export class HrSettingsComponent {
       ],
       icon: 'pi pi-receipt',
       component: SalaryComponent,
+    },
+    {
+      name: 'Compensations and Deductions',
+      subSetting: [
+        'Allowance Types',
+        'Deduction Types',
+        'Bonus Type',
+        'Overtime Types',
+      ],
+      icon: 'pi pi-receipt',
+      component: CompensationComponent,
     },
     {
       name: 'Employee management',
