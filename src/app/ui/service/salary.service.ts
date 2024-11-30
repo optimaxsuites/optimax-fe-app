@@ -25,13 +25,20 @@ export class SalaryService {
     .pipe(catchError(this.handleError));
   }
 
+
+  updateSalary(id: number, data: SalaryDTO){
+    return this.http
+    .put<any>(this.getBaseApiUrl() + `/x/api/v2/hr/salaries/${id}`, data)
+    .pipe(catchError(this.handleError));
+  }
+
   addSalary(data: SalaryDTO){
     return this.http
     .post<any>(this.getBaseApiUrl() + `/x/api/v2/hr/salaries`, data)
     .pipe(catchError(this.handleError));
   }
 
-  deleteSalry(id: number){
+  deleteSalry(id: number|undefined){
     return this.http
     .delete<any>(this.getBaseApiUrl() + `/x/api/v2/hr/salaries/${id}`)
     .pipe(catchError(this.handleError));
@@ -64,6 +71,7 @@ export class SalaryService {
     .post<any>(this.getBaseApiUrl() + "/x/api/v2/hr/allowances", data)
     .pipe(catchError(this.handleError));
   }
+  
 
  addBonus(data: BonusDTO){
     return this.http
@@ -83,7 +91,7 @@ export class SalaryService {
   }
   getAllAllowanceTypes(){
     return this.http
-    .get<any>(this.getBaseApiUrl() + "/x/api/v2/hr/allowanceTypes")
+    .get<any>(this.getBaseApiUrl() + "/x/api/v2/hr/allowanceTypes?page=1&size=50")
     .pipe(catchError(this.handleError));
   }
 
@@ -171,6 +179,29 @@ export class SalaryService {
     .pipe(catchError(this.handleError));
   }
  
+  deleteAllowance(id: number){
+    return this.http
+    .delete<any>(this.getBaseApiUrl() + `/x/api/v2/hr/allowances/${id}`)
+    .pipe(catchError(this.handleError));
+  }
+
+  deleteBonus(id: number){
+    return this.http
+    .delete<any>(this.getBaseApiUrl() + `/x/api/v2/hr/bonuses/${id}`)
+    .pipe(catchError(this.handleError));
+  }
+
+  deleteDeduction(id: number){
+    return this.http
+    .delete<any>(this.getBaseApiUrl() + `/x/api/v2/hr/deductions/${id}`)
+    .pipe(catchError(this.handleError));
+  }
+
+  deleteOvertime(id: number){
+    return this.http
+    .delete<any>(this.getBaseApiUrl() + `/x/api/v2/hr/overtimes/${id}`)
+    .pipe(catchError(this.handleError));
+  }
 
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'An unknown error occurred!';
@@ -191,4 +222,6 @@ export class SalaryService {
       }
       return throwError(() => errorMessage);
   }
+
+ 
 }
