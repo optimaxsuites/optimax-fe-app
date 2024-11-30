@@ -101,7 +101,10 @@ export class LeaveComponent {
         id,
         ...newleaveStructure
        };
-       this.leaveService.updateLeaveType(id, newleaveStructure).subscribe(() => {
+       this.leaveService.addLeaveType({
+        id,
+        ...newleaveStructure
+       }).subscribe(() => {
        this.messageService.add({ severity: 'success', summary: 'Success', detail: "Leave updated successfully!", key: 'tl', life: 3000  }); 
        this.leaveForm.reset();
        this.editIndex = null;

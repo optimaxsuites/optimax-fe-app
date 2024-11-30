@@ -56,13 +56,20 @@ import { GeneralSettingsComponent } from './ui/view/general/general-settings/gen
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { LevelComponent } from './ui/view/hr/level/level.component';
 import { LeaveComponent } from './ui/view/hr/leave/leave.component';
-import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import {
+  HTTP_INTERCEPTORS,
+  provideHttpClient,
+  withInterceptorsFromDi,
+} from '@angular/common/http';
 import { AuthInterceptor } from './ui/sharedComponents/service/auth-service/auth.interceptor.service';
 import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
+import { AppraisalassessmentComponent } from './ui/view/hr/appraisalassessment/appraisalassessment.component';
+import { SideModalComponent } from './ui/sharedComponents/view/side-modal/side-modal.component';
+import { CompensationComponent } from './ui/view/hr/compensation/compensation.component';
+import { NavTabComponent } from './ui/sharedComponents/view/nav-tab/nav-tab.component';
 
 
 //
-
 
 @NgModule({
   declarations: [
@@ -73,7 +80,11 @@ import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
     ScoresheetConfigComponent,
     GeneralSettingsComponent,
     LevelComponent,
-    LeaveComponent
+    LeaveComponent,
+    AppraisalassessmentComponent,
+    CompensationComponent,
+    NavTabComponent,
+    
   ],
   imports: [
     // BrowserModule,
@@ -85,46 +96,47 @@ import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
     RippleModule,
     DialogModule,
     ToastModule,
-    FormsModule, 
+    FormsModule,
     ReactiveFormsModule,
     SidebarModule,
     TabViewModule,
-      ToolbarModule,
-      ConfirmDialogModule,
-      SplitButtonModule,
-      PanelModule,
-      DividerModule,
-      OverlayPanelModule,
-      StepperModule,
-      InputTextModule,
-      FloatLabelModule,
-      EditorModule,
-      MessagesModule,
-      MessageModule,
-      RippleModule,
-      TableModule,
-      PasswordModule,
-      ButtonModule,
-      NgSelectModule,
-      MatExpansionModule,
-      MatRadioModule,
-      MatPaginatorModule,
-      MatTableModule,
-      MatRadioModule,
-      MatDialogModule,
-      MatFormFieldModule,
-      MatInputModule,
-      MatIconModule,
-      MatTabsModule,
-      MatDatepickerModule,
-      MatSelectModule,
-      MatTooltipModule,
-      MatButtonModule,
-      MatDividerModule,
-      MatTooltip,
-      MatTabGroup,
-      MatMenuModule,
+    ToolbarModule,
+    ConfirmDialogModule,
+    SplitButtonModule,
+    PanelModule,
+    DividerModule,
+    OverlayPanelModule,
+    StepperModule,
+    InputTextModule,
+    FloatLabelModule,
+    EditorModule,
+    MessagesModule,
+    MessageModule,
+    RippleModule,
+    TableModule,
+    PasswordModule,
+    ButtonModule,
+    NgSelectModule,
+    MatExpansionModule,
+    MatRadioModule,
+    MatPaginatorModule,
+    MatTableModule,
+    MatRadioModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule,
+    MatTabsModule,
+    MatDatepickerModule,
+    MatSelectModule,
+    MatTooltipModule,
+    MatButtonModule,
+    MatDividerModule,
+    MatTooltip,
+    MatTabGroup,
+    MatMenuModule,
     LargeSideModalComponent,
+    SideModalComponent,
   ],
   providers: [
     NavigationLinksService,
@@ -141,6 +153,6 @@ import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
     JwtHelperService,
     provideHttpClient(withInterceptorsFromDi()),
   ],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
 })
-export class AppSettingsModule { }
+export class AppSettingsModule {}

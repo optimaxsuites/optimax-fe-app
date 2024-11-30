@@ -1,59 +1,62 @@
 
 export interface SalaryDTO {
-    levelId: number;
-	allowance: AllowanceDTO[];
-	bonus: BonusDTO[]
-	deductions:DeductionsDTO[];
+  id? :number | undefined
+  levelId: number;
+	allowance?: AllowanceDTO[];
+	bonus?: BonusDTO[]
+	deductions?:DeductionsDTO[];
 	baseSalary: number;
-	overTime?: OvertimeDTO[]
+	overtime?: OvertimeDTO[]
 }
 
 export interface AllowanceDTO {
-	allowanceId: number;
-	type: AllowanceTypeDTO;
+	id?: number | undefined;
+	allowanceTypeId: number;
 	amount: number
 }
 
 export interface AllowanceTypeDTO {
-    id: number;          
-    name: string;       
+    id?: number | undefined;          
+    name: string;    
+    code?: string;   
     description?: string;   
 }
 
 export interface BonusDTO {
-  bonusId: number;
-  type: BonusTypeDTO; 
+  id?: number | undefined;
+  bonusTypeId: number; 
   amount: number; 
   dateAwarded?: Date; 
 }
 
 export interface BonusTypeDTO { 
-  id: number; 
+  id?: number | undefined; 
   name: string;
   description?: string; 
 }
 
 export interface DeductionsDTO { 
-  deductionId: number;
-  type: DeductionsTypeDTO; 
+  id?: number | undefined;
+  deductionsTypeId: number; 
   amount: number; 
 }
 
 export interface DeductionsTypeDTO { 
-  id: number; 
+  id?: number | undefined; 
   name: string; 
   description?: string; 
   isTax?: boolean; 
 }
 
 export interface OvertimeDTO { 
-  type: OvertimeTypeDTO;
+  id?: number | undefined;
+  overtimeTypeId: number;
   maxHours: number; 
   rate: number
 }
 
 export interface OvertimeTypeDTO { 
-  id: number; 
+  id?: number | undefined; 
   name: string; 
   description?: string;
 }
