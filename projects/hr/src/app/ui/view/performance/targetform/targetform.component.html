@@ -10,7 +10,7 @@
     <div class="w-1/2">
       <!-- Goal Name -->
       <div class="mb-4 mt-3">
-        <label class="mb-3 text-lg font-semibold">Goal Name*</label>
+        <label class="mb-3 text-lg font-semibold">Target Name*</label>
         <input
           type="text"
           formControlName="goalName"
@@ -24,33 +24,12 @@
           "
           class="text-red-500 text-sm"
         >
-          Goal name is required
+          Target name is required
         </div>
       </div>
 
       <!-- Level and Priority -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-        <!-- <div class="">
-          <label class="mb-3 text-lg font-semibold">Level*</label>
-          <ng-select
-            [items]="levelUser"
-            bindLabel="option"
-            bindValue="option"
-            formControlName="levelUser"
-            placeholder="Select level"
-            class="w-full"
-          ></ng-select>
-          <div
-            *ngIf="
-              goalForm.get('levelUser')?.touched &&
-              goalForm.get('levelUser')?.invalid
-            "
-            class="text-red-500 text-sm"
-          >
-            Level is required
-          </div>
-        </div> -->
-
         <div class="">
           <label class="mb-3 text-lg font-semibold">Level*</label>
           <select

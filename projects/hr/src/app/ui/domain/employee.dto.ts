@@ -76,3 +76,10 @@ export interface LeaveTypeDTO {
   defaultDays: number;
   description?: string;
 }
+
+export interface LevelDTO {
+  id?: number,
+ name: string;
+ code: string;
+ description: string;
+}

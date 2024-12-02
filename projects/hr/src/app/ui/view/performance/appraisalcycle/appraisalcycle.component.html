@@ -1,45 +1,117 @@
 <body class="bg-gray-100">
   <div class="flex min-h-screen p-15">
-    <!-- Sidebar -->
-    <aside class="w-64 bg-white rounded-lg p-5 shadow-md text-lg mr-1">
-      <ul>
+    <!-- Sidebar Section -->
+    <aside class="w-80 bg-white rounded-lg p-0 shadow-lg text-lg space-y-4">
+      <ul class="space-y-10 mt-10 mr-7">
+        <!-- All Section -->
         <li
-          class="flex items-center justify-between p-5 text-gray-800 hover:bg-gray-100 rounded-lg"
+          class="flex items-center justify-between mt-12 bg-blue-100 p-6 rounded-lg shadow-sm hover:bg-blue-200 transition-colors duration-300"
         >
-          <span class="text-lg">All</span>
-          <span class="t text-gray-500 bg-gray-200 rounded-full px-2">5</span>
-        </li>
-        <li
-          class="flex items-center justify-between p-5 text-gray-800 hover:bg-gray-100 rounded-lg"
-        >
-          <span>Created</span>
-          <span class="text-gray-500 bg-gray-200 rounded-full px-2">3</span>
-        </li>
-        <li
-          class="flex items-center justify-between p-5 text-gray-800 hover:bg-gray-100 rounded-lg"
-        >
-          <span>Appraisals Created</span>
-          <span class="text-gray-500 bg-gray-200 rounded-full px-2">0</span>
-        </li>
-        <li
-          class="flex items-center justify-between p-5 text-gray-800 hover:bg-gray-100 rounded-lg"
-        >
-          <span>Activated</span>
-          <span class="text-gray-500 bg-gray-200 rounded-full px-2">4</span>
-        </li>
-        <li
-          class="flex items-center justify-between p-5 text-gray-800 hover:bg-gray-100 rounded-lg"
-        >
-          <span>Closed</span>
-          <span class="text-gray-500 bg-gray-200 rounded-xl px-2">0</span>
-        </li>
-        <li
-          class="flex items-center justify-between p-5 text-gray-800 hover:bg-gray-100 rounded-lg"
-        >
-          <span>Reopened</span>
-          <span class="text-sm text-gray-500 bg-gray-200 rounded-full px-2"
-            >0</span
+          <div class="flex items-center space-x-3">
+            <i class="text-blue-600 pi pi-list"></i>
+            <span class="text-blue-900 font-medium text-[14px]">All</span>
+          </div>
+          <span
+            class="bg-blue-600 text-white font-semibold rounded-full px-3 py-1 text-lg"
           >
+            {{ getFilteredSidebarData().length }}
+          </span>
+        </li>
+
+        <!-- Department Section -->
+        <li
+          class="flex flex-col bg-green-100 p-4 rounded-lg shadow-sm hover:bg-green-200 transition-colors duration-300"
+        >
+          <div class="flex items-center space-x-2 mb-2">
+            <i class="text-green-600 pi pi-building"></i>
+            <span class="text-green-900 font-medium text-[14px]"
+              >Department</span
+            >
+          </div>
+          <ul>
+            <li
+              *ngFor="let dept of getDepartmentCounts()"
+              class="flex justify-between items-center pl-6 py-1 hover:bg-green-300 rounded-lg transition-colors duration-300"
+            >
+              <span>{{ dept.name }}</span>
+              <span
+                class="bg-green-600 text-white font-semibold rounded-full px-2 py-1"
+              >
+                {{ dept.count }}
+              </span>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Level Section -->
+        <li
+          class="flex flex-col bg-purple-100 p-4 rounded-lg shadow-sm hover:bg-purple-200 transition-colors duration-300"
+        >
+          <div class="flex items-center space-x-2 mb-2">
+            <i class="text-purple-600 pi pi-sitemap"></i>
+            <span class="text-purple-900 font-medium text-[14px]">Level</span>
+          </div>
+          <ul>
+            <li
+              *ngFor="let lvl of getLevelCounts()"
+              class="flex justify-between items-center pl-6 py-1 hover:bg-purple-300 rounded-lg transition-colors duration-300"
+            >
+              <span>{{ lvl.name }}</span>
+              <span
+                class="bg-purple-600 text-white font-semibold rounded-full px-2 py-1"
+              >
+                {{ lvl.count }}
+              </span>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Status Section -->
+        <li
+          class="flex flex-col bg-yellow-100 p-4 rounded-lg shadow-sm hover:bg-yellow-200 transition-colors duration-300"
+        >
+          <div class="flex items-center space-x-2 mb-2">
+            <i class="text-yellow-600 pi pi-check-circle"></i>
+            <span class="text-yellow-900 font-medium text-[14px]">Status</span>
+          </div>
+          <ul>
+            <li
+              *ngFor="let status of getStatusCounts()"
+              class="flex justify-between items-center pl-6 py-1 hover:bg-yellow-300 rounded-lg transition-colors duration-300"
+            >
+              <span>{{ status.name }}</span>
+              <span
+                class="bg-yellow-600 text-white font-semibold rounded-full px-2 py-1"
+              >
+                {{ status.count }}
+              </span>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Created Date Section -->
+        <li
+          class="flex flex-col bg-red-100 p-4 rounded-lg shadow-sm hover:bg-red-200 transition-colors duration-300"
+        >
+          <div class="flex items-center space-x-2 mb-2">
+            <i class="text-red-600 pi pi-calendar"></i>
+            <span class="text-red-900 font-medium text-[14px]"
+              >Created Date</span
+            >
+          </div>
+          <ul>
+            <li
+              *ngFor="let date of getDateCounts()"
+              class="flex justify-between items-center pl-6 py-1 hover:bg-red-300 rounded-lg transition-colors duration-300"
+            >
+              <span>{{ date.name }}</span>
+              <span
+                class="bg-red-600 text-white font-semibold rounded-full px-2 py-1"
+              >
+                {{ date.count }}
+              </span>
+            </li>
+          </ul>
         </li>
       </ul>
     </aside>
@@ -47,253 +119,155 @@
     <!-- Main Content -->
     <div class="flex-1">
       <div class="card">
-        <p-toolbar styleClass="mb-4 gap-2">
-          <!--  <app-button
-              text="Reject"
-              class="btn-delete"
-              (click)="bulkReject()"
-              ></app-button> -->
-
-          <ng-template pTemplate="right">
-            <app-button
-              (click)="bulkApprove()"
-              text="Add"
-              class="btn-navigate gap-2"
-            ></app-button>
-          </ng-template>
-
+        <!-- Toolbar with Select Dropdowns -->
+        <p-toolbar styleClass="mb-4 gap-5">
           <ng-template pTemplate="left">
-            <div class="flex w-full justify-between gap-4 px-3">
-              <div class="flex gap-4 w-1/1">
-                <!-- <div class="w-full">
-                       <ng-select 
-                        [items]="leaveTypes"
-                        bindLabel="position"
-                        [multiple]="true"
-                        placeholder="Filter by leave type"
-                        [(ngModel)]="selectedLeaveType"
-                        (ngModelChange)="filterBySelectedLeaveType()"
-                      >
-                      </ng-select>
-                    </div>-->
-
-                <div class="w-[100%]">
+            <div class="flex w-full justify-between gap-6 px-3">
+              <div class="flex gap-4 text-[12px] w-1/1">
+                <div class="w-full">
                   <ng-select
-                    [items]="statuses"
-                    bindLabel="position"
+                    [items]="departments"
+                    placeholder="Select Department"
+                    [(ngModel)]="selectedDepartment"
+                    (ngModelChange)="filterDepartment()"
+                    bindLabel="name"
+                    bindValue="id"
+                    style="width: 100%"
                     [multiple]="true"
-                    placeholder="Filter by status"
-                    [(ngModel)]="selectedStatus"
-                    (ngModelChange)="filterBySelectedStatus()"
                   >
                   </ng-select>
                 </div>
-              </div>
-              <div class="search-bar w-[100%]">
-                <input
-                  type="text"
-                  placeholder="Search"
-                  [(ngModel)]="searchTerm"
-                  (ngModelChange)="filterCandidates()"
-                  class="editInput w-full"
-                />
+                <div class="w-full">
+                  <ng-select
+                    [items]="levels"
+                    placeholder="Select Level"
+                    [(ngModel)]="selectedLevel"
+                    (ngModelChange)="filterLevel()"
+                    bindLabel="name"
+                    bindValue="id"
+                    style="width: 100%"
+                    [multiple]="true"
+                  >
+                  </ng-select>
+                </div>
               </div>
             </div>
           </ng-template>
         </p-toolbar>
 
-        <p-table
-          [value]="filteredCandidates"
-          [paginator]="true"
-          [(selection)]="selectedEmployees"
-          styleClass=""
-          [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '1000px' }"
-          [rows]="10"
-        >
-          <ng-template pTemplate="header">
-            <tr>
-              <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
-              <th class="table-item" pSortableColumn="Employee">
-                Appraisal Cycle Name
-              </th>
-              <!--  <th class="table-item" pSortableColumn="Date">From</th>
-              <th class="table-item" pSortableColumn="LeaveType">To</th>
-             <th class="table-item" pSortableColumn="NetLeaveBalance">Due</th> -->
-              <th class="table-item" pSortableColumn="RequestedDuration">
-                Due date
-              </th>
-              <th class="table-item" pSortableColumn="Status">Status</th>
-
-              <th class="table-item">Action</th>
-            </tr>
-          </ng-template>
-
-          <ng-template pTemplate="body" let-employee let-i="rowIndex">
-            <tr class="p-table-row">
-              <td><p-tableCheckbox [value]="employee" /></td>
-              <td class="table-item">{{ employee.Employee }}</td>
-              <td class="table-item">{{ employee.Date }}</td>
-              <td class="table-item">{{ employee.LeaveType }}</td>
-              <td class="table-item">{{ employee.NetLeaveBalance }}</td>
-              <td class="table-item">{{ employee.RequestedDuration }}</td>
-              <td class="table-item">{{ employee.Status }}</td>
-              <td class="actions table-item">
-                <i
-                  class="pi pi-ellipsis-v table-item"
-                  (click)="op.toggle($event)"
-                ></i>
-                <p-overlayPanel #op ngClass="padding: 0;">
-                  <div>
-                    <li
-                      class="table-item-panel"
-                      (click)="viewEmployee(employee, op)"
-                    >
-                      <i class="pi pi-eye table-item me-2"></i> View
-                    </li>
-                    <li
-                      class="table-item-panel"
-                      *ngIf="employee.Status.includes('Pending Approval')"
-                      (click)="openAcceptRejectModal(employee)"
-                    >
-                      <i class="pi pi-download table-item me-2"></i>
-                      Approve/Reject
-                    </li>
-                    <!-- <li class="table-item-panel"> <i class="pi pi-trash table-item me-2"></i> Reject</li> -->
-                  </div>
-                </p-overlayPanel>
-              </td>
-            </tr>
-          </ng-template>
-
-          <ng-template pTemplate="emptymessage">
-            <tr>
-              <td colspan="8" class="text-center text-[14px] py-4">
-                No request made yet
-              </td>
-            </tr>
-          </ng-template>
-        </p-table>
-      </div>
-
-      <app-modal *ngIf="acceptModal" (close)="closeModal()">
-        <div class="flex justify-between items-center">
-          <p class="mb-3 text-gray-800 pt-2 text-3xl">Comment</p>
-          <span (click)="closeModal()" class="cursor-pointer">x</span>
-        </div>
-        <textarea
-          name="comment"
-          id="comment"
-          class="border-0 outline-none border-b-2 placeholder:text-gray-400 w-full"
-          rows="5"
-          cols="50"
-          placeholder="enter message here"
-          [(ngModel)]="comment"
-        ></textarea>
-
-        <div class="flex justify-around my-6 px-3 items-center w-full">
-          <button
-            class="bg-customGreen text-white rounded-xl w-[40%] py-4 hover:bg-customGreenHover"
-            (click)="acceptLeave()"
-          >
-            Approve
-          </button>
-          <button
-            class="bg-red-600 hover:bg-red-400 text-white rounded-xl w-[40%] py-4"
-            (click)="rejectLeave()"
-          >
-            Reject
-          </button>
-        </div>
-      </app-modal>
-
-      <app-modal *ngIf="openViewEmployee" (close)="openViewEmployee = false">
-        <div class="flex gap-2 items-center mb-2">
-          <img
-            src="https://cdn.vectorstock.com/i/500p/53/42/user-member-avatar-face-profile-icon-vector-22965342.jpg"
-            alt=""
-            class="w-28 h-28"
-          />
-          <p class="font-bold text-2xl text-gray-700">
-            {{ employeeInView.Employee }}
-          </p>
-        </div>
-        <p>
-          Requested For:
-          <span class="ml-2 mb-5 pb-2 text-wrap">{{
-            employeeInView.Date
-          }}</span>
-        </p>
-        <p>
-          Duration:
-          <span class="ml-2 mb-5 pb-2 text-wrap">
-            {{ employeeInView.RequestedDuration }}</span
-          >
-        </p>
-        <p>
-          Applied On:
-          <span class="ml-2 mb-5 pb-2 text-wrap">{{
-            employeeInView.AppliedOn
-          }}</span>
-        </p>
-        <p>
-          Leave Type:
-          <span class="ml-2 mb-5 pb-2 text-wrap">{{
-            employeeInView.LeaveType
-          }}</span>
-        </p>
-        <p
-          *ngIf="
-            employeeInView.Attachment &&
-            employeeInView.Attachment.fileName.length > 0
-          "
-        >
-          Attachement:
-          <button
-            text="Download Resume"
-            class="text-customGreen font-bold ml-2"
-            (click)="downloadAttachment(employeeInView)"
-          >
-            <i class="pi pi-download resume me-2 text-xl"></i> Download
-            Attachment
-          </button>
-        </p>
-        <p
-          *ngIf="employeeInView.Attachment == null"
-          (click)="downloadAttachment(employeeInView)"
-        >
-          Attachement: No attachment attached
-        </p>
-
-        <p class="w-[30vw]">
-          Reason:
-          <span class="ml-2 mb-5 pb-2 text-wrap">
-            {{ employeeInView.RequestComment }}
-          </span>
-        </p>
-
-        <p
-          class="w-[30vw]"
-          *ngIf="!employeeInView.Status.includes('Pending Approval')"
-        >
-          Review Comment:
-          <span class="ml-2 mb-5 pb-2 text-wrap">
-            {{ employeeInView.ApprovalComment }}
-          </span>
-        </p>
-
+        <!-- Display Question Count -->
         <div
-          *ngIf="employeeInView.Status.includes('Pending Approval')"
-          class="flex justify-around my-3 px-3 items-center w-full"
+          *ngIf="selectedDepartment && selectedLevel && selectedAppraisal"
+          class="mt-4 bg-white p-6 rounded-lg shadow-md"
         >
-          <button
-            class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl w-[40%] py-4"
-            (click)="openAcceptRejectModal(employeeInView)"
+          <p class="text-gray-700 text-lg">
+            Number of Questions for
+            <span class="font-semibold">{{ selectedDepartment }}</span> -
+            <span class="font-semibold">{{ selectedLevel }}</span
+            >:
+            <span class="font-medium text-blue-600">Appraisals</span>
+          </p>
+
+          <!-- Instruction Section -->
+          <div
+            *ngIf="selectedAppraisal.instructionText"
+            class="mb-6 bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500"
           >
-            Approve/Reject
-          </button>
+            <h3 class="font-semibold text-blue-800 mb-2">Instructions</h3>
+            <p class="text-blue-600 text-sm">
+              {{ selectedAppraisal.instructionText }}
+            </p>
+          </div>
+
+          <!-- Sections -->
+          <div
+            *ngFor="
+              let section of selectedAppraisal.sections;
+              let sectionIndex = index
+            "
+            class="mb-6"
+          >
+            <h3 class="font-bold text-lg text-gray-800 mb-3">
+              Section {{ getSectionLabel(sectionIndex) }}:
+              {{ section.sectionTitle }}
+            </h3>
+            <div
+              *ngFor="
+                let question of section.questions;
+                let questionIndex = index
+              "
+              class="mb-2"
+            >
+              <p class="text-gray-700">
+                <span class="font-semibold text-blue-700"
+                  >{{ questionIndex + 1 }}.</span
+                >
+                {{ question.text }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Display User Selection After Showing Sections -->
+          <div *ngIf="selectedAppraisal.sections.length" class="mt-6">
+            <h3 class="font-bold text-lg text-gray-800 mb-3">
+              Select Users to Send Appraisal
+            </h3>
+
+            <ng-select
+              [(ngModel)]="selectedUsers"
+              [items]="getFilteredUsers()"
+              bindLabel="name"
+              bindValue="id"
+              [multiple]="true"
+              placeholder="Select users"
+              class="mb-4"
+            >
+              <ng-template ng-label-tmp let-item="item">
+                {{ item.name }} ({{ item.department }} - {{ item.level }})
+              </ng-template>
+              <ng-template ng-option-tmp let-item="item">
+                {{ item.name }} - {{ item.email }}
+              </ng-template>
+            </ng-select>
+
+            <p-button
+              label="Send Appraisal"
+              icon="pi pi-send"
+              class="p-button-primary"
+              (click)="sendAppraisal()"
+              [disabled]="!selectedUsers.length"
+            ></p-button>
+          </div>
         </div>
-      </app-modal>
-      <p-toast position="top-right" key="tl" />
+
+        <!-- User Selection Section -->
+        <div *ngIf="selectedAppraisal?.sections?.length" class="mt-6">
+          <h3 class="font-bold text-lg mb-3">Select Users to Send Appraisal</h3>
+          <ng-select
+            [(ngModel)]="selectedUsers"
+            [items]="getFilteredUsers()"
+            bindLabel="name"
+            bindValue="id"
+            [multiple]="true"
+            placeholder="Select users"
+            class="mb-4"
+          >
+            <ng-template ng-label-tmp let-item="item">
+              {{ item.name }} ({{ item.department }} - {{ item.level }})
+            </ng-template>
+            <ng-template ng-option-tmp let-item="item">
+              {{ item.name }} - {{ item.email }}
+            </ng-template>
+          </ng-select>
+
+          <p-button
+            label="Send Appraisal"
+            icon="pi pi-send"
+            (click)="sendAppraisal()"
+            [disabled]="!selectedUsers.length"
+          ></p-button>
+        </div>
+      </div>
     </div>
   </div>
 </body>

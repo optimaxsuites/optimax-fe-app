@@ -1,381 +1,228 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { DataService } from '../../../service/data.service';
+
+interface Section {
+  id: string;
+  sectionTitle: string;
+  questions: Question[];
+}
+
+interface Question {
+  id: string;
+  text: string;
+}
+
+interface AppraisalQuestionDTO {
+  id: string;
+  department: string;
+  level: string;
+  sections: Section[];
+  instructionText: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  department: string;
+  level: string;
+}
 
 @Component({
   selector: 'app-appraisalcycle',
   templateUrl: './appraisalcycle.component.html',
   styleUrl: './appraisalcycle.component.scss',
-  providers: [MessageService],
+  providers: [MessageService, ConfirmationService],
 })
-export class AppraisalcycleComponent {
-  statuses: string[] = ['Pending Approval', 'Approved', 'Rejected'];
-  leaveTypes: string[] = [
-    'Annual Leave',
-    'Sick Leave',
-    'Maternity Leave',
-    'Paternity Leave',
-    'Vacation Leave',
-    'Bereavement Leave',
-    'Study Leave',
-    'Unpaid Leave',
-    'Emergency Leave',
-    'Compassionate Leave',
-    'Sabbatical Leave',
-    'Public Holiday Leave',
-    'Medical Leave',
-    'Parental Leave',
-    'Compensatory Leave (Comp Time)',
-    'Marriage Leave',
-    'Religious Leave',
-    'Volunteer Leave',
-  ];
-  selectedLeaveType: string[] = [];
-  selectedStatus: string[] = [];
-  acceptModal = false;
-  selectedEmployee: any = null;
-  searchTerm: string = '';
-  // employee: any[] = [
-  //     {
-  //         Employee: "Rissa Quan",
-  //         Date: "2023-06-04 to 2023-06-10",
-  //         LeaveType: "Annual Leave",
-  //         NetLeaveBalance: "5.00 day(s)",
-  //         RequestedDuration: "3.00 day(s)",
-  //         Status: "Pending Approval (3.00 day(s))",
-  //         RequestComment: '',
-  //         ApprovalComment: "",
-  //         AppliedOn: "2023-05-08, 10:27 AM",
-  //         Id: this.token.getRandomToken()
-  //     },
-  //     {
-  //         Employee: "Susan Williams",
-  //         Date: "2023-06-04 to 2023-06-08",
-  //         LeaveType: "Vacation Leave",
-  //         NetLeaveBalance: "8.00 day(s)",
-  //         RequestedDuration: "4.00 day(s)",
-  //         Status: "Pending Approval (4.00 day(s))",
-  //         RequestComment: '',
-  //         AppliedOn: "2023-05-08, 10:27 AM",
-  //         ApprovalComment: "",
-  //         Id: this.token.getRandomToken()
-  //     },
-  //     {
-  //         Employee: "Anthony Davies",
-  //         Date: "2023-06-03 to 2023-06-07",
-  //         LeaveType: "Annual Leave",
-  //         NetLeaveBalance: "10.00 day(s)",
-  //         RequestedDuration: "2.00 day(s)",
-  //         Status: "Approved",
-  //         RequestComment: '',
-  //         AppliedOn: "2023-05-08, 10:27 AM",
-  //         ApprovalComment: "",
-  //         Id: this.token.getRandomToken()
-  //     },
-  //     {
-  //         Employee: "Kevin Scott",
-  //         Date: "2023-06-02 to 2023-06-05",
-  //         LeaveType: "Vacation Leave",
-  //         NetLeaveBalance: "4.00 day(s)",
-  //         RequestedDuration: "1.00 day(s)",
-  //         Status: "Pending Approval (1.00 day(s))",
-  //         AppliedOn: "2023-05-08, 10:27 AM",
-  //         RequestComment: '',
-  //         ApprovalComment: "",
-  //         Id: this.token.getRandomToken()
-  //     },
-  //     {
-  //         Employee: "Christopher Morgan",
-  //         Date: "2023-06-02 to 2023-06-06",
-  //         LeaveType: "Annual Leave",
-  //         NetLeaveBalance: "6.00 day(s)",
-  //         RequestedDuration: "2.00 day(s)",
-  //         Status: "Pending Approval (2.00 day(s))",
-  //         RequestComment: '',
-  //         AppliedOn: "2023-05-08, 10:27 AM",
-  //         ApprovalComment: "",
-  //         Id: this.token.getRandomToken()
-  //     },
-  //     {
-  //         Employee: "Emma Johnson",
-  //         Date: "2023-06-01 to 2023-06-05",
-  //         LeaveType: "Vacation Leave",
-  //         NetLeaveBalance: "3.00 day(s)",
-  //         RequestedDuration: "2.00 day(s)",
-  //         Status: "Approved",
-  //         RequestComment: '',
-  //         AppliedOn: "2023-05-08, 10:27 AM",
-  //         ApprovalComment: "",
-  //         Id: this.token.getRandomToken()
-  //     },
-  //     {
-  //         Employee: "Lucas Brown",
-  //         Date: "2023-06-05 to 2023-06-09",
-  //         LeaveType: "Annual Leave",
-  //         AppliedOn: "2023-05-08, 10:27 AM",
-  //         NetLeaveBalance: "7.00 day(s)",
-  //         RequestedDuration: "4.00 day(s)",
-  //         Status: "Pending Approval (4.00 day(s))",
-  //         RequestComment: '',
-  //         ApprovalComment: "",
-  //         Id: this.token.getRandomToken()
-  //     },
-  //     {
-  //         Employee: "Mia Davis",
-  //         Date: "2023-06-03 to 2023-06-08",
-  //         LeaveType: "Vacation Leave",
-  //         NetLeaveBalance: "2.00 day(s)",
-  //         RequestedDuration: "1.00 day(s)",
-  //         Status: "Pending Approval (1.00 day(s))",
-  //         AppliedOn: "2023-05-08, 10:27 AM",
-  //         RequestComment: '',
-  //         ApprovalComment: "",
-  //         Id: this.token.getRandomToken()
-  //     },
-  //     {
-  //         Employee: "Oliver Martinez",
-  //         Date: "2023-06-04 to 2023-06-10",
-  //         LeaveType: "Annual Leave",
-  //         NetLeaveBalance: "9.00 day(s)",
-  //         RequestedDuration: "3.00 day(s)",
-  //         Status: "Rejected",
-  //         AppliedOn: "2023-05-08, 10:27 AM",
-  //         RequestComment: '',
-  //         ApprovalComment: "",
-  //         Id: this.token.getRandomToken()
+export class AppraisalcycleComponent implements OnInit {
+  departments: any[] = [];
+  levels: any[] = [];
 
-  //     },
-  //     {
-  //         Employee: "Sophia Garcia",
-  //         Date: "2023-06-01 to 2023-06-04",
-  //         LeaveType: "Vacation Leave",
-  //         NetLeaveBalance: "5.00 day(s)",
-  //         RequestedDuration: "2.00 day(s)",
-  //         Status: "Pending Approval (2.00 day(s))",
-  //         RequestComment: '',
-  //         AppliedOn: "2023-05-08, 10:27 AM",
-  //         ApprovalComment: "",
-  //         Id: this.token.getRandomToken()
-  //     }
-  // ];
-  comment: string = '';
-  employeeInView: any;
-  openViewEmployee: boolean = false;
-  savedEmployees: any[] = [];
-  filteredCandidates: any[] = [];
+  questionListArray: AppraisalQuestionDTO[] = [];
+  selectedAppraisal: AppraisalQuestionDTO | null = null;
+  selectedDepartment: string | null = null;
+  selectedLevel: string | null = null;
+  users: User[] = [
+    {
+      id: '1',
+      name: 'John Doe',
+      email: 'john@example.com',
+      department: 'IT',
+      level: 'Mid Level 1',
+    },
+    {
+      id: '2',
+      name: 'Jane Smith',
+      email: 'jane@example.com',
+      department: 'HR',
+      level: 'Senior Level 1',
+    },
+  ];
+  selectedUsers: User[] = [];
+  instructionDisplayed: boolean = false;
+  instructionText: string = '';
 
   constructor(
+    private randomTokenService: RandomTokenService,
     private messageService: MessageService,
-    private token: RandomTokenService
+    private confirmationService: ConfirmationService,
+    private dataService: DataService
   ) {}
+
   ngOnInit() {
-    this.savedEmployees = JSON.parse(
-      localStorage.getItem('leaveRequest') || '[]'
-    );
-    this.filteredCandidates = [...this.savedEmployees];
-    this.sortByStatus();
-  }
-  sortByStatus() {
-    this.filteredCandidates.sort((a, b) => {
-      const statusA = a.Status.includes('Pending Approval') ? 0 : 1;
-      const statusB = b.Status.includes('Pending Approval') ? 0 : 1;
-
-      if (statusA !== statusB) {
-        return statusA - statusB;
-      }
-
-      const dateA = new Date(a.AppliedOn);
-      const dateB = new Date(b.AppliedOn);
-
-      return dateB.getTime() - dateA.getTime();
+    this.dataService.getDepartment().subscribe({
+      next: (data) => {
+        this.departments = data;
+      },
+      error: (err) => {
+        console.log(err);
+      },
     });
-  }
 
-  filterCandidates() {
-    this.filteredCandidates = this.savedEmployees.filter(
-      (employee: { Employee: string }) =>
-        employee.Employee.toLowerCase().includes(this.searchTerm.toLowerCase())
-    );
-    this.filteredCandidates = this.savedEmployees.filter((employee) => {
-      const matchesSearchTerm = employee.Employee.toLowerCase().includes(
-        this.searchTerm.toLowerCase()
-      );
-      const matchesLeaveType =
-        this.selectedLeaveType.length === 0 ||
-        this.selectedLeaveType.includes(employee.LeaveType);
-      const matchesStatus =
-        this.selectedStatus.length === 0 ||
-        this.selectedStatus.includes(employee.Status);
-      return matchesSearchTerm && matchesLeaveType && matchesStatus;
+    this.dataService.getAllLevels().subscribe({
+      next: (data) => {
+        this.levels = data;
+      },
+      error: (err) => {
+        console.log(err);
+      },
     });
-    this.sortByStatus();
+    this.loadQuestions();
+    this.selectedAppraisal = this.getAppraisalFromStorage();
   }
-  filterBySelectedStatus() {
-    if (this.selectedStatus.length == 0) {
-      this.filteredCandidates = [...this.savedEmployees];
-    } else {
-      this.filteredCandidates = this.savedEmployees.filter(
-        (employee: { Status: string }) =>
-          this.selectedStatus.some((status) =>
-            employee.Status.toLowerCase().includes(status.toLowerCase())
-          )
+
+  loadQuestions() {
+    const savedQuestions = localStorage.getItem('appraisalQuestions');
+    console.log(savedQuestions);
+    if (savedQuestions) {
+      this.questionListArray = JSON.parse(savedQuestions);
+    }
+
+    const instructionState = localStorage.getItem('instructionDisplayed');
+    const savedInstructionText = localStorage.getItem('instructionText');
+    if (instructionState === 'true' && savedInstructionText) {
+      this.instructionDisplayed = true;
+      this.instructionText = savedInstructionText;
+    }
+  }
+
+  getSectionLabel(index: number): string {
+    return String.fromCharCode(65 + index);
+  }
+
+  getFilteredSidebarData() {
+    if (this.selectedDepartment && this.selectedLevel) {
+      return this.questionListArray.filter(
+        (question) =>
+          question.department === this.selectedDepartment &&
+          question.level === this.selectedLevel
       );
     }
-
-    if (this.searchTerm && this.searchTerm.trim() !== '') {
-      this.filterCandidates();
-    }
-    this.sortByStatus();
+    return this.questionListArray;
   }
 
-  filterBySelectedLeaveType() {
-    if (this.selectedLeaveType.length == 0) {
-      this.filteredCandidates = [...this.savedEmployees];
-    } else {
-      this.filteredCandidates = this.savedEmployees.filter(
-        (employee: { LeaveType: string }) =>
-          this.selectedLeaveType.some((status) =>
-            employee.LeaveType.toLowerCase().includes(status.toLowerCase())
-          )
-      );
-    }
-
-    if (this.searchTerm && this.searchTerm.trim() !== '') {
-      this.filterCandidates();
-    }
-    this.sortByStatus();
-  }
-  openAcceptRejectModal(employee: any) {
-    this.openViewEmployee = false;
-    this.selectedEmployee = employee;
-    this.acceptModal = true;
+  view(department: string, level: string) {
+    const existingQuestions = this.getQuestionsForDepartmentAndLevel(
+      department,
+      level
+    );
+    this.selectedAppraisal =
+      existingQuestions.length > 0 ? existingQuestions[0] : null;
   }
 
-  acceptLeave() {
-    if (this.selectedEmployee) {
-      this.selectedEmployee.Status = 'Approved';
-
-      this.selectedEmployee.ApprovalComment = this.comment
-        ? this.comment
-        : 'No comment';
-
-      this.comment = '';
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Leave',
-        detail: `${this.selectedEmployee?.Employee}'s leave has been accepted`,
-        key: 'tl',
-        life: 3000,
-      });
-
-      this.closeModal();
-      this.updateLocalStorage();
-
-      this.sortByStatus();
-    }
+  closeView() {
+    this.selectedAppraisal = null;
   }
 
-  rejectLeave() {
-    if (this.selectedEmployee) {
-      this.selectedEmployee.Status = 'Rejected';
+  getQuestionsForDepartmentAndLevel(
+    department: string,
+    level: string
+  ): AppraisalQuestionDTO[] {
+    return this.questionListArray.filter(
+      (question) =>
+        question.department === department && question.level === level
+    );
+  }
 
-      this.selectedEmployee.ApprovalComment = this.comment
-        ? this.comment
-        : 'No comment';
-
-      this.comment = '';
+  sendAppraisal() {
+    if (!this.selectedAppraisal || this.selectedUsers.length === 0) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Leave',
-        detail: `${this.selectedEmployee?.Employee}'s leave has been rejected`,
-        key: 'tl',
-        life: 3000,
+        summary: 'Invalid Selection',
+        detail: 'Please select an appraisal and users to send',
       });
-
-      this.closeModal();
-      this.updateLocalStorage();
-
-      this.sortByStatus();
+      return;
     }
-  }
-
-  closeModal() {
-    this.acceptModal = false;
-    this.selectedEmployee = null;
-  }
-
-  selectedEmployees: any[] = [];
-
-  bulkApprove() {
-    if (this.selectedEmployees.length == 0) return;
-
-    this.selectedEmployees.forEach((employee) => {
-      if (employee.Status.includes('Pending Approval')) {
-        employee.Status = 'Approved';
-      }
+    const token = this.generateToken();
+    this.selectedUsers.forEach((user) => {
+      console.log(`Sending appraisal to ${user.name} with token ${token}`);
     });
-
     this.messageService.add({
       severity: 'success',
-      summary: 'Leave',
-      detail: `Selected leave(s) has been accepted`,
-      key: 'tl',
-      life: 3000,
+      summary: 'Appraisal Sent',
+      detail: `Appraisal sent to ${this.selectedUsers.length} users`,
     });
-    this.updateLocalStorage();
-
-    this.selectedEmployees = [];
-    this.sortByStatus();
   }
 
-  bulkReject() {
-    if (this.selectedEmployees.length == 0) return;
-
-    this.selectedEmployees.forEach((employee) => {
-      if (employee.Status.includes('Pending Approval')) {
-        employee.Status = 'Rejected';
-      }
-    });
-    this.updateLocalStorage();
-    this.messageService.add({
-      severity: 'warn',
-      summary: 'Leave',
-      detail: `Selected leave(s) has been rejected`,
-      key: 'tl',
-      life: 3000,
-    });
-    this.selectedEmployees = [];
-    this.sortByStatus();
-  }
-
-  updateLocalStorage() {
-    localStorage.setItem(
-      'leaveRequest',
-      JSON.stringify(this.filteredCandidates)
+  getFilteredUsers(): User[] {
+    if (!this.selectedAppraisal) return this.users;
+    return this.users.filter(
+      (user) =>
+        user.department === this.selectedAppraisal?.department &&
+        user.level === this.selectedAppraisal?.level
     );
   }
 
-  viewEmployee(employee: any, op: any) {
-    this.employeeInView = employee;
-    console.log(employee);
-    this.openViewEmployee = true;
-    op.hide();
+  generateToken(): string {
+    return Math.random().toString(36).substr(2, 9);
   }
 
-  downloadAttachment(leaveRequest: any) {
-    if (leaveRequest.Attachment != 'Null') {
-      const link = document.createElement('a');
-      link.href = leaveRequest.Attachment.fileData;
-      link.download = leaveRequest.Attachment.fileName;
-      link.click();
+  getAppraisalFromStorage(): AppraisalQuestionDTO | null {
+    const storedAppraisal = localStorage.getItem('selectedAppraisal');
+    return storedAppraisal ? JSON.parse(storedAppraisal) : null;
+  }
+
+  filterDepartment() {
+    if (this.selectedDepartment && this.selectedLevel) {
+      this.view(this.selectedDepartment, this.selectedLevel);
     } else {
-      this.messageService.add({
-        severity: 'info',
-        summary: 'No Attachment',
-        detail: 'No file attached to this request.',
-        key: 'tl',
-        life: 3000,
-      });
+      this.selectedLevel = null;
     }
+  }
+
+  filterLevel() {
+    if (this.selectedDepartment && this.selectedLevel) {
+      this.view(this.selectedDepartment, this.selectedLevel);
+    }
+  }
+
+  getDepartmentCounts() {
+    return this.groupBy(this.questionListArray, 'department');
+  }
+
+  getLevelCounts() {
+    return this.groupBy(this.questionListArray, 'level');
+  }
+
+  getStatusCounts() {
+    return this.groupBy(this.questionListArray, 'status');
+  }
+
+  getDateCounts() {
+    return this.groupBy(this.questionListArray, (q) =>
+      new Date(q.createdDate).toDateString()
+    );
+  }
+
+  groupBy(array: any[], key: string | ((item: any) => string)) {
+    const map = new Map<string, number>();
+    array.forEach((item) => {
+      const keyValue = typeof key === 'function' ? key(item) : item[key];
+      map.set(keyValue, (map.get(keyValue) || 0) + 1);
+    });
+
+    return Array.from(map, ([name, count]) => ({ name, count }));
   }
 }

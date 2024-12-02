@@ -30,9 +30,25 @@ import { RippleModule } from 'primeng/ripple';
 import { DropdownModule } from 'primeng/dropdown';
 import { TagModule } from 'primeng/tag';
 
-
 import { NgSelectComponent, NgSelectModule } from '@ng-select/ng-select';
 import { FullCalendarModule } from '@fullcalendar/angular';
+
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
+import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatTabGroup, MatTabsModule } from '@angular/material/tabs';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatRadioModule } from '@angular/material/radio';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatTableModule } from '@angular/material/table';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { AppHrRoutingModule } from './app-routing.module';
 import { AppHrComponent } from './app.component';
@@ -102,7 +118,6 @@ import { MasterComponent } from './master.component';
 import { RouterModule } from '@angular/router';
 import { SidebarComponent } from './ui/view/sidebar/sidebar.component';
 
-
 @NgModule({
   declarations: [
     AppHrComponent,
@@ -163,7 +178,6 @@ import { SidebarComponent } from './ui/view/sidebar/sidebar.component';
     EditableLabelComponent,
     DropdownComponent,
     MasterComponent,
-
   ],
   imports: [
     // BrowserModule,
@@ -195,13 +209,31 @@ import { SidebarComponent } from './ui/view/sidebar/sidebar.component';
     MessageModule,
     RippleModule,
     TableModule,
+    MatExpansionModule,
+    MatRadioModule,
+    MatPaginatorModule,
+    MatTableModule,
+    MatRadioModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule,
+    MatTabsModule,
+    MatDatepickerModule,
+    MatSelectModule,
+    MatTooltipModule,
+    MatButtonModule,
+    MatDividerModule,
+    MatTooltip,
+    MatTabGroup,
+    MatMenuModule,
     PasswordModule,
     ButtonModule,
     NgSelectModule,
     FullCalendarModule,
     LargeSideModalComponent,
-    FooterComponent ,
-],
+    FooterComponent,
+  ],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,

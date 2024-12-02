@@ -7,6 +7,7 @@ import { RandomTokenService } from '../../../shared-component/service/random-tok
 import { environment } from '../../../shared-component/service/environments/environment';
 import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
 import { DataService } from '../../../service/data.service';
+import { EmployeeService } from '../../../service/employee.service';
 
 @Component({
   selector: 'app-admin-creation-form',
@@ -35,6 +36,15 @@ export class AdminCreationFormComponent {
   salaryStructure: any = [];
   departments: any[] = [];
   gender: any[] = []
+  levels: any[] = []
+  leaves: any[] = []
+  isAmountTouched: boolean = false
+  selectedLeaves: {
+    name: number,
+    amount: number
+  }[] = []
+
+
   currentTab = 1;
   tabs = ["Employment Information", "Employment Status", "Leave", "Access", "Summary"]
    maritalStatuses = [
@@ -106,13 +116,14 @@ export class AdminCreationFormComponent {
   userInfoRegData: any[] = [];
   userRegData: any = { };
 totalLeaveDays: number = 0;
+  errorMessage: string = "";
   constructor(
     private fb: FormBuilder,  
     private authenticationService: AuthenticationService,
     private messageService: MessageService,
     private router: Router, 
     private token: RandomTokenService, 
-    private sanitizer: DomSanitizer,
+    private employeeService: EmployeeService,
     private dataService: DataService
   ) {  }
 
@@ -129,6 +140,18 @@ totalLeaveDays: number = 0;
        value: g.id,
      }));
    });
+   this.dataService.getAllLevels().subscribe(level => {
+    this.levels = level.map((g: any) => ({
+     label: g.name,
+     value: g.id,
+   }));
+ });
+ this.dataService.getLeaveTypes().subscribe(leave => {
+  this.leaves = leave.map((g: any) => ({
+   label: g.name,
+   value: g.id,
+ }));
+});
    this.dataService.getJobType().subscribe(jobType => {
     this.employments = jobType.map((j: any) => ({
      label: j.name,
@@ -147,12 +170,12 @@ totalLeaveDays: number = 0;
     this.basicForm = this.fb.group({
       firstName: ['',Validators.required ],
       lastName: ['',Validators.required ],
-      email: [ "employee@gmail.com", [Validators.required, Validators.email]],
+      email: [ "", [Validators.required, Validators.email]],
       workemail:[ "", [Validators.required, Validators.email]],
       title: ["", [Validators.required]],
       department: ["", [Validators.required]],
-      level: ["", [Validators.required]],
-      employmentType: ["", [Validators.required]],
+      level: [0, [Validators.required]],
+      employmentType: [0, [Validators.required]],
       supervisor: ["", [Validators.required]],
     });
 
@@ -168,11 +191,9 @@ totalLeaveDays: number = 0;
 
     this.leaveForm = this.fb.group({
       // leaveDays: [null, Validators.required],
-      annual: [0, [ Validators.pattern("^[0-9]*$"), Validators.min(0)]],
-      sick: [0, [ Validators.pattern("^[0-9]*$"), Validators.min(0)]],
-      holiday: [0, [ Validators.pattern("^[0-9]*$"), Validators.min(0)]],
-      bereavement: [0, [ Validators.pattern("^[0-9]*$"), Validators.min(0)]],
-      casual: [0, [ Validators.pattern("^[0-9]*$"), Validators.min(0)]]
+      leaveType: [null, [Validators.pattern("^[0-9]*$"), Validators.min(1)]],
+      leaveAmount: [null, [Validators.pattern("^[0-9]*$"), Validators.min(1)]],
+    
     });
 
     this.guarantorForm = this.fb.group({
@@ -209,7 +230,7 @@ totalLeaveDays: number = 0;
   }
 
   calculateTotalLeaveDays(): void {
-    this.totalLeaveDays = Object.values(this.leaveForm.value).reduce((sum: number, value) => sum + Number(value || 0), 0);
+    this.totalLeaveDays = Object.values(this.selectedLeaves).reduce((sum: number, leave) => sum + Number(leave.amount || 0), 0);
   }
 private setProbationValidators(): void {
   const isProbation = this.employeeForm.get('isProbation')?.value;
@@ -303,43 +324,49 @@ private setProbationValidators(): void {
   const employeesFromStorage = localStorage.getItem("employeesList");
   const employeesList = employeesFromStorage ? JSON.parse(employeesFromStorage) : [];
   const newEmployee = {
-    id: this.token.getRandomToken(),  // Generate a random ID for the employee
+ 
     firstName: this.basicForm.get('firstName')?.value,
     lastName: this.basicForm.get('lastName')?.value,
     email: this.basicForm.get('email')?.value,
-    workemail: this.basicForm.get('workemail')?.value,
+    workEmail: this.basicForm.get('workemail')?.value,
     jobTitle: this.basicForm.get('title')?.value,
-    department: this.basicForm.get('department')?.value,
+    departmentId: this.basicForm.get('department')?.value,
     level: this.basicForm.get('level')?.value,
     employmentType: this.basicForm.get('employmentType')?.value,
     supervisor: this.basicForm.get('supervisor')?.value,
 
     // Employment Information
-    status: this.employeeForm.get('status')?.value,
-    startDate: this.employeeForm.get('startDate')?.value,
-    endDate: this.employeeForm.get('endDate')?.value,
-    isProbation: this.employeeForm.get('isProbation')?.value,
+    employeeStatus: this.employeeForm.get('status')?.value,
+    employementStartDate: this.employeeForm.get('startDate')?.value,
+    employementEndDate: this.employeeForm.get('endDate')?.value,
+    onProbation: this.employeeForm.get('isProbation')?.value,
     probationStartDate: this.employeeForm.get('probationStartDate')?.value,
     probationEndDate: this.employeeForm.get('probationEndDate')?.value,
     appraisalDueDate: this.employeeForm.get('appraisalDueDate')?.value,
 
     // Leave Information
-    leaveDays: this.leaveForm.get('leaveDays')?.value,
+    // leaveDays: this.leaveForm.get('leaveDays')?.value,
 
     // Access Information
-    employeePortalAccess: this.guarantorForm.get('employeePortalAccess')?.value,
-    emailAccess: this.guarantorForm.get('emailAccess')?.value,
-    hrSystemAccess: this.guarantorForm.get('hrSystemAccess')?.value,
-    projectManagementAccess: this.guarantorForm.get('projectManagementAccess')?.value,
-    buildingAccess: this.guarantorForm.get('buildingAccess')?.value,
-    managerialAccess: this.guarantorForm.get('managerialAccess')?.value,
-    adminAccess: this.guarantorForm.get('adminAccess')?.value,
+    // employeePortalAccess: this.guarantorForm.get('employeePortalAccess')?.value,
+    // emailAccess: this.guarantorForm.get('emailAccess')?.value,
+    // hrSystemAccess: this.guarantorForm.get('hrSystemAccess')?.value,
+    // projectManagementAccess: this.guarantorForm.get('projectManagementAccess')?.value,
+    // buildingAccess: this.guarantorForm.get('buildingAccess')?.value,
+    // managerialAccess: this.guarantorForm.get('managerialAccess')?.value,
+    // adminAccess: this.guarantorForm.get('adminAccess')?.value,
    
   }
-  employeesList.push(newEmployee);
-  localStorage.setItem("employeesList", JSON.stringify(employeesList));
+
+  this.employeeService.addEmployee(newEmployee).subscribe(
+   { next: (data: any) => {
+    console.log(data)
+   }}
+  )
+  // employeesList.push(newEmployee);
+  // localStorage.setItem("employeesList", JSON.stringify(employeesList));
   if (shouldRedirect) {
-  this.router.navigate([`/user/onboarding/${newEmployee.id}/wer23456fghi367ghj`]);
+  // this.router.navigate([`/user/onboarding/${newEmployee.id}/wer23456fghi367ghj`]);
   }
   this.loading = false;
   this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Employee added successfully!', key: 'tl', life: 3000  }); 
@@ -473,4 +500,52 @@ console.log(this.guarantorForm.value)
   
     return '';
   }
+
+  addLeave(){
+    this.isAmountTouched = true
+    const leaveType = this.leaveForm.value.leaveType;
+    const leaveAmount = this.leaveForm.value.leaveAmount;
+    if(  this.leaveForm.valid && 
+      typeof leaveAmount === 'number' && 
+      !isNaN(leaveAmount)){
+      this.selectedLeaves.push({
+        name: leaveType,
+        amount: leaveAmount
+      })
+      this.calculateTotalLeaveDays()
+      this.isAmountTouched =false
+      this.leaveForm.reset()
+    }else {
+      this.isAmountTouched= true
+      this.errorMessage = this.getLeaveAmountErrorMessage()
+    }
+
+  }
+
+  getLeaveNameWithId(id: number){
+    const leave = this.leaves.find((item) => item.value === id);
+    return leave ? leave.label : 'Unknown';
+  }
+
+  getLeaveAmountErrorMessage(): string {
+    const control = this.leaveForm.get('leaveAmount');
+  
+   
+    if (control?.value <= 0 && typeof control?.value === 'number') {
+      return 'Value must be at least 1.';
+    }
+  
+    if (!isNaN(control?.value)) {
+      return 'Please enter a positive number.';
+    }
+  
+    return '';
+  }
+
+  removeLeave(id: number){
+    const leaveIndex = this.selectedLeaves.findIndex(s => s.name === id);
+    this.selectedLeaves.splice(leaveIndex, 1)
+    this.calculateTotalLeaveDays()
+  }
+  
 }
