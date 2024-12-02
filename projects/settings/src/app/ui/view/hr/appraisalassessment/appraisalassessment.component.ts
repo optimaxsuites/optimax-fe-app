@@ -5,22 +5,20 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 interface Section {
   id: string;
   sectionTitle: string;
-  instruction: string;
   questions: Question[];
-  isEditing?: boolean;
 }
 
 interface Question {
   id: string;
   text: string;
-  isEditing?: boolean;
 }
 
 interface AppraisalQuestionDTO {
-  id?: string;
+  id: string;
   department: string;
   level: string;
   sections: Section[];
+  instructionText: string;
 }
 
 @Component({
@@ -33,9 +31,12 @@ export class AppraisalassessmentComponent implements OnInit {
   appraisalQuestionForm!: FormGroup;
   selectedDepartment: string | null = null;
   selectedLevel: string | null = null;
-  isEditable = false;
   isEditing = false;
+  isEditMode = false;
+  isViewMode: boolean = false;
   editingSectionIndex: number | null = null;
+  instructionDisplayed = false;
+  instructionText = '';
   departments = [
     'Human Resources',
     'Finance',
@@ -73,7 +74,9 @@ export class AppraisalassessmentComponent implements OnInit {
   appraisal: AppraisalQuestionDTO = {
     department: '',
     level: '',
+    id: '',
     sections: [],
+    instructionText: '',
   };
 
   resetMessage: string = '';
@@ -85,6 +88,14 @@ export class AppraisalassessmentComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    const instructionState = localStorage.getItem('instructionDisplayed');
+    const savedInstructionText = localStorage.getItem('instructionText');
+
+    if (instructionState === 'true' && savedInstructionText) {
+      this.instructionDisplayed = true;
+      this.instructionText = savedInstructionText; // Load the saved instruction text
+    }
+
     this.loadQuestions();
   }
 
@@ -96,6 +107,28 @@ export class AppraisalassessmentComponent implements OnInit {
   //     questions: this.fb.array([]),
   //   });
   // }
+
+  // Toggle between Edit and View mode
+  toggleEditMode() {
+    if (this.isViewMode) {
+      this.isEditMode = !this.isEditMode;
+      this.instructionDisplayed = false;
+    }
+  }
+
+  confirmInstruction() {
+    if (this.instructionText.trim() !== '') {
+      this.instructionDisplayed = true;
+
+      // Save the state and instruction text to localStorage
+      localStorage.setItem('instructionDisplayed', 'true');
+      localStorage.setItem('instructionText', this.instructionText);
+
+      // The field will remain populated with the text after saving
+    } else {
+      alert('Please enter some instructions.');
+    }
+  }
 
   getQuestionsForDepartmentAndLevel(
     department: string,
@@ -111,18 +144,18 @@ export class AppraisalassessmentComponent implements OnInit {
     const newSection: Section = {
       id: this.generateUniqueId(),
       sectionTitle: '',
-      instruction: '',
       questions: [],
-      isEditing: true,
     };
     this.appraisal.sections.push(newSection);
+    if (this.appraisal.sections.length === 1) {
+      this.instructionDisplayed = false;
+    }
   }
 
   addQuestion(sectionIndex: number) {
     const newQuestion: Question = {
       id: this.generateUniqueId(),
       text: '',
-      isEditing: true,
     };
     this.appraisal.sections[sectionIndex].questions.push(newQuestion);
   }
@@ -145,23 +178,23 @@ export class AppraisalassessmentComponent implements OnInit {
     });
   }
 
-  // removeInstruction(instructionIndex: number, sectionIndex: number) {
-  //   this.confirmationService.confirm({
-  //     message: `Are you sure you want to delete this instruction?`,
-  //     accept: () => {
-  //       // Use splice to remove the instruction from the array
-  //       this.appraisal.sections[sectionIndex].instruction.splice(
-  //         instructionIndex,
-  //         1
-  //       );
-  //       this.messageService.add({
-  //         severity: 'success',
-  //         summary: 'Instruction Deleted',
-  //         detail: 'Instruction has been deleted.',
-  //       });
-  //     },
-  //   });
-  // }
+  removeInstruction() {
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete this instruction?`,
+      accept: () => {
+        // Clear the instruction text
+        this.appraisal.instructionText = '';
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Instruction Deleted',
+          detail: 'Instruction has been deleted.',
+        });
+
+        // Optionally, clear it from localStorage
+        localStorage.removeItem('instructionText');
+      },
+    });
+  }
 
   removeQuestion(sectionIndex: number, questionIndex: number) {
     this.appraisal.sections[sectionIndex].questions.splice(questionIndex, 1);
@@ -173,12 +206,13 @@ export class AppraisalassessmentComponent implements OnInit {
     this.selectedDepartment = department;
     this.selectedLevel = level;
     this.showAddForm = true;
+    this.instructionDisplayed = false; // Reset the instruction display
+    this.instructionText = '';
 
     const existingQuestions = this.questionListArray.find(
       (q) => q.department === department && q.level === level
     );
 
-    // If existing questions found, load them, otherwise start with a blank form
     this.appraisal = existingQuestions
       ? { ...existingQuestions }
       : {
@@ -186,13 +220,23 @@ export class AppraisalassessmentComponent implements OnInit {
           department: department,
           level: level,
           sections: [],
+          instructionText: '',
         };
+
+    // Save selected department and level in localStorage
+    localStorage.setItem('selectedDepartment', department);
+    localStorage.setItem('selectedLevel', level);
+    localStorage.setItem('showAddForm', 'true');
+
+    this.isEditMode = false;
+    this.isViewMode = false;
   }
 
   saveCurrentState() {
     if (!this.selectedDepartment || !this.selectedLevel) return;
 
-    // Remove existing questions for this department and level
+    this.appraisal.instructionText = this.instructionText.trim();
+
     const index = this.questionListArray.findIndex(
       (q) =>
         q.department === this.selectedDepartment &&
@@ -210,20 +254,39 @@ export class AppraisalassessmentComponent implements OnInit {
       JSON.stringify(this.questionListArray)
     );
 
+    // Save instruction state
+    localStorage.setItem('instructionDisplayed', 'true');
+    localStorage.setItem('instructionText', this.instructionText);
+
     this.messageService.add({
       severity: 'success',
       summary: 'Success',
       detail: 'Questions saved successfully',
     });
+
+    // Clear form state
     this.showAddForm = false;
     this.selectedDepartment = null;
     this.selectedLevel = null;
+    localStorage.removeItem('selectedDepartment');
+    localStorage.removeItem('selectedLevel');
+    localStorage.removeItem('showAddForm');
+    this.confirmInstruction();
   }
 
   loadQuestions() {
     const savedQuestions = localStorage.getItem('appraisalQuestions');
     if (savedQuestions) {
       this.questionListArray = JSON.parse(savedQuestions);
+    }
+
+    // Load instruction state
+    const instructionState = localStorage.getItem('instructionDisplayed');
+    const savedInstructionText = localStorage.getItem('instructionText');
+
+    if (instructionState === 'true' && savedInstructionText) {
+      this.instructionDisplayed = true;
+      this.instructionText = savedInstructionText;
     }
   }
 
@@ -240,8 +303,10 @@ export class AppraisalassessmentComponent implements OnInit {
         department: '',
         level: '',
         sections: [],
+        instructionText: '',
       };
-      this.isEditing = false;
+      this.isEditMode = false;
+      this.isViewMode = false;
     }
     this.showAddForm = !this.showAddForm;
   }
@@ -268,13 +333,15 @@ export class AppraisalassessmentComponent implements OnInit {
         department: department,
         level: level,
         sections: [],
+        instructionText: '',
       };
     }
 
     this.selectedDepartment = department;
     this.selectedLevel = level;
-    this.isEditing = true;
+    this.isEditMode = true;
     this.showAddForm = true;
+    this.isViewMode = true;
   }
 
   hasSectionsForDepartmentAndLevel(department: string, level: string): boolean {
@@ -292,15 +359,19 @@ export class AppraisalassessmentComponent implements OnInit {
           (q) => q.department === department && q.level === level
         );
         if (index !== -1) {
+          // Clear all sections and instructions for this department and level
           this.questionListArray[index].sections = [];
+          this.questionListArray[index].instructionText = ''; // Clear instructions
           localStorage.setItem(
             'appraisalQuestions',
             JSON.stringify(this.questionListArray)
           );
+
+          this.instructionText = '';
           this.messageService.add({
             severity: 'success',
             summary: 'Cleared',
-            detail: `All sections cleared for ${department} - ${level}`,
+            detail: `All sections and instructions cleared for ${department} - ${level}`,
           });
         }
       },
@@ -314,18 +385,6 @@ export class AppraisalassessmentComponent implements OnInit {
       .split(/[\n,;]/)
       .map((step) => step.trim())
       .filter((step) => step);
-  }
-
-  toggleSectionEditing(section: Section) {
-    section.isEditing = !section.isEditing;
-  }
-
-  toggleQuestionEditing(question: Question) {
-    question.isEditing = !question.isEditing;
-  }
-
-  toggleInstructionEditing(instruction: Section) {
-    instruction.isEditing = !instruction.isEditing;
   }
 }
 

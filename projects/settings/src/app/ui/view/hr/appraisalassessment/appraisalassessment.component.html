@@ -17,13 +17,23 @@
         : "Appraisal Questions"
     }}
   </p>
-  <button
-    *ngIf="selectedDepartment && selectedLevel"
-    class="bg-customGreen text-white font-bold p-3 rounded-xl"
-    (click)="toggleForm()"
-  >
-    Cancel
-  </button>
+
+  <div class="flex items-center space-x-2">
+    <button
+      *ngIf="isViewMode"
+      class="bg-customGreen text-white font-bold p-3 rounded-xl"
+      (click)="toggleEditMode()"
+    >
+      {{ isEditMode ? "Edit" : "View" }}
+    </button>
+    <button
+      *ngIf="selectedDepartment && selectedLevel"
+      class="bg-customGreen text-white font-bold p-3 rounded-xl"
+      (click)="toggleForm()"
+    >
+      Cancel
+    </button>
+  </div>
 </div>
 
 <!-- Sections List -->
@@ -40,13 +50,10 @@
     <div *ngFor="let level of levels">
       <div
         (click)="isValidData(dept, level) ? view(dept, level) : null"
-        class="flex justify-between items-center p-1 mb-4 bg-gray-100 border border-gray-200 shadow-md rounded-lg hover:shadow-lg transition duration-300 ease-in-out"
+        class="flex justify-between items-center mb-4 bg-gray-70 border border-gray-100 shadow-md rounded-lg hover:shadow-lg transition duration-300 ease-in-out"
       >
         <div>
-          <p
-            (click)="view(dept, level)"
-            class="text-gray-600 px-2 py-4 font-bold text-[14px]"
-          >
+          <p class="text-gray-600 px-2 py-4 font-bold text-[14px]">
             {{ level }}
           </p>
         </div>
@@ -58,13 +65,13 @@
             "
           >
             <!-- <div > -->
-            <p-button
+            <!-- <p-button
               icon="pi pi-eye"
               class="p-button-text text-blue-300 hover:bg-white p-3 rounded-xl border-none"
               pTooltip="View"
               tooltipPosition="top"
               (click)="view(dept, level)"
-            ></p-button>
+            ></p-button> -->
             <p-button
               icon="pi pi-trash"
               class="p-button-text text-red-500 hover:bg-red-200 ml-auto p-3 rounded-xl border-none"
@@ -90,7 +97,7 @@
 </mat-accordion>
 
 <div *ngIf="showAddForm && selectedDepartment && selectedLevel">
-  <div *ngIf="!isEditing">
+  <div *ngIf="!isEditMode && !isViewMode">
     <h1 class="text-2xl mt-4 font-bold text-center text-customBlue mb-6">
       Employee Assessment
     </h1>
@@ -118,169 +125,148 @@
           Once you’ve set the questions, they will be presented to employees for
           their reflection and feedback.
         </p>
-        <p><strong>Before You Begin:</strong></p>
-        <ul class="list-disc ml-5">
-          <li>
-            Carefully consider the types of questions you want to include:
-            whether multiple-choice, open-ended, or situational.
-          </li>
-          <li>
-            Make sure the questions are clear, concise, and relevant to each
-            employee's role and performance objectives.
-          </li>
-          <li>
-            Feel free to add any instructions or guidelines to assist
-            supervisors and managers in evaluating the performance of each
-            individual employee.
+      </div>
+    </div>
+  </div>
+  <div class="mb-4">
+    <h3 class="text-lg font-semibold text-customBlue mb-2">Instructions:</h3>
+
+    <!-- Show this block if the instruction is not displayed -->
+    <div *ngIf="!instructionDisplayed">
+      <div class="flex items-center">
+        <textarea
+          *ngIf="!isEditMode"
+          [(ngModel)]="instructionText"
+          class="w-full ml-4p-1 border rounded"
+          placeholder="Enter section Instructions"
+          rows="6"
+        ></textarea>
+        <p-button
+          *ngIf="!isEditMode"
+          icon="pi pi-trash"
+          class="text-red-500 p-1 mt-8 rounded-xl"
+          (click)="removeInstruction()"
+        ></p-button>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <div *ngIf="isEditMode" class="text-gray-700">
+        <ul class="list-disc ml-4 font-semi text-lg text-customBlue">
+          <li *ngFor="let step of getSteps(instructionText)" class="leading-6">
+            {{ step }}
           </li>
         </ul>
-        <p>
-          Your role in this process is vital in helping supervisors and managers
-          gain clarity about each employee's performance and future growth. We
-          appreciate your attention to detail and dedication to making this
-          process as smooth and effective as possible. Let’s get started!
-        </p>
       </div>
     </div>
   </div>
 
-  <div
-    class="p-4 w-[80%] mt-3 mb-10 mx-auto shadow-md rounded-xl text-customBlue bg-white/70"
-  >
-    <div>
-      <div *ngFor="let section of appraisal.sections; let sectionIndex = index">
-        <div class="flex justify-between items-center mb-4">
-          <div class="flex-1 mr-4">
-            <label class="block text-lg font-small mb-1">Instructions: </label>
-            <textarea
-              *ngIf="section.isEditing"
-              [(ngModel)]="section.instruction"
-              class="w-full p-1 border rounded"
-              placeholder="Enter section Instructions"
-              rows="6"
-            ></textarea>
-            <div *ngIf="!section.isEditing">
-              <ul
-                class="list-disc ml-6 font-semibold text-[16px] text-customBlue space-y-3"
+  <div>
+    <div
+      class="p-4 w-[80%] mt-3 mb-10 mx-auto table-item shadow-md table-auto rounded-xl text-customBlue bg-white/70"
+    >
+      <div>
+        <div
+          *ngFor="let section of appraisal.sections; let sectionIndex = index"
+        >
+          <div class="flex justify-between items-center mb-4">
+            <div class="flex-1 mr-4">
+              <label class="block text-lg font-small mb-1"
+                >Section {{ getSectionLabel(sectionIndex) }}:
+              </label>
+              <input
+                *ngIf="!isEditMode"
+                [(ngModel)]="section.sectionTitle"
+                class="w-full p-2 border rounded"
+                placeholder="Enter section title"
+              />
+              <div
+                *ngIf="isEditMode"
+                class="p-5 rounded-lg shadow-sm text-customBlue font-semibold text-sm"
               >
-                <li
-                  *ngFor="let step of getSteps(section.instruction)"
-                  class="p-4 rounded-md shadow-sm"
-                >
-                  {{ step }}
-                </li>
-              </ul>
+                {{ section.sectionTitle }}
+              </div>
             </div>
-            <div class="flex space-x-2"></div>
-          </div>
-        </div>
 
-        <div class="flex justify-between items-center mb-4">
-          <div class="flex-1 mr-4">
-            <label class="block text-lg font-small mb-1"
-              >Section {{ getSectionLabel(sectionIndex) }}:
-            </label>
-            <input
-              *ngIf="section.isEditing"
-              [(ngModel)]="section.sectionTitle"
-              class="w-full p-2 border rounded"
-              placeholder="Enter section title"
-            />
+            <div class="flex space-x-2">
+              <p-button
+                *ngIf="!isEditMode"
+                icon="pi pi-trash"
+                class="text-red-500 p-1 mt-8 rounded-xl"
+                (click)="removeSection(sectionIndex)"
+              ></p-button>
+            </div>
+          </div>
+
+          <div>
             <div
-              *ngIf="!section.isEditing"
-              class="p-5 rounded-lg shadow-sm text-customBlue font-semibold text-sm"
+              *ngFor="
+                let question of section.questions;
+                let questionIndex = index
+              "
+              class="mb-4"
             >
-              {{ section.sectionTitle }}
+              <div class="flex justify-between mt-6">
+                <textarea
+                  *ngIf="!isEditMode"
+                  [(ngModel)]="question.text"
+                  class="flex-1 w-full p-2 border rounded mr-4"
+                  rows="3"
+                  placeholder="Enter question"
+                ></textarea>
+
+                <div *ngIf="isEditMode">
+                  <ul class="list-decimal pl-6 space-y-3">
+                    <li class="p-5 rounded-lg shadow-sm hover:shadow-xl">
+                      <p
+                        class="text-customBlue text-sm font-semibold leading-relaxed"
+                      >
+                        {{ question.text }}
+                      </p>
+                    </li>
+                  </ul>
+                </div>
+
+                <div class="flex space-x-2">
+                  <p-button
+                    *ngIf="!isEditMode"
+                    icon="pi pi-trash"
+                    class="text-red-500 mt-8 p-1 rounded-xl"
+                    (click)="removeQuestion(sectionIndex, questionIndex)"
+                  ></p-button>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div class="flex space-x-2">
-            <p-button
-              *ngIf="isEditing"
-              icon="pi pi-pencil"
-              class="text-blue-500 hover:bg-blue-50 p-3 rounded-xl"
-              (click)="toggleSectionEditing(section)"
-            ></p-button>
-
-            <p-button
-              icon="pi pi-trash"
-              class="text-red-500 hover:bg-red-50 p-3 rounded-xl"
-              (click)="removeSection(sectionIndex)"
-            ></p-button>
+            <button
+              *ngIf="!isEditMode"
+              type="button"
+              class="text-green-500 hover:bg-green-50 p-2 rounded mt-2"
+              (click)="addQuestion(sectionIndex)"
+            >
+              <i class="fa-solid fa-plus"></i> Add Question
+            </button>
           </div>
         </div>
 
-        <div>
-          <div
-            *ngFor="
-              let question of section.questions;
-              let questionIndex = index
-            "
-            class="mb-4"
-          >
-            <div class="flex justify-between mt-6">
-              <textarea
-                *ngIf="question.isEditing"
-                [(ngModel)]="question.text"
-                class="flex-1 w-full p-2 border rounded mr-4"
-                rows="3"
-                placeholder="Enter question"
-              ></textarea>
-
-              <div *ngIf="!question.isEditing">
-                <ul class="list-decimal pl-6 space-y-3">
-                  <li class="p-5 rounded-lg shadow-sm hover:shadow-xl">
-                    <p
-                      class="text-customBlue text-sm font-semibold leading-relaxed"
-                    >
-                      {{ question.text }}
-                    </p>
-                  </li>
-                </ul>
-              </div>
-
-              <div class="flex space-x-2">
-                <p-button
-                  *ngIf="isEditing"
-                  icon="pi pi-pencil"
-                  class="text-blue-500 hover:bg-blue-50 p-3 rounded-xl"
-                  (click)="toggleQuestionEditing(question)"
-                ></p-button>
-
-                <p-button
-                  icon="pi pi-trash"
-                  class="text-red-500 hover:bg-red-50 p-3 rounded-xl"
-                  (click)="removeQuestion(sectionIndex, questionIndex)"
-                ></p-button>
-              </div>
-            </div>
-          </div>
-
+        <div class="flex justify-between mt-6">
           <button
+            *ngIf="!isEditMode"
             type="button"
-            class="text-green-500 hover:bg-green-50 p-2 rounded mt-2"
-            (click)="addQuestion(sectionIndex)"
+            class="text-blue-500 hover:bg-blue-50 p-3 rounded"
+            (click)="addSection()"
           >
-            <i class="fa-solid fa-plus"></i> Add Question
+            <i class="fa-solid fa-plus"></i> Add Section
+          </button>
+          <button
+            *ngIf="!isEditMode"
+            type="button"
+            class="bg-customGreen text-white px-6 py-3 rounded"
+            (click)="saveCurrentState()"
+          >
+            {{ isViewMode ? "Update Question" : "Save Question" }}
           </button>
         </div>
-      </div>
-
-      <div class="flex justify-between mt-6">
-        <button
-          type="button"
-          class="text-blue-500 hover:bg-blue-50 p-3 rounded"
-          (click)="addSection()"
-        >
-          <i class="fa-solid fa-plus"></i> Add Section
-        </button>
-        <button
-          type="button"
-          class="bg-customGreen text-white px-6 py-3 rounded"
-          (click)="saveCurrentState()"
-        >
-          {{ isEditing ? "Update Question" : "Save Question" }}
-        </button>
       </div>
     </div>
   </div>

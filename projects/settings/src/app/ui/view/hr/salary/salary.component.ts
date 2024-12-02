@@ -43,21 +43,25 @@ salaryStructure: any[] = []
   typeForm:string = ""
  allowances: {
   id: number;
+  levelId: number;
   allowanceTypeId: number,
   amount: number
  }[] = []
  deductions: {
   id: number;
+  levelId: number;
   deductionsTypeId: number,
   amount: number
  }[] = []
  bonuses: {
   id: number;
+  levelId: number;
   bonusTypeId: number,
   amount: number
  }[] = []
  overtImes: {
   id: number;
+  levelId: number;
   overtimeTypeId: number,
   rate: number,
   maxHours: number
@@ -96,7 +100,7 @@ salaryStructure: any[] = []
     });
   }
   ngOnInit() {
-    const salariesFromStorage = localStorage.getItem("salaryStructure");
+    
     this.levelService.getAllLevels().subscribe(data => {
       this.levels = data
     })
@@ -129,8 +133,10 @@ salaryStructure: any[] = []
     
   }
   addAllowanceToTotal(event?: Event) {
+   if(event) {
     const keyboardEvent = event as KeyboardEvent;
     keyboardEvent.preventDefault();
+  }
     const allowanceGroup = this.allowanceForm
 
     // Check if the allowances form is valid
@@ -140,6 +146,7 @@ salaryStructure: any[] = []
    
 
       const newAllowance = {
+        levelId: this.salaryForm.value.level,
         amount: formValue.amount,
         allowanceTypeId: formValue.type
       }
@@ -168,8 +175,10 @@ salaryStructure: any[] = []
   }
 
   addBonusToTotal(event? : Event) {
-    const keyboardEvent = event as KeyboardEvent;
-    keyboardEvent.preventDefault();
+    if(event) {
+      const keyboardEvent = event as KeyboardEvent;
+      keyboardEvent.preventDefault();
+    }
     const bonusGroup = this.bonusForm
 
     // Check if the allowances form is valid
@@ -177,6 +186,8 @@ salaryStructure: any[] = []
       const formValue = bonusGroup.value;
 
       const newBonus = {
+        levelId: this.salaryForm.value.level,
+
         bonusTypeId: formValue.type,
         amount: formValue.amount,
       };
@@ -206,8 +217,10 @@ salaryStructure: any[] = []
   }
 
   addDeductionToTotal(event?: Event) {
-    const keyboardEvent = event as KeyboardEvent;
-    keyboardEvent.preventDefault();
+    if(event) {
+      const keyboardEvent = event as KeyboardEvent;
+      keyboardEvent.preventDefault();
+    }
     const deductionGroup = this.deductionForm
 
     // Check if the allowances form is valid
@@ -215,6 +228,8 @@ salaryStructure: any[] = []
       const formValue = deductionGroup.value;
 
       const newDeduction ={
+        levelId: this.salaryForm.value.level,
+
         deductionsTypeId: formValue.type,
         amount: formValue.amount,
       };
@@ -237,8 +252,10 @@ salaryStructure: any[] = []
   }
 
   addOverTimeToTotal(event?: Event){
-    const keyboardEvent = event as KeyboardEvent;
-    keyboardEvent.preventDefault();
+    if(event) {
+      const keyboardEvent = event as KeyboardEvent;
+      keyboardEvent.preventDefault();
+    }
     const overtimeGroup = this.overtimeForm
 
     // Check if the allowances form is valid
@@ -246,6 +263,9 @@ salaryStructure: any[] = []
       const formValue = overtimeGroup.value;
 
      const newOvertime ={
+      levelId: this.salaryForm.value.level,
+
+
         overtimeTypeId: formValue.type,
         rate: formValue.amount,
         maxHours: formValue.maxHour
@@ -370,30 +390,56 @@ salaryStructure: any[] = []
   onSubmit() {
     console.log('New Salary Structure:', this.salaryForm.value);
 
+    if (this.allowanceForm.valid && !this.allowances.some(a => a.allowanceTypeId === this.allowanceForm.value.type)) {
+     this.addAllowanceToTotal()
+    }
+    if (this.bonusForm.valid && !this.bonuses.some(a => a.bonusTypeId === this.bonusForm.value.type)) {
+      this.addBonusToTotal()
+     }
+    if (this.deductionForm.valid && !this.deductions.some(a => a.deductionsTypeId === this.deductionForm.value.type)) {
+      this.addDeductionToTotal()
+     }
+    if (this.overtimeForm.valid && !this.overtImes.some(a => a.overtimeTypeId === this.overtimeForm.value.type)) {
+      this.addOverTimeToTotal()
+     } 
+
     if (this.salaryForm.valid) {
       const formValue = this.salaryForm.value;
-  
-  
+ 
       const newSalaryStructure = {
         levelId: formValue.level,
         baseSalary: formValue.baseSalary,
         allowance: this.allowances,
         deductions: this.deductions,
         bonus: this.bonuses,
-        // overtime: this.overtImes
+        overtime: this.overtImes
       };
   
       if (this.isEditMode && this.editIndex !== null) {
         this.salaryService.addSalary({
           id: this.editIndex,
           ...newSalaryStructure
-        }).subscribe((data) => {
+        }).subscribe({
+         next : (data) => {
+          console.log(data)
           this.messageService.add({ severity: 'success', summary: 'Success', detail: `Salary structure for ${this.getSalaryByLevelId(data.levelId)} updated successfully!`, key: 'tl', life: 3000  }); 
           this.toogleForm()
           // this.salaryStructure[this.editIndex] = newSalaryStructure;
-        })
+        },
+        error: (err) => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: `Failed to update salary structure. Please try again.`,
+            key: 'tl',
+            life: 3000,
+          });
+          console.error('Error:', err);
+        }
+      })
       } else {
-        this.salaryService.addSalary(newSalaryStructure).subscribe((data) => {
+        this.salaryService.addSalary(newSalaryStructure).subscribe({
+          next: (data) => {
         this.messageService.add({ severity: 'success', summary: 'Success', detail: `Salary structure for ${this.getSalaryByLevelId(data.levelId)} added successfully!`, key: 'tl', life: 3000  }); 
         this.isEditMode = false
         this.salaryForm.reset();
@@ -401,9 +447,19 @@ salaryStructure: any[] = []
         this.bonuses= []
         this.deductions = []
         this.overtImes = []
-
+        this.toogleForm()
           this.salaryStructure.push(data);
-        })
+        },
+        error: (err) => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: `Failed to add salary structure. Please try again.`,
+            key: 'tl',
+            life: 3000,
+          });
+          console.error('Error:', err);
+        }})
       }
   
       console.log('New Salary Structure:', newSalaryStructure);
@@ -423,6 +479,7 @@ salaryStructure: any[] = []
     this.allowances = salaryStructure.allowance
     this.deductions = salaryStructure.deductions
     this.bonuses = salaryStructure.bonus
+    this.overtImes = salaryStructure.overtime
   }
 
   toTitleCaseWithSpace(key: string): string {
