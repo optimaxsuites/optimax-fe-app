@@ -87,8 +87,8 @@ import { NavTabComponent } from './ui/sharedComponents/view/nav-tab/nav-tab.comp
     
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppRoutingModule,
     CommonModule,
     AppRoutingModule,
