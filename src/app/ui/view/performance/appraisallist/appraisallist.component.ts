@@ -148,3 +148,82 @@ export class AppraisallistComponent implements OnInit {
     this.selectedAppraisal = null;
   }
 }
+
+// import { Component, OnInit } from '@angular/core';
+// import { MessageService } from 'primeng/api';
+// import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
+// import { FormGroup } from '@angular/forms';
+// import { Route, Router } from '@angular/router';
+
+// @Component({
+//   selector: 'app-appraisallist',
+//   templateUrl: './appraisallist.component.html',
+//   styleUrl: './appraisallist.component.scss',
+//   providers: [MessageService],
+// })
+// export class AppraisallistComponent implements OnInit {
+//   quizStarted: boolean = false;
+//   openAppraisalform = false;
+//   employeeId = '';
+//   department = '';
+//   level = '';
+//   isUserInfoSaved = false;
+
+//   constructor(private router: Router, private messageService: MessageService) {}
+
+//   get isFormValid() {
+//     return this.employeeId && this.department && this.level;
+//   }
+
+//   ngOnInit(): void {
+//     // Initialization logic here (if any)
+//   }
+
+//   saveUserInfo() {
+//     const userInfo = {
+//       employeeId: this.employeeId,
+//       department: this.department,
+//       level: this.level,
+//     };
+//     localStorage.setItem('currentUser', JSON.stringify(userInfo));
+//     this.isUserInfoSaved = true;
+//   }
+
+//   startQuiz() {
+//     // Initialize quiz data in localStorage
+//     const questions = this.getQuestionsByDepartmentAndLevel();
+//     localStorage.setItem(
+//       'currentQuiz',
+//       JSON.stringify({
+//         questions,
+//         currentIndex: 0,
+//         startTime: new Date().getTime(),
+//         answers: {},
+//       })
+//     );
+//     this.navigateToCreate();
+//   }
+
+//   navigateToCreate() {
+//     this.openAppraisalform = !this.openAppraisalform;
+//   }
+
+//   private getQuestionsByDepartmentAndLevel() {
+//     // Sample questions - you would replace this with your actual questions
+//     const allQuestions = [
+//       {
+//         id: 1,
+//         text: 'Sample IT Senior Question',
+//         options: ['A', 'B', 'C', 'D'],
+//         correctAnswer: 'A',
+//         department: 'IT',
+//         level: 'Senior',
+//       },
+//       // Add more questions...
+//     ];
+
+//     return allQuestions
+//       .filter((q) => q.department === this.department && q.level === this.level)
+//       .slice(0, 30);
+//   }
+// }

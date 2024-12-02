@@ -13,62 +13,61 @@ import { AddEmployeeFormComponent } from './ui/view/employee-management/add-empl
 import { MasterComponent } from './master.component';
 
 const routes: Routes = [
+  {
+    path: 'user/onboarding/:id/:uuid',
+    component: AddEmployeeFormComponent,
+  },
 
-      {
-        path: '',
-        redirectTo: 'admin/hr/recruitment/uu',
-        pathMatch: 'full',
-      },
-      {
-        path: 'admin/hr/recruitment/:uuid',
-        component: RecruitmentComponent,
-      },
-      {
-        path: 'admin/hr/leave/:uuid',
-        component: LeaveComponent,
-      },
-      {
-        path: 'admin/hr/attendance/:uuid',
-        component: AttendanceComponent,
-      },
-      // {
-      //   path: 'admin/hr/employee-management/:uuid',
-      //   component: EmployeeManagementComponent,
-      // },
-      {
-        path: 'admin/hr/performance/:uuid',
-        component: PerformanceComponent,
-      },
-      {
-        path: 'admin/hr/employee-management/:uuid',
-        component: EmployeeManagementComponent,
-      },
-      {
-        path: 'admin/hr/payroll/:uuid',
-        component: EmployeePayrollComponent,
-      },
-      {
-        path: 'admin/employee-payslip/:uuid',
-        component: EmployeePayslipListComponent,
-      },
-      // {
-      //   path: 'admin/hr/attendance/:uuid',
-      //   component: AttendanceComponent,
-      // },
-      { path: 'mygoal', component: MygoalComponent },
+  {
+    path: '',
+    redirectTo: 'admin/hr/recruitment/uu',
+    pathMatch: 'full',
+  },
+  {
+    path: 'admin/hr/recruitment/:uuid',
+    component: RecruitmentComponent,
+  },
+  {
+    path: 'admin/hr/leave/:uuid',
+    component: LeaveComponent,
+  },
+  {
+    path: 'admin/hr/attendance/:uuid',
+    component: AttendanceComponent,
+  },
+  // {
+  //   path: 'admin/hr/employee-management/:uuid',
+  //   component: EmployeeManagementComponent,
+  // },
+  {
+    path: 'admin/hr/performance/:uuid',
+    component: PerformanceComponent,
+  },
+  {
+    path: 'admin/hr/employee-management/:uuid',
+    component: EmployeeManagementComponent,
+  },
+  {
+    path: 'admin/hr/payroll/:uuid',
+    component: EmployeePayrollComponent,
+  },
+  {
+    path: 'admin/employee-payslip/:uuid',
+    component: EmployeePayslipListComponent,
+  },
+  // {
+  //   path: 'admin/hr/attendance/:uuid',
+  //   component: AttendanceComponent,
+  // },
+  { path: 'mygoal', component: MygoalComponent },
 
-      
-    
-    
-    {
-      path: 'user/onboarding/:id/:uuid',
-      component: AddEmployeeFormComponent,
-    },
-
-
-  ]
+  {
+    path: 'user/onboarding/:id/:uuid',
+    component: AddEmployeeFormComponent,
+  },
+];
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule],
 })
 export class AppHrRoutingModule {}

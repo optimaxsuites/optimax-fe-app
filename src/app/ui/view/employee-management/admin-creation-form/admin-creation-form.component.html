@@ -52,7 +52,7 @@
   
         <div class="mb-4">
         <label for="email" class="block text-[13px] font-medium">Email <span class="ml-1 font-bold text-red-600">*</span></label>
-        <input type="email" formControlName="email" id="email" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" readonly/>
+        <input type="email" formControlName="email" id="email" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
         <small *ngIf="basicForm.get('email')?.touched && basicForm.get('email')?.invalid" class="text-red-600">
           {{ getErrorMessage(basicForm.get("email"),'email') }}
         </small>
@@ -107,9 +107,9 @@
                 <div class="mb-4">
                   <label for="department" class="block text-[13px] font-medium">Level <span class="ml-1 font-bold text-red-600">*</span></label>
                   <ng-select 
-                  [items]="salaryStructure" 
-                  bindLabel="level"
-                  bindValue="level"
+                  [items]="levels" 
+                  bindLabel="label"
+                  bindValue="value"
                   placeholder="Select Level"
                   formControlName="level"
                   class="w-full mt-1 rounded-md"></ng-select>
@@ -120,13 +120,14 @@
           
                 <div class="mb-4">
                   <label for="department" class="block text-[13px] font-medium">Supervisor/Manager <span class="ml-1 font-bold text-red-600">*</span></label>
-                  <ng-select 
+                  <!-- <ng-select 
                   [items]="salaryStructure" 
                   bindLabel="level"
                   bindValue="level"
                   placeholder="Select Supervisor"
                   formControlName="supervisor"
-                  class="w-full mt-1 rounded-md"></ng-select>
+                  class="w-full mt-1 rounded-md"></ng-select> -->
+                  <input type="text" formControlName="supervisor" id="supervisor" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
                   <small *ngIf="basicForm.get('supervisor')?.touched && basicForm.get('supervisor')?.invalid" class="text-red-600">
                     {{ getErrorMessage(basicForm.get("supervisor"),'supervisor') }}
                   </small>
@@ -213,7 +214,7 @@
    
   </form>
 
-  <form [formGroup]="leaveForm"  *ngIf="currentTab === 3" class="flex w-full flex-col justify-center item-center">
+  <form [formGroup]="leaveForm"  *ngIf="currentTab === 4" class="flex w-full flex-col justify-center item-center">
 
     <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
       <!-- <div class="mb-4">
@@ -230,49 +231,51 @@
               <td>Leave Types</td>
               <td>Assigned number of day(s)</td>
             </thead>
-            <tbody>
-              <tr>
-                <td>Annual leave <span class="ml-1 font-bold text-red-600">*</span></td>
-                <td>
-                  <input type="number" min="0"  class="outline-none p-1" placeholder="0" formControlName="annual">
+            <tbody class="w-full">
+              <tr class="w-full" *ngFor="let leave of selectedLeaves; let i = index">
+                <td class="w-1/2">{{getLeaveNameWithId(leave.name)}}</td>
+                <td class="w-1/2">
+                  <!-- <input type="number" min="0"  class="outline-none p-1" placeholder="0" formControlName="annual"> -->
+                   <div class="flex w-full justify-between items-center gap-1 px-2">
+                    <p class="">{{leave.amount}} day(s)</p>
+                    <i (click)="removeLeave(i)"  class="fa-solid fa-trash hover:bg-red-50 text-red-500 cursor-pointer text-2xl " ></i>
+                   </div>
                 </td>
               </tr>
-              <tr>
-                <td>Sick leave</td>
-                <td>
-                  <input type="number" min="0"  class="outline-none p-1" placeholder="0" formControlName="sick">
-                </td>
-              </tr>
-              <tr>
-                <td>Public Holiday</td>
-                <td>
-                  <input type="number" min="0"  class="outline-none p-1" placeholder="0" formControlName="holiday">
-                </td>
-              </tr>
-              <tr>
-                <td>Casual leave</td>
-                <td>
-                  <input type="number" min="0"  class="outline-none p-1" placeholder="0" formControlName="casual">
-                </td>
-              </tr>
-              <tr>
-                <td>Bereavement leave</td>
-                <td>
-                  <input type="number" min="0"  class="outline-none p-1" placeholder="0" formControlName="bereavement">
-                </td>
-              </tr>
-              <tr>
+            
+              <tr *ngIf="selectedLeaves.length > 0" >
                 <td>Total</td>
-                <td>
+                <td class="px-4">
                   {{totalLeaveDays}}
+                </td>
+              </tr>
+
+              <tr class="">
+                <td>
+                  <div class="w-full">
+                    <!-- <label for="leave" class="block text-[13px] font-medium">Leave Types <span class="ml-1 font-bold text-red-600">*</span></label> -->
+                    <ng-select 
+                    [items]="leaves" 
+                    bindLabel="label"
+                    bindValue="value"
+                    placeholder="Select leave"
+                    formControlName="leaveType"
+                    class="w-full rounded-md"></ng-select>
+          
+                  </div>
+                </td>
+
+                <td>
+                  <input type="number" min="0" (keydown.enter)="addLeave()" (change)="errorMessage = ''"  class="outline-none w-full p-2" placeholder="0" formControlName="leaveAmount">
+                  <small *ngIf="isAmountTouched" class="text-red-600">
+                   {{getLeaveAmountErrorMessage()}}
+                    </small>
                 </td>
               </tr>
             </tbody>
           </table>
-
-          <small *ngIf="leaveForm.get('annual')?.touched && leaveForm.get('annual')?.invalid" class="text-red-600">
-            {{ getErrorMessage(leaveForm.get("annual"), 'Annual Days Entitlement') }}
-            </small>
+         
+    
       </div>
       <div class="text-right">
         <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
@@ -285,7 +288,7 @@
   </form>
 
 
-  <form [formGroup]="guarantorForm" *ngIf="currentTab === 4" class="flex w-full flex-col justify-center item-center" >
+  <form [formGroup]="guarantorForm" *ngIf="currentTab === 5" class="flex w-full flex-col justify-center item-center" >
     <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-2">
       <label class="block text-[13px] font-medium">Grant Access</label>
 
@@ -332,7 +335,7 @@
   </form>
 
 
-  <form  (ngSubmit)="onSubmit()" *ngIf="currentTab === 5" class="flex w-full flex-col justify-center item-center">
+  <form  (ngSubmit)="onSubmit()" *ngIf="currentTab === 3" class="flex w-full flex-col justify-center item-center">
     <div>
 
       <div class="p-4 mx-auto w-1/2  rounded-xl text-customBlue gap-10 grid grid-cols-1">

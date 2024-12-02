@@ -4,7 +4,7 @@ import { catchError, Observable, throwError } from 'rxjs';
 
 import { Router } from '@angular/router';
 import { JwtHelperService } from '@auth0/angular-jwt';
-import { employeeDTO } from '../domain/employee.dto';
+import { employeeDTO, LevelDTO } from '../domain/employee.dto';
 @Injectable({
   providedIn: 'root'
 })
@@ -36,6 +36,8 @@ export class EmployeeService {
                 `/x/api/v2/hr/employees/${id}`)
         .pipe(catchError(this.handleError));
   }
+
+
 
   private handleError(error: HttpErrorResponse) {
     if (error.error instanceof ErrorEvent) {
