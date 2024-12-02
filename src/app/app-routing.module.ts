@@ -6,27 +6,24 @@ import { HrSettingsComponent } from './ui/view/hr/hr-settings/hr-settings.compon
 
 const routes: Routes = [
   {
-      path: '',
-      component: SettingsPageComponent,
-      children: [
-        // { path: '', redirectTo: 'admin/settings/general-settings/:uuid', pathMatch: 'full' },
-        {
-          path: 'general-settings/:uuid',
-          component: GeneralSettingsComponent,
-        },
-        {
-          path: 'HR-settings/:uuid',
-          component: HrSettingsComponent,
-        },
-
-      ]
-    },
-
- 
+    path: '',
+    component: SettingsPageComponent,
+    children: [
+      // { path: '', redirectTo: 'admin/settings/general-settings/:uuid', pathMatch: 'full' },
+      {
+        path: 'general-settings/:uuid',
+        component: GeneralSettingsComponent,
+      },
+      {
+        path: 'HR-settings/:uuid',
+        component: HrSettingsComponent,
+      },
+    ],
+  },
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+  imports: [RouterModule.forChild(routes)],
+  exports: [RouterModule],
 })
-export class AppRoutingModule { }
+export class AppRoutingModule {}

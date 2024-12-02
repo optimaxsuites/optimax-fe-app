@@ -68,7 +68,6 @@ import { SideModalComponent } from './ui/sharedComponents/view/side-modal/side-m
 import { CompensationComponent } from './ui/view/hr/compensation/compensation.component';
 import { NavTabComponent } from './ui/sharedComponents/view/nav-tab/nav-tab.component';
 
-
 //
 
 @NgModule({
@@ -84,7 +83,6 @@ import { NavTabComponent } from './ui/sharedComponents/view/nav-tab/nav-tab.comp
     AppraisalassessmentComponent,
     CompensationComponent,
     NavTabComponent,
-    
   ],
   imports: [
     BrowserModule,
