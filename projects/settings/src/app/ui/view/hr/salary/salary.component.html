@@ -80,11 +80,11 @@
    
     <div>
       <p *ngIf="salary?.overtime?.length">
-        <strong>Overtime:</strong> {{ salary.overtime[0] | currency: 'NGN' }}
+        <strong>Overtime:</strong> 
       </p>
       <ul *ngIf="salary?.overtime?.length">
         <li *ngFor="let ot of salary.overtime">
-          {{ getOvertimeName(ot.overtimeTypeId) }}: {{ ot.amount | currency: 'NGN' }}
+          {{ getOvertimeName(ot.overtimeTypeId) }}: {{ ot.rate | currency: 'NGN' }}
         </li>
       </ul>
     </div>
@@ -132,7 +132,7 @@
             <div class="flex gap-3 justify-center">
             <p class="text-[14px]">{{allowance.amount | currency:'NGN' }}</p>
 
-              <i class="fa-solid fa-pen-to-square cursor-pointer hover:bg-red-200 rounded-sm  text-2xl pr-2 " (click)="removeAllowance(i, allowance.id)"></i>
+              <i class="fa-solid fa-trash cursor-pointer hover:bg-red-200 rounded-sm  text-2xl pr-2 " (click)="removeAllowance(i, allowance.id)"></i>
             </div>
           </div>
             
@@ -183,7 +183,7 @@
           <div class="flex justify-between">
             <button >
             </button>
-            <button type="button" (click)="addAllowanceToTotal()" class="text-customGreen text-[12px]">
+            <button type="button" (click)="addAllowanceToTotal($event)" class="text-customGreen text-[12px]">
               +add
             </button>
           </div>
@@ -213,7 +213,7 @@
             <div class="flex gap-3 justify-center">
             <p class="text-[14px]">{{deduction.amount | currency:'NGN' }}</p>
 
-              <i class="fa-solid fa-pen-to-square cursor-pointer hover:bg-red-200 rounded-sm  text-2xl pr-2 " (click)="removeDeduction(i, deduction.deductionsTypeId)"></i>
+              <i class="fa-solid fa-trash cursor-pointer hover:bg-red-200 rounded-sm  text-2xl pr-2 " (click)="removeDeduction(i, deduction.deductionsTypeId)"></i>
             </div>
           </div>
             
@@ -264,7 +264,7 @@
           <div class="flex justify-between">
             <button >
             </button>
-            <button type="button" (click)="addDeductionToTotal()" class="text-customGreen text-[12px]">
+            <button type="button" (click)="addDeductionToTotal($event)" class="text-customGreen text-[12px]">
               +add
             </button>
           </div>
@@ -288,7 +288,7 @@
             <div class="flex gap-3 justify-center">
             <p class="text-[14px]">{{bonus.amount | currency:'NGN' }}</p>
 
-              <i class="fa-solid fa-pen-to-square cursor-pointer hover:bg-red-200 rounded-sm  text-2xl pr-2 " (click)="removeBonus(i, bonus.bonusTypeId)"></i>
+              <i class="fa-solid fa-trash cursor-pointer hover:bg-red-200 rounded-sm  text-2xl pr-2 " (click)="removeBonus(i, bonus.bonusTypeId)"></i>
             </div>
           </div>
             
@@ -339,7 +339,7 @@
           <div class="flex justify-between">
             <button >
             </button>
-            <button type="button" (click)="addBonusToTotal()" class="text-customGreen text-[12px]">
+            <button type="button" (click)="addBonusToTotal($event)" class="text-customGreen text-[12px]">
               +add
             </button>
           </div>
@@ -360,7 +360,7 @@
 
             <div class="flex gap-3 justify-center">
               <p class="text-[14px]">Max {{overtime.maxHours}} hour(s)</p>
-              <i class="fa-solid fa-pen-to-square cursor-pointer hover:bg-red-200 rounded-sm  text-2xl pr-2 " (click)="removeOvertime(i, overtime.overtimeTypeId)"></i>
+              <i class="fa-solid fa-trash cursor-pointer hover:bg-red-200 rounded-sm  text-2xl pr-2 " (click)="removeOvertime(i, overtime.overtimeTypeId)"></i>
             </div>
           </div>
             
@@ -425,7 +425,7 @@
           <div class="flex justify-between">
             <button >
             </button>
-            <button type="button" (click)="addOverTimeToTotal()" class="text-customGreen text-[12px]">
+            <button type="button" (click)="addOverTimeToTotal($event)" class="text-customGreen text-[12px]">
               +add
             </button>
           </div>
