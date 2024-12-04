@@ -3,7 +3,7 @@ import { Injectable, isDevMode } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 import { LevelDTO } from '../domain/level.dto';
 import { environment } from '../sharedComponents/service/environments/environment.prod';
-import { LeaveDTO, LeaveTypeDTO } from '../domain/leave.dto';
+import { LeaveAllocationDTO, LeaveDTO, LeaveTypeDTO } from '../domain/leave.dto';
 
 @Injectable({
   providedIn: 'root'
@@ -53,6 +53,29 @@ export class LeaveService {
   addLeaveType(data: LeaveTypeDTO){
     return this.http
     .post<any>(this.getBaseApiUrl() + `/x/api/v2/hr/leaveTypes`, data)
+    .pipe(catchError(this.handleError));
+  }
+
+  addLeaveAllocation(data: LeaveAllocationDTO){
+    return this.http
+    .post<any>(this.getBaseApiUrl() + `/x/api/v2/hr/leaveAllocations`, data)
+    .pipe(catchError(this.handleError));
+  }
+  updateLeaveAllocation(id:number | undefined, data: LeaveAllocationDTO){
+    return this.http
+    .put<any>(this.getBaseApiUrl() + `/x/api/v2/hr/leaveAllocations/${id}`, data)
+    .pipe(catchError(this.handleError));
+  }
+
+  deleteLeaveAllocation(id:number | undefined, data: LeaveAllocationDTO){
+    return this.http
+    .delete<any>(this.getBaseApiUrl() + `/x/api/v2/hr/leaveAllocations/${id}`)
+    .pipe(catchError(this.handleError));
+  }
+
+  getLeaveAllocationById(id:number | undefined){
+    return this.http
+    .get<any>(this.getBaseApiUrl() + `/x/api/v2/hr/leaveAllocations/${id}`)
     .pipe(catchError(this.handleError));
   }
 

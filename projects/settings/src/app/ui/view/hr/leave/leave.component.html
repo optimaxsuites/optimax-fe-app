@@ -1,15 +1,15 @@
 <p-confirmDialog header="Confirm Deletion" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog>
 
-<div class="flex gap-4 items-center">
+<!-- <div class="flex gap-4 items-center">
     <i class="pi pi-receipt text-4xl text-customBlue"></i>
     <div>
         <p class="text-customBlue/60">Human Resources</p>
         <p class="text-customBlue font-semibold text-[17px]">Level configuration</p>
     </div>
 </div>
-<hr>
+<hr> -->
 
-<div class="mb-4 mt-3 px-3 flex justify-between items-center ">
+<div class="mb-4 px-3 flex justify-between items-center ">
   <p class="text-xl font-semibold text-customBlue"><span *ngIf="showAddForm">New</span> Leave Structures</p>
   <button class="bg-customBlue text-white font-bold p-3 rounded-xl"  (click)="toogleForm()">{{showAddForm ? "Cancel" : "Create New"}}</button>
 </div>
