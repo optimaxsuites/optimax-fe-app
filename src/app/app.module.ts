@@ -67,6 +67,7 @@ import { AppraisalassessmentComponent } from './ui/view/hr/appraisalassessment/a
 import { SideModalComponent } from './ui/sharedComponents/view/side-modal/side-modal.component';
 import { CompensationComponent } from './ui/view/hr/compensation/compensation.component';
 import { NavTabComponent } from './ui/sharedComponents/view/nav-tab/nav-tab.component';
+import { LeaveStrctureComponent } from './ui/view/hr/leave-strcture/leave-strcture.component';
 
 //
 
@@ -83,10 +84,11 @@ import { NavTabComponent } from './ui/sharedComponents/view/nav-tab/nav-tab.comp
     AppraisalassessmentComponent,
     CompensationComponent,
     NavTabComponent,
+    LeaveStrctureComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppRoutingModule,
     CommonModule,
     AppRoutingModule,

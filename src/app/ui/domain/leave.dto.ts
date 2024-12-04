@@ -17,3 +17,9 @@ export interface LeaveDTO {
     balance: number; 
     usedDays: number; 
 }
+
+export interface LeaveAllocationDTO {
+    allocatedDays: number;
+    levelId: number | undefined;
+    leaveTypeId: number;
+}

@@ -142,7 +142,7 @@
         <div  class="grid grid-cols-1 gap-2 ">
           <div class="flex justify-between w-full gap-10" >
             <div class="w-1/2">
-              <label for="allowanceName"  class="block text-[14px] font-medium">Allowance Name</label>
+              <label for="allowanceName"  class="block text-[14px] font-medium">Name</label>
               <div class="flex items-center">
                 <ng-select 
                 [items]="availableAllowanceTypes"
@@ -165,7 +165,7 @@
             </div>
     
             <div class="w-1/2">
-              <label class="block text-[14px] font-medium" id="allowanceAccount">Allowance Amount</label>
+              <label class="block text-[14px] font-medium" id="allowanceAccount">Amount</label>
               <input 
                 formControlName="amount" 
                 (keydown.enter)="addAllowanceToTotal($event)"

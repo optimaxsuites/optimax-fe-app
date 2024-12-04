@@ -5,6 +5,7 @@ import { ScoresheetConfigComponent } from '../scoresheet-config/scoresheet-confi
 import { LevelComponent } from '../level/level.component';
 import { LeaveComponent } from '../leave/leave.component';
 import { CompensationComponent } from '../compensation/compensation.component';
+import { LeaveStrctureComponent } from '../leave-strcture/leave-strcture.component';
 
 @Component({
   selector: 'app-hr-settings',
@@ -62,7 +63,8 @@ export class HrSettingsComponent {
         'Update Leave Policies, Leave Allocation',
       ],
       icon: 'pi pi-receipt',
-      component: LeaveComponent,
+      // component: LeaveComponent,
+      component: LeaveStrctureComponent
     },
     {
       name: 'Score Sheet',
