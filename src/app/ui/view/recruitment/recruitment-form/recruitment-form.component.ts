@@ -3,6 +3,8 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { DomSanitizer } from '@angular/platform-browser';
 import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
 import { JobPostingCustomFieldDTO, JobPostingDTO } from '../../../domain/job.dto';
+import { RecruitmentService } from '../../../service/recruitment.service';
+import { stringify } from 'uuid';
 
 @Component({
   selector: 'app-recruitment-form',
@@ -12,7 +14,7 @@ import { JobPostingCustomFieldDTO, JobPostingDTO } from '../../../domain/job.dto
 })
 export class RecruitmentFormComponent {
   @Output() back = new EventEmitter<void>();
-  @Output() submitFrom = new EventEmitter<JobPostingDTO>();
+  @Output() submitForm = new EventEmitter<any>();
   @Input() jobData: JobPostingDTO = {};
   @Input() isEdit?: boolean; 
   openSideModal?: boolean;
@@ -31,103 +33,6 @@ export class RecruitmentFormComponent {
     { value: 'textarea', label: 'Textarea' },
   ];
 
-  jobCategories = [
-    'Accounting',
-    'Administration',
-    'Advertising',
-    'Aerospace',
-    'Agriculture',
-    'Arts and Entertainment',
-    'Automotive',
-    'Banking',
-    'Biotechnology',
-    'Business Development',
-    'Construction',
-    'Consulting',
-    'Customer Service',
-    'Data Analyst',
-    'Software Developer',
-    'Project Manager',
-    'Graphic Designer',
-    'Marketing Specialist',
-    'Sales Representative',
-    'Human Resources Manager',
-    'Financial Analyst',
-    'Business Analyst',
-    'Network Administrator',
-    'Content Writer',
-    'Customer Support Specialist',
-    'Research Scientist',
-    'Web Developer',
-    'Mobile App Developer',
-    'Data Scientist',
-    'System Administrator',
-    'UX/UI Designer',
-    'Quality Assurance Tester',
-    'IT Support Technician',
-    'Database Administrator',
-    'DevOps Engineer',
-    'Social Media Manager',
-    'Brand Manager',
-    'Compliance Officer',
-    'Event Planner',
-    'SEO Specialist',
-    'Digital Marketing Manager',
-    'Operations Manager',
-    'Teacher/Educator',
-    'Healthcare',
-    'Hospitality',
-    'Medical Professional (e.g., Doctor, Nurse)',
-    'Legal Advisor',
-    'Supply Chain Manager',
-    'Product Manager',
-    'Construction Manager',
-    'Chemist',
-    'Electrical Engineer',
-    'Civil Engineer',
-    'Mechanical Engineer',
-    'Architect',
-    'Information Security Analyst',
-    'Data Entry Clerk',
-    'Real Estate Agent',
-    'Copywriter',
-    'Web Content Manager',
-    'Public Relations Specialist',
-    'Product Designer',
-    'Research Assistant',
-    'Insurance Underwriter',
-    'Nonprofit',
-    'Pharmaceuticals',
-    'Project Management',
-    'Retail',
-    'Science',
-    'Security',
-    'Social Services',
-    'Telecommunications',
-    'Transportation',
-    'Travel and Tourism',
-    'Writing and Editing'
-  ];
-
-  jobTypes = [
-    'Full-time',
-    'Part-time',
-    'Contract',
-    'Temporary',
-    'Internship',
-    'Freelance',
-    'Commission-based',
-    'Volunteer',
-    'Seasonal',
-    'Project-based',
-    'Flexible'
-  ];
-
-  experienceLevels = [
-    '0-1 Year',
-    '2-4 Years',
-    '5+ Years'
-  ];
 
   jobSpecifications = [
     'On-site',
@@ -136,45 +41,86 @@ export class RecruitmentFormComponent {
     'Flexible'
   ];
 
-  jobQualification = [
-    'High School Diploma',
-    'Associate\'s Degree',
-    'Bachelor\'s Degree',
-    'Master\'s Degree',
-    'Doctorate (PhD)',
-    'Professional Certification (e.g., PMP, CPA, Six Sigma)',
-    'Vocational Training',
-    'Certificate Program (e.g., ITIL, AWS Certified)',
-    'Trade Certification',
-    'Apprenticeship',
-    'GED (General Educational Development)',
-    'Diploma (various fields)',
-    'Licensed (e.g., Medical Doctor, Nurse)',
-    'Certified (e.g., Certified Public Accountant)',
-    'Specialized Training (e.g., Software Development Bootcamp)',
-    'Continuous Professional Development (CPD)',
-    'Language Proficiency (e.g., TOEFL, IELTS)',
-    'Leadership Training',
-    'Technical Certification (e.g., Cisco, Microsoft)',
-    'Safety Training (e.g., OSHA)'
-  ];
+  jobCategories: any[] = [];
+  jobTypes: any[] = [];
+  jobExperienceLevels: any[] = [];
+  jobQualification: any[] = [];
+
   
   constructor(
     private sanitizer: DomSanitizer,
     private randomToken: RandomTokenService,
     private confirmationService: ConfirmationService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private recruitmentService: RecruitmentService
   ) {
 
   }
 
   ngOnInit() {
-    if (!this.jobData.postedDate) {
+    // if (!this.jobData.jobPostedDate) {
       this.getTodayDate(); 
-    }
+    // }
 
 
     console.log("Check if isEdit is working",this.isEdit)
+
+    this.loadJobCategories();
+    this.loadJobTypes();
+    this.loadJobExperiences();
+    this.loadJobVacancyQualifications();
+    this.loadJobVacancySpecifications();
+    this.populateCustomFieldList();
+  }
+
+  loadJobCategories() {
+    this.recruitmentService.getJobCategories().subscribe({
+      next: (categories) => {
+        this.jobCategories = categories;
+        console.log('Job Categories:', this.jobCategories); // Log categories
+      },
+      error: (error) => console.error('Error loading job categories', error),
+    });
+  }
+
+  loadJobTypes() {
+    this.recruitmentService.getJobTypes().subscribe({
+      next: (item) => {
+        this.jobTypes = item;
+        console.log('Job type:', this.jobTypes); // Log categories
+      },
+      error: (error) => console.error('Error loading job categories', error),
+    });
+  }
+
+  loadJobExperiences() {
+    this.recruitmentService.getJobVacancyExperiences().subscribe({
+      next: (item) => {
+        this.jobExperienceLevels = item;
+        console.log('Job experience:', this.jobExperienceLevels); // Log categories
+      },
+      error: (error) => console.error('Error loading job categories', error),
+    });
+  }
+
+  loadJobVacancyQualifications() {
+    this.recruitmentService.getJobVacancyQualifications().subscribe({
+      next: (item) => {
+        this.jobQualification = item;
+        console.log('Job qualification:', this.jobQualification); // Log categories
+      },
+      error: (error) => console.error('Error loading job categories', error),
+    });
+  }
+
+  loadJobVacancySpecifications() {
+    this.recruitmentService.getJobVacancySpecifications().subscribe({
+      next: (item) => {
+        this.jobSpecifications = item;
+        console.log('Job specification:', this.jobSpecifications); // Log categories
+      },
+      error: (error) => console.error('Error loading job categories', error),
+    });
   }
 
   onDeleteCustomiseInput(index: number): void {
@@ -183,8 +129,8 @@ export class RecruitmentFormComponent {
  
   toggleSideModal(field?: JobPostingCustomFieldDTO, index?: number): void {
     this.openSideModal = true;
-    if (!this.jobData.fields) {
-      this.customFieldList = [...(this.jobData.fields || [])]; 
+    if (!this.jobData.jobVacancyCustomFields) {
+      this.customFieldList = [...(this.jobData.jobVacancyCustomFields || [])]; 
     }
     if (field && index !== undefined) {
       this.customField = { ...field }; 
@@ -193,6 +139,27 @@ export class RecruitmentFormComponent {
       this.resetCustomField(); 
       this.editIndex = null; 
     }
+  }
+
+  populateCustomFieldList(): void {
+    if (!this.jobData.jobVacancyCustomFields || this.jobData.jobVacancyCustomFields.length === 0) {
+        console.warn("No custom fields available in jobData.jobVacancyCustomFields.");
+        this.customFieldList = [];
+        return;
+    }
+
+    const fetchRequests = this.jobData.jobVacancyCustomFields.map((FieldId) =>
+        this.recruitmentService.getCustomFieldById(FieldId).toPromise()
+    );
+
+    Promise.all(fetchRequests)
+      .then((fetchedFields) => {
+          this.customFieldList = fetchedFields; // Populate the customFieldList with fetched data
+          console.log("Custom fields successfully populated", fetchedFields);
+      })
+      .catch((err) => {
+          console.error("Error fetching custom fields", err);
+      });
   }
   
   onEditCustomInput(index: number): void {
@@ -226,28 +193,187 @@ export class RecruitmentFormComponent {
   resetCustomField(): void {
     this.customField = { label: '', type: '', required: false }; 
   }
-  
+
+  fieldsArray: JobPostingCustomFieldDTO[] = []
   saveCustomiseInputs(): void {
-      this.jobData.fields = [...this.customFieldList]; 
-      localStorage.setItem('customiseInputs', JSON.stringify(this.jobData.fields));
-  
-      this.openSideModal = false; 
+    // Make a copy of the custom field list
+    this.fieldsArray = [...this.customFieldList];
+
+    // Initialize an array to store responses
+    const responseArray: any[] = [];
+
+    // Make all service calls and collect responses
+    const saveRequests = this.fieldsArray.map((field) =>
+        this.recruitmentService.addJobVacncyCustomFieldss(field).toPromise()
+    );
+
+    // Wait for all requests to complete
+    Promise.all(saveRequests)
+      .then((responses) => {
+          responseArray.push(...responses);
+
+          // Save responses into jobData.jobVacancyCustomFields
+          this.jobData.jobVacancyCustomFields = responseArray;
+
+          // Save updated data to localStorage
+          localStorage.setItem('customiseInputs', JSON.stringify(this.jobData.jobVacancyCustomFields));
+
+          console.log("All fields successfully saved", responses);
+      this.populateCustomFieldList()
+
+      })
+      .catch((err) => {
+          console.error("Error saving one or more fields", err);
+      })
+      .finally(() => {
+          // Close the side modal regardless of success or failure
+          this.openSideModal = false;
+      });
+
+
   }
 
-  getTodayDate(){
-    const today = new Date();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const year = today.getFullYear();
   
-    this.jobData.postedDate = `${month}/${day}/${year}`; // MM/DD/YYYY
+  // saveCustomiseInputs(): void {
+  //     this.jobData.fields = [...this.customFieldList]; 
+  //     localStorage.setItem('customiseInputs', JSON.stringify(this.jobData.fields));
+  
+  //     this.openSideModal = false; 
+  // }
+  // generateRandomId(): number {
+  //   return Math.floor(Math.random() * (9999 - 1000 + 1)) + 1000; // Random number between 1000 and 9999
+  // }
+  // saveCustomFields(): void {
+  //   const customFieldData: JobPostingCustomFieldDTO = { 
+  //     id: this.generateRandomId(),
+  //     label: this.customField.label, 
+  //     type: this.customField.type, 
+  //     required: this.customField.required 
+  //   };
+
+  //   if (this.editIndex !== null) {
+  //     // Update logic: modify the custom field in your data array
+  //     // Here, you can use this.editIndex to update the existing field in an array or object
+  //     console.log('Updated custom field:', customFieldData);
+  //   } else {
+  //     // Add logic: you can either push this new custom field to an array or directly save it
+  //     console.log('Added new custom field:', customFieldData);
+  //   }
+
+  //   // Call the service to save or update the custom field
+  //   this.recruitmentService.addJobVacncyCustomFieldss(customFieldData)
+  //     .subscribe({
+  //       next: (response) => {
+  //         console.log('Custom field saved successfully:', response);
+  //         // Handle success (e.g., show a success message, navigate, etc.)
+  //       },
+  //       error: (error) => {
+  //         console.error('Error saving custom field:', error);
+  //         // Handle error (e.g., show an error message to the user)
+  //       }
+  //     });
+
+  //     this.openSideModal = false; 
+  // }
+
+  getTodayDate() {
+    const today = new Date();
+    console.log("posted date", today);
+    const unixTimestamp = today.getTime() / 1000; // Convert to Unix timestamp (seconds)
+    this.jobData.jobPostedDate = unixTimestamp.toFixed(3); // Store as string
+    console.log("posted date timestamp", this.jobData.jobPostedDate);
   }
+  
+  formatToDatetimeLocal(unixTimestamp: string): string {
+    if (!unixTimestamp) return '';
+    
+    // Convert Unix timestamp (in seconds) to milliseconds
+    const date = new Date(parseFloat(unixTimestamp) * 1000);
+    
+    // Format date to ISO 8601 string for datetime-local input
+    return date.toISOString().slice(0, 16); // Keep only `yyyy-MM-ddTHH:mm`
+  }
+  jobExpiryDateInput: string = ''; // Holds the datetime-local value
+// jobData: { jobExpiryDate: string } = { jobExpiryDate: '' }; // Holds the final Unix timestamp
+
+onExpiryDateChange(value: string): void {
+  if (value) {
+    const date = new Date(value); // Convert the input value to a Date object
+    const unixTimestamp = date.getTime() / 1000; // Convert to Unix timestamp in seconds
+    this.jobData.jobExpiryDate = unixTimestamp.toFixed(3); // Store it as a string with 3 decimal places
+    console.log("expiry date timestamp", this.jobData.jobExpiryDate)
+  } else {
+    this.jobData.jobExpiryDate = ''; // Reset if input is cleared
+  }
+}
+
+  
+  
+  // getExpiryDate() {
+  //   if (this.jobData.jobExpiryDate) {
+  //     const expiryDate = new Date(this.jobData.jobExpiryDate); // Now it's safe to create a Date object
+  //     const offsetDateString = `${expiryDate.toISOString().slice(0, 16)}+00:00`; // Custom offset if needed
+  //     this.jobData.jobExpiryDate = new Date(offsetDateString); // Set as a Date object
+  //   } 
+  // }
+  
+  
+  
 
   goBack() {
     this.back.emit();
   }
   
-  submitForm() {
+  // submitForm() {
+  //   const isValid = this.validateForm();
+  //   if (!isValid) {
+  //     this.messageService.add({
+  //       severity: 'error', 
+  //       summary: 'Validation Failed',
+  //       detail: 'Please fill out all fields before submitting the form.' 
+  //     });    
+  //     return; 
+  //   }
+  //   const storedJobs = localStorage.getItem('jobData');
+  //   const jobArray = storedJobs ? JSON.parse(storedJobs) : [];
+  
+  //   if (this.isEdit) {
+  //     const jobIndex = jobArray.findIndex((jobData: { id: number | undefined; }) => jobData.id === this.jobData.id);
+  
+  //     if (jobIndex > -1) {
+  //       jobArray[jobIndex] = this.jobData;
+  //       console.log('Job updated:', this.jobData);
+  //     } else {
+  //       console.error('Job not found for editing.');
+  //     }
+  //   } else {
+  //     this.jobData.id = this.randomToken.getRandomToken(); 
+  //     jobArray.push(this.jobData);
+  //     console.log('Job added:', this.jobData);
+  //   }
+  //   localStorage.setItem('jobData', JSON.stringify(jobArray));
+  
+  //   this.submitFrom.emit(this.jobData);
+  //   this.jobData = {}; 
+  // }
+
+  // prepareFormData() {
+  //   const jobPostedDate = this.jobData.jobPostedDate 
+  //   ? new Date(this.jobData.jobPostedDate).toISOString() 
+  //   : null; // Handle undefined case
+  // const jobExpiryDate = this.jobData.jobExpiryDate 
+  //   ? new Date(this.jobData.jobExpiryDate).toISOString() 
+  //   : null; // Handle undefined case
+  
+  //   return {
+  //     ...this.jobData,
+  //     jobPostedDate,
+  //     jobExpiryDate,
+  //   };
+  // }
+
+  onSubmitForm() {
+    // const preparedData = this.prepareFormData();
     const isValid = this.validateForm();
     if (!isValid) {
       this.messageService.add({
@@ -257,37 +383,61 @@ export class RecruitmentFormComponent {
       });    
       return; 
     }
-    const storedJobs = localStorage.getItem('jobData');
-    const jobArray = storedJobs ? JSON.parse(storedJobs) : [];
   
+    // Check if the job is being edited or added
     if (this.isEdit) {
-      const jobIndex = jobArray.findIndex((jobData: { id: number | undefined; }) => jobData.id === this.jobData.id);
-  
-      if (jobIndex > -1) {
-        jobArray[jobIndex] = this.jobData;
-        console.log('Job updated:', this.jobData);
-      } else {
-        console.error('Job not found for editing.');
-      }
+      console.log('Job updated:', this.jobData);
     } else {
-      this.jobData.id = this.randomToken.getRandomToken(); 
-      jobArray.push(this.jobData);
+      // this.jobData.id = this.randomToken.getRandomToken(); 
       console.log('Job added:', this.jobData);
     }
-    localStorage.setItem('jobData', JSON.stringify(jobArray));
+
+    function isDate(value: any): value is Date {
+      return value instanceof Date;
+    }
+    
+    const jobPostedDate =
+      this.jobData.jobPostedDate != null
+        ? isDate(this.jobData.jobPostedDate)
+          ? this.jobData.jobPostedDate.toISOString()
+          : typeof this.jobData.jobPostedDate === 'number'
+            ? new Date(this.jobData.jobPostedDate * 1000).toISOString()
+            : this.jobData.jobPostedDate
+        : null;
+
+  // Prepare the data object, including jobPostedDate
+  const data = {
+    ...this.jobData,
+    jobPostedDate
+  };
   
-    this.submitFrom.emit(this.jobData);
-    this.jobData = {}; 
+    // Call the recruitment service to save the job data
+    this.recruitmentService.addJobVacancy(data).subscribe(
+      response => {
+        console.log('Job saved successfully:', response);
+        this.submitForm.emit(data);  // Emit the saved job data if needed
+        this.jobData = {};  // Reset the form data after successful submission
+      },
+      error => {
+        console.error('Error saving job:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error Saving Job',
+          detail: 'There was an issue saving the job vacancy. Please try again later.'
+        });
+      }
+    );
   }
+  
 
 
   validateForm(): boolean {
     const requiredFields = [
-      this.jobData.title,
-      this.jobData.category,
-      this.jobData.employmentType,
-      this.jobData.expiryDate,
-      this.jobData.description
+      this.jobData.jobTitle,
+      this.jobData.jobCategory,
+      this.jobData.jobType,
+      this.jobData.jobExpiryDate,
+      this.jobData.companyOverview
     ];
 
     return requiredFields.every(field => field); 

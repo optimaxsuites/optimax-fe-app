@@ -8,6 +8,7 @@ import { environment } from '../../../shared-component/service/environments/envi
 import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
 import { DataService } from '../../../service/data.service';
 import { EmployeeService } from '../../../service/employee.service';
+import { formatDate } from '@angular/common';
 
 @Component({
   selector: 'app-admin-creation-form',
@@ -46,7 +47,7 @@ export class AdminCreationFormComponent {
 
 
   currentTab = 1;
-  tabs = ["Employment Information", "Employment Status", "Leave", "Access", "Summary"]
+  tabs = ["Employment Information", "Employment Status", "Access", "Summary"]
    maritalStatuses = [
     "Single",
     "Married",
@@ -285,18 +286,18 @@ private setProbationValidators(): void {
     this.employeeForm.markAllAsTouched()
     if(this.employeeForm.invalid) return
   }
+  // if(this.currentTab == 3){
+  //   this.leaveForm.markAllAsTouched()
+  //   if(this.leaveForm.invalid) return
+  // }
   if(this.currentTab == 3){
-    this.leaveForm.markAllAsTouched()
-    if(this.leaveForm.invalid) return
-  }
-  if(this.currentTab == 4){
     this.guarantorForm.markAllAsTouched()
     if(this.guarantorForm.invalid) return
   }
   
    
 
-    if (this.currentTab < 5) {
+    if (this.currentTab < 4) {
       this.currentTab++;
     }
   }
@@ -315,7 +316,11 @@ private setProbationValidators(): void {
   openBulkInstruction() {
       this.openInfoModal = true
   }
-
+ toLocalDateTime(date: Date | string): string {
+    if (!date) return '';
+    const parsedDate = new Date(date);
+    return formatDate(parsedDate, "yyyy-MM-dd'T'HH:mm:ss", 'en-US');
+  }
 
   addNewEmployee(shouldRedirect: boolean){
   const currentDate = new Date();  
@@ -336,13 +341,13 @@ private setProbationValidators(): void {
     supervisor: this.basicForm.get('supervisor')?.value,
 
     // Employment Information
-    employeeStatus: this.employeeForm.get('status')?.value,
-    employementStartDate: this.employeeForm.get('startDate')?.value,
-    employementEndDate: this.employeeForm.get('endDate')?.value,
+    employeeStatus: this.employeeForm.get('status')?.value.toUpperCase(),
+    employementStartDate: this.toLocalDateTime(this.employeeForm.get('startDate')?.value),
+    employementEndDate: this.toLocalDateTime(this.employeeForm.get('endDate')?.value),
     onProbation: this.employeeForm.get('isProbation')?.value,
-    probationStartDate: this.employeeForm.get('probationStartDate')?.value,
-    probationEndDate: this.employeeForm.get('probationEndDate')?.value,
-    appraisalDueDate: this.employeeForm.get('appraisalDueDate')?.value,
+    probationStartDate: this.toLocalDateTime(this.employeeForm.get('probationStartDate')?.value),
+    probationEndDate: this.toLocalDateTime(this.employeeForm.get('probationEndDate')?.value),
+    appraisalDueDate: this.toLocalDateTime(this.employeeForm.get('appraisalDueDate')?.value),
 
     // Leave Information
     // leaveDays: this.leaveForm.get('leaveDays')?.value,
@@ -357,24 +362,38 @@ private setProbationValidators(): void {
     // adminAccess: this.guarantorForm.get('adminAccess')?.value,
    
   }
-
-  this.employeeService.addEmployee(newEmployee).subscribe(
+  const formData = new FormData();
+  formData.append('employee', JSON.stringify(newEmployee));
+  console.log(formData)
+  this.employeeService.addEmployee(formData).subscribe(
    { next: (data: any) => {
     console.log(data)
-   }}
+    this.loading = false;
+    this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Employee added successfully!', key: 'tl', life: 3000  }); 
+    this.basicForm.reset()
+    this.guarantorForm.reset()
+    this.leaveForm.reset()
+    this.employeeForm.reset()
+    this.currentTab = 1
+
+    if (shouldRedirect) {
+      this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
+      }
+   },
+   error: (err) => {
+    this.loading = false;
+    console.log(err)
+  }
+  },
+   
+  
   )
   // employeesList.push(newEmployee);
   // localStorage.setItem("employeesList", JSON.stringify(employeesList));
   if (shouldRedirect) {
   // this.router.navigate([`/user/onboarding/${newEmployee.id}/wer23456fghi367ghj`]);
   }
-  this.loading = false;
-  this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Employee added successfully!', key: 'tl', life: 3000  }); 
-  this.basicForm.reset()
-  this.guarantorForm.reset()
-  this.leaveForm.reset()
-  this.employeeForm.reset()
-  this.currentTab = 1
+ 
 }
 
 

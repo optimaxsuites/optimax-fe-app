@@ -1,18 +1,19 @@
 export interface JobPostingDTO {
-    id?: string;
-    title?: string;
-    category?: string;
-    description?: string;
+    id?: number;
+    jobTitle?: string;
+    jobCategory?: number;
+    companyOverview?: string;
     location?: string;
-    employmentType?: string;
-    postedDate?: string;
-    expiryDate?: Date;
-    specification?: string;
-    experience?: string;
-    qualification?: string;
-    fields?: JobPostingCustomFieldDTO[]; 
+    jobType?: number;
+    jobPostedDate?: string;
+    jobExpiryDate?: string;
+    jobVacancySpecification?: number;
+    jobVacancyExperience?: number;
+    qualifications?: number;
+    jobVacancyCustomFields?: number[]; 
 }
 export interface JobPostingCustomFieldDTO {
+    id?: number;
     label?: string;
     type?: string; 
     options?: string[];

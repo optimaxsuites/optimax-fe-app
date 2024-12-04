@@ -12,7 +12,7 @@ export class EmployeeService {
  baseurl = 'https://be.optimaxsuites.com'
   constructor(private http: HttpClient) { }
 
-  addEmployee(data: employeeDTO): Observable<any>{
+  addEmployee(data: any): Observable<any>{
     return this.http
         .post<any>(
             this.baseurl +
@@ -37,6 +37,46 @@ export class EmployeeService {
         .pipe(catchError(this.handleError));
   }
 
+  
+  getSalaryById(id: number): Observable<any>{
+    return this.http
+        .get<any>(
+            this.baseurl +
+                `/x/api/v2/hr/salaries/getSalaryByLevel/${id}`)
+        .pipe(catchError(this.handleError));
+  }
+
+  getAllowanceTypeById(id: number){
+    return this.http
+    .get<any>(
+        this.baseurl +
+            `/x/api/v2/hr/salaries/allowanceTypes/${id}`)
+    .pipe(catchError(this.handleError));
+  }
+
+  getBonusTypeById(id: number){
+    return this.http
+    .get<any>(
+        this.baseurl +
+            `/x/api/v2/hr/salaries/bonusTypes/${id}`)
+    .pipe(catchError(this.handleError));
+  }
+
+  getDeductionTypeById(id: number){
+    return this.http
+    .get<any>(
+        this.baseurl +
+            `/x/api/v2/hr/salaries/deductionsType/${id}`)
+    .pipe(catchError(this.handleError));
+  }
+
+  getOverTimeTypeById(id: number){
+    return this.http
+    .get<any>(
+        this.baseurl +
+            `/x/api/v2/hr/salaries/overtimeTypes/${id}`)
+    .pipe(catchError(this.handleError));
+  }
 
 
   private handleError(error: HttpErrorResponse) {

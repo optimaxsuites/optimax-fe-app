@@ -214,17 +214,10 @@
    
   </form>
 
-  <form [formGroup]="leaveForm"  *ngIf="currentTab === 4" class="flex w-full flex-col justify-center item-center">
+  <!-- <form [formGroup]="leaveForm"  *ngIf="currentTab === 4" class="flex w-full flex-col justify-center item-center">
 
     <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
-      <!-- <div class="mb-4">
-          <label for="leaveDays" class="block text-[13px] font-medium">Leave Days Entitlement (Annually)<span class="ml-1 font-bold text-red-600">*</span></label>
-          <input type="number" formControlName="leaveDays" id="leaveDays" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" min="0"/>
-          <small *ngIf="leaveForm.get('leaveDays')?.touched && leaveForm.get('leaveDays')?.invalid" class="text-red-600">
-          {{ getErrorMessage(leaveForm.get("leaveDays"), 'Leave Days Entitlement') }}
-          </small>
-      </div> -->
-
+     
       <div class="mb-4">
           <table class="styled-table">
             <thead class="bg-customBlue text-white">
@@ -235,7 +228,6 @@
               <tr class="w-full" *ngFor="let leave of selectedLeaves; let i = index">
                 <td class="w-1/2">{{getLeaveNameWithId(leave.name)}}</td>
                 <td class="w-1/2">
-                  <!-- <input type="number" min="0"  class="outline-none p-1" placeholder="0" formControlName="annual"> -->
                    <div class="flex w-full justify-between items-center gap-1 px-2">
                     <p class="">{{leave.amount}} day(s)</p>
                     <i (click)="removeLeave(i)"  class="fa-solid fa-trash hover:bg-red-50 text-red-500 cursor-pointer text-2xl " ></i>
@@ -253,7 +245,6 @@
               <tr class="">
                 <td>
                   <div class="w-full">
-                    <!-- <label for="leave" class="block text-[13px] font-medium">Leave Types <span class="ml-1 font-bold text-red-600">*</span></label> -->
                     <ng-select 
                     [items]="leaves" 
                     bindLabel="label"
@@ -285,10 +276,10 @@
       </div>
     
     </div>
-  </form>
+  </form> -->
 
 
-  <form [formGroup]="guarantorForm" *ngIf="currentTab === 5" class="flex w-full flex-col justify-center item-center" >
+  <form [formGroup]="guarantorForm" *ngIf="currentTab === 4" class="flex w-full flex-col justify-center item-center" >
     <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-2">
       <label class="block text-[13px] font-medium">Grant Access</label>
 

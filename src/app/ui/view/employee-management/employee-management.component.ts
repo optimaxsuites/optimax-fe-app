@@ -545,119 +545,120 @@ handleDateClick(arg: DateClickArg) {
    private dataService: DataService
   ) {
   }
-  async ngOnInit() {
+   ngOnInit() {
 
    this.fetchEmployees()
 
       
-   try{
-    await this.employeeService.getAllEmployee().toPromise()
-     .then((res: any) => {
-        this.employees = res.data;
-        console.log(this.employees)
-        // this.filteredEmployees = [...this.employees];
-        // this.fetchSalaryStructure();
-      })
-     .catch((err: any) => {
-        console.log('Error fetching employees', err);
-      });
-
-    }catch(err) {}
+  
   }
 
 
   fetchEmployees(){
-    const employeesFromStorage = localStorage.getItem("employeesList");
-    const salaryStructureFromStorage = localStorage.getItem("salaryStructure");
-    if (salaryStructureFromStorage) {
-      this.salaryStructure = JSON.parse(salaryStructureFromStorage);
-    }else {
-      localStorage.setItem("salaryStructure", JSON.stringify(this.salaries))
-      const salaryStructureFromStorage = localStorage.getItem("salaryStructure") || "[]"
-      this.salaryStructure = JSON.parse(salaryStructureFromStorage);
-    }
-    if (employeesFromStorage) {
-      const storedEmployees = JSON.parse(employeesFromStorage);
-      let salaryStructure: any[] = [];
-      if (salaryStructureFromStorage) {
-        salaryStructure = JSON.parse(salaryStructureFromStorage);
-      }
+    this.employeeService.getAllEmployee().subscribe({
+      next: data => {
+        this.employees = data
+        this.uniqueLevels = [...new Set(this.employees.map((employee: { levelId: any; }) => employee.levelId))];
+        this.uniquePositions = [...new Set(this.employees.map((employee: {jobTitle: string} ) => employee.jobTitle))];
+        this.filteredEmployees = this.employees;
+    console.log(this.filteredEmployees)
+
+      },
+      error: err => console.log(err)
+    })
+
+
+//     const employeesFromStorage = localStorage.getItem("employeesList");
+//     const salaryStructureFromStorage = localStorage.getItem("salaryStructure");
+//     if (salaryStructureFromStorage) {
+//       this.salaryStructure = JSON.parse(salaryStructureFromStorage);
+//     }else {
+//       localStorage.setItem("salaryStructure", JSON.stringify(this.salaries))
+//       const salaryStructureFromStorage = localStorage.getItem("salaryStructure") || "[]"
+//       this.salaryStructure = JSON.parse(salaryStructureFromStorage);
+//     }
+//     if (employeesFromStorage) {
+//       const storedEmployees = JSON.parse(employeesFromStorage);
+//       let salaryStructure: any[] = [];
+//       if (salaryStructureFromStorage) {
+//         salaryStructure = JSON.parse(salaryStructureFromStorage);
+//       }
       
-      const calculateNetSalary = (salaryDetails: any) => {
-        const grossSalary = salaryDetails.baseSalary +
-          (salaryDetails.allowances.transportationAllowance || 0) +
-          (salaryDetails.allowances.mealAllowance || 0) + (salaryDetails.allowances.housingAllowance || 0) +
-          (salaryDetails.bonuses.internshipCompletionBonus || 0);
-        return grossSalary - (salaryDetails.deductions.tax + (salaryDetails.deductions.pension || 0));
-      };
-      this.employees = storedEmployees.map((employee: any) => {
-        const salaryDetails = salaryStructure.find(s => s.level === employee.level);
-        return {
-          ...employee,
-          salaryDetails: salaryDetails ? {
-            baseSalary: salaryDetails.baseSalary,
-            allowances: salaryDetails.allowances,
-            deductions: salaryDetails.deductions,
-            bonuses: salaryDetails.bonuses,
-            overtime: salaryDetails.overtime,
-            netSalary: calculateNetSalary(salaryDetails)
-          } : null 
-        };
-      });
-console.log(this.employees)
-      this.uniqueLevels = [...new Set(this.employees.map((employee: { level: any; }) => employee.level))];
+//       const calculateNetSalary = (salaryDetails: any) => {
+//         const grossSalary = salaryDetails.baseSalary +
+//           (salaryDetails.allowances.transportationAllowance || 0) +
+//           (salaryDetails.allowances.mealAllowance || 0) + (salaryDetails.allowances.housingAllowance || 0) +
+//           (salaryDetails.bonuses.internshipCompletionBonus || 0);
+//         return grossSalary - (salaryDetails.deductions.tax + (salaryDetails.deductions.pension || 0));
+//       };
+//       this.employees = storedEmployees.map((employee: any) => {
+//         const salaryDetails = salaryStructure.find(s => s.level === employee.level);
+//         return {
+//           ...employee,
+//           salaryDetails: salaryDetails ? {
+//             baseSalary: salaryDetails.baseSalary,
+//             allowances: salaryDetails.allowances,
+//             deductions: salaryDetails.deductions,
+//             bonuses: salaryDetails.bonuses,
+//             overtime: salaryDetails.overtime,
+//             netSalary: calculateNetSalary(salaryDetails)
+//           } : null 
+//         };
+//       });
+// console.log(this.employees)
+//       this.uniqueLevels = [...new Set(this.employees.map((employee: { level: any; }) => employee.level))];
 
-      this.uniquePositions = [...new Set(this.employees.map((employee: {jobTitle: string} ) => employee.jobTitle))];
+//       this.uniquePositions = [...new Set(this.employees.map((employee: {jobTitle: string} ) => employee.jobTitle))];
 
-      this.filteredEmployees = this.employees;
+//       this.filteredEmployees = this.employees;
 
-    }
+//     }
   
-  else {
-    localStorage.setItem("employeesList", JSON.stringify(this.employeeList))
-    const employeesFromStorage = localStorage.getItem("employeesList");
-    const salaryStructureFromStorage = localStorage.getItem("salaryStructure");
-    if (employeesFromStorage) {
+//   else {
+//     localStorage.setItem("employeesList", JSON.stringify(this.employeeList))
+//     const employeesFromStorage = localStorage.getItem("employeesList");
+//     const salaryStructureFromStorage = localStorage.getItem("salaryStructure");
+//     if (employeesFromStorage) {
 
-      const storedEmployees = JSON.parse(employeesFromStorage);
-      let salaryStructure: any[] = [];
-      if (salaryStructureFromStorage) {
-        salaryStructure = JSON.parse(salaryStructureFromStorage);
-      }
+//       const storedEmployees = JSON.parse(employeesFromStorage);
+//       let salaryStructure: any[] = [];
+//       if (salaryStructureFromStorage) {
+//         salaryStructure = JSON.parse(salaryStructureFromStorage);
+//       }
       
-      const calculateNetSalary = (salaryDetails: any) => {
-        const grossSalary = salaryDetails.baseSalary +
-          (salaryDetails.allowances.transportationAllowance || 0) +
-          (salaryDetails.allowances.mealAllowance || 0) + (salaryDetails.allowances.housingAllowance || 0) +
-          (salaryDetails.bonuses.internshipCompletionBonus || 0);
-        return grossSalary - (salaryDetails.deductions.tax + (salaryDetails.deductions.pension || 0));
-      };
-      this.employees = storedEmployees.map((employee: any) => {
-        const salaryDetails = salaryStructure.find(s => s.level === employee.level);
-        return {
-          ...employee,
-          salaryDetails: salaryDetails ? {
-            baseSalary: salaryDetails.baseSalary,
-            allowances: salaryDetails.allowances,
-            deductions: salaryDetails.deductions,
-            bonuses: salaryDetails.bonuses,
-            overtime: salaryDetails.overtime,
-            netSalary: calculateNetSalary(salaryDetails)
-          } : null 
-        };
-      });
-      this.uniqueLevels = [...new Set(this.employees.map((employee: { level: any; }) => employee.level))];
-      console.log(this.uniqueLevels)
+//       const calculateNetSalary = (salaryDetails: any) => {
+//         const grossSalary = salaryDetails.baseSalary +
+//           (salaryDetails.allowances.transportationAllowance || 0) +
+//           (salaryDetails.allowances.mealAllowance || 0) + (salaryDetails.allowances.housingAllowance || 0) +
+//           (salaryDetails.bonuses.internshipCompletionBonus || 0);
+//         return grossSalary - (salaryDetails.deductions.tax + (salaryDetails.deductions.pension || 0));
+//       };
+//       this.employees = storedEmployees.map((employee: any) => {
+//         const salaryDetails = salaryStructure.find(s => s.level === employee.level);
+//         return {
+//           ...employee,
+//           salaryDetails: salaryDetails ? {
+//             baseSalary: salaryDetails.baseSalary,
+//             allowances: salaryDetails.allowances,
+//             deductions: salaryDetails.deductions,
+//             bonuses: salaryDetails.bonuses,
+//             overtime: salaryDetails.overtime,
+//             netSalary: calculateNetSalary(salaryDetails)
+//           } : null 
+//         };
+//       });
+//       this.uniqueLevels = [...new Set(this.employees.map((employee: { level: any; }) => employee.level))];
+//       console.log(this.uniqueLevels)
 
 
-      this.uniquePositions = [...new Set(this.employees.map((employee: {jobTitle: string} ) => employee.jobTitle))];
-      console.log(this.uniquePositions)
+//       this.uniquePositions = [...new Set(this.employees.map((employee: {jobTitle: string} ) => employee.jobTitle))];
+//       console.log(this.uniquePositions)
 
-      this.filteredEmployees = this.employees;
+//       this.filteredEmployees = this.employees;
 
 
-    }
-  }
+//     }
+//   }
   }
 
   closeAddForm() {
@@ -681,15 +682,13 @@ console.log(this.employees)
     console.log(employee)
     localStorage.setItem('employeeInView', JSON.stringify(employee))
 
-  this.viewEmployee = true
-  this.employeeInView = employee
-  this.calendarOptions = {
-    initialView: 'dayGridMonth',
-    plugins: [dayGridPlugin, interactionPlugin],
-    dateClick: (arg) => this.handleDateClick(arg),
-    events:  this.generateLeaveEvents(this.employeeInView.leaveDetails)
-  };
+    this.viewEmployee = true
+    this.employeeInView = employee
+    
+    
     }    
+
+
     closeViewEmployee() {
   this.viewEmployee = false
   this.employeeInView = {}
