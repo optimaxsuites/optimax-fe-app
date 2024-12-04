@@ -180,8 +180,8 @@ import { SidebarComponent } from './ui/view/sidebar/sidebar.component';
     MasterComponent,
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     AppHrRoutingModule,
     CommonModule,
     TableModule,

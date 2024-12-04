@@ -12,14 +12,15 @@
         <div class="input-container-50 space-y-2 ">
           <!-- Job Title -->
           <label for="jobTitle">Job Title: <span style="color: red;">*</span></label>
-          <input type="text" id="jobTitle" placeholder="Job Title" class="editInput h-[36px]" name="jobTitle" [(ngModel)]="jobData.title" required>
+          <input type="text" id="jobTitle" placeholder="Job Title" class="editInput h-[36px]" name="jobTitle" [(ngModel)]="jobData.jobTitle" required>
           
           <!-- Job Category -->
           <label for="jobCategory">Category: <span style="color: red;">*</span></label>
           <ng-select 
             bindLabel="name"
+            bindValue="id"
             placeholder="Select Category"
-            [(ngModel)]="jobData.category"
+            [(ngModel)]="jobData.jobCategory"
             [items]="jobCategories">
           </ng-select>
           
@@ -27,8 +28,9 @@
           <label for="jobType">Job Type: <span style="color: red;">*</span></label>
           <ng-select 
             bindLabel="name"
+            bindValue="id"
             placeholder="Select Job Type"
-            [(ngModel)]="jobData.employmentType"
+            [(ngModel)]="jobData.jobType"
             [items]="jobTypes">
           </ng-select>
           
@@ -40,17 +42,19 @@
           <label for="experience">Experience:</label>
           <ng-select 
             bindLabel="name"
+            bindValue="id"
             placeholder="Select Experience Year"
-            [(ngModel)]="jobData.experience"
-            [items]="experienceLevels">
+            [(ngModel)]="jobData.jobVacancyExperience"
+            [items]="jobExperienceLevels">
           </ng-select>
           
           <!-- Qualification -->
           <label for="qualification">Qualification:</label>
           <ng-select 
             bindLabel="name"
+            bindValue="id"
             placeholder="Select Qualification"
-            [(ngModel)]="jobData.qualification"
+            [(ngModel)]="jobData.qualifications"
             [items]="jobQualification">
           </ng-select>
           
@@ -58,8 +62,9 @@
           <label for="specification">Specification:</label>
           <ng-select 
             bindLabel="name"
+            bindValue="id"
             placeholder="Select Specification"
-            [(ngModel)]="jobData.specification"
+            [(ngModel)]="jobData.jobVacancySpecification"
             [items]="jobSpecifications">
           </ng-select>
           
@@ -67,20 +72,36 @@
             <div class="input-container-50 space-y-2">
               <!-- Posted Date -->
               <label for="postedDate">Posted Date:</label>
-              <input type="text" id="postedDate" class="editInput h-[36px] mb-4" name="postedDate" [ngModel]="jobData.postedDate | date: 'MM/dd/yyyy'" disabled required>
+              <!-- <input type="datetime-local" id="postedDate" class="editInput h-[36px] mb-4" name="postedDate" [ngModel]="jobData.jobPostedDate | date: 'dd-MM-yyyy HH:mm'" disabled required> -->
+              <input 
+              type="datetime-local" 
+              id="postedDate" 
+              class="editInput h-[36px] mb-4" 
+              name="postedDate" 
+              [value]="formatToDatetimeLocal(jobData.jobPostedDate!)" 
+              disabled 
+              required>
             </div>
             <div class="input-container-50 space-y-2">
               <!-- Expiry Date -->
               <label for="expiryDate">Expiry Date: <span style="color: red;">*</span></label>
-              <input type="date" id="expiryDate" class="editInput h-[36px] mb-4" name="expiryDate" [(ngModel)]="jobData.expiryDate" required>
+              <!-- <input type="datetime-local" id="expiryDate" class="editInput h-[36px] mb-4" name="expiryDate" [(ngModel)]="jobData.jobExpiryDate"  required> -->
+              <input 
+              type="datetime-local" 
+              id="expiryDate" 
+              class="editInput h-[36px] mb-4" 
+              name="expiryDate" 
+              [(ngModel)]="jobExpiryDateInput" 
+              (ngModelChange)="onExpiryDateChange($event)" 
+              required>
             </div>
           </div>
 
           <div>
-            <div class="" *ngIf="jobData.fields && jobData.fields.length > 0">
+            <div class="" *ngIf="customFieldList && customFieldList.length > 0">
               <hr>
               <h4><strong>Customised input field(s)</strong></h4>
-              <div class="card list-card-wrapper p-4 m-2" *ngFor="let item of jobData.fields">
+              <div class="card list-card-wrapper p-4 m-2" *ngFor="let item of customFieldList">
                 <div class="list-card-right">
                   <span>{{ item.label }} - {{ item.type }} - {{ item.required ? 'Required' : 'Optional' }}</span>
                 </div>
@@ -90,18 +111,18 @@
             <!-- <hr> -->
             <div class="btn-wrapper" >
               <button class="add-btn" (click)="toggleSideModal()">
-                <i class="fas fa-plus me-2"></i>{{ jobData.fields?.length! > 0 ? 'Edit Customize Input' : 'Add Customize Input' }}
+                <i class="fas fa-plus me-2"></i>{{ jobData.jobVacancyCustomFields?.length! > 0 ? 'Edit Customize Input' : 'Add Customize Input' }}
               </button>
             </div>
           </div>
         </div>
         <div class="input-container-50">
           <label for="">Overview & Description: <span style="color: red;">*</span></label>
-          <p-editor [(ngModel)]="jobData.description" placeholder="Overview & Description..."  [style]="{ height: '100vh' }" />
+          <p-editor [(ngModel)]="jobData.companyOverview" placeholder="Overview & Description..."  [style]="{ height: '100vh' }" />
         </div>
       </div>
       <div class="btn-wrapper">
-        <app-button (click)="submitForm()" text="{{ isEdit ? 'Update' : 'Create' }}" type="submit" class="btn-navigate"></app-button>
+        <app-button (click)="onSubmitForm()" text="{{ isEdit ? 'Update' : 'Create' }}" type="submit" class="btn-navigate"></app-button>
       </div>
     </div>
   </div>

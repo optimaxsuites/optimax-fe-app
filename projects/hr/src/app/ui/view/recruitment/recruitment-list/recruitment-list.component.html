@@ -35,13 +35,13 @@
             <div *ngFor="let job of filteredJobPostings; let i = index" class=" bg-gray-50 transition ease-linear hover:scale-105 hover:border-2 text-customBlue rounded-xl flex flex-col w-[50%] p-2 editInput" >
                 <div class="list-card-wrapper">
                     <div class="list-card-right">
-                        <h3><strong>{{job.title}}</strong></h3>
+                        <h3><strong>{{job.jobTitle}}</strong></h3>
                         <div class="table-item">
                             <p *ngIf="job.location"> <i class="pi pi-map-marker table-item me-2 "></i> {{job.location}}</p>
-                            <p *ngIf="job.employmentType" > <i class="pi pi-clock table-item  me-2"></i> {{job.employmentType}}</p>
+                            <p *ngIf="job.jobType" > <i class="pi pi-clock table-item  me-2"></i> {{job.jobType}}</p>
                             <!-- <p> <i class="pi pi-clock"></i> {{job.category}}</p> -->
-                            <p *ngIf="job.postedDate"> <i class="pi pi-calendar-clock table-item me-2"></i> {{job.postedDate}}</p>
-                            <p *ngIf="job.expiryDate"> <i class="pi pi-calendar-times table-item me-2"></i> {{job.expiryDate}}</p>
+                            <p *ngIf="job.jobPostedDate"> <i class="pi pi-calendar-clock table-item me-2"></i> {{job.jobPostedDate}}</p>
+                            <p *ngIf="job.jobExpiryDate"> <i class="pi pi-calendar-times table-item me-2"></i> {{job.jobExpiryDate}}</p>
                         </div>
                     </div>
                     <div class="list-card-left ">
@@ -52,7 +52,7 @@
                         </div>
                     </div>
                 </div>
-                <!-- <div class="editInput" style="width: 700px; height: 400px; overflow-y: scroll; font-size: 14px;" [innerHTML]="safeHtmlDescriptions[i]"></div> -->
+                <!-- <div class="editInput" style="width: 700px; height: 400px; overflow-y: scroll; font-size: 14px;" [innerHTML]="safeHtmlcompanyOverviews[i]"></div> -->
             </div>
         </div>
 
@@ -115,49 +115,49 @@
 </div>
 
 <div *ngIf="showRecruitmentForm">
-    <app-recruitment-form [jobData]="activeItem" (back)="close()" (submitFrom)="createJob()" [isEdit]="isEdit"></app-recruitment-form>
+    <app-recruitment-form #recruitmentForm [jobData]="activeItem" (back)="close()" (submitForm)="createJob()" [isEdit]="isEdit"></app-recruitment-form>
 </div>
 
 <app-modal 
   *ngIf="viewModal"
-  [header]="'Viewing ' + activeItem.title + ' job posting information'"
+  [header]="'Viewing ' + activeItem.jobTitle + ' job posting information'"
   [title]="'Cancel'"
   (close)="closeViewModal()">
     <div class="view-wrapper">
         <div class="d-flex gap-4 my-4">
             <div class="input-container-50">
                 <label for="name"><strong>Job Title:</strong></label>
-                <span> {{activeItem.title}}</span>
+                <span> {{activeItem.jobTitle}}</span>
             </div>
             <div class="input-container-50">
                 <label for="phone-number"><strong>Category:</strong></label>
-                <span> {{activeItem.category}}</span>
+                <span> {{activeItem.jobCategory}}</span>
             </div>
         </div>
         <div class="d-flex gap-4 my-4">
             <div class="input-container-50">
                 <label for="email"><strong>Job Type:</strong></label>
-                <span> {{activeItem.employmentType}}</span>
+                <span> {{activeItem.jobType}}</span>
             </div>
             <div class="input-container-50">
                 <label for="position"><strong>Specification:</strong></label>
-                <span> {{activeItem.specification}}</span>
+                <span> {{activeItem.jobVacancySpecification}}</span>
             </div>
         </div>
         <div class="d-flex gap-4 my-4">
             <div class="input-container-50">
                 <label for="email"><strong>Qualification:</strong></label>
-                <span> {{activeItem.qualification}}</span>
+                <span> {{activeItem.qualifications}}</span>
             </div>
             <div class="input-container-50">
                 <label for="position"><strong>Experience:</strong></label>
-                <span> {{activeItem.experience}}</span>
+                <span> {{activeItem.jobVacancyExperience}}</span>
             </div>
         </div>
         <div class="d-flex gap-4 my-4">
             <div class="input-container-50">
                 <label for="date"><strong>Date Applied:</strong></label>
-                <span> {{activeItem.postedDate}}</span>
+                <span> {{activeItem.jobPostedDate | date: 'fullDate'}}</span>
             </div>
             <div class="input-container-50">
                 <label for="date"><strong>Location:</strong></label>
@@ -167,19 +167,19 @@
         <div class="d-flex gap-4 my-4">
             <div class="input-container-50">
                 <label for="date"><strong>Expiry Date:</strong></label>
-                <span> {{activeItem.expiryDate}}</span>
+                <span> {{activeItem.jobExpiryDate | date: 'fullDate'}}</span>
             </div>
         </div>
         <div class="d-flex gap-4 my-4">
             <div class="input-container-50">
                 <label for="cover-letter"><strong>Overview:</strong></label>
-                <!-- <textarea class="cover-letter editInput" name="cover-letter" [(ngModel)]="activeItem.description" disabled></textarea> -->
-                <div class="input-container-100 editInput" style="text-align: justify;" [innerHTML]="activeItem.description"></div>
+                <!-- <textarea class="cover-letter editInput" name="cover-letter" [(ngModel)]="activeItem.companyOverview" disabled></textarea> -->
+                <div class="input-container-100 editInput" style="text-align: justify;" [innerHTML]="activeItem.companyOverview"></div>
             </div>
             <div class="input-container-50">
                 <!-- <div class="" *ngIf="activeItem.fields && activeItem.fields.length > 0"> -->
                     <label><strong>Customised Input Field(s)</strong></label>
-                    <div class="card list-card-wrapper p-4 m-2" *ngFor="let item of activeItem.fields">
+                    <div class="card list-card-wrapper p-4 m-2" *ngFor="let item of customFieldList">
                       <div class="list-card-right">
                         <span>{{ item.label }} - {{ item.type }} - {{ item.required ? 'Required' : 'Optional' }}</span>
                       </div>

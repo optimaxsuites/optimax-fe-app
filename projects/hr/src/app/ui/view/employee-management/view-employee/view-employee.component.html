@@ -56,12 +56,12 @@
             <div class="flex justify-between items-center">
                 <div class="flex gap-3 items-center my-2 text-customBlue">
                     <i class="fa-solid fa-wallet text-[2rem]"></i>
-                    <p class="text-[15px] font-semibold tracking-wider mb-2">Base salary: <span class="ml-1 text-[14px] font-normal text-customBlue">₦{{employeeInView?.salaryDetails?.baseSalary}}</span></p>
+                    <p class="text-[15px] font-semibold tracking-wider mb-2">Base salary: <span class="ml-1 text-[14px] font-normal text-customBlue">{{employeeInView?.salaryDetails?.baseSalary | currency: 'NGN'}}</span></p>
                 </div>
   
                 <div class="flex gap-3 items-center my-2 text-customBlue">
                     <i class="fa-solid fa-wallet text-[2rem]"></i>
-                    <p class="text-[15px] font-semibold tracking-wider mb-2">Net salary: <span class="ml-1 text-[14px] font-normal text-customBlue">₦{{employeeInView?.salaryDetails?.netSalary}}</span></p>
+                    <p class="text-[15px] font-semibold tracking-wider mb-2">Net salary: <span class="ml-1 text-[14px] font-normal text-customBlue">{{employeeInView?.salaryDetails?.netSalary | currency: 'NGN'}}</span></p>
                 </div>
             </div>
   
@@ -73,9 +73,9 @@
                     <div class="flex flex-col gap-1">
                         <p class="text-[15px] font-semibold tracking-wider mb-2">Allowances</p>
   
-                        <div *ngIf="employeeInView?.salaryDetails?.allowances; else noAllowances">
-                            <p *ngFor="let allowance of getAllowanceKeys(employeeInView?.salaryDetails?.allowances)">
-                              {{ toTitleCaseWithSpace(allowance) | titlecase }}: ₦{{ employeeInView?.salaryDetails?.allowances[allowance] }}
+                        <div *ngIf="employeeInView?.salaryDetails?.allowance; else noAllowances">
+                            <p *ngFor="let allowance of employeeInView?.salaryDetails?.allowance">
+                              {{ getAllowanceName(allowance.allowanceTypeId) }}: {{allowance.amount | currency: 'NGN' }}
                             </p>
                         </div>
   
@@ -88,9 +88,9 @@
                     <div class="flex flex-col gap-1">
                         <p class="text-[15px] font-semibold tracking-wider mb-2">Bonuses</p>
   
-                        <div *ngIf="employeeInView?.salaryDetails?.bonuses && getAllowanceKeys(employeeInView?.salaryDetails?.bonuses).length > 0; else noBonuses">
-                            <p *ngFor="let bonus of getAllowanceKeys(employeeInView?.salaryDetails?.bonuses)">
-                              {{ toTitleCaseWithSpace(bonus) | titlecase }}: ₦{{ employeeInView?.salaryDetails?.bonuses[bonus] }}
+                        <div *ngIf="employeeInView?.salaryDetails?.bonus else noBonuses">
+                            <p *ngFor="let bonus of employeeInView?.salaryDetails?.bonus">
+                              {{bonus.bonusTypeId}}: {{ bonus.amount | currency: 'NGN'}}
                             </p>
                           </div>
   
@@ -103,9 +103,9 @@
                     <div class="flex flex-col gap-1">
                         <p class="text-[15px] font-semibold tracking-wider mb-2">Deductions</p>
   
-                        <div *ngIf="employeeInView?.salaryDetails?.deductions && getAllowanceKeys(employeeInView?.salaryDetails?.deductions).length > 0; else noDeduction">
-                            <p *ngFor="let deduction of getAllowanceKeys(employeeInView?.salaryDetails?.deductions)">
-                              {{ toTitleCaseWithSpace(deduction) | titlecase }}: ₦{{ employeeInView?.salaryDetails?.deductions[deduction] }}
+                        <div *ngIf="employeeInView?.salaryDetails?.deductions; else noDeduction">
+                            <p *ngFor="let deduction of employeeInView?.salaryDetails?.deductions">
+                              {{ deduction.deductionsTypeId }}: {{ deduction.amount | currency: 'NGN'}}
                             </p>
                           </div>
   
@@ -118,9 +118,9 @@
                     <div class="flex flex-col gap-1">
                         <p class="text-[15px] font-semibold tracking-wider mb-2">OverTime </p>
   
-                        <div *ngIf="employeeInView?.salaryDetails?.overtime && getAllowanceKeys(employeeInView?.salaryDetails?.overtime).length > 0; else noOvertime">
-                            <p *ngFor="let overtime of getAllowanceKeys(employeeInView?.salaryDetails?.overtime)">
-                              {{ toTitleCaseWithSpace(overtime) | titlecase }}: ₦{{ employeeInView?.salaryDetails?.overtime[overtime] }}
+                        <div *ngIf="employeeInView?.salaryDetails?.overtime; else noOvertime">
+                            <p *ngFor="let overtime of employeeInView?.salaryDetails?.overtime">
+                              {{ overtime.overtimeTypeId }}: {{ overtime.rate | currency: 'NGN' }}
                             </p>
                           </div>
   

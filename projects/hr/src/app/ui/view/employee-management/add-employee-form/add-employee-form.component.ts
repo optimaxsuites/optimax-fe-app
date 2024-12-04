@@ -7,6 +7,7 @@ import { RandomTokenService } from '../../../shared-component/service/random-tok
 import { environment } from '../../../shared-component/service/environments/environment';
 import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
 import { ActivatedRoute } from '@angular/router';
+import { EmployeeService } from '../../../service/employee.service';
 
 interface Employee {
   id: number;
@@ -160,7 +161,7 @@ export class AddEmployeeFormComponent {
   formErrors: string[] = [];
   userInfoRegData: any[] = [];
   userRegData: any = { };
-  employeeId:string = ""
+  employeeId:number = 0
   employeeData: any;
   maxDate: string ="";
   constructor(
@@ -168,12 +169,12 @@ export class AddEmployeeFormComponent {
     private authenticationService: AuthenticationService,
     private messageService: MessageService,
     private router: Router, 
-    private token: RandomTokenService, 
+    private employeeService: EmployeeService, 
     private route: ActivatedRoute
   ) {  }
 
   ngOnInit(): void {
-    this.employeeId = this.route.snapshot.paramMap.get('id') as string;
+    this.employeeId = this.route.snapshot.paramMap.get('id') as unknown as number;
     const today = new Date();
     const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());  // 18 years ago
     this.maxDate = maxDate.toISOString().split('T')[0];  
@@ -238,19 +239,16 @@ export class AddEmployeeFormComponent {
 
   }
 
-  fetchEmployeeData(employeeId: string): void {
-    const employeesFromStorage = localStorage.getItem("employeesList");
-    const employeesList = employeesFromStorage ? JSON.parse(employeesFromStorage) : [];
-    
-    this.employeeData = employeesList.find((employee: { id: string; }) => employee.id === employeeId);
-    console.log(this.employeeData)
-    if (this.employeeData) {
-      this.basicForm.patchValue({
-        firstName: this.employeeData.firstName,
-        lastName: this.employeeData.lastName,
-        email: this.employeeData.email,
-      });
-    }
+  fetchEmployeeData(employeeId: number): void {
+    this.employeeService.getEmployeeById(employeeId).subscribe({
+      next: (employee: any) => {
+        this.basicForm.patchValue({
+              firstName: employee.firstName,
+              lastName: employee.lastName,
+              email: employee.email,
+            });
+      }
+    })
   }
  imageFileValidator(): ValidatorFn {
   return (control: AbstractControl): { [key: string]: any } | null => {
@@ -336,7 +334,7 @@ addNewEmployee(){
   const employeesList = employeesFromStorage ? JSON.parse(employeesFromStorage) : [];
 
   
-  const employeeIndex = employeesList.findIndex((emp: { id: string; }) => emp.id === this.employeeId);
+  const employeeIndex = employeesList.findIndex((emp: { id: number; }) => emp.id === this.employeeId);
   
   if (employeeIndex !== -1) {
     const existingEmployee = employeesList[employeeIndex];

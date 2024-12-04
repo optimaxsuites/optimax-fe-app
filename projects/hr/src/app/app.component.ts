@@ -27,6 +27,7 @@ this.userLoginAction()
 
 
 ngOnInit(): void {
+  this.userLoginAction()
 }
   async userLoginAction(): Promise<void> {
   

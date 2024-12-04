@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { DomSanitizer } from '@angular/platform-browser';
 import { animate, state, style, transition, trigger } from '@angular/animations';
-import { JobPostingDTO } from '../../../domain/job.dto';
+import { JobPostingCustomFieldDTO, JobPostingDTO } from '../../../domain/job.dto';
+import { RecruitmentService } from '../../../service/recruitment.service';
+import { RecruitmentFormComponent } from '../recruitment-form/recruitment-form.component';
 
 @Component({
   selector: 'app-recruitment-list',
@@ -26,7 +28,8 @@ export class RecruitmentListComponent implements OnInit {
   constructor(
     private sanitizer: DomSanitizer,
     private confirmationService: ConfirmationService,
-    private messageService: MessageService 
+    private messageService: MessageService,
+    private recruitmentService: RecruitmentService
   ) {}
 
   ngOnInit() {
@@ -34,34 +37,77 @@ export class RecruitmentListComponent implements OnInit {
     // console.log("jobpostingsData", this.jobpostings);
 
   }
+  customFieldList: JobPostingCustomFieldDTO[] = []
+  populateCustomFieldList(): void {
+    if (!this.activeItem.jobVacancyCustomFields || this.activeItem.jobVacancyCustomFields.length === 0) {
+        console.warn("No custom fields available in jobpostings.jobVacancyCustomFields.");
+        this.customFieldList = [];
+        return;
+    }
+
+    const fetchRequests = this.activeItem.jobVacancyCustomFields.map((FieldId) =>
+        this.recruitmentService.getCustomFieldById(FieldId).toPromise()
+    );
+
+    Promise.all(fetchRequests)
+      .then((fetchedFields) => {
+          this.customFieldList = fetchedFields; // Populate the customFieldList with fetched data
+          console.log("Custom fields successfully populated", fetchedFields);
+      })
+      .catch((err) => {
+          console.error("Error fetching custom fields", err);
+      });
+  }
+
+
   toggleView() {
     this.showListView = !this.showListView;
   }
 
   getJobPostings() {
-    const storedJobData = localStorage.getItem('jobData');
-
-    if (storedJobData) {
-      const parsedData = JSON.parse(storedJobData);
-
-      // Check if parsedData is an array
-      if (Array.isArray(parsedData)) {
-        this.jobpostings = parsedData;
-        this.jobpostings.reverse();
-      } else {
-        console.error('Parsed data is not an array:', parsedData);
+    // Fetch data from the API
+    this.recruitmentService.getJobVacancies().subscribe({
+      next: (apiJobVacancies) => {
+        // Reverse the order of job vacancies and assign to jobpostings
+        this.jobpostings = apiJobVacancies.reverse();
+  
+        // Copy reversed data to filteredJobPostings
+        this.filteredJobPostings = [...this.jobpostings];
+      },
+      error: (err) => {
+        console.error('Error fetching job vacancies:', err);
+  
+        // Fallback to an empty array if API call fails
         this.jobpostings = [];
-      }
-      
-      // Copy the jobpostings to filteredJobPostings
-      this.filteredJobPostings = [...this.jobpostings];
-
-    } else {
-      this.jobpostings = []; // Initialize as an empty array if no data found
-      this.filteredJobPostings = []; // Initialize as an empty array if no data found
-    }
-
+        this.filteredJobPostings = [];
+      },
+    });
   }
+
+  // getJobPostings() {
+  //   const storedJobData = localStorage.getItem('jobData');
+
+  //   if (storedJobData) {
+  //     const parsedData = JSON.parse(storedJobData);
+
+  //     // Check if parsedData is an array
+  //     if (Array.isArray(parsedData)) {
+  //       this.jobpostings = parsedData;
+  //       this.jobpostings.reverse();
+  //     } else {
+  //       console.error('Parsed data is not an array:', parsedData);
+  //       this.jobpostings = [];
+  //     }
+      
+  //     // Copy the jobpostings to filteredJobPostings
+  //     this.filteredJobPostings = [...this.jobpostings];
+
+  //   } else {
+  //     this.jobpostings = []; // Initialize as an empty array if no data found
+  //     this.filteredJobPostings = []; // Initialize as an empty array if no data found
+  //   }
+
+  // }
 
   confirmJobDelete(job: any): void {
     this.confirmationService.confirm({
@@ -118,6 +164,7 @@ export class RecruitmentListComponent implements OnInit {
   viewJob(job: JobPostingDTO){
     this.activeItem = { ...job };
     this.viewModal = true;
+    this.populateCustomFieldList();
   }
 
   console(){
@@ -149,10 +196,10 @@ export class RecruitmentListComponent implements OnInit {
     const term = this.searchTerm!.toLowerCase();
 
     this.filteredJobPostings = this.jobpostings.filter(job =>
-      (job.title && job.title.toLowerCase().includes(term)) ||
+      (job.jobTitle && job.jobTitle.toLowerCase().includes(term)) ||
       (job.location && job.location.toLowerCase().includes(term)) ||
-      (job.employmentType && job.employmentType.toLowerCase().includes(term)) ||
-      (job.postedDate && job.postedDate.includes(term))
+      (job.jobType && job.jobType === Number(term)) ||
+      (job.jobPostedDate && job.jobPostedDate.includes(term))
     );
   }
 
