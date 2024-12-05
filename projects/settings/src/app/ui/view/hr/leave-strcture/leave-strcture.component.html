@@ -14,49 +14,54 @@
   <button *ngIf="showAddForm"  class="bg-customBlue text-white font-bold p-3 rounded-xl"  (click)="toogleForm()">Cancel</button>
 </div>
 
-<mat-accordion *ngIf="showAddForm == false">
-  <mat-expansion-panel *ngFor="let level of levels, let i = index" #panel>
-    <mat-expansion-panel-header>
-      <mat-panel-title>
-        <p class="text-gray-600 py-4 font-bold text-[14px]">{{ level.name }}</p>
-      </mat-panel-title>
-      <mat-panel-description *ngIf="getLeaveByLevelId(level.id) "  class="action-buttons">
-        <button (click)=" editSalary( level.id, i, $event)"   class="text-customGreen p-3 hover:bg-green-50 rounded-xl"><p-button
-          icon="fa-solid fa-pen-to-square"
-          class="p-button-text text-green-500 ml-auto rounded-md border-none"
-          pTooltip="Edit Structure"
-          tooltipPosition="top"
-        ></p-button><span class="mt-1" *ngIf="panel.expanded" >Edit</span></button>
-        <button (click)="confirmSalaryDelete(level.id, i, $event)"  class="text-red-500 p-3 hover:bg-red-50 rounded-xl flex items-center justify-center "><p-button
-          icon="fa-solid fa-trash"
-          class="p-button-text text-red-500 ml-auto rounded-md border-none"
-          pTooltip="Clear Structure"
-          tooltipPosition="top"
-        ></p-button><span class="mt-1" *ngIf="panel.expanded">Delete</span></button>
-      </mat-panel-description>
-      <mat-panel-description *ngIf="!getLeaveByLevelId(level.id) "  class="action-buttons">
-        <p-button
-              icon="pi pi-plus"
-              class="text-customBlue rounded-xl p-button-success ml-auto p-4"
-              pTooltip="Create structure"
+<mat-accordion *ngIf="!showAddForm">
+    <mat-expansion-panel *ngFor="let level of levels; let i = index" #panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <p class="text-gray-600 py-4 font-bold text-[14px]">{{ level.name }}</p>
+        </mat-panel-title>
+        <mat-panel-description *ngIf="getLeaveByLevelId(level.id)?.length > 0" class="action-buttons">
+          <button (click)="editLevelLeave(level.id, i, $event)" class="text-customGreen p-3 hover:bg-green-50 rounded-xl">
+            <p-button
+              icon="fa-solid fa-pen-to-square"
+              class="p-button-text text-green-500 ml-auto rounded-md border-none"
+              pTooltip="Edit Structure"
               tooltipPosition="top"
-              (click)="createNewStructure(level.id)"
             ></p-button>
-      </mat-panel-description>
-    </mat-expansion-panel-header>
+            <span class="mt-1" *ngIf="panel.expanded">Edit</span>
+          </button>
+          <button (click)="confrimLevelDelete(level.id, i, $event)" class="text-red-500 p-3 hover:bg-red-50 rounded-xl">
+            <p-button
+              icon="fa-solid fa-trash"
+              class="p-button-text text-red-500 ml-auto rounded-md border-none"
+              pTooltip="Clear Structure"
+              tooltipPosition="top"
+            ></p-button>
+            <span class="mt-1" *ngIf="panel.expanded">Delete</span>
+          </button>
+        </mat-panel-description>
+        <mat-panel-description *ngIf="getLeaveByLevelId(level.id)?.length == 0" class="action-buttons">
+          <p-button
+            icon="pi pi-plus"
+            class="text-customBlue rounded-xl p-button-success ml-auto p-4"
+            pTooltip="Create structure"
+            tooltipPosition="top"
+            (click)="createNewStructure(level.id)"
+          ></p-button>
+        </mat-panel-description>
+      </mat-expansion-panel-header>
   
-
-    <div class="text-gray-600 flex flex-col gap-2" *ngIf="getLeaveByLevelId(level.id) as salary; else noSalary">
-      <p >
-        <!-- <strong>Base Salary:</strong> {{ salary.baseSalary | currency: 'NGN' }} -->
-      </p>
-    </div>
-
-    <ng-template #noSalary>
-      <p class="text-gray-500">No leave assigned to this level.</p>
-    </ng-template>
-  </mat-expansion-panel>
-</mat-accordion>
+      <div class="text-gray-600 flex flex-col gap-2" *ngIf="getLeaveByLevelId(level.id)?.length > 0 as leaveData; else noLeave">
+        <p *ngFor="let leave of getLeaveByLevelId(level.id)">
+            <strong>{{getLeaveNameWithId(leave.leaveTypeId)}}:</strong> {{ leave.allocatedDays }} days
+          </p>
+      </div>
+  
+      <ng-template #noLeave>
+        <p class="text-gray-500">No leave assigned to this level.</p>
+      </ng-template>
+    </mat-expansion-panel>
+  </mat-accordion>
   
 
 
@@ -76,7 +81,12 @@
                 <td class="w-1/2">
                    <div class="flex w-full justify-between items-center gap-1 px-2">
                     <p class="">{{leave.amount}} day(s)</p>
-                    <i (click)="removeLeave(i)"  class="fa-solid fa-trash hover:bg-red-50 text-red-500 cursor-pointer text-xl " ></i>
+
+                    <div class="flex gap-2 items-center ">
+                        <!-- <i *ngIf="isEditMode" (click)="editInput(i, leave)"  class="fa-solid fa-pen hover:bg-green-50 text-green-500 cursor-pointer text-xl " ></i> -->
+                        <i (click)="removeLeave(leave.id)"  class="fa-solid fa-trash hover:bg-red-50 text-red-500 cursor-pointer text-xl " ></i>
+                    </div>
+                   
                    </div>
                 </td>
               </tr>
@@ -103,7 +113,7 @@
                 </td>
 
                 <td>
-                  <input type="number" min="0" (keydown.enter)="addLeave()" (change)="errorMessage = ''"  class="outline-none w-full p-2" placeholder="0" formControlName="leaveAmount">
+                  <input type="number" min="0" (keydown.enter)="addLeave($event)" (change)="errorMessage = ''"  class="outline-none w-full p-2" placeholder="0" formControlName="leaveAmount">
                   <small *ngIf="isAmountTouched" class="text-red-600">
                    {{getLeaveAmountErrorMessage()}}
                     </small>
@@ -116,7 +126,7 @@
       </div>
      
       <div class="text-right">
-        <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-700" [disabled]="selectedLeaves.length == 0">Add</button>
+        <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-700" [disabled]="selectedLeaves.length == 0">{{isEditMode ? "Update" : "Add"}}</button>
       </div>
     </div>
 

@@ -20,6 +20,6 @@ export interface LeaveDTO {
 
 export interface LeaveAllocationDTO {
     allocatedDays: number;
-    levelId: number | undefined;
+    levelId: number | undefined ;
     leaveTypeId: number;
 }
