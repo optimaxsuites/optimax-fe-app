@@ -8,6 +8,8 @@ import { environment } from '../../../shared-component/service/environments/envi
 import { AuthenticationService } from '../../../shared-component/service/auth-service/authentication.service';
 import { ActivatedRoute } from '@angular/router';
 import { EmployeeService } from '../../../service/employee.service';
+import { formatDate } from '@angular/common';
+import { DataService } from '../../../service/data.service';
 
 interface Employee {
   id: number;
@@ -90,36 +92,16 @@ export class AddEmployeeFormComponent {
     "Compliance",
     "Training & Development"
   ];
-  gender = ["Male", "Female", "Other"]
+  gender = []
   currentTab = 1;
   tabs = ["Basic Information", "Employment Information", "Next Of Kin", "Guarantor Information", "Summary"]
    maritalStatuses = [
-    "Single",
-    "Married",
-    "Divorced",
-    "Widowed",
-    "Separated",
-    "Engaged",
-    "In a Relationship",
-    "Domestic Partnership",
-    "Civil Union"
+
   ];
   religions = [
-    "Christianity",
-    "Islam",
-    "Hinduism",
-    "Buddhism",
-    "Judaism",
-    "Atheism",
-    "Agnosticism",
-    "Sikhism",
-    "Taoism",
-    "Shinto",
-    "Traditional African Religions",
-    "Bahá'í",
-    "Other"
+ 
   ];
-  employments = ["Full-time", "Part-time", "Contract", "Freelance", "Intern"]
+
   nigerianBanks = [
     "Access Bank",
     "Citibank Nigeria",
@@ -168,7 +150,7 @@ export class AddEmployeeFormComponent {
     private fb: FormBuilder,  
     private authenticationService: AuthenticationService,
     private messageService: MessageService,
-    private router: Router, 
+    private dataService: DataService, 
     private employeeService: EmployeeService, 
     private route: ActivatedRoute
   ) {  }
@@ -191,9 +173,9 @@ export class AddEmployeeFormComponent {
       phone: ['', [Validators.required]],
       gender: ['', [Validators.required]],
       DOB: ['', [Validators.required]],
-      maritalStatus: ['', [Validators.required]],
-      religion: ['', [Validators.required]],
-      address: ['', [Validators.required]],
+      maritalStatus: [null, [Validators.required, Validators.min(1)]],
+      religion: [null, [Validators.required,  Validators.min(1)]],
+      address: [null, [Validators.required,  Validators.min(1)]],
       profilePhoto: ['',[ Validators.required, this.imageFileValidator()]]
     });
 
@@ -235,13 +217,37 @@ export class AddEmployeeFormComponent {
       password: ['', [Validators.required]],
       confirmPassword: ['', [Validators.required]],
     })
+
     this.fetchEmployeeData(this.employeeId);
+
+    this.fetchMetaDatas()
 
   }
 
+  fetchMetaDatas(){
+    this.dataService.getGender().subscribe({
+      next: (data: any) => {
+        this.gender = data;
+       
+      }
+    })
+    this.dataService.getMaritalStatus().subscribe({
+      next: (data: any) => {
+        this.maritalStatuses = data;
+       
+      }
+    })
+    this.dataService.getReligion().subscribe({
+      next: (data: any) => {
+        this.religions = data;
+       
+      }
+    })
+  }
   fetchEmployeeData(employeeId: number): void {
     this.employeeService.getEmployeeById(employeeId).subscribe({
       next: (employee: any) => {
+        this.employeeData = employee
         this.basicForm.patchValue({
               firstName: employee.firstName,
               lastName: employee.lastName,
@@ -324,6 +330,13 @@ export class AddEmployeeFormComponent {
   this.loading = true;
   this.addNewEmployee()
   }
+
+  toLocalDateTime(date: Date | string): string {
+    if (!date) return '';
+    const parsedDate = new Date(date);
+    return formatDate(parsedDate, "yyyy-MM-dd'T'HH:mm:ss", 'en-US');
+  }
+
 addNewEmployee(){
   console.log(this.guarantorList)
   const currentDate = new Date();
@@ -395,6 +408,54 @@ console.log(existingEmployee)
     this.loading = false;
     this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Employee not found!' });
   }
+
+  const newEmployee = {
+ 
+
+   
+    ...this.employeeData,
+    phone: this.basicForm.get('phone')?.value,
+    address: this.basicForm.get('address')?.value,
+    dob: this.toLocalDateTime(this.basicForm.get('DOB')?.value),
+    gender: this.basicForm.get('gender')?.value,
+    maritalStatus: this.basicForm.get('maritalStatus')?.value,
+    religion: this.basicForm.get('religion')?.value,
+    bankName: this.employeeForm.get('bankName')?.value,
+    accountNumber: this.employeeForm.get('accountNumber')?.value,
+    nin: this.employeeForm.get('nin')?.value,
+    bvn: this.employeeForm.get('bvn')?.value,
+  
+
+
+  
+  }
+  const formData = new FormData();
+  formData.append('employee', JSON.stringify(newEmployee));
+
+  if (this.employeeForm.get('profileImage')?.value instanceof File) {
+    formData.append('file', this.employeeForm.get('profileImage')?.value)
+  }
+  console.log(formData)
+  this.employeeService.addEmployee(formData).subscribe(
+   { next: (data: any) => {
+    console.log(data)
+    this.loading = false;
+    this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Onboarding details submitted successfully!', key: 'tl', life: 3000  }); 
+    this.basicForm.reset()
+    this.guarantorForm.reset()
+    this.employeeForm.reset()
+    this.currentTab = 1
+
+    // if (shouldRedirect) {
+    //   this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
+    //   }
+   }
+  })
+
+
+
+
+
 }
 
 
@@ -476,7 +537,7 @@ console.log(existingEmployee)
     if (input.files && input.files.length) {
       const file = input.files[0];
      console.log(`${controlName} file:`, file);
-      this.guarantorForm.patchValue({ [controlName]: file }); 
+      // this.guarantorForm.patchValue({ [controlName]: file }); 
 
       this.guarantorForm.get(controlName)?.updateValueAndValidity();
 
@@ -487,7 +548,7 @@ console.log(existingEmployee)
     if (input.files && input.files.length) {
       this.previewImageFile(input.files[0])
       const file = input.files;
-      this.basicForm.patchValue({ [controlName]: file }); 
+      // this.basicForm.patchValue({ [controlName]: file }); 
       this.basicForm.get('profilePhoto')?.updateValueAndValidity();
     }
 

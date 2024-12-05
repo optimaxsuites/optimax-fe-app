@@ -86,8 +86,8 @@
       <label for="gender" class="block text-[13px] font-medium">Gender <span class="ml-1 font-bold text-red-600">*</span></label>
       <ng-select 
       [items]="gender" 
-      bindLabel="gender"
-      bindValue="gender"
+      bindLabel="name"
+      bindValue="id"
       placeholder="Select Gender"
       formControlName="gender"
       class="w-full mt-1 rounded-md"></ng-select>
@@ -97,11 +97,11 @@
       </div> 
 
       <div class="mb-4">
-      <label for="gender" class="block text-[13px] font-medium">Marital Status <span class="ml-1 font-bold text-red-600">*</span></label>
+      <label for="maritalStatus" class="block text-[13px] font-medium">Marital Status <span class="ml-1 font-bold text-red-600">*</span></label>
       <ng-select 
       [items]="maritalStatuses" 
-      bindLabel="maritalStatus"
-      bindValue="maritalStatus"
+      bindLabel="name"
+      bindValue="id"
       placeholder="Select marital status"
       formControlName="maritalStatus"
       class="w-full mt-1 rounded-md"></ng-select>
@@ -114,8 +114,8 @@
       <label for="gender" class="block text-[13px] font-medium">Religion <span class="ml-1 font-bold text-red-600">*</span></label>
       <ng-select 
       [items]="religions" 
-      bindLabel="religion"
-      bindValue="religion"
+      bindLabel="name"
+      bindValue="id"
       placeholder="Select Religion"
       formControlName="religion"
       class="w-full mt-1 rounded-md"></ng-select>
@@ -186,7 +186,7 @@
     </div>
   </form>
 
-  <form [formGroup]="NOKForm"  *ngIf="currentTab === 3" class="flex w-full flex-col justify-center item-center">
+  <form [formGroup]="NOKForm"  *ngIf="currentTab === 5" class="flex w-full flex-col justify-center item-center">
 
     <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
       <div *ngIf="nextOfKinList.length > 0" class="my-4  w-full text-customBlue">
@@ -407,7 +407,7 @@
   </form>
 
 
-  <form  (ngSubmit)="onSubmit()" *ngIf="currentTab === 5" class="flex w-full flex-col justify-center item-center">
+  <form  (ngSubmit)="onSubmit()" *ngIf="currentTab === 3" class="flex w-full flex-col justify-center item-center">
     <div>
 
       <div class="p-4 mx-auto w-1/2  rounded-xl text-customBlue gap-10 grid grid-cols-1">
