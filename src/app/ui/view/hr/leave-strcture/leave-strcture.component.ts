@@ -33,7 +33,8 @@ export class LeaveStrctureComponent {
   typeForm:string = ""
   selectedLeaves: {
     name: number,
-    amount: number
+    amount: number,
+    id: number
   }[] = []
 
   totalLeaveDays: number = 0;
@@ -42,7 +43,7 @@ export class LeaveStrctureComponent {
   leaves: any[] = []
   levelInView: number | undefined;
 
-
+  leaveDataByLevel: { [key: number]: any } = {};
   constructor(private fb: FormBuilder, private confirmationService: ConfirmationService, private salaryService: SalaryService, private levelService: LevelService, private leaveService: LeaveService, 
     private messageService: MessageService  ) {
    
@@ -61,10 +62,23 @@ export class LeaveStrctureComponent {
       isTax: [false, []]
     });
   }
-  ngOnInit() {
+  async ngOnInit() {
     
     this.levelService.getAllLevels().subscribe(data => {
       this.levels = data
+      data.forEach((level: { id: number | undefined; }) => {
+        this.leaveService.getLeaveByLevel(level.id).subscribe({
+          next: (data) => {
+            this.leaveDataByLevel[level.id? level.id : 0] = data; 
+          },
+          error: (err) => {
+            console.error(`Error fetching leave data for level ID ${level.id}:`, err);
+          },
+        });
+
+      });
+
+      console.log(this.leaveDataByLevel)
     })
 
     this.leaveService.getAllLeave().subscribe( {
@@ -78,33 +92,105 @@ export class LeaveStrctureComponent {
       error: (error) => console.error('Error fetching leaves type', error)
     })
 
+     this.loadLeaveData()
+   
     
   }
  
   
+  loadLeaveData(): void {
+    this.levels.forEach((level) => {
+      this.leaveService.getLeaveByLevel(level.id).subscribe({
+        next: (data) => {
+          this.leaveDataByLevel[level.id? level.id : 0] = data; 
+        },
+        error: (err) => {
+          console.error(`Error fetching leave data for level ID ${level.id}:`, err);
+        },
+      });
+  })
+}
+
+
 
   onSubmit() {
-    if(this.selectedLeaves.length > 0){
-      this.selectedLeaves.map(leave => {
+    // if(this.selectedLeaves.length > 0){
+    //   this.selectedLeaves.map(leave => {
+    //     const data = {
+    //       leaveTypeId: leave.name,
+    //       allocatedDays: leave.amount,
+    //       levelId: this.levelInView,
+    //     }
+    //     this.leaveService.addLeaveAllocation(data).subscribe({
+    //       next: (data) => {
+    //         console.log(data)
+    //         this.loadLeaveData()
+    //       },
+    //       error: (error) => this.errorMessage = error
+    //     })
+    //   })
+    // }
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: this.isEditMode ? 'Updated successfully!' : 'Added Successfully',
+      key: 'tl',
+      life: 3000
+    });
+  this.showAddForm = false
+  this.loadLeaveData()
+  }
+
+  addLeave(event: Event){
+    const keyboardEvent = event as KeyboardEvent;
+    keyboardEvent.preventDefault();
+    this.isAmountTouched = true
+    const leaveType = this.leaveForm.value.leaveType;
+    const leaveAmount = this.leaveForm.value.leaveAmount;
+    if(  this.leaveForm.valid && 
+      typeof leaveAmount === 'number' && 
+      !isNaN(leaveAmount)){
         const data = {
-          leaveTypeId: leave.name,
-          allocatedDays: leave.amount,
+          leaveTypeId: leaveType,
+          allocatedDays: leaveAmount,
           levelId: this.levelInView,
         }
         this.leaveService.addLeaveAllocation(data).subscribe({
           next: (data) => {
             console.log(data)
+            this.isAmountTouched =false
+            this.selectedLeaves.push({
+              name: leaveType,
+              amount: leaveAmount,
+              id: data.id
+            })
+            this.calculateTotalLeaveDays()
+
+            this.leaveForm.reset()
           },
           error: (error) => this.errorMessage = error
         })
-      })
+      
+    }else {
+      this.isAmountTouched= true
+      this.errorMessage = this.getLeaveAmountErrorMessage()
     }
+
   }
 
-  populateForm(salaryStructure: any, index: number) {
+  populateForm(leaveStructure: any, index: number) {
     this.isEditMode = true;
-    this.editIndex = salaryStructure.id;
-    
+    // this.editIndex = salaryStructure.id;
+    const structuredLeave = leaveStructure.map((leave: { leaveTypeId: any; allocatedDays: any; id: number }) => {
+     return { 
+      name: leave.leaveTypeId,
+      amount: leave.allocatedDays,
+      id: leave.id
+      }
+    })
+    this.selectedLeaves = structuredLeave
+    this.calculateTotalLeaveDays()
+
   }
 
   toTitleCaseWithSpace(key: string): string {
@@ -113,33 +199,44 @@ export class LeaveStrctureComponent {
       .replace(/^./, str => str.toUpperCase());
   }
   
-  editSalary(levelId: number|undefined, index:number, event: Event) {
+  editLevelLeave(levelId: number | undefined, index:number, event: Event) {
    
     event.stopPropagation();
-    const salary = this.getLeaveByLevelId(levelId)
+    const leave = this.getLeaveByLevelId(levelId)
     this.showAddForm = true
     this.editIndex = index
-    this.populateForm(salary, index)
+    this.levelInView = levelId
+    this.populateForm(leave, index)
   }
 
-  deleteSalary(salary: SalaryDTO, index:number, event: Event) {
-    this.salaryService.deleteSalry(salary.id).subscribe(() => {
-      // this.salaryStructure.splice(index, 1);
-      const salaryIndex = this.leaveStructure.findIndex(s => s.id === salary.id);
-      if (salaryIndex > -1) {
-        this.leaveStructure.splice(salaryIndex, 1);
-      }
-      this.messageService.add({ severity: 'success', summary: 'Success', detail: `Salary structure for ${this.getLeaveByLevelId(salary.levelId)} cleared successfully!`, key: 'tl', life: 3000  }); 
-    })
+  deleteSalary(leave: any[], index: number | undefined, event: Event) {
+    leave.forEach((l: { id: number | undefined }, i: number) => {
+      const isLast = i === leave.length - 1;
+      this.leaveService.deleteLeavesByLevel(l.id).subscribe({
+        next: () => {
+          if (isLast) {
+            this.loadLeaveData();
+          this.messageService.add({ severity: 'success', summary: 'Success', detail: `Level allocated for ${this.getLevelName(index)} cleared successfully!`, key: 'tl', life: 3000  }); 
 
+          }
+        },
+        error: (err) => {
+          console.error(`Failed to delete leave with ID ${l.id}:`, err);
+          if (isLast) {
+            this.loadLeaveData(); 
+          }
+        },
+      });
+    });
   }
+  
 
-  confirmSalaryDelete(levelId: number|undefined, i: number , event: Event): void {
+  confrimLevelDelete(levelId: number | undefined, i: number , event: Event): void {
     event.stopPropagation();
-    const salary = this.getLeaveByLevelId(levelId)
+    const leave = this.getLeaveByLevelId(levelId)
     this.confirmationService.confirm({
-      message: `Are You sure you want to carry out this action?  Clicking on DELETE, would lead to clearing of ${this.getLevelName(salary.levelId)}'s salary structure`,
-      header: `Delete Salary Structure - ${this.getLevelName(salary.levelId)}`,
+      message: `Are You sure you want to carry out this action?  Clicking on DELETE, would lead to clearing of all leave's allocated to ${this.getLevelName(levelId)}`,
+      header: `Delete Salary Structure - ${this.getLevelName(leave.levelId)}`,
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass:"p-btn-danger p-button-text",
       rejectButtonStyleClass:"p-btn-cancel p-button-text",
@@ -149,7 +246,8 @@ export class LeaveStrctureComponent {
       rejectLabel: 'Cancel',
       // styleClass: 'custom-confirm-dialog',
       accept: () => {
-        this.deleteSalary(salary, i , event);
+        
+        this.deleteSalary(leave, levelId , event);
       },
       reject: () => {
 
@@ -162,15 +260,18 @@ export class LeaveStrctureComponent {
     this.showAddForm = !this.showAddForm
     if(this.showAddForm){
       this.isEditMode = false
-    this.leaveStructure = []
+    this.selectedLeaves = []
     }
   }
-
   getLeaveByLevelId(levelId: number | undefined): any {
-    return this.leaveStructure.find((leave) => leave.levelId === levelId);
+    if (levelId === undefined) {
+      return null;
+    }
+    return this.leaveDataByLevel[levelId] || null;
   }
+  
 
-  getLevelName(levelId: number): string {
+  getLevelName(levelId: number | undefined): string {
     const level = this.levels.find((lvl) => lvl.id === levelId);
     return level ? level.name : '';
   }
@@ -216,26 +317,7 @@ export class LeaveStrctureComponent {
     this.totalLeaveDays = Object.values(this.selectedLeaves).reduce((sum: number, leave) => sum + Number(leave.amount || 0), 0);
   }
 
-  addLeave(){
-    this.isAmountTouched = true
-    const leaveType = this.leaveForm.value.leaveType;
-    const leaveAmount = this.leaveForm.value.leaveAmount;
-    if(  this.leaveForm.valid && 
-      typeof leaveAmount === 'number' && 
-      !isNaN(leaveAmount)){
-      this.selectedLeaves.push({
-        name: leaveType,
-        amount: leaveAmount
-      })
-      this.calculateTotalLeaveDays()
-      this.isAmountTouched =false
-      this.leaveForm.reset()
-    }else {
-      this.isAmountTouched= true
-      this.errorMessage = this.getLeaveAmountErrorMessage()
-    }
-
-  }
+ 
 
   getLeaveNameWithId(id: number){
     const leave = this.leaves.find((item) => item.id === id);
@@ -258,9 +340,22 @@ export class LeaveStrctureComponent {
   }
 
   removeLeave(id: number){
-    const leaveIndex = this.selectedLeaves.findIndex(s => s.name === id);
-    this.selectedLeaves.splice(leaveIndex, 1)
-    this.calculateTotalLeaveDays()
+    this.leaveService.deleteLeavesByLevel(id).subscribe({
+      next: () => {
+     
+      const leaveIndex = this.selectedLeaves.findIndex(s => s.name === id);
+      this.selectedLeaves.splice(leaveIndex, 1)
+      this.calculateTotalLeaveDays()
+      
+        
+      },
+      error: (err) => {
+        console.error(`Failed to delete leave with ID ${id}:`, err);
+       
+        
+      },
+    });
+   
   }
   
 }

@@ -92,6 +92,17 @@ export class LeaveService {
     .pipe(catchError(this.handleError));
   }
 
+
+  getLeaveByLevel(id: number | undefined){
+    return this.http
+    .get<any>(this.getBaseApiUrl() + `/x/api/v2/hr/leaveAllocations/getLeaveByLevel/${id}`)
+    .pipe(catchError(this.handleError));
+  }
+  deleteLeavesByLevel(id: number | undefined){
+    return this.http
+    .delete<any>(this.getBaseApiUrl() + `/x/api/v2/hr/leaveAllocations/${id}`)
+    .pipe(catchError(this.handleError));
+  }
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'An unknown error occurred!';
       if (error.error instanceof ErrorEvent) {
