@@ -117,6 +117,7 @@ import { AuthInterceptor } from './ui/shared-component/service/auth-service/auth
 import { MasterComponent } from './master.component';
 import { RouterModule } from '@angular/router';
 import { SidebarComponent } from './ui/view/sidebar/sidebar.component';
+import { AppraisalComponent } from './ui/view/performance/appraisal/appraisal.component';
 
 @NgModule({
   declarations: [
@@ -178,6 +179,7 @@ import { SidebarComponent } from './ui/view/sidebar/sidebar.component';
     EditableLabelComponent,
     DropdownComponent,
     MasterComponent,
+    AppraisalComponent,
   ],
   imports: [
     // BrowserModule,

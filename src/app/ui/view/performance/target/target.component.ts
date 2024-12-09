@@ -12,7 +12,6 @@ interface TargetGoal {
   priority: string;
   assignedTo: string;
   targetMetrics: { name: string; completed: boolean }[];
-  actualMetrics: string;
   progressStatus: string;
   user_id?: number;
   isTarget?: boolean;

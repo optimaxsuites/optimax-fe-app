@@ -5,6 +5,7 @@ import { CandidateComponent } from './ui/view/recruitment/candidate/candidate.co
 import { ScheduledInterviewComponent } from './ui/view/recruitment/scheduled-interview/scheduled-interview.component';
 import { MessageService } from 'primeng/api';
 import { AuthenticationService } from './ui/shared-component/service/auth-service/authentication.service';
+import { MetadataService } from './ui/service/metadata.service';
 
 @Component({
   selector: 'app-root',
@@ -18,7 +19,7 @@ export class AppHrComponent {
   router: any;
   sidebarHidden: boolean = true;
 constructor(
-  private authenticationService: AuthenticationService 
+  private authenticationService: AuthenticationService, private metadataService: MetadataService
 ){
 this.userLoginAction()
 
@@ -28,6 +29,8 @@ this.userLoginAction()
 
 ngOnInit(): void {
   this.userLoginAction()
+  this.metadataService.fetchMetaData();
+
 }
   async userLoginAction(): Promise<void> {
   

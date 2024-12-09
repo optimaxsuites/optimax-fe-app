@@ -30,6 +30,18 @@ interface User {
   level: string;
 }
 
+interface Appraisal {
+  employeeName: string;
+  employeeId: string;
+  department: string;
+  level: string;
+  startDate: string;
+  dueDate: string;
+  period: string;
+  progressStatus: string;
+  id: string;
+}
+
 @Component({
   selector: 'app-appraisalcycle',
   templateUrl: './appraisalcycle.component.html',
@@ -40,38 +52,34 @@ export class AppraisalcycleComponent implements OnInit {
   departments: any[] = [];
   levels: any[] = [];
 
-  questionListArray: AppraisalQuestionDTO[] = [];
-  selectedAppraisal: AppraisalQuestionDTO | null = null;
+  appraisals: Appraisal[] = [];
+  filteredAppraisals: Appraisal[] = [];
+
   selectedDepartment: string | null = null;
   selectedLevel: string | null = null;
-  users: User[] = [
-    {
-      id: '1',
-      name: 'John Doe',
-      email: 'john@example.com',
-      department: 'IT',
-      level: 'Mid Level 1',
-    },
-    {
-      id: '2',
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      department: 'HR',
-      level: 'Senior Level 1',
-    },
+
+  openAppraisal = false;
+  userRole: string = 'ROLE_ADMIN';
+  user_id: number | undefined;
+
+  reviewStatus: string[] = ['Pending', 'In Progress', 'Completed'];
+  templates: string[] = [
+    'Annual Review',
+    'Quarterly Review',
+    'Performance Improvement',
   ];
-  selectedUsers: User[] = [];
-  instructionDisplayed: boolean = false;
-  instructionText: string = '';
 
   constructor(
-    private randomTokenService: RandomTokenService,
     private messageService: MessageService,
-    private confirmationService: ConfirmationService,
     private dataService: DataService
   ) {}
 
   ngOnInit() {
+    this.loadDepartmentsAndLevels();
+    this.loadAppraisals();
+  }
+
+  loadDepartmentsAndLevels() {
     this.dataService.getDepartment().subscribe({
       next: (data) => {
         this.departments = data;
@@ -89,140 +97,100 @@ export class AppraisalcycleComponent implements OnInit {
         console.log(err);
       },
     });
-    this.loadQuestions();
-    this.selectedAppraisal = this.getAppraisalFromStorage();
   }
 
-  loadQuestions() {
-    const savedQuestions = localStorage.getItem('appraisalQuestions');
-    console.log(savedQuestions);
-    if (savedQuestions) {
-      this.questionListArray = JSON.parse(savedQuestions);
-    }
-
-    const instructionState = localStorage.getItem('instructionDisplayed');
-    const savedInstructionText = localStorage.getItem('instructionText');
-    if (instructionState === 'true' && savedInstructionText) {
-      this.instructionDisplayed = true;
-      this.instructionText = savedInstructionText;
-    }
-  }
-
-  getSectionLabel(index: number): string {
-    return String.fromCharCode(65 + index);
-  }
-
-  getFilteredSidebarData() {
-    if (this.selectedDepartment && this.selectedLevel) {
-      return this.questionListArray.filter(
-        (question) =>
-          question.department === this.selectedDepartment &&
-          question.level === this.selectedLevel
-      );
-    }
-    return this.questionListArray;
-  }
-
-  view(department: string, level: string) {
-    const existingQuestions = this.getQuestionsForDepartmentAndLevel(
-      department,
-      level
+  loadAppraisals() {
+    const storedAppraisals = JSON.parse(
+      localStorage.getItem('adminAppraisals') || '[]'
     );
-    this.selectedAppraisal =
-      existingQuestions.length > 0 ? existingQuestions[0] : null;
+
+    this.appraisals = storedAppraisals.map((appraisal: any) => ({
+      employeeName: appraisal.employeeName,
+      employeeId: appraisal.employeeId,
+      department: appraisal.department,
+      level: appraisal.department,
+      reviewStatus: appraisal.reviewStatus,
+      dueDate: appraisal.dueDate,
+      period: appraisal.period,
+      progressStatus: 'Initiated',
+      id: appraisal.token,
+    }));
+
+    this.filteredAppraisals = [...this.appraisals];
   }
 
-  closeView() {
-    this.selectedAppraisal = null;
+  navigateToCreate() {
+    this.openAppraisal = !this.openAppraisal;
   }
 
-  getQuestionsForDepartmentAndLevel(
-    department: string,
-    level: string
-  ): AppraisalQuestionDTO[] {
-    return this.questionListArray.filter(
-      (question) =>
-        question.department === department && question.level === level
-    );
-  }
+  filterAppraisals() {
+    this.filteredAppraisals = this.appraisals.filter((appraisal) => {
+      const matchesDepartment =
+        !this.selectedDepartment ||
+        appraisal.department === this.selectedDepartment;
 
-  sendAppraisal() {
-    if (!this.selectedAppraisal || this.selectedUsers.length === 0) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Invalid Selection',
-        detail: 'Please select an appraisal and users to send',
-      });
-      return;
-    }
-    const token = this.generateToken();
-    this.selectedUsers.forEach((user) => {
-      console.log(`Sending appraisal to ${user.name} with token ${token}`);
+      const matchesLevel =
+        !this.selectedLevel || appraisal.level === this.selectedLevel;
+
+      return matchesDepartment && matchesLevel;
     });
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Appraisal Sent',
-      detail: `Appraisal sent to ${this.selectedUsers.length} users`,
-    });
-  }
-
-  getFilteredUsers(): User[] {
-    if (!this.selectedAppraisal) return this.users;
-    return this.users.filter(
-      (user) =>
-        user.department === this.selectedAppraisal?.department &&
-        user.level === this.selectedAppraisal?.level
-    );
-  }
-
-  generateToken(): string {
-    return Math.random().toString(36).substr(2, 9);
-  }
-
-  getAppraisalFromStorage(): AppraisalQuestionDTO | null {
-    const storedAppraisal = localStorage.getItem('selectedAppraisal');
-    return storedAppraisal ? JSON.parse(storedAppraisal) : null;
   }
 
   filterDepartment() {
-    if (this.selectedDepartment && this.selectedLevel) {
-      this.view(this.selectedDepartment, this.selectedLevel);
-    } else {
-      this.selectedLevel = null;
-    }
+    this.filterAppraisals();
   }
 
   filterLevel() {
-    if (this.selectedDepartment && this.selectedLevel) {
-      this.view(this.selectedDepartment, this.selectedLevel);
+    this.filterAppraisals();
+  }
+
+  updateAppraisalStatus(appraisalId: string, newStatus: string) {
+    const index = this.appraisals.findIndex((a) => a.id === appraisalId);
+
+    if (index !== -1) {
+      this.appraisals[index].progressStatus = newStatus;
+      this.filteredAppraisals[index].progressStatus = newStatus;
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Status Updated',
+        detail: `Appraisal status has been updated to ${newStatus}`,
+        key: 'tl',
+        life: 3000,
+      });
     }
   }
 
-  getDepartmentCounts() {
-    return this.groupBy(this.questionListArray, 'department');
+  viewAppraisalDetails(appraisal: Appraisal) {
+    console.log('View appraisal details:', appraisal);
   }
 
-  getLevelCounts() {
-    return this.groupBy(this.questionListArray, 'level');
+  editAppraisal(appraisal: Appraisal) {
+    if (this.userRole === 'ROLE_ADMIN') {
+      console.log('Edit appraisal:', appraisal);
+    }
   }
 
-  getStatusCounts() {
-    return this.groupBy(this.questionListArray, 'status');
+  deleteAppraisal(appraisalId: string) {
+    if (this.userRole === 'ROLE_ADMIN') {
+      const index = this.appraisals.findIndex((a) => a.id === appraisalId);
+
+      if (index !== -1) {
+        this.appraisals.splice(index, 1);
+        this.filteredAppraisals = [...this.appraisals];
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Deleted',
+          detail: `Appraisal ID ${appraisalId} deleted successfully`,
+        });
+      }
+    }
   }
 
-  getDateCounts() {
-    return this.groupBy(this.questionListArray, (q) =>
-      new Date(q.createdDate).toDateString()
+  filterByStatus(status: string) {
+    this.filteredAppraisals = this.appraisals.filter(
+      (appraisal) => appraisal.progressStatus === status
     );
-  }
-
-  groupBy(array: any[], key: string | ((item: any) => string)) {
-    const map = new Map<string, number>();
-    array.forEach((item) => {
-      const keyValue = typeof key === 'function' ? key(item) : item[key];
-      map.set(keyValue, (map.get(keyValue) || 0) + 1);
-    });
-
-    return Array.from(map, ([name, count]) => ({ name, count }));
   }
 }

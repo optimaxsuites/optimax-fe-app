@@ -10,6 +10,7 @@ import { ActivatedRoute } from '@angular/router';
 import { EmployeeService } from '../../../service/employee.service';
 import { formatDate } from '@angular/common';
 import { DataService } from '../../../service/data.service';
+import { MetadataService } from '../../../service/metadata.service';
 
 interface Employee {
   id: number;
@@ -92,13 +93,13 @@ export class AddEmployeeFormComponent {
     "Compliance",
     "Training & Development"
   ];
-  gender = []
+  gender: any[] = []
   currentTab = 1;
   tabs = ["Basic Information", "Employment Information", "Next Of Kin", "Guarantor Information", "Summary"]
-   maritalStatuses = [
+   maritalStatuses: any[] = [
 
   ];
-  religions = [
+  religions: any[] = [
   ];
 
   nigerianBanks = [
@@ -121,7 +122,7 @@ export class AddEmployeeFormComponent {
     "Wema Bank",
     "Zenith Bank"
   ];
-  nextOfKinRelationships = [
+  nextOfKinRelationships: any[] = [
   ];
   nextOfKinList: any[] = []
   guarantorList: any[] = []
@@ -133,7 +134,7 @@ export class AddEmployeeFormComponent {
   maxDate: string ="";
   constructor(
     private fb: FormBuilder,  
-    private authenticationService: AuthenticationService,
+    private metadataService: MetadataService,
     private messageService: MessageService,
     private dataService: DataService, 
     private employeeService: EmployeeService, 
@@ -205,35 +206,15 @@ export class AddEmployeeFormComponent {
 
     this.fetchEmployeeData(this.employeeId);
 
-    this.fetchMetaDatas()
+    this.fetchMetaData()
 
   }
 
-  fetchMetaDatas(){
-    this.dataService.getGender().subscribe({
-      next: (data: any) => {
-        this.gender = data;
-       
-      }
-    })
-    this.dataService.getMaritalStatus().subscribe({
-      next: (data: any) => {
-        this.maritalStatuses = data;
-       
-      }
-    })
-    this.dataService.getReligion().subscribe({
-      next: (data: any) => {
-        this.religions = data;
-       
-      }
-    })
-
-    this.dataService.getRelationship().subscribe({
-      next: (data: any) => {
-        this.nextOfKinRelationships = data
-      }
-    })
+  fetchMetaData(){
+    this.metadataService.gender$.subscribe(data => (this.gender = data));
+    this.metadataService.maritalStatuses$.subscribe(data => (this.maritalStatuses = data));
+    this.metadataService.religions$.subscribe(data => (this.religions = data));
+    this.metadataService.nextOfKinRelationships$.subscribe(data => (this.nextOfKinRelationships = data));
   }
   fetchEmployeeData(employeeId: number): void {
     this.employeeService.getEmployeeById(employeeId).subscribe({
@@ -312,10 +293,13 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
         relationshipId: nok.relationship,
         dob: this.toLocalDateTime(nok.DOB),
         emergencyContact: nok.emergencyContact,
-        employee: this.employeeId
+        employeeId:  Number(this.employeeId)
       } 
 
-      this.employeeService.addNOK(nokData).subscribe()
+      const formData = new FormData();
+      formData.append('nextOfKinDTO', JSON.stringify(nokData));
+
+      this.employeeService.addNOK(formData).subscribe()
     })
     this.nextTab()
   }
@@ -327,6 +311,32 @@ console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
     if(this.guarantorForm.valid) {
     this.addGuarantor()
     }
+    this.guarantorList.map((guarantor) => {
+      const guarantorData = {
+        fullName: guarantor.fullName,
+        email: guarantor.email,
+        phone: guarantor.phone,
+        address: guarantor.address,
+        relationshipId: guarantor.relationship,
+        dob: this.toLocalDateTime(guarantor.DOB),
+        employeeId:  Number(this.employeeId),
+        yearsKnown: Number(guarantor.yearsKnown),
+        idNumber: Number(guarantor.idNumber)
+      } 
+
+      const formData = new FormData();
+      formData.append('guarantor', JSON.stringify(guarantorData));
+      if (guarantor.passportPhoto instanceof File) {
+        formData.append('Passport Photograph', guarantor.passportPhoto)
+      }
+      if (guarantor.idCard instanceof File) {
+        formData.append('Id Photo', guarantor.idCard)
+      }
+      if (guarantor.signature instanceof File) {
+        formData.append('Signature', guarantor.signature)
+      }
+      this.employeeService.addGuarantor(formData).subscribe()
+    })
     this.nextTab()
   }
 
@@ -433,9 +443,10 @@ addNewEmployee(){
   }
 
   deleteNextOfKin(index: number) {
-    if (confirm('Are you sure you want to remove this next of kin?')) {
-      this.nextOfKinList.splice(index, 1); 
-    }
+    // if (confirm('Are you sure you want to remove this next of kin?')) {
+    // }
+    this.nextOfKinList.splice(index, 1); 
+
   }
   addGuarantor() {
     if (this.guarantorForm.valid) {
@@ -496,6 +507,7 @@ addNewEmployee(){
       const file = input.files[0];
      console.log(`${controlName} file:`, file);
       // this.guarantorForm.patchValue({ [controlName]: file }); 
+      this.guarantorForm.get(controlName)?.setValue(file)
 
       this.guarantorForm.get(controlName)?.updateValueAndValidity();
 
@@ -560,20 +572,7 @@ addNewEmployee(){
   }
   }
 
-  // getFormValidationErrors() {
-  //   const errors: any[] = [];
-    
-  //   Object.keys(this.basicForm.controls).forEach(key => {
-  //     const controlErrors = this.basicForm.get(key)?.errors;
-  //     if (controlErrors) {
-  //       Object.keys(controlErrors).forEach(errorKey => {
-  //         errors.push(this.getErrorMessage(control, key));
-  //       });
-  //     }
-  //   });
-  
-  //   return errors;
-  // }
+ 
 
   getErrorMessage(control: AbstractControl | null, controlName: string): string {
     // const control = this.basicForm.get(controlName);

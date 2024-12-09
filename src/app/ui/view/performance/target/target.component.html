@@ -17,20 +17,7 @@
           {{ filteredGoals.length }}
         </span>
       </li>
-      <!--
-        <li
-          class="flex items-center justify-between bg-green-50 p-6 rounded-lg shadow-sm hover:bg-green-100"
-        >
-          <div class="flex items-center space-x-3">
-            <i class="text-green-600 pi pi-pencil"></i>
-            <span class="text-green-800 font-medium text-lg">Created</span>
-          </div>
-          <span
-            class="bg-green-200 text-green-700 ml-5 font-semibold rounded-full px-3 py-1 text-lg"
-          >
-            {{ getGoalsByStatus("Pending").length }}
-          </span>
-         </li> -->
+
       <li
         class="flex items-center w-64 justify-between bg-gray-50 p-4 rounded-lg shadow-sm hover:bg-gray-100"
       >
@@ -83,7 +70,7 @@
         <span
           class="bg-red-200 text-red-600 font-semibold rounded-full px-3 py-1 text-lg"
         >
-          {{ getGoalsByStatus("Not Achieved").length }}
+          {{ getGoalsByStatus("Not Completed").length }}
         </span>
       </li>
 
@@ -117,14 +104,14 @@
 
           <app-button
             (click)="navigateToCreateGoal()"
-            text="Add Goal"
+            text="Add Target"
             class="btn-navigate gap-2"
           ></app-button>
         </ng-template>
 
         <ng-template pTemplate="left">
           <div class="flex w-full justify-between gap-4 px-3">
-            <div class="flex gap-4 w-1/1">
+            <div class="flex gap-4 text-[12px] w-1/1">
               <div class="w-[100%]">
                 <ng-select
                   [items]="statusOptions"
@@ -139,10 +126,10 @@
             <div class="search-bar w-[100%]">
               <input
                 type="text"
-                placeholder="Search goals"
+                placeholder="Search Targer"
                 [(ngModel)]="searchTerm"
                 (ngModelChange)="filterGoals()"
-                class="editInput w-full"
+                class="editInput text-[12px] w-full"
               />
             </div>
           </div>
@@ -159,7 +146,7 @@
         <ng-template pTemplate="header">
           <tr>
             <th class="table-item" pSortableColumn="RequestedDuration">
-              Goal Name
+              Target Name
             </th>
             <th class="table-item" pSortableColumn="RequestedDuration">
               Employee Name
@@ -190,7 +177,7 @@
               {{ goal.goalName }}
             </td>
             <td>
-              {{ goal.employeeName }}
+              {{ goal.user_id }}
             </td>
             <td>
               {{ goal.assignedTo }}
@@ -247,7 +234,9 @@
         </ng-template>
         <ng-template pTemplate="emptymessage">
           <tr>
-            <td colspan="7" class="text-center p-4">No goals found</td>
+            <td colspan="7" class="text-center text-[12px] p-4">
+              No Target found
+            </td>
           </tr>
         </ng-template>
       </p-table>
@@ -257,7 +246,7 @@
     <app-side-modal *ngIf="viewModalVisible" (close)="viewModalVisible = false">
       <div *ngIf="selectedGoal" class="p-12 space-y-12">
         <h2 class="text-2xl text-gray-700 font-bold text-center">
-          <h1 class="font-semibold text-gray-700">Goal Name</h1>
+          <h1 class="font-semibold text-gray-700">Target Name</h1>
           {{ selectedGoal.goalName }}
         </h2>
 
@@ -296,6 +285,13 @@
             <h3 class="font-semibold text-gray-700">Level</h3>
             <p class="text-gray-600 text-2xl">
               {{ selectedGoal.level }}
+            </p>
+          </div>
+
+          <div class="col-span-2">
+            <h3 class="font-semibold text-gray-700">Priority</h3>
+            <p class="text-gray-600 text-2xl">
+              {{ selectedGoal.priority }}
             </p>
           </div>
 

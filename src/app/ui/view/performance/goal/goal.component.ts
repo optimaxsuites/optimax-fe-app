@@ -1,199 +1,231 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { RandomTokenService } from '../../../shared-component/service/random-token/random-token.service';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { DataService } from '../../../service/data.service';
 
-interface TargetGoal {
-  goalName: string;
+interface Section {
+  id: string;
+  sectionTitle: string;
+  questions: Question[];
+}
+
+interface Question {
+  id: string;
+  text: string;
+}
+
+interface AppraisalQuestionDTO {
+  id: string;
+  department: string;
+  level: string;
+  sections: Section[];
+  instructionText: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  department: string;
+  level: string;
+}
+
+interface Appraisal {
   employeeName: string;
-  goalDescription: string;
-  startDate: string;
-  endDate: string;
-  priority: string;
-  assignedTo: string;
-  targetMetrics: { name: string; completed: boolean }[];
-  actualMetrics: string;
+  employeeId: string;
+  department: string;
+  level: string;
+  dueDate: string;
+  period: string;
   progressStatus: string;
-  user_id?: number;
-  isTarget?: boolean;
+  id: string;
+  comment: string;
 }
 
 @Component({
   selector: 'app-goal',
   templateUrl: './goal.component.html',
-  styleUrls: ['./goal.component.scss'],
-  providers: [MessageService],
+  styleUrl: './goal.component.scss',
+  providers: [MessageService, ConfirmationService],
 })
 export class GoalComponent implements OnInit {
-  goals: TargetGoal[] = [];
-  filteredGoals: TargetGoal[] = [];
-  selectedStatus: string[] = [];
-  searchTerm: string = '';
-  statusOptions: string[] = [
-    'Pending',
-    'In Progress',
-    'Not Achieved',
-    'On Hold',
-    'Completed',
-  ];
-  viewModalVisible: boolean = false;
-  selectedGoal: TargetGoal | null = null;
-  openAddGoal: boolean = false;
-  confirmationMessage: string | null = null;
-  user_id: number | undefined;
-  openTargetForm: boolean = false;
-  userRole: string | null = null;
+  departments: any[] = [];
+  levels: any[] = [];
 
-  constructor(private router: Router, private messageService: MessageService) {}
+  appraisals: Appraisal[] = [];
+  filteredAppraisals: Appraisal[] = [];
+
+  selectedDepartment: string | null = null;
+  selectedLevel: string | null = null;
+
+  selectedAppraisal: Appraisal | null = null;
+  comment: string = '';
+
+  openAppraisal = false;
+  userRole: string = 'ROLE_ADMIN';
+  user_id: number | undefined;
+
+  statuses: string[] = ['Pending', 'In Progress', 'Completed'];
+  templates: string[] = [
+    'Annual Review',
+    'Quarterly Review',
+    'Performance Improvement',
+  ];
+
+  constructor(
+    private messageService: MessageService,
+    private dataService: DataService
+  ) {}
 
   ngOnInit() {
-    this.user_id = Number(sessionStorage.getItem('userid'));
-    this.userRole = sessionStorage.getItem('role');
-    this.loadGoals();
-    this.loadMetricsFromLocalStorage();
-
-    window.addEventListener('storage', () => this.loadGoals());
+    this.loadDepartmentsAndLevels();
+    this.loadAppraisals();
   }
 
-  loadGoals() {
-    const savedTargetGoals = JSON.parse(
-      localStorage.getItem('targetGoals') || '[]'
-    );
-    const savedEmployeeGoals = JSON.parse(
-      localStorage.getItem('employeeGoals') || '[]'
+  loadDepartmentsAndLevels() {
+    this.dataService.getDepartment().subscribe({
+      next: (data) => {
+        this.departments = data;
+      },
+      error: (err) => {
+        console.log(err);
+      },
+    });
+
+    this.dataService.getAllLevels().subscribe({
+      next: (data) => {
+        this.levels = data;
+      },
+      error: (err) => {
+        console.log(err);
+      },
+    });
+  }
+
+  loadAppraisals() {
+    const storedAppraisals = JSON.parse(
+      localStorage.getItem('employeeAppraisals') || '[]'
     );
 
-    if (this.userRole === 'ROLE_ADMIN') {
-      this.goals = [...savedTargetGoals, ...savedEmployeeGoals];
+    this.appraisals = storedAppraisals.map((appraisal: any) => ({
+      employeeName: appraisal.employeeName,
+      employeeId: appraisal.employeeId,
+      department: appraisal.department,
+      level: appraisal.level,
+      startDate: appraisal.startDate,
+      dueDate: appraisal.dueDate,
+      period: appraisal.period,
+      progressStatus: appraisal.progressStatus || 'Initiated',
+      id: appraisal.id,
+      comment: appraisal.comment || '',
+    }));
+
+    this.filteredAppraisals = [...this.appraisals];
+  }
+
+  navigateToCreate() {
+    this.openAppraisal = !this.openAppraisal;
+  }
+
+  filterAppraisals() {
+    this.filteredAppraisals = this.appraisals.filter((appraisal) => {
+      const matchesDepartment =
+        !this.selectedDepartment ||
+        appraisal.department === this.selectedDepartment;
+
+      const matchesLevel =
+        !this.selectedLevel || appraisal.level === this.selectedLevel;
+
+      return matchesDepartment && matchesLevel;
+    });
+  }
+
+  viewAppraisalDetails(appraisal: Appraisal) {
+    this.selectedAppraisal = appraisal;
+    this.openAppraisal = true;
+  }
+
+  submitAppraisalForApproval(appraisal: Appraisal) {
+    // Update appraisal with comment and status
+    const updatedAppraisal = {
+      ...appraisal,
+      comment: this.comment,
+      progressStatus: 'Pending Approval',
+    };
+
+    // Update in localStorage
+    const storedAppraisals = JSON.parse(
+      localStorage.getItem('employeeAppraisals') || '[]'
+    );
+    const index = storedAppraisals.findIndex((a: any) => a.id === appraisal.id);
+
+    if (index !== -1) {
+      storedAppraisals[index] = updatedAppraisal;
     } else {
-      this.goals = savedEmployeeGoals.filter(
-        (goal: TargetGoal) => goal.user_id === this.user_id
-      );
+      storedAppraisals.push(updatedAppraisal);
     }
-    this.filteredGoals = [...this.goals];
-    this.sortGoals();
-  }
 
-  sortGoals() {
-    this.filteredGoals.sort((a, b) => {
-      const statusOrder = {
-        Pending: 0,
-        'In Progress': 1,
-        'Not Achieved': 2,
-        'On Hold': 3,
-        Completed: 4,
-      };
-      return (
-        statusOrder[a.progressStatus as keyof typeof statusOrder] -
-        statusOrder[b.progressStatus as keyof typeof statusOrder]
-      );
-    });
-  }
-
-  filterGoals() {
-    this.filteredGoals = this.goals.filter((goal) => {
-      const matchesSearch =
-        goal.goalName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        goal.assignedTo.toLowerCase().includes(this.searchTerm.toLowerCase());
-      const matchesStatus =
-        this.selectedStatus.length === 0 ||
-        this.selectedStatus.includes(goal.progressStatus);
-      return matchesSearch && matchesStatus;
-    });
-    this.sortGoals();
-  }
-
-  getGoalsByStatus(status: string): TargetGoal[] {
-    return this.goals.filter((goal) => goal.progressStatus === status);
-  }
-
-  getPriorityBadgeClass(priority: string): string {
-    const baseClasses = 'px-2 py-1 rounded-full text-lg font-semibold';
-    switch (priority.toLowerCase()) {
-      case 'high':
-        return `${baseClasses} bg-red-100 text-red-800`;
-      case 'medium':
-        return `${baseClasses} bg-yellow-100 text-yellow-800`;
-      case 'low':
-        return `${baseClasses} bg-green-100 text-green-800`;
-      default:
-        return baseClasses;
-    }
-  }
-
-  getStatusBadgeClass(status: string): string {
-    const baseClasses = 'px-2 py-1 rounded-full text-lg font-semibold';
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return `${baseClasses} bg-gray-100 text-gray-800`;
-      case 'in progress':
-        return `${baseClasses} bg-blue-100 text-blue-800`;
-      case 'not achieved':
-        return `${baseClasses} bg-red-100 text-red-800`;
-      case 'on hold':
-        return `${baseClasses} bg-yellow-100 text-yellow-800`;
-      case 'completed':
-        return `${baseClasses} bg-green-100 text-green-800`;
-      default:
-        return baseClasses;
-    }
-  }
-
-  viewGoal(goal: TargetGoal) {
-    this.selectedGoal = goal;
-    this.viewModalVisible = true;
-  }
-
-  editGoal(goal: TargetGoal) {
-    console.log('Edit goal:', goal);
-  }
-
-  deleteGoal(goal: TargetGoal) {
-    const employeeGoals = JSON.parse(
-      localStorage.getItem('employeeGoals') || '[]'
+    localStorage.setItem(
+      'employeeAppraisals',
+      JSON.stringify(storedAppraisals)
     );
-    const updatedGoals = employeeGoals.filter(
-      (g: TargetGoal) =>
-        !(g.goalName === goal.goalName && g.user_id === goal.user_id)
-    );
-    localStorage.setItem('employeeGoals', JSON.stringify(updatedGoals));
-    this.goals = updatedGoals;
-    this.filteredGoals = this.goals;
+
+    // Notify user of success
     this.messageService.add({
       severity: 'success',
-      summary: 'Success',
-      detail: 'Goal deleted successfully',
+      summary: 'Appraisal Submitted',
+      detail: `Appraisal for ${appraisal.employeeName} submitted for approval.`,
       life: 3000,
     });
+
+    this.openAppraisal = false;
+    this.comment = ''; // Clear the comment field
+    this.loadAppraisals(); // Reload the updated appraisals
   }
 
-  toggleMetricCompletion(metric: { name: string; completed: boolean }) {
-    if (!metric.completed) {
-      metric.completed = true;
-      this.confirmationMessage = `Task "${metric.name}" completed successfully!`;
-      setTimeout(() => {
-        this.confirmationMessage = null;
-      }, 2000);
-    }
-    localStorage.setItem('employeeGoals', JSON.stringify(this.goals));
-  }
+  updateAppraisalStatus(appraisalId: string, newStatus: string) {
+    const index = this.appraisals.findIndex((a) => a.id === appraisalId);
 
-  navigateToCreateGoal() {
-    this.openTargetForm = !this.openTargetForm;
-  }
+    if (index !== -1) {
+      this.appraisals[index].progressStatus = newStatus;
+      this.filteredAppraisals[index].progressStatus = newStatus;
 
-  saveMetricsToLocalStorage(): void {
-    if (this.selectedGoal) {
-      localStorage.setItem(
-        'targetMetrics',
-        JSON.stringify(this.selectedGoal.targetMetrics)
-      );
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Status Updated',
+        detail: `Appraisal status has been updated to ${newStatus}`,
+        key: 'tl',
+        life: 3000,
+      });
     }
   }
 
-  loadMetricsFromLocalStorage(): void {
-    const savedMetrics = localStorage.getItem('targetMetrics');
-    if (savedMetrics && this.selectedGoal) {
-      this.selectedGoal.targetMetrics = JSON.parse(savedMetrics);
+  editAppraisal(appraisal: Appraisal) {
+    if (this.userRole === 'ROLE_ADMIN') {
+      console.log('Edit appraisal:', appraisal);
     }
+  }
+
+  deleteAppraisal(appraisalId: string) {
+    if (this.userRole === 'ROLE_ADMIN') {
+      const index = this.appraisals.findIndex((a) => a.id === appraisalId);
+
+      if (index !== -1) {
+        this.appraisals.splice(index, 1);
+        this.filteredAppraisals = [...this.appraisals];
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Deleted',
+          detail: `Appraisal ID ${appraisalId} deleted successfully`,
+        });
+      }
+    }
+  }
+
+  filterByStatus(status: string) {
+    this.filteredAppraisals = this.appraisals.filter(
+      (appraisal) => appraisal.progressStatus === status
+    );
   }
 }
