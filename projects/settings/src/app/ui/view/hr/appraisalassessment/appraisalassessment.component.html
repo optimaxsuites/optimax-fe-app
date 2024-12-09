@@ -128,35 +128,44 @@
       </div>
     </div>
   </div>
-  <div class="mb-4">
-    <h3 class="text-lg font-semibold text-customBlue mb-2">Instructions:</h3>
+  <div
+    class="p-4 w-[80%] mt-3 mb-10 mx-auto table-item shadow-md table-auto rounded-xl text-customBlue bg-white/70"
+  >
+    <div class="mb-4">
+      <h3 class="text-lg font-semibold text-customBlue mb-2">Instructions:</h3>
 
-    <!-- Show this block if the instruction is not displayed -->
-    <div *ngIf="!instructionDisplayed">
-      <div class="flex items-center">
-        <textarea
-          *ngIf="!isEditMode"
-          [(ngModel)]="instructionText"
-          class="w-full ml-4p-1 border rounded"
-          placeholder="Enter section Instructions"
-          rows="6"
-        ></textarea>
-        <p-button
-          *ngIf="!isEditMode"
-          icon="pi pi-trash"
-          class="text-red-500 p-1 mt-8 rounded-xl"
-          (click)="removeInstruction()"
-        ></p-button>
+      <!-- Show this block if the instruction is not displayed -->
+      <div *ngIf="!instructionDisplayed">
+        <div class="flex items-center">
+          <textarea
+            *ngIf="!isEditMode"
+            [(ngModel)]="instructionText"
+            class="w-full p-1 text-customBlue border rounded"
+            placeholder="Enter section Instructions"
+            rows="6"
+          ></textarea>
+          <p-button
+            *ngIf="!isEditMode"
+            icon="pi pi-trash"
+            class="text-red-500 p-1 mt-8 rounded-xl"
+            (click)="removeInstruction()"
+          ></p-button>
+        </div>
       </div>
-    </div>
 
-    <div class="mt-4">
-      <div *ngIf="isEditMode" class="text-gray-700">
-        <ul class="list-disc ml-4 font-semi text-lg text-customBlue">
-          <li *ngFor="let step of getSteps(instructionText)" class="leading-6">
-            {{ step }}
-          </li>
-        </ul>
+      <div class="mt-4">
+        <div *ngIf="isEditMode" class="text-gray-700">
+          <ul
+            class="list-disc p-5 rounded-lg shadow-sm text-customBlue font-semibold text-sm"
+          >
+            <li
+              *ngFor="let step of getSteps(instructionText)"
+              class="leading-6"
+            >
+              {{ step }}
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
@@ -274,281 +283,3 @@
 
 <p-toast></p-toast>
 <p-confirmDialog></p-confirmDialog>
-
-<!-- 
-
-<!-- <mat-accordion>
-      <mat-expansion-panel *ngFor="let level of levels">
-        <mat-expansion-panel-header>
-          <mat-panel-title>
-            <p class="text-gray-600 px-2 py-4 font-bold text-[14px]">
-              {{ level }}
-            </p>
-          </mat-panel-title>
-          <mat-panel-description>
-            <div class="flex w-full items-center">
-              <ng-container
-                *ngIf="
-                  hasSectionsForDepartmentAndLevel(dept, level);
-                  else createAppraisal
-                "
-              >
-                <div class="flex ml-auto space-x-4">
-                  <p-button
-                    icon="pi pi-pencil"
-                    class="p-button-text text-blue-500 hover:bg-blue-200 p-3 rounded-xl border-none"
-                    pTooltip="Edit Sections"
-                    tooltipPosition="top"
-                    (click)="view(dept, level)"
-                  ></p-button>
-                  <p-button
-                    icon="pi pi-trash"
-                    class="p-button-text text-red-500 hover:bg-red-200 ml-auto p-3 rounded-xl border-none"
-                    pTooltip="Clear Sections?"
-                    tooltipPosition="top"
-                    (click)="clearSections(dept, level)"
-                  ></p-button>
-                </div>
-              </ng-container>
-              <ng-template #createAppraisal>
-                <p-button
-                  icon="pi pi-plus"
-                  class="text-customBlue hover:bg-white p-3 rounded-xl p-button-success ml-auto"
-                  (click)="selectDepartmentAndLevel(dept, level)"
-                  pTooltip="Create Appraisal"
-                  tooltipPosition="top"
-                ></p-button>
-              </ng-template>
-            </div>
-          </mat-panel-description>
-        </mat-expansion-panel-header>
-      </mat-expansion-panel>
-    </mat-accordion> 
-
-<ng-container *ngIf="!showAddForm && selectedDepartment && selectedLevel">
-  <div
-    *ngFor="
-      let question of getQuestionsForDepartmentAndLevel(
-        selectedDepartment,
-        selectedLevel
-      )
-    "
-  >
-    <div
-      *ngFor="let section of question.sections; let sectionIndex = index"
-      class="mb-6 p-4 border rounded"
-    >
-      <div *ngIf="isEditing" class="flex justify-between items-center mb-5">
-        <h3 class="font-semibold text-lg text-customBlue">
-          Section {{ getSectionLabel(sectionIndex) }}:
-          {{ section.sectionTitle }}
-        </h3>
-        <p-button
-          class="bg-blue-500 text-white px-3 py-2 rounded"
-          (click)="toggleEditSection(sectionIndex)"
-        >
-          {{ isEditing ? "View" : "Edit" }}
-        </p-button>
-      </div>
-      <!-- Questions in Section 
-      <ol *ngIf="isEditing" class="list-decimal pl-3">
-        <li
-          *ngFor="let questionItem of section.questions"
-          class="mb-3 text-customBlue"
-        >
-          <!-- <span class="flex-1">{{ questionItem.questionText }}</span> 
-        </li>
-      </ol>
-
-      <!-- Editable section for editing 
-      <div *ngIf="isEditing && editingSectionIndex === sectionIndex">
-        <div class="mb-4">
-          <label class="block text-sm font-small mb-1">Instructions:</label>
-          <textarea
-            formControlName="section.instruction"
-            class="w-full p-2 border rounded"
-            placeholder="Enter section instructions"
-            [readonly]="!isEditing"
-          ></textarea>
-        </div>
-        <div class="mb-4">
-          <label class="block text-sm font-small mb-1">Section Title:</label>
-          <input
-            formControlName="section.sectionTitle"
-            class="w-full p-2 border rounded"
-            placeholder="Enter section title"
-            [disabled]="!isEditing"
-          />
-        </div>
-        <div class="mb-4">
-          <label class="block text-sm font-small mb-1">Questions:</label>
-          <textarea
-            *ngFor="let questionItem of section.questions"
-            formControlName="questionItem.questionText"
-            class="w-full p-2 mb-2 border rounded"
-            rows="2"
-            placeholder="Edit question"
-            [disabled]="!isEditing"
-          ></textarea>
-        </div>
-      </div>
-    </div>
-  </div>
-</ng-container> -->
-<!-- Add/Edit Form -->
-<!-- <div *ngIf="showAddForm && selectedDepartment && selectedLevel">
-  <div>
-    <h1 class="text-2xl mt-4 font-bold text-center text-customBlue mb-6">
-      Employee Assessment
-    </h1>
-
-    <div
-      class="bg-indigo-50 text-xl border-l-4 border-green-600 p-4 rounded-lg mb-3"
-    >
-      <h2 class="text-xl ml-8 font-semibold text-green-800 mb-4 mt-2">
-        Welcome Admin!
-      </h2>
-      <div
-        class="ml-2 mr-2 mb-4 text-[16px] list-inside space-y-1 text-gray-700 text-justify flex flex-wrap"
-      >
-        <p>
-          Thank you for taking the time to set up the appraisal questions. This
-          is a critical step in guiding employees through their performance
-          evaluation process. Your thoughtful selection of questions will help
-          assess their achievements, identify areas for growth, and provide
-          valuable insights into their professional development.
-        </p>
-
-        <p>
-          Please ensure the questions align with the goals of the appraisal,
-          focusing on key aspects such as job performance, skills, and growth.
-          Once you’ve set the questions, they will be presented to employees for
-          their reflection and feedback.
-        </p>
-        <p><strong>Before You Begin:</strong></p>
-        <ul class="list-disc ml-5">
-          <li>
-            Carefully consider the types of questions you want to include:
-            whether multiple-choice, open-ended, or situational.
-          </li>
-          <li>
-            Make sure the questions are clear, concise, and relevant to each
-            employee's role and performance objectives.
-          </li>
-          <li>
-            Feel free to add any instructions or guidelines to assist
-            supervisors and managers in evaluating the performance of each
-            individual employee.
-          </li>
-        </ul>
-        <p>
-          Your role in this process is vital in helping supervisors and managers
-          gain clarity about each employee's performance and future growth. We
-          appreciate your attention to detail and dedication to making this
-          process as smooth and effective as possible. Let’s get started!
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <div
-    class="p-4 w-[80%] mt-3 mb-10 mx-auto shadow-md rounded-xl text-customBlue bg-white/70"
-  >
-    <form [formGroup]="appraisalQuestionForm">
-      <div formArrayName="sections">
-        <div
-          *ngFor="
-            let section of sectionsArray.controls;
-            let sectionIndex = index
-          "
-          [formGroupName]="sectionIndex"
-        >
-          <div class="flex justify-between items-center mb-4">
-            <div class="flex-1 mr-4">
-              <label class="block text-sm font-small mb-1"
-                >Instructions:
-              </label>
-              <textarea
-                formControlName="instruction"
-                class="w-full p-1 border rounded"
-                placeholder="Enter section Instructions"
-                rows="6"
-              ></textarea>
-            </div>
-
-          </div>
-
-          <div class="flex justify-between items-center mb-4">
-            <div class="flex-1 mr-4">
-              <label class="block text-sm font-small mb-1"
-                >Section {{ getSectionLabel(sectionIndex) }}:
-              </label>
-              <input
-                formControlName="sectionTitle"
-                class="w-full p-1 border rounded"
-                placeholder="Enter section title"
-              />
-            </div>
-
-            <p-button
-              icon="pi pi-trash"
-              class="text-red-500 hover:bg-red-50 p-3 rounded-xl"
-              (click)="removeSection(sectionIndex)"
-            ></p-button>
-          </div>
-
-          <div formArrayName="questions">
-            <div
-              *ngFor="
-                let question of getQuestionsArray(sectionIndex).controls;
-                let questionIndex = index
-              "
-              [formGroupName]="questionIndex"
-              class="mb-4"
-            >
-              <div class="flex justify-between mt-6">
-                <textarea
-                  formControlName="questionText"
-                  class="flex-1 w-full p-2 border rounded mr-4"
-                  rows="3"
-                  placeholder="Enter question"
-                ></textarea>
-
-                <p-button
-                  icon="pi pi-trash"
-                  class="text-red-500 hover:bg-red-50 p-3 rounded-xl"
-                  (click)="removeQuestion(sectionIndex, questionIndex)"
-                ></p-button>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              class="text-green-500 hover:bg-green-50 p-2 rounded mt-2"
-              (click)="addQuestion(sectionIndex)"
-            >
-              <i class="fa-solid fa-plus"></i> Add Question
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex justify-between mt-6">
-        <button
-          type="button"
-          class="text-blue-500 hover:bg-blue-50 p-3 rounded"
-          (click)="addSection()"
-        >
-          <i class="fa-solid fa-plus"></i> Add Section
-        </button>
-        <button
-          type="button"
-          class="bg-customGreen text-white px-6 py-3 rounded"
-          (click)="saveCurrentState()"
-        >
-          Save Questions
-        </button>
-      </div>
-    </form>
-  </div>
-</div> -->

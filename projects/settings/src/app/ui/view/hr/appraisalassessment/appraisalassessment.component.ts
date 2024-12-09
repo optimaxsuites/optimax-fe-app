@@ -80,6 +80,7 @@ export class AppraisalassessmentComponent implements OnInit {
   };
 
   resetMessage: string = '';
+  selectedAppraisal: any;
 
   constructor(
     private fb: FormBuilder,
@@ -182,16 +183,13 @@ export class AppraisalassessmentComponent implements OnInit {
     this.confirmationService.confirm({
       message: `Are you sure you want to delete this instruction?`,
       accept: () => {
-        // Clear the instruction text
-        this.appraisal.instructionText = '';
+        this.appraisal.instructionText = ''; // Or use undefined if needed
+
         this.messageService.add({
           severity: 'success',
           summary: 'Instruction Deleted',
           detail: 'Instruction has been deleted.',
         });
-
-        // Optionally, clear it from localStorage
-        localStorage.removeItem('instructionText');
       },
     });
   }
@@ -199,8 +197,6 @@ export class AppraisalassessmentComponent implements OnInit {
   removeQuestion(sectionIndex: number, questionIndex: number) {
     this.appraisal.sections[sectionIndex].questions.splice(questionIndex, 1);
   }
-
-  //
 
   selectDepartmentAndLevel(department: string, level: string) {
     this.selectedDepartment = department;
@@ -266,6 +262,7 @@ export class AppraisalassessmentComponent implements OnInit {
 
     // Clear form state
     this.showAddForm = false;
+    this.isViewMode = false;
     this.selectedDepartment = null;
     this.selectedLevel = null;
     localStorage.removeItem('selectedDepartment');
@@ -280,7 +277,6 @@ export class AppraisalassessmentComponent implements OnInit {
       this.questionListArray = JSON.parse(savedQuestions);
     }
 
-    // Load instruction state
     const instructionState = localStorage.getItem('instructionDisplayed');
     const savedInstructionText = localStorage.getItem('instructionText');
 
@@ -387,235 +383,3 @@ export class AppraisalassessmentComponent implements OnInit {
       .filter((step) => step);
   }
 }
-
-//
-// import { Component, OnInit } from '@angular/core';
-// import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
-// import { ConfirmationService, MessageService } from 'primeng/api';
-
-// // interface AppraisalQuestionDTO {
-// //   id?: string;
-// //   department: string;
-// //   level: string;
-// //   sectionss: {
-// //     id: string;
-// //     sectionTitle: string;
-// //     instruction: string;
-// //     questions: {
-// //       id: string;
-// //       questionText: string;
-// //     }[];
-// //   }[];
-// // }
-
-// interface Section {
-//   id: string;
-//   sectionTitle: string;
-//   instruction: string;
-//   questions: Question[];
-//   isEditing?: boolean;
-// }
-
-// interface Question {
-//   id: string;
-//   text: string;
-//   isEditing?: boolean;
-// }
-
-// interface AppraisalQuestionDTO {
-//   id?: string;
-//   department: string;
-//   level: string;
-//   sections: Section[];
-// }
-
-// @Component({
-//   selector: 'app-appraisalassessment',
-//   templateUrl: './appraisalassessment.component.html',
-//   providers: [MessageService, ConfirmationService],
-// })
-// export class AppraisalassessmentComponent implements OnInit {
-//   showAddForm = false;
-//   appraisalQuestionForm!: FormGroup;
-//   selectedDepartment: string | null = null;
-//   selectedLevel: string | null = null;
-//   isEditable = false;
-//   isEditing = false;
-//   editingSectionIndex: number | null = null;
-//   departments = [
-//     'Human Resources',
-//     'Finance',
-//     'Marketing',
-//     'Sales',
-//     'Operations',
-//     'Information Technology',
-//     'Customer Service',
-//     'Legal',
-//     'Procurement',
-//     'Administration',
-//     'Product Development',
-//     'Research & Development',
-//     'Quality Assurance',
-//     'Public Relations',
-//     'Engineering',
-//     'Logistics',
-//     'Health and Safety',
-//     'Security',
-//     'Compliance',
-//     'Training & Development',
-//   ];
-
-//   levels = [
-//     'Entry Level',
-//     'Mid Level 1',
-//     'Mid-Level 2',
-//     'Senior Level 1',
-//     'Senior Level 2',
-//     'Executive Level 1',
-//     'Executive Level 2',
-//     'C-Level',
-//   ];
-//   questionListArray: AppraisalQuestionDTO[] = [];
-//   appraisal: AppraisalQuestionDTO = {
-//     department: '',
-//     level: '',
-//     sections: [],
-//   };
-//   resetMessage: string = '';
-//   app: any = {
-//     sections: ([] = [this.question]),
-//   };
-//   question?: any[] = [];
-
-//   constructor(
-//     private fb: FormBuilder,
-//     private confirmationService: ConfirmationService,
-//     private messageService: MessageService
-//   ) {}
-
-//   ngOnInit() {
-//     this.initForm();
-//     this.loadQuestions();
-//   }
-
-//   initForm() {
-//     this.appraisalQuestionForm = this.fb.group({
-//       sections: this.fb.array([]),
-//     });
-//   }
-
-//   createSection(): FormGroup {
-//     return this.fb.group({
-//       id: [this.generateUniqueId()],
-//       sectionTitle: ['', Validators.required],
-//       instruction: ['', Validators.required],
-//       questions: this.fb.array([]),
-//     });
-//   }
-
-//   getQuestionsForDepartmentAndLevel(
-//     department: string,
-//     level: string
-//   ): AppraisalQuestionDTO[] {
-//     return this.questionListArray.filter(
-//       (question) =>
-//         question.department === department && question.level === level
-//     );
-//   }
-
-// addSection() {
-//   this.app.sections.push({
-//     id: this.generateUniqueId(),
-//     sectionTitle: '',
-//     instruction: '',
-//     questions: [],
-//   });
-// }
-
-// // addQuestion(sectionIndex: number) {
-// //   if (this.isEditing) {
-// //     const questionsArray = this.getQuestionsArray(sectionIndex);
-// //     questionsArray.push(this.createQuestion());
-// //   }
-// // }
-
-// addQuestion(sectionIndex: number) {
-//   const section = this.app.sections[sectionIndex];
-//   if (!section.questions) {
-//     section.questions = [];
-//   }
-//   section.questions.push({ id: this.generateUniqueId(), text: '' });
-// }
-
-// createQuestion(): FormGroup {
-//   return this.fb.group({
-//     id: [this.generateUniqueId()],
-//     questionText: ['', Validators.required],
-//   });
-// }
-
-// get sectionsArray() {
-//   return this.appraisalQuestionForm.get('sections') as FormArray;
-// }
-
-// getQuestionsArray(sectionIndex: number): FormArray {
-//   return this.sectionsArray.at(sectionIndex).get('questions') as FormArray;
-// }
-
-// resetForm() {
-//   this.appraisalQuestionForm.reset();
-//   this.sectionsArray.clear();
-// }
-
-// saveCurrentState() {
-//   if (!this.selectedDepartment || !this.selectedLevel) return;
-
-//   const formValue = this.appraisalQuestionForm.value;
-//   const newQuestion: AppraisalQuestionDTO = {
-//     id: this.generateUniqueId(),
-//     department: this.selectedDepartment,
-//     level: this.selectedLevel,
-//     sections: formValue.sections,
-//   };
-
-//   // Remove existing questions for this department and level
-//   const index = this.questionListArray.findIndex(
-//     (q) =>
-//       q.department === this.selectedDepartment &&
-//       q.level === this.selectedLevel
-//   );
-
-//   if (index !== -1) {
-//     this.questionListArray[index] = newQuestion;
-//   } else {
-//     this.questionListArray.push(newQuestion);
-//   }
-
-//   localStorage.setItem(
-//     'appraisalQuestions',
-//     JSON.stringify(this.questionListArray)
-//   );
-
-//   this.messageService.add({
-//     severity: 'success',
-//     summary: 'Success',
-//     detail: 'Questions saved successfully',
-//   });
-
-//   this.resetForm();
-// }
-
-// toggleEdit(sectionIndex?: number, questionIndex?: number) {
-//   if (sectionIndex !== undefined && questionIndex === undefined) {
-//     // Toggle edit mode for the section
-//     const section = this.sectionsArray.at(sectionIndex);
-//     section.get('sectionTitle')?.enable(); // Enable section title editing
-//   } else if (sectionIndex !== undefined && questionIndex !== undefined) {
-//     // Toggle edit mode for a specific question
-//     const question = this.getQuestionsArray(sectionIndex).at(questionIndex);
-//     const questionTextControl = question?.get('questionText');
-//     if (questionTextControl) {
-//       questionTextControl.enable(); // Enable question text editing
-//     }
-//   }
-// }
