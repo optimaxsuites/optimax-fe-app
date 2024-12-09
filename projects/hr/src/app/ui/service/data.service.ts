@@ -101,6 +101,8 @@ export class DataService {
     .delete<any>(this.baseurl+ `/x/api/v2/hr/levels/${id}`)
     .pipe(catchError(this.handleError));
   }
+
+
   private handleError(error: HttpErrorResponse) {
     if (error.error instanceof ErrorEvent) {
         console.error("An error occurred:", error.error.message);
