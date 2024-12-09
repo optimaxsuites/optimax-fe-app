@@ -94,6 +94,15 @@ export class EmployeeService {
     .pipe(catchError(this.handleError));
   }
 
+
+  addGuarantor(data: any) {
+    return this.http
+    .post<any>(
+        this.baseurl +
+            `/x/api/v2/hr/guarantors`, data)
+    .pipe(catchError(this.handleError));
+  }
+
   private handleError(error: HttpErrorResponse) {
     if (error.error instanceof ErrorEvent) {
         console.error("An error occurred:", error.error.message);

@@ -2,6 +2,7 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { EmployeeService } from '../../../service/employee.service';
 
 export interface Metric {
   name: string;
@@ -22,8 +23,16 @@ interface TargetGoal {
   isTarget?: boolean;
   level: string[];
   evaluator: string[];
+  employees: string[];
   userRole: string | undefined;
-  levelUser: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  department: string;
+  level: string;
 }
 
 @Component({
@@ -38,26 +47,22 @@ export class TargetformComponent implements OnInit {
   metricsArray: Metric[] = [];
   user_id?: number | undefined;
   userRole: any = 'ROLE_USER';
+  employees: User[] = [];
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private employeeService: EmployeeService
   ) {
     this.initializeForm();
   }
-
-  levelUser = [
-    {
-      option: 'Individual',
-    },
-  ];
 
   level = [
     {
       option: 'Individual',
     },
-    { option: 'Organization' },
+    { option: 'Organization', role: 'ROLE_ADMIN' },
   ];
 
   evaluator = [
@@ -83,6 +88,15 @@ export class TargetformComponent implements OnInit {
       this.goalForm.patchValue({ employeeName: currentUserName });
       this.goalForm.get('employeeName')?.disable();
     }
+
+    this.employeeService.getAllEmployee().subscribe({
+      next: (data) => {
+        this.employees = data;
+      },
+      error: (err) => {
+        console.log(err);
+      },
+    });
   }
 
   private initializeForm(): void {
@@ -98,7 +112,6 @@ export class TargetformComponent implements OnInit {
     };
 
     const adminControls = {
-      level: ['Individual', Validators.required],
       evaluator: ['', Validators.required],
     };
 
