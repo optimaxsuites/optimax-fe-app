@@ -78,6 +78,21 @@ export class EmployeeService {
     .pipe(catchError(this.handleError));
   }
 
+  getEmployeeImage(fileName: string){
+    return this.http
+    .get<any>(
+        this.baseurl +
+            `/x/api/v2/hr/employees/images/${fileName}`, { responseType: 'blob' as 'json' })
+    .pipe(catchError(this.handleError));
+  }
+
+  addNOK(data: any) {
+    return this.http
+    .post<any>(
+        this.baseurl +
+            `/x/api/v2/hr/nextOfKins`, data)
+    .pipe(catchError(this.handleError));
+  }
 
   private handleError(error: HttpErrorResponse) {
     if (error.error instanceof ErrorEvent) {

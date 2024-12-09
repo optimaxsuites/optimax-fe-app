@@ -99,7 +99,6 @@ export class AddEmployeeFormComponent {
 
   ];
   religions = [
- 
   ];
 
   nigerianBanks = [
@@ -123,20 +122,6 @@ export class AddEmployeeFormComponent {
     "Zenith Bank"
   ];
   nextOfKinRelationships = [
-    "Spouse",
-    "Parent",
-    "Sibling",
-    "Child",
-    "Grandparent",
-    "Grandchild",
-    "Aunt",
-    "Uncle",
-    "Cousin",
-    "Friend",
-    "Guardian",
-    "Partner",
-    "In-law",
-    "Other"
   ];
   nextOfKinList: any[] = []
   guarantorList: any[] = []
@@ -176,7 +161,7 @@ export class AddEmployeeFormComponent {
       maritalStatus: [null, [Validators.required, Validators.min(1)]],
       religion: [null, [Validators.required,  Validators.min(1)]],
       address: [null, [Validators.required,  Validators.min(1)]],
-      profilePhoto: ['',[ Validators.required, this.imageFileValidator()]]
+      profilePhoto: [null,[ Validators.required, this.imageFileValidator()]]
     });
 
     this.employeeForm = this.fb.group({
@@ -192,7 +177,7 @@ export class AddEmployeeFormComponent {
       email: ['', [Validators.required, Validators.email]],
       phone: ['', [Validators.required]],
       address: ['', [Validators.required]],
-      relationship: ['', [Validators.required]],
+      relationship: [null, [Validators.required]],
       DOB: ['', [Validators.required]],
       emergencyContact: ['', []],
 
@@ -243,6 +228,12 @@ export class AddEmployeeFormComponent {
        
       }
     })
+
+    this.dataService.getRelationship().subscribe({
+      next: (data: any) => {
+        this.nextOfKinRelationships = data
+      }
+    })
   }
   fetchEmployeeData(employeeId: number): void {
     this.employeeService.getEmployeeById(employeeId).subscribe({
@@ -255,6 +246,8 @@ export class AddEmployeeFormComponent {
             });
       }
     })
+
+    console.log(this.employeeData)
   }
  imageFileValidator(): ValidatorFn {
   return (control: AbstractControl): { [key: string]: any } | null => {
@@ -292,6 +285,9 @@ export class AddEmployeeFormComponent {
   if(this.currentTab == 1){
     this.basicForm.markAllAsTouched()
     if(this.basicForm.invalid) return
+console.log(this.basicForm.get('profilePhoto')?.value instanceof File)
+
+
   }
   if(this.currentTab == 2){
     this.employeeForm.markAllAsTouched()
@@ -307,6 +303,20 @@ export class AddEmployeeFormComponent {
     if(this.NOKForm.valid) {
     this.addNextOfKin()
     }
+    this.nextOfKinList.map((nok) => {
+      const nokData = {
+        fullName: nok.fullName,
+        email: nok.email,
+        phone: nok.phone,
+        address: nok.address,
+        relationshipId: nok.relationship,
+        dob: this.toLocalDateTime(nok.DOB),
+        emergencyContact: nok.emergencyContact,
+        employee: this.employeeId
+      } 
+
+      this.employeeService.addNOK(nokData).subscribe()
+    })
     this.nextTab()
   }
   nextTabFromGuarantor(){
@@ -338,88 +348,36 @@ export class AddEmployeeFormComponent {
   }
 
 addNewEmployee(){
-  console.log(this.guarantorList)
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-  const formattedDate = currentDate.toISOString().split('T')[0];
-  
-  const employeesFromStorage = localStorage.getItem("employeesList");
-  const employeesList = employeesFromStorage ? JSON.parse(employeesFromStorage) : [];
-
-  
-  const employeeIndex = employeesList.findIndex((emp: { id: number; }) => emp.id === this.employeeId);
-  
-  if (employeeIndex !== -1) {
-    const existingEmployee = employeesList[employeeIndex];
-
-    // Update employee details with form values
-    existingEmployee.dob = this.basicForm.get('DOB')?.value,
-    existingEmployee.phone= this.basicForm.get('phone')?.value,
-    existingEmployee.maritalStatus= this.basicForm.get('maritalStatus')?.value,
-    existingEmployee.religion= this.basicForm.get('religion')?.value,
-    existingEmployee.address= this.basicForm.get('address')?.value,
-    existingEmployee.gender= this.basicForm.get('gender')?.value,
-    existingEmployee.bankName = this.employeeForm.get('bankName')?.value;
-    existingEmployee.accountNumber = this.employeeForm.get('accountNumber')?.value;
-    existingEmployee.nin = this.employeeForm.get('nin')?.value;
-    existingEmployee.bvn = this.employeeForm.get('bvn')?.value;
-    existingEmployee.nextOfKin = [...this.nextOfKinList];
-    existingEmployee.guarantor = [...this.guarantorList];
-    existingEmployee.profileImage = this.imageURL;
-    // existingEmployee.leaveDetails = {
-    //   assignedLeaves: 20,
-    //   usedLeaves: 0,
-    //   leavesRemaining: 20,
-    //   leavesSpent: []
-    // };
-    // existingEmployee.attendance = {
-    //   year: currentYear,
-    //   daysPresent: 1,
-    //   daysAbsent: 0,
-    //   lateArrivals: 0,
-    //   overtimeHours: 0,
-    //   lastPresent: formattedDate,
-    //   day2DayAttendance: [{
-    //     date: formattedDate,
-    //     clockIn: "9:00 AM",
-    //     clockOut: "5:00 PM",
-    //     comment: "First day in"
-    //   }
-    // ]
-    // };
-console.log(existingEmployee)
-    employeesList[employeeIndex] = existingEmployee;
-    console.log(employeesList)
-    localStorage.setItem("employeesList", JSON.stringify(employeesList));
-
-    this.loading = false;
-    this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Employee updated successfully!' });
-
-    this.basicForm.reset();
-    this.guarantorForm.reset();
-    this.NOKForm.reset();
-    this.employeeForm.reset();
-    this.nextOfKinList = [];
-    this.guarantorList = [];
-    this.imageURL = '';
-    this.fileDataUrl = '';
-    this.currentTab = 1;
-  } else {
-    this.loading = false;
-    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Employee not found!' });
-  }
-
   const newEmployee = {
  
 
-   
-    ...this.employeeData,
+   id: this.employeeId,
+    firstName:  this.employeeData.firstName,
+    lastName:  this.employeeData.lastName,
+    email:  this.employeeData.email,
+    workEmail: this.employeeData.workEmail,
+    jobTitle: this.employeeData.jobTitle,
+    departmentId: this.employeeData.departmentId,
+    levelId: this.employeeData.levelId,
+    employmentType:  this.employeeData.employmentType,
+    supervisor: this.employeeData.supervisor,
+
+    // Employment Information
+    employeeStatus: this.employeeData.employeeStatus,
+    employementStartDate: this.employeeData.employementStartDate,
+    employmentEndDate: this.employeeData.employmentEndDate,
+    onProbation: this.employeeData.onProbation,
+    probationStartDate: this.employeeData.probationStartDate,
+    probationEndDate: this.employeeData.probationEndDate,
+    appraisalDueDate: this.employeeData.appraisalDueDate,
+
+
     phone: this.basicForm.get('phone')?.value,
     address: this.basicForm.get('address')?.value,
     dob: this.toLocalDateTime(this.basicForm.get('DOB')?.value),
-    gender: this.basicForm.get('gender')?.value,
-    maritalStatus: this.basicForm.get('maritalStatus')?.value,
-    religion: this.basicForm.get('religion')?.value,
+    genderId: this.basicForm.get('gender')?.value,
+    maritalStatusId: this.basicForm.get('maritalStatus')?.value,
+    religionId: this.basicForm.get('religion')?.value,
     bankName: this.employeeForm.get('bankName')?.value,
     accountNumber: this.employeeForm.get('accountNumber')?.value,
     nin: this.employeeForm.get('nin')?.value,
@@ -432,8 +390,8 @@ console.log(existingEmployee)
   const formData = new FormData();
   formData.append('employee', JSON.stringify(newEmployee));
 
-  if (this.employeeForm.get('profileImage')?.value instanceof File) {
-    formData.append('file', this.employeeForm.get('profileImage')?.value)
+  if (this.basicForm.get('profilePhoto')?.value instanceof File) {
+    formData.append('file', this.basicForm.get('profilePhoto')?.value)
   }
   console.log(formData)
   this.employeeService.addEmployee(formData).subscribe(
@@ -444,7 +402,7 @@ console.log(existingEmployee)
     this.basicForm.reset()
     this.guarantorForm.reset()
     this.employeeForm.reset()
-    this.currentTab = 1
+    // this.currentTab = 1
 
     // if (shouldRedirect) {
     //   this.router.navigate([`/user/onboarding/${data.id}/wer23456fghi367ghj`]);
@@ -543,12 +501,12 @@ console.log(existingEmployee)
 
     }
   }
-  onProfilePhotoChange(event: Event, controlName: string) {
+  onProfilePhotoChange(event: Event) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length) {
       this.previewImageFile(input.files[0])
-      const file = input.files;
-      // this.basicForm.patchValue({ [controlName]: file }); 
+      const file = input.files[0];
+      this.basicForm.get('profilePhoto')?.setValue(file)
       this.basicForm.get('profilePhoto')?.updateValueAndValidity();
     }
 

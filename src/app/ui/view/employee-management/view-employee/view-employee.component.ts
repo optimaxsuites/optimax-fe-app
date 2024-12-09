@@ -4,6 +4,8 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import { EmployeeService } from '../../../service/employee.service';
 import { catchError, map, Observable, of } from 'rxjs';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { HttpClient } from '@angular/common/http';
 @Component({
   selector: 'app-view-employee',
   templateUrl: './view-employee.component.html',
@@ -16,21 +18,33 @@ export class ViewEmployeeComponent {
     alert('date click! ' + arg.dateStr)
   }
 
-  constructor(private employeeService: EmployeeService){}
+  employeeProfilePhotoUrl: SafeUrl | string = 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='
+
+  constructor(private employeeService: EmployeeService, private sanitizer: DomSanitizer, private http: HttpClient){}
   
   ngOnInit(): void {
     const employee = localStorage.getItem("employeeInView");
+
     if (employee) {
       this.employeeInView = JSON.parse(employee);
-      this.employeeService.getSalaryById(this.employeeInView.levelId).subscribe({
-        next: data => {
-          this.employeeInView.salaryDetails = data[0]
-          console.log(this.employeeInView)
-          // this.employeeInView.leaveEvents = this.generateLeaveEvents(this.employeeInView.salaryDetails.leaveDetails)
-        },
-        error: err => console.log(err)
-      })
+
+      if(this.employeeInView?.level){
+        this.employeeService.getSalaryById(this.employeeInView.level.id).subscribe({
+          next: data => {
+            this.employeeInView.salaryDetails = data[0]
+            console.log(this.employeeInView)
+            // this.employeeInView.leaveEvents = this.generateLeaveEvents(this.employeeInView.salaryDetails.leaveDetails)
+          },
+          error: err => console.log(err)
+        })
+
+      }
+    
     }
+
+  
+    this.getEmployeesProfilePhotoUrl(this.employeeInView?.employeeMedia?.mediaNo);
+
     
     if(this.employeeInView.leaveDetails){
         this.calendarOptions = {
@@ -40,6 +54,8 @@ export class ViewEmployeeComponent {
           events:  this.generateLeaveEvents(this.employeeInView.leaveDetails)
         };
       }    
+
+
   }
   getAllowanceName(id: number): Observable<string> {
     return this.employeeService.getAllowanceTypeById(id).pipe(
@@ -85,4 +101,17 @@ export class ViewEmployeeComponent {
       .replace(/^./, str => str.toUpperCase());
   }
 
+  getEmployeesProfilePhotoUrl(filename: string){
+    this.employeeService.getEmployeeImage(filename).subscribe({
+      next: (response) => {
+        const blob = new Blob([response], { type: 'image/png' });
+        this.employeeProfilePhotoUrl = this.sanitizer.bypassSecurityTrustUrl(URL.createObjectURL(blob));
+      },
+      error: (err) => {
+        console.error('Failed to load employee image', err);
+           this.employeeProfilePhotoUrl = 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0=';
+      console.log(this.employeeProfilePhotoUrl)
+      },
+    });
+  }
 }

@@ -336,14 +336,14 @@ private setProbationValidators(): void {
     workEmail: this.basicForm.get('workemail')?.value,
     jobTitle: this.basicForm.get('title')?.value,
     departmentId: this.basicForm.get('department')?.value,
-    level: this.basicForm.get('level')?.value,
+    levelId: this.basicForm.get('level')?.value,
     employmentType: this.basicForm.get('employmentType')?.value,
     supervisor: this.basicForm.get('supervisor')?.value,
 
     // Employment Information
     employeeStatus: this.employeeForm.get('status')?.value.toUpperCase(),
     employementStartDate: this.toLocalDateTime(this.employeeForm.get('startDate')?.value),
-    employementEndDate: this.toLocalDateTime(this.employeeForm.get('endDate')?.value),
+    employmentEndDate: this.toLocalDateTime(this.employeeForm.get('endDate')?.value),
     onProbation: this.employeeForm.get('isProbation')?.value,
     probationStartDate: this.toLocalDateTime(this.employeeForm.get('probationStartDate')?.value),
     probationEndDate: this.toLocalDateTime(this.employeeForm.get('probationEndDate')?.value),
