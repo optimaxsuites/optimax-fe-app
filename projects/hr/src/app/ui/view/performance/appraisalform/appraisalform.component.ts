@@ -1,6 +1,7 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { DataService } from '../../../service/data.service';
 
 export interface Appraisal {
   id: string;
@@ -8,7 +9,6 @@ export interface Appraisal {
   appraisalCycle: string;
   template: string[];
   startDate: string;
-  // endDate: string;
   dueDate: string;
   progressStatus: string;
   description: string;
@@ -18,7 +18,7 @@ export interface Appraisal {
   userRole: string;
   assignedToUserId?: string;
   user_id: number;
-  department: string;
+  departments: string[];
   assessment: string;
 }
 @Component({
@@ -34,13 +34,25 @@ export class AppraisalformComponent implements OnInit {
 
   userRole: string = 'ROLE_ADMIN'; // Should come from auth service
   user_id?: number | undefined;
+  departments: string[] = [];
 
-  constructor(private fb: FormBuilder, private router: Router) {
+  constructor(
+    private fb: FormBuilder,
+    private router: Router,
+    private dataService: DataService
+  ) {
     this.initForm();
   }
 
   ngOnInit(): void {
-    // Initialization logic can go here if needed
+    this.dataService.getDepartment().subscribe({
+      next: (data) => {
+        this.departments = data;
+      },
+      error: (err) => {
+        console.log(err);
+      },
+    });
   }
 
   private initForm() {
@@ -48,7 +60,6 @@ export class AppraisalformComponent implements OnInit {
       employeeName: ['', Validators.required],
       appraisalCycle: ['Individual', Validators.required],
       startDate: ['', Validators.required],
-      // endDate: ['', Validators.required],
       dueDate: ['', Validators.required],
       progressStatus: ['Pending'],
       evaluator: [[]],
@@ -56,7 +67,7 @@ export class AppraisalformComponent implements OnInit {
       description: [''],
       supervisor: [''],
       period: [''],
-      department: [],
+      departments: [''],
       assessment: [''],
     });
   }

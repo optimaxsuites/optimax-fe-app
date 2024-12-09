@@ -9,6 +9,7 @@ import { AuthenticationService } from '../../../shared-component/service/auth-se
 import { DataService } from '../../../service/data.service';
 import { EmployeeService } from '../../../service/employee.service';
 import { formatDate } from '@angular/common';
+import { MetadataService } from '../../../service/metadata.service';
 
 @Component({
   selector: 'app-admin-creation-form',
@@ -36,7 +37,7 @@ export class AdminCreationFormComponent {
   imageURL: string =''
   salaryStructure: any = [];
   departments: any[] = [];
-  gender: any[] = []
+
   levels: any[] = []
   leaves: any[] = []
   isAmountTouched: boolean = false
@@ -48,32 +49,8 @@ export class AdminCreationFormComponent {
 
   currentTab = 1;
   tabs = ["Employment Information", "Employment Status", "Access", "Summary"]
-   maritalStatuses = [
-    "Single",
-    "Married",
-    "Divorced",
-    "Widowed",
-    "Separated",
-    "Engaged",
-    "In a Relationship",
-    "Domestic Partnership",
-    "Civil Union"
-  ];
-  religions = [
-    "Christianity",
-    "Islam",
-    "Hinduism",
-    "Buddhism",
-    "Judaism",
-    "Atheism",
-    "Agnosticism",
-    "Sikhism",
-    "Taoism",
-    "Shinto",
-    "Traditional African Religions",
-    "Bahá'í",
-    "Other"
-  ];
+  
+  
   employments: any[] = []
   nigerianBanks = [
     "Access Bank",
@@ -95,22 +72,7 @@ export class AdminCreationFormComponent {
     "Wema Bank",
     "Zenith Bank"
   ];
-  nextOfKinRelationships = [
-    "Spouse",
-    "Parent",
-    "Sibling",
-    "Child",
-    "Grandparent",
-    "Grandchild",
-    "Aunt",
-    "Uncle",
-    "Cousin",
-    "Friend",
-    "Guardian",
-    "Partner",
-    "In-law",
-    "Other"
-  ];
+  nextOfKinRelationships: any[] = [];
   nextOfKinList: any[] = []
   guarantorList: any[] = []
   formErrors: string[] = [];
@@ -120,7 +82,7 @@ totalLeaveDays: number = 0;
   errorMessage: string = "";
   constructor(
     private fb: FormBuilder,  
-    private authenticationService: AuthenticationService,
+    private metadataService: MetadataService,
     private messageService: MessageService,
     private router: Router, 
     private token: RandomTokenService, 
@@ -129,45 +91,13 @@ totalLeaveDays: number = 0;
   ) {  }
 
   ngOnInit(): void {
-    this.dataService.getDepartment().subscribe(departments => {
-       this.departments = departments.map((d: any) => ({
-        label: d.name,
-        value: d.id,
-      }));
-    });
-    this.dataService.getGender().subscribe(gender => {
-      this.gender = gender.map((g: any) => ({
-       label: g.name,
-       value: g.id,
-     }));
-   });
-   this.dataService.getAllLevels().subscribe(level => {
-    this.levels = level.map((g: any) => ({
-     label: g.name,
-     value: g.id,
-   }));
- });
- this.dataService.getLeaveTypes().subscribe(leave => {
-  this.leaves = leave.map((g: any) => ({
-   label: g.name,
-   value: g.id,
- }));
-});
-   this.dataService.getJobType().subscribe(jobType => {
-    this.employments = jobType.map((j: any) => ({
-     label: j.name,
-     value: j.id,
-   }));
- });
    
-     
-    // this.userInfoRegData = JSON.parse(sessionStorage["userRegData"]);
-    // this.userRegData = this.userInfoRegData;
-    const salaryStructure = localStorage.getItem("salaryStructure");
-    if (salaryStructure) {
-      this.salaryStructure = JSON.parse(salaryStructure);
-    }
 
+    this.metadataService.departments$.subscribe(data => (this.departments = data));
+    this.metadataService.levels$.subscribe(data => (this.levels = data))
+    this.metadataService.leaves$.subscribe(data => (this.leaves = data));
+   this.metadataService.employment$.subscribe(data => this.employments = data);
+   
     this.basicForm = this.fb.group({
       firstName: ['',Validators.required ],
       lastName: ['',Validators.required ],

@@ -6,7 +6,7 @@
         <div class="flex justify-between w-full gap-4  px-5 py-3">
   
             <div class="text-customBlue w-1/2 text-center flex flex-col items-center">
-                <img *ngIf="employeeInView?.imageUrl" [src]="employeeProfilePhotoUrl"alt="" class="rounded-full w-96 h-96" >
+                <img [src]="employeeInView?.imageUrl.changingThisBreaksApplicationSecurity || 'https://media.istockphoto.com/id/1223671392/vector/default-profile-picture-avatar-photo-placeholder-vector-illustration.jpg?s=612x612&w=0&k=20&c=s0aTdmT5aU6b8ot7VKm11DeID6NctRCpB755rA1BIP0='" alt="" class="rounded-full w-96 h-96" >
                 <p class="text-[15px] font-bold mt-3 mb-2">{{employeeInView?.lastName}}{{' '}}{{employeeInView?.firstName}}</p>
                 <p class="text-[14px] bg-customBlueHover/10 p-2 text-customBlue rounded-md">{{employeeInView?.jobTitle}}</p>
             </div>

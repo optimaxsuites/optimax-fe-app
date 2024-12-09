@@ -168,13 +168,15 @@
 
       <div class="">
         <label class="my-3 text-lg font-semibold">Department*</label>
-        <select
-          formControlName="department"
-          class="w-full px-4 py-3 border border-gray-300 rounded-md transition duration-200"
+        <ng-select
+          [items]="departments"
+          placeholder="Select Department"
+          [(ngModel)]="departments"
+          bindLabel="name"
+          bindValue="id"
+          style="width: 100%"
         >
-          <option value="IT">IT</option>
-          <option value="Sales">Sales</option>
-        </select>
+        </ng-select>
 
         <!-- <label class="my-3 text-lg font-semibold">Progress Status*</label>
         <select

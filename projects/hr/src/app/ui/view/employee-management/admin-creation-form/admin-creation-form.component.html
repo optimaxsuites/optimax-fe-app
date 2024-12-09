@@ -80,8 +80,8 @@
                   <label for="department" class="block text-[13px] font-medium">Departments <span class="ml-1 font-bold text-red-600">*</span></label>
                   <ng-select 
                   [items]="departments" 
-                  bindLabel="label"
-                  bindValue="value"
+                  bindLabel="name"
+                  bindValue="id"
                   placeholder="Select Department"
                   formControlName="department"
                   class="w-full mt-1 rounded-md"></ng-select>
@@ -91,11 +91,11 @@
                 </div>
           
                 <div class="mb-4">
-                  <label for="department" class="block text-[13px] font-medium">Employment Type <span class="ml-1 font-bold text-red-600">*</span></label>
+                  <label for="jobType" class="block text-[13px] font-medium">Employment Type <span class="ml-1 font-bold text-red-600">*</span></label>
                   <ng-select 
                   [items]="employments" 
-                  bindLabel="label"
-                  bindValue="value"
+                  bindLabel="name"
+                  bindValue="id"
                   placeholder="Select Employment Type"
                   formControlName="employmentType"
                   class="w-full mt-1 rounded-md"></ng-select>
@@ -105,11 +105,11 @@
                 </div>
           
                 <div class="mb-4">
-                  <label for="department" class="block text-[13px] font-medium">Level <span class="ml-1 font-bold text-red-600">*</span></label>
+                  <label for="level" class="block text-[13px] font-medium">Level <span class="ml-1 font-bold text-red-600">*</span></label>
                   <ng-select 
                   [items]="levels" 
-                  bindLabel="label"
-                  bindValue="value"
+                  bindLabel="name"
+                  bindValue="id"
                   placeholder="Select Level"
                   formControlName="level"
                   class="w-full mt-1 rounded-md"></ng-select>
@@ -119,7 +119,7 @@
                 </div>
           
                 <div class="mb-4">
-                  <label for="department" class="block text-[13px] font-medium">Supervisor/Manager <span class="ml-1 font-bold text-red-600">*</span></label>
+                  <label for="supervisor" class="block text-[13px] font-medium">Supervisor/Manager <span class="ml-1 font-bold text-red-600">*</span></label>
                   <!-- <ng-select 
                   [items]="salaryStructure" 
                   bindLabel="level"

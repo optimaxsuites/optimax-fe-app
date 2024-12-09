@@ -24,7 +24,7 @@
     </div>
   </div>
 
-  <form [formGroup]="basicForm" (ngSubmit)="onSubmit()" *ngIf="currentTab === 1"  class="flex w-full px-10  gap-10">
+  <form [formGroup]="basicForm" (ngSubmit)="onSubmit()" *ngIf="currentTab === 2"  class="flex w-full px-10  gap-10">
     <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
       <div class="mb-4">
       <label for="firstName" class="block text-[13px] font-medium">First Name <span class="ml-1 font-bold text-red-600">*</span></label>
@@ -76,7 +76,7 @@
 
       <div class="mb-4">
       <label for="DOB" class="block text-[13px] font-medium">Date of Birth <span class="ml-1 font-bold text-red-600">*</span></label>
-      <input type="date" formControlName="DOB" id="DOB" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+      <input type="date" formControlName="DOB" [max]="maxDate" id="DOB" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
       <small *ngIf="basicForm.get('DOB')?.touched && basicForm.get('DOB')?.invalid" class="text-red-600">
         {{ getErrorMessage(basicForm.get("DOB"),'DOB') }}
       </small>
@@ -240,7 +240,7 @@
 
       <div class="mb-4">
         <label for="DOB" class="block text-[13px] font-medium">Date of Birth <span class="ml-1 font-bold text-red-600">*</span></label>
-        <input type="date" formControlName="DOB" [min]="maxDate"  id="DOB" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <input type="date" formControlName="DOB" [max]="maxDate"  id="DOB" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
         <small *ngIf="NOKForm.get('DOB')?.touched && NOKForm.get('DOB')?.invalid" class="text-red-600">
           {{ getErrorMessage(NOKForm.get("DOB"), 'DOB') }}
         </small>
@@ -279,7 +279,7 @@
   </form>
 
 
-  <form [formGroup]="guarantorForm" *ngIf="currentTab === 5" class="flex w-full flex-col justify-center item-center" >
+  <form [formGroup]="guarantorForm" *ngIf="currentTab === 1" class="flex w-full flex-col justify-center item-center" >
     <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
       <div *ngIf="guarantorList.length > 0" class="my-4  w-full text-customBlue">
         <div *ngFor="let guarant of guarantorList, let i = index" class="bg-white/80 shadow-md rounded-md px-4 py-2 mb-4 flex justify-between">
@@ -339,11 +339,11 @@
       </div> 
 
       <div class="mb-4">
-        <label for="gender" class="block text-[13px] font-medium">Relationship <span class="ml-1 font-bold text-red-600">*</span></label>
+        <label for="relationship" class="block text-[13px] font-medium">Relationship <span class="ml-1 font-bold text-red-600">*</span></label>
         <ng-select 
         [items]="nextOfKinRelationships" 
-        bindLabel="gender"
-        bindValue="gender"
+        bindLabel="name"
+        bindValue="id"
         placeholder="Select relationship"
         formControlName="relationship"
         class="w-full mt-1 rounded-md"></ng-select>
