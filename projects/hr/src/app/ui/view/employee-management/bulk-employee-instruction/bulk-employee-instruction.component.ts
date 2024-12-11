@@ -173,7 +173,7 @@ export class BulkEmployeeInstructionComponent {
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
     // console.log(jsonData)
-      this.validateData(jsonData);
+      this.addNewEmployee(jsonData);
     };
     reader.readAsArrayBuffer(this.file);
   }
@@ -188,14 +188,14 @@ export class BulkEmployeeInstructionComponent {
   
     let skippedCount = 0;
     let successfullyAddedCount = 0;
-  
+  console.log(data)
     for (const row of data) {
       const isMissingFields = requiredFields.some(field => !row[field]);
       
       if (isMissingFields) {
         skippedCount++;
         console.warn(`Skipped row due to missing fields:`, row);
-      } else if (!(await this.addNewEmployee(row))) {
+      } else if (!(await this.addNewEmployee(data))) {
         skippedCount++;
       } else {
         successfullyAddedCount++;
@@ -225,33 +225,36 @@ export class BulkEmployeeInstructionComponent {
     return formatDate(parsedDate, "yyyy-MM-dd'T'HH:mm:ss", 'en-US');
   }
   addNewEmployee(data: any): Promise<boolean> {
-    const newEmployee = {
-      ...(data['Employee ID'] && !isNaN(Number(data['Employee ID'])) && Number(data['Employee ID']) > 0
-        ? { id: Number(data['Employee ID']) }
+    console.log(this.levels)
+    console.log(data[0]['Department'])
+
+    const newEmployees = data.map((item: any) => ({
+      ...(item['Employee ID'] && !isNaN(Number(item['Employee ID'])) && Number(item['Employee ID']) > 0
+        ? { id: Number(item['Employee ID']) }
         : {}),
-      firstName: data['First Name'],
-      lastName: data['Last Name'],
-      email: data['Email'],
-      workEmail: data['Work Email'],
-      jobTitle: data['Job Title'],
-      department: this.departments.find(dept => dept.name === data['Department']),
-      level: this.levels.find(level => level.name === data['Level']),
-      employmentType: this.employmentTypes.find(type => type.name === data['Employment Type']),
-      supervisor: data['Supervisor'],
-      status: data['Status'] || 'Active',
-      startDate: this.toLocalDateTime(this.validateDate(data['Employment Start Date'])),
-      endDate: this.toLocalDateTime(this.validateDate(data['Employment End Date'])),
-      isProbation: data['On Probation']?.toLowerCase() === 'yes',
-      probationStartDate: this.toLocalDateTime(this.validateDate(data['Probation Start Date'])),
-      probationEndDate: this.toLocalDateTime(this.validateDate(data['Probation End Date'])),
-      appraisalDueDate: this.toLocalDateTime(this.validateDate(data['Appraisal Due Date'])),
-    };
-  
-    const formData = new FormData();
-    formData.append('employee', JSON.stringify(newEmployee));
-  console.log(newEmployee);
+      firstName: item['First Name'],
+      lastName: item['Last Name'],
+      email: item['Email'],
+      workEmail: item['Work Email'],
+      jobTitle: item['Job Title'],
+      departmentId: this.departments.find(dept => dept.name === item['Department'])?.id,
+      levelId: this.levels.find(level => level.name === item['Level'])?.id,
+      jobTypeId: this.employmentTypes.find(type => type.name === item['Employment Type'])?.id,
+      supervisor: item['Supervisor'],
+      status: item['Status'].toUpperCase() || 'ACTIVE',
+      startDate: this.toLocalDateTime(this.validateDate(item['Employment Start Date'])),
+      endDate: this.toLocalDateTime(this.validateDate(item['Employment End Date'])),
+      onProbation: item['On Probation']?.toLowerCase() === 'yes' ? true : false,
+      probationStartDate: this.toLocalDateTime(this.validateDate(item['Probation Start Date'])),
+      probationEndDate: this.toLocalDateTime(this.validateDate(item['Probation End Date'])),
+      appraisalDueDate: this.toLocalDateTime(this.validateDate(item['Appraisal Due Date'])),
+    }));
+    
+    console.log(newEmployees);
+    
+ 
     return new Promise<boolean>((resolve) => {
-      this.employeeService.addEmployee(formData).subscribe(
+      this.employeeService.addBulkEmployee(newEmployees).subscribe(
         {
           next: () => {
             this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Employee added successfully!', key: 'tl', life: 3000 });
@@ -264,6 +267,7 @@ export class BulkEmployeeInstructionComponent {
           }
         }
       );
+
     });
   }
   

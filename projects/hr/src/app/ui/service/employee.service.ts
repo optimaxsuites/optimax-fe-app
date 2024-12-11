@@ -20,11 +20,19 @@ export class EmployeeService {
         .pipe(catchError(this.handleError));
   }
 
+  addBulkEmployee(data: {}[]): Observable<any>{
+    return this.http
+        .post<any>(
+            this.baseurl +
+                `/x/api/v2/hr/employees/createBatchEmployee`, data)
+        .pipe(catchError(this.handleError));
+  }
+
   getAllEmployee(): Observable<any>{
     return this.http
         .get<any>(
             this.baseurl +
-                `/x/api/v2/hr/employees`)
+                `/x/api/v2/hr/employees?page=1&size=40`)
         .pipe(catchError(this.handleError));
   }
 
