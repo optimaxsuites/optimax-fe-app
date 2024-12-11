@@ -7,7 +7,7 @@ import {
 } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Router } from '@angular/router';
-import { NavigationLinksService } from '../../shared/service/navigation-links/navigation-links.service';
+import { NavigationLinksService } from '../shared-component/service/navigation-links/navigation-links.service';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
