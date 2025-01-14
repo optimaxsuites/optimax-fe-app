@@ -29,6 +29,8 @@ update_subtrees:
         - echo "pulled settings"
         # - git subtree pull --prefix=projects/vendor https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-vendor.git master --squash
         # - echo "pulled vendor"
+        - git subtree pull --prefix=projects/tender https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-tender.git master --squash
+        - echo "pulled tender"
         - git checkout -b temp-branch
         - git checkout mod
         - git merge temp-branch
