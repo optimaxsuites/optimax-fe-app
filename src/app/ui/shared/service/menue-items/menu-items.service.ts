@@ -80,7 +80,7 @@ export class MenuItemsService {
       ],
     },
     {
-      label: 'Office productivity',
+      label: 'Office Productivity',
       route: this.navigationLink.getLink('productivityLink'),
 
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
