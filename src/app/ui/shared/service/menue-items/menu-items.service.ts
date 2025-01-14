@@ -123,7 +123,8 @@ export class MenuItemsService {
     },
     {
       label: 'Tender',
-      // route: ,
+      route: this.navigationLink.getLink('tenderLink'),
+
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'fas fa-file-alt'
     },

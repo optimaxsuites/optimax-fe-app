@@ -52,6 +52,8 @@ export class NavigationLinksService {
     this.links['crmLink'] = '/admin/crm/' +uuidV4();
     this.links['expensesLink'] = '/admin/expenses/' + uuidV4();
     this.links['orderDetails'] = '/user/checkout/order/' + uuidV4();
+    this.links['tenderLink'] = '/admin/tender/' +uuidV4();
+
 
 // Vendor link========================================================================================================
     this.links['vendorLink'] = '/admin/vendor/' +uuidV4();
@@ -80,6 +82,10 @@ export class NavigationLinksService {
     this.links['settingsLink'] = 'admin/settings/general-settings/' +uuidV4();
     this.links['generalSettings'] = '/admin/settings/general-settings/' +uuidV4();
     this.links['HRSettings'] = 'HR-settings/' +uuidV4();
+
+    
+
+
 
 
   }
