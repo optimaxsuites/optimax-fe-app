@@ -38,5 +38,3 @@ update_subtrees:
         - git push origin mod || (echo "Retrying push" && git push origin mod)
 
     rules:
-      
-         
