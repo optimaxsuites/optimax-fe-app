@@ -220,6 +220,10 @@ const routes: Routes = [
         loadChildren: () => import('../../projects/tender/src/app/app.module').then(m => m.AppModule),
       },
       {
+        path: '',
+        loadChildren: () => import('../../projects/productivity/src/app/app.module').then(m => m.AppModule),
+      },
+      {
         path: 'admin/sales/:uuid',
         component: SalesPageComponent,
       },

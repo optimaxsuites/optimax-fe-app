@@ -53,6 +53,8 @@ export class NavigationLinksService {
     this.links['expensesLink'] = '/admin/expenses/' + uuidV4();
     this.links['orderDetails'] = '/user/checkout/order/' + uuidV4();
     this.links['tenderLink'] = '/admin/tender/' +uuidV4();
+    this.links['productivityLink'] = '/admin/productivity/' +uuidV4();
+
 
 
 // Vendor link========================================================================================================

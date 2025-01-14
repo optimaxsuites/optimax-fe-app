@@ -80,6 +80,13 @@ export class MenuItemsService {
       ],
     },
     {
+      label: 'Office productivity',
+      route: this.navigationLink.getLink('productivityLink'),
+
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      icon: 'fas fa-file-alt'
+    },
+    {
       label: 'POS',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('posLink'),
