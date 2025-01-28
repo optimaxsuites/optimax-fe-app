@@ -40,6 +40,9 @@ nav > p {
 .cursor-disabled {
   @apply cursor-not-allowed;
 }
+.half-brightness {
+  @apply filter brightness-50;
+}
 .discount-input {
   @apply text-end   outline-none placeholder:text-5xl text-5xl text-gray-600 placeholder:text-gray-400 pb-2 flex-grow;
 }

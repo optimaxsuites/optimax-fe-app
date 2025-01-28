@@ -129,7 +129,12 @@
         <div class="paymentBtn flex">
           <button class="rounded-l-xl">All payments</button>
 
-          <button class="rounded-r-xl" (click)="processCashPayment()">
+          <button
+            class="rounded-r-xl"
+            (click)="processCashPayment()"
+            [class.half-brightness]="!cartItems.length"
+            [class.cursor-disabled]="!cartItems.length"
+          >
             Cash
           </button>
         </div>

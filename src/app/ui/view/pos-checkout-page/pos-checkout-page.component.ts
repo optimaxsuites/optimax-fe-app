@@ -285,6 +285,8 @@ export class PosCheckoutPageComponent implements OnInit {
   }
 
   processCashPayment() {
+    if (this.cartItems.length === 0) return;
+
     const cart = {
       cartItems: [...this.cartItems],
       total: this.total,
