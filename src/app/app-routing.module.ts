@@ -19,42 +19,12 @@ const routes: Routes = [
     path: 'admin/pos/:uuid',
     component: PosPageComponent,
   },
-  {
-    path: 'user/checkout/orders/:uuid',
-    component: CheckoutOrdersComponent,
-  },
-  {
-    path: 'user/checkout/cash-payment/:uuid',
-    component: CashPaymentComponent,
-  },
-  {
-    path: 'user/checkout/order/:uuid',
-    component: OrderDetailComponent,
-  },
-  {
-    path: 'user/checkout/refund/:uuid',
-    component: OrderRefundComponent,
-  },
-  {
-    path: 'user/checkout/refund-request/:uuid',
-    component: RequestDetailsComponent,
-  },
-  {
-    path: 'user/checkout/openRegister/:uuid',
-    component: OpenRegisterComponent,
-  },
-  {
-    path: 'user/checkout/closeRegister/:uuid',
-    component: CloseRegisterComponent,
-  },
-  {
-    path: 'user/checkout/:uuid',
-    component: PosCheckoutPageComponent,
-  },
+  { path: '', loadChildren: () => import('./user/user.module').then(m => m.UserModule) },
+ 
 ];
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule]
 })
 export class AppRoutingModule {}
