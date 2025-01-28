@@ -96,8 +96,8 @@ import { DeliveryModalComponent } from './ui/view/delivery-modal/delivery-modal.
     DeliveryModalComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppRoutingModule,
     CommonModule,
     AppRoutingModule,
