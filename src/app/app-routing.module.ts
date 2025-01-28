@@ -9,7 +9,7 @@ import { VerificationFailedComponent } from './ui/auth/view/mail-verification/ve
 import { UserRegLayoutComponent } from './ui/auth/view/user-reg-layout.component';
 import { BusinessRegComponent } from './ui/auth/view/business-reg/business-reg.component';
 import { UserComponent } from './user.component';
-import { PosCheckoutPageComponent } from './ui/pos/view/pos-checkout-page/pos-checkout-page.component';
+// import { PosCheckoutPageComponent } from './ui/pos/view/pos-checkout-page/pos-checkout-page.component';
 // import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders.component';
 
 import { MasterComponent } from './master.component';
@@ -36,19 +36,19 @@ import { VendorCategoryComponent } from './ui/crm/view/vendor-category/vendor-ca
 import { VendorIndividualComponent } from './ui/crm/view/vendor-individual/vendor-individual.component';
 import { VendorListComponent } from './ui/crm/view/vendor-list/vendor-list.component';
 import { VendorManagementComponent } from './ui/crm/view/vendorMangement/vendorManagement';
-import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-orders.component';
-import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.component';
-import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';
+// import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-orders.component';
+// import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.component';
+// import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';
 import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.component';
 import { ExpensesComponent } from './ui/expenses/view/expenses.component';
 import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-modal/expense-forms-modal.component';
 import { UploadRecieptComponent } from './ui/expenses/view/upload-reciept/upload-reciept.component';
 import { ExpenseApprovalComponent } from './ui/expenses/view/expense-approval/expense-approval.component';
 import { AddPerDiemComponent } from './ui/expenses/view/add-per-diem/add-per-diem.component';
-import { OrderRefundComponent } from './ui/pos/view/order-refund/order-refund.component';
-import { RequestDetailsComponent } from './ui/pos/view/request-details/request-details.component';
-import { OpenRegisterComponent } from './ui/pos/view/open-register/open-register.component';
-import { CloseRegisterComponent } from './ui/pos/view/close-register/close-register.component';
+// import { OrderRefundComponent } from './ui/pos/view/order-refund/order-refund.component';
+// import { RequestDetailsComponent } from './ui/pos/view/request-details/request-details.component';
+// import { OpenRegisterComponent } from './ui/pos/view/open-register/open-register.component';
+// import { CloseRegisterComponent } from './ui/pos/view/close-register/close-register.component';
 import { AuthGuard } from './ui/auth/service/auth.guard';
 import { ProcurementPageComponent } from './ui/procurement/view/procurement.page.component';
 import { VendorPageComponent } from './ui/vendor/view/vendor-page.component';
@@ -72,6 +72,14 @@ import { CareerJobPostingComponent } from './ui/shared/view/career-job-posting/c
 import { JobApplicationFormComponent } from './ui/shared/view/job-application-form/job-application-form.component';
 import { EmployeePayslipListComponent } from './ui/hr/view/payroll/employee-payslip-list/employee-payslip-list.component';
 import { EmployeeOnboardingFormComponent } from 'projects/hr/src/app/ui/view/employee-management/employee-onboarding-form/employee-onboarding-form.component';
+import { PosCheckoutPageComponent } from 'projects/POS/src/app/ui/view/pos-checkout-page/pos-checkout-page.component';
+import { CheckoutOrdersComponent } from 'projects/POS/src/app/ui/view/checkout-orders/checkout-orders.component';
+import { CashPaymentComponent } from 'projects/POS/src/app/ui/view/cash-payment/cash-payment.component';
+import { OrderDetailComponent } from 'projects/POS/src/app/ui/view/order-detail/order-detail.component';
+import { OrderRefundComponent } from 'projects/POS/src/app/ui/view/order-refund/order-refund.component';
+import { RequestDetailsComponent } from 'projects/POS/src/app/ui/view/request-details/request-details.component';
+import { OpenRegisterComponent } from 'projects/POS/src/app/ui/view/open-register/open-register.component';
+import { CloseRegisterComponent } from 'projects/POS/src/app/ui/view/close-register/close-register.component';
 
 const routes: Routes = [
   {
@@ -130,38 +138,42 @@ const routes: Routes = [
     component: UserComponent,
     // canActivate: [AuthGuard],
     children: [
-      {
-        path: 'user/checkout/:uuid',
-        component: PosCheckoutPageComponent,
-      },
-      {
-        path: 'user/checkout/orders/:uuid',
-        component: CheckoutOrdersComponent,
-      },
-      {
-        path: 'user/checkout/cash-payment/:uuid',
-        component: CashPaymentComponent,
-      },
-      {
-        path: 'user/checkout/order/:uuid',
-        component: OrderDetailComponent,
-      },
-      {
-        path: 'user/checkout/refund/:uuid',
-        component: OrderRefundComponent,
-      },
-      {
-        path: 'user/checkout/refund-request/:uuid',
-        component: RequestDetailsComponent,
-      },
-      {
-        path: 'user/checkout/openRegister/:uuid',
-        component: OpenRegisterComponent,
-      },
-      {
-        path: 'user/checkout/closeRegister/:uuid',
-        component: CloseRegisterComponent,
-      },
+      // {
+      //   path: 'user/checkout/3b20af1f-e3f2-4353-b9f1-d1d4aa2f64c782b84t6w7uvfsg',
+      //   loadChildren: () => import('../../projects/POS/src/app/app.module').then(m => m.AppPOSModule),
+      // },
+      // {
+      //   path: 'user/checkout/:uuid',
+      //   component: PosCheckoutPageComponent,
+      // },
+      // {
+      //   path: 'user/checkout/orders/:uuid',
+      //   component: CheckoutOrdersComponent,
+      // },
+      // {
+      //   path: 'user/checkout/cash-payment/:uuid',
+      //   component: CashPaymentComponent,
+      // },
+      // {
+      //   path: 'user/checkout/order/:uuid',
+      //   component: OrderDetailComponent,
+      // },
+      // {
+      //   path: 'user/checkout/refund/:uuid',
+      //   component: OrderRefundComponent,
+      // },
+      // {
+      //   path: 'user/checkout/refund-request/:uuid',
+      //   component: RequestDetailsComponent,
+      // },
+      // {
+      //   path: 'user/checkout/openRegister/:uuid',
+      //   component: OpenRegisterComponent,
+      // },
+      // {
+      //   path: 'user/checkout/closeRegister/:uuid',
+      //   component: CloseRegisterComponent,
+      // },
       
     ],
   },
