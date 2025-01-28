@@ -19,12 +19,12 @@ update_subtrees:
         # - echo "pulled expense"
         # - git subtree pull --prefix=projects/inventory https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/eep-inventory.git master --squash
         # - echo "pulled inventory"
-        # - git subtree pull --prefix=projects/POS https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-pos.git master --squash
-        # - echo "pulled POS"
-        # - git subtree pull --prefix=projects/productivity https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-productivity.git master --squash
-        # - echo "pulled productivity"
-        - git subtree pull --prefix=projects/procurement https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-procurement.git master --squash
-        - echo "pulled procurement"
+        - git subtree pull --prefix=projects/POS https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-pos.git master --squash
+        - echo "pulled POS"
+        - git subtree pull --prefix=projects/productivity https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-productivity.git master --squash
+        - echo "pulled productivity"
+        # - git subtree pull --prefix=projects/procurement https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-procurement.git master --squash
+        # - echo "pulled procurement"
         # - git subtree pull --prefix=projects/purchase https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-purchase.git master --squash
         # - echo "pulled purchase"
         - git subtree pull --prefix=projects/settings https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-settings.git master --squash
