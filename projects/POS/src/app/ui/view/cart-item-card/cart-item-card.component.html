@@ -1,26 +1,36 @@
 <div class="flex justify-between rounded-2xl items-center border p-3">
-   
-        <div class="flex flex-col  gap-1" (click)="onClick()">
-            <span class="text-wrap w-64">{{item.name  | truncate:30:true}}</span>
-            <span>₦{{item.price}}</span>
-        </div>
-    
-   
+  <div class="flex flex-col gap-1" (click)="onClick()">
+    <span class="text-wrap w-64">{{ item.name | truncate : 30 : true }}</span>
+    <span>₦{{ item.price }}</span>
+  </div>
 
-    <div class="p-3 flex justify-between gap-4 border rounded-xl items-center w-52">
-        <i class="fa-solid fa-minus cursor-pointer" (click)="decreaseCount()"></i>
-        <!-- <span>{{count}}</span> -->
-         <input type="text"  name="count" id="count" [(ngModel)]="item.count" class="w-10 text-center outline-none" (ngModelChange)="onCountChange($event)"/>
-        <i class="fa-solid fa-plus cursor-pointer" (click)="increaseCount()"></i>
+  <div
+    class="p-3 flex justify-between gap-4 border rounded-xl items-center w-52"
+  >
+    <i class="fa-solid fa-minus cursor-pointer" (click)="decreaseCount()"></i>
+    <!-- <span>{{count}}</span> -->
+    <input
+      type="text"
+      name="count"
+      id="count"
+      [(ngModel)]="item.count"
+      class="w-10 text-center outline-none"
+      (ngModelChange)="onCountChange($event)"
+    />
+    <i class="fa-solid fa-plus cursor-pointer" (click)="increaseCount()"></i>
+  </div>
+
+  <div class="flex gap-4 items-center">
+    <div class="flex flex-col gap-1" (click)="onClick()">
+      <span class="font-semibold">₦{{ cartPriceTotal }}</span>
+      <span *ngIf="item.discount > 0" [class.text-red-500]="item.discount > 0"
+        >-₦{{ item.discount }}</span
+      >
     </div>
-
-    <div class="flex gap-4 items-center">
-
-        <div class="flex flex-col  gap-1" (click)="onClick()">
-             <span class=" font-semibold" >₦{{item.cartPriceTotal}}</span>
-            <span *ngIf="item.discount > 0" [class.text-red-500]="item.discount > 0">-₦{{item.discount}}</span>
-        </div>
-    <i  *ngIf="showDelete"  class="fa-solid fa-trash  cursor-pointer" (click)="onDelete()" ></i>
-
-    </div>
+    <i
+      *ngIf="showDelete"
+      class="fa-solid fa-trash cursor-pointer"
+      (click)="onDelete()"
+    ></i>
+  </div>
 </div>

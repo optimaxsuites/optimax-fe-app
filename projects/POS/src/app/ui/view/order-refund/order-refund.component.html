@@ -1,117 +1,257 @@
-<app-checkout-header (closeRegisterEvent)="closeRegister()"></app-checkout-header>
+<app-checkout-header
+  (closeRegisterEvent)="closeRegister()"
+></app-checkout-header>
 
 <div class="gap-3 w-full flex justify-between items-center px-10 mt-10">
-    <!-- <p class="back" ><i class="fa-solid fa-arrow-left"></i> Back</p> -->
-   
-    <div class="w-1/3">
-        <app-searchbar></app-searchbar>
-    </div>
+  <!-- <p class="back" ><i class="fa-solid fa-arrow-left"></i> Back</p> -->
 
-    <button class="p-3 bg-customGreen rounded-xl text-white font-bold"  (click)="openRequestForm()"> New refund request</button>
+  <div class="w-1/3">
+    <app-searchbar></app-searchbar>
+  </div>
 
+  <button
+    class="p-3 bg-customGreen rounded-xl text-white font-bold"
+    (click)="openRequestForm()"
+  >
+    New refund request
+  </button>
 </div>
 
-<app-modal *ngIf="requestForm" (close)="openRequestForm()" header="Refund request form">
-    <form class="py-3 flex flex-col gap-4 w-[30vw] " (ngSubmit)="sendRequest()" #refundForm="ngForm">
-        <div class="flex gap-3 flex-col text-[16px]">
-          <label for="orderId" class="block  font-medium leading-6 text-gray-900">Order id</label>
-         <input type="text" name="orderId" id="orderId" [(ngModel)]="refundData.orderId" required  class="outline-none border-2 rounded-md w-full border-gray-500 p-2" (change)="fetchOrderItems()">
-            
-        </div>
+<app-modal
+  *ngIf="requestForm"
+  (close)="openRequestForm()"
+  header="Refund request form"
+  class="modal-style"
+>
+  <form
+    class="bg-white p-6 rounded-lg shadow-md flex flex-col gap-4 w-full max-w-md"
+    (ngSubmit)="sendRequest()"
+    #refundForm="ngForm"
+  >
+    <!-- <h1 class="text-2xl font-bold text-center mb-6">Refund Request Form</h1> -->
 
-        <div class="flex gap-3 flex-col text-[16px]" *ngIf="orderItems.length > 0">
-          <label for="selectedItems" class="block font-medium leading-6 text-gray-900">Select Product(s) to Return</label>
-          <select name="selectedItems" id="selectedItems" class="outline-none border-2 rounded-md w-full border-gray-500 p-2" [(ngModel)]="refundData.selectedItems" multiple required>
-            <option *ngFor="let item of orderItems" [value]="item">{{item.name}}</option>
-          </select>
-        </div>
+    <!-- <div class="flex gap-2 mb-4">
+      <input
+        type="text"
+        name="firstName"
+        id="firstName"
+        [(ngModel)]="refundData.customerName"
+        placeholder="First Name"
+        required
+        class="w-1/2 px-3 py-2 border rounded-md"
+      />
+      <input
+        type="text"
+        name="lastName"
+        id="lastName"
+        [(ngModel)]="refundData.customerName"
+        placeholder="Last Name"
+        required
+        class="w-1/2 px-3 py-2 border rounded-md"
+      />
+    </div> -->
 
-        <div class="flex gap-3 flex-col text-[16px]">
-          <label for="customerName" class="block  font-medium leading-6 text-gray-900">Customer's Name</label>
-         <input type="text" name="customerName" id="customerName" [(ngModel)]="refundData.customerName" required class="outline-none border-2 rounded-md w-full border-gray-500 p-2">
-        </div>
+    <label>
+      <div>Full Name:</div>
 
-        <div class="flex gap-3 flex-col text-[16px]">
-          <label for="customerName" class="block  font-medium leading-6 text-gray-900">Customer's Phone number</label>
-         <input type="text" name="customerName" id="customerName" [(ngModel)]="refundData.phoneNumber" required class="outline-none border-2 rounded-md w-full border-gray-500 p-2">
-        </div>
+      <input
+        type="text"
+        name="customerName"
+        id="customerName"
+        [(ngModel)]="refundData.customerName"
+        placeholder="Johnathan Smith"
+        required
+        class="w-full px-3 py-2 border rounded-md"
+      />
+    </label>
 
-        <div class="flex gap-3 flex-col text-[16px]">
-          <label for="customerName" class="block  font-medium leading-6 text-gray-900">Customer's Email Address</label>
-         <input type="text" name="customerName" id="customerName" [(ngModel)]="refundData.emailAddress" required class="outline-none border-2 rounded-md w-full border-gray-500 p-2">
-        </div>
+    <label>
+      <div>Email:</div>
 
-        <div class="flex gap-3 flex-col text-[16px]">
-          <label for="refundMeans" class="block  font-medium leading-6 text-gray-900">Refund means</label>
-         <input type="text" name="refundMeans" id="refundMeans" [(ngModel)]="refundData.refundMeans" required class="outline-none border-2 rounded-md w-full border-gray-500 p-2">
-        </div>
+      <input
+        type="email"
+        name="email"
+        id="email"
+        [(ngModel)]="refundData.emailAddress"
+        placeholder="johnathan.smith@example.com"
+        required
+        class="w-full px-3 py-2 border rounded-md mb-4"
+      />
+    </label>
 
-        
-        <div class="flex gap-3 flex-col text-[16px]">
-          <label for="refundReason" class="block  font-medium leading-6 text-gray-900">Refund Reason</label>
-         <textarea type="text" name="refundReason" id="refundReason" class="outline-none border-2 rounded-md w-full border-gray-500 p-2"  [(ngModel)]="refundData.refundReason" rows="5" required></textarea>
-        </div>
+    <label>
+      <div>Date:</div>
+      <input
+        type="date"
+        name="requestDate"
+        id="requestDate"
+        required
+        class="w-full px-3 py-2 border rounded-md mb-4"
+      />
+    </label>
 
-        
-        <div class="flex gap-3 flex-col text-[16px]">
-          <label for="cashierComment" class="block  font-medium leading-6 text-gray-900">Cashier's Comment</label>
-         <textarea type="text" name="cashierComment" id="cashierComment" class="outline-none border-2 rounded-md w-full border-gray-500 p-2"  [(ngModel)]="refundData.cashierComment" rows="5" required></textarea>
-        </div>
+    <div class="flex flex-col gap-2 mb-4">
+      <label>
+        <div>Reason For Refund</div>
+      </label>
+      <label
+        ><input
+          type="radio"
+          name="reason"
+          value="Product doesn't work"
+          class="mr-2"
+        />Product doesn't work</label
+      >
+      <label
+        ><input
+          type="radio"
+          name="reason"
+          value="Wrong Product Delivery"
+          class="mr-2"
+        />Wrong Product Delivery</label
+      >
+      <label
+        ><input
+          type="radio"
+          name="reason"
+          value="Excessive Amount"
+          class="mr-2"
+        />Excessive Amount</label
+      >
+      <label
+        ><input
+          type="radio"
+          name="reason"
+          value="Other"
+          class="mr-2"
+        />Other</label
+      >
+    </div>
 
-      
-        <div class="flex items-center justify-center w-full">
-          <button type="submit" class="bg-customGreen px-5 py-3 text-[18px] rounded-xl text-white font-semibold">Send</button>
-        </div>
-    
-    </form>
+    <label>
+      <div>Product Name:</div>
+      <input
+        type="text"
+        name="productName"
+        id="productName"
+        placeholder="Product Name"
+        required
+        class="w-full px-3 py-2 border rounded-md mb-4"
+      />
+    </label>
+
+    <label>
+      <div>Product ID:</div>
+      <input
+        type="text"
+        name="productID"
+        id="productID"
+        placeholder="ex: #1223"
+        required
+        class="w-full px-3 py-2 border rounded-md mb-4"
+      />
+    </label>
+
+    <label>
+      <div>Purchase Date:</div>
+      <input
+        type="date"
+        name="purchaseDate"
+        id="purchaseDate"
+        required
+        class="w-full px-3 py-2 border rounded-md mb-4"
+      />
+    </label>
+
+    <div class="flex justify-between items-center mb-4 gap-2">
+      <span>Do you have an invoice?</span>
+      <div class="flex gap-2">
+        <label
+          ><input
+            type="radio"
+            name="invoice"
+            value="yes"
+            class="mr-1"
+          />Yes</label
+        >
+        <label
+          ><input
+            type="radio"
+            name="invoice"
+            value="no"
+            class="mr-1"
+          />No</label
+        >
+      </div>
+    </div>
+
+    <textarea
+      name="additionalNotes"
+      id="additionalNotes"
+      rows="4"
+      placeholder="Additional Notes"
+      class="w-full px-3 py-2 border rounded-md mb-4"
+    ></textarea>
+
+    <button
+      type="submit"
+      class="w-full bg-customGreen text-white py-2 rounded-md cursor-pointer"
+    >
+      Submit
+    </button>
+  </form>
 </app-modal>
-
-
 
 <p class="text-3xl font-bold" *ngIf="requests.length === 0">No request here</p>
 <div *ngIf="requests.length > 0" class="px-8 mt-10">
-    <section class="selectClients">
-      <div class="asd">
-        <div class="top-products-container">
-          <div class="top-products">
-            <div class="top-products-table-container">
-              <table class="top-products-table w3-table w3-striped">
-                <thead>
-                  <tr class="top-products-table-row">
-                    <th class="top-products-table-head col-1">
-                      Date
-                    </th>
-                    <th class="top-products-table-head col-1">Id</th>
-                    <th class="top-products-table-head col-1">Customer Name</th>
-                    <th class="top-products-table-head col-1">Status</th>
-                    <th class="top-products-table-head col-1">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let request of requests"  style="cursor: pointer;">
-                    <!-- {{ order?.timestamp || date: 'shortTime' }} -->
-                    <td>{{ request?.timestamp }}</td>
-                    <td>
-                    <p [ngClass]="{'text-green-700': request.status === 'Paid'}"  class="mb-0 capitalize font-bold text-yellow-600"  >{{request.orderId}}</p>
-                    </td>
-                    <td class="capitalize">{{request.customerName}}</td>
-                    <td>{{request.status}}</td>
-                    <td>
-                      <div class="flex gap-3 text-[16px]" >
-                        <!-- <i class="fa-solid fa-cart-shopping hover:bg-customGreen/30 p-2 rounded-md" ></i> -->
-                        <i class="fa-solid fa-arrow-right hover:bg-customGreen/30 rounded-md p-2" (click)="requestDetails(request)" ></i>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+  <section class="selectClients">
+    <div class="asd">
+      <div class="top-products-container">
+        <div class="top-products">
+          <div class="top-products-table-container">
+            <table class="top-products-table w3-table w3-striped">
+              <thead>
+                <tr class="top-products-table-row">
+                  <th class="top-products-table-head col-1">Date</th>
+                  <th class="top-products-table-head col-1">Id</th>
+                  <th class="top-products-table-head col-1">Customer Name</th>
+                  <th class="top-products-table-head col-1">Status</th>
+                  <th class="top-products-table-head col-1">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let request of requests" style="cursor: pointer">
+                  <!-- {{ order?.timestamp || date: 'shortTime' }} -->
+                  <td>{{ request?.timestamp }}</td>
+                  <td>
+                    <p
+                      [ngClass]="{
+                        'text-green-700': request.status === 'Paid'
+                      }"
+                      class="mb-0 capitalize font-bold text-yellow-600"
+                    >
+                      {{ request.orderId }}
+                    </p>
+                  </td>
+                  <td class="capitalize">{{ request.customerName }}</td>
+                  <td>{{ request.status }}</td>
+                  <td>
+                    <div class="flex gap-3 text-[16px]">
+                      <!-- <i class="fa-solid fa-cart-shopping hover:bg-customGreen/30 p-2 rounded-md" ></i> -->
+                      <i
+                        class="fa-solid fa-arrow-right hover:bg-customGreen/30 rounded-md p-2"
+                        (click)="requestDetails(request)"
+                      ></i>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
-    </section>
-  </div>
+    </div>
+  </section>
+</div>
 <p-toast position="top-right" key="tl" />
 <!-- <p-toast position="top-right" key="tl" /> -->
-
-  

@@ -1,4 +1,10 @@
-<div class='search-container'>
-    <input type="input" class="Search-input" placeholder='Search...' />
-    <i class="fas fa-search"></i>
+<div class="search-container">
+  <input
+    type="input"
+    class="Search-input"
+    placeholder="Search..."
+    (keydown.enter)="searchProducts(search)"
+    #search
+  />
+  <i class="fas fa-search" (click)="searchProducts(search)"></i>
 </div>

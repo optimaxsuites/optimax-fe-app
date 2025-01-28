@@ -1,0 +1,18 @@
+// .modal-style {
+//   // Target the modal header
+//   > :first-child {
+//     font-weight: bold;
+//   }
+
+//   // Target the modal body
+//   > :last-child {
+//     margin-top: 0;
+//   }
+// }
+
+label {
+  // Target the label text
+  > div {
+    @apply font-bold pb-1;
+  }
+}

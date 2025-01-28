@@ -4,7 +4,6 @@ import { BrowserModule } from '@angular/platform-browser';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 
-
 import { ButtonModule } from 'primeng/button';
 import { EditorModule } from 'primeng/editor';
 import { PasswordModule } from 'primeng/password';
@@ -29,9 +28,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
 
-
 import { TruncatePipe } from './truncate.pipe';
-
 
 ///mat
 
@@ -65,6 +62,8 @@ import { SearchbarComponent } from './ui/sharedComponent/view/searchbar/searchba
 import { NavTabComponent } from './ui/sharedComponent/view/nav-tab/nav-tab.component';
 import { CheckoutOrdersComponent } from './ui/view/checkout-orders/checkout-orders.component';
 import { HttpClientModule } from '@angular/common/http';
+import { NotesModalComponent } from './ui/view/notes-modal/notes-modal.component';
+import { DeliveryModalComponent } from './ui/view/delivery-modal/delivery-modal.component';
 
 @NgModule({
   declarations: [
@@ -92,11 +91,13 @@ import { HttpClientModule } from '@angular/common/http';
     TruncatePipe,
     EditProductComponent,
     CheckoutHeaderComponent,
-    CheckoutOrdersComponent
-
+    CheckoutOrdersComponent,
+    NotesModalComponent,
+    DeliveryModalComponent,
   ],
   imports: [
-    // BrowserModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     AppRoutingModule,
     CommonModule,
     AppRoutingModule,
@@ -104,7 +105,7 @@ import { HttpClientModule } from '@angular/common/http';
     RippleModule,
     DialogModule,
     ToastModule,
-    FormsModule, 
+    FormsModule,
     ReactiveFormsModule,
     SidebarModule,
     TabViewModule,
@@ -125,17 +126,15 @@ import { HttpClientModule } from '@angular/common/http';
       PasswordModule,
       ButtonModule,
       NgSelectModule,
-      // BrowserAnimationsModule,
     LargeSideModalComponent,
     ButtonComponent,
     ModalComponent,
     SideModalComponent,
     SearchbarComponent,
     NavTabComponent,
-    HttpClientModule
-    
+    HttpClientModule,
   ],
-  providers: [],
-  bootstrap: [AppComponent]
+  providers: [PosCheckoutPageComponent],
+  bootstrap: [AppComponent],
 })
-export class AppPOSModule { }
+export class AppPOSModule {}

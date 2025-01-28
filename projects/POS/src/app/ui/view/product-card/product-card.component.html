@@ -1,10 +1,17 @@
-<div class="border rounded-xl px-2 pt-3 cursor-pointer h-[25rem]" (click)="onAddToCart()">
-    <img src={{product.image}} alt="product image" class="w-full h-44 object-contain">
-    <div class="flex flex-col w-full mt-2 px-2">
-        <!-- <p>Nivea lotion - Even glow</p>
+<div
+  class="border rounded-xl px-2 pt-3 cursor-pointer h-[25rem] product-card"
+  (click)="onAddToCart()"
+>
+  <img
+    src="{{ product.image }}"
+    alt="product image"
+    class="w-full h-44 object-contain"
+  />
+  <div class="flex flex-col w-full mt-4 px-2">
+    <!-- <p>Nivea lotion - Even glow</p>
         <p>#5000</p> -->
 
-        <p>{{product.name | truncate:30:true}}</p>
-        <p>₦{{product.price}}</p>
-    </div>
+    <p class="mb-4">{{ product.name | truncate : 30 : true }}</p>
+    <p class="mb-4">₦{{ product.price }}</p>
+  </div>
 </div>
