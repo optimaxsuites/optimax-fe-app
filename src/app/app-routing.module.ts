@@ -19,12 +19,12 @@ const routes: Routes = [
     path: 'admin/pos/:uuid',
     component: PosPageComponent,
   },
-  { path: '', loadChildren: () => import('./user/user.module').then(m => m.UserModule) },
+  // { path: '', loadChildren: () => import('./user/user.module').then(m => m.UserModule) },
  
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forChild(routes)],
   exports: [RouterModule]
 })
 export class AppRoutingModule {}
