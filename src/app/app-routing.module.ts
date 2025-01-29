@@ -138,10 +138,10 @@ const routes: Routes = [
     component: UserComponent,
     // canActivate: [AuthGuard],
     children: [
-      // {
-      //   path: 'user/checkout/3b20af1f-e3f2-4353-b9f1-d1d4aa2f64c782b84t6w7uvfsg',
-      //   loadChildren: () => import('../../projects/POS/src/app/app.module').then(m => m.AppPOSModule),
-      // },
+      {
+        path: 'user/checkout/3b20af1f-e3f2-4353-b9f1-d1d4aa2f64c782b84t6w7uvfsg',
+        loadChildren: () => import('../../projects/POS/src/app/user/user.module').then(m => m.UserModule),
+      },
       // {
       //   path: 'user/checkout/:uuid',
       //   component: PosCheckoutPageComponent,
@@ -428,6 +428,10 @@ const routes: Routes = [
   {
     path: 'job-application',
     component: JopOpeningsComponent, 
+  },
+  {
+    path: 'user/checkout/3b20af1f-e3f2-4353-b9f1-d1d4aa2f64c782b84t6w7uvfsg',
+    loadChildren: () => import('../../projects/POS/src/app/user/user.module').then(m => m.UserModule),
   },
 ];
 
