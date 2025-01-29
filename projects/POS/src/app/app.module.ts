@@ -41,9 +41,11 @@ import { ModalComponent } from './ui/sharedComponent/view/modal/modal.component'
 import { SideModalComponent } from './ui/sharedComponent/view/side-modal/side-modal.component';
 import { SearchbarComponent } from './ui/sharedComponent/view/searchbar/searchbar.component';
 import { NavTabComponent } from './ui/sharedComponent/view/nav-tab/nav-tab.component';
-import { HttpClientModule } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpClientModule, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { UserModule } from './user/user.module';
+import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
 
-
+import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 @NgModule({
   declarations: [
     AppComponent,
@@ -60,6 +62,7 @@ import { HttpClientModule } from '@angular/common/http';
   imports: [
     // BrowserModule,
     // BrowserAnimationsModule,
+    // UserModule,
     AppRoutingModule,
     CommonModule,
     AppRoutingModule,
@@ -97,7 +100,19 @@ import { HttpClientModule } from '@angular/common/http';
     HttpClientModule,
    
   ],
-  providers: [],
+  providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true,
+    },
+    {
+      provide: JWT_OPTIONS,
+      useValue: JWT_OPTIONS,
+    },
+    JwtHelperService,
+    provideHttpClient(withInterceptorsFromDi()),
+  ],
   bootstrap: [AppComponent],
 })
 export class AppPOSModule {}
