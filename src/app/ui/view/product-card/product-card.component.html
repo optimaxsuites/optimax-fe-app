@@ -3,7 +3,9 @@
   (click)="onAddToCart()"
 >
   <img
-    src="{{ product.image }}"
+    src="https://be.optimaxsuites.com/x/api/v2/pos/products/images/{{
+      product.productImages[0].imgNo
+    }}"
     alt="product image"
     class="w-full h-44 object-contain"
   />
@@ -11,7 +13,7 @@
     <!-- <p>Nivea lotion - Even glow</p>
         <p>#5000</p> -->
 
-    <p class="mb-4">{{ product.name | truncate : 30 : true }}</p>
-    <p class="mb-4">₦{{ product.price }}</p>
+    <p class="mb-4 text-ellipsis">{{ product.name }}</p>
+    <p class="mb-4">₦{{ product.effectivePrice }}</p>
   </div>
 </div>

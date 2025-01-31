@@ -1,10 +1,12 @@
 <div class="search-container">
   <input
-    type="input"
-    class="Search-input"
+    type="text"
+    class="search-input"
     placeholder="Search..."
-    (keydown.enter)="searchProducts(search)"
+    (input)="searchProducts(search.value)"
     #search
+    aria-label="Search Products"
   />
-  <i class="fas fa-search" (click)="searchProducts(search)"></i>
+  <i class="fa-solid fa-search" (click)="searchProducts(search.value)"></i>
+  <i class="fa-solid fa-x" (click)="clearSearchText(search)"></i>
 </div>

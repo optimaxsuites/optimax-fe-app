@@ -41,7 +41,12 @@ import { ModalComponent } from './ui/sharedComponent/view/modal/modal.component'
 import { SideModalComponent } from './ui/sharedComponent/view/side-modal/side-modal.component';
 import { SearchbarComponent } from './ui/sharedComponent/view/searchbar/searchbar.component';
 import { NavTabComponent } from './ui/sharedComponent/view/nav-tab/nav-tab.component';
-import { HTTP_INTERCEPTORS, HttpClientModule, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import {
+  HTTP_INTERCEPTORS,
+  HttpClientModule,
+  provideHttpClient,
+  withInterceptorsFromDi,
+} from '@angular/common/http';
 import { UserModule } from './user/user.module';
 import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
 
@@ -57,7 +62,7 @@ import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
     ManageUsersComponent,
     ProductsComponent,
     AddProductComponent,
-    ViewProductComponent
+    ViewProductComponent,
   ],
   imports: [
     // BrowserModule,
@@ -74,23 +79,23 @@ import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
     ReactiveFormsModule,
     SidebarModule,
     TabViewModule,
-      ToolbarModule,
-      ConfirmDialogModule,
-      SplitButtonModule,
-      PanelModule,
-      DividerModule,
-      OverlayPanelModule,
-      StepperModule,
-      InputTextModule,
-      FloatLabelModule,
-      EditorModule,
-      MessagesModule,
-      MessageModule,
-      RippleModule,
-      TableModule,
-      PasswordModule,
-      ButtonModule,
-      NgSelectModule,
+    ToolbarModule,
+    ConfirmDialogModule,
+    SplitButtonModule,
+    PanelModule,
+    DividerModule,
+    OverlayPanelModule,
+    StepperModule,
+    InputTextModule,
+    FloatLabelModule,
+    EditorModule,
+    MessagesModule,
+    MessageModule,
+    RippleModule,
+    TableModule,
+    PasswordModule,
+    ButtonModule,
+    NgSelectModule,
     LargeSideModalComponent,
     ButtonComponent,
     ModalComponent,
@@ -98,7 +103,6 @@ import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
     SearchbarComponent,
     NavTabComponent,
     HttpClientModule,
-   
   ],
   providers: [
     {

@@ -13,7 +13,7 @@ const routes: Routes = [
   {
     path: '',
     redirectTo: 'user/checkout/34567whr4567yhsdzr56',
-    pathMatch: 'full'
+    pathMatch: 'full',
   },
   {
     path: 'user/checkout/orders/:uuid',
@@ -51,6 +51,6 @@ const routes: Routes = [
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-export class UserRoutingModule { }
+export class UserRoutingModule {}
