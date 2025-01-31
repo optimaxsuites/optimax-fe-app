@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import { Product } from '../models/interface';
 import { BehaviorSubject } from 'rxjs';
 import { RandomTokenService } from '../../shared/service/random-token/random-token.service';
 import { PosServiceService } from './pos-service.service';

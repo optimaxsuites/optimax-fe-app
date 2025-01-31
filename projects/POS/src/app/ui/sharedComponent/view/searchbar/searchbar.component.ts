@@ -14,21 +14,36 @@ export class SearchbarComponent {
   @Input() listToUpdate: typeof this.listToSearch = [];
   @Output() listToUpdateChange = new EventEmitter<typeof this.listToSearch>();
 
-  searchProducts(searchInput: HTMLInputElement) {
-    // TODO: Store the names of the keys of the product in const enum for better typechecking
+  private fuse: Fuse<unknown>;
 
-    // Give more priority to the name
-    const fuse = new Fuse(this.listToSearch, {
+  constructor() {
+    // Initialize Fuse with an empty list. This will be updated later.
+    this.fuse = new Fuse([], {
       keys: [{ name: 'name', weight: 1.5 }, 'description', 'category'],
       includeScore: true,
     });
+  }
 
-    const searchResults = fuse.search(searchInput.value);
+  ngOnChanges() {
+    // Update Fuse with the new list whenever listToSearch changes.
+    this.fuse.setCollection(this.listToSearch);
+  }
 
-    this.listToUpdate = searchResults.map((val) => {
-      return val.item;
-    });
+  searchProducts(searchValue: string) {
+    if (!searchValue.trim()) {
+      this.listToUpdate = this.listToSearch; // If search is empty, show all items
+      this.listToUpdateChange.emit(this.listToUpdate);
+      return;
+    }
+
+    const searchResults = this.fuse.search(searchValue);
+    this.listToUpdate = searchResults.map((val) => val.item);
+    this.listToUpdateChange.emit(this.listToUpdate);
+  }
+
+  clearSearchText(searchInput: HTMLInputElement) {
     searchInput.value = '';
+    this.listToUpdate = this.listToSearch; // Show all items when cleared
     this.listToUpdateChange.emit(this.listToUpdate);
   }
 }

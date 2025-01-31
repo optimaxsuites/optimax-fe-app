@@ -127,7 +127,12 @@
                 </div> -->
 
         <div class="paymentBtn flex">
-          <button class="rounded-l-xl">All payments</button>
+          <button class="rounded-l-xl" (click)="toggleAllPaymentsModal()">
+            All payments
+          </button>
+          <app-all-payments-modal
+            [(isModalOpen)]="isAllPaymentsModalOpen"
+          ></app-all-payments-modal>
 
           <button
             class="rounded-r-xl"

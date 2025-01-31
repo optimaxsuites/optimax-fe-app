@@ -7,6 +7,7 @@ import { PosServiceService } from '../../service/pos-service.service';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
 import { RandomTokenService } from '../../sharedComponent/service/random-token/random-token.service';
 import { ProductCategories } from '../../models/enums';
+import { ProductData } from '../../models/interface';
 
 @Component({
   selector: 'app-pos-checkout-page',
@@ -21,23 +22,17 @@ export class PosCheckoutPageComponent implements OnInit {
   productThatNeedsUpdate: number = 0;
   discountModal: boolean = false;
   saveModal: boolean = false;
-  categories = [
-    // ProductCategories.NONE,
-    ProductCategories.MEN_CLOTHING,
-    ProductCategories.WOMEN_CLOTHING,
-    ProductCategories.ELECTRONICS,
-    ProductCategories.JEWELERY,
-  ];
-  products = this.posService.products;
-  categorizedProducts = this.products; // Relevant products filtered out of a category like "Men's Clothes"
-  shownProducts = this.categorizedProducts; // The clothing that's actually displayed. This is a different variable because of cases where the user
+  categories = [];
+  products: ProductData[] = [];
+  categorizedProducts: ProductData[] = [];
+  shownProducts: ProductData[] = [];
 
   subtotal: number = 0.0;
   tax: number = 0.0;
   discount: number = 0.0;
   productDiscount: number = 0.0;
   total: number = 0.0;
-  cartItems: any[] = [];
+  cartItems: typeof this.products = [];
   count: number = 1;
 
   stateOptions: any[] = [
@@ -58,6 +53,7 @@ export class PosCheckoutPageComponent implements OnInit {
   navigationState: { order: any };
   isNotesModalOpen = false;
   isDeliveryModalOpen = false;
+  isAllPaymentsModalOpen = false;
 
   constructor(
     private router: Router,
@@ -75,6 +71,8 @@ export class PosCheckoutPageComponent implements OnInit {
     if (this.navigationState?.order) {
       this.loadOrder(this.navigationState.order);
     }
+    this.getProducts();
+    this.loadCategory();
   }
   loadOrder(order: any) {
     console.log(order);
@@ -91,12 +89,14 @@ export class PosCheckoutPageComponent implements OnInit {
     return option ? option.label : '';
   }
 
-  addToCart(product: any) {
+  addToCart(product: (typeof this.products)[0]) {
     let existingItem = this.cartItems.find(
       (item) => item.name === product.name
     );
     if (existingItem) {
-      existingItem.cartPriceTotal += product.price;
+      existingItem.cartPriceTotal = (
+        parseInt(existingItem.cartPriceTotal) + parseInt(product.effectivePrice)
+      ).toString();
       existingItem.count = existingItem.count + 1;
     } else {
       this.cartItems.push(product);
@@ -106,12 +106,13 @@ export class PosCheckoutPageComponent implements OnInit {
 
     this.calculateTotals();
     this.calculateDiscount();
+    console.log(this.cartItems);
   }
 
   deleteCartItem(index: number) {
     this.resetProductDiscount(index);
 
-    this.cartItems[index].cartPriceTotal = this.cartItems[index].price;
+    this.cartItems[index].cartPriceTotal = this.cartItems[index].effectivePrice;
     this.cartItems[index].count = 0;
     this.cartItems.splice(index, 1);
     this.calculateTotals();
@@ -123,7 +124,7 @@ export class PosCheckoutPageComponent implements OnInit {
     }
   }
   resetProductDiscount(index: number) {
-    this.cartItems[index].discount = 0.0;
+    this.cartItems[index].discount.value = 0.0;
     this.productDiscountValue = 0;
   }
 
@@ -139,11 +140,11 @@ export class PosCheckoutPageComponent implements OnInit {
 
   calculateTotals() {
     this.subtotal = this.cartItems.reduce(
-      (acc, item) => acc + item.cartPriceTotal,
+      (acc, item) => acc + parseInt(item.cartPriceTotal),
       0
     );
     const prodductDiscount = this.cartItems.reduce(
-      (acc, item) => acc + (item.discount || 0),
+      (acc, item) => acc + (item.discount.value || 0),
       0
     );
     this.displayedDiscount = this.discount + prodductDiscount;
@@ -152,8 +153,10 @@ export class PosCheckoutPageComponent implements OnInit {
   }
 
   handleCountChange(newCount: number, index: number) {
-    this.cartItems[index].cartPriceTotal =
-      this.cartItems[index].price * newCount;
+    console.log(this.cartItems);
+    this.cartItems[index].cartPriceTotal = (
+      parseInt(this.cartItems[index].effectivePrice) * newCount
+    ).toString();
     this.calculateDiscount();
     this.calculateProductDiscount();
     this.calculateTotals();
@@ -224,24 +227,24 @@ export class PosCheckoutPageComponent implements OnInit {
   calculateProductDiscount() {
     for (let item of this.cartItems) {
       if (item.id === this.productThatNeedsUpdate) {
-        item.discountType = this.value;
-        item.discountValue = this.productDiscountValue;
-        if (item.discountType === 'naira') {
-          item.discount = Number(item.discountValue);
+        item.discount.type = this.value;
+        item.discount.value = this.productDiscountValue;
+        if (item.discount.type === 'naira') {
+          item.discount.value = Number(item.discount.value);
         } else {
           const discountedValue =
-            (item.cartPriceTotal * Number(item.discountValue)) / 100;
-          item.discount = discountedValue;
+            (parseInt(item.cartPriceTotal) * Number(item.discount.value)) / 100;
+          item.discount.value = discountedValue;
         }
       }
 
-      if (item.discountValue > 0) {
-        if (item.discountType === 'naira') {
-          item.discount = Number(item.discountValue);
+      if (item.discount.value > 0) {
+        if (item.discount.type === 'naira') {
+          item.discount.value = Number(item.discount.value);
         } else {
           const discountedValue =
-            (item.cartPriceTotal * Number(item.discountValue)) / 100;
-          item.discount = discountedValue;
+            (parseInt(item.cartPriceTotal) * Number(item.discount.value)) / 100;
+          item.discount.value = discountedValue;
         }
       }
     }
@@ -279,8 +282,8 @@ export class PosCheckoutPageComponent implements OnInit {
   resetProductProperties() {
     this.products.forEach((product) => {
       product.count = 0;
-      product.cartPriceTotal = product.price;
-      product.discount = 0.0;
+      product.cartPriceTotal = product.effectivePrice;
+      product.discount.value = 0.0;
     });
   }
 
@@ -311,7 +314,7 @@ export class PosCheckoutPageComponent implements OnInit {
     }
 
     this.categorizedProducts = this.products.filter(
-      (val) => val.category == filterVal
+      (val) => val.productCategory.name == filterVal
     );
 
     this.shownProducts = this.categorizedProducts;
@@ -325,5 +328,54 @@ export class PosCheckoutPageComponent implements OnInit {
   }
   toggleDeliveryModal() {
     this.isDeliveryModalOpen = !this.isDeliveryModalOpen;
+  }
+  toggleAllPaymentsModal() {
+    this.isAllPaymentsModalOpen = !this.isAllPaymentsModalOpen;
+  }
+  getProducts() {
+    this.posService.getProducts().subscribe(async (data) => {
+      if (data) {
+        const p = data.sort((a: any, b: any) => {
+          const dateA = new Date(
+            a.createdDate[0],
+            a.createdDate[1] - 1,
+            a.createdDate[2],
+            a.createdDate[3],
+            a.createdDate[4],
+            a.createdDate[5]
+          );
+          const dateB = new Date(
+            b.createdDate[0],
+            b.createdDate[1] - 1,
+            b.createdDate[2],
+            b.createdDate[3],
+            b.createdDate[4],
+            b.createdDate[5]
+          );
+          return dateB.getTime() - dateA.getTime();
+        }) as any[];
+        this.products = [...p];
+        this.products.forEach((product) => {
+          // Add some extra necessary properties
+          product.count = 0;
+          product.cartPriceTotal = product.effectivePrice;
+        });
+        console.log(this.products);
+        this.categorizedProducts = this.products;
+        this.shownProducts = this.products;
+      } else {
+        console.log('error loading data');
+      }
+    });
+  }
+  loadCategory() {
+    this.posService.getCategories().subscribe(async (data) => {
+      if (data) {
+        //@ts-expect-error
+        this.categories = data.map((category) => category.name);
+      } else {
+        console.log('error loading data');
+      }
+    });
   }
 }
