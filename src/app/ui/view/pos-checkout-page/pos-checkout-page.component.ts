@@ -47,7 +47,7 @@ export class PosCheckoutPageComponent implements OnInit {
   discountValue: number = 0;
   displayedDiscount: number = 0;
   productDiscountValue: number = 0;
-  value: string = 'naira';
+  value: 'naira' | 'percentage' = 'naira';
 
   orders: any[] = [];
   navigationState: { order: any };
@@ -124,7 +124,7 @@ export class PosCheckoutPageComponent implements OnInit {
     }
   }
   resetProductDiscount(index: number) {
-    this.cartItems[index].discount.value = 0.0;
+    this.cartItems[index].discountedPrice = 0.0;
     this.productDiscountValue = 0;
   }
 
@@ -143,13 +143,13 @@ export class PosCheckoutPageComponent implements OnInit {
       (acc, item) => acc + parseInt(item.cartPriceTotal),
       0
     );
-    const prodductDiscount = this.cartItems.reduce(
-      (acc, item) => acc + (item.discount.value || 0),
+    const productDiscount = this.cartItems.reduce(
+      (acc, item) => acc + (item.discountedPrice || 0),
       0
     );
-    this.displayedDiscount = this.discount + prodductDiscount;
+    this.displayedDiscount = this.discount + productDiscount;
     this.tax = this.subtotal * 0.1;
-    this.total = this.subtotal + this.tax - (this.discount + prodductDiscount);
+    this.total = this.subtotal + this.tax - (this.discount + productDiscount);
   }
 
   handleCountChange(newCount: number, index: number) {
@@ -226,27 +226,31 @@ export class PosCheckoutPageComponent implements OnInit {
 
   calculateProductDiscount() {
     for (let item of this.cartItems) {
-      if (item.id === this.productThatNeedsUpdate) {
-        item.discount.type = this.value;
-        item.discount.value = this.productDiscountValue;
-        if (item.discount.type === 'naira') {
-          item.discount.value = Number(item.discount.value);
-        } else {
-          const discountedValue =
-            (parseInt(item.cartPriceTotal) * Number(item.discount.value)) / 100;
-          item.discount.value = discountedValue;
-        }
-      }
-
+      // if (item.id === this.productThatNeedsUpdate) {
+      //   item.discount.discountType = this.value;
+      //   item.discount.value = this.productDiscountValue;
+      //   if (item.discount.discountType === 'naira') {
+      //     item.discount.value = Number(item.discount.value);
+      //   } else {
+      //     const discountedValue =
+      //       (parseInt(item.cartPriceTotal) * Number(item.discount.value)) / 100;
+      //     item.discount.value = discountedValue;
+      //   }
+      // }
+      console.log(
+        `BEFORE CONDTIONAL:\n\nDiscount Value is ${item.discount.value}. Discount Type is ${item.discount.discountType}. Cart Price Total is ${item.cartPriceTotal}`
+      );
       if (item.discount.value > 0) {
-        if (item.discount.type === 'naira') {
-          item.discount.value = Number(item.discount.value);
+        if (item.discount.discountType === 'naira') {
+          item.discountedPrice = Number(item.discount.value);
         } else {
-          const discountedValue =
+          item.discountedPrice =
             (parseInt(item.cartPriceTotal) * Number(item.discount.value)) / 100;
-          item.discount.value = discountedValue;
         }
       }
+      console.log(
+        `AFTER CONDTIONAL:\n\nDiscount Value is ${item.discount.value}. Discount Type is ${item.discount.discountType}. Cart Price Total is ${item.cartPriceTotal}`
+      );
     }
 
     this.calculateTotals();

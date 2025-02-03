@@ -51,6 +51,7 @@ import { UserModule } from './user/user.module';
 import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
 
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
+import { ExcelImportComponent } from './ui/view/excel-import/excel-import.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -63,6 +64,7 @@ import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
     ProductsComponent,
     AddProductComponent,
     ViewProductComponent,
+    ExcelImportComponent,
   ],
   imports: [
     // BrowserModule,

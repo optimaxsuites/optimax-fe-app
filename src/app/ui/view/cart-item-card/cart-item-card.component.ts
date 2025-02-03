@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ProductData } from '../../models/interface';
 
 @Component({
   selector: 'app-cart-item-card',
@@ -6,7 +7,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
   styleUrl: './cart-item-card.component.scss',
 })
 export class CartItemCardComponent {
-  @Input() item: any;
+  @Input() item: ProductData = {} as any;
   @Input() showDelete: boolean = true;
   @Output() delete = new EventEmitter<void>();
   @Output() countChange = new EventEmitter<number>();
@@ -41,6 +42,6 @@ export class CartItemCardComponent {
   }
 
   get cartPriceTotal() {
-    return Math.round((this.item.cartPriceTotal as number) * 100) / 100;
+    return Math.round(parseInt(this.item.cartPriceTotal) * 100) / 100;
   }
 }
