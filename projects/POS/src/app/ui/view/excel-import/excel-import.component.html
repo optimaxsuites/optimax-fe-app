@@ -1,0 +1,27 @@
+<div class="bg-white p-6 rounded-2xl shadow-lg max-w-lg w-full mx-auto">
+  <h2 class="text-xl font-semibold text-center mb-4">Import Excel File</h2>
+
+  <!-- Download Template Button -->
+  <div class="flex justify-center mb-4">
+    <button
+      class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+      (click)="downloadTemplate()"
+    >
+      Download Template
+    </button>
+  </div>
+
+  <!-- File Upload Input -->
+  <div class="text-center">
+    <label for="excelFileInput" class="block text-lg font-medium mb-2">
+      Upload Excel File
+    </label>
+    <input
+      id="excelFileInput"
+      type="file"
+      accept=".xls, .xlsx"
+      class="block w-full border border-gray-300 rounded-lg p-2 focus:ring-blue-500 focus:border-blue-500"
+      (change)="onFileSelected($event)"
+    />
+  </div>
+</div>

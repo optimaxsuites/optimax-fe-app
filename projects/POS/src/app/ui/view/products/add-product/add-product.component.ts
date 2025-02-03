@@ -5,6 +5,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Discount, ProductJSONFormat } from '../../../models/interface';
 
 @Component({
   selector: 'app-add-product',
@@ -16,7 +17,7 @@ export class AddProductComponent {
   @Input() activeItem: any;
   @Input() isEditMode: boolean = false;
   productForm!: FormGroup;
-  productData = {
+  productData: ProductJSONFormat = {
     name: '',
     code: '',
     description: '',
@@ -30,30 +31,34 @@ export class AddProductComponent {
     tax: 0,
     branch: '',
     variant: '',
-    discount: 0,
-    category: '',
+    discount: {
+      id: 0,
+      name: '',
+      value: 0,
+      startDate: '',
+      endDate: '',
+      minQuantity: 0,
+      discountType: '',
+    },
+    productCategory: {
+      id: 0,
+      name: '',
+      code: '',
+      description: '',
+    },
     id: 0,
-    count: 0,
-    discountType: [] as any[],
-    discountValue: 0,
-    image: {} as any,
-    startDate: '',
-    endDate: '',
-    discountMinQuantity: 0,
-    discountName: '',
-  };
-  categoryData = {
-    name: '',
-    code: '',
-    description: '',
-  };
-  discountData = {
-    name: '',
-    value: '',
-    startDate: '',
-    endDate: '',
-    minQuantity: '',
-    discountType: [] as number[],
+    // count: 0,
+    // discountType: [] as any[],
+    // discountValue: 0,
+    // image: {} as any,
+    // startDate: '',
+    // endDate: '',
+    // discountMinQuantity: 0,
+    // discountName: '',
+    createdBy: '',
+    createdDate: '',
+    productImages: [],
+    variants: [],
   };
   barcodeConfig = {
     barcodeType: 'CODE128',
@@ -263,7 +268,9 @@ export class AddProductComponent {
 
     const formValues = this.productForm.value;
 
-    const product = {
+    // TODO: Add the rest of the fields, `variant` and `productImages`
+    //@ts-expect-error
+    const product: ProductJSONFormat = {
       id: 0,
       name: formValues.name,
       code: formValues.code,
@@ -467,13 +474,15 @@ export class AddProductComponent {
     });
   }
   addCategory() {
+    let categoryData = this.productData.productCategory;
+
     const categoryDetails = {
-      name: this.categoryData.name,
-      code: this.categoryData.code,
-      description: this.categoryData.description,
+      name: categoryData.name,
+      code: categoryData.code,
+      description: categoryData.description,
     };
 
-    if (this.checkForEmptyFields(this.categoryData)) {
+    if (this.checkForEmptyFields(categoryData)) {
       console.log('all fiellds are required');
       this.messageService.add({
         severity: 'error',
@@ -495,7 +504,8 @@ export class AddProductComponent {
               life: 3000,
             });
             this.loadCategory();
-            this.categoryData = {
+            categoryData = {
+              id: 0,
               name: '',
               code: '',
               description: '',
@@ -573,9 +583,9 @@ export class AddProductComponent {
   }
   selectCategory(category: any) {
     console.log(category);
-    this.productData.category = category;
+    this.productData.productCategory = category;
     this.productForm.get('category')?.setValue(category);
-    console.log(this.productData.category);
+    console.log(this.productData.productCategory);
   }
 
   toggleCategoryDropdown() {
@@ -583,13 +593,16 @@ export class AddProductComponent {
   }
 
   addDiscount() {
-    const discountDetails = {
-      name: this.discountData.name,
-      value: this.discountData.value,
-      discountTypes: this.discountData.discountType,
-      endDate: this.discountData.endDate,
-      startDate: this.discountData.startDate,
-      minQuantity: this.discountData.minQuantity,
+    let discountObj = this.productData.discount;
+
+    const discountDetails: Discount = {
+      id: discountObj.id,
+      name: discountObj.name,
+      value: discountObj.value,
+      discountType: discountObj.discountType,
+      endDate: discountObj.endDate,
+      startDate: discountObj.startDate,
+      minQuantity: discountObj.minQuantity,
     };
 
     this.posService.addDiscount(discountDetails).subscribe(
@@ -604,13 +617,15 @@ export class AddProductComponent {
             life: 3000,
           });
           this.getDiscounts();
-          this.discountData = {
+          // TODO: Check whether this piece of code is worth it...
+          discountObj = {
+            id: 0,
             name: '',
-            value: '',
+            value: 0,
             startDate: '',
             endDate: '',
-            minQuantity: '',
-            discountType: [] as number[],
+            minQuantity: 0,
+            discountType: '',
           };
         } else {
           this.messageService.add({
@@ -661,7 +676,7 @@ export class AddProductComponent {
     );
   }
   selectDiscount(discount: any) {
-    this.productData.category = discount;
+    this.productData.productCategory = discount;
     this.productForm.get('discount')?.setValue(discount);
   }
 

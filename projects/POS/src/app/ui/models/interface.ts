@@ -9,12 +9,14 @@ export interface ProductJSONFormat {
   effectivePrice: string;
   initialQuantity: number;
   effectiveQuantity: number;
-  createdDate: number[];
-  createdBy: string;
+  // Date String Format: "2025-02-02T22:56:31.935Z"
+  createdDate: string;
+
+  createdBy: string | null;
   partNumber: string;
   tax: number;
   branch: string;
-  variant: null;
+  variant: string | null;
   discount: Discount;
   productCategory: ProductCategory;
   productImages: ProductImage[];
@@ -22,34 +24,41 @@ export interface ProductJSONFormat {
 }
 
 export interface ProductData extends ProductJSONFormat {
+  // The total price of all instances of a single product in the cart
   cartPriceTotal: string;
+  // The number of instances of a product in the cart
   count: number;
+  // The total discount of all instances of a single product in the cart
+  discountedPrice: number;
 }
 
-interface Discount {
+export interface Discount {
   id: number;
   name: string;
   value: number;
-  startDate: null;
-  endDate: null;
-  minQuantity: null;
-  type: string;
+
+  // Date String Format: "2025-02-02T22:56:31.935Z"
+  startDate: string;
+  endDate: string;
+
+  minQuantity: number;
+  discountType: number | string;
 }
 
-interface ProductCategory {
+export interface ProductCategory {
   id: number;
   name: string;
   code: string;
   description: string;
 }
 
-interface ProductImage {
+export interface ProductImage {
   id: number;
   name: string;
   imgNo: string;
 }
 
-interface Variant {
+export interface Variant {
   id: number;
   name: string;
   price: number;
