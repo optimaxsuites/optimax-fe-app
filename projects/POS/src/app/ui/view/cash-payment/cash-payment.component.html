@@ -1,53 +1,94 @@
 <div class="h-screen overflow-y-hidden">
-    <div class="flex justify-between bg-customBlue text-white items-center p-3">
-        <p class="flex items-center gap-3 cursor-pointer" ><i class="fa-solid fa-arrow-left"></i> <span>Back</span></p>
-    
-        <p class="font-bold text-[20px]">Cash Payment</p>
-    
-        <div></div>
+  <div class="flex justify-between bg-customBlue text-white items-center p-3">
+    <p
+      class="flex items-center gap-3 cursor-pointer"
+      (click)="navigateBackToCheckout()"
+    >
+      <i class="fa-solid fa-arrow-left"></i> <span>Back</span>
+    </p>
+
+    <p class="font-bold text-[20px]">Cash Payment</p>
+
+    <div></div>
+  </div>
+
+  <div class="flex w-full h-full">
+    <div class="w-[45%] shadow-lg flex flex-col justify-between">
+      <div
+        *ngIf="navigationState.cart.cartItems.length > 0"
+        class="flex flex-col gap-3 p-3 overflow-y-scroll h-[90vh]"
+      >
+        <app-cart-item-card
+          *ngFor="let item of navigationState.cart.cartItems; let i = index"
+          [item]="item"
+          [showDelete]="false"
+          [freezeItemCount]="true"
+          class="cursor-pointer"
+        ></app-cart-item-card>
+      </div>
+      <div
+        class="w-full border-2 flex flex-col gap-3 rounded-xl py-3 px-6 mb-20 bg-customBlue/90 text-white"
+      >
+        <div class="flex justify-between items-center">
+          <span>Subtotal</span>
+          <span>₦{{ navigationState.cart.subtotal | number : "1.2-2" }}</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span>Tax</span>
+          <span>₦{{ navigationState.cart.tax | number : "1.2-2" }}</span>
+        </div>
+        <div
+          class="flex justify-between items-center"
+          *ngIf="navigationState.cart.discount > 0"
+        >
+          <span>Discount</span>
+          <span>₦{{ navigationState.cart.discount | number : "1.2-2" }}</span>
+        </div>
+        <div class="flex justify-between font-bold text-2xl items-center">
+          <span>Total</span>
+          <span>₦{{ navigationState.cart.total | number : "1.2-2" }}</span>
+        </div>
+      </div>
     </div>
-    
-    
-    <div class="flex w-full h-full">
-        <div class="w-[45%] shadow-lg flex flex-col justify-between">
 
-            <div  *ngIf="navigationState.cart.cartItems.length > 0" class="flex flex-col gap-3 p-3 overflow-y-scroll h-[90vh]">
-                <app-cart-item-card  *ngFor="let item of navigationState.cart.cartItems let i = index" [item]="item"  [showDelete]="false"
-                 class="cursor-pointer"></app-cart-item-card>
+    <div
+      class="flex flex-col items-center justify-center w-full py-20 paymentBtn"
+    >
+      <span class="text-[16px] mb-2"> Amount due </span>
+      <span class="font-semibold text-[30px]">₦{{ approximateCartTotal }}</span>
+      <div class="w-[55%] mt-20 shadow-lg px-3 py-5">
+        <div class="flex justify-center items-center mb-3">
+          <p class="text-nowrap text-[16px]">Amount tendered:</p>
+          <div class="flex items-center">
+            <input
+              type="text"
+              max="100"
+              placeholder="0"
+              [(ngModel)]="priceValue"
+              class="discount-input"
+            />
+            <span>₦</span>
+          </div>
         </div>
-            <div class="w-full border-2 flex flex-col gap-3 rounded-xl py-3 px-6 mb-20 bg-customBlue/90 text-white">
-                <div class="flex justify-between items-center"><span>Subtotal</span> <span>₦{{navigationState.cart.subtotal| number:'1.2-2'}}</span> </div>
-                <div class="flex justify-between items-center"><span>Tax</span> <span>₦{{navigationState.cart.tax | number:'1.2-2'}}</span> </div>
-                <div class="flex justify-between items-center" *ngIf="navigationState.cart.discount > 0"><span>Discount</span> <span>₦{{navigationState.cart.discount | number:'1.2-2'}}</span> </div>
-                <div class="flex justify-between font-bold text-2xl items-center"><span>Total</span> <span>₦{{navigationState.cart.total | number:'1.2-2'}}</span> </div>
-            </div>
 
+        <div
+          class="border flex rounded-xl text-3xl divide-x-2 bg-customGreen/50 justify-between items-center font-bold w-full"
+        >
+          <span
+            class="w-full cursor-pointer text-center p-3"
+            *ngFor="let opt of priceOptions"
+            [class.text-white]="opt.value === priceValue"
+            [class.rounded-xl]="opt.value === priceValue"
+            [class.bg-customBlue]="opt.value === priceValue"
+            (click)="priceValue = opt.value"
+            >{{ opt.label }}</span
+          >
         </div>
-
-
-        <div class="flex flex-col items-center justify-center w-full py-20 paymentBtn">
-            <span class="text-[16px] mb-2">
-                Amount due
-            </span>
-            <span class="font-semibold text-[30px]">₦{{navigationState.cart.total}}</span>
-            <div class="w-[55%] mt-20 shadow-lg px-3 py-5"> 
-               
-            <div class=" flex justify-center items-center mb-3">
-                <p class="text-nowrap text-[16px]">Amount tendered:</p>
-                <div class="flex items-center">
-                    <input type="text" max="100" placeholder="0" [(ngModel)]="priceValue"  class="discount-input"   />
-                    <span>₦</span>
-                </div>
-            </div>
-
-            <div class="border flex rounded-xl text-3xl divide-x-2 bg-customGreen/50 justify-between items-center font-bold w-full">
-                <span class="w-full cursor-pointer text-center p-3"  *ngFor="let opt of priceOptions" [class.text-white]="opt.value === priceValue" [class.rounded-xl]="opt.value === priceValue" [class.bg-customBlue]="opt.value === priceValue" (click)="priceValue = opt.value">{{opt.label}}</span>
-            </div>
-            </div>
-            <button   class="btn rounded-r-xl mt-28" (click)="processCashPayment()">Process</button>
-
-        </div>
-       
+      </div>
+      <button class="btn rounded-r-xl mt-28" (click)="processCashPayment()">
+        Process
+      </button>
     </div>
+  </div>
 </div>
 <p-toast position="top-right" key="tl" />

@@ -46,6 +46,7 @@ import { NavTabComponent } from '../ui/sharedComponent/view/nav-tab/nav-tab.comp
 import { SearchbarComponent } from '../ui/sharedComponent/view/searchbar/searchbar.component';
 import { SideModalComponent } from '../ui/sharedComponent/view/side-modal/side-modal.component';
 import { AllPaymentsModalComponent } from '../ui/view/all-payments-modal/all-payments-modal.component';
+// import { ProductVariantModalComponent } from '../ui/view/product-variant-modal/product-variant-modal.component';
 
 @NgModule({
   declarations: [
@@ -65,6 +66,7 @@ import { AllPaymentsModalComponent } from '../ui/view/all-payments-modal/all-pay
     NotesModalComponent,
     DeliveryModalComponent,
     AllPaymentsModalComponent,
+    // ProductVariantModalComponent,
   ],
   imports: [
     CommonModule,

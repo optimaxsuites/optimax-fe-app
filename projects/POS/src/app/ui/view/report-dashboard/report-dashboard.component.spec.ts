@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ExcelImportComponent } from './excel-import.component';
+import { ReportDashboardComponent } from './report-dashboard.component';
 
-describe('ExcelImportComponent', () => {
-  let component: ExcelImportComponent;
-  let fixture: ComponentFixture<ExcelImportComponent>;
+describe('ReportDashboardComponent', () => {
+  let component: ReportDashboardComponent;
+  let fixture: ComponentFixture<ReportDashboardComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ExcelImportComponent]
+      declarations: [ReportDashboardComponent]
     })
     .compileComponents();
     
-    fixture = TestBed.createComponent(ExcelImportComponent);
+    fixture = TestBed.createComponent(ReportDashboardComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

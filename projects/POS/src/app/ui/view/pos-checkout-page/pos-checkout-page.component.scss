@@ -83,3 +83,6 @@ nav {
     cursor: not-allowed;
   }
 }
+.variant-button {
+  @apply px-4 py-2 text-2xl bg-green-500 hover:bg-green-600 text-white rounded-3xl focus:outline-none focus:ring-2 focus:ring-green-300;
+}

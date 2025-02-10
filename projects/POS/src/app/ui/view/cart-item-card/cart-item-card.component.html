@@ -3,15 +3,28 @@
     <span
       class="text-nowrap text-ellipsis whitespace-nowrap overflow-hidden w-64"
       style="overflow: hidden"
-      >{{ item.name }}</span
     >
+      {{ item.name }}
+    </span>
+    <!-- Chosen Variant icon -->
+    @if (item.selectedVariant) {
+    <span
+      class="text-white px-2 py-1 rounded border inline-block w-max variant-icon"
+    >
+      {{ item.selectedVariant }}
+    </span>
+    }
     <span>₦{{ item.effectivePrice }}</span>
   </div>
 
   <div
     class="p-3 flex justify-between gap-4 border rounded-xl items-center w-52"
   >
-    <i class="fa-solid fa-minus cursor-pointer" (click)="decreaseCount()"></i>
+    <i
+      class="fa-solid fa-minus cursor-pointer"
+      (click)="decreaseCount()"
+      [class]="freezeItemCount ? 'disabled-btn' : ''"
+    ></i>
     <!-- <span>{{count}}</span> -->
     <input
       type="text"
@@ -21,7 +34,11 @@
       class="w-10 text-center outline-none"
       (ngModelChange)="onCountChange($event)"
     />
-    <i class="fa-solid fa-plus cursor-pointer" (click)="increaseCount()"></i>
+    <i
+      class="fa-solid fa-plus cursor-pointer"
+      (click)="increaseCount()"
+      [class]="freezeItemCount ? 'disabled-btn' : ''"
+    ></i>
   </div>
 
   <div class="flex gap-4 items-center">
@@ -30,8 +47,9 @@
       <span
         *ngIf="item.discount.value > 0"
         class="text-red-500 whitespace-nowrap"
-        >-₦{{ item.discountedPrice }}</span
       >
+        -₦{{ item.discountedPrice }}
+      </span>
     </div>
     <i
       *ngIf="showDelete"

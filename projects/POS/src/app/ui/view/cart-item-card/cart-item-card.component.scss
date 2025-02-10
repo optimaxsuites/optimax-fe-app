@@ -1,0 +1,13 @@
+:host {
+  .variant-icon {
+    width: max-content;
+    @apply bg-customGreen;
+    border-radius: 2rem;
+  }
+}
+
+.disabled-btn {
+  opacity: 0.2;
+  pointer-events: none;
+  cursor: not-allowed;
+}

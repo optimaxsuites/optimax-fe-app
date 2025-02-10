@@ -51,7 +51,9 @@ import { UserModule } from './user/user.module';
 import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
 
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
-import { ExcelImportComponent } from './ui/view/excel-import/excel-import.component';
+import { ExcelExportAndImportComponent } from './ui/view/excel-export-and-import/excel-export-and-import.component';
+import { ReportDashboardComponent } from './ui/view/report-dashboard/report-dashboard.component';
+import { NgApexchartsModule } from 'ng-apexcharts';
 @NgModule({
   declarations: [
     AppComponent,
@@ -64,6 +66,8 @@ import { ExcelImportComponent } from './ui/view/excel-import/excel-import.compon
     ProductsComponent,
     AddProductComponent,
     ViewProductComponent,
+    ExcelExportAndImportComponent,
+    ReportDashboardComponent,
     ExcelImportComponent,
   ],
   imports: [
@@ -105,6 +109,7 @@ import { ExcelImportComponent } from './ui/view/excel-import/excel-import.compon
     SearchbarComponent,
     NavTabComponent,
     HttpClientModule,
+    NgApexchartsModule,
   ],
   providers: [
     {
