@@ -68,7 +68,6 @@ import { NgApexchartsModule } from 'ng-apexcharts';
     ViewProductComponent,
     ExcelExportAndImportComponent,
     ReportDashboardComponent,
-    ExcelImportComponent,
   ],
   imports: [
     // BrowserModule,
