@@ -7,7 +7,7 @@ import { PosServiceService } from '../../service/pos-service.service';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
 import { RandomTokenService } from '../../sharedComponent/service/random-token/random-token.service';
 import { ProductCategories } from '../../models/enums';
-import { ProductData } from '../../models/interface';
+import { Cart, ProductData } from '../../models/interface';
 
 @Component({
   selector: 'app-pos-checkout-page',
@@ -35,22 +35,22 @@ export class PosCheckoutPageComponent implements OnInit {
   cartItems: typeof this.products = [];
   count: number = 1;
 
-  stateOptions: any[] = [
+  readonly stateOptions = [
     { label: '₦', value: 'naira' },
     { label: '%', value: 'percentage' },
-  ];
-  discountOptions: any[] = [
-    { label: '5', value: '5' },
-    { label: '10', value: '10' },
-    { label: '15', value: '15' },
-  ];
+  ] as const;
+  readonly discountOptions = [
+    { label: '5', value: 5 },
+    { label: '10', value: 10 },
+    { label: '15', value: 15 },
+  ] as const;
   discountValue: number = 0;
   displayedDiscount: number = 0;
   productDiscountValue: number = 0;
   value: 'naira' | 'percentage' = 'naira';
 
-  orders: any[] = [];
-  navigationState: { order: any };
+  orders: unknown[] = [];
+  navigationState: { order: any; cart?: Cart };
   isNotesModalOpen = false;
   isDeliveryModalOpen = false;
   isAllPaymentsModalOpen = false;
@@ -64,12 +64,22 @@ export class PosCheckoutPageComponent implements OnInit {
     private posService: PosServiceService
   ) {
     const navigation = this.router.getCurrentNavigation();
-    this.navigationState = navigation?.extras.state as { order: any };
+    this.navigationState = navigation?.extras
+      .state as typeof this.navigationState;
   }
 
   ngOnInit() {
     if (this.navigationState?.order) {
       this.loadOrder(this.navigationState.order);
+    }
+    if (this.navigationState.cart) {
+      const cart = this.navigationState.cart;
+
+      this.cartItems = [...cart.cartItems];
+      this.total = cart.total;
+      this.displayedDiscount = cart.discount;
+      this.tax = cart.tax;
+      this.subtotal = cart.subtotal;
     }
     this.getProducts();
     this.loadCategory();
@@ -89,7 +99,7 @@ export class PosCheckoutPageComponent implements OnInit {
     return option ? option.label : '';
   }
 
-  addToCart(product: (typeof this.products)[0]) {
+  addToCart(product: (typeof this.products)[0], chosenVariant?: string) {
     let existingItem = this.cartItems.find(
       (item) => item.name === product.name
     );
@@ -99,6 +109,7 @@ export class PosCheckoutPageComponent implements OnInit {
       ).toString();
       existingItem.count = existingItem.count + 1;
     } else {
+      if (chosenVariant) product.selectedVariant = chosenVariant;
       this.cartItems.push(product);
       product.count = product.count + 1;
     }
@@ -226,20 +237,6 @@ export class PosCheckoutPageComponent implements OnInit {
 
   calculateProductDiscount() {
     for (let item of this.cartItems) {
-      // if (item.id === this.productThatNeedsUpdate) {
-      //   item.discount.discountType = this.value;
-      //   item.discount.value = this.productDiscountValue;
-      //   if (item.discount.discountType === 'naira') {
-      //     item.discount.value = Number(item.discount.value);
-      //   } else {
-      //     const discountedValue =
-      //       (parseInt(item.cartPriceTotal) * Number(item.discount.value)) / 100;
-      //     item.discount.value = discountedValue;
-      //   }
-      // }
-      console.log(
-        `BEFORE CONDTIONAL:\n\nDiscount Value is ${item.discount.value}. Discount Type is ${item.discount.discountType}. Cart Price Total is ${item.cartPriceTotal}`
-      );
       if (item.discount.value > 0) {
         if (item.discount.discountType === 'naira') {
           item.discountedPrice = Number(item.discount.value);
@@ -248,9 +245,6 @@ export class PosCheckoutPageComponent implements OnInit {
             (parseInt(item.cartPriceTotal) * Number(item.discount.value)) / 100;
         }
       }
-      console.log(
-        `AFTER CONDTIONAL:\n\nDiscount Value is ${item.discount.value}. Discount Type is ${item.discount.discountType}. Cart Price Total is ${item.cartPriceTotal}`
-      );
     }
 
     this.calculateTotals();
@@ -381,5 +375,15 @@ export class PosCheckoutPageComponent implements OnInit {
         console.log('error loading data');
       }
     });
+  }
+  get productDataFromClickedProduct() {
+    return this.products.find(
+      (product) => product.id === this.productThatNeedsUpdate
+    ) as ProductData;
+  }
+
+  get chosenProductVariants() {
+    // NOTE: This is guaranteed to have a value since `onAddToCart()` will only indirectly clall this if there are any products.
+    return this.productDataFromClickedProduct!.variants;
   }
 }

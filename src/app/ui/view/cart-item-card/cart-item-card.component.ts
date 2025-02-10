@@ -7,6 +7,7 @@ import { ProductData } from '../../models/interface';
   styleUrl: './cart-item-card.component.scss',
 })
 export class CartItemCardComponent {
+  @Input() freezeItemCount = false;
   @Input() item: ProductData = {} as any;
   @Input() showDelete: boolean = true;
   @Output() delete = new EventEmitter<void>();
@@ -16,12 +17,16 @@ export class CartItemCardComponent {
   // count: number = this.item.count
 
   decreaseCount() {
+    if (this.freezeItemCount) return;
+
     if (this.item.count > 0) {
       this.item.count--;
     }
     this.emitCountChange();
   }
   increaseCount() {
+    if (this.freezeItemCount) return;
+
     this.item.count++;
     this.emitCountChange();
   }

@@ -1,5 +1,6 @@
 <div *ngIf="tableSection" class="flex flex-col w-full gap-14 p-4">
   <div class="gap-3 w-full flex justify-between items-center">
+    <!-- `rotate-0` is used to set this as the container of any `fixed` position elements within it -->
     <ng-select
       [items]="categories"
       bindLabel="name"
@@ -28,7 +29,12 @@
   <div class="">
     <p-toolbar styleClass="mb-4 gap-2">
       <ng-template pTemplate="left">
-        <app-button text="Delete" class="btn-delete"></app-button>
+        <app-button
+          text="Delete"
+          class="btn-delete"
+          (click)="toggleMultiDeleteModal()"
+          [disabled]="!listOfSelectedItems.length"
+        ></app-button>
       </ng-template>
 
       <ng-template pTemplate="right">
@@ -43,7 +49,12 @@
           (btnClick)="toggleImportDialog()"
         ></app-button>
         @if(isImportDialogOpen){
-        <app-excel-import></app-excel-import>
+        <div class="overlay"></div>
+        <app-excel-export-and-import
+          (fileUploaded)="processExcelImport($event)"
+          (close)="toggleImportDialog()"
+          class="excel-import"
+        ></app-excel-export-and-import>
         }
       </ng-template>
     </p-toolbar>
@@ -54,19 +65,40 @@
       responsiveLayout="stack"
       [breakpoint]="'960px'"
       styleClass="p-datatable-striped"
-      [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '650px' }"
+      [tableStyle]="{
+        'min-height': 'fit-content',
+        'max-height': '650px',
+        'table-layout': 'fixed'
+      }"
       [rows]="15"
     >
       <ng-template pTemplate="header" class="header" let-columns>
         <tr>
           <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
-          <th class="table-item">SKU</th>
-          <th class="table-item">Code</th>
-          <th class="table-item">Name</th>
-          <th class="table-item">Price</th>
-          <th class="table-item">Quantity</th>
-          <th class="table-item">Category</th>
-          <th class="table-item">Action</th>
+          <!-- This will display each header item, optionally with an UP / DOWN triangle pointer depednign on the value to sort with. -->
+          @for (header of productTableHeaders | keyvalue:originalOrder; track
+          $index) {
+          <th
+            class="table-item clickable"
+            [class]="
+              sortingData.headerToSort == header.value ? 'selected-header' : ''
+            "
+            (click)="sortProductsByHeader(header.value)"
+          >
+            {{ header.value }}
+            <span
+              class="hidden"
+              [class]="
+                sortingData.headerToSort == header.value
+                  ? sortingData.order == 'asc'
+                    ? 'display-inline-block'
+                    : 'display-inline-block vertical-invert'
+                  : ''
+              "
+              >&#9650;</span
+            >
+          </th>
+          }
         </tr>
       </ng-template>
       <ng-template
@@ -77,7 +109,11 @@
       >
         <tr>
           <td>
-            <p-tableCheckbox [value]="item" class="custom-checkbox" />
+            <p-tableCheckbox
+              [value]="item"
+              class="custom-checkbox"
+              (click)="toggleSelectedItemInList(item)"
+            />
           </td>
           <td class="table-item">
             <span class="p-column-title">Product SKU</span>{{ item.sku }}
@@ -145,6 +181,42 @@
     </button>
   </div>
 </app-modal>
+
+@if (deleteMultipleItemsModal) {
+<app-modal
+  [header]="
+    'Delete ' + listOfSelectedItems.length + (listOfSelectedItems.length > 1)
+      ? ' Items'
+      : ' Item'
+  "
+  [title]="'Cancel'"
+  (close)="toggleMultiDeleteModal()"
+>
+  <p class="modalText">
+    Are You sure you want to carry out this action? <br />
+    Clicking on <span style="color: red; font-weight: bold">DELETE </span>,
+    would lead to permanent removal of
+    <span style="font-weight: bold"
+      >{{ listOfSelectedItems.length }}
+      {{ listOfSelectedItems.length > 1 ? " Items" : " Item" }}</span
+    >
+  </p>
+
+  <div class="modalBtn">
+    <button class="btn create-invoice-btn" (click)="toggleMultiDeleteModal()">
+      Cancel
+    </button>
+
+    <button
+      class="btn create-invoice-btn"
+      style="background-color: red !important"
+      (click)="deleteSelectedProducts()"
+    >
+      Delete
+    </button>
+  </div>
+</app-modal>
+}
 
 <div *ngIf="addProduct">
   <app-add-product (close)="closeAddProduct()"></app-add-product>

@@ -23,6 +23,9 @@ export interface ProductJSONFormat {
   variants: Variant[];
 }
 
+/**
+ * There's some extra data we use with each product that wouldn't fit directly with the fetched data interface, `ProductJSONFormat`
+ */
 export interface ProductData extends ProductJSONFormat {
   // The total price of all instances of a single product in the cart
   cartPriceTotal: string;
@@ -30,6 +33,8 @@ export interface ProductData extends ProductJSONFormat {
   count: number;
   // The total discount of all instances of a single product in the cart
   discountedPrice: number;
+
+  selectedVariant: string;
 }
 
 export interface Discount {
@@ -126,4 +131,26 @@ export interface SelectedRequest {
   cashierComment: string;
   status: string;
   selectedItems: any;
+}
+
+// TODO: Fill this up with the appropriate types
+export interface InventoryProductDTO {
+  // The inventory to be associated to
+  inventoryId: number;
+  // The product to be associated to
+  productId: number;
+  history: HistoryDTO;
+}
+
+export interface HistoryDTO {
+  id: number;
+  changeType: string;
+  costPrice: number;
+  quantity: number;
+  change: ChangeDTO;
+  totalCost: number;
+}
+
+export interface ChangeDTO {
+  returnType: 'customer';
 }

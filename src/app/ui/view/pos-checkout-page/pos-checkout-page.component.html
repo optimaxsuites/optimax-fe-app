@@ -41,6 +41,7 @@
             <app-product-card
               [product]="product"
               (addToCart)="addToCart(product)"
+              (updateItem)="openItemUpdateModal($event)"
             ></app-product-card>
             }
           </div>
@@ -148,10 +149,12 @@
   </div>
 </div>
 
+<!-- SECTION: Variants Modal -->
 <app-modal *ngIf="itemUpdateModal" (close)="itemUpdateModal = false">
   <div class="w-[40vw] flex flex-col justify-between gap-5 py-10">
     <p-tabView>
-      <p-tabPanel header="Discount" [headerStyleClass]="'custom-header'">
+      <!-- Unused Discount Panel -->
+      <!-- <p-tabPanel header="Discount" [headerStyleClass]="'custom-header'">
         <div class="flex flex-col gap-5 mt-6 px-2">
           <div class="flex justify-between items-end">
             <div
@@ -195,17 +198,30 @@
             >
           </div>
         </div>
-      </p-tabPanel>
-      <p-tabPanel header="Metrics" [headerStyleClass]="'custom-header'">
-        <p>
-          Sed ut perspiciatis unde omnis iste natus error sit voluptatem
-          accusantium... Lorem ipsum dolor sit amet consectetur adipisicing
-          elit. Consequuntur, adipisci consequatur nulla atque dolore
-          aspernatur! Natus at consequuntur quod, facilis cum voluptas veniam ad
-          debitis excepturi beatae omnis. Ea nemo odio minus ut ipsum vel vero
-          exercitationem, eius eaque odit omnis! Exercitationem quis unde
-          accusantium mollitia quos ipsam dolorum nemo.
-        </p>
+      </p-tabPanel> -->
+      <p-tabPanel header="Variants" [headerStyleClass]="'custom-header'">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h2 id="modal-title" class="text-3xl font-semibold text-gray-800">
+            Select a Variant
+          </h2>
+        </div>
+
+        <!-- Modal body: Row list of variant buttons -->
+        <div class="px-6 py-4">
+          <div class="flex flex-wrap gap-3">
+            <!-- Loop over the variants array -->
+            @for (variant of chosenProductVariants; track $index) {
+            <button
+              type="button"
+              class="variant-button"
+              (click)="addToCart(productDataFromClickedProduct, variant.name)"
+            >
+              {{ variant.name }}
+            </button>
+
+            }
+          </div>
+        </div>
       </p-tabPanel>
     </p-tabView>
     <div></div>
@@ -215,15 +231,16 @@
         Cancel
       </button>
 
-      <button
+      <!-- <button
         class="btn create-invoice-btn"
         (click)="calculateProductDiscount()"
       >
         Save
-      </button>
+      </button> -->
     </div>
   </div>
 </app-modal>
+<!--!SECTION  -->
 
 <app-modal
   *ngIf="discountModal && cartItems.length > 0"
