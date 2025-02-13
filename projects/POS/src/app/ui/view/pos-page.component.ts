@@ -33,7 +33,10 @@ export class PosPageComponent {
   }
 
   tabsConfig: TabConfig[] = [
-    { name: 'Report', component: ReportDashboardComponent },
+    {
+      name: 'Report',
+      component: ReportDashboardComponent,
+    },
     { name: 'Products', component: ProductsComponent },
     { name: 'Inventory', component: InventoryComponent },
     // {

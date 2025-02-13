@@ -146,6 +146,13 @@ export class ExcelExportAndImportComponent implements OnInit {
     sampleInfo[ProductExcelColumns.ITEM_WEIGHT] = 300;
 
     const sampleInfoRow = worksheet.addRow(sampleInfo);
+    // for (let i = STARTING_INDEX; i < ProductExcelColumns.END; i++) {
+    //   const cell = sampleInfoRow.getCell(i);
+
+    //   cell.model.comment = {
+    //     texts: [{ text: 'Make sure to delete this Dummy Data!' }],
+    //   };
+    // }
 
     const stringArrayToXlsxFormulae = (arr: string[]) => {
       return [`"${arr.join(',')}"`];

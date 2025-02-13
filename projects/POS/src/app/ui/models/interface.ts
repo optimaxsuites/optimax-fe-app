@@ -16,7 +16,7 @@ export interface ProductJSONFormat {
   partNumber: string;
   tax: number;
   branch: string;
-  variant: string | null;
+  variant?: string | null;
   discount: Discount;
   productCategory: ProductCategory;
   productImages: ProductImage[];
@@ -36,6 +36,8 @@ export interface ProductData extends ProductJSONFormat {
 
   selectedVariant: string;
 }
+export type HistoryData =Map<number,ProductData[]>
+
 
 export interface Discount {
   id: number;

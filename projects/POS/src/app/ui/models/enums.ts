@@ -77,3 +77,7 @@ export const enum NavigationLinks {
   GENERAL_SETTINGS = 'generalSettings',
   HR_SETTINGS = 'HRSettings',
 }
+
+export const enum StyleColor {
+  CELADON_GREEN = '#2eb270',
+}

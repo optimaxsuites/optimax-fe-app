@@ -1,1 +1,332 @@
-<p>inventory works!</p>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+<div *ngIf="tableSection" class="flex flex-col w-full gap-14 p-4">
+    <div class="gap-3 w-full flex justify-between items-center">
+      <ng-select
+        [items]="categories"
+        bindLabel="name"
+        bindValue="id"
+        [(ngModel)]="selectedCategories"
+        [multiple]="true"
+        placeholder="Categories"
+        (change)="filterProductsByCategory()"
+      >
+      </ng-select>
+  
+      <div class="w-1/2">
+        <div class="search-container">
+          <input
+            type="input"
+            class="Search-input"
+            placeholder="Search..."
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="filterProductsBySearch($event)"
+          />
+          <i class="fas fa-search"></i>
+        </div>
+      </div>
+    </div>
+  
+    <div class="">
+      <p-toolbar styleClass="mb-4 gap-2">
+        <ng-template pTemplate="left">
+          <app-button text="Delete" class="btn-delete"></app-button>
+        </ng-template>
+<!--   
+        <ng-template pTemplate="right">
+          <app-button
+            text="Add New"
+            class="btn-navigate"
+            (btnClick)="openAddProdut()"
+          ></app-button>
+          <app-button
+            text="Import"
+            class="btn-export"
+            (btnClick)="toggleImportDialog()"
+          ></app-button>
+          @if(isImportDialogOpen){
+          <app-excel-import></app-excel-import>
+          }
+        </ng-template> -->
+      </p-toolbar>
+      <p-table
+        [value]="products"
+        [paginator]="true"
+        dataKey="id"
+        responsiveLayout="stack"
+        [breakpoint]="'960px'"
+        styleClass="p-datatable-striped"
+        [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '650px' }"
+        [rows]="15"
+      >
+        <ng-template pTemplate="header" class="header" let-columns>
+          <tr>
+            <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+            <th class="table-item">SKU</th>
+            <th class="table-item">Code</th>
+            <th class="table-item">Name</th>
+            <th class="table-item">Price</th>
+            <th class="table-item">Quantity</th>
+            <th class="table-item">Category</th>
+            <th class="table-item">Action</th>
+          </tr>
+        </ng-template>
+        <ng-template
+          pTemplate="body"
+          let-item
+          let-i="rowIndex"
+          let-columns="columns"
+        >
+          <tr>
+            <td>
+              <p-tableCheckbox [value]="item" class="custom-checkbox" />
+            </td>
+            <td class="table-item" (click)="openViewProduct(item)">
+              <span class="p-column-title">Product SKU</span>{{ item.sku }}
+            </td>
+            <td class="table-item " (click)="openViewProduct(item)">
+              <span class="p-column-title">Product Code</span>{{ item.code }}
+            </td>
+  
+            <td class="table-item" (click)="openViewProduct(item)" >
+              <span class="p-column-title">Name</span>{{ item.name }}
+            </td>
+            <td class="table-item" (click)="openViewProduct(item)">
+              <span class="p-column-title">Price</span>{{ item.effectivePrice }}
+            </td>
+            <td class="table-item" [ngClass]="getQuantityClass(item.effectiveQuantity)" pTooltip="{{ getTooltipText(item) }}" tooltipPosition="top" (click)="openViewProduct(item)">
+                <span class="p-column-title">Quantity</span>
+                <div class="quantity-box">
+                  <span class="quantity-value">{{ item.effectiveQuantity }}</span>
+                  <span class="quantity-status">
+                    {{ item.effectiveQuantity >= 10 ? 'Available' : 'Low Stock' }}
+                  </span>
+                </div>
+              </td>
+
+
+            <td class="table-item" (click)="openViewProduct(item)" >
+              <span class="p-column-title" >Category</span
+              >{{ item.productCategory?.name }}
+            </td>
+
+            
+            <td class="actions table-item">
+              <span class="p-column-title">Action</span>
+  
+              <div class="dropdown ">
+                <span class="three-dots" (click)="toggleDropdown2(item)" >⋮</span>
+                <ul class="dropdown-menu" *ngIf="item.showMenu" >
+                  <li (click)="openViewProduct(item); closeDropdown(item)">View</li>
+                  <li (click)="openEditInventory(item); closeDropdown(item)">Edit</li>
+                  <li (click)="openDeleteModal(item); closeDropdown(item)">Delete</li>
+                </ul>
+              </div>              
+                                     
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+ 
+
+      
+
+    </div>
+  </div>
+  
+  <app-modal
+    *ngIf="deleteModal"
+    [header]="'Delete ' + activeItem.name"
+    [title]="'Cancel'"
+    (close)="openDeleteModal()"
+  >
+    <p class="modalText">
+      Are You sure you want to carry out this action? <br />
+      Clicking on <span style="color: red; font-weight: bold">DELETE </span>,
+      would lead to permanent removal of
+      <span style="font-weight: bold">{{ activeItem.name }}</span>
+    </p>
+  
+    <div class="modalBtn">
+      <button class="btn create-invoice-btn" (click)="openDeleteModal()">
+        Cancel
+      </button>
+  
+      <button
+        class="btn create-invoice-btn"
+        style="background-color: red !important"
+        (click)="deleteProduct()"
+      >
+        Delete
+      </button>
+    </div>
+  </app-modal>
+  
+  <div *ngIf="addProduct">
+    <app-add-product (close)="closeAddProduct()"></app-add-product>
+  </div>
+
+ <div *ngIf="viewInventory">
+    <app-view-inventory
+    [activeItem]="activeItem"
+      (edit)="openEditInventory(activeItem)"
+      (close)="openViewInventory()"
+      [updatedProduct]="activeItem"
+    ></app-view-inventory>
+  </div> 
+
+
+  <!-- <div *ngIf="viewProduct">
+    <app-view-product
+      [activeItem]="activeItem"
+      (edit)="openEditInventory($event)"
+      (closeView)="closeView()"
+    ></app-view-product>
+  </div> -->
+
+  <div *ngIf="editInventory">
+    <app-edit-inventory
+      [activeItem]="activeItem"
+      (close)="closeEditInventory()"
+      
+      >
+    </app-edit-inventory>
+  </div>
+  <!-- <app-view-inventory [updatedProduct]="updatedProduct"></app-view-inventory> -->
+
+
+
+<!-- 
+  
+  <app-side-modal *ngIf="sidebarVisible" (close)="sidebarVisible = false">
+    <div class="p-4">
+      
+
+      <form (ngSubmit)="saveProduct()">
+        <div class="mt-4">
+
+        <div class="ml-3"> 
+          <div class="align">
+    
+            <div class="row">
+              <div class="field">
+                <label for="name">Product Name</label>
+                <input class="name editInput" id="name" [value]="activeItem.name" readonly />
+              </div>
+          
+              <div class="field">
+                <label for="sku">SKU</label>
+                <input class="editInput" id="sku" [value]="activeItem.sku" readonly />
+              </div>
+            </div>
+          
+     
+            <div class="row">
+              <div class="field">
+                <label for="code" class="block font-medium">Product Code</label>
+                <input class="editInput w-full text-xl" id="code" [value]="activeItem.code" readonly />
+              </div>
+          
+              <div class="field">
+                <label for="category" class="block font-medium">Category</label>
+                <input class="editInput w-full text-xl" id="category" [value]="activeItem.productCategory?.name" readonly />
+              </div>
+            </div>
+          
+          </div>
+
+            
+              <div class="selection">
+                <label for="change-type">Change Type</label>
+                <select class="change-type" id="change-type">
+                  <option *ngFor="let option of changeOptions" [value]="option">{{ option }}</option>
+                </select>
+         
+
+          <label for="Supplier">Supplier</label>
+          <select class="Supplier" id="Supplier" >
+            <option *ngFor="let option of Supplier" [value]="option">{{ option }}</option>
+          </select> 
+        </div>
+
+
+
+
+
+          <div class="align">
+          
+            <div class="row">
+              <div class="field">
+                <label for="quantity" class="block font-medium">Quantity</label>
+                <input 
+                  type="number" 
+                  id="quantity" 
+                  [(ngModel)]="activeItem.effectiveQuantity" 
+                  name="quantity"
+                  required
+                />
+              </div>
+          
+              <div class="field">
+                <label for="price" class="block text-lg font-medium">Price</label>
+                <input 
+                  type="number" 
+                  id="price" 
+                  [(ngModel)]="activeItem.effectivePrice" 
+                  name="price"
+                  required
+                />
+              </div>
+            </div>
+          
+
+            <div class="row">
+              <div class="field">
+                <label for="quantityPerCarton" class="block text-lg font-medium">Quantity per Carton</label>
+                <input 
+                  type="number" 
+                  id="quantityPerCarton" 
+                  [(ngModel)]="activeItem.quantityPerCarton" 
+                  name="quantityPerCarton"
+                  required
+                />
+              </div>
+          
+              <div class="field">
+                <label for="quantityByPiece" class="block text-lg font-medium">Quantity by Piece</label>
+                <input 
+                  type="number" 
+                  id="quantityByPiece" 
+                  [(ngModel)]="activeItem.quantityByPiece" 
+                  name="quantityByPiece"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+        <div class="mt-6 flex justify-end">
+          <button 
+            type="button" 
+            class="p-button p-button-outlined p-mr-2" 
+            (click)="sidebarVisible = false">Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="p-button p-button-primary"
+          >Save</button>
+        </div>
+      </form>
+      
+      
+     
+    </div>
+  </app-side-modal> -->
+  
+
+  
+  
+  <p-toast position="top-right" key="tl" />
+
