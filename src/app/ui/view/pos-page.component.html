@@ -1,12 +1,12 @@
-<!-- 
+<!--
 <div class="sales">
   <div class="link-wrapper">
 
     <button class="tab-btn "  [ngClass]="{'active': selectedTab === 'dashboard'}" (click)="selectTab('dashboard')">Dashboard</button>
     <button class="tab-btn"  [ngClass]="{'active': selectedTab === 'products'}" (click)="selectTab('products')">Products</button>
     <button class="tab-btn"  [ngClass]="{'active': selectedTab === 'inventory'}" (click)="selectTab('inventory')">Inventory</button>
-    
- 
+
+
     <div class="settings-tab-menu relative">
       <button class="tab-btn"  [ngClass]="{'active': selectedTab === 'settings'}" (click)="toggleDropdown()">Settings ▼</button>
       <div class="absolute bg-white p-3 gap-3 shadow-sm text-left " *ngIf="isDropdownOpen">
@@ -15,7 +15,7 @@
         </div>
     </div>
 
-    
+
   </div>
 
 
@@ -30,7 +30,7 @@
       <app-inventory></app-inventory>
     </div>
     <div *ngIf="selectedTab === 'settings'">
-   
+
       <div *ngIf="selectedSetting === 'configurations'">
         <app-configuration></app-configuration>
       </div>
@@ -40,6 +40,5 @@
     </div>
   </div>
 </div> -->
-
 
 <app-nav-tab [tabsConfig]="tabsConfig"></app-nav-tab>

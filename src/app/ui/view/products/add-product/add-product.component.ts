@@ -5,7 +5,11 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Discount, ProductJSONFormat } from '../../../models/interface';
+import {
+  Discount,
+  ProductData,
+  ProductJSONFormat,
+} from '../../../models/interface';
 
 @Component({
   selector: 'app-add-product',
@@ -349,7 +353,7 @@ export class AddProductComponent {
 
     const formValues = this.productForm.value;
 
-    const product = {
+    const product: ProductJSONFormat = {
       id: this.activeItem.id,
       name: formValues.name,
       code: formValues.code,
@@ -363,7 +367,15 @@ export class AddProductComponent {
       partNumber: formValues.partNumber,
       tax: formValues.tax,
       branch: formValues.branch,
-      discount: formValues.discount,
+      discount: formValues.discount ?? {
+        id: 7,
+        name: 'None',
+        value: 0.0,
+        startDate: null,
+        endDate: null,
+        minQuantity: 0,
+        discountType: null,
+      },
       variants: this.variants,
       productImages: [] as any[],
       productCategory: formValues.category,

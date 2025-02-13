@@ -41,19 +41,22 @@ import { ModalComponent } from './ui/sharedComponent/view/modal/modal.component'
 import { SideModalComponent } from './ui/sharedComponent/view/side-modal/side-modal.component';
 import { SearchbarComponent } from './ui/sharedComponent/view/searchbar/searchbar.component';
 import { NavTabComponent } from './ui/sharedComponent/view/nav-tab/nav-tab.component';
-import {
-  HTTP_INTERCEPTORS,
-  HttpClientModule,
-  provideHttpClient,
-  withInterceptorsFromDi,
-} from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpClientModule, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { UserModule } from './user/user.module';
 import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
 
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
+import { NgApexchartsModule } from 'ng-apexcharts';
 import { ExcelExportAndImportComponent } from './ui/view/excel-export-and-import/excel-export-and-import.component';
 import { ReportDashboardComponent } from './ui/view/report-dashboard/report-dashboard.component';
-import { NgApexchartsModule } from 'ng-apexcharts';
+import { SalesReportComponent } from './ui/view/report-dashboard/sales-report/sales-report.component';
+import { FinanceReportComponent } from './ui/view/report-dashboard/finance-report/finance-report.component';
+import { InventoryReportComponent } from './ui/view/report-dashboard/inventory-report/inventory-report.component';
+import { ExpensesReportComponent } from './ui/view/report-dashboard/expenses-report/expenses-report.component';
+import { CreateReportComponent } from './ui/view/report-dashboard/create-report/create-report.component';
+import { EditInventoryComponent } from './ui/view/inventory/edit-inventory/edit-inventory.component';
+import { ViewInventoryComponent } from './ui/view/inventory/view-inventory/view-inventory.component';
+import { InformationComponent } from './information/information.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -66,14 +69,21 @@ import { NgApexchartsModule } from 'ng-apexcharts';
     ProductsComponent,
     AddProductComponent,
     ViewProductComponent,
-    ExcelExportAndImportComponent,
     ReportDashboardComponent,
-    ExcelImportComponent,
+    SalesReportComponent,
+    FinanceReportComponent,
+    InventoryReportComponent,
+    ExpensesReportComponent,
+    CreateReportComponent,
+    ExcelExportAndImportComponent,
+    EditInventoryComponent,
+    ViewInventoryComponent,
+    InformationComponent,
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
-    // UserModule,
+    BrowserModule,
+    BrowserAnimationsModule,
+    UserModule,
     AppRoutingModule,
     CommonModule,
     AppRoutingModule,
@@ -85,23 +95,23 @@ import { NgApexchartsModule } from 'ng-apexcharts';
     ReactiveFormsModule,
     SidebarModule,
     TabViewModule,
-    ToolbarModule,
-    ConfirmDialogModule,
-    SplitButtonModule,
-    PanelModule,
-    DividerModule,
-    OverlayPanelModule,
-    StepperModule,
-    InputTextModule,
-    FloatLabelModule,
-    EditorModule,
-    MessagesModule,
-    MessageModule,
-    RippleModule,
-    TableModule,
-    PasswordModule,
-    ButtonModule,
-    NgSelectModule,
+      ToolbarModule,
+      ConfirmDialogModule,
+      SplitButtonModule,
+      PanelModule,
+      DividerModule,
+      OverlayPanelModule,
+      StepperModule,
+      InputTextModule,
+      FloatLabelModule,
+      EditorModule,
+      MessagesModule,
+      MessageModule,
+      RippleModule,
+      TableModule,
+      PasswordModule,
+      ButtonModule,
+      NgSelectModule,
     LargeSideModalComponent,
     ButtonComponent,
     ModalComponent,

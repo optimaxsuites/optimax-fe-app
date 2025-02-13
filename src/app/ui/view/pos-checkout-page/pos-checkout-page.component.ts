@@ -72,7 +72,7 @@ export class PosCheckoutPageComponent implements OnInit {
     if (this.navigationState?.order) {
       this.loadOrder(this.navigationState.order);
     }
-    if (this.navigationState.cart) {
+    if (this.navigationState?.cart) {
       const cart = this.navigationState.cart;
 
       this.cartItems = [...cart.cartItems];

@@ -3,7 +3,12 @@ import { PosServiceService } from '../../service/pos-service.service';
 import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { ProductData, ProductJSONFormat } from '../../models/interface';
+import {
+  Discount,
+  ProductCategory,
+  ProductData,
+  ProductJSONFormat,
+} from '../../models/interface';
 import { MessageService } from 'primeng/api';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 // import { MatStartDate } from '@angular/material/datepicker';
@@ -12,8 +17,9 @@ import { filter } from 'rxjs';
 // import * as XLSX from 'xlsx';
 // import readXlsxFile from 'read-excel-file';
 import { map } from 'rxjs/operators';
-import { Workbook } from 'exceljs';
+import { Workbook, Worksheet } from 'exceljs';
 import { KeyValue } from '@angular/common';
+import { ProductExcelColumns } from '../../models/enums';
 /**
  * Responsible for showing the list of available products in `admin/pos`
  *
@@ -322,7 +328,105 @@ export class ProductsComponent implements OnInit {
     const workbook = new Workbook();
     // Read the file data
     await workbook.xlsx.load(await xlsxImport.arrayBuffer());
-    console.log(workbook);
+    // console.log(workbook);
+    const worksheet = workbook.getWorksheet('Products to Add') as Worksheet;
+    // console.log(this.products);
+    const workSheetImages = worksheet.getImages();
+    // Just something to easily arrange the images in a sensible order
+    let mappedImages: Map<{ row: number; column: number }, number> = new Map();
+    workSheetImages.forEach((image) => {
+      console.log(
+        `Image anchored at row ${image.range.tl.nativeRow}, col ${image.range.tl.nativeCol}. It's data is: `
+      );
+      console.log(image);
+      console.log(worksheet.model.media);
+      // const media = (worksheet.model.media).find((m) => m.index === image.imageId);
+    });
+    for (let i = 2; i < 999; i++) {
+      const row = worksheet.getRow(i);
+
+      const name = row.getCell(ProductExcelColumns.NAME + 1).text;
+      if (name == 'Dummy Product' || name == '') continue;
+      const description = row.getCell(ProductExcelColumns.DESCRIPTION + 1).text;
+      const branchName = row.getCell(ProductExcelColumns.BRANCH + 1).text;
+      const code = parseInt(row.getCell(ProductExcelColumns.CODE + 1).text);
+      const basePrice = parseInt(
+        row.getCell(ProductExcelColumns.BASE_PRICE + 1).text
+      );
+      const taxPercentage = parseInt(
+        row.getCell(ProductExcelColumns.TAX_PERCENTAGE + 1).text
+      );
+      const discountName = row.getCell(
+        ProductExcelColumns.DISCOUNT_NAME + 1
+      ).text;
+      const quantity = parseInt(
+        row.getCell(ProductExcelColumns.QUANTITY + 1).text
+      );
+      const sku = parseInt(row.getCell(ProductExcelColumns.SKU + 1).text);
+      const partNumber = parseInt(
+        row.getCell(ProductExcelColumns.PART_NUMBER + 1).text
+      );
+      const categoryName = row.getCell(ProductExcelColumns.CATEGORY + 1).text;
+      const variantNames = row
+        .getCell(ProductExcelColumns.VARIANTS + 1)
+        .text.split(',');
+      const weight = parseInt(
+        row.getCell(ProductExcelColumns.ITEM_WEIGHT + 1).text
+      );
+
+      let discount: Discount = {} as any;
+      let productCategory: ProductCategory = {} as any;
+      let branch: string = branchName;
+
+      this.products.forEach((product) => {
+        if (product.discount.name == discountName) {
+          discount = structuredClone(product.discount);
+        }
+        if (product.productCategory.name == categoryName) {
+          productCategory = structuredClone(product.productCategory);
+        }
+      });
+
+      const product: ProductJSONFormat = {
+        id: 0 || (Math.random().toString(36).substr(2, 50) as any),
+        createdDate: new Date().toISOString(),
+        createdBy: '',
+        effectivePrice: (
+          basePrice -
+          (basePrice * discount.value) / 100 -
+          (basePrice * taxPercentage) / 100
+        ).toFixed(2),
+        effectiveQuantity: quantity,
+        variant: '',
+        productImages: [
+          {
+            id: 54,
+            name: 'Opera Snapshot_2025-02-03_030901_localhost.png',
+            imgNo: 'd03BR3TK6L3',
+          },
+        ],
+        variants: [],
+        name: name,
+        description: description,
+        branch: branch,
+        code: code.toString(),
+        initialPrice: basePrice.toString(),
+        tax: taxPercentage,
+        discount: discount,
+        initialQuantity: quantity,
+        sku: sku.toString(),
+        partNumber: partNumber.toString(),
+        productCategory: productCategory,
+        weight: weight,
+      };
+      console.log(product);
+
+      // REVIEW: PLEASE REDO THIS
+      const userName = sessionStorage.getItem('username');
+      const formData = new FormData();
+      formData.append('product', JSON.stringify(product));
+      // formData.append('files', new File());
+    }
     //   console.log(xlsxImport);
     //   const worksheet = await readXlsxFile(xlsxImport);
     //   console.log(worksheet);
