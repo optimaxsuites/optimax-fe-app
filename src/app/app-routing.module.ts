@@ -9,16 +9,28 @@ import { OrderDetailComponent } from './ui/view/order-detail/order-detail.compon
 import { CashPaymentComponent } from './ui/view/cash-payment/cash-payment.component';
 import { CheckoutOrdersComponent } from './ui/view/checkout-orders/checkout-orders.component';
 import { PosCheckoutPageComponent } from './ui/view/pos-checkout-page/pos-checkout-page.component';
+import { InformationComponent } from './information/information.component';
+import { InventoryComponent } from './ui/view/inventory/inventory.component';
 
 const routes: Routes = [
   {path:  '',
     redirectTo: 'admin/pos/34567whr4567yhsdzr56',
-    pathMatch: 'full'
+    pathMatch: 'full',
+   
   },
   {
     path: 'admin/pos/:uuid',
     component: PosPageComponent,
+
   },
+  {
+    path: 'inventory',
+    component:InventoryComponent,
+  },
+  {
+    path: 'supplier-details', 
+    component:InformationComponent,
+  }
   // { path: '', loadChildren: () => import('./user/user.module').then(m => m.UserModule) },
  
 ];

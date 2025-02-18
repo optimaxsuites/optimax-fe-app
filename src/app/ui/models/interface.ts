@@ -156,3 +156,14 @@ export interface HistoryDTO {
 export interface ChangeDTO {
   returnType: 'customer';
 }
+export type supplierData = {
+  supplierName: string,
+  contactPerson: string,
+  email: string,
+  phone: number,
+  address: string,
+  products: string,
+  notes: string,
+  agreeTerms: boolean,
+  createdAt: Date, 
+};
