@@ -35,6 +35,7 @@
   .dropdown {
     position: relative;
     display: inline-block;
+  
   }
   
   .dropdown-menu {
@@ -47,6 +48,7 @@
     z-index: 1000; /* Ensures menu is always on top */
     padding: 1px 0;
     min-width: 90px; /* Prevents menu from being too small */
+    
   }
   
   
@@ -59,11 +61,18 @@
   .dropdown-menu li:hover {
     background: #f0f0f0;
   }
+  // p-table .p-datatable-wrapper {
+  //   overflow: visible !important; 
+  // }
   
   
   
-  
-  
+  // .p-datatable-wrapper {
+  //   overflow: visible !important;
+  // }
+  :host ::ng-deep .p-datatable-wrapper {
+    overflow: visible !important;
+  }
   
   
   

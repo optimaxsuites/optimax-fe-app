@@ -1,4 +1,4 @@
-import { Component, OnInit , Input, Output, EventEmitter} from '@angular/core';
+import { Component, OnInit , Input, Output, EventEmitter, HostListener} from '@angular/core';
 import { PosServiceService } from '../../service/pos-service.service';
 import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
@@ -178,7 +178,10 @@ closeDropdown(item: any) {
   dropdownVisible: boolean[] = [];
   toggleDropdown(index: number): void {
     this.dropdownVisible[index] = !this.dropdownVisible[index];
+    
   }
+  
+
 
 
   selectedAction!: string;

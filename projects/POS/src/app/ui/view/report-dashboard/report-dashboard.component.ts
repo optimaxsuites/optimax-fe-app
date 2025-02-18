@@ -69,6 +69,7 @@ export class ReportDashboardComponent implements OnInit {
     // { name: 'Finance', component: FinanceReportComponent },
     { name: 'Inventory', component: InventoryReportComponent },
     { name: 'Create Report', component: CreateReportComponent },
+    // {name:"Custom Reports", component: CustomReportComponent}
   ];
 
   // // 1. Sales Summary Report (Line Chart)

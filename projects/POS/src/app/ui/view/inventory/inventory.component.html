@@ -32,10 +32,10 @@
         <ng-template pTemplate="left">
           <app-button text="Delete" class="btn-delete"></app-button>
         </ng-template>
-<!--   
+  
         <ng-template pTemplate="right">
           <app-button
-            text="Add New"
+            text="Add Inventory"
             class="btn-navigate"
             (btnClick)="openAddProdut()"
           ></app-button>
@@ -44,10 +44,10 @@
             class="btn-export"
             (btnClick)="toggleImportDialog()"
           ></app-button>
-          @if(isImportDialogOpen){
+          <!-- @if(isImportDialogOpen){
           <app-excel-import></app-excel-import>
-          }
-        </ng-template> -->
+          } -->
+        </ng-template>
       </p-toolbar>
       <p-table
         [value]="products"
@@ -81,20 +81,20 @@
             <td>
               <p-tableCheckbox [value]="item" class="custom-checkbox" />
             </td>
-            <td class="table-item" (click)="openViewProduct(item)">
+            <td class="table-item" (click)="openEditInventory(item)">
               <span class="p-column-title">Product SKU</span>{{ item.sku }}
             </td>
-            <td class="table-item " (click)="openViewProduct(item)">
+            <td class="table-item " (click)="openEditInventory(item)">
               <span class="p-column-title">Product Code</span>{{ item.code }}
             </td>
   
-            <td class="table-item" (click)="openViewProduct(item)" >
+            <td class="table-item" (click)="openEditInventory(item)" >
               <span class="p-column-title">Name</span>{{ item.name }}
             </td>
-            <td class="table-item" (click)="openViewProduct(item)">
+            <td class="table-item" (click)="openEditInventory(item)">
               <span class="p-column-title">Price</span>{{ item.effectivePrice }}
             </td>
-            <td class="table-item" [ngClass]="getQuantityClass(item.effectiveQuantity)" pTooltip="{{ getTooltipText(item) }}" tooltipPosition="top" (click)="openViewProduct(item)">
+            <td class="table-item" [ngClass]="getQuantityClass(item.effectiveQuantity)" pTooltip="{{ getTooltipText(item) }}" tooltipPosition="top" (click)="openEditInventory(item)">
                 <span class="p-column-title">Quantity</span>
                 <div class="quantity-box">
                   <span class="quantity-value">{{ item.effectiveQuantity }}</span>
@@ -105,7 +105,7 @@
               </td>
 
 
-            <td class="table-item" (click)="openViewProduct(item)" >
+            <td class="table-item" (click)="openEditInventory(item)" >
               <span class="p-column-title" >Category</span
               >{{ item.productCategory?.name }}
             </td>
@@ -114,12 +114,12 @@
             <td class="actions table-item">
               <span class="p-column-title">Action</span>
   
-              <div class="dropdown ">
+              <div class="dropdown "  >
                 <span class="three-dots" (click)="toggleDropdown2(item)" >⋮</span>
-                <ul class="dropdown-menu" *ngIf="item.showMenu" >
-                  <li (click)="openViewProduct(item); closeDropdown(item)">View</li>
-                  <li (click)="openEditInventory(item); closeDropdown(item)">Edit</li>
-                  <li (click)="openDeleteModal(item); closeDropdown(item)">Delete</li>
+                <ul class="dropdown-menu" *ngIf="item.showMenu"  >
+                  <li (click)="openViewProduct(item); closeDropdown(item)">View History</li>
+                  <li (click)="openEditInventory(item); closeDropdown(item)">Add Inventory</li>
+        
                 </ul>
               </div>              
                                      
