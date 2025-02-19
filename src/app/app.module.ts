@@ -41,7 +41,12 @@ import { ModalComponent } from './ui/sharedComponent/view/modal/modal.component'
 import { SideModalComponent } from './ui/sharedComponent/view/side-modal/side-modal.component';
 import { SearchbarComponent } from './ui/sharedComponent/view/searchbar/searchbar.component';
 import { NavTabComponent } from './ui/sharedComponent/view/nav-tab/nav-tab.component';
-import { HTTP_INTERCEPTORS, HttpClientModule, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import {
+  HTTP_INTERCEPTORS,
+  HttpClientModule,
+  provideHttpClient,
+  withInterceptorsFromDi,
+} from '@angular/common/http';
 import { UserModule } from './user/user.module';
 import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.interceptor.service';
 
@@ -57,6 +62,8 @@ import { CreateReportComponent } from './ui/view/report-dashboard/create-report/
 import { EditInventoryComponent } from './ui/view/inventory/edit-inventory/edit-inventory.component';
 import { ViewInventoryComponent } from './ui/view/inventory/view-inventory/view-inventory.component';
 import { InformationComponent } from './information/information.component';
+import { SummaryReportComponent } from './ui/view/report-dashboard/summary-report/summary-report.component';
+import { CustomReportComponent } from './ui/view/report-dashboard/custom-report/custom-report.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -79,11 +86,13 @@ import { InformationComponent } from './information/information.component';
     EditInventoryComponent,
     ViewInventoryComponent,
     InformationComponent,
+    SummaryReportComponent,
+    CustomReportComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
-    UserModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
+    // UserModule,
     AppRoutingModule,
     CommonModule,
     AppRoutingModule,
@@ -95,23 +104,23 @@ import { InformationComponent } from './information/information.component';
     ReactiveFormsModule,
     SidebarModule,
     TabViewModule,
-      ToolbarModule,
-      ConfirmDialogModule,
-      SplitButtonModule,
-      PanelModule,
-      DividerModule,
-      OverlayPanelModule,
-      StepperModule,
-      InputTextModule,
-      FloatLabelModule,
-      EditorModule,
-      MessagesModule,
-      MessageModule,
-      RippleModule,
-      TableModule,
-      PasswordModule,
-      ButtonModule,
-      NgSelectModule,
+    ToolbarModule,
+    ConfirmDialogModule,
+    SplitButtonModule,
+    PanelModule,
+    DividerModule,
+    OverlayPanelModule,
+    StepperModule,
+    InputTextModule,
+    FloatLabelModule,
+    EditorModule,
+    MessagesModule,
+    MessageModule,
+    RippleModule,
+    TableModule,
+    PasswordModule,
+    ButtonModule,
+    NgSelectModule,
     LargeSideModalComponent,
     ButtonComponent,
     ModalComponent,

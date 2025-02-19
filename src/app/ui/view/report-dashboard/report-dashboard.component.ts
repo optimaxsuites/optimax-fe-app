@@ -17,6 +17,8 @@ import { ExpensesReportComponent } from './expenses-report/expenses-report.compo
 import { FinanceReportComponent } from './finance-report/finance-report.component';
 import { InventoryReportComponent } from './inventory-report/inventory-report.component';
 import { CreateReportComponent } from './create-report/create-report.component';
+import { SummaryReportComponent } from './summary-report/summary-report.component';
+import { CustomReportComponent } from './custom-report/custom-report.component';
 
 // Define interfaces using Apex types for type safety
 
@@ -61,6 +63,7 @@ export type DonutChartOptions = {
 })
 export class ReportDashboardComponent implements OnInit {
   tabsConfig: TabConfig[] = [
+    { name: 'Summary', component: SummaryReportComponent },
     {
       name: 'Sales',
       component: SalesReportComponent,
@@ -69,7 +72,7 @@ export class ReportDashboardComponent implements OnInit {
     // { name: 'Finance', component: FinanceReportComponent },
     { name: 'Inventory', component: InventoryReportComponent },
     { name: 'Create Report', component: CreateReportComponent },
-    // {name:"Custom Reports", component: CustomReportComponent}
+    { name: 'Custom Reports', component: CustomReportComponent },
   ];
 
   // // 1. Sales Summary Report (Line Chart)

@@ -83,6 +83,7 @@ export const enum StyleColor {
 }
 
 export const enum BusinessType {
+  GENERIC = 'Generic',
   PHARMACY = 'Pharmacy',
   RETAIL = 'Retail',
   RESTAURANT = 'Restaurant',
