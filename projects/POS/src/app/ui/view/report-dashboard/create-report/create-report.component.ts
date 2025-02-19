@@ -1,21 +1,47 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
+import { arrOfCustomReports } from '../custom-report-data';
+import { ChartType } from 'ng-apexcharts';
 
 @Component({
   selector: 'app-create-report',
   templateUrl: './create-report.component.html',
-  styleUrls: ['./create-report.component.scss'],
+  // styleUrls: ['./create-report.component.scss'],
 })
 export class CreateReportComponent implements OnInit {
   //@ts-ignore
   reportForm: FormGroup;
-  uploadedFile: File | null = null;
 
-  reportTypes: Array<{ value: string; label: string }> = [
-    { value: 'sales', label: 'Sales Report' },
-    { value: 'inventory', label: 'Inventory Report' },
-    { value: 'financial', label: 'Financial Report' },
-    // Additional types can be added here
+  // Example chart types you can display for each chart
+  chartTypes: string[] = [
+    'Sales',
+    'Expenses',
+    'Inventory Turnover',
+    'Profit Margin',
+    'Revenue',
+    // Add more chart types as needed
+  ];
+
+  // Timeframe options for each chart
+  timeFrames: string[] = [
+    'Current Day',
+    'Past Week',
+    'Past Month',
+    'Past Quarter',
+    'Past Year',
+    'Past Decade',
+    'Single Day',
+  ];
+  chartStyles: ChartType[] = [
+    'bar',
+    'area',
+    'boxPlot',
+    'bubble',
+    'candlestick',
+    'donut',
+    'heatmap',
+    'line',
+    'pie',
   ];
 
   constructor(private fb: FormBuilder) {}
@@ -23,30 +49,46 @@ export class CreateReportComponent implements OnInit {
   ngOnInit(): void {
     this.reportForm = this.fb.group({
       reportName: ['', Validators.required],
-      reportType: ['', Validators.required],
-      reportDuration: ['', Validators.required],
-      // For custom duration, dates become required. You may add conditional validation if needed.
-      startDate: [null],
-      endDate: [null],
       additionalInfo: [''],
+      charts: this.fb.array([]),
     });
   }
 
-  onFileChange(event: any): void {
-    if (event.target.files && event.target.files.length > 0) {
-      this.uploadedFile = event.target.files[0];
-      console.log('Uploaded file:', this.uploadedFile);
+  get charts(): FormArray {
+    return this.reportForm.get('charts') as FormArray;
+  }
+
+  addChart(): void {
+    // Only add up to 9 charts
+    if (this.charts.length < 9) {
+      this.charts.push(
+        this.fb.group({
+          chartType: ['', Validators.required],
+          timeframe: ['', Validators.required],
+          chartStyle: ['', Validators.required],
+          // dataFile: [null], // or use Validators.required if needed
+        })
+      );
     }
   }
 
+  removeChart(index: number): void {
+    this.charts.removeAt(index);
+  }
+
   onSubmit(): void {
+    console.log('Report form data:', this.charts.value);
     if (this.reportForm.valid) {
-      const formData = {
-        ...this.reportForm.value,
-        dataFile: this.uploadedFile,
-      };
-      console.log('Report Data:', formData);
-      // Integrate your service call here to process report creation.
+      // Handle form submission
+      // e.g., send data to your service or backend
+    } else {
+      // Handle form errors
+      console.log('Form is invalid');
     }
+
+    arrOfCustomReports.push({
+      name: this.reportForm.value.reportName,
+      charts: this.charts.value,
+    });
   }
 }

@@ -1,147 +1,120 @@
-<div class="create-report-container">
-  <h2>Create Report</h2>
+<div class="max-w-4xl mx-auto mt-10 p-6 bg-white shadow-md rounded-md">
   <form [formGroup]="reportForm" (ngSubmit)="onSubmit()">
     <!-- Report Name -->
-    <div class="form-group">
-      <label for="reportName">Report Name</label>
+    <div class="mb-4">
+      <label class="block text-gray-700 font-semibold mb-2" for="reportName">
+        Report Name
+      </label>
       <input
-        type="text"
         id="reportName"
+        type="text"
         formControlName="reportName"
-        class="form-control"
+        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-green-500"
         placeholder="Enter report name"
-      />
-      <div
-        *ngIf="
-          reportForm.get('reportName')!.invalid &&
-          reportForm.get('reportName')!.touched
-        "
-        class="error"
-      >
-        Report Name is required.
-      </div>
-    </div>
-
-    <!-- Report Type -->
-    <div class="form-group">
-      <label for="reportType">Report Type</label>
-      <select id="reportType" formControlName="reportType" class="form-control">
-        <option value="">Select Report Type</option>
-        <option *ngFor="let type of reportTypes" [value]="type.value">
-          {{ type.label }}
-        </option>
-      </select>
-      <div
-        *ngIf="
-          reportForm.get('reportType')!.invalid &&
-          reportForm.get('reportType')!.touched
-        "
-        class="error"
-      >
-        Report Type is required.
-      </div>
-    </div>
-
-    <!-- Report Duration -->
-    <div class="form-group">
-      <label for="reportDuration">Duration of Report</label>
-      <select
-        id="reportDuration"
-        formControlName="reportDuration"
-        class="form-control"
-      >
-        <option value="">Select Duration</option>
-        <option value="last24">Last 24 Hours</option>
-        <option value="lastWeek">Last Week</option>
-        <option value="lastMonth">Last Month</option>
-        <option value="custom">Custom</option>
-      </select>
-      <div
-        *ngIf="
-          reportForm.get('reportDuration')!.invalid &&
-          reportForm.get('reportDuration')!.touched
-        "
-        class="error"
-      >
-        Duration is required.
-      </div>
-    </div>
-
-    <!-- Custom Date Range (visible only if 'custom' is selected) -->
-    <div
-      class="form-group"
-      *ngIf="reportForm.get('reportDuration')!.value === 'custom'"
-    >
-      <label for="startDate">Start Date</label>
-      <input
-        type="date"
-        id="startDate"
-        formControlName="startDate"
-        class="form-control"
-      />
-      <div
-        *ngIf="
-          reportForm.get('startDate')!.invalid &&
-          reportForm.get('startDate')!.touched
-        "
-        class="error"
-      >
-        Start Date is required.
-      </div>
-    </div>
-
-    <div
-      class="form-group"
-      *ngIf="reportForm.get('reportDuration')!.value === 'custom'"
-    >
-      <label for="endDate">End Date</label>
-      <input
-        type="date"
-        id="endDate"
-        formControlName="endDate"
-        class="form-control"
-      />
-      <div
-        *ngIf="
-          reportForm.get('endDate')!.invalid &&
-          reportForm.get('endDate')!.touched
-        "
-        class="error"
-      >
-        End Date is required.
-      </div>
-    </div>
-
-    <!-- Data Source (Excel File Import) -->
-    <div class="form-group">
-      <label for="dataFile">Data Source (Excel File Import)</label>
-      <input
-        type="file"
-        id="dataFile"
-        (change)="onFileChange($event)"
-        accept=".xlsx, .xls"
-        class="form-control-file"
       />
     </div>
 
     <!-- Additional Information -->
-    <div class="form-group">
-      <label for="additionalInfo">Additional Information</label>
+    <div class="mb-4">
+      <label
+        class="block text-gray-700 font-semibold mb-2"
+        for="additionalInfo"
+      >
+        Additional Information
+      </label>
       <textarea
         id="additionalInfo"
         formControlName="additionalInfo"
-        class="form-control"
+        rows="4"
+        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-green-500"
         placeholder="Enter any additional details"
       ></textarea>
     </div>
 
+    <!-- Sub-section for Creating Charts -->
+    <div class="mb-4">
+      <label class="block text-gray-700 font-semibold mb-2">
+        Charts (up to 5)
+      </label>
+
+      <!-- Wrap the FormArray controls with formArrayName -->
+      <div formArrayName="charts">
+        <!-- Existing Charts -->
+        <div
+          *ngFor="let chart of charts.controls; let i = index"
+          [formGroupName]="i"
+          class="mb-2"
+        >
+          <div
+            class="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-2"
+          >
+            <span class="font-semibold">Chart {{ i + 1 }}:</span>
+
+            <!-- Chart Type -->
+            <select
+              formControlName="chartType"
+              class="w-full md:w-1/4 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-green-500"
+            >
+              <option value="" disabled>Select Chart Type</option>
+              <option *ngFor="let cType of chartTypes" [value]="cType">
+                {{ cType }}
+              </option>
+            </select>
+
+            <!-- Timeframe -->
+            <select
+              formControlName="chartStyle"
+              class="w-full md:w-1/4 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-green-500"
+            >
+              <option value="" disabled>Select Style</option>
+              <option *ngFor="let style of chartStyles" [value]="style">
+                {{ style }}
+              </option>
+            </select>
+
+            <!-- Timeframe -->
+            <select
+              formControlName="timeframe"
+              class="w-full md:w-1/4 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-green-500"
+            >
+              <option value="" disabled>Select Timeframe</option>
+              <option *ngFor="let timeframe of timeFrames" [value]="timeframe">
+                {{ timeframe }}
+              </option>
+            </select>
+
+            <!-- Remove Chart Button -->
+            <button
+              type="button"
+              (click)="removeChart(i)"
+              class="text-red-600 hover:text-red-800 font-bold text-xl"
+              title="Remove this chart"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Chart Button -->
+      <button
+        type="button"
+        class="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        (click)="addChart()"
+        [disabled]="charts.length >= 5"
+      >
+        Add Chart
+      </button>
+    </div>
+
     <!-- Submit Button -->
-    <button
-      type="submit"
-      class="btn btn-primary"
-      [disabled]="reportForm.invalid"
-    >
-      Create Report
-    </button>
+    <div class="text-right">
+      <button
+        type="submit"
+        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+      >
+        Create Report
+      </button>
+    </div>
   </form>
 </div>

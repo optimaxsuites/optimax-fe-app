@@ -13,30 +13,24 @@ import { InformationComponent } from './information/information.component';
 import { InventoryComponent } from './ui/view/inventory/inventory.component';
 
 const routes: Routes = [
-  {path:  '',
-    redirectTo: 'admin/pos/34567whr4567yhsdzr56',
-    pathMatch: 'full',
-   
-  },
+  { path: '', redirectTo: 'admin/pos/34567whr4567yhsdzr56', pathMatch: 'full' },
   {
     path: 'admin/pos/:uuid',
     component: PosPageComponent,
-
   },
   {
     path: 'inventory',
-    component:InventoryComponent,
+    component: InventoryComponent,
   },
   {
-    path: 'supplier-details', 
-    component:InformationComponent,
-  }
+    path: 'supplier-details',
+    component: InformationComponent,
+  },
   // { path: '', loadChildren: () => import('./user/user.module').then(m => m.UserModule) },
- 
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+  imports: [RouterModule.forChild(routes)],
+  exports: [RouterModule],
 })
 export class AppRoutingModule {}
