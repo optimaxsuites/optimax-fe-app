@@ -1,3 +1,5 @@
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=stat_minus_1" />
+
 <div class="createVendor"  >
     <div class="flex justify-between items-center mt-4">
     <p class="back" style="cursor: pointer;" (click)="closeEdit()"><i class="fa-solid fa-arrow-left"></i> Back</p>
@@ -61,30 +63,32 @@
             
             </label>
             
-              <div class="relative flex items-center border rounded-md overflow-hidden bg-gray-100 ">
-                
-  
-  
+            <div class="relative flex items-center border rounded-md overflow-hidden bg-gray-100 ">
+              <!-- Select Dropdown -->
               <select
                 id="dropdown"
-                class="w-full px-4 py-2 text-gray-600 bg-gray-100 focus:outline-none appearance-non text-2xl" style= " padding: 10px;"
+                class=" px-4 py text-gray-600 bg-gray-100 text-2xl rounded-2xl" 
+                style="padding: 10px;" 
                 [(ngModel)]="selectedOption"
                 (change)="updateSelectedOption()"
               >
-              <option value="" disabled selected>Select a change-type</option>    
-              <option placeholder="Select a source" *ngFor="let option of options">{{ option }}</option>
-            
+                <option value="" disabled selected>Select a change-type</option>    
+                <option *ngFor="let option of options">{{ option }}</option>
               </select>
-    
-              <!-- Dropdown Arrow -->
-              <!-- <i class="absolute right-12 text-gray-500 fas fa-chevron-down"></i> -->
-              <!-- Add (+) Button -->
-              <i class="absolute right-12 text-gray-500 fas fa-chevron-down" ></i>
-              <button class="bg-green-600 text-white px-4  hover:bg-green-700"  style= " padding: 10px;"  (click)="toggleInput()"  >+</button>
             
-               
+              <!-- Fake Dropdown Icon -->
+              <span class=" material-symbols-outlined absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-500 text-xl pointer-events-none">
+                stat_minus_1
+              </span>
+              <!-- Button Inside the Dropdown Box -->
+              <button 
+                class="absolute right-0.5 top-1/2 transform -translate-y-1/2 bg-green-600 text-white px-4 py-4 hover:bg-green-700 rounded"
+                (click)="toggleInput()"
+              >
+                +
+              </button>
             </div>
-               
+            
           </div>
   
   
@@ -122,10 +126,12 @@
               <option *ngFor="let supplier of suppliers" [value]="supplier.supplierName">   {{ supplier.supplierName }}</option>
               </select>
               <!-- Dropdown Arrow -->
-              <i class="absolute right-12 text-gray-500 fas fa-chevron-down" ></i>
+              <span class=" material-symbols-outlined absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-500 text-xl pointer-events-none">
+                stat_minus_1
+              </span>
               <!-- Add (+) Button -->
                
-              <button class="bg-green-600 text-white px-4 py-2 hover:bg-green-700" style= " padding: 10px;"  (click)="openModal()"  >+</button>
+              <button  class="absolute right-0.5 top-1/2 transform -translate-y-1/2 bg-green-600 text-white px-4 py-4 hover:bg-green-700 rounded" style= " padding: 10px;"  (click)="openModal()"  >+</button>
         
   
             </div>
@@ -180,13 +186,19 @@
           style="padding: 10px;"
           [(ngModel)]="selectedHeadquarters"
         >
-          <option value="" disabled  >Select a headquarters</option>    
+          <option value="" disabled  >Select a Branch</option>    
           <option *ngFor="let hq of headquartersOptions"placeholder="Select a source" [value]="hq">{{ hq }}</option>
 
         </select>
-   <i class="absolute right-12 text-gray-500 fas fa-chevron-down" ></i>
-        <!-- Add (+) Button -->
-        <button class="bg-green-600 text-white px-4 hover:bg-green-700" style="padding: 10px;" (click)="toggleHeadquartersInput()">+</button>
+   <!-- Dropdown Arrow -->
+   <span class=" material-symbols-outlined absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-500 text-xl pointer-events-none">
+    stat_minus_1
+  </span>
+  <!-- Add (+) Button -->
+   
+  <button  class="absolute right-0.5 top-1/2 transform -translate-y-1/2 bg-green-600 text-white px-4 py-4 hover:bg-green-700 rounded" style= " padding: 10px;"  (click)="toggleHeadquartersInput()"  >+</button>
+
+
       </div>
     </div>
   

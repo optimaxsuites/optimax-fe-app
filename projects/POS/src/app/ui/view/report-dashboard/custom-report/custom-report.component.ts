@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { arrOfCustomReports } from '../custom-report-data';
 import { StyleColor } from '../../../models/enums';
 import { ChartOptions } from '../sales-report/sales-report.component';
-import { ChartType } from 'ng-apexcharts';
+import { ApexTitleSubtitle, ChartType } from 'ng-apexcharts';
 
 @Component({
   selector: 'app-custom-report',

@@ -23,6 +23,9 @@ export class EditInventoryComponent {
   @Output() close = new EventEmitter<void>();  
   isOpen = false;
 
+  
+ 
+
   notificationMessage: string = '';
   // Form fields
   supplierName: string = '';
@@ -37,9 +40,12 @@ export class EditInventoryComponent {
  
   
   saveProduct() {
+    console.log("active item", this.activeItem);
     if (this.activeItem) {
+
       let savedProducts = localStorage.getItem('products');
       let productList:HistoryData = savedProducts ? new Map(JSON.parse(savedProducts)) : new Map();
+      console.log("product list", productList);
   
       // // Find the product in storage
       // const existingProduct = productList.find((p: any) => p.id === this.activeItem.id);
@@ -73,24 +79,50 @@ export class EditInventoryComponent {
       const id = this.activeItem.id
       const productHistory = productList.get(id) ?? []
 
+      // ✅ Retrieve supplier details from localStorage if not already set
+        if (!this.selectedSupplier) {
+          const supplierDataString = localStorage.getItem('selectedSupplier');
+          this.selectedSupplier = supplierDataString ? JSON.parse(supplierDataString) : null;
+        }
+
+        // ✅ Ensure supplier exists before adding to product update
+        if (!this.selectedSupplier) {
+          alert("No supplier selected! Please choose a supplier before updating.");
+          return;
+        }
+
       const updateRecord = {
         ...this.activeItem,
         updatedAt: new Date(), // or use your createdDate field
         supplier: this.selectedSupplier  // ensure this.selectedSupplier contains the full supplier object
       };
+      console.log("active item", this.selectedSupplier);
 
+      console.log("Update Record:", updateRecord);
       productHistory.push(updateRecord)
       
       productList.set(id, productHistory)
 
-   
-      localStorage.setItem('lastSelectedSupplier', JSON.stringify(this.selectedSupplier));
-      console.log("Selected Supplier Before Saving:", this.selectedSupplier);
-      // Save the updated list back to localStorage
-      localStorage.setItem('products', JSON.stringify([...productList]));
 
-      
-  
+
+
+      // Retrieve existing suppliers or initialize an empty array
+      const storedSuppliers = JSON.parse(localStorage.getItem('selectedSuppliers') || '[]');
+
+        // Add the new supplier to the list
+        storedSuppliers.push(this.selectedSupplier);
+        console.log("storedSuppliers:", storedSuppliers);
+
+        // Save the updated list back to localStorage
+
+      localStorage.setItem('selectedSuppliers', JSON.stringify(storedSuppliers)); // this selects the supplier 
+
+
+      console.log("Selected Supplier After Saving:", this.selectedSupplier); // saves selected suplier
+        
+
+       // Save the updated list back to localStorage
+      localStorage.setItem('products', JSON.stringify([...productList]));
       // Emit event to update UI
       this.productUpdated.emit(this.activeItem);
       // this.notificationMessage = true;
@@ -103,6 +135,8 @@ export class EditInventoryComponent {
       console.error("No product is being edited.");
     }
   }
+
+
   changeSelectedSupplier(Event:Event){
     const name = (Event.target as HTMLSelectElement).value;
     
@@ -231,6 +265,7 @@ export class EditInventoryComponent {
 
  
   private defaultSupplier: supplierData = {
+    id: 0,
     supplierName: '',
     contactPerson: '',
     email: '',
@@ -342,8 +377,11 @@ removeSelectedSupplier() {
       alert('Please fill in all required fields.');
       return;
     }
+    const storedSuppliers = JSON.parse(localStorage.getItem('suppliers') || '[]');
+    const lastId = storedSuppliers.length > 0 ? storedSuppliers[storedSuppliers.length - 1].id : 0;
     
     const newSupplier:supplierData = {
+      id: lastId + 1,
       supplierName: this.supplierName.trim(),
       contactPerson: this.contactPerson,
       email: this.email,

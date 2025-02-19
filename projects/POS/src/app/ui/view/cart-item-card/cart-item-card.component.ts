@@ -1,12 +1,13 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { ProductData } from '../../models/interface';
+import { Business, ProductData } from '../../models/interface';
+import { businessType } from '../../../variables-to-move-to-backend';
 
 @Component({
   selector: 'app-cart-item-card',
   templateUrl: './cart-item-card.component.html',
   styleUrl: './cart-item-card.component.scss',
 })
-export class CartItemCardComponent {
+export class CartItemCardComponent implements Business {
   @Input() freezeItemCount = false;
   @Input() item: ProductData = {} as any;
   @Input() showDelete: boolean = true;
@@ -48,5 +49,9 @@ export class CartItemCardComponent {
 
   get cartPriceTotal() {
     return Math.round(parseInt(this.item.cartPriceTotal) * 100) / 100;
+  }
+
+  get businessType() {
+    return businessType;
   }
 }

@@ -18,6 +18,32 @@
   }
 }
 
+.inCart {
+  border-color: var(--celadon-green);
+}
+
+.product-card {
+  overflow: hidden;
+}
+
+.product-quantity {
+  $dimension-size: 3.5rem;
+  $position: -3%;
+  top: $position;
+  right: $position;
+  width: $dimension-size;
+  height: $dimension-size;
+  background-color: var(--celadon-green);
+  border-radius: 10%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--white);
+  font-size: 160%;
+  border-radius: 50%;
+  font-weight: bold;
+}
+
 // app-product-variant-modal {
 //   position: absolute;
 // }
