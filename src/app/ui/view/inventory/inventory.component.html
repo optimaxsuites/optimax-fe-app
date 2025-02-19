@@ -1,31 +1,32 @@
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
 <div *ngIf="tableSection" class="flex flex-col w-full gap-14 p-4">
-    <div class="gap-3 w-full flex justify-between items-center">
-      <ng-select
-        [items]="categories"
-        bindLabel="name"
-        bindValue="id"
-        [(ngModel)]="selectedCategories"
-        [multiple]="true"
-        placeholder="Categories"
-        (change)="filterProductsByCategory()"
-      >
-      </ng-select>
-  
-      <div class="w-1/2">
-        <div class="search-container">
-          <input
-            type="input"
-            class="Search-input"
-            placeholder="Search..."
-            [(ngModel)]="searchTerm"
-            (ngModelChange)="filterProductsBySearch($event)"
-          />
-          <i class="fas fa-search"></i>
-        </div>
+  <div class="gap-3 w-full flex justify-between items-center">
+    <!-- `rotate-0` is used to set this as the container of any `fixed` position elements within it -->
+    <ng-select
+      [items]="categories"
+      bindLabel="name"
+      bindValue="id"
+      [(ngModel)]="selectedCategories"
+      [multiple]="true"
+      placeholder="Categories"
+      (change)="filterProductsByCategory()"
+    >
+    </ng-select>
+
+    <div class="w-1/2">
+      <div class="search-container">
+        <input
+          type="input"
+          class="Search-input"
+          placeholder="Search..."
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="filterProductsBySearch($event)"
+        />
+        <i class="fas fa-search"></i>
       </div>
     </div>
+  </div>
   
     <div class="">
       <p-toolbar styleClass="mb-4 gap-2">
@@ -115,8 +116,10 @@
               <span class="p-column-title">Action</span>
   
               <div class="dropdown "  >
-                <span class="three-dots" (click)="toggleDropdown2(item)" >⋮</span>
-                <ul class="dropdown-menu" *ngIf="item.showMenu"  >
+                <span  >
+                  <i class="material-icons" (click)="toggleDropdown2(item, $event)">more_vert</i> 
+                </span>
+                <ul class="dropdown-menu" *ngIf="item.showMenu">
                   <li (click)="openViewProduct(item); closeDropdown(item)">View History</li>
                   <li (click)="openEditInventory(item); closeDropdown(item)">Add Inventory</li>
         

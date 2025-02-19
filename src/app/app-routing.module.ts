@@ -11,6 +11,7 @@ import { CheckoutOrdersComponent } from './ui/view/checkout-orders/checkout-orde
 import { PosCheckoutPageComponent } from './ui/view/pos-checkout-page/pos-checkout-page.component';
 import { InformationComponent } from './information/information.component';
 import { InventoryComponent } from './ui/view/inventory/inventory.component';
+import { ViewInventoryComponent } from './ui/view/inventory/view-inventory/view-inventory.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'admin/pos/34567whr4567yhsdzr56', pathMatch: 'full' },
@@ -21,6 +22,10 @@ const routes: Routes = [
   {
     path: 'inventory',
     component: InventoryComponent,
+  },
+  {
+    path: 'view',
+    component:ViewInventoryComponent,
   },
   {
     path: 'supplier-details',

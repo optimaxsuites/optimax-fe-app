@@ -302,7 +302,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
   // Filters the displayed items based on the selected value in the select element
   filterItems(event: Event) {
-    const filterVal = (event.target as HTMLSelectElement)
+    const filterVal = (event.target as HTMLSelectElement | HTMLButtonElement)
       .value as ProductCategories;
 
     // No category is selected, reset

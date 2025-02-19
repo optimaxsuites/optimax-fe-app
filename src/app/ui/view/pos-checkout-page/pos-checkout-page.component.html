@@ -8,13 +8,18 @@
   <div class="product-cart-container">
     <!-- This will be a left sidebar that'll display all the possible product categories as green buttons -->
     <div class="left-sidebar">
-      <button>All</button>
+      <button (click)="filterItems($event)" value="Category">All</button>
       @for (category of categories; track category) {
-      <button>{{ category }}</button>
+      <button (click)="filterItems($event)" [value]="category">
+        {{ category }}
+      </button>
       }
     </div>
     <div class="product-view">
-      <div class="flex flex-col gap-10 h-[80vh]">
+      <div
+        class="flex flex-col gap-10"
+        [class]="businessType == 'Generic' ? 'h-[80vh]' : 'h-full'"
+      >
         <div class="gap-3 w-full flex justify-between items-center">
           @if (businessType == "Generic") {
           <select
@@ -42,7 +47,10 @@
           </div>
         </div>
 
-        <div class="gap-3 flex-1 overflow-y-auto">
+        <div
+          class="gap-3 flex-1 overflow-y-auto"
+          [class]="businessType == 'Generic' ? '' : 'gap-4 p-4'"
+        >
           <p>Products</p>
           @switch (businessType) { @case ('Pharmacy') {
           <div class="grid grid-cols-4 gap-3 product-area">
@@ -51,6 +59,7 @@
               [product]="product"
               (addToCart)="addToCart(product)"
               (updateItem)="openItemUpdateModal($event)"
+              [cartItems]="cartItems"
             ></app-product-card>
             }
           </div>
@@ -173,7 +182,7 @@
       }
     </div>
     <!-- Extra div at right -->
-    <div class="w-[45] flex flex-col">
+    <div class="flex flex-col flex-grow">
       @if (businessType=="Pharmacy") {
       <nav class="mt-auto">
         <p>More</p>

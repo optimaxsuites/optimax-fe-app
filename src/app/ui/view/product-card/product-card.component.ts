@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { ProductData, Variant } from '../../models/interface';
+import { Cart, ProductData, Variant } from '../../models/interface';
 
 @Component({
   selector: 'app-product-card',
@@ -9,6 +9,8 @@ import { ProductData, Variant } from '../../models/interface';
 export class ProductCardComponent {
   //@ts-ignore
   @Input() product: ProductData;
+  //@ts-ignore
+  @Input() cartItems: ProductData[] | undefined;
   @Output() updateItem = new EventEmitter<number>();
   @Output() addToCart = new EventEmitter<string>();
 
@@ -20,5 +22,10 @@ export class ProductCardComponent {
       // Emit the chosen variant to the parent component
       this.addToCart.emit();
     }
+  }
+  get amountOfProductInCart() {
+    return (
+      this.cartItems?.find((item) => item.id === this.product.id)?.count ?? 0
+    );
   }
 }

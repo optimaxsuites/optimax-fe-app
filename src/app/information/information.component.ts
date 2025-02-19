@@ -1,86 +1,91 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  OnChanges,
+  SimpleChanges,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { HistoryData, ProductData, supplierData } from '../ui/models/interface';
-
 
 @Component({
   selector: 'app-information',
   templateUrl: './information.component.html',
-  styleUrl: './information.component.scss'
+  styleUrl: './information.component.scss',
 })
-export class InformationComponent {
+export class InformationComponent implements OnChanges {
   // getDisplayName(supplier: any): string {
   //   return (supplier && typeof supplier === 'object') ? supplier.supplierName : supplier;
-  supplier: supplierData;
+  supplier!: supplierData;
   //@ts-ignore
   @Input() activeItem: ProductData;
-  @Input() updatedProduct: any; 
- private revivedDate: Date;
+  @Input() updatedProduct: any;
+  revivedDate: Date = new Date(); //
   products: HistoryData = new Map();
-   productHistory:ProductData[] = [];
-   isEditing: boolean[] = [];
+  productHistory: ProductData[] = [];
+  isEditing: boolean[] = [];
   // route: any;
   selectedOption: string = '';
 
   constructor(public router: Router) {
     const navigation = this.router.getCurrentNavigation();
-    if (navigation?.extras.state && navigation.extras.state['supplier']) {
-      this.supplier = navigation.extras.state['supplier'];
-    } else {
-      const storedSupplier = localStorage.getItem('lastSelectedSupplier');
-      this.supplier = storedSupplier ? JSON.parse(storedSupplier) : null;
-    }
-    this.revivedDate = new Date(this.supplier.createdAt);
+    this.revivedDate = new Date(this.supplier?.createdAt || new Date());
   }
+
+  loadSupplierData(): void {
+    const supplierData = history.state.supplierData;
+
+    if (supplierData) {
+      console.log('Supplier Data:', supplierData);
+      this.supplier = supplierData.supplier;
+      this.revivedDate = new Date(this.supplier?.createdAt || new Date()); // ✅ Now correctly updates after supplier loads
+
+      const existing = this.productHistory.find(
+        (s) => s.id === this.supplier.id
+      );
+      if (!existing) {
+        // this.productHistory.push(this.supplier);
+      }
+      console.log('Updated Supplier Data:', this.supplier);
+    } else {
+      console.error('No supplier data available.');
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['activeItem'] && changes['activeItem'].currentValue) {
+      this.loadSupplierData(); // Reload supplier when activeItem changes
+    }
+  }
+
   ngOnInit(): void {
     // Check if navigation state exists and load supplier data from there
-    const navigation = this.router.getCurrentNavigation();
-    if (navigation?.extras.state && navigation.extras.state['supplierData']) {
-      this.supplier = navigation.extras.state['/supplierData'];
-      console.log("Supplier loaded from navigation state:", this.supplier);
-    } else {
-      // If no navigation state, try to load from localStorage
-      const storedSupplier = localStorage.getItem('lastSelectedSupplier');
-      this.supplier = storedSupplier ? JSON.parse(storedSupplier) : null;
-      console.log("Supplier loaded from localStorage:", this.supplier);
+
+    this.loadSupplierData();
+
+    const savedProducts = localStorage.getItem('products');
+    this.products = savedProducts ? new Map(JSON.parse(savedProducts)) : new Map();
+    
+    if (!this.activeItem) {
+      const savedProducts = localStorage.getItem('products');
+      if (savedProducts) {
+        const productList: HistoryData = new Map(JSON.parse(savedProducts));
+        this.activeItem = (productList.values().next().value as ProductData[])[0]; // Choose first product if none set
+      }
     }
-   
-  
+    this.productHistory = this.products.get(this.activeItem.id) || [];
 
-
-     const savedSelectedOption = localStorage.getItem('selectedOption');
-          if (savedSelectedOption) {
-            this.selectedOption = JSON.parse(savedSelectedOption);
-          }
-        
-          const savedProducts = localStorage.getItem('products');
-          this.products = savedProducts ? new Map(JSON.parse(savedProducts)) : new Map();
-          
-          if (!this.activeItem) {
-            const savedProducts = localStorage.getItem('products');
-            if (savedProducts) {
-              const productList: HistoryData = new Map(JSON.parse(savedProducts));
-              this.activeItem = (productList.values().next().value as ProductData[])[0]; // Choose first product if none set
-            }
-          }
-        
-          this.productHistory = this.products.get(this.activeItem.id) || [];
-          this.isEditing = this.productHistory.map(() => false);
-  
-
-    console.log("Product History:", this.productHistory);
-
-    // If supplier is not found from either source
-    if (!this.supplier) {
-      console.error("No supplier data available.");
-    }
+    // this.productHistory = this.productHistory.map(product => ({
+    //   ...product,
+    //   supplier: product.supplier || supplier // Retain existing supplier or assign new
+    // }));
   }
-  get Date(){
-  
+  get Date() {
     return this.revivedDate.getDate();
   }
-  get Time(){
+  get Time() {
     return `${this.revivedDate.getHours()}:${this.revivedDate.getMinutes()}`;
   }
-  
+  // Save updated supplier information in localStorage when updated
 }
