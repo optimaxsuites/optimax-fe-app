@@ -64,7 +64,7 @@ import { ViewInventoryComponent } from './ui/view/inventory/view-inventory/view-
 import { InformationComponent } from './information/information.component';
 import { SummaryReportComponent } from './ui/view/report-dashboard/summary-report/summary-report.component';
 import { CustomReportComponent } from './ui/view/report-dashboard/custom-report/custom-report.component';
-import { SimpleNotificationsModule } from 'angular2-notifications';
+import { AddInventoryComponent } from './ui/view/inventory/add-inventory/add-inventory.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -89,11 +89,10 @@ import { SimpleNotificationsModule } from 'angular2-notifications';
     InformationComponent,
     SummaryReportComponent,
     CustomReportComponent,
+    AddInventoryComponent,
   ],
   imports: [
     BrowserModule,
-    BrowserAnimationsModule, // Required for animations
-    SimpleNotificationsModule.forRoot(), // ✅ Correct way to i
     UserModule,
     AppRoutingModule,
     CommonModule,
