@@ -119,9 +119,10 @@
                 <span  >
                   <i class="material-icons" (click)="toggleDropdown2(item, $event)">more_vert</i> 
                 </span>
-                <ul class="dropdown-menu" *ngIf="item.showMenu">
-                  <li (click)="openViewProduct(item); closeDropdown(item)">View History</li>
-                  <li (click)="openEditInventory(item); closeDropdown(item)">Add Inventory</li>
+                <ul     class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 shadow-lg rounded-lg py-2 z-50"
+                *ngIf="item.showMenu">
+                  <li (click)="openViewProduct(item); closeDropdown(item)"   class="px-4 py-2 hover:bg-gray-100 cursor-pointer">View History</li>
+                  <li (click)="openEditInventory(item); closeDropdown(item)" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Add Inventory</li>
         
                 </ul>
               </div>              
