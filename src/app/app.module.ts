@@ -52,6 +52,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { DropdownModule } from 'primeng/dropdown';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { MatTabsModule } from '@angular/material/tabs';
+import { CommonModule } from '@angular/common';
 // import { DatePicker } from 'primeng/datepicker';
 
 
@@ -81,7 +82,8 @@ import { MatTabsModule } from '@angular/material/tabs';
   imports: [
    
     // BrowserModule,
-    // AppRoutingModule,
+    AppRoutingModule,
+    CommonModule,
     // AppRoutingModule,
     RouterModule,
     ReactiveFormsModule, // Add this here
@@ -96,7 +98,7 @@ import { MatTabsModule } from '@angular/material/tabs';
     MatProgressBarModule,
      ButtonModule,  // ✅ PrimeNG Button
     DialogModule ,  // ✅ PrimeNG Dialog
-     BrowserAnimationsModule,
+    //  BrowserAnimationsModule,
     MatDialogModule,
     MatInputModule,
     MatSelectModule,
