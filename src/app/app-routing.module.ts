@@ -13,8 +13,9 @@ import { ProjectViewComponent } from './ui/view/productivity/components/project-
 // import { ReportComponent } from './ui/view/productivity/components/report/report.component';
 
 const routes: Routes = [
+  { path: '', redirectTo: 'admin/productivity/34567whr4567yhsdzr56', pathMatch: 'full' },
   {
-    path: 'admin/productivity',
+    path: 'admin/productivity/:uuid',
     component: ProductivityComponent,
     children: [
       { path: '', redirectTo: 'project-list', pathMatch: 'full' },
@@ -31,7 +32,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forChild(routes)],
   exports: [RouterModule]
 })
 export class AppRoutingModule { }

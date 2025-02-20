@@ -80,8 +80,8 @@ import { MatTabsModule } from '@angular/material/tabs';
   ],
   imports: [
    
-    BrowserModule,
-    AppRoutingModule,
+    // BrowserModule,
+    // AppRoutingModule,
     // AppRoutingModule,
     RouterModule,
     ReactiveFormsModule, // Add this here
