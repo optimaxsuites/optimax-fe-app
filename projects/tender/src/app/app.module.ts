@@ -9,7 +9,7 @@ import { AppTenderRoutingModule } from './app-routing.module'
   declarations: [AppTenderComponent], 
   imports: [
     AppTenderRoutingModule,
-    BrowserModule, 
+    // BrowserModule, 
     CommonModule],
   bootstrap: [AppTenderComponent]
 })

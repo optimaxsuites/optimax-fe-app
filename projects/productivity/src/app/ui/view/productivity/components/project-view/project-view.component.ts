@@ -30,7 +30,7 @@ export interface Project {
   selector: 'app-project-view',
   templateUrl: './project-view.component.html',
   styleUrls: ['./project-view.component.scss'],
-  providers: [DialogService]
+  // providers: [DialogService]
 })
 export class ProjectViewComponent implements OnInit {
   readonly panelOpenState = signal(false);
