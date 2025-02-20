@@ -6,6 +6,9 @@ $default-bg-color: var(--white);
   .product-cart-container {
     background-color: hsl(0, 0%, 98%);
   }
+  .product-area {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 
   .nav-options p {
     background-color: $default-bg-color;
