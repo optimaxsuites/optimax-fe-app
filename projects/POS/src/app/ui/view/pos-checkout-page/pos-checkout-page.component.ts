@@ -6,8 +6,9 @@ import { RegisterService } from '../../service/register.service';
 import { PosServiceService } from '../../service/pos-service.service';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
 import { RandomTokenService } from '../../sharedComponent/service/random-token/random-token.service';
-import { ProductCategories } from '../../models/enums';
-import { Cart, ProductData } from '../../models/interface';
+import { BusinessType, ProductCategories } from '../../models/enums';
+import { Business, Cart, ProductData } from '../../models/interface';
+import { businessType } from '../../../variables-to-move-to-backend';
 
 @Component({
   selector: 'app-pos-checkout-page',
@@ -15,7 +16,7 @@ import { Cart, ProductData } from '../../models/interface';
   styleUrl: './pos-checkout-page.component.scss',
   providers: [],
 })
-export class PosCheckoutPageComponent implements OnInit {
+export class PosCheckoutPageComponent implements OnInit, Business {
   register: string = 'open';
   orderName: string = '';
   itemUpdateModal: boolean = false;
@@ -301,7 +302,7 @@ export class PosCheckoutPageComponent implements OnInit {
 
   // Filters the displayed items based on the selected value in the select element
   filterItems(event: Event) {
-    const filterVal = (event.target as HTMLSelectElement)
+    const filterVal = (event.target as HTMLSelectElement | HTMLButtonElement)
       .value as ProductCategories;
 
     // No category is selected, reset
@@ -385,5 +386,9 @@ export class PosCheckoutPageComponent implements OnInit {
   get chosenProductVariants() {
     // NOTE: This is guaranteed to have a value since `onAddToCart()` will only indirectly clall this if there are any products.
     return this.productDataFromClickedProduct!.variants;
+  }
+
+  get businessType() {
+    return businessType;
   }
 }

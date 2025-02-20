@@ -1,7 +1,12 @@
 <div
-  class="border rounded-xl px-2 pt-3 cursor-pointer h-[25rem] product-card"
+  class="border rounded-xl px-2 pt-3 cursor-pointer h-[25rem] product-card relative"
   (click)="onAddToCart()"
+  [class.inCart]="amountOfProductInCart"
 >
+  @if (amountOfProductInCart) {
+
+  <div class="product-quantity absolute">{{ amountOfProductInCart }}</div>
+  }
   <!-- TODO: Is it alright to load images like this? -->
   <img
     src="https://be.optimaxsuites.com/x/api/v2/pos/products/images/{{

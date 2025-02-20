@@ -1,16 +1,7 @@
+@use "../shared-chart-styles.scss" as chart-styles;
+
 .inventory-report {
-  padding: 20px;
+  @include chart-styles.reportStyles;
 }
 
-.chart-container {
-  display: flex;
-  justify-content: space-around;
-  flex-wrap: wrap;
-  margin-bottom: 40px;
-}
-
-.chart-item {
-  flex: 1;
-  margin: 10px;
-  min-width: 300px;
-}
+@include chart-styles.sharedChartStyles;

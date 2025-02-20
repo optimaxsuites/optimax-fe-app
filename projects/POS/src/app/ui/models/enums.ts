@@ -81,3 +81,11 @@ export const enum NavigationLinks {
 export const enum StyleColor {
   CELADON_GREEN = '#2eb270',
 }
+
+export const enum BusinessType {
+  GENERIC = 'Generic',
+  PHARMACY = 'Pharmacy',
+  RETAIL = 'Retail',
+  RESTAURANT = 'Restaurant',
+  HOTEL = 'Hotel',
+}

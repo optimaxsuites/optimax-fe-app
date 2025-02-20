@@ -10,12 +10,39 @@
     $backdrop-dimension-y: 11rem;
 
     .product-card {
+      background-color: var(--white);
       transform: scale(1.05);
       position: relative;
       // z-index: $card-z-index;
       // transform: translateZ(2px);
     }
   }
+}
+
+.inCart {
+  border-color: var(--celadon-green);
+}
+
+.product-card {
+  overflow: hidden;
+}
+
+.product-quantity {
+  $dimension-size: 3.5rem;
+  $position: -3%;
+  top: $position;
+  right: $position;
+  width: $dimension-size;
+  height: $dimension-size;
+  background-color: var(--celadon-green);
+  border-radius: 10%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--white);
+  font-size: 140%;
+  border-radius: 50%;
+  font-weight: bold;
 }
 
 // app-product-variant-modal {

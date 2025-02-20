@@ -1,7 +1,8 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 
-import { HistoryData, ProductData } from '../../../models/interface';
+import { HistoryData, ProductData, supplierData } from '../../../models/interface';
 import { PosServiceService } from '../../../service/pos-service.service';
+import { Router } from '@angular/router';
 
 
 @Component({
@@ -10,6 +11,7 @@ import { PosServiceService } from '../../../service/pos-service.service';
   styleUrl: './view-inventory.component.scss'
 })
 export class ViewInventoryComponent {
+  
 
   //@ts-ignore
   @Input() activeItem: ProductData;  // Ensure this property exists
@@ -18,13 +20,37 @@ export class ViewInventoryComponent {
   @Input() updatedProduct: any; 
   productHistory:ProductData[] = [];
  
-  constructor() { 
-    PosService:PosServiceService
+  constructor(private router: Router, private posService: PosServiceService) { }
+
+  // openSupplierDetails(supplier: any) {
+  //   // Navigate to the supplier-details route and pass the supplier data via state
+  //   this.router.navigate(['/supplier-details'], { state: { supplier } });
+  // }
+  
+  openSupplierDetails(item: ProductData) {
+    const supplierData = localStorage.getItem('selectedSupplier');
+    
+    if (supplierData) {
+      const supplier = JSON.parse(supplierData);
+      // Navigate to the supplier details page, passing the supplier data via state
+      console.log("Retrieved Supplier Data:", item);
+      this.router.navigate(['/supplier-details'], { state: { supplierData: item } });
+      console.log("Supplier Data:", supplier);
+      
+      alert("Information available for this update.");
+    } else {
+      alert("No supplier information available for this update.");
+    }
   }
+  
+
+
   // Method to trigger edit event
   triggerEdit() {
     this.edit.emit(this.activeItem);
   }
+ 
+  
 
   // Method to trigger close event
   triggerClose() {
@@ -44,30 +70,37 @@ export class ViewInventoryComponent {
     selectedOption: string = '';
     
     ngOnInit() {
-
-      const savedSelectedOption = localStorage.getItem('selectedOption');
-  if (savedSelectedOption) {
-    this.selectedOption = JSON.parse(savedSelectedOption);
-  }
+      // const savedSelectedOption = localStorage.getItem('selectedOption');
+      // if (savedSelectedOption) {
+      //   this.selectedOption = JSON.parse(savedSelectedOption);
+      // }
+    
       const savedProducts = localStorage.getItem('products');
-      console.log("The saved products:")
       this.products = savedProducts ? new Map(JSON.parse(savedProducts)) : new Map();
-      console.log(this.products);
       
-
-      // Optionally, if you need to re-read from local storage in case activeItem is null:
       if (!this.activeItem) {
         const savedProducts = localStorage.getItem('products');
         if (savedProducts) {
-          const productList:HistoryData = new Map(JSON.parse(savedProducts));
-          // For example, choose the first product or apply your logic here:
-          this.activeItem = (productList.values().next().value as ProductData[])[0];
+          const productList: HistoryData = new Map(JSON.parse(savedProducts));
+          this.activeItem = (productList.values().next().value as ProductData[])[0]; // Choose first product if none set
         }
       }
+    
+      const supplierDataString = localStorage.getItem('selectedSupplier');
+      const supplier: supplierData | null = supplierDataString ? JSON.parse(supplierDataString) : null;
+
 
       this.productHistory = this.products.get(this.activeItem.id) || [];
+
+      this.productHistory = this.productHistory.map(product => ({
+        ...product,
+        supplier: product.supplier || supplier // Retain existing supplier or assign new
+      }));
+
+
       this.isEditing = this.productHistory.map(() => false);
     }
+
     viewProduct: boolean = false;
     closeView() {
       this.viewProduct = false;
@@ -94,13 +127,23 @@ export class ViewInventoryComponent {
 
     item.createdDate = new Date().toISOString();
 
-    // Log the updated value.
-    console.log('Updated effectiveQuantity for', item.name, ':', item.effectiveQuantity);
+    // Fetch the supplier data from localStorage
+  const supplierData = localStorage.getItem('selectedSupplier');
+  const supplier = supplierData ? JSON.parse(supplierData) : null;
+
+  item.createdDate = new Date().toISOString(); // Update timestamp
+
+    console.log("Supplier Data:", supplier);
+
+    // // Log the updated value.
+    // console.log('Updated effectiveQuantity for', item.name, ':', item.effectiveQuantity);
   
     // Update the productHistory array at the given index.
     // You can either update just the effectiveQuantity or replace the whole entry.
     this.productHistory[index] = { 
-      ...this.productHistory[index]
+      ...this.productHistory[index],
+      supplier: supplier
+
     };
   
     // Reset the editing state for this row.
@@ -110,10 +153,11 @@ export class ViewInventoryComponent {
     this.products.set(this.activeItem.id, this.productHistory);
   
     // Persist the updated products map to local storage.
-    // Note: We use the same key ("products") that you use in ngOnInit.
+    // Note: We use the same key ("products") that you use in iniInit.
     localStorage.setItem('products', JSON.stringify([...this.products]));
-  }
-  
+
+    
+  }  
 
   // Save the new quantity and disable edit mode
   

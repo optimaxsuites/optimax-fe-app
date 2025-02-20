@@ -1,0 +1,117 @@
+<div class="p-4 space-y-4">
+  <!-- TOP ROW: KPI CARDS -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Card 1 -->
+    <div class="bg-white shadow rounded p-4 flex flex-col">
+      <div class="text-gray-600 text-sm">Daily Sales</div>
+      <div class="text-2xl font-bold mt-2">N120,000</div>
+      <div class="text-green-600 text-sm mt-1">+5% from yesterday</div>
+    </div>
+    <!-- Card 2 -->
+    <div class="bg-white shadow rounded p-4 flex flex-col">
+      <div class="text-gray-600 text-sm">Weekly Sales</div>
+      <div class="text-2xl font-bold mt-2">N12,000</div>
+      <div class="text-red-600 text-sm mt-1">-2% from last week</div>
+    </div>
+    <!-- Card 3 -->
+    <div class="bg-white shadow rounded p-4 flex flex-col">
+      <div class="text-gray-600 text-sm">Today</div>
+      <div class="text-2xl font-bold mt-2">Tuesday</div>
+      <div class="text-gray-600 text-sm mt-1">Lunch</div>
+    </div>
+  </div>
+
+  <!-- SECOND ROW: LINE CHART, EXTRA CARDS, DONUT CHART -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+    <!-- LINE CHART (spans 6 columns) -->
+    <div class="lg:col-span-6 bg-white shadow rounded p-4">
+      <h2 class="text-lg font-semibold mb-2">Orders Over Time</h2>
+      <apx-chart
+        [series]="lineChartOptions.series"
+        [chart]="lineChartOptions.chart"
+        [xaxis]="lineChartOptions.xaxis"
+        [dataLabels]="lineChartOptions.dataLabels"
+        [stroke]="lineChartOptions.stroke"
+        [markers]="lineChartOptions.markers"
+        [grid]="lineChartOptions.grid"
+        [tooltip]="lineChartOptions.tooltip"
+      ></apx-chart>
+    </div>
+
+    <!-- Extra Cards (spans 3 columns) -->
+    <div class="lg:col-span-3 flex flex-col space-y-4">
+      <!-- Card A -->
+      <div class="bg-white shadow rounded p-4 flex flex-col">
+        <div class="text-gray-600 text-sm">Approval Rate</div>
+        <div class="text-2xl font-bold mt-2">98%</div>
+        <div class="text-green-600 text-sm mt-1">+1% from last month</div>
+      </div>
+      <!-- Card B -->
+      <div class="bg-white shadow rounded p-4 flex flex-col">
+        <div class="text-gray-600 text-sm">Fulfilled</div>
+        <div class="text-2xl font-bold mt-2">95%</div>
+        <div class="text-green-600 text-sm mt-1">+3% from last week</div>
+      </div>
+    </div>
+
+    <!-- DONUT CHART (spans 3 columns) -->
+    <div class="lg:col-span-3 bg-white shadow rounded p-4">
+      <apx-chart
+        [series]="donutChartOptions.series"
+        [chart]="donutChartOptions.chart"
+        [labels]="donutChartOptions.labels"
+        [responsive]="donutChartOptions.responsive"
+        [legend]="donutChartOptions.legend"
+        [plotOptions]="donutChartOptions.plotOptions"
+        [dataLabels]="donutChartOptions.dataLabels"
+        [title]="donutChartOptions.title"
+      ></apx-chart>
+    </div>
+  </div>
+
+  <!-- THIRD ROW: EXTRA STATS OR TABLE -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <!-- Example Stats Cards -->
+    <div class="bg-white shadow rounded p-4 flex flex-col space-y-4">
+      <div class="flex justify-between items-center">
+        <div class="text-gray-600">Completed Orders</div>
+        <div class="font-bold text-lg">90</div>
+      </div>
+      <div class="flex justify-between items-center">
+        <div class="text-gray-600">Pending Orders</div>
+        <div class="font-bold text-lg">10</div>
+      </div>
+    </div>
+
+    <!-- Example Table -->
+    <div class="bg-white shadow rounded p-4">
+      <div class="text-lg font-semibold mb-2">Top Categories</div>
+      <table class="w-full text-left">
+        <thead class="border-b">
+          <tr>
+            <th class="py-2">Name</th>
+            <th class="py-2">Category</th>
+            <th class="py-2">Sales</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b">
+            <td class="py-2">Item One</td>
+            <td class="py-2">Category A</td>
+            <td class="py-2">N5,000</td>
+          </tr>
+          <tr class="border-b">
+            <td class="py-2">Item Two</td>
+            <td class="py-2">Category B</td>
+            <td class="py-2">N2,500</td>
+          </tr>
+          <tr class="border-b">
+            <td class="py-2">Item Three</td>
+            <td class="py-2">Category A</td>
+            <td class="py-2">N8,200</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

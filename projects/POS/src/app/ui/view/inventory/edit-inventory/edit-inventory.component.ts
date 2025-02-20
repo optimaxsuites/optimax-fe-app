@@ -7,7 +7,7 @@ import { MessageService } from 'primeng/api';
 import { PosServiceService } from '../../../service/pos-service.service';
 import { ChangeDetectorRef } from '@angular/core';
 import { Observable } from 'rxjs';
-import { HistoryData, ProductData } from '../../../models/interface';
+import { HistoryData, ProductData, supplierData } from '../../../models/interface';
 
 
 @Component({
@@ -22,12 +22,30 @@ export class EditInventoryComponent {
   @Input() activeItem: ProductData;
   @Output() close = new EventEmitter<void>();  
   isOpen = false;
+
+  
+ 
+
+  notificationMessage: string = '';
+  // Form fields
+  supplierName: string = '';
+  contactPerson: string = '';
+  email: string = '';
+  phone: string = '';
+  address: string = '';
+  products: string = '';
+  notes: string = '';
+  agreeTerms: boolean = false;
+  router: any;
  
   
   saveProduct() {
+    console.log("active item", this.activeItem);
     if (this.activeItem) {
+
       let savedProducts = localStorage.getItem('products');
       let productList:HistoryData = savedProducts ? new Map(JSON.parse(savedProducts)) : new Map();
+      console.log("product list", productList);
   
       // // Find the product in storage
       // const existingProduct = productList.find((p: any) => p.id === this.activeItem.id);
@@ -61,21 +79,73 @@ export class EditInventoryComponent {
       const id = this.activeItem.id
       const productHistory = productList.get(id) ?? []
 
-      productHistory.push(this.activeItem)
+      // ✅ Retrieve supplier details from localStorage if not already set
+        if (!this.selectedSupplier) {
+          const supplierDataString = localStorage.getItem('selectedSupplier');
+          this.selectedSupplier = supplierDataString ? JSON.parse(supplierDataString) : null;
+        }
+
+        // ✅ Ensure supplier exists before adding to product update
+        if (!this.selectedSupplier) {
+          alert("No supplier selected! Please choose a supplier before updating.");
+          return;
+        }
+
+      const updateRecord = {
+        ...this.activeItem,
+        updatedAt: new Date(), // or use your createdDate field
+        supplier: this.selectedSupplier  // ensure this.selectedSupplier contains the full supplier object
+      };
+      console.log("active item", this.selectedSupplier);
+
+      console.log("Update Record:", updateRecord);
+      productHistory.push(updateRecord)
       
       productList.set(id, productHistory)
 
-      // Save the updated list back to localStorage
+
+
+
+      // Retrieve existing suppliers or initialize an empty array
+      const storedSuppliers = JSON.parse(localStorage.getItem('selectedSuppliers') || '[]');
+
+        // Add the new supplier to the list
+        storedSuppliers.push(this.selectedSupplier);
+        console.log("storedSuppliers:", storedSuppliers);
+
+        // Save the updated list back to localStorage
+
+      localStorage.setItem('selectedSuppliers', JSON.stringify(storedSuppliers)); // this selects the supplier 
+
+
+      console.log("Selected Supplier After Saving:", this.selectedSupplier); // saves selected suplier
+        
+
+       // Save the updated list back to localStorage
       localStorage.setItem('products', JSON.stringify([...productList]));
-  
       // Emit event to update UI
       this.productUpdated.emit(this.activeItem);
+      // this.notificationMessage = true;
+      alert("Product updated successfully");
+
+      // Clear the message after 3 seconds
+      
       this.closeEdit();
     } else {
       console.error("No product is being edited.");
     }
   }
-  
+
+
+  changeSelectedSupplier(Event:Event){
+    const name = (Event.target as HTMLSelectElement).value;
+    
+    this.selectedSupplier =  this.suppliers.filter(n =>{
+      return n.supplierName === name
+    })[0];
+    console.log("Selected Supplier:", this.selectedSupplier);
+    localStorage.setItem('selectedSupplier', JSON.stringify(this.selectedSupplier));
+  }
   
 
   selectedHeadquarters: string = '';
@@ -113,27 +183,22 @@ export class EditInventoryComponent {
 
 
   // sourceName = '';
-  supplierName = '';
   showModal = false;
   sourceInput  = '';
   options: string[] = [];
   // options2: string[] = [];
   source: string = '';
-  suppliers: string[] = ['suppler_1', 'suppler_2', 'suppler_3'];
+  suppliers:supplierData[]=[];
   newOption: string = '';
   // newOption2: string = '';
   showInput: boolean = false;
   showInput2: boolean = false;
   sourceName: string = '';
-  contactPerson = '';
-  email = '';
-  phone = '';
-  address = '';
-  paymentTerms = '';
-  notes = '';
-  products= '';
-  agreeTerms = false;
 
+
+  getDisplayName(supplier: supplierData): string {
+    return supplier.supplierName;
+  }
   // updateProductQuantity(id: number, quantity: number): Observable<any> {
   //   return this.http.put(`https://your-api.com/products/${id}/update-quantity`, { quantity });
   // }
@@ -197,18 +262,38 @@ export class EditInventoryComponent {
     
     
   }
-  selectedSupplier: string = ''; // Stores the selected dropdown value
+
+ 
+  private defaultSupplier: supplierData = {
+    id: 0,
+    supplierName: '',
+    contactPerson: '',
+    email: '',
+    phone: 0,
+    address: '',
+    products: ' ',
+    notes: '',
+    agreeTerms: false,
+    createdAt: new Date(),
+  }
+  selectedSupplier = structuredClone(this.defaultSupplier);
+
+
+  selectSupplier(supplier: any) {
+    localStorage.setItem('selected', JSON.stringify(supplier)); // Store the entire supplier object
+    this.router.navigate(['/supplier-details']);
+  }
 
 removeSelectedSupplier() {
   if (this.selectedSupplier) {
     // Remove the selected supplier from the array
-    this.suppliers = this.suppliers.filter(supplier => supplier !== this.selectedSupplier);
+    this.suppliers = this.suppliers.filter(supplier => supplier.supplierName !== this.selectedSupplier.supplierName);
     
     // Update local storage
     localStorage.setItem('suppliers', JSON.stringify(this.suppliers));
 
     // Reset selection
-    this.selectedSupplier = '';
+    this.selectedSupplier = structuredClone(this.defaultSupplier) ;
   }
 }
 
@@ -292,22 +377,34 @@ removeSelectedSupplier() {
       alert('Please fill in all required fields.');
       return;
     }
-    const trimmedName = this.supplierName.trim();
-    if (trimmedName && !this.suppliers.includes(trimmedName)) {
-      this.suppliers.push(trimmedName);
-      localStorage.setItem('suppliers', JSON.stringify(this.suppliers));
-    }
-
-    const newSupplier = {
-      supplierName: this.supplierName,
+    const storedSuppliers = JSON.parse(localStorage.getItem('suppliers') || '[]');
+    const lastId = storedSuppliers.length > 0 ? storedSuppliers[storedSuppliers.length - 1].id : 0;
+    
+    const newSupplier:supplierData = {
+      id: lastId + 1,
+      supplierName: this.supplierName.trim(),
       contactPerson: this.contactPerson,
       email: this.email,
-      phone: this.phone,
+      phone: parseInt(this.phone),
       address: this.address,
-      paymentTerms: this.paymentTerms,
+      products: this.products,
+      notes: this.notes,
+      agreeTerms: this.agreeTerms,
+      createdAt: new Date()  // Add a
     };
+    // let suppliers = [];
+    // const storedSuppliers = localStorage.getItem('suppliers');
+    // if (storedSuppliers) {
+    //   suppliers = JSON.parse(storedSuppliers);
+    // }
+    // let suppliers:supplierData[] = JSON.parse(localStorage.getItem('suppliers') || '[]');
 
-    console.log('New Supplier Data:', newSupplier);
+   this.suppliers.push(newSupplier);
+
+    // Save the updated list back to local storage
+    localStorage.setItem('suppliers', JSON.stringify(this.suppliers))
+
+    console.log('New Supplier Data:', this.suppliers);
     alert('Supplier added successfully!');
 
     // Close Modal after submission
@@ -324,7 +421,6 @@ removeSelectedSupplier() {
     this.email = '';
     this.phone = '';
     this.address = '';
-    this.paymentTerms = '';
     this.agreeTerms = false;
     this.notes = '';
     this.products= '';
@@ -448,9 +544,13 @@ removeSelectedSupplier() {
     // } else {
     //   this.suppliers = ['suppler_1', 'suppler_2', 'suppler_3']; // Default values
     // }
-    const savedSuppliers = localStorage.getItem('suppliers');
-    if (savedSuppliers) {
-      this.suppliers = JSON.parse(savedSuppliers);
+    // const savedSuppliers = localStorage.getItem('suppliers');
+    // if (savedSuppliers) {
+    //   this.suppliers = JSON.parse(savedSuppliers);
+    // }
+    const storedSuppliers = localStorage.getItem('suppliers');
+    if (storedSuppliers) {
+      this.suppliers = JSON.parse(storedSuppliers);
     }
   
 

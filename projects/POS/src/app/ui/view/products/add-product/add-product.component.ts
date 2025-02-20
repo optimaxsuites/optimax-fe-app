@@ -7,6 +7,7 @@ import jsPDF from 'jspdf';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
   Discount,
+  HistoryData,
   ProductData,
   ProductJSONFormat,
 } from '../../../models/interface';
@@ -287,7 +288,7 @@ export class AddProductComponent {
       effectiveQuantity: formValues.effectiveQuantity,
       partNumber: formValues.partNumber,
       tax: formValues.tax,
-      branch: formValues.branch,
+      branch: (formValues.branch as string[])[0], //FIXME: The backend can only store a sinlge string. Once that's fixed, undo this change
       discount: formValues.discount,
       variants: this.variants,
       productCategory: formValues.category,
@@ -305,8 +306,13 @@ export class AddProductComponent {
     console.log(formData);
 
     this.posService.addProduct(formData).subscribe(
+      
       async (data) => {
         if (data) {
+           let savedProducts = localStorage.getItem('products');
+            let productList:HistoryData = savedProducts ? new Map(JSON.parse(savedProducts)) : new Map();
+            productList.set(data.id, data);
+            localStorage.setItem('products', JSON.stringify([...productList]));
           this.messageService.add({
             severity: 'success',
             summary: 'Product Added',

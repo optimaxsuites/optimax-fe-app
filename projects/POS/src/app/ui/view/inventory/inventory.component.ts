@@ -1,4 +1,4 @@
-import { Component, OnInit , Input, Output, EventEmitter} from '@angular/core';
+import { Component, OnInit , Input, Output, EventEmitter, HostListener} from '@angular/core';
 import { PosServiceService } from '../../service/pos-service.service';
 import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
@@ -17,11 +17,22 @@ import { Observable } from 'rxjs';
 export class InventoryComponent {
 
   @Output() productUpdated = new EventEmitter<any>();
+  items = [{ showMenu: false }, { showMenu: false }]; // Example list of items
 
-  toggleDropdown2(item: any) {
+ 
+ 
+
+  toggleDropdown2(item: any, event?: Event) {
+    if (event) {
+      event.stopPropagation(); // Stop event propagation
+    }
     item.showMenu = !item.showMenu;
   }
 
+  @HostListener('document:click')
+  closeAllDropdowns() {
+    this.items.forEach((item) => (item.showMenu = false));
+  }
 closeDropdown(item: any) {
   item.showMenu = false;
 }
@@ -178,7 +189,10 @@ closeDropdown(item: any) {
   dropdownVisible: boolean[] = [];
   toggleDropdown(index: number): void {
     this.dropdownVisible[index] = !this.dropdownVisible[index];
+    
   }
+  
+
 
 
   selectedAction!: string;

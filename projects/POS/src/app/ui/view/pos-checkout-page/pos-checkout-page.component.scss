@@ -1,3 +1,5 @@
+@use "./pharmacy-layout.scss";
+
 .product-cart-container {
   @apply flex w-screen h-full flex-grow overflow-hidden;
 }
@@ -85,4 +87,31 @@ nav {
 }
 .variant-button {
   @apply px-4 py-2 text-2xl bg-green-500 hover:bg-green-600 text-white rounded-3xl focus:outline-none focus:ring-2 focus:ring-green-300;
+}
+.left-sidebar {
+  max-width: min-content;
+  margin: 1rem;
+  display: flex;
+  flex-direction: column;
+  row-gap: 1.5rem;
+  align-items: stretch;
+  padding-top: 4.5%;
+
+  button {
+    @apply px-4 py-2 text-2xl bg-green-500 hover:bg-green-600 text-white rounded-3xl focus:outline-none focus:ring-2 focus:ring-green-300;
+
+    border-radius: 0.75rem;
+  }
+}
+.product-view {
+  width: 45%;
+}
+
+.two-third-widths {
+  width: 66.67%;
+}
+
+app-cart-item-card,
+app-product-card {
+  border-radius: 1rem;
 }

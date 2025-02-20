@@ -1,3 +1,5 @@
+import { businessType } from '../../variables-to-move-to-backend';
+import { BusinessType } from './enums';
 export interface ProductJSONFormat {
   id: number;
   name: string;
@@ -27,6 +29,8 @@ export interface ProductJSONFormat {
  * There's some extra data we use with each product that wouldn't fit directly with the fetched data interface, `ProductJSONFormat`
  */
 export interface ProductData extends ProductJSONFormat {
+  // FIXME: REMOVE THIS "any" >~<
+  supplier: any;
   // The total price of all instances of a single product in the cart
   cartPriceTotal: string;
   // The number of instances of a product in the cart
@@ -36,8 +40,7 @@ export interface ProductData extends ProductJSONFormat {
 
   selectedVariant: string;
 }
-export type HistoryData =Map<number,ProductData[]>
-
+export type HistoryData = Map<number, ProductData[]>;
 
 export interface Discount {
   id: number;
@@ -155,4 +158,27 @@ export interface HistoryDTO {
 
 export interface ChangeDTO {
   returnType: 'customer';
+}
+export type supplierData = {
+  id: number;
+  supplierName: string;
+  contactPerson: string;
+  email: string;
+  phone: number;
+  address: string;
+  products: string;
+  notes: string;
+  agreeTerms: boolean;
+  createdAt: Date;
+};
+
+/**
+ * This is the interface that should be implemented by components that wish to change behaviour or UI based on the business type.
+ *
+ * @export
+ * @interface Business
+ * @typedef {Business}
+ */
+export interface Business {
+  businessType: BusinessType;
 }
