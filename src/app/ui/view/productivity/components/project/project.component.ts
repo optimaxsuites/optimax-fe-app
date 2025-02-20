@@ -103,7 +103,7 @@ export class ProjectComponent implements OnInit {
     localStorage.setItem('projectData', JSON.stringify(projectsArray));
 
     alert('Project saved successfully!');
-    this.router.navigate(['admin/productivity/project-list']);
+    this.router.navigate(['admin/productivity/4032e3b6-ea0e-480f-9c98-bbe10d67cee2/project-list']);
   }
 
   generateRandomId(): string {
@@ -111,7 +111,7 @@ export class ProjectComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['admin/productivity/project-list']);
+    this.router.navigate(['admin/productivity/4032e3b6-ea0e-480f-9c98-bbe10d67cee2/project-list']);
   }
 }
 

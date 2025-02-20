@@ -127,11 +127,11 @@ export class ProjectListComponent implements OnInit {
   }
 
   onCreateProjectClick(): void {
-    this.router.navigate(['admin/productivity/project']);
+    this.router.navigate(['admin/productivity/4032e3b6-ea0e-480f-9c98-bbe10d67cee2/project']);
   }
 
   onViewClick(project: Project): void {
-    this.router.navigate(['admin/productivity/project-view', project.id]);
+    this.router.navigate(['admin/productivity/4032e3b6-ea0e-480f-9c98-bbe10d67cee2/project-view', project.id]);
   }
 
   onNewTaskClick(): void {

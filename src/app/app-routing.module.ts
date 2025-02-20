@@ -18,7 +18,7 @@ const routes: Routes = [
     path: 'admin/productivity/:uuid',
     component: ProductivityComponent,
     children: [
-      { path: '', redirectTo: 'project-list', pathMatch: 'full' },
+      // { path: '', redirectTo: 'project-list', pathMatch: 'full' },
       { path: 'project-list', component: ProjectListComponent },
       { path: 'project', component: ProjectComponent },
       { path: 'target', component: TargetComponent },
