@@ -1,6 +1,48 @@
+
+// Custom Theming for Angular Material
+// For more information: https://material.angular.io/guide/theming
+// @use '@angular/material' as mat;
+// Plus imports for other components in your app.
+
+// Include the common styles for Angular Material. We include this here so that you only
+// have to load a single css file for Angular Material in your app.
+// Be sure that you only ever include this mixin once!
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+// Define the palettes for your theme using the Material Design palettes available in palette.scss
+// (imported above). For each palette, you can optionally specify a default, lighter, and darker
+// hue. Available color palettes: https://material.io/design/color/
+$office_productivity-primary: mat.define-palette(mat.$indigo-palette);
+$office_productivity-accent: mat.define-palette(mat.$pink-palette, A200, A100, A400);
+
+// The warn palette is optional (defaults to red).
+$office_productivity-warn: mat.define-palette(mat.$red-palette);
+
+// Create the theme object. A theme consists of configurations for individual
+// theming systems such as "color" or "typography".
+$office_productivity-theme: mat.define-light-theme((
+  color: (
+    primary: $office_productivity-primary,
+    accent: $office_productivity-accent,
+    warn: $office_productivity-warn,
+  ),
+  typography: mat.define-typography-config(),
+  density: 0
+));
+
+// Include theme styles for core and each component used in your app.
+// Alternatively, you can import and @include the theme mixins for each component
+// that you are using.
+@include mat.all-component-themes($office_productivity-theme);
+
 /* You can add global styles to this file, and also import other style files */
 
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @import "assets/theme/theme.scss";
 @import "../node_modules/primeng/resources/themes/saga-green/theme.css";
@@ -9,12 +51,38 @@
 @import "../node_modules/primeicons/primeicons.css";
 
 
+
 @import "@ng-select/ng-select/themes/default.theme.css";
 
 @import "../node_modules/quill/dist/quill.core.css";
 @import "../node_modules/quill/dist/quill.snow.css";
 
 
+
+
+// Ekemini
+
+
+
+// end
+
+
+// body {
+//   font-family: Roboto, "Helvetica Neue", sans-serif;
+//   margin: 0;
+//   padding: 30px;
+//   height: 100%;
+
+//   @include mat.theme((
+//     color: (
+//       theme-type: light,
+//       primary: mat.$azure-palette,
+//       tertiary: mat.$blue-palette,
+//     ),
+//     typography: Roboto,
+//     density: 0,
+//   ));
+// }
 
 
 
@@ -116,3 +184,10 @@ input[type="radio"]{
   @apply accent-customBlue
 
 }
+
+
+
+
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }

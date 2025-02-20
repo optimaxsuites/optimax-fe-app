@@ -1,10 +1,10 @@
+
+// productivity.component.ts
 import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-productivity',
   templateUrl: './productivity.component.html',
-  styleUrl: './productivity.component.scss'
+  styleUrls: ['./productivity.component.scss']
 })
-export class ProductivityComponent {
-
-}
+export class ProductivityComponent {}

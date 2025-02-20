@@ -12,7 +12,8 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/animations": "^17.3.0",
+    "@angular/animations": "^17.3.12",
+    "@angular/cdk": "^17.3.10",
     "@angular/common": "^17.3.0",
     "@angular/compiler": "^17.3.0",
     "@angular/core": "^17.3.0",
@@ -21,12 +22,13 @@
     "@angular/platform-browser": "^17.3.0",
     "@angular/platform-browser-dynamic": "^17.3.0",
     "@angular/router": "^17.3.0",
+    "@ng-select/ng-select": "^12.0.7",
+    "@primeng/themes": "^19.0.5",
+    "primeicons": "^7.0.0",
+    "primeng": "^17.18.15",
+    "quill": "^2.0.3",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
-    "primeicons": "^7.0.0",
-    "primeng": "^17.18.11",
-    "quill": "^2.0.2",
-    "@ng-select/ng-select": "^12.0.7",
     "zone.js": "~0.14.3"
   },
   "devDependencies": {
@@ -42,6 +44,7 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
     "postcss": "^8.5.1",
+    "postcss-scss": "^4.0.9",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.4.2"
   }

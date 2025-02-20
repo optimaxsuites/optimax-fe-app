@@ -1,0 +1,119 @@
+<div  class="project-list bg-customAntiFlashWhite h-full">
+  <hr />
+  <div
+    class="pro-list-cover w-[95vw] flex flex-col justify-center items-center mt-10 border- border-solid border-blue-500"
+  >
+    <div class="header w-[97%] flex justify-between mt-2 bg-slate-100">
+      <div
+        class="w-[50%] h-32 flex flex-row justify-evenly items-center border- border-solid border-red-500"
+      >
+        <input type="search" name="search" id="" class="w-[40%] h-12" />
+        <input type="search" name="progress" id="" class="w-[40%] h-12" />
+      </div>
+      <div
+        class="btn flex flex-row w-[40%] justify-end items-center border- border-solid border-green-500"
+      >
+        <button
+          (click)="onCreateProjectClick()"
+          class="w-48 bg-customGreen hover:bg-customGreenHover text-white h-20 rounded-lg text mr-20"
+        >
+          Add New
+        </button>
+        
+      </div>
+    </div>
+
+   <div 
+ 
+  class="card-container w-[97%] h-auto rounded-3xl border-green-600 bg-white mt-10"
+>
+  <div   class="card-cover w-[98%] h-auto flex flex-row justify-evenly  flex-wrap mt-3 mb-3 "  >
+    <div    *ngFor="let project of projects"
+      class="card-frame border-[1.5px] border-solid border-gray-200 w-[30%] h-[250px] rounded-2xl p-3 mt-5 ml-4 "
+    >
+      <div  class="border-[0.5px] border-gray-200 rounded-2xl ">
+        <img [src]="project.projectImage" alt="project image" class="w-[100%] h-20 rounded-2xl object-cover" />
+       
+      </div>
+
+      <!-- <p class="text-4xl p-5">{{ project.name }}
+         <span class="text-sm"> / Timeline 
+    {{ project.timeline ? 
+      (project.timeline.includes('years') ? project.timeline.split(', ')[0] : '00 years') + ', ' +
+      (project.timeline.includes('months') ? project.timeline.split(', ')[1] : '00 months') + ', ' +
+      (project.timeline.includes('days') ? project.timeline.split(', ')[2] : '00 days') + ', ' 
+    
+      : '00 years, 00 months, 00 days' }}
+      
+  </span>
+      </p> -->
+      <div class="text-4xl p-5">
+        <p>{{ project.name }} </p>
+  
+  <span class=" text-base font-bold">
+    <p class="text-slate-600 flex items-center"> Timeline:
+    <ng-container *ngIf="project.timeline">
+      <ng-container *ngIf="project.timeline.years > 0">{{ project.timeline.years }} years, </ng-container>
+      <ng-container *ngIf="project.timeline.months > 0">{{ project.timeline.months }} months, </ng-container>
+      <ng-container *ngIf="project.timeline.days > 0">{{ project.timeline.days }} days, </ng-container>
+      <ng-container *ngIf="project.timeline.hours > 0">{{ project.timeline.hours }} hours, </ng-container>
+      <ng-container *ngIf="project.timeline.minutes > 0">{{ project.timeline.minutes }} minutes, </ng-container>
+      <ng-container *ngIf="project.timeline.seconds > 0">{{ project.timeline.seconds }} seconds</ng-container>
+    </ng-container>
+    </p>
+  </span>
+  
+</div>
+
+
+      <div class="percentage-frame flex flex-row justify-between">
+        <div class="flex flex-row items-center ml-6 mr-6">
+          <div>
+            <img class="w-10 h-8" src="../../../../../../assets/images/pcentile 80.PNG" alt="icon" />
+          </div>
+          <div>
+            <p class="text-1xl text-slate-600 ml-3">Accuracy Percentage</p>
+            <p class="ml-3">{{ project.accuracyPercentage }}%</p>
+          </div>
+        </div>
+        <div class="h-[20px] border-l-[1px] border-gray-300"></div>
+        <div class="flex flex-row items-center">
+          <div class="ml-3">
+            <img class="w-10 h-8" src="../../../../../../assets/images/pcentile 80.PNG" alt="icon" />
+          </div>
+          <div>
+            <p class="text-1xl text-slate-600 ml-3">Completion Rate</p>
+            <p class="ml-3">{{ project.completionRate }}%</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="short-name flex flex-row justify-between mt-3 mb-3 ml-6 mr-6">
+        <div class="flex flex-row justify-between mt-3 mb-1 w-[60%]">
+          <p class="bg-slate-100 rounded-3xl pt-2 pb-2 px-5 h-10">{{ project.shortName }}</p>
+          <p
+            class="bg-slate-100 rounded-3xl pt-2 pb-2 px-5 h-10"
+            [ngClass]="getPriorityClass(project.priority)"
+          >
+            {{ project.priority }}
+          </p>
+        </div>
+        <div>
+          <img src="../../../../../../assets/images/head.PNG" alt="" class="h-14" />
+        </div>
+      </div>
+
+      <div class="last-edited flex flex-row justify-between ml-6 mr-6">
+        <div class="flex flex-row justify-between px-2">
+          <p>Edited {{ project.lastEdited | date }}</p>
+        </div>
+        <div class="text-ellipsis px-2 cursor-pointer" (click)="onViewClick(project)">
+          <img src="../../../../../../assets/images/eclips.PNG" alt="" />
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 
+
+  </div>
+</div>
