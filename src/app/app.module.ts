@@ -64,6 +64,7 @@ import { ViewInventoryComponent } from './ui/view/inventory/view-inventory/view-
 import { InformationComponent } from './information/information.component';
 import { SummaryReportComponent } from './ui/view/report-dashboard/summary-report/summary-report.component';
 import { CustomReportComponent } from './ui/view/report-dashboard/custom-report/custom-report.component';
+import { SimpleNotificationsModule } from 'angular2-notifications';
 @NgModule({
   declarations: [
     AppComponent,
@@ -90,9 +91,10 @@ import { CustomReportComponent } from './ui/view/report-dashboard/custom-report/
     CustomReportComponent,
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
-    // UserModule,
+    BrowserModule,
+    BrowserAnimationsModule, // Required for animations
+    SimpleNotificationsModule.forRoot(), // ✅ Correct way to i
+    UserModule,
     AppRoutingModule,
     CommonModule,
     AppRoutingModule,
@@ -129,6 +131,7 @@ import { CustomReportComponent } from './ui/view/report-dashboard/custom-report/
     NavTabComponent,
     HttpClientModule,
     NgApexchartsModule,
+   
   ],
   providers: [
     {
