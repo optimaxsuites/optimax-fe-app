@@ -50,6 +50,7 @@
     "@auth0/angular-jwt": "^5.2.0",
     "@canvasjs/angular-charts": "^1.2.0",
     "@canvasjs/charts": "^3.8.12",
+    "@primeng/themes": "^19.0.5",
     "@fortawesome/fontawesome-free": "^6.5.2",
     "@fullcalendar/angular": "^6.1.15",
     "@fullcalendar/core": "^6.1.15",
