@@ -8,7 +8,9 @@ import { PosServiceService } from '../../../service/pos-service.service';
 import { ChangeDetectorRef } from '@angular/core';
 import { Observable } from 'rxjs';
 import { HistoryData, ProductData, supplierData } from '../../../models/interface';
-
+import { NotificationsService } from 'angular2-notifications';
+import { position } from 'html2canvas/dist/types/css/property-descriptors/position';
+import { Options, Position, NotificationAnimationType } from 'angular2-notifications';
 
 @Component({
   selector: 'app-edit-inventory',
@@ -16,6 +18,7 @@ import { HistoryData, ProductData, supplierData } from '../../../models/interfac
   styleUrl: './edit-inventory.component.scss'
 })
 export class EditInventoryComponent {
+
    @Input() product: any;  
    @Output() productUpdated: EventEmitter<any> = new EventEmitter();
    //@ts-ignore
@@ -24,7 +27,9 @@ export class EditInventoryComponent {
   isOpen = false;
 
   
- 
+ onSucess() {
+     
+ }
 
   notificationMessage: string = '';
   // Form fields
@@ -104,7 +109,8 @@ export class EditInventoryComponent {
       productList.set(id, productHistory)
 
 
-
+    
+      
 
       // Retrieve existing suppliers or initialize an empty array
       const storedSuppliers = JSON.parse(localStorage.getItem('selectedSuppliers') || '[]');
@@ -190,7 +196,7 @@ export class EditInventoryComponent {
   source: string = '';
   suppliers:supplierData[]=[];
   newOption: string = '';
-  // newOption2: string = '';
+  newOption2: string = '';
   showInput: boolean = false;
   showInput2: boolean = false;
   sourceName: string = '';
@@ -527,9 +533,37 @@ removeSelectedSupplier() {
   constructor(
     private messageService: MessageService,
     private posService: PosServiceService,  private http: HttpClient,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private notifications: NotificationsService
   ) {
   }
+
+  showError(message: string, title: string = 'Error') {
+    this.notifications.error(title, message, {
+      timeOut: 3000,
+      showProgressBar: true,
+      pauseOnHover: true,
+      clickToClose: true,
+    });
+  }
+
+  showInfo(message: string, title: string = 'Info') {
+    this.notifications.info(title, message, {
+      timeOut: 3000,
+      showProgressBar: true,
+      pauseOnHover: true,
+      clickToClose: true,
+    });
+  }
+  notificationOptions: Options = {
+    position: ['top', 'right'] as Position,
+    timeOut: 3000,
+    showProgressBar: true,
+    pauseOnHover: true,
+    clickToClose: true,
+    animate: 'fade' as NotificationAnimationType, // ✅ Explicitly cast 'fade'
+  };
+
   ngOnInit(): void {
     this.loadCategory()
     this.getDiscountTypes()
