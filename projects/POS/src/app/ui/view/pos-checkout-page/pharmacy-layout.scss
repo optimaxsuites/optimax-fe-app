@@ -1,0 +1,25 @@
+$default-bg-color: var(--white);
+.pharmacy-layout {
+  .product-view {
+    @apply w-[45%];
+  }
+  .product-cart-container {
+    background-color: hsl(0, 0%, 98%);
+  }
+
+  .nav-options p {
+    background-color: $default-bg-color;
+  }
+
+  .cart-view {
+    width: 100%;
+
+    div:nth-child(2) > div:first-child {
+      background-color: $default-bg-color;
+    }
+  }
+
+  app-cart-item-card {
+    background-color: $default-bg-color;
+  }
+}

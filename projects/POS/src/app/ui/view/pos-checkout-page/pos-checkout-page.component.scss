@@ -1,14 +1,15 @@
+@use "./pharmacy-layout.scss";
+
 .product-cart-container {
   @apply flex w-screen h-full flex-grow overflow-hidden;
 }
 
 .product-view {
-  @apply w-[40%] flex flex-col justify-between h-full gap-10  px-4 pt-4 overflow-hidden;
+  @apply w-[62%] flex flex-col justify-between h-full gap-10  px-4 pt-4 overflow-hidden;
 }
 
 .cart-view {
   @apply shadow-lg w-[38%] h-full p-4 flex flex-col justify-between overflow-hidden;
-  width: 100%;
 }
 
 nav {
@@ -108,4 +109,9 @@ nav {
 
 .two-third-widths {
   width: 66.67%;
+}
+
+app-cart-item-card,
+app-product-card {
+  border-radius: 1rem;
 }
