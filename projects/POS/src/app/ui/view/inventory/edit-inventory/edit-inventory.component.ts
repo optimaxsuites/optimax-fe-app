@@ -8,7 +8,6 @@ import { ChangeDetectorRef } from '@angular/core';
 import { Observable } from 'rxjs';
 import { HistoryData, ProductData, supplierData } from '../../../models/interface';
 import { position } from 'html2canvas/dist/types/css/property-descriptors/position';
-import { Options, Position, NotificationAnimationType } from 'angular2-notifications';
 import { Toast } from 'primeng/toast';
 import { Message } from 'primeng/api';
 
@@ -601,14 +600,14 @@ removeSelectedSupplier() {
   //     clickToClose: true,
   //   });
   // }
-  notificationOptions: Options = {
-    position: ['top', 'right'] as Position,
-    timeOut: 3000,
-    showProgressBar: true,
-    pauseOnHover: true,
-    clickToClose: true,
-    animate: 'fade' as NotificationAnimationType, // ✅ Explicitly cast 'fade'
-  };
+  // notificationOptions: Options = {
+  //   position: ['top', 'right'] as Position,
+  //   timeOut: 3000,
+  //   showProgressBar: true,
+  //   pauseOnHover: true,
+  //   clickToClose: true,
+  //   animate: 'fade' as NotificationAnimationType, // ✅ Explicitly cast 'fade'
+  // };
 
   ngOnInit(): void {
    this.loadBranchesFromLocalStorage();
