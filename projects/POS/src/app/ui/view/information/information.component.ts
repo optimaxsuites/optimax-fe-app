@@ -7,7 +7,7 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { HistoryData, ProductData, supplierData } from '../ui/models/interface';
+import { supplierData, HistoryData, ProductData } from '../../models/interface';
 
 @Component({
   selector: 'app-information',

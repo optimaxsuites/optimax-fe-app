@@ -21,22 +21,22 @@ const routes: Routes = [
     path: 'admin/pos/:uuid',
     component: PosPageComponent,
   },
-  {
-    path: 'inventory',
-    component: InventoryComponent,
-  },
-  {
-    path: 'view',
-    component:ViewInventoryComponent,
-  },
-  {
-    path: 'supplier-details',
-    component: InformationComponent,
-  },
-  {
-    path: 'add-inventory',
-    component: AddInventoryComponent,
-  },
+  // {
+  //   path: 'inventory',
+  //   component: InventoryComponent,
+  // },
+  // {
+  //   path: 'view',
+  //   component:ViewInventoryComponent,
+  // },
+  // {
+  //   path: 'supplier-details',
+  //   component: InformationComponent,
+  // },
+  // {
+  //   path: 'add-inventory',
+  //   component: AddInventoryComponent,
+  // },
 
   // { path: '', loadChildren: () => import('./user/user.module').then(m => m.UserModule) },
 ];

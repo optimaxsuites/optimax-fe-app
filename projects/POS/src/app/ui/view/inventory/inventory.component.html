@@ -38,7 +38,7 @@
           <app-button
             text="Add Inventory"
             class="btn-navigate"
-            [routerLink] = "['/add-inventory']"
+            (click)="openEditInventory()" 
           ></app-button>
           <app-button
             text="Import"

@@ -1,9 +1,4 @@
-select {
-    width: 100%;
-    padding: 8px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-  }
+
   
   select:focus {
     outline: none;
@@ -94,7 +89,7 @@ select {
     .details {
       display: flex;
       // gap: 10rem;
-      @apply justify-around w-full bg-gray-50 rounded-xl shadow-sm p-3
+      @apply justify-around w-full  rounded-xl shadow-sm p-3
      
     }
   
@@ -133,6 +128,30 @@ select {
     label {
       @apply pb-2
     }
+
+
+  .field {
   
   
-  
+    input{
+      border: none;
+      padding: 0.8rem 1rem;
+      border-radius: 5px;
+      // background-color: red;
+      margin-bottom: 2.5rem;
+      @apply active:border-none
+    }
+
+    label {
+      @apply pb-2
+    }
+
+    @apply pb-2
+  }
+
+  :host ::ng-deep input:focus,
+:host ::ng-deep select:focus {
+    border-color: transparent !important; /* Ensures no color change */
+    outline: none !important;
+    box-shadow: none !important;
+}

@@ -66,6 +66,8 @@ import { CustomReportComponent } from './ui/view/report-dashboard/custom-report/
 import { AddInventoryComponent } from './ui/view/inventory/add-inventory/add-inventory.component';
 import { InformationComponent } from './ui/view/information/information.component';
 
+import { InputGroupModule } from 'primeng/inputgroup';
+import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 @NgModule({
   declarations: [
     AppComponent,
@@ -131,6 +133,8 @@ import { InformationComponent } from './ui/view/information/information.componen
     NavTabComponent,
     HttpClientModule,
     NgApexchartsModule,
+    InputGroupModule,
+    InputGroupAddonModule
     // BrowserAnimationsModule,
    
   ],
