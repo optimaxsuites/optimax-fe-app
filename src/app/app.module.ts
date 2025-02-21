@@ -61,10 +61,10 @@ import { ExpensesReportComponent } from './ui/view/report-dashboard/expenses-rep
 import { CreateReportComponent } from './ui/view/report-dashboard/create-report/create-report.component';
 import { EditInventoryComponent } from './ui/view/inventory/edit-inventory/edit-inventory.component';
 import { ViewInventoryComponent } from './ui/view/inventory/view-inventory/view-inventory.component';
-import { InformationComponent } from './information/information.component';
 import { SummaryReportComponent } from './ui/view/report-dashboard/summary-report/summary-report.component';
 import { CustomReportComponent } from './ui/view/report-dashboard/custom-report/custom-report.component';
 import { AddInventoryComponent } from './ui/view/inventory/add-inventory/add-inventory.component';
+import { InformationComponent } from './ui/view/information/information.component';
 
 @NgModule({
   declarations: [
@@ -93,7 +93,7 @@ import { AddInventoryComponent } from './ui/view/inventory/add-inventory/add-inv
     AddInventoryComponent,
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
     UserModule,
     AppRoutingModule,
     CommonModule,
@@ -131,7 +131,7 @@ import { AddInventoryComponent } from './ui/view/inventory/add-inventory/add-inv
     NavTabComponent,
     HttpClientModule,
     NgApexchartsModule,
-    BrowserAnimationsModule,
+    // BrowserAnimationsModule,
    
   ],
   providers: [
