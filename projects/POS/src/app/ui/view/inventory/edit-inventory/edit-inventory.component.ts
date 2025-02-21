@@ -1,16 +1,16 @@
 
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
-import { MessageService } from 'primeng/api';
 import { PosServiceService } from '../../../service/pos-service.service';
 import { ChangeDetectorRef } from '@angular/core';
 import { Observable } from 'rxjs';
 import { HistoryData, ProductData, supplierData } from '../../../models/interface';
-import { NotificationsService } from 'angular2-notifications';
 import { position } from 'html2canvas/dist/types/css/property-descriptors/position';
 import { Options, Position, NotificationAnimationType } from 'angular2-notifications';
+import { Toast } from 'primeng/toast';
+import { Message } from 'primeng/api';
 
 @Component({
   selector: 'app-edit-inventory',
@@ -18,7 +18,12 @@ import { Options, Position, NotificationAnimationType } from 'angular2-notificat
   styleUrl: './edit-inventory.component.scss'
 })
 export class EditInventoryComponent {
+  messages: Message[] = [];
+  newBranchName: string = ''; // Renamed from newOption
+  showBranchInput: boolean = false; // Renamed from showInput
 
+
+  
    @Input() product: any;  
    @Output() productUpdated: EventEmitter<any> = new EventEmitter();
    //@ts-ignore
@@ -26,12 +31,24 @@ export class EditInventoryComponent {
   @Output() close = new EventEmitter<void>();  
   isOpen = false;
 
-  
- onSucess() {
-     
- }
 
-  notificationMessage: string = '';
+//@ts-ignore
+  notificationMessage: string ;
+  isVisible: boolean = false;
+   // Function to show the notification
+
+   showNotification(message: string) {
+    this.notificationMessage = message;
+    console.log("message", message);
+    this.isVisible = true;
+
+    // Hide after 3 seconds
+    setTimeout(() => {
+      this.isVisible = false;
+    }, 3000);
+  }
+
+
   // Form fields
   supplierName: string = '';
   contactPerson: string = '';
@@ -43,8 +60,29 @@ export class EditInventoryComponent {
   agreeTerms: boolean = false;
   router: any;
  
-  
+  loadBranchesFromLocalStorage() {
+    const storedBranches = localStorage.getItem('branches');
+    if (storedBranches) {
+      this.headquartersOptions = JSON.parse(storedBranches);
+    }
+  }
+
+  toggleBranchInput() {
+    this.showBranchInput = !this.showBranchInput;
+  }
+
+   // Add a new branch and store it in localStorage
+   addBranch() {
+    if (this.newBranchName.trim() !== '') {
+      this.headquartersOptions.push(this.newBranchName.trim());
+      localStorage.setItem('branches', JSON.stringify(this.headquartersOptions));
+      this.newBranchName = ''; // Clear input
+      this.showBranchInput = false; // Hide input field
+    }
+  }
+
   saveProduct() {
+  
     console.log("active item", this.activeItem);
     if (this.activeItem) {
 
@@ -52,35 +90,35 @@ export class EditInventoryComponent {
       let productList:HistoryData = savedProducts ? new Map(JSON.parse(savedProducts)) : new Map();
       console.log("product list", productList);
   
-      // // Find the product in storage
-      // const existingProduct = productList.find((p: any) => p.id === this.activeItem.id);
-  
-      // if (existingProduct) {
-      //   // Ensure history array exists
-      //   if (!existingProduct.history) {
-      //     existingProduct.history = [];
-      //   }
-  
-        // Store the previous state before updating
-        // existingProduct.history.push({
-        //   sku: existingProduct.sku,
-        //   code: existingProduct.code,
-        //   name: existingProduct.name,
-        //   costPrice: existingProduct.costPrice,
-        //   effectivePrice: existingProduct.effectivePrice,
-        //   effectiveQuantity: existingProduct.effectiveQuantity,
-        //   productCategory: existingProduct.productCategory,
-        //   updatedAt: new Date() 
-        // });
-  
-        // Update the product details
-      //   Object.assign(existingProduct, this.activeItem);
-      // } else {
-      //   // If the product isn't found, add it with an empty history
-      //   this.activeItem.history = [];
-      //   productList.push(this.activeItem);
-      // }
-  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       const id = this.activeItem.id
       const productHistory = productList.get(id) ?? []
 
@@ -109,8 +147,8 @@ export class EditInventoryComponent {
       productList.set(id, productHistory)
 
 
-    
-      
+
+
 
       // Retrieve existing suppliers or initialize an empty array
       const storedSuppliers = JSON.parse(localStorage.getItem('selectedSuppliers') || '[]');
@@ -133,6 +171,8 @@ export class EditInventoryComponent {
       this.productUpdated.emit(this.activeItem);
       // this.notificationMessage = true;
       alert("Product updated successfully");
+      this.showNotification('Product updated successfully!');
+     
 
       // Clear the message after 3 seconds
       
@@ -140,8 +180,8 @@ export class EditInventoryComponent {
     } else {
       console.error("No product is being edited.");
     }
-  }
 
+  }
 
   changeSelectedSupplier(Event:Event){
     const name = (Event.target as HTMLSelectElement).value;
@@ -158,12 +198,19 @@ export class EditInventoryComponent {
   headquartersOptions: string[] = ['Wuse', 'Gariki', 'Zone1'];
 
   toggleHeadquartersInput() {
-    // Logic to open an input field for adding new headquarters
-    console.log('Add new headquarters logic here');
+     const newBranch = prompt("Enter a new branch name:");
+    if (newBranch && newBranch.trim() !== '') {
+      this.headquartersOptions.push(newBranch.trim());
+      localStorage.setItem('branches', JSON.stringify(this.headquartersOptions));
+    }
   }
   
   deleteSelectedHeadquarters() {
-    this.selectedHeadquarters;
+    if (this.selectedHeadquarters) {
+      this.headquartersOptions = this.headquartersOptions.filter(branch => branch !== this.selectedHeadquarters);
+      localStorage.setItem('branches', JSON.stringify(this.headquartersOptions));
+      this.selectedHeadquarters = ''; // Reset selection
+    }
   }
 
   // branchOptions = [
@@ -252,7 +299,7 @@ export class EditInventoryComponent {
     this.showInput2 = !this.showInput2;
   }
 
-
+ 
   toggleInput() {
     this.showInput = !this.showInput;
   }
@@ -531,30 +578,29 @@ removeSelectedSupplier() {
     {label: 'MSI1110', value: 'MSI1110'},
   ]
   constructor(
-    private messageService: MessageService,
     private posService: PosServiceService,  private http: HttpClient,
     private cdr: ChangeDetectorRef,
-    private notifications: NotificationsService
+
   ) {
   }
 
-  showError(message: string, title: string = 'Error') {
-    this.notifications.error(title, message, {
-      timeOut: 3000,
-      showProgressBar: true,
-      pauseOnHover: true,
-      clickToClose: true,
-    });
-  }
+  // showError(message: string, title: string = 'Error') {
+  //   this.notifications.error(title, message, {
+  //     timeOut: 3000,
+  //     showProgressBar: true,
+  //     pauseOnHover: true,
+  //     clickToClose: true,
+  //   });
+  // }
 
-  showInfo(message: string, title: string = 'Info') {
-    this.notifications.info(title, message, {
-      timeOut: 3000,
-      showProgressBar: true,
-      pauseOnHover: true,
-      clickToClose: true,
-    });
-  }
+  // showInfo(message: string, title: string = 'Info') {
+  //   this.notifications.info(title, message, {
+  //     timeOut: 3000,
+  //     showProgressBar: true,
+  //     pauseOnHover: true,
+  //     clickToClose: true,
+  //   });
+  // }
   notificationOptions: Options = {
     position: ['top', 'right'] as Position,
     timeOut: 3000,
@@ -565,6 +611,7 @@ removeSelectedSupplier() {
   };
 
   ngOnInit(): void {
+   this.loadBranchesFromLocalStorage();
     this.loadCategory()
     this.getDiscountTypes()
     console.log(this.activeItem)
@@ -656,62 +703,10 @@ removeSelectedSupplier() {
       description: this.categoryData.description
     }
 
-    if (this.checkForEmptyFields(this.categoryData)) {
-      console.log("all fiellds are required")
-        this.messageService.add({ severity: 'error', summary: 'warn', detail: 'All fields are required' , key: 'tl', life: 3000 });
-    } else {
-            this.posService.addCategory(categoryDetails).subscribe(
-              async (data) => {
-            console.log(data)
-            if (data) {
-              this.messageService.add({ severity: 'success', summary: 'Category Added', detail: 'Category added successfully.', key: 'tl', life: 3000 });
-          this.loadCategory();
-              this.categoryData = {
-                name: "",
-                code: "",
-                description: "",
-              }
-            } else {
-              this.messageService.add({ severity: 'error', summary: 'Failed', detail: 'Failed, please try again.', key: 'tl', life: 3000 });
-            }
-                },
-                (error: HttpErrorResponse) => {
-                  if (error.status === 500) {
-                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Check form details and try again.', key: 'tl', life: 3000 });
-                  } else if (error.status === 404) {
-                    this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Error, try again.', key: 'tl', life: 3000 });
-                  } else if (error.status === 0) {
-                    this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.', key: 'tl', life: 3000 });
-                  } else {
-                    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'An unexpected error occurred.', key: 'tl', life: 3000 });
-                  }
-                }
-            );}
+   
   
   }
-  removeCategory(id: number) {
-    this.posService.deleteCategory(id).subscribe(
-      async (data) => {
-        if (data) {
-          this.messageService.add({ 
-            severity: 'error', 
-            summary: 'Failed', 
-            detail: 'Failed to delete category.', 
-            key: 'tl', 
-            life: 3000 
-          });
-        } else {
-          this.loadCategory();
-          this.messageService.add({ 
-            severity: 'success', 
-            summary: 'Category deleted', 
-            detail: 'Category deleted successfully.', 
-            key: 'tl', 
-            life: 3000 
-          });
-        }}
-    )  
-  }
+  
   selectCategory(category: any) {
     console.log(
     category

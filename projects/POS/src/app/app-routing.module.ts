@@ -13,6 +13,7 @@ import { InformationComponent } from './information/information.component';
 import { InventoryComponent } from './ui/view/inventory/inventory.component';
 import { ViewInventoryComponent } from './ui/view/inventory/view-inventory/view-inventory.component';
 import { AddInventoryComponent } from './ui/view/inventory/add-inventory/add-inventory.component';
+import { EditInventoryComponent } from './ui/view/inventory/edit-inventory/edit-inventory.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'admin/pos/34567whr4567yhsdzr56', pathMatch: 'full' },
@@ -36,6 +37,7 @@ const routes: Routes = [
     path: 'add-inventory',
     component: AddInventoryComponent,
   },
+
   // { path: '', loadChildren: () => import('./user/user.module').then(m => m.UserModule) },
 ];
 

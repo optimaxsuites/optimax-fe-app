@@ -1,4 +1,4 @@
-import { NgModule } from '@angular/core';
+import { NgModule, viewChild } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -65,6 +65,7 @@ import { InformationComponent } from './information/information.component';
 import { SummaryReportComponent } from './ui/view/report-dashboard/summary-report/summary-report.component';
 import { CustomReportComponent } from './ui/view/report-dashboard/custom-report/custom-report.component';
 import { AddInventoryComponent } from './ui/view/inventory/add-inventory/add-inventory.component';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -130,6 +131,7 @@ import { AddInventoryComponent } from './ui/view/inventory/add-inventory/add-inv
     NavTabComponent,
     HttpClientModule,
     NgApexchartsModule,
+    BrowserAnimationsModule,
    
   ],
   providers: [
