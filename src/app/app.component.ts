@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { AuthenticationService } from './ui/sharedComponent/service/auth-service/authentication.service';
-import { NotificationsService } from 'angular2-notifications';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
