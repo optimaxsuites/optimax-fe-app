@@ -111,12 +111,14 @@ closeDropdown(item: any) {
   deleteModal: boolean = false;
   editProduct: boolean = false;
   editInventory: boolean = false;
+  addInventory: boolean = false;
 
 
   sidebarVisible: boolean = false; // Controls sidebar visibility
 
   openEditInventory(item: any = {}) {
-    this.activeItem = item;
+   
+    this.activeItem = item || {};
     console.log('view', item);
     this.tableSection = false;
     this.viewProduct = false;
@@ -407,6 +409,7 @@ closeDropdown(item: any) {
     this.editProduct = false;
     this.addProduct = false;
     this.editInventory = false;
+    this.addInventory = false;
     this.getProducts();
   }
 }

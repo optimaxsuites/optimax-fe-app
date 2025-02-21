@@ -38,7 +38,7 @@
           <app-button
             text="Add Inventory"
             class="btn-navigate"
-            [routerLink]="'/add-inventory'"
+            [routerLink] = "['/add-inventory']"
           ></app-button>
           <app-button
             text="Import"
@@ -198,6 +198,14 @@
   </div>
   <!-- <app-view-inventory [updatedProduct]="updatedProduct"></app-view-inventory> -->
 
+  <div *ngIf="addInventory">
+    <app-edit-inventory
+      [activeItem]="activeItem"
+      (close)="closeEditInventory()"
+      
+      >
+    </app-edit-inventory>
+  </div>
 
 
 <!-- 
