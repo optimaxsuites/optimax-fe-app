@@ -82,6 +82,7 @@ export class EditInventoryComponent {
 
   saveProduct() {
   
+  
     console.log("active item", this.activeItem);
     if (this.activeItem) {
 
