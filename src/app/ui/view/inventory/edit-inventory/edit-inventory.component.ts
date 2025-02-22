@@ -89,35 +89,6 @@ export class EditInventoryComponent {
       let savedProducts = localStorage.getItem('products');
       let productList:HistoryData = savedProducts ? new Map(JSON.parse(savedProducts)) : new Map();
       console.log("product list", productList);
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
       const id = this.activeItem.id
       const productHistory = productList.get(id) ?? []
@@ -403,28 +374,10 @@ removeSelectedSupplier() {
 // agreeTerms: boolean = false;
 
   submitForm() {
-    // if (this.sourceName.trim()) {
-    //   // Add new supplier and remove duplicates
-    //   if (!this.suppliers.includes(this.sourceName.trim())) {
-    //     this.suppliers.push(this.sourceName.trim());
-    //   }
-
-    //   // Save to local storage
-    //   localStorage.setItem('suppliers', JSON.stringify(this.suppliers));
-
-    //   // Reset input and close modal
-    //   this.sourceName = '';
-    //   this.closeModal();
-    // }
     // if (!this.agreeTerms) {
-    //   this.showAlert = true; // Show the alert modal
+    //   alert("You must agree to the Terms & Conditions before proceeding.");
     //   return;
     // }
-    
-    if (!this.agreeTerms) {
-      alert("You must agree to the Terms & Conditions before proceeding.");
-      return;
-    }
 
     if (!this.supplierName || !this.contactPerson || !this.email || !this.phone) {
       alert('Please fill in all required fields.');
