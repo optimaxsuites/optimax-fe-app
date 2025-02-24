@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { SettingsPageComponent } from './ui/view/settings-page.component';
 import { GeneralSettingsComponent } from './ui/view/general/general-settings/general-settings.component';
 import { HrSettingsComponent } from './ui/view/hr/hr-settings/hr-settings.component';
+import { PosSettingComponent } from './ui/view/pos/pos-setting/pos-setting.component';
 
 const routes: Routes = [
   {
@@ -17,6 +18,10 @@ const routes: Routes = [
       {
         path: 'HR-settings/:uuid',
         component: HrSettingsComponent,
+      },
+      {
+        path: 'POS-settings/:uuid',
+        component: PosSettingComponent,
       },
     ],
   },

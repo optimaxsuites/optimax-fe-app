@@ -68,6 +68,11 @@ import { SideModalComponent } from './ui/sharedComponents/view/side-modal/side-m
 import { CompensationComponent } from './ui/view/hr/compensation/compensation.component';
 import { NavTabComponent } from './ui/sharedComponents/view/nav-tab/nav-tab.component';
 import { LeaveStrctureComponent } from './ui/view/hr/leave-strcture/leave-strcture.component';
+import { CheckoutComponent } from './ui/view/pos/checkout/checkout.component';
+import { PosSettingComponent } from './ui/view/pos/pos-setting/pos-setting.component';
+import { BusInfoSettingComponent } from './ui/view/pos/bus-info-setting/bus-info-setting.component';
+import { PAndISettingComponent } from './ui/view/pos/p-and-isetting/p-and-isetting.component';
+import { UserSettingComponent } from './ui/view/pos/user-setting/user-setting.component';
 
 //
 
@@ -85,6 +90,11 @@ import { LeaveStrctureComponent } from './ui/view/hr/leave-strcture/leave-strctu
     CompensationComponent,
     NavTabComponent,
     LeaveStrctureComponent,
+    CheckoutComponent,
+    PosSettingComponent,
+    BusInfoSettingComponent,
+    PAndISettingComponent,
+    UserSettingComponent,
   ],
   imports: [
     BrowserModule,
