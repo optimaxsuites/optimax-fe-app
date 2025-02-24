@@ -83,6 +83,8 @@ export class NavigationLinksService {
 this.links['settingsLink'] = '/admin/settings/general-settings/' +uuidV4();
 this.links['generalSettings'] = 'general-settings/' +uuidV4();
 this.links['HRSettings'] = 'HR-settings/' +uuidV4();
+this.links['posSettings'] = 'POS-settings/' +uuidV4();
+
 
 
 
