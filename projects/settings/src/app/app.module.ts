@@ -87,8 +87,8 @@ import { LeaveStrctureComponent } from './ui/view/hr/leave-strcture/leave-strctu
     LeaveStrctureComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     AppRoutingModule,
     CommonModule,
     AppRoutingModule,
