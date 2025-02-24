@@ -20,7 +20,89 @@ import { UserInfo} from '../../domain/auth.dto'
 export class UserRegComponent {
   userInfoData: UserInfo = {  };
   viewDonorProfile: any = []
-
+  industries: any[] = [
+    {
+      "id": 1,
+      "name": "Retail",
+      "description": "Stores selling goods directly to consumers, such as clothing stores, electronics, furniture, and bookstores."
+    },
+    {
+      "id": 2,
+      "name": "Food & Beverage",
+      "description": "Restaurants, cafes, food trucks, catering services, and other establishments serving food and drinks."
+    },
+    {
+      "id": 3,
+      "name": "Pharmacy & Health",
+      "description": "Pharmacies, health and wellness stores, medical equipment shops, and clinics."
+    },
+    {
+      "id": 4,
+      "name": "Hospitality",
+      "description": "Hotels, resorts, event venues, and other businesses in the travel and accommodation sector."
+    },
+    {
+      "id": 5,
+      "name": "Beauty & Personal Care",
+      "description": "Salons, spas, barber shops, nail salons, and cosmetic stores."
+    },
+    {
+      "id": 6,
+      "name": "Automotive",
+      "description": "Car dealerships, auto parts stores, and repair shops."
+    },
+    {
+      "id": 7,
+      "name": "Groceries & Food Stores",
+      "description": "Supermarkets, organic food shops, convenience stores, and grocery outlets."
+    },
+    {
+      "id": 8,
+      "name": "Entertainment & Events",
+      "description": "Movie theaters, event venues, concerts, and live shows."
+    },
+    {
+      "id": 9,
+      "name": "Health & Fitness",
+      "description": "Gyms, yoga studios, fitness equipment stores, and health clubs."
+    },
+    {
+      "id": 10,
+      "name": "Fashion",
+      "description": "Clothing boutiques, shoe stores, jewelry stores, and accessory shops."
+    },
+    {
+      "id": 11,
+      "name": "Electronics & Gadgets",
+      "description": "Mobile and tech stores, computer retailers, and home appliance shops."
+    },
+    {
+      "id": 12,
+      "name": "Construction & Hardware",
+      "description": "Hardware stores, building material suppliers, and equipment rental services."
+    },
+    {
+      "id": 13,
+      "name": "Education",
+      "description": "Bookstores, educational supplies, tutoring centers, and online learning platforms."
+    },
+    {
+      "id": 14,
+      "name": "Home & Garden",
+      "description": "Home improvement stores, garden centers, and furniture shops."
+    },
+    {
+      "id": 15,
+      "name": "Arts & Crafts",
+      "description": "Art supply stores, craft shops, and DIY stores."
+    },
+    {
+      "id": 16,
+      "name": "Wholesale Distribution",
+      "description": "Wholesale suppliers, B2B retailers, and large-scale distributors."
+    }
+  ]
+  
 
   onImageUpload(event: any) {
     const file = event.target.files[0];

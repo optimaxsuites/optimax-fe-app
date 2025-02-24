@@ -118,7 +118,14 @@
                     <div class="input-wrapper gap-3">
                         <div class="input-width-1">
                             <label for="industry">Industry <span style="color: red;">*</span></label>
-                            <input class="editInput" type="text" id="industry" pInputText [(ngModel)]="userInfoData.industry">
+                            <!-- <input class="editInput" type="text" id="industry" pInputText [(ngModel)]="userInfoData.industry"> -->
+                            <ng-select 
+                            [items]="industries"
+                            bindLabel="name"
+                            bindValue="id"
+                            placeholder="Select Industry"
+                            [(ngModel)]="userInfoData.industry">
+                        </ng-select>
                         </div>
                         <div class="input-width-1">
                             <label for="company">Company Name <span style="color: red;">*</span></label>
@@ -178,3 +185,10 @@
 </div>
 
 <p-toast position="top-right" key="tl" />
+
+
+
+
+
+
+
