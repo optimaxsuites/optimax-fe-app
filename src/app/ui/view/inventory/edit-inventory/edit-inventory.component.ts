@@ -1,6 +1,6 @@
 
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, Output, ViewChild } from '@angular/core';
 import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
 import { PosServiceService } from '../../../service/pos-service.service';
@@ -10,7 +10,14 @@ import { HistoryData, ProductData, supplierData } from '../../../models/interfac
 import { position } from 'html2canvas/dist/types/css/property-descriptors/position';
 import { Toast } from 'primeng/toast';
 import { Message } from 'primeng/api';
+import { FormGroup } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms'; 
 
+
+interface Branch {
+  id: number;
+  name: string;
+}
 @Component({
   selector: 'app-edit-inventory',
   templateUrl: './edit-inventory.component.html',
@@ -21,7 +28,22 @@ export class EditInventoryComponent {
   newBranchName: string = ''; // Renamed from newOption
   showBranchInput: boolean = false; // Renamed from showInput
 
+  branchForm!: FormGroup;
+  branchOptions: Branch[] = [
+    { id: 1, name: 'Branch A' },
+    { id: 2, name: 'Branch B' },
+    { id: 3, name: 'Branch C' },
+    { id: 4, name: 'Branch D' },
+    { id: 5, name: 'Branch E' },
+    { id: 6, name: 'Branch F' },
+  ];
+  dropdownOpen: boolean = false;
+  isEditing: boolean = false; 
 
+  selectAll() {
+    const allSelected = this.branchForm.value.selectedBranches.length === this.branchOptions.length;
+    this.branchForm.patchValue({ selectedBranches: allSelected ? [] : [...this.branchOptions] });
+  }
   
    @Input() product: any;  
    @Output() productUpdated: EventEmitter<any> = new EventEmitter();
@@ -36,16 +58,6 @@ export class EditInventoryComponent {
   isVisible: boolean = false;
    // Function to show the notification
 
-   showNotification(message: string) {
-    this.notificationMessage = message;
-    console.log("message", message);
-    this.isVisible = true;
-
-    // Hide after 3 seconds
-    setTimeout(() => {
-      this.isVisible = false;
-    }, 3000);
-  }
 
 
   // Form fields
@@ -81,9 +93,14 @@ export class EditInventoryComponent {
   }
 
   saveProduct() {
-  
-  
-    console.log("active item", this.activeItem);
+    if (!this.selectedSupplier) {
+      alert("Please select a supplier before updating the product.");
+      return;
+    }
+    if (!this.activeItem.effectiveQuantity || !this.activeItem.effectivePrice) {
+      alert("Please enter both quantity and price before updating the product.");
+      return;
+    }
     if (this.activeItem) {
 
       let savedProducts = localStorage.getItem('products');
@@ -92,6 +109,7 @@ export class EditInventoryComponent {
 
       const id = this.activeItem.id
       const productHistory = productList.get(id) ?? []
+          // Store in local storage
 
       // ✅ Retrieve supplier details from localStorage if not already set
         if (!this.selectedSupplier) {
@@ -110,9 +128,7 @@ export class EditInventoryComponent {
         updatedAt: new Date(), // or use your createdDate field
         supplier: this.selectedSupplier  // ensure this.selectedSupplier contains the full supplier object
       };
-      console.log("active item", this.selectedSupplier);
 
-      console.log("Update Record:", updateRecord);
       productHistory.push(updateRecord)
       
       productList.set(id, productHistory)
@@ -128,13 +144,9 @@ export class EditInventoryComponent {
         storedSuppliers.push(this.selectedSupplier);
         console.log("storedSuppliers:", storedSuppliers);
 
-        // Save the updated list back to localStorage
 
-      localStorage.setItem('selectedSuppliers', JSON.stringify(storedSuppliers)); // this selects the supplier 
-
-
-      console.log("Selected Supplier After Saving:", this.selectedSupplier); // saves selected suplier
-        
+        localStorage.setItem("savedBranches", JSON.stringify(this.savedBranches));
+        console.log("savedBranches:", this.savedBranches);
 
        // Save the updated list back to localStorage
       localStorage.setItem('products', JSON.stringify([...productList]));
@@ -142,7 +154,6 @@ export class EditInventoryComponent {
       this.productUpdated.emit(this.activeItem);
       // this.notificationMessage = true;
       alert("Product updated successfully");
-      this.showNotification('Product updated successfully!');
      
 
       // Clear the message after 3 seconds
@@ -153,6 +164,7 @@ export class EditInventoryComponent {
     }
 
   }
+  hasSelectedSupplier = false;
 
   changeSelectedSupplier(Event:Event){
     const name = (Event.target as HTMLSelectElement).value;
@@ -162,10 +174,14 @@ export class EditInventoryComponent {
     })[0];
     console.log("Selected Supplier:", this.selectedSupplier);
     localStorage.setItem('selectedSupplier', JSON.stringify(this.selectedSupplier));
+    this.hasSelectedSupplier = true;
   }
   
+  saveBranches() {
+    console.log("Selected Branches:", this.selectedHeadquarters);
+  }
 
-  selectedHeadquarters: string = '';
+  selectedHeadquarters:  string[] = []; 
   headquartersOptions: string[] = ['Wuse', 'Gariki', 'Zone1'];
 
   toggleHeadquartersInput() {
@@ -175,14 +191,36 @@ export class EditInventoryComponent {
       localStorage.setItem('branches', JSON.stringify(this.headquartersOptions));
     }
   }
-  
-  deleteSelectedHeadquarters() {
-    if (this.selectedHeadquarters) {
-      this.headquartersOptions = this.headquartersOptions.filter(branch => branch !== this.selectedHeadquarters);
-      localStorage.setItem('branches', JSON.stringify(this.headquartersOptions));
-      this.selectedHeadquarters = ''; // Reset selection
-    }
+  toggleDropdown() {
+    this.dropdownOpen = !this.dropdownOpen;
   }
+
+  isSelected(branch: Branch): boolean {
+    return this.branchForm.value.selectedBranches.some((b: Branch) => b.id === branch.id);
+  }
+
+  selectBranch(branch: Branch) {
+    let selectedBranches = [...this.branchForm.value.selectedBranches];
+
+    if (this.isSelected(branch)) {
+      selectedBranches = selectedBranches.filter(b => b.id !== branch.id);
+    } else {
+      selectedBranches.push(branch);
+    }
+
+    this.branchForm.patchValue({ selectedBranches });
+  }
+
+
+
+  
+  // deleteSelectedHeadquarters() {
+  //   if (this.selectedHeadquarters) {
+  //     this.headquartersOptions = this.headquartersOptions.filter(branch => branch !== this.selectedHeadquarters);
+  //     localStorage.setItem('branches', JSON.stringify(this.headquartersOptions));
+  //     this.selectedHeadquarters = ''; // Reset selection
+  //   }
+
 
   // branchOptions = [
   //   { name: 'Lagos Branch', code: 'LAG' },
@@ -318,10 +356,11 @@ removeSelectedSupplier() {
 
     // Reset selection
     this.selectedSupplier = structuredClone(this.defaultSupplier) ;
+    this.hasSelectedSupplier = false;
   }
 }
 
-
+savedBranches: any[] = [];
 
   openSourceModal() {
     this.showModal = true;
@@ -378,7 +417,17 @@ removeSelectedSupplier() {
     //   alert("You must agree to the Terms & Conditions before proceeding.");
     //   return;
     // }
-
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    const phonePattern = /^[0-9]{10,15}$/;
+    if (!emailPattern.test(this.email)) {
+      alert("Please enter a valid Gmail address.");
+      return;
+    }
+  
+    if (!phonePattern.test(this.phone)) {
+      alert("Enter a valid phone number (digits only, 10-15 characters).");
+      return;
+    }
     if (!this.supplierName || !this.contactPerson || !this.email || !this.phone) {
       alert('Please fill in all required fields.');
       return;
@@ -533,7 +582,7 @@ removeSelectedSupplier() {
   constructor(
     private posService: PosServiceService,  private http: HttpClient,
     private cdr: ChangeDetectorRef,
-
+    private fb: FormBuilder,
   ) {
   }
 
@@ -564,12 +613,19 @@ removeSelectedSupplier() {
   // };
 
   ngOnInit(): void {
+    this.branchForm = this.fb.group({
+      selectedBranches: [[]], // Store selected objects as an array
+      quantity: [null, Validators.required],
+      price: [null, Validators.required]
+    });
+    
+
    this.loadBranchesFromLocalStorage();
     this.loadCategory()
     this.getDiscountTypes()
     console.log(this.activeItem)
     const savedOptions = localStorage.getItem('dropdownOptions');
-    this.options = savedOptions ? JSON.parse(savedOptions) : ['Restock', 'Sale', 'Return'];
+    this.options = savedOptions ? JSON.parse(savedOptions) : ['Restock'];
     //     const storedSuppliers = localStorage.getItem('suppliers');
     // this.suppliers = storedSuppliers ? JSON.parse(storedSuppliers) : [];
     // const storedSuppliers = localStorage.getItem('suppliers');
@@ -590,6 +646,21 @@ removeSelectedSupplier() {
 
 
       }
+
+
+   removeBranch(branchId: number) {
+    let selectedBranches = this.branchForm.value.selectedBranches.filter((b: { id: number; }) => b.id !== branchId);
+    this.branchForm.patchValue({ selectedBranches });
+  }
+
+  @HostListener('document:click', ['$event'])
+  onClickOutside(event: Event) {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.dropdown-container')) {
+      this.dropdownOpen = false;
+    }
+  }
+  
   getDiscountTypes(){
         this.posService.getDiscountTypes().subscribe(
           async (data) => {
@@ -755,7 +826,45 @@ removeSelectedSupplier() {
   
     pdf.save('barcodes.pdf');
   }
+  saveSelection(productId: number){
+    if (this.branchForm.value.selectedBranches.length > 0) {
+      const newQuantity = this.activeItem.effectiveQuantity;
+    const newPrice = this.activeItem.effectivePrice;
+      this.savedBranches = this.branchForm.value.selectedBranches.map((branch: any) => ({
+        id: branch.id,
+        name: branch.name,
+        quantity: newQuantity,  // Apply same quantity to all
+        price: newPrice         // Apply same price to all
+      }));
 
+      // Store in local storage
+      localStorage.setItem(`savedBranches_${productId}`, JSON.stringify(this.savedBranches));
+    
+      console.log(`Saved branches for product ${productId}:`, this.savedBranches);
+
+
+     this.isEditing = false; // Reset after saving
+      console.log("Saved Data: ", this.savedBranches);
+    } else {
+      console.log("No branches selected!");
+    }
+  }
+  editAllBranches() {
+    if (this.savedBranches.length > 0) {
+      const firstBranch = this.savedBranches[0]; // Get data from the first branch
+  
+      this.activeItem.effectiveQuantity = firstBranch.quantity;
+      this.activeItem.effectivePrice = firstBranch.price;
+  
+      this.isEditing = true; // Switch to edit mode
+      alert("Editing all branches!");
+      console.log("Editing all branches:", this.savedBranches);
+    }
+  }
+  deleteAllBranches() {
+    this.savedBranches = []; // Clears all selected branches
+  }
+  
   closeEdit() {
     this.close.emit();
 

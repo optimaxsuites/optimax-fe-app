@@ -22,6 +22,26 @@ $default-bg-color: var(--white);
     }
   }
 
+  .left-sidebar {
+    max-width: min-content;
+    margin: 1rem;
+    display: flex;
+    flex-direction: column;
+    row-gap: 1.5rem;
+    align-items: stretch;
+    padding-top: 4.5%;
+
+    button {
+      @apply px-4 py-2 text-2xl bg-green-500 hover:bg-green-600 text-white rounded-3xl focus:outline-none focus:ring-2 focus:ring-green-300;
+
+      border-radius: 0.75rem;
+    }
+  }
+
+  .two-third-widths {
+    width: 66.67%;
+  }
+
   app-cart-item-card {
     background-color: $default-bg-color;
   }

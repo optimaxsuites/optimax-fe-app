@@ -1,4 +1,4 @@
-<button (click)="router.navigate(['/inventory'])" class="p-5 text-2xl">
+<button (click)="goBack()" class="p-5 text-2xl">
     <i class="fa-solid fa-arrow-left"></i>
   </button>
   
@@ -75,8 +75,33 @@
 <input id="category" type="text" class="border rounded-lg p-4 w-full  bg-gray-100  text-xl mb-4" [value]="supplier.products" readonly>
 <label for="category" class="block font-medium text-2xl ">Date: {{ Date }} , {{Time}} </label>
 </div>
+<div class="mt-9 "> 
+  <h1 class="text-3xl  text-center mb-8"> Branch Details</h1>
+  <ul class="flex gap-4 flex-wrap  mb-8">
+  <li *ngFor="let branch of savedBranches" class="p-2 bg-gray-200 rounded-md">
+    <span class="font-bold">{{ branch.name }}</span> - 
+    Quantity: {{ branch.quantity }} | Price: {{ branch.price }}
+  </li>
+</ul>
+</div>
   </div>
 </div>
+
+<!-- <div *ngIf="savedBranches.length > 0" class="mt-6 p-4 border rounded-md bg-gray-50">
+  <h2 class="text-xl font-bold mb-3">Saved Branches</h2>
+  <ul class="flex gap-4 flex-wrap">
+    <li *ngFor="let branch of savedBranches" class="p-2 bg-gray-200 rounded-md">
+      <span class="font-bold">{{ branch.name }}</span> - 
+      Quantity: {{ branch.quantity }} | Price: {{ branch.price }}
+    </li>
+  </ul>
+</div> -->
+
+<!-- Show a message if no branches are found -->
+<div *ngIf="savedBranches.length === 0" class="text-red-500 text-xl">
+  No saved branches available.
+</div>
+
 <!-- </div> -->
 <!-- If no supplier is found -->
 <ng-template #noSupplier>

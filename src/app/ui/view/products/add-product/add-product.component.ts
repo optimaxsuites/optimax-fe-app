@@ -6,10 +6,11 @@ import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import {
-  Discount,
+  DiscountDTO,
   HistoryData,
   ProductData,
   ProductJSONFormat,
+  VariantDTO,
 } from '../../../models/interface';
 
 @Component({
@@ -75,13 +76,28 @@ export class AddProductComponent {
   openAddVariant: boolean = false;
   isEditing: boolean = false;
   editingIndex: number | null = null;
-  variants: any[] = [];
-  newVariant = {
+  variants: VariantDTO[] = [];
+
+  /**
+   * NOTE: The order of this object is important! See `get variantObjectKeys()`
+   */
+  private readonly defaultVariant: VariantDTO = {
+    id: 0,
     name: '',
-    price: '',
-    quantity: '',
+    price: 1,
+    quantity: 1,
+    color: ['Other'],
+    size: 'M',
     sku: '',
   };
+  protected readonly variantValues = {
+    size: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL'] as VariantDTO['size'][],
+  };
+  /**
+   * The `color` field would actually be a string like "Red, Blue, Yellow" when the user is adding a new variant, however, before getting stored, it will split into an array
+   */
+  newVariant = this.resetVariantData();
+
   branches: any[] = [
     { label: 'HQT', value: 'headquarter' },
     { label: 'wuse', value: 'Wuse' },
@@ -306,13 +322,14 @@ export class AddProductComponent {
     console.log(formData);
 
     this.posService.addProduct(formData).subscribe(
-      
       async (data) => {
         if (data) {
-           let savedProducts = localStorage.getItem('products');
-            let productList:HistoryData = savedProducts ? new Map(JSON.parse(savedProducts)) : new Map();
-            productList.set(data.id, data);
-            localStorage.setItem('products', JSON.stringify([...productList]));
+          let savedProducts = localStorage.getItem('products');
+          let productList: HistoryData = savedProducts
+            ? new Map(JSON.parse(savedProducts))
+            : new Map();
+          productList.set(data.id, data);
+          localStorage.setItem('products', JSON.stringify([...productList]));
           this.messageService.add({
             severity: 'success',
             summary: 'Product Added',
@@ -451,20 +468,20 @@ export class AddProductComponent {
     return this.productForm.get('variant') as FormArray;
   }
   addVariant() {
+    //@ts-ignore
+    const variant: VariantDTO = structuredClone(this.newVariant);
+    //@ts-ignore
+    variant.color = this.newVariant.color.split(',').map((val) => val.trim());
+
     if (this.isEditing && this.editingIndex !== null) {
-      this.variants[this.editingIndex] = { ...this.newVariant };
+      this.variants[this.editingIndex] = variant;
       this.isEditing = false;
       this.editingIndex = null;
     } else {
-      this.variants.push({ ...this.newVariant });
+      this.variants.push(variant);
     }
 
-    this.newVariant = {
-      name: '',
-      price: '',
-      quantity: '',
-      sku: '',
-    };
+    this.newVariant = this.resetVariantData();
 
     this.openAddVariant = false;
   }
@@ -477,7 +494,12 @@ export class AddProductComponent {
     this.editingIndex = index;
 
     const selectedVariant = this.variants[index];
-    this.newVariant = { ...selectedVariant };
+    this.newVariant = {
+      ...selectedVariant,
+      color: selectedVariant.color.join(
+        ', '
+      ) as unknown as VariantDTO['color'][0],
+    };
 
     this.openAddVariant = true;
   }
@@ -613,7 +635,7 @@ export class AddProductComponent {
   addDiscount() {
     let discountObj = this.productData.discount;
 
-    const discountDetails: Discount = {
+    const discountDetails: DiscountDTO = {
       id: discountObj.id,
       name: discountObj.name,
       value: discountObj.value,
@@ -819,5 +841,32 @@ export class AddProductComponent {
     }
 
     return '';
+  }
+
+  /**
+   * Yes this looks needlessly complex :p
+   */
+  protected get variantObjectKeys() {
+    return (
+      Object.keys(this.defaultVariant) as (keyof typeof this.defaultVariant)[]
+    )
+      .filter((key) => key != 'id')
+      .map((key) => {
+        if (key == 'sku') return key.toLocaleUpperCase();
+        // "size" becomes "Size"
+        else return key.charAt(0).toLocaleUpperCase() + key.slice(1);
+      });
+  }
+
+  private resetVariantData() {
+    return {
+      id: this.defaultVariant.id,
+      name: this.defaultVariant.name,
+      price: this.defaultVariant.price,
+      quantity: this.defaultVariant.quantity,
+      color: this.defaultVariant.color[0],
+      size: this.defaultVariant.size,
+      sku: this.defaultVariant.sku,
+    };
   }
 }

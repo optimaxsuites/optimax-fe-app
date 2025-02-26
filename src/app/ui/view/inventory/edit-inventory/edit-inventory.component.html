@@ -9,7 +9,7 @@
 
 
 
-    <button  class="btn create-invoice-btn p-4" [disabled]="!selectedOption || !selectedSupplier || !selectedHeadquarters "  (click) =" saveProduct()">Update Product</button>
+    <button  class="btn create-invoice-btn p-4" [disabled]=" !selectedSupplier "  (click) =" saveProduct()">Edit Inventory</button>
   </div>
   <!-- <div  class="fixed top-4 right-4 bg-green-500 text-white p-3 rounded-md shadow-lg transition-opacity duration-500">
     <p> message</p>{{ notificationMessage }}
@@ -44,7 +44,29 @@
     
   
   
-            
+           
+  <div *ngIf="savedBranches.length > 0" class="mt-6 p-4 border rounded-md bg-gray-50">
+    <h2 class="text-xl font-bold mb-3">Selected Branches</h2>
+    <ul class="flex gap-4 flex-wrap">
+      <li *ngFor="let branch of savedBranches; let i = index" 
+          class="p-2 bg-gray-200 rounded-md flex items-center gap-3">
+        
+        <span class="font-bold">{{ branch.name }}</span> - 
+        Quantity: {{ branch.quantity }} | Price: {{ branch.price }}
+    
+        <!-- Edit Button -->
+       
+      </li>
+      <button (click)="editAllBranches()" title="Edit all selected branches">
+        <i class="fas fa-edit text-blue-500 cursor-pointer text-xl"></i>
+       
+      </button>
+      <button (click)="deleteAllBranches()" title="Remove all selected branches">
+        <i class="fas fa-trash text-red-500 cursor-pointer text-xl"></i>
+      </button>
+    </ul>
+  </div>
+    
           
           <!-- Dropdown1 -->
           
@@ -73,21 +95,14 @@
              
 
 
-              <p-inputGroup>
-              <select
-                id="dropdown"
-                class=" px-4 py text-gray-600 bg-gray-100 text-2xl w-full" 
-                style="padding: 10px;" 
-                [(ngModel)]="selectedOption"
-                (change)="updateSelectedOption()"
-              >
-                <option value="" disabled selected>Select a change-type</option>    
-                <option *ngFor="let option of options">{{ option }}</option>
-              </select>
-                <p-inputGroupAddon class="bg-customGreen text-white font-2xl px-2 cursor-pointer"    (click)="toggleInput()">
-                  <i class="fas fa-plus px-2"></i>
-                </p-inputGroupAddon>
-              </p-inputGroup>
+            
+                <span 
+                  class="px-4 py text-gray-600 bg-gray-100 text-2xl w-full block"
+                  style="padding: 10px;"
+                >
+                  Restock
+                </span>
+              
             </div>
             
           </div>
@@ -107,7 +122,7 @@
             <label for="dropdown" class="block font-medium text-2xl">Source <span class="text-red-500">*</span>
             
               <span 
-              *ngIf="selectedSupplier" 
+              *ngIf="hasSelectedSupplier" 
               (click)="removeSelectedSupplier()" 
               title="Delete selected supplier" 
               class="cursor-pointer text-red-600 text-2xl pl-3"
@@ -127,7 +142,7 @@
               style="padding: 10px;" 
               (change)="changeSelectedSupplier($event)"
             >
-            <option value="" disabled selected>Select a supplier</option>
+             <option [value]="null" disabled>Select a Supplier</option>
             <option *ngFor="let supplier of suppliers" [value]="supplier.supplierName">   {{ supplier.supplierName }}</option>
             </select>
                 <p-inputGroupAddon class="bg-customGreen text-white font-2xl px-2 cursor-pointer"    (click)="openModal()">
@@ -140,38 +155,22 @@
         </div>
         
 
-      <!-- adding a dropdown1 add new -->
-  
-      <div *ngIf="showInput"  class="my-4 border rounded-md overflow-hidden bg-gray-100 w-1/2">
-        <input 
-        type="text" 
-        [(ngModel)]="newOption" 
-        placeholder="Enter new option" 
-        class="w-full px-4 py-3 text-gray-600 bg-gray-100 focus:outline-none text-2xl border"
-      >
-      <button 
-      class="w-full bg-green-600 text-white px-4 py-2 hover:bg-green-700" 
-      (click)="addOption()">
-      Save
-    </button>
-      </div>
-  
 
 
 
 
 
-  
+
+<!--   
    <div class="flex space-x-4 gap-5 my-4">
-        <!-- Headquarters Dropdown -->
+     
     <div class="w-1/2">
       <label for="headquartersDropdown" class="block font-medium text-2xl">
         Branches <span class="text-red-500">*</span>
   
-        <!-- Delete Icon (Only Shows When an Option is Selected) -->
+     
         <span 
           *ngIf="selectedHeadquarters" 
-          (click)="deleteSelectedHeadquarters()" 
           title="Delete selected option" 
           class="cursor-pointer text-red-600 text-2xl pl-2"
         >
@@ -231,11 +230,63 @@
   </div>
   
   
+         -->
+         <div class="flex space-x-4 gap-5 my-4 items-center">
+          <!-- Branches Selection -->
+          <div class="w-1/2">
+            <form [formGroup]="branchForm">
+              <div class="dropdown-container relative w-full">
+                <label class="block font-medium text-2xl mb-2">Branches <span class="text-red-500">*</span></label>
         
-      
-  
-  
-  
+                <!-- Dropdown Display -->
+                <div 
+                  class="dropdown-display border p-3 rounded-md flex items-center justify-between cursor-pointer bg-gray-100"   style="padding: 10px;" 
+                  (click)="toggleDropdown()"
+                >
+                  <div *ngIf="branchForm.value.selectedBranches.length > 0" class="flex flex-wrap gap-2">
+                    <span *ngFor="let branch of branchForm.value.selectedBranches" class="bg-blue-500 text-white px-3 py-1 rounded-md flex items-center">
+                      {{ branch.name }} 
+                      <span class="ml-2 cursor-pointer text-white font-bold" (click)="removeBranch(branch.id)">✖</span>
+                    </span>
+                  </div>
+                  <div *ngIf="branchForm.value.selectedBranches.length === 0" class=" text-gray-600 text-2xl">Select Branches</div>
+                  <i class="fas fa-chevron-down text-gray-600"></i>
+                </div>
+        
+                <!-- Dropdown List -->
+                <div *ngIf="dropdownOpen" class="absolute bg-white border mt-2 rounded-md shadow-md w-full p-3 ">
+                  <!-- Select All Option -->
+                  <label class="flex items-center space-x-2 cursor-pointer py-2 font-semibold text-lg">
+                    <input type="checkbox" class="w-5 h-5 accent-blue-500" [checked]="branchForm.value.selectedBranches.length === branchOptions.length" (change)="selectAll()" />
+                    <span>Select All</span>
+                  </label>
+        
+                  <!-- Individual Branches -->
+                  <div class="grid grid-cols-2 gap-2">
+                    <label *ngFor="let branch of branchOptions" class="flex items-center space-x-2 cursor-pointer py-2 text-xl">
+                      <input type="checkbox" class="w-5 h-5 accent-blue-500" [checked]="isSelected(branch)" (change)="selectBranch(branch)" />
+                      <span>{{ branch.name }}</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        
+          <!-- Date Selection -->
+          <div class="w-1/2">
+            <label for="dateInput" class="block text-2xl text-gray-700">Select Date <span class="text-red-500">*</span></label>
+            <input
+              id="dateInput"
+              type="date"
+              class="text-2xl border-gray-300 border-2 rounded-md bg-gray-100 w-full px-4 py-2.5 focus:outline-none focus:ring focus:border-blue-300"
+              [(ngModel)]="selectedDate"
+              (change)="saveDate()"
+            />
+          </div>
+        </div>
+        
+        
   <!-- Modal Backdrop dropdown2 -->
   <!-- Overlay -->
   <!-- <div *ngIf="isOpen" class="fixed inset-0 bg-black bg-opacity-50 z-50" (click)="closeModal()"></div> -->
@@ -244,42 +295,70 @@
 
   
   
+
   
   
   
+  <div class="flex gap-4">
+    <div class="field w-1/2">
+      <label for="lastQuantity" class="block font-medium text-2xl">Last Quantity</label>
+      <input 
+        type="number" 
+        id="lastQuantity" 
+        name="lastQuantity"
+        class="editInput w-full bg-gray-100 p-2"
+        [(ngModel)] = "activeItem.effectiveQuantity"
+        required
+      />
+    </div>
   
+    <div class="field w-1/2">
+      <label for="currentQuantity" class="block font-medium text-2xl">Current Quantity</label>
+      <input 
+        type="number" 
+        id="currentQuantity" 
+        name="currentQuantity"
+        class="editInput w-full bg-gray-100 p-2"
+        required
+      />
+    </div>
+  </div>
   
-          <div class="field">
-            <label for="quantity" class="block font-medium text-2xl">Quantity</label>
-            <input 
-              type="number" 
-              id="quantity" 
-              name="quantity"
-              class="editInput w-full  bg-gray-100 "
-              style= " padding: 10px;"
-              required
-              [(ngModel)]="activeItem.effectiveQuantity"
-            />
-          </div>
         
-         <!-- <div class="mb-4">
-          <label class="block text-gray-700 text-2xl">Quantity</label>
-          <input type="number " [(ngModel)]="activeItem.effectiveQuantity" name="quantity" class="w-full p-2  bg-gray-200"style="border: 1px solid gray; border-radius: 4px;" required />
-        </div> -->
-          <div class="field">
-            <label for="price" class="block  font-medium text-2xl">Purchase Price</label>
-            <input 
-              type="number" 
-              id="price" 
-              name="price"
-              class="editInput w-full  bg-gray-100"
-              style= " padding: 10px;"
-              required
-              [(ngModel)]="activeItem.effectivePrice"
-            />
-          </div>
+  <div class="flex gap-4">
+    <div class="field w-1/2">
+      <label for="lastPrice" class="block font-medium text-2xl">Last Price</label>
+      <input 
+        type="number" 
+        id="lastPrice" 
+        name="lastPrice"
+        class="editInput w-full bg-gray-100 p-2"
+        [(ngModel)] = "activeItem.effectivePrice"
+        required
+   
+      />
+    </div>  
   
- 
+    <div class="field w-1/2">
+      <label for="currentPrice" class="block font-medium text-2xl">Current Price</label>
+      <input 
+        type="number" 
+        id="currentPrice" 
+        name="currentPrice"
+        class="editInput w-full bg-gray-100 p-2"
+        required
+
+      />
+    </div>  
+  </div>
+  
+          <button 
+          type="button" 
+          class="mt-4 bg-green-500 text-white px-6 py-2 rounded-md font-medium hover:bg-green-700 transition" 
+          (click)="saveSelection(activeItem.id)"
+        >
+          {{ isEditing ? 'Update Branch' : 'Save' }}
+        </button>
       
         </div>
    
@@ -305,12 +384,12 @@
         
               <div class="mb-4">
                 <label class="block text-gray-700 text-2xl">Email Address</label>
-                <input type="email" [(ngModel)]="email" name="email" class="w-full p-2  bg-gray-200"style="border: 1px solid gray; border-radius: 4px;" required />
+                <input type="email" [(ngModel)]="email" name="email" class="w-full p-2  bg-gray-200 "  #emailInput="ngModel" style="border: 1px solid gray; border-radius: 4px;" required />
               </div>
         
               <div class="mb-4">
                 <label class="block text-gray-700 text-2xl">Phone Number</label>
-                <input type="tel" [(ngModel)]="phone" name="phone" class="w-full p-2  bg-gray-200"style="border: 1px solid gray; border-radius: 4px;" required />
+                <input type="tel" [(ngModel)]="phone" name="phone"     [(ngModel)]="phone" class="w-full p-2  bg-gray-200"style="border: 1px solid gray; border-radius: 4px;" required />
               </div>
         
               <div class="mb-4">

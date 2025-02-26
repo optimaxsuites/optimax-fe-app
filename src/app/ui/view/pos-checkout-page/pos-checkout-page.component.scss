@@ -17,7 +17,7 @@ nav {
 }
 
 nav > p {
-  @apply text-gray-600 font-semibold  p-5 cursor-pointer mb-0 w-full text-center shadow-sm text-nowrap hover:bg-customGreen/70 hover:text-white;
+  @apply text-gray-600 font-semibold  p-5 cursor-pointer mb-0 w-full text-center shadow-sm text-nowrap hover:bg-customGreen/70 hover:brightness-90;
 }
 
 .payment > p {
@@ -87,28 +87,6 @@ nav {
 }
 .variant-button {
   @apply px-4 py-2 text-2xl bg-green-500 hover:bg-green-600 text-white rounded-3xl focus:outline-none focus:ring-2 focus:ring-green-300;
-}
-.left-sidebar {
-  max-width: min-content;
-  margin: 1rem;
-  display: flex;
-  flex-direction: column;
-  row-gap: 1.5rem;
-  align-items: stretch;
-  padding-top: 4.5%;
-
-  button {
-    @apply px-4 py-2 text-2xl bg-green-500 hover:bg-green-600 text-white rounded-3xl focus:outline-none focus:ring-2 focus:ring-green-300;
-
-    border-radius: 0.75rem;
-  }
-}
-.product-view {
-  width: 45%;
-}
-
-.two-third-widths {
-  width: 66.67%;
 }
 
 app-cart-item-card,

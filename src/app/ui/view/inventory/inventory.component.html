@@ -38,7 +38,7 @@
           <app-button
             text="Add Inventory"
             class="btn-navigate"
-            (click)="openEditInventory()" 
+            *ngIf="activeItem" (click)="openEditInventory(activeItem)"
           ></app-button>
           <app-button
             text="Import"

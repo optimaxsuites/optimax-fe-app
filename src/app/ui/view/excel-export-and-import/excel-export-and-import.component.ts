@@ -3,7 +3,7 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { Column, Row, Workbook } from 'exceljs';
 import { ProductExcelColumns } from '../../models/enums';
 import { PosServiceService } from '../../service/pos-service.service';
-import { Discount, ProductCategory } from '../../models/interface';
+import { DiscountDTO, ProductCategoryDTO } from '../../models/interface';
 
 @Component({
   selector: 'app-excel-export-and-import',
@@ -24,7 +24,7 @@ export class ExcelExportAndImportComponent implements OnInit {
     // Fetch the required data
     this.posService
       .getCategories()
-      .subscribe(async (data: ProductCategory[]) => {
+      .subscribe(async (data: ProductCategoryDTO[]) => {
         try {
           this.categoryNames = structuredClone(data).map((category) => {
             return category.name;
@@ -34,7 +34,7 @@ export class ExcelExportAndImportComponent implements OnInit {
         }
       });
 
-    this.posService.getDiscount().subscribe(async (data: Discount[]) => {
+    this.posService.getDiscount().subscribe(async (data: DiscountDTO[]) => {
       try {
         this.discountNames = structuredClone(data).map((discount) => {
           return discount.name;
