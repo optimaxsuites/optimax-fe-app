@@ -7,7 +7,7 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { supplierData, HistoryData, ProductData } from '../../models/interface';
+import { supplierData, HistoryData, ProductData } from '../../../models/interface';
 
 @Component({
   selector: 'app-information',
@@ -25,12 +25,27 @@ export class InformationComponent implements OnChanges {
   products: HistoryData = new Map();
   productHistory: ProductData[] = [];
   isEditing: boolean[] = [];
+  @Output() close = new EventEmitter<void>();  
   // route: any;
   selectedOption: string = '';
 
   constructor(public router: Router) {
     const navigation = this.router.getCurrentNavigation();
     this.revivedDate = new Date(this.supplier?.createdAt || new Date());
+  }
+  goBack() {
+    window.history.back();
+  }
+  
+  loadSavedBranches(productId: number) {
+    const storedBranches = localStorage.getItem(`savedBranches_${productId}`);
+    if (storedBranches) {
+      this.savedBranches = JSON.parse(storedBranches);
+      console.log(`Loaded branches for product ${productId}:`, this.savedBranches);
+    } else {
+      console.log(`No saved branches for product ${productId}`);
+      this.savedBranches = [];
+    }
   }
 
   loadSupplierData(): void {
@@ -58,9 +73,27 @@ export class InformationComponent implements OnChanges {
       this.loadSupplierData(); // Reload supplier when activeItem changes
     }
   }
+  savedBranches: any[] = []; 
 
   ngOnInit(): void {
     // Check if navigation state exists and load supplier data from there
+
+    if (history.state.branchData) {
+      this.savedBranches = history.state.branchData;
+      console.log("Loaded Branches from State:", this.savedBranches);
+    } else {
+      const storedBranches = localStorage.getItem("savedBranches");
+      if (storedBranches) {
+        this.savedBranches = JSON.parse(storedBranches);
+        console.log("Loaded Branches from LocalStorage:", this.savedBranches);
+      } else {
+        console.log("No saved branches found.");
+      }
+    }
+
+
+
+
 
     this.loadSupplierData();
 

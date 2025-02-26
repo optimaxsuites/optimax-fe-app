@@ -11,7 +11,9 @@ import { Router } from '@angular/router';
   styleUrl: './view-inventory.component.scss'
 })
 export class ViewInventoryComponent {
-  
+  savedBranches: any[] = []; // Declare it here
+
+
 
   //@ts-ignore
   @Input() activeItem: ProductData;  // Ensure this property exists
@@ -19,6 +21,7 @@ export class ViewInventoryComponent {
   @Output() close = new EventEmitter<void>();
   @Input() updatedProduct: any; 
   productHistory:ProductData[] = [];
+  revivedDate: Date = new Date(); //
  
   constructor(private router: Router, private posService: PosServiceService) { }
 
@@ -26,6 +29,29 @@ export class ViewInventoryComponent {
   //   // Navigate to the supplier-details route and pass the supplier data via state
   //   this.router.navigate(['/supplier-details'], { state: { supplier } });
   // }
+  get Date() {
+    return this.revivedDate.getDate();
+  }
+
+  get Month() {
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June", 
+      "July", "August", "September", "October", "November", "December"
+    ];
+  
+    return monthNames[this.revivedDate.getMonth()];
+  }
+
+  get Year() {
+    return this.revivedDate.getFullYear();
+  }
+  get Time() {
+    const hours = this.revivedDate.getHours();
+    const minutes = this.revivedDate.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const formattedHours = hours % 12 || 12; // Convert 0 to 12 for AM/PM format
+    return `${formattedHours}:${minutes < 10 ? '0' : ''}${minutes} ${ampm}`;
+  }
   
   openSupplierDetails(item: ProductData) {
     const supplierData = localStorage.getItem('selectedSupplier');
@@ -42,7 +68,21 @@ export class ViewInventoryComponent {
       alert("No supplier information available for this update.");
     }
   }
+  openBranchDetails(productId: number)  {
+    const storedBranches = localStorage.getItem("savedBranches");
   
+    if (storedBranches) {
+      const branches = JSON.parse(storedBranches);
+  
+      // Navigate to the branch details page, passing data via state
+      console.log("Retrieved Branch Data:", branches);
+      this.router.navigate(['/supplier-details'], { state:{ productId: productId }});
+  
+      alert("Branch information available.");
+    } else {
+      alert("No branch information available.");
+    }
+  }
 
 
   // Method to trigger edit event
@@ -62,7 +102,9 @@ export class ViewInventoryComponent {
     this.close.emit();
 
     }
-
+    printPage() {
+      window.print();
+    }
     products: HistoryData = new Map();
     // If you are viewing details for a single product,
     // you might have a property like:
@@ -74,7 +116,24 @@ export class ViewInventoryComponent {
       // if (savedSelectedOption) {
       //   this.selectedOption = JSON.parse(savedSelectedOption);
       // }
+      const productId = history.state.productId; // Get product ID from navigation state
+
+      if (productId) {
+        const storedBranches = localStorage.getItem(`savedBranches_${productId}`);
+        if (storedBranches) {
+          this.savedBranches = JSON.parse(storedBranches);
+          console.log(`Loaded saved branches for product ${productId}:`, this.savedBranches);
+        } else {
+          console.log(`No saved branches found for product ${productId}.`);
+          this.savedBranches = [];
+        }
+      } else {
+        console.log("No product ID found.");
+        this.savedBranches = [];
+      }
     
+
+
       const savedProducts = localStorage.getItem('products');
       this.products = savedProducts ? new Map(JSON.parse(savedProducts)) : new Map();
       
@@ -131,6 +190,8 @@ export class ViewInventoryComponent {
   const supplierData = localStorage.getItem('selectedSupplier');
   const supplier = supplierData ? JSON.parse(supplierData) : null;
 
+
+  
   item.createdDate = new Date().toISOString(); // Update timestamp
 
     console.log("Supplier Data:", supplier);

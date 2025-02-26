@@ -4,8 +4,8 @@ import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import {
-  Discount,
-  ProductCategory,
+  DiscountDTO,
+  ProductCategoryDTO,
   ProductData,
   ProductJSONFormat,
 } from '../../models/interface';
@@ -215,7 +215,7 @@ export class ProductsComponent implements OnInit {
           this.messageService.add({
             severity: 'success',
             summary: 'Product deleted',
-            detail: `${this.activeItem.name} deleted successfully`,
+            detail: `Product deleted successfully`,
             key: 'tl',
             life: 3000,
           });
@@ -250,7 +250,7 @@ export class ProductsComponent implements OnInit {
           this.messageService.add({
             severity: 'success',
             summary: 'Product deleted',
-            detail: `${this.activeItem.name} deleted successfully`,
+            detail: `Product deleted successfully`,
             key: 'tl',
             life: 3000,
           });
@@ -374,8 +374,8 @@ export class ProductsComponent implements OnInit {
         row.getCell(ProductExcelColumns.ITEM_WEIGHT + 1).text
       );
 
-      let discount: Discount = {} as any;
-      let productCategory: ProductCategory = {} as any;
+      let discount: DiscountDTO = {} as any;
+      let productCategory: ProductCategoryDTO = {} as any;
       let branch: string = branchName;
 
       this.products.forEach((product) => {
