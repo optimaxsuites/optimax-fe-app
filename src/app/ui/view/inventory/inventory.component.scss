@@ -21,28 +21,13 @@
 //   cursor: pointer;
 // }
 
-.three-dots {
-  cursor: pointer;
-  font-size: 20px;
-  color: black;
-}
+
 
 .dropdown {
   position: relative;
   display: inline-block;
 }
 
-.dropdown-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background: white;
-  border: 1px solid #ccc;
-  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
-  z-index: 1000; /* Ensures menu is always on top */
-  padding: 1px 0;
-  min-width: 90px; /* Prevents menu from being too small */
-}
 
 .dropdown-menu li {
   padding: 8px 12px;
@@ -51,7 +36,7 @@
 }
 
 .dropdown-menu li:hover {
-  background: #f0f0f0;
+  background: black;
 }
 // p-table .p-datatable-wrapper {
 //   overflow: visible !important;
@@ -69,6 +54,12 @@
   flex-direction: column;
   gap: 15px; /* Space between rows */
   margin-top: 18px;
+}
+#dropdown-menu {
+  z-index: 50; /* Higher value, appears on top */
+  align-items: center; /* Align items vertically */
+  white-space: nowrap;
+  width: auto; 
 }
 
 .row {
