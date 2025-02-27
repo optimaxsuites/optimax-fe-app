@@ -71,10 +71,10 @@ export class EditInventoryComponent {
       id: 0,
       name: '',
       value: 0,
-      startDate: '',
-      endDate: '',
+      startDate: new Date(),
+      endDate: new Date(),
       minQuantity: 0,
-      discountType: '',
+      discountType: {id: 0, code: ' ', name: ' ', description: " "},
     },
 
     productCategory: {
