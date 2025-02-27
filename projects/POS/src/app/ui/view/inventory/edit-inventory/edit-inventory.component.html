@@ -3,8 +3,8 @@
 
 <div class="createVendor"  >
     <div class="flex justify-between  ">
-    <p class="back pt-4" style="cursor: pointer; " (click)="closeEdit()"><i class="fa-solid fa-arrow-left text-[13px] "></i> Back</p>
-    <button  class="p-2 h-[5rem] bg-customGreen rounded-2xl text-white text-[13px]" [disabled]=" !selectedSupplier "  (click) =" saveProduct()">Edit Inventory</button>
+    <p class="back pt-4 text-[13px]" style="cursor: pointer; " (click)="closeEdit()"><i class="fa-solid fa-arrow-left  "></i> Back</p>
+    <button  class="p-2 h-[4rem] bg-customGreen rounded-2xl text-white text-[13px]" [disabled]=" !selectedSupplier "  (click) =" saveProduct()">Add Inventory</button>
   </div>
   <!-- <div  class="fixed top-4 right-4 bg-green-500 text-white p-3 rounded-md shadow-lg transition-opacity duration-500">
     <p> message</p>{{ notificationMessage }}
@@ -243,7 +243,7 @@
 <!-- Show Base Price, Tax, Effective Price, and Discount When Price Change is Clicked -->
 <div class=" flex-col items-center w-full" id="openprice" *ngIf="openPriceChange">
   <div class="flex  w-full">
-    <div class="detailDiv w-1/2 mb-6">
+    <div class="detailDiv w-1/2 ">
       <label class="text-[13px]" for="base-price">Base Price <span style="color: red">*</span></label>
       <input class="name editInput w-full" type="text" id="base-price" formControlName="initialPrice" placeholder="Base Price" />
     </div>
@@ -259,7 +259,7 @@
 <div class="detailDiv w-full">
   <label for="discount" class="block whitespace-nowrap text-[13px]">Discount<span style="color: red">*</span></label>
   
-  <div class="flex gap-4 items-center mb-6">
+  <div class="flex gap-4 items-center ">
     <select id="discount" formControlName="discount" class="editInput w-3/4" >
       <option [value]="0" disabled selected class="">Discount %</option> <!-- Placeholder Option -->
       <option [value]="5">5% Off</option>
