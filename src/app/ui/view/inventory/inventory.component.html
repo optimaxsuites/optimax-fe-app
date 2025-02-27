@@ -119,7 +119,7 @@
                 <span  >
                   <i class="material-icons" (click)="toggleDropdown2(item, $event)">more_vert</i> 
                 </span>
-                <ul     class="absolute w-full bg-gray-100 bordershadow-2xl rounded-lg py-2 " id="dropdown-menu"
+                <ul class="absolute w-full bg-gray-100 bordershadow-2xl rounded-lg py-2 " id="dropdown-menu"
                 *ngIf="item.showMenu">
                   <li (click)="openViewProduct(item); closeDropdown(item)"   class="px-4 py-2 hover:bg-gray-100 cursor-pointer">View History</li>
                   <li (click)="openEditInventory(item); closeDropdown(item)" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Add Inventory</li>

@@ -90,10 +90,10 @@
   color: green; /* Custom color */
   cursor: pointer; 
   white-space: nowrap; /* Prevent text from wrapping */
-  font-size: 13px; /* Optional: */
+  font-size: 12px; /* Optional: */
   }
   #openprice input{
-    padding: 0.8rem;
+    padding: 0.9rem;
   }
   #openprice select{
     padding: 0.8rem;
@@ -102,6 +102,9 @@
   //   margin-top: 20px;
   //   padding-top: 10px;
   // }
+  #addB{
+    height: 50px;
+  }
   
   .notification {
     background-color: #e0ffe0;
