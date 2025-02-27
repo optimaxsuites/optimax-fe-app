@@ -239,7 +239,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   calculateProductDiscount() {
     for (let item of this.cartItems) {
       if (item.discount.value > 0) {
-        if (item.discount.discountType === 'naira') {
+        if (item.discount.discountType.name === 'naira') {
           item.discountedPrice = Number(item.discount.value);
         } else {
           item.discountedPrice =

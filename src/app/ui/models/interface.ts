@@ -48,16 +48,23 @@ export interface DiscountDTO {
   value: number;
 
   // Date String Format: "2025-02-02T22:56:31.935Z"
-  startDate: string;
-  endDate: string;
+  startDate: Date;
+  endDate: Date;
   /**
    * The idea behind minimum quantity is when the discount only applies on quantity , for instance by 2 get 1
    */
   minQuantity: number;
   /**
-   * Maybe named wrongly, but it just means if its cash/currency and not quantity
+   * Maybe named wrongly, but it just means if its cash/currency and not quantity. Also it can be `null` or `undefined` for some reason :p
    */
-  discountType: number | string;
+  discountType: DiscountTypeDTO;
+}
+
+export interface DiscountTypeDTO {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
 }
 
 export interface ProductCategoryDTO {
