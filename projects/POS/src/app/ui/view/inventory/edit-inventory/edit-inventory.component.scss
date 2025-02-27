@@ -134,7 +134,6 @@
   
   
     input{
-      border: none;
       padding: 0.8rem 1rem;
       border-radius: 5px;
       // background-color: red;
@@ -148,10 +147,9 @@
 
     @apply pb-2
   }
+  
 
   :host ::ng-deep input:focus,
 :host ::ng-deep select:focus {
-    border-color: transparent !important; /* Ensures no color change */
-    outline: none !important;
     box-shadow: none !important;
 }

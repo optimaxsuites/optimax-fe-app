@@ -21,38 +21,27 @@ export class ViewInventoryComponent {
   @Output() close = new EventEmitter<void>();
   @Input() updatedProduct: any; 
   productHistory:ProductData[] = [];
-  revivedDate: Date = new Date(); //
+  //@ts-ignore
+  revivedDate: Date;
  
-  constructor(private router: Router, private posService: PosServiceService) { }
+  constructor(private router: Router, private posService: PosServiceService) { 
+    this.revivedDate = new Date(); 
+  }
 
   // openSupplierDetails(supplier: any) {
   //   // Navigate to the supplier-details route and pass the supplier data via state
   //   this.router.navigate(['/supplier-details'], { state: { supplier } });
   // }
-  get Date() {
-    return this.revivedDate.getDate();
+  get Timestamp() {
+    return this.revivedDate.toLocaleString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric', 
+  
+    });
   }
 
-  get Month() {
-    const monthNames = [
-      "January", "February", "March", "April", "May", "June", 
-      "July", "August", "September", "October", "November", "December"
-    ];
-  
-    return monthNames[this.revivedDate.getMonth()];
-  }
 
-  get Year() {
-    return this.revivedDate.getFullYear();
-  }
-  get Time() {
-    const hours = this.revivedDate.getHours();
-    const minutes = this.revivedDate.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const formattedHours = hours % 12 || 12; // Convert 0 to 12 for AM/PM format
-    return `${formattedHours}:${minutes < 10 ? '0' : ''}${minutes} ${ampm}`;
-  }
-  
   openSupplierDetails(item: ProductData) {
     const supplierData = localStorage.getItem('selectedSupplier');
     
@@ -97,7 +86,7 @@ export class ViewInventoryComponent {
     this.close.emit();
   }
 
-
+  currentPriceAndQuantity: any[] = [];
   closeEdit() {
     this.close.emit();
 
@@ -110,14 +99,32 @@ export class ViewInventoryComponent {
     // you might have a property like:
     // updatedProduct: any;
     selectedOption: string = '';
-    
+
+    loadSavedData() {
+      // Retrieve data from local storage
+      const storedData = JSON.parse(localStorage.getItem('currentPriceAndQuantity') || '[]');
+  
+      if (storedData.length > 0) {
+        this.currentPriceAndQuantity = storedData;
+        console.log("Retrieved data:", this.currentPriceAndQuantity);
+      } else {
+        console.log("No saved data found.");
+      }
+    }
+
     ngOnInit() {
       // const savedSelectedOption = localStorage.getItem('selectedOption');
       // if (savedSelectedOption) {
       //   this.selectedOption = JSON.parse(savedSelectedOption);
       // }
-      const productId = history.state.productId; // Get product ID from navigation state
+      if (this.productHistory.length > 0) {
+        this.revivedDate = new Date(this.productHistory[0].createdDate); // Use first item's date
+      } else {
+        this.revivedDate = new Date(); // Fallback if no history exists
+      }
 
+      const productId = history.state.productId; // Get product ID from navigation state
+      this.loadSavedData();
       if (productId) {
         const storedBranches = localStorage.getItem(`savedBranches_${productId}`);
         if (storedBranches) {

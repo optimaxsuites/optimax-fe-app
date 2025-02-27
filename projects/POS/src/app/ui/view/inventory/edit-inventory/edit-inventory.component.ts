@@ -6,7 +6,7 @@ import jsPDF from 'jspdf';
 import { PosServiceService } from '../../../service/pos-service.service';
 import { ChangeDetectorRef } from '@angular/core';
 import { Observable } from 'rxjs';
-import { HistoryData, ProductData, supplierData } from '../../../models/interface';
+import { HistoryData, ProductData, ProductJSONFormat, supplierData } from '../../../models/interface';
 import { position } from 'html2canvas/dist/types/css/property-descriptors/position';
 import { Toast } from 'primeng/toast';
 import { Message } from 'primeng/api';
@@ -27,6 +27,14 @@ export class EditInventoryComponent {
   messages: Message[] = [];
   newBranchName: string = ''; // Renamed from newOption
   showBranchInput: boolean = false; // Renamed from showInput
+  openAddDiscount: boolean = false;
+  productForm!: FormGroup;
+
+
+  selectDiscount(discount: any) {
+    this.productData.productCategory = discount;
+    this.productForm.get('discount')?.setValue(discount);
+  }
 
   branchForm!: FormGroup;
   branchOptions: Branch[] = [
@@ -44,7 +52,43 @@ export class EditInventoryComponent {
     const allSelected = this.branchForm.value.selectedBranches.length === this.branchOptions.length;
     this.branchForm.patchValue({ selectedBranches: allSelected ? [] : [...this.branchOptions] });
   }
-  
+  productData: ProductJSONFormat = {
+    name: '',
+    code: '',
+    description: '',
+    sku: '',
+    weight: 0,
+    initialPrice: '',
+    effectivePrice: '',
+    initialQuantity: 0,
+    effectiveQuantity: 0,
+    partNumber: '',
+    tax: 0,
+    branch: '',
+    variant: '',
+
+    discount: {
+      id: 0,
+      name: '',
+      value: 0,
+      startDate: '',
+      endDate: '',
+      minQuantity: 0,
+      discountType: '',
+    },
+
+    productCategory: {
+      id: 0,
+      name: '',
+      code: '',
+      description: '',
+    },
+    id: 0,
+    createdDate: '',
+    createdBy: null,
+    productImages: [],
+    variants: []
+  }
    @Input() product: any;  
    @Output() productUpdated: EventEmitter<any> = new EventEmitter();
    //@ts-ignore
@@ -90,6 +134,43 @@ export class EditInventoryComponent {
       this.newBranchName = ''; // Clear input
       this.showBranchInput = false; // Hide input field
     }
+  }
+  currentPriceAndQuantity: { quantity: number; price: number }[] = [];
+  openPriceChange: boolean = false;
+  saveToLocalStorage() {
+    const quantity = (document.getElementById('currentQuantity') as HTMLInputElement)?.value;
+    const price = (document.getElementById('currentPrice') as HTMLInputElement)?.value;
+    const newEntry = { quantity: Number(quantity), price: Number(price) };
+
+  
+    if (quantity && price) {
+      // Retrieve existing data from local storage (or initialize as an empty array)
+      let storedData = JSON.parse(localStorage.getItem('currentPriceAndQuantity') || '[]');
+  
+      // Add new entry
+      storedData.push({ quantity: Number(quantity), price: Number(price) });
+      
+
+      // 🔹 Check if this entry already exists to prevent duplicates
+    const isDuplicate = storedData.some(
+      (entry: any) => entry.quantity === newEntry.quantity && entry.price === newEntry.price
+    );
+
+    if (!isDuplicate) {
+      storedData.push(newEntry);
+    }
+  
+      // Save updated data back to local storage under a **single key**
+      localStorage.setItem('currentPriceAndQuantity', JSON.stringify(storedData));
+  
+      // Update component variable to reflect in UI
+      this.currentPriceAndQuantity = storedData;
+    }
+  }
+  
+  loadFromLocalStorage() {
+    const storedData = JSON.parse(localStorage.getItem('currentPriceAndQuantity') || '[]');
+    this.currentPriceAndQuantity = storedData;
   }
 
   saveProduct() {
@@ -409,6 +490,40 @@ savedBranches: any[] = [];
 //   this.showAlert = false;
 // }
 
+discounts = [
+  { id: 1, name: '10% Off' },
+  { id: 2, name: '20% Off' },
+  { id: 3, name: 'Buy 1 Get 1 Free' }
+];
+
+getErrorMessage(controlName: string, displayName?: string): string {
+  const control = this.productForm.get(controlName);
+  const name = displayName || controlName;
+
+  if (control && control.errors) {
+    const errors = control.errors;
+    const errorKeys = Object.keys(errors);
+
+    if (errorKeys.length > 0) {
+      switch (errorKeys[0]) {
+        case 'required':
+          return `${name} is required.`;
+        case 'pattern':
+          return `${name} has an invalid format.`;
+        case 'min':
+          return `${name} must be at least ${errors['min'].min}.`;
+        case 'minlength':
+          return `${name} must be at least ${errors['minlength'].requiredLength}.`;
+        case 'maxlength':
+          return `${name} should not exceed ${errors['maxlength'].requiredLength} characters.`;
+        default:
+          return `${name} has an error.`;
+      }
+    }
+  }
+
+  return '';
+}
 
 // agreeTerms: boolean = false;
 
@@ -494,39 +609,39 @@ savedBranches: any[] = [];
   //   return item; // Tracks by value instead of reference
   // }
   
-  productData = {
-    name: "",
-    code: "",
-    description: "",
-    sku: "",
-    weight: 0,
-    initialPrice: "",
-    effectivePrice: "",
-    initialQuantity: 0,
-    effectiveQuantity: 0,
-    partNumber: "",
-    tax: 0,
-    branch: "",
-    variant: "",
-    discount: 0,
-    category: "",
-    organizer: "",
-    changetype: "",
-    id: 0,
-    count: 0,
-    discountType: [] as any[],
-    discountValue: 0,
-    image: {} as any,
-    startDate: "",
-    endDate: "",
-    discountMinQuantity: 0,
-    discountName: ''
-  }
-  categoryData = {
-    name: "",
-    code: "",
-    description: "",
-  }
+  // productData = {
+  //   name: "",
+  //   code: "",
+  //   description: "",
+  //   sku: "",
+  //   weight: 0,
+  //   initialPrice: "",
+  //   effectivePrice: "",
+  //   initialQuantity: 0,
+  //   effectiveQuantity: 0,
+  //   partNumber: "",
+  //   tax: 0,
+  //   branch: "",
+  //   variant: "",
+  //   discount: 0,
+  //   category: "",
+  //   organizer: "",
+  //   changetype: "",
+  //   id: 0,
+  //   count: 0,
+  //   discountType: [] as any[],
+  //   discountValue: 0,
+  //   image: {} as any,
+  //   startDate: "",
+  //   endDate: "",
+  //   discountMinQuantity: 0,
+  //   discountName: ''
+  // }
+  // categoryData = {
+  //   name: "",
+  //   code: "",
+  //   description: "",
+  // }
   barcodeConfig = {
     barcodeType: 'CODE128',
     barcodeQuantity: 1
@@ -586,31 +701,6 @@ savedBranches: any[] = [];
   ) {
   }
 
-  // showError(message: string, title: string = 'Error') {
-  //   this.notifications.error(title, message, {
-  //     timeOut: 3000,
-  //     showProgressBar: true,
-  //     pauseOnHover: true,
-  //     clickToClose: true,
-  //   });
-  // }
-
-  // showInfo(message: string, title: string = 'Info') {
-  //   this.notifications.info(title, message, {
-  //     timeOut: 3000,
-  //     showProgressBar: true,
-  //     pauseOnHover: true,
-  //     clickToClose: true,
-  //   });
-  // }
-  // notificationOptions: Options = {
-  //   position: ['top', 'right'] as Position,
-  //   timeOut: 3000,
-  //   showProgressBar: true,
-  //   pauseOnHover: true,
-  //   clickToClose: true,
-  //   animate: 'fade' as NotificationAnimationType, // ✅ Explicitly cast 'fade'
-  // };
 
   ngOnInit(): void {
     this.branchForm = this.fb.group({
@@ -618,7 +708,7 @@ savedBranches: any[] = [];
       quantity: [null, Validators.required],
       price: [null, Validators.required]
     });
-    
+    this.loadFromLocalStorage();
 
    this.loadBranchesFromLocalStorage();
     this.loadCategory()
@@ -675,19 +765,7 @@ savedBranches: any[] = [];
   checkForEmptyFields(obj: any): boolean {
     return Object.values(obj).some(value => typeof value === 'string' && value.trim() === '');
   }
-  onImageUpload(event: any) {
-    const file = event.target.files[0];
-    console.log(file)
-        this.productData.image = file;
 
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        this.productImage = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  }
  
   deleteVariant(index: number) {
     this.variants.splice(index, 1);
@@ -720,147 +798,61 @@ savedBranches: any[] = [];
 
 
 
-  addCategory() {
-    const categoryDetails = {
-      name: this.categoryData.name,
-      code: this.categoryData.code,
-      description: this.categoryData.description
-    }
-
-   
   
-  }
-  
-  selectCategory(category: any) {
-    console.log(
-    category
-    )
-    this.productData.category = category
-    console.log(this.productData.category)
-  }
-  
-  toggleCategoryDropdown(){
-    this.openCategories =!this.openCategories
-  }
-  
-
-  openGenerateBarcode() {
-    this.configureBarcode = true
-    this.addSuccessfull = false
-  }
-
-  generateBarcode() {
-  const productCode: string = '5901234123457';
-    
-    const barcodeSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    JsBarcode(barcodeSvg, productCode, {
-      format: this.barcodeConfig.barcodeType,
-      lineColor: '#000',
-      width: 1,
-      height: 50,
-      displayValue: true
-    });
-
-
-    this.convertSvgToPng(barcodeSvg);
-  }
-  
-  convertSvgToPng(svgElement: Node) {
-    const svgString = new XMLSerializer().serializeToString(svgElement);
-    
-    const encodedSvg = encodeURIComponent(svgString);
-    
-    const img = new Image();
-    
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx?.drawImage(img, 0, 0);
-  
-      const imgData = canvas.toDataURL('image/png');
-      this.generatePDF(imgData);
-    };
-  
-    img.src = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
-  }
-  
-  generatePDF(imgData: string) {
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'px',
-      format: 'a4'
-    });
-  
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (100 * pdfWidth) / 200; 
-
-    const padding = 10;
-    const barcodeWidth = 150;
-    const barcodeHeight = 50;
-    const itemsPerRow = Math.floor((pdfWidth - 2 * padding) / pdfWidth);
-    let currentX = padding;
-    let currentY = padding;
-  
-    for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
-      pdf.addImage(imgData, 'PNG', currentX, currentY, barcodeWidth, barcodeHeight);
-  
-      currentX += pdfWidth;
-      if ((i + 1) % itemsPerRow === 0) {
-        currentX = padding;
-        currentY += barcodeHeight + padding;
-      }
-
-      if (currentX + pdfWidth > pdf.internal.pageSize.getWidth()) {
-        currentX = padding;
-        currentY += pdfHeight + padding;
-      }
-
-      if (currentY + pdfHeight + padding > pdf.internal.pageSize.getHeight()) {
-        pdf.addPage();
-        currentX = padding;
-        currentY = padding;
-      }
-    }
-  
-    pdf.save('barcodes.pdf');
-  }
-  saveSelection(productId: number){
+  saveSelection(productId: number) {
     if (this.branchForm.value.selectedBranches.length > 0) {
       const newQuantity = this.activeItem.effectiveQuantity;
-    const newPrice = this.activeItem.effectivePrice;
-      this.savedBranches = this.branchForm.value.selectedBranches.map((branch: any) => ({
+      const newPrice = this.activeItem.effectivePrice;
+  
+      // Retrieve previously saved branch lists for this product
+      let savedBranchLists = JSON.parse(localStorage.getItem(`savedBranches_${productId}`) || '[]');
+  
+      // Create a new list entry
+      const newBranchList = this.branchForm.value.selectedBranches.map((branch: any) => ({
         id: branch.id,
         name: branch.name,
-        quantity: newQuantity,  // Apply same quantity to all
-        price: newPrice         // Apply same price to all
+        quantity: newQuantity,
+        price: newPrice
       }));
-
-      // Store in local storage
-      localStorage.setItem(`savedBranches_${productId}`, JSON.stringify(this.savedBranches));
-    
-      console.log(`Saved branches for product ${productId}:`, this.savedBranches);
-
-
-     this.isEditing = false; // Reset after saving
-      console.log("Saved Data: ", this.savedBranches);
+  
+      // Add the new list to the existing lists (keeping old ones)
+      savedBranchLists.push(newBranchList);
+  
+      // Save back to local storage
+      localStorage.setItem(`savedBranches_${productId}`, JSON.stringify(savedBranchLists));
+  
+      // Update the UI to show all lists
+      this.savedBranches = savedBranchLists;
+  
+      console.log(`Updated branches for product ${productId}:`, this.savedBranches);
+  
+      this.isEditing = false; // Reset after saving
     } else {
       console.log("No branches selected!");
     }
   }
-  editAllBranches() {
-    if (this.savedBranches.length > 0) {
-      const firstBranch = this.savedBranches[0]; // Get data from the first branch
   
-      this.activeItem.effectiveQuantity = firstBranch.quantity;
-      this.activeItem.effectivePrice = firstBranch.price;
+  editingIndex: number | null = null; // Track which selection is being edited
+
   
+  editAllBranches(listIndex: number) {
+    if (this.savedBranches.length > listIndex) {
+      const selectedList = this.savedBranches[listIndex]; // Get the selected list
+  
+      // Set values based on the first branch in that list
+      if (selectedList.length > 0) {
+        this.activeItem.effectiveQuantity = selectedList[0].quantity;
+        this.activeItem.effectivePrice = selectedList[0].price;
+      }
+  
+      this.editingIndex = listIndex; // Track which list is being edited
       this.isEditing = true; // Switch to edit mode
-      alert("Editing all branches!");
-      console.log("Editing all branches:", this.savedBranches);
+  
+      alert(`Editing selection ${listIndex + 1}!`);
+      console.log("Editing selection:", selectedList);
     }
   }
+  
   deleteAllBranches() {
     this.savedBranches = []; // Clears all selected branches
   }
