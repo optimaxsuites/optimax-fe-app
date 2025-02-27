@@ -3,8 +3,8 @@
 
 <div class="createVendor"  >
     <div class="flex justify-between  ">
-    <p class="back pt-4 text-[13px]" style="cursor: pointer; " (click)="closeEdit()"><i class="fa-solid fa-arrow-left  "></i> Back</p>
-    <button  class="p-2 h-[4rem] bg-customGreen rounded-2xl text-white text-[13px]" [disabled]=" !selectedSupplier "  (click) =" saveProduct()">Add Inventory</button>
+    <p class="back pt-4 text-[12px]" style="cursor: pointer; " (click)="closeEdit()"><i class="fa-solid fa-arrow-left  "></i> Back</p>
+    <button  class="p-2  bg-customGreen rounded-2xl text-white text-[12px]" [disabled]=" !selectedSupplier "  (click) =" saveProduct()" id="addB">Add Inventory</button>
   </div>
   <!-- <div  class="fixed top-4 right-4 bg-green-500 text-white p-3 rounded-md shadow-lg transition-opacity duration-500">
     <p> message</p>{{ notificationMessage }}
@@ -232,7 +232,7 @@
         />
         <p 
           id="priceChange"
-            (click)="openPriceChange = !openPriceChange" class="text-[13px]"
+            (click)="openPriceChange = !openPriceChange" 
         >
             + Price Change
         </p>
@@ -267,7 +267,7 @@
       <option [value]="15">15% Off</option>
     </select>
 
-    <button class="btn create-invoice-btn w-32 text-center" type="button" (click)="openAddDiscount = true">
+    <button class="w-32 text-center text-[13px] bg-customGreen p-3 rounded-2xl" (click)="openAddDiscount = true">
       Add
     </button>
   </div>
@@ -275,7 +275,7 @@
 
 
   <div class="detailDiv w-full">
-    <label for="e-price">Effective Price <span style="color: red">*</span></label>
+    <label class="text-[13px]" for="e-price">Effective Price <span style="color: red">*</span></label>
     <input class="name editInput" type="text" id="e-price" formControlName="effectivePrice" placeholder="Effective Price"  />
   </div>
 
