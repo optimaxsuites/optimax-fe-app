@@ -3,9 +3,10 @@
 </div>
 
 <div
-  class="project-container bg-white shadow-md h-lvh flex flex-col justify-center items-center w-auto overflow-y-scroll"
+  class="project-container bg-white shadow-md  flex flex-col justify-center items-center w-auto  "
 >
-  <form [formGroup]="form" (ngSubmit)="saveProject()" class="project-form">
+
+  <form [formGroup]="form" (ngSubmit)="saveProject()" class="project-form ">
     <div class="form-section">
       <div class="form-field">
         <label for="name" class="">Project Name <span>*</span></label>
@@ -122,6 +123,19 @@
         >
           Budget is required and must be greater than 0.
         </p>
+
+
+
+         <div class="form-field">
+          <label for="endDate">Date created<span>*</span></label>
+          <input id="endDate" type="date" formControlName="endDate" />
+          <p
+            class="error"
+            *ngIf="form.get('endDate')?.invalid && form.get('endDate')?.touched"
+          >
+            End date is required.
+          </p>
+        </div>
       </div>
 
       <div class="form-field">

@@ -15,7 +15,7 @@
       >
         <button
           (click)="onCreateProjectClick()"
-          class="w-48 bg-customGreen hover:bg-customGreenHover text-white h-20 rounded-lg text mr-20"
+          class="w-48 bg-customGreen hover:bg-customGreenHover text-white h-20 rounded-lg text mr-20 text-2xl"
         >
           Add New
         </button>
@@ -25,11 +25,11 @@
 
    <div 
  
-  class="card-container w-[97%] h-auto rounded-3xl border-green-600 bg-white mt-10"
+  class="card-container w-[97%] h-auto rounded-3xl border-green-600 bg-white mt-10 "
 >
   <div   class="card-cover w-[98%] h-auto flex flex-row justify-evenly  flex-wrap mt-3 mb-3 "  >
     <div    *ngFor="let project of projects"
-      class="card-frame border-[1.5px] border-solid border-gray-200 w-[30%] h-[250px] rounded-2xl p-3 mt-5 ml-4 "
+      class="card-frame border-[1.5px] border-solid border-gray-200 w-[23%] h-[250px] rounded-2xl p-3 mt-5 ml-4 "
     >
       <div  class="border-[0.5px] border-gray-200 rounded-2xl ">
         <img [src]="project.projectImage" alt="project image" class="w-[100%] h-20 rounded-2xl object-cover" />
@@ -47,8 +47,8 @@
       
   </span>
       </p> -->
-      <div class="text-4xl p-5">
-        <p>{{ project.name }} </p>
+      <div class="text-xl p-5">
+        <p class="text-gray-600">{{ project.name }} </p>
   
   <span class=" text-base font-bold">
     <p class="text-slate-600 flex items-center"> Timeline:
