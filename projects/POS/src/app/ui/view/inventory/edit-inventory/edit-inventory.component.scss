@@ -10,7 +10,7 @@
       margin-top: 0px;
     }
    > div:first-of-type{
-    margin-top: 5%;
+    margin-top: 3%;
     }
     label{
       // padding-bottom: 10px;
@@ -92,7 +92,12 @@
   white-space: nowrap; /* Prevent text from wrapping */
   font-size: 13px; /* Optional: */
   }
-
+  #openprice input{
+    padding: 0.8rem;
+  }
+  #openprice select{
+    padding: 0.8rem;
+  }
   // #field{
   //   margin-top: 20px;
   //   padding-top: 10px;
@@ -112,7 +117,11 @@
   //   margin-top: 0px!important;
   // }
   
-  
+  input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0; 
+}
   
   .btn-navigate{
       margin-right: 1rem;
