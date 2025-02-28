@@ -64,7 +64,7 @@ import { ViewInventoryComponent } from './ui/view/inventory/view-inventory/view-
 import { SummaryReportComponent } from './ui/view/report-dashboard/summary-report/summary-report.component';
 import { CustomReportComponent } from './ui/view/report-dashboard/custom-report/custom-report.component';
 import { AddInventoryComponent } from './ui/view/inventory/add-inventory/add-inventory.component';
-import { InformationComponent } from './ui/view/information/information.component';
+import { InformationComponent } from './ui/view/inventory/information/information.component';
 
 import { InputGroupModule } from 'primeng/inputgroup';
 import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
@@ -95,7 +95,7 @@ import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
     AddInventoryComponent,
   ],
   imports: [
-    // BrowserModule,
+    BrowserModule,
     UserModule,
     AppRoutingModule,
     CommonModule,

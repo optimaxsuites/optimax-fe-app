@@ -5,8 +5,106 @@
     border-color: #007bff;
   }
   
-  
-  
+  #addInventory >div{
+   > div:not(:first-child){
+      margin-top: 0px;
+    }
+   > div:first-of-type{
+    margin-top: 3%;
+    }
+    label{
+      // padding-bottom: 10px;
+      position: relative;
+      top: -3px;
+      padding-bottom: 0px;
+    }    
+  }
+  #name{
+    padding:0.8rem;
+  }
+  #sku{
+    padding:0.8rem;
+  }
+  #code{
+    padding:0.8rem;
+  }
+  #category{
+    padding:0.8rem;
+  }
+  #change-type{
+    padding: 0.8rem ;
+  }
+  #dropdown{
+    padding: 0.8rem;
+
+  }
+  #branch{
+    padding: 0.8rem ;
+  }
+  #date{
+    padding: 0.8rem ;
+  }
+  #dropdown1{
+    padding-bottom: 3rem;
+  }
+  #dropdown2{
+    padding-bottom: 2rem;
+  }
+  #h1Q{
+    margin-top: 0%;
+    margin-bottom: 2rem;
+  }
+  #lastQuantity{
+    padding: 0.8rem;
+  }
+  #currentQuantity{
+    padding: 0.8rem;
+  }
+  #Pricing{
+    margin-top: 0%;
+    margin-bottom: 2rem;
+  }
+  #restockedQuantity{
+    padding: 0.8rem;
+  }
+  #currentQuantity2{
+    padding: 0.8rem;
+  }
+  #lastPrice{
+    padding: 0.8rem;
+  }
+  #currentPrice{
+    padding: 0.8rem;
+  }
+  #lastSellingPrice{
+    padding: 0.8rem;
+  }
+  #currentSellingPrice{
+    padding: 0.8rem;
+  }
+  #priceChange{
+    position: absolute;
+  top: 30%; 
+  right: 10px; 
+  transform: translateY(-50%); /* Center vertically */
+  color: green; /* Custom color */
+  cursor: pointer; 
+  white-space: nowrap; /* Prevent text from wrapping */
+  font-size: 12px; /* Optional: */
+  }
+  #openprice input{
+    padding: 0.9rem;
+  }
+  #openprice select{
+    padding: 0.8rem;
+  }
+  // #field{
+  //   margin-top: 20px;
+  //   padding-top: 10px;
+  // }
+  #addB{
+    height: 50px;
+  }
   
   .notification {
     background-color: #e0ffe0;
@@ -18,9 +116,15 @@
     text-align: center;
   }
   
+  // div.field{
+  //   margin-top: 0px!important;
+  // }
   
-  
-  
+  input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0; 
+}
   
   .btn-navigate{
       margin-right: 1rem;
@@ -54,6 +158,9 @@
       align-items: center;
       color: #224957;
       cursor: pointer;
+    }
+    .detailDiv{
+      margin-bottom: 1.8rem;
     }
   
     .modalText {
@@ -132,14 +239,13 @@
 
   .field {
   
-  
     input{
-      border: none;
       padding: 0.8rem 1rem;
       border-radius: 5px;
       // background-color: red;
       margin-bottom: 2.5rem;
       @apply active:border-none
+      
     }
 
     label {
@@ -148,10 +254,9 @@
 
     @apply pb-2
   }
+  
 
   :host ::ng-deep input:focus,
 :host ::ng-deep select:focus {
-    border-color: transparent !important; /* Ensures no color change */
-    outline: none !important;
     box-shadow: none !important;
 }

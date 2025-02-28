@@ -21,6 +21,7 @@ export class SearchbarComponent {
     this.fuse = new Fuse([], {
       keys: [{ name: 'name', weight: 1.5 }, 'description', 'category'],
       includeScore: true,
+      threshold: 0.333, // Lower threshold for less fuzzy matching
     });
   }
 

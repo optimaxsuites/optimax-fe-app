@@ -38,7 +38,7 @@
           <app-button
             text="Add Inventory"
             class="btn-navigate"
-            (click)="openEditInventory()" 
+            *ngIf="activeItem" (click)="openEditInventory(activeItem)"
           ></app-button>
           <app-button
             text="Import"
@@ -115,11 +115,11 @@
             <td class="actions table-item">
               <span class="p-column-title">Action</span>
   
-              <div class="dropdown "  >
+              <div class="dropdown  "  >
                 <span  >
                   <i class="material-icons" (click)="toggleDropdown2(item, $event)">more_vert</i> 
                 </span>
-                <ul     class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 shadow-lg rounded-lg py-2 z-50"
+                <ul class="absolute w-full bg-gray-100 bordershadow-2xl rounded-lg py-2 " id="dropdown-menu"
                 *ngIf="item.showMenu">
                   <li (click)="openViewProduct(item); closeDropdown(item)"   class="px-4 py-2 hover:bg-gray-100 cursor-pointer">View History</li>
                   <li (click)="openEditInventory(item); closeDropdown(item)" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Add Inventory</li>

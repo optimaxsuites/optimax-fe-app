@@ -19,10 +19,10 @@ export interface ProductJSONFormat {
   tax: number;
   branch: string;
   variant?: string | null;
-  discount: Discount;
-  productCategory: ProductCategory;
-  productImages: ProductImage[];
-  variants: Variant[];
+  discount: DiscountDTO;
+  productCategory: ProductCategoryDTO;
+  productImages: ProductImageDTO[];
+  variants: VariantDTO[];
 }
 
 /**
@@ -42,39 +42,146 @@ export interface ProductData extends ProductJSONFormat {
 }
 export type HistoryData = Map<number, ProductData[]>;
 
-export interface Discount {
+export interface DiscountDTO {
   id: number;
   name: string;
   value: number;
 
   // Date String Format: "2025-02-02T22:56:31.935Z"
-  startDate: string;
-  endDate: string;
-
+  startDate: Date;
+  endDate: Date;
+  /**
+   * The idea behind minimum quantity is when the discount only applies on quantity , for instance by 2 get 1
+   */
   minQuantity: number;
-  discountType: number | string;
+  /**
+   * Maybe named wrongly, but it just means if its cash/currency and not quantity. Also it can be `null` or `undefined` for some reason :p
+   */
+  discountType: DiscountTypeDTO;
 }
 
-export interface ProductCategory {
+export interface DiscountTypeDTO {
   id: number;
   name: string;
   code: string;
   description: string;
 }
 
-export interface ProductImage {
+export interface ProductCategoryDTO {
   id: number;
   name: string;
+  code: string;
+  description: string;
+}
+
+export interface ProductImageDTO {
+  id: number;
+  name: string;
+  /**
+   * It's actually the image id. FOr example, "d03BR3TK6L3", which is used in constructing the appropriate image url.
+   */
   imgNo: string;
 }
 
-export interface Variant {
+export interface VariantDTO {
   id: number;
   name: string;
   price: number;
   quantity: number;
   sku: string;
-  variantType: null;
+  variantType?: number;
+
+  /**
+   * Might revert this type to a regular `string`
+   */
+  color: (
+    | 'Red'
+    | 'Blue'
+    | 'Green'
+    | 'Yellow'
+    | 'Black'
+    | 'White'
+    | 'Silver'
+    | 'Gold'
+    | 'Purple'
+    | 'Orange'
+    | 'Brown'
+    | 'Pink'
+    | 'Gray'
+    | 'Beige'
+    | 'Cyan'
+    | 'Magenta'
+    | 'Lime'
+    | 'Teal'
+    | 'Navy'
+    | 'Maroon'
+    | 'Olive'
+    | 'Indigo'
+    | 'Violet'
+    | 'Rose'
+    | 'Coral'
+    | 'Turquoise'
+    | 'Lavender'
+    | 'Peach'
+    | 'Khaki'
+    | 'Tan'
+    | 'Cream'
+    | 'Ivory'
+    | 'Fuchsia'
+    | 'Aqua'
+    | 'Mint'
+    | 'Salmon'
+    | 'Crimson'
+    | 'Sienna'
+    | 'Mauve'
+    | 'Burgundy'
+    | 'Cerulean'
+    | 'Azure'
+    | 'Periwinkle'
+    | 'Mulberry'
+    | 'Lilac'
+    | 'Chartreuse'
+    | 'Seafoam'
+    | 'Forest'
+    | 'Rust'
+    | 'Bronze'
+    | 'Copper'
+    | 'Silver'
+    | 'Gold'
+    | 'Platinum'
+    | 'Rainbow'
+    | 'Multicolor'
+    | 'Clear'
+    | 'Transparent'
+    | 'Opaque'
+    | 'Matte'
+    | 'Glossy'
+    | 'Metallic'
+    | 'Neon'
+    | 'Pastel'
+    | 'Dark'
+    | 'Light'
+    | 'Bright'
+    | 'Pale'
+    | 'Dusty'
+    | 'Vintage'
+    | 'Classic'
+    | 'Modern'
+    | 'Contemporary'
+    | 'Trendy'
+    | 'Minimalist'
+    | 'Bold'
+    | 'Subtle'
+    | 'Neutral'
+    | 'Warm'
+    | 'Cool'
+    | 'Earthy'
+    | 'Natural'
+    | 'Artificial'
+    | 'Custom'
+    | 'Other'
+  )[];
+  size: 'XXS' | 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
 }
 
 export interface DiscountOption {
@@ -182,3 +289,131 @@ export type supplierData = {
 export interface Business {
   businessType: BusinessType;
 }
+
+/////
+
+interface ProductDTO {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
+  sku: string;
+  weight: number;
+  createdDate: string;
+
+  createdBy: string | null;
+  partNumber: string;
+  tax: number;
+
+  /**
+   * Each branch would be indexed by their name e.g (Headquarters, Wuse)
+   */
+  // branches: Map<string, BranchDTO>;
+  branches: ProductBranchDTO[];
+  discount: DiscountDTO;
+  productCategory: ProductCategoryDTO;
+  productImage: ProductImageDTO;
+  variants: VariantDTO[];
+}
+
+interface ProductBranchDTO {
+  branchId: BranchDTO;
+  data: BranchDataDTO;
+}
+
+interface BranchDTO {
+  id: number;
+  name: string;
+  description: string;
+  address: string;
+  phoneNo: number;
+}
+interface BranchDataDTO {
+  id: number;
+  price: number;
+  quantity: number;
+  sku: string;
+  supplierId: number;
+  variants: VariantDTO[];
+}
+
+interface IndustryDTO {
+  id: number;
+  name: number;
+  description: number;
+}
+
+interface SupplierDTO {
+  id: number;
+  name: string;
+  address: string;
+  description: string;
+  phoneNo: number;
+  email: string;
+}
+
+interface PharmacyProductDTO extends ProductDTO {
+  expiryDate: Date;
+  dosage: string;
+  prescriptionRequired: boolean;
+}
+
+interface RestaurantProductDTO extends ProductDTO {
+  ingredients: IngredientDTO[];
+}
+
+interface IngredientDTO {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
+  weight: number;
+  createdBy: string;
+  partNumber: string;
+  branches: BranchDTO[];
+  price: number;
+  quantity: number;
+  image: File;
+}
+
+interface HotelProductDTO extends ProductDTO {}
+
+// abstract class Product implements ProductDTO {
+//   constructor(
+//     public readonly id: number,
+//     public readonly name: string,
+//     public readonly code: string,
+//     public readonly description: string,
+//     public readonly sku: string,
+//     public readonly weight: number | null,
+//     public readonly createdBy: string | null,
+//     public readonly partNumber: string,
+//     public readonly tax: number,
+//     public readonly branches: Map<string, BranchDTO>,
+//     public readonly discount: DiscountDTO,
+//     public readonly productCategory: ProductCategoryDTO,
+//     public readonly productImages: ProductImageDTO[],
+//     public readonly variants: VariantDTO[],
+//     public readonly createdDate: string
+//   ) {}
+
+//   branchData(branchName: string) {
+//     return this.branches.get(branchName) as BranchDTO;
+//   }
+
+//   effectiveQuantity(branchName: string) {
+//     return this.branchData(branchName).regularQuantity;
+//   }
+
+//   effectivePrice(branchName: string) {
+//     const price = this.branchData(branchName).regularPrice;
+
+//     return (
+//       price + (price * this.discount.value) / 100 + (price * this.tax) / 100
+//     );
+//   }
+
+//   supplierId(branchName: string) {
+//     return this.branchData(branchName).supplierId;
+//   }
+// }

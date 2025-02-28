@@ -379,10 +379,15 @@
             <table *ngIf="variants.length > 0" class="min-w-full mt-3 bg-white">
               <thead>
                 <tr>
-                  <th class="py-2 px-4 bg-gray-600">Name</th>
+                  <!-- <th class="py-2 px-4 bg-gray-600">Name</th>
                   <th class="py-2 px-4 bg-gray-600">Price</th>
                   <th class="py-2 px-4 bg-gray-600">Quantity</th>
+
                   <th class="py-2 px-4 bg-gray-600">SKU</th>
+                  <th class="py-2 px-4 bg-gray-600">Action</th> -->
+                  @for (prop of variantObjectKeys; track $index) {
+                  <th class="py-2 px-4 bg-gray-600">{{ prop }}</th>
+                  }
                   <th class="py-2 px-4 bg-gray-600">Action</th>
                 </tr>
               </thead>
@@ -391,6 +396,10 @@
                   <td class="py-2 px-4 border-b">{{ variant.name }}</td>
                   <td class="py-2 px-4 border-b">{{ variant.price }}</td>
                   <td class="py-2 px-4 border-b">{{ variant.quantity }}</td>
+                  <td class="py-2 px-4 border-b">
+                    {{ variant.color.join(", ") }}
+                  </td>
+                  <td class="py-2 px-4 border-b">{{ variant.size }}</td>
                   <td class="py-2 px-4 border-b">{{ variant.sku }}</td>
                   <td class="py-3 px-4 border-b flex gap-3">
                     <i
@@ -503,6 +512,7 @@
   </div>
 </app-side-modal>
 
+<!-- SECTION: Modal for adding variants -->
 <app-side-modal *ngIf="openAddVariant" (close)="openAddVariant = false">
   <div class="modal-header flex justify-between items-center text-gray-700">
     <h2 class="font-semibold pb-0 mb-0">Variants</h2>
@@ -558,6 +568,34 @@
         placeholder="variant SKU"
       />
 
+      <label for="variant-color">Color</label>
+      <input
+        type="text"
+        id="variant-color"
+        [(ngModel)]="newVariant.color"
+        class="editInput mb-2 outline-none"
+        placeholder="variant color"
+      />
+
+      <label for="variant-size">Size</label>
+      <!-- <input
+        type="text"
+        id="variant-size"
+        [(ngModel)]="newVariant.size"
+        class="editInput mb-2 outline-none"
+        placeholder="variant size"
+      /> -->
+      <select
+        name="variant-size"
+        id="variant-size"
+        [(ngModel)]="newVariant.size"
+        class="editInput mb-2 outline-none"
+      >
+        @for (size of variantValues.size; track $index) {
+        <option [value]="size">{{ size }}</option>
+        }
+      </select>
+
       <!-- <label for="">Branch</label>
         <ng-select
         [items]="branches"
@@ -570,7 +608,9 @@
     </div>
   </div>
 </app-side-modal>
+<!-- !SECTION -->
 
+<!-- SECTION: Modal for adding discounts -->
 <app-side-modal *ngIf="openAddDiscount" (close)="openAddDiscount = false">
   <div class="modal-header flex justify-between items-center text-gray-700">
     <h2 class="font-semibold pb-0 mb-0">Discount</h2>
@@ -665,6 +705,7 @@
     </div>
   </div>
 </app-side-modal>
+<!-- !SECTION -->
 
 <app-modal *ngIf="addSuccessfull" (close)="addSuccessfull = false">
   <div class="flex flex-col items-center justify-center gap-3 px-4">
