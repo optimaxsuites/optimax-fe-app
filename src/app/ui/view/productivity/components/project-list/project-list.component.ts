@@ -18,6 +18,7 @@ export interface Project {
   lastEdited: Date;
   startDate: Date;
   endDate: Date;
+  createdAt: Date;
   timeline: {
     years: number;
     months: number;
@@ -56,6 +57,9 @@ export class ProjectListComponent implements OnInit {
             const endDate = project.endDate
               ? new Date(project.endDate)
               : new Date();
+            const createdAt = project.createdAt
+              ? new Date(project.createdAt)
+              : new Date();
             return {
               id: project.id || '',
               name: project.name || 'Unnamed Project',
@@ -70,6 +74,7 @@ export class ProjectListComponent implements OnInit {
                 : new Date(),
               startDate,
               endDate,
+              createdAt,
 
               timeline: {
                 years: Math.floor(

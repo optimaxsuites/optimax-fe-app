@@ -78,6 +78,14 @@
                 </tr>
                 <tr>
                   <td class="border border-green-500 p-2 font-semibold">
+                    Created On
+                  </td>
+                  <td class="border border-green-500 p-2">
+                    {{ project.createdAt | date: 'dd/MM/yyyy' }}
+                  </td>
+                </tr>
+                <tr>
+                  <td class="border border-green-500 p-2 font-semibold">
                     Last Edited
                   </td>
                   <td class="border border-green-500 p-2">
@@ -86,10 +94,10 @@
                 </tr>
                 <tr>
                   <td class="border border-green-500 p-2 font-semibold">
-                    Time Line
+                    Time Line 
                   </td>
                   <td class="border border-green-500 p-2">
-                    {{ project.lastEdited | date : "medium" }}
+                    {{ project.timeLine | date: 'dd/MM/yyyy' }}
                   </td>
                 </tr>
               </table>
@@ -131,7 +139,7 @@
             </button> -->
                 <button
                   (click)="openTaskModal()"
-                  class="px-4 py-2 bg-blue-500 text-white rounded"
+                  class="px-4 py-2 bg-blue-500 text-white rounded text-xl"
                 >
                   Add Task
                 </button>
