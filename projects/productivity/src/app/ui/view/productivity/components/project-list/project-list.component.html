@@ -1,9 +1,9 @@
 <div  class="project-list bg-customAntiFlashWhite h-full">
   <hr />
   <div
-    class="pro-list-cover w-[95vw] flex flex-col justify-center items-center mt-10 border- border-solid border-blue-500"
+    class="pro-list-cover  flex flex-col justify-center items-center mt-10 border- border-solid border-blue-500"
   >
-    <div class="header w-[97%] flex justify-between mt-2 bg-slate-100">
+    <div class="header w-full flex justify-between mt-2 bg-slate-100">
       <div
         class="w-[50%] h-32 flex flex-row justify-evenly items-center border- border-solid border-red-500"
       >
@@ -11,7 +11,7 @@
         <input type="search" name="progress" id="" class="w-[40%] h-12" />
       </div>
       <div
-        class="btn flex flex-row w-[40%] justify-end items-center border- border-solid border-green-500"
+        class="btn  border- border-solid border-green-500"
       >
         <button
           (click)="onCreateProjectClick()"
@@ -25,9 +25,9 @@
 
    <div 
  
-  class="card-container w-[97%] h-auto rounded-3xl border-green-600 bg-white mt-10 "
+  class="card-container rounded-3xl border-green-600 bg-white mt-10 "
 >
-  <div   class="card-cover w-[98%] h-auto flex flex-row justify-evenly  flex-wrap mt-3 mb-3 "  >
+  <div   class="card-cover  h-auto flex flex-row gap-5  flex-wrap mt-3 mb-3 "  >
     <div    *ngFor="let project of projects"
       class="card-frame border-[1.5px] border-solid border-gray-200 w-[23%] h-[250px] rounded-2xl p-3 mt-5 ml-4 "
     >
