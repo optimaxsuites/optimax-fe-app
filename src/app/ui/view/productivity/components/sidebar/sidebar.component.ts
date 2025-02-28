@@ -7,6 +7,7 @@
 
 // sidebar.component.ts
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
 
 
 @Component({
@@ -15,7 +16,16 @@ import { Component } from '@angular/core';
   styleUrls: ['./sidebar.component.scss']
 })
 export class SidebarComponent {
- 
+  constructor(  private router: Router) {}
+
+  isRouteActive(route: any){
+
+    if(route){
+      const routelink = route?.split("/")
+      return this.router.url.includes(routelink[4]);
+    }
+   return
+  } 
 }
 
 

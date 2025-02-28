@@ -1,4 +1,4 @@
-
+<!-- 
 
 <div class=" w-[150px] h-full bg-[#cbdee4] text-[#3e7292]  flex flex-col">
 
@@ -9,8 +9,6 @@
          routerLinkActive="bg-gray-700 text-white">
       <span class="text-2xl ">Project</span>
     </div>
-
-    <!-- <div class="side-bar-module py-3 px-4 cursor-pointer " -->
     <div class="flex items-center gap-5 rounded-sm transition-colors duration-300 ease-in-out hover:bg-[#ecf0f1] w-[130px] py-3 px-4 cursor-pointer  "
          [routerLink]="['/admin/productivity/target']" 
          routerLinkActive="bg-gray-700 text-white">
@@ -31,4 +29,40 @@
       <span class="text-2xl ">Report</span>
     </div>
   </div>
-</div>
+</div> -->
+
+
+<div class="sidebar bg-gray-800 text-white h-full">
+  <div class="sidebar-cover p-4">
+    <div  class="side-bar-module py-3 px-4  text-customBlue cursor-pointer hover:text-customBlueHover font-semibold"
+         [routerLink]="['/admin/productivity/4032e3b6-ea0e-480f-9c98-bbe10d67cee2/project-list']" 
+         routerLinkActive="bg-gray-700"
+         [ngClass]="{ 'active-link': isRouteActive('/admin/productivity/4032e3b6-ea0e-480f-9c98-bbe10d67cee2/project-list') }">
+      <span>Project</span>
+    </div>
+
+    <div class="side-bar-module py-3 px-4  text-customBlue cursor-pointer hover:text-customBlueHover font-semibold"
+         [routerLink]="['/admin/productivity/4032e3b6-ea0e-480f-9c98-bbe10d67cee2/target']" 
+         routerLinkActive="bg-gray-700"
+         [ngClass]="{ 'active-link': isRouteActive('/admin/productivity/4032e3b6-ea0e-480f-9c98-bbe10d67cee2/target') }">
+
+      <span class="text-2xl" >Target</span>
+    </div>
+
+    <div class="side-bar-module py-3 px-4  text-customBlue cursor-pointer hover:text-customBlueHover font-semibold"
+         [routerLink]="['/admin/productivity/4032e3b6-ea0e-480f-9c98-bbe10d67cee2/workspace']" 
+         routerLinkActive="bg-gray-700"
+         [ngClass]="{ 'active-link': isRouteActive('/admin/productivity/4032e3b6-ea0e-480f-9c98-bbe10d67cee2/workspace') }">
+      
+      <span class="text-2xl ">Work-space</span>
+    </div>
+
+    <div class="side-bar-module py-3 px-4  text-customBlue cursor-pointer hover:text-customBlueHover font-semibold"
+         [routerLink]="['/admin/productivity/4032e3b6-ea0e-480f-9c98-bbe10d67cee2/report']" 
+         routerLinkActive="bg-gray-700"
+         [ngClass]="{ 'active-link': isRouteActive('/admin/productivity/4032e3b6-ea0e-480f-9c98-bbe10d67cee2/report') }">
+      <span>Report</span>
+    <div class="flex items-center gap-5 rounded-sm transition-colors duration-300 ease-in-out hover:bg-[#ecf0f1] w-[130px] py-3 px-4 cursor-pointer  "
+         [routerLink]="['/admin/productivity/report']" 
+         routerLinkActive="bg-gray-700 text-white">
+      <span class="text-2xl ">Report</span>

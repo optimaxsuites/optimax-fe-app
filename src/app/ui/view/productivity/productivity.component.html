@@ -1,9 +1,11 @@
 
-  <div class="flex w-full">
+  <div class="master-container d-flex">
   <app-sidebar class=" min-h-screen"></app-sidebar>
-  <div class=" p-6">
-    <router-outlet></router-outlet>
-  </div>
+  <div class="main-container">
+    <div class="main">
+        <router-outlet></router-outlet>
+    </div>
+</div>
 </div>
 
 
