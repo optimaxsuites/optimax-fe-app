@@ -95,7 +95,7 @@ import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
     AddInventoryComponent,
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
     UserModule,
     AppRoutingModule,
     CommonModule,
