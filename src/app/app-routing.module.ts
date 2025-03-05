@@ -80,6 +80,7 @@ import { OrderRefundComponent } from 'projects/POS/src/app/ui/view/order-refund/
 import { RequestDetailsComponent } from 'projects/POS/src/app/ui/view/request-details/request-details.component';
 import { OpenRegisterComponent } from 'projects/POS/src/app/ui/view/open-register/open-register.component';
 import { CloseRegisterComponent } from 'projects/POS/src/app/ui/view/close-register/close-register.component';
+import { MarketplaceComponent } from './ui/marketplace/view/marketplace/marketplace.component';
 
 const routes: Routes = [
   {
@@ -142,39 +143,6 @@ const routes: Routes = [
         path: '',
         loadChildren: () => import('../../projects/POS/src/app/user/user.module').then(m => m.UserModule),
       },
-      // {
-      //   path: 'user/checkout/:uuid',
-      //   component: PosCheckoutPageComponent,
-      // },
-      // {
-      //   path: 'user/checkout/orders/:uuid',
-      //   component: CheckoutOrdersComponent,
-      // },
-      // {
-      //   path: 'user/checkout/cash-payment/:uuid',
-      //   component: CashPaymentComponent,
-      // },
-      // {
-      //   path: 'user/checkout/order/:uuid',
-      //   component: OrderDetailComponent,
-      // },
-      // {
-      //   path: 'user/checkout/refund/:uuid',
-      //   component: OrderRefundComponent,
-      // },
-      // {
-      //   path: 'user/checkout/refund-request/:uuid',
-      //   component: RequestDetailsComponent,
-      // },
-      // {
-      //   path: 'user/checkout/openRegister/:uuid',
-      //   component: OpenRegisterComponent,
-      // },
-      // {
-      //   path: 'user/checkout/closeRegister/:uuid',
-      //   component: CloseRegisterComponent,
-      // },
-      
     ],
   },
 
@@ -239,13 +207,6 @@ const routes: Routes = [
         path: 'admin/sales/:uuid',
         component: SalesPageComponent,
       },
-      // {
-      //   path: 'admin/procurement/',
-      //   component: ProcurementPageComponent,
-      // },
-      // {path: 'admin/procurement/rfq/:uuid', component: RfqListComponent},
-      // {path: 'admin/procurement/rfq-form/:uuid', component:RfqFormComponent },
-      // {path: 'admin/procurement/settings/:uuid', component:ProcurementSettingsComponent },
       {
         path: 'sales/quotation/quotation-form',
         component: QuotationModalComponent,
@@ -254,160 +215,11 @@ const routes: Routes = [
         path: 'sales/quotation/quotation-form/:id',
         component: QuotationModalComponent,
       },
-      // {
-      //   path: 'sales/proformer-invoice/proformer-invoice-form',
-      //   component: ProformaInvoiceModalComponent,
-      // },
-      // {
-      //   path: 'sales/dispatch-note/dispatch-note-form',
-      //   component: DispatchNoteModalComponent,
-      // },
-      // {
-      //   path: 'sales/invoice/invoice-form',
-      //   component: InvoiceModalComponent,
-      // },
-      // {
-      //   path: 'admin/accounting/:uuid',
-      //   component: AccountingPageComponent,
-      // },
-      // {
-      //   path: 'vendor/:uuid',
-      //   component: VendorPageComponent,
-      // },
-      // {path: 'vendor/rfq/:uuid', component:VendorRfqComponent },
-      // {
-      //   path: 'admin/purchase/:uuid',
-      //   component: PurchasePageComponent,
-      // },
-      // {
-      //   path: 'rfq',
-      //   component: RfqComponent,
-      // },
-      // {
-      //   path: 'purchase/rfq-modal',
-      //   component: RfqModalComponent,
-      // },
-      // {
-      //   path: 'purchase/rfq-modal/:rfqId',
-      //   component: RfqModalComponent
-      // },
-      // {
-      //   path: 'admin/inventory/:uuid',
-      //   component: InventoryPageComponent,
-      // },
-      // {
-      //   path: 'inventory/inventory-form',
-      //   component: InventoryFormComponent
-      // },
-      // {
-      //   path: 'inventory/inventory-form/:id',
-      //   component: InventoryFormComponent,
-      // },
-      // {
-      //   path: 'inventory/view-product',
-      //   component: ViewProductAsideComponent,
-      // },
-      // {
-      //   path: 'admin/settings',
-      //   component: SettingsPageComponent,
-      //   children: [
-      //     // { path: '', redirectTo: 'admin/settings/general-settings/:uuid', pathMatch: 'full' },
-      //     {
-      //       path: 'general-settings/:uuid',
-      //       component: GeneralSettingsComponent,
-      //     },
-      //     {
-      //       path: 'HR-settings/:uuid',
-      //       component: HrSettingsComponent,
-      //     },
-
-      //   ]
-      // },
-      // {
-      //   path: 'payment-receipts-modal',
-      //   component: PaymentReceiptsModalComponent,
-      // },
-      // {
-      //   path: 'sales-order',
-      //   component: SalesOrderComponent,
-      // },
-      // {
-      //   path: 'payment-record-received',
-      //   component: PaymentRecordReceivedComponent,
-      // },
-      // {
-      //   path: 'admin/crm/:uuid',
-      //   component: CrmPageComponent,
-      // },
-      // {
-      //   path: 'admin/expenses/:uuid',
-      //   component: ExpensesComponent,
-      // },
-      // {
-      //   path: 'expenses/expensesForm',
-      //   component: ExpenseFormsModalComponent,
-      // },
-      // {
-      //   path: 'expenses/expensesApproval/:id',
-      //   component: ExpenseApprovalComponent,
-      // },
-      // {
-      //   path: 'expenses/uploadReciept',
-      //   component: UploadRecieptComponent,
-      // },
-      // {
-      //   path: 'expenses/Addperdiem',
-      //   component: AddPerDiemComponent,
-      // },
-      // {
-      //   path: 'admin/pos/:uuid',
-      //   component: PosPageComponent,
-      // },
-      // {
-      //   path: 'crm/vendorCategory',
-      //   component: VendorCategoryComponent,
-      // },
-      // {
-      //   path: 'crm/individualVendor',
-      //   component: VendorIndividualComponent,
-      // },
-
-      // {
-      //   path: 'crm/vendorList',
-      //   component: VendorListComponent,
-      // },
-      // {
-      //   path: 'crm/vendorManagement',
-      //   component: VendorManagementComponent,
-      // },
-      // {
-      //   path: 'admin/hr/recuitment/:uuid',
-      //   component: RecuitmentComponent,
-      // },
-      // {
-      //   path: 'admin/hr/leave/:uuid',
-      //   component: LeaveComponent,
-      // },
-      // {
-      //   path: 'admin/hr/attendance/:uuid',
-      //   component: AttendanceComponent,
-      // },
-      // {
-      //   path: 'admin/hr/interview/:uuid',
-      //   component: InterviewComponent,
-      // },
-      // {
-      //   path: 'admin/hr/employee-management/:uuid',
-      //   component: EmployeeManagementComponent,
-      // },
-      // {
-      //   path: 'admin/hr/payroll/:uuid',
-      //   component: EmployeePayrollComponent,
-      // },
-      // {
-      //   path: 'admin/employee-payslip/:uuid',
-      //   component: EmployeePayslipListComponent,
-      // },
+      {
+        path: 'marketplace/:uuid',
+        component: MarketplaceComponent,
+      },
+     
     ],
   },
 

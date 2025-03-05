@@ -1,4 +1,5 @@
 import { Component, HostListener, ViewEncapsulation } from '@angular/core';
+import { MenuItemsService } from './ui/shared/service/menue-items/menu-items.service';
 
 @Component({
   selector: 'app-root',
@@ -15,8 +16,12 @@ export class AppComponent {
   // Ensure this property exists and is initialized
   clockedInTime: string | null = null;
 
-  constructor() {
+  constructor(private menuItemService: MenuItemsService) {
     this.screenWidth = window.innerWidth;
+  }
+
+  NgOnInit(){
+    // this.menuItemService.loadUnlockedModules()
   }
 
   @HostListener('window:resize', ['$event'])

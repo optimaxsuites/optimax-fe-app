@@ -237,6 +237,7 @@ import { EmployeePayslipListComponent } from './ui/hr/view/payroll/employee-pays
 import { AppDashboardModule } from 'projects/dashboard/src/app/app.module';
 import { ToastrModule } from 'ngx-toastr';
 import { AppHrModule } from 'projects/hr/src/app/app.module';
+import { MarketplaceComponent } from './ui/marketplace/view/marketplace/marketplace.component';
 
 
 @NgModule({
@@ -404,11 +405,13 @@ import { AppHrModule } from 'projects/hr/src/app/app.module';
     JobApplicationFormKeepComponent,
     DashboardFooterComponent,
     PayslipViewComponent,
-    EmployeePayslipListComponent
+    EmployeePayslipListComponent,
+    MarketplaceComponent
 
   ],
   imports: [
       BrowserModule,
+      CommonModule,
       AppRoutingModule,
       AppDashboardModule,
       AppHrModule,
@@ -485,6 +488,7 @@ import { AppHrModule } from 'projects/hr/src/app/app.module';
     JwtHelperService,
     provideAnimationsAsync(),
     provideNativeDateAdapter(),
+    MessageService
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   bootstrap: [AppComponent],

@@ -85,6 +85,12 @@ export class NavigationLinksService {
     this.links['generalSettings'] = '/admin/settings/general-settings/' +uuidV4();
     this.links['HRSettings'] = 'HR-settings/' +uuidV4();
 
+
+
+
+    this.links['marketplaceLink'] = 'marketplace/' +uuidV4();
+
+
     
 
 

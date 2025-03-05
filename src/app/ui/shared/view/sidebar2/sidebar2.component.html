@@ -45,6 +45,18 @@
           </li>
         </ul>
       </li>
+
+      <li>
+        <div class="menu-item">
+          <a 
+             [routerLink]="marketplace.route"
+             routerLinkActive="active"
+             [routerLinkActiveOptions]="{ exact: true }">
+            <i *ngIf="marketplace.icon" [class]="marketplace.icon"></i> {{ marketplace.label }}
+          </a>
+         
+        </div>
+      </li>
     </ul>
 </nav>
   

@@ -6,5 +6,7 @@ export interface MenuItem {
     roles: string[];
     submenu?: MenuItem[];
     open?: boolean; 
+    locked?: boolean;
+    active?: boolean;
   }
   

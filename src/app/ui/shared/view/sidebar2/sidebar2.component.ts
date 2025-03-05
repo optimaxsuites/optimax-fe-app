@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { MenuItem } from '../../domain/menuItem.dto';
 import { MenuItemsService } from '../../service/menue-items/menu-items.service';
 import { NavigationEnd, Router } from '@angular/router';
+import { NavigationLinksService } from '../../service/navigation-links/navigation-links.service';
 
 @Component({
   selector: 'app-sidebar2',
@@ -11,17 +12,21 @@ import { NavigationEnd, Router } from '@angular/router';
 export class Sidebar2Component {
   menuItems: MenuItem[] = [];
   role: string | null = null;
-
-  constructor(private menuService: MenuItemsService,  private router: Router) {}
+marketplace : any =   {
+  label: 'Marketplace',
+  route: this.navigationLink.getLink('marketplaceLink'),
+  roles: ['ROLE_USER', 'ROLE_ADMIN'],
+  icon: 'fas fa-store'
+}
+  constructor(private menuService: MenuItemsService,  private router: Router, private navigationLink: NavigationLinksService) {}
 
   ngOnInit(): void {
     this.role = sessionStorage.getItem('role'); // Retrieve role from session storage
     console.log("role = ", this.role)
     if (this.role) {
-      this.menuItems = this.menuService.getMenuItemsForRole(this.role).map(item => ({
-        ...item,
-        open: false
-      }));
+      this.menuService.getUnlockedModulesObservable().subscribe(modules => {
+        this.menuItems = modules;
+      });
     }
     this.router.events.subscribe(event => {
       if (event instanceof NavigationEnd) {
