@@ -39,6 +39,8 @@ export interface ProductData extends ProductJSONFormat {
   discountedPrice: number;
 
   selectedVariant: string;
+
+  pricingQuantity: any;
 }
 export type HistoryData = Map<number, ProductData[]>;
 

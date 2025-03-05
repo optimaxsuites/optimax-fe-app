@@ -1,5 +1,5 @@
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=visibility" />
 <div *ngIf="tableSection" class="flex flex-col w-full gap-14 p-4">
   <div class="gap-3 w-full flex justify-between items-center">
     <!-- `rotate-0` is used to set this as the container of any `fixed` position elements within it -->
@@ -121,8 +121,8 @@
                 </span>
                 <ul class="absolute w-full bg-gray-100 bordershadow-2xl rounded-lg py-2 " id="dropdown-menu"
                 *ngIf="item.showMenu">
-                  <li (click)="openViewProduct(item); closeDropdown(item)"   class="px-4 py-2 hover:bg-gray-100 cursor-pointer">View History</li>
-                  <li (click)="openEditInventory(item); closeDropdown(item)" class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Add Inventory</li>
+                  <li (click)="openViewProduct(item); closeDropdown(item)"   class="px-4 py-2 hover:bg-gray-100 cursor-pointer"><i class="pi pi-eye table-item pr-2"></i>View History</li>
+                  <li (click)="openEditInventory(item); closeDropdown(item)" class="px-4 py-2 hover:bg-gray-100 cursor-pointer"><i class="pi pi-pen-to-square table-item pr-2"></i>Add Inventory</li>
         
                 </ul>
               </div>              

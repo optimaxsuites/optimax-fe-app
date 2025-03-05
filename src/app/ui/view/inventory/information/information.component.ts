@@ -47,6 +47,19 @@ export class InformationComponent implements OnChanges {
       this.savedBranches = [];
     }
   }
+  pricingQuantity: any = {};
+
+  retrieveFromLocalStorage() {
+    const data = localStorage.getItem('pricingQuantity');
+    if (data) {
+      console.log('Retrieved:', this.pricingQuantity);
+    this.pricingQuantity = JSON.parse(data);
+    console.log('After Assignment:', this.pricingQuantity);
+
+    } else {
+      console.log('No data found');
+    }
+  }
 
   loadSupplierData(): void {
     const supplierData = history.state.supplierData;
@@ -76,26 +89,30 @@ export class InformationComponent implements OnChanges {
   savedBranches: any[] = []; 
 
   ngOnInit(): void {
+    console.log('ngOnInit called');
     // Check if navigation state exists and load supplier data from there
+    this.retrieveFromLocalStorage(); // Automatically retrieve data on page load
 
-    if (history.state.branchData) {
-      this.savedBranches = history.state.branchData;
-      console.log("Loaded Branches from State:", this.savedBranches);
-    } else {
-      const storedBranches = localStorage.getItem("savedBranches");
-      if (storedBranches) {
-        this.savedBranches = JSON.parse(storedBranches);
-        console.log("Loaded Branches from LocalStorage:", this.savedBranches);
-      } else {
-        console.log("No saved branches found.");
-      }
-    }
+
+    // if (history.state.branchData) {
+    //   this.savedBranches = history.state.branchData;
+    //   console.log("Loaded Branches from State:", this.savedBranches);
+    // } else {
+    //   const storedBranches = localStorage.getItem("savedBranches");
+    //   if (storedBranches) {
+    //     this.savedBranches = JSON.parse(storedBranches);
+    //     console.log("Loaded Branches from LocalStorage:", this.savedBranches);
+    //   } else {
+    //     console.log("No saved branches found.");
+    //   }
+    // }
 
 
 
 
 
     this.loadSupplierData();
+    
 
     const savedProducts = localStorage.getItem('products');
     this.products = savedProducts ? new Map(JSON.parse(savedProducts)) : new Map();
@@ -109,10 +126,10 @@ export class InformationComponent implements OnChanges {
     }
     this.productHistory = this.products.get(this.activeItem.id) || [];
 
-    // this.productHistory = this.productHistory.map(product => ({
-    //   ...product,
-    //   supplier: product.supplier || supplier // Retain existing supplier or assign new
-    // }));
+    this.productHistory = this.productHistory.map(product => ({
+      ...product,
+      supplier: product.supplier || this.supplier // Retain existing supplier or assign new
+    }));
   }
   get Date() {
     return this.revivedDate.getDate();

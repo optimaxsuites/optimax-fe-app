@@ -100,6 +100,7 @@ export class EditProductComponent {
   ) {
   }
   ngOnInit(): void {
+
     this.loadCategory()
     this.getDiscountTypes()
 

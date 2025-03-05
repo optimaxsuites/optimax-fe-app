@@ -57,21 +57,7 @@ export class ViewInventoryComponent {
       alert("No supplier information available for this update.");
     }
   }
-  openBranchDetails(productId: number)  {
-    const storedBranches = localStorage.getItem("savedBranches");
-  
-    if (storedBranches) {
-      const branches = JSON.parse(storedBranches);
-  
-      // Navigate to the branch details page, passing data via state
-      console.log("Retrieved Branch Data:", branches);
-      this.router.navigate(['/supplier-details'], { state:{ productId: productId }});
-  
-      alert("Branch information available.");
-    } else {
-      alert("No branch information available.");
-    }
-  }
+
 
 
   // Method to trigger edit event
@@ -155,14 +141,20 @@ export class ViewInventoryComponent {
       const supplierDataString = localStorage.getItem('selectedSupplier');
       const supplier: supplierData | null = supplierDataString ? JSON.parse(supplierDataString) : null;
 
+      const pricingQuantityString = localStorage.getItem('pricingQuantity');
+      const pricingQuantity = pricingQuantityString ? JSON.parse(pricingQuantityString) : null;
+
+
 
       this.productHistory = this.products.get(this.activeItem.id) || [];
 
       this.productHistory = this.productHistory.map(product => ({
         ...product,
-        supplier: product.supplier || supplier // Retain existing supplier or assign new
+        supplier: product.supplier || supplier,// Retain existing supplier or assign new
+        pricingQuantity: product.pricingQuantity || pricingQuantity
       }));
 
+      console.log("Product History:", this.productHistory);
 
       this.isEditing = this.productHistory.map(() => false);
     }

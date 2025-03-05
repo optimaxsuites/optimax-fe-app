@@ -1,37 +1,11 @@
 <button (click)="goBack()" class="p-5 text-2xl">
     <i class="fa-solid fa-arrow-left"></i>
   </button>
+
+
   
-<!-- <div class="flex justify-center items-center max-w-7xl p-6 bg-white border border-gray-200 rounded-lg shadow-lg hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 mb-10 mx-auto">
-    <div class="row">
-      <h1 class="text-3xl mb-2">Product Information</h1>
-      <p class="text-2xl mb-2">Product name: {{ productHistory[0].name }}</p>
-      <p class="text-2xl mb-2">Categories: {{ productHistory[0].productCategory.name }}</p> <p class="text-2xl mb-2">
-        Status: 
-        <span [style.color]="productHistory[0].effectiveQuantity >= 10 ? 'green' : 'red'">
-          {{ productHistory[0].effectiveQuantity >= 10 ? 'Available' : 'Low Stock' }}
-        </span>
-      </p> 
-    </div>
-
-
-   -->
-
-<!-- supplier-details.component.html -->
-<!-- <div *ngIf="supplier">
-  <h2>Supplier Details</h2>
-  <p><strong>Name:</strong> {{ supplier.supplierName }}</p>
-  <p><strong>Contact Person:</strong> {{ supplier.contactPerson }}</p>
-  <p><strong>Email:</strong> {{ supplier.email }}</p>
-  <p><strong>Phone:</strong> {{ supplier.phone }}</p>
- 
-   
-</div> -->
-
-
-
-
-    <div class="flex  justify-center  w-full ">
+  
+<div class="flex  justify-center  w-full ">
     
    <div class="  w-full  max-w-7xl p-6 pl-10 bg-white border border-gray-200 rounded-lg shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 mb-10 ml-4 mt-10" *ngIf="productHistory && productHistory.length">
    <h1 class="text-3xl mb-7 mt-3 text-center">Product Information</h1>
@@ -75,16 +49,31 @@
 <input id="category" type="text" class="border rounded-lg p-4 w-full  bg-gray-100  text-xl mb-4" [value]="supplier.products" readonly>
 <label for="category" class="block font-medium text-2xl ">Date: {{ Date }} , {{Time}} </label>
 </div>
-<div class="mt-9 "> 
-  <h1 class="text-3xl  text-center mb-8"> Branch Details</h1>
-  <ul class="flex gap-4 flex-wrap  mb-8">
-  <li *ngFor="let branch of savedBranches" class="p-2 bg-gray-200 rounded-md">
-    <span class="font-bold">{{ branch.name }}</span> - 
-    Quantity: {{ branch.quantity }} | Price: {{ branch.price }}
-  </li>
-</ul>
-</div>
+
+<h1 class="text-3xl text-center font-bold mb-6">Pricing and Quantity Information</h1>
+
+    <label class="block font-medium text-2xl mb-2">Available Quantity</label>
+    <input type="text" class="border rounded-lg p-4 w-full bg-gray-100 text-xl mb-4" [value]="pricingQuantity[0]?.availableQuantity" readonly>
+
+    <label class="block font-medium text-2xl mb-2">Restocked Quantity</label>
+    <input type="text" class="border rounded-lg p-4 w-full bg-gray-100 text-xl mb-4" [value]="pricingQuantity[0]?.restockedQuantity" readonly>
+
+    <label class="block font-medium text-2xl mb-2">Current Quantity</label>
+    <input type="text" class="border rounded-lg p-4 w-full bg-gray-100 text-xl mb-4" [value]="pricingQuantity[0]?.currentQuantity" readonly>
+
+    <label class="block font-medium text-2xl mb-2">Current Purchase Price</label>
+    <input type="text" class="border rounded-lg p-4 w-full bg-gray-100 text-xl mb-4" [value]="pricingQuantity[0]?.currentPrice" readonly>
+
+    <label class="block font-medium text-2xl mb-2">Current Selling Price</label>
+    <input type="text" class="border rounded-lg p-4 w-full bg-gray-100 text-xl mb-4" [value]="pricingQuantity[0]?.currentSellingPrice" readonly>
+
+    <hr class="my-6 border-t border-gray-300">
+
+    <label class="block font-medium text-2xl">Date: {{ Date }} , {{ Time }}</label>
+
+
   </div>
+  
 </div>
 
 <!-- <div *ngIf="savedBranches.length > 0" class="mt-6 p-4 border rounded-md bg-gray-50">
@@ -98,9 +87,6 @@
 </div> -->
 
 <!-- Show a message if no branches are found -->
-<div *ngIf="savedBranches.length === 0" class="text-red-500 text-xl">
-  No saved branches available.
-</div>
 
 <!-- </div> -->
 <!-- If no supplier is found -->

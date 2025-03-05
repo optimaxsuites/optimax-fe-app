@@ -29,7 +29,80 @@ export class EditInventoryComponent {
   showBranchInput: boolean = false; // Renamed from showInput
   openAddDiscount: boolean = false;
   productForm!: FormGroup;
+  
+  newPrice: number = 0;
+  newQuantity: number = 0;
+  isVariantEditOpen: boolean = false;
 
+  selectedVariant: any = {
+  name: '',
+  price: 0,
+  quantity: 0,
+};
+
+
+// Function to Open Modal and Set Selected Variant
+openVariantEditModal(variant: any) {
+  console.log('Editing Variant:', variant);
+  
+  this.selectedVariant = { 
+    ...variant, 
+    currentQuantity: variant.quantity, 
+    currentPrice: variant.price, 
+    newQuantity: 0, 
+    newPrice: 0 
+  };
+  this.isVariantEditOpen = true;
+  console.log('Modal Opened with Variant:', this.selectedVariant);
+}
+
+
+// Function to Close Modal
+closeVariantEditModal() {
+  this.isVariantEditOpen = false;
+  this.selectedVariant = { name: '', price: 0, quantity: 0 }; // Reset form
+}
+
+// Function to Update Variant
+updateVariant() {
+  console.log('Before Update:', this.selectedVariant);
+
+  const index = this.variants.findIndex(v => v.name === this.selectedVariant.name && v.sku === this.selectedVariant.sku);
+
+  if (index !== -1) {
+    console.log(`Index Found: ${index}`);
+    console.log('Current Quantity:', this.selectedVariant.quantity);
+    console.log('New Quantity:', this.newQuantity);
+
+    this.variants[index].quantity = this.selectedVariant.quantity + this.newQuantity;
+    this.variants[index].price = this.selectedVariant.price + this.newPrice;
+
+    console.log('After Update:', this.variants[index]);
+
+    // Reset form inputs
+    this.newQuantity = 0;
+    this.newPrice = 0;
+  } else {
+    console.log('Variant Not Found');
+  }
+
+  this.closeVariantEditModal();
+}
+
+
+
+
+  // calculateEffectivePrice() {
+  //   const basePrice = this.productForm.get('initialPrice')?.value;
+  //   const taxPercentage = this.productForm.get('tax')?.value;
+
+  //   if (basePrice && taxPercentage) {
+  //     const effectivePrice = basePrice * (1 + taxPercentage / 100);
+  //     this.productForm
+  //       .get('effectivePrice')
+  //       ?.setValue(parseFloat(effectivePrice.toFixed(2)), { emitEvent: false });
+  //   }
+  // }
 
   selectDiscount(discount: any) {
     this.productData.productCategory = discount;
@@ -137,37 +210,40 @@ export class EditInventoryComponent {
   }
   currentPriceAndQuantity: { quantity: number; price: number }[] = [];
   openPriceChange: boolean = false;
+
+  pricingQuantity: any;
+
   saveToLocalStorage() {
-    const quantity = (document.getElementById('currentQuantity') as HTMLInputElement)?.value;
-    const price = (document.getElementById('currentPrice') as HTMLInputElement)?.value;
-    const newEntry = { quantity: Number(quantity), price: Number(price) };
-
+    const newPricingQuantity = {
+      availableQuantity: (document.getElementById('currentQuantity') as HTMLInputElement)?.value,
+      restockedQuantity: (document.getElementById('restockedQuantity') as HTMLInputElement)?.value,
+      currentQuantity: (document.getElementById('currentQuantity2') as HTMLInputElement)?.value,
+      currentPrice: (document.getElementById('currentPrice') as HTMLInputElement)?.value,
+      currentSellingPrice: (document.getElementById('currentSellingPrice') as HTMLInputElement)?.value,
+    };
   
-    if (quantity && price) {
-      // Retrieve existing data from local storage (or initialize as an empty array)
-      let storedData = JSON.parse(localStorage.getItem('currentPriceAndQuantity') || '[]');
+    // Retrieve existing data
+    const existingData = localStorage.getItem('pricingQuantity');
+    
+    // Parse existing data or initialize as an empty array
+    let pricingList = existingData ? JSON.parse(existingData) : [];
   
-      // Add new entry
-      storedData.push({ quantity: Number(quantity), price: Number(price) });
-      
-
-      // 🔹 Check if this entry already exists to prevent duplicates
-    const isDuplicate = storedData.some(
-      (entry: any) => entry.quantity === newEntry.quantity && entry.price === newEntry.price
-    );
-
-    if (!isDuplicate) {
-      storedData.push(newEntry);
+    // Make sure it's always an array
+    if (!Array.isArray(pricingList)) {
+      pricingList = [];
     }
   
-      // Save updated data back to local storage under a **single key**
-      localStorage.setItem('currentPriceAndQuantity', JSON.stringify(storedData));
+    // Append new item without overriding the list
+    pricingList.push(newPricingQuantity);
   
-      // Update component variable to reflect in UI
-      this.currentPriceAndQuantity = storedData;
-    }
+    // Save back to local storage
+    localStorage.setItem('pricingQuantity', JSON.stringify(pricingList));
+  
+    console.log('Saved:', newPricingQuantity);
+    console.log('Full List:', pricingList);
   }
   
+
   loadFromLocalStorage() {
     const storedData = JSON.parse(localStorage.getItem('currentPriceAndQuantity') || '[]');
     this.currentPriceAndQuantity = storedData;
@@ -233,6 +309,8 @@ export class EditInventoryComponent {
       localStorage.setItem('products', JSON.stringify([...productList]));
       // Emit event to update UI
       this.productUpdated.emit(this.activeItem);
+
+      this.saveToLocalStorage();
       // this.notificationMessage = true;
       alert("Product updated successfully");
      
@@ -456,6 +534,7 @@ savedBranches: any[] = [];
     this.isOpen = true;
     
   }
+  
 
   closeModal() {
     this.isOpen = false;
@@ -662,7 +741,6 @@ getErrorMessage(controlName: string, displayName?: string): string {
   //   {label: 'wuse', value: 'Wuse'}
   //   ]
 
-  discountTypes: any[] = [];
     discountType: string[] = []
     periodicDiscount: { startDate: string, endDate: string } = { startDate: '', endDate: '' };
     quantityBasedDiscount: { minQuantity: number } = { minQuantity: 0 };
@@ -708,6 +786,13 @@ getErrorMessage(controlName: string, displayName?: string): string {
       quantity: [null, Validators.required],
       price: [null, Validators.required]
     });
+
+    if (this.activeItem) {
+      this.variants = this.activeItem.variants ? this.activeItem.variants : [];
+    }
+    console.log("this is variant", this.variants);
+
+
     this.loadFromLocalStorage();
 
    this.loadBranchesFromLocalStorage();
@@ -733,11 +818,47 @@ getErrorMessage(controlName: string, displayName?: string): string {
       this.suppliers = JSON.parse(storedSuppliers);
     }
   
+    this.productForm.get('initialPrice')?.valueChanges.subscribe((basePrice) => {
+      this.calculateEffectivePrice();
+    });
+  
+    this.productForm.get('tax')?.valueChanges.subscribe((tax) => {
+      this.calculateEffectivePrice();
+    });
+  }
 
+    priceDetails = {
+      basePrice: null as number | null,
+      tax: null as number | null,
+      discount: null as number | null,
+      effectivePrice: null as number | null
+    };
+  
+  calculateEffectivePrice() {
+    const basePrice = this.priceDetails.basePrice || 0;
+    const tax = this.priceDetails.tax || 0;
+    const taxAmount = (basePrice * tax) / 100;
+    this.priceDetails.effectivePrice = basePrice + taxAmount;
+  }
 
-      }
+  discountOptions = ["Black Friday", "10%","Test" ]
+  startDate: string = ''; // Start Date Property
+  endDate: string = '';   // End Date Property
 
+discountTypes: any[] = [];
 
+showDiscountModal: boolean = false;
+discountTitle: string = '';
+discountRate: number = 0;
+selectedDiscountOption: any;
+discountStartDate: Date | undefined;
+discountEndDate: Date | undefined;
+minimumDiscountQuantity: number = 0;
+
+discountOptions_2 = [
+  { label: 'Percentage', value: 'percentage' },
+  { label: 'Fixed Amount', value: 'fixed' }
+];
    removeBranch(branchId: number) {
     let selectedBranches = this.branchForm.value.selectedBranches.filter((b: { id: number; }) => b.id !== branchId);
     this.branchForm.patchValue({ selectedBranches });

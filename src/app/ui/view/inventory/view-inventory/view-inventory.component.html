@@ -71,12 +71,13 @@
             <td>{{ activeItem.code }}</td>
             <td>{{ activeItem.effectivePrice }}</td>
             <td>N/A</td>
-            <td>{{ activeItem.effectiveQuantity }}</td>
+           
+            <td>{{activeItem.effectiveQuantity}}</td>
             <td>N/A</td>
             <td>{{ activeItem.productCategory.name }}</td>
             <td>{{ Timestamp }}</td> <!-- No update date for active item -->
             <td>
-              <button (click)="openSupplierDetails(activeItem)">View </button>
+              <!-- <button (click)="openSupplierDetails(activeItem)">View </button> -->
             </td>
           </tr>
         }
@@ -89,10 +90,9 @@
             <td>{{ item.effectivePrice }}</td>
            
             <td>
-              <span *ngIf="!isEditing[0]">{{ item.effectiveQuantity }}</span>
-              <input *ngIf="isEditing[0]" type="number" [(ngModel)]="item.effectiveQuantity" />
+              N/A
             </td>
-            <td>N/A</td>
+            <td>{{item.effectiveQuantity}}</td>
             <td> N/A</td>
             <td>{{ item.productCategory.name }}</td>
        
