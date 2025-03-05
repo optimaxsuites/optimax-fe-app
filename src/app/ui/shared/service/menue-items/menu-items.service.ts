@@ -114,26 +114,26 @@ export class MenuItemsService {
       route: this.navigationLink.getLink('posLink'),
       icon: 'fas fa-cash-register',
       locked: true,
-      active: true
+      active: true,
 
-      // submenu: [
-      //   // { label: 'Sales', route: this.navigationLink.getLink('posLink'), roles: ['ROLE_USER'], icon: 'pi pi-cart' },
-      //   // { label: 'Transactions', route: "", roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
-      // ],
+      submenu: [
+        { label: 'Product', route: this.navigationLink.getLink('productLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-box' },
+        { label: 'Sales', route: this.navigationLink.getLink('salesLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-receipt' },
+        { label: 'Inventory', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-warehouse' },
+        { label: 'Checkout',roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-credit-card', route: this.navigationLink.getLink('checkoutLink'), },
+        { label: 'Report', route: this.navigationLink.getLink('reportLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fa-solid fa-chart-pie' },
+      ],
     },
-    {
-      label: 'Checkout',
-      roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      route: this.navigationLink.getLink('checkoutLink'),
-      icon: 'fas fa-shopping-cart',
-      locked: true,
-      active: true
+    // {
+    //   label: 'Checkout',
+    //   roles: ['ROLE_USER', 'ROLE_ADMIN'],
+    //   route: this.navigationLink.getLink('checkoutLink'),
+    //   icon: 'fas fa-shopping-cart',
+    //   locked: true,
+    //   active: true
 
-      // submenu: [
-      //   // { label: 'Order Summary', route: this.navigationLink.getLink('checkoutLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-      //   // { label: 'Payment Details', route: "", roles: ['ROLE_USER'], icon: 'pi pi-wallet' },
-      // ],
-    },
+    
+    // },
     {
       label: 'CRM',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
