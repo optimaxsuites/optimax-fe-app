@@ -14,12 +14,32 @@ import { ViewInventoryComponent } from './ui/view/inventory/view-inventory/view-
 import { AddInventoryComponent } from './ui/view/inventory/add-inventory/add-inventory.component';
 import { EditInventoryComponent } from './ui/view/inventory/edit-inventory/edit-inventory.component';
 import { InformationComponent } from './ui/view/inventory/information/information.component';
+import { ProductsComponent } from './ui/view/products/products.component';
+import { ReportDashboardComponent } from './ui/view/report-dashboard/report-dashboard.component';
+import { SalesComponent } from './ui/view/sales/sales.component';
 
 const routes: Routes = [
-  { path: '', redirectTo: 'admin/pos/34567whr4567yhsdzr56', pathMatch: 'full' },
+  { path: '', redirectTo: 'admin/pos/product/34567whr4567yhsdzr56', pathMatch: 'full' },
   {
-    path: 'admin/pos/:uuid',
-    component: PosPageComponent,
+    path: 'admin/pos/product/:uuid',
+    component: ProductsComponent,
+  },
+
+  {
+    path: 'admin/pos/product/:uuid',
+    component: ProductsComponent,
+  },
+  {
+    path: 'admin/pos/inventory/:uuid',
+    component: InventoryComponent,
+  },
+  {
+    path: 'admin/pos/sale/:uuid',
+    component: SalesComponent,
+  },
+  {
+    path: 'admin/pos/report/:uuid',
+    component: ReportDashboardComponent,
   },
   // {
   //   path: 'inventory',

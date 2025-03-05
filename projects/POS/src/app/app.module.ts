@@ -68,6 +68,7 @@ import { InformationComponent } from './ui/view/inventory/information/informatio
 
 import { InputGroupModule } from 'primeng/inputgroup';
 import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
+import { SalesComponent } from './ui/view/sales/sales.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -93,6 +94,7 @@ import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
     SummaryReportComponent,
     CustomReportComponent,
     AddInventoryComponent,
+    SalesComponent,
   ],
   imports: [
     // BrowserModule,
@@ -134,7 +136,7 @@ import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
     HttpClientModule,
     NgApexchartsModule,
     InputGroupModule,
-    InputGroupAddonModule
+    InputGroupAddonModule,
     // BrowserAnimationsModule,
    
   ],
