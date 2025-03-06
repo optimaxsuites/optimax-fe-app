@@ -73,6 +73,9 @@ import { PosSettingComponent } from './ui/view/pos/pos-setting/pos-setting.compo
 import { BusInfoSettingComponent } from './ui/view/pos/bus-info-setting/bus-info-setting.component';
 import { PAndISettingComponent } from './ui/view/pos/p-and-isetting/p-and-isetting.component';
 import { UserSettingComponent } from './ui/view/pos/user-setting/user-setting.component';
+import { RolesNpermissionComponent } from './ui/view/pos/user-setting/roles-npermission/roles-npermission.component';
+import { UsersComponent } from './ui/view/pos/user-setting/users/users.component';
+import { MessageService } from 'primeng/api';
 
 //
 
@@ -95,6 +98,8 @@ import { UserSettingComponent } from './ui/view/pos/user-setting/user-setting.co
     BusInfoSettingComponent,
     PAndISettingComponent,
     UserSettingComponent,
+    UsersComponent,
+    RolesNpermissionComponent,
   ],
   imports: [
     BrowserModule,
@@ -151,6 +156,7 @@ import { UserSettingComponent } from './ui/view/pos/user-setting/user-setting.co
   providers: [
     NavigationLinksService,
     MenuItemsService,
+    MessageService,
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,

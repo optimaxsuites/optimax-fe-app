@@ -1,1 +1,32 @@
-<p>user-setting works!</p>
+<!-- <p-confirmDialog header="Confirm Deletion" icon="pi pi-exclamation-triangle" styleClass="custom-confirm-dialog"></p-confirmDialog> -->
+
+<div class="flex gap-4 items-center">
+    <i class="pi pi-receipt text-4xl text-customBlue"></i>
+    <div>
+        <p class="text-customBlue/60">Point of Sale</p>
+        <p class="text-customBlue font-semibold text-[17px]">User Management</p>
+    </div>
+</div>
+
+
+<div class="flex gap-8 my-4 justify-center items-center text-customBlue">
+    <button *ngFor="let tab of tabs" 
+    [ngClass]="{
+        'border-b-4 border-customBlue font-bold text-customBlue scale-105': tab === tabState,
+        'hover:scale-105 hover:text-customBlueHover': true
+      }"
+    (click)="changeTab(tab)">
+{{ tab | titlecase }}
+</button>
+</div>
+
+
+
+@if (tabState === 'Users'){
+<app-users></app-users>
+}
+
+
+@if (tabState === 'Roles and permission'){
+<app-roles-npermission></app-roles-npermission>
+}

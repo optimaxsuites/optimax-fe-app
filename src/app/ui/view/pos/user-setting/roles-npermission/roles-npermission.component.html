@@ -1,0 +1,112 @@
+<div class="mb-4 mt-3 px-3 flex items-center">
+    <p *ngIf="showAddForm" class="text-xl font-semibold text-customBlue capitalize flex-1">
+      <span>New</span> Role structure
+    </p>
+    <button 
+      class="bg-customBlue text-white font-bold p-3 rounded-xl ml-auto" 
+      (click)="toogleForm()"
+    >
+      {{ showAddForm ? "Cancel" : "Create New" }}
+    </button>
+  </div>
+  
+
+@if(!showAddForm){
+    <mat-accordion>
+
+  @for(role of roles; track role.roleName){
+        <mat-expansion-panel #panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title class="capitalize">
+              {{ role.roleName }}
+            </mat-panel-title>
+            <mat-panel-description  class="action-buttons">
+              <button (click)="editCompensation(role,  $event)"  class="text-customGreen hover:bg-green-50 p-3 rounded-xl"><i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2 "></i><span *ngIf="panel.expanded" >{{role.isEditing? 'Save Changes' : 'Edit'}}</span></button>
+              <button (click)="confirmCompensationDelete(role, $event)"  class="text-red-500 hover:bg-red-50 p-3 rounded-xl " *ngIf="!role.isEditing"><i class="fa-solid fa-trash text-2xl pr-2"></i><span *ngIf="panel.expanded">Delete</span></button>
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+          <div class="">
+            <table class="w-full border-collapse border border-gray-300">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="border border-gray-300 px-4 py-2">Permission</th>
+                        <th class="border border-gray-300 px-4 py-2 text-center">View</th>
+                        <th class="border border-gray-300 px-4 py-2 text-center">Edit</th>
+                        <th class="border border-gray-300 px-4 py-2 text-center">Delete</th>
+                        <th class="border border-gray-300 px-4 py-2 text-center">Read</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for(permissionKey of Object.keys(role.permissions); track permissionKey){
+                        <tr>
+                            <td class="border border-gray-300 px-4 py-2 capitalize">{{ permissionKey }}</td>
+                            <td class="border border-gray-300 px-4 py-2 text-center">
+                                <input type="checkbox" [checked]="role.permissions[permissionKey].view" [disabled]="!role.isEditing" class="disabled:accent-customGreen"/>
+                            </td>
+                            <td class="border border-gray-300 px-4 py-2 text-center">
+                                <input type="checkbox" [checked]="role.permissions[permissionKey].edit" [disabled]="!role.isEditing" />
+                            </td>
+                            <td class="border border-gray-300 px-4 py-2 text-center">
+                                <input type="checkbox" [checked]="role.permissions[permissionKey].delete" [disabled]="!role.isEditing" />
+                            </td>
+                            <td class="border border-gray-300 px-4 py-2 text-center">
+                                <input type="checkbox" [checked]="role.permissions[permissionKey].read" [disabled]="!role.isEditing" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        </mat-expansion-panel>
+  }
+  @empty {<li>There are no items.</li>}
+</mat-accordion>
+
+}
+
+
+@if(showAddForm){
+
+
+        <div class="px-4">
+            <div class="py-5 flex flex-col gap-1">
+              <label for="name" class="font-semibold text-customBlue">Role name</label>
+              <input type="text" placeholder="Role name" id="name" class="editInput" [(ngModel)]="newRole.roleName">
+            </div>
+            
+            <table class="w-full border-collapse border border-gray-300">
+              <thead>
+                <tr class="bg-gray-100">
+                  <th class="border border-gray-300 px-4 py-2">Permission</th>
+                  <th class="border border-gray-300 px-4 py-2 text-center">View</th>
+                  <th class="border border-gray-300 px-4 py-2 text-center">Edit</th>
+                  <th class="border border-gray-300 px-4 py-2 text-center">Delete</th>
+                  <th class="border border-gray-300 px-4 py-2 text-center">Read</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let permissionKey of permissionKeys">
+                  <td class="border border-gray-300 px-4 py-2 capitalize">{{ permissionKey }}</td>
+                  <td class="border border-gray-300 px-4 py-2 text-center">
+                    <input type="checkbox" [(ngModel)]="newRole.permissions[permissionKey].view" />
+                  </td>
+                  <td class="border border-gray-300 px-4 py-2 text-center">
+                    <input type="checkbox" [(ngModel)]="newRole.permissions[permissionKey].edit" />
+                  </td>
+                  <td class="border border-gray-300 px-4 py-2 text-center">
+                    <input type="checkbox" [(ngModel)]="newRole.permissions[permissionKey].delete" />
+                  </td>
+                  <td class="border border-gray-300 px-4 py-2 text-center">
+                    <input type="checkbox" [(ngModel)]="newRole.permissions[permissionKey].read" />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            
+            <div class="text-right my-3">
+                <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-customGreenHover disabled:cursor-not-allowed" (click)="submitRole()" [disabled]="newRole.roleName === ''">Add</button>
+              </div>
+          </div>
+          
+
+}
