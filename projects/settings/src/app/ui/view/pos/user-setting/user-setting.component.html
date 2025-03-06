@@ -9,10 +9,10 @@
 </div>
 
 
-<div class="flex gap-8 my-4 justify-center items-center text-customBlue">
+<div class="flex gap-8 my-4 justify-center items-center text-customBlue text-xl">
     <button *ngFor="let tab of tabs" 
     [ngClass]="{
-        'border-b-4 border-customBlue font-bold text-customBlue scale-105': tab === tabState,
+        'border-b-[3px] border-customBlue font-bold text-customBlue scale-105': tab === tabState,
         'hover:scale-105 hover:text-customBlueHover': true
       }"
     (click)="changeTab(tab)">
