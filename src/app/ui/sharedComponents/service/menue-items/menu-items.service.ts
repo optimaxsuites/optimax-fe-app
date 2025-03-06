@@ -396,7 +396,7 @@ export class MenuItemsService {
     });
   
     if (unlockedCount > 0) {
-      const settingsModule = this.menuItems.find(module => module.label === 'General Settings');
+      const settingsModule = this.menuItems.find(module => module.label === 'Settings');
       if (settingsModule) {
         settingsModule.locked = false;
       }
@@ -435,7 +435,7 @@ console.log(this.settingsMenuItems)
   }
   
   getUnlockedSettingsModules(): MenuItem[] {
-    let unlockedModules = this.settingsMenuItems.filter(module => !module.locked || module.label === 'Dashboard');
+    let unlockedModules = this.settingsMenuItems.filter(module => !module.locked || module.label === 'General Settings');
     return unlockedModules;
   }
   
