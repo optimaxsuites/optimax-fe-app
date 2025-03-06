@@ -81,7 +81,7 @@ import { CommonModule } from '@angular/common';
   ],
   imports: [
    
-    // BrowserModule,
+    BrowserModule,
     AppRoutingModule,
     CommonModule,
     // AppRoutingModule,
@@ -98,7 +98,7 @@ import { CommonModule } from '@angular/common';
     MatProgressBarModule,
      ButtonModule,  // ✅ PrimeNG Button
     DialogModule ,  // ✅ PrimeNG Dialog
-    //  BrowserAnimationsModule,
+     BrowserAnimationsModule,
     MatDialogModule,
     MatInputModule,
     MatSelectModule,
