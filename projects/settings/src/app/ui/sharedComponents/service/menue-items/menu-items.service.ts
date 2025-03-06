@@ -396,7 +396,7 @@ export class MenuItemsService {
     });
   
     if (unlockedCount > 0) {
-      const settingsModule = this.menuItems.find(module => module.label === 'Settings');
+      const settingsModule = this.menuItems.find(module => module.label === 'General Settings');
       if (settingsModule) {
         settingsModule.locked = false;
       }
