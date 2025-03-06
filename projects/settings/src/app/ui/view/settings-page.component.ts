@@ -22,15 +22,15 @@ export class SettingsPageComponent {
     console.log('Fetched Menu Items:', fetchedItems);
 
     if (this.role) {
-      this.menuItems = this.menuService.getSettingsMenuItemsForRole(this.role).map(item => ({
+      this.menuItems = this.menuService.getUnlockedSettingsModules().map(item => ({
         ...item,
         open: false
       }));
       console.log(this.menuItems)
     }
 
-    this.menuItems = [...this.menuService.settingsMenuItems]
-    console.log(this.menuService.settingsMenuItems)
+    // this.menuItems = [...this.menuService.settingsMenuItems]
+    // console.log(this.menuService.settingsMenuItems)
     this.router.events.subscribe(event => {
       if (event instanceof NavigationEnd) {
         this.updateActiveState();
