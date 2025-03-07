@@ -6,7 +6,7 @@ interface Permission {
   view: boolean;
   edit: boolean;
   delete: boolean;
-  read: boolean;
+  create: boolean;
 }
 
 interface Role {
@@ -35,10 +35,10 @@ export class RolesNpermissionComponent {
     {
       roleName: 'Admin',
       permissions: {
-        sales: { view: true, edit: true, delete: true, read: true },
-        inventory: { view: true, edit: true, delete: true, read: true },
-        product: { view: true, edit: true, delete: true, read: true },
-        report: { view: true, edit: true, delete: true, read: true }
+        sales: { view: true, edit: true, delete: true, create: true },
+        inventory: { view: true, edit: true, delete: true, create: true },
+        product: { view: true, edit: true, delete: true, create: true },
+        report: { view: true, edit: true, delete: true, create: true }
       },
       usersAssigned: [
         { id: 1, name: 'John Doe', email: 'john@example.com' },
@@ -50,10 +50,10 @@ export class RolesNpermissionComponent {
     {
       roleName: 'Cashier',
       permissions: {
-        sales: { view: true, edit: true, delete: false, read: true },
-        inventory: { view: false, edit: false, delete: false, read: false },
-        product: { view: false, edit: false, delete: false, read: false },
-        report: { view: true, edit: false, delete: false, read: true }
+        sales: { view: true, edit: true, delete: false, create: true },
+        inventory: { view: false, edit: false, delete: false, create: false },
+        product: { view: false, edit: false, delete: false, create: false },
+        report: { view: true, edit: false, delete: false, create: true }
       },
       usersAssigned: [
         { id: 4, name: 'Emily Davis', email: 'emily@example.com' },
@@ -64,10 +64,10 @@ export class RolesNpermissionComponent {
     {
       roleName: 'Inventory Manager',
       permissions: {
-        sales: { view: false, edit: false, delete: false, read: false },
-        inventory: { view: true, edit: true, delete: true, read: true },
-        product: { view: true, edit: true, delete: true, read: true },
-        report: { view: false, edit: false, delete: false, read: false }
+        sales: { view: false, edit: false, delete: false, create: false },
+        inventory: { view: true, edit: true, delete: true, create: true },
+        product: { view: true, edit: true, delete: true, create: true },
+        report: { view: false, edit: false, delete: false, create: false }
       },
       usersAssigned: [
         { id: 6, name: 'Sophia Martinez', email: 'sophia@example.com' },
@@ -80,10 +80,10 @@ export class RolesNpermissionComponent {
   newRole: Role = {
     roleName: '',
     permissions: {
-      sales: { view: false, edit: false, delete: false, read: false },
-      inventory: { view: false, edit: false, delete: false, read: false },
-      product: { view: false, edit: false, delete: false, read: false },
-      report: { view: false, edit: false, delete: false, read: false },
+      sales: { view: false, edit: false, delete: false, create: false },
+      inventory: { view: false, edit: false, delete: false, create: false },
+      product: { view: false, edit: false, delete: false, create: false },
+      report: { view: false, edit: false, delete: false, create: false },
     },
   };
 
@@ -119,10 +119,10 @@ export class RolesNpermissionComponent {
       this.newRole = {
       roleName: '',
       permissions: {
-        sales: { view: false, edit: false, delete: false, read: false },
-        inventory: { view: false, edit: false, delete: false, read: false },
-        product: { view: false, edit: false, delete: false, read: false },
-        report: { view: false, edit: false, delete: false, read: false },
+        sales: { view: false, edit: false, delete: false, create: false },
+        inventory: { view: false, edit: false, delete: false, create: false },
+        product: { view: false, edit: false, delete: false, create: false },
+        report: { view: false, edit: false, delete: false, create: false },
       }
      
     }

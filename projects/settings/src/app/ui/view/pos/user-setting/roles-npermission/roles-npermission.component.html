@@ -33,7 +33,7 @@
                         <th class="border border-gray-300 px-4 py-2 text-center">View</th>
                         <th class="border border-gray-300 px-4 py-2 text-center">Edit</th>
                         <th class="border border-gray-300 px-4 py-2 text-center">Delete</th>
-                        <th class="border border-gray-300 px-4 py-2 text-center">Read</th>
+                        <th class="border border-gray-300 px-4 py-2 text-center">Create</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -50,7 +50,7 @@
                                 <input type="checkbox" [checked]="role.permissions[permissionKey].delete" [disabled]="!role.isEditing" />
                             </td>
                             <td class="border border-gray-300 px-4 py-2 text-center">
-                                <input type="checkbox" [checked]="role.permissions[permissionKey].read" [disabled]="!role.isEditing" />
+                                <input type="checkbox" [checked]="role.permissions[permissionKey].create" [disabled]="!role.isEditing" />
                             </td>
                         </tr>
                     }
@@ -81,7 +81,7 @@
                   <th class="border border-gray-300 px-4 py-2 text-center">View</th>
                   <th class="border border-gray-300 px-4 py-2 text-center">Edit</th>
                   <th class="border border-gray-300 px-4 py-2 text-center">Delete</th>
-                  <th class="border border-gray-300 px-4 py-2 text-center">Read</th>
+                  <th class="border border-gray-300 px-4 py-2 text-center">Create</th>
                 </tr>
               </thead>
               <tbody>
@@ -97,7 +97,7 @@
                     <input type="checkbox" [(ngModel)]="newRole.permissions[permissionKey].delete" />
                   </td>
                   <td class="border border-gray-300 px-4 py-2 text-center">
-                    <input type="checkbox" [(ngModel)]="newRole.permissions[permissionKey].read" />
+                    <input type="checkbox" [(ngModel)]="newRole.permissions[permissionKey].create" />
                   </td>
                 </tr>
               </tbody>
