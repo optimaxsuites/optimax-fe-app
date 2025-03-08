@@ -96,7 +96,7 @@ import { MessageService } from 'primeng/api';
     SalesComponent,
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
     UserModule,
     AppRoutingModule,
     CommonModule,
@@ -136,7 +136,7 @@ import { MessageService } from 'primeng/api';
     NgApexchartsModule,
     InputGroupModule,
     InputGroupAddonModule,
-    BrowserAnimationsModule,
+    // BrowserAnimationsModule,
    
   ],
   providers: [
