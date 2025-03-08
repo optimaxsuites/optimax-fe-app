@@ -1,112 +1,77 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=stat_minus_1" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-
 <div class="createVendor"  >
-    <div class="flex justify-between  ">
+  <div class="flex justify-between  ">
     <p class="back pt-4 text-[12px]" style="cursor: pointer; " (click)="closeEdit()"><i class="fa-solid fa-arrow-left  "></i> Back</p>
     <button  class="p-2  bg-customGreen rounded-2xl text-white text-[12px]" [disabled]=" !selectedSupplier "  (click) =" saveProduct()"    (click)="saveToLocalStorage()" id="addB">Add Inventory</button>
   </div>
-  <!-- <div  class="fixed top-4 right-4 bg-green-500 text-white p-3 rounded-md shadow-lg transition-opacity duration-500">
-    <p> message</p>{{ notificationMessage }}
-  </div> -->
-
-
     <div class="details" id="addInventory">
-     
-      <div class=" shadow bg-gray-50 text-gray-700 flex flex-col  space-y-5 stl p-5 rounded-2xl border w-[50%] " > 
+      <div class=" shadow bg-gray-50 text-gray-700 flex flex-col  space-y-5 stl p-5 rounded-2xl border w-[50%] " >
         <p class="text-[14px] text-gray-700 font-semibold pb-0  mb-0 text-center">Add-Inventory</p>
         <hr>
-        <div class="field" >
+         <div class="field" >
           <label class="text-[13px] font-normal " for="name">Product Name</label>
-          <input class="name editInput bg-gray-100 text-[12px] p-2.5 font-normal "  id="name" [value]="activeItem.name" disabled />
+          <input class="name editInput bg-gray-100 text-[12px] p-2.5 font-normal "  id="name" [value]="activeItem.name" disabled *ngIf="mode === 'child'"/>
+          <!-- <ngSelect class="name editInput bg-gray-100 text-[12px] p-2.5 font-normal "  id="name" [value]="activeItem.name" disabled *ngIf="mode === 'parent'"/> -->
+          <select
+          name="parent"
+          id="parent"
+          [(ngModel)]="activeItem"
+          *ngIf="mode === 'parent'"
+          class="editInput mb-2 outline-none"  
+          >  
+          @for (product of products; track $index) {
+          <option [value]="product" >{{ product.name }}</option>
+          }
+          </select>
         </div>
   
-  
-        <div  class="field" >
+        <div class="field" >
           <label class="text-[13px] font-normal" for="sku">SKU</label>
           <input class="editInput  bg-gray-100  text-[12px] " id="sku" [value]="activeItem.sku" readonly />
         </div>
-  
-  
-          <div class="field">
-            <label class="block font-normal text-[13px]">Product Code</label>
-            <input class="editInput w-full text-[12px]  bg-gray-100"   id="code" [value]="activeItem.code" readonly />
-          </div>
+
+        <div class="field">
+          <label class="block font-normal text-[13px]">Product Code</label>
+          <input class="editInput w-full text-[12px]  bg-gray-100"   id="code" [value]="activeItem.code" readonly />
+        </div>
             
         <div class="field">
           <label for="category" class="block font-normal text-[13px] ">Category</label>
           <input class="editInput w-full text-[12px]   bg-gray-100" id="category"   [value]="activeItem.productCategory.name" readonly />
         </div>
-    
-  
-  
-          
-          <!-- Dropdown1 -->
-          
-          <div class="flex gap-4"id="dropdown1">
-            <!-- Event Category Dropdown -->
-            <div class="w-1/2 ">
-              <label for="dropdown" class="block font-normal text-[13px]">Change-type <span class="text-red-500">*
-  
+
+        <div class="flex gap-4"id="dropdown1">
+          <div class="w-1/2 ">
+            <label for="dropdown" class="block font-normal text-[13px]">Change-type 
+              <span class="text-red-500">*
               </span>  
-            
             </label>
-            
-           
-            
-            <input class="editInput w-full bg-gray-100 text-[12px] " value="Restock" id="change-type" readonly />
-
-                  
-
-            
+            <input class="editInput w-full bg-gray-100 text-[12px] " value="Restock" id="change-type" readonly /> 
           </div>
-  
-  
-  
-          
-        
-  
-  
-  
-  
-  
-  
-          <!-- Dropdown2 -->
+
           <div class="w-1/2 ">
             <label for="dropdown" class="block font-normal text-[13px]">
               Source <span class="text-red-500">*</span>
-              <span 
-                *ngIf="hasSelectedSupplier" 
-                (click)="removeSelectedSupplier()" 
-                title="Delete selected supplier" 
-                class="cursor-pointer text-red-600 text-2xl pl-3">
-                <i class="fas fa-trash"></i>
-              </span>
             </label>
-               
-       
-            <!-- <div class="relative flex items-center border rounded-md overflow-hidden bg-gray-100" > -->
-
-              <p-inputGroup class="relative flex items-center border rounded-md overflow-hidden bg-gray-100">
-                <select
-                  id="dropdown"
-                  class="text-gray-600 bg-gray-100 text-[14px] w-full outline-none p-2"
-                  [(ngModel)]="selectedSupplier"
-                  (change)="changeSelectedSupplier($event)">
-                
-                  <option *ngFor="let supplier of suppliers" [ngValue]="supplier">
-                    {{ supplier.supplierName }}
-                </select>
+            <p-inputGroup class="relative flex items-center border rounded-md overflow-hidden bg-gray-100">
+              <select
+                id="dropdown"
+                class="text-gray-600 bg-gray-100 text-[14px] w-full outline-none p-2"
+                [(ngModel)]="selectedSupplier"
+                (change)="changeSelectedSupplier($event)"
+                >
+              <option *ngFor="let supplier of suppliers" [ngValue]="supplier">
+                {{ supplier.supplierName }}
+              </select>
             
-                <p-inputGroupAddon 
-                  class="bg-customGreen text-white text-[14px] px-3 cursor-pointer" 
-                  (click)="openModal()">
-                  <i class="fas fa-plus"></i>
-                </p-inputGroupAddon>
-              </p-inputGroup>
-    
+            <p-inputGroupAddon 
+              class="bg-customGreen text-white text-[14px] px-3 cursor-pointer" 
+              (click)="openModal()">
+              <i class="fas fa-plus"></i>
+            </p-inputGroupAddon>
+            </p-inputGroup>
         </div>
-          
         </div>
         
         <div class="flex w-full gap-4">
@@ -128,15 +93,10 @@
           </div>
         </div>
         
-  
-
-  
-  
 
   <p class="text-[13px] text-gray-700 font-semibold " id="h1Q">
     Quantity
   </p>
-  
   <div class="flex gap-4">
     <div class="field w-1/2">
       <label for="lastQuantity" class="block font-normal text-[13px]">Last Quantity Added</label>
@@ -188,8 +148,6 @@
 </div>
 
 
-
-
   <p class="text-[13px] text-gray-700 font-semibold" id="Pricing">
     Pricing
   </p>
@@ -201,9 +159,7 @@
         id="lastPrice" 
         name="lastPrice"
         class="editInput w-full bg-gray-100 text-[12px] " id="lastPrice"
-     
         required
-   
       />
     </div>  
   
@@ -219,12 +175,6 @@
     </div>  
   </div>
 
-  
-
-
-
-
-  <!-- New Fields for Selling Price -->
 <div class="flex gap-4 ">
   <div class="field w-1/2">
     <label for="lastSellingPrice" class="block font-normal text-[13px]">Last Selling Price</label>
@@ -243,26 +193,23 @@
         Current Selling Price
     </label>
     <div class="relative">
-        <input 
-            type="number" 
-            id="currentSellingPrice" 
-            name="currentSellingPrice"
-            class="editInput w-full bg-gray-100  text-[12px] " id="currentSellingPrice"
-            required
-        />
-        <p 
-          id="priceChange"
-            (click)="openPriceChange = !openPriceChange" 
-        >
-            + Price Change
-        </p>
+      <input 
+        type="number" 
+        id="currentSellingPrice" 
+        name="currentSellingPrice"
+        class="editInput w-full bg-gray-100  text-[12px] " id="currentSellingPrice"
+        required
+      />
+      <p 
+        id="priceChange"
+          (click)="openPriceChange = !openPriceChange" 
+      >
+        + Price Change
+      </p>
     </div>
-
-    
 </div>
 
 </div>
-<!-- Show Base Price, Tax, Effective Price, and Discount When Price Change is Clicked -->
 <div class=" flex-col items-center w-full" id="openprice" *ngIf="openPriceChange">
   <div class="flex gap-4">
     <div class="field w-1/2">
@@ -297,67 +244,66 @@
   <div class="field w-full" id="discountField">
     <label for="discount" class="block font-normal text-[13px]">Discount (%)</label>
     <div class="flex items-center gap-2">
-      <select
-        id="discount"
-        class="editInput w-full bg-gray-100 text-[12px]"
-        [(ngModel)]="priceDetails.discount"
-        (change)="calculateEffectivePrice()">
-        <option [ngValue]="null" disabled selected>Select Discount</option>
-        <option *ngFor="let discount of discountOptions" [ngValue]="discount">{{discount}}</option>
-      </select>
+    <select
+      id="discount"
+      class="editInput w-full bg-gray-100 text-[12px]"
+      [(ngModel)]="priceDetails.discount"
+      (change)="calculateEffectivePrice()">
+      <option [ngValue]="null" disabled selected>Select Discount</option>
+      <option *ngFor="let discount of discountOptions" [ngValue]="discount">{{discount}}</option>
+    </select>
       
-      <button
-      class="btn create-invoice-btn text-white bg-customGreen text-[12px] px-3 py-1 rounded"
-      type="button"
-      (click)="openAddDiscount = true">
-      Add
+    <button
+    class="btn create-invoice-btn text-white bg-customGreen text-[12px] px-3 py-1 rounded"
+    type="button"
+    (click)="openAddDiscount = true">
+    Add
     </button>
     
-    <app-side-modal *ngIf="openAddDiscount" (close)="openAddDiscount = false">
-      <div class="p-fluid ">
-        <h1 class="text-[17px] font-bold text-left text-customGreen mt-8">Discount</h1>
-      
-        <div class=" " id="divbox">
-          <label class="block text-[12px] font-medium text-gray-700 ">Name</label>
-          <input type="text" pInputText placeholder="Discount name" [(ngModel)]="discountTitle" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
-        </div>
-      
-        <div class="">
-          <label class="block text-[12px] font-medium text-gray-700">Discount Percentage (%)</label>
-          <input type="number" pInputText placeholder="0" [(ngModel)]="discountRate" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
-        </div>
 
-        <div class=" ">
-          <label  class="block text-[12px] font-medium text-gray-700" >Discount Type</label>
-          <select [(ngModel)]="selectedDiscountOption" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" >
-            <option *ngFor="let option of discountOptions_2" [ngValue]="option.value">{{ option.label }}</option>
-            </select>
-        </div>
+  <app-side-modal *ngIf="openAddDiscount" (close)="openAddDiscount = false">
+    <div class="p-fluid ">
+      <h1 class="text-[17px] font-bold text-left text-customGreen mt-8">Discount</h1>
+      
+      <div class=" " id="divbox">
+        <label class="block text-[12px] font-medium text-gray-700 ">Name</label>
+        <input type="text" pInputText placeholder="Discount name" [(ngModel)]="discountTitle" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
+      </div>
+      
+      <div class="">
+        <label class="block text-[12px] font-medium text-gray-700">Discount Percentage (%)</label>
+        <input type="number" pInputText placeholder="0" [(ngModel)]="discountRate" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
+      </div>
+
+      <div class=" ">
+        <label  class="block text-[12px] font-medium text-gray-700" >Discount Type</label>
+        <select [(ngModel)]="selectedDiscountOption" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" >
+          <option *ngFor="let option of discountOptions_2" [ngValue]="option.value">{{ option.label }}</option>
+        </select>
+      </div>
     
-        <div class="flex gap-4 w-full mt-9">
-          <div class="w-full">
-            <label class="block text-[12px] font-medium text-gray-700">Start Date:</label>
-            <input type="date" [(ngModel)]="startDate" class="border rounded-lg p-2 w-full focus:ring focus:ring-blue-300 outline-none">
-          
+      <div class="flex gap-4 w-full mt-9">
+         <div class="w-full">
+          <label class="block text-[12px] font-medium text-gray-700">Start Date:</label>
+          <input type="date" [(ngModel)]="startDate" class="border rounded-lg p-2 w-full focus:ring focus:ring-blue-300 outline-none">
           </div>
         
           <div class="w-full">
             <label class="block text-[12px] font-medium text-gray-700">End Date:</label>
             <input type="date" [(ngModel)]="endDate" class="border rounded-lg p-2 w-full focus:ring focus:ring-blue-300 outline-none">
-           
           </div>
-        </div>        
+      </div>        
 
-        <div class="field">
-          <label class="block text-[12px] font-medium text-gray-700">Minimum Quantity</label>
-          <input type="number" pInputText placeholder="Minimum quantity" [(ngModel)]="minimumDiscountQuantity" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
-        </div>
+      <div class="field">
+        <label class="block text-[12px] font-medium text-gray-700">Minimum Quantity</label>
+        <input type="number" pInputText placeholder="Minimum quantity" [(ngModel)]="minimumDiscountQuantity" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
       </div>
-    </app-side-modal>
-    
     </div>
+  </app-side-modal>
+    
   </div>
-  
+  </div>
+
 
   <div class="field w-full mt-4">
     <label for="effectivePrice" class="block font-normal text-[13px]">Effective Price</label>
@@ -378,202 +324,193 @@
     </div>
   </div>
 
-
-
- 
-
-
-
 </div>
-        </div>
+</div>
    
-        <div class="tableContainer w-[40%] ">
-          <div class=" bg-gray-50 shadow rounded-lg p-4">
-            <h2 class="text-lg font-semibold mb-3">Product Variants</h2>
-            <table
-              *ngIf="activeItem.variants.length > 0"
-              class="min-w-full bg-white rounded-lg overflow-hidden"
-            >
-              <thead>
-                <tr>
-                  <th class="py-2 px-4 bg-gray-600 text-white text-left">Name</th>
-                  <th class="py-2 px-4 bg-gray-600 text-white text-left">Price</th>
-                  <th class="py-2 px-4 bg-gray-600 text-white text-left">Quantity</th>
-                  <th class="py-2 px-4 bg-gray-600 text-white text-left">SKU</th>
-                  <th class="py-2 px-4 bg-gray-600 text-white text-left">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let variant of variants; let i = index">
-                  <td class="py-2 px-4 border-b">{{ variant.name }}</td>
-                  <td class="py-2 px-4 border-b">{{ variant.price }}</td>
-                  <td class="py-2 px-4 border-b">{{ variant.quantity }}</td>
-                  <td class="py-2 px-4 border-b">{{ variant.sku }}</td>
-                  <td class="py-2 px-4 border-b">
-                    <i
-                    class="fa-solid fa-pen cursor-pointer text-blue-500 hover:text-blue-700"
-                    (click)="openVariantEditModal(variant)"
+  <div class="tableContainer w-[40%] " *ngIf="activeItem?.variants?.length > 0">
+    <div class=" bg-gray-50 shadow rounded-lg p-4 h-1/2">
+      <h2 class="text-lg font-semibold mb-3">Product Variants</h2>
+      <table
+        class="min-w-full bg-white rounded-lg overflow-hidden"
+      >
+        <thead>
+          <tr>
+            <th class="py-2 px-4 bg-gray-600 text-white text-left">Name</th>
+            <th class="py-2 px-4 bg-gray-600 text-white text-left">Price</th>
+            <th class="py-2 px-4 bg-gray-600 text-white text-left">Quantity</th>
+            <th class="py-2 px-4 bg-gray-600 text-white text-left">SKU</th>
+            <th class="py-2 px-4 bg-gray-600 text-white text-left">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let variant of variants; let i = index">
+            <td class="py-2 px-4 border-b">{{ variant.name }}</td>
+            <td class="py-2 px-4 border-b">{{ variant.price }}</td>
+            <td class="py-2 px-4 border-b">{{ variant.quantity }}</td>
+            <td class="py-2 px-4 border-b">{{ variant.sku }}</td>
+            <td class="py-2 px-4 border-b">
+              <i
+              class="fa-solid fa-pen cursor-pointer text-blue-500 hover:text-blue-700"
+              (click)="openVariantEditModal(variant)"
 
-                    title="Edit"
-                  ></i>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+              title="Edit"
+            ></i>
+            </td>
+          </tr>
+        </tbody>
+        </table>
+      </div>
+  </div>
+</div>
+  <app-side-modal *ngIf="isOpen" (close)="closeModal()">
+    <h2 class="text-2xl font-bold my-5 text-center">Add New Supplier</h2>
+  
+    <div class="bg-white shadow-2xl rounded-lg p-6 mt-14">
+      <form (ngSubmit)="submitForm()">
+        <div class="mb-4">
+          <label class="block text-gray-700 text-2xl">Supplier Name</label>
+          <input type="text" [(ngModel)]="supplierName" name="supplierName" class="w-full p-3  bg-gray-200"  style="border: 1px solid gray; border-radius: 4px;" required />
+        </div>
+  
+        <div class="mb-4">
+          <label class="block text-gray-700 text-2xl">Contact Person</label>
+          <input type="text" [(ngModel)]="contactPerson" name="contactPerson" class="w-full p-2  bg-gray-200"  style="border: 1px solid gray; border-radius: 4px;"required />
+        </div>
+  
+        <div class="mb-4">
+          <label class="block text-gray-700 text-2xl">Email Address</label>
+          <input
+            type="text"
+            [(ngModel)]="email"
+            name="email"
+            #emailInput="ngModel"
+            class="w-full p-2 bg-gray-200"
+            [ngClass]="{'border-red-500': emailInput.invalid && emailInput.dirty}"
+            style="border: 1px solid gray; border-radius: 4px;"
+            required
+          />
+          <div *ngIf="emailInput.invalid && emailInput.dirty" class="text-red-500 text-sm">
+            This field is required
           </div>
         </div>
-
-</div>
-        <app-side-modal *ngIf="isOpen" (close)="closeModal()">
-          <h2 class="text-2xl font-bold my-5 text-center">Add New Supplier</h2>
-        
-          <div class="bg-white shadow-2xl rounded-lg p-6 mt-14">
-            <form (ngSubmit)="submitForm()">
-              <div class="mb-4">
-                <label class="block text-gray-700 text-2xl">Supplier Name</label>
-                <input type="text" [(ngModel)]="supplierName" name="supplierName" class="w-full p-3  bg-gray-200"  style="border: 1px solid gray; border-radius: 4px;" required />
-              </div>
-        
-              <div class="mb-4">
-                <label class="block text-gray-700 text-2xl">Contact Person</label>
-                <input type="text" [(ngModel)]="contactPerson" name="contactPerson" class="w-full p-2  bg-gray-200"  style="border: 1px solid gray; border-radius: 4px;"required />
-              </div>
-        
-              <div class="mb-4">
-                <label class="block text-gray-700 text-2xl">Email Address</label>
-                <input
-                  type="text"
-                  [(ngModel)]="email"
-                  name="email"
-                  #emailInput="ngModel"
-                  class="w-full p-2 bg-gray-200"
-                  [ngClass]="{'border-red-500': emailInput.invalid && emailInput.dirty}"
-                  style="border: 1px solid gray; border-radius: 4px;"
-                  required
-                />
-                <div *ngIf="emailInput.invalid && emailInput.dirty" class="text-red-500 text-sm">
-                  This field is required
-                </div>
-              </div>
-        
-              <div class="mb-4">
-                <label class="block text-gray-700 text-2xl">Phone Number</label>
-                <input
-                  type="tel"
-                  [(ngModel)]="phone"
-                  name="phone"
-                  #phoneInput="ngModel"
-                  pattern="^(\+?\d{1,4}[-.\s]?)?\(?\d{1,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{4}$"
-                  class="w-full p-2 bg-gray-200"
-                  [ngClass]="{'border-red-500': phoneInput.invalid && phoneInput.dirty}"
-                  style="border: 1px solid gray; border-radius: 4px;"
-                  required
-                />
-                <p *ngIf="phoneInput.invalid && phoneInput.dirty" class="text-customGreen text-xl">
-                  Enter a valid phone number (e.g., +234 or +1).
-                </p>
-              </div>
-        
-              <div class="mb-4">
-                <label class="block text-gray-700 text-2xl">Business Address</label>
-                <input type="text" [(ngModel)]="address" name="address" class="w-full p-2  bg-gray-200" style="border: 1px solid gray; border-radius: 4px;" />
-              </div>
-        
-              <!-- Additional Information -->
-              <label class="block text-gray-700 font-medium mb-2 text-2xl">Products/Services Provided</label>
-              <textarea [(ngModel)]="products" name="products" class="w-full p-3 bg-gray-200 focus:ring-2 focus:ring-green-400 mb-4" placeholder="List the products or services offered" style="border: 1px solid gray; border-radius: 4px;"></textarea>
-        
-              <label class="block text-gray-700 font-medium mb-2 text-2xl">Notes</label>
-              <textarea [(ngModel)]="notes" name="notes" class="w-full p-3  bg-gray-200 focus:ring-2 focus:ring-green-400 mb-4" placeholder="Any special instructions or comments " style="border: 1px solid gray; border-radius: 4px;"></textarea>
-        
-              <!-- Terms & Conditions -->
-              <!-- <div class="mb-4 flex items-center">
-                <input type="checkbox" [(ngModel)]="agreeTerms" name="agreeTerms" class="mr-2" />
-                <label for="agreeTerms" class="text-2xl">
-                  I agree to the 
-                  <a href="/terms-and-conditions" target="_blank" class="text-blue-600 underline">Terms & Conditions</a>
-                </label>
-              </div> -->
-            
-        
-              <!-- Buttons -->
-              <div class="flex justify-end">
-                <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Save</button>
-                <button type="button" class="ml-2 text-gray-600" (click)="closeModal()">Cancel</button>
-              </div>
-            </form>
-          </div>
+  
+        <div class="mb-4">
+          <label class="block text-gray-700 text-2xl">Phone Number</label>
+          <input
+            type="tel"
+            [(ngModel)]="phone"
+            name="phone"
+            #phoneInput="ngModel"
+            pattern="^(\+?\d{1,4}[-.\s]?)?\(?\d{1,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{4}$"
+            class="w-full p-2 bg-gray-200"
+            [ngClass]="{'border-red-500': phoneInput.invalid && phoneInput.dirty}"
+            style="border: 1px solid gray; border-radius: 4px;"
+            required
+          />
+          <p *ngIf="phoneInput.invalid && phoneInput.dirty" class="text-customGreen text-xl">
+            Enter a valid phone number (e.g., +234 or +1).
+          </p>
+        </div>
+  
+        <div class="mb-4">
+          <label class="block text-gray-700 text-2xl">Business Address</label>
+          <input type="text" [(ngModel)]="address" name="address" class="w-full p-2  bg-gray-200" style="border: 1px solid gray; border-radius: 4px;" />
+        </div>
+  
+        <!-- Additional Information -->
+        <label class="block text-gray-700 font-medium mb-2 text-2xl">Products/Services Provided</label>
+        <textarea [(ngModel)]="products" name="products" class="w-full p-3 bg-gray-200 focus:ring-2 focus:ring-green-400 mb-4" placeholder="List the products or services offered" style="border: 1px solid gray; border-radius: 4px;"></textarea>
+  
+        <label class="block text-gray-700 font-medium mb-2 text-2xl">Notes</label>
+        <textarea [(ngModel)]="notes" name="notes" class="w-full p-3  bg-gray-200 focus:ring-2 focus:ring-green-400 mb-4" placeholder="Any special instructions or comments " style="border: 1px solid gray; border-radius: 4px;"></textarea>
+  
+        <!-- Terms & Conditions -->
+        <!-- <div class="mb-4 flex items-center">
+          <input type="checkbox" [(ngModel)]="agreeTerms" name="agreeTerms" class="mr-2" />
+          <label for="agreeTerms" class="text-2xl">
+            I agree to the 
+            <a href="/terms-and-conditions" target="_blank" class="text-blue-600 underline">Terms & Conditions</a>
+          </label>
+        </div> -->
       
-        </app-side-modal>
+  
+        <!-- Buttons -->
+        <div class="flex justify-end">
+          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Save</button>
+          <button type="button" class="ml-2 text-gray-600" (click)="closeModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
 
+  </app-side-modal>
 
-        <app-side-modal *ngIf="isVariantEditOpen" (close)="closeVariantEditModal()">
-          <h2 class="text-2xl font-bold my-5 text-center">Edit Variant</h2>
-        
-          <div class="bg-white shadow-2xl rounded-lg p-6">
-            <form (ngSubmit)="updateVariant()">
-              <div class="mb-4">
-                <label class="block text-gray-700 text-2xl"> Name</label>
-                <input
-                  type="text"
-                  [(ngModel)]="selectedVariant.name"
-                  name="variantName"
-                  class="w-full p-3 bg-gray-200 rounded-md border border-solid border-gray-400"
-                  required
-                />
-              </div>
-        
-              <div class="mb-4">
-                <label class="block text-gray-700 text-2xl">Current Price</label>
-                <input
-                  type="number"
-                  [(ngModel)]="selectedVariant.price"
-                  name="currentPrice"
-                  class="w-full p-3 bg-gray-200 rounded-md border border-solid border-gray-400"
-                  disabled
-                />
-              </div>
-        
-              <div class="mb-4">
-                <label class="block text-gray-700 text-2xl">New Price</label>
-                <input
-                  type="number"
-                  [(ngModel)]="newPrice"
-                  name="newPrice"
-                  class="w-full p-3 bg-gray-200 rounded-md border border-solid border-gray-400"
-                />
-              </div>
-        
-              <div class="mb-4">
-                <label class="block text-gray-700 text-2xl">Current Quantity</label>
-                <input
-                  type="number"
-                  [(ngModel)]="selectedVariant.quantity"
-                  name="currentQuantity"
-                  class="w-full p-3 bg-gray-200 rounded-md border border-solid border-gray-400"
-                  disabled
-                />
-              </div>
-        
-              <div class="mb-4">
-                <label class="block text-gray-700 text-2xl">New Quantity</label>
-                <input
-                  type="number"
-                  [(ngModel)]="newQuantity"
-                  name="newQuantity"
-                  class="w-full p-3 bg-gray-200 rounded-md border border-solid border-gray-400"
-                />
-              </div>
-        
-              <div class="flex justify-end">
-                <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">
-                  Update
-                </button>
-                <button type="button" class="ml-2 text-gray-600" (click)="closeVariantEditModal()">
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </app-side-modal>
-        
+  <app-side-modal *ngIf="isVariantEditOpen" (close)="closeVariantEditModal()">
+    <h2 class="text-2xl font-bold my-5 text-center">Edit Variant</h2>
+  
+    <div class="bg-white shadow-2xl rounded-lg p-6">
+      <form (ngSubmit)="updateVariant()">
+        <div class="mb-4">
+          <label class="block text-gray-700 text-2xl"> Name</label>
+          <input
+            type="text"
+            [(ngModel)]="selectedVariant.name"
+            name="variantName"
+            class="w-full p-3 bg-gray-200 rounded-md border border-solid border-gray-400"
+            required
+          />
+        </div>
+  
+        <div class="mb-4">
+          <label class="block text-gray-700 text-2xl">Current Price</label>
+          <input
+            type="number"
+            [(ngModel)]="selectedVariant.price"
+            name="currentPrice"
+            class="w-full p-3 bg-gray-200 rounded-md border border-solid border-gray-400"
+            disabled
+          />
+        </div>
+  
+        <div class="mb-4">
+          <label class="block text-gray-700 text-2xl">New Price</label>
+          <input
+            type="number"
+            [(ngModel)]="newPrice"
+            name="newPrice"
+            class="w-full p-3 bg-gray-200 rounded-md border border-solid border-gray-400"
+          />
+        </div>
+  
+        <div class="mb-4">
+          <label class="block text-gray-700 text-2xl">Current Quantity</label>
+          <input
+            type="number"
+            [(ngModel)]="selectedVariant.quantity"
+            name="currentQuantity"
+            class="w-full p-3 bg-gray-200 rounded-md border border-solid border-gray-400"
+            disabled
+          />
+        </div>
+  
+        <div class="mb-4">
+          <label class="block text-gray-700 text-2xl">New Quantity</label>
+          <input
+            type="number"
+            [(ngModel)]="newQuantity"
+            name="newQuantity"
+            class="w-full p-3 bg-gray-200 rounded-md border border-solid border-gray-400"
+          />
+        </div>
+  
+        <div class="flex justify-end">
+          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">
+            Update
+          </button>
+          <button type="button" class="ml-2 text-gray-600" (click)="closeVariantEditModal()">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </app-side-modal>
+  

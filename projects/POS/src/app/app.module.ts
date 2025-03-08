@@ -63,12 +63,12 @@ import { EditInventoryComponent } from './ui/view/inventory/edit-inventory/edit-
 import { ViewInventoryComponent } from './ui/view/inventory/view-inventory/view-inventory.component';
 import { SummaryReportComponent } from './ui/view/report-dashboard/summary-report/summary-report.component';
 import { CustomReportComponent } from './ui/view/report-dashboard/custom-report/custom-report.component';
-import { AddInventoryComponent } from './ui/view/inventory/add-inventory/add-inventory.component';
 import { InformationComponent } from './ui/view/inventory/information/information.component';
 
 import { InputGroupModule } from 'primeng/inputgroup';
 import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { SalesComponent } from './ui/view/sales/sales.component';
+import { MessageService } from 'primeng/api';
 @NgModule({
   declarations: [
     AppComponent,
@@ -93,11 +93,10 @@ import { SalesComponent } from './ui/view/sales/sales.component';
     InformationComponent,
     SummaryReportComponent,
     CustomReportComponent,
-    AddInventoryComponent,
     SalesComponent,
   ],
   imports: [
-    // BrowserModule,
+    BrowserModule,
     UserModule,
     AppRoutingModule,
     CommonModule,
@@ -137,7 +136,7 @@ import { SalesComponent } from './ui/view/sales/sales.component';
     NgApexchartsModule,
     InputGroupModule,
     InputGroupAddonModule,
-    // BrowserAnimationsModule,
+    BrowserAnimationsModule,
    
   ],
   providers: [
@@ -152,6 +151,7 @@ import { SalesComponent } from './ui/view/sales/sales.component';
     },
     JwtHelperService,
     provideHttpClient(withInterceptorsFromDi()),
+    MessageService
   ],
   bootstrap: [AppComponent],
 })
