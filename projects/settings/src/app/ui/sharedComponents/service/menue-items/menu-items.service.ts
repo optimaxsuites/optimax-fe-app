@@ -288,12 +288,12 @@ export class MenuItemsService {
       ],
     },
     {
-      label: 'Checkout',
-      route: this.navigationLink.getLink('checkoutSettings'),
+      label: 'User and Roles Management',
+      route: this.navigationLink.getLink('userRoles'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-check', 
       submenu: [
-        { label: 'Order Summary', route: this.navigationLink.getLink('checkoutLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
+        { label: 'Order Summary', route: this.navigationLink.getLink('userRoles'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
  
       ],
     },
@@ -343,6 +343,21 @@ export class MenuItemsService {
       icon: 'pi pi-cog' 
     },
   ];
+
+  private modulesRolePermissions = [
+    {
+      name: 'POS',
+      forms: ['product','report', 'sales', 'inventory', 'checkout']
+    },
+    {
+      name: 'Human Resources',
+      forms: ['employee','recruitment', 'Job vacancy', 'leave', 'loan', 'attendance', 'payroll']
+    },
+    {
+      name: 'Office Productivity',
+      forms: ['project','task']
+    },
+  ]
 
   private unlockedModules$ = new BehaviorSubject<MenuItem[]>(this.getUnlockedModules());
 
@@ -417,7 +432,6 @@ export class MenuItemsService {
       }
     });
 
-console.log(this.settingsMenuItems)
   }
   
   getUnlockedModules(): MenuItem[] {
@@ -433,9 +447,12 @@ console.log(this.settingsMenuItems)
   
     return unlockedModules;
   }
-  
+  getUnlockedModulesRole(){
+    let unlockedModules = this.settingsMenuItems.filter(module => !module.locked);
+    return this.modulesRolePermissions.filter(module => unlockedModules.filter(m => m.label !== module.name))
+  }
   getUnlockedSettingsModules(): MenuItem[] {
-    let unlockedModules = this.settingsMenuItems.filter(module => !module.locked || module.label === 'General Settings');
+    let unlockedModules = this.settingsMenuItems.filter(module => !module.locked || module.label === 'General Settings' || module.label === 'User and Roles Management');
     return unlockedModules;
   }
   

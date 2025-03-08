@@ -4,6 +4,7 @@ import { SettingsPageComponent } from './ui/view/settings-page.component';
 import { GeneralSettingsComponent } from './ui/view/general/general-settings/general-settings.component';
 import { HrSettingsComponent } from './ui/view/hr/hr-settings/hr-settings.component';
 import { PosSettingComponent } from './ui/view/pos/pos-setting/pos-setting.component';
+import { UserSettingComponent } from './ui/view/user-setting/user-setting.component';
 
 const routes: Routes = [
   {
@@ -23,6 +24,10 @@ const routes: Routes = [
         path: 'POS-settings/:uuid',
         component: PosSettingComponent,
       },
+      {
+        path: 'user-roles/:uuid',
+        component: UserSettingComponent,
+      }
     ],
   },
 ];
