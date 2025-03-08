@@ -449,7 +449,7 @@ export class MenuItemsService {
   }
   getUnlockedModulesRole(){
     let unlockedModules = this.settingsMenuItems.filter(module => !module.locked);
-    return this.modulesRolePermissions.filter(module => unlockedModules.filter(m => m.label !== module.name))
+    return this.modulesRolePermissions.filter(module => unlockedModules.some(m => m.label === module.name))
   }
   getUnlockedSettingsModules(): MenuItem[] {
     let unlockedModules = this.settingsMenuItems.filter(module => !module.locked || module.label === 'General Settings' || module.label === 'User and Roles Management');

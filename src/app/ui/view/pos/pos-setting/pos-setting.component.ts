@@ -29,15 +29,7 @@ export class PosSettingComponent {
       icon: 'pi pi-receipt',
       component: PAndISettingComponent,
     },
-    {
-      name: 'User & Role Management',
-      subSetting: [
-       ' Assign roles', 'permissions', ' manage employees'
-      ],
-      icon: 'pi pi-receipt',
-      component: UserSettingComponent,
-    },
-    {
+        {
       name: 'Payment Settings',
       subSetting: [
         'Salary Structure',
