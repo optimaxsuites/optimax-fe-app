@@ -11,7 +11,6 @@ import { CheckoutOrdersComponent } from './ui/view/checkout-orders/checkout-orde
 import { PosCheckoutPageComponent } from './ui/view/pos-checkout-page/pos-checkout-page.component';
 import { InventoryComponent } from './ui/view/inventory/inventory.component';
 import { ViewInventoryComponent } from './ui/view/inventory/view-inventory/view-inventory.component';
-import { AddInventoryComponent } from './ui/view/inventory/add-inventory/add-inventory.component';
 import { EditInventoryComponent } from './ui/view/inventory/edit-inventory/edit-inventory.component';
 import { InformationComponent } from './ui/view/inventory/information/information.component';
 import { ProductsComponent } from './ui/view/products/products.component';
@@ -65,7 +64,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule],
 })
 export class AppRoutingModule {}
