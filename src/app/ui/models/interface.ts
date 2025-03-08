@@ -275,7 +275,7 @@ export type supplierData = {
   email: string;
   phone: number;
   address: string;
-  products: string;
+  products?: string;
   notes: string;
   agreeTerms: boolean;
   createdAt: Date;

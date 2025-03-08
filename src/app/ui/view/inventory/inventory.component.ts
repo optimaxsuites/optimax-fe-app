@@ -8,97 +8,21 @@ import { MessageService } from 'primeng/api';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef } from '@angular/core';
 import { Observable } from 'rxjs';
+
 @Component({
   selector: 'app-inventory',
   templateUrl: './inventory.component.html',
   styleUrl: './inventory.component.scss',
-  providers: [MessageService]
 })
+
 export class InventoryComponent {
+
 
   @Output() productUpdated = new EventEmitter<any>();
   items = [{ showMenu: false }, { showMenu: false }]; // Example list of items
 
- 
- 
-
-  toggleDropdown2(item: any, event?: Event) {
-    if (event) {
-      event.stopPropagation(); // Stop event propagation
-    }
-    item.showMenu = !item.showMenu;
-  }
-
-  @HostListener('document:click')
-  closeAllDropdowns() {
-    this.items.forEach((item) => (item.showMenu = false));
-  }
-closeDropdown(item: any) {
-  item.showMenu = false;
-}
-
-// updatedProduct: any = null;
-
-  
-// updateInventory(updatedProduct: any) {
-//   console.log("Product Updated:", updatedProduct);
-
-//   // Find the product in the list
-//   const index = this.products.findIndex(p => p.id === updatedProduct.id);
-//   if (index !== -1) {
-//     if (!this.products[index].history) {
-//       this.products[index].history = [];
-//     }
-
-//     // Add update record to history
-//     const updateRecord = {
-//       sku: updatedProduct.sku,
-//       code: updatedProduct.code,
-//       name: updatedProduct.name,
-//       effectivePrice: updatedProduct.effectivePrice,
-//       effectiveQuantity: updatedProduct.effectiveQuantity,
-//       productCategory: updatedProduct.productCategory,
-//       timestamp: new Date().toISOString() // Add timestamp for tracking
-//     };
-
-//     // Store update history
-//     this.products[index].history.push(updateRecord);
-//     this.products[index] = { ...updatedProduct, history: this.products[index].history };
-
-//     // ✅ Save updated products list to `localStorage`
-//     localStorage.setItem('products', JSON.stringify(this.products));
-
-//     // ✅ Also update `updatedProduct` for the view page
-//     this.updatedProduct = { ...this.products[index] };
-//   }
-
-//   this.editInventory = false; // Close edit form
-// }
-
-
-  
-//  saveProduct() {
-//   if (this.activeItem) {
-//     this.productUpdated.emit(this.activeItem);
-//   }
-//  }
-  // saveProduct() {
-  //   // Update the quantity of the active product
-  //   const updatedProduct = this.products.find(item => item.id === this.activeItem.id);
-  //   if (updatedProduct) {
-  //     updatedProduct.effectiveQuantity = this.activeItem.effectiveQuantity;
-  //   }
-  
-  //   // Trigger change detection to reflect the updated quantity in the table
-  //   this.cdRef.detectChanges();
-  
-  //   // Close the sidebar
-  //   this.sidebarVisible = false;
-  
-  //   // Optionally, show a toast notification or handle other UI updates
-  // }
-
-  
+  dropdownVisible: boolean[] = [];
+  selectedAction!: string; 
   products: any[] = [];
   originalProducts: any[] = [];
   viewProduct: 
@@ -112,37 +36,25 @@ closeDropdown(item: any) {
   editProduct: boolean = false;
   editInventory: boolean = false;
   addInventory: boolean = false;
-
-
+  mode: string = '';
+  discountType: string[] = [];
   sidebarVisible: boolean = false; // Controls sidebar visibility
 
-  openEditInventory(item: any = {}) {
-   
-    this.activeItem = item || {};
-    console.log('view', item);
-    this.tableSection = false;
-    this.viewProduct = false;
-    this.addProduct = false;
-    this.editInventory = !this.editInventory;
-  }
-  
-  // closeSidebar() {
-  //   this.sidebarVisible = false; // Close sidebar
-  // }
-
-
-
+  actions = [
+    { label: 'Edit', value: 'edit' },
+  ];
 
   discountTypes = [
     { label: 'Periodic', value: 'periodic' },
     { label: 'Quantity Based', value: 'quantityBased' },
     { label: 'Global Discount', value: 'globalDiscount' },
   ];
-  discountType: string[] = [];
+
   periodicDiscount: { startDate: string; endDate: string } = {
     startDate: '',
     endDate: '',
   };
+
   quantityBasedDiscount: { minQuantity: number } = { minQuantity: 0 };
   productImage: any = '';
   tableSection: boolean = true;
@@ -150,6 +62,7 @@ closeDropdown(item: any) {
   selectedCategories: number[] = [];
   categories: any[] = [];
   isImportDialogOpen = false;
+
   constructor(
     private messageService: MessageService,
     private posService: PosServiceService,
@@ -161,13 +74,72 @@ closeDropdown(item: any) {
     this.loadCategory();
     this.getProducts();
     this.getDiscountTypes();
-    const savedProducts = localStorage.getItem('products');
-    if (savedProducts) {
-      const productList = JSON.parse(savedProducts);
-      // For example, choose the first product or the one you need:
-      this.activeItem = productList[0];
-    }
+ 
   }
+
+  
+  toggleDropdown2(item: any, event?: Event) {
+    if (event) {
+      event.stopPropagation(); // Stop event propagation
+    }
+    item.showMenu = !item.showMenu;
+  }
+
+  @HostListener('document:click')
+  closeAllDropdowns() {
+    this.items.forEach((item) => (item.showMenu = false));
+  }
+
+  closeDropdown(item: any) {
+    item.showMenu = false;
+  }
+
+  openEditInventory(item: any = {}, mode: string) {
+    this.mode = mode;
+
+   if (mode === 'parent') {
+    this.activeItem =  { id: 0,
+      name: "",
+      code: "",
+      description: "",
+      sku: "",
+      weight: 0,
+      initialPrice: "",
+      effectivePrice: "",
+      initialQuantity: Number,
+      effectiveQuantity: Number,
+      // Date String Format: "2025-02-02T22:56:31.935Z"
+      createdDate: "",
+    
+      createdBy: "" ,
+      partNumber: "",
+      tax: Number,
+      branch: "",
+      variant: "" ,
+      discount: {},
+      productCategory: {},
+      productImages: [],
+      variants: [],
+      supplier: '',
+      cartPriceTotal: '',
+      count: 0,
+      discountedPrice: 0,
+
+      selectedVariant: '',
+
+      pricingQuantity: 0,
+    }
+   }
+   if(mode === 'child'){
+    this.activeItem = item || {};
+
+   }
+    this.tableSection = false;
+    this.viewProduct = false;
+    this.addProduct = false;
+    this.editInventory = !this.editInventory;
+  }
+  
 
   closeView() {
     this.viewProduct = false;
@@ -182,33 +154,22 @@ closeDropdown(item: any) {
   getMenuItems(item: any) {
     return [
       { label: 'View', icon: 'pi pi-eye', command: () => this.openViewInventory(item) },
-      { label: 'Edit', icon: 'pi pi-pencil', command: () => this.openEditInventory(item) },
+      { label: 'Edit', icon: 'pi pi-pencil', command: () => this.openEditInventory(item, 'child') },
       { label: 'Delete', icon: 'pi pi-trash', command: () => this.openDeleteModal(item) }
     ];
   }
-
+ 
   
-  dropdownVisible: boolean[] = [];
   toggleDropdown(index: number): void {
     this.dropdownVisible[index] = !this.dropdownVisible[index];
     
   }
-  
 
 
-
-  selectedAction!: string;
-  actions = [
-    { label: 'Edit', value: 'edit' },
-    // Add more actions as needed
-  ];
-
-  // Method that is triggered when an action is selected
   onActionChange(item: any): void {
     if (this.selectedAction === 'edit') {
-      this.openEditInventory(item);
+      this.openEditInventory(item, 'child');
     }
-    // You can add more conditions for other actions like 'delete'
   }
   
   getProducts() {
@@ -240,6 +201,7 @@ closeDropdown(item: any) {
       }
     });
   }
+  
   getDiscountTypes() {
     this.posService.getDiscountTypes().subscribe(async (data) => {
       console.log(data);
@@ -250,6 +212,8 @@ closeDropdown(item: any) {
       }
     });
   }
+
+
   loadCategory() {
     this.posService.getCategories().subscribe(async (data) => {
       console.log(data);
@@ -260,12 +224,14 @@ closeDropdown(item: any) {
       }
     });
   }
-  getQuantityClass(quantity: number): string {
-    return quantity >= 10 ? 'quantity-available' : 'quantity-low';
+    getQuantityClass(quantity: number): string {
+      return quantity >= 10 ? 'quantity-available' : 'quantity-low';
   }
 
   getTooltipText(item: any): string {
-    return `Name: ${item.name}\nCategory: ${item.productCategory?.name}\nPrice: ${item.effectivePrice}\nStock: ${item.effectiveQuantity}`;
+    return `Name: ${item.name}\nCategory: 
+    ${item.productCategory?.name}\nPrice: 
+    ${item.effectivePrice}\nStock: ${item.effectiveQuantity}`;
   }
   
   
@@ -278,21 +244,18 @@ closeDropdown(item: any) {
         this.filterProductsByCategory();
       }
     } else {
-      this.products = this.originalProducts.filter((product) => {
-        const matchesCategory =
-          this.selectedCategories.length === 0 ||
-          this.selectedCategories.includes(product.productCategory?.id);
-        const matchesSearch = product.name
-          .toLowerCase()
-          .includes(this.searchTerm);
-        return matchesCategory && matchesSearch;
+    this.products = this.originalProducts.filter((product) => {
+      const matchesCategory =
+        this.selectedCategories.length === 0 ||
+        this.selectedCategories.includes(product.productCategory?.id);
+      const matchesSearch = product.name
+        .toLowerCase()
+        .includes(this.searchTerm);
+    return matchesCategory && matchesSearch;
       });
     }
   }
  
-
-
-
 
   filterProductsByCategory() {
     if (this.selectedCategories.length === 0) {
@@ -302,25 +265,6 @@ closeDropdown(item: any) {
         this.selectedCategories.includes(product.productCategory?.id)
       );
     }
-  }
-  deleteProduct() {
-    this.posService
-      .deleteProduct(this.activeItem.id)
-      .subscribe(async (data) => {
-        if (data) {
-          console.log(data);
-        } else {
-          this.deleteModal = false;
-          this.getProducts();
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Product deleted',
-            detail: `${this.activeItem.name} deleted successfully`,
-            key: 'tl',
-            life: 3000,
-          });
-        }
-      });
   }
 
   openViewProduct(item: any = {}) {
@@ -352,23 +296,6 @@ closeDropdown(item: any) {
     console.log('modal open', this.deleteModal);
     this.deleteModal = !this.deleteModal;
   }
-
-  // closeEditInventory() {
-  //   this.tableSection = true;  // Show the table again
-  //   this.editInventory = false;  // Hide the editInventory form
-    
-  // }
-
-
-  // openEditInventory(item: any = {}) {
-  //   this.activeItem = item;
-  //   console.log('view', item);
-  //   this.tableSection = false;
-  //   this.viewProduct = false;
-  //   this.addProduct = false;
-  //   this.editProduct = !this.editProduct;
-  //   this.editInventory = !this.editInventory;
-  // }
 
   closeEdit() {
     this.tableSection = true;

@@ -1,6 +1,3 @@
-<!-- Show history only when an update is made -->
-<!-- 
-<p class="back" style="cursor: pointer;" (click)="closeEdit()"><i class="fa-solid fa-arrow-left"></i> Back</p> -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=print" />
 <div class="flex justify-between items-center w-full">
   <p class="back text-xl cursor-pointer" (click)="closeEditInventory()">
@@ -15,37 +12,14 @@
 
 
 <div class="grid grid-cols-3">
-<!-- <div class="block max-w-lg p-6 pl-10 bg-white border border-gray-200 rounded-lg shadow-lg hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 mb-10 ml-4 mt-10" *ngIf="productHistory && productHistory.length">
-  <div class="row">
-    <h1 class="text-3xl mb-2">Product Information</h1>
-    <p class="text-2xl mb-2">Product name: {{ productHistory[0].name }}</p>
-    <p class="text-2xl mb-2">Categories: {{ productHistory[0].productCategory.name }}</p> <p class="text-2xl mb-2">
-      Status: 
-      <span [style.color]="productHistory[0].effectiveQuantity >= 10 ? 'green' : 'red'">
-        {{ productHistory[0].effectiveQuantity >= 10 ? 'Available' : 'Low Stock' }}
-      </span>
-    </p> 
-  </div>
-</div> -->
-
-
   <div class="block max-w-xl p-6 pl-10 bg-white border border-gray-200 rounded-lg shadow-lg hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 mb-10 ml-4 mt-10">
     <h1 class="text-[14px] mb-4 text-customGreen">Product Information</h1>
- 
     <label class="text-[12px] mb-4 block">Product name: {{ activeItem.name }}</label>
     <label class="text-[12px] mb-4 block">Category: {{ activeItem.productCategory.name }}</label>
+  </div>
 </div>
-
-
-</div>
-
-
-
-
-
 
 @if(products){
-
 <div>
     <table class="history-table">
       <thead>
@@ -71,11 +45,10 @@
             <td>{{ activeItem.code }}</td>
             <td>{{ activeItem.effectivePrice }}</td>
             <td>N/A</td>
-           
             <td>{{activeItem.effectiveQuantity}}</td>
             <td>N/A</td>
             <td>{{ activeItem.productCategory.name }}</td>
-            <td>{{ Timestamp }}</td> <!-- No update date for active item -->
+            <td>{{ Timestamp }}</td> 
             <td>
               <!-- <button (click)="openSupplierDetails(activeItem)">View </button> -->
             </td>
@@ -98,20 +71,15 @@
        
             <td>{{ Timestamp}}</td>
             <td>
-              <button (click)="openSupplierDetails(item)">View Supplier</button>
-              <!-- <button (click)="openBranchDetails()">View Branch</button> -->
-              <button (click)="deleteProductHistory(0)" class="delete-btn">
-                <i class="fa fa-trash"></i> <!-- You can use any icon library, e.g., Font Awesome -->
-              </button>
-            </td>
-            
-        
-        
+      
+            <button (click)="openSupplierDetails(item)"  >View Supplier</button>
+            <button (click)="deleteProductHistory(0)" class="delete-btn">
+                <i class="fa fa-trash"></i> 
+            </button>
+            </td>    
           </tr>
-          
         }
       </tbody>
     </table>
 </div>
-
 }

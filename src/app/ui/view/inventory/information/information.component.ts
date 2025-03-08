@@ -33,53 +33,7 @@ export class InformationComponent implements OnChanges {
     const navigation = this.router.getCurrentNavigation();
     this.revivedDate = new Date(this.supplier?.createdAt || new Date());
   }
-  goBack() {
-    window.history.back();
-  }
-  
-  loadSavedBranches(productId: number) {
-    const storedBranches = localStorage.getItem(`savedBranches_${productId}`);
-    if (storedBranches) {
-      this.savedBranches = JSON.parse(storedBranches);
-      console.log(`Loaded branches for product ${productId}:`, this.savedBranches);
-    } else {
-      console.log(`No saved branches for product ${productId}`);
-      this.savedBranches = [];
-    }
-  }
-  pricingQuantity: any = {};
 
-  retrieveFromLocalStorage() {
-    const data = localStorage.getItem('pricingQuantity');
-    if (data) {
-      console.log('Retrieved:', this.pricingQuantity);
-    this.pricingQuantity = JSON.parse(data);
-    console.log('After Assignment:', this.pricingQuantity);
-
-    } else {
-      console.log('No data found');
-    }
-  }
-
-  loadSupplierData(): void {
-    const supplierData = history.state.supplierData;
-
-    if (supplierData) {
-      console.log('Supplier Data:', supplierData);
-      this.supplier = supplierData.supplier;
-      this.revivedDate = new Date(this.supplier?.createdAt || new Date()); // ✅ Now correctly updates after supplier loads
-
-      const existing = this.productHistory.find(
-        (s) => s.id === this.supplier.id
-      );
-      if (!existing) {
-        // this.productHistory.push(this.supplier);
-      }
-      console.log('Updated Supplier Data:', this.supplier);
-    } else {
-      console.error('No supplier data available.');
-    }
-  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['activeItem'] && changes['activeItem'].currentValue) {
@@ -131,6 +85,55 @@ export class InformationComponent implements OnChanges {
       supplier: product.supplier || this.supplier // Retain existing supplier or assign new
     }));
   }
+  
+  goBack() {
+    window.history.back();
+  }
+  
+  loadSavedBranches(productId: number) {
+    const storedBranches = localStorage.getItem(`savedBranches_${productId}`);
+    if (storedBranches) {
+      this.savedBranches = JSON.parse(storedBranches);
+      console.log(`Loaded branches for product ${productId}:`, this.savedBranches);
+    } else {
+      console.log(`No saved branches for product ${productId}`);
+      this.savedBranches = [];
+    }
+  }
+  pricingQuantity: any = {};
+
+  retrieveFromLocalStorage() {
+    const data = localStorage.getItem('pricingQuantity');
+    if (data) {
+      console.log('Retrieved:', this.pricingQuantity);
+    this.pricingQuantity = JSON.parse(data);
+    console.log('After Assignment:', this.pricingQuantity);
+
+    } else {
+      console.log('No data found');
+    }
+  }
+
+  loadSupplierData(): void {
+    const supplierData = history.state.supplierData;
+
+    if (supplierData) {
+      console.log('Supplier Data:', supplierData);
+      this.supplier = supplierData.supplier;
+      this.revivedDate = new Date(this.supplier?.createdAt || new Date()); // ✅ Now correctly updates after supplier loads
+
+      const existing = this.productHistory.find(
+        (s) => s.id === this.supplier.id
+      );
+      if (!existing) {
+        // this.productHistory.push(this.supplier);
+      }
+      console.log('Updated Supplier Data:', this.supplier);
+    } else {
+      console.error('No supplier data available.');
+    }
+  }
+
   get Date() {
     return this.revivedDate.getDate();
   }
