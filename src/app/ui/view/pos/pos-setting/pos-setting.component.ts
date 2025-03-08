@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CheckoutComponent } from '../checkout/checkout.component';
-import { UserSettingComponent } from '../user-setting/user-setting.component';
+import { UserSettingComponent } from '../../user-setting/user-setting.component';
 import { PAndISettingComponent } from '../p-and-isetting/p-and-isetting.component';
 
 @Component({

@@ -72,9 +72,9 @@ import { CheckoutComponent } from './ui/view/pos/checkout/checkout.component';
 import { PosSettingComponent } from './ui/view/pos/pos-setting/pos-setting.component';
 import { BusInfoSettingComponent } from './ui/view/pos/bus-info-setting/bus-info-setting.component';
 import { PAndISettingComponent } from './ui/view/pos/p-and-isetting/p-and-isetting.component';
-import { UserSettingComponent } from './ui/view/pos/user-setting/user-setting.component';
-import { RolesNpermissionComponent } from './ui/view/pos/user-setting/roles-npermission/roles-npermission.component';
-import { UsersComponent } from './ui/view/pos/user-setting/users/users.component';
+import { UserSettingComponent } from './ui/view/user-setting/user-setting.component';
+import { RolesNpermissionComponent } from './ui/view/user-setting/roles-npermission/roles-npermission.component';
+import { UsersComponent } from './ui/view/user-setting/users/users.component';
 import { MessageService } from 'primeng/api';
 
 //
