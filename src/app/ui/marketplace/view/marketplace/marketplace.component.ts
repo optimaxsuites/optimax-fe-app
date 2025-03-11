@@ -4,7 +4,7 @@ import { MessageService } from 'primeng/api';
 import { MenuItem } from 'src/app/ui/shared/domain/menuItem.dto';
 import { MenuItemsService } from 'src/app/ui/shared/service/menue-items/menu-items.service';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
-
+import { MarketplaceService } from '../../service/marketplace.service'
 @Component({
   selector: 'app-marketplace',
   templateUrl: './marketplace.component.html',
@@ -16,8 +16,8 @@ export class MarketplaceComponent {
   visible: boolean = false;
   label: string = ''
   key: string = ''
-  constructor(private menuService: MenuItemsService,      private messageService: MessageService,
-   private navigationLink: NavigationLinksService) {}
+  constructor(private menuService: MenuItemsService, private messageService: MessageService,
+   private navigationLink: NavigationLinksService, private marketplaceService: MarketplaceService) {}
 
    ngOnInit(): void {
       this.role = sessionStorage.getItem('role'); 
@@ -46,13 +46,36 @@ export class MarketplaceComponent {
         return
       }
       this.menuService.unlockModule(this.label)
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Validation successful',
-        detail:   `${this.label} has been installed successfully`,
-        key: 'tf',
-        life: 3000
-      });
+      const newApp = {
+        appName: this.label,
+        appCode: this.label,
+        description: this.label
+      }
+      this.marketplaceService.registerApp(newApp).subscribe(
+        data => {
+          console.log(data)
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Validation successful',
+            detail:   `${this.label} has been installed successfully`,
+            key: 'tf',
+            life: 3000
+          });
+    
+        },
+        error => {
+          console.log(error)
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: "Failed to install app.",
+            key: 'tf',
+            life: 3000
+          });
+        }
+      )
+    
+
       this.visible = false;
       this.label = ''
       this.key = ''
