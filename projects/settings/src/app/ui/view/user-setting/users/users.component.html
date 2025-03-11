@@ -59,7 +59,7 @@
                 <i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2"></i>
                 <span *ngIf="panel.expanded">{{ user.isEditing ? 'Save Changes' : 'Edit' }}</span>
               </button>
-              <button (click)="confirmCompensationDelete(user, $event)" class="text-red-500 hover:bg-red-50 p-3 rounded-xl" *ngIf="!user.isEditing">
+              <button (click)="confirmDeleteUser(user, $event)" class="text-red-500 hover:bg-red-50 p-3 rounded-xl" *ngIf="!user.isEditing">
                 <i class="fa-solid fa-trash text-2xl pr-2"></i>
                 <span *ngIf="panel.expanded">Delete</span>
               </button>
@@ -80,6 +80,8 @@
                 <tr class="bg-gray-100">
                   <th class="border border-gray-300 px-4 py-2">Module</th>
                   <th class="border border-gray-300 px-4 py-2 text-center">Role</th>
+                  <th *ngIf="user.isEditing" class="border border-gray-300 px-4 py-2 text-center w-16"></th>
+
             
                 </tr>
               </thead>
@@ -91,10 +93,31 @@
                       <td class="border border-gray-300 px-4 py-2 text-center">
                          <p class="capitalize">{{user.permission[moduleKey]}}</p>
                       </td>
-                   
+                      <td *ngIf="user.isEditing"  class="border border-gray-300 px-4 py-2 capitalize text-center cursor-pointer text-red-500 w-16" (click)="revokeRole(user, moduleKey)">Revoke</td>                   
                     </tr>
-                  
+                 
                 }
+                <tr *ngIf="user.isEditing">
+                    <td class="border border-gray-300 px-4 py-2 relative">
+                      <ng-select 
+                        [items]="uniquePositions"
+                        bindLabel="name"
+                        placeholder="Select Module"
+                        class="z-50 absolute"
+                        [(ngModel)]="selectedModule">
+                      </ng-select>
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2 text-center">
+                      <ng-select 
+                        [items]="uniqueLevels"
+                        bindLabel="name"
+                        placeholder="Select Role"
+                        [(ngModel)]="selectedRole">
+                      </ng-select>
+                    </td>
+                  
+                    <td *ngIf="user.isEditing"  class="border border-gray-300 px-4 py-2 capitalize text-center cursor-pointer text-customGreen w-16" (click)="updateRole(user.permission)">Add</td>     
+                  </tr>
               </tbody>
               
             </table>

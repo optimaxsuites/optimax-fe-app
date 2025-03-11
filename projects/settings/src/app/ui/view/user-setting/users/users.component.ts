@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { ConfirmationService, MessageService } from 'primeng/api';
 
 
 
@@ -18,9 +19,7 @@ interface user {
   styleUrl: './users.component.scss'
 })
 export class UsersComponent {
-submitUser() {
-throw new Error('Method not implemented.');
-}
+
 openAddForm: boolean = false
 uniqueLevels = ['admin', 'checkout', 'inventory manager']
 uniquePositions = ['POS', 'Human resources', 'Office productivity']
@@ -90,6 +89,11 @@ newUser: user ={
 selectedModule: string = ''; 
 selectedRole: string = '';
 
+
+constructor(private confirmationService: ConfirmationService, private messageService: MessageService){
+
+}
+
 applyFilters() {
   // this.filteredUsers = this.users.filter((user: { name: any; position: string; firstName: string; lastName: string; }) => {
   //   const matchesLevelType = this.selectedEmployeeType.length === 0 || 
@@ -121,14 +125,83 @@ filterBySelectedPosition() {
   //   this.selectedPosition.includes(user.position);
   // })
    }
+   updateRole(permission: any){
+    if (this.selectedModule && this.selectedRole) {
+      permission[this.selectedModule] = this.selectedRole;
+    this.selectedModule = ''
+    this.selectedRole = ''
+    }
+   }
 
+   revokeRole(user: any, moduleKey: string) {
+  
+      delete user.permission[moduleKey];
 
+   
+  }
+
+  submitUser() {
+    throw new Error('Method not implemented.');
+    }
+
+    updateUser(user: user) {
+      console.log('invoked')
+      console.log(Object.keys(user.permission).length)
+      if(Object.keys(user.permission).length >= 1){
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'User updated successfully ',
+          key: 'tl', life: 3000 
+        })
+        user.isEditing = false
+      } else {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'User must be assigned at least a role ',
+          key: 'tl', life: 3000 
+        })
+      }
+    }  
+  confirmDeleteUser(user: user, event: Event) {
+    event.stopPropagation()
+
+    this.confirmationService.confirm({
+      message: `Are You sure you want to carry out this action?  Clicking on DELETE, would lead to permanent removal of ${user.name}'s salary structure`,
+      header: `Delete user - ${user.name}`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass:"p-btn-danger p-button-text",
+      rejectButtonStyleClass:"p-btn-cancel p-button-text",
+      acceptIcon:"none",
+      rejectIcon:"none",
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+      // styleClass: 'custom-confirm-dialog',
+      accept: () => {
+        this.deleteUser(user);
+      },
+      reject: () => {
+
+      }
+    });
+  }
+
+  deleteUser(user: user){
+    this.users = this.users.filter((u: user) => u.name!== user.name);
+  }
   confirmCompensationDelete(arg0: any,$event: MouseEvent) {
     throw new Error('Method not implemented.');
     }
     editCompensation(role: any,$event: MouseEvent) {
       $event.stopPropagation()
-      role.isEditing = !role.isEditing 
+      if(role.isEditing){
+        this.updateUser(role);
+       
+      }else{
+        role.isEditing = !role.isEditing 
+
+      }
 
 
     }
