@@ -75,7 +75,7 @@ import { PAndISettingComponent } from './ui/view/pos/p-and-isetting/p-and-isetti
 import { UserSettingComponent } from './ui/view/user-setting/user-setting.component';
 import { RolesNpermissionComponent } from './ui/view/user-setting/roles-npermission/roles-npermission.component';
 import { UsersComponent } from './ui/view/user-setting/users/users.component';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 
 //
 
@@ -157,6 +157,7 @@ import { MessageService } from 'primeng/api';
     NavigationLinksService,
     MenuItemsService,
     MessageService,
+    ConfirmationService,
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
