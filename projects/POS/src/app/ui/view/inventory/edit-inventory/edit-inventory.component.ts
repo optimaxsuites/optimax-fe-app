@@ -33,6 +33,8 @@ export class EditInventoryComponent {
   showBranchInput: boolean = false; 
   openAddDiscount: boolean = false;
   productForm!: FormGroup;
+   // Ensure it's explicitly null
+
 
   newPrice: number = 0;
   newQuantity: number = 0;
@@ -50,7 +52,7 @@ export class EditInventoryComponent {
   isOpen = false;
   hasSelectedSupplier = false;
   isVisible: boolean = false;
-    
+
 
   currentPriceAndQuantity: { quantity: number; price: number }[] = [];
   openPriceChange: boolean = false;
@@ -84,6 +86,23 @@ export class EditInventoryComponent {
   notes: string = '';
   agreeTerms: boolean = false;
   router: any;
+  selectedCountryCode = '+234'; // Default to Nigeria
+  phonePattern = '^\\+?[1-9]\\d{1,14}$'; // Allows international phone numbers
+  phoneNumber: string = '';
+
+
+  countryCodes = [
+    { name: 'Nigeria', code: '+234' },
+    { name: 'United States', code: '+1' },
+    { name: 'United Kingdom', code: '+44' },
+    { name: 'Canada', code: '+1' },
+    { name: 'India', code: '+91' },
+    { name: 'Germany', code: '+49' },
+    { name: 'France', code: '+33' },
+    { name: 'Australia', code: '+61' },
+  ];
+
+
 
   selectedVariant: any = {
   name: '',
@@ -121,6 +140,9 @@ openAddCategory: boolean = false
 categories: string[] = [];
 newCategory: string = '';
 configureBarcode: boolean = false
+
+
+
 
 barcodes: any[] = [
   { label: 'CODE128 ', value: 'CODE128' },
@@ -199,7 +221,8 @@ priceDetails = {
   basePrice: null as number | null,
   tax: null as number | null,
   discount: null as number | null,
-  effectivePrice: null as number | null
+  effectivePrice: null as number | null,
+  sellingprice: null as number | null
 };
 
 constructor(
@@ -236,7 +259,14 @@ ngOnInit(): void {
   }
   
 }
+selectOption(event: any) {
 
+ this.activeItem = this.products.find(item => item.id === Number(event.target.value));
+ if (this.activeItem) {
+  this.variants = this.activeItem.variants ? this.activeItem.variants : [];
+}
+console.log(this.activeItem)
+}
 openVariantEditModal(variant: any) {
   console.log('Editing Variant:', variant);
   this.selectedVariant = { 
@@ -248,6 +278,47 @@ openVariantEditModal(variant: any) {
   };
   this.isVariantEditOpen = true;
   console.log('Modal Opened with Variant:', this.selectedVariant);
+}
+togglePriceChange() {
+
+  this.openPriceChange = true;
+ 
+  // // If openPriceChange is true, replace selling price with effective price
+  // if (this.openPriceChange) {
+  //   this.priceDetails.sellingprice = this.priceDetails.effectivePrice;
+  // }
+}
+updateSellingPrice() {
+
+console.log("this is price details", this.priceDetails.effectivePrice)
+ return this.priceDetails.effectivePrice ;
+}
+
+
+
+saveDiscount() {
+  if (this.discountTitle && this.discountRate) {
+    const newDiscount = `${this.discountTitle} - ${this.discountRate}%`;
+    this.discountOptions.push(newDiscount);
+    this.openAddDiscount = false; // Close modal after saving
+    this.discountTitle = '';
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Discount added successfully',
+      life: 3000,
+      key: 'tg'
+    });
+  } else {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Please fill in all fields',
+      life: 3000,
+      key: 'tg'
+    });
+  }
 }
 
 
@@ -501,7 +572,7 @@ submitForm() {
   const phonePattern = /^[0-9]{10,15}$/;
   if (!emailPattern.test(this.email)) {
     this.messageService.add({
-      severity: 'Error',
+      severity: 'error',
       summary: 'Error',
       detail: 'Please enter a valid email address.',
       life: 3000,
@@ -512,7 +583,7 @@ submitForm() {
 
   if (!phonePattern.test(this.phone)) {
     this.messageService.add({
-      severity: 'Error',
+      severity: 'error',
       summary: 'Error',
       detail: 'Please enter a valid Phone number',
       life: 3000,
@@ -522,7 +593,7 @@ submitForm() {
   }
   if (!this.supplierName || !this.contactPerson || !this.email || !this.phone) {
     this.messageService.add({
-      severity: 'Error',
+      severity: 'error',
       summary: 'Error',
       detail: 'Please fill in all required fields.',
       life: 3000,
@@ -587,6 +658,7 @@ calculateEffectivePrice() {
   const tax = this.priceDetails.tax || 0;
   const taxAmount = (basePrice * tax) / 100;
   this.priceDetails.effectivePrice = basePrice + taxAmount;
+  sellingPrice: this.priceDetails.effectivePrice;
 }
 
 removeBranch(branchId: number) {

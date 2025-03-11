@@ -87,7 +87,7 @@ export class ProductsComponent implements OnInit {
     price: 'Price',
     quantity: 'Quantity',
     category: 'Category',
-    action: 'Action',
+    action: '',
   } as const;
   sortingData = {
     headerToSort: this.productTableHeaders
@@ -531,7 +531,7 @@ export class ProductsComponent implements OnInit {
   sortProductsByHeader(
     header: (typeof this.productTableHeaders)[keyof typeof this.productTableHeaders]
   ) {
-    if (header == 'Action') return;
+    if (header == '') return;
     else {
       // Check if the param and the currently chosen header are the same, if so, invert its order
       if (header == this.sortingData.headerToSort) {

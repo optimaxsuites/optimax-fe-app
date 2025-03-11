@@ -1,9 +1,5 @@
 
-  
-  select:focus {
-    outline: none;
-    border-color: #007bff;
-  }
+
   
   #addInventory >div{
    > div:not(:first-child){
@@ -264,7 +260,15 @@ input[type="number"]::-webkit-inner-spin-button {
 
     @apply pb-2
   }
-  
+  /* Default placeholder visibility */
+.supplier-placeholder {
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Make placeholder transparent when an option is selected */
+
+/* Custom Styling for Error Messages */
 
   :host ::ng-deep input:focus,
 :host ::ng-deep select:focus {

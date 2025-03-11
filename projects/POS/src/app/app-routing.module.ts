@@ -16,14 +16,14 @@ import { InformationComponent } from './ui/view/inventory/information/informatio
 import { ProductsComponent } from './ui/view/products/products.component';
 import { ReportDashboardComponent } from './ui/view/report-dashboard/report-dashboard.component';
 import { SalesComponent } from './ui/view/sales/sales.component';
+import { RefundComponent } from './ui/view/refund/refund/refund.component';
 
 const routes: Routes = [
-  { path: '', redirectTo: 'admin/pos/product/34567whr4567yhsdzr56', pathMatch: 'full' },
   {
-    path: 'admin/pos/product/:uuid',
-    component: ProductsComponent,
+    path: '',
+    redirectTo: 'admin/pos/product/34567whr4567yhsdzr56',
+    pathMatch: 'full',
   },
-
   {
     path: 'admin/pos/product/:uuid',
     component: ProductsComponent,
@@ -40,14 +40,18 @@ const routes: Routes = [
     path: 'admin/pos/report/:uuid',
     component: ReportDashboardComponent,
   },
+  {
+    path: 'admin/pos/refunds/:uuid',
+    component: RefundComponent,
+  },
   // {
   //   path: 'inventory',
   //   component: InventoryComponent,
   // },
-  // {
-  //   path: 'view',
-  //   component:ViewInventoryComponent,
-  // },
+  {
+    path: 'view',
+    component:ViewInventoryComponent,
+  },
   {
     path: 'supplier-details',
     component: InformationComponent,

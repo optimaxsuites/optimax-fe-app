@@ -54,12 +54,17 @@ export class SummaryReportComponent implements OnInit {
   // Donut Chart Options
   //@ts-ignore
   public donutChartOptions: DonutChartOptions;
+  public generalChartOptions: any;
+  public generalChartOptions2: any;
 
   constructor() {}
 
   ngOnInit(): void {
     this.initLineChart();
     this.initDonutChart();
+
+    this.generalChartOptions = this.lineChartOptions;
+    this.generalChartOptions2 = this.donutChartOptions;
   }
 
   private initLineChart(): void {

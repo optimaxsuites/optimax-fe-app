@@ -8,7 +8,7 @@ import { NavigationLinksService } from '../../sharedComponent/service/navigation
 import { RandomTokenService } from '../../sharedComponent/service/random-token/random-token.service';
 import { BusinessType, ProductCategories } from '../../models/enums';
 import { Business, Cart, ProductData } from '../../models/interface';
-import { businessType } from '../../../variables-to-move-to-backend';
+import { IndustryDataService } from '../../service/industry-data.service';
 
 @Component({
   selector: 'app-pos-checkout-page',
@@ -62,7 +62,8 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     private randomTokenService: RandomTokenService,
     //  public userComponent: UserComponent,
     private registerService: RegisterService,
-    private posService: PosServiceService
+    private posService: PosServiceService,
+    private industryDataService: IndustryDataService
   ) {
     const navigation = this.router.getCurrentNavigation();
     this.navigationState = navigation?.extras
@@ -389,6 +390,6 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   }
 
   get businessType() {
-    return businessType;
+    return this.industryDataService.businessType;
   }
 }

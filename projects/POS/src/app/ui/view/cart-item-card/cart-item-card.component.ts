@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Business, ProductData } from '../../models/interface';
-import { businessType } from '../../../variables-to-move-to-backend';
+import { IndustryDataService } from '../../service/industry-data.service';
 
 @Component({
   selector: 'app-cart-item-card',
@@ -16,6 +16,8 @@ export class CartItemCardComponent implements Business {
   @Output() updateItem = new EventEmitter<number>();
 
   // count: number = this.item.count
+
+  constructor(private industryDataService: IndustryDataService) {}
 
   decreaseCount() {
     if (this.freezeItemCount) return;
@@ -52,6 +54,6 @@ export class CartItemCardComponent implements Business {
   }
 
   get businessType() {
-    return businessType;
+    return this.industryDataService.businessType;
   }
 }

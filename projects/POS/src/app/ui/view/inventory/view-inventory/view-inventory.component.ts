@@ -109,15 +109,16 @@ openSupplierDetails(item: ProductData, ) {
       }
     }
 
+    } else {
+
     this.messageService.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Supplier Information Available ',
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Supplier Information Not Available ',
       life: 3000,
       key: 'tg'
     });
-    } else {
-      alert("No supplier information available for this update.");
+
     }
     
 }
@@ -154,7 +155,18 @@ closeEdit() {
 }
     
 printPage() {
-  window.print();
+  const printContents = document.getElementById('printable-area')?.innerHTML;
+  if (printContents) {
+    const originalContents = document.body.innerHTML;
+
+    // Replace the body content with the printable section
+    document.body.innerHTML = printContents;
+    window.print();
+
+    // Restore the original content after printing
+    document.body.innerHTML = originalContents;
+    location.reload(); // Refresh to restore event bindings
+  }
 }
 
 
