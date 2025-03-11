@@ -69,6 +69,8 @@ import { InputGroupModule } from 'primeng/inputgroup';
 import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { SalesComponent } from './ui/view/sales/sales.component';
 import { MessageService } from 'primeng/api';
+import { RefundComponent } from './ui/view/refund/refund/refund.component';
+import { ChartTableComponent } from './ui/view/report-dashboard/chart-table/chart-table.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -93,7 +95,9 @@ import { MessageService } from 'primeng/api';
     InformationComponent,
     SummaryReportComponent,
     CustomReportComponent,
+    ChartTableComponent,
     SalesComponent,
+    RefundComponent,
   ],
   imports: [
     // BrowserModule,
