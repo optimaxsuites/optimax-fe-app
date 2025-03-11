@@ -1,4 +1,3 @@
-import { businessType } from '../../variables-to-move-to-backend';
 import { BusinessType } from './enums';
 export interface ProductJSONFormat {
   id: number;
@@ -183,7 +182,7 @@ export interface VariantDTO {
     | 'Custom'
     | 'Other'
   )[];
-  size: 'XXS' | 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
+  size: 'XXS' | 'XS' | 'Small' | 'Medium' | 'Regular' | 'Large' | 'XL' | 'XXL';
 }
 
 export interface DiscountOption {

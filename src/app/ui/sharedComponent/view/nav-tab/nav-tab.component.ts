@@ -7,49 +7,71 @@ import { CommonModule } from '@angular/common';
   templateUrl: './nav-tab.component.html',
   styleUrl: './nav-tab.component.scss',
   standalone: true,
-  imports: [CommonModule]
-
+  imports: [CommonModule],
 })
 export class NavTabComponent {
-  @Input() tabsConfig: TabConfig[] = []; 
+  @Input() tabsConfig: TabConfig[] = [];
 
   isDropdownOpen = false;
-  selectedTab: string = ""; 
+  selectedTab: string = '';
   selectedSetting: string | null = null;
   selectedDropdownTab: string = '';
-  user_role:any = ''
-  ngOnInit(): void{
-    // this.selectedTab = this.tabsConfig[0]?.name
-    this.user_role = sessionStorage.getItem('role'); 
-    const accessibleTab = this.tabsConfig.find(tab => !tab.role || tab.role === this.user_role);
-    this.selectedTab = accessibleTab ? accessibleTab.name : this.tabsConfig[0]?.name;
+  user_role: any = '';
+  #sessionStorageCacheKey = '';
 
+  ngOnInit(): void {
+    // this.selectedTab = this.tabsConfig[0]?.name
+    this.user_role = sessionStorage.getItem('role');
+    this.#sessionStorageCacheKey = this.tabsConfig
+      .map((tab) => tab.name)
+      .join('-')
+      .toLowerCase()
+      .trim();
+    const accessibleTab = this.tabsConfig.find(
+      (tab) => !tab.role || tab.role === this.user_role
+    );
+    this.selectedTab = accessibleTab
+      ? accessibleTab.name
+      : this.tabsConfig[0]?.name;
+
+    const cachedTabName = sessionStorage.getItem(this.#sessionStorageCacheKey);
+    if (cachedTabName) {
+      this.selectedTab = cachedTabName;
+    }
   }
 
-  toggleDropdown(tabName:string) {
-      this.isDropdownOpen = !this.isDropdownOpen
+  toggleDropdown(tabName: string) {
+    this.isDropdownOpen = !this.isDropdownOpen;
   }
 
   selectTab(tab: any) {
-
-    if(tab.hasDropdown){
-
-    this.toggleDropdown(tab.name);
-    this.selectedDropdownTab = tab.name
-    }else{
+    if (tab.hasDropdown) {
+      this.toggleDropdown(tab.name);
+      this.selectedDropdownTab = tab.name;
+    } else {
       this.selectedTab = tab.name;
-      this.isDropdownOpen = false
+      this.#cacheSelectedTab(tab.name);
+      this.isDropdownOpen = false;
     }
-
   }
 
-  selectDropdownOption(tabName:string, option: DropdownOption) {
-    this.selectedTab = tabName; 
+  selectDropdownOption(tabName: string, option: DropdownOption) {
+    this.selectedTab = tabName;
+    this.#cacheSelectedTab(tabName);
     this.selectedSetting = option.action;
-    this.isDropdownOpen = false; 
+    this.isDropdownOpen = false;
   }
   getComponentForOption(action: string): Type<any> | null {
-    const tab = this.tabsConfig.find(t => t.dropdownOptions?.some(opt => opt.action === action));
-    return tab?.dropdownOptions?.find(opt => opt.action === action)?.component || null;
+    const tab = this.tabsConfig.find((t) =>
+      t.dropdownOptions?.some((opt) => opt.action === action)
+    );
+    return (
+      tab?.dropdownOptions?.find((opt) => opt.action === action)?.component ||
+      null
+    );
+  }
+
+  #cacheSelectedTab(tabName: string) {
+    sessionStorage.setItem(this.#sessionStorageCacheKey, tabName);
   }
 }

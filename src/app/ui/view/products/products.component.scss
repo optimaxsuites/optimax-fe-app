@@ -176,3 +176,8 @@ $z-index: 1000;
 .selected-header {
   @include darken-05();
 }
+
+.actions-tab {
+  display: flex;
+  justify-content: center;
+}

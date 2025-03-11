@@ -73,13 +73,21 @@
         </td>
         <td class="table-item">{{ item.productCategory?.name }}</td>
         <td class="actions table-item">
-        <div class="dropdown">
-          <span><i class="material-icons" (click)="toggleDropdown2(item, $event)">more_vert</i></span>
-            <ul class="absolute w-full bg-gray-100 bordershadow-2xl rounded-lg py-2" *ngIf="item.showMenu">
-              <li (click)="openViewProduct(item); closeDropdown(item)" class="px-4 py-2 hover:bg-gray-100 cursor-pointer"><i class="pi pi-eye table-item pr-2"></i>View History</li>
-              <li (click)="openEditInventory(item, 'child'); closeDropdown(item)" class="px-4 py-2 hover:bg-gray-100 cursor-pointer"><i class="pi pi-pen-to-square table-item pr-2"></i>Add Inventory</li>
+
+          <div class="dropdown">
+            <span  (click)="toggleDropdown2(item, $event)">
+              <i class="material-icons">more_vert</i>
+            </span>
+            <ul class="absolute bg-white border shadow-lg rounded-lg py-2 z-50" *ngIf="item.showMenu">
+              <li (click)="openViewProduct(item); closeDropdown(item)" class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                <i class="pi pi-eye pr-2 text-2xl"></i> View History
+              </li>
+              <li (click)="openEditInventory(item, 'child'); closeDropdown(item)" class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                <i class="pi pi-pen-to-square pr-2 text-2xl"></i> Add Inventory
+              </li>
             </ul>
-        </div>
+          </div>
+          
         </td>
         </tr>
       </ng-template>

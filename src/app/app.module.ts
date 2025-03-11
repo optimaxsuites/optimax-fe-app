@@ -68,7 +68,10 @@ import { InformationComponent } from './ui/view/inventory/information/informatio
 import { InputGroupModule } from 'primeng/inputgroup';
 import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { SalesComponent } from './ui/view/sales/sales.component';
+import { ChartTableComponent } from './ui/view/report-dashboard/chart-table/chart-table.component';
+// import { ChartTableComponent } from './ui/view/report-dashboard/chart-table/chart-table.component';
 import { MessageService } from 'primeng/api';
+import { RefundComponent } from './ui/view/refund/refund/refund.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -93,12 +96,14 @@ import { MessageService } from 'primeng/api';
     InformationComponent,
     SummaryReportComponent,
     CustomReportComponent,
+    ChartTableComponent,
     SalesComponent,
+    RefundComponent,
   ],
   imports: [
     BrowserModule,
-    UserModule,
-    AppRoutingModule,
+    // UserModule,
+    // AppRoutingModule,
     CommonModule,
     AppRoutingModule,
     TableModule,
@@ -137,7 +142,6 @@ import { MessageService } from 'primeng/api';
     InputGroupModule,
     InputGroupAddonModule,
     BrowserAnimationsModule,
-   
   ],
   providers: [
     {
@@ -151,7 +155,7 @@ import { MessageService } from 'primeng/api';
     },
     JwtHelperService,
     provideHttpClient(withInterceptorsFromDi()),
-    MessageService
+    MessageService,
   ],
   bootstrap: [AppComponent],
 })

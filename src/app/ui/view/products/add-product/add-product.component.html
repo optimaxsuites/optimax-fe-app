@@ -107,14 +107,48 @@
           </div>
         </div>
 
+        <p class="text-xl ml-3 text-gray-700 font-bold pb-0 mb-0 mt-2 w-1/2">
+          Branch Data:
+          <ng-select
+            [items]="selectedBranches"
+            placeholder="Select branch data to edit"
+            [(ngModel)]="selectedBranchFromForm"
+            [ngModelOptions]="{ standalone: true }"
+          ></ng-select>
+        </p>
+
         <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">
           Pricing
         </p>
         <div class="flex gap-4 items-center w-full">
           <div class="detailDiv w-full">
             <div class="flex items-center justify-between">
-              <label for="price"
-                >Base price <span style="color: red">*</span></label
+              <label for="cost-price"
+                >Cost price <span style="color: red">*</span></label
+              >
+              <div
+                *ngIf="
+                  productForm.get('purchasePrice')?.invalid &&
+                  productForm.get('purchasePrice')?.touched
+                "
+                class="error"
+              >
+                {{ getErrorMessage("purchasePrice", "base price") }}
+              </div>
+            </div>
+            <input
+              class="name editInput"
+              type="text"
+              formControlName="purchasePrice"
+              id="cost-price"
+              placeholder="cost price"
+            />
+          </div>
+
+          <div class="detailDiv w-full">
+            <div class="flex items-center justify-between">
+              <label for="selling-price"
+                >Selling price <span style="color: red">*</span></label
               >
               <div
                 *ngIf="
@@ -129,9 +163,9 @@
             <input
               class="name editInput"
               type="text"
-              formControlName="initialPrice"
-              id="price"
-              placeholder="price"
+              [formControl]="formControlInBranchDataAtIndex('price')"
+              id="selling-price"
+              placeholder="selling price"
             />
           </div>
           <div class="detailDiv w-full">
@@ -200,7 +234,7 @@
               class="name editInput"
               type="text"
               id="e-price"
-              formControlName="effectivePrice"
+              [formControl]="formControlInBranchDataAtIndex('effectivePrice')"
               placeholder="Effective Price"
               readonly
             />
@@ -229,7 +263,7 @@
             </div>
             <input
               id="quantity"
-              formControlName="initialQuantity"
+              [formControl]="formControlInBranchDataAtIndex('quantity')"
               class="name editInput"
               placeholder="Quantity"
             />
@@ -251,7 +285,7 @@
             <input
               id="sku"
               class="name editInput"
-              formControlName="sku"
+              [formControl]="formControlInBranchDataAtIndex('sku')"
               placeholder="SKU"
             />
           </div>
@@ -271,7 +305,9 @@
               class="name editInput"
               type="text"
               id="e-quantity"
-              formControlName="effectiveQuantity"
+              [formControl]="
+                formControlInBranchDataAtIndex('effectiveQuantity')
+              "
               placeholder="Effective Quantity"
               readonly
             />
@@ -300,7 +336,54 @@
             />
           </div>
         </div>
+
+        <!-- SECTION: Industry-specific details -->
+        <div class="industry-specific-details">
+          @if (businessType == "Pharmacy") {
+          <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-5">
+            Industry-specific Details
+          </p>
+          <div class="ml-3">
+            <div class="flex items-center justify-between">
+              <label for="expiryDate"
+                >Expiry Date <span style="color: red">*</span></label
+              >
+            </div>
+            <input
+              type="date"
+              class="name editInput"
+              formControlName="expiryDate"
+              id="expiryDate"
+              placeholder="Select expiry date"
+            />
+          </div>
+          <div class="ml-3">
+            <div class="flex items-center justify-between">
+              <label for="dosage"
+                >Dosage <span style="color: red">*</span></label
+              >
+            </div>
+            <input
+              type="text"
+              class="name editInput"
+              formControlName="dosage"
+              id="dosage"
+              placeholder="Enter dosage"
+            />
+          </div>
+          <div class="ml-3 flex items-center">
+            <input
+              type="checkbox"
+              class="mr-2"
+              formControlName="prescriptionRequired"
+              id="prescriptionRequired"
+            />
+            <label for="prescriptionRequired">Prescription Required</label>
+          </div>
+          }
+        </div>
       </div>
+
       <div class="imageDiv">
         <div class="flex flex-col justify-center items-center gap-4">
           <img
@@ -366,17 +449,25 @@
           <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">
             Variant
           </p>
-          <div class="editInput">
+          <div
+            class="editInput"
+            [class]="selectedBranchIndex == -1 ? 'disabled' : ''"
+          >
             <div class="ml-3 flex justify-between items-center">
               <p class="pb-0 mb-0">Product Variants</p>
               <p
                 class="text-customGreen cursor-pointer"
-                (click)="openAddVariant = true"
+                (click)="
+                  selectedBranchIndex != -1 ? (openAddVariant = true) : ''
+                "
               >
                 + add product variant
               </p>
             </div>
-            <table *ngIf="variants.length > 0" class="min-w-full mt-3 bg-white">
+            <table
+              *ngIf="variants[this.selectedBranchIndex].length > 0"
+              class="min-w-full mt-3 bg-white"
+            >
               <thead>
                 <tr>
                   <!-- <th class="py-2 px-4 bg-gray-600">Name</th>
@@ -392,7 +483,12 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let variant of variants; let i = index">
+                <tr
+                  *ngFor="
+                    let variant of variants[this.selectedBranchIndex];
+                    let i = index
+                  "
+                >
                   <td class="py-2 px-4 border-b">{{ variant.name }}</td>
                   <td class="py-2 px-4 border-b">{{ variant.price }}</td>
                   <td class="py-2 px-4 border-b">{{ variant.quantity }}</td>
@@ -441,6 +537,7 @@
   </div>
 </form>
 
+<!-- SECTION: Modal for adding categories -->
 <app-side-modal *ngIf="openAddCategory" (close)="openAddCategory = false">
   <div class="modal-header flex justify-between items-center text-gray-700">
     <h2 class="font-semibold pb-0 mb-0">Categories</h2>
@@ -705,6 +802,16 @@
     </div>
   </div>
 </app-side-modal>
+<!-- !SECTION -->
+
+<!-- SECTION: Modal for adding branches -->
+<!-- TODO -->
+<!-- !SECTION  -->
+
+<!-- SECTION: Modal for displaying and setting branch data like price and quantity -->
+@if (openBranchData) {
+<app-side-modal (close)="openBranchData = false"> </app-side-modal>
+}
 <!-- !SECTION -->
 
 <app-modal *ngIf="addSuccessfull" (close)="addSuccessfull = false">

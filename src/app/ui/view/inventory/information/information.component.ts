@@ -28,6 +28,14 @@ export class InformationComponent implements OnChanges {
   @Output() close = new EventEmitter<void>();  
   // route: any;
   selectedOption: string = '';
+  currentIndex: number = 0;
+  savedBranches: any[] = []; 
+  selectedHistory: any; 
+
+  Month: string = '';
+  Day: string = '';
+  Time: string = '';
+
 
   constructor(public router: Router) {
     const navigation = this.router.getCurrentNavigation();
@@ -40,30 +48,26 @@ export class InformationComponent implements OnChanges {
       this.loadSupplierData(); // Reload supplier when activeItem changes
     }
   }
-  savedBranches: any[] = []; 
+
 
   ngOnInit(): void {
-    console.log('ngOnInit called');
+    this.setLastUpdatedTimestamp();
     // Check if navigation state exists and load supplier data from there
     this.retrieveFromLocalStorage(); // Automatically retrieve data on page load
 
+    const data = localStorage.getItem('fullHistories');   
+    if (data ) {
+      const parsedData = JSON.parse(data);
+      
+      if (parsedData.length > 0){
+        console.log(`Showing History ${this.currentIndex + 1}:`, parsedData[this.currentIndex]);
 
-    // if (history.state.branchData) {
-    //   this.savedBranches = history.state.branchData;
-    //   console.log("Loaded Branches from State:", this.savedBranches);
-    // } else {
-    //   const storedBranches = localStorage.getItem("savedBranches");
-    //   if (storedBranches) {
-    //     this.savedBranches = JSON.parse(storedBranches);
-    //     console.log("Loaded Branches from LocalStorage:", this.savedBranches);
-    //   } else {
-    //     console.log("No saved branches found.");
-    //   }
-    // }
+      this.selectedHistory = parsedData[this.currentIndex]; 
 
+      this.currentIndex++; // Move to the next history
+      }
 
-
-
+    }
 
     this.loadSupplierData();
     
@@ -86,6 +90,16 @@ export class InformationComponent implements OnChanges {
     }));
   }
   
+
+  setLastUpdatedTimestamp() {
+    const now = new Date();
+
+    this.Month = now.toLocaleString('en-US', { month: 'long' }); // Example: March
+    this.Day = now.getDate().toString(); // Example: 9
+    this.Time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }); // Example: 06:45 PM
+  }
+
+
   goBack() {
     window.history.back();
   }
@@ -134,11 +148,6 @@ export class InformationComponent implements OnChanges {
     }
   }
 
-  get Date() {
-    return this.revivedDate.getDate();
-  }
-  get Time() {
-    return `${this.revivedDate.getHours()}:${this.revivedDate.getMinutes()}`;
-  }
+
   // Save updated supplier information in localStorage when updated
 }

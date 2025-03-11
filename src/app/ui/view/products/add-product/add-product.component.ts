@@ -4,7 +4,14 @@ import { PosServiceService } from '../../../service/pos-service.service';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
-import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {
+  FormArray,
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  Validators,
+  type AbstractControl,
+} from '@angular/forms';
 import {
   DiscountDTO,
   HistoryData,
@@ -12,6 +19,7 @@ import {
   ProductJSONFormat,
   VariantDTO,
 } from '../../../models/interface';
+import { IndustryDataService } from '../../../service/industry-data.service';
 
 @Component({
   selector: 'app-add-product',
@@ -76,7 +84,11 @@ export class AddProductComponent {
   openAddVariant: boolean = false;
   isEditing: boolean = false;
   editingIndex: number | null = null;
-  variants: VariantDTO[] = [];
+
+  /**
+   * This will be an object indexed with `this.selectedBranchIndex` where each value would be an array of variants for each branch.
+   */
+  variants: Record<number, VariantDTO[]> = {};
 
   /**
    * NOTE: The order of this object is important! See `get variantObjectKeys()`
@@ -87,21 +99,31 @@ export class AddProductComponent {
     price: 1,
     quantity: 1,
     color: ['Other'],
-    size: 'M',
+    size: 'Regular',
     sku: '',
   };
   protected readonly variantValues = {
-    size: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL'] as VariantDTO['size'][],
+    size: [
+      'XXS',
+      'XS',
+      'Small',
+      'Medium',
+      'Regular',
+      'Large',
+      'XL',
+      'XXL',
+    ] as VariantDTO['size'][],
   };
   /**
    * The `color` field would actually be a string like "Red, Blue, Yellow" when the user is adding a new variant, however, before getting stored, it will split into an array
    */
   newVariant = this.resetVariantData();
 
-  branches: any[] = [
+  branches = [
     { label: 'HQT', value: 'headquarter' },
     { label: 'wuse', value: 'Wuse' },
-  ];
+    { label: 'Jikwoyi', value: 'Jikwoyi' },
+  ] as const;
 
   discountTypes: any[] = [];
   discountType: string[] = [];
@@ -119,6 +141,7 @@ export class AddProductComponent {
   openCategories: boolean = false;
   openAddCategory: boolean = false;
   openAddDiscount: boolean = false;
+  openBranchData = false;
   categories: any[] = [];
   configureBarcode: boolean = false;
   barcodes: any[] = [
@@ -137,23 +160,50 @@ export class AddProductComponent {
     { label: 'MSI1010', value: 'MSI1010' },
     { label: 'MSI1110', value: 'MSI1110' },
   ];
+  /**
+   * This is the branch name that is used to determine what branch data to be edited
+   *
+   * TODO: Make this type better. It should represent the value of each branch
+   */
+  //@ts-ignore
+  selectedBranchFromForm: (typeof this.branches)[0]['value'];
+
   constructor(
     private messageService: MessageService,
     private posService: PosServiceService,
     private http: HttpClient,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private industryData: IndustryDataService
   ) {}
   ngOnInit(): void {
     console.log(this.activeItem);
+
+    // Initialize as many empty form controls for as many branches as there can possibly be.
+    // Also use this chance to init the `this.variants` object
+    const controlGroupForFormBranches = new FormArray(
+      this.branches.map((_, index) => {
+        this.variants[index] = [];
+        return this.createBranchData();
+      })
+    );
+
+    // For when there's no selected branch;
+    this.variants[this.selectedBranchIndex] = [];
+
     this.loadCategory();
     this.getDiscountTypes();
     this.getDiscounts();
-    this.productForm = this.fb.group({
+    const fbGroup: Parameters<typeof this.fb.group>[0] = {
       name: ['', Validators.required],
       code: ['', Validators.required],
       description: ['', [Validators.required, Validators.maxLength(255)]],
       sku: ['', Validators.required],
       weight: [, [Validators.min(0)]],
+      purchasePrice: [
+        '',
+        [Validators.required, Validators.pattern('^[0-9]*.?[0-9]{0,2}$')],
+      ],
+      // TODO: Remove these
       initialPrice: [
         '',
         [Validators.required, Validators.pattern('^[0-9]*.?[0-9]{0,2}$')],
@@ -164,9 +214,11 @@ export class AddProductComponent {
       ],
       initialQuantity: [, [Validators.required, Validators.min(0)]],
       effectiveQuantity: [, [Validators.required, Validators.min(0)]],
+
       partNumber: ['', Validators.required],
       tax: [, [Validators.required, Validators.min(0)]],
       branch: ['', Validators.required],
+      branches: controlGroupForFormBranches,
       variant: [''],
       discount: [''],
       category: [''],
@@ -176,19 +228,82 @@ export class AddProductComponent {
       discountMinQuantity: [0],
       discountName: [''],
       variants: [this.variants],
-    });
-    this.productForm.get('initialQuantity')?.valueChanges.subscribe((value) => {
-      this.productForm
-        .get('effectiveQuantity')
-        ?.setValue(value, { emitEvent: false });
-    });
-    this.productForm.get('initialPrice')?.valueChanges.subscribe(() => {
-      this.calculateEffectivePrice();
-    });
+    };
 
-    this.productForm.get('tax')?.valueChanges.subscribe(() => {
-      this.calculateEffectivePrice();
-    });
+    // Append additional validators depending on the business type
+    switch (this.businessType) {
+      case 'Pharmacy':
+        fbGroup['expiryDate'] = ['', Validators.required];
+        fbGroup['dosage'] = ['', Validators.required];
+        fbGroup['prescriptionRequired'] = [false];
+        break;
+      default:
+        break;
+    }
+
+    this.productForm = this.fb.group(fbGroup);
+    (this.productForm.get('branches') as FormArray<any>).controls.forEach(
+      (v) => {
+        const group = v as FormGroup<any>;
+
+        const priceControl = group.get('price') as FormControl<any>;
+        const effectivePriceControl = group.get(
+          'effectivePrice'
+        ) as FormControl<any>;
+        const quantityControl = group.get('quantity') as FormControl<any>;
+        const effectiveQuantityControl = group.get(
+          'effectiveQuantity'
+        ) as FormControl<any>;
+
+        const preventNaN = (val: number) => {
+          return Number.isNaN(val) ? 0 : parseInt(val as any);
+        };
+        const calcEffectivePrice = (basePrice: number) => {
+          const taxedPercentageOfPrice =
+            (preventNaN(parseInt(this.productForm.get('tax')?.value) ?? 0) /
+              100) *
+            basePrice;
+          const effectivePrice = basePrice + taxedPercentageOfPrice;
+
+          effectivePriceControl.setValue(effectivePrice, {
+            emitEvent: false,
+          });
+        };
+        priceControl.valueChanges.subscribe((val) => {
+          // `val` is a number
+          calcEffectivePrice(preventNaN(parseInt(val)));
+        });
+        this.productForm.get('tax')?.valueChanges.subscribe(() => {
+          calcEffectivePrice(preventNaN(priceControl.value));
+        });
+        quantityControl.valueChanges.subscribe((val: number) => {
+          effectiveQuantityControl.setValue(val, { emitEvent: false });
+        });
+      }
+    );
+
+    if (this.selectedBranchIndex == -1) {
+      // Disable the branch specific data
+      this.formControlInBranchDataAtIndex('price').disable();
+      this.formControlInBranchDataAtIndex('effectivePrice').disable();
+      this.formControlInBranchDataAtIndex('quantity').disable();
+      this.formControlInBranchDataAtIndex('effectiveQuantity').disable();
+      this.formControlInBranchDataAtIndex('sku').disable();
+      this.formControlInBranchDataAtIndex('variants').disable();
+    }
+
+    // this.productForm.get('initialQuantity')?.valueChanges.subscribe((value) => {
+    //   this.productForm
+    //     .get('effectiveQuantity')
+    //     ?.setValue(value, { emitEvent: false });
+    // });
+    // this.productForm.get('initialPrice')?.valueChanges.subscribe(() => {
+    //   this.calculateEffectivePrice();
+    // });
+
+    // this.productForm.get('tax')?.valueChanges.subscribe(() => {
+    //   this.calculateEffectivePrice();
+    // });
     if (this.isEditMode && this.activeItem) {
       this.productForm.patchValue(this.activeItem);
       if (this.activeItem.variants.length > 0) {
@@ -306,7 +421,7 @@ export class AddProductComponent {
       tax: formValues.tax,
       branch: (formValues.branch as string[])[0], //FIXME: The backend can only store a sinlge string. Once that's fixed, undo this change
       discount: formValues.discount,
-      variants: this.variants,
+      variants: this.variants[this.selectedBranchIndex],
       productCategory: formValues.category,
       createdBy: userName,
       createdDate: new Date().toISOString(),
@@ -342,7 +457,7 @@ export class AddProductComponent {
           this.messageService.add({
             severity: 'error',
             summary: 'Failed',
-            detail: 'Failed, please try again.',
+            detail: 'An error occured. Please try adding the product again.',
             key: 'tl',
             life: 3000,
           });
@@ -352,7 +467,7 @@ export class AddProductComponent {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'Unexpected error occured, please try again later3',
+          detail: 'Unexpected error occured, please try again later.',
           key: 'tl',
           life: 3000,
         });
@@ -367,7 +482,7 @@ export class AddProductComponent {
       this.messageService.add({
         severity: 'error',
         summary: 'Warn',
-        detail: 'All fields are required',
+        detail: 'All fields are required.',
         key: 'tl',
         life: 3000,
       });
@@ -399,7 +514,7 @@ export class AddProductComponent {
         minQuantity: 0,
         discountType: null,
       },
-      variants: this.variants,
+      variants: this.variants[this.selectedBranchIndex],
       productImages: [] as any[],
       productCategory: formValues.category,
       createdBy: userName,
@@ -474,11 +589,11 @@ export class AddProductComponent {
     variant.color = this.newVariant.color.split(',').map((val) => val.trim());
 
     if (this.isEditing && this.editingIndex !== null) {
-      this.variants[this.editingIndex] = variant;
+      this.variants[this.selectedBranchIndex][this.editingIndex] = variant;
       this.isEditing = false;
       this.editingIndex = null;
     } else {
-      this.variants.push(variant);
+      this.variants[this.selectedBranchIndex].push(variant);
     }
 
     this.newVariant = this.resetVariantData();
@@ -487,13 +602,13 @@ export class AddProductComponent {
   }
 
   deleteVariant(index: number) {
-    this.variants.splice(index, 1);
+    this.variants[this.selectedBranchIndex].splice(index, 1);
   }
   editVariant(index: number) {
     this.isEditing = true;
     this.editingIndex = index;
 
-    const selectedVariant = this.variants[index];
+    const selectedVariant = this.variants[this.selectedBranchIndex][index];
     this.newVariant = {
       ...selectedVariant,
       color: selectedVariant.color.join(
@@ -868,5 +983,74 @@ export class AddProductComponent {
       size: this.defaultVariant.size,
       sku: this.defaultVariant.sku,
     };
+  }
+
+  get businessType() {
+    return this.industryData.businessType;
+  }
+
+  /**
+   * An array of values from `this.branches` that have been selected by the multiple-choice `ng-select`
+   */
+  get selectedBranches() {
+    return (this.productForm.get('branch') as FormControl).value;
+  }
+
+  /**
+   * Using the chosen branch from the `ng-select` under the `Branch Data` label, it gets an index that can be used to obtain the right data from the `FormArray` of branch data values.
+   */
+  get selectedBranchIndex() {
+    return this.branches.findIndex((val) => {
+      return this.selectedBranchFromForm == val.value;
+    });
+  }
+
+  get branchDataAtIndex() {
+    return (this.productForm.get('branches') as FormArray).at(
+      this.selectedBranchIndex
+    );
+  }
+
+  /**
+   * Please don't pass an invalid name here. All the viable names here are properties of the form group in `this.createBranchData()`
+   */
+  formControlInBranchDataAtIndex(formControlName: string) {
+    const formControl = this.branchDataAtIndex.get(
+      formControlName
+    ) as AbstractControl<any, any> as FormControl<any>;
+    typeof formControl.value == 'object' ? formControl.setValue('') : '';
+
+    return formControl;
+  }
+
+  createBranchData(): FormGroup {
+    // TODO: Remove all these "effective" stuff. Blegh
+    return new FormGroup({
+      price: new FormControl([
+        Validators.required,
+        Validators.pattern('^[0-9]*.?[0-9]{0,2}$'),
+      ]),
+      effectivePrice: new FormControl([
+        Validators.required,
+        Validators.pattern('^[0-9]*.?[0-9]{0,2}$'),
+      ]),
+      quantity: new FormControl([, [Validators.required, Validators.min(0)]]),
+      effectiveQuantity: new FormControl([
+        ,
+        [Validators.required, Validators.min(0)],
+      ]),
+      sku: new FormControl(['', Validators.required]),
+      variants: new FormControl(this.variants),
+      // city: new FormControl(''),
+    });
+  }
+  addBranchData() {
+    const peopleArray = this.productForm.get('branches') as FormArray;
+    peopleArray.push(this.createBranchData());
+  }
+
+  removePerson(index: number) {
+    const peopleArray = this.productForm.get('branches') as FormArray;
+    peopleArray.removeAt(index);
   }
 }

@@ -136,17 +136,43 @@
             <span class="p-column-title">Category</span
             >{{ item.productCategory?.name }}
           </td>
-          <td class="actions table-item">
+          <td class="actions table-item actions-tab">
             <span class="p-column-title">Action</span>
-            <i class="pi pi-eye table-item" (click)="openViewProduct(item)"></i>
-            <i
-              class="pi pi-pen-to-square table-item"
-              (click)="openEdit(item)"
-            ></i>
-            <i
-              class="pi pi-times-circle table-item"
-              (click)="openDeleteModal(item)"
-            ></i>
+            <div>
+              <i
+                class="pi pi-ellipsis-v table-item"
+                (click)="op.toggle($event)"
+              ></i>
+
+              <p-overlayPanel #op ngClass="padding: 0;">
+                <ul class="py-2 text-xl">
+                  <li
+                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
+                    (click)="openViewProduct(item)"
+                    style="column-gap: 0.5rem"
+                  >
+                    <i class="pi pi-eye table-item"></i>
+                    <span>View</span>
+                  </li>
+                  <li
+                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
+                    (click)="openEdit(item)"
+                    style="column-gap: 0.5rem"
+                  >
+                    <i class="pi pi-pen-to-square table-item"></i>
+                    <span>Edit</span>
+                  </li>
+                  <li
+                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
+                    (click)="openDeleteModal(item)"
+                    style="column-gap: 0.5rem"
+                  >
+                    <i class="pi pi-times-circle table-item"></i>
+                    <span>Delete</span>
+                  </li>
+                </ul>
+              </p-overlayPanel>
+            </div>
           </td>
         </tr>
       </ng-template>
