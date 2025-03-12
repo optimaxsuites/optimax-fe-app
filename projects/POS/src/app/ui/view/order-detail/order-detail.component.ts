@@ -33,4 +33,23 @@ export class OrderDetailComponent {
     const checkoutLink = this.navigationLink.getLink('checkoutLink');
     this.router.navigate([checkoutLink], { state: { order } });
   }
+
+printReciept() {
+  const printWindow = window.open('', '', 'height=500,width=800');
+  
+  if (printWindow) {
+  const content = document.getElementById('receipt-container')?.outerHTML;
+
+  if (content) {
+    printWindow.document.write('<html><head><title>Receipt</title>');
+    printWindow.document.write('<style>table { width: 100%; border-collapse: collapse; } td, th { border: 1px solid #ddd; padding: 8px; text-align: center; }</style>'); // Add basic styles for the table
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(content);  
+    printWindow.document.write('</body></html>');
+    printWindow.document.close(); 
+    printWindow.print();  
+  }
+}
+}
+
 }

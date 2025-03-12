@@ -56,4 +56,23 @@ export class CartItemCardComponent implements Business {
   get businessType() {
     return this.industryDataService.businessType;
   }
+
+ 
+
+  updateItemQuantity(item: any, change: number, variant?: any, ) {
+    if (variant) {
+      variant.selectedQuantity = Math.max((variant.selectedQuantity ?? 0) + change, 0);
+  
+      if (variant.selectedQuantity === 0) {
+        item.selectedVariants = item.selectedVariants.filter((v: any) => v !== variant);
+      }
+    } else {
+      item.count = Math.max((item.count ?? 0) + change, 0);
+  
+      this.countChange.emit(item.count);
+
+    }
+  }
+  
+  
 }

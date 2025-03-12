@@ -1,5 +1,6 @@
 th{
    background-color: var(--blue-green);
+   @apply text-center
 }
 
 .modalBtn {
@@ -19,3 +20,29 @@ th{
     border-radius: 10px;
    
   }
+
+  @media print {
+    body {
+      font-family: Arial, sans-serif;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+  
+    th, td {
+      padding: 8px;
+      text-align: left;
+      border: 1px solid #ddd;
+    }
+  
+    button {
+      display: none;
+    }
+  
+    .top-products-table {
+      width: 100%;
+    }
+  }
+  

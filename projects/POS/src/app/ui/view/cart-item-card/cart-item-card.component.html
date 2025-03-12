@@ -1,65 +1,48 @@
-<div class="flex justify-between rounded-2xl items-center border p-3">
-  <div class="flex flex-col gap-1" (click)="onClick()">
-    <span
-      class="text-nowrap text-ellipsis whitespace-nowrap overflow-hidden w-64"
-      style="overflow: hidden"
-    >
-      {{ item.name }}
-    </span>
-    <!-- Chosen Variant icon -->
-    @if (item.selectedVariant) {
-    <span
-      class="text-white px-2 py-1 rounded border inline-block w-max variant-icon"
-    >
-      {{ item.selectedVariant }}
-    </span>
-    }
-    <span>₦{{ item.effectivePrice }}</span>
-  </div>
+<div 
+  *ngIf="item.selectedVariants.length > 0; else noVariantTemplate" 
+  class="flex flex-col gap-3"
+>
+  @for (variant of item.selectedVariants; track $index) {
+    <div class="flex justify-between rounded-2xl items-center border p-3">
+      <div class="flex flex-col gap-1" (click)="onClick()">
+        <span class="text-nowrap text-ellipsis whitespace-nowrap overflow-hidden w-64">
+          {{ item.name }} - {{ variant.name }}
+        </span>
+        <span>₦{{ variant.price }}</span>
+      </div>
 
-  <!-- Expiry Date for Pharmacautical stuff -->
-  <div class="text-red">
-    <span>Expires: <span class="expiry-date">2025-08-28</span></span>
-  </div>
+      <div class="p-3 flex justify-between gap-4 border rounded-xl items-center w-52">
+        <i class="fa-solid fa-minus cursor-pointer" (click)="updateItemQuantity(item, -1, variant)"></i>
+        <input type="text" [(ngModel)]="variant.selectedQuantity" class="w-10 text-center outline-none" />
+        <i class="fa-solid fa-plus cursor-pointer" (click)="updateItemQuantity(item, 1, variant)"></i>
+      </div>
 
-  <div
-    class="p-3 flex justify-between gap-4 border rounded-xl items-center w-52"
-  >
-    <i
-      class="fa-solid fa-minus cursor-pointer"
-      (click)="decreaseCount()"
-      [class]="freezeItemCount ? 'disabled-btn' : ''"
-    ></i>
-    <!-- <span>{{count}}</span> -->
-    <input
-      type="text"
-      name="count"
-      id="count"
-      [(ngModel)]="item.count"
-      class="w-10 text-center outline-none"
-      (ngModelChange)="onCountChange($event)"
-    />
-    <i
-      class="fa-solid fa-plus cursor-pointer"
-      (click)="increaseCount()"
-      [class]="freezeItemCount ? 'disabled-btn' : ''"
-    ></i>
-  </div>
-
-  <div class="flex gap-4 items-center">
-    <div class="flex flex-col gap-1 ml-4" (click)="onClick()">
-      <span class="font-semibold">₦{{ item.cartPriceTotal }}</span>
-      <span
-        *ngIf="item.discount.value > 0"
-        class="text-red-500 whitespace-nowrap"
-      >
-        -₦{{ item.discountedPrice }}
-      </span>
+      <div class="flex gap-4 items-center">
+        <span class="font-semibold">₦{{ (variant.selectedQuantity ?? 0) * variant.price }}</span>
+        <!-- <i class="fa-solid fa-trash cursor-pointer" (click)="updateItemQuantity(item, -variant.selectedQuantity, variant)"></i> -->
+      </div>
     </div>
-    <i
-      *ngIf="showDelete"
-      class="fa-solid fa-trash cursor-pointer"
-      (click)="onDelete()"
-    ></i>
-  </div>
+  }
 </div>
+
+<ng-template #noVariantTemplate>
+  <div class="flex justify-between rounded-2xl items-center border p-3">
+    <div class="flex flex-col gap-1" (click)="onClick()">
+      <span class="text-nowrap text-ellipsis whitespace-nowrap overflow-hidden w-64">
+        {{ item.name }}
+      </span>
+      <span>₦{{ item.effectivePrice }}</span>
+    </div>
+
+    <div class="p-3 flex justify-between gap-4 border rounded-xl items-center w-52">
+      <i class="fa-solid fa-minus cursor-pointer" (click)="updateItemQuantity(item, -1)"></i>
+      <input type="text" [(ngModel)]="item.count" class="w-10 text-center outline-none" />
+      <i class="fa-solid fa-plus cursor-pointer" (click)="updateItemQuantity(item, 1)"></i>
+    </div>
+
+    <div class="flex gap-4 items-center">
+      <span class="font-semibold">₦{{ item.cartPriceTotal }}</span>
+      <!-- <i class="fa-solid fa-trash cursor-pointer" (click)="updateItemQuantity(item, -item.count)"></i> -->
+    </div>
+  </div>
+</ng-template>

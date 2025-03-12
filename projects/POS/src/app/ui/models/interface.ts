@@ -37,7 +37,7 @@ export interface ProductData extends ProductJSONFormat {
   // The total discount of all instances of a single product in the cart
   discountedPrice: number;
 
-  selectedVariant: string;
+  selectedVariants: VariantDTO[];
 
   pricingQuantity: any;
 }
@@ -91,6 +91,7 @@ export interface VariantDTO {
   quantity: number;
   sku: string;
   variantType?: number;
+  selectedQuantity?: number;
 
   /**
    * Might revert this type to a regular `string`

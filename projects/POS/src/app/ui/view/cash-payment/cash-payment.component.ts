@@ -32,6 +32,7 @@ export class CashPaymentComponent implements OnInit {
       const savedState = localStorage.getItem('navigationState');
       if (savedState) {
         this.navigationState = JSON.parse(savedState);
+
       }
     } else {
       localStorage.setItem(
@@ -40,10 +41,11 @@ export class CashPaymentComponent implements OnInit {
       );
     }
 
-    this.initializePriceOptions();
   }
   ngOnInit(): void {
     this.cart = this.navigationState?.cart;
+    this.initializePriceOptions();
+
   }
 
   initializePriceOptions() {
