@@ -169,6 +169,11 @@ export class AddProductComponent {
   selectedBranchFromForm: (typeof this.branches)[0]['value'];
   dataOfChosenBranches: any[] = [];
 
+  /**
+   * This should be `true` as long as the backend endpoints for the new models aren't ready
+   */
+  fallBackToOldForm = true;
+
   constructor(
     private messageService: MessageService,
     private posService: PosServiceService,
@@ -229,6 +234,8 @@ export class AddProductComponent {
       variants: [this.variants],
     };
 
+    if (this.fallBackToOldForm) delete fbGroup['branches'];
+
     // Append additional validators depending on the business type
     switch (this.businessType) {
       case 'Pharmacy':
@@ -241,45 +248,47 @@ export class AddProductComponent {
     }
 
     this.productForm = this.fb.group(fbGroup);
-    (this.productForm.get('branches') as FormArray<any>).controls.forEach(
-      (v) => {
-        const group = v as FormGroup<any>;
+    if (!this.fallBackToOldForm) {
+      (this.productForm.get('branches') as FormArray<any>).controls.forEach(
+        (v) => {
+          const group = v as FormGroup<any>;
 
-        const priceControl = group.get('price') as FormControl<any>;
-        const effectivePriceControl = group.get(
-          'effectivePrice'
-        ) as FormControl<any>;
-        const quantityControl = group.get('quantity') as FormControl<any>;
-        const effectiveQuantityControl = group.get(
-          'effectiveQuantity'
-        ) as FormControl<any>;
+          const priceControl = group.get('price') as FormControl<any>;
+          const effectivePriceControl = group.get(
+            'effectivePrice'
+          ) as FormControl<any>;
+          const quantityControl = group.get('quantity') as FormControl<any>;
+          const effectiveQuantityControl = group.get(
+            'effectiveQuantity'
+          ) as FormControl<any>;
 
-        const preventNaN = (val: number) => {
-          return Number.isNaN(val) ? 0 : parseInt(val as any);
-        };
-        const calcEffectivePrice = (basePrice: number) => {
-          const taxedPercentageOfPrice =
-            (preventNaN(parseInt(this.productForm.get('tax')?.value) ?? 0) /
-              100) *
-            basePrice;
-          const effectivePrice = basePrice + taxedPercentageOfPrice;
+          const preventNaN = (val: number) => {
+            return Number.isNaN(val) ? 0 : parseInt(val as any);
+          };
+          const calcEffectivePrice = (basePrice: number) => {
+            const taxedPercentageOfPrice =
+              (preventNaN(parseInt(this.productForm.get('tax')?.value) ?? 0) /
+                100) *
+              basePrice;
+            const effectivePrice = basePrice + taxedPercentageOfPrice;
 
-          effectivePriceControl.setValue(effectivePrice, {
-            emitEvent: false,
+            effectivePriceControl.setValue(effectivePrice, {
+              emitEvent: false,
+            });
+          };
+          priceControl.valueChanges.subscribe((val) => {
+            // `val` is a number
+            calcEffectivePrice(preventNaN(parseInt(val)));
           });
-        };
-        priceControl.valueChanges.subscribe((val) => {
-          // `val` is a number
-          calcEffectivePrice(preventNaN(parseInt(val)));
-        });
-        this.productForm.get('tax')?.valueChanges.subscribe(() => {
-          calcEffectivePrice(preventNaN(priceControl.value));
-        });
-        quantityControl.valueChanges.subscribe((val: number) => {
-          effectiveQuantityControl.setValue(val, { emitEvent: false });
-        });
-      }
-    );
+          this.productForm.get('tax')?.valueChanges.subscribe(() => {
+            calcEffectivePrice(preventNaN(priceControl.value));
+          });
+          quantityControl.valueChanges.subscribe((val: number) => {
+            effectiveQuantityControl.setValue(val, { emitEvent: false });
+          });
+        }
+      );
+    }
 
     // if (this.selectedBranchIndex == -1) {
     //   // Disable the branch specific data
@@ -291,18 +300,22 @@ export class AddProductComponent {
     //   this.formControlInBranchDataAtIndex('variants').disable();
     // }
 
-    // this.productForm.get('initialQuantity')?.valueChanges.subscribe((value) => {
-    //   this.productForm
-    //     .get('effectiveQuantity')
-    //     ?.setValue(value, { emitEvent: false });
-    // });
-    // this.productForm.get('initialPrice')?.valueChanges.subscribe(() => {
-    //   this.calculateEffectivePrice();
-    // });
+    if (this.fallBackToOldForm) {
+      this.productForm
+        .get('initialQuantity')
+        ?.valueChanges.subscribe((value) => {
+          this.productForm
+            .get('effectiveQuantity')
+            ?.setValue(value, { emitEvent: false });
+        });
+      this.productForm.get('initialPrice')?.valueChanges.subscribe(() => {
+        this.calculateEffectivePrice();
+      });
 
-    // this.productForm.get('tax')?.valueChanges.subscribe(() => {
-    //   this.calculateEffectivePrice();
-    // });
+      this.productForm.get('tax')?.valueChanges.subscribe(() => {
+        this.calculateEffectivePrice();
+      });
+    }
     if (this.isEditMode && this.activeItem) {
       this.productForm.patchValue(this.activeItem);
       if (this.activeItem.variants.length > 0) {

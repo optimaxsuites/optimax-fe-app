@@ -90,6 +90,7 @@
                   openBranchData = true;
                   dataOfChosenBranches = getDataOfChosenBranches
                 "
+                [disabled]="fallBackToOldForm"
               >
                 +
               </button>
@@ -157,7 +158,7 @@
             />
           </div>
 
-          <!-- <div class="detailDiv w-full">
+          <div class="detailDiv w-full">
             <div class="flex items-center justify-between">
               <label for="selling-price"
                 >Selling price <span style="color: red">*</span></label
@@ -175,11 +176,11 @@
             <input
               class="name editInput"
               type="text"
-              [formControl]="formControlInBranchDataAtIndex('price')"
+              formControlName="initialPrice"
               id="selling-price"
               placeholder="selling price"
             />
-          </div> -->
+          </div>
           <div class="detailDiv w-full">
             <div class="flex items-center justify-between">
               <label for="tax"
@@ -234,22 +235,28 @@
 
         <div class="flex gap-4 items-center w-full">
           <div class="detailDiv w-full">
-            <!-- <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between">
               <label for="e-price"
                 >Effective price <span style="color: red">*</span></label
               >
-              <!-- <div *ngIf="productForm.get('effectivePrice')?.invalid && productForm.get('effectivePrice')?.touched" class="error">
-              {{ getErrorMessage('effectivePrice', 'effective price') }}
-            </div>
+              <div
+                *ngIf="
+                  productForm.get('effectivePrice')?.invalid &&
+                  productForm.get('effectivePrice')?.touched
+                "
+                class="error"
+              >
+                {{ getErrorMessage("effectivePrice", "effective price") }}
+              </div>
             </div>
             <input
               class="name editInput"
               type="text"
               id="e-price"
-              [formControl]="formControlInBranchDataAtIndex('effectivePrice')"
+              formControlName="effectivePrice"
               placeholder="Effective Price"
               readonly
-            /> -->
+            />
           </div>
         </div>
 
@@ -258,7 +265,7 @@
         </p>
 
         <div class="flex gap-4 items-center w-full">
-          <!-- <div class="detailDiv w-full">
+          <div class="detailDiv w-full">
             <div class="flex items-center justify-between">
               <label for="quantity"
                 >Quantity <span style="color: red">*</span></label
@@ -275,13 +282,13 @@
             </div>
             <input
               id="quantity"
-              [formControl]="formControlInBranchDataAtIndex('quantity')"
+              formControlName="initialQuantity"
               class="name editInput"
               placeholder="Quantity"
             />
-          </div> -->
+          </div>
 
-          <!-- <div class="detailDiv w-full">
+          <div class="detailDiv w-full">
             <div class="flex items-center justify-between">
               <label for="sku">SKU <span style="color: red">*</span></label>
               <div
@@ -297,33 +304,37 @@
             <input
               id="sku"
               class="name editInput"
-              [formControl]="formControlInBranchDataAtIndex('sku')"
+              formControlName="sku"
               placeholder="SKU"
             />
-          </div> -->
+          </div>
         </div>
 
         <div class="flex gap-4 items-center w-full">
-          <!-- <div class="detailDiv w-full">
+          <div class="detailDiv w-full">
             <div class="flex items-center justify-between">
               <label for="e-quantity"
                 >Effective Quantity <span style="color: red">*</span></label
               >
-              <!-- <div *ngIf="productForm.get('effectiveQuantity')?.invalid && productForm.get('effectiveQuantity')?.touched" class="error">
-              {{ getErrorMessage('effectiveQuantity') }}
-            </div>
+              <div
+                *ngIf="
+                  productForm.get('effectiveQuantity')?.invalid &&
+                  productForm.get('effectiveQuantity')?.touched
+                "
+                class="error"
+              >
+                {{ getErrorMessage("effectiveQuantity") }}
+              </div>
             </div>
             <input
               class="name editInput"
               type="text"
               id="e-quantity"
-              [formControl]="
-                formControlInBranchDataAtIndex('effectiveQuantity')
-              "
+              formControlName="effectiveQuantity"
               placeholder="Effective Quantity"
               readonly
             />
-          </div> -->
+          </div>
 
           <div class="detailDiv w-full">
             <div class="flex items-center justify-between">
