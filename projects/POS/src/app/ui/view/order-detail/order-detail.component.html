@@ -188,18 +188,18 @@
           <ng-container *ngFor="let variant of item.selectedVariants;">
             <tr style="text-align: center; font-size: 10px;">
               <td style="text-align: left;">{{ item.name }} - {{ variant.name }}</td>
-              <td style="text-align: center; font-weight: bold; color: #d97706;">{{ variant.selectedQuantity }}</td>
-              <td style="text-align: center;">{{ variant.price | currency :'₦' }}</td>
-              <td style="text-align: center;">{{ variant.price * (variant.selectedQuantity || 0  ) | currency :'₦'}}</td>
+              <td style="text-align: center; font-weight: bold; ;">{{ variant.selectedQuantity }}</td>
+              <td style="text-align: center;">{{ variant.price  }}</td>
+              <td style="text-align: center;">{{ variant.price * (variant.selectedQuantity || 0  ) }}</td>
             </tr>
           </ng-container>
         </ng-container>
         <ng-template #noVariantTemplate>
           <tr style="text-align: center; font-size: 10px;">
             <td style="text-align: left;">{{ item?.name }}</td>
-            <td style="font-weight: bold; color: #d97706;">{{ item.count }}</td>
-            <td>{{ item.initialPrice  | currency :'₦' }}</td>
-            <td>{{ item.cartPriceTotal  | currency :'₦' }}</td>
+            <td style="font-weight: bold; ;">{{ item.count }}</td>
+            <td>{{ item.initialPrice   }}</td>
+            <td>{{ item.cartPriceTotal   }}</td>
           </tr>
         </ng-template>
       </ng-container>
