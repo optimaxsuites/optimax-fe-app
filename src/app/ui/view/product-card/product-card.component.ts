@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Cart, ProductData, VariantDTO } from '../../models/interface';
+import { ImageCacheService } from '../../service/image-cache.service';
 
 @Component({
   selector: 'app-product-card',
@@ -13,6 +14,16 @@ export class ProductCardComponent {
   @Input() cartItems: ProductData[] | undefined;
   @Output() updateItem = new EventEmitter<number>();
   @Output() addToCart = new EventEmitter<string>();
+
+  imageUrl!: string;
+  constructor(private imageCacheService: ImageCacheService) {}
+
+  ngOnInit(): void {
+    const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${this.product.productImages[0].imgNo}`;
+    this.imageCacheService.getImage(remoteImageUrl).subscribe((url) => {
+      this.imageUrl = url;
+    });
+  }
 
   onAddToCart() {
     if (this.product.variants.length > 0) {

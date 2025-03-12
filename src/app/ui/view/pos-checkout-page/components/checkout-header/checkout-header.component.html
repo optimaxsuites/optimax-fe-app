@@ -1,9 +1,5 @@
 <div class="flex justify-between items-center px-5">
-  <img
-    src="/assets/Logo-green.png"
-    alt="Test Logo"
-    class="hidden md:block h-28"
-  />
+  <img [src]="logoUrl" alt="Test Logo" class="hidden md:block h-28" />
 
   <nav>
     <ul class="flex gap-12 list-none">
@@ -26,7 +22,7 @@
 
   <div>
     <div (click)="op.toggle($event)" class="profile">
-      <img src="/assets/profile.jpg" alt="Test Profile" class="profile-img" />
+      <img [src]="profileImgUrl" alt="Test Profile" class="profile-img" />
       <p class="capitalize mb-0">{{ userRegData.username }}</p>
     </div>
     <p-overlayPanel #op>
