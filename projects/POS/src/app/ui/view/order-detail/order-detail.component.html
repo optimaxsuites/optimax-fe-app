@@ -156,7 +156,7 @@
 
 <div id="receipt-container" style=" font-family: 'Courier New', monospace; font-size: 12px; text-align: left; padding: 10px;" class='hidden'>
   <div style="text-align: center;">
-    <strong style="font-size: 18px;">SHOP NAME</strong><br>
+    <strong style="font-size: 22px;">SHOP NAME</strong><br>
     Address: Lorem Ipsum, 23-10 <br>
     Telephone: 11223344
   </div>
@@ -167,8 +167,11 @@
     <div ><strong>Cashier:</strong> Ayaobasheba</div>
     <div ><strong>Receipt ID:</strong> {{receiptID}}</div>
   </div>
+  <hr style="border-top: 1px dashed black; margin: 5px 0;">
 
   <table style="width: 100%; border-collapse: collapse;">
+  <hr style="border-top: 1px dashed black; margin: 5px 0;">
+
     <thead>
       <tr>
         <th style="text-align: left;">Name</th>
@@ -176,12 +179,14 @@
         <th style="text-align: center;">Price</th>
         <th style="text-align: center;">Total</th>
       </tr>
+
     </thead>
+
     <tbody>
       <ng-container *ngFor="let item of navigationState.order.cart">
         <ng-container *ngIf="item.selectedVariants.length > 0; else noVariantTemplate">
           <ng-container *ngFor="let variant of item.selectedVariants;">
-            <tr style="text-align: center;">
+            <tr style="text-align: center; font-size: 10px;">
               <td style="text-align: left;">{{ item.name }} - {{ variant.name }}</td>
               <td style="text-align: center; font-weight: bold; color: #d97706;">{{ variant.selectedQuantity }}</td>
               <td style="text-align: center;">{{ variant.price | currency :'₦' }}</td>
@@ -190,7 +195,7 @@
           </ng-container>
         </ng-container>
         <ng-template #noVariantTemplate>
-          <tr style="text-align: center;">
+          <tr style="text-align: center; font-size: 10px;">
             <td style="text-align: left;">{{ item?.name }}</td>
             <td style="font-weight: bold; color: #d97706;">{{ item.count }}</td>
             <td>{{ item.initialPrice  | currency :'₦' }}</td>
@@ -206,20 +211,20 @@
   <div style="text-align: right;">
     <div style="display: flex; justify-content: space-between;">
       <span>Subtotal</span>
-      <span>₦{{ navigationState.order.subtotal | number : '1.2-2' }}</span>
+      <span>{{ navigationState.order.subtotal | currency: '₦' }}</span>
     </div>
     <div style="display: flex; justify-content: space-between;">
       <span>Tax</span>
-      <span>₦{{ navigationState.order.tax | number : '1.2-2' }}</span>
+      <span>{{ navigationState.order.tax | currency: '₦' }}</span>
     </div>
     <div *ngIf="navigationState.order.discount > 0" style="display: flex; justify-content: space-between;">
       <span>Discount</span>
-      <span>₦{{ navigationState.order.discount | number : '1.2-2' }}</span>
+      <span>{{ navigationState.order.discount | currency: '₦' }}</span>
     </div>
     <hr *ngIf="navigationState.order.discount > 0">
     <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px;">
       <span>Total</span>
-      <span>₦{{ navigationState.order.total | number : '1.2-2' }}</span>
+      <span>{{ navigationState.order.total | currency: '₦' }}</span>
     </div>
   </div>
 
