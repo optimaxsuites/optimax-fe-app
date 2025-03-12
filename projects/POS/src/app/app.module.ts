@@ -53,7 +53,10 @@ import { AuthInterceptor } from './ui/sharedComponent/service/auth-service/auth.
 import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { ExcelExportAndImportComponent } from './ui/view/excel-export-and-import/excel-export-and-import.component';
-import { ReportDashboardComponent } from './ui/view/report-dashboard/report-dashboard.component';
+import {
+  ReportDashboardComponent,
+  SalesSummaryChartOptions,
+} from './ui/view/report-dashboard/report-dashboard.component';
 import { SalesReportComponent } from './ui/view/report-dashboard/sales-report/sales-report.component';
 import { FinanceReportComponent } from './ui/view/report-dashboard/finance-report/finance-report.component';
 import { InventoryReportComponent } from './ui/view/report-dashboard/inventory-report/inventory-report.component';
@@ -70,6 +73,8 @@ import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { SalesComponent } from './ui/view/sales/sales.component';
 import { MessageService } from 'primeng/api';
 import { RefundComponent } from './ui/view/refund/refund/refund.component';
+import { SaleSummaryComponent } from './ui/view/sales/sale-summary/sale-summary.component';
+import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-button.component';
 import { ChartTableComponent } from './ui/view/report-dashboard/chart-table/chart-table.component';
 @NgModule({
   declarations: [
@@ -98,6 +103,8 @@ import { ChartTableComponent } from './ui/view/report-dashboard/chart-table/char
     ChartTableComponent,
     SalesComponent,
     RefundComponent,
+    BackButtonComponent,
+    SaleSummaryComponent,
   ],
   imports: [
     // BrowserModule,

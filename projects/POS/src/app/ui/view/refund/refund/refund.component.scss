@@ -1,9 +1,17 @@
-::ng-deep app-side-modal .modal-content{
-    width: 50rem !important;
+::ng-deep app-side-modal .modal-content {
+  width: 50rem !important;
 }
-#filter-bar{
-    margin-bottom: 8rem;
+#filter-bar {
+  margin-bottom: 8rem;
+  margin-top: 2rem;
 }
-#table-row{
-    margin-bottom: 200rem;
+#status {
+  padding-bottom: 5rem;
+}
+.refund-row {
+  background-color: #f9fafb; /* Tailwind's bg-gray-50 */
+}
+
+.refund-row:nth-child(odd) {
+  background-color: #ffffff; /* Tailwind's bg-white */
 }
