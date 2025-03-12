@@ -5,7 +5,13 @@ import {
   HttpHeaders,
 } from '@angular/common/http';
 
-import { catchError, Observable, throwError } from 'rxjs';
+import {
+  catchError,
+  Observable,
+  shareReplay,
+  ShareReplayConfig,
+  throwError,
+} from 'rxjs';
 import { Router } from '@angular/router';
 import { RandomTokenService } from '../sharedComponent/service/random-token/random-token.service';
 import { NavigationLinksService } from '../sharedComponent/service/navigation-links/navigation-links.service';
@@ -386,6 +392,13 @@ export class PosServiceService {
       },
     },
   ];
+  /**
+   * These are the options used in `shareReplay()` to cache http requests
+   */
+  private shareReplayOptions: ShareReplayConfig = {
+    refCount: true,
+    bufferSize: 1,
+  };
   private getBaseApiUrl(): string {
     return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
   }
@@ -395,10 +408,18 @@ export class PosServiceService {
       .pipe(catchError(this.handleError));
   }
 
+  private categories$!: Observable<any>;
   getCategories() {
-    return this.http
-      .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/productCategories')
-      .pipe(catchError(this.handleError));
+    if (!this.categories$) {
+      this.categories$ = this.http
+        .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/productCategories')
+        .pipe(
+          catchError(this.handleError),
+          shareReplay(this.shareReplayOptions)
+        );
+    }
+
+    return this.categories$;
   }
 
   deleteCategory(id: number) {
@@ -415,10 +436,18 @@ export class PosServiceService {
       .pipe(catchError(this.handleError));
   }
 
+  private products$!: Observable<any>;
   getProducts() {
-    return this.http
-      .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/products')
-      .pipe(catchError(this.handleError));
+    if (!this.products$) {
+      this.products$ = this.http
+        .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/products')
+        .pipe(
+          catchError(this.handleError),
+          shareReplay(this.shareReplayOptions)
+        ); // For caching!
+    }
+
+    return this.products$;
   }
 
   updateProduct(data: any) {
@@ -437,16 +466,30 @@ export class PosServiceService {
     return this.getBaseApiUrl() + `/x/api/v2/pos/products/images/${filename}`;
   }
 
+  private discountTypes$!: Observable<any>;
   getDiscountTypes() {
-    return this.http
-      .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/discountTypes')
-      .pipe(catchError(this.handleError));
+    if (!this.discountTypes$) {
+      this.discountTypes$ = this.http
+        .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/discountTypes')
+        .pipe(
+          catchError(this.handleError),
+          shareReplay(this.shareReplayOptions)
+        );
+    }
+    return this.discountTypes$;
   }
 
+  private discount$!: Observable<any>;
   getDiscount() {
-    return this.http
-      .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/discounts')
-      .pipe(catchError(this.handleError));
+    if (!this.discount$) {
+      this.discount$ = this.http
+        .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/discounts')
+        .pipe(
+          catchError(this.handleError),
+          shareReplay(this.shareReplayOptions)
+        );
+    }
+    return this.discount$;
   }
 
   addDiscount(data: any) {

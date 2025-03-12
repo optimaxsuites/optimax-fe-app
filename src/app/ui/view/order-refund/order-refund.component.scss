@@ -10,9 +10,30 @@
 //   }
 // }
 
-label {
-  // Target the label text
-  > div {
-    @apply font-bold pb-1;
+::ng-deep {
+  app-modal {
+    .modal[class="modal"] {
+      width: 40vw;
+    }
+
+    h2 {
+      font-size: medium;
+      font-weight: bold;
+    }
+
+    label {
+      // Target the label text
+      > div {
+        @apply font-bold pb-1;
+      }
+    }
+
+    .refund-reasons > label {
+      @apply flex;
+
+      > input {
+        margin-right: 0.75rem;
+      }
+    }
   }
 }
