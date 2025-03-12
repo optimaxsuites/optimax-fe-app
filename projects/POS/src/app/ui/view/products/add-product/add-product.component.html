@@ -73,15 +73,27 @@
               </div>
             </div>
 
-            <ng-select
-              [items]="branches"
-              bindLabel="label"
-              bindValue="value"
-              formControlName="branch"
-              [multiple]="true"
-              placeholder="Select branch"
-            >
-            </ng-select>
+            <div class="inputAndBtn">
+              <ng-select
+                [items]="branches"
+                bindLabel="label"
+                bindValue="value"
+                formControlName="branch"
+                [multiple]="true"
+                placeholder="Select branch"
+              >
+              </ng-select>
+              <button
+                class="btn create-invoice-btn mt-1.5 w-fit"
+                type="button"
+                (click)="
+                  openBranchData = true;
+                  dataOfChosenBranches = getDataOfChosenBranches
+                "
+              >
+                +
+              </button>
+            </div>
           </div>
 
           <div class="detailDiv w-full">
@@ -107,7 +119,7 @@
           </div>
         </div>
 
-        <p class="text-xl ml-3 text-gray-700 font-bold pb-0 mb-0 mt-2 w-1/2">
+        <!-- <p class="text-xl ml-3 text-gray-700 font-bold pb-0 mb-0 mt-2 w-1/2">
           Branch Data:
           <ng-select
             [items]="selectedBranches"
@@ -115,7 +127,7 @@
             [(ngModel)]="selectedBranchFromForm"
             [ngModelOptions]="{ standalone: true }"
           ></ng-select>
-        </p>
+        </p> -->
 
         <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">
           Pricing
@@ -145,7 +157,7 @@
             />
           </div>
 
-          <div class="detailDiv w-full">
+          <!-- <div class="detailDiv w-full">
             <div class="flex items-center justify-between">
               <label for="selling-price"
                 >Selling price <span style="color: red">*</span></label
@@ -167,7 +179,7 @@
               id="selling-price"
               placeholder="selling price"
             />
-          </div>
+          </div> -->
           <div class="detailDiv w-full">
             <div class="flex items-center justify-between">
               <label for="tax"
@@ -196,7 +208,7 @@
         <div class="ml-3">
           <label for="discount">Discount</label>
 
-          <div class="flex gap-3 items-center">
+          <div class="flex inputAndBtn">
             <ng-select
               [items]="discounts"
               bindLabel="name"
@@ -206,7 +218,7 @@
               [multiple]="false"
               id="discount"
               placeholder="Discount"
-              class="w-full mt-3"
+              class="w-full"
             >
             </ng-select>
 
@@ -215,20 +227,20 @@
               type="button"
               (click)="openAddDiscount = true"
             >
-              Add
+              +
             </button>
           </div>
         </div>
 
         <div class="flex gap-4 items-center w-full">
           <div class="detailDiv w-full">
-            <div class="flex items-center justify-between">
+            <!-- <div class="flex items-center justify-between">
               <label for="e-price"
                 >Effective price <span style="color: red">*</span></label
               >
               <!-- <div *ngIf="productForm.get('effectivePrice')?.invalid && productForm.get('effectivePrice')?.touched" class="error">
               {{ getErrorMessage('effectivePrice', 'effective price') }}
-            </div> -->
+            </div>
             </div>
             <input
               class="name editInput"
@@ -237,7 +249,7 @@
               [formControl]="formControlInBranchDataAtIndex('effectivePrice')"
               placeholder="Effective Price"
               readonly
-            />
+            /> -->
           </div>
         </div>
 
@@ -246,7 +258,7 @@
         </p>
 
         <div class="flex gap-4 items-center w-full">
-          <div class="detailDiv w-full">
+          <!-- <div class="detailDiv w-full">
             <div class="flex items-center justify-between">
               <label for="quantity"
                 >Quantity <span style="color: red">*</span></label
@@ -267,9 +279,9 @@
               class="name editInput"
               placeholder="Quantity"
             />
-          </div>
+          </div> -->
 
-          <div class="detailDiv w-full">
+          <!-- <div class="detailDiv w-full">
             <div class="flex items-center justify-between">
               <label for="sku">SKU <span style="color: red">*</span></label>
               <div
@@ -288,18 +300,18 @@
               [formControl]="formControlInBranchDataAtIndex('sku')"
               placeholder="SKU"
             />
-          </div>
+          </div> -->
         </div>
 
         <div class="flex gap-4 items-center w-full">
-          <div class="detailDiv w-full">
+          <!-- <div class="detailDiv w-full">
             <div class="flex items-center justify-between">
               <label for="e-quantity"
                 >Effective Quantity <span style="color: red">*</span></label
               >
               <!-- <div *ngIf="productForm.get('effectiveQuantity')?.invalid && productForm.get('effectiveQuantity')?.touched" class="error">
               {{ getErrorMessage('effectiveQuantity') }}
-            </div> -->
+            </div>
             </div>
             <input
               class="name editInput"
@@ -311,7 +323,7 @@
               placeholder="Effective Quantity"
               readonly
             />
-          </div>
+          </div> -->
 
           <div class="detailDiv w-full">
             <div class="flex items-center justify-between">
@@ -424,7 +436,7 @@
           <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">
             Category <span style="color: red">*</span>
           </p>
-          <div class="flex gap-3 items-center">
+          <div class="flex inputAndBtn">
             <ng-select
               [items]="categories"
               bindLabel="name"
@@ -433,7 +445,7 @@
               [(ngModel)]="productData.productCategory"
               [multiple]="false"
               placeholder="Category"
-              class="w-full mt-3"
+              class="w-full"
             >
             </ng-select>
             <button
@@ -441,7 +453,7 @@
               type="button"
               (click)="openAddCategory = true"
             >
-              Add
+              +
             </button>
           </div>
 
@@ -449,25 +461,17 @@
           <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">
             Variant
           </p>
-          <div
-            class="editInput"
-            [class]="selectedBranchIndex == -1 ? 'disabled' : ''"
-          >
+          <div class="editInput">
             <div class="ml-3 flex justify-between items-center">
               <p class="pb-0 mb-0">Product Variants</p>
               <p
                 class="text-customGreen cursor-pointer"
-                (click)="
-                  selectedBranchIndex != -1 ? (openAddVariant = true) : ''
-                "
+                (click)="openAddVariant = true"
               >
                 + add product variant
               </p>
             </div>
-            <table
-              *ngIf="variants[this.selectedBranchIndex].length > 0"
-              class="min-w-full mt-3 bg-white"
-            >
+            <table *ngIf="variants.length > 0" class="min-w-full mt-3 bg-white">
               <thead>
                 <tr>
                   <!-- <th class="py-2 px-4 bg-gray-600">Name</th>
@@ -483,12 +487,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr
-                  *ngFor="
-                    let variant of variants[this.selectedBranchIndex];
-                    let i = index
-                  "
-                >
+                <tr *ngFor="let variant of variants; let i = index">
                   <td class="py-2 px-4 border-b">{{ variant.name }}</td>
                   <td class="py-2 px-4 border-b">{{ variant.price }}</td>
                   <td class="py-2 px-4 border-b">{{ variant.quantity }}</td>
@@ -810,7 +809,93 @@
 
 <!-- SECTION: Modal for displaying and setting branch data like price and quantity -->
 @if (openBranchData) {
-<app-side-modal (close)="openBranchData = false"> </app-side-modal>
+<app-side-modal (close)="openBranchData = false">
+  <div class="modal-header flex justify-between items-center text-gray-700">
+    <h2 class="font-semibold pb-0 mb-0">Selected Branches</h2>
+
+    <div class="flex gap-3">
+      <button
+        class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold"
+        (click)="openBranchData = false"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <div class="mt-5 mb-2">
+    <div>
+      <h3 class="font-semibold pb-0 mb-0">Current Branches</h3>
+      @for (branch of branches; track $index) {
+      <span class="branch-names ml-4">
+        {{ branch.label }}
+        <!-- <i class="fa-solid fa-trash ml-2" (click)="deleteBranch(branch)"></i> -->
+      </span>
+      }
+    </div>
+
+    <div>
+      <h3 class="font-semibold pb-0 mb-0">Add Branch</h3>
+    </div>
+
+    @if (dataOfChosenBranches.length) {
+    <div id="branchTableData">
+      <p-table
+        [value]="dataOfChosenBranches"
+        [tableStyle]="{ 'min-width': '50rem' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Branch</th>
+            <th>Selling Price</th>
+            <th>Quantity</th>
+            <th>SKU</th>
+            <th>Select Variants</th>
+            <th>Variant Data</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-branchData>
+          <tr>
+            <td>{{ branchData.branchName }}</td>
+            <td>
+              <input
+                class="name editInput"
+                [formControl]="branchData.sellingPrice"
+                placeholder="Selling Price"
+              />
+            </td>
+            <td>
+              <input
+                class="name editInput"
+                [formControl]="branchData.quantity"
+                placeholder="Quantity"
+              />
+            </td>
+            <td>
+              <input
+                class="name editInput"
+                [formControl]="branchData.sku"
+                placeholder="SKU"
+              />
+            </td>
+            <td>
+              <!-- @for (variant of variants; track $index) {
+                          <p-checkbox
+                [inputId]="'checkbox-' + $index"
+                name="variants"
+                [value]="variant"
+                [(ngModel)]="selectedVariants">
+              </p-checkbox>
+              <label [attr.for]="'checkbox-' + $index">{{ variant }}</label>
+                          } -->
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+    }
+  </div>
+</app-side-modal>
 }
 <!-- !SECTION -->
 

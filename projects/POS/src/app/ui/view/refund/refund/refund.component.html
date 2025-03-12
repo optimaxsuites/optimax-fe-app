@@ -1,4 +1,4 @@
-<div class="flex items-center justify-between w-full mb-40 mt-8">
+<div class="flex items-center justify-between w-full " id="filter-bar">
     <!-- Start Date Input -->
     <input 
       placeholder="Start Date"
@@ -23,24 +23,24 @@
     <!-- Table Header (Fixed, not inside *ngFor) -->
     <thead>
       <tr class="bg-gray-200">
-        <th class="text-left px-4 py-4 w-1/7 ">Refund ID</th>
-        <th class="text-left px-4 py-4 w-1/7 ">Cashier</th>
-        <th class="text-left px-4 py-4 w-1/7 ">Amount Requested</th>
-        <th class="text-left px-4 py-4 w-1/7 ">Reason Type</th>
-        <th class="text-left px-4 py-4 w-1/7 ">Status</th>
-        <th class="text-left px-4 py-4 w-1/7 ">Date</th>
-        <th class="text-left px-4 py-4 w-1/7 ">Action</th>
+        <th class="text-left px-2 py-2 w-1/7 ">Refund ID</th>
+        <th class="text-left px-2 py-2 w-1/7 ">Cashier</th>
+        <th class="text-left px-2 py-2 w-1/7 ">Amount Requested</th>
+        <th class="text-left px-2 py-2 w-1/7 ">Reason Type</th>
+        <th class="text-left px-2 py-2 w-1/7 ">Status</th>
+        <th class="text-left px-2 py-2 w-1/7 ">Date</th>
+        <th class="text-left px-2 py-2 w-1/7 ">Action</th>
       </tr>
     </thead>
   
     <tbody>
-      <tr *ngFor="let refund of filteredRefundList; let i = index" class="bg-gray-50 odd:bg-white">
-        <td class="px-4 py-8">{{ refund.orderId }}</td>
-        <td class="px-4 py-8">{{ refund.cashier }}</td>
-        <td class="px-4 py-8">₦{{ refund.Amount_Requested.toFixed(2) }}</td>
-        <td class="px-4 py-8">{{ refund.reasonType }}</td>
+      <tr *ngFor="let refund of filteredRefundList; let i = index" class="bg-gray-50 odd:bg-white" >
+        <td class="px-4 "style="padding-buttom: " >{{ refund.orderId }}</td>
+        <td class="px-4 ">{{ refund.cashier }}</td>
+        <td class="px-4 ">₦{{ refund.Amount_Requested.toFixed(2) }}</td>
+        <td class="px-4 ">{{ refund.reasonType }}</td>
         
-        <td class="px-4 py-8 flex items-center">
+        <td class="px-4  flex items-center">
           <i 
             class="pi text-xl mr-2"
             [ngClass]="{
