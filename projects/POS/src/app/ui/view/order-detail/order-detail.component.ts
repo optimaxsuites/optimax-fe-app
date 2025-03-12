@@ -3,7 +3,7 @@ import { Navigation, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { NavigationState } from '../../models/interface';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
-
+import JsBarcode from 'jsbarcode';
 @Component({
   selector: 'app-order-detail',
   templateUrl: './order-detail.component.html',
@@ -11,6 +11,7 @@ import { NavigationLinksService } from '../../sharedComponent/service/navigation
 })
 export class OrderDetailComponent {
   navigationState: NavigationState;
+  receiptID: string = Math.floor(100000 + Math.random() * 900000).toString(); 
   constructor(
     private router: Router,
     public navigationLink: NavigationLinksService
@@ -42,7 +43,7 @@ printReciept() {
 
   if (content) {
     printWindow.document.write('<html><head><title>Receipt</title>');
-    printWindow.document.write('<style>table { width: 100%; border-collapse: collapse; } td, th { border: 1px solid #ddd; padding: 8px; text-align: center; }</style>'); // Add basic styles for the table
+    printWindow.document.write('<style>table { width: 100%; border-collapse: collapse; } td, th { border: 1px solid #ddd;  text-align: center; } .receipt-header {text-align: center;}</style>'); // Add basic styles for the table
     printWindow.document.write('</head><body>');
     printWindow.document.write(content);  
     printWindow.document.write('</body></html>');
@@ -50,6 +51,15 @@ printReciept() {
     printWindow.print();  
   }
 }
+}
+
+ngAfterViewInit() {
+  JsBarcode("#barcode", this.receiptID, {
+    format: "CODE128",
+    displayValue: false, 
+    width: 2,
+    height: 40
+  });
 }
 
 }

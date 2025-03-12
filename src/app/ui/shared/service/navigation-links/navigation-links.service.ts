@@ -96,7 +96,7 @@ export class NavigationLinksService {
 // POS ================================================================================================================
 this.links['productLink'] = '/admin/pos/product/' +uuidV4();
 this.links['inventoryLink'] = `/admin/pos/inventory/${uuidV4()}`;
-this.links['salesLink'] = '/admin/pos/sales/' +uuidV4();
+this.links['salesLink'] = '/admin/pos/sale/' +uuidV4();
 this.links['refundLink'] = '/admin/pos/refunds/' +uuidV4();
 this.links['reportLink'] = '/admin/pos/report/' +uuidV4();
 

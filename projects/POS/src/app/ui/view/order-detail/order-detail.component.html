@@ -154,93 +154,79 @@
 
 
 
-<div id="receipt-container" class="receipt w-full hidden">
-  <div class="receipt-header items-center text-center flex flex-col justify-center w-full">
-    <strong class='text-3xl'>SHOP NAME</strong><br>
+<div id="receipt-container" style=" font-family: 'Courier New', monospace; font-size: 12px; text-align: left; padding: 10px;" class='hidden'>
+  <div style="text-align: center;">
+    <strong style="font-size: 18px;">SHOP NAME</strong><br>
     Address: Lorem Ipsum, 23-10 <br>
-    Telphone: 11223344
+    Telephone: 11223344
   </div>
-  <div class="line"></div>
-  <table class="top-products-table w3-table w3-striped mt-3">
+  <hr style="border-top: 1px dashed black; margin: 5px 0;">
+  <div style="text-align: left; margin-bottom: 10px;">
+    <div ><strong>Sold to:</strong> Walk-in Customer</div>
+    <div ><strong>Date & Time:</strong> {{ navigationState.order.timestamp }}</div>
+    <div ><strong>Cashier:</strong> Ayaobasheba</div>
+    <div ><strong>Receipt ID:</strong> {{receiptID}}</div>
+  </div>
+
+  <table style="width: 100%; border-collapse: collapse;">
     <thead>
-      <tr class="">
-        <th class="top-products-table-head col-1">Name</th>
-        <th class="top-products-table-head col-1">qty</th>
-        <th class="top-products-table-head col-1">
-           Price
-        </th>
-        <!-- <th class="top-products-table-head col-1">Discount</th> -->
-        <th class="top-products-table-head col-1">total</th>
+      <tr>
+        <th style="text-align: left;">Name</th>
+        <th style="text-align: center;">Qty</th>
+        <th style="text-align: center;">Price</th>
+        <th style="text-align: center;">Total</th>
       </tr>
     </thead>
     <tbody>
-    <ng-container *ngFor="let item of navigationState.order.cart" >
-      <ng-container *ngIf="item.selectedVariants.length > 0; else noVariantTemplate" >
-           <ng-container *ngFor="let variant of item.selectedVariants; let i = index" class="flex flex-col">
-            <tr style=" text-align: center">
-              <td>{{ item.name }} - {{ variant.name }}</td>
-              <td>
-                <p class="mb-0 capitalize font-bold text-yellow-600">
-                  {{ variant.selectedQuantity }}
-                </p>
-              </td>
-              <td class="capitalize">{{ variant.price }}</td>
-              <!-- <td>₦0</td> -->
-              <td>₦{{ variant.price * (variant.selectedQuantity || 0) }}</td>
+      <ng-container *ngFor="let item of navigationState.order.cart">
+        <ng-container *ngIf="item.selectedVariants.length > 0; else noVariantTemplate">
+          <ng-container *ngFor="let variant of item.selectedVariants;">
+            <tr style="text-align: center;">
+              <td style="text-align: left;">{{ item.name }} - {{ variant.name }}</td>
+              <td style="text-align: center; font-weight: bold; color: #d97706;">{{ variant.selectedQuantity }}</td>
+              <td style="text-align: center;">{{ variant.price | currency :'₦' }}</td>
+              <td style="text-align: center;">{{ variant.price * (variant.selectedQuantity || 0  ) | currency :'₦'}}</td>
             </tr>
           </ng-container>
-
+        </ng-container>
+        <ng-template #noVariantTemplate>
+          <tr style="text-align: center;">
+            <td style="text-align: left;">{{ item?.name }}</td>
+            <td style="font-weight: bold; color: #d97706;">{{ item.count }}</td>
+            <td>{{ item.initialPrice  | currency :'₦' }}</td>
+            <td>{{ item.cartPriceTotal  | currency :'₦' }}</td>
+          </tr>
+        </ng-template>
       </ng-container>
-  
-      <ng-template #noVariantTemplate>
-        <tr style=" text-align: center">
-
-        <td>{{ item?.name }}</td>
-        <td>
-          <p class="mb-0 capitalize font-bold text-yellow-600">
-            {{ item.count }}
-          </p>
-        </td>
-        <td class="capitalize">{{ item.initialPrice }}</td>
-        <!-- <td>₦{{ item.discount }}</td> -->
-        <td>₦{{ item.cartPriceTotal }}</td>
-        </tr>
-      </ng-template>
-    </ng-container>
     </tbody>
-    </table>
-    <div class="line"></div>
-    <hr>
-    <div class="items-end text-end w-full">
-      <div class="flex justify-between items-center">
-        <span>Subtotal</span>
-        <span>₦{{ navigationState.order.subtotal | number : "1.2-2" }}</span>
-      </div>
-     
-      <div class="flex justify-between items-center">
-        <span>Tax</span>
-        <span>₦{{ navigationState.order.tax | number : "1.2-2" }}</span>
-      </div>
-     
+  </table>
 
-      <div
-        class="flex justify-between items-center"
-        *ngIf="navigationState.order.discount > 0"
-      >
-        <span>Discount</span>
-        <span>₦{{ navigationState.order.discount | number : "1.2-2" }}</span>
-      </div>
-      <hr *ngIf="navigationState.order.discount > 0" />
+  <hr style="border-top: 1px dashed black; margin: 5px 0;">
 
-      <div class="flex justify-between font-bold text-2xl items-center">
-        <span>Total</span>
-        <span>₦{{ navigationState.order.total | number : "1.2-2" }}</span>
-      </div>
-
+  <div style="text-align: right;">
+    <div style="display: flex; justify-content: space-between;">
+      <span>Subtotal</span>
+      <span>₦{{ navigationState.order.subtotal | number : '1.2-2' }}</span>
     </div>
-  
-    <div class="line"></div>
+    <div style="display: flex; justify-content: space-between;">
+      <span>Tax</span>
+      <span>₦{{ navigationState.order.tax | number : '1.2-2' }}</span>
+    </div>
+    <div *ngIf="navigationState.order.discount > 0" style="display: flex; justify-content: space-between;">
+      <span>Discount</span>
+      <span>₦{{ navigationState.order.discount | number : '1.2-2' }}</span>
+    </div>
+    <hr *ngIf="navigationState.order.discount > 0">
+    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px;">
+      <span>Total</span>
+      <span>₦{{ navigationState.order.total | number : '1.2-2' }}</span>
+    </div>
+  </div>
 
+  <hr style="border-top: 1px dashed black; margin: 5px 0;">
+  <div style="text-align: center;"><strong>THANK YOU!</strong></div>
 
-  <div><strong>THANK YOU!</strong></div>
+  <div style="text-align: center; width: 100%;">
+    <svg id="barcode"></svg>
+  </div>
 </div>
