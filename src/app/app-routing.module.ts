@@ -50,7 +50,7 @@ const routes: Routes = [
   // },
   {
     path: 'view',
-    component:ViewInventoryComponent,
+    component: ViewInventoryComponent,
   },
   {
     path: 'supplier-details',

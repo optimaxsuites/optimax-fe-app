@@ -5,6 +5,7 @@ import { InventoryComponent } from './inventory/inventory.component';
 import { ConfigurationComponent } from './configuration/configuration.component';
 import { ManageUsersComponent } from './manage-users/manage-users.component';
 import { TabConfig } from '../sharedComponent/service/interface/data';
+import { SalesComponent } from './sales/sales.component';
 
 @Component({
   selector: 'app-pos-page',
@@ -39,6 +40,7 @@ export class PosPageComponent {
     },
     { name: 'Products', component: ProductsComponent },
     { name: 'Inventory', component: InventoryComponent },
+
     // {
     //   name: 'Settings',
     //   component: null,

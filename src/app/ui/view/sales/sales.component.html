@@ -1,1 +1,307 @@
-<p>sales works!</p>
+<div class="sales-report-container card" *ngIf="!openSale">
+  <!-- Header Section with Toolbar -->
+  <p-toolbar styleClass="mb-4 gap-2">
+    <ng-template pTemplate="left">
+      <div class="flex w-full items-center justify-between gap-6 px-4 py-3">
+        <!-- Filters Section -->
+        <div class="flex gap-5 w-4/5 items-center">
+          <!-- Date Range Picker -->
+          <div class="w-1/2">
+            <div
+              class="flex items-center justify-between bg-gray-100 px-3 py-2 rounded-lg cursor-pointer"
+            >
+              <div class="flex items-center space-x-4">
+                <button
+                  class="text-gray-600 mr-2 hover:text-gray-900"
+                  (click)="navigateDate(-1)"
+                >
+                  <i class="pi pi-chevron-left"></i>
+                </button>
+
+                <div
+                  (click)="toggleCalendar()"
+                  class="flex items-center justify-center space-x-6 px-4 py-2 border rounded-lg cursor-pointer min-w-[200px] whitespace-nowrap"
+                >
+                  <span class="text-gray-700 text-xl font-semibold">{{
+                    displayDateLabel
+                  }}</span>
+                  <i
+                    [ngClass]="
+                      calendarVisible
+                        ? 'pi pi-chevron-up text-gray-500'
+                        : 'pi pi-chevron-down text-gray-500'
+                    "
+                  ></i>
+                </div>
+
+                <button
+                  class="text-gray-600 ml-2 hover:text-gray-900"
+                  (click)="navigateDate(1)"
+                >
+                  <i class="pi pi-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cashier Filter -->
+          <div class="w-1/2">
+            <ng-select
+              [items]="cashiers"
+              [multiple]="false"
+              placeholder="Filter by cashier"
+              class="rounded-lg border-gray-300 shadow-sm"
+              [(ngModel)]="selectedCashier"
+              (ngModelChange)="onCashierChange($event)"
+            >
+            </ng-select>
+          </div>
+
+          <!-- Status Filter -->
+          <div class="w-1/2">
+            <ng-select
+              [items]="statusOptions"
+              [multiple]="false"
+              placeholder="Filter by status"
+              class="rounded-lg border-gray-300 shadow-sm"
+              [(ngModel)]="selectedStatus"
+              (ngModelChange)="filterTransactions()"
+            >
+            </ng-select>
+          </div>
+        </div>
+
+        <!-- Summary Filter-->
+        <div class="w-1/3">
+          <ng-select
+            [items]="summaryOptions"
+            placeholder="Select Summary"
+            class="rounded-lg border-gray-300 shadow-sm"
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="handleSearchChange()"
+          >
+          </ng-select>
+        </div>
+      </div>
+    </ng-template>
+  </p-toolbar>
+
+  <!-- Date Range and Total Box -->
+  <div class="summary-box bg-white rounded-lg p-4 shadow-sm mb-4">
+    <div class="summary-content flex justify-between items-center">
+      <div class="date-range-display">
+        <span class="text-gray-700 font-bold">Date Range: </span>
+        <span class="font-extrabold text-2xl text-gray-800">{{
+          displayDateLabel
+        }}</span>
+      </div>
+      <div class="total-sales">
+        <span class="text-gray-700 font-bold">Gross Sales Total: </span>
+        <span class="sales-amount text-2xl font-extrabold text-blue-700"
+          >${{ formatCurrency(grossSalesTotal) }}</span
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- Date Options Dropdown -->
+  <div class="date-dropdown-menu" *ngIf="calendarVisible">
+    <div
+      class="calendar-container items-center bg-white rounded-lg shadow-lg p-3 w-[400px]"
+    >
+      <!-- Calendar Header with Month Navigation -->
+      <div class="calendar-header flex justify-between items-center mb-3">
+        <button
+          class="text-gray-600 hover:text-gray-800"
+          (click)="navigateMonth(-1)"
+        >
+          <i class="pi pi-chevron-left"></i>
+        </button>
+        <div class="text-sm font-semibold text-gray-700">
+          {{ currentMonth }}
+        </div>
+        <button
+          class="text-gray-600 hover:text-gray-800"
+          (click)="navigateMonth(1)"
+        >
+          <i class="pi pi-chevron-right"></i>
+        </button>
+      </div>
+
+      <!-- Calendar Days of Week -->
+      <div
+        class="grid grid-cols-7 text-center text-xs font-medium text-gray-600 mb-1"
+      >
+        <div>S</div>
+        <div>M</div>
+        <div>T</div>
+        <div>W</div>
+        <div>T</div>
+        <div>F</div>
+        <div>S</div>
+      </div>
+
+      <!-- Calendar Days -->
+      <div class="grid grid-cols-7 gap-1 mb-3">
+        <div
+          *ngFor="let day of calendarDays"
+          [ngClass]="getDayClass(day)"
+          class="text-center text-xs p-1 rounded cursor-pointer"
+          (click)="selectDay(day)"
+        >
+          {{ day.getDate() }}
+        </div>
+      </div>
+
+      <!-- Date Range Inputs -->
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <div class="text-xs text-gray-600">START</div>
+        <div class="text-xs text-gray-600 text-right">END</div>
+        <input
+          type="date"
+          class="border border-gray-300 rounded p-1 text-xs w-full"
+          [ngModel]="startDate | date : 'yyyy-MM-dd'"
+          (ngModelChange)="updateStartDate($event)"
+        />
+        <input
+          type="date"
+          class="border border-gray-300 rounded p-1 text-xs w-full"
+          [ngModel]="endDate | date : 'yyyy-MM-dd'"
+          (ngModelChange)="updateEndDate($event)"
+        />
+      </div>
+
+      <!-- Apply Button -->
+      <div class="flex justify-end">
+        <button
+          class="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded px-3 py-1 text-xs"
+          (click)="applyCustomDateRange()"
+        >
+          Apply
+        </button>
+      </div>
+
+      <!-- Shortcuts -->
+      <div class="date-shortcuts flex flex-wrap gap-2">
+        <div
+          *ngFor="let option of dateOptions"
+          class="shortcut-btn px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm cursor-pointer"
+          (click)="selectDateOption(option)"
+        >
+          {{ option.label }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sales Transactions Table -->
+  <div class="transactions-table">
+    <p-table
+      [value]="filteredTransactions"
+      [paginator]="true"
+      [rows]="10"
+      [showCurrentPageReport]="true"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      styleClass="p-datatable-gridlines"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+      [globalFilterFields]="[
+        'orderId',
+        'cashier',
+        'transactionOrderId',
+        'status'
+      ]"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th
+            class="table-item"
+            pSortableColumn="orderId"
+            (click)="clearSearch()"
+          >
+            Order ID <p-sortIcon field="orderId"></p-sortIcon>
+          </th>
+          <th
+            class="table-item"
+            pSortableColumn="cashier"
+            (click)="clearSearch()"
+          >
+            Cashier <p-sortIcon field="cashier"></p-sortIcon>
+          </th>
+          <th
+            class="table-item"
+            pSortableColumn="transactionOrderId"
+            (click)="clearSearch()"
+          >
+            Transaction Order ID
+            <p-sortIcon field="transactionOrderId"></p-sortIcon>
+          </th>
+          <th
+            class="table-item"
+            pSortableColumn="status"
+            (click)="clearSearch()"
+          >
+            Status <p-sortIcon field="status"></p-sortIcon>
+          </th>
+          <th class="table-item" pSortableColumn="date" (click)="clearSearch()">
+            Date <p-sortIcon field="date"></p-sortIcon>
+          </th>
+          <th
+            class="table-item"
+            pSortableColumn="amount"
+            (click)="clearSearch()"
+          >
+            Amount <p-sortIcon field="amount"></p-sortIcon>
+          </th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-transaction>
+        <tr
+          class="text-xl cursor-pointer hover:bg-gray-50"
+          (click)="goToSaleDetails(transaction)"
+        >
+          <td>{{ transaction.orderId }}</td>
+          <td>{{ transaction.cashier }}</td>
+          <td>{{ transaction.transactionOrderId }}</td>
+          <td>
+            <span
+              [ngClass]="{
+                'bg-green-300 text-green-700':
+                  transaction.status === 'Completed',
+                'bg-gray-300 text-gray-600': transaction.status === 'Pending',
+                'bg-red-200 text-red-600': transaction.status === 'Void'
+              }"
+              class="font-semibold rounded-full px-3 py-2 text-lg"
+            >
+              {{ transaction.status }}
+            </span>
+          </td>
+          <td>{{ formatDate(transaction.date) }}</td>
+          <td>${{ formatCurrency(transaction.amount) }}</td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="text-center text-[12px] p-4">
+            No sales transactions found for the selected filters
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="paginatorright">
+        <div class="total-display">
+          Total Transactions: {{ filteredTransactions.length }}
+        </div>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<div *ngIf="openSale">
+  <app-sale-summary
+    [selectedTransaction]="selectedTransaction"
+    (back)="navigateToSale()"
+  ></app-sale-summary>
+</div>
