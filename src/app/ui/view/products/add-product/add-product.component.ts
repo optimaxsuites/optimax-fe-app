@@ -88,7 +88,7 @@ export class AddProductComponent {
   /**
    * This will be an object indexed with `this.selectedBranchIndex` where each value would be an array of variants for each branch.
    */
-  variants: Record<number, VariantDTO[]> = {};
+  variants: VariantDTO[] = [];
 
   /**
    * NOTE: The order of this object is important! See `get variantObjectKeys()`
@@ -123,7 +123,7 @@ export class AddProductComponent {
     { label: 'HQT', value: 'headquarter' },
     { label: 'wuse', value: 'Wuse' },
     { label: 'Jikwoyi', value: 'Jikwoyi' },
-  ] as const;
+  ];
 
   discountTypes: any[] = [];
   discountType: string[] = [];
@@ -167,6 +167,7 @@ export class AddProductComponent {
    */
   //@ts-ignore
   selectedBranchFromForm: (typeof this.branches)[0]['value'];
+  dataOfChosenBranches: any[] = [];
 
   constructor(
     private messageService: MessageService,
@@ -176,19 +177,17 @@ export class AddProductComponent {
     private industryData: IndustryDataService
   ) {}
   ngOnInit(): void {
-    console.log(this.activeItem);
-
     // Initialize as many empty form controls for as many branches as there can possibly be.
     // Also use this chance to init the `this.variants` object
     const controlGroupForFormBranches = new FormArray(
       this.branches.map((_, index) => {
-        this.variants[index] = [];
+        this.variants = [];
         return this.createBranchData();
       })
     );
 
     // For when there's no selected branch;
-    this.variants[this.selectedBranchIndex] = [];
+    this.variants = [];
 
     this.loadCategory();
     this.getDiscountTypes();
@@ -282,15 +281,15 @@ export class AddProductComponent {
       }
     );
 
-    if (this.selectedBranchIndex == -1) {
-      // Disable the branch specific data
-      this.formControlInBranchDataAtIndex('price').disable();
-      this.formControlInBranchDataAtIndex('effectivePrice').disable();
-      this.formControlInBranchDataAtIndex('quantity').disable();
-      this.formControlInBranchDataAtIndex('effectiveQuantity').disable();
-      this.formControlInBranchDataAtIndex('sku').disable();
-      this.formControlInBranchDataAtIndex('variants').disable();
-    }
+    // if (this.selectedBranchIndex == -1) {
+    //   // Disable the branch specific data
+    //   this.formControlInBranchDataAtIndex('price').disable();
+    //   this.formControlInBranchDataAtIndex('effectivePrice').disable();
+    //   this.formControlInBranchDataAtIndex('quantity').disable();
+    //   this.formControlInBranchDataAtIndex('effectiveQuantity').disable();
+    //   this.formControlInBranchDataAtIndex('sku').disable();
+    //   this.formControlInBranchDataAtIndex('variants').disable();
+    // }
 
     // this.productForm.get('initialQuantity')?.valueChanges.subscribe((value) => {
     //   this.productForm
@@ -421,7 +420,7 @@ export class AddProductComponent {
       tax: formValues.tax,
       branch: (formValues.branch as string[])[0], //FIXME: The backend can only store a sinlge string. Once that's fixed, undo this change
       discount: formValues.discount,
-      variants: this.variants[this.selectedBranchIndex],
+      variants: this.variants,
       productCategory: formValues.category,
       createdBy: userName,
       createdDate: new Date().toISOString(),
@@ -514,7 +513,7 @@ export class AddProductComponent {
         minQuantity: 0,
         discountType: null,
       },
-      variants: this.variants[this.selectedBranchIndex],
+      variants: this.variants,
       productImages: [] as any[],
       productCategory: formValues.category,
       createdBy: userName,
@@ -589,11 +588,11 @@ export class AddProductComponent {
     variant.color = this.newVariant.color.split(',').map((val) => val.trim());
 
     if (this.isEditing && this.editingIndex !== null) {
-      this.variants[this.selectedBranchIndex][this.editingIndex] = variant;
+      this.variants[this.editingIndex] = variant;
       this.isEditing = false;
       this.editingIndex = null;
     } else {
-      this.variants[this.selectedBranchIndex].push(variant);
+      this.variants.push(variant);
     }
 
     this.newVariant = this.resetVariantData();
@@ -602,13 +601,13 @@ export class AddProductComponent {
   }
 
   deleteVariant(index: number) {
-    this.variants[this.selectedBranchIndex].splice(index, 1);
+    this.variants.splice(index, 1);
   }
   editVariant(index: number) {
     this.isEditing = true;
     this.editingIndex = index;
 
-    const selectedVariant = this.variants[this.selectedBranchIndex][index];
+    const selectedVariant = this.variants[index];
     this.newVariant = {
       ...selectedVariant,
       color: selectedVariant.color.join(
@@ -989,40 +988,6 @@ export class AddProductComponent {
     return this.industryData.businessType;
   }
 
-  /**
-   * An array of values from `this.branches` that have been selected by the multiple-choice `ng-select`
-   */
-  get selectedBranches() {
-    return (this.productForm.get('branch') as FormControl).value;
-  }
-
-  /**
-   * Using the chosen branch from the `ng-select` under the `Branch Data` label, it gets an index that can be used to obtain the right data from the `FormArray` of branch data values.
-   */
-  get selectedBranchIndex() {
-    return this.branches.findIndex((val) => {
-      return this.selectedBranchFromForm == val.value;
-    });
-  }
-
-  get branchDataAtIndex() {
-    return (this.productForm.get('branches') as FormArray).at(
-      this.selectedBranchIndex
-    );
-  }
-
-  /**
-   * Please don't pass an invalid name here. All the viable names here are properties of the form group in `this.createBranchData()`
-   */
-  formControlInBranchDataAtIndex(formControlName: string) {
-    const formControl = this.branchDataAtIndex.get(
-      formControlName
-    ) as AbstractControl<any, any> as FormControl<any>;
-    typeof formControl.value == 'object' ? formControl.setValue('') : '';
-
-    return formControl;
-  }
-
   createBranchData(): FormGroup {
     // TODO: Remove all these "effective" stuff. Blegh
     return new FormGroup({
@@ -1044,13 +1009,65 @@ export class AddProductComponent {
       // city: new FormControl(''),
     });
   }
-  addBranchData() {
-    const peopleArray = this.productForm.get('branches') as FormArray;
-    peopleArray.push(this.createBranchData());
+
+  /**
+   * An array of values from `this.branches` that have been selected by the multiple-choice `ng-select`
+   */
+  get selectedBranches(): string[] {
+    return (this.productForm.get('branch') as FormControl).value;
   }
 
-  removePerson(index: number) {
-    const peopleArray = this.productForm.get('branches') as FormArray;
-    peopleArray.removeAt(index);
+  /**
+   * Constructs an object of the form elements for the chosen branches.
+   */
+  get getDataOfChosenBranches() {
+    const formArrayOfBranches = this.productForm.get('branches') as FormArray;
+
+    const returnArray: {
+      branchName: string;
+      sellingPrice: FormControl<any>;
+      quantity: FormControl<any>;
+      sku: FormControl<any>;
+    }[] = [];
+
+    formArrayOfBranches.controls.forEach((a, index) => {
+      const indexToUse = this.selectedBranches.findIndex((val) => {
+        return val == this.branches[index].value;
+      });
+
+      const sanitizeFormControl = (
+        formGroup: FormGroup<any>,
+        controlName: string
+      ) => {
+        const formControl = formGroup.get(controlName) as FormControl<any>;
+
+        typeof formControl.value == 'object' ? formControl.setValue('') : '';
+
+        return formControl;
+      };
+
+      if (indexToUse > -1) {
+        const formGrp = a as FormGroup<any>;
+        const objToConstruct: (typeof returnArray)[0] = {
+          branchName: this.branches[index].value,
+          sellingPrice: sanitizeFormControl(formGrp, 'price'),
+          quantity: sanitizeFormControl(formGrp, 'quantity'),
+          sku: sanitizeFormControl(formGrp, 'sku'),
+          // variants:
+        };
+
+        returnArray.push(objToConstruct);
+      }
+    });
+
+    return returnArray;
+  }
+
+  /** UNUSED */
+  deleteBranch(branchData: (typeof this.branches)[0]) {
+    console.log(branchData);
+    console.log(this.branches);
+    delete this.branches[this.branches.findIndex((br) => br == branchData)];
+    // this.dataOfChosenBranches = this.getDataOfChosenBranches;
   }
 }
