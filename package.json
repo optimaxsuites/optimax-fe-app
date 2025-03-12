@@ -50,7 +50,6 @@
     "@auth0/angular-jwt": "^5.2.0",
     "@canvasjs/angular-charts": "^1.2.0",
     "@canvasjs/charts": "^3.8.12",
-    "@primeng/themes": "^19.0.5",
     "@fortawesome/fontawesome-free": "^6.5.2",
     "@fullcalendar/angular": "^6.1.15",
     "@fullcalendar/core": "^6.1.15",
@@ -58,6 +57,7 @@
     "@fullcalendar/interaction": "^6.1.15",
     "@kolkov/angular-editor": "^3.0.0-beta.0",
     "@ng-select/ng-select": "^12.0.7",
+    "@primeng/themes": "^19.0.5",
     "@progress/kendo-angular-buttons": "^15.5.0",
     "@progress/kendo-angular-common": "^15.5.0",
     "@progress/kendo-angular-dialog": "^15.5.0",
@@ -93,7 +93,7 @@
     "tslib": "^2.3.0",
     "uuid": "^10.0.0",
     "xlsx": "^0.17.0",
-    "zone.js": "~0.14.3"
+    "zone.js": "^0.14.10"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^17.3.6",
