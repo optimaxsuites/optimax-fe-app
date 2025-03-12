@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { ChangeDetectorRef } from '@angular/core';
+
+import { OverlayPanel, OverlayPanelModule } from 'primeng/overlaypanel';
 
 
 
@@ -29,13 +31,29 @@ interface Refund {
 
 export class RefundComponent {
   
+  @ViewChild('op') op!: OverlayPanel;  // Reference to the Overlay Panel
   selectedDate: Date | null = null;
   searchQuery: string = '';
   dropdownIndex: number | null = null;
   isModalOpen: boolean = false;
   selectedRefund: Refund | null = null; // Store the selected refund
+  cashierList: string[] = [];
+  selectedCashier: string = '';
+  selectedStatus: string = '';
+  startDate: any;
+  endDate: any;
+  selectedDay: string = '';
+  daysOfWeek: string[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  isDatePickerOpen = false;
 
  
+
+
+  ngOnInit() {
+    this.getCashierList();
+    this.filterTable();
+  }
+
  constructor(
 
    private messageService: MessageService,
@@ -71,11 +89,27 @@ export class RefundComponent {
   filteredRefundList: Refund[] = [...this.refundList];
 
 
+getCashierList() {
+  this.cashierList = [...new Set(this.refundList.map(refund => refund.cashier))];
+}
+toggleDatePicker() {
+  this.isDatePickerOpen = !this.isDatePickerOpen;
+}
 
+closeOverlay() {
+  if (this.op) {
+    this.op.hide();
+  }
+}
 
-  filterTable() {
+filterTable() {
+  // Reset the filtered list
+  this.filteredRefundList = [...this.refundList];
+
+  // Apply search filter
+  if (this.searchQuery) {
     const query = this.searchQuery.toLowerCase();
-    this.filteredRefundList = this.refundList.filter(refund => 
+    this.filteredRefundList = this.filteredRefundList.filter(refund =>
       refund.orderId.toLowerCase().includes(query) ||
       refund.cashier.toLowerCase().includes(query) ||
       refund.reasonType.toLowerCase().includes(query) ||
@@ -83,6 +117,41 @@ export class RefundComponent {
       refund.Date.toLowerCase().includes(query)
     );
   }
+
+  // Apply cashier filter
+  if (this.selectedCashier) {
+    this.filteredRefundList = this.filteredRefundList.filter(refund => refund.cashier === this.selectedCashier);
+  }
+
+  // Apply status filter
+  if (this.selectedStatus) {
+    this.filteredRefundList = this.filteredRefundList.filter(refund => refund.status === this.selectedStatus);
+  }
+   // Filter by selected weekday
+   if (this.selectedDay) {
+    this.filteredRefundList = this.filteredRefundList.filter(refund => {
+      return this.getDayOfWeek(refund.Date) === this.selectedDay;
+    });
+  }
+
+  // Apply date range filter
+  if (this.startDate && this.endDate) {
+    const start = new Date(this.startDate);
+    const end = new Date(this.endDate);
+
+    this.filteredRefundList = this.filteredRefundList.filter(refund => {
+      const refundDate = new Date(refund.Date);
+      return refundDate >= start && refundDate <= end;
+    });
+  }
+}
+
+// Helper function to get the day of the week from a date
+getDayOfWeek(dateString: string): string {
+  const date = new Date(dateString);
+  return this.daysOfWeek[date.getDay()];
+}
+
   toggleDropdown(index: number) {
     this.dropdownIndex = this.dropdownIndex === index ? null : index;
   }
