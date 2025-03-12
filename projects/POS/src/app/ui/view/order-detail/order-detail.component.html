@@ -154,7 +154,7 @@
 
 
 
-<div id="receipt-container" style=" font-family: 'Courier New', monospace; font-size: 12px; text-align: left; padding: 10px;" class='hidden'>
+<div id="receipt-container" style=" font-family: 'Courier New', monospace; font-size: 10px; text-align: left; padding: 10px;" class='hidden'>
   <div style="text-align: center;">
     <strong style="font-size: 22px;">SHOP NAME</strong><br>
     Address: Lorem Ipsum, 23-10 <br>
@@ -162,10 +162,10 @@
   </div>
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
   <div style="text-align: left; margin-bottom: 10px;">
-    <div ><strong>Sold to:</strong> Walk-in Customer</div>
-    <div ><strong>Date & Time:</strong> {{ navigationState.order.timestamp }}</div>
-    <div ><strong>Cashier:</strong> Ayaobasheba</div>
-    <div ><strong>Receipt ID:</strong> {{receiptID}}</div>
+    <div >Sold to: Walk-in Customer</div>
+    <div >Date & Time: {{ navigationState.order.timestamp }}</div>
+    <div >Cashier: Ayaobasheba</div>
+    <div >Receipt ID: {{receiptID}}</div>
   </div>
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
 
@@ -173,7 +173,7 @@
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
 
     <thead>
-      <tr>
+      <tr style=" font-size: 10px;">
         <th style="text-align: left;">Name</th>
         <th style="text-align: center;">Qty</th>
         <th style="text-align: center;">Price</th>
@@ -188,16 +188,16 @@
           <ng-container *ngFor="let variant of item.selectedVariants;">
             <tr style="text-align: center; font-size: 10px;">
               <td style="text-align: left;">{{ item.name }} - {{ variant.name }}</td>
-              <td style="text-align: center; font-weight: bold; ;">{{ variant.selectedQuantity }}</td>
+              <td style="text-align: center ;">{{ variant.selectedQuantity }}</td>
               <td style="text-align: center;">{{ variant.price  }}</td>
               <td style="text-align: center;">{{ variant.price * (variant.selectedQuantity || 0  ) }}</td>
             </tr>
           </ng-container>
         </ng-container>
         <ng-template #noVariantTemplate>
-          <tr style="text-align: center; font-size: 10px;">
+          <tr style="font-size: 10px;">
             <td style="text-align: left;">{{ item?.name }}</td>
-            <td style="font-weight: bold; ;">{{ item.count }}</td>
+            <td >{{ item.count }}</td>
             <td>{{ item.initialPrice   }}</td>
             <td>{{ item.cartPriceTotal   }}</td>
           </tr>
