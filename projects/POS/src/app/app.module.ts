@@ -110,7 +110,7 @@ import { MenuModule } from 'primeng/menu';
     SaleSummaryComponent,
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
     // UserModule,
     // AppRoutingModule,
     CommonModule,
@@ -152,7 +152,7 @@ import { MenuModule } from 'primeng/menu';
     MenuModule,
     InputGroupModule,
     InputGroupAddonModule,
-    BrowserAnimationsModule,
+    // BrowserAnimationsModule,
   ],
   providers: [
     {
