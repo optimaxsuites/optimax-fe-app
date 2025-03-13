@@ -7,6 +7,7 @@ import { FormBuilder, FormGroup } from '@angular/forms';
   styleUrls: ['./sales.component.scss'],
 })
 export class SalesComponent implements OnInit {
+  [x: string]: any;
   filterForm: FormGroup;
   cashiers: string[] = ['All', 'John', 'Ben', 'Winifred', 'Conrad'];
   selectedCashier: string | null = null;
@@ -115,6 +116,16 @@ export class SalesComponent implements OnInit {
 
     this.filteredTransactions = [...this.transactions];
     this.grossSalesTotal = this.calculateTotal(this.filteredTransactions);
+  }
+
+  isSelectedDay(day: Date): boolean {
+    // Check if this day is either the start or end date
+    const dayTime = day.getTime();
+    const startTime = new Date(this.startDate.setHours(0, 0, 0, 0)).getTime();
+    const endTime = new Date(this.endDate.setHours(23, 59, 59, 999)).getTime();
+
+    // Return true if this day is either the start or end date
+    return dayTime === startTime || dayTime === endTime;
   }
 
   // Search and filter methods
@@ -280,7 +291,6 @@ export class SalesComponent implements OnInit {
   }
 
   selectDay(day: Date) {
-    // If no date is selected, set both start and end to the selected date
     if (!this.dateSelectionMode) {
       this.startDate = new Date(day);
       this.endDate = new Date(day);
@@ -317,8 +327,6 @@ export class SalesComponent implements OnInit {
   }
 
   navigateDate(direction: number) {
-    // Implement date navigation based on current view (day, week, month)
-    // For simplicity, let's assume we're navigating by day
     this.startDate = new Date(
       this.startDate.setDate(this.startDate.getDate() + direction)
     );
@@ -362,7 +370,6 @@ export class SalesComponent implements OnInit {
   }
 
   applyCustomDateRange() {
-    // Update the display label
     if (this.startDate.getTime() === this.endDate.getTime()) {
       this.displayDateLabel = this.formatDate(this.startDate);
     } else {
