@@ -14,12 +14,14 @@ import { NavigationLinks } from '../../models/enums';
 })
 export class CashPaymentComponent implements OnInit {
   navigationState: NavigationState;
-  cart: Cart = {} as any; // It's going to be filled in ngOnInit
+  cart: Cart = {} as any; 
   priceOptions: any[] = [];
   priceValue = 0.0;
   orders: any;
   changeOffered: number = 0.0;
   changeOfferedModal: boolean = false;
+  receiptID: string = Math.floor(100000 + Math.random() * 900000).toString(); 
+
   constructor(
     private router: Router,
     public navigationLink: NavigationLinksService,
@@ -69,6 +71,7 @@ export class CashPaymentComponent implements OnInit {
       this.saveCurrentCartItem();
       const order: any[] = [];
       const checkoutLink = this.navigationLink.getLink('checkoutLink');
+      this.printReceipt()
       this.router.navigate([checkoutLink], { state: { order } });
     }
   }
@@ -104,4 +107,22 @@ export class CashPaymentComponent implements OnInit {
   get approximateCartTotal() {
     return Math.round(this.cart?.total * 100) / 100;
   }
+
+  printReceipt() {
+    const printWindow = window.open('', '', 'height=500,width=800');
+    
+    if (printWindow) {
+    const content = document.getElementById('receipt-container')?.outerHTML;
+  
+    if (content) {
+      printWindow.document.write('<html><head><title>Receipt</title>');
+      printWindow.document.write('</head><body>');
+      printWindow.document.write(content);  
+      printWindow.document.write('</body></html>');
+      printWindow.document.close(); 
+      printWindow.print();  
+    }
+  }
+  }
 }
+

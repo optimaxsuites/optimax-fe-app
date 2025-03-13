@@ -47,6 +47,7 @@
     "@angular/platform-browser": "^17.3.0",
     "@angular/platform-browser-dynamic": "^17.3.0",
     "@angular/router": "^17.3.0",
+    "@angular/service-worker": "^17.3.0",
     "@auth0/angular-jwt": "^5.2.0",
     "@canvasjs/angular-charts": "^1.2.0",
     "@canvasjs/charts": "^3.8.12",

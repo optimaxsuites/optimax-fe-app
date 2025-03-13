@@ -43,7 +43,6 @@ printReciept() {
 
   if (content) {
     printWindow.document.write('<html><head><title>Receipt</title>');
-    printWindow.document.write('<style>table { width: 100%; border-collapse: collapse; } td, th { border: 1px solid #ddd;  text-align: center; } .receipt-header {text-align: center;}</style>'); // Add basic styles for the table
     printWindow.document.write('</head><body>');
     printWindow.document.write(content);  
     printWindow.document.write('</body></html>');

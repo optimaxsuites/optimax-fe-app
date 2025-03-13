@@ -1,4 +1,4 @@
-import { CUSTOM_ELEMENTS_SCHEMA, NgModule } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, NgModule, isDevMode } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -238,6 +238,7 @@ import { AppDashboardModule } from 'projects/dashboard/src/app/app.module';
 import { ToastrModule } from 'ngx-toastr';
 import { AppHrModule } from 'projects/hr/src/app/app.module';
 import { MarketplaceComponent } from './ui/marketplace/view/marketplace/marketplace.component';
+import { ServiceWorkerModule } from '@angular/service-worker';
 
 
 @NgModule({
@@ -472,7 +473,13 @@ import { MarketplaceComponent } from './ui/marketplace/view/marketplace/marketpl
       CheckboxModule,
       NgSelectModule,
       MatMenuModule,
-      FullCalendarModule,   
+      FullCalendarModule,
+      ServiceWorkerModule.register('ngsw-worker.js', {
+        enabled: !isDevMode(),
+        // Register the ServiceWorker as soon as the application is stable
+        // or after 30 seconds (whichever comes first).
+        registrationStrategy: 'registerWhenStable:30000'
+      }),   
       // ToastrModule.forRoot(),
   ],
   providers: [
