@@ -77,6 +77,8 @@ import { MessageService } from 'primeng/api';
 import { RefundComponent } from './ui/view/refund/refund/refund.component';
 import { SaleSummaryComponent } from './ui/view/sales/sale-summary/sale-summary.component';
 import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-button.component';
+import { CalendarModule } from 'primeng/calendar';
+import { MenuModule } from 'primeng/menu';
 @NgModule({
   declarations: [
     AppComponent,
@@ -106,6 +108,7 @@ import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-
     RefundComponent,
     BackButtonComponent,
     SaleSummaryComponent,
+    
   ],
   imports: [
     BrowserModule,
@@ -147,6 +150,8 @@ import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-
     HttpClientModule,
     NgApexchartsModule,
     InputGroupModule,
+    CalendarModule,
+    MenuModule, 
     InputGroupAddonModule,
     BrowserAnimationsModule,
   ],

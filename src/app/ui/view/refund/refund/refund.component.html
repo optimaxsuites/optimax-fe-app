@@ -1,31 +1,41 @@
-<div class="flex items-center w-full gap-4 justify-between" id="filter-bar">
+<div class="flex items-center w-full gap-4 justify-between px-8 py-8 bg-gray-100" id="filter-bar">
   <!-- Left Filters -->
-  <div class="flex items-center gap-4">
+  <div class="flex items-center gap-4 ">
     <!-- Start Date Input -->
-    <div class="date-filter border border-2 text-2xl border-gray-950 py-2 px-4 rounded-md">
-      <label for="dateRange">Select Date Range:</label>
-      <input type="date" [(ngModel)]="startDate" (change)="filterTable()" class="date-input">
-      <input type="date" [(ngModel)]="endDate" (change)="filterTable()" class="date-input">
+    <div >
+      <!-- <label for="dateRange">Select Date Range:</label> -->
+      <p-calendar 
+      [(ngModel)]="dateRange" 
+      selectionMode="range" 
+      (onSelect)="filterTable()" 
+      showIcon="true"
+      dateFormat="yy-mm-dd"
+      touchUI="true"  
+      class="w-full "
+      placeholder="Select Date Range"
+      >
+      
+    </p-calendar>
     </div>
 
     <!-- Weekday Selector -->
     <div>
       <select [(ngModel)]="selectedDay" (change)="filterTable()"
-        class="w-full border border-gray-300 text-2xl rounded-lg px-4 py-2 focus:ring-blue-400 focus:ring-2">
-        <option value="">All Days</option>
+        class="w-full border border-gray-300 text-xl rounded-lg px-5 py-3 focus:ring-blue-400 focus:ring-2">
+        <option value="" class>Filter By Days</option>
         <option *ngFor="let day of daysOfWeek" [value]="day">{{ day }}</option>
       </select>
     </div>
 
     <!-- Cashier Filter -->
-    <select [(ngModel)]="selectedCashier" (change)="filterTable()" class="border border-gray-300 text-2xl rounded-lg px-4 py-2">
-      <option value="">All Cashiers</option>
+    <select [(ngModel)]="selectedCashier" (change)="filterTable()" class="border border-gray-300 text-xl rounded-lg px-5 py-3">
+      <option value="">Filter By Cashiers</option>
       <option *ngFor="let cashier of cashierList" [value]="cashier">{{ cashier }}</option>
     </select>
 
     <!-- Status Filter -->
-    <select [(ngModel)]="selectedStatus" (change)="filterTable()" class="border border-gray-300 text-2xl rounded-lg px-4 py-2">
-      <option value="">All Status</option>
+    <select [(ngModel)]="selectedStatus" (change)="filterTable()" class="border border-gray-300 text-xl rounded-lg px-5 py-3">
+      <option value="">Filter By Status</option>
       <option value="Pending">Pending</option>
       <option value="Accepted">Accepted</option>
       <option value="Rejected">Rejected</option>
@@ -33,12 +43,23 @@
   </div>
 
   <!-- Search Bar (Now correctly positioned to the right) -->
-  <div class="relative w-1/3 flex justify-end">
+  <div class="w-1/3">
+    <div class="search-container">
+      <input type="input" 
+      class="Search-input" 
+      placeholder="Search..." 
+      [(ngModel)]="searchQuery" 
+      (ngModelChange)="filterTable()" />
+      <i class="fas fa-search"></i>
+    </div>
+    </div>
+</div>
+  <!-- <div class="relative w-1/3 flex justify-end">
     <input type="text" [(ngModel)]="searchQuery" (input)="filterTable()" placeholder="Search..."
       class="w-full  text-2xl px-4 py-2 pl-6 pr-10 border border-gray-300 rounded-full bg-gray-100 focus:outline-none">
     <i class="pi pi-search text-2xl absolute right-4 top-1.5 "></i>
   </div>
-</div>
+</div> -->
 
 
 <div class="transactions-table">
@@ -117,9 +138,8 @@
     </ng-template>
 
     <ng-template pTemplate="body" let-refund let-i >
-      <tr      
-      >
-        <td>{{ refund.orderId }}</td>
+      <tr >
+        <td > {{ refund.orderId }}</td>
         <td>{{ refund.cashier }}</td>
         <td>{{  refund.Amount_Requested.toFixed(2) }}</td>
         <td >{{ refund.reasonType }}</td>
@@ -141,41 +161,58 @@
       <td class="px-4">
         <!-- Ellipsis Button -->
     <div>
-        <i
+        <!-- <i
         class="pi pi-ellipsis-v table-item"
         (click)="op.toggle($event)"
-      ></i>
+      ></i> -->
 
          <!-- Dropdown Menu -->
          <!-- <div
          *ngIf="dropdownIndex === i"
          class="asolute bg-white shadow-lg rounded-md"
        > -->
-       <p-overlayPanel #op class="shadow-lg rounded-md">
+
+
+<!-- 
+       <p-toast />
+      <p-menu #menu [model]="items" [popup]="true" />
+      <p-button (onClick)="menu.toggle($event)" icon="pi pi-ellipsis-v"/>
+ -->
+ <p-menu #menu [model]="items" [popup]="true" appendTo="body" [style]="{ width: '80px' , fontSize: '14px'}"></p-menu>
+
+ <p-button 
+   (click)="openMenu($event, menu, refund)" 
+   icon="pi pi-ellipsis-v" 
+   class="p-button-text text-5xl"
+ />
+
+
+
+       <!-- <p-overlayPanel #op class="shadow-lg rounded-md">
         <ul class="py-2 text-gray-700 w-40">
           <li
-            class="flex items-center  text-2xl gap-2 px-4 py-2 hover:bg-gray-100 cursor-pointer"
+            class="flex items-center  text-xl gap-2 px-4 py-2 hover:bg-gray-100 cursor-pointer"
             (click)="viewRefund(refund); closeOverlay()"
           >
-            <i class="pi pi-eye  text-gray-600 text-2xl"></i>
+            <i class="pi pi-eye  text-gray-600 text-xl"></i>
             <span>View</span>
           </li>
           <li
-            class="flex items-center gap-2 text-2xl px-4 py-2 hover:bg-gray-100 cursor-pointer"
+            class="flex items-center gap-2 text-xl px-4 py-2 hover:bg-gray-100 cursor-pointer"
             (click)="acceptRefund(refund); closeOverlay()"
           >
-            <i class="pi pi-check-circle text-green-500 text-2xl"></i>
+            <i class="pi pi-check-circle text-green-500 text-xl"></i>
             <span>Accept</span>
           </li>
           <li
-            class="flex items-center gap-2 px-4 py-2 text-2xl  hover:bg-gray-100 cursor-pointer text-red-500"
+            class="flex items-center gap-2 px-4 py-2 text-xl  hover:bg-gray-100 cursor-pointer text-red-500"
             (click)="rejectRefund(refund);closeOverlay()"
           >
-            <i class="pi pi-times-circle text-red-500 text-2xl"></i>
+            <i class="pi pi-times-circle text-red-500 text-xl"></i>
             <span>Reject</span>
           </li>
         </ul>
-      </p-overlayPanel>
+      </p-overlayPanel> -->
 </div>
       </tr>
     </ng-template>

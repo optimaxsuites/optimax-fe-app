@@ -1,6 +1,7 @@
 import { Component, ViewChild } from '@angular/core';
-import { MessageService } from 'primeng/api';
+import { MenuItem, MessageService } from 'primeng/api';
 import { ChangeDetectorRef } from '@angular/core';
+import { Menu, MenuModule } from 'primeng/menu';
 
 import { OverlayPanel, OverlayPanelModule } from 'primeng/overlaypanel';
 
@@ -45,6 +46,8 @@ export class RefundComponent {
   selectedDay: string = '';
   daysOfWeek: string[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   isDatePickerOpen = false;
+  dateRange: Date[] = [];
+  items: any[] = [];
 
  
 
@@ -54,6 +57,29 @@ export class RefundComponent {
     this.filterTable();
   }
 
+  openMenu(event: Event, menu: Menu, refund: Refund) {
+    this.selectedRefund = refund; // Store the selected refund
+    this.items = [
+      { 
+        label: 'View', 
+        icon: 'pi pi-eye text-gray-600 text-xl', 
+        command: () => this.viewRefund(refund)
+      },
+      { 
+        label: 'Accept', 
+        icon: 'pi pi-check-circle text-green-500 text-xl', 
+        command: () => this.acceptRefund(refund)
+      },
+      { 
+        label: 'Reject', 
+        icon: 'pi pi-times-circle text-red-500 text-xl', 
+        command: () => this.rejectRefund(refund)
+      }
+    ];
+    menu.toggle(event); // Show menu
+  }
+
+  
  constructor(
 
    private messageService: MessageService,
@@ -118,6 +144,12 @@ filterTable() {
     );
   }
 
+  if (this.dateRange && this.dateRange.length === 2) {
+    this.startDate = this.dateRange[0];
+    this.endDate = this.dateRange[1];
+    
+    console.log("Filtering from", this.startDate, "to", this.endDate);
+  }
   // Apply cashier filter
   if (this.selectedCashier) {
     this.filteredRefundList = this.filteredRefundList.filter(refund => refund.cashier === this.selectedCashier);
