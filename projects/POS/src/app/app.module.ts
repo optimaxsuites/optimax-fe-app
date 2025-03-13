@@ -71,11 +71,14 @@ import { InformationComponent } from './ui/view/inventory/information/informatio
 import { InputGroupModule } from 'primeng/inputgroup';
 import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { SalesComponent } from './ui/view/sales/sales.component';
+import { ChartTableComponent } from './ui/view/report-dashboard/chart-table/chart-table.component';
+// import { ChartTableComponent } from './ui/view/report-dashboard/chart-table/chart-table.component';
 import { MessageService } from 'primeng/api';
 import { RefundComponent } from './ui/view/refund/refund/refund.component';
 import { SaleSummaryComponent } from './ui/view/sales/sale-summary/sale-summary.component';
 import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-button.component';
-import { ChartTableComponent } from './ui/view/report-dashboard/chart-table/chart-table.component';
+import { CalendarModule } from 'primeng/calendar';
+import { MenuModule } from 'primeng/menu';
 @NgModule({
   declarations: [
     AppComponent,
@@ -107,9 +110,9 @@ import { ChartTableComponent } from './ui/view/report-dashboard/chart-table/char
     SaleSummaryComponent,
   ],
   imports: [
-    // BrowserModule,
-    UserModule,
-    AppRoutingModule,
+    BrowserModule,
+    // UserModule,
+    // AppRoutingModule,
     CommonModule,
     AppRoutingModule,
     TableModule,
@@ -145,10 +148,11 @@ import { ChartTableComponent } from './ui/view/report-dashboard/chart-table/char
     NavTabComponent,
     HttpClientModule,
     NgApexchartsModule,
+    CalendarModule,
+    MenuModule,
     InputGroupModule,
     InputGroupAddonModule,
-    // BrowserAnimationsModule,
-   
+    BrowserAnimationsModule,
   ],
   providers: [
     {
@@ -162,7 +166,7 @@ import { ChartTableComponent } from './ui/view/report-dashboard/chart-table/char
     },
     JwtHelperService,
     provideHttpClient(withInterceptorsFromDi()),
-    MessageService
+    MessageService,
   ],
   bootstrap: [AppComponent],
 })
