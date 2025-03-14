@@ -79,6 +79,10 @@ import { SaleSummaryComponent } from './ui/view/sales/sale-summary/sale-summary.
 import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-button.component';
 import { CalendarModule } from 'primeng/calendar';
 import { MenuModule } from 'primeng/menu';
+import { SaleComponent } from './ui/view/sales/sale/sale.component';
+import { ChartModule } from 'primeng/chart';
+import { SaleSummariesComponent } from './ui/view/sales/sale-summaries/sale-summaries.component';
+import { DropdownModule } from 'primeng/dropdown';
 @NgModule({
   declarations: [
     AppComponent,
@@ -108,7 +112,8 @@ import { MenuModule } from 'primeng/menu';
     RefundComponent,
     BackButtonComponent,
     SaleSummaryComponent,
-    
+    SaleComponent,
+    SaleSummariesComponent
   ],
   imports: [
     // BrowserModule,
@@ -152,8 +157,10 @@ import { MenuModule } from 'primeng/menu';
     InputGroupModule,
     CalendarModule,
     MenuModule, 
+    ChartModule,
+    DropdownModule,
     InputGroupAddonModule,
-    BrowserAnimationsModule,
+    // BrowserAnimationsModule
   ],
   providers: [
     {

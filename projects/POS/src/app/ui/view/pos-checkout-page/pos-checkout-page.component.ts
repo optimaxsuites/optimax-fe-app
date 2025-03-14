@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 
 // import { UserComponent } from 'src/app/user.component';
@@ -17,6 +17,7 @@ import { IndustryDataService } from '../../service/industry-data.service';
   providers: [],
 })
 export class PosCheckoutPageComponent implements OnInit, Business {
+  scannedSKU: string = '';
   register: string = 'open';
   orderName: string = '';
   itemUpdateModal: boolean = false;
@@ -85,6 +86,28 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     }
     this.getProducts();
     this.loadCategory();
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  handleKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Enter' && this.scannedSKU.trim() !== '') {
+      this.processScannedSKU();
+      this.scannedSKU = ''; // Reset input
+    } else {
+      this.scannedSKU += event.key; // Append keypress
+    }
+  }
+
+  processScannedSKU() {
+    const product = this.categorizedProducts.find(
+      (item) => item.sku === this.scannedSKU.trim()
+    );
+
+    if (product) {
+      this.addToCart(product);
+    } else {
+      alert('Product not found');
+    }
   }
   loadOrder(order: any) {
     console.log(order);
