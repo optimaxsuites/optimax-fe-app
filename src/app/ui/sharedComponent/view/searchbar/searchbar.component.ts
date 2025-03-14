@@ -19,7 +19,7 @@ export class SearchbarComponent {
   constructor() {
     // Initialize Fuse with an empty list. This will be updated later.
     this.fuse = new Fuse([], {
-      keys: [{ name: 'name', weight: 1.5 }, 'description', 'category'],
+      keys: [   { name: 'sku', weight: 2 }, { name: 'name', weight: 1.5 }, 'description', 'category'],
       includeScore: true,
       threshold: 0.333, // Lower threshold for less fuzzy matching
     });
@@ -32,9 +32,18 @@ export class SearchbarComponent {
 
   searchProducts(searchValue: string) {
     if (!searchValue.trim()) {
-      this.listToUpdate = this.listToSearch; // If search is empty, show all items
+      this.listToUpdate = this.listToSearch; 
       this.listToUpdateChange.emit(this.listToUpdate);
       return;
+    }
+
+    if (/^\d+$/.test(searchValue)) {
+      const exactMatch = this.listToSearch.find((item: any )=> item.sku === searchValue);
+      if (exactMatch) {
+        this.listToUpdate = [exactMatch];
+        this.listToUpdateChange.emit(this.listToUpdate);
+        return;
+      }
     }
 
     const searchResults = this.fuse.search(searchValue);
