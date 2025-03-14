@@ -108,6 +108,7 @@ import { MenuModule } from 'primeng/menu';
     RefundComponent,
     BackButtonComponent,
     SaleSummaryComponent,
+    
   ],
   imports: [
     // BrowserModule,
@@ -148,11 +149,11 @@ import { MenuModule } from 'primeng/menu';
     NavTabComponent,
     HttpClientModule,
     NgApexchartsModule,
-    CalendarModule,
-    MenuModule,
     InputGroupModule,
+    CalendarModule,
+    MenuModule, 
     InputGroupAddonModule,
-    // BrowserAnimationsModule,
+    BrowserAnimationsModule,
   ],
   providers: [
     {

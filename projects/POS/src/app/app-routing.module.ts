@@ -15,8 +15,9 @@ import { EditInventoryComponent } from './ui/view/inventory/edit-inventory/edit-
 import { InformationComponent } from './ui/view/inventory/information/information.component';
 import { ProductsComponent } from './ui/view/products/products.component';
 import { ReportDashboardComponent } from './ui/view/report-dashboard/report-dashboard.component';
-import { SalesComponent } from './ui/view/sales/sales.component';
+
 import { RefundComponent } from './ui/view/refund/refund/refund.component';
+import { SaleComponent } from './ui/view/sales/sale/sale.component';
 
 const routes: Routes = [
   {
@@ -34,7 +35,7 @@ const routes: Routes = [
   },
   {
     path: 'admin/pos/sale/:uuid',
-    component: SalesComponent,
+    component: SaleComponent,
   },
   {
     path: 'admin/pos/report/:uuid',
