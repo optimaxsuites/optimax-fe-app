@@ -36,21 +36,45 @@ export class OrderDetailComponent {
   }
 
 printReciept() {
-  const printWindow = window.open('', '', 'height=500,width=800');
-  
-  if (printWindow) {
   const content = document.getElementById('receipt-container')?.outerHTML;
-
+  
   if (content) {
-    printWindow.document.write('<html><head><title>Receipt</title>');
-    printWindow.document.write('</head><body>');
-    printWindow.document.write(content);  
-    printWindow.document.write('</body></html>');
-    printWindow.document.close(); 
-    printWindow.print();  
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(`
+        <html>
+        <head>
+          <title>Receipt</title>
+          <style>
+            @media print {
+              @page { margin: 0; }
+              body { margin: 0; padding: 0; }
+              #receipt-container { width: 100%; }
+            }
+          </style>
+        </head>
+        <body>
+          ${content}
+        </body>
+        </html>
+      `);
+      doc.close();
+
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => document.body.removeChild(iframe), 1000);
+    }
   }
 }
-}
+
 
 ngAfterViewInit() {
   JsBarcode("#barcode", this.receiptID, {

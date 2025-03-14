@@ -5,6 +5,7 @@ import { MessageService } from 'primeng/api';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
 import { RandomTokenService } from '../../sharedComponent/service/random-token/random-token.service';
 import { NavigationLinks } from '../../models/enums';
+import JsBarcode from 'jsbarcode';
 
 @Component({
   selector: 'app-cash-payment',
@@ -71,8 +72,9 @@ export class CashPaymentComponent implements OnInit {
       this.saveCurrentCartItem();
       const order: any[] = [];
       const checkoutLink = this.navigationLink.getLink('checkoutLink');
+      this.router.navigate([checkoutLink]
+      )
       this.printReceipt()
-      this.router.navigate([checkoutLink], { state: { order } });
     }
   }
 
@@ -108,21 +110,56 @@ export class CashPaymentComponent implements OnInit {
     return Math.round(this.cart?.total * 100) / 100;
   }
 
-  printReceipt() {
-    const printWindow = window.open('', '', 'height=500,width=800');
-    
-    if (printWindow) {
+   printReceipt() {
     const content = document.getElementById('receipt-container')?.outerHTML;
-  
-    if (content) {
-      printWindow.document.write('<html><head><title>Receipt</title>');
-      printWindow.document.write('</head><body>');
-      printWindow.document.write(content);  
-      printWindow.document.write('</body></html>');
-      printWindow.document.close(); 
-      printWindow.print();  
+
+  if (content) {
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(`
+        <html>
+        <head>
+          <title>Receipt</title>
+          <style>
+            @media print {
+              @page { margin: 0; }
+              body { margin: 0; padding: 0; }
+              #receipt-container { width: 100%; }
+            }
+          </style>
+        </head>
+        <body>
+          ${content}
+        </body>
+        </html>
+      `);
+      doc.close();
+
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => document.body.removeChild(iframe), 1000);
     }
   }
   }
+
+  ngAfterViewInit() {
+    JsBarcode("#barcode", this.receiptID, {
+      format: "CODE128",
+      displayValue: false, 
+      width: 2,
+      height: 40
+    });
+  }
 }
+
+
+
 
