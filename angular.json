@@ -28,7 +28,8 @@
             "allowedCommonJsDependencies": [
               "apexcharts",
               "@canvasjs/angular-charts",
-              "@canvasjs/charts"
+              "@canvasjs/charts",
+              "zone.js"
             ],
             "outputPath": "dist/erp-fe",
             "index": "src/index.html",
