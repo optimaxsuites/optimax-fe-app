@@ -44,7 +44,7 @@
   </p-toolbar>
 
     <!-- //****************************************************************The Table starts here -->
-  <p-table [value]="products" [paginator]="true" dataKey="id" responsiveLayout="stack" [breakpoint]="'960px'" styleClass="p-datatable-striped" [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '650px' }" [rows]="15">
+  <p-table [value]="ingredients" [paginator]="true" dataKey="id" responsiveLayout="stack" [breakpoint]="'960px'" styleClass="p-datatable-striped" [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '650px' }" [rows]="15">
     <ng-template pTemplate="header" let-columns>
       <tr>
         <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
@@ -57,7 +57,44 @@
         <th class="table-item">Action</th>
       </tr>
     </ng-template>
+    
+
     <ng-template pTemplate="body" let-item let-i="rowIndex">
+      <tr (click)="openEditInventory(item, 'child')">
+        <td><p-tableCheckbox [value]="item" class="custom-checkbox" /></td>
+        <td class="table-item">{{ item.sku }}</td>
+        <td class="table-item">{{ item.code }}</td>
+        <td class="table-item">{{ item.name }}</td>
+        <td class="table-item">{{ item.effectivePrice }}</td>
+        <td class="table-item" [ngClass]="getQuantityClass(item.effectiveQuantity)" pTooltip="{{ getTooltipText(item) }}" tooltipPosition="top">
+          <div class="quantity-box">
+            <span class="quantity-value">{{ item.effectiveQuantity }}</span>
+            <span class="quantity-status">{{ item.effectiveQuantity >= 10 ? 'Available' : 'Low Stock' }}</span>
+          </div>
+        </td>
+        <td class="table-item">{{ item.productCategory?.name }}</td>
+        <td class="actions table-item">
+          <div class="dropdown">
+            <span (click)="toggleDropdown2(item, $event)">
+              <i class="material-icons">more_vert</i>
+            </span>
+            <ul class="absolute bg-white border shadow-lg rounded-lg py-2 z-50" *ngIf="item.showMenu">
+              <li (click)="openViewProduct(item); closeDropdown(item)" class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                <i class="pi pi-eye pr-2 text-2xl"></i> View History
+              </li>
+              <li (click)="openEditInventory(item, 'child'); closeDropdown(item)" class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                <i class="pi pi-pen-to-square pr-2 text-2xl"></i> Add Inventory
+              </li>
+            </ul>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+
+
+    
+    <!-- <ng-template pTemplate="body" let-item let-i="rowIndex">
       <tr (click)="openEditInventory(item, 'child')">
         <td><p-tableCheckbox [value]="item" class="custom-checkbox" /></td>
         <td class="table-item">{{ item.sku }}</td>
@@ -90,7 +127,7 @@
           
         </td>
         </tr>
-      </ng-template>
+      </ng-template> -->
     </p-table>
   </div>
 </div>
