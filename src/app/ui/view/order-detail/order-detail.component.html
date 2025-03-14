@@ -89,22 +89,41 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr
-                        *ngFor="let item of navigationState.order.cart"
-                        style="cursor: pointer; text-align: center"
-                      >
-                        <!-- {{ item?.timestamp | date: 'shortTime' }} -->
-                        <td>{{ item?.name }}</td>
-                        <td>
-                          <p class="mb-0 capitalize font-bold text-yellow-600">
-                            {{ item.count }}
-                          </p>
-                        </td>
-                        <td class="capitalize">{{ item.initialPrice }}</td>
-                        <td>₦{{ item.discount }}</td>
-                        <td>₦{{ item.cartPriceTotal }}</td>
-                      </tr>
+                      <ng-container *ngFor="let item of navigationState.order.cart" >
+                        <ng-container *ngIf="item.selectedVariants.length > 0; else noVariantTemplate" >
+                             <ng-container *ngFor="let variant of item.selectedVariants; let i = index" class="flex flex-col">
+                              <tr style=" text-align: center">
+                                <td>{{ item.name }} - {{ variant.name }}</td>
+                                <td>
+                                  <p class="mb-0 capitalize font-bold text-yellow-600">
+                                    {{ variant.selectedQuantity }}
+                                  </p>
+                                </td>
+                                <td class="capitalize">{{ variant.price }}</td>
+                                <td>₦0</td>
+                                <td>₦{{ variant.price * (variant.selectedQuantity || 0) }}</td>
+                              </tr>
+                            </ng-container>
+
+                        </ng-container>
+                    
+                        <ng-template #noVariantTemplate>
+                          <tr style=" text-align: center">
+
+                          <td>{{ item?.name }}</td>
+                          <td>
+                            <p class="mb-0 capitalize font-bold text-yellow-600">
+                              {{ item.count }}
+                            </p>
+                          </td>
+                          <td class="capitalize">{{ item.initialPrice }}</td>
+                          <td>₦{{ item.discount }}</td>
+                          <td>₦{{ item.cartPriceTotal }}</td>
+                          </tr>
+                        </ng-template>
+                      </ng-container>
                     </tbody>
+                    
                   </table>
                 </div>
               </div>
@@ -115,10 +134,11 @@
 
       <div class="modalBtn h-full flex-end">
         <button
+        (click)="printReciept()"
           class="btn create-invoice-btn"
           *ngIf="navigationState.order.state == 'Paid'"
         >
-          Print Reciept
+          Print Receipt
         </button>
         <button
           class="btn create-invoice-btn"
@@ -129,5 +149,89 @@
         </button>
       </div>
     </div>
+  </div>
+</div>
+
+
+
+<div id="receipt-container" style=" font-family: 'Courier New', monospace; font-size: 10px; text-align: left; padding: 10px;" class='hidden'>
+  <div style="text-align: center;">
+    <strong style="font-size: 22px;">SHOP NAME</strong><br>
+    Address: Lorem Ipsum, 23-10 <br>
+    Telephone: 11223344
+  </div>
+  <hr style="border-top: 1px dashed black; margin: 5px 0;">
+  <div style="text-align: left; margin-bottom: 10px;">
+    <div >Sold to: Walk-in Customer</div>
+    <div >Date & Time: {{ navigationState.order.timestamp }}</div>
+    <div >Cashier: Ayaobasheba</div>
+    <div >Receipt ID: {{receiptID}}</div>
+  </div>
+  <hr style="border-top: 1px dashed black; margin: 5px 0;">
+
+  <table style="width: 100%; border-collapse: collapse;">
+  <hr style="border-top: 1px dashed black; margin: 5px 0;">
+
+    <thead>
+      <tr style=" font-size: 10px;">
+        <th style="text-align: left;">Name</th>
+        <th style="text-align: center;">Qty</th>
+        <th style="text-align: center;">Price</th>
+        <th style="text-align: center;">Total</th>
+      </tr>
+
+    </thead>
+
+    <tbody>
+      <ng-container *ngFor="let item of navigationState.order.cart">
+        <ng-container *ngIf="item.selectedVariants.length > 0; else noVariantTemplate">
+          <ng-container *ngFor="let variant of item.selectedVariants;">
+            <tr style="text-align: center; font-size: 10px;">
+              <td style="text-align: left;">{{ item.name }} - {{ variant.name }}</td>
+              <td style="text-align: center ;">{{ variant.selectedQuantity }}</td>
+              <td style="text-align: center;">{{ variant.price  }}</td>
+              <td style="text-align: center;">{{ variant.price * (variant.selectedQuantity || 0  ) }}</td>
+            </tr>
+          </ng-container>
+        </ng-container>
+        <ng-template #noVariantTemplate>
+          <tr style="font-size: 10px;">
+            <td style="text-align: left;">{{ item?.name }}</td>
+            <td >{{ item.count }}</td>
+            <td>{{ item.initialPrice   }}</td>
+            <td>{{ item.cartPriceTotal   }}</td>
+          </tr>
+        </ng-template>
+      </ng-container>
+    </tbody>
+  </table>
+
+  <hr style="border-top: 1px dashed black; margin: 5px 0;">
+
+  <div style="text-align: right;">
+    <div style="display: flex; justify-content: space-between;">
+      <span>Subtotal</span>
+      <span>{{ navigationState.order.subtotal | currency: '₦' }}</span>
+    </div>
+    <div style="display: flex; justify-content: space-between;">
+      <span>Tax</span>
+      <span>{{ navigationState.order.tax | currency: '₦' }}</span>
+    </div>
+    <div *ngIf="navigationState.order.discount > 0" style="display: flex; justify-content: space-between;">
+      <span>Discount</span>
+      <span>{{ navigationState.order.discount | currency: '₦' }}</span>
+    </div>
+    <hr *ngIf="navigationState.order.discount > 0">
+    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px;">
+      <span>Total</span>
+      <span>{{ navigationState.order.total | currency: '₦' }}</span>
+    </div>
+  </div>
+
+  <hr style="border-top: 1px dashed black; margin: 5px 0;">
+  <div style="text-align: center;"><strong>THANK YOU!</strong></div>
+
+  <div style="text-align: center; width: 100%;">
+    <svg id="barcode"></svg>
   </div>
 </div>

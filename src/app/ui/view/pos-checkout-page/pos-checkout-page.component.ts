@@ -7,7 +7,7 @@ import { PosServiceService } from '../../service/pos-service.service';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
 import { RandomTokenService } from '../../sharedComponent/service/random-token/random-token.service';
 import { BusinessType, ProductCategories } from '../../models/enums';
-import { Business, Cart, ProductData } from '../../models/interface';
+import { Business, Cart, ProductData, VariantDTO } from '../../models/interface';
 import { IndustryDataService } from '../../service/industry-data.service';
 
 @Component({
@@ -100,25 +100,43 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     const option = this.stateOptions.find((opt) => opt.value === value);
     return option ? option.label : '';
   }
-
-  addToCart(product: (typeof this.products)[0], chosenVariant?: string) {
-    let existingItem = this.cartItems.find(
-      (item) => item.name === product.name
-    );
-    if (existingItem) {
-      existingItem.cartPriceTotal = (
-        parseInt(existingItem.cartPriceTotal) + parseInt(product.effectivePrice)
-      ).toString();
-      existingItem.count = existingItem.count + 1;
+  addToCart(product: (typeof this.products)[0], chosenVariant?: VariantDTO) {
+ 
+  
+    if (!this.cartItems) this.cartItems = [];
+  
+    let existingItem = this.cartItems.find((item) => item.name === product.name);
+  
+    if (chosenVariant) {
+      if (!existingItem) {
+        existingItem = { ...product, selectedVariants: [] };
+        this.cartItems.push(existingItem);
+      }
+  
+      let existingVariant = existingItem.selectedVariants.find(v => v.id === chosenVariant.id);
+  
+      if (existingVariant) {
+        existingVariant.selectedQuantity = (existingVariant.selectedQuantity || 0) + 1;
+      } else {
+        existingItem.selectedVariants.push({ ...chosenVariant, selectedQuantity: 1 });
+      }
+  
+      // existingItem.cartPriceTotal = existingItem.selectedVariants.reduce((acc, v) => acc + (v.price * v.selectedQuantity), 0);
     } else {
-      if (chosenVariant) product.selectedVariant = chosenVariant;
-      this.cartItems.push(product);
-      product.count = product.count + 1;
+      if (existingItem) {
+        existingItem.count += 1;
+        existingItem.cartPriceTotal = (parseInt(existingItem.cartPriceTotal) + parseInt(product.effectivePrice)).toString();
+      } else {
+        product.count = 1;
+        this.cartItems.push({ ...product, selectedVariants: [] });
+        product.cartPriceTotal = product.effectivePrice.toString();
+      }
     }
-    this.calculateProductDiscount();
-
+  
+    // this.calculateProductDiscount();
     this.calculateTotals();
     this.calculateDiscount();
+  
     console.log(this.cartItems);
   }
 
@@ -152,10 +170,17 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   }
 
   calculateTotals() {
-    this.subtotal = this.cartItems.reduce(
-      (acc, item) => acc + parseInt(item.cartPriceTotal),
-      0
-    );
+    console.log(this.cartItems)
+    this.subtotal = this.cartItems.reduce((acc, item) => {
+      if (item.selectedVariants && item.selectedVariants.length > 0) {
+        return acc + item.selectedVariants.reduce(
+          (variantAcc: number, variant: any) => variantAcc + (variant.selectedQuantity * variant.price), 
+          0
+        );
+      } else {
+        return acc + Number(item.cartPriceTotal); 
+      }
+    }, 0);
     const productDiscount = this.cartItems.reduce(
       (acc, item) => acc + (item.discountedPrice || 0),
       0
@@ -165,13 +190,12 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     this.total = this.subtotal + this.tax - (this.discount + productDiscount);
   }
 
-  handleCountChange(newCount: number, index: number) {
-    console.log(this.cartItems);
+  handleCountChange(newCount: number, index: number, variant?: any) {
     this.cartItems[index].cartPriceTotal = (
       parseInt(this.cartItems[index].effectivePrice) * newCount
     ).toString();
     this.calculateDiscount();
-    this.calculateProductDiscount();
+    // this.calculateProductDiscount();
     this.calculateTotals();
   }
 

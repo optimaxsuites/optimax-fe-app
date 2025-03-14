@@ -1,0 +1,324 @@
+<div class="sale-summaries-container">
+  <!-- Header with title and action buttons -->
+  <p-toolbar styleClass="mb-4">
+    <ng-template pTemplate="left">
+      <div class="flex items-center">
+        <span class="text-2xl font-bold"> Sales Summary</span>
+      </div>
+    </ng-template>
+    <ng-template pTemplate="right">
+      <div class="flex gap-2">
+        <app-button
+          (click)="exportData()"
+          text="Export"
+          icon="pi pi-download"
+          class="btn-navigate"
+        ></app-button>
+        <app-button
+          (click)="printReport()"
+          text="Print"
+          icon="pi pi-print"
+          class="btn-navigate"
+        ></app-button>
+      </div>
+    </ng-template>
+  </p-toolbar>
+
+  <!-- Period selector - simplified -->
+  <div class="period-selector bg-white rounded-lg p-4 shadow-sm mb-6">
+    <form
+      [formGroup]="filterForm"
+      class="grid grid-cols-1 md:grid-cols-2 gap-4"
+    >
+      <div class="form-group">
+        <label for="period" class="block mb-2 font-medium text-gray-700"
+          >Time Period</label
+        >
+        <p-dropdown
+          id="period"
+          [options]="periods"
+          formControlName="period"
+          optionLabel="label"
+          optionValue="value"
+          styleClass="w-full"
+        ></p-dropdown>
+      </div>
+    </form>
+  </div>
+
+  <!-- Main KPI Cards - reduced to most important metrics -->
+  <div
+    class="kpi-cards grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"
+  >
+    <!-- Total Sales Card -->
+    <div class="kpi-card bg-white rounded-lg shadow-sm overflow-hidden">
+      <div class="card-header bg-blue-50 p-4 flex justify-between items-center">
+        <div>
+          <h3 class="text-lg font-bold text-gray-800">Total Sales</h3>
+        </div>
+        <div class="icon-container bg-blue-100 text-blue-600 p-2 rounded-full">
+          ₦
+        </div>
+      </div>
+      <div class="card-body p-4">
+        <div class="text-2xl font-extrabold text-blue-700">
+          ₦{{ formatCurrency(totalSales) }}
+        </div>
+        <div class="flex items-center mt-2">
+          <span
+            [ngClass]="{
+              'text-green-600': comparisonData.sales.percentChange > 0,
+              'text-red-600': comparisonData.sales.percentChange < 0
+            }"
+            class="text-sm font-semibold flex items-center"
+          >
+            <i
+              [ngClass]="{
+                'pi-arrow-up': comparisonData.sales.percentChange > 0,
+                'pi-arrow-down': comparisonData.sales.percentChange < 0
+              }"
+              class="pi mr-1"
+            ></i>
+            {{ formatPercent(comparisonData.sales.percentChange) }}
+          </span>
+          <span class="text-sm text-gray-500 ml-2">vs previous</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gross Profit Card -->
+    <div class="kpi-card bg-white rounded-lg shadow-sm overflow-hidden">
+      <div
+        class="card-header bg-green-50 p-4 flex justify-between items-center"
+      >
+        <div>
+          <h3 class="text-lg font-bold text-gray-800">Profit</h3>
+        </div>
+        <div
+          class="icon-container bg-green-100 text-green-600 p-2 rounded-full"
+        >
+          <i class="pi pi-chart-line text-xl"></i>
+        </div>
+      </div>
+      <div class="card-body p-4">
+        <div class="text-2xl font-extrabold text-green-600">
+          ₦{{ formatCurrency(grossProfit) }}
+        </div>
+        <div class="flex items-center mt-2">
+          <span
+            [ngClass]="{
+              'text-green-600': comparisonData.profit.percentChange > 0,
+              'text-red-600': comparisonData.profit.percentChange < 0
+            }"
+            class="text-sm font-semibold flex items-center"
+          >
+            <i
+              [ngClass]="{
+                'pi-arrow-up': comparisonData.profit.percentChange > 0,
+                'pi-arrow-down': comparisonData.profit.percentChange < 0
+              }"
+              class="pi mr-1"
+            ></i>
+            {{ formatPercent(comparisonData.profit.percentChange) }}
+          </span>
+          <span class="text-sm text-gray-500 ml-2">vs previous</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Items Sold Card -->
+    <div class="kpi-card bg-white rounded-lg shadow-sm overflow-hidden">
+      <div
+        class="card-header bg-indigo-50 p-4 flex justify-between items-center"
+      >
+        <div>
+          <h3 class="text-lg font-bold text-gray-800">Items Sold</h3>
+        </div>
+        <div
+          class="icon-container bg-indigo-100 text-indigo-600 p-2 rounded-full"
+        >
+          <i class="pi pi-shopping-bag text-xl"></i>
+        </div>
+      </div>
+      <div class="card-body p-4">
+        <div class="text-2xl font-extrabold text-indigo-600">
+          {{ totalGoodsSold }}
+        </div>
+        <div class="flex items-center mt-2">
+          <span
+            [ngClass]="{
+              'text-green-600': comparisonData.goods.percentChange > 0,
+              'text-red-600': comparisonData.goods.percentChange < 0
+            }"
+            class="text-sm font-semibold flex items-center"
+          >
+            <i
+              [ngClass]="{
+                'pi-arrow-up': comparisonData.goods.percentChange > 0,
+                'pi-arrow-down': comparisonData.goods.percentChange < 0
+              }"
+              class="pi mr-1"
+            ></i>
+            {{ formatPercent(comparisonData.goods.percentChange) }}
+          </span>
+          <span class="text-sm text-gray-500 ml-2">vs previous</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transactions Card -->
+    <div class="kpi-card bg-white rounded-lg shadow-sm overflow-hidden">
+      <div
+        class="card-header bg-amber-50 p-4 flex justify-between items-center"
+      >
+        <div>
+          <h3 class="text-lg font-bold text-gray-800">Transactions</h3>
+        </div>
+        <div
+          class="icon-container bg-amber-100 text-amber-600 p-2 rounded-full"
+        >
+          <i class="pi pi-credit-card text-xl"></i>
+        </div>
+      </div>
+      <div class="card-body p-4">
+        <div class="text-2xl font-extrabold text-amber-600">
+          {{ totalTransactions }}
+        </div>
+        <div class="flex items-center mt-2">
+          <span
+            [ngClass]="{
+              'text-green-600': comparisonData.transactions.percentChange > 0,
+              'text-red-600': comparisonData.transactions.percentChange < 0
+            }"
+            class="text-sm font-semibold flex items-center"
+          >
+            <i
+              [ngClass]="{
+                'pi-arrow-up': comparisonData.transactions.percentChange > 0,
+                'pi-arrow-down': comparisonData.transactions.percentChange < 0
+              }"
+              class="pi mr-1"
+            ></i>
+            {{ formatPercent(comparisonData.transactions.percentChange) }}
+          </span>
+          <span class="text-sm text-gray-500 ml-2">vs previous</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-section grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+    <!-- Sales Trend Chart - Reduced Width -->
+    <div class="trend-chart bg-white rounded-lg p-8 shadow-sm lg:col-span-6">
+      <h2 class="text-lg font-semibold text-gray-800 mb-4">
+        Sales & Profit Trend
+      </h2>
+      <div
+        class="chart-container h-150"
+        style="position: relative; height: 320px"
+      >
+        <p-chart
+          type="line"
+          [data]="salesTrendData"
+          [options]="{
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'top'
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }"
+        ></p-chart>
+      </div>
+    </div>
+
+    <div class="category-chart bg-white rounded-lg p-4 shadow-md lg:col-span-6">
+      <h2 class="text-lg font-semibold text-gray-800 mb-3">
+        Category Breakdown
+      </h2>
+      <div style="position: relative; height: 320px">
+        <p-chart
+          type="doughnut"
+          [data]="categoryPerformanceData"
+          [options]="categoryChartOptions"
+        ></p-chart>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Products - simplified for POS -->
+  <div class="top-products bg-white rounded-lg p-4 shadow-sm mb-6">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">
+      Top Selling Products
+    </h2>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th
+              scope="col"
+              class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Product
+            </th>
+            <th
+              scope="col"
+              class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Category
+            </th>
+            <th
+              scope="col"
+              class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Qty
+            </th>
+            <th
+              scope="col"
+              class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Sales
+            </th>
+            <th
+              scope="col"
+              class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Profit
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr *ngFor="let product of topProducts" class="hover:bg-gray-50">
+            <td class="px-4 py-3 whitespace-nowrap">
+              <div class="font-medium text-gray-900">{{ product.name }}</div>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <div class="text-sm text-gray-500">{{ product.category }}</div>
+            </td>
+            <td
+              class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium"
+            >
+              {{ Math.round(product.quantity) }}
+            </td>
+            <td
+              class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium"
+            >
+              ₦{{ formatCurrency(product.sales) }}
+            </td>
+            <td
+              class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium"
+            >
+              ₦{{ formatCurrency(product.profit) }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -1,5 +1,9 @@
 th{
    background-color: var(--blue-green);
+   @apply text-center
+}
+.receipt-header {
+ @apply text-center
 }
 
 .modalBtn {
@@ -19,3 +23,13 @@ th{
     border-radius: 10px;
    
   }
+
+  @media print {
+    
+    @page {
+      size: auto;
+      margin: 0;
+    }
+  
+  }
+  

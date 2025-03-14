@@ -1,3 +1,4 @@
+import { ChartModule } from 'primeng/chart';
 import { NgModule, viewChild } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { AppRoutingModule } from './app-routing.module';
@@ -77,8 +78,14 @@ import { MessageService } from 'primeng/api';
 import { RefundComponent } from './ui/view/refund/refund/refund.component';
 import { SaleSummaryComponent } from './ui/view/sales/sale-summary/sale-summary.component';
 import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-button.component';
+
+import { SaleComponent } from './ui/view/sales/sale/sale.component';
+import { SaleSummariesComponent } from './ui/view/sales/sale-summaries/sale-summaries.component';
+import { DropdownModule } from 'primeng/dropdown';
+
 import { CalendarModule } from 'primeng/calendar';
 import { MenuModule } from 'primeng/menu';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -108,10 +115,11 @@ import { MenuModule } from 'primeng/menu';
     RefundComponent,
     BackButtonComponent,
     SaleSummaryComponent,
-    
+    SaleComponent,
+    SaleSummariesComponent,
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
     // UserModule,
     // AppRoutingModule,
     CommonModule,
@@ -149,11 +157,16 @@ import { MenuModule } from 'primeng/menu';
     NavTabComponent,
     HttpClientModule,
     NgApexchartsModule,
-    InputGroupModule,
     CalendarModule,
-    MenuModule, 
+    MenuModule,
+    InputGroupModule,
     InputGroupAddonModule,
-    BrowserAnimationsModule,
+
+    ChartModule,
+    DropdownModule,
+
+    // BrowserAnimationsModule,
+
   ],
   providers: [
     {

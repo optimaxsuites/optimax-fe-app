@@ -83,7 +83,7 @@
           >Total Amount:</span
         >
         <span class="text-blue-700 font-bold text-2xl"
-          >${{ formatCurrency(selectedTransaction?.amount) }}</span
+          >₦{{ formatCurrency(selectedTransaction?.amount) }}</span
         >
       </div>
     </div>
@@ -121,9 +121,9 @@
             <td>{{ item.id }}</td>
             <td>{{ item.name }}</td>
             <td>{{ item.quantity }}</td>
-            <td>${{ formatCurrency(item.price) }}</td>
+            <td>₦{{ formatCurrency(item.price) }}</td>
             <td>{{ item.discount }}%</td>
-            <td>${{ formatCurrency(calculateItemTotal(item)) }}</td>
+            <td>₦{{ formatCurrency(calculateItemTotal(item)) }}</td>
           </tr>
         </ng-template>
 
@@ -131,7 +131,7 @@
           <tr>
             <td colspan="4" class="text-right font-medium">Subtotal:</td>
             <td colspan="2" class="text-right font-medium">
-              ${{ formatCurrency(calculateSubtotal()) }}
+              ₦{{ formatCurrency(calculateSubtotal()) }}
             </td>
           </tr>
           <tr>
@@ -139,7 +139,7 @@
               Tax ({{ taxRate }}%):
             </td>
             <td colspan="2" class="text-right font-medium">
-              ${{ formatCurrency(calculateTax()) }}
+              ₦{{ formatCurrency(calculateTax()) }}
             </td>
           </tr>
           <tr>
@@ -150,7 +150,7 @@
               colspan="2"
               class="text-right font-extrabold text-2xl text-blue-700"
             >
-              ${{ formatCurrency(selectedTransaction?.amount) }}
+              ₦{{ formatCurrency(selectedTransaction?.amount) }}
             </td>
           </tr>
         </ng-template>

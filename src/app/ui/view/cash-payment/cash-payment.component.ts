@@ -5,6 +5,7 @@ import { MessageService } from 'primeng/api';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
 import { RandomTokenService } from '../../sharedComponent/service/random-token/random-token.service';
 import { NavigationLinks } from '../../models/enums';
+import JsBarcode from 'jsbarcode';
 
 @Component({
   selector: 'app-cash-payment',
@@ -14,12 +15,14 @@ import { NavigationLinks } from '../../models/enums';
 })
 export class CashPaymentComponent implements OnInit {
   navigationState: NavigationState;
-  cart: Cart = {} as any; // It's going to be filled in ngOnInit
+  cart: Cart = {} as any; 
   priceOptions: any[] = [];
   priceValue = 0.0;
   orders: any;
   changeOffered: number = 0.0;
   changeOfferedModal: boolean = false;
+  receiptID: string = Math.floor(100000 + Math.random() * 900000).toString(); 
+
   constructor(
     private router: Router,
     public navigationLink: NavigationLinksService,
@@ -32,6 +35,7 @@ export class CashPaymentComponent implements OnInit {
       const savedState = localStorage.getItem('navigationState');
       if (savedState) {
         this.navigationState = JSON.parse(savedState);
+
       }
     } else {
       localStorage.setItem(
@@ -40,10 +44,11 @@ export class CashPaymentComponent implements OnInit {
       );
     }
 
-    this.initializePriceOptions();
   }
   ngOnInit(): void {
     this.cart = this.navigationState?.cart;
+    this.initializePriceOptions();
+
   }
 
   initializePriceOptions() {
@@ -67,7 +72,9 @@ export class CashPaymentComponent implements OnInit {
       this.saveCurrentCartItem();
       const order: any[] = [];
       const checkoutLink = this.navigationLink.getLink('checkoutLink');
-      this.router.navigate([checkoutLink], { state: { order } });
+      this.router.navigate([checkoutLink]
+      )
+      this.printReceipt()
     }
   }
 
@@ -102,4 +109,55 @@ export class CashPaymentComponent implements OnInit {
   get approximateCartTotal() {
     return Math.round(this.cart?.total * 100) / 100;
   }
+
+   printReceipt() {
+    const content = document.getElementById('receipt-container')?.outerHTML;
+
+    if (content) {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'absolute';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = 'none';
+      document.body.appendChild(iframe);
+  
+      const doc = iframe.contentWindow?.document;
+      if (doc) {
+        doc.open();
+        doc.write(`
+          <html>
+          <head>
+            <title>Receipt</title>
+            <style>
+              @media print {
+                @page { margin: 0; }
+                body { margin: 0; font-size: 14px; }
+                #receipt-container { width: 100%; }
+              }
+            </style>
+          </head>
+          <body onload="window.print();">
+            ${content}
+          </body>
+          </html>
+        `);
+        doc.close();
+      }
+  
+      setTimeout(() => document.body.removeChild(iframe), 2000);
+    }
+  }
+
+  ngAfterViewInit() {
+    JsBarcode("#barcode", this.receiptID, {
+      format: "CODE128",
+      displayValue: false, 
+      width: 2,
+      height: 40
+    });
+  }
 }
+
+
+
+

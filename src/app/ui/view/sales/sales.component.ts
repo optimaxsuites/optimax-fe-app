@@ -7,7 +7,6 @@ import { FormBuilder, FormGroup } from '@angular/forms';
   styleUrls: ['./sales.component.scss'],
 })
 export class SalesComponent implements OnInit {
-  [x: string]: any;
   filterForm: FormGroup;
   cashiers: string[] = ['All', 'John', 'Ben', 'Winifred', 'Conrad'];
   selectedCashier: string | null = null;
@@ -217,8 +216,6 @@ export class SalesComponent implements OnInit {
 
   generateCalendarDays(year: number, month: number): Date[] {
     const days: Date[] = [];
-
-    // First day of month
     const firstDay = new Date(year, month, 1);
     // Last day of month
     const lastDay = new Date(year, month + 1, 0);

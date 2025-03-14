@@ -47,7 +47,7 @@
           } -->
           <!-- @case ("Hotel") {} -->
           @default {
-          <div class="grid grid-cols-4 gap-3 product-area">
+          <div class="grid grid-cols-5 gap-3 product-area">
             @for (product of shownProducts; track product.id) {
             <app-product-card
               [product]="product"
@@ -107,7 +107,7 @@
 
           <div *ngIf="cartItems.length == 0" class="empty-cart">
             <p class="text-4xl font-bold text-gray-600">Order is empty</p>
-            <p class="text-2xl text-gray-500">Scan items or add from catelog</p>
+            <p class="text-2xl text-gray-500">Scan items or add from catalog</p>
           </div>
         </div>
 
@@ -121,17 +121,17 @@
           <div class="w-full border-2 flex flex-col gap-3 rounded-xl py-3 px-6">
             <div class="flex justify-between items-center">
               <span>Subtotal</span>
-              <span>₦{{ subtotal | number : "1.2-2" }}</span>
+              <span>{{ subtotal | currency: '₦'  }}</span>
             </div>
             <div class="flex justify-between items-center">
-              <span>Tax</span> <span>₦{{ tax | number : "1.2-2" }}</span>
+              <span>Tax</span> <span>{{ tax | currency: '₦'  }}</span>
             </div>
             <div class="flex justify-between items-center">
               <span>Discount</span>
-              <span>₦{{ displayedDiscount | number : "1.2-2" }}</span>
+              <span>{{ displayedDiscount | currency: '₦'  }}</span>
             </div>
             <div class="flex justify-between font-bold text-2xl items-center">
-              <span>Total</span> <span>₦{{ total | number : "1.2-2" }}</span>
+              <span>Total</span> <span>{{ total | currency: '₦'  }}</span>
             </div>
           </div>
           <!-- <div class="payment flex justify-between items-center mt-3" >
@@ -248,7 +248,7 @@
                     type="button"
                     class="variant-button"
                     (click)="
-                      addToCart(productDataFromClickedProduct, variant.name)
+                      addToCart(productDataFromClickedProduct, variant)
                     "
                   >
                     {{ variant.name }}

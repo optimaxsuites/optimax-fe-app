@@ -96,7 +96,7 @@
       <div class="total-sales">
         <span class="text-gray-700 font-bold">Gross Sales Total: </span>
         <span class="sales-amount text-2xl font-extrabold text-blue-700"
-          >${{ formatCurrency(grossSalesTotal) }}</span
+          >₦{{ formatCurrency(grossSalesTotal) }}</span
         >
       </div>
     </div>
@@ -186,7 +186,7 @@
             </span>
           </td>
           <td>{{ formatDate(transaction.date) }}</td>
-          <td>${{ formatCurrency(transaction.amount) }}</td>
+          <td>₦{{ formatCurrency(transaction.amount) }}</td>
         </tr>
       </ng-template>
 
