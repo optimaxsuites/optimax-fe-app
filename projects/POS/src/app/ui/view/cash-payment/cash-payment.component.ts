@@ -113,41 +113,39 @@ export class CashPaymentComponent implements OnInit {
    printReceipt() {
     const content = document.getElementById('receipt-container')?.outerHTML;
 
-  if (content) {
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = 'none';
-    document.body.appendChild(iframe);
-
-    const doc = iframe.contentWindow?.document;
-    if (doc) {
-      doc.open();
-      doc.write(`
-        <html>
-        <head>
-          <title>Receipt</title>
-          <style>
-            @media print {
-              @page { margin: 0; }
-              body { margin: 0; padding: 0; }
-              #receipt-container { width: 100%; }
-            }
-          </style>
-        </head>
-        <body>
-          ${content}
-        </body>
-        </html>
-      `);
-      doc.close();
-
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-      setTimeout(() => document.body.removeChild(iframe), 1000);
+    if (content) {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'absolute';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = 'none';
+      document.body.appendChild(iframe);
+  
+      const doc = iframe.contentWindow?.document;
+      if (doc) {
+        doc.open();
+        doc.write(`
+          <html>
+          <head>
+            <title>Receipt</title>
+            <style>
+              @media print {
+                @page { margin: 0; }
+                body { margin: 0; font-size: 14px; }
+                #receipt-container { width: 100%; }
+              }
+            </style>
+          </head>
+          <body onload="window.print();">
+            ${content}
+          </body>
+          </html>
+        `);
+        doc.close();
+      }
+  
+      setTimeout(() => document.body.removeChild(iframe), 2000);
     }
-  }
   }
 
   ngAfterViewInit() {
