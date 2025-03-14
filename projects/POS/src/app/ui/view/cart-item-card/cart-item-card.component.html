@@ -8,7 +8,7 @@
         <span class="text-nowrap text-ellipsis whitespace-nowrap overflow-hidden w-64">
           {{ item.name }} - {{ variant.name }}
         </span>
-        <span>₦{{ variant.price }}</span>
+        <span>{{ variant.price | currency: '₦'  }}</span>
       </div>
 
       <div class="p-3 flex justify-between gap-4 border rounded-xl items-center w-52">
@@ -18,7 +18,7 @@
       </div>
 
       <div class="flex gap-4 items-center">
-        <span class="font-semibold">₦{{ (variant.selectedQuantity ?? 0) * variant.price }}</span>
+        <span class="font-semibold">{{ (variant.selectedQuantity ?? 0) * variant.price | currency: '₦' }}</span>
         <!-- <i class="fa-solid fa-trash cursor-pointer" (click)="updateItemQuantity(item, -variant.selectedQuantity, variant)"></i> -->
       </div>
     </div>
@@ -31,7 +31,7 @@
       <span class="text-nowrap text-ellipsis whitespace-nowrap overflow-hidden w-64">
         {{ item.name }}
       </span>
-      <span>₦{{ item.effectivePrice }}</span>
+      <span>{{ item.effectivePrice | currency: '₦' }}</span>
     </div>
 
     <div class="p-3 flex justify-between gap-4 border rounded-xl items-center w-52">
@@ -41,7 +41,7 @@
     </div>
 
     <div class="flex gap-4 items-center">
-      <span class="font-semibold">₦{{ item.cartPriceTotal }}</span>
+      <span class="font-semibold">{{ item.cartPriceTotal | currency: '₦' }}</span>
       <!-- <i class="fa-solid fa-trash cursor-pointer" (click)="updateItemQuantity(item, -item.count)"></i> -->
     </div>
   </div>
