@@ -23,13 +23,14 @@ $default-bg-color: var(--white);
   }
 
   .left-sidebar {
-    max-width: min-content;
-    margin: 1rem;
+    max-width: 100%;
+    $general-margin: 1rem;
+    margin: $general-margin;
     display: flex;
     flex-direction: column;
     row-gap: 1.5rem;
     align-items: stretch;
-    padding-top: 4.5%;
+    margin-top: calc(4.5% + $general-margin);
 
     button {
       @apply px-4 py-2 text-2xl bg-green-500 hover:bg-green-600 text-white rounded-3xl focus:outline-none focus:ring-2 focus:ring-green-300;

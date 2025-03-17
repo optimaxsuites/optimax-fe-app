@@ -144,22 +144,25 @@ export class AddProductComponent {
   openBranchData = false;
   categories: any[] = [];
   configureBarcode: boolean = false;
-  barcodes: any[] = [
+  barcodes = [
     { label: 'CODE128 ', value: 'CODE128' },
-    { label: 'CODE128 A/B/C', value: 'CODE128' },
+    // { label: 'CODE128 A/B/C', value: 'CODE128' },
     { label: 'EAN-13', value: 'EAN13' },
     { label: 'EAN-8', value: 'EAN8' },
-    { label: 'EAN-5', value: 'EAN5' },
-    { label: 'EAN-2', value: 'EAN2' },
+    // { label: 'EAN-5', value: 'EAN5' },
+    // { label: 'EAN-2', value: 'EAN2' },
     { label: 'UPC (A)', value: 'UPC' },
     { label: 'UPC (E)', value: 'UPC' },
     { label: 'ITF', value: 'ITF' },
-    { label: 'ITF-14', value: 'ITF14' },
-    { label: 'MSI10', value: 'MSI10' },
-    { label: 'MSI11', value: 'MSI11' },
-    { label: 'MSI1010', value: 'MSI1010' },
-    { label: 'MSI1110', value: 'MSI1110' },
-  ];
+    // { label: 'ITF-14', value: 'ITF14' },
+    // { label: 'MSI10', value: 'MSI10' },
+    // { label: 'MSI11', value: 'MSI11' },
+    // { label: 'MSI1010', value: 'MSI1010' },
+    // { label: 'MSI1110', value: 'MSI1110' },
+
+    { label: 'Codabar', value: 'Codabar' },
+    { label: 'CODE39', value: 'CODE39' },
+  ] as const;
   /**
    * This is the branch name that is used to determine what branch data to be edited
    *
@@ -852,25 +855,42 @@ export class AddProductComponent {
     this.addSuccessfull = false;
   }
 
-  generateBarcode() {
-    const productCode: string = '5901234123457';
-
-    const barcodeSvg = document.createElementNS(
-      'http://www.w3.org/2000/svg',
-      'svg'
+  get isSKUValid() {
+    return (
+      typeof this.productForm.get('sku')?.value == 'string' &&
+      this.productForm.get('sku')?.value != ''
     );
-    JsBarcode(barcodeSvg, productCode, {
-      format: this.barcodeConfig.barcodeType,
-      lineColor: '#000',
-      width: 1,
-      height: 50,
-      displayValue: true,
-    });
-
-    this.convertSvgToPng(barcodeSvg);
   }
 
-  convertSvgToPng(svgElement: Node) {
+  printBarcode(variantSKU?: string) {
+    this.generateBarcode(variantSKU, true);
+  }
+
+  generateBarcode(variantSKU?: string, shouldPrint?: boolean) {
+    const sku = this.productForm.get('sku')?.value;
+
+    if (typeof sku == 'string') {
+      const productCode = variantSKU ? `${sku}-${variantSKU}` : sku;
+
+      const barcodeSvg = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'svg'
+      );
+      JsBarcode(barcodeSvg, productCode, {
+        format: this.barcodeConfig.barcodeType,
+        lineColor: '#000',
+        width: 3,
+        height: 150,
+        displayValue: true,
+      });
+
+      this.convertSvgToPng(barcodeSvg, shouldPrint);
+    } else {
+      alert('Please fill in the SKU with valid data.');
+    }
+  }
+
+  convertSvgToPng(svgElement: Node, shouldPrint?: boolean) {
     const svgString = new XMLSerializer().serializeToString(svgElement);
 
     const encodedSvg = encodeURIComponent(svgString);
@@ -885,7 +905,26 @@ export class AddProductComponent {
       ctx?.drawImage(img, 0, 0);
 
       const imgData = canvas.toDataURL('image/png');
-      this.generatePDF(imgData);
+      if (shouldPrint) {
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentWindow?.document;
+        if (doc) {
+          doc.write(`
+          <html>
+          <body onload="window.print();">
+          </body>
+          </html>
+        `);
+          doc.close();
+          doc.body.appendChild(canvas);
+          // iframe.contentWindow!.print();
+
+          setTimeout(() => document.body.removeChild(iframe), 5000);
+        }
+      } else this.generatePDF(imgData);
     };
 
     img.src = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;

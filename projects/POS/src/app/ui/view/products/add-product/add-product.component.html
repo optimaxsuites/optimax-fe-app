@@ -301,12 +301,23 @@
                 {{ getErrorMessage("sku") }}
               </div>
             </div>
-            <input
-              id="sku"
-              class="name editInput"
-              formControlName="sku"
-              placeholder="SKU"
-            />
+            <div class="flex inputAndBtn">
+              <input
+                id="sku"
+                class="name editInput"
+                formControlName="sku"
+                placeholder="SKU"
+              />
+              <button
+                class="btn create-invoice-btn mt-3"
+                type="button"
+                (click)="addSuccessfull = true"
+                [disabled]="!isSKUValid"
+                [class]="!isSKUValid ? 'disabled-btn' : ''"
+              >
+                Barcode
+              </button>
+            </div>
           </div>
         </div>
 
@@ -363,46 +374,48 @@
         <!-- SECTION: Industry-specific details -->
         <div class="industry-specific-details">
           @if (businessType == "Pharmacy") {
-          <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-5">
-            Industry-specific Details
-          </p>
-          <div class="ml-3">
-            <div class="flex items-center justify-between">
-              <label for="expiryDate"
-                >Expiry Date <span style="color: red">*</span></label
-              >
+          <!-- <div>
+            <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-5">
+              Industry-specific Details
+            </p>
+            <div class="ml-3">
+              <div class="flex items-center justify-between">
+                <label for="expiryDate"
+                  >Expiry Date <span style="color: red">*</span></label
+                >
+              </div>
+              <input
+                type="date"
+                class="name editInput"
+                formControlName="expiryDate"
+                id="expiryDate"
+                placeholder="Select expiry date"
+              />
             </div>
-            <input
-              type="date"
-              class="name editInput"
-              formControlName="expiryDate"
-              id="expiryDate"
-              placeholder="Select expiry date"
-            />
-          </div>
-          <div class="ml-3">
-            <div class="flex items-center justify-between">
-              <label for="dosage"
-                >Dosage <span style="color: red">*</span></label
-              >
+            <div class="ml-3">
+              <div class="flex items-center justify-between">
+                <label for="dosage"
+                  >Dosage <span style="color: red">*</span></label
+                >
+              </div>
+              <input
+                type="text"
+                class="name editInput"
+                formControlName="dosage"
+                id="dosage"
+                placeholder="Enter dosage"
+              />
             </div>
-            <input
-              type="text"
-              class="name editInput"
-              formControlName="dosage"
-              id="dosage"
-              placeholder="Enter dosage"
-            />
-          </div>
-          <div class="ml-3 flex items-center">
-            <input
-              type="checkbox"
-              class="mr-2"
-              formControlName="prescriptionRequired"
-              id="prescriptionRequired"
-            />
-            <label for="prescriptionRequired">Prescription Required</label>
-          </div>
+            <div class="ml-3 flex items-center">
+              <input
+                type="checkbox"
+                class="mr-2"
+                formControlName="prescriptionRequired"
+                id="prescriptionRequired"
+              />
+              <label for="prescriptionRequired">Prescription Required</label>
+            </div>
+          </div> -->
           }
         </div>
       </div>
@@ -508,6 +521,12 @@
                   <td class="py-2 px-4 border-b">{{ variant.size }}</td>
                   <td class="py-2 px-4 border-b">{{ variant.sku }}</td>
                   <td class="py-3 px-4 border-b flex gap-3">
+                    <i
+                      class="fa-solid fa-barcode cursor-pointer"
+                      (click)="isSKUValid && generateBarcode(variant.sku)"
+                      [class]="isSKUValid ? 'disabled-btn' : ''"
+                    >
+                    </i>
                     <i
                       class="fa-regular fa-pen-to-square cursor-pointer"
                       (click)="editVariant(i)"
@@ -893,7 +912,6 @@
               <!-- @for (variant of variants; track $index) {
                           <p-checkbox
                 [inputId]="'checkbox-' + $index"
-                name="variants"
                 [value]="variant"
                 [(ngModel)]="selectedVariants">
               </p-checkbox>
@@ -909,7 +927,6 @@
 </app-side-modal>
 }
 <!-- !SECTION -->
-
 <app-modal *ngIf="addSuccessfull" (close)="addSuccessfull = false">
   <div class="flex flex-col items-center justify-center gap-3 px-4">
     <img
@@ -965,7 +982,9 @@
       <button class="btn create-invoice-btn w-full" (click)="generateBarcode()">
         Get PDF
       </button>
-      <button class="btn create-invoice-btn w-full">Print</button>
+      <button class="btn create-invoice-btn w-full" (click)="printBarcode()">
+        Print
+      </button>
     </div>
   </div>
 </app-modal>
