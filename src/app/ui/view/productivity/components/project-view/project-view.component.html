@@ -1,15 +1,11 @@
+
+
 <div class="project-view-container bg-customAntiFlashWhite h-full">
-  <!-- <div class="bg-white">
-  
-</div> -->
   <div class="flex text-2xl mt-10 items-center">
     <app-back-button
       class="border-[0.5px] border-solid border-slate-200"
       (click)="goBack()"
     ></app-back-button>
-    <!-- <span *ngIf="project" class=" text-2xl "> Project/ {{project.name}}</span>  -->
-
-    <!--  -->
     <div class="card flex justify-center">
       <p-button
         (click)="showDialog()"
@@ -20,22 +16,18 @@
         [header]="project?.name"
         [modal]="true"
         [(visible)]="visible"
-        [style]="{ width: '80rem' }"
+        [style]="{ width: '60rem' }"
         [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }"
         [maximizable]="true"
       >
-        <!-- Tab -->
-
-        <mat-tab-group>
-          <mat-tab label="Table">
+      
             <div
               *ngIf="project"
               class="w-[95%] border-2 border-green-500 border-solid p-4"
             >
-              <h2 class="text-sm font-bold text-center mb-4 border-2">
+              <!-- <h2 class="text-sm font-bold text-center mb-4 border-2">
                 Project Details
-              </h2>
-
+              </h2> -->
               <table class="w-full border-collapse border border-green-500">
                 <tr>
                   <img
@@ -44,59 +36,61 @@
                     class="w-[100%] h-52 object-cover"
                   />
                 </tr>
-                <tr>
-                  <td class="border border-green-500 p-2 font-semibold">
-                    Project Name
-                  </td>
-                  <td class="border border-green-500 p-2">
-                    {{ project.name || "N/A" }}
-                  </td>
+                <!--  -->
+              </table>
+              <table>
+                 <tr class="bg-gray-200">
+                  <th class="border border-green-500 p-2">Project </th>
+                  <th class="border border-green-500 p-2">Details & level</th>
+                
                 </tr>
+                <!--  -->
+              
                 <tr>
-                  <td class="border border-green-500 p-2 font-semibold">
+                  <td class="border border-green-500 p-2 font-normal text-xl">
                     Accuracy Percentage
                   </td>
-                  <td class="border border-green-500 p-2">
+                  <td class="border border-green-500 p-2 font-normal text-xl">
                     {{ project.accuracyPercentage }}0%
                   </td>
                 </tr>
                 <tr>
-                  <td class="border border-green-500 p-2 font-semibold">
+                  <td class="border border-green-500 p-2 font-normal text-xl">
                     Completion Rate
                   </td>
-                  <td class="border border-green-500 p-2">
+                  <td class="border border-green-500 p-2 font-normal text-xl">
                     {{ project.completionRate }}0%
                   </td>
                 </tr>
                 <tr>
-                  <td class="border border-green-500 p-2 font-semibold">
+                  <td class="border border-green-500 p-2 font-normal text-xl">
                     Assignees
                   </td>
-                  <td class="border border-green-500 p-2">
+                  <td class="border border-green-500 p-2 font-normal text-xl">
                     {{ project.taskWorkers?.join(", ") || "None" }}
                   </td>
                 </tr>
                 <tr>
-                  <td class="border border-green-500 p-2 font-semibold">
+                  <td class="border border-green-500 p-2 font-normal text-xl">
                     Created On
                   </td>
-                  <td class="border border-green-500 p-2">
+                  <td class="border border-green-500 p-2 font-normal text-xl">
                     {{ project.createdAt | date: 'dd/MM/yyyy' }}
                   </td>
                 </tr>
                 <tr>
-                  <td class="border border-green-500 p-2 font-semibold">
+                  <td class="border border-green-500 p-2 font-normal text-xl">
                     Last Edited
                   </td>
-                  <td class="border border-green-500 p-2">
+                  <td class="border border-green-500 p-2 font-normal text-xl">
                     {{ project.lastEdited | date : "medium" }}
                   </td>
                 </tr>
                 <tr>
-                  <td class="border border-green-500 p-2 font-semibold">
+                  <td class="border border-green-500 p-2 font-normal text-xl">
                     Time Line 
                   </td>
-                  <td class="border border-green-500 p-2">
+                  <td class="border border-green-500 p-2 font-normal text-xl">
                     {{ project.timeLine | date: 'dd/MM/yyyy' }}
                   </td>
                 </tr>
@@ -110,17 +104,23 @@
               >
                 <tr class="bg-gray-200">
                   <th class="border border-green-500 p-2">Task Name</th>
+                  <th class="border border-green-500 p-2">Assigned User</th>
                   <th class="border border-green-500 p-2">Status</th>
                 </tr>
                 <tr *ngFor="let task of tasks">
-                  <td class="border border-green-500 p-2">{{ task.name }}</td>
+                  <td class="border border-green-500 p-2 font-normal text-xl">{{ task.name }}</td>
+                  <td class="border border-green-500 p-2 font-normal text-xl ">
+                    
+                    {{ task.selectedUsers || "Unassigned" }}
+                  </td>
                   <td
-                    class="border border-green-500 p-2"
+                    class="border border-green-500 p-2 font-normal text-xl"
                     [ngClass]="
                       task.completed ? 'text-green-500' : 'text-red-500'
                     "
                   >
-                    {{ task.completed ? "Completed" : "Pending" }}
+                    <!-- {{ task.completed ? "Completed" : "Pending" }} -->
+                    {{ task.status}}
                   </td>
                 </tr>
               </table>
@@ -131,12 +131,6 @@
 
               <!-- Buttons -->
               <div class="mt-4 flex gap-4">
-                <!-- <button
-              (click)="createTask()"
-              class="px-4 py-2 bg-blue-500 text-white rounded"
-            >
-              Add Task
-            </button> -->
                 <button
                   (click)="openTaskModal()"
                   class="px-4 py-2 bg-blue-500 text-white rounded text-xl"
@@ -151,74 +145,11 @@
                 </button>
               </div>
             </div>
+        
 
-          </mat-tab>
-
-<!-- Cards -->
-          <mat-tab label="Card " class="flex justify-center items-center">
-            <div
-              class="m-auto p-6 bg-white rounded-lg shadow-lg w-full md:w-96"
-            >
-              <img
-                [src]="project?.projectImage"
-                alt="Project Image"
-                class="rounded-t-lg w-full h-40 object-cover"
-              />
-              <div class="p-4">
-                <h3 class="text-lg font-semibold">{{ project?.name }}</h3>
-                <div class="flex items-center justify-between mt-2">
-                  <div class="text-sm text-gray-500">
-                    <p>Accuracy</p>
-                    <div class="flex items-center">
-                      <span class="text-green-600 font-bold"
-                        >{{ project?.accuracyPercentage }}%</span
-                      >
-                    </div>
-                  </div>
-                  <div class="text-sm text-gray-500">
-                    <p>Completion Rate</p>
-                    <div class="flex items-center">
-                      <span class="text-blue-600 font-bold"
-                        >{{ project?.completionRate }}%</span
-                      >
-                    </div>
-                  </div>
-                </div>
-                <div class="flex flex-wrap gap-2 mt-3">
-                  <!-- <span class="px-3 py-1 text-xs bg-gray-200 rounded">{{ project.category }}</span> -->
-                  <span class="px-3 py-1 text-xs bg-gray-200 rounded">{{
-                    project?.priority
-                  }}</span>
-                </div>
-                <div class="flex items-center text-gray-500 text-sm mt-3">
-                  <p>Last Edited: {{ project?.lastEdited }}</p>
-                </div>
-                <div class="flex justify-between mt-4">
-                  <button
-                    class="bg-blue-500 text-white px-4 py-2 rounded"
-                    (click)="openTaskModal()"
-                  >
-                    Add Task
-                  </button>
-                  <button
-                    class="bg-gray-400 text-white px-4 py-2 rounded"
-                    (click)="goBack()"
-                  >
-                    Back
-                  </button>
-                </div>
-              </div>
-            </div>
-          </mat-tab>
-        </mat-tab-group>
-
-        <!-- Tab End -->
-        <!-- Table -->
-
-        <!-- Table end -->
+         
       </p-dialog>
     </div>
-    <!--  -->
   </div>
 
   <div
@@ -249,7 +180,6 @@
       class="flex flex-row w-[97%] justify-around mt-5 bg-slate-100 border- border-slate-900 border-solid"
     >
       <!-- Cards -->
-
       <div
         class="w-[300px] h-auto bg-gray-100 p-3 rounded-lg shadow-lg mt-20 mb-20 rounded-tl-2xl rounded-tr-2xl"
       >
@@ -341,9 +271,6 @@
           </div>
         </div>
       </div>
-
-      <!--Cards end  -->
     </div>
   </div>
 </div>
-
