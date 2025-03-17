@@ -44,7 +44,7 @@
   </p-toolbar>
 
     <!-- //****************************************************************The Table starts here -->
-  <p-table [value]="ingredients" [paginator]="true" dataKey="id" responsiveLayout="stack" [breakpoint]="'960px'" styleClass="p-datatable-striped" [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '650px' }" [rows]="15">
+  <p-table [value]="products" [paginator]="true" dataKey="id" responsiveLayout="stack" [breakpoint]="'960px'" styleClass="p-datatable-striped" [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '650px' }" [rows]="15">
     <ng-template pTemplate="header" let-columns>
       <tr>
         <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
