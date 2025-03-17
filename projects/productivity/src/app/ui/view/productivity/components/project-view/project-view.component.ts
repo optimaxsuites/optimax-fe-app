@@ -1,3 +1,8 @@
+
+
+// Monday
+
+
 import { Component, signal, OnInit, Input } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -9,6 +14,9 @@ export interface Task {
   id: string;
   name: string;
   completed: boolean;
+  projectId: string; // Link the task to a project
+  selectedUsers?: string; // Add selectedUser to the Task interface
+  status?:string,
 }
 
 export interface Project {
@@ -30,7 +38,7 @@ export interface Project {
   selector: 'app-project-view',
   templateUrl: './project-view.component.html',
   styleUrls: ['./project-view.component.scss'],
-  // providers: [DialogService]
+  providers: [DialogService], // Ensure DialogService is provided
 })
 export class ProjectViewComponent implements OnInit {
   readonly panelOpenState = signal(false);
@@ -49,24 +57,25 @@ export class ProjectViewComponent implements OnInit {
     { text: "" },
     { text: "" },
     { text: "" },
-    
-  ]
+  ];
 
-  constructor(private route: ActivatedRoute, private router: Router, private dialogService: DialogService) { }
-  //
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private dialogService: DialogService
+  ) {}
+
   visible: boolean = false;
 
   showDialog() {
     this.visible = true;
   }
-  //
-  //
-  
 
   ngOnInit(): void {
     const projectId = this.route.snapshot.paramMap.get('id');
     if (projectId) {
       this.loadProjectDetails(projectId);
+      this.loadTasksForProject(projectId); // Load tasks for the project
     }
   }
 
@@ -75,29 +84,51 @@ export class ProjectViewComponent implements OnInit {
     if (storedData) {
       const projects: Project[] = JSON.parse(storedData);
       this.project = projects.find((p) => p.id === projectId) || null;
-      if (this.project) {
-        this.tasks = this.project.tasks || [];
-      }
     }
   }
 
-  loadTaskDetail(taskId: string): void {
-    const storedTask = localStorage.getItem('tasks');
-    if (storedTask) {
-      const tasks: Task[] = JSON.parse(storedTask);
-      const task = tasks.find((t) => t.id === taskId) || null;
-      if (task) {
-        this.tasks.push(task);
-      }
+  loadTasksForProject(projectId: string): void {
+    const storedTasks = localStorage.getItem('tasks');
+    if (storedTasks) {
+      const allTasks: { [key: string]: Task } = JSON.parse(storedTasks);
+      this.tasks = Object.values(allTasks).filter((task) => task.projectId === projectId);
     }
   }
 
   createTask(): void {
     if (this.project) {
-      // const newTask: Task = { id: Date.now().toString(), name: '', completed: false };
-      const newTask: Task = { id: Date.now().toString(), name: 'New Task', completed: false };
+      const newTask: Task = {
+        id: Date.now().toString(),
+        name: 'New Task',
+        completed: false,
+        projectId: this.project.id,
+      };
       this.tasks.push(newTask);
-      this.project.tasks = this.tasks;
+      this.saveTaskToLocalStorage(newTask);
+    }
+  }
+
+  saveTaskToLocalStorage(task: Task): void {
+    try {
+      let tasks = JSON.parse(localStorage.getItem('tasks') || '{}');
+      tasks[task.id] = task;
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+
+      // Also, update the project's tasks in localStorage
+      const storedData = localStorage.getItem('projectData');
+      if (storedData) {
+        const projects: Project[] = JSON.parse(storedData);
+        const project = projects.find((p) => p.id === task.projectId);
+        if (project) {
+          if (!project.tasks) {
+            project.tasks = [];
+          }
+          project.tasks.push(task);
+          localStorage.setItem('projectData', JSON.stringify(projects));
+        }
+      }
+    } catch (error) {
+      console.error('Error saving task:', error);
     }
   }
 
@@ -105,14 +136,16 @@ export class ProjectViewComponent implements OnInit {
     this.router.navigate(['admin/productivity/project-list']);
   }
 
-  // Task Modale opening
-
   openTaskModal() {
-    this.dialogService.open(NewTaskComponent, {
-      // header: 'New Task',
-      // height: '1200px',
-      // width: '1000px',
-      // modal: true
+    const ref = this.dialogService.open(NewTaskComponent, {
+      data: { projectId: this.project?.id }, // Pass projectId to the modal
+    });
+
+    ref.onClose.subscribe((task: Task) => {
+      if (task) {
+        this.tasks.push(task);
+        this.saveTaskToLocalStorage(task);
+      }
     });
   }
 }
