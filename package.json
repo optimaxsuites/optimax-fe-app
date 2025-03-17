@@ -8,7 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "postinstall": "npm install zone.js",
-    "build:prod": "ng build --configuration production",
+    "build:prod": "ng build --configuration=production",
     "pullHr": "git subtree pull --prefix=projects/hr https://gitlab.com/Simeon0001/erp-hr.git master --squash",
     "pushHr": "git subtree push --prefix=projects/hr https://gitlab.com/Simeon0001/erp-hr.git master",
     "pullDashboard": "git subtree pull --prefix=projects/dashboard https://gitlab.com/queensheba/erp-dashboard.git master --squash",
