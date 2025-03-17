@@ -3,9 +3,7 @@
     "builds": [
       {
         "src": "dist/optimax_fe_app/**",
-        "use": "@vercel/static",
-        "external": ["zone.js"]
-      }
+        "use": "@vercel/static"      }
     ],
     "routes": [
       {
