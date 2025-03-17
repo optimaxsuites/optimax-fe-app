@@ -1,6 +1,1 @@
-{
-    "build": {
-      "external": ["zone.js"]
-    }
-  }
-  
+
