@@ -3,7 +3,7 @@
   <p-toolbar styleClass="mb-4">
     <ng-template pTemplate="left">
       <div class="flex items-center">
-        <span class="text-2xl font-bold"> Sales Summary</span>
+        <span class="text-4xl font-extrabold"> Sales Summary</span>
       </div>
     </ng-template>
     <ng-template pTemplate="right">
@@ -31,7 +31,7 @@
       class="grid grid-cols-1 md:grid-cols-2 gap-4"
     >
       <div class="form-group">
-        <label for="period" class="block mb-2 font-medium text-gray-700"
+        <label for="period" class="block mb-2 font-bold text-2xl text-gray-700"
           >Time Period</label
         >
         <p-dropdown
@@ -40,13 +40,12 @@
           formControlName="period"
           optionLabel="label"
           optionValue="value"
-          styleClass="w-full"
+          styleClass="w-full text-2xl font-extrabold"
         ></p-dropdown>
       </div>
     </form>
   </div>
 
-  <!-- Main KPI Cards - reduced to most important metrics -->
   <div
     class="kpi-cards grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"
   >
@@ -54,7 +53,7 @@
     <div class="kpi-card bg-white rounded-lg shadow-sm overflow-hidden">
       <div class="card-header bg-blue-50 p-4 flex justify-between items-center">
         <div>
-          <h3 class="text-lg font-bold text-gray-800">Total Sales</h3>
+          <h3 class="text-2xl font-extrabold text-gray-800">Total Sales</h3>
         </div>
         <div class="icon-container bg-blue-100 text-blue-600 p-2 rounded-full">
           ₦
@@ -81,7 +80,7 @@
             ></i>
             {{ formatPercent(comparisonData.sales.percentChange) }}
           </span>
-          <span class="text-sm text-gray-500 ml-2">vs previous</span>
+          <span class="text-lg text-gray-500 ml-2">vs previous</span>
         </div>
       </div>
     </div>
@@ -92,7 +91,7 @@
         class="card-header bg-green-50 p-4 flex justify-between items-center"
       >
         <div>
-          <h3 class="text-lg font-bold text-gray-800">Profit</h3>
+          <h3 class="text-2xl font-extrabold text-gray-800">Profit</h3>
         </div>
         <div
           class="icon-container bg-green-100 text-green-600 p-2 rounded-full"
@@ -132,7 +131,7 @@
         class="card-header bg-indigo-50 p-4 flex justify-between items-center"
       >
         <div>
-          <h3 class="text-lg font-bold text-gray-800">Items Sold</h3>
+          <h3 class="text-2xl font-extrabold text-gray-800">Items Sold</h3>
         </div>
         <div
           class="icon-container bg-indigo-100 text-indigo-600 p-2 rounded-full"
@@ -172,7 +171,7 @@
         class="card-header bg-amber-50 p-4 flex justify-between items-center"
       >
         <div>
-          <h3 class="text-lg font-bold text-gray-800">Transactions</h3>
+          <h3 class="text-2xl font-extrabold text-gray-800">Transactions</h3>
         </div>
         <div
           class="icon-container bg-amber-100 text-amber-600 p-2 rounded-full"
@@ -210,7 +209,7 @@
   <div class="chart-section grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
     <!-- Sales Trend Chart - Reduced Width -->
     <div class="trend-chart bg-white rounded-lg p-8 shadow-sm lg:col-span-6">
-      <h2 class="text-lg font-semibold text-gray-800 mb-4">
+      <h2 class="text-2xl font-extrabold text-gray-800 mb-4">
         Sales & Profit Trend
       </h2>
       <div
@@ -239,7 +238,7 @@
     </div>
 
     <div class="category-chart bg-white rounded-lg p-4 shadow-md lg:col-span-6">
-      <h2 class="text-lg font-semibold text-gray-800 mb-3">
+      <h2 class="text-2xl font-extrabold text-gray-800 mb-3">
         Category Breakdown
       </h2>
       <div style="position: relative; height: 320px">
@@ -254,7 +253,7 @@
 
   <!-- Top Products - simplified for POS -->
   <div class="top-products bg-white rounded-lg p-4 shadow-sm mb-6">
-    <h2 class="text-lg font-semibold text-gray-800 mb-4">
+    <h2 class="text-2xl font-extrabold text-gray-800 mb-4">
       Top Selling Products
     </h2>
     <div class="overflow-x-auto">
@@ -263,31 +262,31 @@
           <tr>
             <th
               scope="col"
-              class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-4 py-3 text-left text-2xl font-extrabold text-gray-500 uppercase tracking-wider"
             >
               Product
             </th>
             <th
               scope="col"
-              class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-4 py-3 text-left text-2xl font-extrabold text-gray-500 uppercase tracking-wider"
             >
               Category
             </th>
             <th
               scope="col"
-              class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-4 py-3 text-right text-2xl font-extrabold text-gray-500 uppercase tracking-wider"
             >
               Qty
             </th>
             <th
               scope="col"
-              class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-4 py-3 text-right text-2xl font-extrabold text-gray-500 uppercase tracking-wider"
             >
               Sales
             </th>
             <th
               scope="col"
-              class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-4 py-3 text-right text-2xl font-extrabold text-gray-500 uppercase tracking-wider"
             >
               Profit
             </th>
