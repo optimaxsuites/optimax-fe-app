@@ -35,7 +35,6 @@ export class SaleSummaryComponent implements OnInit {
   ngOnInit(): void {
     console.log('Transaction details:', this.selectedTransaction);
 
-    // If the transaction doesn't have items, create sample items that add up to the total
     if (!this.selectedTransaction?.items) {
       this.selectedTransaction = {
         ...this.selectedTransaction,
