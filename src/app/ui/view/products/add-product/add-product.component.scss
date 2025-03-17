@@ -150,3 +150,8 @@ label {
     box-shadow: 0 0 0 2px #9ae6b4;
   }
 }
+
+.disabled-btn {
+  filter: grayscale(100%);
+  cursor: not-allowed;
+}

@@ -15,13 +15,13 @@ import JsBarcode from 'jsbarcode';
 })
 export class CashPaymentComponent implements OnInit {
   navigationState: NavigationState;
-  cart: Cart = {} as any; 
+  cart: Cart = {} as any;
   priceOptions: any[] = [];
   priceValue = 0.0;
   orders: any;
   changeOffered: number = 0.0;
   changeOfferedModal: boolean = false;
-  receiptID: string = Math.floor(100000 + Math.random() * 900000).toString(); 
+  receiptID: string = Math.floor(100000 + Math.random() * 900000).toString();
 
   constructor(
     private router: Router,
@@ -35,7 +35,6 @@ export class CashPaymentComponent implements OnInit {
       const savedState = localStorage.getItem('navigationState');
       if (savedState) {
         this.navigationState = JSON.parse(savedState);
-
       }
     } else {
       localStorage.setItem(
@@ -43,12 +42,10 @@ export class CashPaymentComponent implements OnInit {
         JSON.stringify(this.navigationState)
       );
     }
-
   }
   ngOnInit(): void {
     this.cart = this.navigationState?.cart;
     this.initializePriceOptions();
-
   }
 
   initializePriceOptions() {
@@ -72,9 +69,8 @@ export class CashPaymentComponent implements OnInit {
       this.saveCurrentCartItem();
       const order: any[] = [];
       const checkoutLink = this.navigationLink.getLink('checkoutLink');
-      this.router.navigate([checkoutLink]
-      )
-      this.printReceipt()
+      this.router.navigate([checkoutLink]);
+      this.printReceipt();
     }
   }
 
@@ -110,7 +106,7 @@ export class CashPaymentComponent implements OnInit {
     return Math.round(this.cart?.total * 100) / 100;
   }
 
-   printReceipt() {
+  printReceipt() {
     const content = document.getElementById('receipt-container')?.outerHTML;
 
     if (content) {
@@ -120,7 +116,7 @@ export class CashPaymentComponent implements OnInit {
       iframe.style.height = '0';
       iframe.style.border = 'none';
       document.body.appendChild(iframe);
-  
+
       const doc = iframe.contentWindow?.document;
       if (doc) {
         doc.open();
@@ -143,21 +139,17 @@ export class CashPaymentComponent implements OnInit {
         `);
         doc.close();
       }
-  
-      setTimeout(() => document.body.removeChild(iframe), 2000);
+
+      setTimeout(() => document.body.removeChild(iframe), 5000);
     }
   }
 
   ngAfterViewInit() {
-    JsBarcode("#barcode", this.receiptID, {
-      format: "CODE128",
-      displayValue: false, 
+    JsBarcode('#barcode', this.receiptID, {
+      format: 'CODE128',
+      displayValue: false,
       width: 2,
-      height: 40
+      height: 40,
     });
   }
 }
-
-
-
-
