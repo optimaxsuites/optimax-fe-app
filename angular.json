@@ -24,7 +24,6 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            
             "allowedCommonJsDependencies": [
               "apexcharts",
               "@canvasjs/angular-charts",
