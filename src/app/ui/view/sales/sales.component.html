@@ -1,14 +1,13 @@
 <div class="sales-report-container card relative" *ngIf="!openSale">
-  <p-toolbar styleClass="mb-4 gap-2">
-    <ng-template pTemplate="left">
+  <!-- <p-toolbar styleClass="mb-4 gap-2">
+    <ng-template pTemplate="left"> -->
       <div class="flex w-full items-center justify-between gap-6 px-4 py-3">
         <!-- Filters Section -->
-        <div class="flex gap-5 w-4/5 items-center">
           <div class="w-1/2">
             <div
-              class="flex items-center justify-between bg-gray-100 px-3 py-2 rounded-lg cursor-pointer"
+              class="flex items-center justify-between bg-gray-100 px-3 py-2 rounded-lg cursor-pointer w-full"
             >
-              <div class="flex items-center space-x-4">
+              <div class="flex items-center space-x-4 w-full">
                 <button
                   class="text-gray-600 mr-2 hover:text-gray-900"
                   (click)="navigateDate(-1)"
@@ -18,7 +17,7 @@
 
                 <div
                   (click)="toggleCalendar()"
-                  class="flex items-center justify-center space-x-6 px-4 py-2 border rounded-lg cursor-pointer min-w-[200px] whitespace-nowrap"
+                  class="flex items-center justify-center space-x-6 px-4 py-2 border rounded-lg cursor-pointer w-full whitespace-nowrap"
                 >
                   <span class="text-gray-700 text-xl font-semibold">{{
                     displayDateLabel
@@ -67,7 +66,6 @@
             >
             </ng-select>
           </div>
-        </div>
 
         <!-- Summary Filter-->
         <div class="w-1/3">
@@ -81,8 +79,8 @@
           </ng-select>
         </div>
       </div>
-    </ng-template>
-  </p-toolbar>
+    <!-- </ng-template>
+  </p-toolbar> -->
 
   <!-- Date Range and Total Box -->
   <div class="summary-box bg-white rounded-lg p-4 shadow-sm mb-4">
@@ -214,10 +212,10 @@
 >
   <div class="calendar-popup" (click)="$event.stopPropagation()">
     <div
-      class="calendar-container bg-white p-5 w-[500px] shadow-xl border rounded-lg flex gap-6"
+      class="calendar-container bg-white p-5  shadow-xl border rounded-lg flex gap-6 w-2/3"
     >
       <!-- Calendar Section -->
-      <div class="flex-1">
+      <div class="w-2/3">
         <div class="calendar-header flex justify-between items-center mb-4">
           <button
             class="text-gray-500 hover:bg-gray-100 p-2 rounded-full"
@@ -237,7 +235,7 @@
         </div>
 
         <div
-          class="grid grid-cols-7 text-center text-xs font-semibold text-gray-600 mb-2"
+          class="calendar-grid"
         >
           <div class="py-2">S</div>
           <div class="py-2">M</div>
@@ -247,17 +245,9 @@
           <div class="py-2">F</div>
           <div class="py-2">S</div>
         </div>
-
-        <div class="grid grid-cols-7 gap-1 text-center">
-          <div
-            *ngFor="let day of calendarDays"
-            [ngClass]="getDayClass(day)"
-            class="p-1"
-          >
-            <div
-              class="w-9 h-9 flex items-center justify-center rounded-full cursor-pointer hover:bg-gray-100 transition-colors"
-              (click)="selectDay(day)"
-            >
+        <div class="calendar-days">
+          <div *ngFor="let day of calendarDays" [ngClass]="getDayClass(day)" class="calendar-day">
+            <div (click)="selectDay(day)">
               {{ day.getDate() }}
             </div>
           </div>
