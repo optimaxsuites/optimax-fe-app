@@ -1,0 +1,26 @@
+<div class="kitchen-order-grid-container">
+  <!-- TOP BAR -->
+  <header class="top-bar">
+    <div class="top-bar-left">
+      <span class="logo">Logo</span>
+    </div>
+    <div class="top-bar-center">
+      <h1>KITCHEN ORDER</h1>
+    </div>
+    <div class="top-bar-right">
+      <span class="chef-name">Chef Name</span>
+    </div>
+  </header>
+
+  <!-- MAIN GRID -->
+  <main class="grid-area">
+    <div
+      class="table-card"
+      *ngFor="let item of tableStatuses"
+      [title]="item.table + ' - ' + item.status"
+    >
+      <div class="status">{{ item.status }}</div>
+      <div class="table-number">{{ item.table }}</div>
+    </div>
+  </main>
+</div>

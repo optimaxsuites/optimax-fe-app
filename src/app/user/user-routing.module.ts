@@ -8,6 +8,8 @@ import { OrderDetailComponent } from '../ui/view/order-detail/order-detail.compo
 import { OrderRefundComponent } from '../ui/view/order-refund/order-refund.component';
 import { PosCheckoutPageComponent } from '../ui/view/pos-checkout-page/pos-checkout-page.component';
 import { RequestDetailsComponent } from '../ui/view/request-details/request-details.component';
+import { CheckoutKitchenComponent } from '../ui/view/checkout-kitchen/checkout-kitchen.component';
+import { KitchenOrderComponent } from '../ui/view/kitchen-order/kitchen-order.component';
 
 const routes: Routes = [
   {
@@ -46,6 +48,14 @@ const routes: Routes = [
   {
     path: 'user/checkout/:uuid',
     component: PosCheckoutPageComponent,
+  },
+  {
+    path: 'user/checkout/kitchen/order/:uuid',
+    component: KitchenOrderComponent,
+  },
+  {
+    path: 'user/checkout/kitchen/:uuid',
+    component: CheckoutKitchenComponent,
   },
 ];
 
