@@ -81,10 +81,13 @@
     // margin: 2rem;
     // border: 2px solid red;
     background-color: white;
+    width: 100%;
 
     .card-cover {
       height: auto;
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
       justify-content: center;
       flex-direction: row;
 
@@ -97,7 +100,7 @@
 
       .card-frame {
         border: 0.5px solid rgb(211, 198, 198);
-        width: 30%;
+        width: auto;
         height: auto;
         border-radius: 20px;
         padding: 6px;
