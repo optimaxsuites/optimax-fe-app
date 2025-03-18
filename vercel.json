@@ -2,7 +2,7 @@
     "version": 2,
     "builds": [
       {
-        "src": "dist/optimax_fe_app/**",
+        "src": "dist/erp-fe",
         "use": "@vercel/static"      }
     ],
     "routes": [
