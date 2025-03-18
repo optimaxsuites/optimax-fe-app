@@ -24,11 +24,11 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
+            
             "allowedCommonJsDependencies": [
               "apexcharts",
               "@canvasjs/angular-charts",
-              "@canvasjs/charts",
-              "zone.js"
+              "@canvasjs/charts"
             ],
             "outputPath": "dist/erp-fe",
             "index": "src/index.html",
