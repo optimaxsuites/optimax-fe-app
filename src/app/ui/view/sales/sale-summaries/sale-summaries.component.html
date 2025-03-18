@@ -24,7 +24,6 @@
     </ng-template>
   </p-toolbar>
 
-  <!-- Period selector - simplified -->
   <div class="period-selector bg-white rounded-lg p-4 shadow-sm mb-6">
     <form
       [formGroup]="filterForm"
@@ -34,14 +33,32 @@
         <label for="period" class="block mb-2 font-bold text-2xl text-gray-700"
           >Time Period</label
         >
-        <p-dropdown
+        <ng-select
           id="period"
-          [options]="periods"
+          [items]="periods"
+          bindLabel="label"
+          bindValue="value"
           formControlName="period"
-          optionLabel="label"
-          optionValue="value"
-          styleClass="w-full text-2xl font-extrabold"
-        ></p-dropdown>
+          [clearable]="false"
+          class="text-2xl font-extrabold"
+        ></ng-select>
+      </div>
+
+      <div class="form-group">
+        <label for="cashier" class="block mb-2 font-bold text-2xl text-gray-700"
+          >Cashier</label
+        >
+        <ng-select
+          id="cashier"
+          [items]="cashiers"
+          bindLabel="name"
+          bindValue="id"
+          formControlName="cashier"
+          (change)="onCashierChange($event)"
+          [clearable]="true"
+          placeholder="Select cashier"
+          class="text-2xl font-extrabold"
+        ></ng-select>
       </div>
     </form>
   </div>
@@ -49,7 +66,6 @@
   <div
     class="kpi-cards grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"
   >
-    <!-- Total Sales Card -->
     <div class="kpi-card bg-white rounded-lg shadow-sm overflow-hidden">
       <div class="card-header bg-blue-50 p-4 flex justify-between items-center">
         <div>
@@ -206,15 +222,15 @@
     </div>
   </div>
 
-  <div class="chart-section grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+  <div class="chart-section grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
     <!-- Sales Trend Chart - Reduced Width -->
-    <div class="trend-chart bg-white rounded-lg p-8 shadow-sm lg:col-span-6">
+    <div class="trend-chart bg-white rounded-lg p-4 lg:col-span-6">
       <h2 class="text-2xl font-extrabold text-gray-800 mb-4">
         Sales & Profit Trend
       </h2>
       <div
-        class="chart-container h-150"
-        style="position: relative; height: 320px"
+        class="chart-container h-100"
+        style="position: relative; height: 250px"
       >
         <p-chart
           type="line"
@@ -224,24 +240,62 @@
             maintainAspectRatio: false,
             plugins: {
               legend: {
-                position: 'top'
+                position: 'top',
+                labels: {
+                  font: {
+                    size: 14,
+                    weight: 'bold'
+                  }
+                }
+              },
+              tooltip: {
+                enabled: true,
+                backgroundColor: '#fff',
+                titleColor: '#333',
+                borderColor: '#ddd',
+                borderWidth: 1
               }
             },
             scales: {
+              x: {
+                grid: {
+                  display: false
+                },
+                title: {
+                  display: true,
+                  text: 'Days',
+                  font: {
+                    size: 14,
+                    weight: 'bold'
+                  }
+                }
+              },
               y: {
-                beginAtZero: true
+                beginAtZero: true,
+                grid: {
+                  color: '#eee'
+                },
+                title: {
+                  display: true,
+                  text: 'Sales (₦)',
+                  font: {
+                    size: 14,
+                    weight: 'bold'
+                  }
+                }
               }
             }
           }"
+          style="height: 500px; width: 100%"
         ></p-chart>
       </div>
     </div>
 
-    <div class="category-chart bg-white rounded-lg p-4 shadow-md lg:col-span-6">
+    <div class="category-chart bg-white rounded-lg p-4 lg:col-span-6">
       <h2 class="text-2xl font-extrabold text-gray-800 mb-3">
         Category Breakdown
       </h2>
-      <div style="position: relative; height: 320px">
+      <div style="position: relative; height: 250px">
         <p-chart
           type="doughnut"
           [data]="categoryPerformanceData"
@@ -262,31 +316,31 @@
           <tr>
             <th
               scope="col"
-              class="px-4 py-3 text-left text-2xl font-extrabold text-gray-500 uppercase tracking-wider"
+              class="px-4 py-3 text-left text-2xl font-extrabold text-white uppercase tracking-wider"
             >
               Product
             </th>
             <th
               scope="col"
-              class="px-4 py-3 text-left text-2xl font-extrabold text-gray-500 uppercase tracking-wider"
+              class="px-4 py-3 text-left text-2xl font-extrabold text-white uppercase tracking-wider"
             >
               Category
             </th>
             <th
               scope="col"
-              class="px-4 py-3 text-right text-2xl font-extrabold text-gray-500 uppercase tracking-wider"
+              class="px-4 py-3 text-right text-2xl font-extrabold text-white uppercase tracking-wider"
             >
               Qty
             </th>
             <th
               scope="col"
-              class="px-4 py-3 text-right text-2xl font-extrabold text-gray-500 uppercase tracking-wider"
+              class="px-4 py-3 text-right text-2xl font-extrabold text-white uppercase tracking-wider"
             >
               Sales
             </th>
             <th
               scope="col"
-              class="px-4 py-3 text-right text-2xl font-extrabold text-gray-500 uppercase tracking-wider"
+              class="px-4 py-3 text-right text-2xl font-extrabold text-white uppercase tracking-wider"
             >
               Profit
             </th>
@@ -295,23 +349,27 @@
         <tbody class="bg-white divide-y divide-gray-200">
           <tr *ngFor="let product of topProducts" class="hover:bg-gray-50">
             <td class="px-4 py-3 whitespace-nowrap">
-              <div class="font-medium text-gray-900">{{ product.name }}</div>
+              <div class="font-bold text-xl text-gray-500">
+                {{ product.name }}
+              </div>
             </td>
             <td class="px-4 py-3 whitespace-nowrap">
-              <div class="text-sm text-gray-500">{{ product.category }}</div>
+              <div class="text-xl font-bold text-gray-500">
+                {{ product.category }}
+              </div>
             </td>
             <td
-              class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium"
+              class="px-4 py-3 whitespace-nowrap text-right text-xl font-bold text-gray-900"
             >
               {{ Math.round(product.quantity) }}
             </td>
             <td
-              class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium"
+              class="px-4 py-3 whitespace-nowrap text-right text-xl font-bold text-blue-700"
             >
               ₦{{ formatCurrency(product.sales) }}
             </td>
             <td
-              class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium"
+              class="px-4 py-3 whitespace-nowrap text-right text-xl font-bold text-green-600"
             >
               ₦{{ formatCurrency(product.profit) }}
             </td>
