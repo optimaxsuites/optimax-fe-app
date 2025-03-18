@@ -1,6 +1,6 @@
 <div class="project-list bg-customAntiFlashWhite h-full">
   <hr />
-  <div class="pro-list-cover">
+  <div class="pro-list-cover p-10">
     <div class="header">
       <div class="search-box">
         <input type="search" name="search" id="" class="w-[40%] h-12 "  />
@@ -12,9 +12,9 @@
       </div>
     </div>
 
-    <div class="card-container">
+    <div class="card-container" >
       <div class="card-cover">
-        <div *ngFor="let project of projects" class="card-frame">
+        <div *ngFor="let project of projects" class="card-frame grid grid-rows-4" >
           <div class="image-container">
             <img [src]="project.projectImage" alt="project image" class="" />
           </div>
@@ -53,11 +53,12 @@
           <div class="percentage-frame">
             <div class="percentage-frame-cover ">
               <div class="percentage-img ">
-                <img
+                <!-- <img
                  
                   src="../../../../../../assets/images/pcentile 80.PNG"
                   alt="icon"
-                />
+                /> -->
+                <i class="fa-solid fa-circle-half-stroke"></i>
               </div>
               <div class="percentage-text ">
                 <p class="acc-t">Accuracy Percentage</p>
@@ -67,11 +68,12 @@
             <div class="vertical-line"> </div>
             <div class="percentage-frame-cover">
               <div class="percentage-img">
-                <img
+                <!-- <img
                   class="w-10 h-8"
                   src="../../../../../../assets/images/pcentile 80.PNG"
                   alt="icon"
-                />
+                /> -->
+                <i class="fa-solid fa-circle-half-stroke"></i>
               </div>
               <div class="percentage-text">
                 <p >Completion Rate</p>
@@ -111,7 +113,7 @@
               class="text-ellipsis "
               (click)="onViewClick(project)"
             >
-              <img src="../../../../../../assets/images/eclips.PNG" alt="" />
+            <i class="fa-solid fa-ellipsis-vertical"></i>
             </div>
           </div>
         </div>
