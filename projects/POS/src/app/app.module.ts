@@ -116,7 +116,7 @@ import { DropdownModule } from 'primeng/dropdown';
     SaleSummariesComponent,
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
     // UserModule,
     // AppRoutingModule,
     CommonModule,
