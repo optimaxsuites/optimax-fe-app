@@ -19,6 +19,9 @@
 .refund-row {
   background-color: #f9fafb; /* Tailwind's bg-gray-50 */
 }
+.text-yellow-500 {
+  color: #eab308 !important;
+}
 
 .refund-row:nth-child(odd) {
   background-color: #ffffff; /* Tailwind's bg-white */
@@ -46,6 +49,7 @@
     transform: translateY(-50%);
     cursor: pointer;
   }
+
 }
 // ::ng-deep .p-datatable-tbody tr td {
 //   background-color: green;
