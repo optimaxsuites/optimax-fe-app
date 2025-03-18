@@ -8,7 +8,6 @@ import { FormGroup, FormBuilder } from '@angular/forms';
   styleUrls: ['./sale-summaries.component.scss'],
 })
 export class SaleSummariesComponent implements OnInit {
-  // Summary metrics
   totalSales: number = 0;
   grossProfit: number = 0;
   totalGoodsSold: number = 0;
@@ -32,13 +31,20 @@ export class SaleSummariesComponent implements OnInit {
     { label: 'Last Month', value: 'lastMonth' },
   ];
 
+  // Cashier list
+  cashiers: any[] = [
+    { id: 1, name: 'Ben' },
+    { id: 2, name: 'Winifred' },
+    { id: 3, name: 'Conrad' },
+  ];
+  selectedCashier: any = null;
+
   // For charts
   salesTrendData: any;
   categoryPerformanceData: any;
   hourlyDistributionData: any;
 
   topCategories: any[] = [];
-
   topProducts: any[] = [];
   Math: any = Math;
   categoryChartOptions: any;
@@ -46,6 +52,7 @@ export class SaleSummariesComponent implements OnInit {
   constructor(private fb: FormBuilder) {
     this.filterForm = this.fb.group({
       period: ['today'],
+      cashier: [null],
     });
   }
 
@@ -57,11 +64,30 @@ export class SaleSummariesComponent implements OnInit {
     this.filterForm.valueChanges.subscribe(() => {
       this.loadSalesData();
     });
+
+    this.categoryChartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            boxWidth: 12,
+            padding: 15,
+          },
+        },
+      },
+      cutout: '60%',
+    };
+  }
+
+  onCashierChange(selectedCashier: any): void {
+    this.selectedCashier = selectedCashier ? selectedCashier.id : null;
+    this.loadSalesData();
   }
 
   loadSalesData(): void {
     const period = this.filterForm.get('period')?.value || 'today';
-
     this.fetchMockData(period);
     this.initializeCharts();
   }
@@ -69,12 +95,45 @@ export class SaleSummariesComponent implements OnInit {
   fetchMockData(period: string): void {
     const salesMultiplier = this.getPeriodMultiplier(period);
 
-    // Set summary metrics - simplified for POS
-    this.totalSales = 2540.75 * salesMultiplier;
-    this.grossProfit = 890.25 * salesMultiplier;
-    this.totalGoodsSold = 82 * salesMultiplier;
+    // Mock data for each cashier
+    const cashierSalesData: Record<
+      number,
+      { sales: number; profit: number; goods: number; transactions: number }
+    > = {
+      1: { sales: 1000, profit: 300, goods: 30, transactions: 15 },
+      2: { sales: 1500, profit: 450, goods: 45, transactions: 20 },
+      3: { sales: 2000, profit: 600, goods: 60, transactions: 25 },
+    };
+
+    // Set summary metrics based on cashier selection
+    if (this.selectedCashier) {
+      // Use the selected cashier's data
+      const cashierData = cashierSalesData[this.selectedCashier];
+      this.totalSales = cashierData.sales * salesMultiplier;
+      this.grossProfit = cashierData.profit * salesMultiplier;
+      this.totalGoodsSold = cashierData.goods * salesMultiplier;
+      this.totalTransactions = cashierData.transactions * salesMultiplier;
+    } else {
+      // Sum all cashiers' data to show total when none is selected
+      const totalData = Object.values(cashierSalesData).reduce(
+        (acc, curr) => {
+          return {
+            sales: acc.sales + curr.sales,
+            profit: acc.profit + curr.profit,
+            goods: acc.goods + curr.goods,
+            transactions: acc.transactions + curr.transactions,
+          };
+        },
+        { sales: 0, profit: 0, goods: 0, transactions: 0 }
+      );
+
+      this.totalSales = totalData.sales * salesMultiplier;
+      this.grossProfit = totalData.profit * salesMultiplier;
+      this.totalGoodsSold = totalData.goods * salesMultiplier;
+      this.totalTransactions = totalData.transactions * salesMultiplier;
+    }
+
     this.profitMargin = (this.grossProfit / this.totalSales) * 100;
-    this.totalTransactions = 45 * salesMultiplier;
 
     // Set comparison data
     const prevMultiplier = period === 'today' ? 0.9 : 0.8;
@@ -101,7 +160,7 @@ export class SaleSummariesComponent implements OnInit {
       },
     };
 
-    // Set top categories - most relevant for POS
+    // Set top categories and products
     this.topCategories = [
       {
         name: 'Electronics',
@@ -123,7 +182,6 @@ export class SaleSummariesComponent implements OnInit {
       },
     ];
 
-    // Set top products - most relevant for POS
     this.topProducts = [
       {
         name: 'Smartphone Case',
@@ -190,7 +248,7 @@ export class SaleSummariesComponent implements OnInit {
       ],
     };
 
-    // Category Breakdown Chart - simplified for POS
+    // Category Breakdown Chart
     this.categoryPerformanceData = {
       labels: this.topCategories.map((cat) => cat.name),
       datasets: [
@@ -202,30 +260,7 @@ export class SaleSummariesComponent implements OnInit {
       ],
     };
 
-    // Add this to your component class
-    this.categoryChartOptions = {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '60%',
-      plugins: {
-        legend: {
-          position: 'right',
-          align: 'center',
-          labels: {
-            boxWidth: 8,
-            usePointStyle: true,
-            pointStyle: 'circle',
-            padding: 12,
-            font: {
-              size: 12,
-              weight: 500,
-            },
-          },
-        },
-      },
-    };
-
-    // Hourly Distribution Chart - most relevant for POS
+    // Hourly Distribution Chart
     this.hourlyDistributionData = {
       labels: [
         '9 AM',
@@ -290,7 +325,6 @@ export class SaleSummariesComponent implements OnInit {
   }
 
   generateHourlyDistribution(): number[] {
-    // More realistic POS hourly distribution
     return [5, 8, 15, 22, 18, 12, 10, 7].map(
       (percent) => this.totalSales * (percent / 100)
     );
@@ -306,7 +340,6 @@ export class SaleSummariesComponent implements OnInit {
 
   exportData(): void {
     console.log('Exporting data...');
-    // In a real app, you would implement export functionality
   }
 
   printReport(): void {
