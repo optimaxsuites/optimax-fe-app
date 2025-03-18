@@ -1,9 +1,22 @@
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+.pending {
+  color: #EAB308; /* Golden yellow */
+}
+
+.accepted {
+  color: green;
+}
+
+.rejected {
+  color: red;
+}
 
 
+#filter-bar {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+
+}
 
 
 ::ng-deep app-side-modal .modal-content {

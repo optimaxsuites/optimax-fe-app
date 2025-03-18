@@ -1,4 +1,4 @@
-<div class="flex items-center w-full gap-4 justify-between px-8 py-14 bg-gray-100" id="filter-bar">
+<div class="flex items-center w-full gap-4 justify-between px-8  bg-gray-100" id="filter-bar" id="filter-bar">
   <!-- Left Filters -->
   <div class="flex items-center gap-4 ">
     <!-- Start Date Input -->
@@ -157,18 +157,19 @@
         <td>{{  refund.Amount_Requested.toFixed(2) }}</td>
         <td >{{ refund.reasonType }}</td>
 
-      <td class="px-4">
-        <i
-          class="pi text-xl"
-          [ngClass]="{
-            'pi-clock text-yellow-500': refund.status === 'Pending',
-            'pi-check-circle text-green-500': refund.status === 'Accepted',
-            'pi-times-circle text-red-500': refund.status === 'Rejected'
-          }"
-        >
-        </i>
-        {{ refund.status }}
-      </td>
+        <td class="px-4">
+          <i
+            class="pi"
+            [ngClass]="{
+              'pi-clock pending': refund.status === 'Pending',
+              'pi-check-circle accepted': refund.status === 'Accepted',
+              'pi-times-circle rejected': refund.status === 'Rejected'
+            }"
+          >
+          </i>
+          {{ refund.status }}
+        </td>
+        
 
       <td class="px-4">{{ refund.Date }}</td>
       <td class="px-4">

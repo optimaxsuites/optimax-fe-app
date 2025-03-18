@@ -113,10 +113,10 @@ import { DropdownModule } from 'primeng/dropdown';
     BackButtonComponent,
     SaleSummaryComponent,
     SaleComponent,
-    SaleSummariesComponent
+    SaleSummariesComponent,
   ],
   imports: [
-    // BrowserModule,
+    BrowserModule,
     // UserModule,
     // AppRoutingModule,
     CommonModule,
@@ -156,7 +156,7 @@ import { DropdownModule } from 'primeng/dropdown';
     NgApexchartsModule,
     InputGroupModule,
     CalendarModule,
-    MenuModule, 
+    MenuModule,
     ChartModule,
     DropdownModule,
     InputGroupAddonModule,
