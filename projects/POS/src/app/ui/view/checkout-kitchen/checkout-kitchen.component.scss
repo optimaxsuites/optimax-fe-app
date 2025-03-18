@@ -1,0 +1,100 @@
+// REUSE OR DEFINE COLOR VARIABLES (matching previous light theme)
+$bg-color: #ffffff;
+$panel-bg: #f9f9f9;
+$text-color: #333333;
+$accent-color: #4caf50;
+$border-color: #cccccc;
+$hover-bg: #eeeeee;
+
+.kitchen-order-grid-container {
+  display: flex;
+  flex-direction: column;
+  background-color: $bg-color;
+  min-height: 70vh; // adjust as needed
+  color: $text-color;
+
+  // TOP BAR
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: $panel-bg;
+    border-bottom: 1px solid $border-color;
+    padding: 0.75rem 1rem;
+
+    .top-bar-left,
+    .top-bar-center,
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+    }
+
+    .logo {
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      text-transform: uppercase;
+    }
+
+    .chef-name {
+      font-size: 1rem;
+      font-weight: 500;
+    }
+  }
+
+  // MAIN GRID
+  .grid-area {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+    background-color: $bg-color;
+    box-sizing: border-box;
+
+    .table-card {
+      background-color: $panel-bg;
+      border: 1px solid rgba($text-color, 0.1);
+      border-radius: 4px;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background-color: $hover-bg;
+      }
+
+      .status {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+
+      .table-number {
+        font-size: 0.9rem;
+        color: $text-color;
+      }
+    }
+  }
+}
+
+/* RESPONSIVE ADJUSTMENTS */
+@media (max-width: 768px) {
+  .top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .top-bar-center {
+      margin: 0.5rem 0;
+    }
+  }
+
+  .grid-area {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}

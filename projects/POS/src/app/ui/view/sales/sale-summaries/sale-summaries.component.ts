@@ -284,6 +284,14 @@ export class SaleSummariesComponent implements OnInit {
     };
   }
 
+  getSelectedCashierName(): string {
+    if (this.selectedCashier) {
+      const found = this.cashiers.find((c) => c.id === this.selectedCashier);
+      return found ? found.name : '';
+    }
+    return '';
+  }
+
   generatePeriodLabels(): string[] {
     const period = this.filterForm.get('period')?.value || 'today';
     switch (period) {

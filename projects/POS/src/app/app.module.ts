@@ -12,6 +12,7 @@ import { DialogModule } from 'primeng/dialog';
 import { TabViewModule } from 'primeng/tabview';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { CardModule } from 'primeng/card';
 import { SplitButtonModule } from 'primeng/splitbutton';
 import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
@@ -83,6 +84,8 @@ import { SaleComponent } from './ui/view/sales/sale/sale.component';
 import { ChartModule } from 'primeng/chart';
 import { SaleSummariesComponent } from './ui/view/sales/sale-summaries/sale-summaries.component';
 import { DropdownModule } from 'primeng/dropdown';
+import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
+import { KitchenOrderComponent } from './ui/view/kitchen-order/kitchen-order.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -114,6 +117,8 @@ import { DropdownModule } from 'primeng/dropdown';
     SaleSummaryComponent,
     SaleComponent,
     SaleSummariesComponent,
+    CheckoutKitchenComponent,
+    KitchenOrderComponent,
   ],
   imports: [
     // BrowserModule,
@@ -157,6 +162,7 @@ import { DropdownModule } from 'primeng/dropdown';
     InputGroupModule,
     CalendarModule,
     MenuModule,
+    CardModule,
     ChartModule,
     DropdownModule,
     InputGroupAddonModule,
