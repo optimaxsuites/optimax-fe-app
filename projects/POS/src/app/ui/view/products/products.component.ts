@@ -98,6 +98,7 @@ export class ProductsComponent implements OnInit {
   barcodeConfig = {
     barcodeType: 'CODE128',
     barcodeQuantity: 1,
+    variants: false
   };
   barcodes = [
     { label: 'CODE128 ', value: 'CODE128' },
@@ -631,7 +632,7 @@ export class ProductsComponent implements OnInit {
       const sku = this.activeItem.sku  
       if (typeof sku === 'string') {
         // const productCode = variantSKU ? `${sku}-${variantSKU}` : sku;
-    
+        const displayValue = `${this.activeItem.name.split(' ')[0]}-${sku}`
         for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
           const barcodeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
           JsBarcode(barcodeSvg, sku, {
@@ -640,13 +641,35 @@ export class ProductsComponent implements OnInit {
             width: 3,
             height: 150,
             displayValue: true,
+            text: displayValue
           });
     
           this.convertSvgToPng(barcodeSvg, shouldPrint);
 
         }
-      } else {
-        alert('Please fill in the SKU with valid data.');
+      } 
+      if(this.barcodeConfig.variants && Array.isArray(this.activeItem?.variants)){
+        console.log('variant print')
+        this.activeItem.variants.forEach((variant: { sku: string; name: string }) => {
+          const variantSKU = variant.sku
+          if (typeof variantSKU ==='string') {
+            const displayValue = `${variant.name.split(' ')[0]}-${variantSKU}`
+            for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
+              const variantBarcodeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+              JsBarcode(variantBarcodeSvg, variantSKU, {
+                format: this.barcodeConfig.barcodeType,
+                lineColor: '#000',
+                width: 3,
+                height: 150,
+                displayValue: true,
+                text: displayValue
+              });
+
+          this.convertSvgToPng(variantBarcodeSvg, shouldPrint);
+          console.log('variant printed')
+
+            }
+        }})
       }
     }
   

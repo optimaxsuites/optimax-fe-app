@@ -293,13 +293,31 @@
 
     <div class="">
       <label for="name">Quantity</label>
-      <input
+      <p-inputGroup>
+        <input
         class="name editInput"
         type="number"
         placeholder="1"
         id="name"
         [(ngModel)]="barcodeConfig.barcodeQuantity"
       />
+      <p-inputGroupAddon class="cursor-pointer bg-customBlue" (click)="barcodeConfig.barcodeQuantity = activeItem.effectiveQuantity">
+       <p class="cursor-pointer bg-customBlue text-white text-center" >Effective Quantity</p>
+    </p-inputGroupAddon>
+
+      </p-inputGroup>
+     
+    </div>
+    <div class="flex gap-3 items-center" *ngIf="activeItem.variants.length">
+      <input
+      class="name cursor-pointer"
+      type="checkbox"
+      
+      id="name"
+      [(ngModel)]="barcodeConfig.variants"
+    />
+      <label for="name">Include Variants</label>
+     
     </div>
 
     <!-- <svg id="barcode"></svg> -->
