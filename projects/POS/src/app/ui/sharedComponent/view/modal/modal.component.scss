@@ -21,10 +21,11 @@
   width: auto;
   height: auto;
   padding: 0 1rem;
-  max-height: 90%; /* Set a maximum height */
-  overflow-y: auto; /* Allow the modal to scroll internally */
+  max-height: 90%; 
+  overflow-y: auto; 
   display: flex;
   flex-direction: column;
+  min-width: 35%;
 }
 
 .modal-header {

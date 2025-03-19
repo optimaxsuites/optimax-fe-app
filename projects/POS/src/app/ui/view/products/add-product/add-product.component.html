@@ -969,8 +969,9 @@
   *ngIf="configureBarcode"
   (close)="configureBarcode = false"
   header="Configure Barcode"
+  class=""
 >
-  <div class="flex gap-3 mt-2 flex-col">
+  <div class="flex gap-3 mt-2 flex-col w-96">
     <div class="">
       <label for="type">Barcode Type</label>
       <ng-select
