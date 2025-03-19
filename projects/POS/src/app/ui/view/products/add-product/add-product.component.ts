@@ -469,7 +469,7 @@ export class AddProductComponent {
             key: 'tl',
             life: 3000,
           });
-          // this.addSuccessfull = true
+          this.addSuccessfull = true
         } else {
           this.messageService.add({
             severity: 'error',
@@ -871,22 +871,21 @@ export class AddProductComponent {
   generateBarcode(variantSKU?: string, shouldPrint?: boolean) {
     const sku = this.productForm.get('sku')?.value;
 
-    if (typeof sku == 'string') {
+    if (typeof sku === 'string') {
       const productCode = variantSKU ? `${sku}-${variantSKU}` : sku;
-
-      const barcodeSvg = document.createElementNS(
-        'http://www.w3.org/2000/svg',
-        'svg'
-      );
-      JsBarcode(barcodeSvg, productCode, {
-        format: this.barcodeConfig.barcodeType,
-        lineColor: '#000',
-        width: 3,
-        height: 150,
-        displayValue: true,
-      });
-
-      this.convertSvgToPng(barcodeSvg, shouldPrint);
+  
+      for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
+        const barcodeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        JsBarcode(barcodeSvg, productCode, {
+          format: this.barcodeConfig.barcodeType,
+          lineColor: '#000',
+          width: 3,
+          height: 150,
+          displayValue: true,
+        });
+  
+        this.convertSvgToPng(barcodeSvg, shouldPrint);
+      }
     } else {
       alert('Please fill in the SKU with valid data.');
     }
