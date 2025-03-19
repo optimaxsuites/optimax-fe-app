@@ -11,7 +11,7 @@ export const enum ProductExcelColumns {
 
   NAME = 0,
   DESCRIPTION,
-  // IMAGE_URL, // This may be unneeded
+  IMAGE,
   BRANCH,
   CODE,
   BASE_PRICE,

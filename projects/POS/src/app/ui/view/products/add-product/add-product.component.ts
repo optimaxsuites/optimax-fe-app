@@ -225,7 +225,6 @@ export class AddProductComponent {
       partNumber: ['', Validators.required],
       tax: [, [Validators.required, Validators.min(0)]],
       branch: ['', Validators.required],
-      branches: controlGroupForFormBranches,
       variant: [''],
       discount: [''],
       category: [''],
@@ -237,18 +236,20 @@ export class AddProductComponent {
       variants: [this.variants],
     };
 
-    if (this.fallBackToOldForm) delete fbGroup['branches'];
+    if (!this.fallBackToOldForm)
+      fbGroup['branches'] = controlGroupForFormBranches;
 
-    // Append additional validators depending on the business type
-    switch (this.businessType) {
-      case 'Pharmacy':
-        fbGroup['expiryDate'] = ['', Validators.required];
-        fbGroup['dosage'] = ['', Validators.required];
-        fbGroup['prescriptionRequired'] = [false];
-        break;
-      default:
-        break;
-    }
+    //TODO - Get endpoints for these
+    // // Append additional validators depending on the business type
+    // switch (this.businessType) {
+    //   case 'Pharmacy':
+    //     fbGroup['expiryDate'] = ['', Validators.required];
+    //     fbGroup['dosage'] = ['', Validators.required];
+    //     fbGroup['prescriptionRequired'] = [false];
+    //     break;
+    //   default:
+    //     break;
+    // }
 
     this.productForm = this.fb.group(fbGroup);
     if (!this.fallBackToOldForm) {

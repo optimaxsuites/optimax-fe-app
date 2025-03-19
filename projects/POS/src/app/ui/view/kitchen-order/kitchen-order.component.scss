@@ -6,7 +6,14 @@ $accent-color: #4caf50; // Green accent (adjust as needed)
 $border-color: #cccccc; // Subtle border color
 $hover-bg: #eeeeee; // Hover effect background
 
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
 .kitchen-order-container {
+  height: 100%;
   display: flex;
   flex-direction: row;
   background-color: $bg-color;

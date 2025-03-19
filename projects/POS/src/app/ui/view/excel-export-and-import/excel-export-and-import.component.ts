@@ -105,7 +105,7 @@ export class ExcelExportAndImportComponent implements OnInit {
     const headers: string[] = [];
     headers[ProductExcelColumns.NAME] = 'Name';
     headers[ProductExcelColumns.DESCRIPTION] = 'Description';
-    // headers[ProductExcelColumns.IMAGE_URL] = 'Image URL';
+    headers[ProductExcelColumns.IMAGE] = 'Insert Image here';
     headers[ProductExcelColumns.BRANCH] = 'Branch';
     headers[ProductExcelColumns.CODE] = 'Code';
     headers[ProductExcelColumns.BASE_PRICE] = 'Base Price';
@@ -130,7 +130,7 @@ export class ExcelExportAndImportComponent implements OnInit {
     sampleInfo[ProductExcelColumns.NAME] = 'Dummy Product';
     sampleInfo[ProductExcelColumns.DESCRIPTION] =
       'The Dummy Product does everything out of the box!';
-    // sampleInfo[ProductExcelColumns.IMAGE_URL] = ''; // TODO: Figure out how images should be added.
+    sampleInfo[ProductExcelColumns.IMAGE] = ''; // TODO: Figure out how images should be added.
     sampleInfo[ProductExcelColumns.BRANCH] = ''; // TODO: Fetch these from somewhere
     sampleInfo[ProductExcelColumns.CODE] = 1500;
     sampleInfo[ProductExcelColumns.BASE_PRICE] = 1200;
