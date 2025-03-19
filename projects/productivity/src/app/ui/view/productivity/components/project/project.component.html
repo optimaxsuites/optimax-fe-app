@@ -1,43 +1,24 @@
 <div class="bg-white">
+
+<div class="container">
   <app-back-button (click)="goBack()"></app-back-button>
 </div>
 
-<div
-  class="project-container bg-white shadow-md  flex flex-col justify-center items-center w-auto  "
->
-
-  <form [formGroup]="form" (ngSubmit)="saveProject()" class="project-form ">
+<div class="project-container">
+  <form [formGroup]="form" (ngSubmit)="saveProject()" class="project-form">
     <div class="form-section">
       <div class="form-field">
-        <label for="name" class="">Project Name <span>*</span></label>
-        <input
-          id="name"
-          type="text"
-          formControlName="name"
-          placeholder="Enter project name"
-        />
-        <p
-          class="error"
-          *ngIf="form.get('name')?.invalid && form.get('name')?.touched"
-        >
+        <label for="name">Project Name <span>*</span></label>
+        <input id="name" type="text" formControlName="name" placeholder="Enter project name" />
+        <p class="error" *ngIf="form.get('name')?.invalid && form.get('name')?.touched">
           Project name is required.
         </p>
       </div>
 
       <div class="form-field">
         <label for="description">Description <span>*</span></label>
-        <textarea
-          id="description"
-          formControlName="description"
-          placeholder="Enter project description"
-          rows="4"
-        ></textarea>
-        <p
-          class="error"
-          *ngIf="
-            form.get('description')?.invalid && form.get('description')?.touched
-          "
-        >
+        <textarea id="description" formControlName="description" placeholder="Enter project description" rows="4"></textarea>
+        <p class="error" *ngIf="form.get('description')?.invalid && form.get('description')?.touched">
           Description is required.
         </p>
       </div>
@@ -46,12 +27,7 @@
         <div class="form-field">
           <label for="startDate">Start Date <span>*</span></label>
           <input id="startDate" type="date" formControlName="startDate" />
-          <p
-            class="error"
-            *ngIf="
-              form.get('startDate')?.invalid && form.get('startDate')?.touched
-            "
-          >
+          <p class="error" *ngIf="form.get('startDate')?.invalid && form.get('startDate')?.touched">
             Start date is required.
           </p>
         </div>
@@ -59,16 +35,12 @@
         <div class="form-field">
           <label for="endDate">End Date <span>*</span></label>
           <input id="endDate" type="date" formControlName="endDate" />
-          <p
-            class="error"
-            *ngIf="form.get('endDate')?.invalid && form.get('endDate')?.touched"
-          >
+          <p class="error" *ngIf="form.get('endDate')?.invalid && form.get('endDate')?.touched">
             End date is required.
           </p>
         </div>
       </div>
 
-      <!-- Error message for invalid date selection -->
       <p class="error" *ngIf="dateError">{{ dateError }}</p>
 
       <div class="form-row">
@@ -80,12 +52,7 @@
             <option value="design">Design</option>
             <option value="marketing">Marketing</option>
           </select>
-          <p
-            class="error"
-            *ngIf="
-              form.get('category')?.invalid && form.get('category')?.touched
-            "
-          >
+          <p class="error" *ngIf="form.get('category')?.invalid && form.get('category')?.touched">
             Category is required.
           </p>
         </div>
@@ -98,12 +65,7 @@
             <option value="Medium">Medium</option>
             <option value="High">High</option>
           </select>
-          <p
-            class="error"
-            *ngIf="
-              form.get('priority')?.invalid && form.get('priority')?.touched
-            "
-          >
+          <p class="error" *ngIf="form.get('priority')?.invalid && form.get('priority')?.touched">
             Priority is required.
           </p>
         </div>
@@ -111,31 +73,10 @@
 
       <div class="form-field">
         <label for="budget">Budget <span>*</span></label>
-        <input
-          id="budget"
-          type="number"
-          formControlName="budget"
-          placeholder="Enter budget amount"
-        />
-        <p
-          class="error"
-          *ngIf="form.get('budget')?.invalid && form.get('budget')?.touched"
-        >
+        <input id="budget" type="number" formControlName="budget" placeholder="Enter budget amount" />
+        <p class="error" *ngIf="form.get('budget')?.invalid && form.get('budget')?.touched">
           Budget is required and must be greater than 0.
         </p>
-
-
-
-         <div class="form-field">
-          <label for="endDate">Date created<span>*</span></label>
-          <input id="endDate" type="date" formControlName="endDate" />
-          <p
-            class="error"
-            *ngIf="form.get('endDate')?.invalid && form.get('endDate')?.touched"
-          >
-            End date is required.
-          </p>
-        </div>
       </div>
 
       <div class="form-field">
@@ -148,59 +89,36 @@
           <option value="SIMPLE">Simple Task List</option>
           <option value="CUSTOM">Custom Template</option>
         </select>
-        <p
-          class="error"
-          *ngIf="form.get('template')?.invalid && form.get('template')?.touched"
-        >
+        <p class="error" *ngIf="form.get('template')?.invalid && form.get('template')?.touched">
           Template selection is required.
         </p>
       </div>
 
       <div class="form-field">
         <label for="assignee">Assignee <span>*</span></label>
-        <input
-          id="assignee"
-          type="text"
-          formControlName="assignee"
-          placeholder="Enter assignee name"
-        />
-        <p
-          class="error"
-          *ngIf="form.get('assignee')?.invalid && form.get('assignee')?.touched"
-        >
+        <input id="assignee" type="text" formControlName="assignee" placeholder="Enter assignee name" />
+        <p class="error" *ngIf="form.get('assignee')?.invalid && form.get('assignee')?.touched">
           Assignee is required.
         </p>
       </div>
 
-      <!-- Image Upload -->
       <div class="form-field">
         <label for="project-image">Project Image <span>*</span> </label>
         <input id="project-image" type="file" (change)="onFileChange($event)" />
-        <p
-          class="error"
-          *ngIf="
-            form.get('projectImage')?.invalid &&
-            form.get('projectImage')?.touched
-          "
-        >
+        <p class="error" *ngIf="form.get('projectImage')?.invalid && form.get('projectImage')?.touched">
           Project image is required.
         </p>
 
-        <!-- Image Preview -->
         <div *ngIf="imageUrl">
           <img [src]="imageUrl" alt="Project Preview" width="100" />
         </div>
       </div>
     </div>
 
-
     <div class="form-actions">
-      <button
-        type="submit"
-        class="submit-button w-60 flex justify-center items-center p-6"
-      >
-        Save
-      </button>
+      <button type="submit" class="submit-button">Save</button>
     </div>
   </form>
 </div>
+</div>
+
