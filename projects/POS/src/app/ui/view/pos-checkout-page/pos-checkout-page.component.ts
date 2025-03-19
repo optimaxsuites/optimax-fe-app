@@ -90,6 +90,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
+    console.log(this.scannedSKU.trim())
     if (event.key === 'Enter' && this.scannedSKU.trim() !== '') {
       this.processScannedSKU();
       this.scannedSKU = ''; // Reset input
@@ -99,14 +100,15 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   }
 
   processScannedSKU() {
+    console.log(this.scannedSKU)
     const product = this.categorizedProducts.find(
       (item) => item.sku === this.scannedSKU.trim()
     );
-
+console.log(product)
     if (product) {
       this.addToCart(product);
     } else {
-      alert('Product not found');
+      // alert('Product not found');
     }
   }
   loadOrder(order: any) {
