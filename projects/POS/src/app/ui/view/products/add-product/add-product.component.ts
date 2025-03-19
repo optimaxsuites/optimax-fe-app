@@ -405,6 +405,7 @@ export class AddProductComponent {
   addToProduct() {
     const userName = sessionStorage.getItem('username');
 
+    console.log(this.productForm)
     if (this.productForm.invalid) {
       this.messageService.add({
         severity: 'error',
@@ -1121,5 +1122,26 @@ export class AddProductComponent {
     console.log(this.branches);
     delete this.branches[this.branches.findIndex((br) => br == branchData)];
     // this.dataOfChosenBranches = this.getDataOfChosenBranches;
+  }
+
+  generateRandomSku(form?: any, fieldName?: string) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let randomPart = '';
+  
+    for (let i = 0; i < 4; i++) {
+      randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+  
+    const timestamp = Date.now().toString().slice(-5);
+    const generatedSku = `PROD-${randomPart}-${timestamp}`;
+  
+    if (form && fieldName) {
+      if (form instanceof FormGroup) {
+        form.get(fieldName)?.setValue(generatedSku); 
+      } else if (typeof form === 'object' && fieldName in form) {
+        (form )[fieldName] = generatedSku; 
+      }
+    }
+  
   }
 }

@@ -309,13 +309,12 @@
                 placeholder="SKU"
               />
               <button
-                class="btn create-invoice-btn mt-3"
+                class="btn create-invoice-btn cursor-pointer"
                 type="button"
-                (click)="addSuccessfull = true"
-                [disabled]="!isSKUValid"
-                [class]="!isSKUValid ? 'disabled-btn' : ''"
+                (click)="generateRandomSku(productForm, 'sku')"
+                
               >
-                Barcode
+              <i class="fa-solid fa-arrows-rotate"></i>   
               </button>
             </div>
           </div>
@@ -473,7 +472,7 @@
             >
             </ng-select>
             <button
-              class="btn create-invoice-btn mt-3"
+              class="btn create-invoice-btn "
               type="button"
               (click)="openAddCategory = true"
             >
@@ -640,7 +639,7 @@
 
 <!-- SECTION: Modal for adding variants -->
 <app-side-modal *ngIf="openAddVariant" (close)="openAddVariant = false">
-  <div class="modal-header flex justify-between items-center text-gray-700">
+  <div class="modal-header flex justify-between items-center text-gray-700 px-4">
     <h2 class="font-semibold pb-0 mb-0">Variants</h2>
 
     <div class="flex gap-3">
@@ -685,14 +684,34 @@
         placeholder="variant quantity"
       />
 
-      <label for="variant-sku">SKU</label>
+      <!-- <label for="variant-sku">SKU</label>
       <input
         type="text"
         id="variant-sku"
         [(ngModel)]="newVariant.sku"
         class="editInput mb-2 outline-none"
         placeholder="variant SKU"
-      />
+      /> -->
+      <label for="variant-sku">SKU</label>
+
+      <div class="flex inputAndBtn">
+
+        <input
+        type="text"
+        id="variant-sku"
+        [(ngModel)]="newVariant.sku"
+        class="editInput outline-none"
+        placeholder="variant SKU"
+        />
+        <button
+          class="btn create-invoice-btn cursor-pointer"
+          type="button"
+          (click)="generateRandomSku(newVariant, 'sku')"
+          
+        >
+        <i class="fa-solid fa-arrows-rotate"></i>   
+        </button>
+      </div>
 
       <label for="variant-color">Color</label>
       <input
