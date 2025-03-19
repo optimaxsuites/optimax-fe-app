@@ -406,6 +406,7 @@ export class AddProductComponent {
   addToProduct() {
     const userName = sessionStorage.getItem('username');
 
+    console.log(this.productForm)
     if (this.productForm.invalid) {
       this.messageService.add({
         severity: 'error',
@@ -468,7 +469,7 @@ export class AddProductComponent {
             key: 'tl',
             life: 3000,
           });
-          // this.addSuccessfull = true
+          this.addSuccessfull = true
         } else {
           this.messageService.add({
             severity: 'error',
@@ -870,22 +871,21 @@ export class AddProductComponent {
   generateBarcode(variantSKU?: string, shouldPrint?: boolean) {
     const sku = this.productForm.get('sku')?.value;
 
-    if (typeof sku == 'string') {
+    if (typeof sku === 'string') {
       const productCode = variantSKU ? `${sku}-${variantSKU}` : sku;
-
-      const barcodeSvg = document.createElementNS(
-        'http://www.w3.org/2000/svg',
-        'svg'
-      );
-      JsBarcode(barcodeSvg, productCode, {
-        format: this.barcodeConfig.barcodeType,
-        lineColor: '#000',
-        width: 3,
-        height: 150,
-        displayValue: true,
-      });
-
-      this.convertSvgToPng(barcodeSvg, shouldPrint);
+  
+      for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
+        const barcodeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        JsBarcode(barcodeSvg, productCode, {
+          format: this.barcodeConfig.barcodeType,
+          lineColor: '#000',
+          width: 3,
+          height: 150,
+          displayValue: true,
+        });
+  
+        this.convertSvgToPng(barcodeSvg, shouldPrint);
+      }
     } else {
       alert('Please fill in the SKU with valid data.');
     }
@@ -1122,5 +1122,26 @@ export class AddProductComponent {
     console.log(this.branches);
     delete this.branches[this.branches.findIndex((br) => br == branchData)];
     // this.dataOfChosenBranches = this.getDataOfChosenBranches;
+  }
+
+  generateRandomSku(form?: any, fieldName?: string) {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let randomPart = '';
+  
+    for (let i = 0; i < 4; i++) {
+      randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+  
+    const timestamp = Date.now().toString().slice(-5);
+    const generatedSku = `prod-${randomPart}-${timestamp}`;
+  
+    if (form && fieldName) {
+      if (form instanceof FormGroup) {
+        form.get(fieldName)?.setValue(generatedSku); 
+      } else if (typeof form === 'object' && fieldName in form) {
+        (form )[fieldName] = generatedSku; 
+      }
+    }
+  
   }
 }

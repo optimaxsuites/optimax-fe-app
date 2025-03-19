@@ -145,29 +145,37 @@
               ></i>
 
               <p-overlayPanel #op ngClass="padding: 0;">
-                <ul class="py-2 text-xl">
+                <ul class=" ">
                   <li
-                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
+                    class=" table-item-panel"
                     (click)="openViewProduct(item)"
                     style="column-gap: 0.5rem"
                   >
-                    <i class="pi pi-eye table-item"></i>
+                    <i class="pi pi-eye table-item  me-2"></i>
                     <span>View</span>
                   </li>
                   <li
-                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
+                    class=" table-item-panel"
                     (click)="openEdit(item)"
                     style="column-gap: 0.5rem"
                   >
-                    <i class="pi pi-pen-to-square table-item"></i>
+                    <i class="pi pi-pen-to-square table-item me-2"></i>
                     <span>Edit</span>
                   </li>
                   <li
-                    class="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
+                  class=" table-item-panel "
+                  (click)="promptBarcode(item, op)"
+                  style="column-gap: 0.5rem"
+                >
+                  <i class="pi pi-download table-item me-2"></i>
+                  <span>Generate Barcode</span>
+                </li>
+                  <li
+                    class=" table-item-panel"
                     (click)="openDeleteModal(item)"
                     style="column-gap: 0.5rem"
                   >
-                    <i class="pi pi-times-circle table-item"></i>
+                    <i class="pi pi-times-circle table-item me-2"></i>
                     <span>Delete</span>
                   </li>
                 </ul>
@@ -262,3 +270,47 @@
   ></app-add-product>
 </div>
 <p-toast position="top-right" key="tl" />
+
+
+<app-modal
+  *ngIf="configureBarcode"
+  (close)="configureBarcode = false"
+  header="Configure Barcode"
+>
+  <div class="flex gap-3 mt-2 flex-col">
+    <div class="">
+      <label for="type">Barcode Type</label>
+      <ng-select
+        [items]="barcodes"
+        bindLabel="label"
+        bindValue="value"
+        [(ngModel)]="barcodeConfig.barcodeType"
+        [multiple]="false"
+        placeholder="Select branch"
+      >
+      </ng-select>
+    </div>
+
+    <div class="">
+      <label for="name">Quantity</label>
+      <input
+        class="name editInput"
+        type="number"
+        placeholder="1"
+        id="name"
+        [(ngModel)]="barcodeConfig.barcodeQuantity"
+      />
+    </div>
+
+    <!-- <svg id="barcode"></svg> -->
+
+    <div class="flex justify-between gap-10 my-5 items-center">
+      <button class="btn create-invoice-btn w-full" (click)="generateBarcode()">
+        Get PDF
+      </button>
+      <button class="btn create-invoice-btn w-full" (click)="printBarcode()">
+        Print
+      </button>
+    </div>
+  </div>
+</app-modal>

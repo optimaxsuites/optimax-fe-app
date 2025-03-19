@@ -61,6 +61,7 @@ export class ProductsComponent implements OnInit {
   deleteModal: boolean = false;
   deleteMultipleItemsModal = false;
   editProduct: boolean = false;
+  configureBarcode:boolean = false;
 
   discountTypes = [
     { label: 'Periodic', value: 'periodic' },
@@ -94,7 +95,29 @@ export class ProductsComponent implements OnInit {
       .sku as (typeof this.productTableHeaders)[keyof typeof this.productTableHeaders],
     order: 'asc' as 'asc' | 'desc',
   };
+  barcodeConfig = {
+    barcodeType: 'CODE128',
+    barcodeQuantity: 1,
+  };
+  barcodes = [
+    { label: 'CODE128 ', value: 'CODE128' },
+    // { label: 'CODE128 A/B/C', value: 'CODE128' },
+    { label: 'EAN-13', value: 'EAN13' },
+    { label: 'EAN-8', value: 'EAN8' },
+    // { label: 'EAN-5', value: 'EAN5' },
+    // { label: 'EAN-2', value: 'EAN2' },
+    { label: 'UPC (A)', value: 'UPC' },
+    { label: 'UPC (E)', value: 'UPC' },
+    { label: 'ITF', value: 'ITF' },
+    // { label: 'ITF-14', value: 'ITF14' },
+    // { label: 'MSI10', value: 'MSI10' },
+    // { label: 'MSI11', value: 'MSI11' },
+    // { label: 'MSI1010', value: 'MSI1010' },
+    // { label: 'MSI1110', value: 'MSI1110' },
 
+    { label: 'Codabar', value: 'Codabar' },
+    { label: 'CODE39', value: 'CODE39' },
+  ] as const;
   /**
    * This is just to maintain the order used in `productTableHeaders` when it is iterated with `keyValue` in the html template
    * @param a
@@ -590,4 +613,131 @@ export class ProductsComponent implements OnInit {
       });
     }
   }
+
+  promptBarcode(item: any, op: any){
+    op.hide()
+
+    this.configureBarcode = true
+    this.activeItem = item;
+
+  }
+
+  printBarcode() {
+
+    this.generateBarcode(true);
+  }
+
+   generateBarcode(shouldPrint?: boolean) {
+      const sku = this.activeItem.sku  
+      if (typeof sku === 'string') {
+        // const productCode = variantSKU ? `${sku}-${variantSKU}` : sku;
+    
+        for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
+          const barcodeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          JsBarcode(barcodeSvg, sku, {
+            format: this.barcodeConfig.barcodeType,
+            lineColor: '#000',
+            width: 3,
+            height: 150,
+            displayValue: true,
+          });
+    
+          this.convertSvgToPng(barcodeSvg, shouldPrint);
+
+        }
+      } else {
+        alert('Please fill in the SKU with valid data.');
+      }
+    }
+  
+    convertSvgToPng(svgElement: Node, shouldPrint?: boolean) {
+      const svgClone = svgElement.cloneNode(true) as SVGSVGElement;
+      svgClone.setAttribute("width", "300");
+      svgClone.setAttribute("height", "150");
+    
+      if (shouldPrint) {
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        document.body.appendChild(iframe);
+    
+        const doc = iframe.contentWindow?.document;
+        if (doc) {
+          doc.open();
+          doc.write(`
+            <html>
+            <head>
+              <title>Print Barcode</title>
+              <style>
+                @media print {
+                  body { margin: 0; padding: 0; }
+                  @page { size: auto; margin: 0; }
+                }
+              </style>
+            </head>
+            <body onload="window.print();">
+              ${new XMLSerializer().serializeToString(svgClone)}
+            </body>
+            </html>
+          `);
+          doc.close();
+    
+          setTimeout(() => document.body.removeChild(iframe), 5000);
+        }
+      } else {
+        const serializer = new XMLSerializer();
+        const svgString = serializer.serializeToString(svgElement);
+        const encodedSvg = encodeURIComponent(svgString);
+        const imgSrc = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
+        this.generatePDF(imgSrc);
+      }
+    }
+    
+   generatePDF(imgData: string) {
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: 'a4',
+      });
+  
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (100 * pdfWidth) / 200;
+  
+      const padding = 10;
+      const barcodeWidth = 150;
+      const barcodeHeight = 50;
+      const itemsPerRow = Math.floor((pdfWidth - 2 * padding) / pdfWidth);
+      let currentX = padding;
+      let currentY = padding;
+  
+      for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
+        pdf.addImage(
+          imgData,
+          'PNG',
+          currentX,
+          currentY,
+          barcodeWidth,
+          barcodeHeight
+        );
+  
+        currentX += pdfWidth;
+        if ((i + 1) % itemsPerRow === 0) {
+          currentX = padding;
+          currentY += barcodeHeight + padding;
+        }
+  
+        if (currentX + pdfWidth > pdf.internal.pageSize.getWidth()) {
+          currentX = padding;
+          currentY += pdfHeight + padding;
+        }
+  
+        if (currentY + pdfHeight + padding > pdf.internal.pageSize.getHeight()) {
+          pdf.addPage();
+          currentX = padding;
+          currentY = padding;
+        }
+      }
+  
+      pdf.save('barcodes.pdf');
+    }
+    
 }

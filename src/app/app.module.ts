@@ -121,7 +121,7 @@ import { KitchenOrderComponent } from './ui/view/kitchen-order/kitchen-order.com
     KitchenOrderComponent,
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
     // UserModule,
     // AppRoutingModule,
     CommonModule,
