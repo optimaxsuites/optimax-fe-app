@@ -650,12 +650,12 @@ export class ProductsComponent implements OnInit {
     }
   
     if (Array.isArray(this.activeItem?.variants)) {
-      this.activeItem.variants.forEach((variant: { sku: string; name: string }) => {
+      this.activeItem.variants.forEach((variant: { sku: string; name: string; quantity: number }) => {
         const variantSKU = variant?.sku;
         if (typeof variantSKU === 'string') {
           const displayValue = `${(variant.name?.split(' ')[0] || '').toLowerCase()}-${variantSKU}`;
   
-          for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
+          for (let i = 0; i < variant.quantity; i++) {
             const barcodeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             JsBarcode(barcodeSvg, variantSKU, {
               format: this.barcodeConfig.barcodeType,
