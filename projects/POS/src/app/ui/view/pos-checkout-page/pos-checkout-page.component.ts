@@ -93,9 +93,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     console.log(this.scannedSKU.trim())
     if (event.key === 'Enter' && this.scannedSKU.trim() !== '') {
       this.processScannedSKU();
-      this.scannedSKU = ''; // Reset input
+      this.scannedSKU = '';
     } else {
-      this.scannedSKU += event.key; // Append keypress
+      this.scannedSKU += event.key; 
     }
   }
 

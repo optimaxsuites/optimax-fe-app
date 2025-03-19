@@ -1125,7 +1125,7 @@ export class AddProductComponent {
   }
 
   generateRandomSku(form?: any, fieldName?: string) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     let randomPart = '';
   
     for (let i = 0; i < 4; i++) {
@@ -1133,7 +1133,7 @@ export class AddProductComponent {
     }
   
     const timestamp = Date.now().toString().slice(-5);
-    const generatedSku = `PROD${randomPart}${timestamp}`;
+    const generatedSku = `prod-${randomPart}-${timestamp}`;
   
     if (form && fieldName) {
       if (form instanceof FormGroup) {
