@@ -1,9 +1,13 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 // import * as ExcelJS from "exceljs"
 import { Column, Row, Workbook } from 'exceljs';
 import { ProductExcelColumns } from '../../models/enums';
 import { PosServiceService } from '../../service/pos-service.service';
-import { DiscountDTO, ProductCategoryDTO } from '../../models/interface';
+import {
+  DiscountDTO,
+  ProductCategoryDTO,
+  ProductJSONFormat,
+} from '../../models/interface';
 
 @Component({
   selector: 'app-excel-export-and-import',
@@ -13,6 +17,8 @@ import { DiscountDTO, ProductCategoryDTO } from '../../models/interface';
 export class ExcelExportAndImportComponent implements OnInit {
   @Output() fileUploaded = new EventEmitter<File>();
   @Output() close = new EventEmitter<false>();
+
+  @Input() parsedProductArray: ProductJSONFormat[] = [];
 
   private categoryNames: string[] = ['Food', 'Medicine'];
   private discountNames: string[] = ['Black Friday', '10%'];
@@ -105,7 +111,7 @@ export class ExcelExportAndImportComponent implements OnInit {
     const headers: string[] = [];
     headers[ProductExcelColumns.NAME] = 'Name';
     headers[ProductExcelColumns.DESCRIPTION] = 'Description';
-    headers[ProductExcelColumns.IMAGE] = 'Insert Image here';
+    // headers[ProductExcelColumns.IMAGE_URL] = 'Image URL';
     headers[ProductExcelColumns.BRANCH] = 'Branch';
     headers[ProductExcelColumns.CODE] = 'Code';
     headers[ProductExcelColumns.BASE_PRICE] = 'Base Price';
@@ -130,7 +136,7 @@ export class ExcelExportAndImportComponent implements OnInit {
     sampleInfo[ProductExcelColumns.NAME] = 'Dummy Product';
     sampleInfo[ProductExcelColumns.DESCRIPTION] =
       'The Dummy Product does everything out of the box!';
-    sampleInfo[ProductExcelColumns.IMAGE] = ''; // TODO: Figure out how images should be added.
+    // sampleInfo[ProductExcelColumns.IMAGE_URL] = ''; // TODO: Figure out how images should be added.
     sampleInfo[ProductExcelColumns.BRANCH] = ''; // TODO: Fetch these from somewhere
     sampleInfo[ProductExcelColumns.CODE] = 1500;
     sampleInfo[ProductExcelColumns.BASE_PRICE] = 1200;
@@ -235,5 +241,28 @@ export class ExcelExportAndImportComponent implements OnInit {
   }
   closeModal() {
     this.close.emit(false);
+  }
+
+  // onImageUpload(event: any) {
+  //   const file = event.target.files[0];
+
+  //   if (file) {
+  //     const reader = new FileReader();
+  //     reader.onload = (e: any) => {
+  //       this.productImage = e.target.result;
+  //     };
+  //     reader.readAsDataURL(file);
+  //   }
+  // }
+  onImageUpload(event: any) {
+    const file = event.target.files[0];
+
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        // this.productImage = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
   }
 }

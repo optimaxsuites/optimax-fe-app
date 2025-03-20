@@ -50,11 +50,14 @@
         ></app-button>
         @if(isImportDialogOpen){
         <div class="overlay"></div>
-        <app-excel-export-and-import
-          (fileUploaded)="processExcelImport($event)"
-          (close)="toggleImportDialog()"
-          class="excel-import"
-        ></app-excel-export-and-import>
+        <div>
+          <app-excel-export-and-import
+            (fileUploaded)="processExcelImport($event)"
+            (close)="toggleImportDialog()"
+            class="excel-import"
+            [parsedProductArray]="parsedProductData"
+          ></app-excel-export-and-import>
+        </div>
         }
       </ng-template>
     </p-toolbar>
@@ -147,15 +150,15 @@
               <p-overlayPanel #op ngClass="padding: 0;">
                 <ul class=" ">
                   <li
-                    class=" table-item-panel"
+                    class="table-item-panel"
                     (click)="openViewProduct(item)"
                     style="column-gap: 0.5rem"
                   >
-                    <i class="pi pi-eye table-item  me-2"></i>
+                    <i class="pi pi-eye table-item me-2"></i>
                     <span>View</span>
                   </li>
                   <li
-                    class=" table-item-panel"
+                    class="table-item-panel"
                     (click)="openEdit(item)"
                     style="column-gap: 0.5rem"
                   >
@@ -163,15 +166,15 @@
                     <span>Edit</span>
                   </li>
                   <li
-                  class=" table-item-panel "
-                  (click)="promptBarcode(item, op)"
-                  style="column-gap: 0.5rem"
-                >
-                  <i class="pi pi-download table-item me-2"></i>
-                  <span>Generate Barcode</span>
-                </li>
+                    class="table-item-panel"
+                    (click)="promptBarcode(item, op)"
+                    style="column-gap: 0.5rem"
+                  >
+                    <i class="pi pi-download table-item me-2"></i>
+                    <span>Generate Barcode</span>
+                  </li>
                   <li
-                    class=" table-item-panel"
+                    class="table-item-panel"
                     (click)="openDeleteModal(item)"
                     style="column-gap: 0.5rem"
                   >
@@ -270,7 +273,6 @@
   ></app-add-product>
 </div>
 <p-toast position="top-right" key="tl" />
-
 
 <app-modal
   *ngIf="configureBarcode"

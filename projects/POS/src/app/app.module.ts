@@ -11,6 +11,8 @@ import { ToastModule } from 'primeng/toast';
 import { SidebarModule } from 'primeng/sidebar';
 import { DialogModule } from 'primeng/dialog';
 import { TabViewModule } from 'primeng/tabview';
+import { BadgeModule } from 'primeng/badge';
+import { MenubarModule } from 'primeng/menubar';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SplitButtonModule } from 'primeng/splitbutton';
@@ -152,6 +154,8 @@ import { MenuModule } from 'primeng/menu';
     LargeSideModalComponent,
     ButtonComponent,
     ModalComponent,
+    BadgeModule,
+    MenubarModule,
     SideModalComponent,
     SearchbarComponent,
     NavTabComponent,
