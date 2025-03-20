@@ -59,20 +59,26 @@ export class CartItemCardComponent implements Business {
 
  
 
-  updateItemQuantity(item: any, change: number, variant?: any, ) {
+  updateItemQuantity(item: any, change: number, variant?: any) {
     if (variant) {
       variant.selectedQuantity = Math.max((variant.selectedQuantity ?? 0) + change, 0);
   
       if (variant.selectedQuantity === 0) {
         item.selectedVariants = item.selectedVariants.filter((v: any) => v !== variant);
       }
-    } else {
+    }
+  
+    if (!variant || item.selectedVariants.length === 0) {
       item.count = Math.max((item.count ?? 0) + change, 0);
   
       this.countChange.emit(item.count);
-
     }
+  
+    // if (item.count === 0 && item.selectedVariants.length === 0) {
+    //   this.cartItems = this.cartItems.filter((cartItem: any) => cartItem !== item);
+    // }
   }
+  
   
   
 }

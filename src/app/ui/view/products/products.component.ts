@@ -98,6 +98,7 @@ export class ProductsComponent implements OnInit {
   barcodeConfig = {
     barcodeType: 'CODE128',
     barcodeQuantity: 1,
+    variants: false
   };
   barcodes = [
     { label: 'CODE128 ', value: 'CODE128' },
@@ -627,28 +628,111 @@ export class ProductsComponent implements OnInit {
     this.generateBarcode(true);
   }
 
-   generateBarcode(shouldPrint?: boolean) {
-      const sku = this.activeItem.sku  
-      if (typeof sku === 'string') {
-        // const productCode = variantSKU ? `${sku}-${variantSKU}` : sku;
-    
-        for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
-          const barcodeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          JsBarcode(barcodeSvg, sku, {
-            format: this.barcodeConfig.barcodeType,
-            lineColor: '#000',
-            width: 3,
-            height: 150,
-            displayValue: true,
-          });
-    
-          this.convertSvgToPng(barcodeSvg, shouldPrint);
-
-        }
-      } else {
-        alert('Please fill in the SKU with valid data.');
+  generateBarcode(shouldPrint?: boolean) {
+    const barcodes: { svg: SVGSVGElement; text: string }[] = [];
+  
+    const sku = this.activeItem?.sku;
+    if (typeof sku === 'string') {
+      const displayValue = `${(this.activeItem.name?.split(' ')[0] || '').toLowerCase()}-${sku}`;
+      
+      for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
+        const barcodeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        JsBarcode(barcodeSvg, sku, {
+          format: this.barcodeConfig.barcodeType,
+          lineColor: '#000',
+          width: 3,
+          height: 150,
+          displayValue: true,
+          text: displayValue,
+        });
+        barcodes.push({ svg: barcodeSvg, text: displayValue });
       }
     }
+  
+    if (Array.isArray(this.activeItem?.variants)) {
+      this.activeItem.variants.forEach((variant: { sku: string; name: string; quantity: number }) => {
+        const variantSKU = variant?.sku;
+        if (typeof variantSKU === 'string') {
+          const displayValue = `${(variant.name?.split(' ')[0] || '').toLowerCase()}-${variantSKU}`;
+  
+          for (let i = 0; i < variant.quantity; i++) {
+            const barcodeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            JsBarcode(barcodeSvg, variantSKU, {
+              format: this.barcodeConfig.barcodeType,
+              lineColor: '#000',
+              width: 3,
+              height: 150,
+              displayValue: true,
+              text: displayValue,
+            });
+            barcodes.push({ svg: barcodeSvg, text: displayValue });
+          }
+        }
+      });
+    }
+  
+    // Convert and print each barcode separately
+    if (shouldPrint) {
+      this.printBarcodesSeparately(barcodes);
+    }
+  }
+
+  printBarcodesSeparately(barcodes: { svg: SVGSVGElement; text: string }[]) {
+    barcodes.forEach((barcode, index) => {
+      setTimeout(() => {
+        const svgString = new XMLSerializer().serializeToString(barcode.svg);
+        const encodedSvg = encodeURIComponent(svgString);
+        
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx?.drawImage(img, 0, 0);
+          
+          const imgData = canvas.toDataURL('image/png');
+          this.printSingleImage(imgData);
+        };
+        img.src = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
+      }, index * 1500); // Small delay to ensure separate print jobs
+    });
+  }
+
+  
+  printSingleImage(imgSrc: string) {
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+  
+    const doc = iframe.contentWindow?.document;
+    if (doc) {
+      doc.write(`
+        <html>
+        <head>
+          <style>
+            @media print {
+              @page { margin: 0; }
+              body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+              img { max-width: 100%; max-height: 100%; }
+            }
+          </style>
+        </head>
+        <body>
+          <img src="${imgSrc}">
+        </body>
+        </html>
+      `);
+      doc.close();
+  
+      setTimeout(() => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        setTimeout(() => document.body.removeChild(iframe), 5000);
+      }, 500);
+    }
+  }
+  
   
     convertSvgToPng(svgElement: Node, shouldPrint?: boolean) {
       const svgClone = svgElement.cloneNode(true) as SVGSVGElement;

@@ -100,17 +100,29 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   }
 
   processScannedSKU() {
-    console.log(this.scannedSKU)
-    const product = this.categorizedProducts.find(
+    
+    let product = this.categorizedProducts.find(
       (item) => item.sku === this.scannedSKU.trim()
     );
-console.log(product)
+  
     if (product) {
       this.addToCart(product);
-    } else {
-      // alert('Product not found');
+      return;
     }
+  
+    for (const item of this.categorizedProducts) {
+      if (item.variants && Array.isArray(item.variants)) {
+        const variant = item.variants.find(v => v.sku === this.scannedSKU.trim());
+        if (variant) {
+          this.addToCart(item, variant);
+          return;
+        }
+      }
+    }
+  
+    console.log('Product not found');
   }
+  
   loadOrder(order: any) {
     console.log(order);
     this.cartItems = order.cart.map((item: any) => ({ ...item }));
@@ -195,25 +207,31 @@ console.log(product)
   }
 
   calculateTotals() {
-    console.log(this.cartItems)
+    console.log(this.cartItems);
+  
     this.subtotal = this.cartItems.reduce((acc, item) => {
-      if (item.selectedVariants && item.selectedVariants.length > 0) {
-        return acc + item.selectedVariants.reduce(
-          (variantAcc: number, variant: any) => variantAcc + (variant.selectedQuantity * variant.price), 
-          0
-        );
-      } else {
-        return acc + Number(item.cartPriceTotal); 
-      }
+      let itemTotal = (item.count ?? 0) * parseFloat(item.effectivePrice || "0");
+  
+      let variantsTotal = (item.selectedVariants ?? []).reduce(
+        (variantAcc, variant) =>
+          variantAcc + (variant.selectedQuantity ?? 0) * (Number(variant.price) || 0),
+        0
+      );
+  
+      return acc + itemTotal + variantsTotal;
     }, 0);
+  
     const productDiscount = this.cartItems.reduce(
       (acc, item) => acc + (item.discountedPrice || 0),
       0
     );
     this.displayedDiscount = this.discount + productDiscount;
+  
     this.tax = this.subtotal * 0.1;
-    this.total = this.subtotal + this.tax - (this.discount + productDiscount);
+  
+    this.total = this.subtotal + this.tax - this.displayedDiscount;
   }
+  
 
   handleCountChange(newCount: number, index: number, variant?: any) {
     this.cartItems[index].cartPriceTotal = (
