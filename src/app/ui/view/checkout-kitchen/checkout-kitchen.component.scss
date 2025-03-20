@@ -1,27 +1,39 @@
-// REUSE OR DEFINE COLOR VARIABLES (matching previous light theme)
-$bg-color: #ffffff;
+/* kitchen-order.component.scss */
+
+// Example color variables. Adjust to match mod.optimaxsuites.com style.
+$dark-header-bg: #23242a;
+$header-text-color: #ffffff;
 $panel-bg: #f9f9f9;
+$card-bg: #ffffff;
 $text-color: #333333;
 $accent-color: #4caf50;
 $border-color: #cccccc;
 $hover-bg: #eeeeee;
 
-.kitchen-order-grid-container {
+/* Increase base font size */
+html,
+body {
+  font-size: 2rem; /* Adjust up/down as desired */
+}
+
+.kitchen-order-container {
   display: flex;
   flex-direction: column;
-  background-color: $bg-color;
-  min-height: 70vh; // adjust as needed
+  min-height: 80vh;
+  background-color: $panel-bg;
   color: $text-color;
+  font-family: "Segoe UI", Roboto, Arial, sans-serif;
 
-  // TOP BAR
+  /* TOP BAR (p-menubar) */
   .top-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background-color: $panel-bg;
-    border-bottom: 1px solid $border-color;
-    padding: 0.75rem 1rem;
-
+    border-radius: 0;
+    border: none;
+    background-color: $dark-header-bg; /* Darker background for header */
+    border-bottom: 2px solid darken($dark-header-bg, 10%);
+    .ui-menubar-root-list {
+      /* This targets the Menubar list container if you want spacing overrides */
+      margin: 0 1rem;
+    }
     .top-bar-left,
     .top-bar-center,
     .top-bar-right {
@@ -29,55 +41,164 @@ $hover-bg: #eeeeee;
       align-items: center;
     }
 
+    .top-bar-left {
+      margin-right: auto;
+    }
+
+    .top-bar-center {
+      justify-content: center;
+      flex: 1;
+      text-align: center;
+    }
+
+    .top-bar-right {
+      margin-left: auto;
+    }
+
     .logo {
       font-weight: bold;
-      font-size: 1.2rem;
+      font-size: 1.3rem;
+      color: $header-text-color;
+      margin-right: 2rem;
     }
 
     h1 {
       margin: 0;
-      font-size: 1.4rem;
+      font-size: 1.6rem;
+      color: $header-text-color;
       text-transform: uppercase;
+      letter-spacing: 1px;
     }
 
     .chef-name {
-      font-size: 1rem;
+      font-size: 1.1rem;
       font-weight: 500;
+      color: $header-text-color;
     }
   }
 
-  // MAIN GRID
+  /* MAIN CONTENT WRAPPER */
+  .main-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    padding: 1rem;
+  }
+
+  /* GRID AREA for Table Cards */
   .grid-area {
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 1rem;
-    padding: 1rem;
-    background-color: $bg-color;
+    padding: 0.5rem;
     box-sizing: border-box;
 
     .table-card {
-      background-color: $panel-bg;
-      border: 1px solid rgba($text-color, 0.1);
+      background-color: $card-bg;
       border-radius: 4px;
-      padding: 1rem;
-      text-align: center;
+      border: 1px solid rgba($text-color, 0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
       cursor: pointer;
-      transition: background-color 0.2s;
 
       &:hover {
         background-color: $hover-bg;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
       }
 
-      .status {
-        font-size: 1rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
+      .table-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        .table-number {
+          font-weight: 600;
+          font-size: 1.2rem;
+          color: $text-color;
+        }
+
+        .status-badge {
+          margin-left: 0.5rem;
+        }
       }
 
-      .table-number {
-        font-size: 0.9rem;
-        color: $text-color;
+      .table-card-content {
+        padding: 0.5rem 0;
+        font-size: 0.95rem;
+      }
+
+      // Example color-coded left border for statuses
+      &.status-processing {
+        border-left: 5px solid #ff9800;
+      }
+      &.status-pending {
+        border-left: 5px solid #f44336;
+      }
+      &.status-completed {
+        border-left: 5px solid #4caf50;
+      }
+    }
+  }
+
+  /* ORDER DETAILS (Right Panel) */
+  .order-details {
+    width: 380px;
+    margin-left: 1rem;
+
+    .ui-panel-header {
+      font-size: 1.2rem;
+      font-weight: 600;
+      background-color: $dark-header-bg;
+      color: $header-text-color;
+    }
+
+    .ui-panel-content {
+      background-color: $card-bg;
+    }
+
+    .details-body {
+      padding: 1rem;
+
+      .order-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+
+        .item-name {
+          font-weight: 600;
+          font-size: 1rem;
+        }
+        .item-quantity {
+          font-size: 1rem;
+          color: $text-color;
+        }
+      }
+
+      .additional-note {
+        margin-top: 1.5rem;
+
+        h3 {
+          margin: 0 0 0.5rem;
+          font-size: 1.1rem;
+        }
+
+        p {
+          margin: 0;
+          line-height: 1.4;
+        }
+      }
+    }
+
+    .details-footer {
+      display: flex;
+      justify-content: flex-end;
+      padding: 1rem;
+      border-top: 1px solid $border-color;
+
+      button {
+        font-size: 0.95rem;
+        padding: 0.75rem 1.25rem;
       }
     }
   }
@@ -85,16 +206,32 @@ $hover-bg: #eeeeee;
 
 /* RESPONSIVE ADJUSTMENTS */
 @media (max-width: 768px) {
-  .top-bar {
-    flex-direction: column;
-    align-items: flex-start;
-
-    .top-bar-center {
-      margin: 0.5rem 0;
+  .kitchen-order-container {
+    .top-bar {
+      flex-direction: column;
+      .top-bar-left,
+      .top-bar-center,
+      .top-bar-right {
+        margin: 0.5rem 0;
+        justify-content: center;
+      }
     }
-  }
 
-  .grid-area {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    .main-content {
+      flex-direction: column;
+      padding: 0.5rem;
+    }
+
+    .grid-area {
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
+
+    .order-details {
+      width: 100%;
+      margin-left: 0;
+      margin-top: 1rem;
+      border-left: none;
+      border-top: 1px solid $border-color;
+    }
   }
 }

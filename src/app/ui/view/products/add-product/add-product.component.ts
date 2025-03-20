@@ -398,6 +398,7 @@ export class AddProductComponent {
       const reader = new FileReader();
       reader.onload = (e: any) => {
         this.productImage = e.target.result;
+        console.log(this.productImage);
       };
       reader.readAsDataURL(file);
     }
@@ -406,7 +407,7 @@ export class AddProductComponent {
   addToProduct() {
     const userName = sessionStorage.getItem('username');
 
-    console.log(this.productForm)
+    console.log(this.productForm);
     if (this.productForm.invalid) {
       this.messageService.add({
         severity: 'error',
@@ -469,7 +470,7 @@ export class AddProductComponent {
             key: 'tl',
             life: 3000,
           });
-          this.addSuccessfull = true
+          this.addSuccessfull = true;
         } else {
           this.messageService.add({
             severity: 'error',
@@ -873,17 +874,20 @@ export class AddProductComponent {
 
     if (typeof sku === 'string') {
       const productCode = variantSKU ? `${sku}-${variantSKU}` : sku;
-  
+
       for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
-        const barcodeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        const barcodeSvg = document.createElementNS(
+          'http://www.w3.org/2000/svg',
+          'svg'
+        );
         JsBarcode(barcodeSvg, productCode, {
           format: this.barcodeConfig.barcodeType,
           lineColor: '#000',
-          width: 3,
-          height: 150,
+          width: 2,
+          height: 125,
           displayValue: true,
         });
-  
+
         this.convertSvgToPng(barcodeSvg, shouldPrint);
       }
     } else {
@@ -1127,21 +1131,20 @@ export class AddProductComponent {
   generateRandomSku(form?: any, fieldName?: string) {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     let randomPart = '';
-  
+
     for (let i = 0; i < 4; i++) {
       randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-  
+
     const timestamp = Date.now().toString().slice(-5);
     const generatedSku = `${randomPart}-${timestamp}`;
   
     if (form && fieldName) {
       if (form instanceof FormGroup) {
-        form.get(fieldName)?.setValue(generatedSku); 
+        form.get(fieldName)?.setValue(generatedSku);
       } else if (typeof form === 'object' && fieldName in form) {
-        (form )[fieldName] = generatedSku; 
+        form[fieldName] = generatedSku;
       }
     }
-  
   }
 }

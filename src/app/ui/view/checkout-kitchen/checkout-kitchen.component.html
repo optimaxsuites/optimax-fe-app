@@ -1,26 +1,101 @@
-<div class="kitchen-order-grid-container">
-  <!-- TOP BAR -->
-  <header class="top-bar">
-    <div class="top-bar-left">
-      <span class="logo">Logo</span>
-    </div>
-    <div class="top-bar-center">
-      <h1>KITCHEN ORDER</h1>
-    </div>
-    <div class="top-bar-right">
-      <span class="chef-name">Chef Name</span>
-    </div>
-  </header>
+<!-- kitchen-order.component.html -->
+<div class="kitchen-order-container">
+  <!-- TOP BAR (Using p-menubar for a modern top navigation) -->
+  <p-menubar class="top-bar">
+    <ng-template pTemplate="start">
+      <div class="top-bar-left">
+        <span class="logo">Logo</span>
+      </div>
+    </ng-template>
+    <ng-template pTemplate="center">
+      <div class="top-bar-center">
+        <h1>KITCHEN ORDER</h1>
+      </div>
+    </ng-template>
+    <ng-template pTemplate="end">
+      <div class="top-bar-right">
+        <span class="chef-name">Chef Name</span>
+      </div>
+    </ng-template>
+  </p-menubar>
 
-  <!-- MAIN GRID -->
-  <main class="grid-area">
-    <div
-      class="table-card"
-      *ngFor="let item of tableStatuses"
-      [title]="item.table + ' - ' + item.status"
-    >
-      <div class="status">{{ item.status }}</div>
-      <div class="table-number">{{ item.table }}</div>
+  <!-- MAIN CONTENT AREA -->
+  <div class="main-content">
+    <!-- LEFT GRID of TABLE CARDS -->
+    <div class="grid-area">
+      <p-card
+        *ngFor="let item of tableStatuses"
+        class="table-card"
+        [ngClass]="{
+          'status-processing': item.status === 'Processing',
+          'status-pending': item.status === 'Pending',
+          'status-completed': item.status === 'Completed'
+        }"
+        (click)="openOrderDetails(item)"
+      >
+        <!-- Card Title & Subtitle -->
+        <ng-template pTemplate="header">
+          <div class="table-card-header">
+            <span class="table-number">{{ item.table }}</span>
+            <p-badge
+              [value]="item.status"
+              [severity]="getStatusSeverity(item.status)"
+              class="status-badge"
+            ></p-badge>
+          </div>
+        </ng-template>
+        <div class="table-card-content">
+          <p>Click to view order details</p>
+        </div>
+      </p-card>
     </div>
-  </main>
+
+    <!-- ORDER DETAILS PANEL -->
+    <p-panel
+      *ngIf="isOrderDetailsOpen"
+      class="order-details"
+      header="{{ selectedOrder?.table }} - {{ selectedOrder?.status }}"
+      [toggleable]="true"
+      [collapsed]="false"
+    >
+      <div class="details-body">
+        <!-- Replace with dynamic data as needed -->
+        <div class="order-item">
+          <span class="item-name">Jollof Rice</span>
+          <span class="item-quantity">1 Plate</span>
+        </div>
+        <div class="order-item">
+          <span class="item-name">Chicken</span>
+          <span class="item-quantity">2 Portions</span>
+        </div>
+
+        <div class="additional-note">
+          <h3>Additional Note:</h3>
+          <p>
+            I will like the jollof rice to be spicy and have vegetables in it.
+            The chicken should be soft and tender, spicy and well seasoned.
+          </p>
+        </div>
+      </div>
+
+      <!-- Example of a 'Completed' or 'Mark As Done' button -->
+      <div class="details-footer">
+        <button
+          pButton
+          type="button"
+          label="Mark as Completed"
+          icon="pi pi-check"
+          class="p-button-success"
+        ></button>
+        <!-- <button
+          pButton
+          type="button"
+          label="Mark as Completed"
+          icon="pi pi-check"
+          class="p-button-success"
+          (click)="markAsCompleted(selectedOrder)"
+        ></button> -->
+      </div>
+    </p-panel>
+  </div>
 </div>

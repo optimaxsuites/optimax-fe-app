@@ -61,7 +61,7 @@ export class ProductsComponent implements OnInit {
   deleteModal: boolean = false;
   deleteMultipleItemsModal = false;
   editProduct: boolean = false;
-  configureBarcode:boolean = false;
+  configureBarcode: boolean = false;
 
   discountTypes = [
     { label: 'Periodic', value: 'periodic' },
@@ -119,6 +119,13 @@ export class ProductsComponent implements OnInit {
     { label: 'Codabar', value: 'Codabar' },
     { label: 'CODE39', value: 'CODE39' },
   ] as const;
+  /**
+   * Populated from import spreadsheets
+   *
+   * @type {ProductJSONFormat[]}
+   */
+  parsedProductData: ProductJSONFormat[] = [];
+
   /**
    * This is just to maintain the order used in `productTableHeaders` when it is iterated with `keyValue` in the html template
    * @param a
@@ -346,26 +353,32 @@ export class ProductsComponent implements OnInit {
 
   toggleImportDialog() {
     this.isImportDialogOpen = !this.isImportDialogOpen;
+    if (!this.isImportDialogOpen) this.#clearImportedProductData();
+  }
+  #clearImportedProductData() {
+    this.parsedProductData.length = 0;
   }
 
   async processExcelImport(xlsxImport: File) {
+    this.#clearImportedProductData();
     const workbook = new Workbook();
     // Read the file data
     await workbook.xlsx.load(await xlsxImport.arrayBuffer());
     // console.log(workbook);
     const worksheet = workbook.getWorksheet('Products to Add') as Worksheet;
     // console.log(this.products);
-    const workSheetImages = worksheet.getImages();
-    // Just something to easily arrange the images in a sensible order
-    let mappedImages: Map<{ row: number; column: number }, number> = new Map();
-    workSheetImages.forEach((image) => {
-      console.log(
-        `Image anchored at row ${image.range.tl.nativeRow}, col ${image.range.tl.nativeCol}. It's data is: `
-      );
-      console.log(image);
-      console.log(worksheet.model.media);
-      // const media = (worksheet.model.media).find((m) => m.index === image.imageId);
-    });
+    // const workSheetImages = worksheet.getImages();
+    // // Just something to easily arrange the images in a sensible order
+    // console.log(worksheet.getCell('C2'));
+    // let mappedImages: Map<{ row: number; column: number }, number> = new Map();
+    // workSheetImages.forEach((image) => {
+    //   console.log(
+    //     `Image anchored at row ${image.range.tl.nativeRow}, col ${image.range.tl.nativeCol}. It's data is: `
+    //   );
+    //   console.log(image);
+    //   console.log(worksheet.model.media);
+    //   // const media = (worksheet.model.media).find((m) => m.index === image.imageId);
+    // });
     for (let i = 2; i < 999; i++) {
       const row = worksheet.getRow(i);
 
@@ -411,7 +424,7 @@ export class ProductsComponent implements OnInit {
         }
       });
 
-      const product: ProductJSONFormat = {
+      this.parsedProductData.push({
         id: 0 || (Math.random().toString(36).substr(2, 50) as any),
         createdDate: new Date().toISOString(),
         createdBy: '',
@@ -442,13 +455,12 @@ export class ProductsComponent implements OnInit {
         partNumber: partNumber.toString(),
         productCategory: productCategory,
         weight: weight,
-      };
-      console.log(product);
+      });
 
-      // REVIEW: PLEASE REDO THIS
-      const userName = sessionStorage.getItem('username');
-      const formData = new FormData();
-      formData.append('product', JSON.stringify(product));
+      // // REVIEW: PLEASE REDO THIS
+      // const userName = sessionStorage.getItem('username');
+      // const formData = new FormData();
+      // formData.append('product', JSON.stringify(product));
       // formData.append('files', new File());
     }
     //   console.log(xlsxImport);
@@ -615,16 +627,14 @@ export class ProductsComponent implements OnInit {
     }
   }
 
-  promptBarcode(item: any, op: any){
-    op.hide()
+  promptBarcode(item: any, op: any) {
+    op.hide();
 
-    this.configureBarcode = true
+    this.configureBarcode = true;
     this.activeItem = item;
-
   }
 
   printBarcode() {
-
     this.generateBarcode(true);
   }
 
@@ -647,6 +657,8 @@ export class ProductsComponent implements OnInit {
         });
         barcodes.push({ svg: barcodeSvg, text: displayValue });
       }
+    } else {
+      alert('Please fill in the SKU with valid data.');
     }
   
     if (Array.isArray(this.activeItem?.variants)) {
@@ -763,65 +775,64 @@ export class ProductsComponent implements OnInit {
             </body>
             </html>
           `);
-          doc.close();
-    
-          setTimeout(() => document.body.removeChild(iframe), 5000);
-        }
-      } else {
-        const serializer = new XMLSerializer();
-        const svgString = serializer.serializeToString(svgElement);
-        const encodedSvg = encodeURIComponent(svgString);
-        const imgSrc = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
-        this.generatePDF(imgSrc);
+        doc.close();
+
+        setTimeout(() => document.body.removeChild(iframe), 5000);
+      }
+    } else {
+      const serializer = new XMLSerializer();
+      const svgString = serializer.serializeToString(svgElement);
+      const encodedSvg = encodeURIComponent(svgString);
+      const imgSrc = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
+      this.generatePDF(imgSrc);
+    }
+  }
+
+  generatePDF(imgData: string) {
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'px',
+      format: 'a4',
+    });
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (100 * pdfWidth) / 200;
+
+    const padding = 10;
+    const barcodeWidth = 150;
+    const barcodeHeight = 50;
+    const itemsPerRow = Math.floor((pdfWidth - 2 * padding) / pdfWidth);
+    let currentX = padding;
+    let currentY = padding;
+
+    for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
+      pdf.addImage(
+        imgData,
+        'PNG',
+        currentX,
+        currentY,
+        barcodeWidth,
+        barcodeHeight
+      );
+
+      currentX += pdfWidth;
+      if ((i + 1) % itemsPerRow === 0) {
+        currentX = padding;
+        currentY += barcodeHeight + padding;
+      }
+
+      if (currentX + pdfWidth > pdf.internal.pageSize.getWidth()) {
+        currentX = padding;
+        currentY += pdfHeight + padding;
+      }
+
+      if (currentY + pdfHeight + padding > pdf.internal.pageSize.getHeight()) {
+        pdf.addPage();
+        currentX = padding;
+        currentY = padding;
       }
     }
-    
-   generatePDF(imgData: string) {
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'px',
-        format: 'a4',
-      });
-  
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (100 * pdfWidth) / 200;
-  
-      const padding = 10;
-      const barcodeWidth = 150;
-      const barcodeHeight = 50;
-      const itemsPerRow = Math.floor((pdfWidth - 2 * padding) / pdfWidth);
-      let currentX = padding;
-      let currentY = padding;
-  
-      for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
-        pdf.addImage(
-          imgData,
-          'PNG',
-          currentX,
-          currentY,
-          barcodeWidth,
-          barcodeHeight
-        );
-  
-        currentX += pdfWidth;
-        if ((i + 1) % itemsPerRow === 0) {
-          currentX = padding;
-          currentY += barcodeHeight + padding;
-        }
-  
-        if (currentX + pdfWidth > pdf.internal.pageSize.getWidth()) {
-          currentX = padding;
-          currentY += pdfHeight + padding;
-        }
-  
-        if (currentY + pdfHeight + padding > pdf.internal.pageSize.getHeight()) {
-          pdf.addPage();
-          currentX = padding;
-          currentY = padding;
-        }
-      }
-  
-      pdf.save('barcodes.pdf');
-    }
-    
+
+    pdf.save('barcodes.pdf');
+  }
 }
