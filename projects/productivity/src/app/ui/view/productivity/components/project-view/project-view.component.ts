@@ -1,7 +1,4 @@
-
-
 // Monday
-
 
 import { Component, signal, OnInit, Input } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -16,7 +13,7 @@ export interface Task {
   completed: boolean;
   projectId: string; // Link the task to a project
   selectedUsers?: string; // Add selectedUser to the Task interface
-  status?:string,
+  status?: string;
 }
 
 export interface Project {
@@ -50,14 +47,29 @@ export class ProjectViewComponent implements OnInit {
   cards = [
     { text: 'This is a card! Select it to see its card back.', emoji: '👋' },
     { text: 'Hold and drag to move this card to another list', emoji: '👉' },
-    { text: 'Invite collaborators to your board by selecting the menu to the right of the notifications bell.', emoji: '' }
+    {
+      text: 'Invite collaborators to your board by selecting the menu to the right of the notifications bell.',
+      emoji: '',
+    },
   ];
 
-  notStartedCard = [
-    { text: "" },
-    { text: "" },
-    { text: "" },
+  cardHeader = [
+    {
+      cardOne: 'Not Started'
+    },
+
+    {
+      cardTwo: 'In Progress',
+    },
+    {
+      cardThree: 'Completed',
+    },
+    {
+      cardFour: 'Done',
+    },
   ];
+
+  notStartedCard = [{ text: '' }, { text: '' }, { text: '' }];
 
   constructor(
     private route: ActivatedRoute,
@@ -91,7 +103,9 @@ export class ProjectViewComponent implements OnInit {
     const storedTasks = localStorage.getItem('tasks');
     if (storedTasks) {
       const allTasks: { [key: string]: Task } = JSON.parse(storedTasks);
-      this.tasks = Object.values(allTasks).filter((task) => task.projectId === projectId);
+      this.tasks = Object.values(allTasks).filter(
+        (task) => task.projectId === projectId
+      );
     }
   }
 
@@ -133,7 +147,10 @@ export class ProjectViewComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['admin/productivity/4032e3b6-ea0e-480f-9c98-bbe10d67cee2/project-list'], { replaceUrl: true });
+    this.router.navigate(
+      ['admin/productivity/4032e3b6-ea0e-480f-9c98-bbe10d67cee2/project-list'],
+      { replaceUrl: true }
+    );
   }
 
   openTaskModal() {
