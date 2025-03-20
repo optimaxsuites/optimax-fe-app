@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormBuilder } from '@angular/forms';
-
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 @Component({
   selector: 'app-sale-summaries',
@@ -347,10 +348,111 @@ export class SaleSummariesComponent implements OnInit {
   }
 
   exportData(): void {
-    console.log('Exporting data...');
+    const doc = new jsPDF();
+
+    // Title
+    doc.setFontSize(18);
+    doc.text('Sales Summary Report', 14, 20);
+
+    // Summary Table Data
+    const summaryTableColumn = ['Metric', 'Value'];
+    const summaryTableRows = [
+      ['Total Sales', `₦${this.formatCurrency(this.totalSales)}`],
+      ['Gross Profit', `₦${this.formatCurrency(this.grossProfit)}`],
+      ['Items Sold', this.totalGoodsSold.toString()],
+      ['Total Transactions', this.totalTransactions.toString()],
+    ];
+
+    autoTable(doc, {
+      startY: 30,
+      head: [summaryTableColumn],
+      body: summaryTableRows,
+      theme: 'striped',
+    });
+
+    doc.save('sales_summary_report.pdf');
   }
 
   printReport(): void {
-    window.print();
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+
+    if (printWindow) {
+      const periodSelector = document.querySelector('.period-selector');
+      const kpiCards = document.querySelector('.kpi-cards');
+      const chartSection = document.querySelector('.chart-section');
+      const topProducts = document.querySelector('.top-products');
+
+      // Get your current styles
+      const styles = Array.from(document.styleSheets)
+        .map((styleSheet) => {
+          try {
+            return Array.from(styleSheet.cssRules)
+              .map((rule) => rule.cssText)
+              .join('\n');
+          } catch (e) {
+            return '';
+          }
+        })
+        .join('\n');
+
+      // Build the content to print
+      let contentToPrint = '';
+
+      // Add title at the top of the printed report
+      contentToPrint +=
+        '<div class="print-header"><h1 class="text-3xl font-bold mb-4">Sales Summary Report</h1></div>';
+
+      // Add timestamp
+      const now = new Date();
+      contentToPrint += `<div class="print-date mb-4">Generated on: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}</div>`;
+
+      // Add each section if it exists
+      if (periodSelector) contentToPrint += periodSelector.outerHTML;
+      if (kpiCards) contentToPrint += kpiCards.outerHTML;
+      if (chartSection) contentToPrint += chartSection.outerHTML;
+      if (topProducts) contentToPrint += topProducts.outerHTML;
+
+      // Print-specific CSS
+      const printCSS = `
+        @media print {
+          body { font-family: Arial, sans-serif; }
+          .print-header { text-align: center; margin-bottom: 20px; }
+          .print-date { text-align: right; font-style: italic; color: #666; }
+          .period-selector { break-inside: avoid; }
+          .kpi-cards { break-inside: avoid; display: flex; flex-wrap: wrap; }
+          .kpi-card { flex: 1 0 45%; margin: 10px; }
+          .chart-section { break-before: always; }
+          .top-products { break-before: always; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #ddd; padding: 8px; }
+          th { background-color: #f2f2f2 !important; color: #333 !important; }
+          .top-products table { width: 100%; }
+          .top-products th, .top-products td { padding: 8px; }
+        }
+      `;
+
+      // Setup the print window
+      printWindow.document.open();
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Sales Summary Report</title>
+            <style>${styles}\n${printCSS}</style>
+          </head>
+          <body>
+            ${contentToPrint}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+
+      // Print after everything has loaded
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      }, 1000);
+    }
   }
 }
