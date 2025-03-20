@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, HostListener, ViewChild } from '@angular/core';
 import { MenuItem, MessageService } from 'primeng/api';
 import { ChangeDetectorRef } from '@angular/core';
 import { Menu, MenuModule } from 'primeng/menu';
@@ -57,27 +57,19 @@ export class RefundComponent {
     this.filterTable();
   }
 
-  openMenu(event: Event, menu: Menu, refund: Refund) {
-    this.selectedRefund = refund; // Store the selected refund
-    this.items = [
-      { 
-        label: 'View', 
-        icon: 'pi pi-eye text-gray-600 text-xl', 
-        command: () => this.viewRefund(refund)
-      },
-      { 
-        label: 'Accept', 
-        icon: 'pi pi-check-circle text-green-500 text-xl', 
-        command: () => this.acceptRefund(refund)
-      },
-      { 
-        label: 'Reject', 
-        icon: 'pi pi-times-circle text-red-500 text-xl', 
-        command: () => this.rejectRefund(refund)
-      }
-    ];
-    menu.toggle(event); // Show menu
-  }
+  isMenuOpen = false;
+
+toggleMenu(event: Event) {
+  event.stopPropagation();
+  this.isMenuOpen = !this.isMenuOpen;
+}
+
+// Close menu when clicking outside
+@HostListener('document:click')
+closeMenu() {
+  this.isMenuOpen = false;
+}
+
 
   
  constructor(

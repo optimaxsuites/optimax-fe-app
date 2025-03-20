@@ -12,9 +12,32 @@
 }
 
 
+
+
+.menu-container .custom-menu {
+  background-color: #ffffff; /* Tailwind's bg-white */
+  display: none;
+  position: absolute;
+  min-width: 80px;
+  box-shadow: 2px 2px 5px hsla(0, 0%, 0%, 0.1); /* Tailwind's shadow-md */
+}
+.menu-container:hover .custom-menu {
+  display: block;
+}
+
+.custom-menu li {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+
+
 #filter-bar {
+  margin-top: 8rem;
   padding-top: 2rem;
+  // padding-bottom: 2rem;
   padding-bottom: 2rem;
+  // padding-left: ;
 
 }
 
@@ -23,7 +46,7 @@
   width: 50rem !important;
 }
 #filter-bar {
-  margin-bottom: 7rem;
+  // margin-bottom: 7rem;
 
 }
 #status {

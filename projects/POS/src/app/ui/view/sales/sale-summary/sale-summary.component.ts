@@ -48,11 +48,6 @@ export class SaleSummaryComponent implements OnInit {
     this.back.emit();
   }
 
-  printReceipt(): void {
-    console.log('Printing receipt for:', this.selectedTransaction);
-    // Implement print functionality here
-  }
-
   formatDate(date: Date): string {
     if (!date) return '';
     return new Date(date).toLocaleDateString('en-US', {
@@ -85,5 +80,82 @@ export class SaleSummaryComponent implements OnInit {
   calculateTax(): number {
     const subtotal = this.calculateSubtotal();
     return subtotal * (this.taxRate / 100);
+  }
+
+  printReceipt(): void {
+    const printWindow = window.open('', '_blank');
+
+    if (printWindow) {
+      const saleSummaryContainer = document.querySelector(
+        '.sale-summary-container'
+      );
+
+      // Get your current styles
+      const styles = Array.from(document.styleSheets)
+        .map((styleSheet) => {
+          try {
+            return Array.from(styleSheet.cssRules)
+              .map((rule) => rule.cssText)
+              .join('\n');
+          } catch (e) {
+            return '';
+          }
+        })
+        .join('\n');
+
+      // Build the content to print
+      let contentToPrint = '';
+
+      // Add title at the top of the printed receipt
+      contentToPrint +=
+        '<div class="print-header"><h1 class="text-3xl font-bold mb-4">Receipt</h1></div>';
+
+      // Add timestamp
+      const now = new Date();
+      contentToPrint += `<div class="print-date mb-4">Generated on: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}</div>`;
+
+      // Add the sale summary content
+      if (saleSummaryContainer)
+        contentToPrint += saleSummaryContainer.outerHTML;
+
+      // Print CSS
+      const printCSS = `
+        @media print {
+          body { font-family: Arial, sans-serif; }
+          .print-header { text-align: center; margin-bottom: 20px; }
+          .print-date { text-align: right; font-style: italic; color: #666; }
+          .sale-summary-container { break-inside: avoid; }
+          .transaction-summary { break-inside: avoid; }
+          .sale-items { break-before: always; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #ddd; padding: 8px; }
+          th { background-color: #f2f2f2 !important; color: #333 !important; }
+          .sale-items table { width: 100%; }
+          .sale-items th, .sale-items td { padding: 8px; }
+        }
+      `;
+
+      // Setup the print window
+      printWindow.document.open();
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Receipt</title>
+            <style>${styles}\n${printCSS}</style>
+          </head>
+          <body>
+            ${contentToPrint}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+
+      // Print after everything has loaded
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      }, 1000);
+    }
   }
 }
