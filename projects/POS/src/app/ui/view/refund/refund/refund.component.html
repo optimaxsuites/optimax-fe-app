@@ -192,13 +192,24 @@
       <p-menu #menu [model]="items" [popup]="true" />
       <p-button (onClick)="menu.toggle($event)" icon="pi pi-ellipsis-v"/>
  -->
- <p-menu #menu [model]="items" [popup]="true" appendTo="body" [style]="{ width: '80px' , fontSize: '14px'}"></p-menu>
+ <div class="menu-container">
+  <button class="menu-button" (click)="toggleMenu($event)">
+    <i class="pi pi-ellipsis-v"></i>
+  </button>
 
- <p-button 
-   (click)="openMenu($event, menu, refund)" 
-   icon="pi pi-ellipsis-v" 
-   class="p-button-text text-5xl"
- />
+  <ul class="custom-menu" [ngClass]="{ 'show': isMenuOpen }">
+    <li (click)="viewRefund(refund)">
+      <i class="pi pi-eye"></i> View
+    </li>
+    <li (click)="acceptRefund(refund)">
+      <i class="pi pi-check-circle"></i> Accept
+    </li>
+    <li (click)="rejectRefund(refund)">
+      <i class="pi pi-times-circle"></i> Reject
+    </li>
+  </ul>
+</div>
+
 
 
 
