@@ -161,7 +161,6 @@ import { MenuModule } from 'primeng/menu';
     MenuModule,
     InputGroupModule,
     InputGroupAddonModule,
-
     ChartModule,
     DropdownModule,
 

@@ -13,6 +13,7 @@
 
 
 
+
 .menu-container .custom-menu {
   background-color: #ffffff; /* Tailwind's bg-white */
   display: none;
@@ -32,8 +33,11 @@
 
 
 #filter-bar {
+  margin-top: 8rem;
   padding-top: 2rem;
+  // padding-bottom: 2rem;
   padding-bottom: 2rem;
+  // padding-left: ;
 
 }
 
@@ -42,7 +46,7 @@
   width: 50rem !important;
 }
 #filter-bar {
-  margin-bottom: 7rem;
+  // margin-bottom: 7rem;
 
 }
 #status {
