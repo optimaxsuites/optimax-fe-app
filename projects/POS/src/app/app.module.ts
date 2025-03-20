@@ -87,6 +87,8 @@ import { DropdownModule } from 'primeng/dropdown';
 
 import { CalendarModule } from 'primeng/calendar';
 import { MenuModule } from 'primeng/menu';
+import { CardModule } from 'primeng/card';
+import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
 
 @NgModule({
   declarations: [
@@ -119,6 +121,8 @@ import { MenuModule } from 'primeng/menu';
     SaleSummaryComponent,
     SaleComponent,
     SaleSummariesComponent,
+    CheckoutKitchenComponent
+    
   ],
   imports: [
     // BrowserModule,
@@ -167,6 +171,7 @@ import { MenuModule } from 'primeng/menu';
     InputGroupAddonModule,
     ChartModule,
     DropdownModule,
+    CardModule
 
     // BrowserAnimationsModule,
 
