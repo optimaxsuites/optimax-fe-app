@@ -29,6 +29,14 @@ export class MarketplaceService {
         .pipe(catchError(this.handleError));
   }
 
+  getRegisteredApp(): Observable<any> {
+    return this.http
+        .get<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/appList")
+        .pipe(catchError(this.handleError));
+  }
+
+
+
 
   private getBaseApiUrl(): string {
     return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
