@@ -466,11 +466,6 @@ export class SalesComponent implements OnInit {
     console.log('Exporting report...');
   }
 
-  viewTransaction(transaction: any) {
-    // Implement view transaction details
-    console.log('Viewing transaction:', transaction);
-  }
-
   printReceipt(transaction: any) {
     // Implement print receipt
     console.log('Printing receipt for:', transaction);
