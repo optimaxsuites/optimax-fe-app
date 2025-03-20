@@ -1,4 +1,4 @@
-<div class="flex items-center w-full gap-4 justify-between px-8  bg-gray-100" id="filter-bar" id="filter-bar">
+<div class="flex items-center  gap-4 justify-between px-8 ml-3 mr-3 rounded-t-lg  bg-gray-100" id="filter-bar" id="filter-bar">
   <!-- Left Filters -->
   <div class="flex items-center gap-4 ">
     <!-- Start Date Input -->
@@ -75,7 +75,7 @@
 
 
 
-<div class="transactions-table px-3">
+<div class="transactions-table px-3 ">
   <p-table
     [value]="filteredRefundList"
     [paginator]="true"
@@ -201,10 +201,10 @@
     <li (click)="viewRefund(refund)">
       <i class="pi pi-eye"></i> View
     </li>
-    <li (click)="acceptRefund(refund)">
+    <li (click)="acceptRefund(refund)" class="accepted">
       <i class="pi pi-check-circle"></i> Accept
     </li>
-    <li (click)="rejectRefund(refund)">
+    <li (click)="rejectRefund(refund)" class="rejected">
       <i class="pi pi-times-circle"></i> Reject
     </li>
   </ul>

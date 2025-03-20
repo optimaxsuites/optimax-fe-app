@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormBuilder } from '@angular/forms';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+
 
 @Component({
   selector: 'app-sale-summaries',
@@ -363,12 +363,12 @@ export class SaleSummariesComponent implements OnInit {
       ['Total Transactions', this.totalTransactions.toString()],
     ];
 
-    autoTable(doc, {
-      startY: 30,
-      head: [summaryTableColumn],
-      body: summaryTableRows,
-      theme: 'striped',
-    });
+    // autoTable(doc, {
+    //   startY: 30,
+    //   head: [summaryTableColumn],
+    //   body: summaryTableRows,
+    //   theme: 'striped',
+    // });
 
     doc.save('sales_summary_report.pdf');
   }
