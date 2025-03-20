@@ -14,13 +14,13 @@
 
     <div class="card-container" >
       <div class="card-cover">
-        <div *ngFor="let project of projects" class="card-frame grid grid-rows-4" >
+        <div *ngFor="let project of projects" class="card-frame grid grid-rows-4" (click)="onViewClick(project)" >
           <div class="image-container">
             <img [src]="project.projectImage" alt="project image" class="" />
           </div>
 
         
-          <div class="time-line ">
+          <div class="time-line  "  >
             <p class="text-gray-600">{{ project.name }}</p>
 
             <span class="text-ba se font-bold">
