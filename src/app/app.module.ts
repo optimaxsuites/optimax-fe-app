@@ -1,3 +1,4 @@
+import { ChartModule } from 'primeng/chart';
 import { NgModule, viewChild } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { AppRoutingModule } from './app-routing.module';
@@ -12,7 +13,6 @@ import { DialogModule } from 'primeng/dialog';
 import { TabViewModule } from 'primeng/tabview';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { CardModule } from 'primeng/card';
 import { SplitButtonModule } from 'primeng/splitbutton';
 import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
@@ -78,14 +78,14 @@ import { MessageService } from 'primeng/api';
 import { RefundComponent } from './ui/view/refund/refund/refund.component';
 import { SaleSummaryComponent } from './ui/view/sales/sale-summary/sale-summary.component';
 import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-button.component';
-import { CalendarModule } from 'primeng/calendar';
-import { MenuModule } from 'primeng/menu';
+
 import { SaleComponent } from './ui/view/sales/sale/sale.component';
-import { ChartModule } from 'primeng/chart';
 import { SaleSummariesComponent } from './ui/view/sales/sale-summaries/sale-summaries.component';
 import { DropdownModule } from 'primeng/dropdown';
-import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
-import { KitchenOrderComponent } from './ui/view/kitchen-order/kitchen-order.component';
+
+import { CalendarModule } from 'primeng/calendar';
+import { MenuModule } from 'primeng/menu';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -117,13 +117,11 @@ import { KitchenOrderComponent } from './ui/view/kitchen-order/kitchen-order.com
     SaleSummaryComponent,
     SaleComponent,
     SaleSummariesComponent,
-    CheckoutKitchenComponent,
-    KitchenOrderComponent,
   ],
   imports: [
-    // BrowserModule,
-    // UserModule,
-    // AppRoutingModule,
+    BrowserModule,
+    UserModule,
+    AppRoutingModule,
     CommonModule,
     AppRoutingModule,
     TableModule,
@@ -159,14 +157,15 @@ import { KitchenOrderComponent } from './ui/view/kitchen-order/kitchen-order.com
     NavTabComponent,
     HttpClientModule,
     NgApexchartsModule,
-    InputGroupModule,
     CalendarModule,
     MenuModule,
-    CardModule,
+    InputGroupModule,
+    InputGroupAddonModule,
     ChartModule,
     DropdownModule,
-    InputGroupAddonModule,
-    // BrowserAnimationsModule
+
+    // BrowserAnimationsModule,
+
   ],
   providers: [
     {

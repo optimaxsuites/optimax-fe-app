@@ -1133,7 +1133,7 @@ export class AddProductComponent {
     }
   
     const timestamp = Date.now().toString().slice(-5);
-    const generatedSku = `prod-${randomPart}-${timestamp}`;
+    const generatedSku = `${randomPart}-${timestamp}`;
   
     if (form && fieldName) {
       if (form instanceof FormGroup) {
