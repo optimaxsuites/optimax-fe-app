@@ -289,6 +289,17 @@ export class MenuItemsService {
       ],
     },
     {
+      label: 'Office Productivity',
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      route: this.navigationLink.getLink('officeSet'),
+
+      icon: 'pi pi-shopping-bag', 
+      submenu: [
+        { label: 'Sales', route: this.navigationLink.getLink('posLink'), roles: ['ROLE_USER'], icon: 'pi pi-cart' },
+       
+      ],
+    },
+    {
       label: 'User and Roles Management',
       route: this.navigationLink.getLink('userRoles'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
@@ -425,6 +436,7 @@ export class MenuItemsService {
   
     this.menuItems.forEach(module => {
       if (unlockedRoutes.includes(module.label)) {
+        console.log(true)
         module.locked = false;
   
         if (module.label !== 'Dashboard') {
@@ -445,7 +457,7 @@ export class MenuItemsService {
 
   loadUnlockedSettingsModules() {
     // const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
-    const unlockedRoutes = this.appList.map((app : {appName : string}) => app.appName)
+    const unlockedRoutes = this.appList.map((app : {description : string}) => app.description)
     console.log(unlockedRoutes)
   
     this.settingsMenuItems.forEach((module) => {

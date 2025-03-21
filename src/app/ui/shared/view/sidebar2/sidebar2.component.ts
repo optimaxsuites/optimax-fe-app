@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { MenuItem } from '../../domain/menuItem.dto';
-import { MenuItemsService } from '../../service/menue-items/menu-items.service';
 import { NavigationEnd, Router } from '@angular/router';
 import { NavigationLinksService } from '../../service/navigation-links/navigation-links.service';
+import { MenuItemsService } from 'projects/settings/src/app/ui/sharedComponents/service/menue-items/menu-items.service';
 
 @Component({
   selector: 'app-sidebar2',

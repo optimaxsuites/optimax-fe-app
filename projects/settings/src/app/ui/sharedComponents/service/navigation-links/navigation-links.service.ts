@@ -34,20 +34,17 @@ export class NavigationLinksService {
 
     this.links['accountingLink'] = '/admin/accounting/' +uuidV4();
 
-// links =========================================================================================================================
-    this.links['']
 
 // human resources ================================================================================================================
     this.links['hrLink'] = '/admin/hr/' +uuidV4();
-    this.links['recuitmentLink'] = '/admin/hr/recruitment/' +uuidV4();
+    this.links['recuitmentLink'] = `/admin/hr/recruitment/${uuidV4()}`;
     this.links['leaveLink'] = '/admin/hr/leave/' +uuidV4();
     this.links['attendanceLink'] = '/admin/hr/attendance/' +uuidV4();
     this.links['interviewLink'] = '/admin/hr/interview/' +uuidV4();
-    this.links['employeeManagementLink'] = '/admin/hr/employee-management/' +uuidV4();
+    this.links['employeeManagementLink'] = `/admin/hr/employee-management/${uuidV4()}`;
     this.links['payroll'] = '/admin/hr/payroll/' +uuidV4();
-    this.links['allPayslip'] = 'employee-payslip'
+    this.links['allPayslip'] = '/admin/employee-payslip/' +uuidV4();
     this.links['performanceLink'] = '/admin/hr/performance/' +uuidV4();
-
 
 
 //  resources ================================================================================================================
@@ -55,10 +52,14 @@ export class NavigationLinksService {
     this.links['crmLink'] = '/admin/crm/' +uuidV4();
     this.links['expensesLink'] = '/admin/expenses/' + uuidV4();
     this.links['orderDetails'] = '/user/checkout/order/' + uuidV4();
+    this.links['tenderLink'] = '/admin/tender/' +uuidV4();
+    this.links['productivityLink'] = '/admin/productivity/' +uuidV4();
+
+
 
 // Vendor link========================================================================================================
-    this.links['vendorLink'] = '/vendor/' +uuidV4();
-    this.links['vendorRfqLink'] = '/vendor/rfq/' +uuidV4();
+    this.links['vendorLink'] = '/admin/vendor/' +uuidV4();
+    this.links['vendorRfqLink'] = '/admin/vendor/rfq/' +uuidV4();
 
 
 
@@ -80,12 +81,24 @@ export class NavigationLinksService {
     this.links['closeRegister'] = '/user/checkout/closeRegister/' +uuidV4();
 
 // settings links ============================================================================================================
-this.links['settingsLink'] = '/admin/settings/general-settings/' +uuidV4();
-this.links['generalSettings'] = 'general-settings/' +uuidV4();
-this.links['HRSettings'] = 'HR-settings/' +uuidV4();
-this.links['posSettings'] = 'POS-settings/' +uuidV4();
-this.links['userRoles'] = 'user-roles/' +uuidV4();
+    this.links['settingsLink'] = 'admin/settings/general-settings/' +uuidV4();
+    this.links['generalSettings'] = '/admin/settings/general-settings/' +uuidV4();
+    this.links['HRSettings'] = 'HR-settings/' +uuidV4();
 
+
+
+
+    this.links['marketplaceLink'] = 'marketplace/' +uuidV4();
+
+
+    
+
+// POS ================================================================================================================
+this.links['productLink'] = '/admin/pos/product/' +uuidV4();
+this.links['inventoryLink'] = `/admin/pos/inventory/${uuidV4()}`;
+this.links['salesLink'] = '/admin/pos/sale/' +uuidV4();
+this.links['refundLink'] = '/admin/pos/refunds/' +uuidV4();
+this.links['reportLink'] = '/admin/pos/report/' +uuidV4();
 
 
   }

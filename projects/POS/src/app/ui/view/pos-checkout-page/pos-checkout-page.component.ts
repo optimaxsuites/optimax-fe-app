@@ -28,7 +28,8 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   products: ProductData[] = [];
   categorizedProducts: ProductData[] = [];
   shownProducts: ProductData[] = [];
-
+  cartWidth = 300; // Default width of cart
+  resizing = false;
   subtotal: number = 0.0;
   tax: number = 0.0;
   discount: number = 0.0;
@@ -459,4 +460,24 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   get businessType() {
     return this.industryDataService.businessType;
   }
+
+  startResizing(event: MouseEvent) {
+    this.resizing = true;
+
+    document.addEventListener('mousemove', this.resize);
+    document.addEventListener('mouseup', this.stopResizing);
+  }
+
+  resize = (event: MouseEvent) => {
+    if (this.resizing) {
+      const newWidth = window.innerWidth - event.clientX;
+      this.cartWidth = Math.max(200, Math.min(600, newWidth)); 
+    }
+  };
+
+  stopResizing = () => {
+    this.resizing = false;
+    document.removeEventListener('mousemove', this.resize);
+    document.removeEventListener('mouseup', this.stopResizing);
+  };
 }
