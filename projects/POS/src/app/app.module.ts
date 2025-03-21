@@ -126,6 +126,8 @@ import { CardModule } from 'primeng/card';
     SaleSummariesComponent,
     KitchenOrderComponent,
     CheckoutKitchenComponent,
+    IngredientComponent,
+    AddIngredientComponent
   ],
   imports: [
     // BrowserModule,
