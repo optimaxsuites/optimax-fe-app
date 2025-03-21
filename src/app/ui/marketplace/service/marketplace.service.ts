@@ -31,7 +31,7 @@ export class MarketplaceService {
 
   getRegisteredApp(): Observable<any> {
     return this.http
-        .get<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/appList")
+        .get<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/applist")
         .pipe(catchError(this.handleError));
   }
 

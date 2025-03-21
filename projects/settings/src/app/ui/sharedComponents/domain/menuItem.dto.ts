@@ -8,4 +8,5 @@ export interface MenuItem {
   open?: boolean; 
   locked?: boolean;
   active?: boolean;
+  code?: string;
 }

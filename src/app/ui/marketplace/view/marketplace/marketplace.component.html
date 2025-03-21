@@ -18,7 +18,7 @@
         
         <button 
           *ngIf="module.locked && module.active" 
-          (click)="showDialog(module.label)" 
+          (click)="showDialog(module)" 
           class="mt-4 bg-gray-500 text-white py-2 px-4 rounded">
           Locked 🔒
         </button>
@@ -41,7 +41,7 @@
   </div>
   
 
-  <p-dialog [header]="'Unlock ' + label" [modal]="true" [(visible)]="visible" [style]="{ width: '28rem' }">
+  <p-dialog [header]="'Unlock ' + module.label" [modal]="true" [(visible)]="visible" [style]="{ width: '28rem' }">
     <span class="p-text-secondary block mb-5">Please enter the key you received in the subscription confirmation email sent to you</span>
     <div class="flex items-center gap-3 mb-5 w-full">
         <label for="username" class="font-semibold w-[2rem]">Key:</label>
@@ -58,5 +58,5 @@
         <p-button label="Save" (onClick)="visible = false" />
     </div> -->
 
-    <p>Haven't subscribed to {{label}} yet?, proceed to <a [href]="getLink()" target='_blank'>payment</a> page</p>
+    <p>Haven't subscribed to {{module.label}} yet?, proceed to <a [href]="getLink()" target='_blank'>payment</a> page</p>
 </p-dialog>

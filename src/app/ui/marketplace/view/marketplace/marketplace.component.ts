@@ -2,9 +2,10 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { MenuItem } from 'src/app/ui/shared/domain/menuItem.dto';
-import { MenuItemsService } from 'src/app/ui/shared/service/menue-items/menu-items.service';
+// import { MenuItemsService } from 'src/app/ui/shared/service/menue-items/menu-items.service';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 import { MarketplaceService } from '../../service/marketplace.service'
+import { MenuItemsService } from 'projects/settings/src/app/ui/sharedComponents/service/menue-items/menu-items.service';
 @Component({
   selector: 'app-marketplace',
   templateUrl: './marketplace.component.html',
@@ -14,7 +15,8 @@ export class MarketplaceComponent {
   role: string|null = ''
   modules: MenuItem[] = [];
   visible: boolean = false;
-  label: string = ''
+  module: any = {}
+  code: string = ''
   key: string = ''
   constructor(private menuService: MenuItemsService, private messageService: MessageService,
    private navigationLink: NavigationLinksService, private marketplaceService: MarketplaceService) {}
@@ -28,10 +30,10 @@ export class MarketplaceComponent {
  
     }
 
-    showDialog(label: string) {
+    showDialog(module: any, ) {
       this.visible = true;
-      this.label = label;
-  }
+      this.module = module;
+   }
 
     unlockModule() {
       const key = '123456'
@@ -45,11 +47,11 @@ export class MarketplaceComponent {
         });
         return
       }
-      this.menuService.unlockModule(this.label)
+      // this.menuService.unlockModule(this.label)
       const newApp = {
-        appName: this.label,
-        appCode: this.label,
-        description: this.label
+        appName: this.module.code,
+        appCode: this.module.code,
+        description: this.module.label
       }
       this.marketplaceService.registerApp(newApp).subscribe(
         data => {
@@ -57,11 +59,11 @@ export class MarketplaceComponent {
           this.messageService.add({
             severity: 'success',
             summary: 'Validation successful',
-            detail:   `${this.label} has been installed successfully`,
+            detail:   `${this.module.label} has been installed successfully`,
             key: 'tf',
             life: 3000
           });
-    
+          this.module.locked = false;
         },
         error => {
           console.log(error)
@@ -77,12 +79,12 @@ export class MarketplaceComponent {
     
 
       this.visible = false;
-      this.label = ''
+      this.module = []
       this.key = ''
     }
 
     getLink(){
-      switch(this.label){
+      switch(this.module.label){
         case 'Human Resources':
           return 'https://www.optimaxsuites.com/human%20resources';
         case 'POS':

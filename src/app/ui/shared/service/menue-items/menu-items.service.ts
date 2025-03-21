@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { MenuItem } from '../../domain/menuItem.dto';
 import { NavigationLinksService } from '../navigation-links/navigation-links.service';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, map, Observable } from 'rxjs';
+import { MarketplaceService } from 'src/app/ui/marketplace/service/marketplace.service';
 
 @Injectable({
   providedIn: 'root'
@@ -195,10 +196,6 @@ export class MenuItemsService {
     },
   ];
 
-
-
-
-
   private settingsMenuItems: MenuItem[] = [
     {
       label: 'General Settings',
@@ -345,12 +342,28 @@ export class MenuItemsService {
     },
   ];
 
-  private unlockedModules$ = new BehaviorSubject<MenuItem[]>(this.getUnlockedModules());
+  appList  = []
+  private unlockedModules$ = new BehaviorSubject<MenuItem[]>([]);
 
-  constructor(public navigationLink: NavigationLinksService) {
-    this.loadUnlockedModules(); 
-    this.loadUnlockedSettingsModules()
+  constructor(public navigationLink: NavigationLinksService, private marketPlaceService: MarketplaceService) {
+    this.marketPlaceService.getRegisteredApp().subscribe({
+      next: (app: any) => {
+        this.appList = app
+        this.loadUnlockedModules(); 
+        this.loadUnlockedSettingsModules()
+        console.log(this.appList)
+      },
+      error: (error: any) => {
+        console.error('Error fetching app data:', error);
+      }
+    })
+      
+    
+    
+  
+   
   }
+  
 
   getMenuItemsForRole(role: string): MenuItem[] {
     return this.menuItems.filter(item => item.roles.includes(role));
@@ -371,7 +384,7 @@ export class MenuItemsService {
         }
       }
       this.saveUnlockedModules(); 
-      this.unlockedModules$.next(this.getUnlockedModules());
+      // this.unlockedModules$.next(this.getUnlockedModules());
 
     }
   }
@@ -382,7 +395,9 @@ export class MenuItemsService {
   }
 
   loadUnlockedModules() {
-    const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
+    const unlockedRoutes = this.appList.map((app : {appName : string}) => app.appName)
+    // const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
+    console.log(unlockedRoutes)
     
     let unlockedCount = 0;
   
@@ -407,7 +422,8 @@ export class MenuItemsService {
   }
 
   loadUnlockedSettingsModules() {
-    const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
+    // const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
+    const unlockedRoutes = this.appList.map((app : {appName : string}) => app.appName)
     
   
     this.settingsMenuItems.forEach(module => {
@@ -430,6 +446,7 @@ export class MenuItemsService {
     }
   
     return unlockedModules;
+   
   }
   
   getUnlockedSettingsModules(): MenuItem[] {

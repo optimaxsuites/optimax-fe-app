@@ -22,11 +22,14 @@ export class SettingsPageComponent {
     console.log('Fetched Menu Items:', fetchedItems);
 
     if (this.role) {
-      this.menuItems = this.menuService.getUnlockedSettingsModules().map(item => ({
-        ...item,
-        open: false
-      }));
-      console.log(this.menuItems)
+      
+  this.menuService.getUnlockedSettingsModules().subscribe((unlockedModules) => {
+    this.menuItems = unlockedModules.map(item => ({
+      ...item,
+      open: false
+    }));
+    console.log('Updated Menu Items:', this.menuItems);
+  });
     }
 
     // this.menuItems = [...this.menuService.settingsMenuItems]
