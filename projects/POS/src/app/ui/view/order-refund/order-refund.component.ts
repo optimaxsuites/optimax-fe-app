@@ -77,7 +77,7 @@ export class OrderRefundComponent {
     validateReceipt(){
       this.fetchOrderItems();
      
-      if (this.orderItems.length > 0) {
+      if (this.orderItems.length > 0 && !this.requestForm) {
 this.requestForm = true
       }
     }
