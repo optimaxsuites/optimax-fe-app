@@ -1,7 +1,7 @@
 @use "./pharmacy-layout.scss";
 
 .product-cart-container {
-  @apply flex w-screen h-full flex-grow overflow-hidden;
+  @apply flex w-screen h-full flex-grow overflow-hidden ;
 }
 
 .product-view {
@@ -72,6 +72,7 @@ nav > p {
   // Create a new containing block for `product-card.component.scss`
   transform: rotate(0deg);
 
+
   // // When a product is hovered over, darken every other product
   // &:has(app-product-card:hover) > app-product-card:not(app-product-card:hover) {
   //   filter: brightness(95%);
@@ -79,7 +80,11 @@ nav > p {
   // TODO: Apply an animation to this brightness filter
   // TODO: FInd a way to prevent the filter from highlighting the pointed corners (since the actual div is a rounded rectangle
 }
-
+.prod {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+// @apply grid grid-cols-2 gap-3;
+}
 nav {
   .will-not-respond-to-click {
     cursor: not-allowed;
@@ -92,4 +97,12 @@ nav {
 app-cart-item-card,
 app-product-card {
   border-radius: 1rem;
+}
+
+
+.left-side {
+  width: 62%;
+}
+.right-side {
+  width: 38%;
 }

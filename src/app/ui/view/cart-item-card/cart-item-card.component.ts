@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, input, Input, Output } from '@angular/core';
 import { Business, ProductData } from '../../models/interface';
 import { IndustryDataService } from '../../service/industry-data.service';
+import { ImageCacheService } from '../../service/image-cache.service';
 
 @Component({
   selector: 'app-cart-item-card',
@@ -11,14 +12,21 @@ export class CartItemCardComponent implements Business {
   @Input() freezeItemCount = false;
   @Input() item: ProductData = {} as any;
   @Input() showDelete: boolean = true;
+  @Input() cart?: boolean = true
   @Output() delete = new EventEmitter<void>();
   @Output() countChange = new EventEmitter<number>();
   @Output() updateItem = new EventEmitter<number>();
+  imageUrl!: string;
 
   // count: number = this.item.count
 
-  constructor(private industryDataService: IndustryDataService) {}
-
+  constructor(private industryDataService: IndustryDataService, private imageCacheService: ImageCacheService) {}
+  ngOnInit(): void {
+    const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${this.item.productImages[0].imgNo}`;
+    this.imageCacheService.getImage(remoteImageUrl).subscribe((url) => {
+      this.imageUrl = url;
+    });
+  }
   decreaseCount() {
     if (this.freezeItemCount) return;
 
@@ -27,6 +35,14 @@ export class CartItemCardComponent implements Business {
     }
     this.emitCountChange();
   }
+
+  validateItemCount(item: any) {
+    if (item.count <= 0 || isNaN(item.count)) {
+      item.count = 1; 
+    }
+    this.countChange.emit(item.count);
+  }
+  
   increaseCount() {
     if (this.freezeItemCount) return;
 
@@ -61,7 +77,11 @@ export class CartItemCardComponent implements Business {
 
   updateItemQuantity(item: any, change: number, variant?: any) {
     if (variant) {
-      variant.selectedQuantity = Math.max((variant.selectedQuantity ?? 0) + change, 0);
+      variant.selectedQuantity = Math.max((variant.selectedQuantity ?? 0) + change, 1);
+  
+      if (variant.selectedQuantity === 1) {
+        return; 
+      }
   
       if (variant.selectedQuantity === 0) {
         item.selectedVariants = item.selectedVariants.filter((v: any) => v !== variant);
@@ -69,16 +89,18 @@ export class CartItemCardComponent implements Business {
     }
   
     if (!variant || item.selectedVariants.length === 0) {
-      item.count = Math.max((item.count ?? 0) + change, 0);
+      item.count = Math.max((item.count ?? 0) + change, 1); 
   
       this.countChange.emit(item.count);
     }
-  
-    // if (item.count === 0 && item.selectedVariants.length === 0) {
-    //   this.cartItems = this.cartItems.filter((cartItem: any) => cartItem !== item);
-    // }
   }
   
+  // getImge(imgageUrl: string){
+  //   const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${this.product.productImages[0].imgNo}`;
+  //   this.imageCacheService.getImage(remoteImageUrl).subscribe((url) => {
+    
+  //   });
+  // }
   
   
 }

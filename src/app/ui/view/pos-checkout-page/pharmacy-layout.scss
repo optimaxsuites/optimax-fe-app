@@ -1,7 +1,7 @@
 $default-bg-color: var(--white);
 .pharmacy-layout {
   .product-view {
-    @apply w-[45%];
+    @apply w-full;
   }
   .product-cart-container {
     background-color: hsl(0, 0%, 98%);

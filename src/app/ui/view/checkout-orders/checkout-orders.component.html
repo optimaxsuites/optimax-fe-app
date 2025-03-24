@@ -27,7 +27,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let order of orders" style="cursor: pointer">
+                <tr *ngFor="let order of orders" (click)="orderDetails(order)" style="cursor: pointer">
                   <!-- {{ order?.timestamp | date: 'shortTime' }} -->
                   <td>{{ order?.timestamp }}</td>
                   <td>

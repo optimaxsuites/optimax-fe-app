@@ -23,175 +23,106 @@
   header="Refund request form"
   class="modal-style"
 >
-  <form
-    class="bg-white p-6 rounded-lg shadow-md flex flex-col gap-4 w-full"
-    (ngSubmit)="sendRequest()"
-    #refundForm="ngForm"
+<form
+  class="bg-white p-6 rounded-lg shadow-md flex flex-col gap-4 w-full"
+  #refundForm="ngForm"
+  (ngSubmit)="sendRequest()"
+>
+  <div>
+    <label for="receiptId">Receipt Id:</label>
+    <input
+      type="text"
+      name="receiptId"
+      id="receiptId"
+      [(ngModel)]="refundData.orderId"
+      (ngModelChange)="validateReceipt()"
+      placeholder="RTY1542"
+      required
+      class="w-full px-3 py-2 border rounded-md"
+      #receiptId="ngModel"
+    />
+    <p *ngIf="receiptId.invalid && receiptId.touched" class="text-red-500">Receipt ID is required.</p>
+  </div>
+
+  <label>
+    <div>Full Name:</div>
+    <input
+      type="text"
+      name="customerName"
+      id="customerName"
+      [(ngModel)]="refundData.customerName"
+      placeholder="Akintola Akinyemi"
+      required
+      class="w-full px-3 py-2 border rounded-md"
+      #customerName="ngModel"
+    />
+    <p *ngIf="customerName.invalid && customerName.touched" class="text-red-500">Full Name is required.</p>
+  </label>
+
+  <label>
+    <div>Email:</div>
+    <input
+      type="email"
+      name="email"
+      id="email"
+      [(ngModel)]="refundData.emailAddress"
+      placeholder="akintola.akinyemi@example.com"
+      required
+      class="w-full px-3 py-2 border rounded-md"
+      #email="ngModel"
+    />
+    <p *ngIf="email.invalid && email.touched" class="text-red-500">Valid email is required.</p>
+  </label>
+
+  <p class="font-semibold">Refund Method</p>
+  <ng-select 
+    [items]="refundMethods" 
+    bindLabel="label" 
+    bindValue="value" 
+    [(ngModel)]="selectedRefundMethod"
+    name="refundMethod"
+    (ngModelChange)="updateFormFields($event)"
+    placeholder="Select Refund Method"
+    #refundMethod="ngModel"
+    required>
+  </ng-select>
+  <p *ngIf="refundMethod.invalid && refundMethod.touched" class="text-red-500">Please select a refund method.</p>
+
+  <!-- Bank Transfer Fields -->
+  <div *ngIf="selectedRefundMethod === 'bank'">
+    <input type="text" placeholder="Bank Name" [(ngModel)]="refundDetails.bankName" name="bankName" required />
+    <input type="text" placeholder="Account Number" [(ngModel)]="refundDetails.accountNumber" name="accountNumber" required />
+    <input type="text" placeholder="Account Holder" [(ngModel)]="refundDetails.accountHolder" name="accountHolder" required />
+  </div>
+
+  <!-- Royalty Top-Up -->
+  <div *ngIf="selectedRefundMethod === 'royalty'">
+    <input type="text" placeholder="Customer Loyalty ID" [(ngModel)]="refundDetails.loyaltyId" name="loyaltyId" required />
+  </div>
+
+  <!-- Exchange -->
+  <div *ngIf="selectedRefundMethod === 'exchange'">
+    <input type="text" placeholder="New Product" [(ngModel)]="refundDetails.newProduct" name="newProduct" required />
+    <input type="number" placeholder="Price Difference" [(ngModel)]="refundDetails.priceDifference" name="priceDifference" required />
+  </div>
+
+  <textarea
+    name="additionalNotes"
+    id="additionalNotes"
+    rows="4"
+    placeholder="Additional Notes"
+    class="w-full px-3 py-2 border rounded-md mb-4"
+  ></textarea>
+
+  <button
+    type="submit"
+    class="w-full bg-customGreen text-white py-2 rounded-md cursor-pointer"
+    [disabled]="refundForm.invalid"
   >
-    <!-- <h1 class="text-2xl font-bold text-center mb-6">Refund Request Form</h1> -->
+    Submit
+  </button>
+</form>
 
-    <!-- <div class="flex gap-2 mb-4">
-      <input
-        type="text"
-        name="firstName"
-        id="firstName"
-        [(ngModel)]="refundData.customerName"
-        placeholder="First Name"
-        required
-        class="w-1/2 px-3 py-2 border rounded-md"
-      />
-      <input
-        type="text"
-        name="lastName"
-        id="lastName"
-        [(ngModel)]="refundData.customerName"
-        placeholder="Last Name"
-        required
-        class="w-1/2 px-3 py-2 border rounded-md"
-      />
-    </div> -->
-
-    <label>
-      <div>Full Name:</div>
-
-      <input
-        type="text"
-        name="customerName"
-        id="customerName"
-        [(ngModel)]="refundData.customerName"
-        placeholder="Akintola Akinyemi"
-        required
-        class="w-full px-3 py-2 border rounded-md"
-      />
-    </label>
-
-    <label>
-      <div>Email:</div>
-
-      <input
-        type="email"
-        name="email"
-        id="email"
-        [(ngModel)]="refundData.emailAddress"
-        placeholder="akintola.akinyemi@example.com"
-        required
-        class="w-full px-3 py-2 border rounded-md mb-4"
-      />
-    </label>
-
-    <label>
-      <div>Date:</div>
-      <input
-        type="date"
-        name="requestDate"
-        id="requestDate"
-        required
-        class="w-full px-3 py-2 border rounded-md mb-4"
-      />
-    </label>
-
-    <div class="flex flex-col gap-2 mb-4">
-      <label>
-        <div>Reason For Refund</div>
-      </label>
-      <div class="flex justify-around refund-reasons">
-        <label
-          ><input
-            type="radio"
-            name="reason"
-            value="Product doesn't work"
-          />Defective Product</label
-        >
-        <label
-          ><input
-            type="radio"
-            name="reason"
-            value="Wrong Product Delivery"
-          />Wrong Product Delivery</label
-        >
-        <label
-          ><input
-            type="radio"
-            name="reason"
-            value="Excessive Amount"
-          />Excessive Amount</label
-        >
-        <label><input type="radio" name="reason" value="Other" />Other</label>
-      </div>
-    </div>
-
-    <label>
-      <div>Product Name:</div>
-      <input
-        type="text"
-        name="productName"
-        id="productName"
-        placeholder="Product Name"
-        required
-        class="w-full px-3 py-2 border rounded-md mb-4"
-      />
-    </label>
-
-    <label>
-      <div>Product ID:</div>
-      <input
-        type="text"
-        name="productID"
-        id="productID"
-        placeholder="ex: #1223"
-        required
-        class="w-full px-3 py-2 border rounded-md mb-4"
-      />
-    </label>
-
-    <label>
-      <div>Purchase Date:</div>
-      <input
-        type="date"
-        name="purchaseDate"
-        id="purchaseDate"
-        required
-        class="w-full px-3 py-2 border rounded-md mb-4"
-      />
-    </label>
-
-    <div class="flex justify-between items-center mb-4 gap-2">
-      <span>Do you have an invoice?</span>
-      <div class="flex gap-4">
-        <label
-          ><input
-            type="radio"
-            name="invoice"
-            value="yes"
-            class="mr-1"
-          />Yes</label
-        >
-        <label
-          ><input
-            type="radio"
-            name="invoice"
-            value="no"
-            class="mr-1"
-          />No</label
-        >
-      </div>
-    </div>
-
-    <textarea
-      name="additionalNotes"
-      id="additionalNotes"
-      rows="4"
-      placeholder="Additional Notes"
-      class="w-full px-3 py-2 border rounded-md mb-4"
-    ></textarea>
-
-    <button
-      type="submit"
-      class="w-full bg-customGreen text-white py-2 rounded-md cursor-pointer"
-    >
-      Submit
-    </button>
-  </form>
 </app-modal>
 
 <p class="text-3xl font-bold" *ngIf="requests.length === 0">No request here</p>

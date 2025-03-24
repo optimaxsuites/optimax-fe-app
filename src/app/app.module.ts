@@ -126,11 +126,13 @@ import { CardModule } from 'primeng/card';
     SaleSummariesComponent,
     KitchenOrderComponent,
     CheckoutKitchenComponent,
+    IngredientComponent,
+    AddIngredientComponent
   ],
   imports: [
     // BrowserModule,
-    // UserModule,
-    // AppRoutingModule,
+    UserModule,
+    AppRoutingModule,
     CommonModule,
     AppRoutingModule,
     TableModule,

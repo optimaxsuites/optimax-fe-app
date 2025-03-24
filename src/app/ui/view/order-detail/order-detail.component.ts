@@ -11,7 +11,7 @@ import JsBarcode from 'jsbarcode';
 })
 export class OrderDetailComponent {
   navigationState: NavigationState;
-  receiptID: string = Math.floor(100000 + Math.random() * 900000).toString(); 
+  // receiptID: string = Math.floor(100000 + Math.random() * 900000).toString(); 
   constructor(
     private router: Router,
     public navigationLink: NavigationLinksService
@@ -77,7 +77,7 @@ printReciept() {
 
 
 ngAfterViewInit() {
-  JsBarcode("#barcode", this.receiptID, {
+  JsBarcode("#barcode", this.navigationState.order.id, {
     format: "CODE128",
     displayValue: false, 
     width: 2,

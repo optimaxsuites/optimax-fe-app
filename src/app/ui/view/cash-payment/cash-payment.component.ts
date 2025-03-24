@@ -22,7 +22,7 @@ export class CashPaymentComponent implements OnInit {
   changeOffered: number = 0.0;
   changeOfferedModal: boolean = false;
   receiptID: string = Math.floor(100000 + Math.random() * 900000).toString();
-
+  token: string = ''
   constructor(
     private router: Router,
     public navigationLink: NavigationLinksService,
@@ -46,6 +46,7 @@ export class CashPaymentComponent implements OnInit {
   ngOnInit(): void {
     this.cart = this.navigationState?.cart;
     this.initializePriceOptions();
+    this.token = this.randomTokenService.getRandomToken()
   }
 
   initializePriceOptions() {
@@ -86,7 +87,7 @@ export class CashPaymentComponent implements OnInit {
       paymentMethod: 'cash',
       priceTender: this.priceValue,
       changeOffered: this.priceValue - this.cart?.total,
-      id: this.randomTokenService.getRandomToken(),
+      id: this.token,
       timestamp: new Date().toLocaleString(),
     };
     const savedItems = localStorage.getItem('savedItems');
@@ -145,7 +146,7 @@ export class CashPaymentComponent implements OnInit {
   }
 
   ngAfterViewInit() {
-    JsBarcode('#barcode', this.receiptID, {
+    JsBarcode('#barcode', this.token, {
       format: 'CODE128',
       displayValue: false,
       width: 2,

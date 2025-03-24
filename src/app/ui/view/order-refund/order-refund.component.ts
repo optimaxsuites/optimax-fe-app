@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { Order, Refund } from '../../models/interface';
@@ -26,9 +26,46 @@ export class OrderRefundComponent {
     phoneNumber: "",
     status: "awaiting",
     timestamp:"",
-    selectedItems: []
-
+    selectedItems: [],
+    bankName: ''
   };
+
+  refundDetails: any = {};
+  selectedRefundMethod = null
+  refundMethods = [
+    { label: 'Bank Transfer', value: 'bank' },
+    { label: 'Cash', value: 'cash' },
+    { label: 'Royalty Top-Up', value: 'royalty' },
+    { label: 'Exchange', value: 'exchange' }
+  ];
+  scannedReceipt: string = '';
+  
+  updateFormFields(event: any) {
+    this.selectedRefundMethod = event.value
+
+    this.refundDetails = {};
+  }
+   @HostListener('window:keydown', ['$event'])
+  handleKeyDown(event: KeyboardEvent) {
+    if (event.ctrlKey || event.altKey || event.metaKey) {
+      return; 
+    }
+
+    if (event.key === 'Enter') {
+      if (this.refundData.orderId.trim() !== '') {
+        this.validateReceipt();
+      }
+      event.preventDefault(); 
+      return;
+    }
+
+    if (event.key.length === 1) {
+      this.refundData.orderId += event.key;
+    }
+
+    console.log('Current order ID:', this.refundData.orderId);
+  }
+
 
   requests: Refund[] = []
   orderItems: Order[] = [];
@@ -46,7 +83,13 @@ export class OrderRefundComponent {
 
     }
   
-
+    validateReceipt(){
+      this.fetchOrderItems();
+     
+      if (this.orderItems.length > 0 && !this.requestForm) {
+this.requestForm = true
+      }
+    }
     fetchOrderItems() {
       const savedItems = JSON.parse(localStorage.getItem('savedItems') || '[]');
       const order = savedItems.find((item: any) => item.id === this.refundData.orderId);
@@ -72,8 +115,9 @@ export class OrderRefundComponent {
 
         return;
       }
-    
+    console.log(order)
       this.orderItems = order.cart; 
+      this.refundData.timestamp = order.timestamp
     }
 
     openRequestForm() {
@@ -132,3 +176,5 @@ export class OrderRefundComponent {
       this.registerService.triggerCloseRegister();
     }
 }
+
+
