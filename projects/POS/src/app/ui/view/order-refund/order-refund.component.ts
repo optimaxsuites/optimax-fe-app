@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { Order, Refund } from '../../models/interface';
@@ -38,6 +38,7 @@ export class OrderRefundComponent {
     { label: 'Royalty Top-Up', value: 'royalty' },
     { label: 'Exchange', value: 'exchange' }
   ];
+  scannedReceipt: string = '';
   
   updateFormFields(event: any) {
     this.selectedRefundMethod = event.value
@@ -45,6 +46,16 @@ export class OrderRefundComponent {
     this.refundDetails = {};
   }
   
+   @HostListener('window:keydown', ['$event'])
+    handleKeyDown(event: KeyboardEvent) {
+      console.log(this.refundData.orderId.trim())
+      if (event.key === 'Enter' && this.refundData.orderId.trim() !== '') {
+        this.validateReceipt();
+        this.refundData.orderId = '';
+      } else {
+        this.refundData.orderId += event.key; 
+      }
+    }
   
 
   requests: Refund[] = []
@@ -65,19 +76,10 @@ export class OrderRefundComponent {
   
     validateReceipt(){
       this.fetchOrderItems();
-      console.log(this.orderItems)
-      // if (this.orderItems.length === 0) return;
-
-      // this.refundData.timestamp = new Date().toISOString();
-      // this.refundData.selectedItems = this.orderItems.map((item: any) => ({ id: item.id, quantity: item.count }));
-
-      // const refundRequests = JSON.parse(localStorage.getItem('refundRequests') || '[]');
-      // refundRequests.push(this.refundData);
-      // localStorage.setItem('refundRequests', JSON.stringify(refundRequests));
-
-      // this.messageService.add({ severity:'success', summary: 'Success', detail: 'Refund request sent successfully', key: 'tl', life: 3000 });
-      // this.requestForm = false;
-      // this.loadrefundRequests();
+     
+      if (this.orderItems.length > 0) {
+this.requestForm = true
+      }
     }
     fetchOrderItems() {
       const savedItems = JSON.parse(localStorage.getItem('savedItems') || '[]');
@@ -165,3 +167,5 @@ export class OrderRefundComponent {
       this.registerService.triggerCloseRegister();
     }
 }
+
+
