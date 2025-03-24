@@ -26,9 +26,26 @@ export class OrderRefundComponent {
     phoneNumber: "",
     status: "awaiting",
     timestamp:"",
-    selectedItems: []
-
+    selectedItems: [],
+    bankName: ''
   };
+
+  refundDetails: any = {};
+  selectedRefundMethod = null
+  refundMethods = [
+    { label: 'Bank Transfer', value: 'bank' },
+    { label: 'Cash', value: 'cash' },
+    { label: 'Royalty Top-Up', value: 'royalty' },
+    { label: 'Exchange', value: 'exchange' }
+  ];
+  
+  updateFormFields(event: any) {
+    this.selectedRefundMethod = event.value
+
+    this.refundDetails = {};
+  }
+  
+  
 
   requests: Refund[] = []
   orderItems: Order[] = [];
@@ -46,7 +63,22 @@ export class OrderRefundComponent {
 
     }
   
+    validateReceipt(){
+      this.fetchOrderItems();
+      console.log(this.orderItems)
+      // if (this.orderItems.length === 0) return;
 
+      // this.refundData.timestamp = new Date().toISOString();
+      // this.refundData.selectedItems = this.orderItems.map((item: any) => ({ id: item.id, quantity: item.count }));
+
+      // const refundRequests = JSON.parse(localStorage.getItem('refundRequests') || '[]');
+      // refundRequests.push(this.refundData);
+      // localStorage.setItem('refundRequests', JSON.stringify(refundRequests));
+
+      // this.messageService.add({ severity:'success', summary: 'Success', detail: 'Refund request sent successfully', key: 'tl', life: 3000 });
+      // this.requestForm = false;
+      // this.loadrefundRequests();
+    }
     fetchOrderItems() {
       const savedItems = JSON.parse(localStorage.getItem('savedItems') || '[]');
       const order = savedItems.find((item: any) => item.id === this.refundData.orderId);
@@ -72,8 +104,9 @@ export class OrderRefundComponent {
 
         return;
       }
-    
+    console.log(order)
       this.orderItems = order.cart; 
+      this.refundData.timestamp = order.timestamp
     }
 
     openRequestForm() {

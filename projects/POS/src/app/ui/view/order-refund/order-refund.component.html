@@ -51,6 +51,26 @@
       />
     </div> -->
 
+    <div>
+      <label for="receiptId">Receipt Id:</label>
+
+      <input
+        type="text"
+        name="receiptId"
+        id="receiptId"
+        [(ngModel)]="refundData.orderId"
+        (ngModelChange)="validateReceipt()"
+        placeholder="RTY1542"
+        required
+        class="w-full px-3 py-2 border rounded-md"
+      />
+    </div>
+
+    <label *ngIf="orderItems.length">
+      <div>Purchase Date:</div>
+      <p class="editInput">{{refundData.timestamp}}</p>
+    </label>
+
     <label>
       <div>Full Name:</div>
 
@@ -79,8 +99,8 @@
       />
     </label>
 
-    <label>
-      <div>Date:</div>
+    <!-- <label>
+      <div>Request Date:</div>
       <input
         type="date"
         name="requestDate"
@@ -88,13 +108,57 @@
         required
         class="w-full px-3 py-2 border rounded-md mb-4"
       />
+    </label> -->
+
+  
+
+  
+    <!-- <label>
+      <div>Product Name:</div>
+      <input
+        type="text"
+        name="productName"
+        id="productName"
+        placeholder="Product Name"
+        required
+        class="w-full px-3 py-2 border rounded-md mb-4"
+      />
     </label>
 
+    <label>
+      <div>Product ID:</div>
+      <input
+        type="text"
+        name="productID"
+        id="productID"
+        placeholder="ex: #1223"
+        required
+        class="w-full px-3 py-2 border rounded-md mb-4"
+      />
+    </label> -->
+
+    @if (orderItems.length > 0) {
+      <div class="flex flex-col gap-2">
+        <label for="orderItems" class="font-semibold">Purchased Items:</label>
+        <div class="flex flex-col flex-wrap gap-2">
+          <div *ngFor="let item of orderItems" class="items-center flex">
+            <input
+              type="checkbox"
+              id="item-{{ item.id }}"
+              name="orderItems"
+              value="{{ item.id }}"
+            />
+            <label for="item-{{ item.id }}" class="ml-2 cursor-pointer">{{ item.name }}</label>
+          </div>
+        </div>
+      </div>
+    }
+  
     <div class="flex flex-col gap-2 mb-4">
       <label>
         <div>Reason For Refund</div>
       </label>
-      <div class="flex justify-around refund-reasons">
+      <div class="flex justify-betweeen refund-reasons gap-2">
         <label
           ><input
             type="radio"
@@ -120,61 +184,41 @@
       </div>
     </div>
 
-    <label>
-      <div>Product Name:</div>
-      <input
-        type="text"
-        name="productName"
-        id="productName"
-        placeholder="Product Name"
-        required
-        class="w-full px-3 py-2 border rounded-md mb-4"
-      />
-    </label>
 
-    <label>
-      <div>Product ID:</div>
-      <input
-        type="text"
-        name="productID"
-        id="productID"
-        placeholder="ex: #1223"
-        required
-        class="w-full px-3 py-2 border rounded-md mb-4"
-      />
-    </label>
-
-    <label>
-      <div>Purchase Date:</div>
-      <input
-        type="date"
-        name="purchaseDate"
-        id="purchaseDate"
-        required
-        class="w-full px-3 py-2 border rounded-md mb-4"
-      />
-    </label>
-
-    <div class="flex justify-between items-center mb-4 gap-2">
-      <span>Do you have an invoice?</span>
-      <div class="flex gap-4">
-        <label
-          ><input
-            type="radio"
-            name="invoice"
-            value="yes"
-            class="mr-1"
-          />Yes</label
-        >
-        <label
-          ><input
-            type="radio"
-            name="invoice"
-            value="no"
-            class="mr-1"
-          />No</label
-        >
-      </div>
+    <p class="font-semibold">Refund Method</p>
+    <ng-select 
+    [items]="refundMethods" 
+    bindLabel="label" 
+    bindValue="value" 
+    [(ngModel)]="selectedRefundMethod"
+    (change)="updateFormFields($event)"
+    placeholder="Select Refund Method">
+  </ng-select>
+  
+  
+    
+    <!-- Bank Transfer Fields -->
+    <div *ngIf="selectedRefundMethod === 'bank'">
+      <input type="text" placeholder="Bank Name" [(ngModel)]="refundDetails.bankName" />
+      <input type="text" placeholder="Account Number" [(ngModel)]="refundDetails.accountNumber" />
+      <input type="text" placeholder="Account Holder" [(ngModel)]="refundDetails.accountHolder" />
+    </div>
+    
+    <!-- Cash Refund -->
+    <!-- <div *ngIf="selectedRefundMethod === 'cash'">
+      <input type="text" placeholder="Reason (Optional)" [(ngModel)]="refundDetails.cashReason" />
+    </div>
+     -->
+    <!-- Royalty Top-Up -->
+    <div *ngIf="selectedRefundMethod === 'royalty'">
+      <input type="text" placeholder="Customer Loyalty ID" [(ngModel)]="refundDetails.loyaltyId" />
+      <!-- <input type="number" placeholder="Top-Up Amount" [(ngModel)]="refundDetails.amount" /> -->
+    </div>
+    
+    <!-- Exchange -->
+    <div *ngIf="selectedRefundMethod === 'exchange'">
+      <input type="text" placeholder="New Product" [(ngModel)]="refundDetails.newProduct" />
+      <input type="number" placeholder="Price Difference" [(ngModel)]="refundDetails.priceDifference" />
     </div>
 
     <textarea

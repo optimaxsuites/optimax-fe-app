@@ -18,6 +18,11 @@
         *ngIf="navigationState.order.cart.length > 0"
         class="flex flex-col gap-3 p-3"
       >
+
+      <div>
+        <span>orderId:</span>
+        <p>{{ navigationState.order.id }}</p>
+      </div>
         <div>
           <span>Customer:</span>
           <p>Walk in</p>

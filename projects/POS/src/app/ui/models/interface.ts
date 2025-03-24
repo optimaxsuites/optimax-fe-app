@@ -231,6 +231,10 @@ export interface Refund {
   cashierComment: string;
   status: string;
   selectedItems: any;
+  bankName?: string;
+  accountNumber?: string;
+  accountHolder?: string;
+  loyaltyId?: string;
 }
 
 export interface SelectedRequest {
