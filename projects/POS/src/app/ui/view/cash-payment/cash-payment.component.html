@@ -21,6 +21,7 @@
         <app-cart-item-card
           *ngFor="let item of navigationState.cart.cartItems; let i = index"
           [item]="item"
+          [cart]="false"
           [showDelete]="false"
           [freezeItemCount]="true"
           class="cursor-pointer"

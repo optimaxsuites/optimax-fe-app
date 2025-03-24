@@ -62,16 +62,16 @@
                   <tr class="border-t-4 border-transparent"> 
                     <td class="border border-gray-300 px-4 py-2 capitalize">{{ permissionKey }}</td>
                     <td class="border border-gray-300 px-4 py-2 text-center">
-                      <input type="checkbox" [checked]="role.permissions[moduleKey][permissionKey].view" [disabled]="!role.isEditing" class="disabled:accent-customGreen"/>
+                      <input type="checkbox" [checked]="role.permissions[moduleKey][permissionKey].canView" [disabled]="!role.isEditing" class="disabled:accent-customGreen"/>
                     </td>
                     <td class="border border-gray-300 px-4 py-2 text-center">
-                      <input type="checkbox" [checked]="role.permissions[moduleKey][permissionKey].edit" [disabled]="!role.isEditing" />
+                      <input type="checkbox" [checked]="role.permissions[moduleKey][permissionKey].canEdit" [disabled]="!role.isEditing" />
                     </td>
                     <td class="border border-gray-300 px-4 py-2 text-center">
-                      <input type="checkbox" [checked]="role.permissions[moduleKey][permissionKey].delete" [disabled]="!role.isEditing" />
+                      <input type="checkbox" [checked]="role.permissions[moduleKey][permissionKey].canDelete" [disabled]="!role.isEditing" />
                     </td>
                     <td class="border border-gray-300 px-4 py-2 text-center">
-                      <input type="checkbox" [checked]="role.permissions[moduleKey][permissionKey].create" [disabled]="!role.isEditing" />
+                      <input type="checkbox" [checked]="role.permissions[moduleKey][permissionKey].canCreate" [disabled]="!role.isEditing" />
                     </td>
                   </tr>
                 }
@@ -92,11 +92,15 @@
 
 
   <div class="px-4 ">
-    <div class="py-3 mb-3 flex flex-col gap-1">
+    <div class="py-3  flex flex-col gap-1">
       <label for="name" class="font-semibold text-customBlue">Role Name</label>
       <input type="text" placeholder="Role name" id="name" class="editInput" [(ngModel)]="newRole.roleName">
     </div>
   
+    <div class=" mb-4 flex flex-col gap-1">
+      <label for="name" class="font-semibold text-customBlue">Description</label>
+      <textarea placeholder="Role description" id="name" class="editInput" [(ngModel)]="newRole.roleDescription"></textarea>
+    </div>
 
     <mat-accordion class="">
       @for( module of modules; track module.name){
@@ -128,16 +132,16 @@
           <tr *ngFor="let form of module.forms">
             <td class="border border-gray-300 px-4 py-2 capitalize">{{ form }}</td>
             <td class="border border-gray-300 px-4 py-2 text-center">
-              <input type="checkbox" [(ngModel)]="newRole.permissions[module.name][form].view" />
+              <input type="checkbox" [(ngModel)]="newRole.permissions[module.name][form].canView" />
             </td>
             <td class="border border-gray-300 px-4 py-2 text-center">
-              <input type="checkbox" [(ngModel)]="newRole.permissions[module.name][form].edit" />
+              <input type="checkbox" [(ngModel)]="newRole.permissions[module.name][form].canEdit" />
             </td>
             <td class="border border-gray-300 px-4 py-2 text-center">
-              <input type="checkbox" [(ngModel)]="newRole.permissions[module.name][form].delete" />
+              <input type="checkbox" [(ngModel)]="newRole.permissions[module.name][form].canDelete" />
             </td>
             <td class="border border-gray-300 px-4 py-2 text-center">
-              <input type="checkbox" [(ngModel)]="newRole.permissions[module.name][form].create" />
+              <input type="checkbox" [(ngModel)]="newRole.permissions[module.name][form].canCreate" />
             </td>
           </tr>
         </tbody>

@@ -18,10 +18,11 @@ import { MenuItemsService } from '../../../sharedComponents/service/menue-items/
 //   usersAssigned?: { id: number; name: string; email: string }[];
 // }
 interface Permission {
-  view: boolean;
-  edit: boolean;
-  delete: boolean;
-  create: boolean;
+  canView: boolean,
+  canEdit: boolean,
+  canDelete: boolean,
+  canCreate: boolean,
+  superuser?: boolean
 }
 
 interface ModulePermissions {
@@ -30,6 +31,7 @@ interface ModulePermissions {
 
 interface Role {
   roleName: string;
+  roleDescription?: string;
   permissions: {
     [moduleName: string]: ModulePermissions;
   };
@@ -54,17 +56,17 @@ export class RolesNpermissionComponent {
       roleName: 'Admin',
       permissions: {
         pos: {
-          sales: { view: true, edit: true, delete: true, create: true },
-          inventory: { view: true, edit: true, delete: true, create: true },
-          product: { view: true, edit: true, delete: true, create: true },
-          report: { view: true, edit: true, delete: true, create: true },
+          sales: { canView: true, canEdit: true, canDelete: true, canCreate: true },
+          inventory: { canView: true, canEdit: true, canDelete: true, canCreate: true },
+          product: { canView: true, canEdit: true, canDelete: true, canCreate: true },
+          report: { canView: true, canEdit: true, canDelete: true, canCreate: true },
         },
         hr: {
-          employee: { view: true, edit: true, delete: true, create: true },
-          leave: { view: true, edit: true, delete: true, create: true },
-          attendance: { view: true, edit: true, delete: true, create: true },
-          loan: { view: true, edit: true, delete: true, create: true },
-          payroll: { view: true, edit: true, delete: true, create: true },
+          employee: { canView: true, canEdit: true, canDelete: true, canCreate: true },
+          leave: { canView: true, canEdit: true, canDelete: true, canCreate: true },
+          attendance: { canView: true, canEdit: true, canDelete: true, canCreate: true },
+          loan: { canView: true, canEdit: true, canDelete: true, canCreate: true },
+          payroll: { canView: true, canEdit: true, canDelete: true, canCreate: true },
         },
       },
       isEditing: false,
@@ -73,10 +75,10 @@ export class RolesNpermissionComponent {
       roleName: 'Cashier',
       permissions: {
         pos: {
-          sales: { view: true, edit: true, delete: false, create: true },
-          inventory: { view: false, edit: false, delete: false, create: false },
-          product: { view: false, edit: false, delete: false, create: false },
-          report: { view: true, edit: false, delete: false, create: true },
+          sales: { canView: true, canEdit: true, canDelete: false, canCreate: true },
+          inventory: { canView: false, canEdit: false, canDelete: false, canCreate: false },
+          product: { canView: false, canEdit: false, canDelete: false, canCreate: false },
+          report: { canView: true, canEdit: false, canDelete: false, canCreate: true },
         }
       },
       isEditing: false,
@@ -85,16 +87,16 @@ export class RolesNpermissionComponent {
       roleName: 'Inventory Manager',
       permissions: {
         pos: {
-          sales: { view: false, edit: false, delete: false, create: false },
-          inventory: { view: true, edit: true, delete: true, create: true },
-          product: { view: true, edit: true, delete: true, create: true },
-          report: { view: false, edit: false, delete: false, create: false },
+          sales: { canView: false, canEdit: false, canDelete: false, canCreate: false },
+          inventory: { canView: true, canEdit: true, canDelete: true, canCreate: true },
+          product: { canView: true, canEdit: true, canDelete: true, canCreate: true },
+          report: { canView: false, canEdit: false, canDelete: false, canCreate: false },
         },
         hr: {
-          employee: { view: false, edit: false, delete: false, create: false },
-          leave: { view: false, edit: false, delete: false, create: false },
-          attendance: { view: false, edit: false, delete: false, create: false },
-          loan: { view: false, edit: false, delete: false, create: false },
+          employee: { canView: false, canEdit: false, canDelete: false, canCreate: false },
+          leave: { canView: false, canEdit: false, canDelete: false, canCreate: false },
+          attendance: { canView: false, canEdit: false, canDelete: false, canCreate: false },
+          loan: { canView: false, canEdit: false, canDelete: false, canCreate: false },
         },
       },
       isEditing: false,
@@ -104,6 +106,7 @@ export class RolesNpermissionComponent {
   modules:{ name: string; forms: string[]; }[] = []
   newRole: Role = {
     roleName: '',
+    roleDescription: "",
     permissions: {
     },
   };
@@ -125,10 +128,11 @@ export class RolesNpermissionComponent {
       this.newRole.permissions[module.name] = {};
       module.forms.forEach((form) => {
         this.newRole.permissions[module.name][form] = {
-          view: false,
-          edit: false,
-          delete: false,
-          create: false,
+          canView: false,
+          canEdit: false,
+          canDelete: false,
+          canCreate: false,
+          superuser: false
         };
       });
     });
@@ -155,6 +159,13 @@ export class RolesNpermissionComponent {
 
   submitRole() {
     if (this.newRole.roleName && this.validatePermissions(this.newRole.permissions)) {
+      const rolePermission = {
+        name: this.newRole.roleName,
+        roleDescription: this.newRole.roleDescription,
+        permissions: this.newRole.permissions,
+      }
+
+      console.log(rolePermission)
       this.roles.push({...this.newRole, isEditing: false });
       this.newRole = {
       roleName: '',
