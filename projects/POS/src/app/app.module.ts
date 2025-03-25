@@ -90,7 +90,7 @@ import { MenuModule } from 'primeng/menu';
 import { IngredientComponent } from './ui/view/ingredient/ingredient/ingredient.component';
 import { AddIngredientComponent } from './ui/view/ingredient/add-ingredient/add-ingredient.component';
 import { KitchenOrderComponent } from './ui/view/kitchen-order/kitchen-order.component';
-import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
+// import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
 import { CardModule } from 'primeng/card';
 
 @NgModule({
@@ -125,7 +125,7 @@ import { CardModule } from 'primeng/card';
     SaleComponent,
     SaleSummariesComponent,
     KitchenOrderComponent,
-    CheckoutKitchenComponent,
+    // CheckoutKitchenComponent,
     IngredientComponent,
     AddIngredientComponent,
     IngredientComponent,
@@ -180,7 +180,7 @@ import { CardModule } from 'primeng/card';
     DropdownModule,
     CardModule,
 
-    BrowserAnimationsModule,
+    // BrowserAnimationsModule,
   ],
   providers: [
     {
