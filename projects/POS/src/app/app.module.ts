@@ -92,7 +92,7 @@ import { AddIngredientComponent } from './ui/view/ingredient/add-ingredient/add-
 import { KitchenOrderComponent } from './ui/view/kitchen-order/kitchen-order.component';
 // import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
 import { CardModule } from 'primeng/card';
-
+import { InputNumberModule } from 'primeng/inputnumber';
 @NgModule({
   declarations: [
     AppComponent,
@@ -172,6 +172,7 @@ import { CardModule } from 'primeng/card';
     NavTabComponent,
     HttpClientModule,
     NgApexchartsModule,
+    InputNumberModule,
     CalendarModule,
     MenuModule,
     InputGroupModule,

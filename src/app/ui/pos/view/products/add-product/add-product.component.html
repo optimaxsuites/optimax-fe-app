@@ -41,11 +41,31 @@
               [items]="branches"
               bindLabel="label"
               bindValue="value"
-              formControlName="branch"
-              [multiple]="false"
+              formControlName="selectedBranch"
               placeholder="Select branch">
               </ng-select>
-              
+              <button type="button" (click)="addBranch()">Add Branch</button>
+            </div>
+
+            <div formArrayName="branches">
+              <div *ngFor="let branch of branchess.controls; let i = index" [formGroupName]="i">
+                <hr>
+                <h3>Branch: {{ branch.value.branchName }}</h3>
+                <button type="button" (click)="removeBranch(i)">Remove Branch</button>
+          
+                <h4>Pricing & Variants</h4>
+                <button type="button" (click)="addPricingVariant(i)">Add Variant</button>
+          
+                <div formArrayName="pricingVariants">
+                  <div *ngFor="let variant of getPricingVariants(i).controls; let j = index" [formGroupName]="j">
+                    <label>Variant Name:</label>
+                    <input formControlName="variantName" type="text" />
+                    <label>Price:</label>
+                    <input formControlName="price" type="number" />
+                    <button type="button" (click)="removePricingVariant(i, j)">Remove</button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class=" detailDiv w-full" >

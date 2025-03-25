@@ -225,6 +225,8 @@ export class AddProductComponent {
       partNumber: ['', Validators.required],
       tax: [, [Validators.required, Validators.min(0)]],
       branch: ['', Validators.required],
+      selectedBranch: [null, Validators.required], 
+      branches: this.fb.array([]),
       variant: [''],
       discount: [''],
       category: [''],
@@ -346,6 +348,59 @@ export class AddProductComponent {
       this.productForm.get('image')?.setValue(this.activeItem?.productImages);
     }
   }
+
+  get branchess(): FormArray {
+    return this.productForm.get('branches') as FormArray;
+  }
+
+  get selecteddBranch() {
+    return this.productForm.get('selectedBranch')?.value;
+  }
+
+  newBranch(branchData: any): FormGroup {
+    return this.fb.group({
+      branchName: [branchData.label, Validators.required], // Store branch label
+      branchValue: [branchData.value], // Store branch value (optional)
+      pricingVariants: this.fb.array([])
+    });
+  }
+
+  addBranch() {
+    if (!this.selecteddBranch) return;
+
+    // Check if branch is already added
+    if (this.branchess.controls.some(branch => branch.value.branchValue === this.selecteddBranch.value)) {
+      alert('Branch already added!');
+      return;
+    }
+
+    this.branchess.push(this.newBranch(this.selecteddBranch));
+    this.productForm.get('selecteddBranch')?.reset(); // Reset dropdown after adding
+  }
+
+  removeBranch(index: number) {
+    this.branchess.removeAt(index);
+  }
+
+  getPricingVariants(branchIndex: number): FormArray {
+    return this.branchess.at(branchIndex).get('pricingVariants') as FormArray;
+  }
+
+  newPricingVariant(): FormGroup {
+    return this.fb.group({
+      variantName: ['', Validators.required],
+      price: ['', Validators.required]
+    });
+  }
+
+  addPricingVariant(branchIndex: number) {
+    this.getPricingVariants(branchIndex).push(this.newPricingVariant());
+  }
+
+  removePricingVariant(branchIndex: number, variantIndex: number) {
+    this.getPricingVariants(branchIndex).removeAt(variantIndex);
+  }
+
 
   isFieldInvalid(fieldName: string) {
     const field = this.productForm.get(fieldName);

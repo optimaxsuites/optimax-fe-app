@@ -155,3 +155,8 @@ label {
   filter: grayscale(100%);
   cursor: not-allowed;
 }
+
+
+p-inputnumber, p-input-number-input {
+  @apply w-2 editInput
+}
