@@ -58,14 +58,14 @@ body {
     .logo {
       font-weight: bold;
       font-size: 1.3rem;
-      color: $header-text-color;
+      // color: $header-text-color;
       margin-right: 2rem;
     }
 
     h1 {
       margin: 0;
       font-size: 1.6rem;
-      color: $header-text-color;
+      // color: $header-text-color;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
@@ -73,7 +73,7 @@ body {
     .chef-name {
       font-size: 1.1rem;
       font-weight: 500;
-      color: $header-text-color;
+      // color: $header-text-color;
     }
   }
 
@@ -100,12 +100,12 @@ body {
       border: 1px solid rgba($text-color, 0.1);
       transition: transform 0.2s, box-shadow 0.2s;
       cursor: pointer;
-
-      &:hover {
-        background-color: $hover-bg;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-        transform: translateY(-2px);
-      }
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-size: large;
+      min-height: 14vh;
 
       .table-card-header {
         display: flex;
@@ -125,18 +125,23 @@ body {
 
       .table-card-content {
         padding: 0.5rem 0;
-        font-size: 0.95rem;
+        font-size: 0.85em;
       }
 
-      // Example color-coded left border for statuses
       &.status-processing {
-        border-left: 5px solid #ff9800;
+        background-color: #2195f340;
       }
       &.status-pending {
-        border-left: 5px solid #f44336;
+        background-color: #ffa60040;
       }
       &.status-completed {
-        border-left: 5px solid #4caf50;
+        background-color: #4caf4f40;
+      }
+
+      &:hover {
+        filter: brightness(80%);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
       }
     }
   }

@@ -18,6 +18,11 @@
         *ngIf="navigationState.order.cart.length > 0"
         class="flex flex-col gap-3 p-3"
       >
+
+      <div>
+        <span>orderId:</span>
+        <p>{{ navigationState.order.id }}</p>
+      </div>
         <div>
           <span>Customer:</span>
           <p>Walk in</p>
@@ -165,7 +170,7 @@
     <div >Sold to: Walk-in Customer</div>
     <div >Date & Time: {{ navigationState.order.timestamp }}</div>
     <div >Cashier: Ayaobasheba</div>
-    <div >Receipt ID: {{receiptID}}</div>
+    <div >Receipt ID: {{navigationState.order.id}}</div>
   </div>
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
 

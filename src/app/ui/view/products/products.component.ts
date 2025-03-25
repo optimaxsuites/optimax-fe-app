@@ -98,7 +98,7 @@ export class ProductsComponent implements OnInit {
   barcodeConfig = {
     barcodeType: 'CODE128',
     barcodeQuantity: 1,
-    variants: false
+    variants: false,
   };
   barcodes = [
     { label: 'CODE128 ', value: 'CODE128' },
@@ -385,6 +385,21 @@ export class ProductsComponent implements OnInit {
       const name = row.getCell(ProductExcelColumns.NAME + 1).text;
       if (name == 'Dummy Product' || name == '') continue;
       const description = row.getCell(ProductExcelColumns.DESCRIPTION + 1).text;
+      // Just some simple validation on the string provided, other it'll default to a dummy image
+      const imgUrl = ((url: string) => {
+        try {
+          new URL(url);
+          return url;
+        } catch (_) {
+          return 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s';
+        }
+      })(row.getCell(ProductExcelColumns.IMAGE_URL + 1).text);
+      // TODO: Add error handling
+      const imgBlob = await (await fetch(imgUrl)).blob();
+      const imgFile = new File([imgBlob], 'img.jpg', {
+        type: imgBlob.type,
+      });
+      console.log(imgFile);
       const branchName = row.getCell(ProductExcelColumns.BRANCH + 1).text;
       const code = parseInt(row.getCell(ProductExcelColumns.CODE + 1).text);
       const basePrice = parseInt(
@@ -640,13 +655,18 @@ export class ProductsComponent implements OnInit {
 
   generateBarcode(shouldPrint?: boolean) {
     const barcodes: { svg: SVGSVGElement; text: string }[] = [];
-  
+
     const sku = this.activeItem?.sku;
     if (typeof sku === 'string') {
-      const displayValue = `${(this.activeItem.name?.split(' ')[0] || '').toLowerCase()}-${sku}`;
-      
+      const displayValue = `${(
+        this.activeItem.name?.split(' ')[0] || ''
+      ).toLowerCase()}-${sku}`;
+
       for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
-        const barcodeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        const barcodeSvg = document.createElementNS(
+          'http://www.w3.org/2000/svg',
+          'svg'
+        );
         JsBarcode(barcodeSvg, sku, {
           format: this.barcodeConfig.barcodeType,
           lineColor: '#000',
@@ -660,29 +680,36 @@ export class ProductsComponent implements OnInit {
     } else {
       alert('Please fill in the SKU with valid data.');
     }
-  
+
     if (Array.isArray(this.activeItem?.variants)) {
-      this.activeItem.variants.forEach((variant: { sku: string; name: string; quantity: number }) => {
-        const variantSKU = variant?.sku;
-        if (typeof variantSKU === 'string') {
-          const displayValue = `${(variant.name?.split(' ')[0] || '').toLowerCase()}-${variantSKU}`;
-  
-          for (let i = 0; i < variant.quantity; i++) {
-            const barcodeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            JsBarcode(barcodeSvg, variantSKU, {
-              format: this.barcodeConfig.barcodeType,
-              lineColor: '#000',
-              width: 3,
-              height: 150,
-              displayValue: true,
-              text: displayValue,
-            });
-            barcodes.push({ svg: barcodeSvg, text: displayValue });
+      this.activeItem.variants.forEach(
+        (variant: { sku: string; name: string; quantity: number }) => {
+          const variantSKU = variant?.sku;
+          if (typeof variantSKU === 'string') {
+            const displayValue = `${(
+              variant.name?.split(' ')[0] || ''
+            ).toLowerCase()}-${variantSKU}`;
+
+            for (let i = 0; i < variant.quantity; i++) {
+              const barcodeSvg = document.createElementNS(
+                'http://www.w3.org/2000/svg',
+                'svg'
+              );
+              JsBarcode(barcodeSvg, variantSKU, {
+                format: this.barcodeConfig.barcodeType,
+                lineColor: '#000',
+                width: 3,
+                height: 150,
+                displayValue: true,
+                text: displayValue,
+              });
+              barcodes.push({ svg: barcodeSvg, text: displayValue });
+            }
           }
         }
-      });
+      );
     }
-  
+
     // Convert and print each barcode separately
     if (shouldPrint) {
       this.printBarcodesSeparately(barcodes);
@@ -694,7 +721,7 @@ export class ProductsComponent implements OnInit {
       setTimeout(() => {
         const svgString = new XMLSerializer().serializeToString(barcode.svg);
         const encodedSvg = encodeURIComponent(svgString);
-        
+
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
@@ -702,7 +729,7 @@ export class ProductsComponent implements OnInit {
           canvas.width = img.width;
           canvas.height = img.height;
           ctx?.drawImage(img, 0, 0);
-          
+
           const imgData = canvas.toDataURL('image/png');
           this.printSingleImage(imgData);
         };
@@ -711,12 +738,11 @@ export class ProductsComponent implements OnInit {
     });
   }
 
-  
   printSingleImage(imgSrc: string) {
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     document.body.appendChild(iframe);
-  
+
     const doc = iframe.contentWindow?.document;
     if (doc) {
       doc.write(`
@@ -736,7 +762,7 @@ export class ProductsComponent implements OnInit {
         </html>
       `);
       doc.close();
-  
+
       setTimeout(() => {
         iframe.contentWindow?.focus();
         iframe.contentWindow?.print();
@@ -744,22 +770,21 @@ export class ProductsComponent implements OnInit {
       }, 500);
     }
   }
-  
-  
-    convertSvgToPng(svgElement: Node, shouldPrint?: boolean) {
-      const svgClone = svgElement.cloneNode(true) as SVGSVGElement;
-      svgClone.setAttribute("width", "300");
-      svgClone.setAttribute("height", "150");
-    
-      if (shouldPrint) {
-        const iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        document.body.appendChild(iframe);
-    
-        const doc = iframe.contentWindow?.document;
-        if (doc) {
-          doc.open();
-          doc.write(`
+
+  convertSvgToPng(svgElement: Node, shouldPrint?: boolean) {
+    const svgClone = svgElement.cloneNode(true) as SVGSVGElement;
+    svgClone.setAttribute('width', '300');
+    svgClone.setAttribute('height', '150');
+
+    if (shouldPrint) {
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+
+      const doc = iframe.contentWindow?.document;
+      if (doc) {
+        doc.open();
+        doc.write(`
             <html>
             <head>
               <title>Print Barcode</title>

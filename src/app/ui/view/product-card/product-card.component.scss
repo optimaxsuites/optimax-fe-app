@@ -28,8 +28,8 @@
 }
 
 .product-quantity {
-  $dimension-size: 3.5rem;
-  $position: -3%;
+  $dimension-size: 2rem;
+  $position: -1.5%;
   top: $position;
   right: $position;
   width: $dimension-size;
@@ -40,7 +40,7 @@
   justify-content: center;
   align-items: center;
   color: var(--white);
-  font-size: 140%;
+  font-size: 120%;
   border-radius: 50%;
   font-weight: bold;
 }

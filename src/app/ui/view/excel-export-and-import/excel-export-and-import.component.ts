@@ -111,7 +111,7 @@ export class ExcelExportAndImportComponent implements OnInit {
     const headers: string[] = [];
     headers[ProductExcelColumns.NAME] = 'Name';
     headers[ProductExcelColumns.DESCRIPTION] = 'Description';
-    // headers[ProductExcelColumns.IMAGE_URL] = 'Image URL';
+    headers[ProductExcelColumns.IMAGE_URL] = 'Image URL';
     headers[ProductExcelColumns.BRANCH] = 'Branch';
     headers[ProductExcelColumns.CODE] = 'Code';
     headers[ProductExcelColumns.BASE_PRICE] = 'Base Price';
