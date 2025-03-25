@@ -175,129 +175,87 @@
         </button>
       </div>
     </div>
+    
+<!-- Cards section -->
 
-    <div
-      class="flex flex-row w-[97%] justify-around mt-5 bg-slate-100 border- border-slate-900 border-solid"
-    >
-      <!-- Cards -->
-       
-      <div
-        class="w-[300px] h-auto bg-gray-100 p-3 rounded-lg shadow-lg mt-20 mb-20 rounded-tl-2xl rounded-tr-2xl"
-      >
-        <div class="h-20 bg-slate-500 rounded-tl-xl rounded-tr-xl">
-          <h2 *ngFor="let cardCaption of cardHeader"  class="text-white font-semibold text-2xl flex p-5">
-            {{cardCaption.cardOne}}
-          </h2>
-        </div>
-
-        <div class="mt-3 space-y-2">
-          <ul *ngFor="let task of tasks">
-            <!-- <li class="text-lg">{{ task.name }} </li> -->
-            <ul
-              class="bg-white p-3 rounded-lg shadow-md border cursor-pointer hover:bg-gray-100"
-            >
-              <li class="text-lg">
-                {{ task.name }} 
-                <span class="text-xs"></span>
-              </li>
-            </ul>
-          </ul>
-        </div>
-      </div>
-
-
-      <div
-        class="w-[300px] h-auto bg-gray-100 p-3 rounded-lg shadow-lg mt-20 mb-20 rounded-tl-2xl rounded-tr-2xl"
-      >
-        <div class="h-20 bg-sky-900 rounded-tl-xl rounded-tr-xl">
-          <h2 *ngFor="let cardCaption of cardHeader"  class="text-white font-semibold text-2xl flex px-5 py-2">
-            {{cardCaption.cardTwo}}
-          </h2>
-        </div>
-
-        <div class="mt-3 space-y-2">
-          <ul *ngFor="let card of cards">
-            <li class="text-lg">{{ card.text }} {{ card.emoji }}</li>
-            <ul
-              class="bg-white p-3 rounded-lg shadow-md border cursor-pointer hover:bg-gray-100"
-            >
-              <li class="text-lg">
-                {{ card.text }}
-                <span class="text-xs">{{ card.emoji }}</span>
-              </li>
-            </ul>
-          </ul>
-        </div>
-      </div>
-
-      <!-- <div
-        class="w-[300px] h-auto bg-gray-100 p-3 rounded-lg shadow-lg mt-20 mb-20 rounded-tl-2xl rounded-tr-2xl"
-      >
-        
-           <div class="h-20 bg-sky-900 rounded-tl-xl rounded-tr-xl">
-          <h2 *ngFor="let cardCaption of cardHeader"  class="text-white font-semibold text-2xl flex p-5">
-            {{cardCaption.cardTwo}}
-          </h2>
-        </div>
-
-        <div class="mt-3 space-y-2">
-          <div *ngFor="let card of cards">
-            <p class="text-lg">{{ card.text }} {{ card.emoji }}</p>
-            <div
-              class="bg-white p-3 rounded-lg shadow-md border cursor-pointer hover:bg-gray-100"
-            >
-              <p class="text-lg">
-                {{ card.text }}
-                <span class="text-xs">{{ card.emoji }}</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div> -->
-
-      <div
-        class="w-[300px] h-auto bg-gray-100 p-3 rounded-lg shadow-lg mt-20 mb-20 rounded-tl-2xl rounded-tr-2xl"
-      >
-        <div class="h-20 bg-teal-700 rounded-tl-xl rounded-tr-xl">
-          <h2 *ngFor="let cardCaption of cardHeader" class="text-white font-semibold text-2xl flex px-5 py-1">{{cardCaption.cardThree}}</h2>
-        </div>
-
-        <div class="mt-3 space-y-2">
-          <div *ngFor="let card of cards">
-            <p class="text-lg">{{ card.text }} {{ card.emoji }}</p>
-            <div
-              class="bg-white p-3 rounded-lg shadow-md border cursor-pointer hover:bg-gray-100"
-            >
-              <p class="text-lg">
-                {{ card.text }}
-                <span class="text-xs">{{ card.emoji }}</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div
-        class="w-[300px] h-auto bg-gray-100 p-3 rounded-lg shadow-lg mt-20 mb-20 rounded-tl-2xl rounded-tr-2xl"
-      >
-        <div class="h-20 bg-customGreen rounded-tl-xl rounded-tr-xl">
-          <h2 *ngFor="let cardCaption of cardHeader" class="text-white font-semibold text-2xl flex px-5 py-1">{{cardCaption.cardFour}}</h2>
-        </div>
-
-        <div class="mt-3 space-y-2">
-          <div *ngFor="let card of cards">
-            <p class="text-lg">{{ card.text }} {{ card.emoji }}</p>
-            <div
-              class="bg-white p-3 rounded-lg shadow-md border cursor-pointer hover:bg-gray-100"
-            >
-              <p class="text-lg">
-                {{ card.text }}
-                <span class="text-xs">{{ card.emoji }}</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+<div class="flex flex-row w-[97%] justify-around mt-5 bg-slate-100 border" cdkDropListGroup>
+  <!-- Card for "Not Started" -->
+  <div class="w-[300px] h-auto bg-gray-100 p-3 rounded-lg shadow-lg mt-20 mb-20 rounded-tl-2xl rounded-tr-2xl" cdkDropList (cdkDropListDropped)="drop($event)" [cdkDropListData]="cards[0]">
+    <div class="h-20 bg-slate-500 rounded-tl-xl rounded-tr-xl">
+      <h2 class="text-white font-semibold text-2xl flex p-5">
+        {{ cardHeader[0].cardOne }}
+      </h2>
     </div>
+
+    <div class="mt-3 space-y-2">
+      <ul >
+        <li *ngFor="let card of cards[0]; let i = index" cdkDrag class="bg-white p-3 rounded-lg shadow-md border cursor-pointer hover:bg-gray-100">
+          <p class="text-lg">
+            {{ card.text  }}
+          </p>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Card for "In Progress" -->
+  <div class="w-[300px] h-auto bg-gray-100 p-3 rounded-lg shadow-lg mt-20 mb-20 rounded-tl-2xl rounded-tr-2xl" cdkDropList (cdkDropListDropped)="drop($event)" [cdkDropListData]="cards[1]">
+    <div class="h-20 bg-sky-900 rounded-tl-xl rounded-tr-xl">
+      <h2 class="text-white font-semibold text-2xl flex px-5 py-2">
+        {{ cardHeader[1].cardTwo }}
+      </h2>
+    </div>
+
+    <div class="mt-3 space-y-2">
+      <ul >
+        <li *ngFor="let card of cards[1]; let i = index" cdkDrag class="bg-white p-3 rounded-lg shadow-md border cursor-pointer hover:bg-gray-100">
+          <p class="text-lg">
+            {{ card.text  }}
+          </p>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Card for "Completed" -->
+  <div class="w-[300px] h-auto bg-gray-100 p-3 rounded-lg shadow-lg mt-20 mb-20 rounded-tl-2xl rounded-tr-2xl" cdkDropList (cdkDropListDropped)="drop($event)" [cdkDropListData]="cards[2]">
+    <div class="h-20 bg-teal-700 rounded-tl-xl rounded-tr-xl">
+      <h2 class="text-white font-semibold text-2xl flex px-5 py-1">
+        {{ cardHeader[2].cardThree }}
+      </h2>
+    </div>
+
+    <div class="mt-3 space-y-2">
+      <ul >
+        <li *ngFor="let card of cards[2]; let i = index" cdkDrag class="bg-white p-3 rounded-lg shadow-md border cursor-pointer hover:bg-gray-100">
+          <p class="text-lg">
+            {{ card.text }}
+          </p>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Card for "Done" -->
+  <div class="w-[300px] h-auto bg-gray-100 p-3 rounded-lg shadow-lg mt-20 mb-20 rounded-tl-2xl rounded-tr-2xl" cdkDropList (cdkDropListDropped)="drop($event)" [cdkDropListData]="cards[3]">
+    <div class="h-20 bg-customGreen rounded-tl-xl rounded-tr-xl">
+      <h2 class="text-white font-semibold text-2xl flex px-5 py-1">
+        {{ cardHeader[3].cardFour }}
+      </h2>
+    </div>
+
+    <div class="mt-3 space-y-2">
+      <ul >
+        <li *ngFor="let card of cards[3]; let i = index" cdkDrag class="bg-white p-3 rounded-lg shadow-md border cursor-pointer hover:bg-gray-100">
+          <p class="text-lg">
+            {{ card.text }}
+          </p>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
   </div>
 </div>

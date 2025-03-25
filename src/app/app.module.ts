@@ -53,6 +53,7 @@ import { DropdownModule } from 'primeng/dropdown';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { MatTabsModule } from '@angular/material/tabs';
 import { CommonModule } from '@angular/common';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 // import { DatePicker } from 'primeng/datepicker';
 
 
@@ -81,7 +82,7 @@ import { CommonModule } from '@angular/common';
   ],
   imports: [
    
-    // BrowserModule,
+    BrowserModule,
     AppRoutingModule,
     CommonModule,
     // AppRoutingModule,
@@ -111,6 +112,7 @@ import { CommonModule } from '@angular/common';
     DropdownModule,
     InputNumberModule,
     MatTabsModule,
+    DragDropModule,
     
     
   
