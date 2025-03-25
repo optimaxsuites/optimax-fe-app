@@ -183,6 +183,7 @@ import { HotelCheckoutComponent } from './ui/view/hotel-checkout/hotel-checkout.
     ChartModule,
     DropdownModule,
     ChartModule,
+    CardModule
 
     // BrowserAnimationsModule,
   ],
