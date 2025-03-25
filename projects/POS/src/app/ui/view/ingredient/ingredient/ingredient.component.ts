@@ -1,4 +1,6 @@
 import { Component } from '@angular/core';
+import { Router } from '@angular/router';
+
 
 @Component({
   selector: 'app-ingredient',
@@ -15,8 +17,7 @@ export class IngredientComponent {
   categories: any[] = [];
   tableSection: boolean = true;
 
-
-  constructor() {}
+  constructor(private router: Router) {}
 
 // filteredIngredients = this.ingredients;
 
@@ -29,26 +30,14 @@ export class IngredientComponent {
 
   }
 
-
+  navigateToAddIngredient() {
+    this.router.navigate(['add-ingredient']); // Adjust the route as needed
+  }
+ 
 
   loadIngredients(): void {
     this.ingredients = [
-      {
-        id: 1,
-        name: 'Sugar',
-        code: 'C123',
-        sku: 'ING1234',
-        measurementUnit: 'kg',
-        supplier: { id: 1, name: 'Sweet Supplies Co.' },
-        branches: [
-          { id: 1, name: 'Main Branch' },
-          { id: 2, name: 'Secondary Branch' }
-        ],
-        purchasePrice: 100.00,
-        currentStock: 500,
-        reorderThreshold: 100,
-        category: 'Baking Supplies'
-      },
+
       {
         id: 2,
         name: 'Cinnamon',

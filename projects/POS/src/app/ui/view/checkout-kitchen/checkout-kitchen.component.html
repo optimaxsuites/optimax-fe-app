@@ -1,3 +1,7 @@
+<div>
+  <app-checkout-header></app-checkout-header>
+</div>
+
 <!-- kitchen-order.component.html -->
 <div class="kitchen-order-container">
   <!-- TOP BAR (Using p-menubar for a modern top navigation) -->
@@ -23,38 +27,31 @@
   <div class="main-content">
     <!-- LEFT GRID of TABLE CARDS -->
     <div class="grid-area">
-      <p-card
-        *ngFor="let item of tableStatuses"
+      @for (item of tableStatuses; track $index) {
+      <div
         class="table-card"
         [ngClass]="{
           'status-processing': item.status === 'Processing',
           'status-pending': item.status === 'Pending',
-          'status-completed': item.status === 'Completed'
+          'status-completed': item.status === 'Ready'
         }"
         (click)="openOrderDetails(item)"
       >
-        <!-- Card Title & Subtitle -->
-        <ng-template pTemplate="header">
-          <div class="table-card-header">
-            <span class="table-number">{{ item.table }}</span>
-            <p-badge
-              [value]="item.status"
-              [severity]="getStatusSeverity(item.status)"
-              class="status-badge"
-            ></p-badge>
-          </div>
-        </ng-template>
-        <div class="table-card-content">
-          <p>Click to view order details</p>
+        <div class="table-card-header">
+          {{ item.status }}
         </div>
-      </p-card>
+        <div class="table-card-content">
+          <span class="table-number">Table {{ item.no }}</span>
+        </div>
+      </div>
+      }
     </div>
 
     <!-- ORDER DETAILS PANEL -->
     <p-panel
       *ngIf="isOrderDetailsOpen"
       class="order-details"
-      header="{{ selectedOrder?.table }} - {{ selectedOrder?.status }}"
+      header="Table {{ selectedOrder?.no }} - {{ selectedOrder?.status }}"
       [toggleable]="true"
       [collapsed]="false"
     >

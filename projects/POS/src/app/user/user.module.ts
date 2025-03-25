@@ -46,6 +46,10 @@ import { NavTabComponent } from '../ui/sharedComponent/view/nav-tab/nav-tab.comp
 import { SearchbarComponent } from '../ui/sharedComponent/view/searchbar/searchbar.component';
 import { SideModalComponent } from '../ui/sharedComponent/view/side-modal/side-modal.component';
 import { AllPaymentsModalComponent } from '../ui/view/all-payments-modal/all-payments-modal.component';
+import { CheckoutKitchenComponent } from '../ui/view/checkout-kitchen/checkout-kitchen.component';
+import { MenuModule } from 'primeng/menu';
+import { BadgeModule } from 'primeng/badge';
+import { MenubarModule } from 'primeng/menubar';
 // import { ProductVariantModalComponent } from '../ui/view/product-variant-modal/product-variant-modal.component';
 
 @NgModule({
@@ -66,6 +70,7 @@ import { AllPaymentsModalComponent } from '../ui/view/all-payments-modal/all-pay
     NotesModalComponent,
     DeliveryModalComponent,
     AllPaymentsModalComponent,
+    CheckoutKitchenComponent,
     // ProductVariantModalComponent,
   ],
   imports: [
@@ -103,6 +108,8 @@ import { AllPaymentsModalComponent } from '../ui/view/all-payments-modal/all-pay
     SearchbarComponent,
     NavTabComponent,
     HttpClientModule,
+    BadgeModule,
+    MenubarModule,
   ],
   providers: [PosCheckoutPageComponent],
 })

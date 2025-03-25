@@ -1,1 +1,134 @@
-<p>add-ingredient works!</p>
+<div class="form-footer">
+    <p class="back" (click)="navigateToPrevious()">
+      <i class="fa-solid fa-arrow-left"></i> Back
+    </p>
+    <button   (click)="onSubmit()">Add Ingredient</button>
+  </div>
+  
+
+  <div class="form-container">
+    <h2>Add Ingredient</h2>
+  
+    <!-- Use ngModel for two-way data binding -->
+    <form (ngSubmit)="onSubmit()">
+      <!-- Ingredient Name -->
+      <div class="form-group">
+        <label for="ingredient-name">Ingredient Name</label>
+        <input 
+        type="text" 
+        [value]="ingredientName"
+        required />
+        <p> {{ ingredientName }}</p>
+      </div>
+  
+      <!-- SKU -->
+      <div class="form-group">
+        <label for="sku">SKU</label>
+        <input type="text" id="sku"  name="sku" required />
+      </div>
+  
+      <!-- Category -->
+      <div class="form-group">
+        <label for="category">Category</label>
+        <select id="category" name="category" required>
+          <option value="">Select Category</option>
+          <option value="Dairy">Dairy</option>
+          <option value="Vegetables">Vegetables</option>
+          <option value="Spices">Spices</option>
+          <option value="Fruits">Fruits</option>
+          <option value="Grains">Grains</option>
+          <option value="Proteins">Proteins</option>
+          <option value="Seafood">Seafood</option>
+        </select>
+      </div>
+  
+      <!-- Description -->
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description"  name="description" rows="3"></textarea>
+      </div>
+  
+      <!-- Purchase Price -->
+      <div class="form-group">
+        <label for="purchase-price">Purchase Price</label>
+        <input type="number" id="purchase-price"  name="purchasePrice" min="0" required />
+      </div>
+  
+      <!-- Selling Price -->
+      <div class="form-group">
+        <label for="selling-price">Selling Price</label>
+        <input type="number" id="selling-price"  name="sellingPrice" min="0" />
+      </div>
+  
+      <!-- Current Stock -->
+      <div class="form-group">
+        <label for="current-stock">Current Stock</label>
+        <input type="number" id="current-stock"  name="currentStock" min="0" required />
+      </div>
+  
+      <!-- Restock Quantity -->
+      <div class="form-group">
+        <label for="restock-quantity">Restock Quantity</label>
+        <input type="number" id="restock-quantity"  name="restockQuantity" min="1" required />
+      </div>
+  
+      <!-- Reorder Threshold -->
+      <div class="form-group">
+        <label for="reorder-threshold">Reorder Threshold</label>
+        <input type="number" id="reorder-threshold"  name="reorderThreshold" min="0" />
+      </div>
+  
+      <!-- Measurement Unit -->
+      <div class="form-group">
+        <label for="measurement-unit">Measurement Unit</label>
+        <select id="measurement-unit"  name="measurementUnit" required>
+          <option value="">Select Unit</option>
+          <option value="kg">kg</option>
+          <option value="g">g</option>
+          <option value="liters">liters</option>
+          <option value="ml">ml</option>
+          <option value="pieces">pieces</option>
+          <option value="units">units</option>
+          <option value="bags">bags</option>
+          <option value="cartons">cartons</option>
+        </select>
+      </div>
+  
+      <!-- Supplier Name -->
+      <div class="form-group">
+        <label for="supplier-name">Supplier Name</label>
+        <input type="text" id="supplier-name"  name="supplierName" />
+      </div>
+  
+      <!-- Supplier Contact -->
+      <div class="form-group">
+        <label for="supplier-contact">Supplier Contact</label>
+        <input type="text" id="supplier-contact"  name="supplierContact" />
+      </div>
+  
+      <!-- Expiration Date -->
+      <div class="form-group">
+        <label for="expiration-date">Expiration Date</label>
+        <input type="date" id="expiration-date"  name="expirationDate" />
+      </div>
+  
+      <!-- Branch -->
+      <div class="form-group">
+        <label for="branch">Branch</label>
+        <select id="branch"  name="branch" required>
+          <option value="">Select Branch</option>
+          <option value="Main Branch">Main Branch</option>
+          <option value="Secondary Branch">Secondary Branch</option>
+        </select>
+      </div>
+  
+      <!-- Storage Requirements -->
+      <div class="form-group">
+        <label for="storage-requirements">Storage Requirements</label>
+        <textarea id="storage-requirements"  name="storageRequirements" rows="3"></textarea>
+      </div>
+  
+      <!-- Submit Button -->
+      <button type="submit">Submit</button>
+
+  

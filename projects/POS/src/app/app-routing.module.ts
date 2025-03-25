@@ -19,6 +19,7 @@ import { ReportDashboardComponent } from './ui/view/report-dashboard/report-dash
 import { RefundComponent } from './ui/view/refund/refund/refund.component';
 import { SaleComponent } from './ui/view/sales/sale/sale.component';
 import { IngredientComponent } from './ui/view/ingredient/ingredient/ingredient.component';
+import { AddIngredientComponent } from './ui/view/ingredient/add-ingredient/add-ingredient.component';
 
 const routes: Routes = [
   {
@@ -62,6 +63,10 @@ const routes: Routes = [
     path: 'supplier-details',
     component: InformationComponent,
   },
+  {
+    path: 'add-ingredient',
+    component: AddIngredientComponent,
+  }
   // {
   //   path: 'add-inventory',
   //   component: AddInventoryComponent,
@@ -74,7 +79,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule],
 })
 export class AppRoutingModule {}
