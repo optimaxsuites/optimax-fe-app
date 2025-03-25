@@ -38,9 +38,18 @@ type TableOrder = { foodItem: ProductData; amount: number };
 export class CheckoutKitchenComponent implements OnInit {
   isOrderDetailsOpen = false;
   selectedOrder?: TableStatus; // store the order/card clicked
-  @Input() mode: 'waiter' | 'chef' | 'cashier' = 'chef';
 
   tableStatuses: TableStatus[] = [];
+
+  testMode: typeof this.mode = 'chef';
+  changeTestMode(e: Event) {
+    this.testMode = (e.target as HTMLInputElement).value as any;
+  }
+
+  get mode(): 'waiter' | 'chef' | 'cashier' {
+    //TODO: Determine the mode to use from the logged in user's id. For now though, just use a toggle to change this
+    return this.testMode ?? 'chef';
+  }
 
   ngOnInit(): void {
     switch (this.mode) {
@@ -116,5 +125,17 @@ export class CheckoutKitchenComponent implements OnInit {
     tableOrderList.forEach((orderObject) => {
       this.createOrder(orderObject.tableNo, orderObject.orders);
     });
+  }
+  toggleOrderStatus(tableOrder: TableStatus) {
+    switch (tableOrder.status) {
+      case 'Pending':
+        tableOrder.status = 'Processing';
+        break;
+      case 'Processing':
+        tableOrder.status = 'Ready';
+        break;
+      case 'Ready':
+      //TODO: Get rid of the table order
+    }
   }
 }

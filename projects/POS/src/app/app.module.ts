@@ -93,6 +93,8 @@ import { KitchenOrderComponent } from './ui/view/kitchen-order/kitchen-order.com
 // import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
 import { CardModule } from 'primeng/card';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
+import { HotelCheckoutComponent } from './ui/view/hotel-checkout/hotel-checkout.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -130,6 +132,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
     AddIngredientComponent,
     IngredientComponent,
     AddIngredientComponent,
+    HotelCheckoutComponent
   ],
   imports: [
     // BrowserModule,
@@ -179,7 +182,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
     InputGroupAddonModule,
     ChartModule,
     DropdownModule,
-    CardModule,
+    ChartModule,
 
     // BrowserAnimationsModule,
   ],
