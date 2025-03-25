@@ -2,7 +2,6 @@
   <app-checkout-header></app-checkout-header>
 </div>
 
-<!-- kitchen-order.component.html -->
 <div class="kitchen-order-container">
   <!-- TOP BAR (Using p-menubar for a modern top navigation) -->
   <p-menubar class="top-bar">
@@ -10,11 +9,37 @@
       <div class="top-bar-left">
         <span class="logo">Logo</span>
       </div>
+      <input
+        type="radio"
+        id="chef"
+        name="job"
+        value="chef"
+        (change)="changeTestMode($event)"
+      />
+      <label for="chef">Chef</label>
+
+      <input
+        type="radio"
+        id="cashier"
+        name="job"
+        value="cashier"
+        (change)="changeTestMode($event)"
+      />
+      <label for="cashier">Cashier</label>
+
+      <input
+        type="radio"
+        id="waiter"
+        name="job"
+        value="waiter"
+        (change)="changeTestMode($event)"
+      />
+      <label for="waiter">Waiter</label>
     </ng-template>
     <ng-template pTemplate="center">
-      <div class="top-bar-center">
+      <!-- <div class="top-bar-center">
         <h1>KITCHEN ORDER</h1>
-      </div>
+      </div> -->
     </ng-template>
     <ng-template pTemplate="end">
       <div class="top-bar-right">
@@ -39,6 +64,13 @@
       >
         <div class="table-card-header">
           {{ item.status }}
+          @switch (item.status) { @case ("Pending") {
+          <i class="fa-solid fa-clock"></i>
+          } @case ("Processing") {
+          <i class="fa-solid fa-spinner"></i>
+          } @case ("Ready") {
+          <i class="fa-solid fa-check"></i>
+          } }
         </div>
         <div class="table-card-content">
           <span class="table-number">Table {{ item.no }}</span>
@@ -48,13 +80,13 @@
     </div>
 
     <!-- ORDER DETAILS PANEL -->
-    <p-panel
-      *ngIf="isOrderDetailsOpen"
+    @if(isOrderDetailsOpen){<p-panel
       class="order-details"
       header="Table {{ selectedOrder?.no }} - {{ selectedOrder?.status }}"
       [toggleable]="true"
       [collapsed]="false"
     >
+      @switch (mode) { @case ("chef") {
       <div class="details-body">
         <!-- Replace with dynamic data as needed -->
         <div class="order-item">
@@ -75,14 +107,20 @@
         </div>
       </div>
 
-      <!-- Example of a 'Completed' or 'Mark As Done' button -->
       <div class="details-footer">
         <button
           pButton
           type="button"
-          label="Mark as Completed"
+          [label]="
+            selectedOrder?.status == 'Pending'
+              ? 'Start Preparation'
+              : selectedOrder?.status == 'Processing'
+              ? 'Completed'
+              : 'Quit'
+          "
           icon="pi pi-check"
-          class="p-button-success"
+          class="p-button-success bg-green-100"
+          (click)="toggleOrderStatus(selectedOrder!)"
         ></button>
         <!-- <button
           pButton
@@ -93,6 +131,136 @@
           (click)="markAsCompleted(selectedOrder)"
         ></button> -->
       </div>
-    </p-panel>
+      } @case ("cashier") {
+      <!-- TODO -->
+      <div class="max-w-md mx-auto bg-white shadow-lg rounded-lg p-4">
+        <h2 class="text-xl font-bold mb-4 border-b pb-2">Payment Invoice</h2>
+
+        <!-- Table of items -->
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-left">
+            <thead class="border-b bg-gray-50">
+              <tr>
+                <th scope="col" class="py-2 px-2 font-medium text-gray-700">
+                  Item
+                </th>
+                <th scope="col" class="py-2 px-2 font-medium text-gray-700">
+                  Qty
+                </th>
+                <th scope="col" class="py-2 px-2 font-medium text-gray-700">
+                  Rate
+                </th>
+                <th scope="col" class="py-2 px-2 font-medium text-gray-700">
+                  Amount
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Example row -->
+              <tr class="border-b">
+                <td class="py-2 px-2">Jollof Rice</td>
+                <td class="py-2 px-2">1</td>
+                <td class="py-2 px-2">N2,000</td>
+                <td class="py-2 px-2">N2,000</td>
+              </tr>
+              <tr class="border-b">
+                <td class="py-2 px-2">Chicken</td>
+                <td class="py-2 px-2">2</td>
+                <td class="py-2 px-2">N1,500</td>
+                <td class="py-2 px-2">N3,000</td>
+              </tr>
+              <tr class="border-b">
+                <td class="py-2 px-2">Chapman</td>
+                <td class="py-2 px-2">1</td>
+                <td class="py-2 px-2">N1,000</td>
+                <td class="py-2 px-2">N1,000</td>
+              </tr>
+              <tr class="border-b">
+                <td class="py-2 px-2">Cat Fish</td>
+                <td class="py-2 px-2">1</td>
+                <td class="py-2 px-2">N2,000</td>
+                <td class="py-2 px-2">N2,000</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Totals & VAT -->
+        <div class="mt-4 space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span>Subtotal</span>
+            <span>N8,000.00</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Vat</span>
+            <span>N600.00</span>
+          </div>
+          <div class="border-t pt-2 flex justify-between font-bold">
+            <span>Total</span>
+            <span>N8,600.00</span>
+          </div>
+        </div>
+
+        <!-- VAT Type and Payment Method -->
+        <div class="mt-4">
+          <label for="vatType" class="block text-sm font-medium mb-1"
+            >Select VAT Type</label
+          >
+          <select
+            id="vatType"
+            class="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-200"
+          >
+            <option>STANDARD</option>
+            <option>ZERO</option>
+          </select>
+        </div>
+
+        <div class="mt-4">
+          <label for="paymentMethod" class="block text-sm font-medium mb-1"
+            >Payment Method</label
+          >
+          <select
+            id="paymentMethod"
+            class="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-200"
+          >
+            <option>CASH</option>
+            <option>CARD</option>
+            <option>TRANSFER</option>
+          </select>
+        </div>
+
+        <!-- Cash Received -->
+        <div class="mt-4">
+          <label for="cashReceived" class="block text-sm font-medium mb-1"
+            >Cash Received</label
+          >
+          <input
+            id="cashReceived"
+            type="text"
+            class="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-200"
+            placeholder="N0.00"
+          />
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-4 flex space-x-2">
+          <button
+            type="button"
+            class="flex-1 bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-yellow-600 focus:outline-none focus:ring focus:ring-yellow-200"
+          >
+            Hold
+          </button>
+          <button
+            type="button"
+            class="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200"
+          >
+            Paid
+          </button>
+        </div>
+      </div>
+      } @case ("waiter") {
+      <!-- TODO -->
+      } } </p-panel
+    >}
   </div>
 </div>

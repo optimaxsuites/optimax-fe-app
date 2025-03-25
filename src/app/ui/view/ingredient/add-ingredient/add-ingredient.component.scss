@@ -41,7 +41,7 @@
 //     cursor: not-allowed;
 //   }
 .form-container {
-    width: 40%;
+    width: 50%;
     margin: 50px auto;
     padding: 20px;
     background-color: white;
@@ -56,35 +56,26 @@
     font-size: 1.6em;
   }
   
-  .form-group {
-    margin-bottom: 15px;
-    text-align: left;
-  }
+  // label {
+  //   // display: block;
+  //   margin-bottom: 5px;
+  //   font-weight: bold;
+  //   color: #555;
+  // }
   
-  label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: #555;
-  }
-  
-  input,
-  select,
-  textarea {
-    width: 100%;
-    padding: 8px;
-    margin-top: 5px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 14px;
-    box-sizing: border-box;
-    outline-color: #4CAF50;
-  }
-  
+  // input,
+  // select,
+  // textarea {
+  //   width: 100%;
+  //   padding: 8px;
+  //   margin-top: 5px;
+  //   border: 1px solid #ccc;
+  //   border-radius: 5px;
+  //   font-size: 14px;
+  //   box-sizing: border-box;
+  //   outline-color: #4CAF50;
+  // }
 
-  textarea {
-    resize: vertical;
-  }
   
 
 

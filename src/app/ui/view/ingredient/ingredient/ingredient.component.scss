@@ -22,3 +22,22 @@
       cursor: pointer;
     }
   }
+  .menu-container .custom-menu {
+    background-color: #ffffff; /* Tailwind's bg-white */
+    display: none;
+    position: absolute;
+    min-width: 80px;
+    box-shadow: 2px 2px 5px hsla(0, 0%, 0%, 0.1); /* Tailwind's shadow-md */
+  }
+  .menu-container:hover .custom-menu {
+    display: block;
+  }
+  
+  .custom-menu li {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+  }
+  
+  
+  
+  

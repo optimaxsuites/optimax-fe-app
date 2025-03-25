@@ -91,8 +91,7 @@ import { IngredientComponent } from './ui/view/ingredient/ingredient/ingredient.
 import { AddIngredientComponent } from './ui/view/ingredient/add-ingredient/add-ingredient.component';
 import { KitchenOrderComponent } from './ui/view/kitchen-order/kitchen-order.component';
 import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
-import { CardModule } from 'primeng/card';
-
+import { HotelCheckoutComponent } from './ui/view/hotel-checkout/hotel-checkout.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -126,12 +125,12 @@ import { CardModule } from 'primeng/card';
     SaleSummariesComponent,
     KitchenOrderComponent,
     IngredientComponent,
-    AddIngredientComponent,
+    AddIngredientComponent
   ],
   imports: [
-    // BrowserModule,
-    UserModule,
-    AppRoutingModule,
+    BrowserModule,
+    // UserModule,
+    // AppRoutingModule,
     CommonModule,
     AppRoutingModule,
     TableModule,
@@ -175,7 +174,7 @@ import { CardModule } from 'primeng/card';
     InputGroupAddonModule,
     ChartModule,
     DropdownModule,
-    CardModule,
+    ChartModule,
 
     BrowserAnimationsModule,
   ],

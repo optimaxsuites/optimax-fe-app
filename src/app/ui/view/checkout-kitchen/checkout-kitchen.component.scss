@@ -16,6 +16,12 @@ body {
   font-size: 2rem; /* Adjust up/down as desired */
 }
 
+:host {
+  display: flex;
+  flex-direction: column;
+  max-height: 100vh;
+}
+
 .kitchen-order-container {
   display: flex;
   flex-direction: column;
@@ -87,9 +93,10 @@ body {
 
   /* GRID AREA for Table Cards */
   .grid-area {
+    overflow-y: auto;
     flex: 1;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr));
     gap: 1rem;
     padding: 0.5rem;
     box-sizing: border-box;
@@ -106,11 +113,15 @@ body {
       align-items: center;
       font-size: large;
       min-height: 14vh;
+      // max-width: 14vw;
+      font-weight: bold;
 
       .table-card-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        column-gap: 1rem;
+        display: flex;
 
         .table-number {
           font-weight: 600;
@@ -129,13 +140,15 @@ body {
       }
 
       &.status-processing {
-        background-color: #2195f340;
+        background-color: #1e91d6;
+        color: white;
       }
       &.status-pending {
-        background-color: #ffa60040;
+        background-color: #ffa630;
       }
       &.status-completed {
-        background-color: #4caf4f40;
+        background-color: #08a045;
+        color: white;
       }
 
       &:hover {
@@ -148,7 +161,7 @@ body {
 
   /* ORDER DETAILS (Right Panel) */
   .order-details {
-    width: 380px;
+    width: 41.5vw;
     margin-left: 1rem;
 
     .ui-panel-header {
@@ -164,6 +177,9 @@ body {
 
     .details-body {
       padding: 1rem;
+      > * {
+        line-height: 2rem;
+      }
 
       .order-item {
         display: flex;
@@ -172,10 +188,10 @@ body {
 
         .item-name {
           font-weight: 600;
-          font-size: 1rem;
+          // font-size: 1rem;
         }
         .item-quantity {
-          font-size: 1rem;
+          // font-size: 1rem;
           color: $text-color;
         }
       }
@@ -185,7 +201,7 @@ body {
 
         h3 {
           margin: 0 0 0.5rem;
-          font-size: 1.1rem;
+          // font-size: 1.1rem;
         }
 
         p {
@@ -202,7 +218,7 @@ body {
       border-top: 1px solid $border-color;
 
       button {
-        font-size: 0.95rem;
+        // font-size: 0.95rem;
         padding: 0.75rem 1.25rem;
       }
     }

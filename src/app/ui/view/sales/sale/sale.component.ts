@@ -10,7 +10,7 @@ import { SaleSummariesComponent } from '../sale-summaries/sale-summaries.compone
 })
 export class SaleComponent {
   tabsConfig: TabConfig[] = [
-    { name: ' Sales', component: SalesComponent },
     { name: ' Sale Summary', component: SaleSummariesComponent },
+    { name: ' Sales', component: SalesComponent },
   ];
 }
