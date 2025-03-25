@@ -6,6 +6,7 @@
 // Plus imports for other components in your app.
 
 @import "@ng-select/ng-select/themes/default.theme.css";
+@import "@fortawesome/fontawesome-free/css/all.min.css";
 
 // custom primeUI
 @import "../node_modules/primeng/resources/themes/saga-green/theme.css";
@@ -35,66 +36,62 @@ body {
   background-color: rgb(237, 241, 241);
 }
 fieldset {
-  border: 2px solid #4A4A4A;
-  border-radius: 8px;       
-  padding: 10px;          
-  margin-bottom: 1rem;       
+  border: 2px solid #4a4a4a;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 1rem;
 }
 
-
-.p-toast{
+.p-toast {
   font-size: 1em;
 }
-.p-dialog{
+.p-dialog {
   font-size: 1em;
 }
-.p-panel{
+.p-panel {
   font-size: 1.1em;
 }
 
-
-
-.p-divider{
+.p-divider {
   margin: 0;
   padding: 0;
 }
 
-.pi{
+.pi {
   cursor: pointer;
 }
 
-.pi-times-circle, .pi-trash{
+.pi-times-circle,
+.pi-trash {
   color: red;
 }
 
-.button{
+.button {
   background-color: red;
   font-size: 5em;
 }
 
 .custom-header {
-  font-size: 2rem; 
-  color: purple; 
+  font-size: 2rem;
+  color: purple;
   font-weight: bold;
-  text-decoration: none ;
+  text-decoration: none;
   margin-bottom: 1rem;
   padding: 0;
 }
 .custom-header > a {
-  color: #224957; 
+  color: #224957;
   font-weight: bold;
-  text-decoration: none ;
+  text-decoration: none;
 }
 .custom-header > a[aria-selected="true"] {
   background-color: rgb(37 146 91 / 0.6);
   color: white;
   border-radius: 1rem;
 }
-input[type="checkbox"]{
-  @apply accent-customBlue
-
+input[type="checkbox"] {
+  @apply accent-customBlue;
 }
-input[type="radio"]{
-  @apply accent-customBlue
-
+input[type="radio"] {
+  @apply accent-customBlue;
 }

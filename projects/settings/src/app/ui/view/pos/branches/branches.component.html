@@ -1,0 +1,201 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="flex gap-4 items-center">
+  <i class="pi pi-building text-4xl text-customBlue"></i>
+  <div>
+    <p class="text-customBlue/60">POS</p>
+    <p class="text-customBlue font-semibold text-[17px]">Branches Management</p>
+  </div>
+</div>
+<hr />
+
+<div class="mb-4 mt-3 px-3 flex items-center">
+  <p
+    *ngIf="showAddForm"
+    class="text-xl font-semibold text-customBlue capitalize flex-1"
+  >
+    <span>New</span> Branch
+  </p>
+  <button
+    class="bg-customBlue text-white font-bold p-3 rounded-xl ml-auto"
+    (click)="toggleForm()"
+  >
+    {{ showAddForm ? "Cancel" : "Create New" }}
+  </button>
+</div>
+
+@if(!showAddForm){
+<mat-accordion>
+  @for(branch of branches; track branch.id){
+  <mat-expansion-panel #panel>
+    <mat-expansion-panel-header>
+      <mat-panel-title class="capitalize">
+        {{ branch.name }}
+      </mat-panel-title>
+      <mat-panel-description class="action-buttons">
+        <button
+          (click)="editBranch(branch, $event)"
+          class="text-customGreen hover:bg-green-50 p-3 rounded-xl"
+        >
+          <i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2"></i>
+          <span *ngIf="panel.expanded">{{
+            branch.isEditing ? "Save Changes" : "Edit"
+          }}</span>
+        </button>
+        <button
+          (click)="confirmBranchDelete(branch, $event)"
+          class="text-red-500 hover:bg-red-50 p-3 rounded-xl"
+          *ngIf="!branch.isEditing"
+        >
+          <i class="fa-solid fa-trash text-2xl pr-2"></i>
+          <span *ngIf="panel.expanded">Delete</span>
+        </button>
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+
+    <div class="p-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Name and Phone Number -->
+        <div>
+          <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1">Name</label>
+            @if(branch.isEditing){
+            <input
+              type="text"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="branch.name"
+            />
+            } @else {
+            <p>{{ branch.name }}</p>
+            }
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1"
+              >Address</label
+            >
+            @if(branch.isEditing){
+            <textarea
+              class="w-full border border-gray-300 rounded-md p-2"
+              rows="3"
+              [(ngModel)]="branch.address"
+            ></textarea>
+            } @else {
+            <p>{{ branch.address }}</p>
+            }
+          </div>
+        </div>
+
+        <!-- Address and Description -->
+        <div>
+          <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1"
+              >Phone Number</label
+            >
+            @if(branch.isEditing){
+            <input
+              type="number"
+              class="w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="branch.phoneNo"
+            />
+            } @else {
+            <p>{{ branch.phoneNo }}</p>
+            }
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-customBlue font-semibold mb-1"
+              >Description</label
+            >
+            @if(branch.isEditing){
+            <textarea
+              class="w-full border border-gray-300 rounded-md p-2"
+              rows="3"
+              [(ngModel)]="branch.description"
+            ></textarea>
+            } @else {
+            <p>{{ branch.description }}</p>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </mat-expansion-panel>
+  } @empty {
+  <div class="p-6 text-center text-gray-500">
+    No branches found. Click "Create New" to add a branch.
+  </div>
+  }
+</mat-accordion>
+} @if(showAddForm){
+<div class="px-4">
+  <div class="py-3 mb-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <div class="mb-4">
+        <label for="name" class="block font-semibold text-customBlue"
+          >Branch Name</label
+        >
+        <input
+          type="text"
+          placeholder="Enter branch name"
+          id="name"
+          class="w-full border border-gray-300 rounded-md p-2"
+          [(ngModel)]="newBranch.name"
+        />
+      </div>
+
+      <div class="mb-4">
+        <label for="address" class="block font-semibold text-customBlue"
+          >Address</label
+        >
+        <textarea
+          placeholder="Enter branch address"
+          id="address"
+          class="w-full border border-gray-300 rounded-md p-2"
+          rows="3"
+          [(ngModel)]="newBranch.address"
+        ></textarea>
+      </div>
+    </div>
+    <div>
+      <div class="mb-4">
+        <label for="phoneNo" class="block font-semibold text-customBlue"
+          >Phone Number</label
+        >
+        <input
+          type="number"
+          placeholder="Enter phone number"
+          id="phoneNo"
+          class="w-full border border-gray-300 rounded-md p-2"
+          [(ngModel)]="newBranch.phoneNo"
+        />
+      </div>
+
+      <div class="mb-4">
+        <label for="description" class="block font-semibold text-customBlue"
+          >Description</label
+        >
+        <textarea
+          placeholder="Enter branch description"
+          id="description"
+          class="w-full border border-gray-300 rounded-md p-2"
+          rows="3"
+          [(ngModel)]="newBranch.description"
+        ></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-right my-3">
+    <button
+      type="submit"
+      class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-customGreenHover disabled:cursor-not-allowed"
+      (click)="submitBranch()"
+      [disabled]="newBranch.name === ''"
+    >
+      Add Branch
+    </button>
+  </div>
+</div>
+}

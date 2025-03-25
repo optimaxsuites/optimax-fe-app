@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
 import { MenuItem } from '../../domain/menuItem.dto';
 import { NavigationLinksService } from '../navigation-links/navigation-links.service';
-import { BehaviorSubject, map, Observable } from 'rxjs';
-import { AppRegisterServiceService } from '../app-register-service.service';
+import { BehaviorSubject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -87,7 +86,6 @@ export class MenuItemsService {
       label: 'Human Resources',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'fas fa-users',
-      code: 'HR',
       submenu: [
         { label: 'Employee Management', route: this.navigationLink.getLink('employeeManagementLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-cog' },
         { label: 'Recruitment', route: this.navigationLink.getLink('recuitmentLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-plus' },
@@ -103,7 +101,6 @@ export class MenuItemsService {
     {
       label: 'Office Productivity',
       route: this.navigationLink.getLink('productivityLink'),
-      code: 'OP',
 
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'fas fa-file-alt',
@@ -118,13 +115,11 @@ export class MenuItemsService {
       icon: 'fas fa-cash-register',
       locked: true,
       active: true,
-      code: 'POS',
 
       submenu: [
         { label: 'Product', route: this.navigationLink.getLink('productLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-box' },
-        { label: 'Inventory', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-warehouse' },
-        { label: 'Refunds', route: this.navigationLink.getLink('refundLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-receipt' },
         { label: 'Sales', route: this.navigationLink.getLink('salesLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-receipt' },
+        { label: 'Inventory', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-warehouse' },
         { label: 'Checkout',roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-credit-card', route: this.navigationLink.getLink('checkoutLink'), },
         { label: 'Report', route: this.navigationLink.getLink('reportLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fa-solid fa-chart-pie' },
       ],
@@ -198,6 +193,10 @@ export class MenuItemsService {
       locked: true
     },
   ];
+
+
+
+
 
   private settingsMenuItems: MenuItem[] = [
     {
@@ -289,17 +288,6 @@ export class MenuItemsService {
       ],
     },
     {
-      label: 'Office Productivity',
-      roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      route: this.navigationLink.getLink('officeSet'),
-
-      icon: 'pi pi-shopping-bag', 
-      submenu: [
-        { label: 'Sales', route: this.navigationLink.getLink('posLink'), roles: ['ROLE_USER'], icon: 'pi pi-cart' },
-       
-      ],
-    },
-    {
       label: 'User and Roles Management',
       route: this.navigationLink.getLink('userRoles'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
@@ -356,8 +344,6 @@ export class MenuItemsService {
     },
   ];
 
-  appList  = []
-  private unlockedModules$ = new BehaviorSubject<MenuItem[]>([]);
   private modulesRolePermissions = [
     {
       name: 'POS',
@@ -372,31 +358,13 @@ export class MenuItemsService {
       forms: ['project','task']
     },
   ]
-  private settingsMenuItemsSubject = new BehaviorSubject<MenuItem[]>([]);
-  settingsMenuItems$ = this.settingsMenuItemsSubject.asObservable(); 
-  // private menuItemsSubject = new BehaviorSubject<MenuItem[]>([]);
-  // menuItems$ = this.menuItemsSubject.asObservable(); 
 
+  private unlockedModules$ = new BehaviorSubject<MenuItem[]>(this.getUnlockedModules());
 
-  constructor(public navigationLink: NavigationLinksService, private appRegisterService: AppRegisterServiceService) {
-    this.appRegisterService.getRegisteredApp().subscribe({
-      next: (app: any) => {
-        this.appList = app
-        this.loadUnlockedModules(); 
-        this.loadUnlockedSettingsModules()
-        console.log(this.appList)
-      },
-      error: (error: any) => {
-        console.error('Error fetching app data:', error);
-      }
-    })
-      
-    
-    
-  
-   
+  constructor(public navigationLink: NavigationLinksService) {
+    this.loadUnlockedModules(); 
+    this.loadUnlockedSettingsModules()
   }
-  
 
   getMenuItemsForRole(role: string): MenuItem[] {
     return this.menuItems.filter(item => item.roles.includes(role));
@@ -417,7 +385,7 @@ export class MenuItemsService {
         }
       }
       this.saveUnlockedModules(); 
-      // this.unlockedModules$.next(this.getUnlockedModules());
+      this.unlockedModules$.next(this.getUnlockedModules());
 
     }
   }
@@ -428,15 +396,12 @@ export class MenuItemsService {
   }
 
   loadUnlockedModules() {
-    const unlockedRoutes = this.appList.map((app : {description : string}) => app.description)
-    // const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
-    console.log(unlockedRoutes)
+    const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
     
     let unlockedCount = 0;
   
     this.menuItems.forEach(module => {
       if (unlockedRoutes.includes(module.label)) {
-        console.log(true)
         module.locked = false;
   
         if (module.label !== 'Dashboard') {
@@ -456,20 +421,16 @@ export class MenuItemsService {
   }
 
   loadUnlockedSettingsModules() {
-    // const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
-    const unlockedRoutes = this.appList.map((app : {description : string}) => app.description)
-    console.log(unlockedRoutes)
+    const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
+    
   
-    this.settingsMenuItems.forEach((module) => {
-      if (module.label === 'General Settings' || module.label === 'User and Roles Management') {
-        module.locked = false; 
-      } else {
-        module.locked = !unlockedRoutes.includes(module.label);
+    this.settingsMenuItems.forEach(module => {
+      if (unlockedRoutes.includes(module.label)) {
+        module.locked = false;
+      }else {
+        module.locked = true;
       }
     });
-
-    console.log('Updated Settings Menu:', this.settingsMenuItems);
-    this.settingsMenuItemsSubject.next([...this.settingsMenuItems]); 
 
   }
   
@@ -485,22 +446,14 @@ export class MenuItemsService {
     }
   
     return unlockedModules;
-   
   }
-
   getUnlockedModulesRole(){
     let unlockedModules = this.settingsMenuItems.filter(module => !module.locked);
     return this.modulesRolePermissions.filter(module => unlockedModules.some(m => m.label === module.name))
   }
-
-  getUnlockedSettingsModules(){
-    // console.log(this.settingsMenuItems)
-    // let unlockedModules = this.settingsMenuItems.filter(module => !module.locked || module.label === 'Dashboard');
-    // console.log(unlockedModules)
-    // return unlockedModules;
-    return this.settingsMenuItems$.pipe(
-      map((menuItems) => menuItems.filter((item) => !item.locked || item.label === 'Dashboard'))
-    );
+  getUnlockedSettingsModules(): MenuItem[] {
+    let unlockedModules = this.settingsMenuItems.filter(module => !module.locked || module.label === 'General Settings' || module.label === 'User and Roles Management');
+    return unlockedModules;
   }
   
   getAllModules() {
