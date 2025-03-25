@@ -4,7 +4,7 @@ import { NavigationLinksService } from '../navigation-links/navigation-links.ser
 import { BehaviorSubject } from 'rxjs';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class MenuItemsService {
   private menuItems: MenuItem[] = [
@@ -20,7 +20,7 @@ export class MenuItemsService {
       route: this.navigationLink.getLink('salesLink'),
       icon: 'fas fa-chart-line',
       locked: true,
-      active: false
+      active: false,
 
       // submenu: [
       //   { label: 'Quotation', , roles: ['ROLE_USER'], icon: 'pi pi-file' },
@@ -35,7 +35,7 @@ export class MenuItemsService {
       route: this.navigationLink.getLink('purchaseLink'),
       icon: 'fas fa-shopping-bag',
       locked: true,
-      active: false
+      active: false,
 
       // submenu: [
       //   // { label: 'Request For Quotation', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
@@ -46,11 +46,11 @@ export class MenuItemsService {
     },
     {
       label: 'Inventory',
-      roles: ['ROLE_USER' , 'ROLE_ADMIN'],
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('inventoryLink'),
       icon: 'fas fa-box',
       locked: true,
-      active: false
+      active: false,
 
       // submenu: [
       //   { label: 'User Management', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER'], icon: 'pi pi-users' },
@@ -63,7 +63,7 @@ export class MenuItemsService {
       route: this.navigationLink.getLink('procurementLink'),
       icon: 'fas fa-shopping-cart',
       locked: true,
-      active: false
+      active: false,
 
       // submenu: [
       //   // { label: 'Request For Quotation', route: this.navigationLink.getLink('rfqLink'), roles: ['ROLE_USER'], icon: 'fas fa-file-alt' },
@@ -75,28 +75,61 @@ export class MenuItemsService {
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'fas fa-calculator', // PrimeNG icon class
       submenu: [
-        { label: 'Quotation', route: this.navigationLink.getLink('accountingLink'), roles: ['ROLE_USER'], icon: 'fas fa-file-alt' },
+        {
+          label: 'Quotation',
+          route: this.navigationLink.getLink('accountingLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-file-alt',
+        },
         // { label: 'Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
       ],
       locked: true,
-      active: false
-
+      active: false,
     },
     {
       label: 'Human Resources',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'fas fa-users',
       submenu: [
-        { label: 'Employee Management', route: this.navigationLink.getLink('employeeManagementLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-cog' },
-        { label: 'Recruitment', route: this.navigationLink.getLink('recuitmentLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-plus' },
-        { label: 'Performance', route: this.navigationLink.getLink('performanceLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-clock' },
-        { label: 'Payroll', route: this.navigationLink.getLink('payroll'), roles: ['ROLE_USER'], icon: 'fas fa-dollar-sign' },
-        { label: 'Attendance', route: this.navigationLink.getLink('attendanceLink'), roles: ['ROLE_USER'], icon: 'fas fa-calendar-check' },
-        { label: 'Leave', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'fas fa-calendar-minus' },
+        {
+          label: 'Employee Management',
+          route: this.navigationLink.getLink('employeeManagementLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-user-cog',
+        },
+        {
+          label: 'Recruitment',
+          route: this.navigationLink.getLink('recuitmentLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-user-plus',
+        },
+        {
+          label: 'Performance',
+          route: this.navigationLink.getLink('performanceLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-user-clock',
+        },
+        {
+          label: 'Payroll',
+          route: this.navigationLink.getLink('payroll'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-dollar-sign',
+        },
+        {
+          label: 'Attendance',
+          route: this.navigationLink.getLink('attendanceLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-calendar-check',
+        },
+        {
+          label: 'Leave',
+          route: this.navigationLink.getLink('leaveLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-calendar-minus',
+        },
       ],
       locked: true,
-      active: true
-
+      active: true,
     },
     {
       label: 'Office Productivity',
@@ -105,8 +138,7 @@ export class MenuItemsService {
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'fas fa-file-alt',
       locked: true,
-      active: true
-
+      active: true,
     },
     {
       label: 'POS',
@@ -117,11 +149,36 @@ export class MenuItemsService {
       active: true,
 
       submenu: [
-        { label: 'Product', route: this.navigationLink.getLink('productLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-box' },
-        { label: 'Sales', route: this.navigationLink.getLink('salesLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-receipt' },
-        { label: 'Inventory', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-warehouse' },
-        { label: 'Checkout',roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-credit-card', route: this.navigationLink.getLink('checkoutLink'), },
-        { label: 'Report', route: this.navigationLink.getLink('reportLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fa-solid fa-chart-pie' },
+        {
+          label: 'Product',
+          route: this.navigationLink.getLink('productLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-box',
+        },
+        {
+          label: 'Sales',
+          route: this.navigationLink.getLink('salesLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-receipt',
+        },
+        {
+          label: 'Inventory',
+          route: this.navigationLink.getLink('inventoryLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-warehouse',
+        },
+        {
+          label: 'Checkout',
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-credit-card',
+          route: this.navigationLink.getLink('checkoutLink'),
+        },
+        {
+          label: 'Report',
+          route: this.navigationLink.getLink('reportLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'fa-solid fa-chart-pie',
+        },
       ],
     },
     // {
@@ -132,7 +189,6 @@ export class MenuItemsService {
     //   locked: true,
     //   active: true
 
-    
     // },
     {
       label: 'CRM',
@@ -140,7 +196,7 @@ export class MenuItemsService {
       route: this.navigationLink.getLink('crmLink'),
       icon: 'fas fa-user-friends',
       locked: true,
-      active: false
+      active: false,
 
       // submenu: [
       //   // { label: 'Contacts', route: this.navigationLink.getLink('crmLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
@@ -153,7 +209,7 @@ export class MenuItemsService {
       route: this.navigationLink.getLink('expensesLink'),
       icon: 'fas fa-money-bill-wave',
       locked: true,
-      active: false
+      active: false,
 
       // submenu: [
       //   // { label: 'Expenses', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
@@ -169,8 +225,7 @@ export class MenuItemsService {
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'fas fa-file-alt',
       locked: true,
-      active: false
-
+      active: false,
     },
     {
       label: 'Vendor',
@@ -178,7 +233,7 @@ export class MenuItemsService {
       icon: 'fas fa-user-tie',
       route: this.navigationLink.getLink('vendorLink'),
       locked: true,
-      active: false
+      active: false,
 
       // submenu: [
       //   { label: 'Registration', route: this.navigationLink.getLink('vendorLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-plus' },
@@ -190,13 +245,9 @@ export class MenuItemsService {
       route: this.navigationLink.getLink('settingsLink'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'fas fa-sliders-h',
-      locked: true
+      locked: true,
     },
   ];
-
-
-
-
 
   private settingsMenuItems: MenuItem[] = [
     {
@@ -205,38 +256,73 @@ export class MenuItemsService {
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-home',
       submenu: [
-        { label: 'Profile', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-file' },
-        { label: 'Security', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-file' },
+        {
+          label: 'Profile',
+          route: this.navigationLink.getLink('purchaseLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-file',
+        },
+        {
+          label: 'Security',
+          route: this.navigationLink.getLink('purchaseLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-file',
+        },
       ],
     },
     {
       label: 'Sales',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('salesSettings'),
-      icon: 'pi pi-dollar', 
+      icon: 'pi pi-dollar',
       submenu: [
-        { label: 'Profile', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-file' },
-        { label: 'Security', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-file' },
+        {
+          label: 'Profile',
+          route: this.navigationLink.getLink('purchaseLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-file',
+        },
+        {
+          label: 'Security',
+          route: this.navigationLink.getLink('purchaseLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-file',
+        },
       ],
     },
     {
       label: 'Purchase',
       route: this.navigationLink.getLink('purchaseSettings'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'pi pi-shopping-cart', 
+      icon: 'pi pi-shopping-cart',
       submenu: [
-        { label: 'Profile', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-file' },
-        { label: 'Security', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-file' },
+        {
+          label: 'Profile',
+          route: this.navigationLink.getLink('purchaseLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-file',
+        },
+        {
+          label: 'Security',
+          route: this.navigationLink.getLink('purchaseLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-file',
+        },
       ],
     },
     {
       label: 'Inventory',
-      roles: ['ROLE_USER' , 'ROLE_ADMIN'],
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('inventorySettings'),
 
       icon: 'pi pi-cog',
       submenu: [
-        { label: 'User Management', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER'], icon: 'pi pi-users' },
+        {
+          label: 'User Management',
+          route: this.navigationLink.getLink('inventoryLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-users',
+        },
       ],
     },
     {
@@ -244,10 +330,20 @@ export class MenuItemsService {
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('vendorSettings'),
 
-      icon: 'pi pi-truck', 
+      icon: 'pi pi-truck',
       submenu: [
-        { label: 'Request For Quotation', route: this.navigationLink.getLink('rfqLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        { label: 'Settings', route: this.navigationLink.getLink('procurementSettingsLink'), roles: ['ROLE_USER'], icon: 'pi pi-cog' },
+        {
+          label: 'Request For Quotation',
+          route: this.navigationLink.getLink('rfqLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-file',
+        },
+        {
+          label: 'Settings',
+          route: this.navigationLink.getLink('procurementSettingsLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-cog',
+        },
       ],
     },
     {
@@ -255,9 +351,14 @@ export class MenuItemsService {
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('accountSettings'),
 
-      icon: 'pi pi-credit-card', 
+      icon: 'pi pi-credit-card',
       submenu: [
-        { label: 'Quotation', route: this.navigationLink.getLink('accountingLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
+        {
+          label: 'Quotation',
+          route: this.navigationLink.getLink('accountingLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-file',
+        },
         // { label: 'Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
       ],
     },
@@ -266,14 +367,38 @@ export class MenuItemsService {
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('HRSettings'),
 
-      icon: 'pi pi-users', 
+      icon: 'pi pi-users',
       submenu: [
-        { label: 'Recruitment', route: this.navigationLink.getLink('recuitmentLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
-        { label: 'Interview', route: this.navigationLink.getLink('interviewLink'), roles: ['ROLE_USER'], icon: 'pi pi-check' },
-        { label: 'Attendance', route: this.navigationLink.getLink('attendanceLink'), roles: ['ROLE_USER'], icon: 'pi pi-check' },
-        { label: 'Leave', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
-        { label: 'Score Sheet', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
-
+        {
+          label: 'Recruitment',
+          route: this.navigationLink.getLink('recuitmentLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-user',
+        },
+        {
+          label: 'Interview',
+          route: this.navigationLink.getLink('interviewLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-check',
+        },
+        {
+          label: 'Attendance',
+          route: this.navigationLink.getLink('attendanceLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-check',
+        },
+        {
+          label: 'Leave',
+          route: this.navigationLink.getLink('leaveLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-user',
+        },
+        {
+          label: 'Score Sheet',
+          route: this.navigationLink.getLink('leaveLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-user',
+        },
       ],
     },
     {
@@ -281,30 +406,42 @@ export class MenuItemsService {
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('posSettings'),
 
-      icon: 'pi pi-shopping-bag', 
+      icon: 'pi pi-shopping-bag',
       submenu: [
-        { label: 'Sales', route: this.navigationLink.getLink('posLink'), roles: ['ROLE_USER'], icon: 'pi pi-cart' },
-       
+        {
+          label: 'Sales',
+          route: this.navigationLink.getLink('posLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-cart',
+        },
       ],
     },
     {
       label: 'User and Roles Management',
       route: this.navigationLink.getLink('userRoles'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'pi pi-check', 
+      icon: 'pi pi-check',
       submenu: [
-        { label: 'Order Summary', route: this.navigationLink.getLink('userRoles'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
- 
+        {
+          label: 'Order Summary',
+          route: this.navigationLink.getLink('userRoles'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-file',
+        },
       ],
     },
     {
       label: 'CRM',
       route: this.navigationLink.getLink('CRMSettings'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'pi pi-users', 
+      icon: 'pi pi-users',
       submenu: [
-        { label: 'Contacts', route: this.navigationLink.getLink('crmLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
-       
+        {
+          label: 'Contacts',
+          route: this.navigationLink.getLink('crmLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-user',
+        },
       ],
     },
     {
@@ -312,11 +449,14 @@ export class MenuItemsService {
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('expenseSettings'),
 
-      icon: 'pi pi-money-bill', 
+      icon: 'pi pi-money-bill',
       submenu: [
-        { label: 'Expenses', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
- 
-
+        {
+          label: 'Expenses',
+          route: this.navigationLink.getLink('expensesLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-dollar',
+        },
       ],
     },
     {
@@ -324,7 +464,7 @@ export class MenuItemsService {
       route: this.navigationLink.getLink('tenderSettings'),
 
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'pi pi-user' 
+      icon: 'pi pi-user',
     },
     {
       label: 'Vendor',
@@ -332,86 +472,113 @@ export class MenuItemsService {
       icon: 'pi pi-money-bill',
       route: this.navigationLink.getLink('vendorSettings'),
       submenu: [
-        { label: 'View 1', route: this.navigationLink.getLink('vendorLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
-        { label: 'Incoming RFQ ', route: this.navigationLink.getLink('vendorRfqLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
+        {
+          label: 'View 1',
+          route: this.navigationLink.getLink('vendorLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-dollar',
+        },
+        {
+          label: 'Incoming RFQ ',
+          route: this.navigationLink.getLink('vendorRfqLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-credit-card',
+        },
       ],
     },
     {
       label: 'User Management',
       route: this.navigationLink.getLink('userManagmentSettings'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'pi pi-cog' 
+      icon: 'pi pi-cog',
     },
   ];
 
   private modulesRolePermissions = [
     {
       name: 'POS',
-      forms: ['product','report', 'sales', 'inventory', 'checkout']
+      forms: ['product', 'report', 'sales', 'inventory', 'checkout'],
     },
     {
       name: 'Human Resources',
-      forms: ['employee','recruitment', 'Job vacancy', 'leave', 'loan', 'attendance', 'payroll']
+      forms: [
+        'employee',
+        'recruitment',
+        'Job vacancy',
+        'leave',
+        'loan',
+        'attendance',
+        'payroll',
+      ],
     },
     {
       name: 'Office Productivity',
-      forms: ['project','task']
+      forms: ['project', 'task'],
     },
-  ]
+  ];
 
-  private unlockedModules$ = new BehaviorSubject<MenuItem[]>(this.getUnlockedModules());
+  private unlockedModules$ = new BehaviorSubject<MenuItem[]>(
+    this.getUnlockedModules()
+  );
 
   constructor(public navigationLink: NavigationLinksService) {
-    this.loadUnlockedModules(); 
-    this.loadUnlockedSettingsModules()
+    this.loadUnlockedModules();
+    this.loadUnlockedSettingsModules();
   }
 
   getMenuItemsForRole(role: string): MenuItem[] {
-    return this.menuItems.filter(item => item.roles.includes(role));
+    return this.menuItems.filter((item) => item.roles.includes(role));
   }
 
   getSettingsMenuItemsForRole(role: string): MenuItem[] {
-    return this.settingsMenuItems.filter(item => item.roles.includes(role));
+    return this.settingsMenuItems.filter((item) => item.roles.includes(role));
   }
 
   unlockModule(label: string) {
-    const module = this.menuItems.find(m => m.label === label);
+    const module = this.menuItems.find((m) => m.label === label);
     if (module) {
       module.locked = false;
-      if(module.label === "POS"){
-        const checkoutModule = this.menuItems.find(module => module.label === 'Checkout');
+      if (module.label === 'POS') {
+        const checkoutModule = this.menuItems.find(
+          (module) => module.label === 'Checkout'
+        );
         if (checkoutModule) {
           checkoutModule.locked = false;
         }
       }
-      this.saveUnlockedModules(); 
+      this.saveUnlockedModules();
       this.unlockedModules$.next(this.getUnlockedModules());
-
     }
   }
 
   private saveUnlockedModules() {
-    const unlockedRoutes = this.menuItems.filter(m => !m.locked).map(m => m.label);
+    const unlockedRoutes = this.menuItems
+      .filter((m) => !m.locked)
+      .map((m) => m.label);
     localStorage.setItem('unlockedModules', JSON.stringify(unlockedRoutes));
   }
 
   loadUnlockedModules() {
-    const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
-    
+    const unlockedRoutes = JSON.parse(
+      localStorage.getItem('unlockedModules') || '[]'
+    );
+
     let unlockedCount = 0;
-  
-    this.menuItems.forEach(module => {
+
+    this.menuItems.forEach((module) => {
       if (unlockedRoutes.includes(module.label)) {
         module.locked = false;
-  
+
         if (module.label !== 'Dashboard') {
           unlockedCount++;
         }
       }
     });
-  
+
     if (unlockedCount > 0) {
-      const settingsModule = this.menuItems.find(module => module.label === 'Settings');
+      const settingsModule = this.menuItems.find(
+        (module) => module.label === 'Settings'
+      );
       if (settingsModule) {
         settingsModule.locked = false;
       }
@@ -421,43 +588,61 @@ export class MenuItemsService {
   }
 
   loadUnlockedSettingsModules() {
-    const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
-    
-  
-    this.settingsMenuItems.forEach(module => {
+    const unlockedRoutes = JSON.parse(
+      localStorage.getItem('unlockedModules') || '[]'
+    );
+
+    this.settingsMenuItems.forEach((module) => {
       if (unlockedRoutes.includes(module.label)) {
         module.locked = false;
-      }else {
-        module.locked = true;
+      } else {
+        module.locked = false;
       }
     });
-
   }
-  
+
   getUnlockedModules(): MenuItem[] {
-    let unlockedModules = this.menuItems.filter(module => !module.locked || module.label === 'Dashboard');
-  
-    const hasUnlockedModule = unlockedModules.some(module => module.label !== 'Dashboard');
-  
+    let unlockedModules = this.menuItems.filter(
+      (module) => !module.locked || module.label === 'Dashboard'
+    );
+
+    const hasUnlockedModule = unlockedModules.some(
+      (module) => module.label !== 'Dashboard'
+    );
+
     if (hasUnlockedModule) {
-      unlockedModules = unlockedModules.map(module =>
+      unlockedModules = unlockedModules.map((module) =>
         module.label === 'Settings' ? { ...module, locked: false } : module
       );
     }
-  
+
     return unlockedModules;
   }
-  getUnlockedModulesRole(){
-    let unlockedModules = this.settingsMenuItems.filter(module => !module.locked);
-    return this.modulesRolePermissions.filter(module => unlockedModules.some(m => m.label === module.name))
+  getUnlockedModulesRole() {
+    let unlockedModules = this.settingsMenuItems.filter(
+      (module) => !module.locked
+    );
+    return this.modulesRolePermissions.filter((module) =>
+      unlockedModules.some((m) => m.label === module.name)
+    );
   }
   getUnlockedSettingsModules(): MenuItem[] {
-    let unlockedModules = this.settingsMenuItems.filter(module => !module.locked || module.label === 'General Settings' || module.label === 'User and Roles Management');
+    let unlockedModules = this.settingsMenuItems.filter(
+      (module) =>
+        !module.locked ||
+        module.label === 'General Settings' ||
+        module.label === 'User and Roles Management'
+    );
     return unlockedModules;
   }
-  
+
   getAllModules() {
-    return this.menuItems.filter(module => module.label !== 'Dashboard' && module.label !== 'Settings' && module.label !== 'Checkout');
+    return this.menuItems.filter(
+      (module) =>
+        module.label !== 'Dashboard' &&
+        module.label !== 'Settings' &&
+        module.label !== 'Checkout'
+    );
   }
 
   getUnlockedModulesObservable() {

@@ -2,11 +2,13 @@ import { Component } from '@angular/core';
 import { CheckoutComponent } from '../checkout/checkout.component';
 import { UserSettingComponent } from '../../user-setting/user-setting.component';
 import { PAndISettingComponent } from '../p-and-isetting/p-and-isetting.component';
+import { BusInfoSettingComponent } from '../bus-info-setting/bus-info-setting.component';
+import { BranchesComponent } from '../branches/branches.component';
 
 @Component({
   selector: 'app-pos-setting',
   templateUrl: './pos-setting.component.html',
-  styleUrl: './pos-setting.component.scss'
+  styleUrl: './pos-setting.component.scss',
 })
 export class PosSettingComponent {
   sidebar: boolean = false;
@@ -16,20 +18,21 @@ export class PosSettingComponent {
     {
       name: 'Business Information',
       subSetting: [
-        ' Custom business info', 'tax settings', 'language', 'currency preferences'
+        ' Custom business info',
+        'tax settings',
+        'language',
+        'currency preferences',
       ],
       icon: 'pi pi-receipt',
-      component: CheckoutComponent,
+      component: BusInfoSettingComponent,
     },
     {
       name: 'Product & Inventory Settings',
-      subSetting: [
-        'Price', 'unit', 'stock', 'stock alerts'
-      ],
+      subSetting: ['Price', 'unit', 'stock', 'stock alerts'],
       icon: 'pi pi-receipt',
       component: PAndISettingComponent,
     },
-        {
+    {
       name: 'Payment Settings',
       subSetting: [
         'Salary Structure',
@@ -42,9 +45,7 @@ export class PosSettingComponent {
     },
     {
       name: 'Report Settings',
-      subSetting: [
-        'Customize' , 'export sales' , 'stock reports'
-      ],
+      subSetting: ['Customize', 'export sales', 'stock reports'],
       icon: 'pi pi-receipt',
       component: null,
     },
@@ -57,7 +58,7 @@ export class PosSettingComponent {
         'Payslip',
       ],
       icon: 'pi pi-receipt',
-      component: null,
+      component: BranchesComponent,
     },
     {
       name: 'Customization Settings',
@@ -70,7 +71,6 @@ export class PosSettingComponent {
       icon: 'pi pi-receipt',
       component: null,
     },
-    
   ];
 
   selectedComp = null;

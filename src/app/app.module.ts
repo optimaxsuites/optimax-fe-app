@@ -76,6 +76,8 @@ import { UserSettingComponent } from './ui/view/user-setting/user-setting.compon
 import { RolesNpermissionComponent } from './ui/view/user-setting/roles-npermission/roles-npermission.component';
 import { UsersComponent } from './ui/view/user-setting/users/users.component';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { BranchesComponent } from './ui/view/pos/branches/branches.component';
 
 //
 
@@ -100,6 +102,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
     UserSettingComponent,
     UsersComponent,
     RolesNpermissionComponent,
+    BranchesComponent,
   ],
   imports: [
     BrowserModule,
@@ -152,6 +155,7 @@ import { ConfirmationService, MessageService } from 'primeng/api';
     MatMenuModule,
     LargeSideModalComponent,
     SideModalComponent,
+    MatSnackBarModule,
   ],
   providers: [
     NavigationLinksService,
