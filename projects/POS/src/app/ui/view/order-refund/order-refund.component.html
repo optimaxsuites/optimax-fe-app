@@ -28,51 +28,71 @@
   #refundForm="ngForm"
   (ngSubmit)="sendRequest()"
 >
-  <div>
-    <label for="receiptId">Receipt Id:</label>
-    <input
-      type="text"
-      name="receiptId"
-      id="receiptId"
-      [(ngModel)]="refundData.orderId"
-      (ngModelChange)="validateReceipt()"
-      placeholder="RTY1542"
-      required
-      class="w-full px-3 py-2 border rounded-md"
-      #receiptId="ngModel"
-    />
-    <p *ngIf="receiptId.invalid && receiptId.touched" class="text-red-500">Receipt ID is required.</p>
+<div>
+  <label for="receiptId">Receipt Id:</label>
+
+  <input
+    type="text"
+    name="receiptId"
+    id="receiptId"
+    [(ngModel)]="refundData.orderId"
+    (ngModelChange)="validateReceipt()"
+    placeholder="RTY1542"
+    required
+    class="w-full px-3 py-2 border rounded-md"
+  />
+</div>
+
+<label *ngIf="orderItems.length">
+  <div>Purchase Date:</div>
+  <p class="editInput">{{refundData.timestamp}}</p>
+</label>
+
+<label>
+  <div>Full Name:</div>
+
+  <input
+    type="text"
+    name="customerName"
+    id="customerName"
+    [(ngModel)]="refundData.customerName"
+    placeholder="Akintola Akinyemi"
+    required
+    class="w-full px-3 py-2 border rounded-md"
+  />
+</label>
+
+<label>
+  <div>Email:</div>
+
+  <input
+    type="email"
+    name="email"
+    id="email"
+    [(ngModel)]="refundData.emailAddress"
+    placeholder="akintola.akinyemi@example.com"
+    required
+    class="w-full px-3 py-2 border rounded-md mb-4"
+  />
+</label>
+
+
+@if (orderItems.length > 0) {
+  <div class="flex flex-col gap-2">
+    <label for="orderItems" class="font-semibold">Purchased Items:</label>
+    <div class="flex flex-col flex-wrap gap-2">
+      <div *ngFor="let item of orderItems" class="items-center flex">
+        <input
+          type="checkbox"
+          id="item-{{ item.id }}"
+          name="orderItems"
+          value="{{ item.id }}"
+        />
+        <label for="item-{{ item.id }}" class="ml-2 cursor-pointer">{{ item.name }}</label>
+      </div>
+    </div>
   </div>
-
-  <label>
-    <div>Full Name:</div>
-    <input
-      type="text"
-      name="customerName"
-      id="customerName"
-      [(ngModel)]="refundData.customerName"
-      placeholder="Akintola Akinyemi"
-      required
-      class="w-full px-3 py-2 border rounded-md"
-      #customerName="ngModel"
-    />
-    <p *ngIf="customerName.invalid && customerName.touched" class="text-red-500">Full Name is required.</p>
-  </label>
-
-  <label>
-    <div>Email:</div>
-    <input
-      type="email"
-      name="email"
-      id="email"
-      [(ngModel)]="refundData.emailAddress"
-      placeholder="akintola.akinyemi@example.com"
-      required
-      class="w-full px-3 py-2 border rounded-md"
-      #email="ngModel"
-    />
-    <p *ngIf="email.invalid && email.touched" class="text-red-500">Valid email is required.</p>
-  </label>
+}
 
   <p class="font-semibold">Refund Method</p>
   <ng-select 

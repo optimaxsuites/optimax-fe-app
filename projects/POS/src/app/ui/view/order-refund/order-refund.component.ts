@@ -45,26 +45,26 @@ export class OrderRefundComponent {
 
     this.refundDetails = {};
   }
-   @HostListener('window:keydown', ['$event'])
-  handleKeyDown(event: KeyboardEvent) {
-    if (event.ctrlKey || event.altKey || event.metaKey) {
-      return; 
-    }
+  //  @HostListener('window:keydown', ['$event'])
+  // handleKeyDown(event: KeyboardEvent) {
+  //   if (event.ctrlKey || event.altKey || event.metaKey) {
+  //     return; 
+  //   }
 
-    if (event.key === 'Enter') {
-      if (this.refundData.orderId.trim() !== '') {
-        this.validateReceipt();
-      }
-      event.preventDefault(); 
-      return;
-    }
+  //   if (event.key === 'Enter') {
+  //     if (this.refundData.orderId.trim() !== '') {
+  //       this.validateReceipt();
+  //     }
+  //     event.preventDefault(); 
+  //     return;
+  //   }
 
-    if (event.key.length === 1) {
-      this.refundData.orderId += event.key;
-    }
+  //   if (event.key.length === 1) {
+  //     this.refundData.orderId += event.key;
+  //   }
 
-    console.log('Current order ID:', this.refundData.orderId);
-  }
+  //   console.log('Current order ID:', this.refundData.orderId);
+  // }
 
 
   requests: Refund[] = []
