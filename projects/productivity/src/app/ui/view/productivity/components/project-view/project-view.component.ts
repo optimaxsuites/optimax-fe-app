@@ -1,4 +1,4 @@
-// Monday
+
 
 import { Component, signal, OnInit, Input } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -6,13 +6,14 @@ import { ButtonModule } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { DialogService } from 'primeng/dynamicdialog';
 import { NewTaskComponent } from '../new-task/new-task.component';
+import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 
 export interface Task {
   id: string;
   name: string;
   completed: boolean;
-  projectId: string; // Link the task to a project
-  selectedUsers?: string; // Add selectedUser to the Task interface
+  projectId: string;
+  selectedUsers?: string;
   status?: string;
 }
 
@@ -31,11 +32,18 @@ export interface Project {
   tasks?: Task[];
 }
 
+interface CardHeader {
+  cardOne?: string;
+  cardTwo?: string;
+  cardThree?: string;
+  cardFour?: string;
+}
+
 @Component({
   selector: 'app-project-view',
   templateUrl: './project-view.component.html',
   styleUrls: ['./project-view.component.scss'],
-  providers: [DialogService], // Ensure DialogService is provided
+  providers: [DialogService],
 })
 export class ProjectViewComponent implements OnInit {
   readonly panelOpenState = signal(false);
@@ -45,31 +53,36 @@ export class ProjectViewComponent implements OnInit {
   @Input() emoji: string = '';
 
   cards = [
-    { text: 'This is a card! Select it to see its card back.', emoji: '👋' },
-    { text: 'Hold and drag to move this card to another list', emoji: '👉' },
-    {
-      text: 'Invite collaborators to your board by selecting the menu to the right of the notifications bell.',
-      emoji: '',
-    },
+    [{ text: 'Not Started Task 1' }, { text: 'Not Started Task 2' }],
+    [
+      { text: 'In Progress Task 1' },
+      { text: 'In Progress Task 2' },
+      { text: 'In Progress Task 3' }
+    ],
+    [{ text: 'Completed Task 1' }],
+    [{ text: 'Done Task 1' },{ text: 'Not Started Task 2' }]
   ];
 
-  cardHeader = [
-    {
-      cardOne: 'Not Started'
-    },
 
-    {
-      cardTwo: 'In Progress',
-    },
-    {
-      cardThree: 'Completed',
-    },
-    {
-      cardFour: 'Done',
-    },
+
+
+
+
+
+
+
+
+
+
+
+
+
+   cardHeader: CardHeader[] = [
+    { cardOne: 'Not Started' },
+    { cardTwo: 'In Progress' },
+    { cardThree: 'Completed' },
+    { cardFour: 'Done' }
   ];
-
-  notStartedCard = [{ text: '' }, { text: '' }, { text: '' }];
 
   constructor(
     private route: ActivatedRoute,
@@ -87,7 +100,7 @@ export class ProjectViewComponent implements OnInit {
     const projectId = this.route.snapshot.paramMap.get('id');
     if (projectId) {
       this.loadProjectDetails(projectId);
-      this.loadTasksForProject(projectId); // Load tasks for the project
+      this.loadTasksForProject(projectId);
     }
   }
 
@@ -128,7 +141,6 @@ export class ProjectViewComponent implements OnInit {
       tasks[task.id] = task;
       localStorage.setItem('tasks', JSON.stringify(tasks));
 
-      // Also, update the project's tasks in localStorage
       const storedData = localStorage.getItem('projectData');
       if (storedData) {
         const projects: Project[] = JSON.parse(storedData);
@@ -155,7 +167,7 @@ export class ProjectViewComponent implements OnInit {
 
   openTaskModal() {
     const ref = this.dialogService.open(NewTaskComponent, {
-      data: { projectId: this.project?.id }, // Pass projectId to the modal
+      data: { projectId: this.project?.id },
     });
 
     ref.onClose.subscribe((task: Task) => {
@@ -164,5 +176,70 @@ export class ProjectViewComponent implements OnInit {
         this.saveTaskToLocalStorage(task);
       }
     });
+  }  
+  
+//   drop(event: CdkDragDrop<{ text: string }[]>) {
+//   if (event.previousContainer === event.container) {
+//     moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+//   } else {
+   
+//     transferArrayItem(
+//       event.previousContainer.data,
+//       event.container.data,
+//       event.previousIndex,
+//       event.currentIndex
+//     );
+//     const movedTask = event.container.data[event.currentIndex];
+//     const targetListIndex = this.cards.indexOf(event.container.data);
+
+//     const task = this.tasks.find((t) => t.name === movedTask.text);
+//     if (task) {
+
+//       const statusKey = `card${targetListIndex + 1}` as keyof CardHeader;
+//       const status = this.cardHeader[targetListIndex][statusKey];
+//       if (status) {
+//         task.status = status;
+//         this.saveTaskToLocalStorage(task);
+//       }
+//     }
+//   }
+// }
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  drop(event: CdkDragDrop<any[]>) {
+  if (event.previousContainer === event.container) {
+    // Move within same list
+    moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+  } else {
+    // Move between lists
+    transferArrayItem(
+      event.previousContainer.data,
+      event.container.data,
+      event.previousIndex,
+      event.currentIndex
+    );
+
+    // Update task status if needed
+    const movedItem = event.container.data[event.currentIndex];
+    const targetListIndex = this.cards.findIndex(list => list === event.container.data);
+    
+    if (movedItem.id) { // If it's a Task object
+      const task = this.tasks.find(t => t.id === movedItem.id);
+      if (task) {
+        const statusKey = `card${targetListIndex + 1}` as keyof CardHeader;
+        task.status = this.cardHeader[targetListIndex][statusKey];
+        this.saveTaskToLocalStorage(task);
+      }
+    }
   }
+}
 }
