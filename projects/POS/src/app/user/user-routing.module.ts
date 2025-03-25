@@ -10,6 +10,7 @@ import { PosCheckoutPageComponent } from '../ui/view/pos-checkout-page/pos-check
 import { RequestDetailsComponent } from '../ui/view/request-details/request-details.component';
 import { CheckoutKitchenComponent } from '../ui/view/checkout-kitchen/checkout-kitchen.component';
 import { KitchenOrderComponent } from '../ui/view/kitchen-order/kitchen-order.component';
+import { HotelCheckoutComponent } from '../ui/view/hotel-checkout/hotel-checkout.component';
 
 const routes: Routes = [
   {
@@ -56,6 +57,10 @@ const routes: Routes = [
   {
     path: 'user/checkout/kitchen/:uuid',
     component: CheckoutKitchenComponent,
+  },
+  {
+    path: 'user/checkout/hotel/:uuid',
+    component: HotelCheckoutComponent,
   },
 ];
 

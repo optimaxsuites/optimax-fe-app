@@ -94,7 +94,7 @@ this.links['inventoryLink'] = `/admin/pos/inventory/${uuidV4()}`;
 this.links['salesLink'] = '/admin/pos/sale/' +uuidV4();
 this.links['refundLink'] = '/admin/pos/refunds/' +uuidV4();
 this.links['reportLink'] = '/admin/pos/report/' +uuidV4();
-
+this.links['ingredientLink'] = 'admin/pos/ingredients/' +uuidV4(); 
 
   }
 
