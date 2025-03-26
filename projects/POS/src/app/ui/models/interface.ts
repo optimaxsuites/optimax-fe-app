@@ -205,6 +205,7 @@ export interface Order {
 }
 
 export interface Cart {
+paymentModes: any;
   changeOffered: any;
   paymentMethod: any;
   state: any;

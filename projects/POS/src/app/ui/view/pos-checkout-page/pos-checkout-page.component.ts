@@ -355,7 +355,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     });
   }
 
-  processCashPayment() {
+  processPayment(modes: string[]) {
     if (this.cartItems.length === 0) return;
 
     const cart = {
@@ -364,6 +364,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
       discount: this.displayedDiscount,
       tax: this.tax,
       subtotal: this.subtotal,
+      paymentModes: modes,
     };
     const cashPayment = this.navigationLink.getLink('cashPayment');
     this.router.navigate([cashPayment], { state: { cart } });

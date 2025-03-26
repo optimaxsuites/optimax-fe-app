@@ -174,14 +174,14 @@
               [(isModalOpen)]="isAllPaymentsModalOpen"
             ></app-all-payments-modal>
 
-            <button
+            <!-- <button
               class="rounded-r-xl"
               (click)="processCashPayment()"
               [class.half-brightness]="!cartItems.length"
               [class.cursor-disabled]="!cartItems.length"
             >
               Cash
-            </button>
+            </button> -->
           </div>
         </div>
       </div>
@@ -270,21 +270,22 @@
                 </div> -->
 
           <div class="paymentBtn flex">
-            <button class="rounded-l-xl" (click)="toggleAllPaymentsModal()">
-              All payments
+            <button class="rounded-xl" (click)="toggleAllPaymentsModal()" [disabled]="!cartItems.length" [class.half-brightness]="!cartItems.length" [class.cursor-disabled]="!cartItems.length">
+              Process Transaction
             </button>
             <app-all-payments-modal
               [(isModalOpen)]="isAllPaymentsModalOpen"
+              (selectedPayments)="processPayment($event)"
             ></app-all-payments-modal>
 
-            <button
+            <!-- <button
               class="rounded-r-xl"
               (click)="processCashPayment()"
               [class.half-brightness]="!cartItems.length"
               [class.cursor-disabled]="!cartItems.length"
             >
               Cash
-            </button>
+            </button> -->
           </div>
         </div>
       </div>

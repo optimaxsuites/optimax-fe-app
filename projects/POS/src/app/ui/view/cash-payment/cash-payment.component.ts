@@ -23,6 +23,12 @@ export class CashPaymentComponent implements OnInit {
   changeOfferedModal: boolean = false;
   receiptID: string = Math.floor(100000 + Math.random() * 900000).toString();
   token: string = ''
+  paymentValues = {
+    cash: 0,
+    card: 0,
+    loyalty: 0
+  };
+  
   constructor(
     private router: Router,
     public navigationLink: NavigationLinksService,
@@ -48,10 +54,31 @@ export class CashPaymentComponent implements OnInit {
     this.initializePriceOptions();
     this.token = this.randomTokenService.getRandomToken()
   }
+  get totalPaid() {
+    return this.paymentValues.cash + this.paymentValues.card + this.paymentValues.loyalty;
+  }
+  
+  get balanceLeft() {
+    return Math.max(0, this.cart.total - this.totalPaid);
+  }
+  
+  getPriceOptions(method: string) {
+    return [
+      { label: 'Exact', value: this.balanceLeft },
+      { label: '100', value: 100 },
+      { label: '200', value: 200 },
+    ];
+  }
+
+  // selectPrice(method: string, value: number) {
+  //   this.priceValues[method] = value;
+  //   this.paymentValues[method] = value;
+  // }
+  
 
   initializePriceOptions() {
     this.priceOptions = [
-      { label: 'Exact', value: this.cart?.total || 0 },
+      { label: 'Exact', value: this.balanceLeft },
       { label: '100', value: 100 },
       { label: '200', value: 200 },
     ];
