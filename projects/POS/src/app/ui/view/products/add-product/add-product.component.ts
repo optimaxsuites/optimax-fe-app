@@ -15,11 +15,18 @@ import {
 import {
   DiscountDTO,
   HistoryData,
+  IngredientDTO,
   ProductData,
   ProductJSONFormat,
   VariantDTO,
 } from '../../../models/interface';
 import { IndustryDataService } from '../../../service/industry-data.service';
+
+interface SelectedIngredientDTO {
+  ingredient: IngredientDTO;  
+  quantity: number;  
+}
+
 
 @Component({
   selector: 'app-add-product',
@@ -84,6 +91,57 @@ export class AddProductComponent {
   openAddVariant: boolean = false;
   isEditing: boolean = false;
   editingIndex: number | null = null;
+
+
+  /**
+   * We use this for now, pending when user registration industry field is updated
+   */
+  industry: string = "Kitchen";
+   dummyIngredients: IngredientDTO[] = [
+    {
+      id: 1,
+      name: "Flour",
+      code: "FLR001",
+      sku: "SKU-FLR-001",
+      measurementUnit: "kg", // Kilogram
+      purchasePrice: 500,
+      currentStock: 100,
+      reorderThreshold: 20,
+    },
+    {
+      id: 2,
+      name: "Sugar",
+      code: "SGR001",
+      sku: "SKU-SGR-001",
+      measurementUnit: "g", // Gram
+      purchasePrice: 200,
+      currentStock: 5000,
+      reorderThreshold: 500,
+    },
+    {
+      id: 3,
+      name: "Eggs",
+      code: "EGG001",
+      sku: "SKU-EGG-001",
+      measurementUnit: "pcs", // Pieces
+      
+      purchasePrice: 50,
+      currentStock: 200,
+      reorderThreshold: 30,
+    },
+    {
+      id: 4,
+      name: "Milk",
+      code: "MLK001",
+      sku: "SKU-MLK-001",
+      measurementUnit: "L", // Liters
+  
+      purchasePrice: 400,
+      currentStock: 50,
+      reorderThreshold: 10,
+    },
+  ];
+  selectedIngredients: SelectedIngredientDTO[] = [];
 
   /**
    * This will be an object indexed with `this.selectedBranchIndex` where each value would be an array of variants for each branch.
@@ -367,6 +425,35 @@ export class AddProductComponent {
   getVariants(branch: AbstractControl) {
     return branch.get('variants') as FormArray<FormGroup>;
   }
+
+  addIngredient(selectedIngredient: IngredientDTO, quantity: number) {
+    const ingredientExists = this.selectedIngredients.find(
+        (item) => item.ingredient.id === selectedIngredient.id
+    );
+
+    if (!ingredientExists) {
+        this.selectedIngredients.push({
+            ingredient: selectedIngredient,
+            quantity: quantity,
+        });
+    } else {
+        console.log("Ingredient already added!");
+    }
+}
+
+onIngredientSelect(selectedItems: any[]) {
+  console.log(selectedItems)
+  this.selectedIngredients = selectedItems.map(ingredient => ({
+    ingredient: ingredient,
+    quantity: 1, // Default quantity
+  }));
+
+  console.log(this.selectedIngredients)
+
+}
+removeIngredient(index: number) {
+  this.selectedIngredients.splice(index, 1);
+}
   
   updateBranches() {
     const branchArray = this.branchess;

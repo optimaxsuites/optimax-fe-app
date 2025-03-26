@@ -111,11 +111,11 @@ label {
   @apply text-red-400 text-[12px];
 }
 
-.industry-specific-details {
-  > :not(:first-child) {
-    @apply mt-5;
-  }
-}
+// .industry-specific-details {
+//   > :not(:first-child) {
+//     @apply mt-2;
+//   }
+// }
 
 .inputAndBtn {
   display: flex;
