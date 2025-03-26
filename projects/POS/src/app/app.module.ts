@@ -95,6 +95,9 @@ import { CardModule } from 'primeng/card';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
 import { HotelCheckoutComponent } from './ui/view/hotel-checkout/hotel-checkout.component';
+import { SkeletonModule } from 'primeng/skeleton';
+import { PaginatorModule} from 'primeng/paginator'
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -183,7 +186,9 @@ import { HotelCheckoutComponent } from './ui/view/hotel-checkout/hotel-checkout.
     ChartModule,
     DropdownModule,
     ChartModule,
-    CardModule
+    CardModule,
+    SkeletonModule,
+    PaginatorModule
 
     // BrowserAnimationsModule,
   ],

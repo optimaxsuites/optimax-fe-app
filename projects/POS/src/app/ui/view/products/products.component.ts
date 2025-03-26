@@ -53,7 +53,7 @@ export class ProductsComponent implements OnInit {
   viewProduct: boolean = false;
   addProduct: boolean = false;
   activeItem: any = {};
-
+  isLoading: boolean = true
   /**
    * This stored the ids of any items in the table selected by their checkbox
    *
@@ -139,6 +139,12 @@ export class ProductsComponent implements OnInit {
     b: KeyValue<string, string>
   ): number => 0;
 
+
+  //paginator
+
+  currentPage = 0;
+rowsPerPage = 15;
+
   constructor(
     private messageService: MessageService,
     private posService: PosServiceService,
@@ -160,6 +166,17 @@ export class ProductsComponent implements OnInit {
     const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${item.productImages[0].imgNo}`;
     return this.imageCacheService.getImage(remoteImageUrl);
   }
+
+
+get paginatedProducts() {
+  const startIndex = this.currentPage * this.rowsPerPage;
+  return this.products.slice(startIndex, startIndex + this.rowsPerPage);
+}
+
+onPageChange(event: any) {
+  this.currentPage = event.page;
+  this.rowsPerPage = event.rows;
+}
   
   checkForEmptyFields(obj: any): boolean {
     return Object.values(obj).some(
@@ -190,8 +207,10 @@ export class ProductsComponent implements OnInit {
           return dateB.getTime() - dateA.getTime();
         });
         this.products = [...this.originalProducts];
+        this.isLoading = false;
       } else {
         console.log('error loading data');
+        this.isLoading = false;
       }
     });
   }
