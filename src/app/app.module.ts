@@ -125,7 +125,8 @@ import { HotelCheckoutComponent } from './ui/view/hotel-checkout/hotel-checkout.
     SaleSummariesComponent,
     KitchenOrderComponent,
     IngredientComponent,
-    AddIngredientComponent
+    AddIngredientComponent,
+    HotelCheckoutComponent
   ],
   imports: [
     BrowserModule,
