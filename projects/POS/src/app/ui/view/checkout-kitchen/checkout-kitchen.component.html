@@ -52,7 +52,7 @@
   <div class="main-content">
     <!-- LEFT GRID of TABLE CARDS -->
     <div class="grid-area">
-      @for (item of tableStatuses; track $index) {
+      @for (item of displayedTableStatuses; track $index) {
       <div
         class="table-card"
         [ngClass]="{
@@ -133,61 +133,36 @@
       </div>
       } @case ("cashier") {
       <!-- TODO -->
-      <div class="max-w-md mx-auto bg-white shadow-lg rounded-lg p-4">
-        <h2 class="text-xl font-bold mb-4 border-b pb-2">Payment Invoice</h2>
+      <div class="max-w-full mx-auto bg-white shadow-lg rounded-lg p-4">
+        <h2 class="text-2xl font-bold mb-4 border-b pb-2 text-center">
+          Payment Invoice
+        </h2>
 
         <!-- Table of items -->
         <div class="overflow-x-auto">
-          <table class="min-w-full text-left">
-            <thead class="border-b bg-gray-50">
+          <p-table [value]="data">
+            <ng-template pTemplate="header">
               <tr>
-                <th scope="col" class="py-2 px-2 font-medium text-gray-700">
-                  Item
-                </th>
-                <th scope="col" class="py-2 px-2 font-medium text-gray-700">
-                  Qty
-                </th>
-                <th scope="col" class="py-2 px-2 font-medium text-gray-700">
-                  Rate
-                </th>
-                <th scope="col" class="py-2 px-2 font-medium text-gray-700">
-                  Amount
-                </th>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Rate</th>
+                <th>Amount</th>
               </tr>
-            </thead>
-            <tbody>
-              <!-- Example row -->
-              <tr class="border-b">
-                <td class="py-2 px-2">Jollof Rice</td>
-                <td class="py-2 px-2">1</td>
-                <td class="py-2 px-2">N2,000</td>
-                <td class="py-2 px-2">N2,000</td>
+            </ng-template>
+            <ng-template pTemplate="body" let-rowData>
+              <tr>
+                <td>{{ rowData.item }}</td>
+                <td>{{ rowData.qty }}</td>
+                <td>{{ rowData.rate }}</td>
+                <td>{{ rowData.amount }}</td>
               </tr>
-              <tr class="border-b">
-                <td class="py-2 px-2">Chicken</td>
-                <td class="py-2 px-2">2</td>
-                <td class="py-2 px-2">N1,500</td>
-                <td class="py-2 px-2">N3,000</td>
-              </tr>
-              <tr class="border-b">
-                <td class="py-2 px-2">Chapman</td>
-                <td class="py-2 px-2">1</td>
-                <td class="py-2 px-2">N1,000</td>
-                <td class="py-2 px-2">N1,000</td>
-              </tr>
-              <tr class="border-b">
-                <td class="py-2 px-2">Cat Fish</td>
-                <td class="py-2 px-2">1</td>
-                <td class="py-2 px-2">N2,000</td>
-                <td class="py-2 px-2">N2,000</td>
-              </tr>
-            </tbody>
-          </table>
+            </ng-template>
+          </p-table>
         </div>
 
         <!-- Totals & VAT -->
-        <div class="mt-4 space-y-2 text-sm">
-          <div class="flex justify-between">
+        <div class="mt-4 space-y-2">
+          <div class="border-t pt-2 flex justify-between">
             <span>Subtotal</span>
             <span>N8,000.00</span>
           </div>
@@ -202,36 +177,40 @@
         </div>
 
         <!-- VAT Type and Payment Method -->
-        <div class="mt-4">
-          <label for="vatType" class="block text-sm font-medium mb-1"
-            >Select VAT Type</label
-          >
-          <select
-            id="vatType"
-            class="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-200"
-          >
-            <option>STANDARD</option>
-            <option>ZERO</option>
-          </select>
+        <div class="flex justify-between">
+          <div class="mt-4">
+            <label for="vatType" class="block font-medium mb-1"
+              >Select VAT Type</label
+            >
+            <select
+              id="vatType"
+              class="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-200"
+            >
+              <option>STANDARD</option>
+              <option>ZERO</option>
+            </select>
+          </div>
+
+          <div class="mt-4">
+            <label for="paymentMethod" class="block font-medium mb-1"
+              >Payment Method</label
+            >
+            <select
+              id="paymentMethod"
+              class="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-200"
+            >
+              <option>CASH</option>
+              <option>CARD</option>
+              <option>TRANSFER</option>
+            </select>
+          </div>
         </div>
 
-        <div class="mt-4">
-          <label for="paymentMethod" class="block text-sm font-medium mb-1"
-            >Payment Method</label
-          >
-          <select
-            id="paymentMethod"
-            class="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-200"
-          >
-            <option>CASH</option>
-            <option>CARD</option>
-            <option>TRANSFER</option>
-          </select>
-        </div>
+        <!-- <div></div> -->
 
         <!-- Cash Received -->
         <div class="mt-4">
-          <label for="cashReceived" class="block text-sm font-medium mb-1"
+          <label for="cashReceived" class="block font-medium mb-1"
             >Cash Received</label
           >
           <input
@@ -245,17 +224,26 @@
         <!-- Action Buttons -->
         <div class="mt-4 flex space-x-2">
           <button
+            pButton
             type="button"
-            class="flex-1 bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-yellow-600 focus:outline-none focus:ring focus:ring-yellow-200"
-          >
-            Hold
-          </button>
+            label="Cancel"
+            class="p-button-danger flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 focus:outline-none focus:ring focus:ring-red-200"
+            icon="pi pi-times"
+          ></button>
           <button
+            pButton
             type="button"
-            class="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200"
-          >
-            Paid
-          </button>
+            label="Hold"
+            class="p-button-warning flex-1 bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-yellow-600 focus:outline-none focus:ring focus:ring-yellow-200"
+            icon="pi pi-pause"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Paid"
+            class="p-button-success flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200"
+            icon="pi pi-check"
+          ></button>
         </div>
       </div>
       } @case ("waiter") {

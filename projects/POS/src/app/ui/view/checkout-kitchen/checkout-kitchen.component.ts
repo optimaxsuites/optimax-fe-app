@@ -39,12 +39,19 @@ export class CheckoutKitchenComponent implements OnInit {
   isOrderDetailsOpen = false;
   selectedOrder?: TableStatus; // store the order/card clicked
 
-  tableStatuses: TableStatus[] = [];
+  #tableStatuses: TableStatus[] = [];
 
   testMode: typeof this.mode = 'chef';
   changeTestMode(e: Event) {
     this.testMode = (e.target as HTMLInputElement).value as any;
   }
+  // Replace this with the actual orders
+  data = [
+    { item: 'Jollof Rice', qty: 1, rate: 'N2,000', amount: 'N2,000' },
+    { item: 'Chicken', qty: 2, rate: 'N1,500', amount: 'N3,000' },
+    { item: 'Chapman', qty: 1, rate: 'N1,000', amount: 'N1,000' },
+    { item: 'Cat Fish', qty: 1, rate: 'N2,000', amount: 'N2,000' },
+  ];
 
   get mode(): 'waiter' | 'chef' | 'cashier' {
     //TODO: Determine the mode to use from the logged in user's id. For now though, just use a toggle to change this
@@ -108,10 +115,11 @@ export class CheckoutKitchenComponent implements OnInit {
   }
 
   createOrder(tableNo: number, orders: TableOrder[]) {
+    const ids = ['0', '1'];
     // TODO: Get the waiter's id based on their login info
-    const waiterId = '0';
+    const waiterId = ids[Math.round(Math.random() * 100) % ids.length];
 
-    this.tableStatuses.push({
+    this.#tableStatuses.push({
       no: tableNo,
       orderedOn: new Date(),
       orders: orders,
@@ -136,6 +144,18 @@ export class CheckoutKitchenComponent implements OnInit {
         break;
       case 'Ready':
       //TODO: Get rid of the table order
+    }
+  }
+  get displayedTableStatuses(): TableStatus[] {
+    switch (this.testMode) {
+      case 'waiter':
+        // TODO: Use the waiter's id as a comparison here
+        return this.#tableStatuses.filter(
+          (tableStatus) => tableStatus.waiterId == '0'
+        );
+      case 'cashier':
+      case 'chef':
+        return this.#tableStatuses;
     }
   }
 }

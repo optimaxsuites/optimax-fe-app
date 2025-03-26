@@ -49,14 +49,15 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     text-align: center;
   }
-  
+
   h2 {
     margin-bottom: 15px;
     color: #333;
     font-size: 1.6em;
   }
-  
-  // label {
+  div[class^="form"] {
+    margin-bottom: 3%;
+} 
   //   // display: block;
   //   margin-bottom: 5px;
   //   font-weight: bold;
@@ -78,14 +79,18 @@
 
   
 
-
+  .form input,
+  .form select,
+  .form textarea {
+      padding: 5px 5px;
+  }
 
   .form-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-top: 20px;
-    padding: 0 8px;
+    padding: 0 20px;
   }
   
   .back {
