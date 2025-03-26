@@ -157,6 +157,17 @@ label {
 }
 
 
-p-inputnumber, p-input-number-input {
-  @apply w-2 editInput
+:host ::ng-deep .p-inputnumber {
+  width: 60px !important;
+
+  @apply p-1 editInput
+}
+
+:host ::ng-deep .p-element {
+  width: 50px !important;
+  &:focus {
+    outline: none;
+
+  }
+  // @apply  editInput
 }

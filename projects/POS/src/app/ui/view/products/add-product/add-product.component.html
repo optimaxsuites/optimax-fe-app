@@ -83,13 +83,6 @@
                 placeholder="Select branch"
               >
               </ng-select>
-              <button
-                class="btn create-invoice-btn mt-1.5 w-fit"
-                type="button"
-                (click)="addBranch()"
-              >
-                +
-              </button>
             </div>
           </div>
 
@@ -404,20 +397,15 @@
             <tbody>
               <tr *ngFor="let variant of variants; let i = index">
                 <td class="py-2 px-4 border-b">{{ variant.name }}</td>
-                <td class="py-2 px-4 border-b">{{ variant.price }}</td>
-                <td class="py-2 px-4 border-b">{{ variant.quantity }}</td>
+                <!-- <td class="py-2 px-4 border-b">{{ variant.price }}</td>
+                <td class="py-2 px-4 border-b">{{ variant.quantity }}</td> -->
                 <td class="py-2 px-4 border-b">
                   {{ variant.color.join(", ") }}
                 </td>
                 <td class="py-2 px-4 border-b">{{ variant.size }}</td>
                 <td class="py-2 px-4 border-b">{{ variant.sku }}</td>
                 <td class="py-3 px-4 border-b flex gap-3">
-                  <i
-                    class="fa-solid fa-barcode cursor-pointer"
-                    (click)="isSKUValid && generateBarcode(variant.sku)"
-                    [class]="isSKUValid ? 'disabled-btn' : ''"
-                  >
-                  </i>
+                
                   <i
                     class="fa-regular fa-pen-to-square cursor-pointer"
                     (click)="editVariant(i)"
@@ -567,55 +555,80 @@
                 <th class="py-2 px-4 bg-gray-600">Quantity</th>
 
                 <th class="py-2 px-4 bg-gray-600">Tax</th>
-                <!-- <th class="py-2 px-4 bg-gray-600">Action</th> -->
-                <!-- @for (prop of variantObjectKeys; track $index) {
-                <th class="py-2 px-4 bg-gray-600">{{ prop }}</th>
-                } -->
-                <!-- <th class="py-2 px-4 bg-gray-600">Action</th> -->
+                <th class="py-2 px-4 bg-gray-600">Discount</th>
+
+                <th class="py-2 px-4 bg-gray-600"></th> 
               </tr>
             </thead>
             <tbody>
-        @for (branch of selecteddBranch; track $index) {
-
+        @for (branch of  branchess.controls; track $index) {
               <tr>
-                <td class="py-2 px-4 border-b capitalize">{{branch }}</td>
-               
-                <td class="py-2 px-4 border-b"><p-inputNumber 
-                  inputId="minmax" 
-                  mode="decimal" 
-                  [min]="0" 
-                  class=" editInput"
-                 /> </td>
-
-                 <td class="py-2 px-4 border-b"><p-inputNumber 
-                  inputId="minmax" 
-                  mode="decimal" 
-                  [min]="0" 
-                 /> </td>
-
-                 <td class="py-2 px-4 border-b"><p-inputNumber 
-                  inputId="minmax" 
-                  mode="decimal" 
-                  [min]="0" 
-                 /> </td>
-                <!-- <td class="py-3 px-4 border-b flex gap-3">
-                  <i
-                    class="fa-solid fa-barcode cursor-pointer"
-                    (click)="isSKUValid && generateBarcode(variant.sku)"
-                    [class]="isSKUValid ? 'disabled-btn' : ''"
-                  >
-                  </i>
-                  <i
-                    class="fa-regular fa-pen-to-square cursor-pointer"
-                    (click)="editVariant(i)"
-                  ></i>
-
-                  <i
-                    class="fa-solid fa-trash cursor-pointer"
-                    (click)="deleteVariant(i)"
-                  ></i>
-                </td> -->
+                <td class="py-2 px-4  capitalize font-semibold">{{ branch.get('branchName')?.value }}</td>
+                <td colspan="5"></td> 
               </tr>
+              <tr [formGroup]="branch">
+                <td class="py-2 px-4 border-b capitalize text-right">Regular</td>
+
+                <td class="py-2 px-4 border-b">
+                  <p-inputNumber formControlName="sellingPrice" mode="decimal" [min]="0"></p-inputNumber>
+                </td>
+          
+                <td class="py-2 px-4 border-b">
+                  <p-inputNumber formControlName="quantity" mode="decimal" [min]="0"></p-inputNumber>
+                </td>
+          
+                <td class="py-2 px-4 border-b">
+                  <p-inputNumber formControlName="tax" mode="decimal" [min]="0"></p-inputNumber>
+                </td>
+          
+                <td>
+                  <div class="flex inputAndBtn">
+                    <ng-select
+                      [items]="discounts"
+                      bindLabel="name"
+                      bindValue="id"
+                      formControlName="discount"
+                      placeholder="Discount"
+                      class="w-full"
+                    ></ng-select>
+          
+                    <button class="btn create-invoice-btn mt-1.5" type="button" (click)="openAddDiscount = true">+</button>
+                  </div>
+                </td>
+                <td class="py-2 px-4 border-b text-right">
+                  <button class="text-right" type="button" (click)="removeBranch($index)">
+                    
+                    <i
+                      class="fa-solid fa-trash cursor-pointer"
+                      
+                    ></i>
+                  </button>
+                </td>
+              </tr>
+
+              @for (variant of getVariants(branch).controls; track $index) {
+                <tr [formGroup]="variant">
+                  <td class="py-2 px-4 border-b pl-8 text-right">
+                    {{ variant.get('variantName')?.value }}
+                  </td>
+                  <td class="py-2 px-4 border-b">
+                    <p-inputNumber formControlName="sellingPrice" mode="decimal" [min]="0"></p-inputNumber>
+                  </td>
+                  <td class="py-2 px-4 border-b">
+                    <p-inputNumber formControlName="quantity" mode="decimal" [min]="0"></p-inputNumber>
+                  </td>
+                  <td colspan="2" class="py-2 px-4 border-b"></td> 
+                  <td class="py-2 px-4 border-b">
+                    <button  type="button" (click)="removeVariant(branch, $index)">
+                      <i
+                      class="fa-solid fa-trash cursor-pointer"
+                      
+                    ></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            
         }
 
             </tbody>
@@ -733,7 +746,7 @@
         placeholder="variant name"
       />
 
-      <label for="variant-price">Price</label>
+      <!-- <label for="variant-price">Price</label>
       <input
         type="text"
         id="variant-price"
@@ -749,7 +762,7 @@
         [(ngModel)]="newVariant.quantity"
         class="editInput mb-2 outline-none"
         placeholder="variant quantity"
-      />
+      /> -->
 
       <!-- <label for="variant-sku">SKU</label>
       <input
@@ -808,15 +821,15 @@
         }
       </select>
 
-      <!-- <label for="">Branch</label>
+      <label for="">Branch</label>
         <ng-select
-        [items]="branches"
+        [items]="selecteddBranch"
         bindLabel="label"
         bindValue="value"
-        [(ngModel)]="selectedBranch"
+        [(ngModel)]="newVariant.branches"
         [multiple]="true"
         placeholder="Select branch">
-        </ng-select> -->
+        </ng-select>
     </div>
   </div>
 </app-side-modal>
