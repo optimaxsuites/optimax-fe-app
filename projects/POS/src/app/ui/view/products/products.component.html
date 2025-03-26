@@ -1,4 +1,7 @@
-<div *ngIf="tableSection" class="flex flex-col w-full gap-14 p-4">
+
+
+
+<div *ngIf="tableSection" class="flex flex-col w-full gap-14 p-6">
   <div class="gap-3 w-full flex justify-between items-center">
     <!-- `rotate-0` is used to set this as the container of any `fixed` position elements within it -->
     <ng-select
@@ -23,6 +26,12 @@
         />
         <i class="fas fa-search"></i>
       </div>
+    </div>
+
+    <div class="flex justify-end p-4">
+      <button (click)="toggleView()" class="btn-toggle">
+        {{ tableSection ? 'Switch to Cards' : 'Switch to Table' }}
+      </button>
     </div>
   </div>
 
@@ -62,6 +71,7 @@
       </ng-template>
     </p-toolbar>
     <p-table
+    *ngIf="tableSections"
       [value]="products"
       [paginator]="true"
       dataKey="id"
@@ -188,6 +198,29 @@
         </tr>
       </ng-template>
     </p-table>
+
+    <div *ngIf="!tableSections" class="card-grid">
+      <div *ngFor="let product of products" class="card">
+        <img
+        [src]="getImageUrl(product) | async"
+        alt="product image"
+        class="w-full h-44 object-cover rounded-xl"
+      />
+      
+        <h3 class="py-2">{{ product.name }}</h3>
+        <!-- <p><strong>SKU:</strong> {{ product.sku }}</p>
+        <p><strong>Code:</strong> {{ product.code }}</p> -->
+        <p><strong>Price:</strong> {{ product.effectivePrice }}</p>
+        <p><strong>Quantity:</strong> {{ product.effectiveQuantity }}</p>
+        <p><strong>Category:</strong> {{ product.productCategory?.name }}</p>
+        <div class="card-actions">
+          <button (click)="openViewProduct(product)">View</button>
+          <button (click)="openEdit(product)">Edit</button>
+          <button (click)="openDeleteModal(product)">Delete</button>
+        </div>
+      </div>
+    </div>
+    
   </div>
 </div>
 

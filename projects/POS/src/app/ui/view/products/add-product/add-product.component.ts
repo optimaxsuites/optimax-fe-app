@@ -96,7 +96,7 @@ export class AddProductComponent {
   /**
    * We use this for now, pending when user registration industry field is updated
    */
-  industry: string = "Kitchen";
+  industry: string = "Hotel";
    dummyIngredients: IngredientDTO[] = [
     {
       id: 1,

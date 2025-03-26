@@ -12,7 +12,7 @@ import {
 import { MessageService } from 'primeng/api';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 // import { MatStartDate } from '@angular/material/datepicker';
-import { filter } from 'rxjs';
+import { filter, Observable } from 'rxjs';
 // import xlsx from 'node-xlsx';
 // import * as XLSX from 'xlsx';
 // import readXlsxFile from 'read-excel-file';
@@ -20,6 +20,7 @@ import { map } from 'rxjs/operators';
 import { Workbook, Worksheet } from 'exceljs';
 import { KeyValue } from '@angular/common';
 import { ProductExcelColumns } from '../../models/enums';
+import { ImageCacheService } from '../../service/image-cache.service';
 /**
  * Responsible for showing the list of available products in `admin/pos`
  *
@@ -41,7 +42,8 @@ export class ProductsComponent implements OnInit {
    * @type {ProductData[]}
    */
   products: ProductData[] = [];
-
+  tableSections: boolean = false;
+  imageUrl: string = ''
   /**
    * The product data fetched straight from the API. DO NOT TOUCH THIS
    *
@@ -140,7 +142,8 @@ export class ProductsComponent implements OnInit {
   constructor(
     private messageService: MessageService,
     private posService: PosServiceService,
-    private http: HttpClient
+    private http: HttpClient,
+    private imageCacheService: ImageCacheService
   ) {}
 
   ngOnInit(): void {
@@ -149,6 +152,15 @@ export class ProductsComponent implements OnInit {
     this.getDiscountTypes();
   }
 
+  toggleView() {
+    this.tableSections = !this.tableSections;
+  }
+
+  getImageUrl(item: any): Observable<string> {
+    const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${item.productImages[0].imgNo}`;
+    return this.imageCacheService.getImage(remoteImageUrl);
+  }
+  
   checkForEmptyFields(obj: any): boolean {
     return Object.values(obj).some(
       (value) => typeof value === 'string' && value.trim() === ''

@@ -38,10 +38,10 @@ export class HotelCheckoutComponent implements OnInit {
   isCardPayment: boolean = false;
 
   statusColors: any = {
-    available: 'bg-green-300',
     booked: 'bg-orange-300',
     occupied: 'bg-blue-300',
     dirty: 'bg-red-300',
+    available: 'bg-green-300',
   };
 
   roomTypes: string[] = [
