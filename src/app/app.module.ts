@@ -82,7 +82,7 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
   ],
   imports: [
    
-    BrowserModule,
+    // BrowserModule,
     AppRoutingModule,
     CommonModule,
     // AppRoutingModule,
