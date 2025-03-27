@@ -1,16 +1,10 @@
 <div class="flex h-screen bg-gradient-to-b from-gray-200 to-gray-100">
   <p-toast></p-toast>
 
-  <!-- Sidebar -->
-  <aside
-    class="w-1/6 bg-gradient-to-b from-customBlueHover to-customBlue text-white p-6 shadow-lg rounded-xl flex flex-col"
-  >
-    <app-hotel-roomlist [showFilters]="true"></app-hotel-roomlist>
-  </aside>
-
   <!-- Main content area -->
   <main class="flex-1 p-8 overflow-y-auto">
     <app-hotel-roomlist
+      [showFilters]="false"
       (roomSelected)="handleRoomSelected($event)"
     ></app-hotel-roomlist>
   </main>
