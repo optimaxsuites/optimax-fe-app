@@ -71,6 +71,7 @@ import { MenubarModule } from 'primeng/menubar';
     DeliveryModalComponent,
     AllPaymentsModalComponent,
     CheckoutKitchenComponent,
+    CheckoutHeaderComponent,
     // ProductVariantModalComponent,
   ],
   imports: [
@@ -111,6 +112,7 @@ import { MenubarModule } from 'primeng/menubar';
     BadgeModule,
     MenubarModule,
   ],
+  exports: [CheckoutKitchenComponent, CheckoutHeaderComponent],
   providers: [PosCheckoutPageComponent],
 })
 export class UserModule {}

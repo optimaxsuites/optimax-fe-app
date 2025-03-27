@@ -90,8 +90,17 @@ import { MenuModule } from 'primeng/menu';
 import { IngredientComponent } from './ui/view/ingredient/ingredient/ingredient.component';
 import { AddIngredientComponent } from './ui/view/ingredient/add-ingredient/add-ingredient.component';
 import { KitchenOrderComponent } from './ui/view/kitchen-order/kitchen-order.component';
-import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
+
 import { HotelCheckoutComponent } from './ui/view/hotel-checkout/hotel-checkout.component';
+import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
+import { CardModule } from 'primeng/card';
+import { CheckoutHeaderComponent } from './ui/view/pos-checkout-page/components/checkout-header/checkout-header.component';
+import { share } from 'rxjs';
+import { HotelFormComponent } from './ui/view/hotel-form/hotel-form.component';
+import { HotelMessageComponent } from './ui/view/hotel-message/hotel-message.component';
+import { HotelRoomlistComponent } from './ui/view/hotel-roomlist/hotel-roomlist.component';
+import { HotelRoomdetailsComponent } from './ui/view/hotel-roomdetails/hotel-roomdetails.component';
+import { CheckboxModule } from 'primeng/checkbox';
 @NgModule({
   declarations: [
     AppComponent,
@@ -126,12 +135,22 @@ import { HotelCheckoutComponent } from './ui/view/hotel-checkout/hotel-checkout.
     KitchenOrderComponent,
     IngredientComponent,
     AddIngredientComponent,
-    HotelCheckoutComponent
+    HotelCheckoutComponent,
+    HotelCheckoutComponent,
+    IngredientComponent,
+    AddIngredientComponent,
+    HotelFormComponent,
+    HotelMessageComponent,
+    HotelRoomlistComponent,
+    HotelRoomdetailsComponent,
+    //CheckoutKitchenComponent,
+    //CheckoutHeaderComponent,
   ],
   imports: [
     BrowserModule,
     // UserModule,
     // AppRoutingModule,
+    CheckboxModule,
     CommonModule,
     AppRoutingModule,
     TableModule,
@@ -176,9 +195,10 @@ import { HotelCheckoutComponent } from './ui/view/hotel-checkout/hotel-checkout.
     ChartModule,
     DropdownModule,
     ChartModule,
-
+    CardModule,
     BrowserAnimationsModule,
   ],
+  exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,
