@@ -91,10 +91,10 @@ export class CashPaymentComponent implements OnInit {
     const customer = this.customers.find(c => c.phone === this.customerSearch);
     if (customer) {
       this.customerFound = customer;
-      this.paymentValues['loyalty'] = customer.loyaltyPoints || null;
+      // this.paymentValues['loyalty'] = customer.loyaltyPoints || null;
     } else {
       this.customerFound = null;
-      alert("Customer not found!");
+      console.log("Customer not found!");
     }
   }
   // selectPrice(method: string, value: number) {
