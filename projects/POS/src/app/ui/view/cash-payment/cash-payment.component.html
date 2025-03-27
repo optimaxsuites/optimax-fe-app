@@ -58,111 +58,61 @@
       <span class="text-[16px] mb-2"> Amount due </span>
       <span class="font-semibold text-[30px]">₦{{ approximateCartTotal }}</span>
        
+      <div class="flex flex-col gap-4 mt-3">
+        <div *ngFor="let mode of navigationState.cart.paymentModes" class="w-full shadow-lg px-3 py-4 rounded-xl">
+        
+          @if(mode === 'loyalty') {
+            <div class="flex justify-center items-center mb-2">
+              <p class="text-nowrap text-[16px]">{{ customerFound?.name }}</p>
+              <div class="flex items-center">
+                <input
+                  type="text"
+                  placeholder="customer's phone number"
+                  [(ngModel)]="customerSearch"
+                  class="discount-input "
+                />
+                <button (click)="findCustomer()" class="ml-2 bg-customBlue text-white px-4 py-2 rounded">Search</button>
+              </div>
+            </div>
+      
+            <!-- <div *ngIf="customerFound">
+              <p class="text-[16px]">Customer: {{ customerFound.name }}</p>
+              <p class="text-[16px]">Available Points: {{ customerFound.loyaltyPoints }}</p>
+            </div> -->
+          }
+  
+          <div class="flex justify-center items-center mb-3 w-full px-3">
+            <p class="w-72 text-[15px] text-nowrap overflow-visible">
+              {{ getPaymentLabel(mode) }}:
+            </p>
+            <div class="flex items-center">
+              <input
+                type="text"
+                placeholder="0"
+                [(ngModel)]="paymentValues[mode]"
+                class="discount-input"
+                [attr.readonly]="mode === 'loyalty' ? true : null"
+              />
+              <span class="text-5xl ml-2">₦</span>
+            </div>
+          </div>
+      
 
-
-  <div class="flex flex-col gap-3 mt-3">
-    <div *ngFor="let mode of navigationState.cart.paymentModes" class="flex justify-between items-center">
-     @if(mode == 'cash'){
-      <div class="w-full mt-20 shadow-lg px-3 py-5">
-
-      <div class="flex justify-center items-center mb-3">
-        <p class="text-nowrap text-[16px]">Cash tendered:</p>
-        <div class="flex items-center">
-          <input
-            type="text"
-            max="100"
-            placeholder="0"
-            [(ngModel)]="paymentValues.cash"
-            class="discount-input"
-          />
-          <span>₦</span>
+          <div class="border flex rounded-xl text-3xl divide-x-2 bg-customGreen/50 justify-between items-center font-bold w-full" *ngIf="mode !== 'loyalty'">
+            <span
+              class="w-full cursor-pointer text-center p-3"
+              *ngFor="let opt of getPriceOptions(mode)"
+              [class.text-white]="opt.value === paymentValues[mode]"
+              [class.rounded-xl]="opt.value === paymentValues[mode]"
+              [class.bg-customBlue]="opt.value === paymentValues[mode]"
+              (click)="paymentValues[mode] = opt.value"
+            >
+              {{ opt.label }}
+            </span>
+          </div>
         </div>
       </div>
-
-      <div
-        class="border flex rounded-xl text-3xl divide-x-2 bg-customGreen/50 justify-between items-center font-bold w-full"
-      >
-        <span
-          class="w-full cursor-pointer text-center p-3"
-          *ngFor="let opt of getPriceOptions('cash')"
-          [class.text-white]="opt.value === priceValue"
-          [class.rounded-xl]="opt.value === priceValue"
-          [class.bg-customBlue]="opt.value === priceValue"
-          (click)="paymentValues.cash = opt.value"
-          >{{ opt.label }}</span
-        >
-      </div>
-    </div>
-
-     }
-     @if(mode == 'card'){
-      <div class="w-full mt-20 shadow-lg px-3 py-5">
-
-      <div class="flex justify-center items-center mb-3">
-        <p class="text-nowrap text-[16px]">Amount Charged to card:</p>
-        <div class="flex items-center">
-          <input
-            type="text"
-            max="100"
-            placeholder="0"
-            [(ngModel)]="paymentValues.card"
-            class="discount-input"
-          />
-          <span>₦</span>
-        </div>
-      </div>
-
-      <div
-        class="border flex rounded-xl text-3xl divide-x-2 bg-customGreen/50 justify-between items-center font-bold w-full"
-      >
-        <span
-          class="w-full cursor-pointer text-center p-3"
-          *ngFor="let opt of getPriceOptions('card')"
-          [class.text-white]="opt.value === priceValue"
-          [class.rounded-xl]="opt.value === priceValue"
-          [class.bg-customBlue]="opt.value === priceValue"
-          (click)="paymentValues.card = opt.value"
-          >{{ opt.label }}</span
-        >
-      </div>
-    </div>
-
-     }
-     @if(mode == 'loyalty'){
-      <div class="w-full mt-20 shadow-lg px-3 py-5">
-
-      <div class="flex justify-center items-center mb-3">
-        <p class="text-nowrap text-[16px]">Loyalty Charge:</p>
-        <div class="flex items-center">
-          <input
-            type="text"
-            max="100"
-            placeholder="0"
-            [(ngModel)]="paymentValues.loyalty"
-            class="discount-input"
-          />
-          <span>₦</span>
-        </div>
-      </div>
-
-      <div
-        class="border flex rounded-xl text-3xl divide-x-2 bg-customGreen/50 justify-between items-center font-bold w-full"
-      >
-        <span
-          class="w-full cursor-pointer text-center p-3"
-          *ngFor="let opt of priceOptions"
-          [class.text-white]="opt.value === priceValue"
-          [class.rounded-xl]="opt.value === priceValue"
-          [class.bg-customBlue]="opt.value === priceValue"
-          (click)="priceValue = opt.value"
-          >{{ opt.label }}</span
-        >
-      </div>
-    </div>
-
-     }
-    </div>
-  </div>
+      
       <button class="btn rounded-r-xl mt-28" (click)="processCashPayment()">
         Process
       </button>

@@ -386,6 +386,13 @@ export interface IngredientDTO {
   // stockMovements: StockMovementDTO[];
 }
 
+export interface CustomerDTO {
+  id: number;
+  name: string;
+  email?: string;
+  phone: string;
+  loyaltyPoints?: number; 
+}
 interface HotelProductDTO extends ProductDTO {}
 
 // abstract class Product implements ProductDTO {
