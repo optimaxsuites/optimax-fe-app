@@ -20,6 +20,7 @@ import { RefundComponent } from './ui/view/refund/refund/refund.component';
 import { SaleComponent } from './ui/view/sales/sale/sale.component';
 import { IngredientComponent } from './ui/view/ingredient/ingredient/ingredient.component';
 import { AddIngredientComponent } from './ui/view/ingredient/add-ingredient/add-ingredient.component';
+import { HotelCheckoutComponent } from './ui/view/hotel-checkout/hotel-checkout.component';
 
 const routes: Routes = [
   {
@@ -30,6 +31,11 @@ const routes: Routes = [
   {
     path: 'admin/pos/product/:uuid',
     component: ProductsComponent,
+  },
+
+  {
+    path: 'admin/pos/hotel-checkout/:uuid',
+    component: HotelCheckoutComponent,
   },
   {
     path: 'admin/pos/inventory/:uuid',

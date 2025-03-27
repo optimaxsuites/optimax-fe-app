@@ -1,0 +1,599 @@
+<div class="hotel-form-container">
+  <!-- Booking Form Sidebar -->
+  <div
+    *ngIf="showForm"
+    class="fixed inset-0 bg-black bg-opacity-50 flex justify-end z-50 transition-opacity duration-300 ease-in-out"
+  >
+    <div
+      class="bg-white w-full lg:w-1/2 xl:w-1/3 overflow-y-auto shadow-2xl transform transition-all duration-300 ease-in-out"
+    >
+      <!-- Form Header -->
+      <div class="sticky top-0 bg-white z-10 p-6 border-b border-gray-100">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="text-2xl font-bold text-gray-800">
+              {{ formType === "booking" ? "New Booking" : "Check-in Guest" }}
+              <span *ngIf="selectedRooms.length" class="text-blue-500">
+                - {{ selectedRooms.length }} Room{{
+                  selectedRooms.length > 1 ? "s" : ""
+                }}
+              </span>
+            </h3>
+            <p class="text-gray-500 mt-1">
+              Please fill in the required details
+            </p>
+          </div>
+          <button
+            class="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 rounded-full hover:bg-gray-100"
+            (click)="closeForm()"
+            aria-label="Close form"
+          >
+            <i class="pi pi-times text-xl"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Form Content -->
+      <form
+        [formGroup]="bookingForm"
+        (ngSubmit)="onSubmit()"
+        class="space-y-4 p-6"
+      >
+        <!-- Guest Information Section -->
+        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div class="flex items-center mb-3">
+            <div class="bg-blue-500 p-2 rounded-lg mr-3">
+              <i class="pi pi-user text-white"></i>
+            </div>
+            <h4 class="text-xl font-bold text-gray-700">Guest Information</h4>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Title Field -->
+            <div class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Title</label
+              >
+              <select
+                formControlName="title"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Select Title</option>
+                <option value="Mr">Mr</option>
+                <option value="Mrs">Mrs</option>
+                <option value="Ms">Ms</option>
+                <option value="Dr">Dr</option>
+              </select>
+              <div
+                *ngIf="formErrors.title"
+                class="text-red-500 text-xs mt-1 flex items-center"
+              >
+                <i class="pi pi-exclamation-circle mr-1"></i>
+                {{ formErrors.title }}
+              </div>
+            </div>
+
+            <!-- First Name Field -->
+            <div class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >First Name</label
+              >
+              <input
+                type="text"
+                formControlName="firstName"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="John"
+              />
+              <div
+                *ngIf="formErrors.firstName"
+                class="text-red-500 text-xs mt-1 flex items-center"
+              >
+                <i class="pi pi-exclamation-circle mr-1"></i>
+                {{ formErrors.firstName }}
+              </div>
+            </div>
+
+            <!-- Last Name Field -->
+            <div class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Last Name</label
+              >
+              <input
+                type="text"
+                formControlName="lastName"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Doe"
+              />
+              <div
+                *ngIf="formErrors.lastName"
+                class="text-red-500 text-xs mt-1 flex items-center"
+              >
+                <i class="pi pi-exclamation-circle mr-1"></i>
+                {{ formErrors.lastName }}
+              </div>
+            </div>
+
+            <!-- Email Field -->
+            <div class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Email</label
+              >
+              <input
+                type="email"
+                formControlName="email"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="guest@example.com"
+              />
+              <div
+                *ngIf="formErrors.email"
+                class="text-red-500 text-xs mt-1 flex items-center"
+              >
+                <i class="pi pi-exclamation-circle mr-1"></i>
+                {{ formErrors.email }}
+              </div>
+            </div>
+
+            <!-- Phone Field -->
+            <div class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Phone</label
+              >
+              <input
+                type="tel"
+                formControlName="phone"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="+2348012345678"
+              />
+              <div
+                *ngIf="formErrors.phone"
+                class="text-red-500 text-xs mt-1 flex items-center"
+              >
+                <i class="pi pi-exclamation-circle mr-1"></i>
+                {{ formErrors.phone }}
+              </div>
+            </div>
+
+            <!-- Country Field -->
+            <div class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Country</label
+              >
+              <select
+                formControlName="country"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option *ngFor="let country of countries" [value]="country">
+                  {{ country }}
+                </option>
+              </select>
+              <div
+                *ngIf="formErrors.country"
+                class="text-red-500 text-xs mt-1 flex items-center"
+              >
+                <i class="pi pi-exclamation-circle mr-1"></i>
+                {{ formErrors.country }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selected Rooms Section -->
+        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div class="flex items-center mb-3">
+            <div class="bg-blue-500 p-2 rounded-lg mr-3">
+              <i class="pi pi-home text-white"></i>
+            </div>
+            <h4 class="text-xl font-bold text-gray-700">Selected Rooms</h4>
+          </div>
+
+          <div class="space-y-2">
+            <div
+              *ngFor="let room of selectedRooms"
+              class="p-3 bg-white rounded-lg border border-gray-200 flex justify-between items-center"
+            >
+              <div>
+                <p class="font-semibold">
+                  Room {{ room.id }} - {{ room.type }}
+                </p>
+                <p class="text-sm text-gray-600">
+                  {{ room.rate | currency : "NGN" : "symbol" : "1.0-0" }}/night
+                </p>
+              </div>
+              <div class="text-right">
+                <p class="font-semibold">
+                  {{ room.rate | currency : "NGN" : "symbol" : "1.0-0" }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Booking Details Section -->
+        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div class="flex items-center mb-3">
+            <div class="bg-blue-500 p-2 rounded-lg mr-3">
+              <i class="pi pi-calendar text-white"></i>
+            </div>
+            <h4 class="text-xl font-bold text-gray-700">Booking Details</h4>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Check-in Date Field -->
+            <div class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Check-in Date</label
+              >
+              <p-calendar
+                formControlName="checkinDate"
+                [minDate]="currentDate"
+                [showIcon]="true"
+                inputId="checkinDate"
+                dateFormat="dd/mm/yy"
+                class="w-full"
+              >
+              </p-calendar>
+              <div
+                *ngIf="formErrors.checkinDate"
+                class="text-red-500 text-xs mt-1 flex items-center"
+              >
+                <i class="pi pi-exclamation-circle mr-1"></i>
+                {{ formErrors.checkinDate }}
+              </div>
+            </div>
+
+            <!-- Check-out Date Field -->
+            <div class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Check-out Date</label
+              >
+              <p-calendar
+                formControlName="checkoutDate"
+                [minDate]="minCheckoutDate()"
+                [showIcon]="true"
+                inputId="checkoutDate"
+                dateFormat="dd/mm/yy"
+                class="w-full"
+              >
+              </p-calendar>
+              <div
+                *ngIf="formErrors.checkoutDate"
+                class="text-red-500 text-xs mt-1 flex items-center"
+              >
+                <i class="pi pi-exclamation-circle mr-1"></i>
+                {{ formErrors.checkoutDate }}
+              </div>
+            </div>
+
+            <!-- Adults Field -->
+            <div class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Adults</label
+              >
+              <input
+                type="number"
+                formControlName="adults"
+                min="1"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <div
+                *ngIf="formErrors.adults"
+                class="text-red-500 text-xs mt-1 flex items-center"
+              >
+                <i class="pi pi-exclamation-circle mr-1"></i>
+                {{ formErrors.adults }}
+              </div>
+            </div>
+
+            <!-- Children Field -->
+            <div class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Children</label
+              >
+              <input
+                type="number"
+                formControlName="children"
+                min="0"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <div
+                *ngIf="formErrors.children"
+                class="text-red-500 text-xs mt-1 flex items-center"
+              >
+                <i class="pi pi-exclamation-circle mr-1"></i>
+                {{ formErrors.children }}
+              </div>
+            </div>
+
+            <!-- Special Requests Field -->
+            <div class="form-group md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Special Requests</label
+              >
+              <textarea
+                formControlName="specialRequests"
+                rows="3"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Any special requirements..."
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Information Section -->
+        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div class="flex items-center mb-3">
+            <div class="bg-blue-500 p-2 rounded-lg mr-3">
+              <i class="pi pi-credit-card text-white"></i>
+            </div>
+            <h4 class="text-xl font-bold text-gray-700">Payment Information</h4>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Payment Method Field -->
+            <div class="form-group md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Payment Method</label
+              >
+              <select
+                formControlName="paymentMethod"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Select Payment Method</option>
+                <option value="cash">Cash</option>
+                <option value="creditCard">Credit Card</option>
+                <option value="debitCard">Debit Card</option>
+                <option value="bankTransfer">Bank Transfer</option>
+              </select>
+              <div
+                *ngIf="formErrors.paymentMethod"
+                class="text-red-500 text-xs mt-1 flex items-center"
+              >
+                <i class="pi pi-exclamation-circle mr-1"></i>
+                {{ formErrors.paymentMethod }}
+              </div>
+            </div>
+
+            <!-- Card Fields (Conditional) -->
+            <div *ngIf="isCardPayment" class="form-group md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Card Number</label
+              >
+              <input
+                type="text"
+                formControlName="cardNumber"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="1234 5678 9012 3456"
+              />
+              <div
+                *ngIf="formErrors.cardNumber"
+                class="text-red-500 text-xs mt-1 flex items-center"
+              >
+                <i class="pi pi-exclamation-circle mr-1"></i>
+                {{ formErrors.cardNumber }}
+              </div>
+            </div>
+
+            <div *ngIf="isCardPayment" class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Expiry Date</label
+              >
+              <input
+                type="text"
+                formControlName="cardExpiry"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="MM/YY"
+              />
+              <div
+                *ngIf="formErrors.cardExpiry"
+                class="text-red-500 text-xs mt-1 flex items-center"
+              >
+                <i class="pi pi-exclamation-circle mr-1"></i>
+                {{ formErrors.cardExpiry }}
+              </div>
+            </div>
+
+            <div *ngIf="isCardPayment" class="form-group">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >CVV</label
+              >
+              <input
+                type="text"
+                formControlName="cardCvv"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="123"
+              />
+              <div
+                *ngIf="formErrors.cardCvv"
+                class="text-red-500 text-xs mt-1 flex items-center"
+              >
+                <i class="pi pi-exclamation-circle mr-1"></i>
+                {{ formErrors.cardCvv }}
+              </div>
+            </div>
+
+            <!-- Deposit Amount Field -->
+            <div class="form-group md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-1"
+                >Deposit Amount (₦)</label
+              >
+              <input
+                type="number"
+                formControlName="depositAmount"
+                min="0"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter amount"
+              />
+              <div
+                *ngIf="formErrors.depositAmount"
+                class="text-red-500 text-xs mt-1 flex items-center"
+              >
+                <i class="pi pi-exclamation-circle mr-1"></i>
+                {{ formErrors.depositAmount }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Terms Acceptance -->
+        <div class="form-group">
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              formControlName="termsAccepted"
+              id="termsAccepted"
+              class="w-4 h-4 mr-2"
+            />
+            <label for="termsAccepted" class="text-sm"
+              >I accept the terms and conditions</label
+            >
+          </div>
+          <div
+            *ngIf="formErrors.termsAccepted"
+            class="text-red-500 text-xs mt-1 flex items-center"
+          >
+            <i class="pi pi-exclamation-circle mr-1"></i>
+            {{ formErrors.termsAccepted }}
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-3 pt-4">
+          <button
+            type="button"
+            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition"
+            (click)="closeForm()"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition"
+          >
+            Confirm Booking
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Booking Confirmation Modal -->
+  <div
+    *ngIf="bookingSummary"
+    class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
+  >
+    <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold text-gray-800">Booking Confirmation</h3>
+        <button
+          class="text-gray-500 hover:text-gray-800"
+          (click)="editBooking()"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <!-- Room Info -->
+        <div class="bg-blue-50 p-4 rounded-lg">
+          <div class="flex items-center">
+            <div class="bg-blue-100 p-2 rounded-full mr-3">
+              <i class="pi pi-home text-blue-500"></i>
+            </div>
+            <div>
+              <h4 class="font-bold">
+                Rooms {{ bookingSummary.roomIds.join(", ") }}
+              </h4>
+              <p class="text-sm text-gray-600">
+                {{ bookingSummary.roomTypes.join(", ") }}
+              </p>
+              <p class="text-sm mt-1">
+                {{ bookingSummary.checkinDate | date : "mediumDate" }} -
+                {{ bookingSummary.checkoutDate | date : "mediumDate" }}
+                ({{ nights }} night{{ nights > 1 ? "s" : "" }})
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guest Info -->
+        <div class="border-b pb-4">
+          <h4 class="font-semibold mb-2">Guest Information</h4>
+          <p>
+            {{ bookingSummary.title }} {{ bookingSummary.firstName }}
+            {{ bookingSummary.lastName }}
+          </p>
+          <p class="text-sm text-gray-600">{{ bookingSummary.email }}</p>
+          <p class="text-sm text-gray-600">{{ bookingSummary.phone }}</p>
+        </div>
+
+        <!-- Payment Summary -->
+        <div>
+          <h4 class="font-semibold mb-2">Payment Summary</h4>
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <span>Room Rate:</span>
+              <span>{{
+                bookingSummary.roomRates | currency : "NGN" : "symbol" : "1.0-0"
+              }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Subtotal:</span>
+              <span>{{
+                bookingSummary.subtotal | currency : "NGN" : "symbol" : "1.0-0"
+              }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>VAT (7.5%):</span>
+              <span>{{
+                bookingSummary.taxes | currency : "NGN" : "symbol" : "1.0-0"
+              }}</span>
+            </div>
+            <div class="flex justify-between font-bold border-t pt-2 mt-2">
+              <span>Total:</span>
+              <span>{{
+                bookingSummary.total | currency : "NGN" : "symbol" : "1.0-0"
+              }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Deposit Paid:</span>
+              <span>{{
+                bookingSummary.depositAmount
+                  | currency : "NGN" : "symbol" : "1.0-0"
+              }}</span>
+            </div>
+            <div
+              class="flex justify-between font-bold text-lg"
+              [ngClass]="{
+                'text-green-600': bookingSummary.balanceAmount === 0,
+                'text-orange-600': bookingSummary.balanceAmount > 0
+              }"
+            >
+              <span>Balance:</span>
+              <span>{{
+                bookingSummary.balanceAmount
+                  | currency : "NGN" : "symbol" : "1.0-0"
+              }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-end space-x-3 pt-4">
+          <button
+            type="button"
+            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition"
+            (click)="editBooking()"
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition"
+            (click)="confirmBooking()"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,28 @@
+<p-toast></p-toast>
+<div class="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
+  <h2 class="text-2xl font-bold mb-4">Checkout Summary</h2>
+
+  <div class="mb-6">
+    <h3 class="text-lg font-semibold mb-2">Room Charges</h3>
+    <div class="space-y-2">
+      <div *ngFor="let item of billItems" class="flex justify-between">
+        <span>{{ item.name }} ({{ item.quantity }})</span>
+        <span>{{ item.price * item.quantity | currency }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="border-t pt-4">
+    <div class="flex justify-between font-bold text-lg">
+      <span>Total:</span>
+      <span>{{ totalAmount | currency }}</span>
+    </div>
+  </div>
+
+  <button
+    (click)="confirmCheckout()"
+    class="mt-6 w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
+  >
+    Confirm Checkout
+  </button>
+</div>
