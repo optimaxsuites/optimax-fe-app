@@ -15,10 +15,10 @@ export class AllPaymentsModalComponent {
 
 
   paymentOptions = [
-    { label: 'Credit/Debit Card', value: 'card' },
-    { label: 'Mobile Payment', value: 'mobile' },
-    { label: 'Cash', value: 'cash' },
-    { label: 'Loyalty', value: 'loyalty' }
+    { label: 'Credit/Debit Card', value: 'card', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTFkT4bdkUrztzXha598tvVXUllrxOXaeRGVw&s' },
+    { label: 'Mobile Payment', value: 'mobile', image: 'https://png.pngtree.com/element_our/png/20181114/mobile-banking-flat-icon-png_238400.jpg'},
+    { label: 'Cash', value: 'cash', image: 'https://cdn-icons-png.flaticon.com/512/1087/1087099.png' },
+    { label: 'Loyalty', value: 'loyalty', image: 'https://cdn-icons-png.flaticon.com/512/1440/1440505.png' }
 
   ];
   closeModal() {
