@@ -181,3 +181,21 @@ $z-index: 1000;
   display: flex;
   justify-content: center;
 }
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  p{
+    @apply text-base text-gray-600;
+  }
+@apply gap-5;
+}
+
+.card {
+  @apply p-4 rounded-xl
+}
+
+::ng-deep .p-paginator{
+  @apply w-full;
+}
+

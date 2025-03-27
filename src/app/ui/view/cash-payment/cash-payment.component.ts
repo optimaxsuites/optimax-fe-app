@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { Cart, NavigationState } from '../../models/interface';
+import { Cart, CustomerDTO, NavigationState } from '../../models/interface';
 import { MessageService } from 'primeng/api';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
 import { RandomTokenService } from '../../sharedComponent/service/random-token/random-token.service';
@@ -23,6 +23,18 @@ export class CashPaymentComponent implements OnInit {
   changeOfferedModal: boolean = false;
   receiptID: string = Math.floor(100000 + Math.random() * 900000).toString();
   token: string = ''
+  paymentValues: { [key: string]: number|null } = {
+    cash: null,
+    card: null,
+    loyalty: null,
+  };
+  customers: CustomerDTO[] = [
+    { id: 1, name: "John Doe", phone: "08012345678", loyaltyPoints: 500 },
+    { id: 2, name: "Jane Smith", phone: "08087654321", loyaltyPoints: 300 },
+  ];
+  customerSearch: string = "";  
+  customerFound: CustomerDTO | null = null
+  
   constructor(
     private router: Router,
     public navigationLink: NavigationLinksService,
@@ -48,10 +60,52 @@ export class CashPaymentComponent implements OnInit {
     this.initializePriceOptions();
     this.token = this.randomTokenService.getRandomToken()
   }
+  get totalPaid() {
+    return (this.paymentValues['cash'] ?? 0) + 
+         (this.paymentValues['card'] ?? 0) + 
+         (this.paymentValues['loyalty'] ?? 0);
+
+  }
+  
+  get balanceLeft() {
+    return Math.max(0, this.cart.total - this.totalPaid);
+  }
+  
+  getPriceOptions(method: string) {
+    return [
+      { label: 'Balance', value: this.balanceLeft },
+      { label: '100', value: 100 },
+      { label: '200', value: 200 },
+    ];
+  }
+  getPaymentLabel(mode: string): string {
+    const labels:{ [key: string]: string } = {
+      cash: "Cash Tendered",
+      card: "Amount Charged to Card",
+      loyalty: "Loyalty Charge",
+    };
+    return labels[mode] || "Payment Amount";
+  }
+
+  findCustomer() {
+    const customer = this.customers.find(c => c.phone === this.customerSearch);
+    if (customer) {
+      this.customerFound = customer;
+      // this.paymentValues['loyalty'] = customer.loyaltyPoints || null;
+    } else {
+      this.customerFound = null;
+      console.log("Customer not found!");
+    }
+  }
+  // selectPrice(method: string, value: number) {
+  //   this.priceValues[method] = value;
+  //   this.paymentValues[method] = value;
+  // }
+  
 
   initializePriceOptions() {
     this.priceOptions = [
-      { label: 'Exact', value: this.cart?.total || 0 },
+      { label: 'Exact', value: this.balanceLeft },
       { label: '100', value: 100 },
       { label: '200', value: 200 },
     ];

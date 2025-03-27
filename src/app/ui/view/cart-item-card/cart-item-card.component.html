@@ -166,7 +166,7 @@
 
     <div class="flex gap-4 items-center ">
       <span class="font-semibold">
-        ₦{{ (variant.selectedQuantity ?? 0) * variant.price }}
+        ₦{{ (variant.selectedQuantity ?? 0) * (variant.price || 0) }}
       </span>
       
 

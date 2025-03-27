@@ -58,10 +58,11 @@ const routes: Routes = [
     path: 'user/checkout/kitchen/:uuid',
     component: CheckoutKitchenComponent,
   },
-  // {
-  //   path: 'user/checkout/Hotel/:uuid',
-  //   component: HotelCheckoutComponent,
-  // },
+  {
+    path: 'user/checkout/hotel/:uuid',
+    component: HotelCheckoutComponent,
+  },
+
 ];
 
 @NgModule({

@@ -15,11 +15,18 @@ import {
 import {
   DiscountDTO,
   HistoryData,
+  IngredientDTO,
   ProductData,
   ProductJSONFormat,
   VariantDTO,
 } from '../../../models/interface';
 import { IndustryDataService } from '../../../service/industry-data.service';
+
+interface SelectedIngredientDTO {
+  ingredient: IngredientDTO;  
+  quantity: number;  
+}
+
 
 @Component({
   selector: 'app-add-product',
@@ -85,6 +92,57 @@ export class AddProductComponent {
   isEditing: boolean = false;
   editingIndex: number | null = null;
 
+
+  /**
+   * We use this for now, pending when user registration industry field is updated
+   */
+  industry: string = "Hotel";
+   dummyIngredients: IngredientDTO[] = [
+    {
+      id: 1,
+      name: "Flour",
+      code: "FLR001",
+      sku: "SKU-FLR-001",
+      measurementUnit: "kg", // Kilogram
+      purchasePrice: 500,
+      currentStock: 100,
+      reorderThreshold: 20,
+    },
+    {
+      id: 2,
+      name: "Sugar",
+      code: "SGR001",
+      sku: "SKU-SGR-001",
+      measurementUnit: "g", // Gram
+      purchasePrice: 200,
+      currentStock: 5000,
+      reorderThreshold: 500,
+    },
+    {
+      id: 3,
+      name: "Eggs",
+      code: "EGG001",
+      sku: "SKU-EGG-001",
+      measurementUnit: "pcs", // Pieces
+      
+      purchasePrice: 50,
+      currentStock: 200,
+      reorderThreshold: 30,
+    },
+    {
+      id: 4,
+      name: "Milk",
+      code: "MLK001",
+      sku: "SKU-MLK-001",
+      measurementUnit: "L", // Liters
+  
+      purchasePrice: 400,
+      currentStock: 50,
+      reorderThreshold: 10,
+    },
+  ];
+  selectedIngredients: SelectedIngredientDTO[] = [];
+
   /**
    * This will be an object indexed with `this.selectedBranchIndex` where each value would be an array of variants for each branch.
    */
@@ -96,11 +154,12 @@ export class AddProductComponent {
   private readonly defaultVariant: VariantDTO = {
     id: 0,
     name: '',
-    price: 1,
-    quantity: 1,
+    // price: 1,
+    // quantity: 1,
     color: ['Other'],
     size: 'Regular',
     sku: '',
+    branches: []
   };
   protected readonly variantValues = {
     size: [
@@ -225,6 +284,8 @@ export class AddProductComponent {
       partNumber: ['', Validators.required],
       tax: [, [Validators.required, Validators.min(0)]],
       branch: ['', Validators.required],
+      selectedBranch: [null, Validators.required], 
+      branches: this.fb.array([]),
       variant: [''],
       discount: [''],
       category: [''],
@@ -235,6 +296,8 @@ export class AddProductComponent {
       discountName: [''],
       variants: [this.variants],
     };
+
+   
 
     if (!this.fallBackToOldForm)
       fbGroup['branches'] = controlGroupForFormBranches;
@@ -345,7 +408,118 @@ export class AddProductComponent {
         ?.setValue(this.activeItem?.discount?.value);
       this.productForm.get('image')?.setValue(this.activeItem?.productImages);
     }
+
+    this.productForm.get('selectedBranch')?.valueChanges.subscribe(() => {
+      this.updateBranches();
+    });
   }
+
+  get branchess(): FormArray<FormGroup>  {
+    return this.productForm.get('branches') as FormArray<FormGroup> ;
+  }
+
+  get selecteddBranch() {
+    return this.productForm.get('selectedBranch')?.value;
+  }
+
+  getVariants(branch: AbstractControl) {
+    return branch.get('variants') as FormArray<FormGroup>;
+  }
+
+  addIngredient(selectedIngredient: IngredientDTO, quantity: number) {
+    const ingredientExists = this.selectedIngredients.find(
+        (item) => item.ingredient.id === selectedIngredient.id
+    );
+
+    if (!ingredientExists) {
+        this.selectedIngredients.push({
+            ingredient: selectedIngredient,
+            quantity: quantity,
+        });
+    } else {
+        console.log("Ingredient already added!");
+    }
+}
+
+onIngredientSelect(selectedItems: any[]) {
+  console.log(selectedItems)
+  this.selectedIngredients = selectedItems.map(ingredient => ({
+    ingredient: ingredient,
+    quantity: 1, // Default quantity
+  }));
+
+  console.log(this.selectedIngredients)
+
+}
+removeIngredient(index: number) {
+  this.selectedIngredients.splice(index, 1);
+}
+  
+  updateBranches() {
+    const branchArray = this.branchess;
+    branchArray.clear(); // Reset the form array before updating
+  
+    this.selecteddBranch.forEach((branch: string) => {
+      branchArray.push(
+        this.fb.group({
+          branchName: [branch],
+          sellingPrice: [0, Validators.required],
+          quantity: [0, Validators.required],
+          tax: [0, Validators.required],
+          discount: [null],
+          variants: this.fb.array([]),
+        })
+      );
+    });
+  }
+
+  removeBranch(index: number) {
+    const branchToRemove = this.branchess.at(index).get('branchName')?.value;
+    this.branchess.removeAt(index);
+    const updatedBranches = this.productForm.controls['selectedBranch'].value.filter(
+      (branch: string) => branch !== branchToRemove
+    );
+    this.productForm.controls['selectedBranch'].setValue(updatedBranches);
+    this.variants.forEach(variant => {
+      variant.branches = variant.branches?.filter(branch => branch !== branchToRemove);
+    });
+       this.variants = this.variants.filter(variant => variant.branches && variant.branches.length > 0);
+
+  }
+  removeVariant(branch: AbstractControl, variantIndex: number) {
+    const variantsArray = branch.get('variants') as FormArray;
+    const variantToRemove = variantsArray.at(variantIndex).get('variantName')?.value;
+    const branchName = branch.get('branchName')?.value;
+    variantsArray.removeAt(variantIndex);
+    this.variants.forEach(variant => {
+      if (variant.name === variantToRemove) {
+        variant.branches = variant.branches?.filter(branch => branch !== branchName);
+      }
+    });
+       this.variants = this.variants.filter(variant => variant.branches && variant.branches.length > 0);
+
+  }
+  
+  
+  getPricingVariants(branchIndex: number): FormArray {
+    return this.branchess.at(branchIndex).get('pricingVariants') as FormArray;
+  }
+
+  newPricingVariant(): FormGroup {
+    return this.fb.group({
+      variantName: ['', Validators.required],
+      price: ['', Validators.required]
+    });
+  }
+
+  addPricingVariant(branchIndex: number) {
+    this.getPricingVariants(branchIndex).push(this.newPricingVariant());
+  }
+
+  removePricingVariant(branchIndex: number, variantIndex: number) {
+    this.getPricingVariants(branchIndex).removeAt(variantIndex);
+  }
+
 
   isFieldInvalid(fieldName: string) {
     const field = this.productForm.get(fieldName);
@@ -613,7 +787,24 @@ export class AddProductComponent {
     } else {
       this.variants.push(variant);
     }
+    const branchArray = this.branchess.controls;
 
+    variant.branches?.forEach((branchName) => {
+      const targetBranch = branchArray.find(
+        (branch) => branch.get('branchName')?.value === branchName
+      );
+  
+      if (targetBranch) {
+        const variantsArray = targetBranch.get('variants') as FormArray;
+        variantsArray.push(
+          this.fb.group({
+            variantName: [variant.name, Validators.required],
+            sellingPrice: [variant.price, Validators.required],
+            quantity: [variant.quantity, Validators.required],
+          })
+        );
+      }
+    });
     this.newVariant = this.resetVariantData();
 
     this.openAddVariant = false;
@@ -627,12 +818,12 @@ export class AddProductComponent {
     this.editingIndex = index;
 
     const selectedVariant = this.variants[index];
-    this.newVariant = {
-      ...selectedVariant,
-      color: selectedVariant.color.join(
-        ', '
-      ) as unknown as VariantDTO['color'][0],
-    };
+    // this.newVariant = {
+    //   ...selectedVariant,
+    //   color: selectedVariant.color.join(
+    //     ', '
+    //   ) as unknown as VariantDTO['color'][0],
+    // };
 
     this.openAddVariant = true;
   }
@@ -1021,7 +1212,7 @@ export class AddProductComponent {
     return (
       Object.keys(this.defaultVariant) as (keyof typeof this.defaultVariant)[]
     )
-      .filter((key) => key != 'id')
+      .filter((key) => key != 'id' && key != 'branches')
       .map((key) => {
         if (key == 'sku') return key.toLocaleUpperCase();
         // "size" becomes "Size"
@@ -1033,11 +1224,13 @@ export class AddProductComponent {
     return {
       id: this.defaultVariant.id,
       name: this.defaultVariant.name,
-      price: this.defaultVariant.price,
-      quantity: this.defaultVariant.quantity,
+      // price: this.defaultVariant.price,
+      // quantity: this.defaultVariant.quantity,
       color: this.defaultVariant.color[0],
       size: this.defaultVariant.size,
       sku: this.defaultVariant.sku,
+      branches: this.defaultVariant.branches,
+
     };
   }
 

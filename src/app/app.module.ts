@@ -90,6 +90,13 @@ import { MenuModule } from 'primeng/menu';
 import { IngredientComponent } from './ui/view/ingredient/ingredient/ingredient.component';
 import { AddIngredientComponent } from './ui/view/ingredient/add-ingredient/add-ingredient.component';
 import { KitchenOrderComponent } from './ui/view/kitchen-order/kitchen-order.component';
+// import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
+
+import { InputNumberModule } from 'primeng/inputnumber';
+
+import { SkeletonModule } from 'primeng/skeleton';
+import { PaginatorModule} from 'primeng/paginator'
+
 
 import { HotelCheckoutComponent } from './ui/view/hotel-checkout/hotel-checkout.component';
 import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
@@ -133,6 +140,9 @@ import { CheckboxModule } from 'primeng/checkbox';
     SaleComponent,
     SaleSummariesComponent,
     KitchenOrderComponent,
+    // CheckoutKitchenComponent,
+    IngredientComponent,
+    AddIngredientComponent,
     IngredientComponent,
     AddIngredientComponent,
     HotelCheckoutComponent,
@@ -148,8 +158,8 @@ import { CheckboxModule } from 'primeng/checkbox';
   ],
   imports: [
     BrowserModule,
-    // UserModule,
-    // AppRoutingModule,
+    UserModule,
+    AppRoutingModule,
     CheckboxModule,
     CommonModule,
     AppRoutingModule,
@@ -188,6 +198,7 @@ import { CheckboxModule } from 'primeng/checkbox';
     NavTabComponent,
     HttpClientModule,
     NgApexchartsModule,
+    InputNumberModule,
     CalendarModule,
     MenuModule,
     InputGroupModule,
@@ -196,7 +207,9 @@ import { CheckboxModule } from 'primeng/checkbox';
     DropdownModule,
     ChartModule,
     CardModule,
-    BrowserAnimationsModule,
+    SkeletonModule,
+    PaginatorModule
+    // BrowserAnimationsModule,
   ],
   exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],
   providers: [

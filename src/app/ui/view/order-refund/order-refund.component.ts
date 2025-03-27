@@ -19,91 +19,84 @@ export class OrderRefundComponent {
     refundMeans: '',
     refundReason: '',
     cashierComment: '',
-    emailAddress: '',
-    phoneNumber: '',
-    status: 'awaiting',
-    timestamp: '',
+    emailAddress: "",
+    phoneNumber: "",
+    status: "awaiting",
+    timestamp:"",
     selectedItems: [],
-    bankName: '',
+    bankName: ''
   };
 
   refundDetails: any = {};
-  selectedRefundMethod = null;
+  selectedRefundMethod = null
   refundMethods = [
     { label: 'Bank Transfer', value: 'bank' },
     { label: 'Cash', value: 'cash' },
     { label: 'Royalty Top-Up', value: 'royalty' },
-    { label: 'Exchange', value: 'exchange' },
+    { label: 'Exchange', value: 'exchange' }
   ];
   scannedReceipt: string = '';
-
+  
   updateFormFields(event: any) {
-    this.selectedRefundMethod = event.value;
+    this.selectedRefundMethod = event.value
 
     this.refundDetails = {};
   }
-  @HostListener('window:keydown', ['$event'])
-  handleKeyDown(event: KeyboardEvent) {
-    if (event.ctrlKey || event.altKey || event.metaKey) {
-      return;
-    }
+  //  @HostListener('window:keydown', ['$event'])
+  // handleKeyDown(event: KeyboardEvent) {
+  //   if (event.ctrlKey || event.altKey || event.metaKey) {
+  //     return; 
+  //   }
 
-    if (event.key === 'Enter') {
-      if (this.refundData.orderId.trim() !== '') {
-        this.validateReceipt();
-      }
-      event.preventDefault();
-      return;
-    }
+  //   if (event.key === 'Enter') {
+  //     if (this.refundData.orderId.trim() !== '') {
+  //       this.validateReceipt();
+  //     }
+  //     event.preventDefault(); 
+  //     return;
+  //   }
 
-    if (event.key.length === 1) {
-      this.refundData.orderId += event.key;
-    }
+  //   if (event.key.length === 1) {
+  //     this.refundData.orderId += event.key;
+  //   }
 
-    console.log('Current order ID:', this.refundData.orderId);
-  }
+  //   console.log('Current order ID:', this.refundData.orderId);
+  // }
 
-  requests: Refund[] = [];
+
+  requests: Refund[] = []
   orderItems: Order[] = [];
-  reloadPage: boolean = false;
+  reloadPage: boolean = false; 
 
   constructor(
-    private router: Router,
-    public navigationLink: NavigationLinksService,
-    private messageService: MessageService,
-    private registerService: RegisterService
-  ) {}
+    private router: Router, 
+   public navigationLink: NavigationLinksService,
+   private messageService: MessageService,  private registerService: RegisterService
+     ){}
 
-  ngOnInit() {
-    this.loadrefundRequests();
-    this.sortRequestByTimestamp();
-  }
-
-  validateReceipt() {
-    this.fetchOrderItems();
-
-    if (this.orderItems.length > 0 && !this.requestForm) {
-      this.requestForm = true;
+ 
+  
+    validateReceipt(){
+      this.fetchOrderItems();
+     
+      if (this.orderItems.length > 0 && !this.requestForm) {
+this.requestForm = true
+      }
     }
-  }
-  fetchOrderItems() {
-    const savedItems = JSON.parse(localStorage.getItem('savedItems') || '[]');
-    const order = savedItems.find(
-      (item: any) => item.id === this.refundData.orderId
-    );
+    fetchOrderItems() {
+      const savedItems = JSON.parse(localStorage.getItem('savedItems') || '[]');
+      const order = savedItems.find((item: any) => item.id === this.refundData.orderId);
+    
+      if (!order) {
+        this.orderItems = [];
+        this.messageService.add({ severity: 'warn', summary: 'Error', detail: 'Order with order id does not exist', key: 'tl', life: 3000 });
+        return;
+      }
 
-    if (!order) {
-      this.orderItems = [];
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Error',
-        detail: 'Order with order id does not exist',
-        key: 'tl',
-        life: 3000,
-      });
-      return;
-    }
-
+    console.log(order)
+      this.orderItems = order.cart; 
+      this.refundData.timestamp = order.timestamp
+    
     if (order.state === 'Open') {
       this.messageService.add({
         severity: 'warn',
@@ -208,3 +201,5 @@ export class OrderRefundComponent {
     this.registerService.triggerCloseRegister();
   }
 }
+
+

@@ -24,6 +24,8 @@ export interface ProductJSONFormat {
   variants: VariantDTO[];
 }
 
+
+
 /**
  * There's some extra data we use with each product that wouldn't fit directly with the fetched data interface, `ProductJSONFormat`
  */
@@ -87,11 +89,12 @@ export interface ProductImageDTO {
 export interface VariantDTO {
   id: number;
   name: string;
-  price: number;
-  quantity: number;
+  price?: number;
+  quantity?: number;
   sku: string;
   variantType?: number;
   selectedQuantity?: number;
+  branches?: BranchDTO[];
 
   /**
    * Might revert this type to a regular `string`
@@ -202,6 +205,7 @@ export interface Order {
 }
 
 export interface Cart {
+paymentModes: any;
   changeOffered: any;
   paymentMethod: any;
   state: any;
@@ -368,20 +372,27 @@ interface RestaurantProductDTO extends ProductDTO {
   ingredients: IngredientDTO[];
 }
 
-interface IngredientDTO {
+export interface IngredientDTO {
   id: number;
   name: string;
   code: string;
-  description: string;
-  weight: number;
-  createdBy: string;
-  partNumber: string;
-  branches: BranchDTO[];
-  price: number;
-  quantity: number;
-  image: File;
+  sku: string;
+  measurementUnit?: string;
+  supplier?: SupplierDTO;
+  branches?: BranchDTO[]; 
+  purchasePrice: number;
+  currentStock: number; 
+  reorderThreshold?: number; 
+  // stockMovements: StockMovementDTO[];
 }
 
+export interface CustomerDTO {
+  id: number;
+  name: string;
+  email?: string;
+  phone: string;
+  loyaltyPoints?: number; 
+}
 interface HotelProductDTO extends ProductDTO {}
 
 // abstract class Product implements ProductDTO {

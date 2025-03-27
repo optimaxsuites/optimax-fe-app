@@ -52,7 +52,7 @@
   <div class="main-content">
     <!-- LEFT GRID of TABLE CARDS -->
     <div class="grid-area">
-      @for (item of displayedTableStatuses; track $index) {
+      @for (item of displayedTableStatuses(); track $index) {
       <div
         class="table-card"
         [ngClass]="{
@@ -87,7 +87,7 @@
       [collapsed]="false"
     >
       @switch (mode) { @case ("chef") {
-      <div class="details-body">
+      <div class="details-body" style="font-size: 1.7rem">
         <!-- Replace with dynamic data as needed -->
         <div class="order-item">
           <span class="item-name">Jollof Rice</span>
@@ -116,7 +116,7 @@
               ? 'Start Preparation'
               : selectedOrder?.status == 'Processing'
               ? 'Completed'
-              : 'Quit'
+              : 'Close'
           "
           icon="pi pi-check"
           class="p-button-success bg-green-100"
@@ -243,6 +243,7 @@
             label="Paid"
             class="p-button-success flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200"
             icon="pi pi-check"
+            (click)="isReceiptModalOpen = true"
           ></button>
         </div>
       </div>
@@ -252,3 +253,92 @@
     >}
   </div>
 </div>
+
+<!-- Reciept Modal -->
+@if (isReceiptModalOpen) {
+<p-dialog
+  header="Payment Receipt"
+  [(visible)]="isReceiptModalOpen"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  [baseZIndex]="10000"
+  appendTo="body"
+  class="receipt-dialog"
+>
+  <!-- Restaurant Name and Basic Info -->
+  <div class="p-4 text-center border-b border-gray-300">
+    <h2 class="text-2xl font-bold">Dammy Wine & Dine</h2>
+    <div class="mt-2 space-y-1">
+      <div>Date & Time: {{ "13:10" }}</div>
+      <div>Cashier Name: {{ "Dave" }}</div>
+      <div>Receipt ID: {{ "ijcasd9j9" }}</div>
+    </div>
+  </div>
+
+  <!-- Items Table -->
+  <div class="p-4">
+    <div class="overflow-x-auto">
+      <p-table [value]="data" class="w-full border-gray-300">
+        <!-- Table Header -->
+        <ng-template pTemplate="header">
+          <tr class="bg-gray-100">
+            <th class="p-2">Product</th>
+            <th class="p-2">Qty</th>
+            <th class="p-2">Rate</th>
+            <th class="p-2">Amount</th>
+          </tr>
+        </ng-template>
+
+        <!-- Table Body -->
+        <ng-template pTemplate="body" let-rowData>
+          <tr>
+            <td class="p-2 border-b border-gray-200">
+              {{ rowData.item }}
+            </td>
+            <td class="p-2 border-b border-gray-200">
+              {{ rowData.qty }}
+            </td>
+            <td class="p-2 border-b border-gray-200">
+              {{ rowData.rate }}
+            </td>
+            <td class="p-2 border-b border-gray-200">
+              {{ rowData.amount }}
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- Totals Section -->
+    <div class="mt-4 space-y-2">
+      <div class="flex justify-between border-t pt-2">
+        <span>Subtotal</span>
+        <span>{{ 8000 | currency : "NGN" : "symbol" : "1.0-0" }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span>Vat</span>
+        <span>{{ 600 | currency : "NGN" : "symbol" : "1.0-0" }}</span>
+      </div>
+      <div class="flex justify-between border-t pt-2 font-bold">
+        <span>Total</span>
+        <span>{{ 8600 | currency : "NGN" : "symbol" : "1.0-0" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print Button -->
+  <div class="flex justify-center p-4 border-t border-gray-300">
+    <!-- <button
+      pButton
+      label="Print"
+      class="p-button-success px-4 py-2"
+      (click)="printReceipt()"
+    ></button> -->
+    <button
+      pButton
+      label="Print"
+      class="p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200"
+    ></button>
+  </div>
+</p-dialog>
+}

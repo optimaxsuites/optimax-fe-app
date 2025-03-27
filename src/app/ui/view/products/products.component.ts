@@ -12,7 +12,7 @@ import {
 import { MessageService } from 'primeng/api';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 // import { MatStartDate } from '@angular/material/datepicker';
-import { filter } from 'rxjs';
+import { filter, Observable } from 'rxjs';
 // import xlsx from 'node-xlsx';
 // import * as XLSX from 'xlsx';
 // import readXlsxFile from 'read-excel-file';
@@ -20,6 +20,7 @@ import { map } from 'rxjs/operators';
 import { Workbook, Worksheet } from 'exceljs';
 import { KeyValue } from '@angular/common';
 import { ProductExcelColumns } from '../../models/enums';
+import { ImageCacheService } from '../../service/image-cache.service';
 /**
  * Responsible for showing the list of available products in `admin/pos`
  *
@@ -41,7 +42,8 @@ export class ProductsComponent implements OnInit {
    * @type {ProductData[]}
    */
   products: ProductData[] = [];
-
+  tableSections: boolean = false;
+  imageUrl: string = ''
   /**
    * The product data fetched straight from the API. DO NOT TOUCH THIS
    *
@@ -51,7 +53,7 @@ export class ProductsComponent implements OnInit {
   viewProduct: boolean = false;
   addProduct: boolean = false;
   activeItem: any = {};
-
+  isLoading: boolean = true
   /**
    * This stored the ids of any items in the table selected by their checkbox
    *
@@ -137,10 +139,17 @@ export class ProductsComponent implements OnInit {
     b: KeyValue<string, string>
   ): number => 0;
 
+
+  //paginator
+
+  currentPage = 0;
+rowsPerPage = 15;
+
   constructor(
     private messageService: MessageService,
     private posService: PosServiceService,
-    private http: HttpClient
+    private http: HttpClient,
+    private imageCacheService: ImageCacheService
   ) {}
 
   ngOnInit(): void {
@@ -149,6 +158,26 @@ export class ProductsComponent implements OnInit {
     this.getDiscountTypes();
   }
 
+  toggleView() {
+    this.tableSections = !this.tableSections;
+  }
+
+  getImageUrl(item: any): Observable<string> {
+    const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${item.productImages[0].imgNo}`;
+    return this.imageCacheService.getImage(remoteImageUrl);
+  }
+
+
+get paginatedProducts() {
+  const startIndex = this.currentPage * this.rowsPerPage;
+  return this.products.slice(startIndex, startIndex + this.rowsPerPage);
+}
+
+onPageChange(event: any) {
+  this.currentPage = event.page;
+  this.rowsPerPage = event.rows;
+}
+  
   checkForEmptyFields(obj: any): boolean {
     return Object.values(obj).some(
       (value) => typeof value === 'string' && value.trim() === ''
@@ -178,8 +207,10 @@ export class ProductsComponent implements OnInit {
           return dateB.getTime() - dateA.getTime();
         });
         this.products = [...this.originalProducts];
+        this.isLoading = false;
       } else {
         console.log('error loading data');
+        this.isLoading = false;
       }
     });
   }

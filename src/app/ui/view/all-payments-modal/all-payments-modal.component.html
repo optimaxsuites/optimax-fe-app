@@ -1,41 +1,28 @@
 @if(isModalOpen){
-<div
-  class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50"
->
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-96">
-    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-      Payment Options
-    </h2>
-    <p class="text-gray-700 dark:text-gray-300 mt-2">
-      Choose your preferred payment method.
-    </p>
 
-    <div class="mt-4 space-y-3">
-      <button
-        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded"
-      >
-        Credit/Debit Card
-      </button>
-      <button
-        class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded"
-      >
-        Mobile Payment
-      </button>
-      <button
-        class="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded"
-      >
-        Cash on Delivery
-      </button>
-    </div>
+  <app-modal class="bg-white dark:bg-gray-800 rounded-lg shadow-lg py-26 w-96 text-white" (close)="closeModal()">
 
-    <div class="mt-4 flex justify-end">
-      <button
-        (click)="closeModal()"
-        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
-      >
-        Cancel
-      </button>
-    </div>
+   <div class="py-10">
+  <h2 class="text-xl font-semibold text-gray-900 dark:text-white text-center mb-20">
+    Payment Options
+  </h2>
+
+  <div class="mt-4 space-y-5">
+    <label *ngFor="let payment of paymentOptions" class="flex items-center text-center w-full bg-gray-100 hover:bg-gray-200 cursor-pointer py-5 rounded text-2xl px-4 relative">
+      <input type="checkbox" class="absolute left-3 top-6 transform -translate-y-1/2 w-5 h-5"
+             [checked]="selectedPaymentsToGo.includes(payment.value)"
+             (change)="togglePayment(payment.value)">
+      <span class="text-gray-700 font-semibold ml-10">{{ payment.label }}</span>
+    </label>
+  </div>
+
+  <div class="mt-6 flex justify-end">
+    <button (click)="confirmPayment()" class="bg-customBlue hover:bg-customBlueHover text-white px-6 py-3 rounded">
+      Proceed to Payment
+    </button>
   </div>
 </div>
+
+  </app-modal>
+
 }

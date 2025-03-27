@@ -25,11 +25,11 @@ nav > p {
 }
 
 .paymentBtn {
-  @apply mt-7 w-full items-center divide-x-2;
+  @apply mt-7 w-full items-center;
 }
 
 .paymentBtn > button {
-  @apply bg-customBlue text-white font-bold text-2xl  py-4  w-[50%];
+  @apply bg-customBlue text-white font-bold text-2xl  py-4  w-full;
 }
 
 .empty-cart {

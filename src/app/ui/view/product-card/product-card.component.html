@@ -1,5 +1,5 @@
 <div
-  class="border rounded-xl px-2 pt-3 cursor-pointer h-96 product-card relative"
+  class="border rounded-xl p-2 cursor-pointer h-[20rem] product-card relative"
   (click)="onAddToCart()"
   [class.inCart]="amountOfProductInCart"
 >
@@ -11,13 +11,13 @@
   <img
     [src]="imageUrl"
     alt="product image"
-    class="w-full h-2/3 object-contain"
+    class="w-full h-2/3 object-cover rounded-xl"
   />
   <div class="flex flex-col w-full mt-4 px-2 h-[10rem]">
     <!-- <p>Nivea lotion - Even glow</p>
         <p>#5000</p> -->
 
-    <p class="mb-4 text-ellipsis overflow-hidden">{{ product.name }}</p>
-    <p class="mb-4">{{ product.effectivePrice | currency: '₦' }}</p>
+    <p class=" text-ellipsis  h-10">{{ product.name }}</p>
+    <p class="h-6">{{ product.effectivePrice | currency: '₦' }}</p>
   </div>
 </div>

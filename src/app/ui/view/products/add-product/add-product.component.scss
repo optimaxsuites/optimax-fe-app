@@ -111,11 +111,11 @@ label {
   @apply text-red-400 text-[12px];
 }
 
-.industry-specific-details {
-  > :not(:first-child) {
-    @apply mt-5;
-  }
-}
+// .industry-specific-details {
+//   > :not(:first-child) {
+//     @apply mt-2;
+//   }
+// }
 
 .inputAndBtn {
   display: flex;
@@ -154,4 +154,20 @@ label {
 .disabled-btn {
   filter: grayscale(100%);
   cursor: not-allowed;
+}
+
+
+:host ::ng-deep .p-inputnumber {
+  width: 60px !important;
+
+  @apply p-1 editInput
+}
+
+:host ::ng-deep .p-element {
+  width: 50px !important;
+  &:focus {
+    outline: none;
+
+  }
+  // @apply  editInput
 }

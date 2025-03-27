@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, computed, Input, OnInit, signal } from '@angular/core';
 import { ProductData } from '../../models/interface';
 
 interface TableStatus {
@@ -39,11 +39,12 @@ export class CheckoutKitchenComponent implements OnInit {
   isOrderDetailsOpen = false;
   selectedOrder?: TableStatus; // store the order/card clicked
 
-  #tableStatuses: TableStatus[] = [];
+  #tableStatuses = signal<TableStatus[]>([]);
 
-  testMode: typeof this.mode = 'chef';
+  testMode = signal<typeof this.mode>('chef');
+
   changeTestMode(e: Event) {
-    this.testMode = (e.target as HTMLInputElement).value as any;
+    this.testMode.update(() => (e.target as HTMLInputElement).value as any);
   }
   // Replace this with the actual orders
   data = [
@@ -55,8 +56,10 @@ export class CheckoutKitchenComponent implements OnInit {
 
   get mode(): 'waiter' | 'chef' | 'cashier' {
     //TODO: Determine the mode to use from the logged in user's id. For now though, just use a toggle to change this
-    return this.testMode ?? 'chef';
+    return this.testMode() ?? 'chef';
   }
+
+  isReceiptModalOpen = false;
 
   ngOnInit(): void {
     switch (this.mode) {
@@ -119,13 +122,17 @@ export class CheckoutKitchenComponent implements OnInit {
     // TODO: Get the waiter's id based on their login info
     const waiterId = ids[Math.round(Math.random() * 100) % ids.length];
 
-    this.#tableStatuses.push({
-      no: tableNo,
-      orderedOn: new Date(),
-      orders: orders,
-      status: 'Pending',
-      waiterId: waiterId,
-    });
+    // update the signal by creating a new array
+    this.#tableStatuses.update((statuses) => [
+      ...statuses,
+      {
+        no: tableNo,
+        orderedOn: new Date(),
+        orders,
+        status: 'Pending',
+        waiterId,
+      },
+    ]);
   }
   createMultipleOrders(
     tableOrderList: { tableNo: number; orders: TableOrder[] }[]
@@ -146,16 +153,16 @@ export class CheckoutKitchenComponent implements OnInit {
       //TODO: Get rid of the table order
     }
   }
-  get displayedTableStatuses(): TableStatus[] {
-    switch (this.testMode) {
+  displayedTableStatuses = computed(() => {
+    switch (this.testMode()) {
       case 'waiter':
         // TODO: Use the waiter's id as a comparison here
-        return this.#tableStatuses.filter(
+        return this.#tableStatuses().filter(
           (tableStatus) => tableStatus.waiterId == '0'
         );
       case 'cashier':
       case 'chef':
-        return this.#tableStatuses;
+        return this.#tableStatuses();
     }
-  }
+  });
 }

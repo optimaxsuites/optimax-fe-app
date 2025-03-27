@@ -106,7 +106,7 @@
                                 </td>
                                 <td class="capitalize">{{ variant.price }}</td>
                                 <td>₦0</td>
-                                <td>₦{{ variant.price * (variant.selectedQuantity || 0) }}</td>
+                                <td>₦{{ (variant.price || 0) * (variant.selectedQuantity || 0) }}</td>
                               </tr>
                             </ng-container>
 
@@ -195,7 +195,7 @@
               <td style="text-align: left;">{{ item.name }} - {{ variant.name }}</td>
               <td style="text-align: center ;">{{ variant.selectedQuantity }}</td>
               <td style="text-align: center;">{{ variant.price  }}</td>
-              <td style="text-align: center;">{{ variant.price * (variant.selectedQuantity || 0  ) }}</td>
+              <td style="text-align: center;">{{ (variant.price || 0) * (variant.selectedQuantity || 0  ) }}</td>
             </tr>
           </ng-container>
         </ng-container>
