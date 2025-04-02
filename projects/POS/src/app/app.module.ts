@@ -108,6 +108,10 @@ import { HotelMessageComponent } from './ui/view/hotel-message/hotel-message.com
 import { HotelRoomlistComponent } from './ui/view/hotel-roomlist/hotel-roomlist.component';
 import { HotelRoomdetailsComponent } from './ui/view/hotel-roomdetails/hotel-roomdetails.component';
 import { CheckboxModule } from 'primeng/checkbox';
+import { CategoryComponent } from './ui/view/products/metaDatas/category/category.component';
+import { DiscountComponent } from './ui/view/products/metaDatas/discount/discount.component';
+import { SupplierComponent } from './ui/view/products/metaDatas/supplier/supplier.component';
+import { TaxComponent } from './ui/view/products/metaDatas/tax/tax.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -153,6 +157,10 @@ import { CheckboxModule } from 'primeng/checkbox';
     HotelMessageComponent,
     HotelRoomlistComponent,
     HotelRoomdetailsComponent,
+    CategoryComponent,
+    DiscountComponent,
+    SupplierComponent,
+    TaxComponent,
     //CheckoutKitchenComponent,
     //CheckoutHeaderComponent,
   ],

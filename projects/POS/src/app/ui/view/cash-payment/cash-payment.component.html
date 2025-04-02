@@ -32,22 +32,22 @@
       >
         <div class="flex justify-between items-center">
           <span>Subtotal</span>
-          <span>₦{{ navigationState.cart.subtotal | number : "1.2-2" }}</span>
+          <span>₦{{ navigationState.cart.subtotal | currency:'₦'}}</span>
         </div>
         <div class="flex justify-between items-center">
           <span>Tax</span>
-          <span>₦{{ navigationState.cart.tax | number : "1.2-2" }}</span>
+          <span>₦{{ navigationState.cart.tax | currency:'₦'}}</span>
         </div>
         <div
           class="flex justify-between items-center"
           *ngIf="navigationState.cart.discount > 0"
         >
           <span>Discount</span>
-          <span>₦{{ navigationState.cart.discount | number : "1.2-2" }}</span>
+          <span>₦{{ navigationState.cart.discount | currency:'₦'}}</span>
         </div>
         <div class="flex justify-between font-bold text-2xl items-center">
           <span>Total</span>
-          <span>₦{{ navigationState.cart.total | number : "1.2-2" }}</span>
+          <span>₦{{ navigationState.cart.total | currency:'₦'}}</span>
         </div>
       </div>
     </div>
@@ -56,29 +56,28 @@
       class="flex flex-col items-center justify-center w-full py-20 paymentBtn"
     >
       <span class="text-[16px] mb-2"> Amount due </span>
-      <span class="font-semibold text-[30px]">₦{{ approximateCartTotal }}</span>
+      <span class="font-semibold text-[30px]">{{ approximateCartTotal | currency:'₦'}}</span>
        
       <div class="flex flex-col gap-4 mt-3">
         <div *ngFor="let mode of navigationState.cart.paymentModes" class="w-full shadow-lg px-3 py-4 rounded-xl">
         
           @if(mode === 'loyalty') {
-            <div class="flex justify-center items-center mb-2">
-              <p class="text-nowrap text-[16px]">{{ customerFound?.name }}</p>
-              <div class="flex items-center">
+            <div class="flex justify-between px-3 items-center mb-2">
+              <div class="flex flex-col" >
+                <p class="text-nowrap text-[15px]" *ngIf="customerFound">Customer: {{ customerFound?.name }}</p>
+              <p class="text-nowrap text-[15px]" *ngIf="customerFound" >Available Points: {{customerFound?.loyaltyPoints | currency:'₦'}}</p>
+              </div>            
+                <div class="flex items-center">
                 <input
                   type="text"
                   placeholder="customer's phone number"
                   [(ngModel)]="customerSearch"
                   class="discount-input "
                 />
-                <button (click)="findCustomer()" class="ml-2 bg-customBlue text-white px-4 py-2 rounded">Search</button>
+                <button (click)="findCustomer()" class="ml-2 bg-customBlue text-white px-4 py-2 rounded"><i class="fa-solid fa-arrow-right"></i></button>
               </div>
             </div>
-      
-            <!-- <div *ngIf="customerFound">
-              <p class="text-[16px]">Customer: {{ customerFound.name }}</p>
-              <p class="text-[16px]">Available Points: {{ customerFound.loyaltyPoints }}</p>
-            </div> -->
+
           }
   
           <div class="flex justify-center items-center mb-3 w-full px-3">
@@ -91,8 +90,16 @@
                 placeholder="0"
                 [(ngModel)]="paymentValues[mode]"
                 class="discount-input"
-                [attr.readonly]="mode === 'loyalty' ? true : null"
+                [attr.max]="mode === 'loyalty' && customerFound ? customerFound.loyaltyPoints : null"
+                [attr.disabled]="mode === 'loyalty' && customerFound ? false : true"
               />
+              <!-- <p-inputNumber 
+                [(ngModel)]="paymentValues[mode]" 
+                inputId="minmaxfraction" 
+                mode="decimal" 
+                placeholder="0"
+                class="discount-input"
+                />  -->
               <span class="text-5xl ml-2">₦</span>
             </div>
           </div>

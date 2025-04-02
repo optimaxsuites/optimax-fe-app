@@ -18,9 +18,12 @@ import {
   IngredientDTO,
   ProductData,
   ProductJSONFormat,
+  supplierData,
+  TaxDTO,
   VariantDTO,
 } from '../../../models/interface';
 import { IndustryDataService } from '../../../service/industry-data.service';
+import { MetadataService } from '../../../service/metadata.service';
 
 interface SelectedIngredientDTO {
   ingredient: IngredientDTO;  
@@ -92,6 +95,13 @@ export class AddProductComponent {
   isEditing: boolean = false;
   editingIndex: number | null = null;
 
+  supplierData: supplierData = {
+    name: '',
+    contactPerson: '',
+    email: '',
+    phoneNumber: 0,
+    address: '',
+  }
 
   /**
    * We use this for now, pending when user registration industry field is updated
@@ -187,6 +197,8 @@ export class AddProductComponent {
   discountTypes: any[] = [];
   discountType: string[] = [];
   discounts: any[] = [];
+  suppliers: supplierData[] = [];
+  taxes: TaxDTO[] = []
 
   periodicDiscount: { startDate: string; endDate: string } = {
     startDate: '',
@@ -200,6 +212,9 @@ export class AddProductComponent {
   openCategories: boolean = false;
   openAddCategory: boolean = false;
   openAddDiscount: boolean = false;
+  openAddSupplier: boolean = false;
+  openAddTax: boolean = false;
+
   openBranchData = false;
   categories: any[] = [];
   configureBarcode: boolean = false;
@@ -241,9 +256,11 @@ export class AddProductComponent {
     private posService: PosServiceService,
     private http: HttpClient,
     private fb: FormBuilder,
-    private industryData: IndustryDataService
+    private industryData: IndustryDataService,
+    private metadataService: MetadataService
   ) {}
   ngOnInit(): void {
+
     // Initialize as many empty form controls for as many branches as there can possibly be.
     // Also use this chance to init the `this.variants` object
     const controlGroupForFormBranches = new FormArray(
@@ -256,9 +273,8 @@ export class AddProductComponent {
     // For when there's no selected branch;
     this.variants = [];
 
-    this.loadCategory();
-    this.getDiscountTypes();
-    this.getDiscounts();
+    // this.loadCategory();
+
     const fbGroup: Parameters<typeof this.fb.group>[0] = {
       name: ['', Validators.required],
       code: ['', Validators.required],
@@ -412,8 +428,17 @@ export class AddProductComponent {
     this.productForm.get('selectedBranch')?.valueChanges.subscribe(() => {
       this.updateBranches();
     });
+    this.fetchMetaData()
+
   }
 
+  fetchMetaData(){
+    this.metadataService.discount$.subscribe(data => (this.discounts = data));
+    this.metadataService.category$.subscribe(data => (this.categories = data));
+    this.metadataService.supplier$.subscribe(data => (this.suppliers = data));
+    this.metadataService.discountTypes$.subscribe(data => (this.discountTypes = data));
+    this.metadataService.taxes$.subscribe(data => (this.taxes = data));
+  }
   get branchess(): FormArray<FormGroup>  {
     return this.productForm.get('branches') as FormArray<FormGroup> ;
   }
@@ -539,25 +564,25 @@ removeIngredient(index: number) {
     }
   }
 
-  getDiscountTypes() {
-    this.posService.getDiscountTypes().subscribe(async (data) => {
-      if (data) {
-        this.discountTypes = data;
-      } else {
-        console.log('error loading data');
-      }
-    });
-  }
+  // getDiscountTypes() {
+  //   this.posService.getDiscountTypes().subscribe(async (data) => {
+  //     if (data) {
+  //       this.discountTypes = data;
+  //     } else {
+  //       console.log('error loading data');
+  //     }
+  //   });
+  // }
 
-  getDiscounts() {
-    this.posService.getDiscount().subscribe(async (data) => {
-      if (data) {
-        this.discounts = data;
-      } else {
-        console.log('error loading data');
-      }
-    });
-  }
+  // getDiscounts() {
+  //   this.posService.getDiscount().subscribe(async (data) => {
+  //     if (data) {
+  //       this.discounts = data;
+  //     } else {
+  //       console.log('error loading data');
+  //     }
+  //   });
+  // }
   checkForEmptyFields(obj: any): boolean {
     return Object.values(obj).some(
       (value) => typeof value === 'string' && value.trim() === ''
@@ -827,16 +852,16 @@ removeIngredient(index: number) {
 
     this.openAddVariant = true;
   }
-  loadCategory() {
-    this.posService.getCategories().subscribe(async (data) => {
-      console.log(data);
-      if (data) {
-        this.categories = data;
-      } else {
-        console.log('error loading data');
-      }
-    });
-  }
+  // loadCategory() {
+  //   this.posService.getCategories().subscribe(async (data) => {
+  //     console.log(data);
+  //     if (data) {
+  //       this.categories = data;
+  //     } else {
+  //       console.log('error loading data');
+  //     }
+  //   });
+  // }
   addCategory() {
     let categoryData = this.productData.productCategory;
 
@@ -867,7 +892,7 @@ removeIngredient(index: number) {
               key: 'tl',
               life: 3000,
             });
-            this.loadCategory();
+            this.categories.push(data);
             categoryData = {
               id: 0,
               name: '',
@@ -934,7 +959,7 @@ removeIngredient(index: number) {
           life: 3000,
         });
       } else {
-        this.loadCategory();
+        // this.loadCategory();
         this.messageService.add({
           severity: 'success',
           summary: 'Category deleted',
@@ -945,6 +970,29 @@ removeIngredient(index: number) {
       }
     });
   }
+  removeSupplier(id: number|undefined) {
+    this.posService.deleteSupplier(id).subscribe(async (data) => {
+      if (data) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Failed',
+          detail: 'Failed to delete supplier.',
+          key: 'tl',
+          life: 3000,
+        });
+      } else {
+        this.suppliers = this.suppliers.filter(supplier => supplier.id !== id);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Supplier deleted',
+          detail: 'Supplier deleted successfully.',
+          key: 'tl',
+          life: 3000,
+        });
+      }
+    });
+  }
+ 
   selectCategory(category: any) {
     console.log(category);
     this.productData.productCategory = category;
@@ -980,7 +1028,7 @@ removeIngredient(index: number) {
             key: 'tl',
             life: 3000,
           });
-          this.getDiscounts();
+          // this.getDiscounts();
           // TODO: Check whether this piece of code is worth it...
           discountObj = {
             id: 0,
@@ -1039,6 +1087,79 @@ removeIngredient(index: number) {
       }
     );
   }
+  addSupplier() {
+
+
+    this.posService.addSupplier(this.supplierData).subscribe(
+      async (data) => {
+        console.log(data);
+        if (data) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Supplier Added',
+            detail: 'Supplier added successfully.',
+            key: 'tl',
+            life: 3000,
+          });
+          // this.getDiscounts();
+          // TODO: Check whether this piece of code is worth it...
+          this.suppliers.push(data)
+          this.supplierData = {
+            name: '',
+            contactPerson: '',
+            email: '',
+            phoneNumber: 0,
+            address: '',
+          };
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Failed',
+            detail: 'Failed, please try again.',
+            key: 'tl',
+            life: 3000,
+          });
+        }
+      },
+      (error: HttpErrorResponse) => {
+        if (error.status === 500) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Authentication Failed',
+            detail: 'Check form details and try again.',
+            key: 'tl',
+            life: 3000,
+          });
+        } else if (error.status === 404) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Authentication Failed',
+            detail: 'Error, try again.',
+            key: 'tl',
+            life: 3000,
+          });
+        } else if (error.status === 0) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Server Unreachable',
+            detail:
+              'Unable to connect to the server. Please check your internet connection.',
+            key: 'tl',
+            life: 3000,
+          });
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'An unexpected error occurred.',
+            key: 'tl',
+            life: 3000,
+          });
+        }
+      }
+    );
+  } 
+ 
   selectDiscount(discount: any) {
     this.productData.productCategory = discount;
     this.productForm.get('discount')?.setValue(discount);

@@ -17,6 +17,7 @@ import { RandomTokenService } from '../sharedComponent/service/random-token/rand
 import { NavigationLinksService } from '../sharedComponent/service/navigation-links/navigation-links.service';
 import { environment } from '../sharedComponent/service/environments/environment';
 import { ProductCategories } from '../models/enums';
+import { supplierData } from '../models/interface';
 
 @Injectable({
   providedIn: 'root',
@@ -408,18 +409,13 @@ export class PosServiceService {
       .pipe(catchError(this.handleError));
   }
 
-  private categories$!: Observable<any>;
   getCategories() {
-    if (!this.categories$) {
-      this.categories$ = this.http
+   return this.http
         .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/productCategories')
         .pipe(
           catchError(this.handleError),
-          shareReplay(this.shareReplayOptions)
         );
-    }
 
-    return this.categories$;
   }
 
   deleteCategory(id: number) {
@@ -430,6 +426,22 @@ export class PosServiceService {
       .pipe(catchError(this.handleError));
   }
 
+  deleteSupplier(id: any) {
+    return this.http
+      .delete<any>(
+        this.getBaseApiUrl() + `/x/api/v2/pos/suppliers/${id}`
+      )
+      .pipe(catchError(this.handleError));
+  }
+
+
+  deleteTax(id: any) {
+    return this.http
+      .delete<any>(
+        this.getBaseApiUrl() + `/x/api/v2/pos/taxes/${id}`
+      )
+      .pipe(catchError(this.handleError));
+  }
   addProduct(data: any) {
     return this.http
       .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/products/product', data)
@@ -466,30 +478,35 @@ export class PosServiceService {
     return this.getBaseApiUrl() + `/x/api/v2/pos/products/images/${filename}`;
   }
 
-  private discountTypes$!: Observable<any>;
   getDiscountTypes() {
-    if (!this.discountTypes$) {
-      this.discountTypes$ = this.http
+  return this.http
         .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/discountTypes')
         .pipe(
-          catchError(this.handleError),
-          shareReplay(this.shareReplayOptions)
-        );
-    }
-    return this.discountTypes$;
+          catchError(this.handleError));
   }
 
   private discount$!: Observable<any>;
   getDiscount() {
-    if (!this.discount$) {
-      this.discount$ = this.http
-        .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/discounts')
+    return this.http
+    .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/discounts')
+    .pipe(catchError(this.handleError));
+  }
+
+
+  getSupplier() {
+    return this.http
+        .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/suppliers')
         .pipe(
           catchError(this.handleError),
-          shareReplay(this.shareReplayOptions)
         );
-    }
-    return this.discount$;
+  }
+
+  getTax() {
+    return this.http
+        .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/taxes')
+        .pipe(
+          catchError(this.handleError),
+        );
   }
 
   addDiscount(data: any) {
@@ -498,6 +515,18 @@ export class PosServiceService {
       .pipe(catchError(this.handleError));
   }
 
+  addSupplier(data: any) {
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/suppliers', data)
+      .pipe(catchError(this.handleError));
+  }
+
+
+  addTax(data: any) {
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/taxes', data)
+      .pipe(catchError(this.handleError));
+  }
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'An unknown error occurred!';
     if (error.error instanceof ErrorEvent) {
