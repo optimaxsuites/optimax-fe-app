@@ -39,9 +39,9 @@ interface Room {
   providers: [MessageService],
 })
 export class HotelFormComponent implements OnInit {
-  @Output() close = new EventEmitter();
+  @Output() back = new EventEmitter();
+  previousRoom: Room | null = null;
 
-  showForm: boolean = false;
   formType: 'booking' | 'checkin' = 'booking';
   bookingForm: FormGroup;
   formErrors: any = {};
@@ -114,11 +114,6 @@ export class HotelFormComponent implements OnInit {
   }
 
   private setupFormListeners(): void {
-    this.bookingForm.get('paymentMethod')?.valueChanges.subscribe((method) => {
-      this.isCardPayment = method === 'creditCard' || method === 'debitCard';
-      this.updateCardValidators();
-    });
-
     this.bookingForm.get('checkinDate')?.valueChanges.subscribe((date) => {
       if (date) {
         const currentCheckout = this.bookingForm.get('checkoutDate')?.value;
@@ -131,41 +126,11 @@ export class HotelFormComponent implements OnInit {
     });
   }
 
-  private updateCardValidators(): void {
-    const cardNumber = this.bookingForm.get('cardNumber');
-    const cardExpiry = this.bookingForm.get('cardExpiry');
-    const cardCvv = this.bookingForm.get('cardCvv');
-
-    if (this.isCardPayment) {
-      cardNumber?.setValidators([
-        Validators.required,
-        Validators.pattern(/^[0-9]{16}$/),
-      ]);
-      cardExpiry?.setValidators([
-        Validators.required,
-        Validators.pattern(/^(0[1-9]|1[0-2])\/?([0-9]{2})$/),
-      ]);
-      cardCvv?.setValidators([
-        Validators.required,
-        Validators.pattern(/^[0-9]{3,4}$/),
-      ]);
-    } else {
-      cardNumber?.clearValidators();
-      cardExpiry?.clearValidators();
-      cardCvv?.clearValidators();
-    }
-
-    cardNumber?.updateValueAndValidity();
-    cardExpiry?.updateValueAndValidity();
-    cardCvv?.updateValueAndValidity();
-  }
-
   openBookingForm(roomOrRooms: Room | Room[]): void {
     this.formType = 'booking';
     this.selectedRooms = Array.isArray(roomOrRooms)
       ? roomOrRooms
       : [roomOrRooms];
-    this.showForm = true;
     this.initForm();
     this.saveSelectedRooms();
   }
@@ -246,13 +211,6 @@ export class HotelFormComponent implements OnInit {
         } else if (control.errors?.['pattern']) {
           if (field === 'phone') {
             this.formErrors[field] = 'Please enter a valid phone number';
-          } else if (field === 'cardNumber') {
-            this.formErrors[field] =
-              'Please enter a valid 16-digit card number';
-          } else if (field === 'cardExpiry') {
-            this.formErrors[field] = 'Please enter a valid expiry date (MM/YY)';
-          } else if (field === 'cardCvv') {
-            this.formErrors[field] = 'Please enter a valid CVV (3-4 digits)';
           } else if (field === 'firstName' || field === 'lastName') {
             this.formErrors[field] = 'Only letters and spaces allowed';
           }
@@ -302,7 +260,7 @@ export class HotelFormComponent implements OnInit {
   }
 
   closeForm(): void {
-    this.showForm = false;
+    this.back.emit();
     this.bookingSummary = null;
     this.bookingForm.reset();
   }
@@ -332,6 +290,12 @@ export class HotelFormComponent implements OnInit {
     }
   }
 
+  goBack(): void {
+    this.back.emit();
+    this.bookingSummary = null;
+    this.bookingForm.reset();
+  }
+
   private clearSelectedRooms(): void {
     this.selectedRooms = [];
     localStorage.removeItem('selectedRooms');
@@ -340,7 +304,6 @@ export class HotelFormComponent implements OnInit {
   openCheckInForm(room: Room): void {
     this.formType = 'checkin';
     this.selectedRooms = [room];
-    this.showForm = true;
 
     // Pre-fill form with existing booking details if available
     if (room.bookingDetails) {

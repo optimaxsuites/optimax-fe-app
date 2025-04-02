@@ -1,5 +1,5 @@
 <div
-  *ngIf="showDetails && detailedRoom"
+  *ngIf="showDetails && detailedRoom && !openForm && !openMessage"
   class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 animate-fadeIn p-4"
 >
   <div
@@ -341,7 +341,7 @@
         <!-- Available Room Actions -->
         <ng-container *ngIf="isAvailable">
           <button
-            (click)="showBookingFormModal()"
+            (click)="navigateToForm()"
             class="bg-gradient-to-r from-emerald-600 to-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-emerald-700 hover:to-green-600"
           >
             <i class="pi pi-calendar-plus"></i>
@@ -361,7 +361,7 @@
         <!-- Booked Room Actions -->
         <ng-container *ngIf="isBooked">
           <button
-            (click)="onCheckIn()"
+            (click)="navigateToForm()"
             class="bg-gradient-to-r from-blue-600 to-indigo-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-blue-700 hover:to-indigo-600"
           >
             <i class="pi pi-sign-in"></i>
@@ -381,7 +381,7 @@
         <!-- Occupied Room Actions -->
         <ng-container *ngIf="isOccupied">
           <button
-            (click)="onCheckOut()"
+            (click)="navigateToMessage()"
             class="bg-gradient-to-r from-red-600 to-pink-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-red-700 hover:to-red-600"
           >
             <i class="pi pi-sign-out"></i>
@@ -429,4 +429,12 @@
       </div>
     </div>
   </div>
+</div>
+
+<div *ngIf="openForm">
+  <app-hotel-form (back)="navigateToForm()"></app-hotel-form>
+</div>
+
+<div *ngIf="openMessage">
+  <app-hotel-message (back)="navigateToMessage()"></app-hotel-message>
 </div>

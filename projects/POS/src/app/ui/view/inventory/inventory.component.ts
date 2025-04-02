@@ -1,13 +1,15 @@
-import { Component, OnInit , Input, Output, EventEmitter, HostListener} from '@angular/core';
+import { Component, OnInit , Input, Output, EventEmitter, HostListener, ViewChild} from '@angular/core';
 import { PosServiceService } from '../../service/pos-service.service';
 import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { ProductJSONFormat } from '../../models/interface';
+import { ProductData, ProductJSONFormat } from '../../models/interface';
 import { MessageService } from 'primeng/api';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef } from '@angular/core';
 import { Observable } from 'rxjs';
+import { ImageCacheService } from '../../service/image-cache.service';
+import { OverlayPanel } from 'primeng/overlaypanel';
 
 @Component({
   selector: 'app-inventory',
@@ -16,14 +18,19 @@ import { Observable } from 'rxjs';
 })
 
 export class InventoryComponent {
-
-
+  
+  @ViewChild('op') op!: OverlayPanel;
+  currentPage = 0;
+  rowsPerPage = 15;
+  
+  products: ProductData[] = [];
+  isLoading: boolean = true
+  tableSections: boolean = false;
   @Output() productUpdated = new EventEmitter<any>();
   items = [{ showMenu: false }, { showMenu: false }]; // Example list of items
 
   dropdownVisible: boolean[] = [];
   selectedAction!: string; 
-  products: any[] = [];
   originalProducts: any[] = [];
   viewProduct: 
   boolean = false;
@@ -97,16 +104,27 @@ export class InventoryComponent {
     private messageService: MessageService,
     private posService: PosServiceService,
     private http: HttpClient,
-    private cdRef: ChangeDetectorRef
+    private cdRef: ChangeDetectorRef,
+    private imageCacheService: ImageCacheService,
+    private productService: PosServiceService
   ) {}
-
+  onPageChange(event: any) {
+    this.currentPage = event.page;
+    this.rowsPerPage = event.rows;
+  }
   ngOnInit(): void {
     this.loadCategory();
     this.getProducts();
     this.getDiscountTypes();
+    this.fetchProducts();
+
  
   }
+  get paginatedProducts() {
+    const startIndex = this.currentPage * this.rowsPerPage;
+    return this.products.slice(startIndex, startIndex + this.rowsPerPage);
 
+  }
   
   toggleDropdown2(item: any, event?: Event) {
     if (event) {
@@ -122,6 +140,31 @@ export class InventoryComponent {
 
   closeDropdown(item: any) {
     item.showMenu = false;
+  }
+  getImageUrl(item: any): Observable<string> {
+    const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${item.productImages[0].imgNo}`;
+    return this.imageCacheService.getImage(remoteImageUrl);
+  }
+
+
+  toggleView() {
+    this.tableSections = !this.tableSections;
+    console.log("Table Section Toggled:", this.tableSections); // Debugging
+  }
+
+  fetchProducts() {
+    this.isLoading = true;
+    this.productService.getProducts().subscribe({
+      next: (data) => {
+        this.products = data;
+        this.paginatedProducts.splice(0, this.paginatedProducts.length, ...this.products.slice(0, this.rowsPerPage));
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error("Error fetching products", err);
+        this.isLoading = false;
+      }
+    });
   }
 
   openEditInventory(item: any = {}, mode: string) {
@@ -168,6 +211,7 @@ export class InventoryComponent {
     this.viewProduct = false;
     this.addProduct = false;
     this.editInventory = !this.editInventory;
+    this.tableSections = false;  // Hide the product list
   }
   
 
@@ -303,6 +347,7 @@ export class InventoryComponent {
     this.viewProduct = !this.viewProduct;
     this.viewInventory = !this.viewInventory;
     this.tableSection = !this.tableSection;
+    this.tableSections = false;  // Hide the product list
   }
 
   openViewInventory(item: any = {}) {
@@ -311,6 +356,7 @@ export class InventoryComponent {
     this.viewProduct = !this.viewProduct;
     this.viewInventory = !this.viewInventory;
     this.tableSection = !this.tableSection;
+    this.tableSections = false;  // Hide the product list
   }
 
   openViewEditForm() {
@@ -318,6 +364,7 @@ export class InventoryComponent {
     this.viewInventory = !this.viewInventory;
     this.editProduct = !this.editProduct;
     this.editInventory = !this.editInventory;
+    this.tableSections = false;  // Hide the product list
   }
 
   openDeleteModal(item: any = {}) {
@@ -368,7 +415,9 @@ export class InventoryComponent {
     this.editInventory = false;
     this.addInventory = false;
     this.getProducts();
+    this.tableSections = false;  // Hide the product list
   }
+  
 }
 
 

@@ -55,6 +55,7 @@ export class HotelRoomlistComponent {
   viewingAvailableRooms = false;
   selectAll = false;
   selectedRooms: Room[] = [];
+  openForm: boolean = false;
 
   rooms: Room[] = [
     {
@@ -277,6 +278,10 @@ export class HotelRoomlistComponent {
     this.filteredRooms = [...this.rooms];
   }
 
+  navigateToForm() {
+    this.openForm = !this.openForm;
+  }
+
   openRoomDetails(room: Room): void {
     this.roomSelected.emit(room);
   }
@@ -413,13 +418,5 @@ export class HotelRoomlistComponent {
     this.selectedRooms = [];
     this.selectAll = false;
     this.availableRooms.forEach((room) => (room.selected = false));
-  }
-
-  bookSelectedRooms(): void {
-    if (this.selectedRooms.length === 0) return;
-
-    // Emit the selected rooms to the parent component
-    this.roomSelected.emit(this.selectedRooms);
-    this.closeAvailableRoomsModal();
   }
 }

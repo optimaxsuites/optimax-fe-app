@@ -52,7 +52,20 @@
   <div class="main-content">
     <!-- LEFT GRID of TABLE CARDS -->
     <div class="grid-area">
-      @for (item of displayedTableStatuses(); track $index) {
+      @if(testMode() == "waiter"){
+      <!-- An absolutely positioned button in the lower right corner for adding table orders -->
+      <button
+        pButton
+        label="Take Order"
+        class="waiter-order-btn p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200"
+      ></button>
+
+      @if (!displayedTableStatuses().length){
+      <!-- TODO: Display a large centered button for adding a table order -->
+      } }@else{
+      <!-- No orders :( -->
+      @if (!displayedTableStatuses().length){No Orders here :( } } @for (item of
+      displayedTableStatuses(); track $index) {
       <div
         class="table-card"
         [ngClass]="{

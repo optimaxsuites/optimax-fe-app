@@ -95,8 +95,7 @@ import { KitchenOrderComponent } from './ui/view/kitchen-order/kitchen-order.com
 import { InputNumberModule } from 'primeng/inputnumber';
 
 import { SkeletonModule } from 'primeng/skeleton';
-import { PaginatorModule} from 'primeng/paginator'
-
+import { PaginatorModule } from 'primeng/paginator';
 
 import { HotelCheckoutComponent } from './ui/view/hotel-checkout/hotel-checkout.component';
 import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
@@ -215,9 +214,10 @@ import { TaxComponent } from './ui/view/products/metaDatas/tax/tax.component';
     DropdownModule,
     ChartModule,
     CardModule,
+    InputGroupAddonModule,
     SkeletonModule,
-    PaginatorModule
-    // BrowserAnimationsModule,
+    PaginatorModule,
+    BrowserAnimationsModule,
   ],
   exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],
   providers: [
