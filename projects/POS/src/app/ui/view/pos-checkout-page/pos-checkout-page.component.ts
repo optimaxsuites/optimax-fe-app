@@ -37,7 +37,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   total: number = 0.0;
   cartItems: typeof this.products = [];
   count: number = 1;
-
+  selectedCategory: string = 'Category'; 
   readonly stateOptions = [
     { label: '₦', value: 'naira' },
     { label: '%', value: 'percentage' },
@@ -374,7 +374,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   filterItems(event: Event) {
     const filterVal = (event.target as HTMLSelectElement | HTMLButtonElement)
       .value as ProductCategories;
-
+    this.selectedCategory = filterVal;
     // No category is selected, reset
     if (filterVal == ProductCategories.NONE) {
       this.categorizedProducts = this.products;

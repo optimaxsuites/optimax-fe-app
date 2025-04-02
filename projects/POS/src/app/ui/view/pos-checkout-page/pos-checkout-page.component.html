@@ -10,18 +10,23 @@
 
   <div class="product-cart-container ">
     <div class="left-side flex">
-    @if(businessType != "Generic"){<!-- This will be a left sidebar that'll display all the possible product categories as green buttons -->
-    <div class="left-sidebar">
-      <button (click)="filterItems($event)" value="Category">All</button>
-      @for (category of categories; track category) {
-      <button (click)="filterItems($event)" [value]="category">
-        {{ category }}
-      </button>
-      }
-    </div>
-    }
+  
+    
 
     <div class="product-view">
+      <div class="left-sidebar flex gap-3 w-full overflow-x-scroll capitalize">
+        <button (click)="filterItems($event)" value="Category" class="py-1.5 text-[10px] px-4 border rounded-md"   [ngClass]="{ 'active-button': selectedCategory === 'Category' }"  >All</button>
+        @for (category of categories; track category) {
+        <button (click)="filterItems($event)" [value]="category" class="py-1.5 text-[10px] px-4 border rounded-md text-nowrap"   [ngClass]="{ 'active-button': selectedCategory === category }" >
+          {{ category }}
+        </button>
+        }
+        @for (category of categories; track category) {
+          <button (click)="filterItems($event)" [value]="category" class="py-1.5 text-[10px] px-4 border rounded-md"   [ngClass]="{ 'active-button': selectedCategory === category }" >
+            {{ category }}
+          </button>
+          }
+      </div>
       <div
         class="flex flex-col gap-10"
         [class]="businessType == 'Generic' ? 'h-[80vh]' : 'h-full'"

@@ -106,3 +106,9 @@ app-product-card {
 .right-side {
   width: 38%;
 }
+
+.active-button {
+  color: white;
+  font-weight: bold;
+  @apply bg-customGreen text-white font-bold rounded-md
+}
