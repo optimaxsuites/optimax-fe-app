@@ -34,7 +34,7 @@ const routes: Routes = [
   },
 
   {
-    path: 'admin/pos/hotel-checkout/:uuid',
+    path: 'admin/pos/hospitality-checkout/:uuid',
     component: HotelCheckoutComponent,
   },
   {
@@ -72,7 +72,7 @@ const routes: Routes = [
   {
     path: 'add-ingredient',
     component: AddIngredientComponent,
-  }
+  },
   // {
   //   path: 'add-inventory',
   //   component: AddInventoryComponent,

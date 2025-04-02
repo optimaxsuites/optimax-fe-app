@@ -37,6 +37,7 @@ interface Room {
   providers: [MessageService],
 })
 export class HotelRoomdetailsComponent {
+  previousRoom: Room | null | undefined;
   onExtendStay() {
     throw new Error('Method not implemented.');
   }
@@ -44,12 +45,11 @@ export class HotelRoomdetailsComponent {
     throw new Error('Method not implemented.');
   }
 
-  @Output() checkOutRequested = new EventEmitter<Room>();
-  @Output() checkInRequested = new EventEmitter<Room>();
-
   showDetails: boolean = false;
   detailedRoom: Room | null = null;
   isAdminView: boolean = true;
+  openForm: boolean = false;
+  openMessage: boolean = false;
 
   statusColors: any = {
     available: 'bg-emerald-500',
@@ -82,6 +82,7 @@ export class HotelRoomdetailsComponent {
   }
 
   showRoomDetailsModal(room: Room): void {
+    this.previousRoom = this.detailedRoom;
     this.detailedRoom = room;
     this.showDetails = true;
   }
@@ -89,57 +90,20 @@ export class HotelRoomdetailsComponent {
   closeModal(): void {
     this.showDetails = false;
     this.detailedRoom = null;
-  }
-
-  showBookingFormModal(): void {
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Booking Form',
-      detail: 'Would open booking form here',
-    });
-    this.closeModal();
-  }
-
-  // onCheckIn(): void {
-  //   if (this.detailedRoom) {
-  //     this.detailedRoom.status = 'occupied';
-  //     this.messageService.add({
-  //       severity: 'success',
-  //       summary: 'Checked In',
-  //       detail: `Guest checked into Room ${this.detailedRoom.id}`,
-  //     });
-  //   }
-  //   this.closeModal();
-  // }
-
-  // onCheckOut(): void {
-  //   if (this.detailedRoom) {
-  //     this.checkOutRequested.emit(this.detailedRoom);
-  //     this.detailedRoom.status = 'dirty'; // Changed to set status to dirty
-
-  //     delete this.detailedRoom.guest;
-  //     delete this.detailedRoom.bookingDetails;
-  //     this.messageService.add({
-  //       severity: 'success',
-  //       summary: 'Checked Out',
-  //       detail: `Guest checked out from Room ${this.detailedRoom.id}. Room marked for cleaning.`,
-  //     });
-  //   }
-  //   this.closeModal();
-  // }
-
-  onCheckIn(): void {
-    if (this.detailedRoom) {
-      this.checkInRequested.emit(this.detailedRoom);
+    this.openForm = false;
+    if (this.previousRoom) {
+      this.detailedRoom = this.previousRoom;
+      this.previousRoom = null;
     }
-    this.closeModal();
+    this.showDetails = true;
   }
 
-  onCheckOut(): void {
-    if (this.detailedRoom) {
-      this.checkOutRequested.emit(this.detailedRoom);
-    }
-    this.closeModal();
+  navigateToForm() {
+    this.openForm = !this.openForm;
+  }
+
+  navigateToMessage() {
+    this.openMessage = !this.openMessage;
   }
 
   onCompleteCleaning(): void {

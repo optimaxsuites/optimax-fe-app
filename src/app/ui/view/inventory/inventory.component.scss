@@ -311,6 +311,12 @@ td.table-item.quantity-available {
 }
 
 
+.quantity-low {
+  background-color: #fff3e0; /* Light red/orange */
+  color: #d84315;
+ 
+}
+
 .quantity-available {
   background-color: #e8f5e9; /* Light green */
   // border: 2px solid #388e3c; /* Green border */
@@ -439,3 +445,20 @@ label {
     cursor: pointer;
   }
 }
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  p{
+    @apply text-base text-gray-600;
+  }
+@apply gap-5;
+}
+
+.card {
+  @apply p-4 rounded-xl
+}
+
+::ng-deep .p-paginator{
+  @apply w-full;
+}
+
