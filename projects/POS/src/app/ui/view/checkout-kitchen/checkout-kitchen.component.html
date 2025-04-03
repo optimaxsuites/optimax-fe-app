@@ -58,6 +58,7 @@
         pButton
         label="Take Order"
         class="waiter-order-btn p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200"
+        (click)="isCreateOrderModalOpen = true"
       ></button>
 
       @if (!displayedTableStatuses().length){
@@ -268,7 +269,6 @@
 </div>
 
 <!-- Reciept Modal -->
-@if (isReceiptModalOpen) {
 <p-dialog
   header="Payment Receipt"
   [(visible)]="isReceiptModalOpen"
@@ -354,4 +354,95 @@
     ></button>
   </div>
 </p-dialog>
-}
+
+<!-- Create Order Modal -->
+<p-dialog
+  header="Create Order"
+  [(visible)]="isCreateOrderModalOpen"
+  [modal]="true"
+  [style]="{ width: '80rem', height: '70rem' }"
+  [baseZIndex]="10000"
+  class="create-order-dialog"
+>
+  <!-- Contains 2 children; the container for showing selected products, and another for showing the available products that can be selected. -->
+  <div class="product-parent-area">
+    <div class="order-display">
+      <!-- Just putting another slightly smaller div :3 -->
+      <div>
+        <p-table [value]="data">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Rate</th>
+              <th>Amount</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-rowData>
+            <tr>
+              <td>{{ rowData.item }}</td>
+              <td>{{ rowData.qty }}</td>
+              <td>{{ rowData.rate }}</td>
+              <td>{{ rowData.amount }}</td>
+            </tr>
+          </ng-template>
+        </p-table>
+
+        <!-- VAT and total -->
+        <div>
+          <div>
+            <div>Subtotal:</div>
+            <div>N8000</div>
+          </div>
+          <div>
+            <div>VAT:</div>
+            <div>N600</div>
+          </div>
+          <div>
+            <div class="font-bold">Total:</div>
+            <div>N8600</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="subcategory-display">
+      @for (p of productList; track $index) {
+      <div class="subcategory-card">
+        {{ p.name }}
+      </div>
+      }
+    </div>
+  </div>
+
+  <!-- Contains 2 children; the container for displaying all available product categories, and another for utility buttons like finalizing / cancelling an order -->
+  <div class="bottom-btn-bar">
+    <div class="category-list">
+      @for (category of categoryList; track $index) {
+      <button
+        pButton
+        [label]="category"
+        class="p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200"
+      ></button>
+      }
+    </div>
+
+    <div class="utility-btns">
+      <button
+        pButton
+        label="Cancel"
+        class="p-button-danger px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-200 font-bold"
+      ></button>
+      <button
+        pButton
+        label="Note"
+        class="p-button-success px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring focus:ring-orange-200 font-bold"
+      ></button>
+      <button
+        pButton
+        label="Order"
+        class="p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200 font-bold"
+      ></button>
+    </div>
+  </div>
+</p-dialog>
