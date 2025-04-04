@@ -111,6 +111,8 @@ import { CategoryComponent } from './ui/view/products/metaDatas/category/categor
 import { DiscountComponent } from './ui/view/products/metaDatas/discount/discount.component';
 import { SupplierComponent } from './ui/view/products/metaDatas/supplier/supplier.component';
 import { TaxComponent } from './ui/view/products/metaDatas/tax/tax.component';
+import { HotelBillsComponent } from './ui/view/hotel-bills/hotel-bills.component';
+import { HotelChangeroomComponent } from './ui/view/hotel-changeroom/hotel-changeroom.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -160,6 +162,8 @@ import { TaxComponent } from './ui/view/products/metaDatas/tax/tax.component';
     DiscountComponent,
     SupplierComponent,
     TaxComponent,
+    HotelBillsComponent,
+    HotelChangeroomComponent,
     //CheckoutKitchenComponent,
     //CheckoutHeaderComponent,
   ],

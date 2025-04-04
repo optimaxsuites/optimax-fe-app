@@ -99,6 +99,7 @@
     </div>
 
     <!-- Room Cards Grid -->
+
     <div
       class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4"
     >
@@ -129,7 +130,9 @@
 
         <div class="mt-2 flex-1">
           <p *ngIf="room.guest" class="text-xl font-medium truncate">
-            <i class="pi pi-user mr-1"></i> {{ room.guest }}
+            <i class="pi pi-user mr-1"></i>
+            {{ room.guest.title }} {{ room.guest.firstName }}
+            {{ room.guest.lastName }}
           </p>
         </div>
 
@@ -140,9 +143,18 @@
               {{ room.bookingDetails.checkinDate | date : "shortDate" }} -
               {{ room.bookingDetails.checkoutDate | date : "shortDate" }}
             </p>
+            <p *ngIf="room.bookingDetails" class="text-sm mt-1">
+              <i class="pi pi-credit-card mr-1"></i>
+              {{ room.bookingDetails.paymentMethod | titlecase }} •
+              {{
+                room.bookingDetails.paidAmount
+                  | currency : "NGN" : "symbol" : "1.0-0"
+              }}
+              paid
+            </p>
           </div>
           <p class="text-xl font-semibold">
-            {{ room.rate | currency : "₦" : "symbol" : "1.0-0" }}/night
+            {{ room.rate | currency : "NGN" : "symbol" : "1.0-0" }}/night
           </p>
         </div>
       </div>
@@ -230,7 +242,9 @@
           >
             <div class="flex justify-between items-start">
               <div>
-                <p class="font-bold text-2xl text-gray-800">{{ room.id }}</p>
+                <p class="font-bold text-2xl text-gray-800">
+                  {{ room.id }}
+                </p>
                 <p class="text-xl text-gray-600 mt-1">{{ room.type }}</p>
               </div>
               <div
@@ -302,5 +316,10 @@
 </div>
 
 <div *ngIf="openForm">
-  <app-hotel-form (back)="navigateToForm()"></app-hotel-form>
+  <app-hotel-form
+    [selectedRooms]="selectedRooms"
+    (back)="navigateToForm()"
+    (bookingConfirmed)="onBookingConfirmed($event)"
+  >
+  </app-hotel-form>
 </div>
