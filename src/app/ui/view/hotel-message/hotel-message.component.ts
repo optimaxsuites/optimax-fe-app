@@ -1,4 +1,3 @@
-// hotel-checkout-modal.component.ts
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MessageService } from 'primeng/api';
 
@@ -33,14 +32,18 @@ export interface Room {
   description?: string;
   amenities?: string[];
   extendedStayDays?: number;
+  maintenanceNotes?: string;
+  serviceCharge: ServiceCharge[];
+  otherCharges: OtherCharge[];
+  billItem: BillItem[];
 }
 
 export interface ServiceCharge {
-  category: string;
-  name: string;
-  price: number;
-  quantity: number;
-  date: Date | string;
+  category: 'kitchen' | 'mini bar' | 'laundry' | 'bar';
+  name: 'Breakfast Set' | 'Whiskey Bottle' | 'Laundry Service' | 'Beer Can'; // Sample service names
+  price: 15.99;
+  quantity: 2;
+  date: '2025-04-02T08:30:00Z';
 }
 
 export interface BillItem {
@@ -65,9 +68,10 @@ export class HotelMessageComponent {
   @Input() detailedRoom!: Room;
   @Input() serviceCharges: ServiceCharge[] = [];
   @Input() otherCharges: OtherCharge[] = [];
+  @Output() back = new EventEmitter();
 
   @Output() closeCheckoutEvent = new EventEmitter<void>();
-  @Output() processPaymentEvent = new EventEmitter<void>();
+
   @Output() printInvoiceEvent = new EventEmitter<void>();
   @Output() checkoutGuestEvent = new EventEmitter<void>();
 
@@ -77,10 +81,9 @@ export class HotelMessageComponent {
   constructor(private messageService: MessageService) {}
 
   closeCheckout(): void {
-    this.closeCheckoutEvent.emit();
+    this.showCheckout = false;
+    this.detailedRoom;
   }
-
-  // Add these methods to your HotelCheckoutModalComponent
 
   getServiceItems(category: string): ServiceCharge[] {
     return this.serviceCharges.filter(
@@ -111,15 +114,6 @@ export class HotelMessageComponent {
       (sum, service) => sum + service.price * service.quantity,
       0
     );
-  }
-
-  processPayment(): void {
-    this.processPaymentEvent.emit();
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Payment Processed',
-      detail: 'Payment was successfully processed',
-    });
   }
 
   printInvoice(): void {
@@ -189,5 +183,9 @@ export class HotelMessageComponent {
 
   getPaymentMethod(): string {
     return this.detailedRoom?.bookingDetails?.paymentMethod || 'Not specified';
+  }
+
+  goBack(): void {
+    this.back.emit();
   }
 }

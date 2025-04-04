@@ -1,31 +1,40 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MessageService } from 'primeng/api';
+import { ChangeDetectorRef } from '@angular/core';
 
-interface Room {
+// Using the same interface as in roomlist component for consistency
+export interface Guest {
+  title: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  country: string;
+}
+
+export interface BookingDetails {
+  checkinDate: Date;
+  checkoutDate: Date;
+  adults: number;
+  children: number;
+  specialRequests?: string;
+  paymentMethod: string;
+  totalAmount: number;
+  paidAmount: number;
+  balanceAmount: number;
+}
+
+export interface Room {
   id: number;
+  number: number;
   type: string;
   status: string;
   floor?: number;
-  guest?: string;
-  bookingDetails?: {
-    title?: string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    phone?: string;
-    checkinDate: Date;
-    checkoutDate: Date;
-    adults: number;
-    children: number;
-    specialRequests?: string;
-    paymentMethod: string;
-    totalAmount?: number;
-    paidAmount?: number;
-    balanceAmount?: number;
-  };
+  guest?: Guest;
+  rate: number;
+  bookingDetails?: BookingDetails;
   beds?: number;
   maxOccupancy?: number;
-  rate: number;
   description?: string;
   amenities?: string[];
 }
@@ -37,19 +46,18 @@ interface Room {
   providers: [MessageService],
 })
 export class HotelRoomdetailsComponent {
-  previousRoom: Room | null | undefined;
-  onExtendStay() {
-    throw new Error('Method not implemented.');
-  }
-  onAddMaintenanceNotes() {
-    throw new Error('Method not implemented.');
-  }
+  @Input() room: Room | null = null;
+  @Output() back = new EventEmitter<void>();
+  @Output() statusChanged = new EventEmitter<Room>();
 
+  previousRoom: Room | null = null;
   showDetails: boolean = false;
   detailedRoom: Room | null = null;
   isAdminView: boolean = true;
   openForm: boolean = false;
   openMessage: boolean = false;
+  openBills: boolean = false;
+  openRoom: boolean = false;
 
   statusColors: any = {
     available: 'bg-emerald-500',
@@ -58,8 +66,20 @@ export class HotelRoomdetailsComponent {
     maintenance: 'bg-gray-500',
     dirty: 'bg-red-500',
   };
+  selectedRooms: Room[] | undefined;
 
-  constructor(private messageService: MessageService) {}
+  constructor(
+    private messageService: MessageService,
+    private cdRef: ChangeDetectorRef
+  ) {}
+
+  private updateRoom(updatedRoom?: Room): void {
+    const roomToUpdate = updatedRoom || this.room;
+    if (roomToUpdate) {
+      this.updateRoomInLocalStorage(roomToUpdate);
+      this.statusChanged.emit(roomToUpdate);
+    }
+  }
 
   get isAvailable(): boolean {
     return this.detailedRoom?.status === 'available';
@@ -82,9 +102,37 @@ export class HotelRoomdetailsComponent {
   }
 
   showRoomDetailsModal(room: Room): void {
-    this.previousRoom = this.detailedRoom;
-    this.detailedRoom = room;
+    const storedRooms = localStorage.getItem('rooms');
+    if (storedRooms) {
+      const parsedRooms = JSON.parse(storedRooms);
+      const updatedRoom = parsedRooms.find((r: Room) => r.id === room.id);
+
+      if (updatedRoom) {
+        this.processRoomDates(updatedRoom);
+        this.detailedRoom = updatedRoom;
+      } else {
+        this.detailedRoom = room;
+      }
+    } else {
+      this.detailedRoom = room;
+    }
     this.showDetails = true;
+    this.cdRef.detectChanges(); // Force change detection
+  }
+
+  private processRoomDates(room: Room): void {
+    if (room.bookingDetails) {
+      if (typeof room.bookingDetails.checkinDate === 'string') {
+        room.bookingDetails.checkinDate = new Date(
+          room.bookingDetails.checkinDate
+        );
+      }
+      if (typeof room.bookingDetails.checkoutDate === 'string') {
+        room.bookingDetails.checkoutDate = new Date(
+          room.bookingDetails.checkoutDate
+        );
+      }
+    }
   }
 
   closeModal(): void {
@@ -98,61 +146,213 @@ export class HotelRoomdetailsComponent {
     this.showDetails = true;
   }
 
-  navigateToForm() {
-    this.openForm = !this.openForm;
-  }
-
   navigateToMessage() {
     this.openMessage = !this.openMessage;
   }
 
-  onCompleteCleaning(): void {
-    if (this.detailedRoom) {
-      this.detailedRoom.status = 'available';
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Cleaning Complete',
-        detail: `Room ${this.detailedRoom.id} is now available for booking`,
-      });
-    }
-    this.closeModal();
+  navigateToBills() {
+    this.openBills = !this.openBills;
   }
 
-  onCancelBooking(): void {
+  navigateToChangeRoom() {
+    this.openRoom = !this.openRoom;
+  }
+
+  checkIn(): void {
     if (this.detailedRoom) {
-      this.detailedRoom.status = 'available';
+      this.detailedRoom.status = 'occupied';
+
+      // Update both the detailed room view and localStorage
+      this.updateRoom(this.detailedRoom);
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Checked In',
+        detail: 'Guest has been checked in',
+      });
+
+      // Refresh the view
+      this.cdRef.detectChanges();
+    }
+  }
+
+  checkOut(): void {
+    if (this.detailedRoom) {
+      this.detailedRoom.status = 'dirty';
       delete this.detailedRoom.guest;
       delete this.detailedRoom.bookingDetails;
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Booking Cancelled',
-        detail: `Booking for Room ${this.detailedRoom.id} has been cancelled`,
-      });
-    }
-    this.closeModal();
-  }
 
-  onCompleteMaintenance(): void {
-    if (this.detailedRoom) {
-      this.detailedRoom.status = 'available';
+      this.updateRoom(this.detailedRoom);
+
       this.messageService.add({
         severity: 'success',
-        summary: 'Maintenance Complete',
-        detail: `Room ${this.detailedRoom.id} is now available`,
+        summary: 'Checked Out',
+        detail: 'Guest has been checked out',
       });
+
+      this.cdRef.detectChanges();
     }
-    this.closeModal();
   }
 
   onStartMaintenance(): void {
     if (this.detailedRoom) {
       this.detailedRoom.status = 'maintenance';
+      this.updateRoom(this.detailedRoom);
+
       this.messageService.add({
         severity: 'info',
         summary: 'Maintenance Started',
-        detail: `Maintenance started for Room ${this.detailedRoom.id}`,
+        detail: 'Room is now under maintenance',
+      });
+
+      this.cdRef.detectChanges();
+    }
+  }
+
+  onCompleteMaintenance(): void {
+    if (this.detailedRoom) {
+      this.detailedRoom.status = 'available';
+      this.updateRoom(this.detailedRoom);
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Maintenance Complete',
+        detail: 'Room is now available',
+      });
+
+      this.cdRef.detectChanges();
+    }
+  }
+
+  onExtendStay(): void {
+    // Implementation for extending a guest's stay
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Extend Stay',
+      detail: 'Extend stay functionality will be implemented here',
+    });
+  }
+
+  onAddMaintenanceNotes(): void {
+    // Implementation for adding maintenance notes
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Maintenance Notes',
+      detail: 'Add maintenance notes functionality will be implemented here',
+    });
+  }
+
+  // Helper method to update room in localStorage
+  private updateRoomInLocalStorage(room: Room): void {
+    try {
+      const storedRooms = localStorage.getItem('rooms');
+      const rooms = storedRooms ? JSON.parse(storedRooms) : [];
+
+      const index = rooms.findIndex((r: Room) => r.id === room.id);
+
+      if (index !== -1) {
+        // Update existing room
+        rooms[index] = this.sanitizeRoomData(room);
+      } else {
+        // Add new room
+        rooms.push(this.sanitizeRoomData(room));
+      }
+
+      localStorage.setItem('rooms', JSON.stringify(rooms));
+    } catch (error) {
+      console.error('Error updating localStorage:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Storage Error',
+        detail: 'Failed to save room data',
       });
     }
-    this.closeModal();
+  }
+
+  private sanitizeRoomData(room: Room): Room {
+    const sanitizedRoom = { ...room };
+
+    // Ensure dates are properly serialized
+
+    return sanitizedRoom;
+  }
+
+  navigateToForm() {
+    // Create a new array with just this single room
+    const roomsToBook = this.detailedRoom ? [this.detailedRoom] : [];
+
+    // Pass the rooms to the form
+    this.selectedRooms = roomsToBook;
+    this.openForm = !this.openForm;
+  }
+
+  onBookingConfirmed(updatedRooms: Room[]): void {
+    // Update the first room (since we only passed one)
+    if (updatedRooms.length > 0) {
+      this.detailedRoom = { ...updatedRooms[0] };
+      this.processRoomDates(this.detailedRoom);
+      this.updateRoomInLocalStorage(this.detailedRoom);
+
+      // Show success message
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Booking Confirmed',
+        detail: `Room ${this.detailedRoom.number} has been booked`,
+      });
+    }
+
+    this.openForm = false;
+    this.cdRef.detectChanges();
+  }
+
+  onCancelBooking(): void {
+    if (this.detailedRoom) {
+      // Update the room status to 'available'
+      this.detailedRoom.status = 'available';
+
+      // Clear guest and booking details
+      delete this.detailedRoom.guest;
+      delete this.detailedRoom.bookingDetails;
+
+      // Update in localStorage
+      this.updateRoomInLocalStorage(this.detailedRoom);
+
+      // Emit the status change
+      this.statusChanged.emit(this.detailedRoom);
+
+      // Show success message
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Booking Cancelled',
+        detail: `Booking for Room ${this.detailedRoom.number} has been cancelled`,
+      });
+
+      // Close the modal
+      this.closeModal();
+    }
+  }
+  onCompleteCleaning(): void {
+    if (this.detailedRoom) {
+      this.detailedRoom.status = 'available';
+      this.updateRoom(this.detailedRoom);
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Cleaning Complete',
+        detail: 'Room is now available',
+      });
+
+      this.cdRef.detectChanges();
+    }
+  }
+
+  // Helper method to get full guest name
+  getGuestFullName(): string {
+    if (!this.detailedRoom || !this.detailedRoom.guest) return 'No Guest';
+
+    const guest = this.detailedRoom.guest;
+    return `${guest.title || ''} ${guest.firstName || ''} ${
+      guest.lastName || ''
+    }`.trim();
   }
 }

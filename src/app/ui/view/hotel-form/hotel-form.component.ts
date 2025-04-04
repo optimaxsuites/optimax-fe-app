@@ -2,34 +2,61 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 
-interface Room {
+// shared/interfaces/hotel.interfaces.ts
+
+export interface Guest {
+  title: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  country: string;
+}
+
+export interface BookingDetails {
+  checkinDate: Date;
+  checkoutDate: Date;
+  adults: number;
+  children: number;
+  specialRequests?: string;
+  paymentMethod: string;
+  totalAmount: number;
+  paidAmount: number;
+  balanceAmount: number;
+}
+
+export interface Room {
   id: number;
+  number: number;
   type: string;
   status: string;
   floor?: number;
-  guest?: string;
-  selected?: boolean;
-  bookingDetails?: {
-    title?: string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    phone?: string;
-    checkinDate: Date;
-    checkoutDate: Date;
-    adults: number;
-    children: number;
-    specialRequests?: string;
-    paymentMethod: string;
-    totalAmount?: number;
-    paidAmount?: number;
-    balanceAmount?: number;
-  };
+  guest?: Guest;
+  rate: number;
+  bookingDetails?: BookingDetails;
   beds?: number;
   maxOccupancy?: number;
-  rate: number;
   description?: string;
   amenities?: string[];
+}
+
+export interface Booking {
+  guest: Guest;
+  checkinDate: Date;
+  checkoutDate: Date;
+  adults: number;
+  children: number;
+  specialRequests: string;
+  paymentMethod: string;
+  depositAmount: number;
+  roomIds: number[];
+  roomTypes: string[];
+  roomRates: number[];
+  subtotal: number;
+  taxes: number;
+  total: number;
+  balanceAmount: number;
+  status?: string;
 }
 
 @Component({
@@ -39,21 +66,17 @@ interface Room {
   providers: [MessageService],
 })
 export class HotelFormComponent implements OnInit {
+  @Input() selectedRooms: Room[] = []; // Now passed from parent
+  @Output() bookingConfirmed = new EventEmitter<Room[]>();
+  @Input() selectedRoom: Room | null = null;
   @Output() back = new EventEmitter();
-  previousRoom: Room | null = null;
 
   formType: 'booking' | 'checkin' = 'booking';
   bookingForm: FormGroup;
   formErrors: any = {};
-  isCardPayment: boolean = false;
-  selectedRooms: Room[] = [];
-  bookingSummary: any = null;
+  bookingSummary: Booking | null = null;
   nights: number = 0;
-  subtotal: number = 0;
-  taxes: number = 0;
-  total: number = 0;
-  depositAmount: number = 0;
-  balanceAmount: number = 0;
+  activeStatus: string = 'booked';
 
   countries: string[] = [
     'Nigeria',
@@ -69,13 +92,6 @@ export class HotelFormComponent implements OnInit {
     'India',
   ];
 
-  roomTypes: string[] = [
-    'Standard',
-    'Deluxe',
-    'Suite',
-    'Executive',
-    'Presidential',
-  ];
   currentDate: Date = new Date();
 
   constructor(private fb: FormBuilder, private messageService: MessageService) {
@@ -98,19 +114,41 @@ export class HotelFormComponent implements OnInit {
       children: [0, [Validators.min(0)]],
       specialRequests: [''],
       paymentMethod: ['', Validators.required],
-      cardNumber: [''],
-      cardExpiry: [''],
-      cardCvv: [''],
       depositAmount: [0, [Validators.min(0)]],
-      termsAccepted: [false, Validators.requiredTrue],
-      selectedRooms: [[], Validators.required],
     });
 
     this.setupFormListeners();
   }
 
-  ngOnInit(): void {
+  ngOnInit() {
+    if (this.selectedRooms && this.selectedRooms.length > 0) {
+      // Pre-populate form with selected room data
+      this.bookingForm.patchValue({
+        roomType: this.selectedRooms[0].type,
+        roomNumber: this.selectedRooms[0].number,
+        adults: 1,
+        children: 0,
+        checkinDate: new Date(),
+        checkoutDate: new Date(new Date().setDate(new Date().getDate() + 1)),
+
+        // ... other fields
+      });
+    }
     this.loadSelectedRooms();
+  }
+
+  setActiveStatus(status: string) {
+    this.activeStatus = status;
+    if (this.bookingSummary) {
+      // Update the booking summary status
+      this.bookingSummary.status = status === 'checkin' ? 'occupied' : 'booked';
+
+      // Update the selected rooms' status
+      this.selectedRooms = this.selectedRooms.map((room) => ({
+        ...room,
+        status: status === 'checkin' ? 'occupied' : 'booked',
+      }));
+    }
   }
 
   private setupFormListeners(): void {
@@ -122,29 +160,41 @@ export class HotelFormComponent implements OnInit {
           newCheckout.setDate(newCheckout.getDate() + 1);
           this.bookingForm.get('checkoutDate')?.setValue(newCheckout);
         }
+        this.calculateBookingDetails();
       }
+    });
+
+    this.bookingForm.get('checkoutDate')?.valueChanges.subscribe(() => {
+      this.calculateBookingDetails();
+    });
+
+    this.bookingForm.get('depositAmount')?.valueChanges.subscribe(() => {
+      this.calculateBookingDetails();
     });
   }
 
-  openBookingForm(roomOrRooms: Room | Room[]): void {
+  openBookingForm(rooms: Room[]): void {
     this.formType = 'booking';
-    this.selectedRooms = Array.isArray(roomOrRooms)
-      ? roomOrRooms
-      : [roomOrRooms];
+    this.selectedRooms = rooms;
     this.initForm();
     this.saveSelectedRooms();
   }
 
   initForm(): void {
     this.bookingForm.reset({
+      title: '',
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      country: 'Nigeria',
       checkinDate: new Date(),
       checkoutDate: new Date(new Date().setDate(new Date().getDate() + 1)),
       adults: 1,
       children: 0,
+      specialRequests: '',
+      paymentMethod: '',
       depositAmount: 0,
-      termsAccepted: false,
-      country: 'Nigeria',
-      selectedRooms: this.selectedRooms,
     });
   }
 
@@ -172,24 +222,39 @@ export class HotelFormComponent implements OnInit {
       (sum, room) => sum + room.rate,
       0
     );
-    this.subtotal = roomRates * this.nights;
-    this.taxes = this.subtotal * 0.075; // 7.5% VAT
-    this.total = this.subtotal + this.taxes;
-    this.depositAmount = formValues.depositAmount || 0;
-    this.balanceAmount = Math.max(0, this.total - this.depositAmount);
+    const subtotal = roomRates * this.nights;
+    const taxes = subtotal * 0.075; // 7.5% VAT
+    const total = subtotal + taxes;
+    const depositAmount = formValues.depositAmount || 0;
+    const balanceAmount = Math.max(0, total - depositAmount);
+
+    // Prepare guest object
+    const guest: Guest = {
+      title: formValues.title,
+      firstName: formValues.firstName,
+      lastName: formValues.lastName,
+      email: formValues.email,
+      phone: formValues.phone,
+      country: formValues.country,
+    };
 
     // Prepare booking summary
     this.bookingSummary = {
-      ...formValues,
+      guest,
+      checkinDate,
+      checkoutDate,
+      adults: formValues.adults,
+      children: formValues.children,
+      specialRequests: formValues.specialRequests,
+      paymentMethod: formValues.paymentMethod,
+      depositAmount,
       roomIds: this.selectedRooms.map((room) => room.id),
       roomTypes: [...new Set(this.selectedRooms.map((room) => room.type))],
-      roomRates: roomRates,
-      nights: this.nights,
-      subtotal: this.subtotal,
-      taxes: this.taxes,
-      total: this.total,
-      depositAmount: this.depositAmount,
-      balanceAmount: this.balanceAmount,
+      roomRates: this.selectedRooms.map((room) => room.rate),
+      subtotal,
+      taxes,
+      total,
+      balanceAmount,
     };
   }
 
@@ -214,49 +279,49 @@ export class HotelFormComponent implements OnInit {
           } else if (field === 'firstName' || field === 'lastName') {
             this.formErrors[field] = 'Only letters and spaces allowed';
           }
-        } else if (control.errors?.['requiredTrue']) {
-          this.formErrors[field] = 'You must accept the terms and conditions';
         }
       }
     });
   }
 
   confirmBooking(): void {
-    const formValues = this.bookingForm.value;
-    const guestName = `${formValues.title} ${formValues.firstName} ${formValues.lastName}`;
+    if (!this.bookingSummary) return;
 
-    // Update room statuses
-    this.selectedRooms.forEach((room) => {
-      room.status = 'booked';
-      room.guest = guestName;
-      room.bookingDetails = {
-        title: formValues.title,
-        firstName: formValues.firstName,
-        lastName: formValues.lastName,
-        email: formValues.email,
-        phone: formValues.phone,
-        checkinDate: formValues.checkinDate,
-        checkoutDate: formValues.checkoutDate,
-        adults: formValues.adults,
-        children: formValues.children,
-        specialRequests: formValues.specialRequests,
-        paymentMethod: formValues.paymentMethod,
-        totalAmount: this.total,
-        paidAmount: this.depositAmount,
-        balanceAmount: this.balanceAmount,
-      };
-    });
+    const status = this.activeStatus === 'checkin' ? 'occupied' : 'booked';
+
+    const updatedRooms = this.selectedRooms.map((room) => ({
+      ...room,
+      status: status,
+      guest: this.bookingSummary?.guest,
+      bookingDetails: {
+        checkinDate: this.bookingSummary?.checkinDate ?? new Date(),
+        checkoutDate: this.bookingSummary?.checkoutDate ?? new Date(),
+        adults: this.bookingSummary?.adults ?? 0,
+        children: this.bookingSummary?.children ?? 0,
+        specialRequests: this.bookingSummary?.specialRequests ?? '',
+        paymentMethod: this.bookingSummary?.paymentMethod ?? '',
+        totalAmount: this.bookingSummary?.total ?? 0,
+        paidAmount: this.bookingSummary?.depositAmount ?? 0,
+        balanceAmount: this.bookingSummary?.balanceAmount ?? 0,
+      },
+    }));
+
+    this.bookingConfirmed.emit(updatedRooms);
+    this.showSuccessMessage(updatedRooms, status);
+    this.closeForm();
+  }
+
+  private showSuccessMessage(rooms: Room[], status: string): void {
+    const roomNumbers = rooms.map((r) => r.number).join(', ');
+    const statusMessage = status === 'occupied' ? 'checked in' : 'booked';
 
     this.messageService.add({
       severity: 'success',
-      summary: 'Booking Confirmed',
-      detail: `Rooms ${this.selectedRooms
-        .map((r) => r.id)
-        .join(', ')} booked for ${guestName}`,
+      summary: 'Success',
+      detail: `Room${
+        rooms.length > 1 ? 's' : ''
+      } ${roomNumbers} ${statusMessage} successfully`,
     });
-
-    this.clearSelectedRooms();
-    this.closeForm();
   }
 
   closeForm(): void {
@@ -301,27 +366,36 @@ export class HotelFormComponent implements OnInit {
     localStorage.removeItem('selectedRooms');
   }
 
-  openCheckInForm(room: Room): void {
-    this.formType = 'checkin';
-    this.selectedRooms = [room];
+  private calculateBookingDetails(): void {
+    const formValues = this.bookingForm.value;
+    const checkinDate = new Date(formValues.checkinDate || new Date());
+    const checkoutDate = new Date(
+      formValues.checkoutDate ||
+        new Date(new Date().setDate(new Date().getDate() + 1))
+    );
 
-    // Pre-fill form with existing booking details if available
-    if (room.bookingDetails) {
-      this.bookingForm.patchValue({
-        title: room.bookingDetails.title,
-        firstName: room.bookingDetails.firstName,
-        lastName: room.bookingDetails.lastName,
-        email: room.bookingDetails.email,
-        phone: room.bookingDetails.phone,
-        checkinDate: new Date(room.bookingDetails.checkinDate),
-        checkoutDate: new Date(room.bookingDetails.checkoutDate),
-        adults: room.bookingDetails.adults,
-        children: room.bookingDetails.children,
-        specialRequests: room.bookingDetails.specialRequests,
-        paymentMethod: room.bookingDetails.paymentMethod,
-      });
-    } else {
-      this.initForm();
-    }
+    // Calculate nights
+    const timeDiff = checkoutDate.getTime() - checkinDate.getTime();
+    this.nights = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+    // Calculate amounts based on all selected rooms
+    const roomRates = this.selectedRooms.reduce(
+      (sum, room) => sum + room.rate,
+      0
+    );
+    const subtotal = roomRates * this.nights;
+    const taxes = subtotal * 0.075; // 7.5% VAT
+    const total = subtotal + taxes;
+
+    // Update form values
+    this.bookingForm.patchValue(
+      {
+        subtotal,
+        taxes,
+        total,
+        balanceAmount: Math.max(0, total - (formValues.depositAmount || 0)),
+      },
+      { emitEvent: false }
+    );
   }
 }

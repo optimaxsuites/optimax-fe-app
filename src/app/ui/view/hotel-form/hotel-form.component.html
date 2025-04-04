@@ -1,4 +1,37 @@
 <div class="hotel-form-container">
+  <!-- Selected Rooms Section -->
+  <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+    <div class="flex items-center mb-3">
+      <div class="bg-blue-500 p-2 rounded-lg mr-3">
+        <i class="pi pi-home text-white"></i>
+      </div>
+      <h4 class="text-xl font-bold text-gray-700">Selected Rooms</h4>
+    </div>
+
+    <div class="space-y-2">
+      <div
+        *ngFor="let room of selectedRooms"
+        class="p-3 bg-white rounded-lg border border-gray-200 flex justify-between items-center"
+      >
+        <div>
+          <p class="font-semibold">
+            Room {{ room.number }} - {{ room.type }}
+            <span *ngIf="room.floor" class="text-sm text-gray-500 ml-2">
+              (Floor {{ room.floor }})
+            </span>
+          </p>
+          <p class="text-sm text-gray-600">
+            {{ room.rate | currency : "NGN" : "symbol" : "1.0-0" }}/night
+          </p>
+        </div>
+        <div class="text-right">
+          <p class="font-semibold">
+            {{ room.rate | currency : "NGN" : "symbol" : "1.0-0" }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
   <!-- Booking Form Modal -->
   <div
     class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 overflow-y-auto py-8"
@@ -410,121 +443,236 @@
   <!-- Booking Confirmation Modal -->
   <div
     *ngIf="bookingSummary"
-    class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+    class="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn"
   >
-    <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-md mx-4">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-bold text-gray-800">Booking Confirmation</h3>
+    <div
+      class="bg-white rounded-xl shadow-2xl w-full max-w-6xl overflow-hidden border border-white/20 animate-scaleIn"
+    >
+      <!-- Header -->
+      <div
+        class="bg-gradient-to-r from-blue-800 to-green-700 p-6 text-white relative"
+      >
+        <div class="flex items-center gap-4">
+          <div class="bg-white/20 p-3 rounded-full">
+            <i class="pi pi-check-circle text-3xl"></i>
+          </div>
+          <div>
+            <h3 class="text-3xl text-white font-bold">Booking Confirmation</h3>
+            <p class="text-blue-100 mt-5 text-xl">Your reservation is ready</p>
+          </div>
+        </div>
         <button
-          class="text-gray-500 hover:text-gray-800"
           (click)="editBooking()"
+          class="absolute right-6 top-6 text-white/80 hover:text-white transition-all p-2 rounded-full hover:bg-black/20"
         >
-          <i class="pi pi-times"></i>
+          <i class="pi pi-times text-2xl"></i>
         </button>
       </div>
 
-      <div class="space-y-4">
-        <!-- Room Info -->
-        <div class="bg-blue-50 p-4 rounded-lg">
-          <div class="flex items-center">
-            <div class="bg-blue-100 p-2 rounded-full mr-3">
-              <i class="pi pi-home text-blue-500"></i>
+      <!-- Content -->
+      <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Left Column - Rooms Summary -->
+        <div class="bg-blue-50/50 p-6 rounded-xl border border-blue-100">
+          <div class="flex items-center gap-4 mb-5">
+            <div class="bg-white p-3 rounded-lg shadow-sm">
+              <i class="pi pi-home text-blue-500 text-2xl"></i>
             </div>
-            <div>
-              <h4 class="font-bold">
-                Rooms {{ bookingSummary.roomIds.join(", ") }}
-              </h4>
-              <p class="text-sm text-gray-600">
-                {{ bookingSummary.roomTypes.join(", ") }}
-              </p>
-              <p class="text-sm mt-1">
-                {{ bookingSummary.checkinDate | date : "mediumDate" }} -
-                {{ bookingSummary.checkoutDate | date : "mediumDate" }}
-                ({{ nights }} night{{ nights > 1 ? "s" : "" }})
-              </p>
+            <h4 class="font-bold text-2xl text-blue-800">Selected Rooms</h4>
+          </div>
+
+          <div
+            class="space-y-4"
+            [class.max-h-96]="bookingSummary.roomIds.length > 3"
+            [class.overflow-y-auto]="bookingSummary.roomIds.length > 3"
+            [class.pr-3]="bookingSummary.roomIds.length > 3"
+          >
+            <div
+              *ngFor="let room of bookingSummary.roomIds; let i = index"
+              class="bg-white/90 p-4 rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-shadow duration-200"
+            >
+              <div class="flex justify-between items-start">
+                <div>
+                  <h5
+                    class="font-semibold text-xl text-blue-800 flex items-center gap-3"
+                  >
+                    <span>Room {{ room }}</span>
+                    <span
+                      class="text-sm bg-blue-100 text-blue-600 px-3 py-1 rounded-full"
+                    >
+                      {{ bookingSummary.roomTypes[i] }}
+                    </span>
+                  </h5>
+                  <div class="flex items-center text-gray-600 mt-2 text-base">
+                    <i class="pi pi-calendar mr-3 text-blue-400 text-xl"></i>
+                    <span>
+                      {{ bookingSummary.checkinDate | date : "shortDate" }} →
+                      {{ bookingSummary.checkoutDate | date : "shortDate" }}
+                    </span>
+                  </div>
+                </div>
+                <span
+                  class="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg text-base font-medium"
+                >
+                  ₦{{ bookingSummary.roomRates[i] | number }}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Guest Info -->
-        <div class="border-b pb-4">
-          <h4 class="font-semibold mb-2">Guest Information</h4>
-          <p>
-            {{ bookingSummary.title }} {{ bookingSummary.firstName }}
-            {{ bookingSummary.lastName }}
-          </p>
-          <p class="text-sm text-gray-600">{{ bookingSummary.email }}</p>
-          <p class="text-sm text-gray-600">{{ bookingSummary.phone }}</p>
-        </div>
-
-        <!-- Payment Summary -->
-        <div>
-          <h4 class="font-semibold mb-2">Payment Summary</h4>
-          <div class="space-y-2">
-            <div class="flex justify-between">
-              <span>Room Rate:</span>
-              <span>{{
-                bookingSummary.roomRates | currency : "NGN" : "symbol" : "1.0-0"
-              }}</span>
-            </div>
-            <div class="flex justify-between">
+          <div class="mt-6 pt-5 border-t border-blue-200/50">
+            <div class="flex justify-between text-gray-600 mb-3 text-xl-start">
               <span>Subtotal:</span>
-              <span>{{
-                bookingSummary.subtotal | currency : "NGN" : "symbol" : "1.0-0"
-              }}</span>
+              <span>₦{{ bookingSummary.subtotal | number }}</span>
             </div>
-            <div class="flex justify-between">
-              <span>VAT (7.5%):</span>
-              <span>{{
-                bookingSummary.taxes | currency : "NGN" : "symbol" : "1.0-0"
-              }}</span>
-            </div>
-            <div class="flex justify-between font-bold border-t pt-2 mt-2">
-              <span>Total:</span>
-              <span>{{
-                bookingSummary.total | currency : "NGN" : "symbol" : "1.0-0"
-              }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span>Deposit Paid:</span>
-              <span>{{
-                bookingSummary.depositAmount
-                  | currency : "NGN" : "symbol" : "1.0-0"
-              }}</span>
+            <div class="flex justify-between text-gray-600 mb-3 text-xl">
+              <span>Taxes (7.5%):</span>
+              <span>₦{{ bookingSummary.taxes | number }}</span>
             </div>
             <div
-              class="flex justify-between font-bold text-lg"
-              [ngClass]="{
-                'text-green-600': bookingSummary.balanceAmount === 0,
-                'text-orange-600': bookingSummary.balanceAmount > 0
-              }"
+              class="flex justify-between font-extrabold text-blue-800 mt-4 text-xl"
             >
-              <span>Balance:</span>
-              <span>{{
-                bookingSummary.balanceAmount
-                  | currency : "NGN" : "symbol" : "1.0-0"
-              }}</span>
+              <span>Total:</span>
+              <span>₦{{ bookingSummary.total | number }}</span>
             </div>
           </div>
         </div>
 
+        <!-- Right Column - Guest & Payment Info -->
+        <div class="space-y-6">
+          <!-- Guest Info -->
+          <div class="bg-gray-50 p-5 rounded-xl border border-gray-200">
+            <div class="flex items-center gap-4 mb-4">
+              <div class="bg-blue-500 p-3 rounded-lg">
+                <i class="pi pi-user text-white text-xl"></i>
+              </div>
+              <h4 class="font-bold text-2xl text-gray-700">
+                Guest Information
+              </h4>
+            </div>
+
+            <div class="space-y-3 text-xl">
+              <p class="font-medium">
+                {{ bookingSummary.guest.title }}
+                {{ bookingSummary.guest.firstName }}
+                {{ bookingSummary.guest.lastName }}
+              </p>
+              <p class="text-gray-600">{{ bookingSummary.guest.email }}</p>
+              <p class="text-gray-600">{{ bookingSummary.guest.phone }}</p>
+              <p class="text-gray-600">{{ bookingSummary.guest.country }}</p>
+            </div>
+          </div>
+
+          <!-- Payment Info -->
+          <div class="bg-gray-50 p-5 rounded-xl border border-gray-200">
+            <div class="flex items-center gap-4 mb-4">
+              <div class="bg-blue-500 p-3 rounded-lg">
+                <i class="pi pi-credit-card text-white text-xl"></i>
+              </div>
+              <h4 class="font-bold text-2xl text-gray-700">
+                Payment Information
+              </h4>
+            </div>
+
+            <div class="space-y-4 text-xl">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Method:</span>
+                <span class="font-medium">{{
+                  bookingSummary.paymentMethod | titlecase
+                }}</span>
+              </div>
+
+              <div class="flex justify-between text-green-600">
+                <span>Deposit Paid:</span>
+                <span class="font-medium"
+                  >₦{{ bookingSummary.depositAmount | number }}</span
+                >
+              </div>
+
+              <div
+                class="flex justify-between"
+                [ngClass]="{
+                  'text-green-600': bookingSummary.balanceAmount === 0,
+                  'text-amber-600': bookingSummary.balanceAmount > 0
+                }"
+              >
+                <span>Balance Due:</span>
+                <span class="font-medium"
+                  >₦{{ bookingSummary.balanceAmount | number }}</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Special Requests -->
+          <div
+            *ngIf="bookingSummary.specialRequests"
+            class="bg-amber-50 p-5 rounded-xl border border-amber-100"
+          >
+            <div class="flex items-center gap-3 text-amber-700 text-lg">
+              <i class="pi pi-comment"></i>
+              <h4 class="font-medium">Special Requests</h4>
+            </div>
+            <p class="text-amber-800 mt-3 italic text-lg">
+              "{{ bookingSummary.specialRequests }}"
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer with confirmation button -->
+
+      <div
+        class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-t border-gray-200/50 flex justify-between items-center"
+      >
         <!-- Action Buttons -->
-        <div class="flex justify-end space-x-3 pt-4">
+        <div class="flex space-x-3">
+          <!-- Edit Button -->
           <button
             type="button"
-            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition"
+            class="px-5 py-2.5 bg-white text-gray-600 rounded-lg font-medium hover:bg-gray-100 transition-all border border-gray-300/50 hover:border-gray-400/50 shadow-sm hover:shadow-md flex items-center gap-2"
             (click)="editBooking()"
           >
-            Edit
+            <i class="pi pi-pencil text-sm"></i>
+            Edit Booking
           </button>
-          <button
-            type="button"
-            class="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition"
-            (click)="confirmBooking()"
+
+          <!-- Status Toggle Buttons -->
+          <div
+            class="flex bg-gray-200/70 p-1 rounded-lg border border-gray-300/30"
           >
-            Confirm
-          </button>
+            <!-- Check-in Button -->
+            <button
+              type="button"
+              class="px-4 py-2 text-xl font-medium rounded-md transition-all flex items-center gap-1.5 hover:bg-white/80 hover:shadow-sm [&.active]:bg-gradient-to-r [&.active]:from-blue-500 [&.active]:to-blue-600 [&.active]:text-white [&.active]:shadow-md"
+              [class.active]="activeStatus === 'checkin'"
+              (click)="setActiveStatus('checkin')"
+            >
+              <i class="pi pi-sign-in text-lg"></i>
+              Check-in
+            </button>
+
+            <!-- Booked Button -->
+            <button
+              type="button"
+              class="px-4 py-2 text-xl font-medium rounded-md transition-all flex items-center gap-1.5 hover:bg-white/80 hover:shadow-sm [&.active]:bg-gradient-to-r [&.active]:from-emerald-500 [&.active]:to-emerald-600 [&.active]:text-white [&.active]:shadow-md"
+              [class.active]="activeStatus === 'booked'"
+              (click)="setActiveStatus('booked')"
+            >
+              <i class="pi pi-calendar text-lg"></i>
+              Booked
+            </button>
+          </div>
         </div>
+
+        <!-- Confirm Button -->
+        <button
+          type="button"
+          class="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+          (click)="confirmBooking()"
+        >
+          <i class="pi pi-check-circle"></i>
+          Confirm {{ activeStatus === "checkin" ? "Check-in" : "Booking" }}
+        </button>
       </div>
     </div>
   </div>

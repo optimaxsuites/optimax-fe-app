@@ -107,6 +107,8 @@ import { HotelMessageComponent } from './ui/view/hotel-message/hotel-message.com
 import { HotelRoomlistComponent } from './ui/view/hotel-roomlist/hotel-roomlist.component';
 import { HotelRoomdetailsComponent } from './ui/view/hotel-roomdetails/hotel-roomdetails.component';
 import { CheckboxModule } from 'primeng/checkbox';
+import { HotelBillsComponent } from './ui/view/hotel-bills/hotel-bills.component';
+import { HotelChangeroomComponent } from './ui/view/hotel-changeroom/hotel-changeroom.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -152,6 +154,8 @@ import { CheckboxModule } from 'primeng/checkbox';
     HotelMessageComponent,
     HotelRoomlistComponent,
     HotelRoomdetailsComponent,
+    HotelBillsComponent,
+    HotelChangeroomComponent,
     //CheckoutKitchenComponent,
     //CheckoutHeaderComponent,
   ],
