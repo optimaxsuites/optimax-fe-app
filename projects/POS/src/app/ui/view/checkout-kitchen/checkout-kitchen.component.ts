@@ -54,12 +54,36 @@ export class CheckoutKitchenComponent implements OnInit {
     { item: 'Cat Fish', qty: 1, rate: 'N2,000', amount: 'N2,000' },
   ];
 
+  productList = [
+    { name: 'Product A', subCategory: 'Sub-Category' },
+    { name: 'Product B', subCategory: 'Sub-Category' },
+    { name: 'Product C', subCategory: 'Sub-Category' },
+    { name: 'Product D', subCategory: 'Sub-Category' },
+    { name: 'Product E', subCategory: 'Sub-Category' },
+    { name: 'Product F', subCategory: 'Sub-Category' },
+    { name: 'Product G', subCategory: 'Sub-Category' },
+    { name: 'Product H', subCategory: 'Sub-Category' },
+    { name: 'Product I', subCategory: 'Sub-Category' },
+    { name: 'Product A', subCategory: 'Sub-Category' },
+    { name: 'Product B', subCategory: 'Sub-Category' },
+    { name: 'Product C', subCategory: 'Sub-Category' },
+    { name: 'Product D', subCategory: 'Sub-Category' },
+    { name: 'Product E', subCategory: 'Sub-Category' },
+    { name: 'Product F', subCategory: 'Sub-Category' },
+    { name: 'Product G', subCategory: 'Sub-Category' },
+    { name: 'Product H', subCategory: 'Sub-Category' },
+    { name: 'Product I', subCategory: 'Sub-Category' },
+  ];
+
+  categoryList = ['Main Meal', 'Drinks', 'BBQ', 'Sides', 'Appetizer'];
+
   get mode(): 'waiter' | 'chef' | 'cashier' {
     //TODO: Determine the mode to use from the logged in user's id. For now though, just use a toggle to change this
     return this.testMode() ?? 'chef';
   }
 
   isReceiptModalOpen = false;
+  isCreateOrderModalOpen = false;
 
   ngOnInit(): void {
     switch (this.mode) {

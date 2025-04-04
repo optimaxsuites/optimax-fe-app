@@ -269,3 +269,107 @@ body {
   font-weight: bold;
   font-size: 2rem;
 }
+
+.create-order-dialog {
+  display: flex;
+  flex-direction: column;
+
+  ::ng-deep .p-dialog-content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .product-parent-area {
+    display: flex;
+    height: 85%;
+    flex-grow: 1;
+    padding-bottom: 1rem;
+
+    .order-display {
+      width: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      // The container where the selected products will show
+      > div {
+        width: 90%;
+        height: 90%;
+        min-width: fit-content;
+        border: black thin solid;
+        display: flex;
+        flex-direction: column;
+
+        // The container for the vat and totals
+        > div:nth-child(2) {
+          width: 90%;
+          margin: auto;
+          font-size: 1.4rem;
+          display: flex;
+          flex-direction: column;
+          row-gap: 0.5rem;
+
+          // Each container for the text and amount
+          > div {
+            display: flex;
+            justify-content: space-between;
+          }
+        }
+      }
+    }
+
+    .subcategory-display {
+      display: grid;
+      flex-grow: 1;
+      // min-height: 0;
+      grid-template-columns: 1fr 1fr 1fr;
+      // grid-template-rows: repeat(auto-fill, 10rem);
+      // grid-auto-columns: 12rem;
+      grid-auto-rows: 10rem;
+      gap: 1rem;
+      overflow-y: auto;
+      // height: calc-size(auto, 100%);
+
+      .subcategory-card {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border: black thin solid;
+      }
+    }
+  }
+
+  .bottom-btn-bar {
+    display: flex;
+    flex-wrap: nowrap;
+    column-gap: 1rem;
+
+    > * {
+      display: flex;
+      justify-content: space-around;
+      column-gap: 1rem;
+      // width: fit-content;
+    }
+
+    button {
+      height: 4.5rem;
+      width: 6.5rem;
+      min-height: fit-content;
+      min-width: fit-content;
+    }
+
+    .category-list {
+      flex-grow: 1;
+      max-width: 70%;
+      overflow-x: auto;
+    }
+
+    .utility-btns {
+      flex-basis: 30%;
+
+      > :first-child {
+        // margin-left: auto;
+      }
+    }
+  }
+}
