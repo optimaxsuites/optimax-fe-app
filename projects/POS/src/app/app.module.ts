@@ -217,7 +217,7 @@ import { TaxComponent } from './ui/view/products/metaDatas/tax/tax.component';
     InputGroupAddonModule,
     SkeletonModule,
     PaginatorModule,
-    BrowserAnimationsModule,
+    // BrowserAnimationsModule,
   ],
   exports: [HotelRoomlistComponent, HotelRoomdetailsComponent ],
   providers: [
