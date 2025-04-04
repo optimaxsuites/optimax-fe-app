@@ -121,10 +121,10 @@ export class EditInventoryComponent {
 
 private defaultSupplier: supplierData = {
   id: 0,
-  supplierName: '',
+  name: '',
   contactPerson: '',
   email: '',
-  phone: 0,
+  phoneNumber: 0,
   address: '',
   products: ' ',
   notes: '',
@@ -515,7 +515,7 @@ toggleDropdown() {
 }
 
 getDisplayName(supplier: supplierData): string {
-  return supplier.supplierName;
+  return supplier.name;
 }
 
 addOption() {
@@ -606,10 +606,10 @@ submitForm() {
   
   const newSupplier:supplierData = {
     id: lastId + 1,
-    supplierName: this.supplierName.trim(),
+    name: this.supplierName.trim(),
     contactPerson: this.contactPerson,
     email: this.email,
-    phone: parseInt(this.phone),
+    phoneNumber: parseInt(this.phone),
     address: this.address,
     // products: this.products,
     notes: this.notes,

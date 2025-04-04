@@ -277,17 +277,24 @@ export interface ChangeDTO {
   returnType: 'customer';
 }
 export type supplierData = {
-  id: number;
-  supplierName: string;
+  id?: number;
+  name: string;
   contactPerson: string;
   email: string;
-  phone: number;
+  phoneNumber: number;
   address: string;
   products?: string;
-  notes: string;
-  agreeTerms: boolean;
-  createdAt: Date;
+  notes?: string;
+  agreeTerms?: boolean;
+  createdAt?: Date;
 };
+
+export type TaxDTO = {
+  id?: number;
+  name: string;
+  rate: number;
+  order?: number
+}
 
 /**
  * This is the interface that should be implemented by components that wish to change behaviour or UI based on the business type.

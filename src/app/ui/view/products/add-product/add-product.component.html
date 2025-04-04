@@ -637,6 +637,7 @@
 
                 <th class="py-2 px-4 bg-gray-600">Tax</th>
                 <th class="py-2 px-4 bg-gray-600">Discount</th>
+                <th class="py-2 px-4 bg-gray-600">Supplier</th>
 
                 <th class="py-2 px-4 bg-gray-600"></th> 
               </tr>
@@ -657,9 +658,19 @@
                 <td class="py-2 px-4 border-b">
                   <p-inputNumber formControlName="quantity" mode="decimal" [min]="0"></p-inputNumber>
                 </td>
+                <td>
+                  <div class="flex inputAndBtn">
+                    <ng-select
+                      [items]="taxes"
+                      bindLabel="name"
+                      bindValue="id"
+                      formControlName="discount"
+                      placeholder="Taxes"
+                      class="w-full"
+                    ></ng-select>
           
-                <td class="py-2 px-4 border-b">
-                  <p-inputNumber formControlName="tax" mode="decimal" [min]="0"></p-inputNumber>
+                    <button class="btn create-invoice-btn mt-1.5" type="button" (click)="openAddTax = true">+</button>
+                  </div>
                 </td>
           
                 <td>
@@ -674,6 +685,21 @@
                     ></ng-select>
           
                     <button class="btn create-invoice-btn mt-1.5" type="button" (click)="openAddDiscount = true">+</button>
+                  </div>
+                </td>
+
+                <td>
+                  <div class="flex inputAndBtn">
+                    <ng-select
+                      [items]="suppliers"
+                      bindLabel="name"
+                      bindValue="id"
+                      formControlName="discount"
+                      placeholder="Supplier"
+                      class="w-full"
+                    ></ng-select>
+          
+                    <button class="btn create-invoice-btn mt-1.5" type="button" (click)="openAddSupplier = true">+</button>
                   </div>
                 </td>
                 <td class="py-2 px-4 border-b text-right">
@@ -1011,11 +1037,102 @@
     </div>
   </div>
 </app-side-modal>
-<!-- !SECTION -->
 
-<!-- SECTION: Modal for adding branches -->
-<!-- TODO -->
-<!-- !SECTION  -->
+<app-side-modal *ngIf="openAddSupplier" (close)="openAddSupplier = false">
+  <div class="modal-header flex justify-between items-center text-gray-700">
+    <h2 class="font-semibold pb-0 mb-0">Supplier</h2>
+
+    <div class="flex gap-3">
+      <button
+        class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold"
+        (click)="openAddDiscount = false"
+      >
+        Cancel
+      </button>
+      <button class="btn create-invoice-btn" (click)="addSupplier()">
+        Save
+      </button>
+    </div>
+  </div>
+
+  <div class="mt-5 mb-2 flex flex-col gap-4">
+    <div class="detailDiv w-full">
+      <label for="e-price">Name</label>
+      <input
+        class="name editInput"
+        type="text"
+        id="e-price"
+        [(ngModel)]="supplierData.name"
+        placeholder="Supplier name"
+      />
+    </div>
+
+    <div class="detailDiv w-full">
+      <label for="email">Email</label>
+      <input
+        id="email"
+        [(ngModel)]="supplierData.email"
+        class="name editInput"
+        placeholder="Supplier value"
+      />
+    </div>
+
+    <div class="detailDiv w-full">
+      <label for="tel">Phone Number</label>
+      <input
+        id="tel"
+        type="tel"
+        [(ngModel)]="supplierData.phoneNumber"
+        class="name editInput"
+        placeholder="Supplier Phone Number"
+      />
+    </div>
+
+    <!-- <div  *ngIf="productData.discount.discountType.includes(2)"> -->
+    <div  class="detailDiv w-full">
+      <label for="contact">Name of Contact Person</label>
+      <input
+        id="contact"
+        type="text"
+        [(ngModel)]="supplierData.contactPerson"
+        class="name editInput"
+        placeholder="Contact Person"
+      />
+    </div>
+
+    <!-- <div *ngIf="productData.discount.discountType.includes(3)"> -->
+    <div class="detailDiv w-full">
+      <label for="address">Supplier's Address</label>
+      <textarea
+        id="address"
+        type="text"
+        [(ngModel)]="supplierData.address"
+        class="name editInput"
+        placeholder="Supplier's Address"
+      ></textarea>
+    </div>
+
+    <hr>
+
+  <div
+  *ngFor="let supplier of suppliers"
+  class="flex flex-col my-3 text-gray-700 font-mono"
+>
+  <div class="flex justify-between items-center">
+    <p>{{ supplier.name }}</p>
+    <i
+      class="fa-solid fa-trash cursor-pointer"
+      (click)="removeSupplier(supplier.id)"
+    ></i>
+  </div>
+</div>
+  </div>
+</app-side-modal>
+
+<app-side-modal *ngIf="openAddTax" (close)="openAddTax = false">
+   <app-tax></app-tax>
+</app-side-modal>
+
 
 <!-- SECTION: Modal for displaying and setting branch data like price and quantity -->
 @if (openBranchData) {

@@ -21,6 +21,7 @@ import { Workbook, Worksheet } from 'exceljs';
 import { KeyValue } from '@angular/common';
 import { ProductExcelColumns } from '../../models/enums';
 import { ImageCacheService } from '../../service/image-cache.service';
+import { MetadataService } from '../../service/metadata.service';
 /**
  * Responsible for showing the list of available products in `admin/pos`
  *
@@ -149,13 +150,15 @@ rowsPerPage = 15;
     private messageService: MessageService,
     private posService: PosServiceService,
     private http: HttpClient,
-    private imageCacheService: ImageCacheService
+    private imageCacheService: ImageCacheService,
+    private metadataService: MetadataService
   ) {}
 
   ngOnInit(): void {
     this.loadCategory();
     this.getProducts();
     this.getDiscountTypes();
+    this.metadataService.fetchMetaData();
   }
 
   toggleView() {
@@ -207,6 +210,7 @@ onPageChange(event: any) {
           return dateB.getTime() - dateA.getTime();
         });
         this.products = [...this.originalProducts];
+        console.log(this.products)
         this.isLoading = false;
       } else {
         console.log('error loading data');

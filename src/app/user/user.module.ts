@@ -50,6 +50,7 @@ import { CheckoutKitchenComponent } from '../ui/view/checkout-kitchen/checkout-k
 import { MenuModule } from 'primeng/menu';
 import { BadgeModule } from 'primeng/badge';
 import { MenubarModule } from 'primeng/menubar';
+import { AppResizeDirective } from '../ui/service/app-resize.directive';
 // import { ProductVariantModalComponent } from '../ui/view/product-variant-modal/product-variant-modal.component';
 
 @NgModule({
@@ -72,6 +73,7 @@ import { MenubarModule } from 'primeng/menubar';
     AllPaymentsModalComponent,
     CheckoutKitchenComponent,
     CheckoutHeaderComponent,
+    AppResizeDirective
     // ProductVariantModalComponent,
   ],
   imports: [

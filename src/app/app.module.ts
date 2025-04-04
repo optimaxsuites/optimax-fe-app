@@ -107,6 +107,10 @@ import { HotelMessageComponent } from './ui/view/hotel-message/hotel-message.com
 import { HotelRoomlistComponent } from './ui/view/hotel-roomlist/hotel-roomlist.component';
 import { HotelRoomdetailsComponent } from './ui/view/hotel-roomdetails/hotel-roomdetails.component';
 import { CheckboxModule } from 'primeng/checkbox';
+import { CategoryComponent } from './ui/view/products/metaDatas/category/category.component';
+import { DiscountComponent } from './ui/view/products/metaDatas/discount/discount.component';
+import { SupplierComponent } from './ui/view/products/metaDatas/supplier/supplier.component';
+import { TaxComponent } from './ui/view/products/metaDatas/tax/tax.component';
 import { HotelBillsComponent } from './ui/view/hotel-bills/hotel-bills.component';
 import { HotelChangeroomComponent } from './ui/view/hotel-changeroom/hotel-changeroom.component';
 @NgModule({
@@ -154,14 +158,18 @@ import { HotelChangeroomComponent } from './ui/view/hotel-changeroom/hotel-chang
     HotelMessageComponent,
     HotelRoomlistComponent,
     HotelRoomdetailsComponent,
+    CategoryComponent,
+    DiscountComponent,
+    SupplierComponent,
+    TaxComponent,
     HotelBillsComponent,
     HotelChangeroomComponent,
     //CheckoutKitchenComponent,
     //CheckoutHeaderComponent,
   ],
   imports: [
-    BrowserModule,
-    UserModule,
+    // BrowserModule,
+    // UserModule,
     AppRoutingModule,
     CheckboxModule,
     CommonModule,
@@ -213,9 +221,9 @@ import { HotelChangeroomComponent } from './ui/view/hotel-changeroom/hotel-chang
     InputGroupAddonModule,
     SkeletonModule,
     PaginatorModule,
-    BrowserAnimationsModule,
+    // BrowserAnimationsModule,
   ],
-  exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],
+  exports: [HotelRoomlistComponent, HotelRoomdetailsComponent ],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,
