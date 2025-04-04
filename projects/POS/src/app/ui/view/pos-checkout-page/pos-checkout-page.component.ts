@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 
 // import { UserComponent } from 'src/app/user.component';
@@ -9,6 +9,7 @@ import { RandomTokenService } from '../../sharedComponent/service/random-token/r
 import { BusinessType, ProductCategories } from '../../models/enums';
 import { Business, Cart, ProductData, VariantDTO } from '../../models/interface';
 import { IndustryDataService } from '../../service/industry-data.service';
+// import { AppResizeDirective } from '../../service/app-resize.directive';
 
 @Component({
   selector: 'app-pos-checkout-page',
@@ -17,6 +18,7 @@ import { IndustryDataService } from '../../service/industry-data.service';
   providers: [],
 })
 export class PosCheckoutPageComponent implements OnInit, Business {
+
   scannedSKU: string = '';
   register: string = 'open';
   orderName: string = '';
@@ -57,6 +59,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   isNotesModalOpen = false;
   isDeliveryModalOpen = false;
   isAllPaymentsModalOpen = false;
+  
 
   constructor(
     private router: Router,
@@ -87,6 +90,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     }
     this.getProducts();
     this.loadCategory();
+
   }
 
   @HostListener('window:keydown', ['$event'])

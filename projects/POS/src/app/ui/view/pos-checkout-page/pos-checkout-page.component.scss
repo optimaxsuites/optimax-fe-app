@@ -112,3 +112,9 @@ app-product-card {
   font-weight: bold;
   @apply bg-customGreen text-white font-bold rounded-md
 }
+.grabber{
+  width:8px;
+}
+.grabber:hover{
+  cursor:e-resize;
+}

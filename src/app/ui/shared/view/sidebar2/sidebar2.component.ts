@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { MenuItem } from '../../domain/menuItem.dto';
 import { NavigationEnd, Router } from '@angular/router';
 import { NavigationLinksService } from '../../service/navigation-links/navigation-links.service';
@@ -10,6 +10,7 @@ import { MenuItemsService } from 'projects/settings/src/app/ui/sharedComponents/
   styleUrl: './sidebar2.component.scss'
 })
 export class Sidebar2Component {
+   @Input() sidebarHidden!: boolean;
   menuItems: MenuItem[] = [];
   role: string | null = null;
 marketplace : any =   {

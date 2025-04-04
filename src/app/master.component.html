@@ -1,7 +1,7 @@
 
 <div class="master-container d-flex" >
-    <div class="sidebar-container" [ngClass]="{ 'show': !sidebarHidden, 'hidden': sidebarHidden }" >
-        <app-sidebar2></app-sidebar2>
+    <div class="sidebar-container" >
+        <app-sidebar2 [sidebarHidden]="sidebarHidden"></app-sidebar2>
     </div>
     
     <div class="main-container">

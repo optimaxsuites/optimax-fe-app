@@ -17,8 +17,8 @@
     </ul>
 </nav> -->
 
-<nav>
-    <div class="side-bar-header">
+<nav class="rounded-r-lg">
+    <div class="side-bar-header" *ngIf="!sidebarHidden">
       <img src="assets/logo.png" alt="Logo" />
     </div>
     <ul>
@@ -27,10 +27,13 @@
           <a *ngIf="!item.submenu"
              [routerLink]="item.route"
              routerLinkActive="active"
+             class="flex gap-2"
              [routerLinkActiveOptions]="{ exact: true }">
-            <i *ngIf="item.icon" [class]="item.icon"></i> {{ item.label }}
+            <i *ngIf="item.icon" [class]="item.icon"></i>  {{ item.label }}
           </a>
-          <span *ngIf="item.submenu">
+          <span 
+          class="flex gap-2"
+           *ngIf="item.submenu">
             <i *ngIf="item.icon" [class]="item.icon"></i> {{ item.label }} &#9662;
           </span>
         </div>

@@ -239,6 +239,7 @@ import { ToastrModule } from 'ngx-toastr';
 import { AppHrModule } from 'projects/hr/src/app/app.module';
 import { MarketplaceComponent } from './ui/marketplace/view/marketplace/marketplace.component';
 import { ServiceWorkerModule } from '@angular/service-worker';
+import { AppResizeDirective } from '../../projects/POS/src/app/ui/service/app-resize.directive';
 
 
 @NgModule({
@@ -407,7 +408,7 @@ import { ServiceWorkerModule } from '@angular/service-worker';
     DashboardFooterComponent,
     PayslipViewComponent,
     EmployeePayslipListComponent,
-    MarketplaceComponent
+    MarketplaceComponent,
 
   ],
   imports: [
