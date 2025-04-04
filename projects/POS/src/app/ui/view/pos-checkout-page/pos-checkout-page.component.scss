@@ -118,3 +118,14 @@ app-product-card {
 .grabber:hover{
   cursor:e-resize;
 }
+
+.left-sidebar {
+  display: flex;
+  flex-wrap: wrap; /* Allow the items to wrap to the next line */
+  gap: 0.5rem; /* Space between items */
+  @apply overflow-x-auto; /* Enable horizontal scrolling if needed */
+}
+
+.left-sidebar button {
+  width: calc(10% - 0.5rem); /* Each button takes 50% of the container width, minus gap */
+}

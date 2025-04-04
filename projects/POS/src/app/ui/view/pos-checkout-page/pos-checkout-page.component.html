@@ -14,14 +14,26 @@
     
 
     <div class="product-view">
-      <div class="left-sidebar w-auto flex gap-3 overflow-x-scroll capitalize">
-        <button (click)="filterItems($event)" value="Category" class="py-1.5 text-[10px] px-4 border rounded-md"   [ngClass]="{ 'active-button': selectedCategory === 'Category' }"  >All</button>
-        @for (category of categories; track category) {
-        <button (click)="filterItems($event)" [value]="category" class="py-1.5 text-[10px] px-4 border rounded-md text-nowrap"   [ngClass]="{ 'active-button': selectedCategory === category }" >
-          {{ category }}
+      <div class="left-sidebar w-auto flex gap-3 flex-wrap overflow-x-auto">
+        <button 
+          (click)="filterItems($event)" 
+          value="Category" 
+          class="py-1.5 text-[10px] px-4 border rounded-md" 
+          [ngClass]="{ 'active-button': selectedCategory === 'Category' }">
+          All
         </button>
-        }
+      
+        <ng-container *ngFor="let category of categories">
+          <button 
+            (click)="filterItems($event)" 
+            [value]="category" 
+            class="py-1.5 text-[10px] px-4 border rounded-md text-nowrap" 
+            [ngClass]="{ 'active-button': selectedCategory === category }">
+            {{ category }}
+          </button>
+        </ng-container>
       </div>
+      
       <div
         class="flex flex-col gap-10"
         [class]="businessType == 'Generic' ? 'h-[80vh]' : 'h-full'"
