@@ -42,6 +42,7 @@ export class BranchesComponent implements OnInit {
   loadBranches() {
     this.dataService.getBranches().subscribe({
       next: (data: any) => {
+        console.log(data)
         this.branches.push(data);
 
         
