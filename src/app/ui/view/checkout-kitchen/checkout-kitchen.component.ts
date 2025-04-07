@@ -36,6 +36,8 @@ type TableOrder = { foodItem: ProductData; amount: number };
 })
 // Used for both the cashier and kitchen
 export class CheckoutKitchenComponent implements OnInit {
+  /** The table number that is set by the waiter when creating a new order */
+  orderTableNumber = 0;
   isOrderDetailsOpen = false;
   selectedOrder?: TableStatus; // store the order/card clicked
 
@@ -141,10 +143,11 @@ export class CheckoutKitchenComponent implements OnInit {
     return 'success' as const;
   }
 
-  createOrder(tableNo: number, orders: TableOrder[]) {
+  createOrder(tableNo: number, orders: TableOrder[], waiterIdd?: string) {
     const ids = ['0', '1'];
     // TODO: Get the waiter's id based on their login info
-    const waiterId = ids[Math.round(Math.random() * 100) % ids.length];
+    const waiterId =
+      waiterIdd ?? ids[Math.round(Math.random() * 100) % ids.length];
 
     // update the signal by creating a new array
     this.#tableStatuses.update((statuses) => [
