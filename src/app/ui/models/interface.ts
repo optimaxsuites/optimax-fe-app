@@ -338,7 +338,7 @@ interface ProductBranchDTO {
   data: BranchDataDTO;
 }
 
-interface BranchDTO {
+export interface BranchDTO {
   id: number;
   name: string;
   description: string;

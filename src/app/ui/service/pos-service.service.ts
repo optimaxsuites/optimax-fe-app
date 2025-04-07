@@ -417,6 +417,15 @@ export class PosServiceService {
         );
 
   }
+  getBranches() {
+    return this.http
+         .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/branches')
+         .pipe(
+           catchError(this.handleError),
+         );
+ 
+   }
+ 
 
   deleteCategory(id: number) {
     return this.http

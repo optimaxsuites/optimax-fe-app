@@ -12,6 +12,8 @@ export class MetadataService {
   private categorySubject = new BehaviorSubject<any[]>([]);
   private taxSubject = new BehaviorSubject<any[]>([]);
   private supplierSubject = new BehaviorSubject<any[]>([]);
+  private branchSubject = new BehaviorSubject<any[]>([]);
+
 
 
   discount$ = this.discountSubject.asObservable();
@@ -19,6 +21,8 @@ export class MetadataService {
   taxes$ = this.taxSubject.asObservable();
   category$ = this.categorySubject.asObservable();
   supplier$ = this.supplierSubject.asObservable();
+  branches$ = this.branchSubject.asObservable();
+
 
   
   constructor(private posService: PosServiceService) { }
@@ -29,5 +33,7 @@ export class MetadataService {
     this.posService.getCategories().subscribe(data => this.categorySubject.next(data));
     this.posService.getSupplier().subscribe((data) => this.supplierSubject.next(data));
     this.posService.getTax().subscribe((data) => this.taxSubject.next(data));
+    this.posService.getBranches().subscribe((data) => this.branchSubject.next(data));
+
   }
 }
