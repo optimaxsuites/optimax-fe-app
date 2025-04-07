@@ -479,10 +479,10 @@ removeIngredient(index: number) {
     const branchArray = this.branchess;
     branchArray.clear(); // Reset the form array before updating
   
-    this.selecteddBranch.forEach((branch: string) => {
+    this.selecteddBranch.forEach((branch: { name: any; }) => {
       branchArray.push(
         this.fb.group({
-          branchName: [branch],
+          branchName: [branch.name],
           sellingPrice: [0, Validators.required],
           quantity: [0, Validators.required],
           tax: [0, Validators.required],

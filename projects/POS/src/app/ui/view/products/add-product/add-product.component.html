@@ -76,8 +76,7 @@
             <div class="inputAndBtn">
               <ng-select
                 [items]="branches"
-                bindLabel="label"
-                bindValue="value"
+                bindLabel="name"
                 formControlName="selectedBranch"
                 [multiple]="true"
                 placeholder="Select branch"
@@ -90,16 +89,6 @@
 
         
         </div>
-
-        <!-- <p class="text-xl ml-3 text-gray-700 font-bold pb-0 mb-0 mt-2 w-1/2">
-          Branch Data:
-          <ng-select
-            [items]="selectedBranches"
-            placeholder="Select branch data to edit"
-            [(ngModel)]="selectedBranchFromForm"
-            [ngModelOptions]="{ standalone: true }"
-          ></ng-select>
-        </p> -->
 
 
       
@@ -157,59 +146,7 @@
           </div> -->
         </div>
 
-        <!-- <div class="ml-3">
-          <label for="discount">Discount</label>
-
-          <div class="flex inputAndBtn">
-            <ng-select
-              [items]="discounts"
-              bindLabel="name"
-              bindValue="id"
-              (change)="selectDiscount($event)"
-              [(ngModel)]="productData.discount"
-              [multiple]="false"
-              id="discount"
-              placeholder="Discount"
-              class="w-full"
-            >
-            </ng-select>
-
-            <button
-              class="btn create-invoice-btn mt-1.5"
-              type="button"
-              (click)="openAddDiscount = true"
-            >
-              +
-            </button>
-          </div>
-        </div>
-
-        <div class="flex gap-4 items-center w-full">
-          <div class="detailDiv w-full">
-            <div class="flex items-center justify-between">
-              <label for="e-price"
-                >Effective price <span style="color: red">*</span></label
-              >
-              <div
-                *ngIf="
-                  productForm.get('effectivePrice')?.invalid &&
-                  productForm.get('effectivePrice')?.touched
-                "
-                class="error"
-              >
-                {{ getErrorMessage("effectivePrice", "effective price") }}
-              </div>
-            </div>
-            <input
-              class="name editInput"
-              type="text"
-              id="e-price"
-              formControlName="effectivePrice"
-              placeholder="Effective Price"
-              readonly
-            />
-          </div>
-        </div> -->
+      
 
         <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">
           Identifiers
@@ -349,8 +286,8 @@
             [items]="categories"
             bindLabel="name"
             bindValue="id"
-            (change)="selectCategory($event)"
-            [(ngModel)]="productData.productCategory"
+         
+            formControlName="category"
             [multiple]="false"
             placeholder="Category"
             class="w-full"
@@ -531,7 +468,7 @@
                         <td class="py-2 px-4 border-b">{{ ingredient.ingredient.name }}</td>
 
                         <td class="py-2 px-4 border-b flex items-center gap-3">
-                          <p-inputNumber [(ngModel)]="ingredient.quantity" mode="decimal" [min]="0"></p-inputNumber>
+                          <p-inputNumber mode="decimal" [min]="0"></p-inputNumber>
                           <p class="px-2">
                             {{ingredient.ingredient.measurementUnit}}
 
@@ -582,7 +519,6 @@
           <input
             type="file"
             (change)="onImageUpload($event)"
-            [(ngModel)]="productData.productImages"
             id="image"
             hidden
           />
@@ -769,7 +705,6 @@
 
   <div class="mt-5 flex flex-col gap-4">
     <div class="flex items-center">
-      <!-- <input type="text"  [(ngModel)]="newCategory"  class=" outline-none" placeholder="category name" (keydown.enter)="addCategory()"> -->
       <div class="ml-3">
         <label for="name">Category name</label>
         <input
@@ -931,8 +866,7 @@
       <label for="">Branch</label>
         <ng-select
         [items]="selecteddBranch"
-        bindLabel="label"
-        bindValue="value"
+        bindLabel="name"
         [(ngModel)]="newVariant.branches"
         [multiple]="true"
         placeholder="Select branch">
@@ -1048,94 +982,7 @@
 
 
 <!-- SECTION: Modal for displaying and setting branch data like price and quantity -->
-@if (openBranchData) {
-<app-side-modal (close)="openBranchData = false">
-  <div class="modal-header flex justify-between items-center text-gray-700">
-    <h2 class="font-semibold pb-0 mb-0">Selected Branches</h2>
 
-    <div class="flex gap-3">
-      <button
-        class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold"
-        (click)="openBranchData = false"
-      >
-        Cancel
-      </button>
-    </div>
-  </div>
-
-  <div class="mt-5 mb-2">
-    <div>
-      <h3 class="font-semibold pb-0 mb-0">Current Branches</h3>
-      @for (branch of branches; track $index) {
-      <span class="branch-names ml-4">
-        {{ branch.name }}
-        <!-- <i class="fa-solid fa-trash ml-2" (click)="deleteBranch(branch)"></i> -->
-      </span>
-      }
-    </div>
-
-    <div>
-      <h3 class="font-semibold pb-0 mb-0">Add Branch</h3>
-    </div>
-
-    @if (dataOfChosenBranches.length) {
-    <div id="branchTableData">
-      <p-table
-        [value]="dataOfChosenBranches"
-        [tableStyle]="{ 'min-width': '50rem' }"
-      >
-        <ng-template pTemplate="header">
-          <tr>
-            <th>Branch</th>
-            <th>Selling Price</th>
-            <th>Quantity</th>
-            <th>SKU</th>
-            <th>Select Variants</th>
-            <th>Variant Data</th>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-branchData>
-          <tr>
-            <td>{{ branchData.branchName }}</td>
-            <td>
-              <input
-                class="name editInput"
-                [formControl]="branchData.sellingPrice"
-                placeholder="Selling Price"
-              />
-            </td>
-            <td>
-              <input
-                class="name editInput"
-                [formControl]="branchData.quantity"
-                placeholder="Quantity"
-              />
-            </td>
-            <td>
-              <input
-                class="name editInput"
-                [formControl]="branchData.sku"
-                placeholder="SKU"
-              />
-            </td>
-            <td>
-              <!-- @for (variant of variants; track $index) {
-                          <p-checkbox
-                [inputId]="'checkbox-' + $index"
-                [value]="variant"
-                [(ngModel)]="selectedVariants">
-              </p-checkbox>
-              <label [attr.for]="'checkbox-' + $index">{{ variant }}</label>
-                          } -->
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </div>
-    }
-  </div>
-</app-side-modal>
-}
 <!-- !SECTION -->
 <app-modal *ngIf="addSuccessfull" (close)="addSuccessfull = false">
   <div class="flex flex-col items-center justify-center gap-3 px-4">

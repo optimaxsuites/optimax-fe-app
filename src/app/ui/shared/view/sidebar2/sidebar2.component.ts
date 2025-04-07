@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MenuItem } from '../../domain/menuItem.dto';
 import { NavigationEnd, Router } from '@angular/router';
 import { NavigationLinksService } from '../../service/navigation-links/navigation-links.service';
@@ -11,6 +11,8 @@ import { MenuItemsService } from 'projects/settings/src/app/ui/sharedComponents/
 })
 export class Sidebar2Component {
    @Input() sidebarHidden!: boolean;
+     @Output() toggleSidebar = new EventEmitter<void>();
+   
   menuItems: MenuItem[] = [];
   role: string | null = null;
 marketplace : any =   {
@@ -49,6 +51,9 @@ marketplace : any =   {
       item.open = !item.open; // Toggle the 'open' property to show/hide submenu
       console.log(`Toggled submenu for ${item.label}, open: ${item.open}`);
     }
+  }
+  onToggleSidebar() {
+    this.toggleSidebar.emit();
   }
 
   get sidebarClass() {

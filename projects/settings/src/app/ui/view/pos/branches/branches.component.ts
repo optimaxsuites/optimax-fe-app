@@ -43,9 +43,12 @@ export class BranchesComponent implements OnInit {
     this.dataService.getBranches().subscribe({
       next: (data: any) => {
         console.log(data)
-        this.branches.push(data);
-
-        
+        const formattedData = data.map((branch: any) => ({
+          ...branch,
+          isEditing: false
+        }));
+  
+        this.branches = formattedData;
       },
       error: (error: any) => {
         console.log(error)
@@ -106,9 +109,9 @@ export class BranchesComponent implements OnInit {
 
   editBranch(branch: BranchDTO, event: Event) {
     event.stopPropagation();
-    // branch.isEditing = !branch.isEditing;
-
-    // if (!branch.isEditing) {
+    branch.isEditing = !branch.isEditing;
+this.newBranch= branch
+    if (!branch.isEditing) {
     //   this.saveBranchesToLocalStorage();
 
     //   this.messageService.add({
@@ -130,7 +133,7 @@ export class BranchesComponent implements OnInit {
           summary: 'Success',
           detail: 'Branch updated successfully!',
         });
-        this.toggleForm();
+        // this.toggleForm();
         this.resetForm();
       },
       error: (error: any) => {
@@ -142,6 +145,7 @@ export class BranchesComponent implements OnInit {
         });
       },
     })
+  }
   }
 
   confirmBranchDelete(branch: BranchDTO, event: Event) {
@@ -163,7 +167,7 @@ export class BranchesComponent implements OnInit {
             summary: 'Success',
             detail: 'Branch deleted successfully!',
           });
-          this.toggleForm();
+          // this.toggleForm();
           this.resetForm();
         },
         error: (error: any) => {

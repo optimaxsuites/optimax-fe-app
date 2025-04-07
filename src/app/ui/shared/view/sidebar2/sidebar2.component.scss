@@ -27,7 +27,7 @@ nav::-webkit-scrollbar-thumb:hover {
 }
 
   .side-bar-header{
-    height: 100px;
+    height: 90px;
     align-items: center;
     justify-content: center;
     display: flex;
@@ -42,31 +42,39 @@ nav::-webkit-scrollbar-thumb:hover {
   }
   
   .menu-item {
-    padding: .4rem;
-    box-sizing: border-box;
-    cursor: pointer;
+    // padding: .4rem;
+    // box-sizing: border-box;
+    // cursor: pointer;
+
+    @apply flex flex-col justify-center  w-full px-5
   }
   
   .menu-item:hover {
     // background-color: #bbb;
   }
   
-  .menu-item {
-    a, span {
-      font-size: 1.3em;
-    }
-  }
+ 
 
   ul li ul li a{
     font-size: 1.1em;
   }
 
-  a, span {
+  a {
     text-decoration: none;
     color: #fff;
     // display: block;
-    padding: 10px;
+    font-size: 1.1em;
+
+    padding:10px 14px;
     // box-sizing: border-box;
+    i{
+      @apply w-5
+    }
+    span{
+    font-size: 1.1em;
+
+      @apply text-nowrap w-32
+    }
   }
  
   
@@ -118,9 +126,9 @@ nav {
 }
 
 nav.collapsed {
-  width: 60px; /* or whatever suits just icons */
+  // width: 60px; /* or whatever suits just icons */
 }
 
 nav.expanded {
-  width: 250px; /* or your full size */
+  // width: 250px; /* or your full size */
 }
