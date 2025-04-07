@@ -77,6 +77,9 @@ export class HotelFormComponent implements OnInit {
   bookingSummary: Booking | null = null;
   nights: number = 0;
   activeStatus: string = 'booked';
+  checkinForm: FormGroup;
+  showCheckinForm: boolean = false;
+  isSameGuest: boolean = false;
 
   countries: string[] = [
     'Nigeria',
@@ -117,24 +120,52 @@ export class HotelFormComponent implements OnInit {
       depositAmount: [0, [Validators.min(0)]],
     });
 
+    this.checkinForm = this.fb.group({
+      firstName: [
+        '',
+        [Validators.required, Validators.pattern('^[a-zA-Z ]*$')],
+      ],
+      lastName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]*$')]],
+      phone: ['', [Validators.required, Validators.pattern('^[0-9+ ]*$')]],
+      email: ['', [Validators.required, Validators.email]],
+      idNumber: ['', Validators.required],
+      gender: ['', Validators.required],
+    });
+
     this.setupFormListeners();
   }
 
   ngOnInit() {
     if (this.selectedRooms && this.selectedRooms.length > 0) {
-      // Pre-populate form with selected room data
-      this.bookingForm.patchValue({
-        roomType: this.selectedRooms[0].type,
-        roomNumber: this.selectedRooms[0].number,
-        adults: 1,
-        children: 0,
-        checkinDate: new Date(),
-        checkoutDate: new Date(new Date().setDate(new Date().getDate() + 1)),
-
-        // ... other fields
-      });
+      // Check if we're in check-in mode and there's a guest
+      if (this.formType === 'checkin' && this.selectedRooms[0].guest) {
+        this.showCheckinForm = true;
+        // Pre-populate checkin form with guest info
+        const guest = this.selectedRooms[0].guest;
+        this.checkinForm.patchValue({
+          firstName: guest.firstName,
+          lastName: guest.lastName,
+          phone: guest.phone,
+          email: guest.email,
+        });
+      } else {
+        // Pre-populate booking form
+        this.bookingForm.patchValue({
+          adults: 1,
+          children: 0,
+          checkinDate: new Date(),
+          checkoutDate: new Date(new Date().setDate(new Date().getDate() + 1)),
+        });
+      }
     }
     this.loadSelectedRooms();
+  }
+
+  onSameGuestCheckin() {
+    this.isSameGuest = true;
+    this.showCheckinForm = false;
+    // Automatically confirm the booking with the existing guest info
+    this.confirmBooking();
   }
 
   setActiveStatus(status: string) {
@@ -289,10 +320,38 @@ export class HotelFormComponent implements OnInit {
 
     const status = this.activeStatus === 'checkin' ? 'occupied' : 'booked';
 
+    // For check-in with same guest, use existing guest info
+    let guest: Guest;
+    if (this.isSameGuest && this.selectedRooms[0].guest) {
+      guest = this.selectedRooms[0].guest;
+    } else if (this.formType === 'checkin' && this.showCheckinForm) {
+      // For new guest check-in, use checkin form values
+      const formValues = this.checkinForm.value;
+      guest = {
+        title: '',
+        firstName: formValues.firstName,
+        lastName: formValues.lastName,
+        email: formValues.email,
+        phone: formValues.phone,
+        country: '',
+      };
+    } else {
+      // For regular booking, use booking form values
+      const formValues = this.bookingForm.value;
+      guest = {
+        title: formValues.title,
+        firstName: formValues.firstName,
+        lastName: formValues.lastName,
+        email: formValues.email,
+        phone: formValues.phone,
+        country: formValues.country,
+      };
+    }
+
     const updatedRooms = this.selectedRooms.map((room) => ({
       ...room,
       status: status,
-      guest: this.bookingSummary?.guest,
+      guest: guest,
       bookingDetails: {
         checkinDate: this.bookingSummary?.checkinDate ?? new Date(),
         checkoutDate: this.bookingSummary?.checkoutDate ?? new Date(),

@@ -67,6 +67,7 @@ export class HotelRoomdetailsComponent {
     dirty: 'bg-red-500',
   };
   selectedRooms: Room[] | undefined;
+  formType: string | undefined;
 
   constructor(
     private messageService: MessageService,
@@ -277,12 +278,18 @@ export class HotelRoomdetailsComponent {
     return sanitizedRoom;
   }
 
+  // In your parent component
   navigateToForm() {
-    // Create a new array with just this single room
     const roomsToBook = this.detailedRoom ? [this.detailedRoom] : [];
-
-    // Pass the rooms to the form
     this.selectedRooms = roomsToBook;
+
+    // Determine if we're doing a check-in (room is booked) or new booking
+    if (this.detailedRoom?.status === 'booked') {
+      this.formType = 'checkin';
+    } else {
+      this.formType = 'booking';
+    }
+
     this.openForm = !this.openForm;
   }
 

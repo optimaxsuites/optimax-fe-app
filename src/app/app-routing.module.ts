@@ -34,10 +34,6 @@ const routes: Routes = [
   },
 
   {
-    path: 'admin/pos/hospitality-checkout/:uuid',
-    component: HotelCheckoutComponent,
-  },
-  {
     path: 'admin/pos/inventory/:uuid',
     component: InventoryComponent,
   },
@@ -85,7 +81,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
+  imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule],
 })
 export class AppRoutingModule {}

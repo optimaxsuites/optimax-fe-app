@@ -19,7 +19,7 @@
       >
         <div>
           <h2 class="text-4xl font-bold text-white">
-            Room {{ detailedRoom.id }}
+            Room {{ detailedRoom.number }}
           </h2>
           <p class="text-xl mt-4 mb-6 text-white/90">{{ detailedRoom.type }}</p>
         </div>
@@ -151,7 +151,7 @@
               Description
             </p>
             <div class="bg-gray-100/50 p-3 rounded-lg">
-              <p class="text-gray-800 italic text-sm">
+              <p class="text-gray-800 font-bold italic text-lg">
                 {{ detailedRoom.description }}
               </p>
             </div>
@@ -261,7 +261,7 @@
                 Maintenance Notes
               </p>
               <div class="bg-gray-100/50 p-3 rounded-lg">
-                <p class="text-gray-800 italic text-sm">
+                <p class="text-gray-800 italic font-bold text-lg">
                   This room is currently under maintenance.
                 </p>
               </div>

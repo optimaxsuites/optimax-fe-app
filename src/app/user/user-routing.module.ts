@@ -62,7 +62,6 @@ const routes: Routes = [
     path: 'user/checkout/hotel/:uuid',
     component: HotelCheckoutComponent,
   },
-
 ];
 
 @NgModule({
