@@ -1,5 +1,4 @@
 
-
 import { Component, signal, OnInit, Input } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -14,6 +13,7 @@ export interface Task {
   completed: boolean;
   projectId: string;
   selectedUsers?: string;
+  dueDate?: Date;
   status?: string;
 }
 
@@ -52,32 +52,17 @@ export class ProjectViewComponent implements OnInit {
   @Input() text: string = '';
   @Input() emoji: string = '';
 
-  cards = [
-    [{ text: 'Not Started Task 1' }, { text: 'Not Started Task 2' }],
-    [
-      { text: 'In Progress Task 1' },
-      { text: 'In Progress Task 2' },
-      { text: 'In Progress Task 3' }
-    ],
-    [{ text: 'Completed Task 1' }],
-    [{ text: 'Done Task 1' },{ text: 'Not Started Task 2' }]
-  ];
 
 
+  // In your component class, replace the taskColumns declaration with:
+taskColumns: Task[][] = [
+  [], // Not Started (index 0)
+  [], // In Progress (index 1)
+  [], // Completed (index 2)
+  []  // Done (index 3)
+];
 
-
-
-
-
-
-
-
-
-
-
-
-
-   cardHeader: CardHeader[] = [
+  cardHeader: CardHeader[] = [
     { cardOne: 'Not Started' },
     { cardTwo: 'In Progress' },
     { cardThree: 'Completed' },
@@ -119,7 +104,30 @@ export class ProjectViewComponent implements OnInit {
       this.tasks = Object.values(allTasks).filter(
         (task) => task.projectId === projectId
       );
+      
+      // Organize tasks into columns based on status
+      this.organizeTasksByStatus();
     }
+  }
+
+  organizeTasksByStatus(): void {
+    // Clear all columns first
+    this.taskColumns = [[], [], [], []];
+
+    // Default status to 'Not Started' if not set
+    this.tasks.forEach(task => {
+      if (!task.status) task.status = 'Not Started';
+
+      if (task.status === 'Not Started') {
+        this.taskColumns[0].push(task);
+      } else if (task.status === 'In Progress') {
+        this.taskColumns[1].push(task);
+      } else if (task.status === 'Completed') {
+        this.taskColumns[2].push(task);
+      } else if (task.status === 'Done') {
+        this.taskColumns[3].push(task);
+      }
+    });
   }
 
   createTask(): void {
@@ -129,8 +137,10 @@ export class ProjectViewComponent implements OnInit {
         name: 'New Task',
         completed: false,
         projectId: this.project.id,
+        status: 'Not Started' // Default status
       };
       this.tasks.push(newTask);
+      this.taskColumns[0].push(newTask); // Add to Not Started column
       this.saveTaskToLocalStorage(newTask);
     }
   }
@@ -173,73 +183,45 @@ export class ProjectViewComponent implements OnInit {
     ref.onClose.subscribe((task: Task) => {
       if (task) {
         this.tasks.push(task);
+        // Add to appropriate column based on status
+        if (task.status === 'Not Started') this.taskColumns[0].push(task);
+        else if (task.status === 'In Progress') this.taskColumns[1].push(task);
+        else if (task.status === 'Completed') this.taskColumns[2].push(task);
+        else if (task.status === 'Done') this.taskColumns[3].push(task);
+        
         this.saveTaskToLocalStorage(task);
       }
     });
   }  
-  
-//   drop(event: CdkDragDrop<{ text: string }[]>) {
-//   if (event.previousContainer === event.container) {
-//     moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
-//   } else {
-   
-//     transferArrayItem(
-//       event.previousContainer.data,
-//       event.container.data,
-//       event.previousIndex,
-//       event.currentIndex
-//     );
-//     const movedTask = event.container.data[event.currentIndex];
-//     const targetListIndex = this.cards.indexOf(event.container.data);
 
-//     const task = this.tasks.find((t) => t.name === movedTask.text);
-//     if (task) {
-
-//       const statusKey = `card${targetListIndex + 1}` as keyof CardHeader;
-//       const status = this.cardHeader[targetListIndex][statusKey];
-//       if (status) {
-//         task.status = status;
-//         this.saveTaskToLocalStorage(task);
-//       }
-//     }
-//   }
-// }
-
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
   drop(event: CdkDragDrop<any[]>) {
-  if (event.previousContainer === event.container) {
-    // Move within same list
-    moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
-  } else {
-    // Move between lists
-    transferArrayItem(
-      event.previousContainer.data,
-      event.container.data,
-      event.previousIndex,
-      event.currentIndex
-    );
+    if (event.previousContainer === event.container) {
+      // Move within same list
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+    } else {
+      // Move between lists
+      transferArrayItem(
+        event.previousContainer.data,
+        event.container.data,
+        event.previousIndex,
+        event.currentIndex
+      );
 
-    // Update task status if needed
-    const movedItem = event.container.data[event.currentIndex];
-    const targetListIndex = this.cards.findIndex(list => list === event.container.data);
-    
-    if (movedItem.id) { // If it's a Task object
-      const task = this.tasks.find(t => t.id === movedItem.id);
-      if (task) {
-        const statusKey = `card${targetListIndex + 1}` as keyof CardHeader;
-        task.status = this.cardHeader[targetListIndex][statusKey];
-        this.saveTaskToLocalStorage(task);
+      // Update task status
+      const movedTask = event.container.data[event.currentIndex];
+      const targetColumnIndex = this.taskColumns.findIndex(column => column === event.container.data);
+      
+      if (movedTask.id) {
+        // Determine new status based on target column
+        let newStatus = 'Not Started';
+        if (targetColumnIndex === 1) newStatus = 'In Progress';
+        else if (targetColumnIndex === 2) newStatus = 'Completed';
+        else if (targetColumnIndex === 3) newStatus = 'Done';
+
+        // Update task status
+        movedTask.status = newStatus;
+        this.saveTaskToLocalStorage(movedTask);
       }
     }
   }
-}
 }
