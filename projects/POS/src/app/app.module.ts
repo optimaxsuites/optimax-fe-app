@@ -168,7 +168,7 @@ import { HotelChangeroomComponent } from './ui/view/hotel-changeroom/hotel-chang
     //CheckoutHeaderComponent,
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
     UserModule,
     AppRoutingModule,
     CheckboxModule,
