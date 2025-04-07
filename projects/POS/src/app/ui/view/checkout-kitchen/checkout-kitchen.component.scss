@@ -288,8 +288,30 @@ body {
     .order-display {
       width: 50%;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
+
+      // The `Table Number` container
+      > :first-child {
+        min-height: fit-content;
+        height: 6%;
+        font-weight: bold;
+        font-size: 2rem;
+        text-align: center;
+        border: transparent;
+
+        display: flex;
+        flex-wrap: nowrap;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+
+        input {
+          width: 15%;
+        }
+      }
 
       // The container where the selected products will show
       > div {

@@ -1,4 +1,7 @@
-
+@tailwind utilities;
+@tailwind base;
+@tailwind components;
+@tailwind variants;
 
 :root {
   --celadon-green: #2eb270;
@@ -441,7 +444,6 @@ img {
     margin: 0;
     border-radius: 50%;
     background-color: #e0e0e0;
-   
   }
 }
 

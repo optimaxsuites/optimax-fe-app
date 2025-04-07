@@ -262,7 +262,51 @@
         </div>
       </div>
       } @case ("waiter") {
-      <!-- TODO -->
+      <!-- TODO: Use a component or template or whatever for both this and the chef's template -->
+      <div class="details-body" style="font-size: 1.7rem">
+        <!-- Replace with dynamic data as needed -->
+        <div class="order-item">
+          <span class="item-name">Jollof Rice</span>
+          <span class="item-quantity">1 Plate</span>
+        </div>
+        <div class="order-item">
+          <span class="item-name">Chicken</span>
+          <span class="item-quantity">2 Portions</span>
+        </div>
+
+        <div class="additional-note">
+          <h3>Additional Note:</h3>
+          <p>
+            I will like the jollof rice to be spicy and have vegetables in it.
+            The chicken should be soft and tender, spicy and well seasoned.
+          </p>
+        </div>
+      </div>
+
+      <div class="details-footer">
+        <button
+          pButton
+          type="button"
+          [label]="
+            selectedOrder?.status == 'Pending'
+              ? 'Edit Order'
+              : selectedOrder?.status == 'Processing'
+              ? 'Processing'
+              : 'Order Completed'
+          "
+          icon="pi pi-check"
+          class="p-button-success bg-green-100"
+          (click)="toggleOrderStatus(selectedOrder!)"
+        ></button>
+        <!-- <button
+          pButton
+          type="button"
+          label="Mark as Completed"
+          icon="pi pi-check"
+          class="p-button-success"
+          (click)="markAsCompleted(selectedOrder)"
+        ></button> -->
+      </div>
       } } </p-panel
     >}
   </div>
@@ -367,6 +411,15 @@
   <!-- Contains 2 children; the container for showing selected products, and another for showing the available products that can be selected. -->
   <div class="product-parent-area">
     <div class="order-display">
+      <div>
+        Table Number:
+        <input
+          type="number"
+          name="tableNumber"
+          id="tableNumber"
+          [(ngModel)]="orderTableNumber"
+        />
+      </div>
       <!-- Just putting another slightly smaller div :3 -->
       <div>
         <p-table [value]="data">
@@ -432,6 +485,7 @@
         pButton
         label="Cancel"
         class="p-button-danger px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-200 font-bold"
+        (click)="isCreateOrderModalOpen = false"
       ></button>
       <button
         pButton
@@ -442,6 +496,9 @@
         pButton
         label="Order"
         class="p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200 font-bold"
+        (click)="
+          createOrder(orderTableNumber, [], '0'); isCreateOrderModalOpen = false
+        "
       ></button>
     </div>
   </div>
