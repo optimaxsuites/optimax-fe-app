@@ -168,8 +168,8 @@ import { HotelChangeroomComponent } from './ui/view/hotel-changeroom/hotel-chang
     //CheckoutHeaderComponent,
   ],
   imports: [
-    // BrowserModule,
-    // UserModule,
+    BrowserModule,
+    UserModule,
     AppRoutingModule,
     CheckboxModule,
     CommonModule,
@@ -223,7 +223,7 @@ import { HotelChangeroomComponent } from './ui/view/hotel-changeroom/hotel-chang
     PaginatorModule,
     // BrowserAnimationsModule,
   ],
-  exports: [HotelRoomlistComponent, HotelRoomdetailsComponent ],
+  exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],
   providers: [
     {
       provide: HTTP_INTERCEPTORS,
