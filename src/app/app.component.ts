@@ -1,13 +1,24 @@
 import { Component, HostListener, ViewEncapsulation } from '@angular/core';
 import { MenuItemsService } from './ui/shared/service/menue-items/menu-items.service';
 
+declare global {
+  interface Window {
+  electronAPI: {
+  sendMessage:
+    (message : string) => void;
+  }
+  }
+}
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   encapsulation: ViewEncapsulation.None,
   styleUrls: ['./app.component.scss']
 })
+
+
 export class AppComponent {
+  sendMessage() { window.electronAPI.sendMessage("Hello from Angular!"); }
   title = 'ERP-FE';
   sidebarVisible2: boolean = false;
 

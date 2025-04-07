@@ -1,6 +1,6 @@
 
 <div class="master-container d-flex" >
-    <div class="sidebar-container" >
+    <div class="sidebar-container" [ngClass]="{'w-[15%]': !sidebarHidden}" >
         <app-sidebar2 [sidebarHidden]="sidebarHidden"></app-sidebar2>
     </div>
     

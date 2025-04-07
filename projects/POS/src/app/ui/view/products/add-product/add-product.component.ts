@@ -21,6 +21,7 @@ import {
   supplierData,
   TaxDTO,
   VariantDTO,
+  BranchDTO
 } from '../../../models/interface';
 import { IndustryDataService } from '../../../service/industry-data.service';
 import { MetadataService } from '../../../service/metadata.service';
@@ -188,10 +189,8 @@ export class AddProductComponent {
    */
   newVariant = this.resetVariantData();
 
-  branches = [
-    { label: 'HQT', value: 'headquarter' },
-    { label: 'wuse', value: 'Wuse' },
-    { label: 'Jikwoyi', value: 'Jikwoyi' },
+  branches: BranchDTO[] = [
+ 
   ];
 
   discountTypes: any[] = [];
@@ -438,6 +437,8 @@ export class AddProductComponent {
     this.metadataService.supplier$.subscribe(data => (this.suppliers = data));
     this.metadataService.discountTypes$.subscribe(data => (this.discountTypes = data));
     this.metadataService.taxes$.subscribe(data => (this.taxes = data));
+    this.metadataService.branches$.subscribe(data => (this.branches = data));
+
   }
   get branchess(): FormArray<FormGroup>  {
     return this.productForm.get('branches') as FormArray<FormGroup> ;
@@ -1391,48 +1392,7 @@ removeIngredient(index: number) {
   /**
    * Constructs an object of the form elements for the chosen branches.
    */
-  get getDataOfChosenBranches() {
-    const formArrayOfBranches = this.productForm.get('branches') as FormArray;
 
-    const returnArray: {
-      branchName: string;
-      sellingPrice: FormControl<any>;
-      quantity: FormControl<any>;
-      sku: FormControl<any>;
-    }[] = [];
-
-    formArrayOfBranches.controls.forEach((a, index) => {
-      const indexToUse = this.selectedBranches.findIndex((val) => {
-        return val == this.branches[index].value;
-      });
-
-      const sanitizeFormControl = (
-        formGroup: FormGroup<any>,
-        controlName: string
-      ) => {
-        const formControl = formGroup.get(controlName) as FormControl<any>;
-
-        typeof formControl.value == 'object' ? formControl.setValue('') : '';
-
-        return formControl;
-      };
-
-      if (indexToUse > -1) {
-        const formGrp = a as FormGroup<any>;
-        const objToConstruct: (typeof returnArray)[0] = {
-          branchName: this.branches[index].value,
-          sellingPrice: sanitizeFormControl(formGrp, 'price'),
-          quantity: sanitizeFormControl(formGrp, 'quantity'),
-          sku: sanitizeFormControl(formGrp, 'sku'),
-          // variants:
-        };
-
-        returnArray.push(objToConstruct);
-      }
-    });
-
-    return returnArray;
-  }
 
   /** UNUSED */
   deleteBranch(branchData: (typeof this.branches)[0]) {

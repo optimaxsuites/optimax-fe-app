@@ -64,10 +64,11 @@ nav::-webkit-scrollbar-thumb:hover {
   a, span {
     text-decoration: none;
     color: #fff;
-    display: block;
+    // display: block;
     padding: 10px;
-    box-sizing: border-box;
+    // box-sizing: border-box;
   }
+ 
   
   ul ul {
     display: none;
@@ -103,12 +104,23 @@ nav::-webkit-scrollbar-thumb:hover {
   }
 
 
-  i {
-    // font-size: 1.2em;
-    margin-right: 8px;
-    box-sizing: border-box;
-  }
+  // i {
+  //   // font-size: 1.2em;
+  //   margin-right: 8px;
+  //   box-sizing: border-box;
+  // }
   nav {
     scrollbar-width: thin;
     scrollbar-color: lightgray #f1f1f1; 
+}
+nav {
+  transition: width 0.3s ease;
+}
+
+nav.collapsed {
+  width: 60px; /* or whatever suits just icons */
+}
+
+nav.expanded {
+  width: 250px; /* or your full size */
 }

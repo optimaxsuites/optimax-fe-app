@@ -50,6 +50,11 @@ marketplace : any =   {
       console.log(`Toggled submenu for ${item.label}, open: ${item.open}`);
     }
   }
+
+  get sidebarClass() {
+    return this.sidebarHidden ? 'collapsed' : 'expanded';
+  }
+  
 }
 
 

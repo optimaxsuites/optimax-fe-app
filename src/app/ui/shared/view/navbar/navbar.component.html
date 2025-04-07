@@ -6,14 +6,15 @@
       </div>
     </div> -->
 
-    <div class="items hamburger" >
-      <button class="hamburger-icon" (click)="onToggleSidebar()">
-        <i *ngIf="sidebarHidden" class="pi pi-bars"></i>
-        <i *ngIf="!sidebarHidden" class="pi pi-bars"></i> 
+    <div class="absolute left-0 z-10" >
+      <button class=" text-3xl p-1 rounded-full" (click)="onToggleSidebar()">
+        <i *ngIf="sidebarHidden" class="pi pi-angle-right text-xl"></i>
+        <i *ngIf="!sidebarHidden" class="pi pi-angle-left text-xl"></i> 
         <!-- <i *ngIf="!sidebarHidden" class="pi pi-times"></i>  -->
       </button>
     </div>
 
+    <div></div>
     <div class="header-end">
         <!-- <div class="items"><p>Contacts</p></div> -->
         <div class="items">

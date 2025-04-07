@@ -233,7 +233,7 @@ import { JobApplicationFormKeepComponent } from './ui/shared/view/job-applicatio
 import { DashboardFooterComponent } from './ui/shared/view/dashboard-footer/dashboard-footer.component';
 import { PayslipViewComponent } from './ui/hr/view/payroll/payslip-view/payslip-view.component';
 import { EmployeePayslipListComponent } from './ui/hr/view/payroll/employee-payslip-list/employee-payslip-list.component';
-
+import { TooltipModule } from 'primeng/tooltip';
 import { AppDashboardModule } from 'projects/dashboard/src/app/app.module';
 import { ToastrModule } from 'ngx-toastr';
 import { AppHrModule } from 'projects/hr/src/app/app.module';
@@ -420,6 +420,7 @@ import { AppResizeDirective } from '../../projects/POS/src/app/ui/service/app-re
       MatTabGroup,
       FormsModule, 
       MatTooltip,
+      TooltipModule,
       MatGridListModule,
       ReactiveFormsModule,
       NgApexchartsModule,
