@@ -811,7 +811,7 @@ removeIngredient(index: number) {
 
     variant.branches?.forEach((branchName) => {
       const targetBranch = branchArray.find(
-        (branch) => branch.get('branchName')?.value === branchName
+        (branch) => branch.get('branchName')?.value === branchName.name
       );
   
       if (targetBranch) {
