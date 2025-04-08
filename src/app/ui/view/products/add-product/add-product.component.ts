@@ -16,6 +16,7 @@ import {
   DiscountDTO,
   HistoryData,
   IngredientDTO,
+  MeasurementUnit,
   ProductData,
   ProductJSONFormat,
   supplierData,
@@ -108,7 +109,7 @@ export class AddProductComponent {
       name: "Flour",
       code: "FLR001",
       sku: "SKU-FLR-001",
-      measurementUnit: "kg", // Kilogram
+      measurementUnit: MeasurementUnit.UNIT, // Kilogram
       purchasePrice: 500,
       currentStock: 100,
       reorderThreshold: 20,
@@ -118,7 +119,7 @@ export class AddProductComponent {
       name: "Sugar",
       code: "SGR001",
       sku: "SKU-SGR-001",
-      measurementUnit: "g", // Gram
+      measurementUnit: MeasurementUnit.UNIT, // Gram
       purchasePrice: 200,
       currentStock: 5000,
       reorderThreshold: 500,
@@ -128,7 +129,7 @@ export class AddProductComponent {
       name: "Eggs",
       code: "EGG001",
       sku: "SKU-EGG-001",
-      measurementUnit: "pcs", // Pieces
+      measurementUnit: MeasurementUnit.UNIT, // Pieces
       
       purchasePrice: 50,
       currentStock: 200,
@@ -139,7 +140,7 @@ export class AddProductComponent {
       name: "Milk",
       code: "MLK001",
       sku: "SKU-MLK-001",
-      measurementUnit: "L", // Liters
+      measurementUnit: MeasurementUnit.UNIT, // Liters
   
       purchasePrice: 400,
       currentStock: 50,

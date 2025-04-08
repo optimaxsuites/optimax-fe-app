@@ -188,16 +188,28 @@
   
       
       <p><strong>Category:</strong> {{ product.productCategory.name }}</p>
-      <div class="flex justify-end">
-        <i class="pi pi-ellipsis-v table-item" (click)="op.toggle($event)"></i>
-        <p-overlayPanel #op>
-          <ul>
-            <li (click)="openViewProduct(product)"><i class="pi pi-eye"></i> View</li>
-            <!-- <li (click)="openEdit(product)"><i class="pi pi-pen-to-square"></i> Edit</li> -->
-            <li (click)="openDeleteModal(product)"><i class="pi pi-times-circle"></i> Delete</li>
+      <td class="actions relative table-item">
+        <div class="dropdown text-right -mt-10 ">
+          <span (click)="toggleDropdown2(product, $event)" >
+            <i class="material-icons text-sm " style="font-size: 16px;">more_vert</i>
+          </span>
+          <ul
+          class="absolute -right-[100px] mt-2 w-30 bg-white border shadow-lg rounded-lg py-2 z-50"
+          *ngIf="product.showMenu"
+          >
+            <li
+              (click)="openViewProduct(product); closeDropdown(product)"
+              class="flex items-center px-4 py-2 text-xl hover:bg-gray-100 cursor-pointer"
+            >
+              <i class="pi pi-eye pr-2 text-xl"></i> View
+            </li>
+        
+          <li (click)="openEditInventory(product, 'child'); closeDropdown(product)" class="flex items-center px-4 py-2 text-xl hover:bg-gray-100 cursor-pointer">
+            <i class="pi pi-pen-to-square pr-2 text-xl"></i> Add Inventory
+          </li>
           </ul>
-        </p-overlayPanel>
-      </div>
+        </div>
+      </td>
     </div>
   </ng-template>
 

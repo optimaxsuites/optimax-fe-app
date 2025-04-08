@@ -25,6 +25,10 @@ constructor(private posService: PosServiceService, private messageService: Messa
   this.metadataService.supplier$.subscribe(data => (this.suppliers = data));
 
 }
+
+ngOnInit(): void {
+  this.loadSuppliers();
+}
   removeSupplier(id: number|undefined) {
     this.posService.deleteSupplier(id).subscribe(async (data) => {
       if (data) {
@@ -118,4 +122,15 @@ constructor(private posService: PosServiceService, private messageService: Messa
         }
       );
     } 
+    loadSuppliers() {
+      this.posService.getSupplier().subscribe(
+        (data) => {
+          console.log('Suppliers Data:', data);  // Check if the data is coming through correctly
+          this.suppliers = data;
+        },
+        (error) => {
+          console.error('Error loading suppliers:', error);
+        }
+      );
+    }
 }

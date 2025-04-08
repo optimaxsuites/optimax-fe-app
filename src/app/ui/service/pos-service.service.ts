@@ -501,6 +501,11 @@ export class PosServiceService {
     .pipe(catchError(this.handleError));
   }
 
+  addIngredient( ingredientData: any) {
+    return this.http
+    .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/ingredients',  ingredientData)
+    .pipe(catchError(this.handleError));
+  }
 
   getSupplier() {
     return this.http
