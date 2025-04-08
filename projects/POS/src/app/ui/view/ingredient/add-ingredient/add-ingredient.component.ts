@@ -4,11 +4,13 @@ import { Router } from '@angular/router';
 import { DropdownModule } from 'primeng/dropdown';
 import { ReactiveFormsModule } from '@angular/forms';  // Import this
 import { FormsModule } from '@angular/forms';
-import { supplierData } from '../../../models/interface';
+import { MeasurementUnit, supplierData } from '../../../models/interface';
 import { Message, MessageService } from 'primeng/api';
+import { PosServiceService } from '../../../service/pos-service.service';
+import { HttpClient } from '@angular/common/http';
 
 
-type MeasurementUnit = 'kg' | 'g' | 'liters' | 'ml' | 'pieces';
+// type MeasurementUnit = 'kg' | 'g' | 'liters' | 'ml' | 'pieces';
 
 @Component({
   selector: 'app-add-ingredient',
@@ -30,6 +32,7 @@ export class AddIngredientComponent {
     { name: 'Australia', code: '+61' },
   ];
 
+measurementUnits: MeasurementUnit[] = Object.values(MeasurementUnit);
 
 
 
@@ -45,6 +48,7 @@ export class AddIngredientComponent {
   selectedCountryCode = '+234'; // Default to Nigeria
   phonePattern = '^\\+?[1-9]\\d{1,14}$'; // Allows international phone numbers
   phoneNumber: string = '';
+  purchasePrice: string = '';
 
 
 
@@ -55,11 +59,12 @@ export class AddIngredientComponent {
   hasSelectedSupplier = false;
   //@ts-ignore
   ingredientForm!: FormGroup;
+  supplierForm!: FormGroup;
   selectedCategory: any;
 
   
-  suppliers: any[] = [];
-  selectedSupplier: any = null;
+  suppliers: supplierData[] = [];
+  selectedSupplier: number | null = null;  // Store the selected supplier's ID
 
 
 
@@ -69,8 +74,12 @@ export class AddIngredientComponent {
     this.productForm = this.fb.group({
       sku: ['']
     });
+   
+ console.log("im here")
     this.loadSuppliers();
 
+
+    // Initialize the form groups
    this.ingredientForm = new FormGroup({
     ingredientName: new FormControl(''),
     sku: new FormControl(''),
@@ -83,6 +92,7 @@ export class AddIngredientComponent {
     restockQuantity: new FormControl(''),
     reorderThreshold: new FormControl(''),
     measurementUnit: new FormControl(''),
+    reciepe: new FormControl(''),
     supplier: new FormControl(''),
     supplierContact: new FormControl(''),
     expirationDate: new FormControl(''),
@@ -90,6 +100,14 @@ export class AddIngredientComponent {
     storageRequirement: new FormControl(''),
 
    });
+   this.supplierForm = new FormGroup({
+    supplierName: new FormControl(''),
+    contactPerson: new FormControl(''),
+    phoneNumber: new FormControl(''),
+    email: new FormControl(''),
+    address: new FormControl(''),
+   });
+
 
 
   }
@@ -98,14 +116,21 @@ export class AddIngredientComponent {
 
 
 
-  constructor(private router: Router, private fb: FormBuilder, private messageService: MessageService) {
+  constructor(private router: Router, private fb: FormBuilder, private messageService: MessageService, private posService: PosServiceService,private http: HttpClient) {
    
   }
 
-  // Load suppliers from local storage
+  // Load suppliers from api
   loadSuppliers() {
-    const savedSuppliers = localStorage.getItem('suppliers');
-    this.suppliers = savedSuppliers ? JSON.parse(savedSuppliers) : [];
+    this.posService. getSupplier().subscribe(
+      (data) => {
+        this.suppliers = data;
+        console.log('Suppliers loaded:', this.suppliers);
+      },
+      (error) => {
+        console.error('Error loading suppliers:', error);
+      }
+    );
   }
 
 
@@ -114,6 +139,7 @@ export class AddIngredientComponent {
   }
 
   openModal() {
+    console.log("clicked")
     this.isOpen = true;   
 }
 
@@ -132,26 +158,25 @@ clearForm() {
 }
 
 submitForm() {
-  const newSupplier = {
-    id: this.suppliers.length + 1,
-    supplierName: this.supplierName,
-    contactPerson: this.contactPerson,
-    email: this.email,
-    countryCode: this.selectedCountryCode,
-    phone: this.phone,
-    address: this.address,
-    notes: this.notes
-  };
 
   // Save to local storage
-  this.suppliers.push(newSupplier);
-  localStorage.setItem('suppliers', JSON.stringify(this.suppliers));
+  // this.suppliers.push(newSupplier);
+  // localStorage.setItem('suppliers', JSON.stringify(this.suppliers));
+
+  const data = this.supplierForm.value;
+  this.posService.addSupplier(data).subscribe((response: any) => {
+    console.log('API Response:', response);
+    console.log('Supplier added:', data);
+  });
 
   // Update dropdown and reset the form
-  this.loadSuppliers();
+  // this.loadSuppliers();
   this.clearForm();
   this.closeModal();
 }
+
+
+
 
 
 changeSelectedSupplier(event: any) {
@@ -163,13 +188,22 @@ changeSelectedSupplier(event: any) {
 
   onSubmit() {
     console.log("Button clicked!");
+    
 
-    this.saveToLocalStorage(this.ingredientForm.value);
-    this.ingredientForm.reset();
 
-      // Update the local in-memory list after saving
-  const updatedIngredients = JSON.parse(localStorage.getItem('ingredients') || '[]');
-  console.log('Updated Ingredients:', updatedIngredients);
+      const ingredientData = this.ingredientForm.value;
+  
+
+      this.posService.addIngredient(ingredientData).subscribe((response: any) => {
+        console.log('API Response:', response);
+      });
+
+  //   this.saveToLocalStorage(this.ingredientForm.value);
+  //   this.ingredientForm.reset();
+
+  //     // Update the local in-memory list after saving
+  // const updatedIngredients = JSON.parse(localStorage.getItem('ingredients') || '[]');
+  // console.log('Updated Ingredients:', updatedIngredients);
 
   this.messageService.add({
     severity: 'success',
@@ -181,6 +215,7 @@ changeSelectedSupplier(event: any) {
 
 
   }
+
   generateRandomSku() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let randomPart = '';
@@ -242,16 +277,26 @@ changeSelectedSupplier(event: any) {
   }
   
 
-  formatNumber(event: any) {
-    let input = event.target.value;
-    // Remove non-numeric characters except for commas
-    input = input.replace(/[^0-9,]/g, '');
+  formatNumber(event: any, controlName: string) {
+    const input = event.target;
   
-    // Remove existing commas and add them back correctly
-    input = input.replace(/,/g, '');
-    input = input.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    // Remove commas
+    const rawValue = input.value.replace(/,/g, '');
   
-    event.target.value = input;
+    if (!isNaN(rawValue)) {
+      const formattedValue = this.numberWithCommas(rawValue);
+      input.value = formattedValue;
+  
+      console.log(`Updating ${controlName} with value:`, rawValue);
+  
+      this.ingredientForm.get(controlName)?.setValue(rawValue, { emitEvent: false });
+    }
+  }
+  
+  numberWithCommas(x: string): string {
+    const parts = x.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
   }
   
 }

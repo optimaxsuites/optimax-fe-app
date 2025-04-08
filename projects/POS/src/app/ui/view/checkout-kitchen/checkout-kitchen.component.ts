@@ -41,7 +41,7 @@ export class CheckoutKitchenComponent implements OnInit {
   isOrderDetailsOpen = false;
   selectedOrder?: TableStatus; // store the order/card clicked
 
-  #tableStatuses = signal<TableStatus[]>([]);
+  #tableStatuses = signal<Map<number, TableStatus>>(new Map());
 
   testMode = signal<typeof this.mode>('chef');
 
@@ -86,6 +86,12 @@ export class CheckoutKitchenComponent implements OnInit {
 
   isReceiptModalOpen = false;
   isCreateOrderModalOpen = false;
+  /**
+   * This is only true if a waiter accidentally tries to overwrite an order.
+   *
+   * If `true`, it will display a dialog showing the waiter the details of the order and a button to explicitly overwrite it.
+   */
+  isCreateOrderModalOrderExistsDialogOpen = false;
 
   ngOnInit(): void {
     switch (this.mode) {
@@ -143,23 +149,38 @@ export class CheckoutKitchenComponent implements OnInit {
     return 'success' as const;
   }
 
+  /**
+   *
+   *
+   * @param tableNo
+   * @param orders
+   * @param waiterIdd - Dummy. I'll get rid of it later
+   * @returns `true` if an order is added succesfully, otherwise `false` if an order already exists
+   */
   createOrder(tableNo: number, orders: TableOrder[], waiterIdd?: string) {
     const ids = ['0', '1'];
     // TODO: Get the waiter's id based on their login info
     const waiterId =
       waiterIdd ?? ids[Math.round(Math.random() * 100) % ids.length];
 
-    // update the signal by creating a new array
-    this.#tableStatuses.update((statuses) => [
-      ...statuses,
-      {
-        no: tableNo,
-        orderedOn: new Date(),
-        orders,
-        status: 'Pending',
-        waiterId,
-      },
-    ]);
+    if (this.#tableStatuses().has(tableNo)) return false;
+    else {
+      // update the signal by creating a new map
+      this.#tableStatuses.update(
+        (statuses) =>
+          new Map(
+            statuses.set(tableNo, {
+              no: tableNo,
+              orderedOn: new Date(),
+              orders,
+              status: 'Pending',
+              waiterId,
+            })
+          )
+      );
+
+      return true;
+    }
   }
   createMultipleOrders(
     tableOrderList: { tableNo: number; orders: TableOrder[] }[]
@@ -184,12 +205,12 @@ export class CheckoutKitchenComponent implements OnInit {
     switch (this.testMode()) {
       case 'waiter':
         // TODO: Use the waiter's id as a comparison here
-        return this.#tableStatuses().filter(
+        return [...this.#tableStatuses().values()].filter(
           (tableStatus) => tableStatus.waiterId == '0'
         );
       case 'cashier':
       case 'chef':
-        return this.#tableStatuses();
+        return [...this.#tableStatuses().values()];
     }
   });
 }

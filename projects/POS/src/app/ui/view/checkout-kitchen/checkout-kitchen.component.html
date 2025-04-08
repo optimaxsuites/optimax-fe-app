@@ -497,9 +497,35 @@
         label="Order"
         class="p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200 font-bold"
         (click)="
-          createOrder(orderTableNumber, [], '0'); isCreateOrderModalOpen = false
+          isCreateOrderModalOrderExistsDialogOpen = !createOrder(
+            orderTableNumber,
+            [],
+            '0'
+          );
+          isCreateOrderModalOpen = false
         "
       ></button>
     </div>
   </div>
+</p-dialog>
+
+<p-dialog
+  header="Order Conflict"
+  [(visible)]="isCreateOrderModalOrderExistsDialogOpen"
+  [modal]="true"
+  [style]="{ width: '40rem', height: '30rem' }"
+  [baseZIndex]="10000"
+>
+  <div class="order-exists-dialog">
+    The order for
+    <span class="font-bold text-green-400">table {{ orderTableNumber }}</span>
+    already exists. Do you want to edit it?
+  </div>
+
+  <button
+    pButton
+    label="Edit"
+    class="p-button-success px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring focus:ring-orange-200 font-bold"
+    style="position: absolute; bottom: 10%; right: 10%"
+  ></button>
 </p-dialog>

@@ -113,6 +113,7 @@ import { SupplierComponent } from './ui/view/products/metaDatas/supplier/supplie
 import { TaxComponent } from './ui/view/products/metaDatas/tax/tax.component';
 import { HotelBillsComponent } from './ui/view/hotel-bills/hotel-bills.component';
 import { HotelChangeroomComponent } from './ui/view/hotel-changeroom/hotel-changeroom.component';
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -168,6 +169,8 @@ import { HotelChangeroomComponent } from './ui/view/hotel-changeroom/hotel-chang
     //CheckoutHeaderComponent,
   ],
   imports: [
+    BrowserModule,
+    UserModule,
     // BrowserModule,
     UserModule,
     AppRoutingModule,
@@ -221,7 +224,7 @@ import { HotelChangeroomComponent } from './ui/view/hotel-changeroom/hotel-chang
     InputGroupAddonModule,
     SkeletonModule,
     PaginatorModule,
-    // BrowserAnimationsModule,
+    BrowserAnimationsModule,
   ],
   exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],
   providers: [

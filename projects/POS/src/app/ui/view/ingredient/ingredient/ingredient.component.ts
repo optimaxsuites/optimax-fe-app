@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { CloseRegisterComponent } from '../../close-register/close-register.component';
+import { PosServiceService } from '../../../service/pos-service.service';
+import { HttpClient } from '@angular/common/http';
 
 
 @Component({
@@ -31,19 +33,30 @@ export class IngredientComponent {
   // tableSection: boolean = true;
   // isMenuOpen!: boolean;
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private posService: PosServiceService,private http: HttpClient) {}
 
 // filteredIngredients = this.ingredients;
 
 ngOnInit(): void {
 
-    const storedData = localStorage.getItem('ingredients');
-    if (storedData) {
-      this.ingredients = JSON.parse(storedData);
-      this.filteredIngredients = this.ingredients // Show only the last added ingredient
-    }
+  // this.http.get<any[]>('https://be.optimaxsuites.com/x/api/v2/pos/ingredients')
+  //   .subscribe((data) => {
+  //     console.log('Fetched data:', data); // 👀 Check console
+  //     this.ingredients = data;
+  //     this.filteredIngredients = this.ingredients;
 
-    this.categories = this.filteredIngredients.map(ingredients => ingredients.category);
+  //     // Extract categories
+  //     this.categories = this.filteredIngredients.map(ingredient => ingredient.category);
+  //   }, error => {
+  //     console.error('Error fetching ingredients:', error);
+  //   });
+    // const storedData = localStorage.getItem('ingredients');
+    // if (storedData) {
+    //   this.ingredients = JSON.parse(storedData);
+    //   this.filteredIngredients = this.ingredients // Show only the last added ingredient
+    // }
+
+    // this.categories = this.filteredIngredients.map(ingredients => ingredients.category);
     
     
     // if (storedData) {

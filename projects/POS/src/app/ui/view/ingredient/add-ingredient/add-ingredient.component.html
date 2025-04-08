@@ -86,15 +86,15 @@
         </div>
 
        <!-- Description -->
-       <div class="form">
+       <!-- <div class="form">
         <label for="description" class="block mb-2 text-[13px] text-gray-900 dark:text-white text-left">Description</label>
         <textarea id="description" formControlName="description" name="description" rows="3" class="bg-gray-50 border  border-gray-300 text-gray-900 text-xl rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full  dark:bg-gray-700 dark:border-gray-600 dark:text-white"></textarea>
-      </div>
+      </div> -->
 
       <!-- Purchase Price -->
       <div class="form">
         <label for="purchase-price" class="block mb-2 text-[13px] text-gray-900 dark:text-white text-left">Purchase Price</label>
-        <input type="text" id="purchase-price" formControlName="purchasePrice" (input)="formatNumber($event)" placeholder="Enter price (e.g., 1,000)" required class="bg-gray-50 border  border-gray-300 text-gray-900 text-xl rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full  dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+        <input type="text" id="purchase-price" formControlName="purchasePrice" (input)="formatNumber($event, 'purchasePrice')" placeholder="Enter price (e.g., 1,000)" required class="bg-gray-50 border  border-gray-300 text-gray-900 text-xl rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full  dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
       </div>
 <!-- 
       <div class="mb-6">
@@ -105,7 +105,7 @@
       <!-- Current Stock -->
       <div class="form">
         <label for="current-stock" class="block mb-2 text-[13px] text-gray-900 dark:text-white text-left">Current Stock</label>
-        <input type="text" id="current-stock" formControlName="currentStock" (input)="formatNumber($event)" placeholder="Enter stock (e.g., 1,000)" required class="bg-gray-50 border  border-gray-300 text-gray-900 text-xl rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full  dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+        <input type="text" id="current-stock" formControlName="currentStock" (input)="formatNumber($event, 'currentStock')" placeholder="Enter stock (e.g., 1,000)" required class="bg-gray-50 border  border-gray-300 text-gray-900 text-xl rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full  dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
       </div>
 
       <!-- Restock Quantity -->
@@ -117,7 +117,7 @@
       <!-- Reorder Threshold -->
       <div class="form">
         <label for="reorder-threshold" class="block mb-2 text-[13px] text-gray-900 dark:text-white text-left">Reorder Threshold</label>
-        <input type="text" id="reorder-threshold" formControlName="reorderThreshold" (input)="formatNumber($event)" placeholder="Enter threshold (e.g., 1,000)" class="bg-gray-50 border  border-gray-300 text-gray-900 text-xl rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full  dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+        <input type="text" id="reorder-threshold" formControlName="reorderThreshold" (input)="formatNumber($event, 'Threshold')" placeholder="Enter threshold (e.g., 1,000)" class="bg-gray-50 border  border-gray-300 text-gray-900 text-xl rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full  dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
       </div>
 
       <!-- Measurement Unit -->
@@ -125,17 +125,19 @@
         <label for="measurement-unit" class="block mb-2 text-[13px]  text-gray-900 dark:text-white text-left">Measurement Unit</label>
         <select id="measurement-unit" formControlName="measurementUnit" name="measurementUnit" required class="bg-gray-50 border  border-gray-300 text-gray-900 text-xl rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full  dark:bg-gray-700 dark:border-gray-600 dark:text-white">
           <option value="">Select Unit</option>
-          <option value="kg">kg</option>
+          <!-- <option value="kg">kg</option>
           <option value="g">g</option>
           <option value="liters">liters</option>
           <option value="ml">ml</option>
           <option value="pieces">pieces</option>
           <option value="units">units</option>
           <option value="bags">bags</option>
-          <option value="cartons">cartons</option>
+          <option value="cartons">cartons</option> -->
+          <option value="" *ngFor="let unit of measurementUnits">{{unit}}</option>
         </select>
       </div>
       
+     
 
       <div class="w-full ">
         <label for="dropdown" class="block font-normal text-left text-[13px]">
@@ -143,19 +145,19 @@
         </label>
         <p-inputGroup class="relative flex items-center border rounded-md overflow-hidden bg-gray-100 mb-7">
 
-          <div *ngIf="!selectedSupplier" class=" absolute text-gray-600 text-[14px] p-2">
+          <!-- <div      class=" absolute text-gray-600 text-[14px] p-2">
           -- Select a supplier --             
         </div>
-    
+     -->
           <select
             id="dropdown"
             class="text-gray-600 bg-gray-100 text-[14px] w-full outline-none p-2 "
-            [(ngModel)]=" selectedSupplier"
-            (change)="changeSelectedSupplier($event)"
-
+     
             >
-          <option *ngFor="let supplier of suppliers" [ngValue]="supplier">
-            {{ supplier.supplierName }}
+           
+            <option value="0">-- Select a supplier --</option>
+          <option *ngFor="let supplier of suppliers" [ngValue]="supplier.id">
+            {{ supplier.name}}
           </select>
         
         <p-inputGroupAddon 
@@ -181,146 +183,22 @@
     </div>
 
     <!-- Branch -->
-    <div class="form">
+    <!-- <div class="form">
         <label for="branch" class="block mb-2 text-[13px] text-gray-800 dark:text-white text-left">Branch</label>
         <select id="branch" formControlName="branch" class="bg-gray-50 border border-gray-300 text-gray-900  rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full  dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
             <option value="">Select Branch</option>
             <option value="Main Branch">Main Branch</option>
             <option value="Secondary Branch">Secondary Branch</option>
         </select>
-    </div>
+    </div> -->
 
     <!-- Storage Requirements -->
     <div class="form">
-        <label for="storage-requirements" class="block mb-2 text-[13px] text-gray-800 dark:text-white text-left">Storage Requirements</label>
-        <textarea id="storage-requirements" formControlName="storageRequirement" rows="3" class="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg  focus:ring-blue-500 focus:border-blue-500 block w-full  dark:bg-gray-700 dark:border-gray-600 dark:text-white"></textarea>
+      <label for="reorder-threshold" class="block mb-2 text-[13px] text-gray-900 dark:text-white text-left">reciepe</label>
+      <input type="text" id="reorder-threshold" formControlName="reciepe" (input)="formatNumber($event, 'reciepe')" placeholder="Enter threshold (e.g., 1,000)" class="bg-gray-50 border  border-gray-300 text-gray-900 text-xl rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full  dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
     </div>
 
    
-
-
-
     <app-side-modal *ngIf="isOpen" (close)="closeModal()">
-      <h2 class="text-2xl font-semibold my-5 text-center bg-gray-50">Add New Supplier</h2>
-    
-      <div >
-        <form (ngSubmit)="submitForm()" class="p-4">
-          <div class="mb-4 ">
-            <label class="block text-left text-gray-700 text-[13px]">Supplier Name</label>
-            
-            <input 
-              type="text" 
-              [(ngModel)]="supplierName" 
-              #supplierNameInput="ngModel" 
-              name="supplierName" 
-              class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800"
-              required
-            />
-            <!-- Error Message (Only Shows if Input is Empty) -->
-            <p *ngIf="supplierNameInput.invalid && supplierNameInput.touched" class="text-red-500 text-sm mt-1">
-              Supplier Name is required.
-            </p>
-          </div>
-          
-          <div class="mb-4">
-            <label class="block text-gray-700 text-[13px] text-left">Contact Person</label>
-          
-            <input 
-              type="text" 
-              [(ngModel)]="contactPerson" 
-              #contactPersonInput="ngModel" 
-              name="contactPerson" 
-              class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800"  
-              required
-            />
-          
-            <!-- Error Message (Only Shows if Input is Empty) -->
-            <p *ngIf="contactPersonInput.invalid && contactPersonInput.touched" class="text-red-500 text-sm mt-1">
-              Contact Person is required.
-            </p>
-          </div>
-          
-    
-          <div class="mb-4">
-            <label class="block text-gray-700 text-[13px] text-left">Email Address</label>
-          
-            <input
-              type="email"
-              [(ngModel)]="email"
-              name="email"
-              #emailInput="ngModel"
-              class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800" 
-              [ngClass]="{'border-red-500': emailInput.invalid && emailInput.dirty}"
-              required
-              email
-            />
-          
-            <!-- Error Messages -->
-            <div *ngIf="emailInput.invalid && emailInput.dirty" class="text-red-500 text-sm">
-              <p *ngIf="emailInput.errors?.['required']">This field is required.</p>
-              <p *ngIf="emailInput.errors?.['email']">Please enter a valid email address.</p>
-            </div>
-          </div>
-          
-    
-          <div class="mb-4">
-            <label class="block text-gray-700 text-[13px] text-left">Phone Number</label>
-            
-            <div class="flex items-center border border-gray-300 rounded-lg bg-gray-100">
-              <!-- Country Code Selector -->
-              <select
-                [(ngModel)]="selectedCountryCode"
-                name="countryCode"
-                class="bg-gray-200 p-3 border-r outline-none text-gray-700"
-              >
-                <option *ngFor="let country of countryCodes" [value]="country.code">
-                  {{ country.name }} ({{ country.code }})
-                </option>
-              </select>
-          
-              <!-- Phone Number Input -->
-              <input
-                type="tel"
-                [(ngModel)]="phone"
-                name="phone"
-                #phoneInput="ngModel"
-                class="p-3 w-full bg-gray-100 text-gray-800 outline-none"
-                [pattern]="phonePattern"
-                [ngClass]="{'border-red-500': phoneInput.invalid && phoneInput.dirty}"
-                required
-              />
-            </div>
-          
-            <!-- Error Message -->
-            <p *ngIf="phoneInput.invalid && phoneInput.dirty" class="text-red-500 text-sm">
-              Enter a valid phone number (e.g., +234 or +1).
-            </p>
-          </div>
-          
-    
-          <div class="mb-4">
-            <label class="block text-gray-700 text-[13px] text-left">Business Address</label>
-            <input type="text" [(ngModel)]="address" name="address" class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800"  />
-          </div>
-    
-         
-    
-          <!-- Terms & Conditions -->
-          <!-- <div class="mb-4 flex items-center">
-            <input type="checkbox" [(ngModel)]="agreeTerms" name="agreeTerms" class="mr-2" />
-            <label for="agreeTerms" class="text-2xl">
-              I agree to the 
-              <a href="/terms-and-conditions" target="_blank" class="text-blue-600 underline">Terms & Conditions</a>
-            </label>
-          </div> -->
-        
-    
-          <!-- Buttons -->
-          <div class="flex justify-end mt-5" >
-            <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Save</button>
-            <button type="button" class="ml-2 text-gray-600" (click)="closeModal()">Cancel</button>
-          </div>
-        </form>
-      </div>
-  
-    </app-side-modal>
+      <app-supplier></app-supplier>
+     </app-side-modal>
