@@ -412,7 +412,7 @@ import { AppResizeDirective } from '../../projects/POS/src/app/ui/service/app-re
 
   ],
   imports: [
-      // BrowserModule,
+      BrowserModule,
       CommonModule,
       AppRoutingModule,
       AppDashboardModule,
@@ -459,7 +459,7 @@ import { AppResizeDirective } from '../../projects/POS/src/app/ui/service/app-re
       PasswordModule,
       ButtonModule,
       MatCardModule,
-      // BrowserAnimationsModule,
+      BrowserAnimationsModule,
       HttpClientModule,
       AngularEditorModule,
       AsyncPipe,
