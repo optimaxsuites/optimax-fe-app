@@ -143,6 +143,10 @@ const routes: Routes = [
         path: '',
         loadChildren: () => import('../../projects/POS/src/app/user/user.module').then(m => m.UserModule),
       },
+      {
+        path: '',
+        loadChildren: () => import('../../projects/hospitality/src/app/user/user.module').then(m => m.UserModule),
+      },
     ],
   },
 
