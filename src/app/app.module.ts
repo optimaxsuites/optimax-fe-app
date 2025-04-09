@@ -31,7 +31,7 @@ import { UserModule } from './user/user.module';
     HotelRoomlistComponent
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
     CommonModule,
     // UserModule,
     AppRoutingModule,
