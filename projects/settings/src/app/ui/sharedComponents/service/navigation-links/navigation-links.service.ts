@@ -48,10 +48,11 @@ export class NavigationLinksService {
     this.links['allPayslip'] = 'employee-payslip'
     this.links['performanceLink'] = '/admin/hr/performance/' +uuidV4();
 
-// human resources ================================================================================================================
+// hospitality ================================================================================================================
     this.links['roomLink'] = '/admin/hospitality/room/' +uuidV4();
     this.links['serviceLink'] = '/admin/hospitality/service/' +uuidV4();
     this.links['shortletLink'] = '/admin/hospitality/shortlet/' +uuidV4();
+    this.links['roomsCheckoutLink'] = '/user/hospitality/checkout/' +uuidV4();
 
 
 //  resources ================================================================================================================
