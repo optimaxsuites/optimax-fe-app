@@ -31,6 +31,7 @@ import { MessageService } from 'primeng/api';
   ],
   imports: [
     BrowserModule,
+    // UserModule,
     CommonModule,
     AppRoutingModule,
     CalendarModule,
