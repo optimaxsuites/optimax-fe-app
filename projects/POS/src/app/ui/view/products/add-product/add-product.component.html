@@ -285,8 +285,6 @@
           <ng-select
             [items]="categories"
             bindLabel="name"
-            bindValue="id"
-         
             formControlName="category"
             [multiple]="false"
             placeholder="Category"
@@ -370,6 +368,138 @@
             id="weight"
           />
         </div>
+
+
+        <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">
+          Identifiers
+        </p>
+
+        <div class="flex gap-4 items-center w-full">
+          <!-- <div class="detailDiv w-full">
+            <div class="flex items-center justify-between">
+              <label for="quantity"
+                >Quantity <span style="color: red">*</span></label
+              >
+              <div
+                *ngIf="
+                  productForm.get('initialQuantity')?.invalid &&
+                  productForm.get('initialQuantity')?.touched
+                "
+                class="error"
+              >
+                {{ getErrorMessage("initialQuantity", "quantity") }}
+              </div>
+            </div>
+            <input
+              id="quantity"
+              formControlName="initialQuantity"
+              class="name editInput"
+              placeholder="Quantity"
+            />
+          </div> -->
+          <div class="detailDiv w-full">
+            <div class="flex items-center justify-between">
+              <label for="partNumber"
+                >Measurement Unit <span style="color: red">*</span></label
+              >
+              <div
+                *ngIf="
+                  productForm.get('partNumber')?.invalid &&
+                  productForm.get('partNumber')?.touched
+                "
+                class="error"
+              >
+                {{ getErrorMessage("partNumber") }}
+              </div>
+            </div>
+            <ng-select
+            [items]="measurementUnits"
+            bindLabel="name"
+            formControlName="category"
+            [multiple]="false"
+            placeholder="Category"
+            class="w-full"
+          >
+          </ng-select>
+          </div>
+          <div class="detailDiv w-full">
+            <div class="flex items-center justify-between">
+              <label for="sku">Reorder Threshold <span style="color: red">*</span></label>
+              <div
+                *ngIf="
+                  productForm.get('sku')?.invalid &&
+                  productForm.get('sku')?.touched
+                "
+                class="error"
+              >
+                {{ getErrorMessage("sku") }}
+              </div>
+            </div>
+            <div class="flex inputAndBtn">
+              <input
+                id="sku"
+                class="name editInput"
+                formControlName="sku"
+                placeholder="Reorder Threshold"
+              />
+             
+            
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-center w-full">
+          <div class="detailDiv w-full">
+            <div class="flex items-center gap-3">
+              <input
+              class="name "
+              type="checkbox"
+              id="e-quantity"
+              formControlName="effectiveQuantity"
+              placeholder="Effective Quantity"
+              readonly
+            />
+              <label for="e-quantity"
+                >Combo ? <span style="color: red">*</span></label
+              >
+              <div
+                *ngIf="
+                  productForm.get('effectiveQuantity')?.invalid &&
+                  productForm.get('effectiveQuantity')?.touched
+                "
+                class="error"
+              >
+                {{ getErrorMessage("effectiveQuantity") }}
+              </div>
+            </div>
+            
+          </div>
+          <div class="detailDiv w-full">
+            <div class="flex items-center justify-between">
+              <label for="code">Combo Items <span style="color: red">*</span></label>
+              <div
+                *ngIf="
+                  productForm.get('code')?.invalid &&
+                  productForm.get('code')?.touched
+                "
+                class="error"
+              >
+                {{ getErrorMessage("code") }}
+              </div>
+            </div>
+
+            <ng-select
+            [items]="categories"
+            bindLabel="name"
+            formControlName="category"
+            [multiple]="false"
+            placeholder="Category"
+            class="w-full"
+          >
+          </ng-select>
+          </div>
+        
+        </div>
         <!-- SECTION: Industry-specific details -->
         <div class="industry-specific-details">
           @if (industry == "Pharmacy") {
@@ -417,7 +547,7 @@
           </div>
           }
 
-          @if (industry == "Hotel") {
+          <!-- @if (industry == "Hotel") {
             <div class="space-y-4 flex flex-col gap-3">
               <p class="text-lg text-gray-700 font-semibold  mb-0 mt-2">
                 Industry-specific Details
@@ -432,7 +562,7 @@
               <input type="number" formControlName="bedCount" class="name editInput" id="bedCount"/>
             </div>
             </div>
-            }
+            } -->
 
             @if (industry == "Kitchen") {
               <div class="space-y-4 flex flex-col gap-3">
@@ -498,6 +628,10 @@
               </div>
               }
         </div>
+
+
+
+
       </div>
 
       <div class="imageDiv">
@@ -600,7 +734,7 @@
                       [items]="taxes"
                       bindLabel="name"
                       bindValue="id"
-                      formControlName="discount"
+                      formControlName="tax"
                       placeholder="Taxes"
                       class="w-full"
                     ></ng-select>
@@ -630,7 +764,7 @@
                       [items]="suppliers"
                       bindLabel="name"
                       bindValue="id"
-                      formControlName="discount"
+                      formControlName="supplier"
                       placeholder="Supplier"
                       class="w-full"
                     ></ng-select>
@@ -652,15 +786,15 @@
               @for (variant of getVariants(branch).controls; track $index) {
                 <tr [formGroup]="variant">
                   <td class="py-2 px-4 border-b pl-8 text-right">
-                    {{ variant.get('variantName')?.value }}
+                    {{ variant.get('name')?.value }}
                   </td>
                   <td class="py-2 px-4 border-b">
-                    <p-inputNumber formControlName="sellingPrice" mode="decimal" [min]="0"></p-inputNumber>
+                    <p-inputNumber formControlName="price" mode="decimal" [min]="0"></p-inputNumber>
                   </td>
                   <td class="py-2 px-4 border-b">
                     <p-inputNumber formControlName="quantity" mode="decimal" [min]="0"></p-inputNumber>
                   </td>
-                  <td colspan="2" class="py-2 px-4 border-b"></td> 
+                  <td colspan="3" class="py-2 px-4 border-b"></td> 
                   <td class="py-2 px-4 border-b">
                     <button  type="button" (click)="removeVariant(branch, $index)">
                       <i
@@ -901,7 +1035,7 @@
         class="name editInput"
         type="text"
         id="e-price"
-        [(ngModel)]="productData.discount.name"
+        [(ngModel)]="discount.name"
         placeholder="Discount name"
       />
     </div>
@@ -910,7 +1044,7 @@
       <label for="discount">Discount percentage (%)</label>
       <input
         id="discount"
-        [(ngModel)]="productData.discount.value"
+        [(ngModel)]="discount.value"
         class="name editInput"
         placeholder="Discount value"
       />
@@ -922,7 +1056,7 @@
         [items]="discountTypes"
         bindLabel="name"
         bindValue="id"
-        [(ngModel)]="productData.discount.discountType"
+        [(ngModel)]="discount.discountType"
         [multiple]="true"
         placeholder="Select discount types"
       >

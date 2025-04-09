@@ -166,7 +166,7 @@
 
   <ng-template #productList>
     <div *ngFor="let product of paginatedProducts" class="card relative">
-      <span 
+      <!-- <span 
       *ngIf="product.effectiveQuantity < 10"
       class="absolute top-2 right-2 px-2 py-1 rounded-lg text-white text-lg font-semibold"
       [ngClass]="{
@@ -174,7 +174,7 @@
       }"
     >
     Low Stock
-    </span>
+    </span> -->
       
       <img
       
@@ -183,8 +183,8 @@
         class="w-full h-40 object-cover rounded-xl"
       />
       <h4 class="py-2 h-16 text-gray-600">{{ product.name }}</h4>
-      <p><strong>Price:</strong> {{ product.effectivePrice | currency: '₦' }}</p>
-      <p><strong>Quantity:</strong> {{ product.effectiveQuantity }}</p>
+      <!-- <p><strong>Price:</strong> {{ product.effectivePrice | currency: '₦' }}</p> -->
+      <!-- <p><strong>Quantity:</strong> {{ product.effectiveQuantity }}</p> -->
   
       
       <p><strong>Category:</strong> {{ product.productCategory.name }}</p>

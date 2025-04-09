@@ -49,23 +49,14 @@ export class AddProductComponent {
     description: '',
     sku: '',
     weight: 0,
-    initialPrice: '',
-    effectivePrice: '',
-    initialQuantity: 0,
-    effectiveQuantity: 0,
+    originalPurchasePrice: '',
+    currentPurchasePrice: '',
+   
     partNumber: '',
     tax: 0,
-    branch: '',
+  
     variant: '',
-    discount: {
-      id: 0,
-      name: '',
-      value: 0,
-      startDate: new Date(),
-      endDate: new Date(),
-      minQuantity: 0,
-      discountType: { id: 0, code: '', description: '', name: '' },
-    },
+    
     productCategory: {
       id: 0,
       name: '',
@@ -73,14 +64,11 @@ export class AddProductComponent {
       description: '',
     },
     id: 0,
-    // count: 0,
-    // discountType: [] as any[],
-    // discountValue: 0,
-    // image: {} as any,
-    // startDate: '',
-    // endDate: '',
-    // discountMinQuantity: 0,
-    // discountName: '',
+    productBranch: [],
+       isBundle: false, 
+       bundleItems: [], 
+      measurementUnit: MeasurementUnit,
+      reorderThreshold: 12,
     createdBy: '',
     createdDate: '',
     productImages: [],
@@ -90,6 +78,25 @@ export class AddProductComponent {
     barcodeType: 'CODE128',
     barcodeQuantity: 1,
   };
+
+  discount: {
+    id: 0,
+    name: '',
+    value: 0,
+    startDate: Date,
+    endDate: Date,
+    minQuantity: 0,
+    discountType: { id: 0, code: '', description: '', name: '' },
+  } = {
+    id: 0,
+    name: '',
+    value: 0,
+    startDate: new Date(),
+    endDate: new Date(),
+    minQuantity: 0,
+    discountType: { id: 0, code: '', description: '', name: '' },
+  }
+  measurementUnits = Object.keys(MeasurementUnit)
 
   addProduct: boolean = false;
   productImage: any = '';
@@ -288,8 +295,7 @@ export class AddProductComponent {
         '',
         [Validators.required, Validators.pattern('^[0-9]*.?[0-9]{0,2}$')],
       ],
-      initialQuantity: [, [Validators.required, Validators.min(0)]],
-      effectiveQuantity: [, [Validators.required, Validators.min(0)]],
+     
 
       partNumber: ['', Validators.required],
       tax: [, [Validators.required, Validators.min(0)]],
@@ -487,6 +493,7 @@ removeIngredient(index: number) {
           sellingPrice: [0, Validators.required],
           quantity: [0, Validators.required],
           tax: [0, Validators.required],
+          supplier: [0, Validators.required],
           discount: [null],
           variants: this.fb.array([]),
         })
@@ -602,18 +609,18 @@ removeIngredient(index: number) {
   addToProduct() {
     const userName = sessionStorage.getItem('username');
 
-    console.log(this.productForm);
-    if (this.productForm.invalid) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Validation Error',
-        detail: 'Please ensure all required fields are filled in correctly.',
-        key: 'tl',
-        life: 3000,
-      });
+    // console.log(this.productForm);
+    // if (this.productForm.invalid) {
+    //   this.messageService.add({
+    //     severity: 'error',
+    //     summary: 'Validation Error',
+    //     detail: 'Please ensure all required fields are filled in correctly.',
+    //     key: 'tl',
+    //     life: 3000,
+    //   });
 
-      return;
-    }
+    //   return;
+    // }
 
     const formValues = this.productForm.value;
 
@@ -626,18 +633,21 @@ removeIngredient(index: number) {
       description: formValues.description,
       sku: formValues.sku,
       weight: formValues.weight,
-      initialPrice: formValues.initialPrice,
-      effectivePrice: formValues.effectivePrice,
-      initialQuantity: formValues.initialQuantity,
-      effectiveQuantity: formValues.effectiveQuantity,
+      originalPurchasePrice: formValues.initialPrice,
+      currentPurchasePrice: formValues.effectivePrice,
       partNumber: formValues.partNumber,
       tax: formValues.tax,
-      branch: (formValues.branch as string[])[0], //FIXME: The backend can only store a sinlge string. Once that's fixed, undo this change
-      discount: formValues.discount,
-      variants: this.variants,
       productCategory: formValues.category,
       createdBy: userName,
       createdDate: new Date().toISOString(),
+  
+      productBranch: [],
+
+       isBundle: false, 
+       bundleItems: [], 
+      measurementUnit: MeasurementUnit,
+      reorderThreshold: 12,
+    
     };
 
     const formData = new FormData();
@@ -646,46 +656,46 @@ removeIngredient(index: number) {
     if (formValues.image instanceof File) {
       formData.append('files', formValues.image);
     }
-
+    console.log("branches", this.branchess.value)
     console.log(formData);
 
-    this.posService.addProduct(formData).subscribe(
-      async (data) => {
-        if (data) {
-          let savedProducts = localStorage.getItem('products');
-          let productList: HistoryData = savedProducts
-            ? new Map(JSON.parse(savedProducts))
-            : new Map();
-          productList.set(data.id, data);
-          localStorage.setItem('products', JSON.stringify([...productList]));
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Product Added',
-            detail: 'Product added successfully.',
-            key: 'tl',
-            life: 3000,
-          });
-          this.addSuccessfull = true;
-        } else {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Failed',
-            detail: 'An error occured. Please try adding the product again.',
-            key: 'tl',
-            life: 3000,
-          });
-        }
-      },
-      (error) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Unexpected error occured, please try again later.',
-          key: 'tl',
-          life: 3000,
-        });
-      }
-    );
+    // this.posService.addProduct(formData).subscribe(
+    //   async (data) => {
+    //     if (data) {
+    //       let savedProducts = localStorage.getItem('products');
+    //       let productList: HistoryData = savedProducts
+    //         ? new Map(JSON.parse(savedProducts))
+    //         : new Map();
+    //       productList.set(data.id, data);
+    //       localStorage.setItem('products', JSON.stringify([...productList]));
+    //       this.messageService.add({
+    //         severity: 'success',
+    //         summary: 'Product Added',
+    //         detail: 'Product added successfully.',
+    //         key: 'tl',
+    //         life: 3000,
+    //       });
+    //       this.addSuccessfull = true;
+    //     } else {
+    //       this.messageService.add({
+    //         severity: 'error',
+    //         summary: 'Failed',
+    //         detail: 'An error occured. Please try adding the product again.',
+    //         key: 'tl',
+    //         life: 3000,
+    //       });
+    //     }
+    //   },
+    //   (error) => {
+    //     this.messageService.add({
+    //       severity: 'error',
+    //       summary: 'Error',
+    //       detail: 'Unexpected error occured, please try again later.',
+    //       key: 'tl',
+    //       life: 3000,
+    //     });
+    //   }
+    // );
   }
 
   updateProduct() {
@@ -711,13 +721,11 @@ removeIngredient(index: number) {
       description: formValues.description,
       sku: formValues.sku,
       weight: formValues.weight,
-      initialPrice: formValues.initialPrice,
-      effectivePrice: formValues.effectivePrice,
-      initialQuantity: formValues.initialQuantity,
-      effectiveQuantity: formValues.effectiveQuantity,
+      originalPurchasePrice: formValues.initialPrice,
+      currentPurchasePrice: formValues.effectivePrice,
+   
       partNumber: formValues.partNumber,
       tax: formValues.tax,
-      branch: formValues.branch,
       discount: formValues.discount ?? {
         id: 7,
         name: 'None',
@@ -732,6 +740,12 @@ removeIngredient(index: number) {
       productCategory: formValues.category,
       createdBy: userName,
       createdDate: new Date().toISOString(),
+      productBranch: [],
+
+      isBundle: false, 
+      bundleItems: [], 
+     measurementUnit: MeasurementUnit,
+     reorderThreshold: 12,
     };
 
     const formData = new FormData();
@@ -819,8 +833,9 @@ removeIngredient(index: number) {
         const variantsArray = targetBranch.get('variants') as FormArray;
         variantsArray.push(
           this.fb.group({
-            variantName: [variant.name, Validators.required],
-            sellingPrice: [variant.price, Validators.required],
+            name: [variant.name, Validators.required],
+            price: [variant.price, Validators.required],
+            sku: [variant.sku],
             quantity: [variant.quantity, Validators.required],
           })
         );
@@ -980,7 +995,7 @@ removeIngredient(index: number) {
   }
 
   addDiscount() {
-    let discountObj = this.productData.discount;
+    let discountObj = this.discount;
 
     const discountDetails: DiscountDTO = {
       id: discountObj.id,

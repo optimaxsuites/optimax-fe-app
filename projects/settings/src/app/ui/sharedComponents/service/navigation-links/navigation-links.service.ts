@@ -48,6 +48,10 @@ export class NavigationLinksService {
     this.links['allPayslip'] = 'employee-payslip'
     this.links['performanceLink'] = '/admin/hr/performance/' +uuidV4();
 
+// human resources ================================================================================================================
+    this.links['roomLink'] = '/admin/hospitality/room/' +uuidV4();
+    this.links['serviceLink'] = '/admin/hospitality/service/' +uuidV4();
+    this.links['shortletLink'] = '/admin/hospitality/shortlet/' +uuidV4();
 
 
 //  resources ================================================================================================================
@@ -86,6 +90,7 @@ this.links['settingsLink'] = '/admin/settings/general-settings/' +uuidV4();
 this.links['generalSettings'] = 'general-settings/' +uuidV4();
 this.links['HRSettings'] = 'HR-settings/' +uuidV4();
 this.links['posSettings'] = 'POS-settings/' +uuidV4();
+this.links['HOSSettings'] = 'Hospitality-settings/' +uuidV4();
 this.links['userRoles'] = 'user-roles/' +uuidV4();
 
 // POS ================================================================================================================

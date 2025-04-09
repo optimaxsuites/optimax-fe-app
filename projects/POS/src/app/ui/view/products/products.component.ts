@@ -466,9 +466,9 @@ onPageChange(event: any) {
       let branch: string = branchName;
 
       this.products.forEach((product) => {
-        if (product.discount.name == discountName) {
-          discount = structuredClone(product.discount);
-        }
+        // if (product.discount.name == discountName) {
+        //   discount = structuredClone(product.discount);
+        // }
         if (product.productCategory.name == categoryName) {
           productCategory = structuredClone(product.productCategory);
         }
@@ -478,12 +478,12 @@ onPageChange(event: any) {
         id: 0 || (Math.random().toString(36).substr(2, 50) as any),
         createdDate: new Date().toISOString(),
         createdBy: '',
-        effectivePrice: (
+        currentPurchasePrice: (
           basePrice -
           (basePrice * discount.value) / 100 -
           (basePrice * taxPercentage) / 100
         ).toFixed(2),
-        effectiveQuantity: quantity,
+        // effectiveQuantity: quantity,
         variant: '',
         productImages: [
           {
@@ -495,12 +495,12 @@ onPageChange(event: any) {
         variants: [],
         name: name,
         description: description,
-        branch: branch,
+        // branch: branch,
         code: code.toString(),
-        initialPrice: basePrice.toString(),
+        originalPurchasePrice: basePrice.toString(),
         tax: taxPercentage,
         discount: discount,
-        initialQuantity: quantity,
+        // initialQuantity: quantity,
         sku: sku.toString(),
         partNumber: partNumber.toString(),
         productCategory: productCategory,
@@ -645,14 +645,14 @@ onPageChange(event: any) {
             productAVal = productA.name;
             productBVal = productB.name;
             break;
-          case 'Price':
-            productAVal = parseInt(productA.effectivePrice);
-            productBVal = parseInt(productB.effectivePrice);
-            break;
-          case 'Quantity':
-            productAVal = productA.effectiveQuantity;
-            productBVal = productB.effectiveQuantity;
-            break;
+          // case 'Price':
+          //   productAVal = parseInt(productA.effectivePrice);
+          //   productBVal = parseInt(productB.effectivePrice);
+          //   break;
+          // case 'Quantity':
+          //   productAVal = productA.effectiveQuantity;
+          //   productBVal = productB.effectiveQuantity;
+          //   break;
           case 'Category':
             productAVal = productA.productCategory.name;
             productBVal = productB.productCategory.name;

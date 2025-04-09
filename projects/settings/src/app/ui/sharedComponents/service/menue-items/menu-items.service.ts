@@ -100,6 +100,7 @@ export class MenuItemsService {
       active: true
 
     },
+   
     {
       label: 'Office Productivity',
       route: this.navigationLink.getLink('productivityLink'),
@@ -130,16 +131,20 @@ export class MenuItemsService {
         { label: 'Report', route: this.navigationLink.getLink('reportLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fa-solid fa-chart-pie' },
       ],
     },
-    // {
-    //   label: 'Checkout',
-    //   roles: ['ROLE_USER', 'ROLE_ADMIN'],
-    //   route: this.navigationLink.getLink('checkoutLink'),
-    //   icon: 'fas fa-shopping-cart',
-    //   locked: true,
-    //   active: true
+    {
+      label: 'Hospitality',
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      icon: 'fas fa-users',
+      code: 'HOP',
+      submenu: [
+        { label: 'Room', route: this.navigationLink.getLink('roomLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-cog' },
+        { label: 'Shortlets', route: this.navigationLink.getLink('shortletLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-plus' },
+        { label: 'Services', route: this.navigationLink.getLink('serviceLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-clock' },
+      ],
+      locked: true,
+      active: true
 
-    
-    // },
+    },
     {
       label: 'CRM',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
@@ -277,6 +282,18 @@ export class MenuItemsService {
         { label: 'Score Sheet', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
 
       ],
+    },
+    {
+      label: 'Hospitality',
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      icon: 'fas fa-users',
+      route: this.navigationLink.getLink('HOSSettings'),
+
+      submenu: [
+   
+      ],
+ 
+
     },
     {
       label: 'POS',
