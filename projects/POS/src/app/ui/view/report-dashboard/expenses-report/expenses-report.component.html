@@ -1,0 +1,69 @@
+<div class="expense-report">
+  <h2>Daily Expense Report</h2>
+  <div class="chart-container">
+    <div class="chart-item">
+      <apx-chart
+        [series]="chartOptions24H.series"
+        [chart]="chartOptions24H.chart"
+        [title]="chartOptions24H.title"
+        [xaxis]="chartOptions24H.xaxis"
+        [colors]="chartColor"
+      >
+      </apx-chart>
+    </div>
+    <div class="chart-item">
+      <apx-chart
+        [series]="chartOptionsWeek.series"
+        [chart]="chartOptionsWeek.chart"
+        [title]="chartOptionsWeek.title"
+        [xaxis]="chartOptionsWeek.xaxis"
+        [colors]="chartColor"
+      >
+      </apx-chart>
+    </div>
+    <div class="chart-item">
+      <apx-chart
+        [series]="chartOptionsMonth.series"
+        [chart]="chartOptionsMonth.chart"
+        [title]="chartOptionsMonth.title"
+        [xaxis]="chartOptionsMonth.xaxis"
+        [colors]="chartColor"
+      >
+      </apx-chart>
+    </div>
+  </div>
+
+  <h2>Long-Term Expense Report</h2>
+  <div class="chart-container">
+    <div class="chart-item">
+      <apx-chart
+        [series]="chartOptionsQuarter.series"
+        [chart]="chartOptionsQuarter.chart"
+        [title]="chartOptionsQuarter.title"
+        [xaxis]="chartOptionsQuarter.xaxis"
+        [colors]="chartColor"
+      >
+      </apx-chart>
+    </div>
+    <div class="chart-item">
+      <apx-chart
+        [series]="chartOptionsYear.series"
+        [chart]="chartOptionsYear.chart"
+        [title]="chartOptionsYear.title"
+        [xaxis]="chartOptionsYear.xaxis"
+        [colors]="chartColor"
+      >
+      </apx-chart>
+    </div>
+    <div class="chart-item">
+      <apx-chart
+        [series]="chartOptionsFiveYears.series"
+        [chart]="chartOptionsFiveYears.chart"
+        [title]="chartOptionsFiveYears.title"
+        [xaxis]="chartOptionsFiveYears.xaxis"
+        [colors]="chartColor"
+      >
+      </apx-chart>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,43 @@
+<!-- <div class="link-wrapper">
+    <mat-tab-group
+      mat-stretch-tabs="false"
+      mat-align-tabs="start"
+      animationDuration="0ms"
+    >
+      <mat-tab label="User settings">
+        <app-user-reg></app-user-reg>
+      </mat-tab>
+      <mat-tab label="Business settings">
+        <app-business-reg></app-business-reg>
+      </mat-tab>
+    </mat-tab-group>
+  </div> -->
+
+  <div class="master-container d-flex" >
+  <nav class="bg-customBlueHover/20 py-16 pl-2 pr-14 rounded-r-xl">
+
+    <ul class="flex flex-col gap-[20px]">
+      <li *ngFor="let item of menuItems" >
+        <div  (click)="toggleSubMenu(item)" class="text-customBlue cursor-pointer hover:text-customBlueHover font-semibold">
+          <a 
+             [routerLink]="item.route"
+             routerLinkActive="active"
+             [routerLinkActiveOptions]="{ exact: false }"
+             [ngClass]="{ 'active-link': isRouteActive(item.route) }"
+            >
+         {{ item.label }}
+          </a>
+  
+        </div>
+
+      </li>
+    </ul>
+  </nav>
+
+    <div class="main-container">
+        <div class="main">
+            <router-outlet></router-outlet>
+        </div>
+    </div>
+</div>
+ 

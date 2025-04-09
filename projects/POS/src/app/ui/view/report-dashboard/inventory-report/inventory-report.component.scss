@@ -1,0 +1,7 @@
+@use "../shared-chart-styles.scss" as chart-styles;
+
+.inventory-report {
+  @include chart-styles.reportStyles;
+}
+
+@include chart-styles.sharedChartStyles;
