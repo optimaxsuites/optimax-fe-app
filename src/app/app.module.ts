@@ -16,6 +16,7 @@ import {CalendarModule} from 'primeng/calendar'
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
+import { UserModule } from './user/user.module';
 
 
 @NgModule({
@@ -32,6 +33,7 @@ import { MessageService } from 'primeng/api';
   imports: [
     BrowserModule,
     CommonModule,
+    UserModule,
     AppRoutingModule,
     CalendarModule,
     ToastModule,
