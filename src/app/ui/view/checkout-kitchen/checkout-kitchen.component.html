@@ -418,11 +418,12 @@
           name="tableNumber"
           id="tableNumber"
           [(ngModel)]="orderTableNumber"
+          [disabled]="isEditingOrder"
         />
       </div>
       <!-- Just putting another slightly smaller div :3 -->
       <div>
-        <p-table [value]="data">
+        <p-table [value]="tableData() | keyvalue">
           <ng-template pTemplate="header">
             <tr>
               <th>Item</th>
@@ -433,10 +434,10 @@
           </ng-template>
           <ng-template pTemplate="body" let-rowData>
             <tr>
-              <td>{{ rowData.item }}</td>
-              <td>{{ rowData.qty }}</td>
-              <td>{{ rowData.rate }}</td>
-              <td>{{ rowData.amount }}</td>
+              <td>{{ rowData.key }}</td>
+              <td>{{ rowData.value.qty }}</td>
+              <td>{{ rowData.value.rate }}</td>
+              <td>N{{ rowData.value.qty * rowData.value.rate }}</td>
             </tr>
           </ng-template>
         </p-table>
@@ -445,7 +446,7 @@
         <div>
           <div>
             <div>Subtotal:</div>
-            <div>N8000</div>
+            <div>N{{ orderSubTotal() }}</div>
           </div>
           <div>
             <div>VAT:</div>
@@ -453,15 +454,15 @@
           </div>
           <div>
             <div class="font-bold">Total:</div>
-            <div>N8600</div>
+            <div>N{{ orderSubTotal() + 600 }}</div>
           </div>
         </div>
       </div>
     </div>
 
     <div class="subcategory-display">
-      @for (p of productList; track $index) {
-      <div class="subcategory-card">
+      @for (p of selectedSubCategories; track $index) {
+      <div class="subcategory-card" (click)="addFoodItemToOrder(p)">
         {{ p.name }}
       </div>
       }
@@ -471,11 +472,12 @@
   <!-- Contains 2 children; the container for displaying all available product categories, and another for utility buttons like finalizing / cancelling an order -->
   <div class="bottom-btn-bar">
     <div class="category-list">
-      @for (category of categoryList; track $index) {
+      @for (category of productCategories; track $index) {
       <button
         pButton
-        [label]="category"
+        [label]="category.name"
         class="p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200"
+        (click)="selectedSubCategories = category.subCategories"
       ></button>
       }
     </div>
@@ -485,7 +487,7 @@
         pButton
         label="Cancel"
         class="p-button-danger px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-200 font-bold"
-        (click)="isCreateOrderModalOpen = false"
+        (click)="isCreateOrderModalOpen = false; isEditingOrder = false"
       ></button>
       <button
         pButton
@@ -494,15 +496,17 @@
       ></button>
       <button
         pButton
-        label="Order"
+        [label]="isEditingOrder ? 'Overwrite' : 'Order'"
         class="p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200 font-bold"
         (click)="
           isCreateOrderModalOrderExistsDialogOpen = !createOrder(
             orderTableNumber,
             [],
-            '0'
+            '0',
+            isEditingOrder
           );
-          isCreateOrderModalOpen = false
+          isCreateOrderModalOpen = false;
+          isEditingOrder = false
         "
       ></button>
     </div>
@@ -527,5 +531,10 @@
     label="Edit"
     class="p-button-success px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring focus:ring-orange-200 font-bold"
     style="position: absolute; bottom: 10%; right: 10%"
+    (click)="
+      isCreateOrderModalOrderExistsDialogOpen = false;
+      isCreateOrderModalOpen = true;
+      isEditingOrder = true
+    "
   ></button>
 </p-dialog>

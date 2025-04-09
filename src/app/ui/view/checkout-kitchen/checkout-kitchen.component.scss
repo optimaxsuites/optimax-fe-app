@@ -375,9 +375,12 @@ body {
 
     button {
       height: 4.5rem;
-      width: 6.5rem;
+      // width: 6.5rem;
       min-height: fit-content;
-      min-width: fit-content;
+      // min-width: fit-content;
+
+      min-width: 8.2rem;
+      text-wrap-mode: nowrap;
     }
 
     .category-list {
