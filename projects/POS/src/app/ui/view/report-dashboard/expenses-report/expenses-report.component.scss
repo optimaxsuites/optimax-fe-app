@@ -1,7 +1,0 @@
-@use "../shared-chart-styles.scss" as chart-styles;
-
-.expense-report {
-  @include chart-styles.reportStyles;
-}
-
-@include chart-styles.sharedChartStyles;
