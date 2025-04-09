@@ -1,0 +1,156 @@
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=print" />
+<div class="flex justify-between items-center w-full">
+  <p class="back text-xl cursor-pointer" (click)="closeEditInventory()">
+    <i class="fa-solid fa-arrow-left"></i> Back
+  </p>
+
+
+
+  <div id="printable-area">
+    <div class="grid grid-cols-3">
+      <div class="block max-w-xl p-6 pl-10 bg-white border border-gray-200 rounded-lg shadow-lg hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 mb-10 ml-4 mt-10">
+        <h1 class="text-[14px] mb-4 text-customGreen">Product Information</h1>
+        <label class="text-[12px] mb-4 block">Product name: {{ activeItem.name }}</label>
+        <label class="text-[12px] mb-4 block">Category: {{ activeItem.productCategory.name }}</label>
+      </div>
+    </div>
+    @if(products){
+      <div>
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>SKU</th>
+                <th>Code</th>
+                <th>Last Price</th>
+                <th>Current Price</th>
+                <th>Last Quantity</th>
+                <th>Current Quantity</th>
+                <th>Category</th>
+                <th>Updated At</th>  
+            
+             
+              </tr>
+            </thead>
+            <tbody>
+              @if(activeItem){
+                <tr>
+                  <td>{{ activeItem.name }}</td>
+                  <td>{{ activeItem.sku }}</td>
+                  <td>{{ activeItem.code }}</td>
+                  <td>{{ activeItem.effectivePrice }}</td>
+                  <td>N/A</td>
+                  <td>{{activeItem.effectiveQuantity}}</td>
+                  <td>N/A</td>
+                  <td>{{ activeItem.productCategory.name }}</td>
+                  <td>{{ Timestamp }}</td> 
+               
+                </tr>
+              }
+      
+              @for( item of productHistory; track $index){
+              <tr>
+                <td>{{ item.name }}</td>
+                  <td>{{ item.code }}</td>
+                  <td>{{ item.sku }}</td>
+                  <td>{{ item.effectivePrice }}</td>
+                 
+                  <td>
+                    N/A
+                  </td>
+                  <td>{{item.effectiveQuantity}}</td>
+                  <td> N/A</td>
+                  <td>{{ item.productCategory.name }}</td>
+             
+                  <td>{{ Timestamp}}</td>
+                
+                </tr>
+              }
+            </tbody>
+          </table>
+      </div>
+    }
+  </div>
+
+
+
+  
+  <button (click)="printPage()" class="print-btn bg-customGreen text-white p-1 rounded-lg flex items-center space-x-2">
+    <span class="material-symbols-outlined">print</span>
+    <span>Print</span>
+  </button>
+</div>
+
+
+<div class="grid grid-cols-3">
+  <div class="block max-w-xl p-6 pl-10 bg-white border border-gray-200 rounded-lg shadow-lg hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 mb-10 ml-4 mt-10">
+    <h1 class="text-[14px] mb-4 text-customGreen">Product Information</h1>
+    <label class="text-[12px] mb-4 block">Product name: {{ activeItem.name }}</label>
+    <label class="text-[12px] mb-4 block">Category: {{ activeItem.productCategory.name }}</label>
+  </div>
+</div>
+
+@if(products){
+<div>
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>SKU</th>
+          <th>Code</th>
+          <th>Last Price</th>
+          <th>Current Price</th>
+          <th>Last Quantity</th>
+          <th>Current Quantity</th>
+          <th>Category</th>
+          <th>Updated At</th>  
+          <th>Action</th>  
+       
+        </tr>
+      </thead>
+      <tbody>
+        @if(activeItem){
+          <tr>
+            <td>{{ activeItem.name }}</td>
+            <td>{{ activeItem.sku }}</td>
+            <td>{{ activeItem.code }}</td>
+            <td>{{ activeItem.effectivePrice }}</td>
+            <td>N/A</td>
+            <td>{{activeItem.effectiveQuantity}}</td>
+            <td>N/A</td>
+            <td>{{ activeItem.productCategory.name }}</td>
+            <td>{{ Timestamp }}</td> 
+            <td>
+              <!-- <button (click)="openSupplierDetails(activeItem)">View </button> -->
+            </td>
+          </tr>
+        }
+
+        @for( item of productHistory; track $index){
+        <tr>
+          <td>{{ item.name }}</td>
+            <td>{{ item.code }}</td>
+            <td>{{ item.sku }}</td>
+            <td>{{ item.effectivePrice }}</td>
+           
+            <td>
+              N/A
+            </td>
+            <td>{{item.effectiveQuantity}}</td>
+            <td> N/A</td>
+            <td>{{ item.productCategory.name }}</td>
+       
+            <td>{{ Timestamp}}</td>
+            <td>
+      
+            <button (click)="openSupplierDetails(item)"  >View </button>
+            <button (click)="deleteProductHistory(0)" class="delete-btn">
+                <i class="fa fa-trash"></i> 
+            </button>
+            </td>    
+          </tr>
+        }
+      </tbody>
+    </table>
+</div>
+}

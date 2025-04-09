@@ -1,0 +1,180 @@
+<!-- <div
+  *ngIf="item.selectedVariants.length > 0; else noVariantTemplate"
+  class="flex flex-col gap-3"
+>
+  @for (variant of item.selectedVariants; track $index) {
+  <div class="flex justify-between rounded-2xl items-center border p-3">
+    <div class="flex flex-col gap-1" (click)="onClick()">
+      <span
+        class="text-nowrap text-ellipsis whitespace-nowrap overflow-hidden w-64"
+      >
+        {{ item.name }} - {{ variant.name }}
+      </span>
+      <span>{{ variant.price | currency : "₦" }}</span>
+    </div>
+
+    <div
+      class="p-3 flex justify-between gap-4 border rounded-xl items-center w-52"
+    >
+      <i
+        class="fa-solid fa-minus cursor-pointer"
+        (click)="updateItemQuantity(item, -1, variant)"
+      ></i>
+      <input
+        type="text"
+        [(ngModel)]="variant.selectedQuantity"
+        class="w-10 text-center outline-none"
+      />
+      <i
+        class="fa-solid fa-plus cursor-pointer"
+        (click)="updateItemQuantity(item, 1, variant)"
+      ></i>
+    </div>
+
+    <div class="flex gap-4 items-center">
+      <span class="font-semibold">{{
+        (variant.selectedQuantity ?? 0) * variant.price | currency : "₦"
+      }}</span>
+      <i class="fa-solid fa-trash cursor-pointer" (click)="updateItemQuantity(item, -variant.selectedQuantity, variant)"></i>
+    </div>
+
+    Expiry Date for Pharmacautical stuff
+    <div class="text-red">
+    <span>Expires: <span class="expiry-date">2025-08-28</span></span>
+  </div>
+    <div
+      class="p-3 flex justify-between gap-4 border rounded-xl items-center w-52"
+    >
+      <i
+        class="fa-solid fa-minus cursor-pointer"
+        (click)="updateItemQuantity(item, -1, variant)"
+      ></i>
+      <input
+        type="text"
+        [(ngModel)]="variant.selectedQuantity"
+        class="w-10 text-center outline-none"
+      />
+      <i
+        class="fa-solid fa-plus cursor-pointer"
+        (click)="updateItemQuantity(item, 1, variant)"
+      ></i>
+    </div>
+
+    <div class="flex gap-4 items-center">
+      <span class="font-semibold"
+        >₦{{ (variant.selectedQuantity ?? 0) * variant.price }}</span
+      >
+      <i class="fa-solid fa-trash cursor-pointer" (click)="updateItemQuantity(item, -variant.selectedQuantity, variant)"></i>
+    </div>
+  </div>
+  }
+</div>
+
+<ng-template #noVariantTemplate>
+  <div class="flex justify-between rounded-2xl items-center border p-3">
+    <div class="flex flex-col gap-1" (click)="onClick()">
+      <span
+        class="text-nowrap text-ellipsis whitespace-nowrap overflow-hidden w-64"
+      >
+        {{ item.name }}
+      </span>
+      <span>{{ item.effectivePrice | currency : "₦" }}</span>
+    </div>
+
+    <div
+      class="p-3 flex justify-between gap-4 border rounded-xl items-center w-52"
+    >
+      <i
+        class="fa-solid fa-minus cursor-pointer"
+        (click)="updateItemQuantity(item, -1)"
+      ></i>
+      <input
+        type="text"
+        [(ngModel)]="item.count"
+        class="w-10 text-center outline-none"
+      />
+      <i
+        class="fa-solid fa-plus cursor-pointer"
+        (click)="updateItemQuantity(item, 1)"
+      ></i>
+    </div>
+
+    <div class="flex gap-4 items-center">
+      <span class="font-semibold">{{
+        item.cartPriceTotal | currency : "₦"
+      }}</span>
+      <i class="fa-solid fa-trash cursor-pointer" (click)="updateItemQuantity(item, -item.count)"></i>
+    </div>
+  </div>
+</ng-template> -->
+
+
+<div *ngIf="item.count > 0" class="flex justify-between rounded-2xl items-center border p-3 relative">
+  <div class="flex gap-6 items-center flex-2">
+  <div class="flex flex-col gap-1 p-2">
+    <span class="text-nowrap text-ellipsis whitespace-nowrap overflow-hidden w-64">
+      {{ item.name }}
+    </span>
+    <span>{{ item.effectivePrice | currency : "₦" }}</span>
+  </div>
+  <img
+  [src]="imageUrl"
+  alt="product image"
+  class="w-16 h-16 object-contain rounded-xl"
+/>
+</div>
+  <div class="p-3 flex justify-between gap-4 border rounded-xl items-center" *ngIf="cart">
+    <i class="fa-solid fa-minus cursor-pointer" (click)="updateItemQuantity(item, -1)"></i>
+    <input type="text" [(ngModel)]="item.count" class="w-10 text-center outline-none" 
+    (ngModelChange)="validateItemCount(item)"/>
+    <i class="fa-solid fa-plus cursor-pointer" (click)="updateItemQuantity(item, 1)"></i>
+  </div>
+  <p *ngIf="!cart" class="text-center">{{item.count}}</p>
+  <div class="flex gap-4 items-center">
+    <span class="font-semibold">{{ item.cartPriceTotal | currency : "₦" }}</span>
+
+  </div>
+
+  <i class="fa-solid fa-xmark z-10 bg-white bg-opacity-30 p-2 items-center shadow rounded-full cursor-pointer absolute mr-2 left-0 top-0 cancel" *ngIf="cart" (click)="onDelete()"></i>
+
+</div>
+
+<div *ngIf="item.selectedVariants.length > 0" class="flex flex-col gap-3 mt-3">
+  @for (variant of item.selectedVariants; track $index) {
+
+  <div class="flex justify-between rounded-2xl items-center border p-3 relative">
+  <div class="flex gap-6 items-center flex-2">
+
+    <div class="flex flex-col gap-1 p-1">
+      <span class="text-nowrap text-ellipsis whitespace-nowrap overflow-hidden w-64">
+        {{ item.name }} - {{ variant.name }}
+      </span>
+      <span>{{ variant.price | currency : "₦" }}</span>
+    </div>
+    <img
+  [src]="imageUrl"
+  alt="product image"
+  class="w-16 h-16 object-contain rounded-xl"
+/>
+</div>
+    <div class="p-3 flex justify-between gap-4 border rounded-xl items-center " *ngIf="cart">
+      <i class="fa-solid fa-minus cursor-pointer" (click)="updateItemQuantity(item, -1, variant)"></i>
+      <input type="text" [(ngModel)]="variant.selectedQuantity" class="w-10 text-center outline-none" />
+      <i class="fa-solid fa-plus cursor-pointer" (click)="updateItemQuantity(item, 1, variant)"></i>
+    </div>
+    <p *ngIf="!cart" class=" text-center">{{item.count}}</p>
+
+    <div class="flex gap-4 items-center ">
+      <span class="font-semibold">
+        ₦{{ (variant.selectedQuantity ?? 0) * (variant.price || 0) }}
+      </span>
+      
+
+    </div>
+    <i class="fa-solid fa-xmark z-10 bg-white bg-opacity-30 p-2 items-center shadow rounded-full cursor-pointer absolute mr-2 left-0 top-0 cancel" *ngIf="cart"></i>
+
+
+
+  </div>
+  }
+</div>

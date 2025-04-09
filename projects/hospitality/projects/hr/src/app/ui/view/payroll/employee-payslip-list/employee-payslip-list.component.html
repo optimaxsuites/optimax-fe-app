@@ -1,0 +1,120 @@
+<div class="border-2  rounded-3xl m-5">
+    <p-toolbar styleClass="mb-4 gap-2">
+        <ng-template pTemplate="left">
+        <div class="flex gap-3 text-gray-700 items-center">
+            <p class="text-gray-700  text-[20px]">Payroll for {{data?.name}}</p>
+        </div>
+         
+          </ng-template>
+      <ng-template pTemplate="right">
+        <app-button  text="Download CSV"  class="btn-navigate gap-2" ><i class="fa-solid fa-download mr-2 text-[18px]"></i></app-button>
+      </ng-template>
+    </p-toolbar>
+
+    <div class="flex w-full justify-between gap-4 px-3"> 
+    <div class="flex gap-4 w-1/2">
+      <div class="w-full">
+        <ng-select 
+          [items]="monthNames"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by month"
+          [(ngModel)]="selectedMonth"
+          (ngModelChange)="filterBySelectedMonth()">
+        </ng-select>
+      </div>
+
+      <div class="w-full">
+        <ng-select 
+          [items]="year"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by year"
+          [(ngModel)]="selectedYear"
+          (ngModelChange)="filterBySelectedYear()">
+        </ng-select>
+      </div>
+
+      <!-- <div class="w-full">
+        <ng-select 
+          [items]="level"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by level"
+          [(ngModel)]="selectedLevel"
+          (ngModelChange)="filterBySelectedLevel()">
+        </ng-select>
+      </div> -->
+    </div>
+      <div class="search-bar w-[70%]">
+        <input 
+          type="text" 
+          placeholder="Search" 
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="filterPayroll()"
+          class="editInput w-full bg-gray-50 outline-none"
+        />
+      </div>
+    </div>
+   
+
+    <p-table 
+        [value]="data.detail" 
+        [paginator]="true" 
+        [(selection)]="selectedEmployees"
+        styleClass="" 
+        [tableStyle]="{'min-height': 'fit-content', 'max-height': '1000px'}"
+        [rows]="10"
+    
+        >
+        
+        <ng-template pTemplate="header">
+        <tr>
+            <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+            <th class="table-item" pSortableColumn="Employee">Period</th>
+            <th class="table-item" pSortableColumn="Level">Total Allowance</th>
+            <th class="table-item" pSortableColumn="Level">Total Bonuses</th>
+            <th class="table-item" pSortableColumn="Department">Total Deductions</th>
+            <th class="table-item" pSortableColumn="Type">Gross Pay</th>
+            <th class="table-item" pSortableColumn="Pay">Net Pay</th>
+            <th class="table-item"></th>
+
+        </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-employee let-i="rowIndex">
+        <tr class="p-table-row bg-gray-50 cursor-pointer" (click)="viewPayrollDetails(employee, op)"> 
+            <td><p-tableCheckbox [value]="employee" /></td>
+            <td class="table-item capitalize" >{{monthNames[employee.month - 1] + " " + employee.year}}</td>
+            <td class="table-item capitalize"><span class="text-2xl">₦</span>{{calculatePayrollSummary(employee).totalAllowances | number : '1.2-2' }}</td>
+            <td class="table-item capitalize"><span class="text-2xl">₦</span>{{calculatePayrollSummary(employee).totalBonuses | number : '1.2-2' }}</td>
+            <td class="table-item capitalize"><span class="text-2xl">₦</span>{{calculatePayrollSummary(employee).totalDeductions | number : '1.2-2' }}</td>
+            <td class="table-item capitalize"><span class="text-2xl">₦</span>{{calculatePayrollSummary(employee).totalGross | number : '1.2-2' }}</td>
+            <td class=" table-item"><span class="text-2xl">₦</span>{{calculatePayrollSummary(employee).totalNetPayable | number : '1.2' }}</td>
+            <td class="actions table-item">
+                <i class="pi pi-ellipsis-v table-item"(click)="op.toggle($event) ; $event.stopPropagation()" ></i>
+                <p-overlayPanel #op ngClass="padding: 0;">
+                        <div>
+                          <li class="table-item-panel" (click)="viewPayrollDetails(employee, op)"> <i class="pi pi-eye table-item me-2"></i> View</li>
+                          <li class="table-item-panel" > <i class="pi pi-download table-item me-2"></i> Download Payslip</li>
+                        </div>
+                      </p-overlayPanel>
+                    </td>
+        </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="12" class="text-center table-item py-4"> 
+              No request made yet
+            </td>
+          </tr>
+        </ng-template>
+    </p-table>
+  
+  </div>
+
+
+  <app-large-side-modal *ngIf="viewSlip" (close)="viewSlip = false">
+    <app-payslip-view [payslip]="activeSlip"></app-payslip-view>
+    </app-large-side-modal>

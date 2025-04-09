@@ -30,7 +30,7 @@ import { MessageService } from 'primeng/api';
     HotelRoomlistComponent
   ],
   imports: [
-    // BrowserModule,
+    BrowserModule,
     CommonModule,
     AppRoutingModule,
     CalendarModule,

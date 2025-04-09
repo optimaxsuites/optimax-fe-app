@@ -1,0 +1,205 @@
+<div class="flex gap-4 items-center">
+    <i class="pi pi-receipt text-4xl text-customBlue"></i>
+    <div>
+        <p class="text-customBlue/60">User and Roles Management</p>
+        <p class="text-customBlue font-semibold text-[17px]">User Management</p>
+    </div>
+  </div>
+
+
+
+@if(!openAddForm){
+
+  <div class="flex w-full justify-between gap-4 px-3 my-4">
+    <div class="flex gap-4 items-center">
+      <div class="w-full">
+        <ng-select
+          [items]="uniqueLevels"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by role"
+          [(ngModel)]="selectedEmployeeType"
+          (ngModelChange)="filterBySelectedEmployeeType()">
+        </ng-select>
+      </div>
+
+      <div class="w-full">
+        <ng-select
+          [items]="uniquePositions"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by module"
+          [(ngModel)]="selectedPosition"
+          (ngModelChange)="filterBySelectedPosition()"
+          >
+        </ng-select>
+      </div>
+      <input
+      type="text"
+      placeholder="Search"
+      [(ngModel)]="searchTerm"
+      (ngModelChange)="applyFilters()"
+      class="editInput bg-gray-50 w-full outline-none"
+    />
+    </div>
+    <div class="flex items-end">
+        <Button  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3" (click)="openAddForm = true">Create new user</Button>
+       </div>
+</div>
+
+    <mat-accordion class="">
+      @for(user of users; track user.name){
+        <mat-expansion-panel #panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title class="capitalize">
+              {{ user.name }}
+            </mat-panel-title>
+            <mat-panel-description class="action-buttons">
+              <button (click)="editCompensation(user,  $event)" class="text-customGreen hover:bg-green-50 p-3 rounded-xl">
+                <i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2"></i>
+                <span *ngIf="panel.expanded">{{ user.isEditing ? 'Save Changes' : 'Edit' }}</span>
+              </button>
+              <button (click)="confirmDeleteUser(user, $event)" class="text-red-500 hover:bg-red-50 p-3 rounded-xl" *ngIf="!user.isEditing">
+                <i class="fa-solid fa-trash text-2xl pr-2"></i>
+                <span *ngIf="panel.expanded">Delete</span>
+              </button>
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+
+          <div class="flex gap-4  flex-col my-2">
+            <!-- <p ><strong>Name:</strong> {{ user.name }}</p> -->
+            <p><strong>Email:</strong> {{ user.email }}</p>
+            <p><strong>Status:</strong> {{ user.status }}</p>
+            <p><strong>Date Created:</strong> {{ user.dateCreated | date }}</p>
+
+          </div>
+    
+          <div class="">
+            <table class="w-full border-collapse border border-gray-300">
+              <thead>
+                <tr class="bg-gray-100">
+                  <th class="border border-gray-300 px-4 py-2">Module</th>
+                  <th class="border border-gray-300 px-4 py-2 text-center">Role</th>
+                  <th *ngIf="user.isEditing" class="border border-gray-300 px-4 py-2 text-center w-16"></th>
+
+            
+                </tr>
+              </thead>
+              <tbody>
+                @for(moduleKey of Object.keys(user.permission); track moduleKey) {
+          
+                    <tr class="border-t-4 border-transparent"> 
+                      <td class="border border-gray-300 px-4 py-2 capitalize">{{ moduleKey }}</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center">
+                         <p class="capitalize">{{user.permission[moduleKey]}}</p>
+                      </td>
+                      <td *ngIf="user.isEditing"  class="border border-gray-300 px-4 py-2 capitalize text-center cursor-pointer text-red-500 w-16" (click)="revokeRole(user, moduleKey)">Revoke</td>                   
+                    </tr>
+                 
+                }
+                <tr *ngIf="user.isEditing">
+                    <td class="border border-gray-300 px-4 py-2 relative">
+                      <ng-select 
+                        [items]="uniquePositions"
+                        bindLabel="name"
+                        placeholder="Select Module"
+                        class="z-50 absolute"
+                        [(ngModel)]="selectedModule">
+                      </ng-select>
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2 text-center">
+                      <ng-select 
+                        [items]="uniqueLevels"
+                        bindLabel="name"
+                        placeholder="Select Role"
+                        [(ngModel)]="selectedRole">
+                      </ng-select>
+                    </td>
+                  
+                    <td *ngIf="user.isEditing"  class="border border-gray-300 px-4 py-2 capitalize text-center cursor-pointer text-customGreen w-16" (click)="updateRole(user.permission)">Add</td>     
+                  </tr>
+              </tbody>
+              
+            </table>
+          </div>
+        </mat-expansion-panel>
+      }
+      @empty {<li>There are no items.</li>}
+    </mat-accordion>
+    
+  }
+
+
+  @if (openAddForm) {
+    
+  <div class="flex w-full justify-between gap-4 px-3 my-4">
+ <div class="text-xl font-semibold text-customBlue capitalize flex-1">Create new user</div>
+    
+    <div class="flex items-end">
+        <Button  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3" (click)="openAddForm = false">Cancel</Button>
+       </div>
+</div>
+
+
+<div class="px-4 flex flex-col justify-center items-center w-full">
+    <div class="w-[75%]  p-2 rounded">
+        <div class="py-3 flex flex-col gap-1">
+            <label for="name" class="font-semibold text-customBlue">Name</label>
+            <input type="text" placeholder="Role name" id="name" class="editInput" [(ngModel)]="newUser.name">
+          </div>
+          <div class="py-3 flex flex-col gap-1">
+              <label for="name" class="font-semibold text-customBlue">Email</label>
+              <input type="email" placeholder="Role name" id="name" class="editInput" [(ngModel)]="newUser.email">
+          </div>
+          <div class="my-3" *ngIf="Object.keys(newUser.permission).length">
+              <h3 class="font-semibold text-customBlue">Permissions</h3>
+              <ul>
+                <li *ngFor="let module of Object.keys(newUser.permission)" class="flex capitalize justify-between items-center w-full shadow-md p-3 rounded-md ">
+                  <span class="font-semibold">{{ module }}</span> <span>{{ newUser.permission[module]}} <span class="cursor-pointer ml-3"><i class="fa-solid fa-xmark"></i></span></span>
+                </li>
+              </ul>
+            </div>
+          <div class="flex gap-3 py-3 w-full items-center h-full">
+          
+              <div class="w-full ">
+                  <label for="module" class="text-customBlue">Module</label>
+                  <ng-select
+                  [items]="uniquePositions"
+                  id="'module"
+                  bindLabel="position"
+                  placeholder="Select Module"
+                  [(ngModel)]="selectedModule"
+                  (ngModelChange)="filterBySelectedPosition()"
+                  >
+                </ng-select>
+                
+                </div>
+          
+                <div class="w-full">
+                  <label for="role" class="text-customBlue">Role</label>
+      
+                  <ng-select
+                  [items]="uniqueLevels"
+                  id="'role"
+                  bindLabel="position"
+                  placeholder="Select Role"
+                  [(ngModel)]="selectedRole"
+                  (ngModelChange)="filterBySelectedEmployeeType()">
+                </ng-select>
+                </div>
+      
+                <div (click)="attachModuleToRole()" class="w-[15%] text-customGreen cursor-pointer">+ add</div>
+          </div>
+
+          <div class="text-right my-3">
+            <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-customGreenHover disabled:cursor-not-allowed"
+              (click)="submitUser()" [disabled]="newUser.name === ''">
+              Add
+            </button>
+          </div>
+    </div>
+  
+ 
+   
+  </div>
+  }
