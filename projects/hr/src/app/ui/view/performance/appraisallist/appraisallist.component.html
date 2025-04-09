@@ -1,0 +1,317 @@
+<div class="card" *ngIf="openAppraisalForm === false">
+  <p-toolbar styleClass="mb-4 gap-2">
+    <!--  <app-button
+    text="Reject"
+    class="btn-delete"
+    (click)="bulkReject()"
+    ></app-button> -->
+
+    <ng-template pTemplate="right">
+      <app-button
+        *ngIf="userRole === 'ROLE_ADMIN'"
+        (click)="navigateToCreateGoal()"
+        text="Create Assessment"
+        class="btn-navigate gap-2"
+      ></app-button>
+    </ng-template>
+
+    <ng-template pTemplate="left">
+      <div class="flex w-full justify-between gap-4 px-3">
+        <div class="flex gap-4 w-1/1">
+          <!-- <div class="w-full">
+             <ng-select 
+              [items]="leaveTypes"
+              bindLabel="position"
+              [multiple]="true"
+              placeholder="Filter by leave type"
+              [(ngModel)]="selectedLeaveType"
+              (ngModelChange)="filterBySelectedLeaveType()"
+            >
+            </ng-select>
+          </div>-->
+
+          <div class="w-full">
+            <ng-select
+              [items]="statuses"
+              bindLabel="position"
+              [multiple]="true"
+              placeholder="Filter by status"
+              [(ngModel)]="selectedStatus"
+              (ngModelChange)="filterAppraisals()"
+            >
+            </ng-select>
+          </div>
+        </div>
+        <div class="search-bar w-[100%]">
+          <input
+            type="text"
+            placeholder="Search"
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="filterAppraisals()"
+            class="editInput w-full"
+          />
+        </div>
+      </div>
+    </ng-template>
+  </p-toolbar>
+
+  <p-table
+    [value]="filteredAppraisals"
+    [paginator]="true"
+    [(selection)]="selectedTemplate"
+    styleClass=""
+    [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '1000px' }"
+    [rows]="10"
+  >
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+        <th class="table-item" pSortableColumn="Employee">Employee Name</th>
+        <th class="table-item" pSortableColumn="Date">Start Date</th>
+        <!-- <th class="table-item" pSortableColumn="LeaveType">End Date</th> -->
+        <th class="table-item" pSortableColumn="NetLeaveBalance">Due Date</th>
+        <th class="table-item" pSortableColumn="RequestedDuration">
+          Department
+        </th>
+        <th class="table-item" pSortableColumn="Status">Period</th>
+        <th class="table-item" pSortableColumn="Status">Review Status</th>
+
+        <th class="table-item">Action</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-appraisals let-i="rowIndex">
+      <tr class="p-table-row">
+        <td><p-tableCheckbox [value]="appraisals" /></td>
+        <td class="table-item">{{ appraisals.employeeName }}</td>
+        <td class="table-item">{{ appraisals.startDate }}</td>
+        <!-- <td class="table-item">{{ appraisals.endDate }}</td> -->
+        <td class="table-item">{{ appraisals.dueDate }}</td>
+        <td class="table-item">{{ appraisals.department }}</td>
+        <td class="table-item">{{ appraisals.period }}</td>
+        <td class="table-item">
+          <!-- Replace with actual actions as needed -->
+          <button (click)="updateAppraisalStatus(appraisals.id, 'Initiated ')">
+            Initiated
+          </button>
+        </td>
+
+        <td>
+          <div class="flex text-lg gap-2">
+            <button
+              pButton
+              icon="pi pi-eye"
+              class="p-button-rounded p-button-text"
+              (click)="viewAppraisalDetails(appraisals)"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-pencil"
+              class="p-button-rounded p-button-text p-button-success"
+              (click)="editAppraisal(appraisals)"
+            ></button>
+            <button
+              pButton
+              *ngIf="userRole === 'ROLE_ADMIN'"
+              icon="pi pi-trash"
+              class="p-button-rounded p-button-text p-button-danger"
+              (click)="deleteAppraisal(appraisals.id)"
+            ></button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="8" class="text-center text-[14px] py-4">
+          No request made yet
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<!-- View Goal Modal -->
+<app-side-modal *ngIf="viewModalVisible" (close)="viewModalVisible = false">
+  <div *ngIf="selectedAppraisal" class="p-12 space-y-12">
+    <h2 class="text-2xl text-gray-700 font-bold text-center">
+      <h1 class="font-semibold text-gray-700">Assessment Items</h1>
+    </h2>
+
+    <div class="grid grid-cols-2 gap-8">
+      <!-- Employee Info -->
+      <div>
+        <h3 class="font-semibold text-gray-700">Employee Name</h3>
+        <p class="text-gray-600 text-2xl">
+          {{ selectedAppraisal.employeeName }}
+        </p>
+      </div>
+
+      <div>
+        <h3 class="font-semibold text-gray-700">Department</h3>
+        <p class="text-gray-600 text-2xl">{{ selectedAppraisal.department }}</p>
+      </div>
+
+      <div class="col-span-2">
+        <h3 class="font-semibold text-gray-700">Assessment Cycle</h3>
+        <p class="text-gray-600 text-2xl">
+          {{ selectedAppraisal.assessment }}
+        </p>
+      </div>
+
+      <!-- Goal Description -->
+      <div class="col-span-2">
+        <h3 class="font-semibold text-gray-700">Description</h3>
+        <p class="text-gray-600 text-2xl">
+          {{ selectedAppraisal.description }}
+        </p>
+      </div>
+
+      <div class="col-span-2">
+        <h3 class="font-semibold text-gray-700">Period</h3>
+        <p class="text-gray-600 text-2xl">
+          {{ selectedAppraisal.period }}
+        </p>
+      </div>
+
+      <!-- Timeline -->
+      <div>
+        <h3 class="font-semibold text-gray-700">Timeline</h3>
+        <p class="text-gray-600 text-2xl">
+          From - {{ selectedAppraisal.startDate | date }}, <br />To -
+          {{ selectedAppraisal.endDate | date }},<br />
+          Due Date - {{ selectedAppraisal.dueDate | date }},
+        </p>
+      </div>
+
+      <div class="col-span-2">
+        <h3 class="font-semibold text-gray-700">CreatedBy</h3>
+        <p class="text-gray-600 text-2xl">
+          {{ selectedAppraisal.ROLE_ADMIN }}
+        </p>
+      </div>
+
+      <div *ngIf="userRole === 'admin'">
+        <div class="col-span-2">
+          <h3 class="font-semibold text-gray-700">Evaluators</h3>
+          <p class="text-gray-600 text-2xl">
+            {{ selectedAppraisal.evaluator }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-side-modal>
+
+<div *ngIf="openAppraisalForm">
+  <app-appraisalform (back)="navigateToCreateGoal()"></app-appraisalform>
+</div>
+
+<!-- <div class="card" *ngIf="openAppraisalform === false">
+  <div class="min-h-screen bg-gray-100 flex items-center justify-center px-4">
+    <div class="bg-white shadow-lg mar rounded-lg p-6 max-w-[70%] w-full">
+      Header 
+      <h1 class="text-4.5xl mt-4 font-bold text-center text-green-800 mb-10">
+        Employee Assessment
+      </h1>
+
+      Info Card 
+      <div class="bg-indigo-50 border-l-4 border-green-600 p-4 rounded-lg mb-6">
+        <h2 class="text-0.5xl ml-8 font-semibold text-green-800 mb-4 mt-2">
+          Important Information
+        </h2>
+        <ul class="list-disc text-xl list-inside space-y-1 text-gray-700">
+          <li><strong>Total Duration:</strong> 60 minutes</li>
+          <li><strong>Number of Questions:</strong> 30</li>
+          <li><strong>Time per Question:</strong> 2 minutes</li>
+          <li>
+            <strong>Instructions:</strong> Answer the questions based on your
+            knowledge. Once submitted, you cannot go back to previous questions.
+          </li>
+
+          <li>Questions are based on your department and level</li>
+          <li>Quiz will auto-submit when time expires</li>
+        </ul>
+      </div>
+
+      <!-- User Info Form 
+      <div *ngIf="!isUserInfoSaved" class="mb-6">
+        <h3 class="text-1xl font-semibold text-gray-800 mb-4">
+          Please Enter Your Information
+        </h3>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1"
+              >Employee ID:</label
+            >
+            <input
+              type="text"
+              [(ngModel)]="employeeId"
+              required
+              class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1"
+              >Department:</label
+            >
+            <select
+              [(ngModel)]="department"
+              required
+              class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+            >
+              <option value="IT">IT</option>
+              <option value="HR">HR</option>
+              <option value="Finance">Finance</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1"
+              >Level:</label
+            >
+            <select
+              [(ngModel)]="level"
+              required
+              class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2"
+            >
+              <option value="Junior">Junior</option>
+              <option value="Mid">Mid-Level</option>
+              <option value="Senior">Senior</option>
+            </select>
+          </div>
+          <button
+            (click)="saveUserInfo()"
+            [disabled]="!isFormValid"
+            class="w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50"
+          >
+            Save Information
+          </button>
+        </div>
+      </div>
+
+      <!-- Start Quiz Section 
+      <div *ngIf="isUserInfoSaved">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+          Ready to Begin?
+        </h3>
+        <p class="text-gray-700 mb-2">Please ensure you have:</p>
+        <ul class="list-disc list-inside space-y-1 text-gray-700 mb-4">
+          <li>A quiet environment</li>
+          <li>60 minutes of uninterrupted time</li>
+          <li>Stable internet connection</li>
+        </ul>
+        <button
+          (click)="navigateToCreate()"
+          class="w-[75%] bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700"
+        >
+          Start Quiz
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="openAppraisalform">
+  <app-appraisalform (back)="navigateToCreate()"></app-appraisalform>
+</div> -->

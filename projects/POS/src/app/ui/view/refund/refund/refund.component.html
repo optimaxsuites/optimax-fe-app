@@ -1,0 +1,430 @@
+
+<div class=" py-10  px-10 flex justify-end">
+  <div class="w-1/3">
+    <div class="search-container flex items-center">
+      <input 
+        type="input" 
+        class="Search-input" 
+        placeholder="Search..." 
+        [(ngModel)]="searchQuery" 
+        (ngModelChange)="filterTable()" />
+      <i class="fas fa-search"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+<div class="flex items-center  mb-8 gap-4 justify-between px-8 rounded-t-lg  bg-white" id="filter-bar" id="filter-bar">
+  <!-- Left Filters -->
+  <div class="flex items-center gap-4 ">
+    <!-- Start Date Input -->
+    <div >
+      <!-- <label for="dateRange">Select Date Range:</label> -->
+      <p-calendar 
+      [(ngModel)]="dateRange" 
+      selectionMode="range" 
+      (onSelect)="filterTable()" 
+      showIcon="true"
+      dateFormat="yy-mm-dd"
+      touchUI="true"  
+      class="w-full "
+      placeholder="Select Date Range"
+      >
+      
+    </p-calendar>
+    </div>
+
+    <!-- Weekday Selector -->
+    <div>
+      <select [(ngModel)]="selectedDay" (change)="filterTable()"
+        class="w-full border border-gray-300 text-lg rounded-lg px-4 py-2 focus:ring-blue-400 focus:ring-2">
+        <option value="" class>Filter By Days</option>
+        <option *ngFor="let day of daysOfWeek" [value]="day">{{ day }}</option>
+      </select>
+    </div>
+
+    <!-- Cashier Filter -->
+    <select [(ngModel)]="selectedCashier" (change)="filterTable()" class="border border-gray-300 text-lg rounded-lg px-4 py-2">
+      <option value="">Filter By Cashiers</option>
+      <option *ngFor="let cashier of cashierList" [value]="cashier">{{ cashier }}</option>
+    </select>
+
+    <!-- Status Filter -->
+    <select [(ngModel)]="selectedStatus" (change)="filterTable()" class="border border-gray-300 text-lg rounded-lg px-4 py-2">
+      <option value="">Filter By Status</option>
+      <option value="Pending">Pending</option>
+      <option value="Accepted">Accepted</option>
+      <option value="Rejected">Rejected</option>
+    </select>
+  </div>
+
+
+</div>
+  <!-- <div class="relative w-1/3 flex justify-end">
+  <div class="w-1/3">
+    <div class="search-container">
+      <input type="input" 
+      class="Search-input" 
+      placeholder="Search..." 
+      [(ngModel)]="searchQuery" 
+      (ngModelChange)="filterTable()" />
+      <i class="fas fa-search"></i>
+    </div>
+    </div>
+</div>
+<div class="relative w-1/3 flex justify-end">
+    <input type="text" [(ngModel)]="searchQuery" (input)="filterTable()" placeholder="Search..."
+      class="w-full  text-2xl px-4 py-2 pl-6 pr-10 border border-gray-300 rounded-full bg-gray-100 focus:outline-none">
+    <i class="pi pi-search text-2xl absolute right-4 top-1.5 "></i>
+  </div>
+</div> -->
+
+
+<div class="transactions-table px-8  ">
+  <p-table
+    [value]="filteredRefundList"
+    [paginator]="true"
+    [rows]="10"
+    [showCurrentPageReport]="true"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    styleClass="p-datatable-gridlines"
+    [tableStyle]="{ 'min-width': '50rem ' }"
+    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+    [globalFilterFields]="[
+      'orderId',
+      'TransactionId',
+      'cashier',
+      'Amount_Requested',
+      'reasonType',
+      'status',
+      ' Date',
+      'returnmode',
+      'returnedItems',
+      'RequestedDate',
+      'cashierComment',
+    ]"
+  >
+    <ng-template pTemplate="header">
+      <tr class=>
+        <th
+          class="table-item"
+          pSortableColumn="refundId"
+          
+        >
+        Refund ID
+        </th>
+        <th
+          class="table-item"
+          pSortableColumn="cashier"
+          
+        >
+          Cashier
+        </th>
+        <th
+          class="table-item"
+          pSortableColumn="Amount_Requested"
+          
+        >
+          Amount Requested
+          
+        </th>
+        <th
+        class="table-item"
+        pSortableColumn="status"
+        
+      >
+        Reason Type
+      </th>
+        <th
+          class="table-item"
+          pSortableColumn="reasonType"
+          
+        >
+          Status
+        </th>
+        <th class="table-item" pSortableColumn="Date" >
+          Date 
+        </th>
+        <th
+          class="table-item"
+          pSortableColumn="amount"
+        
+        >
+          Actions 
+        </th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-refund let-i >
+      <tr >
+        <td > {{ refund.orderId }}</td>
+        <td>{{ refund.cashier }}</td>
+        <td>{{  refund.Amount_Requested.toFixed(2) }}</td>
+        <td >{{ refund.reasonType }}</td>
+
+        <td class="px-4">
+          <i
+            class="pi"
+            [ngClass]="{
+              'pi-clock pending': refund.status === 'Pending',
+              'pi-check-circle accepted': refund.status === 'Accepted',
+              'pi-times-circle rejected': refund.status === 'Rejected'
+            }"
+          >
+          </i>
+          {{ refund.status }}
+        </td>
+        
+
+      <td class="px-4">{{ refund.Date }}</td>
+      <td class="px-4">
+        <!-- Ellipsis Button -->
+    <div>
+        <!-- <i
+        class="pi pi-ellipsis-v table-item"
+        (click)="op.toggle($event)"
+      ></i> -->
+
+         <!-- Dropdown Menu -->
+         <!-- <div
+         *ngIf="dropdownIndex === i"
+         class="asolute bg-white shadow-lg rounded-md"
+       > -->
+
+
+<!-- 
+       <p-toast />
+      <p-menu #menu [model]="items" [popup]="true" />
+      <p-button (onClick)="menu.toggle($event)" icon="pi pi-ellipsis-v"/>
+ -->
+ <div class="menu-container">
+  <button class="menu-button" (click)="toggleMenu($event)">
+    <i class="pi pi-ellipsis-v"></i>
+  </button>
+
+  <ul class="custom-menu" [ngClass]="{ 'show': isMenuOpen }">
+    <li (click)="viewRefund(refund)">
+      <i class="pi pi-eye"></i> View
+    </li>
+    <li (click)="acceptRefund(refund)" class="accepted">
+      <i class="pi pi-check-circle"></i> Accept
+    </li>
+    <li (click)="rejectRefund(refund)" class="rejected">
+      <i class="pi pi-times-circle"></i> Reject
+    </li>
+  </ul>
+</div>
+
+
+<!-- <p-overlayPanel #op class="shadow-lg rounded-md">
+        <ul class="py-2 text-gray-700 w-40">
+          <li
+            class="flex items-center  text-xl gap-2 px-4 py-2 hover:bg-gray-100 cursor-pointer"
+            (click)="viewRefund(refund); closeOverlay()"
+          >
+            <i class="pi pi-eye  text-gray-600 text-xl"></i>
+            <span>View</span>
+          </li>
+          <li
+            class="flex items-center gap-2 text-xl px-4 py-2 hover:bg-gray-100 cursor-pointer"
+            (click)="acceptRefund(refund); closeOverlay()"
+          >
+            <i class="pi pi-check-circle text-green-500 text-xl"></i>
+            <span>Accept</span>
+          </li>
+          <li
+            class="flex items-center gap-2 px-4 py-2 text-xl  hover:bg-gray-100 cursor-pointer text-red-500"
+            (click)="rejectRefund(refund);closeOverlay()"
+          >
+            <i class="pi pi-times-circle text-red-500 text-xl"></i>
+            <span>Reject</span>
+          </li>
+        </ul>
+      </p-overlayPanel> -->
+</div>
+      </tr>
+    </ng-template>
+
+     <!-- Empty Message -->
+     <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="6" class="text-center text-[12px] p-4">
+          No refund transactions found for the selected filters.
+        </td>
+      </tr>
+    </ng-template>
+    
+  </p-table>
+</div>
+
+<app-side-modal
+  *ngIf="isModalOpen"
+  (close)="closeModal()"
+  class="p-6 bg-white shadow-lg rounded-md"
+>
+  <h2 class="text-[15px] font-semibold mb-4 text-gray-800">Refund Request</h2>
+
+  <div class="space-y-3 text-gray-700">
+    <div>
+      <label class="block text-[13px] font-medium text-gray-600 mb-1"
+        >Cashier</label
+      >
+      <div
+        class="w-full p-3 border border-gray-400 rounded-lg bg-gray-100 text-[12px] mb-4"
+      >
+        {{ selectedRefund?.cashier }}
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-[13px] font-medium text-gray-600 mb-1"
+        >Amount Requested</label
+      >
+      <div
+        class="w-full p-3 border border-gray-400 rounded-lg bg-gray-100 text-[12px] mb-4"
+      >
+        ₦{{ selectedRefund?.Amount_Requested }}
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-[13px] font-medium text-gray-600 mb-1"
+        >Reason Requested</label
+      >
+      <div
+        class="w-full p-3 border border-gray-400 rounded-lg bg-gray-100 text-[12px] mb-4"
+      >
+        {{ selectedRefund?.reasonType }}
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-[13px] font-medium text-gray-600 mb-1"
+        >Transaction Date</label
+      >
+      <div
+        class="w-full p-3 border border-gray-400 rounded-lg bg-gray-100 text-[12px] mb-4"
+      >
+        {{ selectedRefund?.TransactionId }}
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-[13px] font-medium text-gray-600 mb-1"
+        >Transaction Payment ID</label
+      >
+      <div
+        class="w-full p-3 border border-gray-400 rounded-lg bg-gray-100 text-[12px] mb-4"
+      >
+        {{ selectedRefund?.orderId }}
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-[13px] font-medium text-gray-600 mb-1"
+        >Requested Date</label
+      >
+      <div
+        class="w-full p-3 border border-gray-400 rounded-lg bg-gray-100 text-[12px] mb-4"
+      >
+        {{ selectedRefund?.RequestedDate }}
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-[13px] font-medium text-gray-600 mb-1"
+        >Return Mode</label
+      >
+      <div
+        class="w-full p-3 border border-gray-400 rounded-lg bg-gray-100 text-[12px] mb-4"
+      >
+        {{ selectedRefund?.returnmode }}
+      </div>
+    </div>
+
+<div class="mt-4">
+      <h3 class="text-[13px]">Returned Items</h3>
+      <ul
+        class="w-full p-3 border border-gray-400 rounded-lg bg-gray-100 text-[12px] mb-4"
+      >
+        <li
+          *ngFor="let item of selectedRefund?.returnedItems"
+          class="p-1 border-b last:border-b-0 border-gray-400 text-[12px]"
+        >
+          <span class="font-medium">{{ item.itemName }}</span> -
+          <span class="text-gray-400 text-[12px]"
+            >Qty: {{ item.quantity }}</span
+          >
+        </li>
+      </ul>
+    </div>
+
+    <div>
+      <label class="block text-[13px] font-medium text-gray-600">Status</label>
+      <div
+        class="w-full p-3 border border-gray-400 rounded-lg bg-gray-100 text-[12px] mb-4 flex items-center"
+      >
+        <span>
+          {{ selectedRefund?.status }}
+        </span>
+        <span
+          *ngIf="selectedRefund?.status === 'Approved'"
+          class="text-green-500 ml-2"
+          >✔</span
+        >
+        <span
+          *ngIf="selectedRefund?.status === 'Rejected'"
+          class="text-red-500 ml-2"
+          >✖</span
+        >
+      </div>
+    </div>
+
+    <!-- Cashier's Comment -->
+    <div class="mt-4">
+      <label class="block text-[13px] font-medium text-gray-600"
+        >Cashier's Comment</label
+      >
+      <div
+        class="w-full p-3 border border-gray-400 rounded-lg bg-gray-100 text-[12px] mb-4"
+      >
+        {{ selectedRefund?.cashierComment }}
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-[13px] font-medium text-gray-600"
+        >Your Comment</label
+      >
+      <textarea
+        class="text-[12px] w-full p-2 border border-gray-400 rounded bg-gray-100 focus:outline-none"
+        placeholder="Input your comment"
+      ></textarea>
+    </div>
+  </div>
+
+  <div class="mt-6 flex justify-between">
+    <button
+      (click)="acceptRefund(selectedRefund)"
+      class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+    >
+      Accept
+    </button>
+    <button
+      (click)="rejectRefund(selectedRefund)"
+      class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+    >
+      Reject
+    </button>
+    <button
+      (click)="closeModal()"
+      class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
+    >
+      Close
+    </button>
+  </div>
+</app-side-modal>

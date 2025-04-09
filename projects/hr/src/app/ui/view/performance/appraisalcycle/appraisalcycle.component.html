@@ -1,0 +1,213 @@
+<body *ngIf="!openAppraisal" class="card">
+  <div class="flex min-h-screen p-15">
+    <!-- Sidebar Section with filter options -->
+    <aside class="w-65 bg-white rounded-lg p-0 shadow-lg text-lg space-y-4">
+      <ul class="space-y-10 mt-10 mr-7">
+        <li
+          class="flex items-center justify-between mt-12 bg-blue-50 w-64 p-6 rounded-lg shadow-sm hover:bg-blue-100"
+        >
+          <div class="flex items-center space-x-3">
+            <i class="text-blue-600 mr-2 pi pi-list"></i>
+            <span class="text-blue-800 font-medium text-lg">All</span>
+          </div>
+          <span
+            class="bg-blue-200 text-blue-700 font-semibold ml-5 rounded-full px-3 py-1 text-lg"
+          >
+            {{ filterAppraisals.length }}
+          </span>
+        </li>
+
+        <li
+          class="flex items-center w-64 justify-between bg-gray-50 p-4 rounded-lg shadow-sm hover:bg-gray-100"
+        >
+          <div class="flex items-center space-x-2">
+            <i class="text-gray-400 pi pi-clock"></i>
+            <span class="text-gray-500 font-medium text-lg">Approved</span>
+          </div>
+          <span
+            class="bg-gray-200 text-gray-600 font-semibold rounded-full px-3 py-1 text-lg"
+          >
+            {{ "Pending".length }}
+          </span>
+        </li>
+
+        <li
+          class="flex w-64 items-center justify-between bg-green-150 p-6 rounded-lg shadow-sm hover:bg-green-100"
+        >
+          <div class="flex items-center space-x-2">
+            <i class="text-green-700 pi pi-spinner"></i>
+            <span class="text-green-800 font-medium text-lg">In Progress</span>
+          </div>
+          <span
+            class="bg-green-300 text-green-900 font-semibold rounded-full px-3 py-1 text-lg"
+          >
+            {{ "In Progress".length }}
+          </span>
+        </li>
+
+        <li
+          class="flex w-64 items-center justify-between bg-yellow-50 p-4 rounded-lg shadow-sm hover:bg-yellow-100"
+        >
+          <div class="flex items-center space-x-2">
+            <i class="text-yellow-400 pi pi-pause"></i>
+            <span class="text-yellow-500 font-medium text-lg">On Hold</span>
+          </div>
+          <span
+            class="bg-yellow-200 text-yellow-600 font-semibold rounded-full px-3 py-2 text-lg"
+          >
+            {{ "On Hold".length }}
+          </span>
+        </li>
+
+        <li
+          class="flex w-64 items-center justify-between bg-red-50 p-4 rounded-lg shadow-sm hover:bg-red-100"
+        >
+          <div class="flex items-center space-x-2">
+            <i class="text-red-400 pi pi-times"></i>
+            <span class="text-red-500 font-medium text-lg">Not Completed</span>
+          </div>
+          <span
+            class="bg-red-200 text-red-600 font-semibold rounded-full px-3 py-1 text-lg"
+          >
+            {{ "Not Achieved".length }}
+          </span>
+        </li>
+
+        <li
+          class="flex w-64 items-center justify-between bg-purple-50 p-4 rounded-lg shadow-sm hover:bg-purple-100"
+        >
+          <div class="flex items-center space-x-2">
+            <i class="text-purple-600 pi pi-check"></i>
+            <span class="text-purple-800 font-medium text-lg">Completed</span>
+          </div>
+          <span
+            class="bg-purple-200 text-purple-700 font-semibold rounded-full px-3 py-1 text-lg"
+          >
+            {{ "Completed".length }}
+          </span>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1">
+      <div class="card">
+        <!-- Toolbar with Generate Appraisal Button -->
+        <p-toolbar styleClass="mb-4 gap-5">
+          <!-- Left Section: Filters -->
+          <ng-template pTemplate="left">
+            <div class="flex w-full justify-between gap-4 px-3">
+              <div class="flex gap-4 text-[12px] w-1/1">
+                <ng-select
+                  [items]="departments"
+                  [(ngModel)]="selectedDepartment"
+                  (ngModelChange)="filterDepartment()"
+                  bindLabel="name"
+                  bindValue="id"
+                  placeholder="Select Department"
+                ></ng-select>
+              </div>
+
+              <div class="search-bar text-[12px] w-[100%]">
+                <ng-select
+                  [items]="levels"
+                  [(ngModel)]="selectedLevel"
+                  (ngModelChange)="filterLevel()"
+                  bindLabel="name"
+                  bindValue="id"
+                  placeholder="Select Level"
+                ></ng-select>
+              </div>
+            </div>
+          </ng-template>
+
+          <!-- Right Section: Generate Appraisal Button -->
+          <ng-template pTemplate="right">
+            <app-button
+              (click)="navigateToCreate()"
+              text="Generate Appraisal"
+              class="btn-navigate gap-2"
+            ></app-button>
+          </ng-template>
+        </p-toolbar>
+
+        <p-table
+          [value]="filteredAppraisals"
+          [paginator]="true"
+          styleClass=""
+          [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '1000px' }"
+          [rows]="10"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th class="table-item" pSortableColumn="Employee">
+                Employee Name
+              </th>
+              <th class="table-item" pSortableColumn="Department">
+                Department
+              </th>
+              <th class="table-item" pSortableColumn="Level">Level</th>
+
+              <th class="table-item" pSortableColumn="NetLeaveBalance">
+                Due Date
+              </th>
+              <th class="table-item" pSortableColumn="Status">Review Status</th>
+              <th class="table-item">Action</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-appraisal>
+            <tr class="p-table-row">
+              <td class="table-item">{{ appraisal.employeeName }}</td>
+              <td class="table-item">{{ appraisal.department }}</td>
+              <td class="table-item">{{ appraisal.level }}</td>
+              <td class="table-item">{{ appraisal.dueDate }}</td>
+              <td class="table-item">
+                <button
+                  (click)="updateAppraisalStatus(appraisal.id, 'Initiated')"
+                >
+                  {{ appraisal.progressStatus }}
+                </button>
+              </td>
+              <td>
+                <div class="flex text-lg gap-2">
+                  <button
+                    pButton
+                    icon="pi pi-eye"
+                    class="p-button-rounded p-button-text"
+                    (click)="viewAppraisalDetails(appraisal)"
+                  ></button>
+                  <button
+                    pButton
+                    icon="pi pi-pencil"
+                    class="p-button-rounded p-button-text p-button-success"
+                    (click)="editAppraisal(appraisal)"
+                  ></button>
+                  <button
+                    pButton
+                    *ngIf="userRole === 'ROLE_ADMIN'"
+                    icon="pi pi-trash"
+                    class="p-button-rounded p-button-text p-button-danger"
+                    (click)="deleteAppraisal(appraisal.id)"
+                  ></button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="7" class="text-center text-[14px] py-4">
+                No appraisals created yet
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+  </div>
+</body>
+
+<div *ngIf="openAppraisal">
+  <app-appraisal (back)="navigateToCreate()"></app-appraisal>
+</div>

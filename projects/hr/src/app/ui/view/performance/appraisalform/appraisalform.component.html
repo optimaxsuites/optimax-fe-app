@@ -1,0 +1,281 @@
+<div class="card">
+  <app-back-button class="table-item" (click)="goBack()"></app-back-button>
+
+  <form
+    [formGroup]="appraisalForm"
+    (ngSubmit)="onSubmit()"
+    class="space-y-8 flex gap-10 flex-row justify-between px-5 py-3 items-start"
+  >
+    <!-- Left Column -->
+    <div class="w-1/2">
+      <!-- Goal Name -->
+      <div class="mb-4 mt-3">
+        <label class="mb-3 text-lg font-semibold">Employee Name*</label>
+        <input
+          type="text"
+          formControlName="employeeName"
+          placeholder="Enter goal name"
+          class="w-full px-4 py-3 border border-gray-300 rounded-md transition duration-200"
+        />
+        <div
+          *ngIf="
+            appraisalForm.get('goalName')?.touched &&
+            appraisalForm.get('goalName')?.invalid
+          "
+          class="text-red-500 text-sm"
+        >
+          Employee name is required
+        </div>
+      </div>
+
+      <!-- Level and Priority -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+        <!-- <div class="">
+          <label class="mb-3 text-lg font-semibold">Level*</label>
+          <ng-select
+            [items]="levelUser"
+            bindLabel="option"
+            bindValue="option"
+            formControlName="levelUser"
+            placeholder="Select level"
+            class="w-full"
+          ></ng-select>
+          <div
+            *ngIf="
+              goalForm.get('levelUser')?.touched &&
+              goalForm.get('levelUser')?.invalid
+            "
+            class="text-red-500 text-sm"
+          >
+            Level is required
+          </div>
+        </div> -->
+
+        <div class="">
+          <label class="mb-3 text-lg font-semibold">Assessment Cycle*</label>
+          <select
+            formControlName="assessment"
+            class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
+          >
+            <option value="Annual Review For All 2024">
+              Annual Review For All 2024
+            </option>
+            <option value="Annual Review By HR Department 2024">
+              Annual Review By HR Department 2024
+            </option>
+            <option value="Annual Assesssment 2025">
+              Annual Assesssment 2025
+            </option>
+            <option value="Annual Review For All 2025">
+              Annual Review For All 2025
+            </option>
+            <option value="Annual Review By HR Department 2025">
+              Annual Review By HR Department 2025
+            </option>
+            <option value="Annual Assesssment 2025">
+              Annual Assesssment 2025
+            </option>
+          </select>
+        </div>
+
+        <div class="">
+          <label class="mb-3 text-lg font-semibold">Period*</label>
+          <select
+            formControlName="period"
+            class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200"
+          >
+            <option value="Annual Review">Annual Review</option>
+            <option value="Quarterly Review">Quarterly Review'</option>
+            <option value="Performance Improvement">
+              Performance Improvement
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Dates -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+        <div>
+          <label class="mb-3 text-lg font-semibold">Start Date*</label>
+          <input
+            type="date"
+            formControlName="startDate"
+            class="w-full px-4 py-3 border border-gray-300 rounded-md transition duration-200"
+          />
+        </div>
+        <!-- <div>
+          <label class="mb-3 text-lg font-semibold">End Date*</label>
+          <input
+            type="date"
+            formControlName="endDate"
+            class="w-full px-4 py-3 border border-gray-300 rounded-md transition duration-200"
+          />
+        </div> -->
+        <div>
+          <label class="mb-3 text-lg font-semibold">Due Date*</label>
+          <input
+            type="date"
+            formControlName="dueDate"
+            class="w-full px-4 py-3 border border-gray-300 rounded-md transition duration-200"
+          />
+        </div>
+
+        <div class="">
+          <label class="mb-3 text-lg font-semibold">Evaluator*</label>
+          <select
+            formControlName="evaluator"
+            class="w-full px-4 py-3 border border-gray-300 rounded-md transition duration-200"
+          >
+            <option value="Pending">Initiated</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Progress Status -->
+
+      <div class="flex justify-end gap-4 mt-6">
+        <button
+          type="button"
+          (click)="onCancel()"
+          class="px-5 py-3 border border-gray-300 rounded-md hover:bg-gray-50 transition duration-200"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="px-5 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition duration-200"
+        >
+          Save
+        </button>
+        <!-- </div> -->
+      </div>
+
+      <!-- Action Buttons -->
+    </div>
+
+    <!-- Right Column -->
+    <div class="w-1/2">
+      <div>
+        <label class="mb-3 text-lg font-semibold"
+          >Overview & Description*</label
+        >
+        <p-editor
+          formControlName="description"
+          placeholder="Overview & Description..."
+          class="w-full"
+        ></p-editor>
+      </div>
+
+      <div class="">
+        <label class="my-3 text-lg font-semibold">Department*</label>
+        <ng-select
+          [items]="departments"
+          placeholder="Select Department"
+          [(ngModel)]="departments"
+          bindLabel="name"
+          bindValue="id"
+          style="width: 100%"
+        >
+        </ng-select>
+
+        <!-- <label class="my-3 text-lg font-semibold">Progress Status*</label>
+        <select
+          formControlName="progressStatus"
+          class="w-full px-4 py-3 border border-gray-300 rounded-md transition duration-200"
+        >
+          <option value="Pending">Initiated</option>
+        </select> -->
+
+        <label class="my-3 text-lg font-semibold">Supervisor*</label>
+        <select
+          formControlName="supervisor"
+          class="w-full px-4 py-3 border border-gray-300 rounded-md transition duration-200"
+        >
+          <option value="Pending">John doe</option>
+        </select>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- <div class="card">
+  <!-- <app-back-button class="table-item" (click)="goBack()"></app-back-button> 
+
+  <div
+    *ngIf="currentQuestion"
+    class="min-h-screen bg-gray-100 flex flex-col items-center justify-center px-4"
+  >
+    <!-- Quiz Header 
+    <div class="w-full max-w-3xl bg-white shadow-lg rounded-lg p-6 mb-4">
+      <div class="flex justify-between items-center mb-4">
+        <div class="text-indigo-600 font-semibold text-lg">
+          Time Remaining: {{ formatTime(timeRemaining) }}
+        </div>
+        <div class="text-gray-700">
+          Question {{ currentIndex + 1 }} of {{ questions.length }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Question Card 
+    <div class="w-full max-w-3xl bg-white shadow-lg rounded-lg p-6">
+      <h2 class="text-2xl font-semibold text-gray-800 mb-6">
+        {{ currentQuestion.text }}
+      </h2>
+      <div class="space-y-4">
+        <div
+          *ngFor="let option of currentQuestion.options"
+          class="flex items-center space-x-3"
+        >
+          <input
+            type="radio"
+            [id]="option"
+            [name]="'question' + currentQuestion.id"
+            [value]="option"
+            [(ngModel)]="selectedAnswer"
+            class="h-5 w-5 text-indigo-600 border-gray-300 focus:ring-indigo-500"
+          />
+          <label [for]="option" class="text-gray-700 text-lg cursor-pointer">
+            {{ option }}
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Buttons 
+    <div class="w-full max-w-3xl flex justify-between items-center mt-6">
+      <button
+        *ngIf="currentIndex > 0"
+        (click)="previousQuestion()"
+        class="bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg shadow-sm font-semibold"
+      >
+        Previous
+      </button>
+      <button
+        (click)="nextQuestion()"
+        class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg shadow-sm font-semibold"
+      >
+        {{ isLastQuestion ? "Submit Quiz" : "Next" }}
+      </button>
+    </div>
+  </div>
+
+
+  <div
+    *ngIf="showResults"
+    class="min-h-screen bg-gray-100 flex flex-col items-center justify-center px-4"
+  >
+    <div class="w-full max-w-3xl bg-white shadow-lg rounded-lg p-6 text-center">
+      <h2 class="text-3xl font-bold text-indigo-600 mb-6">Quiz Complete!</h2>
+      <div class="text-xl text-gray-700 font-semibold mb-6">
+        Score: <span class="text-indigo-600">{{ score }}%</span>
+      </div>
+      <button
+        (click)="exitQuiz()"
+        class="bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg shadow-md font-semibold"
+      >
+        Exit
+      </button>
+    </div>
+  </div>
+</div> -->

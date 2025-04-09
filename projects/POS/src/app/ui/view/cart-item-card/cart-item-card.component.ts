@@ -1,0 +1,106 @@
+import { Component, EventEmitter, input, Input, Output } from '@angular/core';
+import { Business, ProductData } from '../../models/interface';
+import { IndustryDataService } from '../../service/industry-data.service';
+import { ImageCacheService } from '../../service/image-cache.service';
+
+@Component({
+  selector: 'app-cart-item-card',
+  templateUrl: './cart-item-card.component.html',
+  styleUrl: './cart-item-card.component.scss',
+})
+export class CartItemCardComponent implements Business {
+  @Input() freezeItemCount = false;
+  @Input() item: ProductData = {} as any;
+  @Input() showDelete: boolean = true;
+  @Input() cart?: boolean = true
+  @Output() delete = new EventEmitter<void>();
+  @Output() countChange = new EventEmitter<number>();
+  @Output() updateItem = new EventEmitter<number>();
+  imageUrl!: string;
+
+  // count: number = this.item.count
+
+  constructor(private industryDataService: IndustryDataService, private imageCacheService: ImageCacheService) {}
+  ngOnInit(): void {
+    const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${this.item.productImages[0].imgNo}`;
+    this.imageCacheService.getImage(remoteImageUrl).subscribe((url) => {
+      this.imageUrl = url;
+    });
+  }
+  decreaseCount() {
+    if (this.freezeItemCount) return;
+
+    if (this.item.count > 0) {
+      this.item.count--;
+    }
+    this.emitCountChange();
+  }
+
+  validateItemCount(item: any) {
+    if (item.count <= 0 || isNaN(item.count)) {
+      item.count = 1; 
+    }
+    this.countChange.emit(item.count);
+  }
+  
+  increaseCount() {
+    if (this.freezeItemCount) return;
+
+    this.item.count++;
+    this.emitCountChange();
+  }
+
+  private emitCountChange() {
+    this.countChange.emit(this.item.count);
+  }
+
+  onDelete() {
+    this.delete.emit();
+  }
+  onCountChange(newCount: number) {
+    this.countChange.emit(newCount);
+  }
+
+  onClick() {
+    this.updateItem.emit(this.item.id);
+  }
+
+  get cartPriceTotal() {
+    return Math.round(parseInt(this.item.cartPriceTotal) * 100) / 100;
+  }
+
+  get businessType() {
+    return this.industryDataService.businessType;
+  }
+
+ 
+
+  updateItemQuantity(item: any, change: number, variant?: any) {
+    if (variant) {
+      variant.selectedQuantity = Math.max((variant.selectedQuantity ?? 0) + change, 1);
+  
+      if (variant.selectedQuantity === 1) {
+        return; 
+      }
+  
+      if (variant.selectedQuantity === 0) {
+        item.selectedVariants = item.selectedVariants.filter((v: any) => v !== variant);
+      }
+    }
+  
+    if (!variant || item.selectedVariants.length === 0) {
+      item.count = Math.max((item.count ?? 0) + change, 1); 
+  
+      this.countChange.emit(item.count);
+    }
+  }
+  
+  // getImge(imgageUrl: string){
+  //   const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${this.product.productImages[0].imgNo}`;
+  //   this.imageCacheService.getImage(remoteImageUrl).subscribe((url) => {
+    
+  //   });
+  // }
+  
+  
+}
