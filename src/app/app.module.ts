@@ -12,12 +12,14 @@ import { HotelRoomdetailsComponent } from './ui/view/hotel-roomdetails/hotel-roo
 import { HotelRoomlistComponent } from './ui/view/hotel-roomlist/hotel-roomlist.component';
 import { ToastModule } from 'primeng/toast';
 
-import {CalendarModule} from 'primeng/calendar'
+import { CalendarModule } from 'primeng/calendar';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { UserModule } from './user/user.module';
 
+import { ProgressBarModule } from 'primeng/progressbar';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 @NgModule({
   declarations: [
@@ -28,7 +30,7 @@ import { UserModule } from './user/user.module';
     HotelFormComponent,
     HotelMessageComponent,
     HotelRoomdetailsComponent,
-    HotelRoomlistComponent
+    HotelRoomlistComponent,
   ],
   imports: [
     BrowserModule,
@@ -39,13 +41,11 @@ import { UserModule } from './user/user.module';
     ToastModule,
     FormsModule,
     ReactiveFormsModule,
+    NgSelectModule,
+    ProgressBarModule,
   ],
-  providers: [
-    MessageService,
+  providers: [MessageService],
 
-
-   ],
-  
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
 })
-export class AppModule { }
+export class AppModule {}
