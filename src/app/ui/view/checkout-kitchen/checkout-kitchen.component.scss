@@ -325,7 +325,8 @@ body {
         // The container for the vat and totals
         > div:nth-child(2) {
           width: 90%;
-          margin: auto;
+          margin: 5rem auto 0;
+
           font-size: 1.4rem;
           display: flex;
           flex-direction: column;
