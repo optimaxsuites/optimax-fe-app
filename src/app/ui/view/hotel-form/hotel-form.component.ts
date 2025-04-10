@@ -1,16 +1,21 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
+import { HotelServiceService } from '../hotel-service.service';
+import { Camera, CameraResultType } from '@capacitor/camera';
 
 // shared/interfaces/hotel.interfaces.ts
 
 export interface Guest {
+  id?: string; // Optional property for guest ID
   title: string;
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
   country: string;
+  idNumber: string;
+  gender: string;
 }
 
 export interface BookingDetails {
@@ -31,13 +36,14 @@ export interface Room {
   type: string;
   status: string;
   floor?: number;
-  guest?: Guest;
+  guest?: Guest; // Optional property for guest
   rate: number;
   bookingDetails?: BookingDetails;
   beds?: number;
   maxOccupancy?: number;
   description?: string;
   amenities?: string[];
+  currentKey?: RoomKey; // Optional property for current key
 }
 
 export interface Booking {
@@ -57,6 +63,28 @@ export interface Booking {
   total: number;
   balanceAmount: number;
   status?: string;
+}
+
+export interface RoomKey {
+  id: string;
+  roomNumber: number;
+  roomId: number;
+  isActive: boolean;
+  assignedDate: Date;
+  deactivationDate: Date;
+  guestIdNumber: string;
+  guestName?: string;
+}
+
+export interface KeyCardLog {
+  id: string;
+  roomNumber: number;
+  roomId: number;
+  keyCardId: string;
+  guestIdNumber: string;
+  accessType: 'GUEST' | 'MASTER' | 'STAFF';
+  timestamp: Date;
+  accessGranted: boolean;
 }
 
 @Component({
@@ -81,6 +109,12 @@ export class HotelFormComponent implements OnInit {
   showCheckinForm: boolean = false;
   isSameGuest: boolean = false;
 
+  isScanning: boolean = false;
+  scanError: string | null = null;
+  scanMethod: 'camera' | 'scanner' = 'camera';
+  scanProgress: number = 0;
+  showScanOptions: boolean = false;
+
   countries: string[] = [
     'Nigeria',
     'United States',
@@ -97,7 +131,11 @@ export class HotelFormComponent implements OnInit {
 
   currentDate: Date = new Date();
 
-  constructor(private fb: FormBuilder, private messageService: MessageService) {
+  constructor(
+    private fb: FormBuilder,
+    private ocrService: HotelServiceService,
+    private messageService: MessageService
+  ) {
     this.bookingForm = this.fb.group({
       title: ['', Validators.required],
       firstName: [
@@ -108,6 +146,8 @@ export class HotelFormComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       phone: ['', [Validators.required, Validators.pattern('^[0-9+ ]*$')]],
       country: ['Nigeria', Validators.required],
+      idNumber: ['', Validators.required],
+      gender: ['', Validators.required],
       checkinDate: [new Date(), Validators.required],
       checkoutDate: [
         new Date(new Date().setDate(new Date().getDate() + 1)),
@@ -118,6 +158,8 @@ export class HotelFormComponent implements OnInit {
       specialRequests: [''],
       paymentMethod: ['', Validators.required],
       depositAmount: [0, [Validators.min(0)]],
+      subtotal: [{ value: 0, disabled: true }],
+      taxes: [{ value: 0, disabled: true }],
     });
 
     this.checkinForm = this.fb.group({
@@ -135,6 +177,10 @@ export class HotelFormComponent implements OnInit {
     this.setupFormListeners();
   }
 
+  ngOnDestroy() {
+    this.ocrService.terminateWorker();
+  }
+
   ngOnInit() {
     if (this.selectedRooms && this.selectedRooms.length > 0) {
       // Check if we're in check-in mode and there's a guest
@@ -147,6 +193,8 @@ export class HotelFormComponent implements OnInit {
           lastName: guest.lastName,
           phone: guest.phone,
           email: guest.email,
+          idNumber: guest.idNumber,
+          gender: guest.gender,
         });
       } else {
         // Pre-populate booking form
@@ -226,6 +274,9 @@ export class HotelFormComponent implements OnInit {
       specialRequests: '',
       paymentMethod: '',
       depositAmount: 0,
+      idNumber: '',
+      gender: '',
+      subtotal: 0,
     });
   }
 
@@ -267,6 +318,8 @@ export class HotelFormComponent implements OnInit {
       email: formValues.email,
       phone: formValues.phone,
       country: formValues.country,
+      idNumber: formValues.idNumber,
+      gender: formValues.gender,
     };
 
     // Prepare booking summary
@@ -316,14 +369,42 @@ export class HotelFormComponent implements OnInit {
   }
 
   confirmBooking(): void {
-    if (!this.bookingSummary) return;
+    if (!this.bookingSummary) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No booking summary available',
+        life: 3000,
+      });
+      return;
+    }
 
     const status = this.activeStatus === 'checkin' ? 'occupied' : 'booked';
+
+    // Validate ID number first
+    let idNumber: string;
+    try {
+      idNumber = this.validateIdNumber();
+    } catch (error) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'ID Number Required',
+        detail:
+          error instanceof Error
+            ? error.message
+            : 'Valid ID number is required for check-in',
+        life: 5000,
+      });
+      return;
+    }
 
     // For check-in with same guest, use existing guest info
     let guest: Guest;
     if (this.isSameGuest && this.selectedRooms[0].guest) {
-      guest = this.selectedRooms[0].guest;
+      guest = {
+        ...this.selectedRooms[0].guest,
+        idNumber: idNumber,
+      };
     } else if (this.formType === 'checkin' && this.showCheckinForm) {
       // For new guest check-in, use checkin form values
       const formValues = this.checkinForm.value;
@@ -334,6 +415,8 @@ export class HotelFormComponent implements OnInit {
         email: formValues.email,
         phone: formValues.phone,
         country: '',
+        idNumber: idNumber,
+        gender: formValues.gender,
       };
     } else {
       // For regular booking, use booking form values
@@ -345,29 +428,63 @@ export class HotelFormComponent implements OnInit {
         email: formValues.email,
         phone: formValues.phone,
         country: formValues.country,
+        idNumber: idNumber,
+        gender: formValues.gender,
       };
     }
 
-    const updatedRooms = this.selectedRooms.map((room) => ({
-      ...room,
-      status: status,
-      guest: guest,
-      bookingDetails: {
-        checkinDate: this.bookingSummary?.checkinDate ?? new Date(),
-        checkoutDate: this.bookingSummary?.checkoutDate ?? new Date(),
-        adults: this.bookingSummary?.adults ?? 0,
-        children: this.bookingSummary?.children ?? 0,
-        specialRequests: this.bookingSummary?.specialRequests ?? '',
-        paymentMethod: this.bookingSummary?.paymentMethod ?? '',
-        totalAmount: this.bookingSummary?.total ?? 0,
-        paidAmount: this.bookingSummary?.depositAmount ?? 0,
-        balanceAmount: this.bookingSummary?.balanceAmount ?? 0,
-      },
-    }));
+    const updatedRooms = this.selectedRooms.map((room) => {
+      const updatedRoom: Room = {
+        ...room,
+        status: status,
+        guest: guest,
+        bookingDetails: {
+          checkinDate: this.bookingSummary!.checkinDate,
+          checkoutDate: this.bookingSummary!.checkoutDate,
+          adults: this.bookingSummary!.adults,
+          children: this.bookingSummary!.children,
+          specialRequests: this.bookingSummary!.specialRequests || '',
+          paymentMethod: this.bookingSummary!.paymentMethod,
+          totalAmount: this.bookingSummary!.total,
+          paidAmount: this.bookingSummary!.depositAmount,
+          balanceAmount: this.bookingSummary!.balanceAmount,
+        },
+      };
+
+      return updatedRoom;
+    });
 
     this.bookingConfirmed.emit(updatedRooms);
     this.showSuccessMessage(updatedRooms, status);
     this.closeForm();
+  }
+
+  private validateIdNumber(): string {
+    // Get ID number from the appropriate form
+    let idNumber: string;
+    if (this.isSameGuest && this.selectedRooms[0].guest?.idNumber) {
+      idNumber = this.selectedRooms[0].guest.idNumber;
+    } else if (this.formType === 'checkin' && this.showCheckinForm) {
+      idNumber = this.checkinForm.value.idNumber;
+    } else {
+      idNumber = this.bookingForm.value.idNumber;
+    }
+
+    // Validate presence
+    if (!idNumber || idNumber.trim() === '') {
+      throw new Error('Government-issued ID number is required');
+    }
+
+    // Add additional validation rules as needed
+    // Example: Check for minimum length or specific format
+    if (idNumber.length < 6) {
+      throw new Error('ID number must be at least 6 characters');
+    }
+
+    // You can add more specific validation based on your country's ID format
+    // For example, check for specific patterns or checksums
+
+    return idNumber.trim();
   }
 
   private showSuccessMessage(rooms: Room[], status: string): void {
@@ -456,5 +573,169 @@ export class HotelFormComponent implements OnInit {
       },
       { emitEvent: false }
     );
+  }
+
+  toggleScanOptions(): void {
+    this.showScanOptions = !this.showScanOptions;
+  }
+
+  async startIDScan(): Promise<void> {
+    this.isScanning = true;
+    this.scanError = null;
+    this.scanProgress = 0;
+
+    try {
+      if (this.scanMethod === 'camera') {
+        await this.scanWithCamera();
+      } else {
+        await this.scanWithDeviceScanner();
+      }
+    } catch (error) {
+      console.error('Scanning error:', error);
+      this.scanError = 'Failed to scan ID. Please try again or enter manually.';
+      this.isScanning = false;
+    } finally {
+      this.showScanOptions = false;
+    }
+  }
+
+  private async scanWithCamera(): Promise<void> {
+    try {
+      const image = await Camera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.Base64,
+        promptLabelPhoto: 'Select from gallery',
+        promptLabelPicture: 'Take photo of ID',
+        promptLabelHeader: 'ID Scan',
+      });
+
+      if (image.base64String) {
+        this.scanProgress = 30;
+        await this.processIDImage(
+          `data:image/jpeg;base64,${image.base64String}`
+        );
+      }
+    } catch (error) {
+      if (error !== 'USER_CANCELLED') {
+        throw error;
+      }
+    } finally {
+      this.isScanning = false;
+    }
+  }
+
+  private async scanWithDeviceScanner(): Promise<void> {
+    // Mock implementation - replace with actual scanner SDK
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Scanner Not Connected',
+      detail: 'Physical scanner not detected. Using camera instead.',
+      life: 3000,
+    });
+    this.scanMethod = 'camera';
+    await this.scanWithCamera();
+  }
+
+  private async processIDImage(imageData: string): Promise<void> {
+    try {
+      this.scanProgress = 50;
+
+      // Use OCR service to extract text
+      const extractedText = await this.ocrService.recognizeText(imageData);
+      this.scanProgress = 80;
+
+      // Parse the extracted data to identify fields
+      const guestData = this.parseIDData(extractedText);
+
+      // Auto-fill the form
+      this.fillFormWithGuestData(guestData);
+
+      this.scanProgress = 100;
+      this.messageService.add({
+        severity: 'success',
+        summary: 'ID Scan Complete',
+        detail: 'Guest information extracted successfully',
+        life: 2000,
+      });
+    } catch (error) {
+      console.error('OCR processing error:', error);
+      throw new Error('Failed to process ID image');
+    }
+  }
+
+  private parseIDData(extractedText: string): Partial<Guest> {
+    // Enhanced parsing logic for common ID formats
+    const data: Partial<Guest> = {};
+    const lines = extractedText
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line);
+
+    // Common patterns for IDs (adjust based on your country's format)
+    const nameRegex =
+      /^([A-Z][a-z]+)(?:\s+([A-Z][a-z]+))?(?:\s+([A-Z][a-z]+))?$/;
+    const idRegex = /([A-Z0-9]{6,20})/;
+    const dobRegex = /(\d{2}[\/\-\.]\d{2}[\/\-\.]\d{4})/;
+    const countryRegex =
+      /(Nigeria|United States|United Kingdom|Canada|Ghana|South Africa|Kenya|Germany|France|China|India)/i;
+
+    for (const line of lines) {
+      // Extract name
+      if (!data.firstName && nameRegex.test(line)) {
+        const matches = line.match(nameRegex);
+        if (matches) {
+          if (matches[3]) {
+            // Format: LAST FIRST MIDDLE
+            data.lastName = matches[1];
+            data.firstName = `${matches[2]} ${matches[3]}`;
+          } else if (matches[2]) {
+            // Format: FIRST LAST
+            data.firstName = matches[1];
+            data.lastName = matches[2];
+          }
+        }
+      }
+
+      // Extract ID number
+      if (!data.idNumber && idRegex.test(line)) {
+        const idMatch = line.match(idRegex);
+        if (idMatch) data.idNumber = idMatch[1];
+      }
+
+      // Extract country
+      if (!data.country && countryRegex.test(line)) {
+        const countryMatch = line.match(countryRegex);
+        if (countryMatch) data.country = countryMatch[1];
+      }
+
+      // Extract gender (from titles or explicit markers)
+      if (!data.gender) {
+        if (line.match(/(Mr|Mister|Male|M)/i)) data.gender = 'Male';
+        if (line.match(/(Mrs|Miss|Ms|Female|F)/i)) data.gender = 'Female';
+      }
+    }
+
+    return data;
+  }
+
+  private fillFormWithGuestData(guestData: Partial<Guest>): void {
+    if (this.showCheckinForm) {
+      this.checkinForm.patchValue({
+        firstName: guestData.firstName || '',
+        lastName: guestData.lastName || '',
+        idNumber: guestData.idNumber || '',
+        gender: guestData.gender || '',
+        ...(guestData.country && { country: guestData.country }),
+      });
+    } else {
+      this.bookingForm.patchValue({
+        firstName: guestData.firstName || '',
+        lastName: guestData.lastName || '',
+        idNumber: guestData.idNumber || '',
+        gender: guestData.gender || '',
+        ...(guestData.country && { country: guestData.country }),
+      });
+    }
   }
 }
