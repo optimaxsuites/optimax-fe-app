@@ -4,12 +4,15 @@ import { MessageService } from 'primeng/api';
 // shared/interfaces/hotel.interfaces.ts
 
 export interface Guest {
+  id?: string; // Optional property for guest ID
   title: string;
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
   country: string;
+  idNumber: string;
+  gender: string;
 }
 
 export interface BookingDetails {
@@ -30,13 +33,14 @@ export interface Room {
   type: string;
   status: string;
   floor?: number;
-  guest?: Guest;
+  guest?: Guest; // Optional property for guest
   rate: number;
   bookingDetails?: BookingDetails;
   beds?: number;
   maxOccupancy?: number;
   description?: string;
   amenities?: string[];
+  currentKey?: RoomKey; // Optional property for current key
 }
 
 export interface Booking {
@@ -50,11 +54,34 @@ export interface Booking {
   depositAmount: number;
   roomIds: number[];
   roomTypes: string[];
-  roomRates: number;
+  roomRates: number[];
   subtotal: number;
   taxes: number;
   total: number;
   balanceAmount: number;
+  status?: string;
+}
+
+export interface RoomKey {
+  id: string;
+  roomNumber: number;
+  roomId: number;
+  isActive: boolean;
+  assignedDate: Date;
+  deactivationDate: Date;
+  guestIdNumber: string;
+  guestName?: string;
+}
+
+export interface KeyCardLog {
+  id: string;
+  roomNumber: number;
+  roomId: number;
+  keyCardId: string;
+  guestIdNumber: string;
+  accessType: 'GUEST' | 'MASTER' | 'STAFF';
+  timestamp: Date;
+  accessGranted: boolean;
 }
 
 @Component({
@@ -99,6 +126,20 @@ export class HotelRoomlistComponent {
     occupied: 'bg-blue-400',
     maintenance: 'bg-gray-400',
     dirty: 'bg-red-400',
+  };
+  // In your component class
+  statusOptions = [
+    { value: 'All Statuses', label: 'All Statuses' },
+    { value: 'available', label: 'Available' },
+    { value: 'booked', label: 'Booked' },
+    { value: 'occupied', label: 'Occupied' },
+    { value: 'maintenance', label: 'Maintenance' },
+    { value: 'dirty', label: 'Dirty' },
+  ];
+
+  selectedStatus: { value: string; label: string } = {
+    value: 'All Statuses',
+    label: 'All Statuses',
   };
 
   constructor(private messageService: MessageService) {
@@ -276,24 +317,66 @@ export class HotelRoomlistComponent {
       : `${baseClasses} bg-white border-2 border-gray-200 text-gray-700 hover:border-emerald-300`;
   }
 
-  toggleRoomTypeSelection(type: string): void {
-    if (type === 'All Rooms') {
-      this.selectedRoomTypes = ['All Rooms'];
-    } else {
-      if (this.selectedRoomTypes.includes(type)) {
-        this.selectedRoomTypes = this.selectedRoomTypes.filter(
-          (t) => t !== type
-        );
-        if (this.selectedRoomTypes.length === 0) {
-          this.selectedRoomTypes = ['All Rooms'];
+  onStatusChange(selectedValue: { value: string; label: string }): void {
+    this.selectedStatus = selectedValue;
+    this.applyFilters();
+  }
+
+  applyFilters(): void {
+    this.filteredRooms = this.rooms.filter((room) => {
+      // Room type filter (unchanged)
+      const typeMatch =
+        this.selectedRoomTypes.includes('All Rooms') ||
+        this.selectedRoomTypes.includes(room.type);
+
+      // Updated status filter for single selection
+      const statusMatch =
+        this.selectedStatus.value === 'All Statuses' ||
+        this.selectedStatus.value === room.status;
+
+      // Search filter (unchanged)
+      const searchMatch =
+        !this.searchQuery ||
+        room.number.toString().includes(this.searchQuery) ||
+        (room.guest &&
+          `${room.guest.firstName} ${room.guest.lastName}`
+            .toLowerCase()
+            .includes(this.searchQuery.toLowerCase()));
+
+      // Date filter (unchanged)
+      let dateMatch = true;
+      if (this.searchDate && room.bookingDetails) {
+        const searchDateObj = new Date(this.searchDate);
+        searchDateObj.setHours(0, 0, 0, 0);
+
+        const checkinDate = room.bookingDetails.checkinDate
+          ? new Date(room.bookingDetails.checkinDate)
+          : null;
+        const checkoutDate = room.bookingDetails.checkoutDate
+          ? new Date(room.bookingDetails.checkoutDate)
+          : null;
+
+        if (checkinDate && checkoutDate) {
+          checkinDate.setHours(0, 0, 0, 0);
+          checkoutDate.setHours(0, 0, 0, 0);
+          dateMatch =
+            searchDateObj >= checkinDate && searchDateObj < checkoutDate;
+        } else {
+          dateMatch = false;
         }
-      } else {
-        this.selectedRoomTypes = this.selectedRoomTypes.filter(
-          (t) => t !== 'All Rooms'
-        );
-        this.selectedRoomTypes.push(type);
       }
-    }
+
+      return (
+        typeMatch &&
+        statusMatch &&
+        searchMatch &&
+        (this.searchDate ? dateMatch : true)
+      );
+    });
+  }
+
+  toggleRoomTypeSelection(type: string): void {
+    this.selectedRoomTypes = [type];
     this.applyFilters();
   }
 
@@ -309,48 +392,7 @@ export class HotelRoomlistComponent {
     this.selectAll = false;
   }
 
-  applyFilters(): void {
-    this.filteredRooms = this.rooms.filter((room) => {
-      const typeMatch =
-        this.selectedRoomTypes.includes('All Rooms') ||
-        this.selectedRoomTypes.includes(room.type);
-      const searchMatch =
-        !this.searchQuery ||
-        room.number.toString().includes(this.searchQuery) ||
-        (room.guest &&
-          `${room.guest.firstName} ${room.guest.lastName}`
-            .toLowerCase()
-            .includes(this.searchQuery.toLowerCase()));
-
-      let dateMatch = true;
-      if (this.searchDate && room.bookingDetails) {
-        const searchDateObj = new Date(this.searchDate);
-        // Set time to midnight for proper comparison
-        searchDateObj.setHours(0, 0, 0, 0);
-
-        const checkinDate = new Date(room.bookingDetails.checkinDate);
-        checkinDate.setHours(0, 0, 0, 0);
-
-        const checkoutDate = new Date(room.bookingDetails.checkoutDate);
-        checkoutDate.setHours(0, 0, 0, 0);
-
-        // Date falls within the booking period
-        dateMatch =
-          searchDateObj >= checkinDate && searchDateObj < checkoutDate;
-      }
-
-      return typeMatch && searchMatch && (this.searchDate ? dateMatch : true);
-    });
-  }
-
   clearDateFilter(): void {
-    this.searchDate = null;
-    this.applyFilters();
-  }
-
-  resetFilters(): void {
-    this.selectedRoomTypes = ['All Rooms'];
-    this.searchQuery = '';
     this.searchDate = null;
     this.applyFilters();
   }
@@ -429,6 +471,14 @@ export class HotelRoomlistComponent {
     this.selectAll = false;
 
     // Refresh the filtered rooms
+    this.applyFilters();
+  }
+
+  resetFilters(): void {
+    this.selectedRoomTypes = ['All Rooms'];
+    this.selectedStatus = { value: 'All Statuses', label: 'All Statuses' };
+    this.searchQuery = '';
+    this.searchDate = null;
     this.applyFilters();
   }
 }
