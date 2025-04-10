@@ -399,23 +399,23 @@
           </div> -->
           <div class="detailDiv w-full">
             <div class="flex items-center justify-between">
-              <label for="partNumber"
+              <label for="measurementUnit"
                 >Measurement Unit <span style="color: red">*</span></label
               >
               <div
                 *ngIf="
-                  productForm.get('partNumber')?.invalid &&
-                  productForm.get('partNumber')?.touched
+                  productForm.get('measurementUnit')?.invalid &&
+                  productForm.get('measurementUnit')?.touched
                 "
                 class="error"
               >
-                {{ getErrorMessage("partNumber") }}
+                {{ getErrorMessage("measurementUnit") }}
               </div>
             </div>
             <ng-select
             [items]="measurementUnits"
             bindLabel="name"
-            formControlName="category"
+            formControlName="measurementUnit"
             [multiple]="false"
             placeholder="Category"
             class="w-full"
@@ -424,22 +424,22 @@
           </div>
           <div class="detailDiv w-full">
             <div class="flex items-center justify-between">
-              <label for="sku">Reorder Threshold <span style="color: red">*</span></label>
+              <label for="reorderThreshold">Reorder Threshold <span style="color: red">*</span></label>
               <div
                 *ngIf="
-                  productForm.get('sku')?.invalid &&
-                  productForm.get('sku')?.touched
+                  productForm.get('reorderThreshold')?.invalid &&
+                  productForm.get('reorderThreshold')?.touched
                 "
                 class="error"
               >
-                {{ getErrorMessage("sku") }}
+                {{ getErrorMessage("reorderThreshold") }}
               </div>
             </div>
             <div class="flex inputAndBtn">
               <input
-                id="sku"
+                id="reorderThreshold"
                 class="name editInput"
-                formControlName="sku"
+                formControlName="reorderThreshold"
                 placeholder="Reorder Threshold"
               />
              
@@ -454,46 +454,46 @@
               <input
               class="name "
               type="checkbox"
-              id="e-quantity"
-              formControlName="effectiveQuantity"
+              id="isBundle"
+              formControlName="isBundle"
               placeholder="Effective Quantity"
               readonly
             />
-              <label for="e-quantity"
+              <label for="isBundle"
                 >Combo ? <span style="color: red">*</span></label
               >
               <div
                 *ngIf="
-                  productForm.get('effectiveQuantity')?.invalid &&
-                  productForm.get('effectiveQuantity')?.touched
+                  productForm.get('isBundle')?.invalid &&
+                  productForm.get('isBundle')?.touched
                 "
                 class="error"
               >
-                {{ getErrorMessage("effectiveQuantity") }}
+                {{ getErrorMessage("isBundle") }}
               </div>
             </div>
             
           </div>
           <div class="detailDiv w-full">
             <div class="flex items-center justify-between">
-              <label for="code">Combo Items <span style="color: red">*</span></label>
+              <label for="bundleItems">Combo Items <span style="color: red">*</span></label>
               <div
                 *ngIf="
-                  productForm.get('code')?.invalid &&
-                  productForm.get('code')?.touched
+                  productForm.get('bundleItems')?.invalid &&
+                  productForm.get('bundleItems')?.touched
                 "
                 class="error"
               >
-                {{ getErrorMessage("code") }}
+                {{ getErrorMessage("bundleItems") }}
               </div>
             </div>
 
             <ng-select
             [items]="categories"
             bindLabel="name"
-            formControlName="category"
+            formControlName="bundleItems"
             [multiple]="false"
-            placeholder="Category"
+            placeholder="Products"
             class="w-full"
           >
           </ng-select>
@@ -715,7 +715,7 @@
             <tbody>
         @for (branch of  branchess.controls; track $index) {
               <tr>
-                <td class="py-2 px-4  capitalize font-semibold">{{ branch.get('branchName')?.value }}</td>
+                <td class="py-2 px-4  capitalize font-semibold">{{ branch.get('branchName')?.value.name }}</td>
                 <td colspan="5"></td> 
               </tr>
               <tr [formGroup]="branch">
@@ -733,7 +733,6 @@
                     <ng-select
                       [items]="taxes"
                       bindLabel="name"
-                      bindValue="id"
                       formControlName="tax"
                       placeholder="Taxes"
                       class="w-full"
@@ -748,7 +747,6 @@
                     <ng-select
                       [items]="discounts"
                       bindLabel="name"
-                      bindValue="id"
                       formControlName="discount"
                       placeholder="Discount"
                       class="w-full"
@@ -763,7 +761,6 @@
                     <ng-select
                       [items]="suppliers"
                       bindLabel="name"
-                      bindValue="id"
                       formControlName="supplier"
                       placeholder="Supplier"
                       class="w-full"
@@ -849,7 +846,7 @@
         />
       </div>
       <div class="ml-3">
-        <label for="code">Category code</label>
+        <label for="bundleItems">Category code</label>
         <input
           class="name editInput"
           [(ngModel)]="productData.productCategory.code"
