@@ -679,9 +679,6 @@ removeIngredient(index: number) {
         supplierId: branch.supplier.id ,
         taxId: branch.tax.id ,
         discountId: branch.discount.id ,
-        tax: branch.tax,
-        supplier: branch.supplier,
-        discount: branch.discount,
       };
   
       const branchDataResponse = await this.posService.addBranchData(branchDataPayload).toPromise();
@@ -699,7 +696,7 @@ removeIngredient(index: number) {
   
       for (const item of branchDataResponses) {
         const { branchData, branch } = item;
-  
+  console.log(branch)
         // 2. Post all variants for each branchData
         if (branch.variants && Array.isArray(branch.variants)) {
           for (const variant of branch.variants) {
@@ -718,7 +715,7 @@ removeIngredient(index: number) {
         // 3. Prepare productBranch payload (productId = 0 for now)
         const productBranchPayload = {
           id: 0,
-          branchId: branch.id ,
+          branchId: branch.branchName.id ,
           dataId: branchData.id,
         };
         const productBranchRes = await this.posService.addProductBranchData(productBranchPayload).toPromise();
@@ -880,7 +877,7 @@ removeIngredient(index: number) {
 
     variant.branches?.forEach((branchName) => {
       const targetBranch = branchArray.find(
-        (branch) => branch.get('branchName')?.value === branchName.name
+        (branch) => branch.get('branchName')?.value.name === branchName.name
       );
   
       if (targetBranch) {

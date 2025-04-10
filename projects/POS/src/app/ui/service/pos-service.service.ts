@@ -471,7 +471,7 @@ export class PosServiceService {
 
   addProductBranchData(data: any) {
     return this.http
-      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/productbranches', data)
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/productBranches', data)
       .pipe(catchError(this.handleError));
   }
 
