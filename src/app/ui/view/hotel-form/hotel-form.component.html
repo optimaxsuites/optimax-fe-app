@@ -87,8 +87,13 @@
               <!-- Title Field -->
               <div class="form-group">
                 <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >Title</label
-                >
+                  >Title
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i>
+                </label>
                 <select
                   formControlName="title"
                   class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -111,8 +116,13 @@
               <!-- First Name Field -->
               <div class="form-group">
                 <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >First Name</label
-                >
+                  >First Name
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
                 <input
                   type="text"
                   formControlName="firstName"
@@ -131,8 +141,13 @@
               <!-- Last Name Field -->
               <div class="form-group">
                 <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >Last Name</label
-                >
+                  >Last Name
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
                 <input
                   type="text"
                   formControlName="lastName"
@@ -151,8 +166,13 @@
               <!-- Email Field -->
               <div class="form-group">
                 <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >Email</label
-                >
+                  >Email
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
                 <input
                   type="email"
                   formControlName="email"
@@ -170,9 +190,14 @@
 
               <!-- Phone Field -->
               <div class="form-group">
-                <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >Phone</label
-                >
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Phone
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
                 <input
                   type="tel"
                   formControlName="phone"
@@ -191,8 +216,13 @@
               <!-- Country Field -->
               <div class="form-group">
                 <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >Country</label
-                >
+                  >Country
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
                 <select
                   formControlName="country"
                   class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -207,6 +237,99 @@
                 >
                   <i class="pi pi-exclamation-circle mr-1"></i>
                   {{ formErrors.country }}
+                </div>
+              </div>
+              <!-- Add this near the ID Number field in both forms -->
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  ID Number
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i>
+                </label>
+                <div class="flex gap-2 items-center">
+                  <input
+                    type="tel"
+                    formControlName="idNumber"
+                    class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Scan or enter ID number"
+                  />
+                  <div class="relative">
+                    <button
+                      type="button"
+                      (click)="toggleScanOptions()"
+                      class="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 transition"
+                      [disabled]="isScanning"
+                    >
+                      <i class="pi pi-id-card" *ngIf="!isScanning"></i>
+                      <i class="pi pi-spinner pi-spin" *ngIf="isScanning"></i>
+                    </button>
+
+                    <!-- Scan Options Dropdown -->
+                    <div
+                      *ngIf="showScanOptions && !isScanning"
+                      class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200"
+                    >
+                      <div class="py-1">
+                        <button
+                          (click)="scanMethod = 'camera'; startIDScan()"
+                          class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          <i class="pi pi-camera mr-2"></i> Use Camera
+                        </button>
+                        <button
+                          (click)="scanMethod = 'scanner'; startIDScan()"
+                          class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          <i class="pi pi-desktop mr-2"></i> Use Scanner
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div *ngIf="scanError" class="text-red-500 text-xs mt-1">
+                  {{ scanError }}
+                </div>
+
+                <!-- Progress Bar -->
+                <div *ngIf="isScanning" class="mt-2">
+                  <p-progressBar
+                    [value]="scanProgress"
+                    [showValue]="false"
+                    styleClass="h-2"
+                  ></p-progressBar>
+                  <p class="text-xs text-gray-500 mt-1 text-center">
+                    Scanning ID... {{ scanProgress }}%
+                  </p>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Gender
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
+                <select
+                  formControlName="gender"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+                <div
+                  *ngIf="formErrors.gender"
+                  class="text-red-500 text-xs mt-1 flex items-center"
+                >
+                  <i class="pi pi-exclamation-circle mr-1"></i>
+                  {{ formErrors.gender }}
                 </div>
               </div>
             </div>
@@ -254,8 +377,13 @@
               <!-- Check-in Date Field -->
               <div class="form-group">
                 <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >Check-in Date</label
-                >
+                  >Check-in Date
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
                 <p-calendar
                   formControlName="checkinDate"
                   [minDate]="currentDate"
@@ -277,8 +405,13 @@
               <!-- Check-out Date Field -->
               <div class="form-group">
                 <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >Check-out Date</label
-                >
+                  >Check-out Date
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
                 <p-calendar
                   formControlName="checkoutDate"
                   [minDate]="minCheckoutDate()"
@@ -300,8 +433,13 @@
               <!-- Adults Field -->
               <div class="form-group">
                 <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >Adults</label
-                >
+                  >Adults
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
                 <input
                   type="number"
                   formControlName="adults"
@@ -366,9 +504,14 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <!-- Payment Method Field -->
               <div class="form-group md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >Payment Method</label
-                >
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Method
+                  <i
+                    class="fa fa-asterisk"
+                    style="color: #ce0d0d; font-size: 0.875rem"
+                    aria-hidden="true"
+                  ></i
+                ></label>
                 <select
                   formControlName="paymentMethod"
                   class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -552,8 +695,13 @@
             <!-- First Name -->
             <div class="form-group">
               <label class="block text-sm font-medium text-gray-700 mb-1"
-                >First Name</label
-              >
+                >First Name
+                <i
+                  class="fa fa-asterisk"
+                  style="color: #ce0d0d; font-size: 0.875rem"
+                  aria-hidden="true"
+                ></i
+              ></label>
               <input
                 type="text"
                 formControlName="firstName"
@@ -564,8 +712,13 @@
             <!-- Last Name -->
             <div class="form-group">
               <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Last Name</label
-              >
+                >Last Name
+                <i
+                  class="fa fa-asterisk"
+                  style="color: #ce0d0d; font-size: 0.875rem"
+                  aria-hidden="true"
+                ></i
+              ></label>
               <input
                 type="text"
                 formControlName="lastName"
@@ -576,8 +729,13 @@
             <!-- Phone -->
             <div class="form-group">
               <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Phone</label
-              >
+                >Phone
+                <i
+                  class="fa fa-asterisk"
+                  style="color: #ce0d0d; font-size: 0.875rem"
+                  aria-hidden="true"
+                ></i
+              ></label>
               <input
                 type="tel"
                 formControlName="phone"
@@ -587,9 +745,14 @@
 
             <!-- Email -->
             <div class="form-group">
-              <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Email</label
-              >
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Email
+                <i
+                  class="fa fa-asterisk"
+                  style="color: #ce0d0d; font-size: 0.875rem"
+                  aria-hidden="true"
+                ></i
+              ></label>
               <input
                 type="email"
                 formControlName="email"
@@ -600,8 +763,13 @@
             <!-- ID Number -->
             <div class="form-group">
               <label class="block text-sm font-medium text-gray-700 mb-1"
-                >ID Number</label
-              >
+                >ID Number
+                <i
+                  class="fa fa-asterisk"
+                  style="color: #ce0d0d; font-size: 0.875rem"
+                  aria-hidden="true"
+                ></i
+              ></label>
               <input
                 type="text"
                 formControlName="idNumber"
@@ -612,8 +780,13 @@
             <!-- Gender -->
             <div class="form-group">
               <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Gender</label
-              >
+                >Gender
+                <i
+                  class="fa fa-asterisk"
+                  style="color: #ce0d0d; font-size: 0.875rem"
+                  aria-hidden="true"
+                ></i
+              ></label>
               <select
                 formControlName="gender"
                 class="w-full p-2 border border-gray-300 rounded-lg"
@@ -654,14 +827,32 @@
             </div>
 
             <div class="space-y-3 text-xl">
-              <p class="font-medium">
+              <p class="font-medium text-gray-600">
+                <span class="font-medium">Name: </span>
                 {{ bookingSummary.guest.title }}
                 {{ bookingSummary.guest.firstName }}
                 {{ bookingSummary.guest.lastName }}
               </p>
-              <p class="text-gray-600">{{ bookingSummary.guest.email }}</p>
-              <p class="text-gray-600">{{ bookingSummary.guest.phone }}</p>
-              <p class="text-gray-600">{{ bookingSummary.guest.country }}</p>
+              <p class="text-gray-600">
+                <span class="font-medium">Email: </span
+                >{{ bookingSummary.guest.email }}
+              </p>
+              <p class="text-gray-600">
+                <span class="font-medium">Phone: </span
+                >{{ bookingSummary.guest.phone }}
+              </p>
+              <p class="text-gray-600">
+                <span class="font-medium">Country: </span
+                >{{ bookingSummary.guest.country }}
+              </p>
+              <p class="text-gray-600">
+                <span class="font-medium">ID: </span>
+                {{ bookingSummary.guest.idNumber }}
+              </p>
+              <p class="text-gray-600">
+                <span class="font-medium">Gender: </span>
+                {{ bookingSummary.guest.gender }}
+              </p>
             </div>
           </div>
 
