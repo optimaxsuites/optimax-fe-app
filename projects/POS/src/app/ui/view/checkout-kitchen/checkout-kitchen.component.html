@@ -316,7 +316,11 @@
           "
           icon="pi pi-check"
           class="p-button-success bg-green-100"
-          (click)="toggleOrderStatus(selectedOrder!)"
+          (click)="
+            overwriteTableOrderData(selectedOrder!);
+            isEditingOrder = true;
+            isCreateOrderModalOpen = true
+          "
         ></button>
         <!-- <button
           pButton

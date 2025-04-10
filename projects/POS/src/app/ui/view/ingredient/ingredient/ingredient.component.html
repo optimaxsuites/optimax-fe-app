@@ -53,7 +53,7 @@
   </p-toolbar>
 
 
-  <p-table [value]="filteredIngredients" [paginator]="true" dataKey="sku" responsiveLayout="stack" [rows]="10" styleClass="p-datatable-striped"   [(selection)]="selectedIngredients">
+  <p-table [value]="filteredIngredients" [paginator]="true" dataKey="sku" responsiveLayout="stack" [rows]="13" styleClass="p-datatable-striped"   [(selection)]="selectedIngredients">
     <ng-template pTemplate="header">
       <tr>
         <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
@@ -62,7 +62,7 @@
         <th class="table-item">Name</th>
         <th class="table-item">Price</th>
         <th class="table-item">Quantity</th>
-        <th class="table-item">Category</th>
+        <th class="table-item " >MeasurementUnits</th>
         <th class="table-item">Action</th>
       </tr>
     </ng-template>
@@ -72,10 +72,11 @@
         <td><p-tableCheckbox [value]="item" class="custom-checkbox" ></p-tableCheckbox></td>
         <td>{{ item.sku }}</td>
         <td>{{ item.code }}</td>
-        <td>{{ item.ingredientName }}</td>
+        <td>{{ item.name }}</td>
         <td>{{ item.purchasePrice }}</td>
         <td>{{ item.currentStock }}</td>
-        <td>{{ item.category }}</td>
+        <td>{{ item.measurementUnit }}</td>
+   
 
         <div class="menu-container pl-12 pt-4">
           <button class="menu-button" (click)="toggleMenu($event)">
@@ -118,3 +119,20 @@
 <div *ngIf="editInventory">
   <app-edit-inventory [activeItem]="activeItem" [mode]="mode" (close)="closeEditInventory()"></app-edit-inventory>
 </div> -->
+<div *ngIf="Delete" (close)="closeModal()">
+  <div class="flex flex-col justify-center items-center gap-4">
+    <h2 class="text-2xl font-bold">Delete Ingredient</h2>
+    <p>Are you sure you want to delete this ingredient?</p>
+    <div class="flex gap-4">
+      <app-button
+        text="Yes"
+        class="btn-navigate"
+        (click)="confirmDelete()"
+      ></app-button>
+      <app-button
+        text="No"
+        class="btn-navigate"
+        (click)="closeModal()"
+      ></app-button>
+    </div>
+ </div>

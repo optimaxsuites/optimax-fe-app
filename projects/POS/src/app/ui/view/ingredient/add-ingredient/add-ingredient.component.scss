@@ -42,15 +42,17 @@
 //   }
 .form-container {
     width: 50%;
-    margin: 50px auto;
+    margin:  auto ;
     padding: 20px;
     background-color: white;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     text-align: center;
+  
   }
 
   h2 {
+    margin-top: 15px;
     margin-bottom: 15px;
     color: #333;
     font-size: 1.6em;
@@ -111,6 +113,29 @@
     font-size: 14px;
     margin-top: 2px;
   }
-  
+.supplier{
+  background-color: #4CAF50;
+}
+.image{
+  background-color: #4CAF50;
+}
+#name{
+  padding: 0.65rem 0.75rem;
+}
+#sku{
+  padding: 0.65rem 0.75rem;
+}
+#code{
+  padding: 0.65rem 0.75rem;
+}
+#purchase-price{
+  padding: 0.65rem 0.75rem;
+}
+#current-stock{
+  padding: 0.65rem 0.75rem;
+}
+#threshold-stock{
+  padding: 0.65rem 0.75rem;
+}
 
   
