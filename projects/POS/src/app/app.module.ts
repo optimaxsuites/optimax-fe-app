@@ -113,6 +113,8 @@ import { SupplierComponent } from './ui/view/products/metaDatas/supplier/supplie
 import { TaxComponent } from './ui/view/products/metaDatas/tax/tax.component';
 import { HotelBillsComponent } from './ui/view/hotel-bills/hotel-bills.component';
 import { HotelChangeroomComponent } from './ui/view/hotel-changeroom/hotel-changeroom.component';
+import { HotelKeycardComponent } from './ui/view/hotel-keycard/hotel-keycard.component';
+import { HotelDooraccessComponent } from './ui/view/hotel-dooraccess/hotel-dooraccess.component';
 
 @NgModule({
   declarations: [
@@ -165,6 +167,8 @@ import { HotelChangeroomComponent } from './ui/view/hotel-changeroom/hotel-chang
     TaxComponent,
     HotelBillsComponent,
     HotelChangeroomComponent,
+    HotelKeycardComponent,
+    HotelDooraccessComponent,
     //CheckoutKitchenComponent,
     //CheckoutHeaderComponent,
   ],

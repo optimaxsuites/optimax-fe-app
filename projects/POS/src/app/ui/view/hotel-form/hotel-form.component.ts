@@ -1,16 +1,20 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
+import { HotelServiceService } from '../hotel-service.service';
 
 // shared/interfaces/hotel.interfaces.ts
 
 export interface Guest {
+  id?: string; // Optional property for guest ID
   title: string;
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
   country: string;
+  idNumber: string;
+  gender: string;
 }
 
 export interface BookingDetails {
@@ -31,13 +35,14 @@ export interface Room {
   type: string;
   status: string;
   floor?: number;
-  guest?: Guest;
+  guest?: Guest; // Optional property for guest
   rate: number;
   bookingDetails?: BookingDetails;
   beds?: number;
   maxOccupancy?: number;
   description?: string;
   amenities?: string[];
+  currentKey?: RoomKey; // Optional property for current key
 }
 
 export interface Booking {
@@ -57,6 +62,28 @@ export interface Booking {
   total: number;
   balanceAmount: number;
   status?: string;
+}
+
+export interface RoomKey {
+  id: string;
+  roomNumber: number;
+  roomId: number;
+  isActive: boolean;
+  assignedDate: Date;
+  deactivationDate: Date;
+  guestIdNumber: string;
+  guestName?: string;
+}
+
+export interface KeyCardLog {
+  id: string;
+  roomNumber: number;
+  roomId: number;
+  keyCardId: string;
+  guestIdNumber: string;
+  accessType: 'GUEST' | 'MASTER' | 'STAFF';
+  timestamp: Date;
+  accessGranted: boolean;
 }
 
 @Component({
@@ -97,7 +124,11 @@ export class HotelFormComponent implements OnInit {
 
   currentDate: Date = new Date();
 
-  constructor(private fb: FormBuilder, private messageService: MessageService) {
+  constructor(
+    private fb: FormBuilder,
+    private keyCardService: HotelServiceService,
+    private messageService: MessageService
+  ) {
     this.bookingForm = this.fb.group({
       title: ['', Validators.required],
       firstName: [
@@ -108,6 +139,8 @@ export class HotelFormComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       phone: ['', [Validators.required, Validators.pattern('^[0-9+ ]*$')]],
       country: ['Nigeria', Validators.required],
+      idNumber: ['', Validators.required],
+      gender: ['', Validators.required],
       checkinDate: [new Date(), Validators.required],
       checkoutDate: [
         new Date(new Date().setDate(new Date().getDate() + 1)),
@@ -118,6 +151,8 @@ export class HotelFormComponent implements OnInit {
       specialRequests: [''],
       paymentMethod: ['', Validators.required],
       depositAmount: [0, [Validators.min(0)]],
+      subtotal: [{ value: 0, disabled: true }],
+      taxes: [{ value: 0, disabled: true }],
     });
 
     this.checkinForm = this.fb.group({
@@ -147,6 +182,8 @@ export class HotelFormComponent implements OnInit {
           lastName: guest.lastName,
           phone: guest.phone,
           email: guest.email,
+          idNumber: guest.idNumber,
+          gender: guest.gender,
         });
       } else {
         // Pre-populate booking form
@@ -226,6 +263,9 @@ export class HotelFormComponent implements OnInit {
       specialRequests: '',
       paymentMethod: '',
       depositAmount: 0,
+      idNumber: '',
+      gender: '',
+      subtotal: 0,
     });
   }
 
@@ -267,6 +307,8 @@ export class HotelFormComponent implements OnInit {
       email: formValues.email,
       phone: formValues.phone,
       country: formValues.country,
+      idNumber: formValues.idNumber,
+      gender: formValues.gender,
     };
 
     // Prepare booking summary
@@ -316,14 +358,42 @@ export class HotelFormComponent implements OnInit {
   }
 
   confirmBooking(): void {
-    if (!this.bookingSummary) return;
+    if (!this.bookingSummary) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No booking summary available',
+        life: 3000,
+      });
+      return;
+    }
 
     const status = this.activeStatus === 'checkin' ? 'occupied' : 'booked';
+
+    // Validate ID number first
+    let idNumber: string;
+    try {
+      idNumber = this.validateIdNumber();
+    } catch (error) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'ID Number Required',
+        detail:
+          error instanceof Error
+            ? error.message
+            : 'Valid ID number is required for check-in',
+        life: 5000,
+      });
+      return;
+    }
 
     // For check-in with same guest, use existing guest info
     let guest: Guest;
     if (this.isSameGuest && this.selectedRooms[0].guest) {
-      guest = this.selectedRooms[0].guest;
+      guest = {
+        ...this.selectedRooms[0].guest,
+        idNumber: idNumber,
+      };
     } else if (this.formType === 'checkin' && this.showCheckinForm) {
       // For new guest check-in, use checkin form values
       const formValues = this.checkinForm.value;
@@ -334,6 +404,8 @@ export class HotelFormComponent implements OnInit {
         email: formValues.email,
         phone: formValues.phone,
         country: '',
+        idNumber: idNumber,
+        gender: formValues.gender,
       };
     } else {
       // For regular booking, use booking form values
@@ -345,29 +417,105 @@ export class HotelFormComponent implements OnInit {
         email: formValues.email,
         phone: formValues.phone,
         country: formValues.country,
+        idNumber: idNumber,
+        gender: formValues.gender,
       };
     }
 
-    const updatedRooms = this.selectedRooms.map((room) => ({
-      ...room,
-      status: status,
-      guest: guest,
-      bookingDetails: {
-        checkinDate: this.bookingSummary?.checkinDate ?? new Date(),
-        checkoutDate: this.bookingSummary?.checkoutDate ?? new Date(),
-        adults: this.bookingSummary?.adults ?? 0,
-        children: this.bookingSummary?.children ?? 0,
-        specialRequests: this.bookingSummary?.specialRequests ?? '',
-        paymentMethod: this.bookingSummary?.paymentMethod ?? '',
-        totalAmount: this.bookingSummary?.total ?? 0,
-        paidAmount: this.bookingSummary?.depositAmount ?? 0,
-        balanceAmount: this.bookingSummary?.balanceAmount ?? 0,
-      },
-    }));
+    const updatedRooms = this.selectedRooms.map((room) => {
+      const updatedRoom: Room = {
+        ...room,
+        status: status,
+        guest: guest,
+        bookingDetails: {
+          checkinDate: this.bookingSummary!.checkinDate,
+          checkoutDate: this.bookingSummary!.checkoutDate,
+          adults: this.bookingSummary!.adults,
+          children: this.bookingSummary!.children,
+          specialRequests: this.bookingSummary!.specialRequests || '',
+          paymentMethod: this.bookingSummary!.paymentMethod,
+          totalAmount: this.bookingSummary!.total,
+          paidAmount: this.bookingSummary!.depositAmount,
+          balanceAmount: this.bookingSummary!.balanceAmount,
+        },
+      };
+
+      if (status === 'occupied') {
+        try {
+          this.keyCardService.deactivateRoomKeys(room.id);
+
+          const key = this.keyCardService.assignKey(
+            updatedRoom,
+            guest,
+            this.bookingSummary!.checkinDate,
+            this.bookingSummary!.checkoutDate
+          );
+
+          updatedRoom.currentKey = key;
+
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Key Card Assigned',
+            detail: `Key ${key.id} assigned to Room ${room.number}`,
+            life: 3000,
+          });
+
+          this.keyCardService.logAccess(
+            room.number,
+            room.id,
+            key.id,
+            guest.idNumber || '',
+
+            true
+          );
+        } catch (error) {
+          console.error('Key assignment error:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Key Assignment Failed',
+            detail: 'Could not assign key card to room',
+            life: 3000,
+          });
+        }
+      } else if (status === 'booked' && room.currentKey) {
+        this.keyCardService.deactivateKey(room.currentKey.id);
+        updatedRoom.currentKey = undefined;
+      }
+
+      return updatedRoom;
+    });
 
     this.bookingConfirmed.emit(updatedRooms);
     this.showSuccessMessage(updatedRooms, status);
     this.closeForm();
+  }
+
+  private validateIdNumber(): string {
+    // Get ID number from the appropriate form
+    let idNumber: string;
+    if (this.isSameGuest && this.selectedRooms[0].guest?.idNumber) {
+      idNumber = this.selectedRooms[0].guest.idNumber;
+    } else if (this.formType === 'checkin' && this.showCheckinForm) {
+      idNumber = this.checkinForm.value.idNumber;
+    } else {
+      idNumber = this.bookingForm.value.idNumber;
+    }
+
+    // Validate presence
+    if (!idNumber || idNumber.trim() === '') {
+      throw new Error('Government-issued ID number is required');
+    }
+
+    // Add additional validation rules as needed
+    // Example: Check for minimum length or specific format
+    if (idNumber.length < 6) {
+      throw new Error('ID number must be at least 6 characters');
+    }
+
+    // You can add more specific validation based on your country's ID format
+    // For example, check for specific patterns or checksums
+
+    return idNumber.trim();
   }
 
   private showSuccessMessage(rooms: Room[], status: string): void {

@@ -24,11 +24,19 @@ interface TableStatus {
    */
   orderedOn: Date;
   /**
-   * An array of all the meals / drinks / whatever that were ordered
+   * A collection of all the meals / drinks / whatever that were ordered
    */
-  orders: TableOrder[];
+  orders: TableOrder;
+  /**
+   * Extra details about the order
+   */
+  note?: string;
 }
-type TableOrder = { foodItem: ProductData; amount: number };
+// type TableOrder = { foodItem: ProductData; amount: number };
+/**
+ * A collection of all the items in an order
+ */
+type TableOrder = Map<string, OrderItem>;
 
 interface OrderItem {
   qty: number;
@@ -186,6 +194,14 @@ export class CheckoutKitchenComponent implements OnInit {
    * If true, then the modal for creating orders will overwrite an order if it exists
    */
   isEditingOrder = false;
+  /**
+   * Toggles the note modal / dialog for adding additional information to an order.
+   */
+  isCreateOrderModalNoteDialogOpen = false;
+  /**
+   * Temporarily stores the note of an order
+   */
+  orderNote = '';
 
   ngOnInit(): void {
     switch (this.mode) {
@@ -196,36 +212,36 @@ export class CheckoutKitchenComponent implements OnInit {
 
         // Sample data
         this.createMultipleOrders([
-          { tableNo: 21, orders: [] },
-          { tableNo: 22, orders: [] },
-          { tableNo: 23, orders: [] },
-          { tableNo: 24, orders: [] },
-          { tableNo: 25, orders: [] },
-          { tableNo: 26, orders: [] },
-          { tableNo: 27, orders: [] },
-          { tableNo: 28, orders: [] },
-          { tableNo: 29, orders: [] },
-          { tableNo: 30, orders: [] },
-          { tableNo: 31, orders: [] },
-          { tableNo: 32, orders: [] },
-          { tableNo: 33, orders: [] },
-          { tableNo: 34, orders: [] },
-          { tableNo: 35, orders: [] },
-          { tableNo: 36, orders: [] },
-          { tableNo: 37, orders: [] },
-          { tableNo: 38, orders: [] },
-          { tableNo: 39, orders: [] },
-          { tableNo: 40, orders: [] },
-          { tableNo: 41, orders: [] },
-          { tableNo: 42, orders: [] },
-          { tableNo: 43, orders: [] },
-          { tableNo: 44, orders: [] },
-          { tableNo: 45, orders: [] },
-          { tableNo: 46, orders: [] },
-          { tableNo: 47, orders: [] },
-          { tableNo: 48, orders: [] },
-          { tableNo: 49, orders: [] },
-          { tableNo: 50, orders: [] },
+          { tableNo: 21 },
+          { tableNo: 22 },
+          { tableNo: 23 },
+          { tableNo: 24 },
+          { tableNo: 25 },
+          { tableNo: 26 },
+          { tableNo: 27 },
+          { tableNo: 28 },
+          { tableNo: 29 },
+          { tableNo: 30 },
+          { tableNo: 31 },
+          { tableNo: 32 },
+          { tableNo: 33 },
+          { tableNo: 34 },
+          { tableNo: 35 },
+          { tableNo: 36 },
+          { tableNo: 37 },
+          { tableNo: 38 },
+          { tableNo: 39 },
+          { tableNo: 40 },
+          { tableNo: 41 },
+          { tableNo: 42 },
+          { tableNo: 43 },
+          { tableNo: 44 },
+          { tableNo: 45 },
+          { tableNo: 46 },
+          { tableNo: 47 },
+          { tableNo: 48 },
+          { tableNo: 49 },
+          { tableNo: 50 },
         ]);
         break;
       case 'cashier':
@@ -252,8 +268,9 @@ export class CheckoutKitchenComponent implements OnInit {
    */
   createOrder(
     tableNo: number,
-    orders: TableOrder[],
+    orders: TableOrder,
     waiterIdd?: string,
+    note?: string,
     overwrite = false
   ) {
     const ids = ['0', '1'];
@@ -270,8 +287,9 @@ export class CheckoutKitchenComponent implements OnInit {
             statuses.set(tableNo, {
               no: tableNo,
               orderedOn: new Date(),
-              orders,
+              orders: structuredClone(orders),
               status: 'Pending',
+              note,
               waiterId,
             })
           )
@@ -281,10 +299,10 @@ export class CheckoutKitchenComponent implements OnInit {
     }
   }
   createMultipleOrders(
-    tableOrderList: { tableNo: number; orders: TableOrder[] }[]
+    tableOrderList: { tableNo: number; orders?: TableOrder }[]
   ) {
     tableOrderList.forEach((orderObject) => {
-      this.createOrder(orderObject.tableNo, orderObject.orders);
+      this.createOrder(orderObject.tableNo, orderObject.orders ?? new Map());
     });
   }
   toggleOrderStatus(tableOrder: TableStatus) {

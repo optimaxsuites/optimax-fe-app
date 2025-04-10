@@ -102,7 +102,13 @@
     >
       @switch (mode) { @case ("chef") {
       <div class="details-body" style="font-size: 1.7rem">
-        <!-- Replace with dynamic data as needed -->
+        @if(selectedOrder!.orders.size > 0){ @for (item of
+        selectedOrder!.orders; track $index) {
+        <div class="order-item">
+          <span class="item-name"> {{ item[0] }} </span>
+          <span class="item-quantity"> {{ item[1].qty }} Serving(s)</span>
+        </div>
+        } } @else {
         <div class="order-item">
           <span class="item-name">Jollof Rice</span>
           <span class="item-quantity">1 Plate</span>
@@ -111,12 +117,16 @@
           <span class="item-name">Chicken</span>
           <span class="item-quantity">2 Portions</span>
         </div>
+        }
 
         <div class="additional-note">
           <h3>Additional Note:</h3>
           <p>
-            I will like the jollof rice to be spicy and have vegetables in it.
-            The chicken should be soft and tender, spicy and well seasoned.
+            @if (selectedOrder!.note) {
+            {{ selectedOrder!.note }}
+            }@else { I will like the jollof rice to be spicy and have vegetables
+            in it. The chicken should be soft and tender, spicy and well
+            seasoned. }
           </p>
         </div>
       </div>
@@ -264,7 +274,13 @@
       } @case ("waiter") {
       <!-- TODO: Use a component or template or whatever for both this and the chef's template -->
       <div class="details-body" style="font-size: 1.7rem">
-        <!-- Replace with dynamic data as needed -->
+        @if(selectedOrder!.orders.size > 0){ @for (item of
+        selectedOrder!.orders; track $index) {
+        <div class="order-item">
+          <span class="item-name"> {{ item[0] }} </span>
+          <span class="item-quantity"> {{ item[1].qty }} Serving(s)</span>
+        </div>
+        } } @else {
         <div class="order-item">
           <span class="item-name">Jollof Rice</span>
           <span class="item-quantity">1 Plate</span>
@@ -273,12 +289,16 @@
           <span class="item-name">Chicken</span>
           <span class="item-quantity">2 Portions</span>
         </div>
+        }
 
         <div class="additional-note">
           <h3>Additional Note:</h3>
           <p>
-            I will like the jollof rice to be spicy and have vegetables in it.
-            The chicken should be soft and tender, spicy and well seasoned.
+            @if (selectedOrder!.note) {
+            {{ selectedOrder!.note }}
+            }@else { I will like the jollof rice to be spicy and have vegetables
+            in it. The chicken should be soft and tender, spicy and well
+            seasoned. }
           </p>
         </div>
       </div>
@@ -422,7 +442,7 @@
         />
       </div>
       <!-- Just putting another slightly smaller div :3 -->
-      <div>
+      <div class="overflow-y-auto">
         <p-table [value]="tableData() | keyvalue">
           <ng-template pTemplate="header">
             <tr>
@@ -443,6 +463,7 @@
         </p-table>
 
         <!-- VAT and total -->
+        @if(tableData().size > 0){
         <div>
           <div>
             <div>Subtotal:</div>
@@ -457,6 +478,7 @@
             <div>N{{ orderSubTotal() + 600 }}</div>
           </div>
         </div>
+        }
       </div>
     </div>
 
@@ -487,12 +509,18 @@
         pButton
         label="Cancel"
         class="p-button-danger px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-200 font-bold"
-        (click)="isCreateOrderModalOpen = false; isEditingOrder = false"
+        (click)="
+          isCreateOrderModalOpen = false;
+          isEditingOrder = false;
+          tableData().clear();
+          orderNote = ''
+        "
       ></button>
       <button
         pButton
         label="Note"
         class="p-button-success px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring focus:ring-orange-200 font-bold"
+        (click)="isCreateOrderModalNoteDialogOpen = true"
       ></button>
       <button
         pButton
@@ -501,12 +529,15 @@
         (click)="
           isCreateOrderModalOrderExistsDialogOpen = !createOrder(
             orderTableNumber,
-            [],
+            tableData(),
             '0',
+            orderNote,
             isEditingOrder
           );
           isCreateOrderModalOpen = false;
-          isEditingOrder = false
+          isEditingOrder = false;
+          tableData().clear();
+          orderNote = ''
         "
       ></button>
     </div>
@@ -537,4 +568,39 @@
       isEditingOrder = true
     "
   ></button>
+</p-dialog>
+
+<p-dialog
+  header="Order Notes"
+  [(visible)]="isCreateOrderModalNoteDialogOpen"
+  [style]="{ width: '300px' }"
+  [modal]="true"
+>
+  <div class="p-fluid">
+    <textarea
+      pInputTextarea
+      [(ngModel)]="orderNote"
+      rows="5"
+      cols="30"
+      placeholder="Add your notes here..."
+      autofocus
+    ></textarea>
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      type="button"
+      label="Save"
+      (click)="isCreateOrderModalNoteDialogOpen = false"
+      class="p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200 font-bold"
+      [style]="{ 'margin-right': '1rem' }"
+    ></button>
+    <button
+      pButton
+      type="button"
+      label="Cancel"
+      (click)="isCreateOrderModalNoteDialogOpen = false; orderNote = ''"
+      class="p-button-secondary px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-200 font-bold"
+    ></button>
+  </ng-template>
 </p-dialog>
