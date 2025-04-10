@@ -1,7 +1,9 @@
 <div *ngIf="tableSection" class="flex flex-col w-full gap-14 p-6">
   <div class="gap-3 w-full flex justify-between items-center">
     <!-- `rotate-0` is used to set this as the container of any `fixed` position elements within it -->
-    <ng-select
+
+    <div class="flex gap-3">
+      <ng-select
       [items]="categories"
       bindLabel="name"
       bindValue="id"
@@ -11,6 +13,17 @@
       (change)="filterProductsByCategory()"
     >
     </ng-select>
+
+    <ng-select
+    [items]="branches"
+    bindLabel="name"
+    bindValue="id"
+    [(ngModel)]="selectedBranch"
+    placeholder="Branches"
+  >
+  </ng-select>
+    </div>
+  
 
     <div class="w-1/2 flex gap-2">
       <div class="search-container">

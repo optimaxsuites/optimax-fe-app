@@ -4,6 +4,7 @@ import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import {
+  BranchDTO,
   DiscountDTO,
   ProductCategoryDTO,
   ProductData,
@@ -81,9 +82,11 @@ export class ProductsComponent implements OnInit {
   tableSection: boolean = true;
   searchTerm: string = '';
   selectedCategories: number[] = [];
+  selectedBranch: number = 1;
+
   categories: any[] = [];
   isImportDialogOpen = false;
-
+  branches: BranchDTO[] = []
   productTableHeaders = {
     sku: 'SKU',
     code: 'Code',
@@ -159,6 +162,8 @@ rowsPerPage = 15;
     this.getProducts();
     this.getDiscountTypes();
     this.metadataService.fetchMetaData();
+    this.metadataService.branches$.subscribe(data => (this.branches = data));
+
   }
 
   toggleView() {
@@ -188,7 +193,7 @@ onPageChange(event: any) {
   }
 
   getProducts() {
-    this.posService.getProducts().subscribe(async (data) => {
+    this.metadataService.products$.subscribe(async (data) => {
       if (data) {
         this.originalProducts = data.sort((a: any, b: any) => {
           const dateA = new Date(

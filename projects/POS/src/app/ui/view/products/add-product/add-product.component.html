@@ -489,7 +489,7 @@
             </div>
 
             <ng-select
-            [items]="categories"
+            [items]="originalProducts"
             bindLabel="name"
             formControlName="bundleItems"
             [multiple]="false"
@@ -812,9 +812,16 @@
     </div>
 
     <div class="flex justify-center items-center mt-4">
-      <button class="btn create-invoice-btn p-4" type="submit">
-        {{ isEditMode ? "Update Product" : "Add Product" }}
+      <button class="btn create-invoice-btn p-4" type="submit" [disabled]="loading">
+        <ng-container *ngIf="loading">
+          {{ isEditMode ? "Updating..." : "Adding..." }}
+          <span class="spinner-border spinner-border-sm ms-2" role="status" aria-hidden="true"></span>
+        </ng-container>
+        <ng-container *ngIf="!loading">
+          {{ isEditMode ? "Update Product" : "Add Product" }}
+        </ng-container>
       </button>
+      
     </div>
   </div>
 </form>

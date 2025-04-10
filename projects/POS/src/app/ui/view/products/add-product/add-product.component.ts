@@ -251,6 +251,8 @@ export class AddProductComponent {
    * This should be `true` as long as the backend endpoints for the new models aren't ready
    */
   fallBackToOldForm = true;
+  loading: boolean = false;
+  originalProducts: ProductData[] = [];
 
   constructor(
     private messageService: MessageService,
@@ -430,6 +432,8 @@ export class AddProductComponent {
     this.metadataService.discountTypes$.subscribe(data => (this.discountTypes = data));
     this.metadataService.taxes$.subscribe(data => (this.taxes = data));
     this.metadataService.branches$.subscribe(data => (this.branches = data));
+    this.metadataService.products$.subscribe(data => {this.originalProducts = data});
+
 
   }
   get branchess(): FormArray<FormGroup>  {
@@ -578,9 +582,36 @@ removeIngredient(index: number) {
     }
   }
 
+  getProducts() {
+    this.posService.getProducts().subscribe(async (data) => {
+      if (data) {
+        this.originalProducts = data.sort((a: any, b: any) => {
+          const dateA = new Date(
+            a.createdDate[0],
+            a.createdDate[1] - 1,
+            a.createdDate[2],
+            a.createdDate[3],
+            a.createdDate[4],
+            a.createdDate[5]
+          );
+          const dateB = new Date(
+            b.createdDate[0],
+            b.createdDate[1] - 1,
+            b.createdDate[2],
+            b.createdDate[3],
+            b.createdDate[4],
+            b.createdDate[5]
+          );
+          return dateB.getTime() - dateA.getTime();
+        });
+      } else {
+        console.log('error loading data');
+      }
+    });
+  }
   addToProduct() {
     const userName = sessionStorage.getItem('username');
-
+    this.loading = true
     // console.log(this.productForm);
     if (this.productForm.invalid) {
       console.log(this.productForm)
@@ -591,6 +622,7 @@ removeIngredient(index: number) {
         key: 'tl',
         life: 3000,
       });
+      this.loading = false
 
       return;
     }
@@ -606,8 +638,8 @@ removeIngredient(index: number) {
       description: formValues.description,
       sku: formValues.sku,
       weight: formValues.weight,
-      originalPurchasePrice: formValues.initialPrice,
-      currentPurchasePrice: formValues.effectivePrice,
+      originalPurchasePrice: formValues.purchasePrice,
+      currentPurchasePrice: formValues.purchasePrice,
       partNumber: formValues.partNumber,
       tax: formValues.tax,
       productCategory: formValues.category,
@@ -727,6 +759,8 @@ removeIngredient(index: number) {
         ...productForm,
         productBranch: productBranches
       };
+
+      console.log(productPayload)
   
       const formData = new FormData();
     formData.append('product', JSON.stringify(productPayload));
@@ -738,14 +772,41 @@ removeIngredient(index: number) {
       this.posService.addProduct(formData).subscribe({
         next: (res) => {
           console.log('✅ Product created successfully:', res);
+          this.messageService.add({
+                    severity: 'success',
+                    summary: 'Product Added',
+                    detail: 'Product added successfully.',
+                    key: 'tl',
+                    life: 3000,
+                  });
+                  this.addSuccessfull = true;
+    this.loading = false
+
         },
         error: (err) => {
-          console.error('❌ Error creating product:', err);
+          this.messageService.add({
+                    severity: 'error',
+                    summary: 'Failed',
+                    detail: 'An error occured. Please try adding the product again.',
+                    key: 'tl',
+                    life: 3000,
+                  });
+    this.loading = false
+
         }
+        
       });
   
     }).catch(error => {
-      console.error('❌ Error in branch data step:', error);
+      this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Unexpected error occured, please try again later.',
+              key: 'tl',
+              life: 3000,
+            });
+    this.loading = false
+
     });
   }
   
