@@ -32,29 +32,46 @@
       </div>
     </div>
   </div>
+
   <!-- Booking Form Modal -->
   <div
     class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 overflow-y-auto py-8"
   >
     <div
-      class="bg-white w-full max-w-6xl mx-4 max-h-[90vh] flex flex-col shadow-2xl rounded-lg"
+      class="bg-white w-full max-w-5xl mx-4 max-h-[90vh] flex flex-col shadow-2xl rounded-lg"
     >
       <!-- Form Header (Sticky) -->
       <div class="sticky top-0 bg-white z-10 p-6 border-b border-gray-100">
         <div class="flex justify-between items-center">
-          <div>
-            <h3 class="text-2xl font-bold text-gray-800">
-              {{ formType === "booking" ? "New Booking" : "Check-in Guest" }}
-              <span *ngIf="selectedRooms.length" class="text-blue-500">
-                - {{ selectedRooms.length }} Room{{
-                  selectedRooms.length > 1 ? "s" : ""
-                }}
-              </span>
-            </h3>
-            <p class="text-gray-500 mt-1">
-              Please fill in the required details
-            </p>
+          <div class="bg-white rounded-2xl p-4 flex items-start gap-4">
+            <!-- Icon Section -->
+            <div
+              class="bg-blue-500 p-3 rounded-xl flex items-center justify-center"
+            >
+              <i class="pi pi-home text-white text-xl"></i>
+            </div>
+
+            <!-- Content Section -->
+            <div>
+              <h3
+                class="text-3xl font-semibold text-gray-600 flex items-center gap-2 flex-wrap"
+              >
+                {{ formType === "booking" ? "New Booking" : "Check-in Guest" }}
+                <span
+                  *ngIf="selectedRooms.length"
+                  class="text-blue-500 text-xl font-medium"
+                >
+                  – {{ selectedRooms.length }} Room{{
+                    selectedRooms.length > 1 ? "s" : ""
+                  }}
+                </span>
+              </h3>
+              <p class="text-gray-500 text-lg mt-2">
+                Please fill in the required details
+              </p>
+            </div>
           </div>
+
           <div class="flex items-center space-x-2">
             <button
               class="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 rounded-full hover:bg-gray-100"
@@ -80,13 +97,15 @@
               <div class="bg-blue-500 p-2 rounded-lg mr-3">
                 <i class="pi pi-user text-white"></i>
               </div>
-              <h4 class="text-xl font-bold text-gray-700">Guest Information</h4>
+              <h4 class="text-2xl font-bold text-gray-700">
+                Guest Information
+              </h4>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <!-- Title Field -->
               <div class="form-group">
-                <label class="block text-sm font-medium text-gray-700 mb-1"
+                <label class="block text-lg font-medium text-gray-700 mb-1"
                   >Title
                   <i
                     class="fa fa-asterisk"
@@ -96,7 +115,7 @@
                 </label>
                 <select
                   formControlName="title"
-                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Select Title</option>
                   <option value="Mr">Mr</option>
@@ -115,7 +134,7 @@
 
               <!-- First Name Field -->
               <div class="form-group">
-                <label class="block text-sm font-medium text-gray-700 mb-1"
+                <label class="block text-lg font-medium text-gray-700 mb-1"
                   >First Name
                   <i
                     class="fa fa-asterisk"
@@ -126,7 +145,7 @@
                 <input
                   type="text"
                   formControlName="firstName"
-                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="John"
                 />
                 <div
@@ -140,7 +159,7 @@
 
               <!-- Last Name Field -->
               <div class="form-group">
-                <label class="block text-sm font-medium text-gray-700 mb-1"
+                <label class="block text-lg font-medium text-gray-700 mb-1"
                   >Last Name
                   <i
                     class="fa fa-asterisk"
@@ -151,7 +170,7 @@
                 <input
                   type="text"
                   formControlName="lastName"
-                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Doe"
                 />
                 <div
@@ -165,7 +184,7 @@
 
               <!-- Email Field -->
               <div class="form-group">
-                <label class="block text-sm font-medium text-gray-700 mb-1"
+                <label class="block text-lg font-medium text-gray-700 mb-1"
                   >Email
                   <i
                     class="fa fa-asterisk"
@@ -176,7 +195,7 @@
                 <input
                   type="email"
                   formControlName="email"
-                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="guest@example.com"
                 />
                 <div
@@ -190,7 +209,7 @@
 
               <!-- Phone Field -->
               <div class="form-group">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label class="block text-lg font-medium text-gray-700 mb-1">
                   Phone
                   <i
                     class="fa fa-asterisk"
@@ -201,7 +220,7 @@
                 <input
                   type="tel"
                   formControlName="phone"
-                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="+2348012345678"
                 />
                 <div
@@ -215,7 +234,7 @@
 
               <!-- Country Field -->
               <div class="form-group">
-                <label class="block text-sm font-medium text-gray-700 mb-1"
+                <label class="block text-lg font-medium text-gray-700 mb-1"
                   >Country
                   <i
                     class="fa fa-asterisk"
@@ -225,7 +244,7 @@
                 ></label>
                 <select
                   formControlName="country"
-                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option *ngFor="let country of countries" [value]="country">
                     {{ country }}
@@ -239,9 +258,9 @@
                   {{ formErrors.country }}
                 </div>
               </div>
-              <!-- Add this near the ID Number field in both forms -->
+              <!-- ID Number field with scanner integration -->
               <div class="form-group">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label class="block text-lg font-medium text-gray-700 mb-1">
                   ID Number
                   <i
                     class="fa fa-asterisk"
@@ -252,62 +271,56 @@
                 <div class="flex gap-2 items-center">
                   <input
                     type="tel"
+                    id="idNumber"
                     formControlName="idNumber"
-                    class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Scan or enter ID number"
                   />
-                  <div class="relative">
-                    <button
-                      type="button"
-                      (click)="toggleScanOptions()"
-                      class="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 transition"
-                      [disabled]="isScanning"
-                    >
-                      <i class="pi pi-id-card" *ngIf="!isScanning"></i>
-                      <i class="pi pi-spinner pi-spin" *ngIf="isScanning"></i>
-                    </button>
-
-                    <!-- Scan Options Dropdown -->
-                    <div
-                      *ngIf="showScanOptions && !isScanning"
-                      class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200"
-                    >
-                      <div class="py-1">
-                        <button
-                          (click)="scanMethod = 'camera'; startIDScan()"
-                          class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          <i class="pi pi-camera mr-2"></i> Use Camera
-                        </button>
-                        <button
-                          (click)="scanMethod = 'scanner'; startIDScan()"
-                          class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          <i class="pi pi-desktop mr-2"></i> Use Scanner
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div *ngIf="scanError" class="text-red-500 text-xs mt-1">
-                  {{ scanError }}
+                  <button
+                    type="button"
+                    (click)="startIDScan()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition flex items-center"
+                    [disabled]="isScanning"
+                    [class.opacity-50]="isScanning"
+                  >
+                    <i class="pi pi-id-card mr-1" *ngIf="!isScanning"></i>
+                    <i
+                      class="pi pi-spinner pi-spin mr-1"
+                      *ngIf="isScanning"
+                    ></i>
+                    <span>{{ isScanning ? "Scanning..." : "Scan ID" }}</span>
+                  </button>
                 </div>
 
-                <!-- Progress Bar -->
+                <!-- Scan Progress and Status -->
                 <div *ngIf="isScanning" class="mt-2">
                   <p-progressBar
                     [value]="scanProgress"
                     [showValue]="false"
                     styleClass="h-2"
                   ></p-progressBar>
-                  <p class="text-xs text-gray-500 mt-1 text-center">
-                    Scanning ID... {{ scanProgress }}%
-                  </p>
+                  <div class="flex justify-between items-center mt-1">
+                    <p class="text-xs text-gray-500">
+                      Scanning ID... {{ scanProgress }}%
+                    </p>
+                    <button
+                      type="button"
+                      (click)="cancelScan()"
+                      class="text-xs text-red-500 hover:text-red-700"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Error Message -->
+                <div *ngIf="scanError" class="mt-2 text-red-500 text-sm">
+                  {{ scanError }}
                 </div>
               </div>
 
               <div class="form-group">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label class="block text-lg font-medium text-gray-700 mb-1">
                   Gender
                   <i
                     class="fa fa-asterisk"
@@ -317,7 +330,7 @@
                 ></label>
                 <select
                   formControlName="gender"
-                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Select Gender</option>
                   <option value="Male">Male</option>
@@ -341,7 +354,7 @@
               <div class="bg-blue-500 p-2 rounded-lg mr-3">
                 <i class="pi pi-home text-white"></i>
               </div>
-              <h4 class="text-xl font-bold text-gray-700">Selected Rooms</h4>
+              <h4 class="text-2xl font-bold text-gray-700">Selected Rooms</h4>
             </div>
 
             <div class="space-y-2">
@@ -370,13 +383,13 @@
               <div class="bg-blue-500 p-2 rounded-lg mr-3">
                 <i class="pi pi-calendar text-white"></i>
               </div>
-              <h4 class="text-xl font-bold text-gray-700">Booking Details</h4>
+              <h4 class="text-2xl font-bold text-gray-700">Booking Details</h4>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <!-- Check-in Date Field -->
               <div class="form-group">
-                <label class="block text-sm font-medium text-gray-700 mb-1"
+                <label class="block text-lg font-medium text-gray-700 mb-1"
                   >Check-in Date
                   <i
                     class="fa fa-asterisk"
@@ -385,17 +398,18 @@
                   ></i
                 ></label>
                 <p-calendar
-                  formControlName="checkinDate"
-                  [minDate]="currentDate"
+                  formControlName="checkoutDate"
+                  [minDate]="minCheckoutDate()"
                   [showIcon]="true"
-                  inputId="checkinDate"
+                  inputId="checkoutDate"
                   dateFormat="dd/mm/yy"
                   class="w-full"
-                >
-                </p-calendar>
+                  [style]="{ width: '100%' }"
+                  inputStyleClass="w-full p-3 text-lg rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
+                ></p-calendar>
                 <div
                   *ngIf="formErrors.checkinDate"
-                  class="text-red-500 text-xs mt-1 flex items-center"
+                  class="text-red-500 text-lg mt-1 flex items-center"
                 >
                   <i class="pi pi-exclamation-circle mr-1"></i>
                   {{ formErrors.checkinDate }}
@@ -404,7 +418,7 @@
 
               <!-- Check-out Date Field -->
               <div class="form-group">
-                <label class="block text-sm font-medium text-gray-700 mb-1"
+                <label class="block text-lg font-medium text-gray-700 mb-1"
                   >Check-out Date
                   <i
                     class="fa fa-asterisk"
@@ -419,11 +433,12 @@
                   inputId="checkoutDate"
                   dateFormat="dd/mm/yy"
                   class="w-full"
-                >
-                </p-calendar>
+                  [style]="{ width: '100%' }"
+                  inputStyleClass="w-full p-3 text-lg rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
+                ></p-calendar>
                 <div
                   *ngIf="formErrors.checkoutDate"
-                  class="text-red-500 text-xs mt-1 flex items-center"
+                  class="text-red-500 text-lg mt-1 flex items-center"
                 >
                   <i class="pi pi-exclamation-circle mr-1"></i>
                   {{ formErrors.checkoutDate }}
@@ -432,7 +447,7 @@
 
               <!-- Adults Field -->
               <div class="form-group">
-                <label class="block text-sm font-medium text-gray-700 mb-1"
+                <label class="block text-lg font-medium text-gray-700 mb-1"
                   >Adults
                   <i
                     class="fa fa-asterisk"
@@ -444,7 +459,7 @@
                   type="number"
                   formControlName="adults"
                   min="1"
-                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <div
                   *ngIf="formErrors.adults"
@@ -457,14 +472,14 @@
 
               <!-- Children Field -->
               <div class="form-group">
-                <label class="block text-sm font-medium text-gray-700 mb-1"
+                <label class="block text-lg font-medium text-gray-700 mb-1"
                   >Children</label
                 >
                 <input
                   type="number"
                   formControlName="children"
                   min="0"
-                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <div
                   *ngIf="formErrors.children"
@@ -477,13 +492,13 @@
 
               <!-- Special Requests Field -->
               <div class="form-group md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1"
+                <label class="block text-lg font-medium text-gray-700 mb-1"
                   >Special Requests</label
                 >
                 <textarea
                   formControlName="specialRequests"
                   rows="3"
-                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Any special requirements..."
                 ></textarea>
               </div>
@@ -496,7 +511,7 @@
               <div class="bg-blue-500 p-2 rounded-lg mr-3">
                 <i class="pi pi-credit-card text-white"></i>
               </div>
-              <h4 class="text-xl font-bold text-gray-700">
+              <h4 class="text-2xl font-bold text-gray-700">
                 Payment Information
               </h4>
             </div>
@@ -504,7 +519,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <!-- Payment Method Field -->
               <div class="form-group md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label class="block text-lg font-medium text-gray-700 mb-1">
                   Payment Method
                   <i
                     class="fa fa-asterisk"
@@ -514,7 +529,7 @@
                 ></label>
                 <select
                   formControlName="paymentMethod"
-                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">Select Payment Method</option>
                   <option value="cash">Cash</option>
@@ -533,16 +548,22 @@
 
               <!-- Deposit Amount Field -->
               <div class="form-group md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1"
+                <label class="block text-lg font-medium text-gray-700 mb-1"
                   >Deposit Amount (₦)</label
                 >
-                <input
-                  type="number"
-                  formControlName="depositAmount"
-                  min="0"
-                  class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter amount"
-                />
+                <div class="relative">
+                  <input
+                    type="text"
+                    formControlName="depositAmount"
+                    min="0"
+                    class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                    placeholder="Enter amount"
+                    [value]="formattedAmount"
+                    (input)="onAmountInput($event)"
+                    (blur)="onBlur()"
+                  />
+                </div>
+
                 <div
                   *ngIf="formErrors.depositAmount"
                   class="text-red-500 text-xs mt-1 flex items-center"

@@ -127,7 +127,7 @@ export class HotelRoomlistComponent {
     maintenance: 'bg-gray-400',
     dirty: 'bg-red-400',
   };
-  // In your component class
+
   statusOptions = [
     { value: 'All Statuses', label: 'All Statuses' },
     { value: 'available', label: 'Available' },
