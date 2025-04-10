@@ -22,7 +22,7 @@ export class IngredientComponent {
   isMenuOpen: boolean = false;
   selectedIngredients: any[] = [];
 
-
+  Delete = false;
 
   // filteredIngredients: any[] = [];
 
@@ -38,13 +38,10 @@ export class IngredientComponent {
 // filteredIngredients = this.ingredients;
 
 ngOnInit(): void {
+  this.loadIngredients();
 
-  // this.http.get<any[]>('https://be.optimaxsuites.com/x/api/v2/pos/ingredients')
-  //   .subscribe((data) => {
-  //     console.log('Fetched data:', data); // 👀 Check console
-  //     this.ingredients = data;
-  //     this.filteredIngredients = this.ingredients;
 
+ 
   //     // Extract categories
   //     this.categories = this.filteredIngredients.map(ingredient => ingredient.category);
   //   }, error => {
@@ -68,15 +65,28 @@ ngOnInit(): void {
 
 
 }
-
+closeModal(){
+  this.Delete = false;
+}
 
   navigateToAddIngredient() {
     this.router.navigate(['add-ingredient']); // Adjust the route as needed
   }
  
 
-
-  
+  loadIngredients() {
+    this.posService.getIngredient().subscribe({
+      next: (data) => {
+        console.log('Ingredients received:', data); // 🔍 DEBUG HERE
+        this.ingredients = data;
+        this.filteredIngredients = data; // Initialize filtered version
+      },
+      error: (error) => {
+        console.error('Error loading ingredients:', error);
+      }
+    });
+  }
+   
 
   toggleMenu(event: Event) {
     event.stopPropagation();
@@ -122,7 +132,9 @@ ngOnInit(): void {
 
 
 
-
+  confirmDelete(){
+    
+  }
 
 
 }

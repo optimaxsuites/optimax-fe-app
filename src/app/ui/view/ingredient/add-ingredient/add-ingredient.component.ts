@@ -19,8 +19,12 @@ import { HttpClient } from '@angular/common/http';
 })
 
 export class AddIngredientComponent {
-
+  productImage: string | null = null;
+  previewImage: string | ArrayBuffer | null = null;
+  selectedImageFile: File | null = null;
   productForm!: FormGroup;
+  isEditMode: boolean = false;
+  base64Image: string | null = null; // store base64 for localStorage
   countryCodes = [
     { name: 'Nigeria', code: '+234' },
     { name: 'United States', code: '+1' },
@@ -32,7 +36,7 @@ export class AddIngredientComponent {
     { name: 'Australia', code: '+61' },
   ];
 
-measurementUnits: MeasurementUnit[] = Object.values(MeasurementUnit);
+measurementUnits = Object.keys(MeasurementUnit)
 
 
 
@@ -54,7 +58,6 @@ measurementUnits: MeasurementUnit[] = Object.values(MeasurementUnit);
 
   isOpen = false;
 
-
   
   hasSelectedSupplier = false;
   //@ts-ignore
@@ -66,6 +69,7 @@ measurementUnits: MeasurementUnit[] = Object.values(MeasurementUnit);
   suppliers: supplierData[] = [];
   selectedSupplier: number | null = null;  // Store the selected supplier's ID
 
+  branches: any[] = [];
 
 
 
@@ -75,29 +79,24 @@ measurementUnits: MeasurementUnit[] = Object.values(MeasurementUnit);
       sku: ['']
     });
    
+    this.loadBranches();
+
  console.log("im here")
     this.loadSuppliers();
 
 
     // Initialize the form groups
    this.ingredientForm = new FormGroup({
-    ingredientName: new FormControl(''),
+    name: new FormControl(''),
     sku: new FormControl(''),
     code: new FormControl(''),
-    category: new FormControl(''),
-    description: new FormControl(''),
     purchasePrice: new FormControl(''),
-    sellingPrice: new FormControl(''),
     currentStock: new FormControl(''),
-    restockQuantity: new FormControl(''),
     reorderThreshold: new FormControl(''),
-    measurementUnit: new FormControl(''),
-    reciepe: new FormControl(''),
-    supplier: new FormControl(''),
-    supplierContact: new FormControl(''),
-    expirationDate: new FormControl(''),
-    branch: new FormControl(''),
-    storageRequirement: new FormControl(''),
+    measurementUnit: new FormControl(null),
+    supplierId: new FormControl(null),
+    branches: new FormControl(''),
+   
 
    });
    this.supplierForm = new FormGroup({
@@ -108,6 +107,7 @@ measurementUnits: MeasurementUnit[] = Object.values(MeasurementUnit);
     address: new FormControl(''),
    });
 
+   console.log(this.ingredientForm.value);  // This should show the selected value for measurementUnit
 
 
   }
@@ -119,9 +119,11 @@ measurementUnits: MeasurementUnit[] = Object.values(MeasurementUnit);
   constructor(private router: Router, private fb: FormBuilder, private messageService: MessageService, private posService: PosServiceService,private http: HttpClient) {
    
   }
+  
 
   // Load suppliers from api
   loadSuppliers() {
+    console.log("Loading suppliers...");
     this.posService. getSupplier().subscribe(
       (data) => {
         this.suppliers = data;
@@ -156,14 +158,27 @@ clearForm() {
   this.address = '';
   this.notes = '';
 }
+loadBranches() {
+  this.posService.getBranches().subscribe(
+    (data) => {
+      this.branches = data;
+      console.log('Branches loaded:', this.branches);
+    },
+    (error) => {
+      console.error('Error loading branches:', error);
+    }
+  );
+}
 
 submitForm() {
 
   // Save to local storage
   // this.suppliers.push(newSupplier);
   // localStorage.setItem('suppliers', JSON.stringify(this.suppliers));
+  
 
   const data = this.supplierForm.value;
+
   this.posService.addSupplier(data).subscribe((response: any) => {
     console.log('API Response:', response);
     console.log('Supplier added:', data);
@@ -189,14 +204,49 @@ changeSelectedSupplier(event: any) {
   onSubmit() {
     console.log("Button clicked!");
     
+      // Save image to localStorage
+
 
 
       const ingredientData = this.ingredientForm.value;
   
+    console.log('Data being sent:', ingredientData);
 
-      this.posService.addIngredient(ingredientData).subscribe((response: any) => {
+
+    if (this.base64Image) {
+      const key = `ingredientImage_${ingredientData.name}`; // unique key per ingredient
+      localStorage.setItem(key, this.base64Image);
+      console.log(`Saved image for ${ingredientData.name}`);
+    }
+
+
+    this.posService.addIngredient(ingredientData).subscribe({
+      next: (response: any) => {
         console.log('API Response:', response);
-      });
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Ingredients added successfully',
+          life: 3000,
+          key: 'tg'
+        });
+      },
+      error: (error) => {
+        console.error('API Error:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to add ingredient. Please try again.',
+          life: 3000,
+          key: 'tg'
+        });
+      }
+    });
+    
+    this.ingredientForm.reset();
+  this.resetImage();
+
+      
 
   //   this.saveToLocalStorage(this.ingredientForm.value);
   //   this.ingredientForm.reset();
@@ -205,38 +255,41 @@ changeSelectedSupplier(event: any) {
   // const updatedIngredients = JSON.parse(localStorage.getItem('ingredients') || '[]');
   // console.log('Updated Ingredients:', updatedIngredients);
 
-  this.messageService.add({
-    severity: 'success',
-    summary: 'Success',
-    detail: 'Ingredients added successfully',
-    life: 3000,
-    key: 'tg'
-  });
+
+
+
+
+  
+
 
 
   }
+  resetImage() {
+    this.previewImage = null;
 
+    // Optional: clear file input
+    const fileInput = document.getElementById('image') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';  // Clear the input value
+    }
+  }
   generateRandomSku() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let randomPart = '';
-  
+    
     for (let i = 0; i < 3; i++) {
       randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-  
+    
     const timestamp = Date.now().toString().slice(-5);
     const generatedSku = `${randomPart}-${timestamp}`;
     console.log('Generated SKU:', generatedSku); // Debugging: Check generated SKU
-  
-    const skuInput = document.getElementById('sku') as HTMLInputElement;
-  
-    if (skuInput) {
-      skuInput.value = generatedSku;
-      console.log('SKU set to input field:', skuInput.value); // Debugging: Verify input value
-    } else {
-      console.log('SKU input field not found!'); // Debugging: Check if input field exists
-    }
+    
+    // ✅ Update the Angular FormControl properly
+    this.ingredientForm.get('sku')?.setValue(generatedSku);  // Use lowercase 'sku' to match formControlName
+    console.log('Form after SKU set:', this.ingredientForm.value); // Debugging: Check form values
   }
+  
 
   generateRandomCode() {
     let randomCode = '';
@@ -246,11 +299,8 @@ changeSelectedSupplier(event: any) {
       randomCode += Math.floor(Math.random() * 10); // Random digit from 0 to 9
     }
   
-    const inputElement = document.getElementById('code') as HTMLInputElement;
-    if (inputElement) {
-      inputElement.value = randomCode;
-      console.log('Generated code set to input field:', randomCode); // Debugging
-    }
+    this.ingredientForm.get('code')?.setValue(randomCode);
+
   }
 
 
@@ -261,42 +311,28 @@ changeSelectedSupplier(event: any) {
 
 
 
-  saveToLocalStorage(ingredient: any) {
-    // Check if there's a duplicate before adding
-    let ingredients = JSON.parse(localStorage.getItem('ingredients') || '[]');
-  
-    // Prevent duplication by checking unique fields like 'sku' or 'code'
-    const exists = ingredients.some((item: any) => item.sku === ingredient.sku || item.code === ingredient.code);
-  
-    if (!exists) {
-      ingredients.push(ingredient);
-      localStorage.setItem('ingredients', JSON.stringify(ingredients));
-    } else {
-      alert('Ingredient already exists!');
-    }
-  }
+
   
 
-  formatNumber(event: any, controlName: string) {
-    const input = event.target;
   
-    // Remove commas
-    const rawValue = input.value.replace(/,/g, '');
+  // numberWithCommas(x: string): string {
+  //   const parts = x.split('.');
+  //   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  //   return parts.join('.');
+  // }
+  onImageUpload(event: any) {
+    const file = event.target.files[0];
+    const reader = new FileReader();
   
-    if (!isNaN(rawValue)) {
-      const formattedValue = this.numberWithCommas(rawValue);
-      input.value = formattedValue;
+    reader.onload = () => {
+      this.previewImage = reader.result as string;
+      this.base64Image = this.previewImage;
+      this.ingredientForm.patchValue({ image: this.base64Image });
+    };
   
-      console.log(`Updating ${controlName} with value:`, rawValue);
-  
-      this.ingredientForm.get(controlName)?.setValue(rawValue, { emitEvent: false });
+    if (file) {
+      reader.readAsDataURL(file); // Convert to base64
     }
-  }
-  
-  numberWithCommas(x: string): string {
-    const parts = x.split('.');
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return parts.join('.');
   }
   
 }

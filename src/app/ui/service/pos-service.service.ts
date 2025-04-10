@@ -424,7 +424,7 @@ export class PosServiceService {
            catchError(this.handleError),
          );
  
-   }
+        }
  
 
   deleteCategory(id: number) {
@@ -504,6 +504,11 @@ export class PosServiceService {
   addIngredient( ingredientData: any) {
     return this.http
     .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/ingredients',  ingredientData)
+    .pipe(catchError(this.handleError));
+  }
+  getIngredient() {
+    return this.http
+    .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/ingredients')
     .pipe(catchError(this.handleError));
   }
 

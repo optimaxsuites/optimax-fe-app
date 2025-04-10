@@ -385,7 +385,7 @@ export interface IngredientDTO {
   name: string;
   code: string;
   sku: string;
-  measurementUnit?: MeasurementUnit;
+  measurementUnit?: (typeof MeasurementUnit)[keyof typeof MeasurementUnit];
   supplier?: SupplierDTO;
   branches?: BranchDTO[]; 
   purchasePrice: number;
@@ -444,37 +444,37 @@ interface HotelProductDTO extends ProductDTO {}
 // }
 
 
-export enum MeasurementUnit {
-  UNIT = "Unit",
-  PIECE = "Piece",
-  PACK = "Pack",
-  BOX = "Box",
-  DOZEN = "Dozen",
-  KG = "Kg",
-  GRAM = "Gram",
-  POUND = "Pound",
-  TON = "Ton",
-  LITER = "Liter",
-  MILLILITER = "Milliliter",
-  CUBIC_METER = "Cubic Meter",
-  METER = "Meter",
-  CENTIMETER = "Centimeter",
-  INCH = "Inch",
-  FOOT = "Foot",
-  YARD = "Yard",
-  PER_MINUTE = "Per Minute",
-  PER_HOUR = "Per Hour",
-  PER_DAY = "Per Day",
-  PER_WEEK = "Per Week",
-  PER_MONTH = "Per Month",
-  PER_YEAR = "Per Year",
-  PER_SESSION = "Per Session", 
-  PER_VISIT = "Per Visit", 
-  PER_USAGE = "Per Usage",
-  PER_NIGHT = "Per Night",
-  PER_PERSON = "Per Person",
-  PER_ROOM = "Per Room",
-  PER_KM = "Per Kilometer",
-  PER_MILE = "Per Mile",
-  PER_TRIP = "Per Trip",
-}
+export const  MeasurementUnit = {
+  UNIT : "UNIT",
+  PIECE : "Piece",
+  PACK : "Pack",
+  BOX : "Box",
+  DOZEN : "Dozen",
+  KG : "Kg",
+  GRAM : "Gram",
+  POUND : "Pound",
+  TON : "Ton",
+  LITER : "Liter",
+  MILLILITER : "Milliliter",
+  CUBIC_METER : "Cubic Meter",
+  METER : "Meter",
+  CENTIMETER : "Centimeter",
+  INCH : "Inch",
+  FOOT : "Foot",
+  YARD : "Yard",
+  PER_MINUTE : "Per Minute",
+  PER_HOUR : "Per Hour",
+  PER_DAY : "Per Day",
+  PER_WEEK : "Per Week",
+  PER_MONTH : "Per Month",
+  PER_YEAR : "Per Year",
+  PER_SESSION : "Per Session", 
+  PER_VISIT : "Per Visit", 
+  PER_USAGE : "Per Usage",
+  PER_NIGHT : "Per Night",
+  PER_PERSON : "Per Person",
+  PER_ROOM : "Per Room",
+  PER_KM : "Per Kilometer",
+  PER_MILE : "Per Mile",
+  PER_TRIP : "Per Trip",
+}as const

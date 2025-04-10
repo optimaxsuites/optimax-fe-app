@@ -58,8 +58,14 @@ export class CheckoutKitchenComponent implements OnInit {
   /** The table number that is set by the waiter when creating a new order */
   orderTableNumber = 1;
   isOrderDetailsOpen = false;
-  selectedOrder?: TableStatus; // store the order/card clicked
+  /*
+   *the order/card clicked
+   */
+  selectedOrder?: TableStatus;
 
+  /**
+   * The status (and orders) of all the tables in the restaurant
+   */
   #tableStatuses = signal<Map<number, TableStatus>>(new Map());
 
   testMode = signal<typeof this.mode>('chef');
@@ -74,7 +80,10 @@ export class CheckoutKitchenComponent implements OnInit {
     { item: 'Chapman', qty: 1, rate: 'N1,000', amount: 'N1,000' },
     { item: 'Cat Fish', qty: 1, rate: 'N2,000', amount: 'N2,000' },
   ];
-  // --- MODIFIED: Convert tableData to a signal ---
+
+  /**
+   * This is a collection of all the items in an order for a particular table
+   */
   tableData = signal<Map<string, OrderItem>>(new Map());
 
   // --- MODIFIED: Updated productCategories structure ---
@@ -356,10 +365,15 @@ export class CheckoutKitchenComponent implements OnInit {
     return subTotal;
   });
 
-  // selectCategory(categoryIndex: number) {
-  //   if (categoryIndex >= 0 && categoryIndex < this.productCategories.length) {
-  //     this.selectedSubCategories =
-  //       this.productCategories[categoryIndex].subCategories;
-  //   }
-  // }
+  /**
+   * Whenever a table's order should be edited, call this with the table status to enforce
+   */
+  overwriteTableOrderData(tableStatus: TableStatus) {
+    const clone = structuredClone(tableStatus);
+    this.tableData.update((_) => {
+      return clone.orders;
+    });
+    this.orderNote = clone.note ?? '';
+    this.orderTableNumber = clone.no;
+  }
 }
