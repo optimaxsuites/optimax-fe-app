@@ -4,12 +4,15 @@ import { ChangeDetectorRef } from '@angular/core';
 
 // Using the same interface as in roomlist component for consistency
 export interface Guest {
+  id?: string; // Optional property for guest ID
   title: string;
   firstName: string;
   lastName: string;
   email: string;
   phone: string;
   country: string;
+  idNumber: string;
+  gender: string;
 }
 
 export interface BookingDetails {
@@ -30,13 +33,55 @@ export interface Room {
   type: string;
   status: string;
   floor?: number;
-  guest?: Guest;
+  guest?: Guest; // Optional property for guest
   rate: number;
   bookingDetails?: BookingDetails;
   beds?: number;
   maxOccupancy?: number;
   description?: string;
   amenities?: string[];
+  currentKey?: RoomKey; // Optional property for current key
+}
+
+export interface Booking {
+  guest: Guest;
+  checkinDate: Date;
+  checkoutDate: Date;
+  adults: number;
+  children: number;
+  specialRequests: string;
+  paymentMethod: string;
+  depositAmount: number;
+  roomIds: number[];
+  roomTypes: string[];
+  roomRates: number[];
+  subtotal: number;
+  taxes: number;
+  total: number;
+  balanceAmount: number;
+  status?: string;
+}
+
+export interface RoomKey {
+  id: string;
+  roomNumber: number;
+  roomId: number;
+  isActive: boolean;
+  assignedDate: Date;
+  deactivationDate: Date;
+  guestIdNumber: string;
+  guestName?: string;
+}
+
+export interface KeyCardLog {
+  id: string;
+  roomNumber: number;
+  roomId: number;
+  keyCardId: string;
+  guestIdNumber: string;
+  accessType: 'GUEST' | 'MASTER' | 'STAFF';
+  timestamp: Date;
+  accessGranted: boolean;
 }
 
 @Component({
@@ -68,6 +113,10 @@ export class HotelRoomdetailsComponent {
   };
   selectedRooms: Room[] | undefined;
   formType: string | undefined;
+
+  onKeyAssigned: any;
+  defaultCheckinDate: Date = new Date();
+  defaultCheckoutDate: Date = new Date();
 
   constructor(
     private messageService: MessageService,
