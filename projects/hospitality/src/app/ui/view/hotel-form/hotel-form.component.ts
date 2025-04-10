@@ -3,6 +3,11 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { HotelServiceService } from '../hotel-service.service';
 import { Camera, CameraResultType } from '@capacitor/camera';
+import { Subscription } from 'rxjs';
+import {
+  HotelScannerserviceService,
+  ScanStatus,
+} from '../hotel-scannerservice.service';
 
 // shared/interfaces/hotel.interfaces.ts
 
@@ -108,12 +113,17 @@ export class HotelFormComponent implements OnInit {
   checkinForm: FormGroup;
   showCheckinForm: boolean = false;
   isSameGuest: boolean = false;
+  formattedAmount: string = '';
+  rawAmount: string = '';
 
-  isScanning: boolean = false;
-  scanError: string | null = null;
-  scanMethod: 'camera' | 'scanner' = 'camera';
-  scanProgress: number = 0;
   showScanOptions: boolean = false;
+
+  isScanning = false;
+  scanError: string | null = null;
+  scanProgress = 0;
+
+  // Scanner status tracking
+  private scanStatusSubscription: Subscription;
 
   countries: string[] = [
     'Nigeria',
@@ -133,8 +143,9 @@ export class HotelFormComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
+    private messageService: MessageService,
     private ocrService: HotelServiceService,
-    private messageService: MessageService
+    private scannerService: HotelScannerserviceService
   ) {
     this.bookingForm = this.fb.group({
       title: ['', Validators.required],
@@ -175,10 +186,54 @@ export class HotelFormComponent implements OnInit {
     });
 
     this.setupFormListeners();
+
+    this.scanStatusSubscription =
+      this.scannerService.scanStatusChanged.subscribe((status) =>
+        this.handleScanStatusUpdate(status)
+      );
   }
 
-  ngOnDestroy() {
-    this.ocrService.terminateWorker();
+  onAmountInput(event: any): void {
+    let inputValue = event.target.value.replace(/,/g, ''); // Remove any commas
+
+    // Store the raw unformatted value
+    this.rawAmount = inputValue;
+
+    // Only format if there's a value
+    if (inputValue) {
+      const numericValue = parseFloat(inputValue);
+      if (!isNaN(numericValue)) {
+        // Update the formatted display value
+        this.formattedAmount = this.formatWithCommas(numericValue);
+
+        // Update the form control with the raw numeric value
+        this.bookingForm
+          .get('depositAmount')
+          ?.setValue(numericValue, { emitEvent: false });
+      }
+    } else {
+      this.formattedAmount = '';
+      this.bookingForm.get('depositAmount')?.setValue('', { emitEvent: false });
+    }
+  }
+
+  formatWithCommas(value: number): string {
+    return value.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  onBlur(): void {
+    // Make sure the form control has the numeric value, not the formatted string
+    if (this.rawAmount) {
+      const numericValue = parseFloat(this.rawAmount);
+      if (!isNaN(numericValue)) {
+        this.bookingForm
+          .get('depositAmount')
+          ?.setValue(numericValue, { emitEvent: false });
+      }
+    }
   }
 
   ngOnInit() {
@@ -575,167 +630,141 @@ export class HotelFormComponent implements OnInit {
     );
   }
 
-  toggleScanOptions(): void {
-    this.showScanOptions = !this.showScanOptions;
+  // this scanner javascript code
+  // scanner.js
+
+  private handleScanStatusUpdate(status: ScanStatus): void {
+    if (status.progress !== undefined) {
+      this.scanProgress = status.progress;
+    }
+
+    switch (status.status) {
+      case 'starting':
+        this.isScanning = true;
+        this.scanError = null;
+        break;
+
+      case 'scanning':
+        // Progress updates handled above
+        break;
+
+      case 'completed':
+        // Scan is complete, but processing might still be ongoing
+        // Final processing is handled in startIDScan's result handling
+        break;
+
+      case 'error':
+        this.isScanning = false;
+        this.scanError = 'Scanner encountered an error. Please try again.';
+        break;
+
+      case 'cancelled':
+        this.isScanning = false;
+        this.scanError = null;
+        break;
+    }
   }
 
   async startIDScan(): Promise<void> {
+    if (this.isScanning) {
+      return; // Already scanning
+    }
+
     this.isScanning = true;
     this.scanError = null;
     this.scanProgress = 0;
 
     try {
-      if (this.scanMethod === 'camera') {
-        await this.scanWithCamera();
+      // Start the physical scanner
+      const scanResult = await this.scannerService.startScan();
+
+      if (!scanResult.success || !scanResult.imageBuffer) {
+        throw new Error(scanResult.error || 'Failed to capture document');
+      }
+
+      // Process the scanned document with OCR in real-time
+      // Important: We're only using the buffer temporarily for OCR processing
+      // The image data is not saved anywhere
+      const ocrResult = await this.ocrService.recognizeFromBuffer(
+        scanResult.imageBuffer
+      );
+
+      // Extract guest data from OCR result
+      if (ocrResult.fields) {
+        // Fill form with extracted data
+        this.fillFormWithGuestData(ocrResult.fields);
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'ID Scan Complete',
+          detail: 'Guest information extracted successfully',
+          life: 2000,
+        });
       } else {
-        await this.scanWithDeviceScanner();
+        throw new Error('Could not extract information from ID');
       }
     } catch (error) {
-      console.error('Scanning error:', error);
-      this.scanError = 'Failed to scan ID. Please try again or enter manually.';
-      this.isScanning = false;
-    } finally {
-      this.showScanOptions = false;
-    }
-  }
+      console.error('ID scanning error:', error);
+      this.scanError =
+        error instanceof Error
+          ? error.message
+          : 'Failed to scan ID. Please try again or enter manually.';
 
-  private async scanWithCamera(): Promise<void> {
-    try {
-      const image = await Camera.getPhoto({
-        quality: 90,
-        allowEditing: false,
-        resultType: CameraResultType.Base64,
-        promptLabelPhoto: 'Select from gallery',
-        promptLabelPicture: 'Take photo of ID',
-        promptLabelHeader: 'ID Scan',
-      });
-
-      if (image.base64String) {
-        this.scanProgress = 30;
-        await this.processIDImage(
-          `data:image/jpeg;base64,${image.base64String}`
-        );
-      }
-    } catch (error) {
-      if (error !== 'USER_CANCELLED') {
-        throw error;
-      }
-    } finally {
-      this.isScanning = false;
-    }
-  }
-
-  private async scanWithDeviceScanner(): Promise<void> {
-    // Mock implementation - replace with actual scanner SDK
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Scanner Not Connected',
-      detail: 'Physical scanner not detected. Using camera instead.',
-      life: 3000,
-    });
-    this.scanMethod = 'camera';
-    await this.scanWithCamera();
-  }
-
-  private async processIDImage(imageData: string): Promise<void> {
-    try {
-      this.scanProgress = 50;
-
-      // Use OCR service to extract text
-      const extractedText = await this.ocrService.recognizeText(imageData);
-      this.scanProgress = 80;
-
-      // Parse the extracted data to identify fields
-      const guestData = this.parseIDData(extractedText);
-
-      // Auto-fill the form
-      this.fillFormWithGuestData(guestData);
-
-      this.scanProgress = 100;
       this.messageService.add({
-        severity: 'success',
-        summary: 'ID Scan Complete',
-        detail: 'Guest information extracted successfully',
-        life: 2000,
+        severity: 'error',
+        summary: 'Scanning Failed',
+        detail: this.scanError,
+        life: 3000,
       });
-    } catch (error) {
-      console.error('OCR processing error:', error);
-      throw new Error('Failed to process ID image');
+    } finally {
+      this.isScanning = false;
     }
-  }
-
-  private parseIDData(extractedText: string): Partial<Guest> {
-    // Enhanced parsing logic for common ID formats
-    const data: Partial<Guest> = {};
-    const lines = extractedText
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line);
-
-    // Common patterns for IDs (adjust based on your country's format)
-    const nameRegex =
-      /^([A-Z][a-z]+)(?:\s+([A-Z][a-z]+))?(?:\s+([A-Z][a-z]+))?$/;
-    const idRegex = /([A-Z0-9]{6,20})/;
-    const dobRegex = /(\d{2}[\/\-\.]\d{2}[\/\-\.]\d{4})/;
-    const countryRegex =
-      /(Nigeria|United States|United Kingdom|Canada|Ghana|South Africa|Kenya|Germany|France|China|India)/i;
-
-    for (const line of lines) {
-      // Extract name
-      if (!data.firstName && nameRegex.test(line)) {
-        const matches = line.match(nameRegex);
-        if (matches) {
-          if (matches[3]) {
-            // Format: LAST FIRST MIDDLE
-            data.lastName = matches[1];
-            data.firstName = `${matches[2]} ${matches[3]}`;
-          } else if (matches[2]) {
-            // Format: FIRST LAST
-            data.firstName = matches[1];
-            data.lastName = matches[2];
-          }
-        }
-      }
-
-      // Extract ID number
-      if (!data.idNumber && idRegex.test(line)) {
-        const idMatch = line.match(idRegex);
-        if (idMatch) data.idNumber = idMatch[1];
-      }
-
-      // Extract country
-      if (!data.country && countryRegex.test(line)) {
-        const countryMatch = line.match(countryRegex);
-        if (countryMatch) data.country = countryMatch[1];
-      }
-
-      // Extract gender (from titles or explicit markers)
-      if (!data.gender) {
-        if (line.match(/(Mr|Mister|Male|M)/i)) data.gender = 'Male';
-        if (line.match(/(Mrs|Miss|Ms|Female|F)/i)) data.gender = 'Female';
-      }
-    }
-
-    return data;
   }
 
   private fillFormWithGuestData(guestData: Partial<Guest>): void {
-    if (this.showCheckinForm) {
-      this.checkinForm.patchValue({
-        firstName: guestData.firstName || '',
-        lastName: guestData.lastName || '',
-        idNumber: guestData.idNumber || '',
-        gender: guestData.gender || '',
-        ...(guestData.country && { country: guestData.country }),
-      });
-    } else {
-      this.bookingForm.patchValue({
-        firstName: guestData.firstName || '',
-        lastName: guestData.lastName || '',
-        idNumber: guestData.idNumber || '',
-        gender: guestData.gender || '',
-        ...(guestData.country && { country: guestData.country }),
-      });
+    const targetForm = this.showCheckinForm
+      ? this.checkinForm
+      : this.bookingForm;
+
+    // Fill only fields that were successfully extracted
+    const formUpdate: Partial<Guest> = {};
+
+    if (guestData.firstName) formUpdate.firstName = guestData.firstName;
+    if (guestData.lastName) formUpdate.lastName = guestData.lastName;
+    if (guestData.idNumber) formUpdate.idNumber = guestData.idNumber;
+    if (guestData.gender) formUpdate.gender = guestData.gender;
+    if (guestData.country) formUpdate.country = guestData.country;
+
+    // Update the form with extracted data
+    targetForm.patchValue(formUpdate);
+
+    // Focus on a field that might need manual entry if it couldn't be extracted
+    // This improves user experience by guiding them to complete missing info
+    if (!guestData.firstName && !guestData.lastName) {
+      document.getElementById('firstName')?.focus();
+    } else if (!guestData.idNumber) {
+      document.getElementById('idNumber')?.focus();
     }
+  }
+
+  cancelScan(): void {
+    if (this.isScanning) {
+      this.scannerService.cancelScan();
+      this.isScanning = false;
+      this.scanError = null;
+    }
+  }
+
+  ngOnDestroy() {
+    // Clean up resources
+    if (this.scanStatusSubscription) {
+      this.scanStatusSubscription.unsubscribe();
+    }
+
+    // Terminate OCR worker to free resources
+    this.ocrService.terminateWorker();
+
+    // Close scanner connection
+    this.scannerService.closeScanner();
   }
 }
