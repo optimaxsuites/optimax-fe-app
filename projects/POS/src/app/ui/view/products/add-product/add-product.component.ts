@@ -698,38 +698,30 @@ removeIngredient(index: number) {
     this.createFullProductFlow(product, this.branchess.value)
   }
 
-  createFullProductFlow(productForm: any, branches: any[]) {
+  async createFullProductFlow(productForm: any, branches: any[]) {
     const branchDataResponses: any[] = [];
     const formValues = this.productForm.value;
+    this.loading = true;
   
-    // 1. Loop through each branch and post branch data (without variants)
-    const branchDataPromises = branches.map(async branch => {
-      const branchDataPayload = {
-        price: branch.sellingPrice,
-        quantity: branch.quantity,
-        sku: formValues.sku,
-        supplierId: branch.supplier.id ,
-        taxId: branch.tax.id ,
-        discountId: branch.discount.id ,
-      };
+    try {
+      // Step 1: Create Branch Data
+      for (const branch of branches) {
+        const branchDataPayload = {
+          price: branch.sellingPrice,
+          quantity: branch.quantity,
+          sku: formValues.sku,
+          supplierId: branch.supplier.id,
+          taxId: branch.tax.id,
+          discountId: branch.discount.id,
+        };
   
-      const branchDataResponse = await this.posService.addBranchData(branchDataPayload).toPromise();
-      branchDataResponses.push({
-        branchData: branchDataResponse,
-        branch: branch
-      });
-      return branchDataResponse;
-    });
+        const branchDataResponse = await this.posService.addBranchData(branchDataPayload).toPromise();
+        branchDataResponses.push({ branchData: branchDataResponse, branch });
+      }
   
-    // Run all branch data requests first
-    Promise.all(branchDataPromises).then(async responses => {
-      const productVariants: any[] = [];
-      const productBranches: any[] = [];
-  
+      // Step 2: Add Variants for each BranchData
       for (const item of branchDataResponses) {
         const { branchData, branch } = item;
-  console.log(branch)
-        // 2. Post all variants for each branchData
         if (branch.variants && Array.isArray(branch.variants)) {
           for (const variant of branch.variants) {
             const variantPayload = {
@@ -739,76 +731,61 @@ removeIngredient(index: number) {
               sku: variant.sku,
               branchDataId: branchData.id
             };
-            const variantRes = await this.posService.addProductVariant(variantPayload).toPromise();
-            productVariants.push(variantRes);
+            await this.posService.addProductVariant(variantPayload).toPromise();
           }
         }
+      }
   
-        // 3. Prepare productBranch payload (productId = 0 for now)
+      // Step 3: Add Product (without productBranch for now)
+      const productPayload = {
+        ...productForm,
+        productBranch: [] // add later
+      };
+  
+      const formData = new FormData();
+      formData.append('product', JSON.stringify(productPayload));
+      if (formValues.image instanceof File) {
+        formData.append('files', formValues.image);
+      }
+  
+      const productRes = await this.posService.addProduct(formData).toPromise();
+      const productId = productRes.id;
+  
+      // Step 4: Create productBranches using productId
+      const productBranches = [];
+      for (const item of branchDataResponses) {
+        const { branchData, branch } = item;
         const productBranchPayload = {
           id: 0,
-          branchId: branch.branchName.id ,
+          branchId: branch.branchName.id,
           dataId: branchData.id,
+          productId: productId
         };
         const productBranchRes = await this.posService.addProductBranchData(productBranchPayload).toPromise();
         productBranches.push(productBranchRes);
       }
   
-      // 4. Post final product
-      const productPayload = {
-        ...productForm,
-        productBranch: productBranches
-      };
-
-      console.log(productPayload)
-  
-      const formData = new FormData();
-    formData.append('product', JSON.stringify(productPayload));
-
-
-    if (formValues.image instanceof File) {
-      formData.append('files', formValues.image);
-    }
-      this.posService.addProduct(formData).subscribe({
-        next: (res) => {
-          console.log('✅ Product created successfully:', res);
-          this.messageService.add({
-                    severity: 'success',
-                    summary: 'Product Added',
-                    detail: 'Product added successfully.',
-                    key: 'tl',
-                    life: 3000,
-                  });
-                  this.addSuccessfull = true;
-    this.loading = false
-
-        },
-        error: (err) => {
-          this.messageService.add({
-                    severity: 'error',
-                    summary: 'Failed',
-                    detail: 'An error occured. Please try adding the product again.',
-                    key: 'tl',
-                    life: 3000,
-                  });
-    this.loading = false
-
-        }
-        
-      });
-  
-    }).catch(error => {
       this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: 'Unexpected error occured, please try again later.',
-              key: 'tl',
-              life: 3000,
-            });
-    this.loading = false
-
-    });
+        severity: 'success',
+        summary: 'Product Added',
+        detail: 'Product added successfully.',
+        key: 'tl',
+        life: 3000,
+      });
+      this.addSuccessfull = true;
+    } catch (error) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Failed',
+        detail: 'An error occurred. Please try again.',
+        key: 'tl',
+        life: 3000,
+      });
+    } finally {
+      this.loading = false;
+    }
   }
+  
   
   updateProduct() {
     const userName = sessionStorage.getItem('username');
