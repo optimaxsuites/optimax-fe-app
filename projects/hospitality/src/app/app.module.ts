@@ -40,8 +40,8 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
     BackButtonComponent,
   ],
   imports: [
-    BrowserAnimationsModule,
-    BrowserModule,
+    // BrowserAnimationsModule,
+    // BrowserModule,
     CommonModule,
     // UserModule,
     AppRoutingModule,
