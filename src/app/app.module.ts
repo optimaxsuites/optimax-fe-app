@@ -1,3 +1,5 @@
+import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-button.component';
+import { TableModule } from 'primeng/table';
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 
@@ -20,6 +22,9 @@ import { UserModule } from './user/user.module';
 
 import { ProgressBarModule } from 'primeng/progressbar';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { HotelLogsComponent } from './ui/view/hotel-logs/hotel-logs.component';
+import { DialogModule } from 'primeng/dialog';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 @NgModule({
   declarations: [
@@ -31,8 +36,11 @@ import { NgSelectModule } from '@ng-select/ng-select';
     HotelMessageComponent,
     HotelRoomdetailsComponent,
     HotelRoomlistComponent,
+    HotelLogsComponent,
+    BackButtonComponent,
   ],
   imports: [
+    BrowserAnimationsModule,
     BrowserModule,
     CommonModule,
     UserModule,
@@ -43,6 +51,8 @@ import { NgSelectModule } from '@ng-select/ng-select';
     ReactiveFormsModule,
     NgSelectModule,
     ProgressBarModule,
+    TableModule,
+    DialogModule,
   ],
   providers: [MessageService],
 

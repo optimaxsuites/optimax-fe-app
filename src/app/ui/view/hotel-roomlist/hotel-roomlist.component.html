@@ -1,4 +1,4 @@
-<div class="flex h-full" *ngIf="!openForm">
+<div class="flex h-full" *ngIf="!openForm && !openLogs">
   <!-- Sidebar with filters (always visible) -->
   <aside
     class="w-1/6 bg-gradient-to-b from-customBlueHover to-customBlue text-white p-6 shadow-lg rounded-xl"
@@ -28,11 +28,19 @@
       <h1 class="text-4xl font-bold text-gray-800">Room Status</h1>
       <div class="flex gap-4">
         <button
-          class="flex items-center gap-2 bg-customBlue text-white px-6 py-3 rounded-lg text-xl font-semibold hover:bg-customBlueHover transition duration-300"
+          class="flex items-center gap-2 bg-customGreen text-white px-6 py-3 rounded-lg text-xl font-semibold hover:bg-customGreenHover transition duration-300"
           (click)="showAvailableRooms()"
         >
           <i class="pi pi-calendar-plus"></i>
           Add Booking
+        </button>
+
+        <button
+          class="flex items-center gap-2 bg-customBlue text-white px-6 py-3 rounded-lg text-xl font-semibold hover:bg-customBlueHover transition duration-300"
+          (click)="navigateToLogs()"
+        >
+          <i class="pi pi-calendar-plus"></i>
+          View All Logs
         </button>
       </div>
     </div>
@@ -345,4 +353,8 @@
     (bookingConfirmed)="onBookingConfirmed($event)"
   >
   </app-hotel-form>
+</div>
+
+<div *ngIf="openLogs">
+  <app-hotel-logs (back)="navigateToLogs()"></app-hotel-logs>
 </div>

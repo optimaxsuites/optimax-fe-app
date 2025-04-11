@@ -56,7 +56,7 @@ export class HotelServiceService {
         await this.worker.setParameters({
           tessedit_char_whitelist:
             'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-/.',
-          tessedit_pageseg_mode: PSM.SINGLE_BLOCK, // Numeric value (not string) for single uniform block of text
+          tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
         });
 
         this.isInitialized = true;
