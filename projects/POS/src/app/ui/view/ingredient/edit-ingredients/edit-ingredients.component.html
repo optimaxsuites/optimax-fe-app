@@ -1,0 +1,71 @@
+<div class="form-footer" >
+    <p class="back" (click)="navigateToPrevious()">
+      <i class="fa-solid fa-arrow-left"></i> Back
+    </p>
+    <button  (click)="updateIngredient()">Update Ingredient</button>
+  </div>
+
+  <div class="form-container  ">
+    <h2 class="text-2xl font-semibold  text-gray-800">Ingredient</h2>
+
+    <!-- Use ngModel for two-way data binding -->
+    <form  novalidate [formGroup]="ingredientForm" >
+        <!-- Ingredient Name -->
+        <div class="form">
+            <label for="default-input" class="block mb-2 text-[13px]  text-gray-900 dark:text-white text-left"> Name</label>
+            <input 
+            class="editInput bg-gray-100 text-[12px] p-2.5 font-normal w-full" 
+            formControlName="name" 
+          />
+         </div>
+        <div class="form">
+            <label for="default-input" class="block mb-2 text-[13px]  text-gray-900 dark:text-white text-left"> Sku</label>
+            <input class="name editInput bg-gray-100 text-[12px] p-2.5 font-normal "  id="name" [value]="activeItem.sku" disabled />
+        </div>
+        <div class="form">
+            <label for="default-input" class="block mb-2 text-[13px]  text-gray-900 dark:text-white text-left"> Code</label>
+            <input class="name editInput bg-gray-100 text-[12px] p-2.5 font-normal "  id="name" [value]="activeItem.code" disabled />
+        </div>
+        <div class="form">
+            <label for="default-input" class="block mb-2 text-[13px]  text-gray-900 dark:text-white text-left"> Purchase Price</label>
+            <input 
+            class="editInput bg-gray-100 text-[12px] p-2.5 font-normal w-full" 
+            formControlName="purchasePrice" 
+          />
+            </div>
+        <div class="form">
+            <label for="default-input" class="block mb-2 text-[13px]  text-gray-900 dark:text-white text-left"> Current Stock</label>
+            <input 
+            class="editInput bg-gray-100 text-[12px] p-2.5 font-normal w-full" 
+            formControlName="currentStock" 
+          />
+        </div>
+        <div class="form">
+            <label for="default-input" class="block mb-2 text-[13px]  text-gray-900 dark:text-white text-left"> Reorder Threshold</label>
+            <input 
+            class="editInput bg-gray-100 text-[12px] p-2.5 font-normal w-full" 
+            formControlName="reorderThreshold" 
+          />   
+        </div>
+        <div class="form">
+            <label for="default-input" class="block mb-2 text-[13px]  text-gray-900 dark:text-white text-left"> Measurement Unit</label>
+            <input 
+            class="editInput bg-gray-100 text-[12px] p-2.5 font-normal w-full" 
+            formControlName="measurementUnit" 
+          />
+        </div>
+        <div class="form">
+            <label for="default-input" class="block mb-2 text-[13px]  text-gray-900 dark:text-white text-left"> Supplier</label>
+            <input 
+            class="editInput bg-gray-100 text-[12px] p-2.5 font-normal w-full" 
+            formControlName="supplierId" 
+          />
+        </div>
+        <div class="form">
+            <label for="default-input" class="block mb-2 text-[13px]  text-gray-900 dark:text-white text-left"> Branch</label>
+            <input 
+            class="editInput bg-gray-100 text-[12px] p-2.5 font-normal w-full" 
+            formControlName="branches" 
+          />
+        </div>
+</form>   

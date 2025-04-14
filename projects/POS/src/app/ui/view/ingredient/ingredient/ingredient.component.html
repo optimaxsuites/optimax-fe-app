@@ -44,17 +44,17 @@
         (click)="navigateToAddIngredient()">
       </app-button>
 
-      <app-button 
+      <!-- <app-button 
       text="  Delete" 
       class="btn-navigate "
       (click)="  deleteSelectedIngredients()">
-    </app-button>
+    </app-button> -->
     </ng-template>
   </p-toolbar>
 
 
-  <p-table [value]="filteredIngredients" [paginator]="true" dataKey="sku" responsiveLayout="stack" [rows]="13" styleClass="p-datatable-striped"   [(selection)]="selectedIngredients">
-    <ng-template pTemplate="header">
+  <p-table    [value]="filteredIngredients" [paginator]="true" dataKey="id" responsiveLayout="stack" [breakpoint]="'960px'" styleClass="p-datatable-striped" [tableStyle]="{ 'min-height': 'fit-content', 'max-height': '650px' }" [rows]="15">
+    <ng-template pTemplate="header" let-columns>
       <tr>
         <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
         <th class="table-item">SKU</th>
@@ -62,54 +62,44 @@
         <th class="table-item">Name</th>
         <th class="table-item">Price</th>
         <th class="table-item">Quantity</th>
-        <th class="table-item " >MeasurementUnits</th>
+        <th class="table-item">MeasurementUnit</th>
         <th class="table-item">Action</th>
       </tr>
     </ng-template>
+    
 
-    <ng-template pTemplate="body" let-item>
-      <tr let item   >
-        <td><p-tableCheckbox [value]="item" class="custom-checkbox" ></p-tableCheckbox></td>
-        <td>{{ item.sku }}</td>
-        <td>{{ item.code }}</td>
-        <td>{{ item.name }}</td>
-        <td>{{ item.purchasePrice }}</td>
-        <td>{{ item.currentStock }}</td>
-        <td>{{ item.measurementUnit }}</td>
-   
+    <ng-template pTemplate="body" let-item let-i="rowIndex">
+      <tr >
+        <td><p-tableCheckbox [value]="item" class="custom-checkbox" /></td>
+        <td class="table-item">{{ item.sku }}</td>
+        <td class="table-item">{{ item.code }}</td>
+        <td class="table-item">{{ item.name }}</td>
+        <td class="table-item">{{ item.purchasePrice }}</td>
+        <td class="table-item">{{ item.currentStock }}</td>
+        <td class="table-item">{{ item.measurementUnit }}</td>
 
-        <div class="menu-container pl-12 pt-4">
-          <button class="menu-button" (click)="toggleMenu($event)">
-            <i class="pi pi-ellipsis-v"></i>
-          </button>
-
-          <ul class="custom-menu" [ngClass]="{ 'show': isMenuOpen }">
-            <li >
-              <i class="pi pi-eye"></i> View
-            </li>
-            <li >
-              <i class="pi pi-plus"></i> Add Ingredient
-            </li>
-          
-          </ul>
-
-        </div>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="emptymessage">
-      <tr>
-        <td colspan="8" style="text-align: center; padding: 20px;">
-          No ingredients found.
+        <td class="actions table-item">
+          <div class="dropdown">
+              <span (click)="toggleDropdown2(item, $event)">
+              <i class="material-icons cursor-pointer">more_vert</i>
+            </span>
+            <ul class="absolute bg-white border shadow-lg rounded-lg py-2 z-50" *ngIf="item.showMenu">
+              <li  class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"  (click)="navigateToViewIngredient(item)">
+                <i class="pi pi-eye pr-2 text-2xl "  > </i> View
+              </li>
+              <li class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"  (click)="navigateToEditIngredient(item)">
+                <i class="pi pi-pen-to-square pr-2 text-2xl"></i> Edit 
+              </li>
+              <li class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer"  (click)="deleteIngredient(item)">
+                <i class="pi pi-trash pr-2 text-2xl"  ></i> Delete 
+              </li>
+            </ul>
+          </div>
         </td>
       </tr>
     </ng-template>
-  </p-table>
-  <!-- <div
-    *ngIf="filteredIngredients.length === 0"
-    style="text-align: center; margin-top: 10px"
-  >
-    No ingredients found.
-  </div> -->
+    </p-table>
+
 </div>
 <!--
 <div *ngIf="viewInventory">
@@ -119,7 +109,7 @@
 <div *ngIf="editInventory">
   <app-edit-inventory [activeItem]="activeItem" [mode]="mode" (close)="closeEditInventory()"></app-edit-inventory>
 </div> -->
-<div *ngIf="Delete" (close)="closeModal()">
+<!-- <div *ngIf="Delete" (close)="closeModal()">
   <div class="flex flex-col justify-center items-center gap-4">
     <h2 class="text-2xl font-bold">Delete Ingredient</h2>
     <p>Are you sure you want to delete this ingredient?</p>
@@ -135,4 +125,10 @@
         (click)="closeModal()"
       ></app-button>
     </div>
- </div>
+ </div> -->
+ <!-- <div *ngIf="  viewInventory">
+  <app-view-inventory 
+    [activeItem]="activeIngredient" 
+    (close)="closeViewInventory()">
+  </app-view-inventory>
+</div> -->

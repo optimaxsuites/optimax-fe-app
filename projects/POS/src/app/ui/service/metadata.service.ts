@@ -27,6 +27,7 @@ export class MetadataService {
   enrichedProduct$ = this.enrichedProductSubject.asObservable()
 
 
+
   
   constructor(private posService: PosServiceService) { }
 

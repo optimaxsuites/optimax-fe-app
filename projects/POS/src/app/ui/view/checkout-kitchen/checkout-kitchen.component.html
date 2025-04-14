@@ -315,21 +315,21 @@
               : 'Order Completed'
           "
           icon="pi pi-check"
-          class="p-button-success bg-green-100"
+          class="p-button-success bg-green-300 rounded-md hover:bg-green-400 focus:outline-none focus:ring focus:ring-green-200 font-bold"
           (click)="
             overwriteTableOrderData(selectedOrder!);
             isEditingOrder = true;
             isCreateOrderModalOpen = true
           "
         ></button>
-        <!-- <button
+        <button
           pButton
           type="button"
-          label="Mark as Completed"
+          label="Delete Order"
           icon="pi pi-check"
-          class="p-button-success"
-          (click)="markAsCompleted(selectedOrder)"
-        ></button> -->
+          class="p-button-danger ml-2 bg-red-300 text-white rounded-md hover:bg-red-400 focus:outline-none focus:ring focus:ring-red-200 font-bold"
+          (click)="deleteTable(selectedOrder!); isOrderDetailsOpen = false"
+        ></button>
       </div>
       } } </p-panel
     >}
@@ -454,6 +454,7 @@
               <th>Qty</th>
               <th>Rate</th>
               <th>Amount</th>
+              <th></th>
             </tr>
           </ng-template>
           <ng-template pTemplate="body" let-rowData>
@@ -462,6 +463,12 @@
               <td>{{ rowData.value.qty }}</td>
               <td>{{ rowData.value.rate }}</td>
               <td>N{{ rowData.value.qty * rowData.value.rate }}</td>
+              <td>
+                <i
+                  class="fa-solid fa-minus"
+                  (click)="reduceFoodItemQtyInOrder(rowData.key)"
+                ></i>
+              </td>
             </tr>
           </ng-template>
         </p-table>
@@ -517,7 +524,7 @@
           isCreateOrderModalOpen = false;
           isEditingOrder = false;
           tableData().clear();
-          orderNote = ''
+          setOrderNote('')
         "
       ></button>
       <button
@@ -526,6 +533,9 @@
         class="p-button-success px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring focus:ring-orange-200 font-bold"
         (click)="isCreateOrderModalNoteDialogOpen = true"
       ></button>
+      <!--
+      `openOrderDetails(tableStatuses().get(selectedOrder!.no)!)` is used to refresh the order details
+       -->
       <button
         pButton
         [label]="isEditingOrder ? 'Overwrite' : 'Order'"
@@ -535,13 +545,17 @@
             orderTableNumber,
             tableData(),
             '0',
-            orderNote,
+            orderNote(),
             isEditingOrder
           );
           isCreateOrderModalOpen = false;
           isEditingOrder = false;
           tableData().clear();
-          orderNote = ''
+          setOrderNote('');
+          this.isOrderDetailsOpen = false;
+          isCreateOrderModalOrderExistsDialogOpen
+            ? ''
+            : openOrderDetails(tableStatuses().get(selectedOrder!.no)!)
         "
       ></button>
     </div>
@@ -603,7 +617,7 @@
       pButton
       type="button"
       label="Cancel"
-      (click)="isCreateOrderModalNoteDialogOpen = false; orderNote = ''"
+      (click)="isCreateOrderModalNoteDialogOpen = false; setOrderNote('')"
       class="p-button-secondary px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-200 font-bold"
     ></button>
   </ng-template>

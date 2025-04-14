@@ -11,7 +11,9 @@ import { HttpClient } from '@angular/common/http';
   styleUrl: './ingredient.component.scss'
 })
 export class IngredientComponent {
-
+  tableSections: boolean = false;
+  items = [{ showMenu: false }, { showMenu: false }]; // Example list of items
+  viewInventory: boolean = false;
   filteredIngredients: any[] = [];
   ingredients: any[] = [];
   selectedCategories: number[] = [];
@@ -23,6 +25,7 @@ export class IngredientComponent {
   selectedIngredients: any[] = [];
 
   Delete = false;
+  activeIngredient: any;
 
   // filteredIngredients: any[] = [];
 
@@ -65,6 +68,13 @@ ngOnInit(): void {
 
 
 }
+toggleDropdown2(item: any, event?: Event) {
+  if (event) {
+    event.stopPropagation(); // Stop event propagation
+  }
+  (item as any).showMenu = !(item as any).showMenu;
+}
+
 closeModal(){
   this.Delete = false;
 }
@@ -72,7 +82,20 @@ closeModal(){
   navigateToAddIngredient() {
     this.router.navigate(['add-ingredient']); // Adjust the route as needed
   }
- 
+  navigateToViewIngredient(ingredient: any) {
+    this.router.navigate(['/view-ingredient'], {
+      state: { activeItem: ingredient }
+    });
+  }
+  navigateToEditIngredient(ingredient: any) {
+    this.router.navigate(['/edit-ingredient'], {
+      state: { activeItem: ingredient }
+    });
+  }
+  closeViewInventory() {
+    this.viewInventory = false;
+    this.activeIngredient = null;
+  }
 
   loadIngredients() {
     this.posService.getIngredient().subscribe({
@@ -110,18 +133,15 @@ closeModal(){
     }
 
   }
+  deleteIngredient(item: any): void {
+    console.log('Deleting item:', item);
   
-  deleteSelectedIngredients(): void {
-    console.log('Selected Ingredients:', this.selectedIngredients);
-    // Remove selected ingredients from the main and filtered lists
-    this.ingredients = this.ingredients.filter(item => !this.selectedIngredients.includes(item));
-    this.filteredIngredients = this.filteredIngredients.filter(item => !this.selectedIngredients.includes(item));
+    // Remove from ingredients list
+    this.ingredients = this.ingredients.filter(ing => ing !== item);
+    this.filteredIngredients = this.filteredIngredients.filter(ing => ing !== item);
   
-    // Update localStorage
+    // Optionally update localStorage if needed
     localStorage.setItem('ingredients', JSON.stringify(this.ingredients));
-  
-    // Clear selected ingredients
-    this.selectedIngredients = [];
   }
   
   
