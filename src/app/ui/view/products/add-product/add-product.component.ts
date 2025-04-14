@@ -49,23 +49,14 @@ export class AddProductComponent {
     description: '',
     sku: '',
     weight: 0,
-    initialPrice: '',
-    effectivePrice: '',
-    initialQuantity: 0,
-    effectiveQuantity: 0,
+    originalPurchasePrice: '',
+    currentPurchasePrice: '',
+   
     partNumber: '',
     tax: 0,
-    branch: '',
+  
     variant: '',
-    discount: {
-      id: 0,
-      name: '',
-      value: 0,
-      startDate: new Date(),
-      endDate: new Date(),
-      minQuantity: 0,
-      discountType: { id: 0, code: '', description: '', name: '' },
-    },
+    
     productCategory: {
       id: 0,
       name: '',
@@ -73,14 +64,11 @@ export class AddProductComponent {
       description: '',
     },
     id: 0,
-    // count: 0,
-    // discountType: [] as any[],
-    // discountValue: 0,
-    // image: {} as any,
-    // startDate: '',
-    // endDate: '',
-    // discountMinQuantity: 0,
-    // discountName: '',
+    productBranch: [],
+       isBundle: false, 
+       bundleItems: [], 
+      measurementUnit: MeasurementUnit,
+      reorderThreshold: 12,
     createdBy: '',
     createdDate: '',
     productImages: [],
@@ -90,6 +78,25 @@ export class AddProductComponent {
     barcodeType: 'CODE128',
     barcodeQuantity: 1,
   };
+
+  discount: {
+    id: 0,
+    name: '',
+    value: 0,
+    startDate: Date,
+    endDate: Date,
+    minQuantity: 0,
+    discountType: { id: 0, code: '', description: '', name: '' },
+  } = {
+    id: 0,
+    name: '',
+    value: 0,
+    startDate: new Date(),
+    endDate: new Date(),
+    minQuantity: 0,
+    discountType: { id: 0, code: '', description: '', name: '' },
+  }
+  measurementUnits = Object.keys(MeasurementUnit)
 
   addProduct: boolean = false;
   productImage: any = '';
@@ -244,6 +251,8 @@ export class AddProductComponent {
    * This should be `true` as long as the backend endpoints for the new models aren't ready
    */
   fallBackToOldForm = true;
+  loading: boolean = false;
+  originalProducts: ProductData[] = [];
 
   constructor(
     private messageService: MessageService,
@@ -279,24 +288,10 @@ export class AddProductComponent {
         '',
         [Validators.required, Validators.pattern('^[0-9]*.?[0-9]{0,2}$')],
       ],
-      // TODO: Remove these
-      initialPrice: [
-        '',
-        [Validators.required, Validators.pattern('^[0-9]*.?[0-9]{0,2}$')],
-      ],
-      effectivePrice: [
-        '',
-        [Validators.required, Validators.pattern('^[0-9]*.?[0-9]{0,2}$')],
-      ],
-      initialQuantity: [, [Validators.required, Validators.min(0)]],
-      effectiveQuantity: [, [Validators.required, Validators.min(0)]],
-
+    
       partNumber: ['', Validators.required],
-      tax: [, [Validators.required, Validators.min(0)]],
-      branch: ['', Validators.required],
       selectedBranch: [null, Validators.required], 
       branches: this.fb.array([]),
-      variant: [''],
       discount: [''],
       category: [''],
       image: [null],
@@ -304,7 +299,11 @@ export class AddProductComponent {
       endDate: [''],
       discountMinQuantity: [0],
       discountName: [''],
-      variants: [this.variants],
+      isBundle: [false],
+      bundleItems: [], 
+      measurementUnit: [''],
+      reorderThreshold: [null],
+
     };
 
    
@@ -433,6 +432,8 @@ export class AddProductComponent {
     this.metadataService.discountTypes$.subscribe(data => (this.discountTypes = data));
     this.metadataService.taxes$.subscribe(data => (this.taxes = data));
     this.metadataService.branches$.subscribe(data => (this.branches = data));
+    this.metadataService.products$.subscribe(data => {this.originalProducts = data});
+
 
   }
   get branchess(): FormArray<FormGroup>  {
@@ -480,13 +481,14 @@ removeIngredient(index: number) {
     const branchArray = this.branchess;
     branchArray.clear(); // Reset the form array before updating
   
-    this.selecteddBranch.forEach((branch: string) => {
+    this.selecteddBranch.forEach((branch: { name: any; }) => {
       branchArray.push(
         this.fb.group({
           branchName: [branch],
           sellingPrice: [0, Validators.required],
           quantity: [0, Validators.required],
-          tax: [0, Validators.required],
+          tax: [null, Validators.required],
+          supplier: [null, Validators.required],
           discount: [null],
           variants: this.fb.array([]),
         })
@@ -560,25 +562,6 @@ removeIngredient(index: number) {
     }
   }
 
-  // getDiscountTypes() {
-  //   this.posService.getDiscountTypes().subscribe(async (data) => {
-  //     if (data) {
-  //       this.discountTypes = data;
-  //     } else {
-  //       console.log('error loading data');
-  //     }
-  //   });
-  // }
-
-  // getDiscounts() {
-  //   this.posService.getDiscount().subscribe(async (data) => {
-  //     if (data) {
-  //       this.discounts = data;
-  //     } else {
-  //       console.log('error loading data');
-  //     }
-  //   });
-  // }
   checkForEmptyFields(obj: any): boolean {
     return Object.values(obj).some(
       (value) => typeof value === 'string' && value.trim() === ''
@@ -599,11 +582,39 @@ removeIngredient(index: number) {
     }
   }
 
+  getProducts() {
+    this.posService.getProducts().subscribe(async (data) => {
+      if (data) {
+        this.originalProducts = data.sort((a: any, b: any) => {
+          const dateA = new Date(
+            a.createdDate[0],
+            a.createdDate[1] - 1,
+            a.createdDate[2],
+            a.createdDate[3],
+            a.createdDate[4],
+            a.createdDate[5]
+          );
+          const dateB = new Date(
+            b.createdDate[0],
+            b.createdDate[1] - 1,
+            b.createdDate[2],
+            b.createdDate[3],
+            b.createdDate[4],
+            b.createdDate[5]
+          );
+          return dateB.getTime() - dateA.getTime();
+        });
+      } else {
+        console.log('error loading data');
+      }
+    });
+  }
   addToProduct() {
     const userName = sessionStorage.getItem('username');
-
-    console.log(this.productForm);
+    this.loading = true
+    // console.log(this.productForm);
     if (this.productForm.invalid) {
+      console.log(this.productForm)
       this.messageService.add({
         severity: 'error',
         summary: 'Validation Error',
@@ -611,6 +622,7 @@ removeIngredient(index: number) {
         key: 'tl',
         life: 3000,
       });
+      this.loading = false
 
       return;
     }
@@ -626,68 +638,178 @@ removeIngredient(index: number) {
       description: formValues.description,
       sku: formValues.sku,
       weight: formValues.weight,
-      initialPrice: formValues.initialPrice,
-      effectivePrice: formValues.effectivePrice,
-      initialQuantity: formValues.initialQuantity,
-      effectiveQuantity: formValues.effectiveQuantity,
+      originalPurchasePrice: formValues.purchasePrice,
+      currentPurchasePrice: formValues.purchasePrice,
       partNumber: formValues.partNumber,
       tax: formValues.tax,
-      branch: (formValues.branch as string[])[0], //FIXME: The backend can only store a sinlge string. Once that's fixed, undo this change
-      discount: formValues.discount,
-      variants: this.variants,
       productCategory: formValues.category,
       createdBy: userName,
       createdDate: new Date().toISOString(),
+      productBranch: [],
+       isBundle: formValues.isBundle, 
+       bundleItems: formValues.bundleItems, 
+      measurementUnit: formValues.measurementUnit,
+      reorderThreshold: formValues.reorderThreshold,
+    
     };
 
-    const formData = new FormData();
-    formData.append('product', JSON.stringify(product));
+    
+    // console.log("branches", this.branchess.value)
+    // console.log(formData);
+
+    // this.posService.addProduct(formData).subscribe(
+    //   async (data) => {
+    //     if (data) {
+    //       let savedProducts = localStorage.getItem('products');
+    //       let productList: HistoryData = savedProducts
+    //         ? new Map(JSON.parse(savedProducts))
+    //         : new Map();
+    //       productList.set(data.id, data);
+    //       localStorage.setItem('products', JSON.stringify([...productList]));
+    //       this.messageService.add({
+    //         severity: 'success',
+    //         summary: 'Product Added',
+    //         detail: 'Product added successfully.',
+    //         key: 'tl',
+    //         life: 3000,
+    //       });
+    //       this.addSuccessfull = true;
+    //     } else {
+    //       this.messageService.add({
+    //         severity: 'error',
+    //         summary: 'Failed',
+    //         detail: 'An error occured. Please try adding the product again.',
+    //         key: 'tl',
+    //         life: 3000,
+    //       });
+    //     }
+    //   },
+    //   (error) => {
+    //     this.messageService.add({
+    //       severity: 'error',
+    //       summary: 'Error',
+    //       detail: 'Unexpected error occured, please try again later.',
+    //       key: 'tl',
+    //       life: 3000,
+    //     });
+    //   }
+    // );
+
+    this.createFullProductFlow(product, this.branchess.value)
+  }
+
+  createFullProductFlow(productForm: any, branches: any[]) {
+    const branchDataResponses: any[] = [];
+    const formValues = this.productForm.value;
+  
+    // 1. Loop through each branch and post branch data (without variants)
+    const branchDataPromises = branches.map(async branch => {
+      const branchDataPayload = {
+        price: branch.sellingPrice,
+        quantity: branch.quantity,
+        sku: formValues.sku,
+        supplierId: branch.supplier.id ,
+        taxId: branch.tax.id ,
+        discountId: branch.discount.id ,
+      };
+  
+      const branchDataResponse = await this.posService.addBranchData(branchDataPayload).toPromise();
+      branchDataResponses.push({
+        branchData: branchDataResponse,
+        branch: branch
+      });
+      return branchDataResponse;
+    });
+  
+    // Run all branch data requests first
+    Promise.all(branchDataPromises).then(async responses => {
+      const productVariants: any[] = [];
+      const productBranches: any[] = [];
+  
+      for (const item of branchDataResponses) {
+        const { branchData, branch } = item;
+  console.log(branch)
+        // 2. Post all variants for each branchData
+        if (branch.variants && Array.isArray(branch.variants)) {
+          for (const variant of branch.variants) {
+            const variantPayload = {
+              name: variant.name,
+              price: variant.price,
+              quantity: variant.quantity,
+              sku: variant.sku,
+              branchDataId: branchData.id
+            };
+            const variantRes = await this.posService.addProductVariant(variantPayload).toPromise();
+            productVariants.push(variantRes);
+          }
+        }
+  
+        // 3. Prepare productBranch payload (productId = 0 for now)
+        const productBranchPayload = {
+          id: 0,
+          branchId: branch.branchName.id ,
+          dataId: branchData.id,
+        };
+        const productBranchRes = await this.posService.addProductBranchData(productBranchPayload).toPromise();
+        productBranches.push(productBranchRes);
+      }
+  
+      // 4. Post final product
+      const productPayload = {
+        ...productForm,
+        productBranch: productBranches
+      };
+
+      console.log(productPayload)
+  
+      const formData = new FormData();
+    formData.append('product', JSON.stringify(productPayload));
+
 
     if (formValues.image instanceof File) {
       formData.append('files', formValues.image);
     }
-
-    console.log(formData);
-
-    this.posService.addProduct(formData).subscribe(
-      async (data) => {
-        if (data) {
-          let savedProducts = localStorage.getItem('products');
-          let productList: HistoryData = savedProducts
-            ? new Map(JSON.parse(savedProducts))
-            : new Map();
-          productList.set(data.id, data);
-          localStorage.setItem('products', JSON.stringify([...productList]));
+      this.posService.addProduct(formData).subscribe({
+        next: (res) => {
+          console.log('✅ Product created successfully:', res);
           this.messageService.add({
-            severity: 'success',
-            summary: 'Product Added',
-            detail: 'Product added successfully.',
-            key: 'tl',
-            life: 3000,
-          });
-          this.addSuccessfull = true;
-        } else {
+                    severity: 'success',
+                    summary: 'Product Added',
+                    detail: 'Product added successfully.',
+                    key: 'tl',
+                    life: 3000,
+                  });
+                  this.addSuccessfull = true;
+    this.loading = false
+
+        },
+        error: (err) => {
           this.messageService.add({
-            severity: 'error',
-            summary: 'Failed',
-            detail: 'An error occured. Please try adding the product again.',
-            key: 'tl',
-            life: 3000,
-          });
+                    severity: 'error',
+                    summary: 'Failed',
+                    detail: 'An error occured. Please try adding the product again.',
+                    key: 'tl',
+                    life: 3000,
+                  });
+    this.loading = false
+
         }
-      },
-      (error) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Unexpected error occured, please try again later.',
-          key: 'tl',
-          life: 3000,
-        });
-      }
-    );
-  }
+        
+      });
+  
+    }).catch(error => {
+      this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Unexpected error occured, please try again later.',
+              key: 'tl',
+              life: 3000,
+            });
+    this.loading = false
 
+    });
+  }
+  
   updateProduct() {
     const userName = sessionStorage.getItem('username');
 
@@ -711,13 +833,11 @@ removeIngredient(index: number) {
       description: formValues.description,
       sku: formValues.sku,
       weight: formValues.weight,
-      initialPrice: formValues.initialPrice,
-      effectivePrice: formValues.effectivePrice,
-      initialQuantity: formValues.initialQuantity,
-      effectiveQuantity: formValues.effectiveQuantity,
+      originalPurchasePrice: formValues.initialPrice,
+      currentPurchasePrice: formValues.effectivePrice,
+   
       partNumber: formValues.partNumber,
       tax: formValues.tax,
-      branch: formValues.branch,
       discount: formValues.discount ?? {
         id: 7,
         name: 'None',
@@ -732,6 +852,12 @@ removeIngredient(index: number) {
       productCategory: formValues.category,
       createdBy: userName,
       createdDate: new Date().toISOString(),
+      productBranch: [],
+
+      isBundle: false, 
+      bundleItems: [], 
+     measurementUnit: MeasurementUnit,
+     reorderThreshold: 12,
     };
 
     const formData = new FormData();
@@ -812,15 +938,16 @@ removeIngredient(index: number) {
 
     variant.branches?.forEach((branchName) => {
       const targetBranch = branchArray.find(
-        (branch) => branch.get('branchName')?.value === branchName
+        (branch) => branch.get('branchName')?.value.name === branchName.name
       );
   
       if (targetBranch) {
         const variantsArray = targetBranch.get('variants') as FormArray;
         variantsArray.push(
           this.fb.group({
-            variantName: [variant.name, Validators.required],
-            sellingPrice: [variant.price, Validators.required],
+            name: [variant.name, Validators.required],
+            price: [variant.price, Validators.required],
+            sku: [variant.sku],
             quantity: [variant.quantity, Validators.required],
           })
         );
@@ -980,7 +1107,7 @@ removeIngredient(index: number) {
   }
 
   addDiscount() {
-    let discountObj = this.productData.discount;
+    let discountObj = this.discount;
 
     const discountDetails: DiscountDTO = {
       id: discountObj.id,

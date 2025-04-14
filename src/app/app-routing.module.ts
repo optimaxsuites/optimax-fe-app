@@ -21,6 +21,8 @@ import { SaleComponent } from './ui/view/sales/sale/sale.component';
 import { IngredientComponent } from './ui/view/ingredient/ingredient/ingredient.component';
 import { AddIngredientComponent } from './ui/view/ingredient/add-ingredient/add-ingredient.component';
 import { HotelCheckoutComponent } from './ui/view/hotel-checkout/hotel-checkout.component';
+import { ViewIngredientsComponent } from './ui/view/ingredient/view-ingredients/view-ingredients.component';
+import { EditIngredientsComponent } from './ui/view/ingredient/edit-ingredients/edit-ingredients.component';
 
 const routes: Routes = [
   {
@@ -69,6 +71,14 @@ const routes: Routes = [
     path: 'add-ingredient',
     component: AddIngredientComponent,
   },
+  {
+    path: 'view-ingredient',
+    component: ViewIngredientsComponent,
+  },
+  {
+    path:'edit-ingredient',
+    component: EditIngredientsComponent
+  }
   // {
   //   path: 'add-inventory',
   //   component: AddInventoryComponent,

@@ -167,11 +167,11 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     } else {
       if (existingItem) {
         existingItem.count += 1;
-        existingItem.cartPriceTotal = (parseInt(existingItem.cartPriceTotal) + parseInt(product.effectivePrice)).toString();
+        // existingItem.cartPriceTotal = (parseInt(existingItem.cartPriceTotal) + parseInt(product.effectivePrice)).toString();
       } else {
         product.count = 1;
         this.cartItems.push({ ...product, selectedVariants: [] });
-        product.cartPriceTotal = product.effectivePrice.toString();
+        // product.cartPriceTotal = product.effectivePrice.toString();
       }
     }
   
@@ -185,7 +185,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   deleteCartItem(index: number) {
     this.resetProductDiscount(index);
 
-    this.cartItems[index].cartPriceTotal = this.cartItems[index].effectivePrice;
+    // this.cartItems[index].cartPriceTotal = this.cartItems[index].effectivePrice;
     this.cartItems[index].count = 0;
     this.cartItems.splice(index, 1);
     this.calculateTotals();
@@ -215,8 +215,8 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     console.log(this.cartItems);
   
     this.subtotal = this.cartItems.reduce((acc, item) => {
-      let itemTotal = (item.count ?? 0) * parseFloat(item.effectivePrice || "0");
-  
+      // let itemTotal = (item.count ?? 0) * parseFloat(item.effectivePrice || "0");
+      let itemTotal =0
       let variantsTotal = (item.selectedVariants ?? []).reduce(
         (variantAcc, variant) =>
           variantAcc + (variant.selectedQuantity ?? 0) * (Number(variant.price) || 0),
@@ -239,9 +239,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   
 
   handleCountChange(newCount: number, index: number, variant?: any) {
-    this.cartItems[index].cartPriceTotal = (
-      parseInt(this.cartItems[index].effectivePrice) * newCount
-    ).toString();
+    // this.cartItems[index].cartPriceTotal = (
+    //   parseInt(this.cartItems[index].effectivePrice) * newCount
+    // ).toString();
     this.calculateDiscount();
     // this.calculateProductDiscount();
     this.calculateTotals();
@@ -311,14 +311,14 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
   calculateProductDiscount() {
     for (let item of this.cartItems) {
-      if (item.discount.value > 0) {
-        if (item.discount.discountType.name === 'naira') {
-          item.discountedPrice = Number(item.discount.value);
-        } else {
-          item.discountedPrice =
-            (parseInt(item.cartPriceTotal) * Number(item.discount.value)) / 100;
-        }
-      }
+      // if (item.discount.value > 0) {
+      //   if (item.discount.discountType.name === 'naira') {
+      //     item.discountedPrice = Number(item.discount.value);
+      //   } else {
+      //     item.discountedPrice =
+      //       (parseInt(item.cartPriceTotal) * Number(item.discount.value)) / 100;
+      //   }
+      // }
     }
 
     this.calculateTotals();
@@ -354,8 +354,8 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   resetProductProperties() {
     this.products.forEach((product) => {
       product.count = 0;
-      product.cartPriceTotal = product.effectivePrice;
-      product.discount.value = 0.0;
+      // product.cartPriceTotal = product.effectivePrice;
+      // product.discount.value = 0.0;
     });
   }
 
@@ -431,7 +431,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
         this.products.forEach((product) => {
           // Add some extra necessary properties
           product.count = 0;
-          product.cartPriceTotal = product.effectivePrice;
+          // product.cartPriceTotal = product.effectivePrice;
         });
         console.log(this.products);
         this.categorizedProducts = this.products;

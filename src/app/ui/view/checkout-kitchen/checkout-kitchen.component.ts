@@ -66,7 +66,7 @@ export class CheckoutKitchenComponent implements OnInit {
   /**
    * The status (and orders) of all the tables in the restaurant
    */
-  #tableStatuses = signal<Map<number, TableStatus>>(new Map());
+  tableStatuses = signal<Map<number, TableStatus>>(new Map());
 
   testMode = signal<typeof this.mode>('chef');
 
@@ -210,7 +210,7 @@ export class CheckoutKitchenComponent implements OnInit {
   /**
    * Temporarily stores the note of an order
    */
-  orderNote = '';
+  orderNote = signal('');
 
   ngOnInit(): void {
     switch (this.mode) {
@@ -287,10 +287,10 @@ export class CheckoutKitchenComponent implements OnInit {
     const waiterId =
       waiterIdd ?? ids[Math.round(Math.random() * 100) % ids.length];
 
-    if (this.#tableStatuses().has(tableNo) && !overwrite) return false;
+    if (this.tableStatuses().has(tableNo) && !overwrite) return false;
     else {
       // update the signal by creating a new map
-      this.#tableStatuses.update(
+      this.tableStatuses.update(
         (statuses) =>
           new Map(
             statuses.set(tableNo, {
@@ -330,12 +330,12 @@ export class CheckoutKitchenComponent implements OnInit {
     switch (this.testMode()) {
       case 'waiter':
         // TODO: Use the waiter's id as a comparison here
-        return [...this.#tableStatuses().values()].filter(
+        return [...this.tableStatuses().values()].filter(
           (tableStatus) => tableStatus.waiterId == '0'
         );
       case 'cashier':
       case 'chef':
-        return [...this.#tableStatuses().values()];
+        return [...this.tableStatuses().values()];
     }
   });
 
@@ -373,7 +373,34 @@ export class CheckoutKitchenComponent implements OnInit {
     this.tableData.update((_) => {
       return clone.orders;
     });
-    this.orderNote = clone.note ?? '';
+    this.setOrderNote(clone.note ?? '');
     this.orderTableNumber = clone.no;
+  }
+
+  setOrderNote(note: string) {
+    this.orderNote.update((_) => note);
+  }
+
+  reduceFoodItemQtyInOrder(key: string) {
+    this.tableData.update((val) => {
+      if (val.has(key)) {
+        const orderItem = val.get(key)!;
+
+        orderItem.qty--;
+        if (orderItem.qty <= 0) {
+          val.delete(key);
+        }
+      }
+
+      return val;
+    });
+  }
+
+  deleteTable(tableStatus: TableStatus) {
+    this.tableStatuses.update((val) => {
+      val.delete(tableStatus.no);
+
+      return new Map(val);
+    });
   }
 }

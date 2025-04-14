@@ -6,22 +6,25 @@ export interface ProductJSONFormat {
   description: string;
   sku: string;
   weight: number | null;
-  initialPrice: string;
-  effectivePrice: string;
-  initialQuantity: number;
-  effectiveQuantity: number;
+  originalPurchasePrice: string;
+  currentPurchasePrice: string;
+
   // Date String Format: "2025-02-02T22:56:31.935Z"
   createdDate: string;
 
   createdBy: string | null;
   partNumber: string;
   tax: number;
-  branch: string;
+  productBranch?: any;
   variant?: string | null;
-  discount: DiscountDTO;
+  discount?: DiscountDTO;
   productCategory: ProductCategoryDTO;
   productImages: ProductImageDTO[];
-  variants: VariantDTO[];
+  variants?: VariantDTO[];
+  isBundle? : boolean;
+  bundleItems?: any;
+  measurementUnit?: any;
+  reorderThreshold?: number | null;
 }
 
 

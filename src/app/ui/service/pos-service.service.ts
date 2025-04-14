@@ -457,6 +457,24 @@ export class PosServiceService {
       .pipe(catchError(this.handleError));
   }
 
+  addBranchData(data: any) {
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/branchDatas', data)
+      .pipe(catchError(this.handleError));
+  }
+
+  addProductVariant(data: any) {
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/productVariants', data)
+      .pipe(catchError(this.handleError));
+  }
+
+  addProductBranchData(data: any) {
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/productBranches', data)
+      .pipe(catchError(this.handleError));
+  }
+
   private products$!: Observable<any>;
   getProducts() {
     if (!this.products$) {

@@ -76,8 +76,7 @@
             <div class="inputAndBtn">
               <ng-select
                 [items]="branches"
-                bindLabel="label"
-                bindValue="value"
+                bindLabel="name"
                 formControlName="selectedBranch"
                 [multiple]="true"
                 placeholder="Select branch"
@@ -90,16 +89,6 @@
 
         
         </div>
-
-        <!-- <p class="text-xl ml-3 text-gray-700 font-bold pb-0 mb-0 mt-2 w-1/2">
-          Branch Data:
-          <ng-select
-            [items]="selectedBranches"
-            placeholder="Select branch data to edit"
-            [(ngModel)]="selectedBranchFromForm"
-            [ngModelOptions]="{ standalone: true }"
-          ></ng-select>
-        </p> -->
 
 
       
@@ -157,59 +146,7 @@
           </div> -->
         </div>
 
-        <!-- <div class="ml-3">
-          <label for="discount">Discount</label>
-
-          <div class="flex inputAndBtn">
-            <ng-select
-              [items]="discounts"
-              bindLabel="name"
-              bindValue="id"
-              (change)="selectDiscount($event)"
-              [(ngModel)]="productData.discount"
-              [multiple]="false"
-              id="discount"
-              placeholder="Discount"
-              class="w-full"
-            >
-            </ng-select>
-
-            <button
-              class="btn create-invoice-btn mt-1.5"
-              type="button"
-              (click)="openAddDiscount = true"
-            >
-              +
-            </button>
-          </div>
-        </div>
-
-        <div class="flex gap-4 items-center w-full">
-          <div class="detailDiv w-full">
-            <div class="flex items-center justify-between">
-              <label for="e-price"
-                >Effective price <span style="color: red">*</span></label
-              >
-              <div
-                *ngIf="
-                  productForm.get('effectivePrice')?.invalid &&
-                  productForm.get('effectivePrice')?.touched
-                "
-                class="error"
-              >
-                {{ getErrorMessage("effectivePrice", "effective price") }}
-              </div>
-            </div>
-            <input
-              class="name editInput"
-              type="text"
-              id="e-price"
-              formControlName="effectivePrice"
-              placeholder="Effective Price"
-              readonly
-            />
-          </div>
-        </div> -->
+      
 
         <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">
           Identifiers
@@ -348,9 +285,7 @@
           <ng-select
             [items]="categories"
             bindLabel="name"
-            bindValue="id"
-            (change)="selectCategory($event)"
-            [(ngModel)]="productData.productCategory"
+            formControlName="category"
             [multiple]="false"
             placeholder="Category"
             class="w-full"
@@ -433,6 +368,138 @@
             id="weight"
           />
         </div>
+
+
+        <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">
+          Identifiers
+        </p>
+
+        <div class="flex gap-4 items-center w-full">
+          <!-- <div class="detailDiv w-full">
+            <div class="flex items-center justify-between">
+              <label for="quantity"
+                >Quantity <span style="color: red">*</span></label
+              >
+              <div
+                *ngIf="
+                  productForm.get('initialQuantity')?.invalid &&
+                  productForm.get('initialQuantity')?.touched
+                "
+                class="error"
+              >
+                {{ getErrorMessage("initialQuantity", "quantity") }}
+              </div>
+            </div>
+            <input
+              id="quantity"
+              formControlName="initialQuantity"
+              class="name editInput"
+              placeholder="Quantity"
+            />
+          </div> -->
+          <div class="detailDiv w-full">
+            <div class="flex items-center justify-between">
+              <label for="measurementUnit"
+                >Measurement Unit <span style="color: red">*</span></label
+              >
+              <div
+                *ngIf="
+                  productForm.get('measurementUnit')?.invalid &&
+                  productForm.get('measurementUnit')?.touched
+                "
+                class="error"
+              >
+                {{ getErrorMessage("measurementUnit") }}
+              </div>
+            </div>
+            <ng-select
+            [items]="measurementUnits"
+            bindLabel="name"
+            formControlName="measurementUnit"
+            [multiple]="false"
+            placeholder="Category"
+            class="w-full"
+          >
+          </ng-select>
+          </div>
+          <div class="detailDiv w-full">
+            <div class="flex items-center justify-between">
+              <label for="reorderThreshold">Reorder Threshold <span style="color: red">*</span></label>
+              <div
+                *ngIf="
+                  productForm.get('reorderThreshold')?.invalid &&
+                  productForm.get('reorderThreshold')?.touched
+                "
+                class="error"
+              >
+                {{ getErrorMessage("reorderThreshold") }}
+              </div>
+            </div>
+            <div class="flex inputAndBtn">
+              <input
+                id="reorderThreshold"
+                class="name editInput"
+                formControlName="reorderThreshold"
+                placeholder="Reorder Threshold"
+              />
+             
+            
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 items-center w-full">
+          <div class="detailDiv w-full">
+            <div class="flex items-center gap-3">
+              <input
+              class="name "
+              type="checkbox"
+              id="isBundle"
+              formControlName="isBundle"
+              placeholder="Effective Quantity"
+              readonly
+            />
+              <label for="isBundle"
+                >Combo ? <span style="color: red">*</span></label
+              >
+              <div
+                *ngIf="
+                  productForm.get('isBundle')?.invalid &&
+                  productForm.get('isBundle')?.touched
+                "
+                class="error"
+              >
+                {{ getErrorMessage("isBundle") }}
+              </div>
+            </div>
+            
+          </div>
+          <div class="detailDiv w-full">
+            <div class="flex items-center justify-between">
+              <label for="bundleItems">Combo Items <span style="color: red">*</span></label>
+              <div
+                *ngIf="
+                  productForm.get('bundleItems')?.invalid &&
+                  productForm.get('bundleItems')?.touched
+                "
+                class="error"
+              >
+                {{ getErrorMessage("bundleItems") }}
+              </div>
+            </div>
+
+            <ng-select
+            [items]="originalProducts"
+            bindLabel="name"
+            formControlName="bundleItems"
+            [multiple]="false"
+            placeholder="Products"
+            class="w-full"
+          >
+          </ng-select>
+          </div>
+        
+        </div>
         <!-- SECTION: Industry-specific details -->
         <div class="industry-specific-details">
           @if (industry == "Pharmacy") {
@@ -480,7 +547,7 @@
           </div>
           }
 
-          @if (industry == "Hotel") {
+          <!-- @if (industry == "Hotel") {
             <div class="space-y-4 flex flex-col gap-3">
               <p class="text-lg text-gray-700 font-semibold  mb-0 mt-2">
                 Industry-specific Details
@@ -495,7 +562,7 @@
               <input type="number" formControlName="bedCount" class="name editInput" id="bedCount"/>
             </div>
             </div>
-            }
+            } -->
 
             @if (industry == "Kitchen") {
               <div class="space-y-4 flex flex-col gap-3">
@@ -531,7 +598,7 @@
                         <td class="py-2 px-4 border-b">{{ ingredient.ingredient.name }}</td>
 
                         <td class="py-2 px-4 border-b flex items-center gap-3">
-                          <p-inputNumber [(ngModel)]="ingredient.quantity" mode="decimal" [min]="0"></p-inputNumber>
+                          <p-inputNumber mode="decimal" [min]="0"></p-inputNumber>
                           <p class="px-2">
                             {{ingredient.ingredient.measurementUnit}}
 
@@ -561,6 +628,10 @@
               </div>
               }
         </div>
+
+
+
+
       </div>
 
       <div class="imageDiv">
@@ -582,7 +653,6 @@
           <input
             type="file"
             (change)="onImageUpload($event)"
-            [(ngModel)]="productData.productImages"
             id="image"
             hidden
           />
@@ -645,7 +715,7 @@
             <tbody>
         @for (branch of  branchess.controls; track $index) {
               <tr>
-                <td class="py-2 px-4  capitalize font-semibold">{{ branch.get('branchName')?.value }}</td>
+                <td class="py-2 px-4  capitalize font-semibold">{{ branch.get('branchName')?.value.name }}</td>
                 <td colspan="5"></td> 
               </tr>
               <tr [formGroup]="branch">
@@ -663,8 +733,7 @@
                     <ng-select
                       [items]="taxes"
                       bindLabel="name"
-                      bindValue="id"
-                      formControlName="discount"
+                      formControlName="tax"
                       placeholder="Taxes"
                       class="w-full"
                     ></ng-select>
@@ -678,7 +747,6 @@
                     <ng-select
                       [items]="discounts"
                       bindLabel="name"
-                      bindValue="id"
                       formControlName="discount"
                       placeholder="Discount"
                       class="w-full"
@@ -693,8 +761,7 @@
                     <ng-select
                       [items]="suppliers"
                       bindLabel="name"
-                      bindValue="id"
-                      formControlName="discount"
+                      formControlName="supplier"
                       placeholder="Supplier"
                       class="w-full"
                     ></ng-select>
@@ -716,15 +783,15 @@
               @for (variant of getVariants(branch).controls; track $index) {
                 <tr [formGroup]="variant">
                   <td class="py-2 px-4 border-b pl-8 text-right">
-                    {{ variant.get('variantName')?.value }}
+                    {{ variant.get('name')?.value }}
                   </td>
                   <td class="py-2 px-4 border-b">
-                    <p-inputNumber formControlName="sellingPrice" mode="decimal" [min]="0"></p-inputNumber>
+                    <p-inputNumber formControlName="price" mode="decimal" [min]="0"></p-inputNumber>
                   </td>
                   <td class="py-2 px-4 border-b">
                     <p-inputNumber formControlName="quantity" mode="decimal" [min]="0"></p-inputNumber>
                   </td>
-                  <td colspan="2" class="py-2 px-4 border-b"></td> 
+                  <td colspan="3" class="py-2 px-4 border-b"></td> 
                   <td class="py-2 px-4 border-b">
                     <button  type="button" (click)="removeVariant(branch, $index)">
                       <i
@@ -745,9 +812,16 @@
     </div>
 
     <div class="flex justify-center items-center mt-4">
-      <button class="btn create-invoice-btn p-4" type="submit">
-        {{ isEditMode ? "Update Product" : "Add Product" }}
+      <button class="btn create-invoice-btn p-4" type="submit" [disabled]="loading">
+        <ng-container *ngIf="loading">
+          {{ isEditMode ? "Updating..." : "Adding..." }}
+          <span class="spinner-border spinner-border-sm ms-2" role="status" aria-hidden="true"></span>
+        </ng-container>
+        <ng-container *ngIf="!loading">
+          {{ isEditMode ? "Update Product" : "Add Product" }}
+        </ng-container>
       </button>
+      
     </div>
   </div>
 </form>
@@ -769,7 +843,6 @@
 
   <div class="mt-5 flex flex-col gap-4">
     <div class="flex items-center">
-      <!-- <input type="text"  [(ngModel)]="newCategory"  class=" outline-none" placeholder="category name" (keydown.enter)="addCategory()"> -->
       <div class="ml-3">
         <label for="name">Category name</label>
         <input
@@ -780,7 +853,7 @@
         />
       </div>
       <div class="ml-3">
-        <label for="code">Category code</label>
+        <label for="bundleItems">Category code</label>
         <input
           class="name editInput"
           [(ngModel)]="productData.productCategory.code"
@@ -931,8 +1004,7 @@
       <label for="">Branch</label>
         <ng-select
         [items]="selecteddBranch"
-        bindLabel="label"
-        bindValue="value"
+        bindLabel="name"
         [(ngModel)]="newVariant.branches"
         [multiple]="true"
         placeholder="Select branch">
@@ -967,7 +1039,7 @@
         class="name editInput"
         type="text"
         id="e-price"
-        [(ngModel)]="productData.discount.name"
+        [(ngModel)]="discount.name"
         placeholder="Discount name"
       />
     </div>
@@ -976,7 +1048,7 @@
       <label for="discount">Discount percentage (%)</label>
       <input
         id="discount"
-        [(ngModel)]="productData.discount.value"
+        [(ngModel)]="discount.value"
         class="name editInput"
         placeholder="Discount value"
       />
@@ -988,7 +1060,7 @@
         [items]="discountTypes"
         bindLabel="name"
         bindValue="id"
-        [(ngModel)]="productData.discount.discountType"
+        [(ngModel)]="discount.discountType"
         [multiple]="true"
         placeholder="Select discount types"
       >
@@ -1048,94 +1120,7 @@
 
 
 <!-- SECTION: Modal for displaying and setting branch data like price and quantity -->
-@if (openBranchData) {
-<app-side-modal (close)="openBranchData = false">
-  <div class="modal-header flex justify-between items-center text-gray-700">
-    <h2 class="font-semibold pb-0 mb-0">Selected Branches</h2>
 
-    <div class="flex gap-3">
-      <button
-        class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold"
-        (click)="openBranchData = false"
-      >
-        Cancel
-      </button>
-    </div>
-  </div>
-
-  <div class="mt-5 mb-2">
-    <div>
-      <h3 class="font-semibold pb-0 mb-0">Current Branches</h3>
-      @for (branch of branches; track $index) {
-      <span class="branch-names ml-4">
-        {{ branch.name }}
-        <!-- <i class="fa-solid fa-trash ml-2" (click)="deleteBranch(branch)"></i> -->
-      </span>
-      }
-    </div>
-
-    <div>
-      <h3 class="font-semibold pb-0 mb-0">Add Branch</h3>
-    </div>
-
-    @if (dataOfChosenBranches.length) {
-    <div id="branchTableData">
-      <p-table
-        [value]="dataOfChosenBranches"
-        [tableStyle]="{ 'min-width': '50rem' }"
-      >
-        <ng-template pTemplate="header">
-          <tr>
-            <th>Branch</th>
-            <th>Selling Price</th>
-            <th>Quantity</th>
-            <th>SKU</th>
-            <th>Select Variants</th>
-            <th>Variant Data</th>
-          </tr>
-        </ng-template>
-        <ng-template pTemplate="body" let-branchData>
-          <tr>
-            <td>{{ branchData.branchName }}</td>
-            <td>
-              <input
-                class="name editInput"
-                [formControl]="branchData.sellingPrice"
-                placeholder="Selling Price"
-              />
-            </td>
-            <td>
-              <input
-                class="name editInput"
-                [formControl]="branchData.quantity"
-                placeholder="Quantity"
-              />
-            </td>
-            <td>
-              <input
-                class="name editInput"
-                [formControl]="branchData.sku"
-                placeholder="SKU"
-              />
-            </td>
-            <td>
-              <!-- @for (variant of variants; track $index) {
-                          <p-checkbox
-                [inputId]="'checkbox-' + $index"
-                [value]="variant"
-                [(ngModel)]="selectedVariants">
-              </p-checkbox>
-              <label [attr.for]="'checkbox-' + $index">{{ variant }}</label>
-                          } -->
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </div>
-    }
-  </div>
-</app-side-modal>
-}
 <!-- !SECTION -->
 <app-modal *ngIf="addSuccessfull" (close)="addSuccessfull = false">
   <div class="flex flex-col items-center justify-center gap-3 px-4">
