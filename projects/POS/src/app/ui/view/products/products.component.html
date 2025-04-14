@@ -163,11 +163,11 @@
             <span class="p-column-title">Name</span>{{ item.name }}
           </td>
           <td class="table-item">
-            <span class="p-column-title">Price</span>{{ item.effectivePrice }}
+            <span class="p-column-title">Price</span>{{ item.branchDetails[0].branchData.price | currency : "₦" }}
           </td>
           <td class="table-item">
             <span class="p-column-title">Quantity</span
-            >{{ item.effectiveQuantity }}
+            >{{ item.branchDetails[0].branchData.quantity }}
           </td>
           <td class="table-item">
             <span class="p-column-title">Category</span
@@ -236,36 +236,36 @@
       </ng-container>
 
       <ng-template #productList>
-        <div *ngFor="let product of paginatedProducts" class="card">
+        <div *ngFor="let product of paginatedProducts" class="card cursor-pointer"  (click)="openViewProduct(product)">
           <img
-            [src]="getImageUrl(product) | async"
+            [src]="product.imageUrl$"
             alt="product image"
             class="w-full h-40 object-cover rounded-xl"
           />
           <h4 class="py-2 h-16 text-gray-600">{{ product.name }}</h4>
           <p>
             <strong>Price:</strong>
-            <!-- {{ product.effectivePrice | currency : "₦" }} -->
+            {{ product.branchDetails[0].branchData.price | currency : "₦" }}
           </p>
-          <!-- <p><strong>Quantity:</strong> {{ product.effectiveQuantity }}</p> -->
+          <p><strong>Quantity:</strong> {{ product.branchDetails[0].branchData.quantity  }}</p>
           <p><strong>Category:</strong> {{ product.productCategory.name }}</p>
           <div class="flex justify-end">
             <i
               class="pi pi-ellipsis-v table-item"
-              (click)="op.toggle($event)"
+              (click)="op.toggle($event); $event.stopPropagation()"
             ></i>
             <p-overlayPanel #op>
               <ul>
-                <li (click)="openViewProduct(product)">
+                <li class="cursor-pointer" (click)="openViewProduct(product)">
                   <i class="pi pi-eye"></i> View
                 </li>
-                <li (click)="openEdit(product)">
+                <li class="cursor-pointer" (click)="openEdit(product)">
                   <i class="pi pi-pen-to-square"></i> Edit
                 </li>
-                <li (click)="promptBarcode(product, op)">
+                <li class="cursor-pointer" (click)="promptBarcode(product, op)">
                   <i class="pi pi-download"></i> Generate Barcode
                 </li>
-                <li (click)="openDeleteModal(product)">
+                <li class="cursor-pointer" (click)="openDeleteModal(product)">
                   <i class="pi pi-times-circle"></i> Delete
                 </li>
               </ul>

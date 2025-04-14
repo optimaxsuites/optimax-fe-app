@@ -1,3 +1,4 @@
+import { Observable, Subscribable } from 'rxjs';
 import { BusinessType } from './enums';
 export interface ProductJSONFormat {
   id: number;
@@ -33,6 +34,8 @@ export interface ProductJSONFormat {
  * There's some extra data we use with each product that wouldn't fit directly with the fetched data interface, `ProductJSONFormat`
  */
 export interface ProductData extends ProductJSONFormat {
+branchDetails?: any;
+imageUrl$?: Observable<unknown>|Subscribable<unknown>|Promise<unknown>;
 showMenu: any;
   // FIXME: REMOVE THIS "any" >~<
   supplier: any;

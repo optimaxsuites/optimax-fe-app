@@ -7,9 +7,14 @@ import {
 
 import {
   catchError,
+  forkJoin,
+  map,
   Observable,
+  of,
   shareReplay,
   ShareReplayConfig,
+  switchMap,
+  tap,
   throwError,
 } from 'rxjs';
 import { Router } from '@angular/router';
@@ -18,6 +23,7 @@ import { NavigationLinksService } from '../sharedComponent/service/navigation-li
 import { environment } from '../sharedComponent/service/environments/environment';
 import { ProductCategories } from '../models/enums';
 import { supplierData } from '../models/interface';
+import { ImageCacheService } from './image-cache.service';
 
 @Injectable({
   providedIn: 'root',
@@ -26,7 +32,7 @@ export class PosServiceService {
   constructor(
     private randomTokenService: RandomTokenService,
     private http: HttpClient,
-    private navigationLink: NavigationLinksService,
+    private imageCacheService: ImageCacheService,
     private router: Router
   ) {}
 
@@ -475,6 +481,40 @@ export class PosServiceService {
       .pipe(catchError(this.handleError));
   }
 
+  getProductBranchDataById(id: number) {
+    return this.http
+      .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/productBranches/${id}`,)
+      .pipe(catchError(this.handleError));
+  }
+  getBranchDataById(id: number) {
+    return this.http
+      .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/branchDatas/${id}`)
+      .pipe(
+        catchError(error => {
+          console.error(`❌ Error fetching branch data for ID ${id}:`, error);
+          return of(null); // return a null fallback to avoid forkJoin breaking
+        })
+      );
+  }  
+
+  getVariant() {
+    return this.http
+      .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/productVariants`,)
+      .pipe(catchError(this.handleError));
+  }
+
+  getVariantsByBranchDataId(id: number) {
+    return this.http
+      .get<any[]>(this.getBaseApiUrl() + `/x/api/v2/pos/productVariants/getBy/${id}`)
+      .pipe(
+        catchError(error => {
+          console.error(`❌ Error fetching variants for branchDataId ${id}:`, error);
+          return of([]);
+        })
+      );
+  }
+  
+
   private products$!: Observable<any>;
   getProducts() {
     if (!this.products$) {
@@ -488,6 +528,81 @@ export class PosServiceService {
 
     return this.products$;
   }
+
+  getFilteredProductsWithDetails(currentBranchId: number) {
+    return this.getProducts().pipe(
+      switchMap((products: any[]) => {
+        // console.log('📦 All products from API:', products);
+  
+        const filteredProducts = currentBranchId === 1
+          ? products
+          : products.filter(product =>
+              product.productBranch?.some((pb: { branchId: number }) => pb.branchId === currentBranchId)
+            );
+  
+        // console.log('🔍 Current Branch ID:', currentBranchId);
+        // console.log('🧹 Filtered Products:', filteredProducts);
+  
+        const enrichedProducts$ = filteredProducts.map(product => {
+          const relevantProductBranches = currentBranchId === 1
+            ? product.productBranch
+            : product.productBranch.filter((pb: { branchId: number }) => pb.branchId === currentBranchId);
+  
+          const productBranchDetails$ = relevantProductBranches.map((pb: { dataId: number }) => {
+            const dataId = pb.dataId;
+            // console.log('📥 Fetching for dataId:', dataId);
+  
+            return forkJoin({
+              productBranch: of(pb),
+              branchData: this.getBranchDataById(dataId),
+              variants: this.getVariantsByBranchDataId(dataId)
+            }).pipe(
+              tap(res => {
+                // console.log(`✅ Got data for dataId ${dataId}:`, res);
+              }),
+              catchError(error => {
+                // console.error(`❌ Error loading branchData/variants for dataId ${dataId}:`, error);
+                return of({
+                  productBranch: pb,
+                  branchData: null,
+                  variants: []
+                });
+              })
+            );
+          });
+          const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${product.productImages[0].imgNo}`
+          
+          return forkJoin([forkJoin(productBranchDetails$), this.imageCacheService.getImage(remoteImageUrl)]).pipe(
+            map(([branchDetails, imageUrl$]) => {
+              
+            
+            // const imageUrl$ = remoteImageUrl ? this.imageCacheService.getImage(remoteImageUrl) : of(null);
+            
+              // console.log('🔗 Branch Details for product:', product.name, branchDetails);
+              return {
+                ...product,
+                branchDetails,
+                imageUrl$
+              };
+            }),
+            catchError(error => {
+              // console.error(`❌ Error enriching product ${product.name}:`, error);
+              return of({ ...product, branchDetails: [] });
+            })
+          );
+        });
+  
+        return forkJoin(enrichedProducts$);
+      }),
+      catchError(err => {
+        // console.error('❌ Error fetching product details:', err);
+        return of([]);
+      })
+    );
+  }
+  
+  
+  
 
   updateProduct(data: any) {
     return this.http

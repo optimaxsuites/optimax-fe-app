@@ -322,6 +322,8 @@ export class AddProductComponent {
     //   default:
     //     break;
     // }
+    this.fetchMetaData()
+
 
     this.productForm = this.fb.group(fbGroup);
     if (!this.fallBackToOldForm) {
@@ -412,16 +414,28 @@ export class AddProductComponent {
       this.productForm
         .get('endDate')
         ?.setValue(this.activeItem?.discount?.endDate);
+        this.productForm
+        .get('category')
+        ?.setValue(this.activeItem?.productCategory);
       this.productForm
         .get('discountValue')
         ?.setValue(this.activeItem?.discount?.value);
-      this.productForm.get('image')?.setValue(this.activeItem?.productImages);
+      this.productForm.get('image')?.setValue(this.activeItem?.imageUrl$);
+      this.productForm
+      .get('purchasePrice')
+      ?.setValue(this.activeItem?.currentPurchasePrice);
+
+   this.loadBranches()
+
+     this.loadVariants()
     }
+
+
+
 
     this.productForm.get('selectedBranch')?.valueChanges.subscribe(() => {
       this.updateBranches();
     });
-    this.fetchMetaData()
 
   }
 
@@ -462,7 +476,48 @@ export class AddProductComponent {
         console.log("Ingredient already added!");
     }
 }
+ loadVariants(){
 
+    const variantMap: { [key: string]: any } = {};
+
+    this.activeItem?.branchDetails?.forEach((branchDetail: any) => {
+    const branchId = branchDetail.productBranch.branchId;
+    const variants = branchDetail.variants;
+
+    variants.forEach((variant: any) => {
+    const key = variant.variantId || variant.sku || variant.name; 
+
+    if (!variantMap[key]) {
+      variantMap[key] = {
+        variantId: variant.variantId,
+        name: variant.name,
+        sku: variant.sku,
+        color: variant.color || 'Other'.split(',').map((val) => val.trim()),
+        size: variant.size || 'Regular',
+        branches: [branchId],
+      };
+    } else {
+      if (!variantMap[key].branches.includes(branchId)) {
+        variantMap[key].branches.push(branchId);
+      }
+    }
+    });
+    });
+
+    this.variants = Object.values(variantMap);
+ }
+
+ loadBranches(){
+  const branchDataList = this.activeItem?.branchDetails?.map((detail: any) => {
+    const branchId = detail.productBranch?.branchId;
+    const fullBranch = this.branches.find((branch: any) => branch.id === branchId);
+    return fullBranch; 
+  });
+  this.productForm.get('selectedBranch')?.setValue(branchDataList);
+
+  this.populateEditBranches();
+
+ }
 onIngredientSelect(selectedItems: any[]) {
   console.log(selectedItems)
   this.selectedIngredients = selectedItems.map(ingredient => ({
@@ -495,6 +550,45 @@ removeIngredient(index: number) {
       );
     });
   }
+
+  populateEditBranches() {
+    this.selecteddBranch.forEach((branch: any) => {
+      const branchId = branch.id;
+  
+      const detail = this.activeItem?.branchDetails?.find(
+        (d: any) => d.productBranch?.branchId === branchId
+      );
+  
+      const variantsFormArray = new FormArray<FormGroup>([]);
+
+if (detail?.variants?.length) {
+  detail.variants.forEach((variant: any) => {
+    variantsFormArray.push(
+      this.fb.group({
+        name: [variant.name, Validators.required],
+        price: [variant.price, Validators.required],
+        sku: [variant.sku],
+        quantity: [variant.quantity, Validators.required],
+      })
+    );
+  });
+}
+
+
+      this.branchess.push(
+        this.fb.group({
+          branchName: [branch],
+          sellingPrice: [detail.branchData?.price ?? 0, Validators.required],
+          quantity: [detail.branchData?.quantity ?? 0, Validators.required],
+          tax: [detail.branchData?.taxId || null, Validators.required],
+          supplier: [detail.branchData?.supplierId || null, Validators.required],
+          discount: [detail.branchData?.discountId || null],
+          variants: variantsFormArray,
+        })
+      );
+    });
+  }
+  
 
   removeBranch(index: number) {
     const branchToRemove = this.branchess.at(index).get('branchName')?.value;
