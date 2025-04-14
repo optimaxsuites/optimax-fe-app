@@ -303,7 +303,7 @@ onPageChange(event: any) {
   }
   deleteProduct() {
     this.posService
-      .deleteProduct(this.activeItem.id)
+      .deleteProductAndRelated(this.activeItem)
       .subscribe(async (data) => {
         if (data) {
           console.log(data);

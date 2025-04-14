@@ -881,7 +881,7 @@ if (detail?.variants?.length) {
   }
   
   
-  updateProduct() {
+  async updateProduct() {
     const userName = sessionStorage.getItem('username');
 
     if (this.productForm.invalid) {
@@ -895,87 +895,192 @@ if (detail?.variants?.length) {
       return;
     }
 
-    const formValues = this.productForm.value;
+    // const formValues = this.productForm.value;
 
-    const product: ProductJSONFormat = {
-      id: this.activeItem.id,
-      name: formValues.name,
-      code: formValues.code,
-      description: formValues.description,
-      sku: formValues.sku,
-      weight: formValues.weight,
-      originalPurchasePrice: formValues.initialPrice,
-      currentPurchasePrice: formValues.effectivePrice,
+    // const product: ProductJSONFormat = {
+    //   id: this.activeItem.id,
+    //   name: formValues.name,
+    //   code: formValues.code,
+    //   description: formValues.description,
+    //   sku: formValues.sku,
+    //   weight: formValues.weight,
+    //   originalPurchasePrice: formValues.initialPrice,
+    //   currentPurchasePrice: formValues.effectivePrice,
    
-      partNumber: formValues.partNumber,
-      tax: formValues.tax,
-      discount: formValues.discount ?? {
-        id: 7,
-        name: 'None',
-        value: 0.0,
-        startDate: null,
-        endDate: null,
-        minQuantity: 0,
-        discountType: null,
-      },
-      variants: this.variants,
-      productImages: [] as any[],
-      productCategory: formValues.category,
+    //   partNumber: formValues.partNumber,
+    //   tax: formValues.tax,
+    //   discount: formValues.discount ?? {
+    //     id: 7,
+    //     name: 'None',
+    //     value: 0.0,
+    //     startDate: null,
+    //     endDate: null,
+    //     minQuantity: 0,
+    //     discountType: null,
+    //   },
+    //   variants: this.variants,
+    //   productImages: [] as any[],
+    //   productCategory: formValues.category,
+    //   createdBy: userName,
+    //   createdDate: new Date().toISOString(),
+    //   productBranch: [],
+
+    //   isBundle: false, 
+    //   bundleItems: [], 
+    //  measurementUnit: MeasurementUnit,
+    //  reorderThreshold: 12,
+    // };
+
+    // const formData = new FormData();
+    // formData.append('product', JSON.stringify(product));
+
+    // if (formValues.image instanceof File) {
+    //   formData.append('files', formValues.image);
+    // }
+    // if (formValues.image) {
+    //   product.productImages.push(...formValues.image);
+
+    //   formData.append('files', new Blob(), formValues.image);
+    // }
+    // console.log(formData);
+
+    // this.posService.addProduct(formData).subscribe(
+    //   async (data) => {
+    //     if (data) {
+    //       this.messageService.add({
+    //         severity: 'success',
+    //         summary: 'Product updated',
+    //         detail: 'Product updated successfully.',
+    //         key: 'tl',
+    //         life: 3000,
+    //       });
+    //       this.resetForm();
+    //       this.triggerClose();
+    //     } else {
+    //       this.messageService.add({
+    //         severity: 'error',
+    //         summary: 'Failed',
+    //         detail: 'Failed, please try again.',
+    //         key: 'tl',
+    //         life: 3000,
+    //       });
+    //     }
+    //   },
+    //   (error) => {
+    //     this.messageService.add({
+    //       severity: 'error',
+    //       summary: 'Error',
+    //       detail: error,
+    //       key: 'tl',
+    //       life: 3000,
+    //     });
+    //   }
+    // );
+    const formValue = this.productForm.value;
+    try {
+      // 1. Update each branch detail and variants
+      for (const branchGroup of this.branchess.controls) {
+        const branch = branchGroup.value;
+        const branchId = branch.branchName.id;
+  
+        const detail = this.activeItem.branchDetails.find(
+          (d: any) => d.productBranch?.branchId === branchId
+        );
+  
+        // Update branchData
+        const branchDataPayload = {
+          id: branchId,
+          price: branch.sellingPrice,
+          quantity: branch.quantity,
+          sku: formValue.sku,
+          supplierId: branch.supplier.id,
+          taxId: branch.tax.id,
+          discountId: branch.discount.id,
+        };
+  
+        await this.posService.addBranchData(branchDataPayload).toPromise();
+  
+        // Update variants
+        if (branch.variants?.length) {
+          for (const variant of branch.variants) {
+            const existing = detail?.variants?.find(
+              (v: any) => v.name === variant.name
+            );
+  
+            const variantPayload = {
+              id: existing?.id ?? 0,
+              name: variant.name,
+              price: variant.price,
+              quantity: variant.quantity,
+              sku: variant.sku,
+              branchDataId: detail?.branchData?.id,
+            };
+  
+            await this.posService.addProductVariant(variantPayload).toPromise();
+          }
+        }
+      }
+  
+      // 2. Construct updated product payload
+      const updatedProduct: ProductJSONFormat = {
+        ...this.activeItem,
+         name: formValue.name,
+      code: formValue.code,
+      description: formValue.description,
+      sku: formValue.sku,
+      weight: formValue.weight,
+      originalPurchasePrice: formValue.purchasePrice,
+      currentPurchasePrice: formValue.purchasePrice,
+      partNumber: formValue.partNumber,
+      tax: formValue.tax,
+      productCategory: formValue.category,
       createdBy: userName,
       createdDate: new Date().toISOString(),
       productBranch: [],
+       isBundle: formValue.isBundle, 
+       bundleItems: formValue.bundleItems, 
+      measurementUnit: formValue.measurementUnit,
+      reorderThreshold: formValue.reorderThreshold,
+      };
+  
+      // 3. Append to FormData for image upload
+      const formData = new FormData();
+      formData.append('product', JSON.stringify(updatedProduct));
+  
+      
 
-      isBundle: false, 
-      bundleItems: [], 
-     measurementUnit: MeasurementUnit,
-     reorderThreshold: 12,
-    };
-
-    const formData = new FormData();
-    formData.append('product', JSON.stringify(product));
-
-    if (formValues.image instanceof File) {
-      formData.append('files', formValues.image);
-    }
-    if (formValues.image) {
-      product.productImages.push(...formValues.image);
-
-      formData.append('files', new Blob(), formValues.image);
-    }
-    console.log(formData);
-
-    this.posService.addProduct(formData).subscribe(
-      async (data) => {
-        if (data) {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Product updated',
-            detail: 'Product updated successfully.',
-            key: 'tl',
-            life: 3000,
-          });
-          this.resetForm();
-          this.triggerClose();
-        } else {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Failed',
-            detail: 'Failed, please try again.',
-            key: 'tl',
-            life: 3000,
-          });
-        }
-      },
-      (error) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: error,
-          key: 'tl',
-          life: 3000,
-        });
+      if (formValue.image instanceof File) {
+        formData.append('files', formValue.image);
       }
-    );
+      if (formValue.image) {
+        updatedProduct.productImages.push(...formValue.image);
+  
+        formData.append('files', new Blob(), formValue.image);
+      }
+  
+  
+      // 4. Call updateProduct endpoint
+      await this.posService.updateProduct(formData).toPromise();
+  
+      // this.toastService.showSuccess('Product updated successfully!');
+      // this.dialogRef.close(true);
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Product Updated',
+        detail: 'Product updated successfully.',
+        key: 'tl',
+        life: 3000,
+      });
+    } catch (error) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Failed',
+        detail: 'An error occurred. Please try again.',
+        key: 'tl',
+        life: 3000,
+      });
+      // this.toastService.showError('An error occurred while updating the product.');
+    }
   }
 
   resetForm() {
@@ -1037,11 +1142,13 @@ if (detail?.variants?.length) {
     this.editingIndex = index;
 
     const selectedVariant = this.variants[index];
+    console.log(selectedVariant)
     // this.newVariant = {
     //   ...selectedVariant,
     //   color: selectedVariant.color.join(
     //     ', '
     //   ) as unknown as VariantDTO['color'][0],
+    
     // };
 
     this.openAddVariant = true;
