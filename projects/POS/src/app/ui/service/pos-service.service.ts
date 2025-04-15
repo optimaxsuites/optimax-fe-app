@@ -659,8 +659,11 @@ export class PosServiceService {
     );
   }
   
-  
-  
+  deleteBranchVariantData(id: number){
+    return this.http
+    .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/productVariants/${id}`)
+    .pipe(catchError(this.handleError));
+  }
   updateProduct(data: any) {
     return this.http
       .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/products/product', data)

@@ -169,7 +169,7 @@ export class AddProductComponent {
     name: '',
     // price: 1,
     // quantity: 1,
-    color: ['Other'],
+    color: '',
     size: 'Regular',
     sku: '',
     branches: []
@@ -565,6 +565,7 @@ if (detail?.variants?.length) {
   detail.variants.forEach((variant: any) => {
     variantsFormArray.push(
       this.fb.group({
+        id: [variant.id],
         name: [variant.name, Validators.required],
         price: [variant.price, Validators.required],
         sku: [variant.sku],
@@ -605,8 +606,11 @@ if (detail?.variants?.length) {
   }
   removeVariant(branch: AbstractControl, variantIndex: number) {
     const variantsArray = branch.get('variants') as FormArray;
-    const variantToRemove = variantsArray.at(variantIndex).get('variantName')?.value;
+    const variantToRemove = variantsArray.at(variantIndex).get('name')?.value;
+    const variantToId = variantsArray.at(variantIndex).get('id')?.value;
+
     const branchName = branch.get('branchName')?.value;
+
     variantsArray.removeAt(variantIndex);
     this.variants.forEach(variant => {
       if (variant.name === variantToRemove) {
@@ -614,6 +618,38 @@ if (detail?.variants?.length) {
       }
     });
        this.variants = this.variants.filter(variant => variant.branches && variant.branches.length > 0);
+    if(this.isEditMode){
+      this.posService.deleteBranchVariantData(variantToId).subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Deleted',
+            detail: `Variant '${variantToRemove}' deleted successfully.`,
+            key: 'tl',
+            life: 3000,
+          });
+  
+          this.activeItem.branchDetails = this.activeItem.branchDetails.map((detail: any) => {
+            if (detail.branchName === branchName) {
+              return {
+                ...detail,
+                variants: detail.variants.filter((v: any) => v.id !== variantToId)
+              };
+            }
+            return detail;
+          }).filter((detail: any) => detail.variants.length > 0);
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: `Failed to delete variant '${variantToRemove}'`,
+            key: 'tl',
+            life: 3000,
+          });
+        }
+      });
+    }
 
   }
   
@@ -1100,56 +1136,141 @@ if (detail?.variants?.length) {
   addVariant() {
     //@ts-ignore
     const variant: VariantDTO = structuredClone(this.newVariant);
-    //@ts-ignore
-    variant.color = this.newVariant.color.split(',').map((val) => val.trim());
-
+  
     if (this.isEditing && this.editingIndex !== null) {
-      this.variants[this.editingIndex] = variant;
-      this.isEditing = false;
-      this.editingIndex = null;
+      console.log('editinnnnnn!!')
     } else {
       this.variants.push(variant);
     }
+  
     const branchArray = this.branchess.controls;
-
+  
     variant.branches?.forEach((branchName) => {
-      const targetBranch = branchArray.find(
+      const targetBranches = branchArray.filter(
         (branch) => branch.get('branchName')?.value.name === branchName.name
       );
-  
-      if (targetBranch) {
-        const variantsArray = targetBranch.get('variants') as FormArray;
-        variantsArray.push(
-          this.fb.group({
-            name: [variant.name, Validators.required],
-            price: [variant.price, Validators.required],
-            sku: [variant.sku],
-            quantity: [variant.quantity, Validators.required],
-          })
-        );
+    
+      console.log(targetBranches);
+    
+      if (targetBranches.length > 0) {
+        targetBranches.forEach((targetBranch) => {
+          const variantsArray = targetBranch.get('variants') as FormArray;
+    
+          if (this.isEditing && this.editingIndex !== null) {
+            console.log('editing!!!!');
+            console.log(variantsArray);
+    
+            const variantIndex = variantsArray.controls.findIndex(
+              (control) => control.get('sku')?.value === variant.sku
+            );
+            console.log(variantIndex);
+    
+            if (variantIndex !== -1) {
+              variantsArray.at(variantIndex).patchValue({
+                name: variant.name,
+                price: variant.price,
+                sku: variant.sku,
+                quantity: variant.quantity,
+              });
+            }
+    
+            this.variants[this.editingIndex] = variant;
+    
+          } else {
+            variantsArray.push(
+              this.fb.group({
+                id: [variant.id],
+                name: [variant.name, Validators.required],
+                price: [variant.price, Validators.required],
+                sku: [variant.sku],
+                quantity: [variant.quantity, Validators.required],
+              })
+            );
+          }
+        });
       }
     });
+    
     this.newVariant = this.resetVariantData();
-
     this.openAddVariant = false;
+    this.isEditing = false;
+    this.editingIndex = null;
+
+
+    
+  
+
   }
+  
 
   deleteVariant(index: number) {
     this.variants.splice(index, 1);
+    if(this.isEditMode){
+      this.removeAllVariants()
+    }
+
   }
+
+  removeAllVariants() {
+    const variantIds: number[] = [];
+
+    this.branchess.controls.forEach((branchGroup: FormGroup) => {
+      const variants = branchGroup.get('variants') as FormArray<FormGroup>;
+  
+      if (variants && variants.length > 0) {
+        variants.controls.forEach((variantGroup: FormGroup) => {
+          const id = variantGroup.get('id')?.value;
+          if (id) {
+            variantIds.push(id);
+          }
+        });
+      }
+    });
+  
+    variantIds.forEach((id: number) => {
+      this.posService.deleteBranchVariantData(id).subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Variant Deleted',
+            detail: `Variant with ID ${id} deleted successfully.`,
+            key: 'tl',
+            life: 3000,
+          });
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: `Failed to delete variant with ID ${id}.`,
+            key: 'tl',
+            life: 3000,
+          });
+        },
+      });
+    });
+  
+     // Clear from form after deletion
+  this.branchess.controls.forEach((branchGroup: FormGroup) => {
+    const variants = branchGroup.get('variants') as FormArray;
+    variants.clear(); // Remove all variants from the UI
+  });
+
+  // Also clear from this.variants if you're tracking it separately
+  this.variants = [];
+  }
+  
   editVariant(index: number) {
     this.isEditing = true;
     this.editingIndex = index;
 
     const selectedVariant = this.variants[index];
     console.log(selectedVariant)
-    // this.newVariant = {
-    //   ...selectedVariant,
-    //   color: selectedVariant.color.join(
-    //     ', '
-    //   ) as unknown as VariantDTO['color'][0],
-    
-    // };
+    this.newVariant = {
+      ...selectedVariant,
+      color: selectedVariant.color,
+      branches: selectedVariant.branches || []
+    };
 
     this.openAddVariant = true;
   }

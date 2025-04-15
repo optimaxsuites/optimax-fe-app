@@ -29,7 +29,7 @@ export class ViewProductComponent {
     name: '',
     // price: 1,
     // quantity: 1,
-    color: ['Other'],
+    color: '',
     size: 'Regular',
     sku: '',
     branches: []

@@ -76,20 +76,25 @@
           class="btn-navigate"
           (btnClick)="openAddProdut()"
         ></app-button>
-        <!-- <app-button
+        <app-button
           text="Import"
           class="btn-export"
           (btnClick)="toggleImportDialog()"
-        ></app-button> -->
+        ></app-button>
         @if(isImportDialogOpen){
-        <div class="overlay"></div>
-        <div>
+        <div class="modal-overlay" 
+        (close)="toggleImportDialog()"
+        ></div>
+        <div class="modal">
+         <div class="modal-body">
           <app-excel-export-and-import
-            (fileUploaded)="processExcelImport($event)"
-            (close)="toggleImportDialog()"
-            class="excel-import"
-            [parsedProductArray]="parsedProductData"
-          ></app-excel-export-and-import>
+          (fileUploaded)="processExcelImport($event)"
+          (close)="toggleImportDialog()"
+          class="excel-import"
+          [parsedProductArray]="parsedProductData"
+        ></app-excel-export-and-import>
+         </div>
+       
         </div>
         }
       </ng-template>
