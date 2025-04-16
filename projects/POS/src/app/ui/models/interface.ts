@@ -7,8 +7,9 @@ export interface ProductJSONFormat {
   description: string;
   sku: string;
   weight: number | null;
-  originalPurchasePrice: string;
-  currentPurchasePrice: string;
+  costPrice: string;
+  sellingPrice?: string;
+  quantity?: number;
 
   // Date String Format: "2025-02-02T22:56:31.935Z"
   createdDate: string;

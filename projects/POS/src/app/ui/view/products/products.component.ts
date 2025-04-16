@@ -6,6 +6,7 @@ import html2canvas from 'html2canvas';
 import {
   BranchDTO,
   DiscountDTO,
+  MeasurementUnit,
   ProductCategoryDTO,
   ProductData,
   ProductJSONFormat,
@@ -125,6 +126,9 @@ export class ProductsComponent implements OnInit {
     { label: 'Codabar', value: 'Codabar' },
     { label: 'CODE39', value: 'CODE39' },
   ] as const;
+
+    measurementUnits = Object.keys(MeasurementUnit)
+  
   /**
    * Populated from import spreadsheets
    *
@@ -165,6 +169,9 @@ rowsPerPage = 15;
     this.metadataService.branches$.subscribe(data => (this.branches = data));
 
   }
+
+
+  
 
   toggleView() {
     this.tableSections = !this.tableSections;
@@ -510,7 +517,7 @@ onPageChange(event: any) {
         id: 0 || (Math.random().toString(36).substr(2, 50) as any),
         createdDate: new Date().toISOString(),
         createdBy: '',
-        currentPurchasePrice: (
+        costPrice: (
           basePrice -
           (basePrice * discount.value) / 100 -
           (basePrice * taxPercentage) / 100
@@ -529,8 +536,9 @@ onPageChange(event: any) {
         description: description,
         // branch: branch,
         code: code.toString(),
-        originalPurchasePrice: basePrice.toString(),
+        // originalPurchasePrice: basePrice.toString(),
         tax: taxPercentage,
+        // quantity: 0,
         discount: discount,
         // initialQuantity: quantity,
         sku: sku.toString(),

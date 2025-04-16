@@ -536,52 +536,27 @@ export class PosServiceService {
   
         const filteredProducts = currentBranchId === 1
           ? products
-          : products.filter(product =>
-              product.productBranch?.some((pb: { branchId: number }) => pb.branchId === currentBranchId)
-            );
+          : products
   
         console.log('🔍 Current Branch ID:', currentBranchId);
         console.log('🧹 Filtered Products:', filteredProducts);
   
         const enrichedProducts$ = filteredProducts.map(product => {
-          const relevantProductBranches = currentBranchId === 1
-            ? product.productBranch
-            : product.productBranch.filter((pb: { branchId: number }) => pb.branchId === currentBranchId);
+          
   
-          const productBranchDetails$ = relevantProductBranches.map((pb: { dataId: number }) => {
-            const dataId = pb.dataId;
-            console.log('📥 Fetching for dataId:', dataId);
+         
   
-            return forkJoin({
-              productBranch: of(pb),
-              branchData: this.getBranchDataById(dataId),
-              variants: this.getVariantsByBranchDataId(dataId)
-            }).pipe(
-              tap(res => {
-                console.log(`✅ Got data for dataId ${dataId}:`, res);
-              }),
-              catchError(error => {
-                console.error(`❌ Error loading branchData/variants for dataId ${dataId}:`, error);
-                return of({
-                  productBranch: pb,
-                  branchData: null,
-                  variants: []
-                });
-              })
-            );
-          });
+       
           const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${product?.productImages[0]?.imgNo}`
           
-          return forkJoin([forkJoin(productBranchDetails$), this.imageCacheService.getImage(remoteImageUrl)]).pipe(
-            map(([branchDetails, imageUrl$]) => {
+          return forkJoin([this.imageCacheService.getImage(remoteImageUrl)]).pipe(
+            map(([imageUrl$]) => {
               
             
             // const imageUrl$ = remoteImageUrl ? this.imageCacheService.getImage(remoteImageUrl) : of(null);
             
-              console.log('🔗 Branch Details for product:', product.name, branchDetails);
               return {
                 ...product,
-                branchDetails,
                 imageUrl$
               };
             }),

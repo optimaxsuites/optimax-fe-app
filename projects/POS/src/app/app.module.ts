@@ -117,7 +117,7 @@ import { HotelKeycardComponent } from './ui/view/hotel-keycard/hotel-keycard.com
 import { HotelDooraccessComponent } from './ui/view/hotel-dooraccess/hotel-dooraccess.component';
 import { ViewIngredientsComponent } from './ui/view/ingredient/view-ingredients/view-ingredients.component';
 import { EditIngredientsComponent } from './ui/view/ingredient/edit-ingredients/edit-ingredients.component';
-
+import { HotTableModule } from '@handsontable/angular';
 @NgModule({
   declarations: [
     AppComponent,
@@ -230,6 +230,7 @@ import { EditIngredientsComponent } from './ui/view/ingredient/edit-ingredients/
     InputGroupAddonModule,
     SkeletonModule,
     PaginatorModule,
+    HotTableModule
     // BrowserAnimationsModule,
   ],
   exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],

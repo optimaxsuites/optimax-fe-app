@@ -49,8 +49,8 @@ export class AddProductComponent {
     description: '',
     sku: '',
     weight: 0,
-    originalPurchasePrice: '',
-    currentPurchasePrice: '',
+    costPrice: '',
+    sellingPrice: '',
    
     partNumber: '',
     tax: 0,
@@ -284,10 +284,10 @@ export class AddProductComponent {
       description: ['', [Validators.required, Validators.maxLength(255)]],
       sku: ['', Validators.required],
       weight: [, [Validators.min(0)]],
-      purchasePrice: [
-        '',
-        [Validators.required, Validators.pattern('^[0-9]*.?[0-9]{0,2}$')],
-      ],
+      // purchasePrice: [
+      //   '',
+      //   [Validators.required, Validators.pattern('^[0-9]*.?[0-9]{0,2}$')],
+      // ],
     
       partNumber: ['', Validators.required],
       selectedBranch: [null, Validators.required], 
@@ -540,8 +540,9 @@ removeIngredient(index: number) {
       branchArray.push(
         this.fb.group({
           branchName: [branch],
-          sellingPrice: [0, Validators.required],
-          quantity: [0, Validators.required],
+          sellingPrice: [null, Validators.required],
+          costPrice:[null, Validators.required],
+          quantity: [null, Validators.required],
           tax: [null, Validators.required],
           supplier: [null, Validators.required],
           discount: [null],
@@ -580,6 +581,7 @@ if (detail?.variants?.length) {
         this.fb.group({
           branchName: [branch],
           sellingPrice: [detail.branchData?.price ?? 0, Validators.required],
+          costPrice: [detail.branchData?.purchasePrice ?? 0, Validators.required],
           quantity: [detail.branchData?.quantity ?? 0, Validators.required],
           tax: [detail.branchData?.taxId || null, Validators.required],
           supplier: [detail.branchData?.supplierId || null, Validators.required],
@@ -768,8 +770,8 @@ if (detail?.variants?.length) {
       description: formValues.description,
       sku: formValues.sku,
       weight: formValues.weight,
-      originalPurchasePrice: formValues.purchasePrice,
-      currentPurchasePrice: formValues.purchasePrice,
+      costPrice: formValues.purchasePrice,
+      // currentPurchasePrice: formValues.purchasePrice,
       partNumber: formValues.partNumber,
       tax: formValues.tax,
       productCategory: formValues.category,
@@ -825,80 +827,56 @@ if (detail?.variants?.length) {
     //   }
     // );
 
-    this.createFullProductFlow(product, this.branchess.value)
+    this.createProductPerBranch(this.branchess.value)
   }
 
-  async createFullProductFlow(productForm: any, branches: any[]) {
-    const branchDataResponses: any[] = [];
-    const formValues = this.productForm.value;
+  async createProductPerBranch( branches: any[]) {
     this.loading = true;
+    const formValues = this.productForm.value;
+    const userName = sessionStorage.getItem('username');
   
     try {
-      // Step 1: Create Branch Data
       for (const branch of branches) {
-        const branchDataPayload = {
-          price: branch.sellingPrice,
-          quantity: branch.quantity,
+        const productPayload = {
+          name: formValues.name,
+          code: formValues.code,
+          partNumber: formValues.partNumber,
+          description: formValues.description,
+          measurementUnit: formValues.measurementUnit,
+          isBundle: formValues.isBundle,
+          bundleItems: formValues.bundleItems || [],
+          productCategory: formValues.category,
+          variants: branch.variants || [],
+          // branch-specific values
           sku: formValues.sku,
-          supplierId: branch.supplier.id,
-          taxId: branch.tax.id,
-          discountId: branch.discount.id,
+          purchasePrice: branch.costPrice,
+          sellingPrice: branch.sellingPrice,
+          quantity: branch.quantity,
+          weight: formValues.weight,
+          reorderThreshold: formValues.reorderThreshold,
+          taxId: branch.tax?.id,
+          // discountId: branch.discount?.id,
+          supplierId: branch.supplier?.id,
+          branchId: branch.branchName.id, // if needed on the backend
+          createdBy: userName,
+          createdDate: new Date().toISOString(),
+  
+          productImages: formValues.productImages || [],
         };
-  
-        const branchDataResponse = await this.posService.addBranchData(branchDataPayload).toPromise();
-        branchDataResponses.push({ branchData: branchDataResponse, branch });
-      }
-  
-      // Step 2: Add Variants for each BranchData
-      for (const item of branchDataResponses) {
-        const { branchData, branch } = item;
-        if (branch.variants && Array.isArray(branch.variants)) {
-          for (const variant of branch.variants) {
-            const variantPayload = {
-              name: variant.name,
-              price: variant.price,
-              quantity: variant.quantity,
-              sku: variant.sku,
-              branchDataId: branchData.id
-            };
-            await this.posService.addProductVariant(variantPayload).toPromise();
-          }
+        console.log(productPayload)
+        const formData = new FormData();
+        formData.append('product', JSON.stringify(productPayload));
+        if (formValues.image instanceof File) {
+          formData.append('files', formValues.image);
         }
-      }
-  
-      // Step 3: Add Product (without productBranch for now)
-      const productPayload = {
-        ...productForm,
-        productBranch: [] // add later
-      };
-  
-      const formData = new FormData();
-      formData.append('product', JSON.stringify(productPayload));
-      if (formValues.image instanceof File) {
-        formData.append('files', formValues.image);
-      }
-  
-      const productRes = await this.posService.addProduct(formData).toPromise();
-      const productId = productRes.id;
-  
-      // Step 4: Create productBranches using productId
-      const productBranches = [];
-      for (const item of branchDataResponses) {
-        const { branchData, branch } = item;
-        const productBranchPayload = {
-          id: 0,
-          branchId: branch.branchName.id,
-          dataId: branchData.id,
-          productId: productId
-        };
-        const productBranchRes = await this.posService.addProductBranchData(productBranchPayload).toPromise();
-        productBranches.push(productBranchRes);
+        console.log(formData)
+        await this.posService.addProduct(formData).toPromise();
       }
   
       this.messageService.add({
         severity: 'success',
         summary: 'Product Added',
-        detail: 'Product added successfully.',
+        detail: 'Products created for all branches successfully.',
         key: 'tl',
         life: 3000,
       });
@@ -915,6 +893,7 @@ if (detail?.variants?.length) {
       this.loading = false;
     }
   }
+  
   
   
   async updateProduct() {
@@ -1065,8 +1044,8 @@ if (detail?.variants?.length) {
       description: formValue.description,
       sku: formValue.sku,
       weight: formValue.weight,
-      originalPurchasePrice: formValue.purchasePrice,
-      currentPurchasePrice: formValue.purchasePrice,
+      costPrice: formValue.purchasePrice,
+      // currentPurchasePrice: formValue.purchasePrice,
       partNumber: formValue.partNumber,
       tax: formValue.tax,
       productCategory: formValue.category,

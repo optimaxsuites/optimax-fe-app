@@ -166,14 +166,16 @@ export class MenuItemsService {
       route: this.navigationLink.getLink('expensesLink'),
       icon: 'fas fa-money-bill-wave',
       locked: true,
-      active: false
+      active: true,
+      code: 'expense',
 
-      // submenu: [
-      //   // { label: 'Expenses', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
-      //   // { label: 'Reimbursements', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
-      //   // { label: 'Retirement', route: "", roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
 
-      // ],
+      submenu: [
+        { label: 'Expenses', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
+        { label: 'Reimbursements', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
+        { label: 'Retirement', route: "", roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
+
+      ],
     },
     {
       label: 'Tender',

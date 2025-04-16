@@ -1,78 +1,136 @@
 <div
-  class="bg-white p-6 rounded-2xl shadow-lg max-w-2xl mx-auto h-full min-h-fit"
-  style="min-height: fit-content"
+  class="p-6 rounded-2xl  max-w-2xl mx-auto h-full min-h-fit"
 >
-  <!-- Close Button -->
-  <button
-    (click)="closeModal()"
-    class="absolute top-4 right-4 text-red-500 hover:text-red-700 focus:outline-none text-2xl"
-    aria-label="Close modal"
+
+
+  <p class="text-center">Kindly fill out <span class="font-bold text-[14px] text-customGreen cursor-pointer uppercase" (click)="createExcelSheet()">this</span>  excel sheet provided, following the format outlined in the template. <br> Please ensure all required fields are filled correctly before uploading.</p>
+
+    <div
+    class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center mt-5"
+    (dragover)="onDragOver($event)"
+    (drop)="onDrop($event)"
+    (dragleave)="onDragLeave($event)"
+    [class.border-customGreen]="isDragging"
   >
-    Close
-  </button>
-
-  <h2 class="text-xl font-semibold text-center mb-4">Import Excel File</h2>
-
-  <!-- Download Template Button -->
-  <div class="flex justify-center mb-4 mt-10">
+    <p class="text-gray-500" *ngIf="!fileName">
+        Drag and drop your .xlsx file here, or <span class="text-customGreen cursor-pointer font-semibold" (click)="fileInput.click()">click here</span> to upload.
+    </p>
+    <p class="text-gray-500" *ngIf="fileName">
+        File uploaded - {{ fileName }}
+    </p>
+  
+    <input
+      type="file"
+      accept=".xlsx"
+      (change)="onFileSelected($event)"
+      class="hidden"
+      #fileInput
+    />
     <button
-      class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
-      (click)="downloadTemplate()"
+      class="mt-4 px-4 py-2 text-white bg-customGreen rounded"
+      (click)="readExcelFile()"
     >
-      Download Template
+      {{buttonText}}
     </button>
   </div>
 
-  <!-- File Upload Input -->
-  <div class="text-center mt-20">
-    <label for="excelFileInput" class="block text-xl font-medium mb-2">
-      Upload Excel File
-    </label>
-    <input
-      id="excelFileInput"
-      type="file"
-      accept=".xls, .xlsx"
-      class="block w-full border border-gray-300 rounded-lg p-2 focus:ring-green-500 focus:border-green-500"
-      (change)="onFileSelected($event)"
-    />
-  </div>
+  <p *ngIf="alert.length > 0" class="text-center mt-4 text-customRed">
+   {{alert}}
+  </p>
+<p-toast position="top-right" key="tl" />
 
-  @for (p of parsedProductArray; track $index) {
-
-
-
-
-
-
-
-
-
-
-  <div class="bg-white shadow-md rounded-lg overflow-hidden">
-    <div class="flex">
-      <label for="image" class="btn create-invoice-btn p-4"
-        ><img
-          [src]="
-            'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s'
-          "
-          alt="{{ p.name }}"
-          class="w-1/3 h-auto object-cover"
-        />
-        <span style="color: red">*</span></label
-      >
-      <input
-        type="file"
-        (change)="onImageUpload($event)"
-        [(ngModel)]="p.productImages"
-        id="image"
-        hidden
-      />
-      <div class="p-4">
-        <h2 class="text-xl font-semibold mb-2">{{ p.name }}</h2>
-        <p class="text-gray-600">SKU: {{ p.sku }}</p>
-      </div>
-    </div>
-  </div>
-  }
 </div>
 
+
+<!-- <div class="p-8">
+  <p class="back" style="cursor: pointer" (click)="closeModal()">
+    <i class="fa-solid fa-arrow-left"></i> Back
+  </p>
+  
+
+  <form [formGroup]="form">
+
+  <table class="table-auto w-full border">
+    <thead class="bg-blue-100 text-blue-900">
+      <tr>
+        <th *ngFor="let header of headers" class="py-2 px-4 border-b">{{ header }}</th>
+      </tr>
+    </thead>
+    <tbody formArrayName="rows">
+      <tr *ngFor="let row of formArray.controls; let i = index" [formGroupName]="i">
+      <td class="py-2 px-4 border-b text-center font-semibold">
+        {{ i + 1 }}
+      </td>
+
+
+        <td class="py-2 px-4 border-b">
+          <input type="text" formControlName="name" class="w-full p-2 border rounded" />
+        </td>
+  
+        <td class="py-2 px-4 border-b w-96">
+          <textarea formControlName="description" class="w-full p-2 border rounded" rows="3"></textarea>
+        </td>
+  
+        <td class="py-2 px-4 border-b">
+          <ng-select 
+            [items]="branches" 
+            bindLabel="name" 
+            formControlName="branches" 
+            [multiple]="true" 
+            placeholder="Select branch(es)">
+          </ng-select>
+        </td>
+  
+        <td class="py-2 px-4 border-b">
+          <input type="text" formControlName="partNumber" class="w-full p-2 border rounded" />
+        </td>
+  
+        <td class="py-2 px-4 border-b">
+          <input type="text" formControlName="sku" class="w-full p-2 border rounded" />
+        </td>
+  
+        <td class="py-2 px-4 border-b">
+          <input type="text" formControlName="code" class="w-full p-2 border rounded" />
+        </td>
+  
+        <td class="py-2 px-4 border-b w-24">
+          <ng-select 
+            [items]="categories" 
+            bindLabel="name" 
+            formControlName="category" 
+            placeholder="Select category">
+          </ng-select>
+        </td>
+  
+        <td class="py-2 px-4 border-b w-6">
+          <p-inputNumber formControlName="weight" mode="decimal" [min]="0" class="w-6"></p-inputNumber>
+        </td>
+  
+        <td class="py-2 px-4 border-b">
+          <ng-select 
+            [items]="measurementUnits" 
+            bindLabel="name" 
+            formControlName="unit" 
+            placeholder="Select unit">
+          </ng-select>
+        </td>
+  
+        <td class="py-2 px-4 border-b">
+          <p-inputNumber formControlName="reorderThreshold" mode="decimal" [min]="0"></p-inputNumber>
+        </td>
+  
+        <td class="py-2 px-4 border-b text-center">
+          <input type="checkbox" formControlName="isCombo" />
+        </td>
+  
+        <td class="py-2 px-4 border-b">
+          <input type="text" formControlName="comboItems" class="w-full p-2 border rounded" />
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  
+  </form>
+  
+</div> -->
+ 
