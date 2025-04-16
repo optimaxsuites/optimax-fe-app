@@ -25,6 +25,8 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { HotelLogsComponent } from './ui/view/hotel-logs/hotel-logs.component';
 import { DialogModule } from 'primeng/dialog';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { HotelCheckinformComponent } from './ui/view/hotel-checkinform/hotel-checkinform.component';
+import { HotelMaintenancenoteComponent } from './ui/view/hotel-maintenancenote/hotel-maintenancenote.component';
 
 @NgModule({
   declarations: [
@@ -38,6 +40,8 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
     HotelRoomlistComponent,
     HotelLogsComponent,
     BackButtonComponent,
+    HotelCheckinformComponent,
+    HotelMaintenancenoteComponent,
   ],
   imports: [
     BrowserAnimationsModule,
