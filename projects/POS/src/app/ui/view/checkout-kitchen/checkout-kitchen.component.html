@@ -96,17 +96,28 @@
     <!-- ORDER DETAILS PANEL -->
     @if(isOrderDetailsOpen){<p-panel
       class="order-details"
-      header="Table {{ selectedOrder?.no }} - {{ selectedOrder?.status }}"
       [toggleable]="true"
       [collapsed]="false"
     >
+      <ng-template pTemplate="header">
+        <i
+          class="fa-solid fa-x text-red-500 cursor-pointer"
+          (click)="isOrderDetailsOpen = false"
+        ></i>
+        <span class="font-bold ml-auto text-2xl"
+          >Table {{ selectedOrder?.no }} - {{ selectedOrder?.status }}</span
+        >
+      </ng-template>
       @switch (mode) { @case ("chef") {
       <div class="details-body" style="font-size: 1.7rem">
         @if(selectedOrder!.orders.size > 0){ @for (item of
         selectedOrder!.orders; track $index) {
         <div class="order-item">
           <span class="item-name"> {{ item[0] }} </span>
-          <span class="item-quantity"> {{ item[1].qty }} Serving(s)</span>
+          <span class="item-quantity">
+            {{ item[1].qty }}
+            {{ item[1].qty > 1 ? "Servings" : "Serving" }}</span
+          >
         </div>
         } } @else {
         <div class="order-item">
@@ -164,7 +175,7 @@
 
         <!-- Table of items -->
         <div class="overflow-x-auto">
-          <p-table [value]="data">
+          <p-table [value]="selectedOrder!.orders | keyvalue">
             <ng-template pTemplate="header">
               <tr>
                 <th>Item</th>
@@ -175,10 +186,10 @@
             </ng-template>
             <ng-template pTemplate="body" let-rowData>
               <tr>
-                <td>{{ rowData.item }}</td>
-                <td>{{ rowData.qty }}</td>
-                <td>{{ rowData.rate }}</td>
-                <td>{{ rowData.amount }}</td>
+                <td>{{ rowData.key }}</td>
+                <td>{{ rowData.value.qty }}</td>
+                <td>{{ rowData.value.rate }}</td>
+                <td>N{{ rowData.value.qty * rowData.value.rate }}</td>
               </tr>
             </ng-template>
           </p-table>
@@ -188,7 +199,7 @@
         <div class="mt-4 space-y-2">
           <div class="border-t pt-2 flex justify-between">
             <span>Subtotal</span>
-            <span>N8,000.00</span>
+            <span> {{ orderSubTotal() }} </span>
           </div>
           <div class="flex justify-between">
             <span>Vat</span>
@@ -196,7 +207,7 @@
           </div>
           <div class="border-t pt-2 flex justify-between font-bold">
             <span>Total</span>
-            <span>N8,600.00</span>
+            <span>N{{ orderSubTotal() + 600 }}</span>
           </div>
         </div>
 
@@ -254,13 +265,13 @@
             class="p-button-danger flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 focus:outline-none focus:ring focus:ring-red-200"
             icon="pi pi-times"
           ></button>
-          <button
+          <!-- <button
             pButton
             type="button"
             label="Hold"
             class="p-button-warning flex-1 bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-yellow-600 focus:outline-none focus:ring focus:ring-yellow-200"
             icon="pi pi-pause"
-          ></button>
+          ></button> -->
           <button
             pButton
             type="button"
@@ -278,7 +289,10 @@
         selectedOrder!.orders; track $index) {
         <div class="order-item">
           <span class="item-name"> {{ item[0] }} </span>
-          <span class="item-quantity"> {{ item[1].qty }} Serving(s)</span>
+          <span class="item-quantity">
+            {{ item[1].qty }}
+            {{ item[1].qty > 1 ? "Servings" : "Serving" }}</span
+          >
         </div>
         } } @else {
         <div class="order-item">
@@ -359,7 +373,10 @@
   <!-- Items Table -->
   <div class="p-4">
     <div class="overflow-x-auto">
-      <p-table [value]="data" class="w-full border-gray-300">
+      <p-table
+        [value]="(selectedOrder?.orders | keyvalue) ?? data"
+        class="w-full border-gray-300"
+      >
         <!-- Table Header -->
         <ng-template pTemplate="header">
           <tr class="bg-gray-100">
@@ -374,16 +391,16 @@
         <ng-template pTemplate="body" let-rowData>
           <tr>
             <td class="p-2 border-b border-gray-200">
-              {{ rowData.item }}
+              {{ rowData?.key ?? "Jollof Rice" }}
             </td>
             <td class="p-2 border-b border-gray-200">
-              {{ rowData.qty }}
+              {{ rowData?.value?.qty ?? 1 }}
             </td>
             <td class="p-2 border-b border-gray-200">
-              {{ rowData.rate }}
+              N{{ rowData?.value?.rate ?? 2000 }}
             </td>
             <td class="p-2 border-b border-gray-200">
-              {{ rowData.amount }}
+              N{{ (rowData?.value?.qty ?? 1) * (rowData?.value?.rate ?? 2000) }}
             </td>
           </tr>
         </ng-template>
@@ -394,7 +411,9 @@
     <div class="mt-4 space-y-2">
       <div class="flex justify-between border-t pt-2">
         <span>Subtotal</span>
-        <span>{{ 8000 | currency : "NGN" : "symbol" : "1.0-0" }}</span>
+        <span>{{
+          orderSubTotal() | currency : "NGN" : "symbol" : "1.0-0"
+        }}</span>
       </div>
       <div class="flex justify-between">
         <span>Vat</span>
@@ -402,7 +421,9 @@
       </div>
       <div class="flex justify-between border-t pt-2 font-bold">
         <span>Total</span>
-        <span>{{ 8600 | currency : "NGN" : "symbol" : "1.0-0" }}</span>
+        <span>{{
+          orderSubTotal() + 600 | currency : "NGN" : "symbol" : "1.0-0"
+        }}</span>
       </div>
     </div>
   </div>

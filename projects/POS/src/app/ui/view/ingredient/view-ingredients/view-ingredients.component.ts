@@ -30,9 +30,10 @@ export class ViewIngredientsComponent {
       currentStock: new FormControl(''),
       reorderThreshold: new FormControl(''),
       measurementUnit: new FormControl(null),
-      supplierId: new FormControl(null),
+      supplierName: new FormControl(null),
       branches: new FormControl(''),
      });
+     console.log('Loaded ingredient:', this.activeItem);
     }
-     
+    
 }

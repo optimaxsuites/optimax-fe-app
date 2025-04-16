@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { CloseRegisterComponent } from '../../close-register/close-register.component';
 import { PosServiceService } from '../../../service/pos-service.service';
 import { HttpClient } from '@angular/common/http';
-
+import { MeasurementUnit, supplierData } from '../../../models/interface';
 
 @Component({
   selector: 'app-ingredient',
@@ -23,6 +23,10 @@ export class IngredientComponent {
   tableSection: boolean = true;
   isMenuOpen: boolean = false;
   selectedIngredients: any[] = [];
+//@ts-ignore
+  selectedMeasurementUnit: string;
+
+  measurementUnits = Object.values(MeasurementUnit); 
 
   Delete = false;
   activeIngredient: any;
@@ -42,6 +46,8 @@ export class IngredientComponent {
 
 ngOnInit(): void {
   this.loadIngredients();
+
+  this.filteredIngredients = this.ingredients;
 
 
  
@@ -117,11 +123,12 @@ closeModal(){
   }
   
 
-
-  filterIngredientsBySearch(searchValue: string): void {
-    this.filteredIngredients = this.ingredients.filter(ingredient => ingredient.ingredientName.toLowerCase()
-    .includes(this.searchTerm.toLowerCase()));
+  filterIngredientsBySearch(): void {
+    this.filteredIngredients = this.ingredients.filter(ingredient =>
+      ingredient.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+    );
   }
+  
   
   filterIngredientsByCategories(selectedCategories: string): void {
     if (!selectedCategories) {
@@ -129,7 +136,7 @@ closeModal(){
       this.filteredIngredients = this.ingredients;
     } else {
       // Show filtered ingredients by category
-      this.filteredIngredients = this.ingredients.filter(ingredient => ingredient.category === selectedCategories);
+      this.filteredIngredients = this.ingredients.filter(ingredient => ingredient.measurementUnits === selectedCategories);
     }
 
   }
@@ -143,6 +150,17 @@ closeModal(){
     // Optionally update localStorage if needed
     localStorage.setItem('ingredients', JSON.stringify(this.ingredients));
   }
+  filterIngredientsByMeasurementUnit(unit: string): void {
+    if (!unit) {
+      this.filteredIngredients = this.ingredients;
+    } else {
+      this.filteredIngredients = this.ingredients.filter(
+        ingredient =>
+          ingredient.measurementUnit?.toLowerCase().trim() === unit.toLowerCase().trim()
+      );
+    }
+  }
+  
   
   
 

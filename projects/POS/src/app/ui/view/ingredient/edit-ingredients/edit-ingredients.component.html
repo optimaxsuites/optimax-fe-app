@@ -58,7 +58,7 @@
             <label for="default-input" class="block mb-2 text-[13px]  text-gray-900 dark:text-white text-left"> Supplier</label>
             <input 
             class="editInput bg-gray-100 text-[12px] p-2.5 font-normal w-full" 
-            formControlName="supplierId" 
+            [value]="activeItem.supplier.name"
           />
         </div>
         <div class="form">

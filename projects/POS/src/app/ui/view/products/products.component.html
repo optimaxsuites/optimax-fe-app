@@ -178,11 +178,11 @@
             <span class="p-column-title">Name</span>{{ item.name }}
           </td>
           <td class="table-item">
-            <span class="p-column-title">Price</span>{{ item?.sellingPrice | currency : "₦" }}
+            <span class="p-column-title">Price</span>{{ item.branchDetails[0].branchData.price | currency : "₦" }}
           </td>
           <td class="table-item">
             <span class="p-column-title">Quantity</span
-            >{{ item?.quantity }}
+            >{{ item.branchDetails[0].branchData.quantity }}
           </td>
           <td class="table-item">
             <span class="p-column-title">Category</span
