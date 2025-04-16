@@ -99,7 +99,7 @@ export interface KeyCardLog {
 export class HotelCheckinformComponent implements OnInit {
   @Input() selectedRoom: Room | null = null;
   @Output() checkinComplete = new EventEmitter<Room>();
-  @Output() close = new EventEmitter<void>();
+  @Output() back = new EventEmitter<void>();
   @Input() selectedRooms: Room[] = [];
 
   bookingForm: FormGroup;
@@ -304,7 +304,7 @@ export class HotelCheckinformComponent implements OnInit {
   }
 
   closeForm(): void {
-    this.close.emit();
+    this.back.emit();
   }
 
   toggleNewGuest(): void {
