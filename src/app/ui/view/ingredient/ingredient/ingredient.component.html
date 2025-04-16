@@ -12,12 +12,13 @@
 <div *ngIf="tableSection" class="flex flex-col w-full  p-4">
   <div class="gap-3 w-full flex justify-between items-center">
     <ng-select
-    [items]="categories"
-    bindLabel="name"
-    [(ngModel)]="selectedCategories"
-    (ngModelChange)="filterIngredientsByCategories($event)"
-    placeholder="Select Category"
-  ></ng-select>
+    [items]="measurementUnits"
+    [(ngModel)]="selectedMeasurementUnit"
+    (ngModelChange)="filterIngredientsByMeasurementUnit($event)"
+    placeholder="Select MeasurementUnit"
+  ></ng-select>  
+  
+  
   
 <div class="w-1/3 flex justify-end">
   <div class="search-container ">
@@ -26,7 +27,7 @@
       class="Search-input"
       placeholder="Search by Name..."
       [(ngModel)]="searchTerm"
-      (ngModelChange)="filterIngredientsBySearch($event)"
+      (ngModelChange)="filterIngredientsBySearch()" 
     />
     <i class="fas fa-search"></i>
   </div>
@@ -78,8 +79,8 @@
         <td class="table-item">{{ item.currentStock }}</td>
         <td class="table-item">{{ item.measurementUnit }}</td>
 
-        <td class="actions table-item">
-          <div class="dropdown">
+        <td class="actions  relative table-item ">
+          <div class="dropdown relative">
               <span (click)="toggleDropdown2(item, $event)">
               <i class="material-icons cursor-pointer">more_vert</i>
             </span>

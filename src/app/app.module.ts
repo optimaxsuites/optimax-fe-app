@@ -177,8 +177,8 @@ import { EditIngredientsComponent } from './ui/view/ingredient/edit-ingredients/
     //CheckoutHeaderComponent,
   ],
   imports: [
-    BrowserModule,
-    UserModule,
+    // BrowserModule,
+    // UserModule,
     AppRoutingModule,
     CheckboxModule,
     CommonModule,

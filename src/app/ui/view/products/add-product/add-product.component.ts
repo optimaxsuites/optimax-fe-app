@@ -322,6 +322,8 @@ export class AddProductComponent {
     //   default:
     //     break;
     // }
+    this.fetchMetaData()
+
 
     this.productForm = this.fb.group(fbGroup);
     if (!this.fallBackToOldForm) {
@@ -412,16 +414,28 @@ export class AddProductComponent {
       this.productForm
         .get('endDate')
         ?.setValue(this.activeItem?.discount?.endDate);
+        this.productForm
+        .get('category')
+        ?.setValue(this.activeItem?.productCategory);
       this.productForm
         .get('discountValue')
         ?.setValue(this.activeItem?.discount?.value);
-      this.productForm.get('image')?.setValue(this.activeItem?.productImages);
+      this.productForm.get('image')?.setValue(this.activeItem?.imageUrl$);
+      this.productForm
+      .get('purchasePrice')
+      ?.setValue(this.activeItem?.currentPurchasePrice);
+
+   this.loadBranches()
+
+     this.loadVariants()
     }
+
+
+
 
     this.productForm.get('selectedBranch')?.valueChanges.subscribe(() => {
       this.updateBranches();
     });
-    this.fetchMetaData()
 
   }
 
@@ -462,7 +476,48 @@ export class AddProductComponent {
         console.log("Ingredient already added!");
     }
 }
+ loadVariants(){
 
+    const variantMap: { [key: string]: any } = {};
+
+    this.activeItem?.branchDetails?.forEach((branchDetail: any) => {
+    const branchId = branchDetail.productBranch.branchId;
+    const variants = branchDetail.variants;
+
+    variants.forEach((variant: any) => {
+    const key = variant.variantId || variant.sku || variant.name; 
+
+    if (!variantMap[key]) {
+      variantMap[key] = {
+        variantId: variant.variantId,
+        name: variant.name,
+        sku: variant.sku,
+        color: variant.color || 'Other'.split(',').map((val) => val.trim()),
+        size: variant.size || 'Regular',
+        branches: [branchId],
+      };
+    } else {
+      if (!variantMap[key].branches.includes(branchId)) {
+        variantMap[key].branches.push(branchId);
+      }
+    }
+    });
+    });
+
+    this.variants = Object.values(variantMap);
+ }
+
+ loadBranches(){
+  const branchDataList = this.activeItem?.branchDetails?.map((detail: any) => {
+    const branchId = detail.productBranch?.branchId;
+    const fullBranch = this.branches.find((branch: any) => branch.id === branchId);
+    return fullBranch; 
+  });
+  this.productForm.get('selectedBranch')?.setValue(branchDataList);
+
+  this.populateEditBranches();
+
+ }
 onIngredientSelect(selectedItems: any[]) {
   console.log(selectedItems)
   this.selectedIngredients = selectedItems.map(ingredient => ({
@@ -495,6 +550,45 @@ removeIngredient(index: number) {
       );
     });
   }
+
+  populateEditBranches() {
+    this.selecteddBranch.forEach((branch: any) => {
+      const branchId = branch.id;
+  
+      const detail = this.activeItem?.branchDetails?.find(
+        (d: any) => d.productBranch?.branchId === branchId
+      );
+  
+      const variantsFormArray = new FormArray<FormGroup>([]);
+
+if (detail?.variants?.length) {
+  detail.variants.forEach((variant: any) => {
+    variantsFormArray.push(
+      this.fb.group({
+        name: [variant.name, Validators.required],
+        price: [variant.price, Validators.required],
+        sku: [variant.sku],
+        quantity: [variant.quantity, Validators.required],
+      })
+    );
+  });
+}
+
+
+      this.branchess.push(
+        this.fb.group({
+          branchName: [branch],
+          sellingPrice: [detail.branchData?.price ?? 0, Validators.required],
+          quantity: [detail.branchData?.quantity ?? 0, Validators.required],
+          tax: [detail.branchData?.taxId || null, Validators.required],
+          supplier: [detail.branchData?.supplierId || null, Validators.required],
+          discount: [detail.branchData?.discountId || null],
+          variants: variantsFormArray,
+        })
+      );
+    });
+  }
+  
 
   removeBranch(index: number) {
     const branchToRemove = this.branchess.at(index).get('branchName')?.value;
@@ -698,38 +792,30 @@ removeIngredient(index: number) {
     this.createFullProductFlow(product, this.branchess.value)
   }
 
-  createFullProductFlow(productForm: any, branches: any[]) {
+  async createFullProductFlow(productForm: any, branches: any[]) {
     const branchDataResponses: any[] = [];
     const formValues = this.productForm.value;
+    this.loading = true;
   
-    // 1. Loop through each branch and post branch data (without variants)
-    const branchDataPromises = branches.map(async branch => {
-      const branchDataPayload = {
-        price: branch.sellingPrice,
-        quantity: branch.quantity,
-        sku: formValues.sku,
-        supplierId: branch.supplier.id ,
-        taxId: branch.tax.id ,
-        discountId: branch.discount.id ,
-      };
+    try {
+      // Step 1: Create Branch Data
+      for (const branch of branches) {
+        const branchDataPayload = {
+          price: branch.sellingPrice,
+          quantity: branch.quantity,
+          sku: formValues.sku,
+          supplierId: branch.supplier.id,
+          taxId: branch.tax.id,
+          discountId: branch.discount.id,
+        };
   
-      const branchDataResponse = await this.posService.addBranchData(branchDataPayload).toPromise();
-      branchDataResponses.push({
-        branchData: branchDataResponse,
-        branch: branch
-      });
-      return branchDataResponse;
-    });
+        const branchDataResponse = await this.posService.addBranchData(branchDataPayload).toPromise();
+        branchDataResponses.push({ branchData: branchDataResponse, branch });
+      }
   
-    // Run all branch data requests first
-    Promise.all(branchDataPromises).then(async responses => {
-      const productVariants: any[] = [];
-      const productBranches: any[] = [];
-  
+      // Step 2: Add Variants for each BranchData
       for (const item of branchDataResponses) {
         const { branchData, branch } = item;
-  console.log(branch)
-        // 2. Post all variants for each branchData
         if (branch.variants && Array.isArray(branch.variants)) {
           for (const variant of branch.variants) {
             const variantPayload = {
@@ -739,76 +825,61 @@ removeIngredient(index: number) {
               sku: variant.sku,
               branchDataId: branchData.id
             };
-            const variantRes = await this.posService.addProductVariant(variantPayload).toPromise();
-            productVariants.push(variantRes);
+            await this.posService.addProductVariant(variantPayload).toPromise();
           }
         }
+      }
   
-        // 3. Prepare productBranch payload (productId = 0 for now)
+      // Step 3: Add Product (without productBranch for now)
+      const productPayload = {
+        ...productForm,
+        productBranch: [] // add later
+      };
+  
+      const formData = new FormData();
+      formData.append('product', JSON.stringify(productPayload));
+      if (formValues.image instanceof File) {
+        formData.append('files', formValues.image);
+      }
+  
+      const productRes = await this.posService.addProduct(formData).toPromise();
+      const productId = productRes.id;
+  
+      // Step 4: Create productBranches using productId
+      const productBranches = [];
+      for (const item of branchDataResponses) {
+        const { branchData, branch } = item;
         const productBranchPayload = {
           id: 0,
-          branchId: branch.branchName.id ,
+          branchId: branch.branchName.id,
           dataId: branchData.id,
+          productId: productId
         };
         const productBranchRes = await this.posService.addProductBranchData(productBranchPayload).toPromise();
         productBranches.push(productBranchRes);
       }
   
-      // 4. Post final product
-      const productPayload = {
-        ...productForm,
-        productBranch: productBranches
-      };
-
-      console.log(productPayload)
-  
-      const formData = new FormData();
-    formData.append('product', JSON.stringify(productPayload));
-
-
-    if (formValues.image instanceof File) {
-      formData.append('files', formValues.image);
-    }
-      this.posService.addProduct(formData).subscribe({
-        next: (res) => {
-          console.log('✅ Product created successfully:', res);
-          this.messageService.add({
-                    severity: 'success',
-                    summary: 'Product Added',
-                    detail: 'Product added successfully.',
-                    key: 'tl',
-                    life: 3000,
-                  });
-                  this.addSuccessfull = true;
-    this.loading = false
-
-        },
-        error: (err) => {
-          this.messageService.add({
-                    severity: 'error',
-                    summary: 'Failed',
-                    detail: 'An error occured. Please try adding the product again.',
-                    key: 'tl',
-                    life: 3000,
-                  });
-    this.loading = false
-
-        }
-        
-      });
-  
-    }).catch(error => {
       this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: 'Unexpected error occured, please try again later.',
-              key: 'tl',
-              life: 3000,
-            });
-    this.loading = false
-
-    });
+        severity: 'success',
+        summary: 'Product Added',
+        detail: 'Product added successfully.',
+        key: 'tl',
+        life: 3000,
+      });
+      this.addSuccessfull = true;
+    } catch (error) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Failed',
+        detail: 'An error occurred. Please try again.',
+        key: 'tl',
+        life: 3000,
+      });
+    } finally {
+      this.loading = false;
+    }
   }
+  
   
   updateProduct() {
     const userName = sessionStorage.getItem('username');

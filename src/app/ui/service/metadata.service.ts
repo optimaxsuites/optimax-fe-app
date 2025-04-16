@@ -14,6 +14,7 @@ export class MetadataService {
   private supplierSubject = new BehaviorSubject<any[]>([]);
   private branchSubject = new BehaviorSubject<any[]>([]);
   private productSubject =  new BehaviorSubject<any[]>([]);
+  private enrichedProductSubject =  new BehaviorSubject<any[]>([])
 
 
   discount$ = this.discountSubject.asObservable();
@@ -23,6 +24,7 @@ export class MetadataService {
   supplier$ = this.supplierSubject.asObservable();
   branches$ = this.branchSubject.asObservable();
   products$ = this.productSubject.asObservable();
+  enrichedProduct$ = this.enrichedProductSubject.asObservable()
 
 
 
@@ -37,6 +39,9 @@ export class MetadataService {
     this.posService.getTax().subscribe((data) => this.taxSubject.next(data));
     this.posService.getBranches().subscribe((data) => this.branchSubject.next(data));
     this.posService.getProducts().subscribe((data) => this.productSubject.next(data));
+    this.posService.getFilteredProductsWithDetails(1).subscribe(data => 
+      this.enrichedProductSubject.next(data)
+    );
 
   }
 }

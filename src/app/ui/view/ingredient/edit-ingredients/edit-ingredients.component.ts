@@ -33,8 +33,9 @@ export class EditIngredientsComponent {
         supplierId: new FormControl(this.activeItem?.supplierId || ''),
         branches: new FormControl(this.activeItem?.branches || ''),
       });
+      console.log('Loaded ingredient:', this.activeItem);
       }
-
+      
       
       updateIngredient() {
         if (this.ingredientForm.valid) {

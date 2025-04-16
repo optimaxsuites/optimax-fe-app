@@ -640,8 +640,7 @@
             class="w-[450px] h-[400px]"
             [src]="
               isEditMode
-                ? productImage ||
-                  getImageUrl(activeItem?.productImages[0]?.imgNo)
+                ? activeItem?.imageUrl$ 
                 : productImage ||
                   'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s'
             "

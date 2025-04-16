@@ -82,7 +82,7 @@ export class ProductsComponent implements OnInit {
   tableSection: boolean = true;
   searchTerm: string = '';
   selectedCategories: number[] = [];
-  selectedBranch: number = 1;
+  selectedBranch: number = 5;
 
   categories: any[] = [];
   isImportDialogOpen = false;
@@ -170,10 +170,7 @@ rowsPerPage = 15;
     this.tableSections = !this.tableSections;
   }
 
-  getImageUrl(item: any): Observable<string> {
-    const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${item.productImages[0].imgNo}`;
-    return this.imageCacheService.getImage(remoteImageUrl);
-  }
+
 
 
 get paginatedProducts() {
@@ -193,7 +190,7 @@ onPageChange(event: any) {
   }
 
   getProducts() {
-    this.metadataService.products$.subscribe(async (data) => {
+    this.metadataService.enrichedProduct$.subscribe(async (data) => {
       if (data) {
         this.originalProducts = data.sort((a: any, b: any) => {
           const dateA = new Date(
@@ -222,6 +219,36 @@ onPageChange(event: any) {
         this.isLoading = false;
       }
     });
+
+    // this.posService.getFilteredProductsWithDetails(this.selectedBranch).subscribe((data) => {
+    //     if (data) {
+    //     this.originalProducts = data.sort((a: any, b: any) => {
+    //       const dateA = new Date(
+    //         a.createdDate[0],
+    //         a.createdDate[1] - 1,
+    //         a.createdDate[2],
+    //         a.createdDate[3],
+    //         a.createdDate[4],
+    //         a.createdDate[5]
+    //       );
+    //       const dateB = new Date(
+    //         b.createdDate[0],
+    //         b.createdDate[1] - 1,
+    //         b.createdDate[2],
+    //         b.createdDate[3],
+    //         b.createdDate[4],
+    //         b.createdDate[5]
+    //       );
+    //       return dateB.getTime() - dateA.getTime();
+    //     });
+    //     this.products = [...this.originalProducts];
+    //     console.log(this.products)
+    //     this.isLoading = false;
+    //   } else {
+    //     console.log('error loading data');
+    //     this.isLoading = false;
+    //   }
+    // });
   }
   getDiscountTypes() {
     this.posService.getDiscountTypes().subscribe(async (data) => {
