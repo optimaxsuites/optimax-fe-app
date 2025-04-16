@@ -157,7 +157,7 @@ export class HotelFormComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       phone: ['', [Validators.required, Validators.pattern('^[0-9+ ]*$')]],
       country: ['Nigeria', Validators.required],
-      idNumber: ['', Validators.required],
+      idNumber: [''],
       gender: ['', Validators.required],
       checkinDate: [new Date(), Validators.required],
       checkoutDate: [
@@ -181,7 +181,7 @@ export class HotelFormComponent implements OnInit {
       lastName: ['', [Validators.required, Validators.pattern('^[a-zA-Z ]*$')]],
       phone: ['', [Validators.required, Validators.pattern('^[0-9+ ]*$')]],
       email: ['', [Validators.required, Validators.email]],
-      idNumber: ['', Validators.required],
+      idNumber: [''],
       gender: ['', Validators.required],
     });
 

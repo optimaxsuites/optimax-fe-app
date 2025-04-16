@@ -94,6 +94,7 @@ export class HotelRoomdetailsComponent {
   @Input() room: Room | null = null;
   @Output() back = new EventEmitter<void>();
   @Output() statusChanged = new EventEmitter<Room>();
+  @Input() selectedRoom: Room | null = null;
 
   previousRoom: Room | null = null;
   showDetails: boolean = false;
@@ -103,6 +104,8 @@ export class HotelRoomdetailsComponent {
   openMessage: boolean = false;
   openBills: boolean = false;
   openRoom: boolean = false;
+  openCheckinForm: boolean = false;
+  openNote: boolean = false;
 
   statusColors: any = {
     available: 'bg-emerald-500',
@@ -204,44 +207,16 @@ export class HotelRoomdetailsComponent {
     this.openBills = !this.openBills;
   }
 
+  navigateToNote() {
+    this.openNote = !this.openNote;
+  }
+
   navigateToChangeRoom() {
     this.openRoom = !this.openRoom;
   }
 
-  checkIn(): void {
-    if (this.detailedRoom) {
-      this.detailedRoom.status = 'occupied';
-
-      // Update both the detailed room view and localStorage
-      this.updateRoom(this.detailedRoom);
-
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Checked In',
-        detail: 'Guest has been checked in',
-      });
-
-      // Refresh the view
-      this.cdRef.detectChanges();
-    }
-  }
-
-  checkOut(): void {
-    if (this.detailedRoom) {
-      this.detailedRoom.status = 'dirty';
-      delete this.detailedRoom.guest;
-      delete this.detailedRoom.bookingDetails;
-
-      this.updateRoom(this.detailedRoom);
-
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Checked Out',
-        detail: 'Guest has been checked out',
-      });
-
-      this.cdRef.detectChanges();
-    }
+  navigateTocheck() {
+    this.openCheckinForm = !this.openCheckinForm;
   }
 
   onStartMaintenance(): void {
@@ -281,6 +256,11 @@ export class HotelRoomdetailsComponent {
       summary: 'Extend Stay',
       detail: 'Extend stay functionality will be implemented here',
     });
+  }
+
+  onCheckinComplete(updatedRoom: Room) {
+    // Update your room list or perform other actions
+    console.log('Room updated:', updatedRoom);
   }
 
   onAddMaintenanceNotes(): void {
