@@ -19,7 +19,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { UserModule } from './user/user.module';
-
+import { InputNumberModule } from 'primeng/inputnumber';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { HotelLogsComponent } from './ui/view/hotel-logs/hotel-logs.component';
@@ -27,6 +27,7 @@ import { DialogModule } from 'primeng/dialog';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HotelCheckinformComponent } from './ui/view/hotel-checkinform/hotel-checkinform.component';
 import { HotelMaintenancenoteComponent } from './ui/view/hotel-maintenancenote/hotel-maintenancenote.component';
+import { HotelExtendstayComponent } from './ui/view/hotel-extendstay/hotel-extendstay.component';
 
 @NgModule({
   declarations: [
@@ -42,6 +43,7 @@ import { HotelMaintenancenoteComponent } from './ui/view/hotel-maintenancenote/h
     BackButtonComponent,
     HotelCheckinformComponent,
     HotelMaintenancenoteComponent,
+    HotelExtendstayComponent,
   ],
   imports: [
     BrowserAnimationsModule,
@@ -57,6 +59,7 @@ import { HotelMaintenancenoteComponent } from './ui/view/hotel-maintenancenote/h
     ProgressBarModule,
     TableModule,
     DialogModule,
+    InputNumberModule,
   ],
   providers: [MessageService],
 
