@@ -261,22 +261,13 @@ export class AddProductComponent {
     private fb: FormBuilder,
     private industryData: IndustryDataService,
     private metadataService: MetadataService
-  ) {}
+  ) {
+    
+  }
   ngOnInit(): void {
 
-    // Initialize as many empty form controls for as many branches as there can possibly be.
-    // Also use this chance to init the `this.variants` object
-    const controlGroupForFormBranches = new FormArray(
-      this.branches.map((_, index) => {
-        this.variants = [];
-        return this.createBranchData();
-      })
-    );
 
-    // For when there's no selected branch;
-    this.variants = [];
-
-    // this.loadCategory();
+    
 
     const fbGroup: Parameters<typeof this.fb.group>[0] = {
       name: ['', Validators.required],
@@ -308,92 +299,14 @@ export class AddProductComponent {
 
    
 
-    if (!this.fallBackToOldForm)
-      fbGroup['branches'] = controlGroupForFormBranches;
 
-    //TODO - Get endpoints for these
-    // // Append additional validators depending on the business type
-    // switch (this.businessType) {
-    //   case 'Pharmacy':
-    //     fbGroup['expiryDate'] = ['', Validators.required];
-    //     fbGroup['dosage'] = ['', Validators.required];
-    //     fbGroup['prescriptionRequired'] = [false];
-    //     break;
-    //   default:
-    //     break;
-    // }
-    this.fetchMetaData()
 
 
     this.productForm = this.fb.group(fbGroup);
-    if (!this.fallBackToOldForm) {
-      (this.productForm.get('branches') as FormArray<any>).controls.forEach(
-        (v) => {
-          const group = v as FormGroup<any>;
+    this.fetchMetaData()
 
-          const priceControl = group.get('price') as FormControl<any>;
-          const effectivePriceControl = group.get(
-            'effectivePrice'
-          ) as FormControl<any>;
-          const quantityControl = group.get('quantity') as FormControl<any>;
-          const effectiveQuantityControl = group.get(
-            'effectiveQuantity'
-          ) as FormControl<any>;
 
-          const preventNaN = (val: number) => {
-            return Number.isNaN(val) ? 0 : parseInt(val as any);
-          };
-          const calcEffectivePrice = (basePrice: number) => {
-            const taxedPercentageOfPrice =
-              (preventNaN(parseInt(this.productForm.get('tax')?.value) ?? 0) /
-                100) *
-              basePrice;
-            const effectivePrice = basePrice + taxedPercentageOfPrice;
-
-            effectivePriceControl.setValue(effectivePrice, {
-              emitEvent: false,
-            });
-          };
-          priceControl.valueChanges.subscribe((val) => {
-            // `val` is a number
-            calcEffectivePrice(preventNaN(parseInt(val)));
-          });
-          this.productForm.get('tax')?.valueChanges.subscribe(() => {
-            calcEffectivePrice(preventNaN(priceControl.value));
-          });
-          quantityControl.valueChanges.subscribe((val: number) => {
-            effectiveQuantityControl.setValue(val, { emitEvent: false });
-          });
-        }
-      );
-    }
-
-    // if (this.selectedBranchIndex == -1) {
-    //   // Disable the branch specific data
-    //   this.formControlInBranchDataAtIndex('price').disable();
-    //   this.formControlInBranchDataAtIndex('effectivePrice').disable();
-    //   this.formControlInBranchDataAtIndex('quantity').disable();
-    //   this.formControlInBranchDataAtIndex('effectiveQuantity').disable();
-    //   this.formControlInBranchDataAtIndex('sku').disable();
-    //   this.formControlInBranchDataAtIndex('variants').disable();
-    // }
-
-    if (this.fallBackToOldForm) {
-      this.productForm
-        .get('initialQuantity')
-        ?.valueChanges.subscribe((value) => {
-          this.productForm
-            .get('effectiveQuantity')
-            ?.setValue(value, { emitEvent: false });
-        });
-      this.productForm.get('initialPrice')?.valueChanges.subscribe(() => {
-        this.calculateEffectivePrice();
-      });
-
-      this.productForm.get('tax')?.valueChanges.subscribe(() => {
-        this.calculateEffectivePrice();
-      });
-    }
+  
     if (this.isEditMode && this.activeItem) {
       this.productForm.patchValue(this.activeItem);
       if (this.activeItem.variants.length > 0) {
@@ -432,10 +345,10 @@ export class AddProductComponent {
 
 
 
-
     this.productForm.get('selectedBranch')?.valueChanges.subscribe(() => {
       this.updateBranches();
     });
+
 
   }
 
@@ -445,7 +358,8 @@ export class AddProductComponent {
     this.metadataService.supplier$.subscribe(data => (this.suppliers = data));
     this.metadataService.discountTypes$.subscribe(data => (this.discountTypes = data));
     this.metadataService.taxes$.subscribe(data => (this.taxes = data));
-    this.metadataService.branches$.subscribe(data => (this.branches = data));
+    this.metadataService.branches$.subscribe(data => this.branches = data);
+    
     this.metadataService.products$.subscribe(data => {this.originalProducts = data});
 
 
