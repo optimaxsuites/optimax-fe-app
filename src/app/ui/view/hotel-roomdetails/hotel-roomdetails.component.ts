@@ -152,7 +152,7 @@ export class HotelRoomdetailsComponent {
   }
 
   get isMaintenance(): boolean {
-    return this.detailedRoom?.status === 'maintenance';
+    return this.detailedRoom?.status?.toLowerCase() === 'maintenance';
   }
 
   get isDirty(): boolean {
@@ -435,7 +435,7 @@ export class HotelRoomdetailsComponent {
       // Handle old room (set to maintenance)
       const updatedOldRoom = {
         ...event.oldRoomStatus,
-        status: 'Maintenance',
+        status: 'maintenance',
         maintenanceReason: event.note,
         maintenanceTasks: maintenanceTasks,
         maintenanceStartDate: new Date(),
