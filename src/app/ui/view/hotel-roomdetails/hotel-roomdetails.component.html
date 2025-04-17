@@ -8,7 +8,8 @@
     !openBills &&
     !openRoom &&
     !openCheckinForm &&
-    !openNote
+    !openNote &&
+    !openExtendStay
   "
   class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 animate-fadeIn p-4"
 >
@@ -273,64 +274,124 @@
         </ng-template>
       </div>
 
-      <!-- Column 4: Booking/Payment Info -->
+      <!-- Column 4: Booking/Payment Info OR Maintenance Info -->
       <div
         class="p-6 border-r border-gray-200/50"
-        *ngIf="isBooked || isOccupied"
+        *ngIf="isBooked || isOccupied || isMaintenance"
       >
-        <div class="flex items-center gap-3 mb-6">
-          <div class="bg-purple-100/80 text-purple-600 p-3 rounded-xl">
-            <i class="pi pi-calendar text-2xl"></i>
+        <!-- For Booked or Occupied rooms -->
+        <ng-container *ngIf="isBooked || isOccupied">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="bg-purple-100/80 text-purple-600 p-3 rounded-xl">
+              <i class="pi pi-calendar text-2xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-800">Stay Details</h3>
           </div>
-          <h3 class="text-2xl font-bold text-gray-800">Stay Details</h3>
-        </div>
 
-        <div class="space-y-4">
-          <div *ngIf="detailedRoom.bookingDetails">
-            <div class="grid grid-cols-1 gap-4">
-              <div>
-                <p
-                  class="text-lg font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Check-in
-                </p>
-                <p class="text-xl font-semibold text-gray-800 mt-1">
-                  {{
-                    detailedRoom.bookingDetails.checkinDate
-                      | date : "mediumDate"
-                  }}
-                </p>
+          <div class="space-y-4">
+            <div *ngIf="detailedRoom.bookingDetails">
+              <div class="grid grid-cols-1 gap-4">
+                <div>
+                  <p
+                    class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Check-in
+                  </p>
+                  <p class="text-xl font-semibold text-gray-800 mt-1">
+                    {{
+                      detailedRoom.bookingDetails.checkinDate
+                        | date : "mediumDate"
+                    }}
+                  </p>
+                </div>
+                <div>
+                  <p
+                    class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Check-out
+                  </p>
+                  <p class="text-xl font-semibold text-gray-800 mt-1">
+                    {{
+                      detailedRoom.bookingDetails.checkoutDate
+                        | date : "mediumDate"
+                    }}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p
-                  class="text-lg font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Check-out
-                </p>
-                <p class="text-xl font-semibold text-gray-800 mt-1">
+            </div>
+
+            <div *ngIf="detailedRoom.bookingDetails?.adults">
+              <p
+                class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Guests
+              </p>
+              <p class="text-xl font-semibold text-gray-800 mt-1">
+                {{ detailedRoom.bookingDetails?.adults }} Adults
+                <span *ngIf="detailedRoom.bookingDetails?.children">
+                  • {{ detailedRoom.bookingDetails?.children }} Children
+                </span>
+              </p>
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- For Maintenance rooms -->
+        <ng-container *ngIf="isMaintenance">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="bg-gray-100/80 text-gray-600 p-3 rounded-xl">
+              <i class="pi pi-wrench text-2xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-800">
+              Maintenance Details
+            </h3>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <p
+                class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Reason
+              </p>
+              <div class="bg-gray-100/50 p-3 rounded-lg">
+                <p class="text-gray-800 font-bold text-lg">
                   {{
-                    detailedRoom.bookingDetails.checkoutDate
-                      | date : "mediumDate"
+                    detailedRoom.maintenanceReason ||
+                      "Room requires maintenance"
                   }}
                 </p>
               </div>
             </div>
-          </div>
 
-          <div *ngIf="detailedRoom.bookingDetails?.adults">
-            <p
-              class="text-lg font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Guests
-            </p>
-            <p class="text-xl font-semibold text-gray-800 mt-1">
-              {{ detailedRoom.bookingDetails?.adults }} Adults
-              <span *ngIf="detailedRoom.bookingDetails?.children">
-                • {{ detailedRoom.bookingDetails?.children }} Children
-              </span>
-            </p>
+            <div *ngIf="detailedRoom.maintenanceTasks?.length">
+              <p
+                class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Required Tasks
+              </p>
+              <div class="flex flex-wrap gap-2 mt-2">
+                <span
+                  *ngFor="let task of detailedRoom.maintenanceTasks"
+                  class="bg-gray-200 text-gray-800 px-2 py-1 rounded-full text-sm"
+                >
+                  {{ task }}
+                </span>
+              </div>
+            </div>
+
+            <div *ngIf="detailedRoom.maintenanceStartDate">
+              <p
+                class="text-lg font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Started On
+              </p>
+              <p class="text-xl font-semibold text-gray-800 mt-1">
+                {{ detailedRoom.maintenanceStartDate | date : "mediumDate" }}
+              </p>
+            </div>
           </div>
-        </div>
+        </ng-container>
       </div>
 
       <!-- Column 5: Payment & Requests -->
@@ -456,7 +517,7 @@
 
           <button
             *ngIf="isAdminView"
-            (click)="onExtendStay()"
+            (click)="navigateToExtend()"
             class="bg-gradient-to-r from-blue-600 to-indigo-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-blue-700 hover:to-indigo-600"
           >
             <i class="pi pi-clock"></i>
@@ -486,7 +547,7 @@
             class="bg-gradient-to-r from-gray-600 to-slate-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-gray-700 hover:to-slate-600"
           >
             <i class="pi pi-pencil"></i>
-            Add Notes
+            Add Notes or View Notes
           </button>
         </ng-container>
       </div>
@@ -505,7 +566,7 @@
 
 <div *ngIf="openCheckinForm">
   <app-hotel-checkinform
-    [selectedRoom]="selectedRoom"
+    [selectedRoom]="selectedRoom!"
     (checkinComplete)="onCheckinComplete($event)"
     (back)="navigateTocheck()"
   >
@@ -513,7 +574,13 @@
 </div>
 
 <div *ngIf="openMessage">
-  <app-hotel-message (back)="navigateToMessage()"></app-hotel-message>
+  <app-hotel-message
+    [room]="detailedRoom!"
+    [showCheckout]="true"
+    (closeCheckout)="navigateToMessage()"
+    (checkoutComplete)="onCheckoutComplete($event)"
+  >
+  </app-hotel-message>
 </div>
 
 <div *ngIf="openBills">
@@ -521,16 +588,41 @@
 </div>
 
 <div *ngIf="openRoom">
-  <app-hotel-changeroom (back)="navigateToChangeRoom()"></app-hotel-changeroom>
+  <app-hotel-changeroom
+    [currentRoom]="(detailedRoom || room)!"
+    [availableRooms]="getAvailableRooms()"
+    (back)="navigateToChangeRoom()"
+    (onChangeRoom)="handleRoomChange($event)"
+  ></app-hotel-changeroom>
 </div>
 
 <div *ngIf="openNote">
   <app-hotel-maintenancenote
-    [room]="detailedRoom"
+    [room]="detailedRoom!"
     (back)="navigateToNote()"
     (maintenanceComplete)="onCompleteMaintenance()"
   ></app-hotel-maintenancenote>
 </div>
+
+<!-- parent.component.html update for the dialog -->
+<p-dialog
+  [(visible)]="openExtendStay"
+  [modal]="true"
+  [closable]="false"
+  [style]="{ width: '700px', maxHeight: '90vh' }"
+  [baseZIndex]="1000"
+  styleClass="custom-dialog p-0"
+  [showHeader]="false"
+  contentStyleClass="p-0 flex flex-column"
+>
+  <app-hotel-extendstay
+    [selectedRoom]="detailedRoom || selectedRoom!"
+    (stayExtended)="onStayExtended($event)"
+    (back)="navigateToExtend()"
+    class="flex flex-column h-full"
+  >
+  </app-hotel-extendstay>
+</p-dialog>
 
 <!-- <div class="key-card-section">
   <app-hotel-keycard
