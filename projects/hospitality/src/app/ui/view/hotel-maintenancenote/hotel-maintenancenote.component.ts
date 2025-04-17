@@ -5,6 +5,7 @@ export interface Todo {
   id: number;
   title: string;
   description?: string;
+  reason?: string; // Added reason field
   completed: boolean;
   priority: 'low' | 'medium' | 'high';
   dueDate?: Date;
@@ -12,7 +13,6 @@ export interface Todo {
   roomNumber?: number;
   roomId?: number;
 }
-
 export interface Guest {
   id?: string; // Optional property for guest ID
   title: string;
@@ -51,6 +51,10 @@ export interface Room {
   description?: string;
   amenities?: string[];
   currentKey?: RoomKey; // Optional property for current key
+  maintenanceReason?: string;
+  maintenanceTasks?: string[];
+  maintenanceStartDate?: Date;
+  maintenanceNotes?: string;
 }
 
 export interface Booking {
@@ -107,6 +111,7 @@ export class HotelMaintenancenoteComponent implements OnInit {
   todos: Todo[] = [];
   filteredTodos: Todo[] = [];
   newTodoTitle: string = '';
+  newTodoReason: string = ''; // Added for reason input
   newTodoPriority: 'low' | 'medium' | 'high' = 'medium';
   currentFilter: 'all' | 'active' | 'completed' = 'all';
   sortBy: 'priority' | 'name' | 'dueDate' = 'priority';
@@ -195,6 +200,7 @@ export class HotelMaintenancenoteComponent implements OnInit {
     const newTodo: Todo = {
       id: this.generateId(),
       title: this.newTodoTitle.trim(),
+      reason: this.newTodoReason.trim() || undefined, // Add reason if provided
       completed: false,
       priority: this.newTodoPriority,
       roomNumber: this.room?.number,
@@ -203,6 +209,7 @@ export class HotelMaintenancenoteComponent implements OnInit {
 
     this.todos.unshift(newTodo);
     this.newTodoTitle = '';
+    this.newTodoReason = ''; // Clear reason input
     this.saveTodos();
     this.updateFilteredTodos();
     this.updateProgress();
