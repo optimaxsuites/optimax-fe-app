@@ -516,7 +516,11 @@
 
     <div class="subcategory-display">
       @for (p of selectedSubCategories; track $index) {
-      <div class="subcategory-card" (click)="addFoodItemToOrder(p)">
+      <div
+        role="button"
+        class="subcategory-card"
+        (click)="addFoodItemToOrder(p)"
+      >
         {{ p.name }}
       </div>
       }
