@@ -1,62 +1,56 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MessageService } from 'primeng/api';
 
+export interface Guest {
+  id?: string;
+  title: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  country: string;
+  idNumber: string;
+  gender: string;
+}
+
 export interface BookingDetails {
-  title?: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-  checkinDate: Date | string;
-  checkoutDate: Date | string;
+  checkinDate: Date;
+  checkoutDate: Date;
   adults: number;
-  children?: number;
+  children: number;
   specialRequests?: string;
-  paymentMethod?: string;
-  totalAmount?: number;
-  paidAmount?: number;
-  balanceAmount?: number;
+  paymentMethod: string;
+  totalAmount: number;
+  paidAmount: number;
+  balanceAmount: number;
 }
 
 export interface Room {
   id: number;
+  number: number;
   type: string;
   status: string;
   floor?: number;
-  guest?: string;
-  selected?: boolean;
+  guest?: Guest;
+  rate: number;
   bookingDetails?: BookingDetails;
   beds?: number;
   maxOccupancy?: number;
-  rate: number;
   description?: string;
   amenities?: string[];
   extendedStayDays?: number;
   maintenanceNotes?: string;
-  serviceCharge: ServiceCharge[];
-  otherCharges: OtherCharge[];
-  billItem: BillItem[];
+  serviceCharges?: ServiceCharge[];
 }
 
 export interface ServiceCharge {
-  category: 'kitchen' | 'mini bar' | 'laundry' | 'bar';
-  name: 'Breakfast Set' | 'Whiskey Bottle' | 'Laundry Service' | 'Beer Can'; // Sample service names
-  price: 15.99;
-  quantity: 2;
-  date: '2025-04-02T08:30:00Z';
-}
-
-export interface BillItem {
+  category: string;
   name: string;
   price: number;
   quantity: number;
+  date: string;
 }
 
-export interface OtherCharge {
-  name: string;
-  price: number;
-  quantity: number;
-}
 @Component({
   selector: 'app-hotel-message',
   templateUrl: './hotel-message.component.html',
@@ -65,105 +59,70 @@ export interface OtherCharge {
 })
 export class HotelMessageComponent {
   @Input() showCheckout: boolean = false;
-  @Input() detailedRoom!: Room;
-  @Input() serviceCharges: ServiceCharge[] = [];
-  @Input() otherCharges: OtherCharge[] = [];
-  @Output() back = new EventEmitter();
+  @Input() room!: Room;
+  @Output() closeCheckout = new EventEmitter<void>();
+  @Output() checkoutComplete = new EventEmitter<Room>();
 
-  @Output() closeCheckoutEvent = new EventEmitter<void>();
-
-  @Output() printInvoiceEvent = new EventEmitter<void>();
-  @Output() checkoutGuestEvent = new EventEmitter<void>();
-
-  // Sample tax rate (7.5%)
+  paymentAmount: number = 0;
+  paymentMethod: string = 'cash';
   readonly TAX_RATE = 0.075;
+  formattedAmount: string = '';
+  rawAmount: string = '';
 
   constructor(private messageService: MessageService) {}
 
-  closeCheckout(): void {
-    this.showCheckout = false;
-    this.detailedRoom;
-  }
-
-  getServiceItems(category: string): ServiceCharge[] {
-    return this.serviceCharges.filter(
-      (service) =>
-        service.name.includes(category) || service.category === category
+  calculateRoomTotal(): number {
+    if (!this.room?.bookingDetails) return 0;
+    const nights = this.calculateNights(
+      this.room.bookingDetails.checkinDate,
+      this.room.bookingDetails.checkoutDate
     );
+    return this.room.rate * nights;
   }
 
-  getServiceTotal(category: string): number {
-    return this.getServiceItems(category).reduce(
-      (sum, service) => sum + service.price * service.quantity,
-      0
-    );
+  onAmountInput(value: string): void {
+    const inputValue = value.replace(/,/g, ''); // Remove commas
+    this.rawAmount = inputValue;
+
+    if (inputValue) {
+      const numericValue = parseFloat(inputValue);
+      if (!isNaN(numericValue)) {
+        this.paymentAmount = numericValue;
+        this.formattedAmount = this.formatWithCommas(numericValue);
+      }
+    } else {
+      this.paymentAmount = 0;
+      this.formattedAmount = '';
+    }
   }
 
-  getOtherServiceCategories(): string[] {
-    const allCategories = this.serviceCharges.map(
-      (service) => service.category || service.name.split(' - ')[0]
-    );
-    const uniqueCategories = [...new Set(allCategories)];
-    return uniqueCategories.filter(
-      (cat) => cat && !['Mini Bar', 'Kitchen'].includes(cat)
-    );
+  onBlur(): void {
+    if (this.rawAmount) {
+      const numericValue = parseFloat(this.rawAmount);
+      if (!isNaN(numericValue)) {
+        this.paymentAmount = numericValue;
+      }
+    }
   }
 
-  calculateServiceChargesTotal(): number {
-    return this.serviceCharges.reduce(
-      (sum, service) => sum + service.price * service.quantity,
-      0
-    );
-  }
-
-  printInvoice(): void {
-    this.printInvoiceEvent.emit();
-  }
-
-  checkoutGuest(): void {
-    this.checkoutGuestEvent.emit();
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Checkout Complete',
-      detail: 'Guest has been checked out successfully',
+  formatWithCommas(value: number): string {
+    return value.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
     });
   }
 
-  calculateNights(
-    checkinDate: Date | string,
-    checkoutDate: Date | string
-  ): number {
-    if (!checkinDate || !checkoutDate) return 0;
-
-    const checkin = new Date(checkinDate);
-    const checkout = new Date(checkoutDate);
-    return Math.ceil(
-      (checkout.getTime() - checkin.getTime()) / (1000 * 60 * 60 * 24)
-    );
-  }
-
-  calculateRoomTotal(): number {
-    if (!this.detailedRoom?.bookingDetails) return 0;
-
-    const nights = this.calculateNights(
-      this.detailedRoom.bookingDetails.checkinDate,
-      this.detailedRoom.bookingDetails.checkoutDate
-    );
-    return this.detailedRoom.rate * nights;
-  }
-
-  calculateOtherChargesTotal(): number {
-    return this.otherCharges.reduce(
-      (sum, charge) => sum + charge.price * charge.quantity,
+  calculateServiceChargesTotal(): number {
+    if (!this.room.serviceCharges) return 0;
+    return this.room.serviceCharges.reduce(
+      (sum, service) => sum + service.price * service.quantity,
       0
     );
   }
 
   calculateTaxes(): number {
     const subtotal =
-      this.calculateRoomTotal() +
-      this.calculateServiceChargesTotal() +
-      this.calculateOtherChargesTotal();
+      this.calculateRoomTotal() + this.calculateServiceChargesTotal();
     return subtotal * this.TAX_RATE;
   }
 
@@ -171,21 +130,84 @@ export class HotelMessageComponent {
     return (
       this.calculateRoomTotal() +
       this.calculateServiceChargesTotal() +
-      this.calculateOtherChargesTotal() +
       this.calculateTaxes()
     );
   }
 
   calculateBalance(): number {
-    const paidAmount = this.detailedRoom?.bookingDetails?.paidAmount || 0;
+    const paidAmount = this.room?.bookingDetails?.paidAmount || 0;
     return this.calculateTotal() - paidAmount;
   }
 
-  getPaymentMethod(): string {
-    return this.detailedRoom?.bookingDetails?.paymentMethod || 'Not specified';
+  processPayment(): void {
+    if (this.paymentAmount <= 0) return;
+
+    if (!this.room.bookingDetails) {
+      this.room.bookingDetails = {
+        checkinDate: new Date(),
+        checkoutDate: new Date(),
+        adults: 1,
+        children: 0,
+        paymentMethod: this.paymentMethod,
+        totalAmount: this.calculateTotal(),
+        paidAmount: 0,
+        balanceAmount: this.calculateTotal(),
+      };
+    }
+
+    this.room.bookingDetails.paidAmount += this.paymentAmount;
+    this.room.bookingDetails.balanceAmount = this.calculateBalance();
+    this.room.bookingDetails.paymentMethod = this.paymentMethod;
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Payment Processed',
+      detail: `Payment of ${this.paymentAmount} has been recorded`,
+    });
+
+    this.paymentAmount = 0;
   }
 
-  goBack(): void {
-    this.back.emit();
+  completeCheckout(): void {
+    // Update room status to dirty
+    this.room.status = 'dirty';
+
+    // Clear guest and booking details
+    delete this.room.guest;
+    delete this.room.bookingDetails;
+    delete this.room.serviceCharges;
+    delete this.room.extendedStayDays;
+
+    // Emit checkout complete event
+    this.checkoutComplete.emit(this.room);
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Checkout Complete',
+      detail: 'Guest has been checked out and room marked as dirty',
+    });
+
+    this.closeCheckoutModal();
+  }
+
+  closeCheckoutModal(): void {
+    this.closeCheckout.emit();
+  }
+  // Fix for: "Argument of type 'Date | undefined' is not assignable to parameter of type 'Date'"
+  calculateNights(
+    checkinDate: Date | undefined,
+    checkoutDate: Date | undefined
+  ): number {
+    if (!checkinDate || !checkoutDate) {
+      return 0;
+    }
+
+    // Convert to milliseconds and calculate the difference
+    const diffTime = checkoutDate.getTime() - checkinDate.getTime();
+
+    // Convert the difference to days
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return diffDays > 0 ? diffDays : 0;
   }
 }
