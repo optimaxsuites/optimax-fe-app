@@ -27,8 +27,8 @@ export class ViewProductComponent {
  private readonly defaultVariant: VariantDTO = {
     id: 0,
     name: '',
-    // price: 1,
-    // quantity: 1,
+    price: 0,
+    quantity: 0,
     color: '',
     size: 'Regular',
     sku: '',

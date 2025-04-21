@@ -26,6 +26,7 @@ import {
 } from '../../../models/interface';
 import { IndustryDataService } from '../../../service/industry-data.service';
 import { MetadataService } from '../../../service/metadata.service';
+import { skipUntil } from 'rxjs';
 
 interface SelectedIngredientDTO {
   ingredient: IngredientDTO;  
@@ -167,8 +168,8 @@ export class AddProductComponent {
   private readonly defaultVariant: VariantDTO = {
     id: 0,
     name: '',
-    // price: 1,
-    // quantity: 1,
+    price: 0,
+    quantity: 0,
     color: '',
     size: 'Regular',
     sku: '',
@@ -253,6 +254,8 @@ export class AddProductComponent {
   fallBackToOldForm = true;
   loading: boolean = false;
   originalProducts: ProductData[] = [];
+  userBranch = "headquarters"
+Array = Array;
 
   constructor(
     private messageService: MessageService,
@@ -271,19 +274,23 @@ export class AddProductComponent {
 
     const fbGroup: Parameters<typeof this.fb.group>[0] = {
       name: ['', Validators.required],
-      code: ['', Validators.required],
+      code: [''],
       description: ['', [Validators.required, Validators.maxLength(255)]],
-      sku: ['', Validators.required],
-      weight: [, [Validators.min(0)]],
+      sku: [''],
+      weight: [null, [Validators.min(0)]],
       // purchasePrice: [
       //   '',
       //   [Validators.required, Validators.pattern('^[0-9]*.?[0-9]{0,2}$')],
       // ],
-    
-      partNumber: ['', Validators.required],
-      selectedBranch: [null, Validators.required], 
+      costPrice: [null],
+      sellingPrice: [null],
+      tax: [null],
+      discount: [null],
+      quantity: [null],
+      supplier: [null],
+      partNumber: [''],
+      selectedBranch: [[], Validators.required], 
       branches: this.fb.array([]),
-      discount: [''],
       category: [''],
       image: [null],
       startDate: [''],
@@ -344,7 +351,12 @@ export class AddProductComponent {
     }
 
 
-
+    if (this.userBranch !== 'headquarters') {
+      this.productForm.get('selectedBranch')?.disable();
+    } else {
+      this.productForm.get('selectedBranch')?.enable();
+    }
+    
     this.productForm.get('selectedBranch')?.valueChanges.subscribe(() => {
       this.updateBranches();
     });
@@ -358,7 +370,14 @@ export class AddProductComponent {
     this.metadataService.supplier$.subscribe(data => (this.suppliers = data));
     this.metadataService.discountTypes$.subscribe(data => (this.discountTypes = data));
     this.metadataService.taxes$.subscribe(data => (this.taxes = data));
-    this.metadataService.branches$.subscribe(data => this.branches = data);
+    this.metadataService.branches$.subscribe(data => {
+      this.branches = data;
+  
+      if (this.branches.length > 0) {
+        this.productForm.get('selectedBranch')?.setValue(this.branches[1]);
+        this.newVariant.branches = [this.branches[1]]
+      }
+    });
     
     this.metadataService.products$.subscribe(data => {this.originalProducts = data});
 
@@ -375,6 +394,19 @@ export class AddProductComponent {
   getVariants(branch: AbstractControl) {
     return branch.get('variants') as FormArray<FormGroup>;
   }
+
+  get currentBranch() {
+    return this.userBranch !== 'headquarters' ?  this.selecteddBranch : this.newVariant.branches;
+  }
+  
+  set currentBranch(value: any) {
+    if (this.userBranch === 'headquarters') {
+      this.selectedBranch = value;
+    } else {
+      this.newVariant.branches = value;
+    }
+  }
+  
 
   addIngredient(selectedIngredient: IngredientDTO, quantity: number) {
     const ingredientExists = this.selectedIngredients.find(
@@ -446,25 +478,37 @@ removeIngredient(index: number) {
   this.selectedIngredients.splice(index, 1);
 }
   
-  updateBranches() {
-    const branchArray = this.branchess;
-    branchArray.clear(); // Reset the form array before updating
-  
-    this.selecteddBranch.forEach((branch: { name: any; }) => {
-      branchArray.push(
-        this.fb.group({
-          branchName: [branch],
-          sellingPrice: [null, Validators.required],
-          costPrice:[null, Validators.required],
-          quantity: [null, Validators.required],
-          tax: [null, Validators.required],
-          supplier: [null, Validators.required],
-          discount: [null],
-          variants: this.fb.array([]),
-        })
-      );
+updateBranches() {
+  const branchArray = this.branchess;
+  const selectedBranches = this.selecteddBranch;
+
+  if (selectedBranches.length > 1) {
+    selectedBranches.forEach((branch: any) => {
+      const exists = branchArray.controls.some(ctrl => ctrl.get('branchName')?.value.name === branch.name);
+
+      if (!exists) {
+        branchArray.push(
+          this.fb.group({
+            branchName: [branch],
+            sellingPrice: [null, Validators.required],
+            costPrice: [null, Validators.required],
+            quantity: [null, Validators.required],
+            sku: [this.autoGenerateBranchSku(), Validators.required],
+            code: [null, Validators.required],
+            partNumber: [null, Validators.required],
+            tax: [null, Validators.required],
+            supplier: [null, Validators.required],
+            discount: [null],
+            variants: this.fb.array([]),
+          })
+        );
+      }
     });
+  } else {
+    console.log('Only one branch selected');
   }
+}
+
 
   populateEditBranches() {
     this.selecteddBranch.forEach((branch: any) => {
@@ -660,6 +704,12 @@ if (detail?.variants?.length) {
     this.loading = true
     // console.log(this.productForm);
     if (this.productForm.invalid) {
+      for (const controlName in this.productForm.controls) {
+        const control = this.productForm.controls[controlName];
+        if (control.invalid) {
+          console.log(`${controlName} is invalid. Errors:`, control.errors);
+        }
+      }
       console.log(this.productForm)
       this.messageService.add({
         severity: 'error',
@@ -676,72 +726,89 @@ if (detail?.variants?.length) {
     const formValues = this.productForm.value;
 
     // TODO: Add the rest of the fields, `variant` and `productImages`
-    //@ts-expect-error
-    const product: ProductJSONFormat = {
-      id: 0,
-      name: formValues.name,
-      code: formValues.code,
-      description: formValues.description,
-      sku: formValues.sku,
-      weight: formValues.weight,
-      costPrice: formValues.purchasePrice,
-      // currentPurchasePrice: formValues.purchasePrice,
-      partNumber: formValues.partNumber,
-      tax: formValues.tax,
-      productCategory: formValues.category,
-      createdBy: userName,
-      createdDate: new Date().toISOString(),
-      productBranch: [],
-       isBundle: formValues.isBundle, 
-       bundleItems: formValues.bundleItems, 
-      measurementUnit: formValues.measurementUnit,
-      reorderThreshold: formValues.reorderThreshold,
-    
-    };
-
-    
     // console.log("branches", this.branchess.value)
     // console.log(formData);
 
-    // this.posService.addProduct(formData).subscribe(
-    //   async (data) => {
-    //     if (data) {
-    //       let savedProducts = localStorage.getItem('products');
-    //       let productList: HistoryData = savedProducts
-    //         ? new Map(JSON.parse(savedProducts))
-    //         : new Map();
-    //       productList.set(data.id, data);
-    //       localStorage.setItem('products', JSON.stringify([...productList]));
-    //       this.messageService.add({
-    //         severity: 'success',
-    //         summary: 'Product Added',
-    //         detail: 'Product added successfully.',
-    //         key: 'tl',
-    //         life: 3000,
-    //       });
-    //       this.addSuccessfull = true;
-    //     } else {
-    //       this.messageService.add({
-    //         severity: 'error',
-    //         summary: 'Failed',
-    //         detail: 'An error occured. Please try adding the product again.',
-    //         key: 'tl',
-    //         life: 3000,
-    //       });
-    //     }
-    //   },
-    //   (error) => {
-    //     this.messageService.add({
-    //       severity: 'error',
-    //       summary: 'Error',
-    //       detail: 'Unexpected error occured, please try again later.',
-    //       key: 'tl',
-    //       life: 3000,
-    //     });
-    //   }
-    // );
+   
 
-    this.createProductPerBranch(this.branchess.value)
+    if(this.selecteddBranch?.length > 1){
+      this.createProductPerBranch(this.branchess.value)
+    }else {
+
+      const product = {
+        id: 0,
+        name: formValues.name,
+          code: formValues.code,
+          partNumber: formValues.partNumber,
+          description: formValues.description,
+          measurementUnit: formValues.measurementUnit,
+          isBundle: formValues.isBundle,
+          bundleItems: formValues.bundleItems || [],
+          productCategoryId: formValues.category.id,
+          variants: this.variants || [],         
+          sku: formValues.sku,
+          purchasePrice: formValues.costPrice,
+          sellingPrice: formValues.sellingPrice,
+          quantity: formValues.quantity,
+          weight: formValues.weight,
+          reorderThreshold: formValues.reorderThreshold,
+          taxId: formValues.tax?.id,
+          discountId: formValues.discount?.id,
+          supplierId: formValues.supplier?.id,
+          formValuesId: this.selecteddBranch.id, 
+          createdBy: userName,
+          createdDate: new Date().toISOString(),
+      
+      };
+
+      console.log(product)
+      const formData = new FormData();
+        formData.append('product', JSON.stringify(product));
+        if (formValues.image instanceof File) {
+          formData.append('files', formValues.image);
+        }
+
+      this.posService.addProduct(formData).subscribe(
+      async (data) => {
+        if (data) {
+          // let savedProducts = localStorage.getItem('products');
+          // let productList: HistoryData = savedProducts
+          //   ? new Map(JSON.parse(savedProducts))
+          //   : new Map();
+          // productList.set(data.id, data);
+          // localStorage.setItem('products', JSON.stringify([...productList]));
+          console.log(data)
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Product Added',
+            detail: 'Product added successfully.',
+            key: 'tl',
+            life: 3000,
+          });
+          this.loading = false;
+          this.addSuccessfull = true;
+        } else {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Failed',
+            detail: 'An error occured. Please try adding the product again.',
+            key: 'tl',
+            life: 3000,
+          });
+          this.loading = false;
+        }
+      },
+      (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Unexpected error occured, please try again later.',
+          key: 'tl',
+          life: 3000,
+        });
+      }
+    );
+    }
   }
 
   async createProductPerBranch( branches: any[]) {
@@ -753,23 +820,23 @@ if (detail?.variants?.length) {
       for (const branch of branches) {
         const productPayload = {
           name: formValues.name,
-          code: formValues.code,
-          partNumber: formValues.partNumber,
+          code: branch.code,
+          partNumber: branch.partNumber,
           description: formValues.description,
           measurementUnit: formValues.measurementUnit,
           isBundle: formValues.isBundle,
           bundleItems: formValues.bundleItems || [],
-          productCategory: formValues.category,
+          productCategoryId: formValues.category.id,
           variants: branch.variants || [],
           // branch-specific values
-          sku: formValues.sku,
+          sku: branch.sku,
           purchasePrice: branch.costPrice,
           sellingPrice: branch.sellingPrice,
           quantity: branch.quantity,
           weight: formValues.weight,
           reorderThreshold: formValues.reorderThreshold,
           taxId: branch.tax?.id,
-          // discountId: branch.discount?.id,
+          discountId: branch.discount?.id,
           supplierId: branch.supplier?.id,
           branchId: branch.branchName.id, // if needed on the backend
           createdBy: userName,
@@ -808,6 +875,84 @@ if (detail?.variants?.length) {
     }
   }
   
+  autoGenerateSku() {
+    const formValue = this.productForm.value;
+
+
+    if (formValue.name && !formValue.sku) { 
+      const prefix = formValue.name.substring(0, 3).toUpperCase();
+      const randomNumber = Math.floor(1000 + Math.random() * 9000);
+      this.productForm.get('sku')?.setValue(`${prefix}-${randomNumber}`);
+
+      if(this.variants.length && this.selectedBranch.length< 2){
+        this.variants.forEach(v => v.sku = this.generateVariantSku(this.productForm.get(
+          'sku')?.value, v))
+      }
+
+
+    }
+
+
+    if(formValue.name && this.selecteddBranch.length > 1){
+      this.branchess.controls.forEach((branchControl: FormGroup) => {
+        const updatedSku = this.autoGenerateBranchSku(); 
+        branchControl.patchValue({
+          sku: updatedSku,  
+        });
+
+        const variantsArray = branchControl.get('variants') as FormArray;
+      if (variantsArray && variantsArray.length > 0) {
+        variantsArray.controls.forEach((variantControl: AbstractControl, index: number) => {
+          const variantGroup = variantControl as FormGroup;
+          const variantSku = variantGroup.get('sku')?.value || '';
+
+          const parts = variantSku.split('-');
+          const newPrefix = branchControl.get('sku')?.value
+          const newVariantSku = `${newPrefix}-${parts.slice(1).join('-')}`;
+          variantGroup.patchValue({
+            sku: newVariantSku,
+          });
+        });
+    }
+      });
+    }
+  }
+  autoGenerateBranchSku(): string | null {
+    const formValue = this.productForm.value;
+
+    if (formValue.name) { 
+      const prefix = formValue.name.substring(0, 3).toUpperCase();
+      const randomNumber = Math.floor(1000 + Math.random() * 9000);
+      return `${prefix}-${randomNumber}`
+    }
+return 'AUTO'
+    
+  }
+  generateVariantSku(parentSku: string, variant: VariantDTO) {
+    if (!parentSku) {
+     return 'Auto'
+    }
+  
+    let suffix = '';
+  
+    if (variant.color) {
+      suffix += '-' + variant.color?.toUpperCase();
+    }
+    if (variant.size) {
+      suffix += '-' + variant.size?.toUpperCase();
+    }
+  
+    if (!suffix && variant.name) {
+      const words = variant.name.split(' ');
+      suffix += '-' + words.map(word => word.charAt(0).toUpperCase()).join('');
+    }
+  
+    if (!suffix) {
+      suffix = '-' + Math.floor(1000 + Math.random() * 9000);
+    }
+  
+    return `${parentSku}${suffix}`;
+  }
   
   
   async updateProduct() {
@@ -1026,74 +1171,80 @@ if (detail?.variants?.length) {
   get variantFormArray() {
     return this.productForm.get('variant') as FormArray;
   }
+  
   addVariant() {
     //@ts-ignore
     const variant: VariantDTO = structuredClone(this.newVariant);
   
-    if (this.isEditing && this.editingIndex !== null) {
-      console.log('editinnnnnn!!')
-    } else {
+    const selectedBranch = this.productForm.get('selectedBranch')?.value;
+  
+    if (Array.isArray(selectedBranch) && selectedBranch.length > 1) {
+  
+      const branchArray = this.branchess.controls;
+  
+      variant.branches?.forEach((branchName) => {
+        const targetBranches = branchArray.filter(
+          (branch) => branch.get('branchName')?.value.name === branchName.name
+        );
+  
+        if (targetBranches.length > 0) {
+          targetBranches.forEach((targetBranch) => {
+            const variantsArray = targetBranch.get('variants') as FormArray;
+  
+            if (this.isEditing && this.editingIndex !== null) {
+              const variantIndex = variantsArray.controls.findIndex(
+                (control) => control.get('sku')?.value === variant.sku
+              );
+  
+              if (variantIndex !== -1) {
+                variantsArray.at(variantIndex).patchValue({
+                  name: variant.name,
+                  price: variant.price,
+                  sku: variant.sku,
+                  quantity: variant.quantity,
+                  size: variant.size,
+                  color: variant.color,
+
+                });
+              }
+  
+              this.variants[this.editingIndex] = variant;
+            } else {
+              variantsArray.push(
+                this.fb.group({
+                  // id: [variant.id],
+                  name: [variant.name, Validators.required],
+                  price: [variant.price],
+                  sku: [this.generateVariantSku(targetBranch.get('sku')?.value, variant)],
+                  quantity: [variant.quantity],
+                  size: [variant.size, Validators.required],
+                  color: [variant.color, Validators.required]
+
+                })
+              );
+            }
+          });
+        }
+      });
       this.variants.push(variant);
+
+  
+    } else {
+      if (this.isEditing && this.editingIndex !== null) {
+        this.variants[this.editingIndex] = variant;
+      } else {
+        variant.sku = this.generateVariantSku(this.productForm.get(
+          'sku')?.value, variant);
+        this.variants.push(variant);
+      }
     }
   
-    const branchArray = this.branchess.controls;
-  
-    variant.branches?.forEach((branchName) => {
-      const targetBranches = branchArray.filter(
-        (branch) => branch.get('branchName')?.value.name === branchName.name
-      );
-    
-      console.log(targetBranches);
-    
-      if (targetBranches.length > 0) {
-        targetBranches.forEach((targetBranch) => {
-          const variantsArray = targetBranch.get('variants') as FormArray;
-    
-          if (this.isEditing && this.editingIndex !== null) {
-            console.log('editing!!!!');
-            console.log(variantsArray);
-    
-            const variantIndex = variantsArray.controls.findIndex(
-              (control) => control.get('sku')?.value === variant.sku
-            );
-            console.log(variantIndex);
-    
-            if (variantIndex !== -1) {
-              variantsArray.at(variantIndex).patchValue({
-                name: variant.name,
-                price: variant.price,
-                sku: variant.sku,
-                quantity: variant.quantity,
-              });
-            }
-    
-            this.variants[this.editingIndex] = variant;
-    
-          } else {
-            variantsArray.push(
-              this.fb.group({
-                id: [variant.id],
-                name: [variant.name, Validators.required],
-                price: [variant.price, Validators.required],
-                sku: [variant.sku],
-                quantity: [variant.quantity, Validators.required],
-              })
-            );
-          }
-        });
-      }
-    });
-    
     this.newVariant = this.resetVariantData();
     this.openAddVariant = false;
     this.isEditing = false;
     this.editingIndex = null;
-
-
-    
-  
-
   }
+  
   
 
   deleteVariant(index: number) {
@@ -1568,8 +1719,8 @@ if (detail?.variants?.length) {
     return {
       id: this.defaultVariant.id,
       name: this.defaultVariant.name,
-      // price: this.defaultVariant.price,
-      // quantity: this.defaultVariant.quantity,
+      price: this.defaultVariant.price,
+      quantity: this.defaultVariant.quantity,
       color: this.defaultVariant.color[0],
       size: this.defaultVariant.size,
       sku: this.defaultVariant.sku,
@@ -1582,27 +1733,6 @@ if (detail?.variants?.length) {
     return this.industryData.businessType;
   }
 
-  createBranchData(): FormGroup {
-    // TODO: Remove all these "effective" stuff. Blegh
-    return new FormGroup({
-      price: new FormControl([
-        Validators.required,
-        Validators.pattern('^[0-9]*.?[0-9]{0,2}$'),
-      ]),
-      effectivePrice: new FormControl([
-        Validators.required,
-        Validators.pattern('^[0-9]*.?[0-9]{0,2}$'),
-      ]),
-      quantity: new FormControl([, [Validators.required, Validators.min(0)]]),
-      effectiveQuantity: new FormControl([
-        ,
-        [Validators.required, Validators.min(0)],
-      ]),
-      sku: new FormControl(['', Validators.required]),
-      variants: new FormControl(this.variants),
-      // city: new FormControl(''),
-    });
-  }
 
   /**
    * An array of values from `this.branches` that have been selected by the multiple-choice `ng-select`

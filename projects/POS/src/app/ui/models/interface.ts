@@ -97,8 +97,8 @@ export interface ProductImageDTO {
 export interface VariantDTO {
   id: number;
   name: string;
-  price?: number;
-  quantity?: number;
+  price: number;
+  quantity: number;
   sku: string;
   variantType?: number;
   selectedQuantity?: number;
@@ -107,7 +107,7 @@ export interface VariantDTO {
   /**
    * Might revert this type to a regular `string`
    */
-  color: ''
+  color: string
   size: 'XXS' | 'XS' | 'Small' | 'Medium' | 'Regular' | 'Large' | 'XL' | 'XXL';
 }
 

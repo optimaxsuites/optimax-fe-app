@@ -579,21 +579,11 @@ export class PosServiceService {
   
   
   deleteProductAndRelated(activeItem: any): Observable<any> {
-    const variantIds = activeItem.branchDetails
-      .flatMap((detail: any) => detail.variants.map((v: any) => v.id))
-      .filter((id: any) => id);
-  
-    const branchDataIds = activeItem.branchDetails
-      .map((detail: any) => detail.branchData?.id)
-      .filter((id: any) => id);
-  
-    const productBranchIds = activeItem.branchDetails
-      .map((detail: any) => detail.productBranch?.id)
-      .filter((id: any) => id);
+    const variantIds = activeItem.variants
+    .map((variant: any) => variant.id) 
+    .filter((id: any) => id);
 
-      console.log(productBranchIds)
   
-    // Step 1: Delete variants first
     const deleteVariants$ = variantIds.length
       ? forkJoin(
           variantIds.map((id: any) =>
@@ -601,35 +591,11 @@ export class PosServiceService {
           )
         ).pipe(tap(() => console.log('Deleted variants:', variantIds)))
       : of(null);
-  
-    // Step 2: Delete product branches next
-    console.log(productBranchIds)
-    const deleteProductBranches$ = productBranchIds.length
-      ? forkJoin(
-          productBranchIds.map((id: any) =>
-            this.http.delete<any>(`${this.getBaseApiUrl()}/x/api/v2/pos/productBranches/${id}`)
-          )
-        ).pipe(tap(() => console.log('Deleted product branches:', productBranchIds)))
-      : of(null);
-  
-    // Step 3: Delete branch data
-    const deleteBranchData$ = branchDataIds.length
-      ? forkJoin(
-          branchDataIds.map((id: any) =>
-            this.http.delete<any>(`${this.getBaseApiUrl()}/x/api/v2/pos/branchDatas/${id}`)
-          )
-        ).pipe(tap(() => console.log('Deleted branch data:', branchDataIds)))
-      : of(null);
-  
-    // Step 4: Finally, delete the product
     const deleteProduct$ = this.http.delete<any>(`${this.getBaseApiUrl()}/x/api/v2/pos/products/${activeItem.id}`).pipe(
       tap(() => console.log('Deleted product with ID:', activeItem.id))
     );
   
-    // Execute all steps sequentially
     return deleteVariants$.pipe(
-      switchMap(() => deleteProductBranches$),
-      switchMap(() => deleteBranchData$),
       switchMap(() => deleteProduct$)
     );
   }
