@@ -93,15 +93,22 @@ body {
   }
 
   /* GRID AREA for Table Cards */
-  .grid-area {
-    overflow-y: auto;
+  div:has(> .grid-area) {
+    overflow-y: hidden;
     flex: 1;
+    position: relative;
+  }
+
+  .grid-area {
+    $card-dimension: 13.5rem;
+    overflow-y: auto;
     display: grid;
-    grid-template-columns: repeat(auto-fill, 13.5rem);
-    grid-template-rows: repeat(auto-fill, 13.5rem);
+    grid-template-columns: repeat(auto-fill, $card-dimension);
+    grid-template-rows: repeat(auto-fill, $card-dimension);
     gap: 1rem;
     padding: 0.5rem;
     box-sizing: border-box;
+    height: 100%;
 
     .table-card {
       background-color: $card-bg;
@@ -114,7 +121,8 @@ body {
       justify-content: center;
       align-items: center;
       font-size: large;
-      min-height: 14vh;
+      min-height: $card-dimension;
+      min-width: $card-dimension;
       // max-width: 14vw;
       font-weight: bold;
 
@@ -260,6 +268,7 @@ body {
 }
 
 .waiter-order-btn {
+  opacity: 0.9;
   position: absolute;
   bottom: 5rem;
   right: 5rem;

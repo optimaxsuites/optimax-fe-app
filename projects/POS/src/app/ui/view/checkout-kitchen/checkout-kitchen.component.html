@@ -50,47 +50,50 @@
 
   <!-- MAIN CONTENT AREA -->
   <div class="main-content">
-    <!-- LEFT GRID of TABLE CARDS -->
-    <div class="grid-area">
-      @if(testMode() == "waiter"){
-      <!-- An absolutely positioned button in the lower right corner for adding table orders -->
-      <button
-        pButton
-        label="Take Order"
-        class="waiter-order-btn p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200"
-        (click)="isCreateOrderModalOpen = true"
-      ></button>
+    <!-- This is just a wrapper for the actual grid -->
+    <div>
+      <!-- LEFT GRID of TABLE CARDS -->
+      <div class="grid-area">
+        @if(testMode() == "waiter"){
+        <!-- An absolutely positioned button in the lower right corner for adding table orders -->
+        <button
+          pButton
+          label="Take Order"
+          class="waiter-order-btn p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200 z-50"
+          (click)="isCreateOrderModalOpen = true"
+        ></button>
 
-      @if (!displayedTableStatuses().length){
-      <!-- TODO: Display a large centered button for adding a table order -->
-      } }@else{
-      <!-- No orders :( -->
-      @if (!displayedTableStatuses().length){No Orders here :( } } @for (item of
-      displayedTableStatuses(); track $index) {
-      <div
-        class="table-card"
-        [ngClass]="{
-          'status-processing': item.status === 'Processing',
-          'status-pending': item.status === 'Pending',
-          'status-completed': item.status === 'Ready'
-        }"
-        (click)="openOrderDetails(item)"
-      >
-        <div class="table-card-header">
-          {{ item.status }}
-          @switch (item.status) { @case ("Pending") {
-          <i class="fa-solid fa-clock"></i>
-          } @case ("Processing") {
-          <i class="fa-solid fa-spinner"></i>
-          } @case ("Ready") {
-          <i class="fa-solid fa-check"></i>
-          } }
+        @if (!displayedTableStatuses().length){
+        <!-- TODO: Display a large centered button for adding a table order -->
+        } }@else{
+        <!-- No orders :( -->
+        @if (!displayedTableStatuses().length){No Orders here :( } } @for (item
+        of displayedTableStatuses(); track $index) {
+        <div
+          class="table-card"
+          [ngClass]="{
+            'status-processing': item.status === 'Processing',
+            'status-pending': item.status === 'Pending',
+            'status-completed': item.status === 'Ready'
+          }"
+          (click)="openOrderDetails(item)"
+        >
+          <div class="table-card-header">
+            {{ item.status }}
+            @switch (item.status) { @case ("Pending") {
+            <i class="fa-solid fa-clock"></i>
+            } @case ("Processing") {
+            <i class="fa-solid fa-spinner"></i>
+            } @case ("Ready") {
+            <i class="fa-solid fa-check"></i>
+            } }
+          </div>
+          <div class="table-card-content">
+            <span class="table-number">Table {{ item.no }}</span>
+          </div>
         </div>
-        <div class="table-card-content">
-          <span class="table-number">Table {{ item.no }}</span>
-        </div>
+        }
       </div>
-      }
     </div>
 
     <!-- ORDER DETAILS PANEL -->
@@ -136,9 +139,7 @@
             <p>
               @if (selectedOrder!.note) {
               {{ selectedOrder!.note }}
-              }@else { I will like the jollof rice to be spicy and have
-              vegetables in it. The chicken should be soft and tender, spicy and
-              well seasoned. }
+              }@else { N/A }
             </p>
           </div>
         </div>
@@ -311,9 +312,7 @@
             <p>
               @if (selectedOrder!.note) {
               {{ selectedOrder!.note }}
-              }@else { I will like the jollof rice to be spicy and have
-              vegetables in it. The chicken should be soft and tender, spicy and
-              well seasoned. }
+              }@else { N/A }
             </p>
           </div>
         </div>
@@ -326,7 +325,7 @@
               selectedOrder?.status == 'Pending'
                 ? 'Edit Order'
                 : selectedOrder?.status == 'Processing'
-                ? 'Processing'
+                ? 'Order In Progress'
                 : 'Order Completed'
             "
             icon="pi pi-check"
@@ -335,6 +334,10 @@
               overwriteTableOrderData(selectedOrder!);
               isEditingOrder = true;
               isCreateOrderModalOpen = true
+            "
+            [disabled]="selectedOrder?.status != 'Pending'"
+            [class]="
+              selectedOrder?.status != 'Pending' ? 'cursor-not-allowed' : ''
             "
           ></button>
           <button
@@ -548,10 +551,9 @@
         label="Cancel"
         class="p-button-danger px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-200 font-bold"
         (click)="
+          setOrderNote('');
           isCreateOrderModalOpen = false;
-          isEditingOrder = false;
-          tableData().clear();
-          setOrderNote('')
+          isEditingOrder = false
         "
       ></button>
       <button
@@ -582,7 +584,10 @@
           this.isOrderDetailsOpen = false;
           isCreateOrderModalOrderExistsDialogOpen
             ? ''
-            : openOrderDetails(tableStatuses().get(selectedOrder!.no)!)
+            : openOrderDetails(
+                tableStatuses().get(orderTableNumber) ??
+                  tableStatuses().get(selectedOrder!.no)!
+              )
         "
       ></button>
     </div>
@@ -607,11 +612,7 @@
     label="Edit"
     class="p-button-success px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring focus:ring-orange-200 font-bold"
     style="position: absolute; bottom: 10%; right: 10%"
-    (click)="
-      isCreateOrderModalOrderExistsDialogOpen = false;
-      isCreateOrderModalOpen = true;
-      isEditingOrder = true
-    "
+    (click)="proceedToOverwriteTableConflict(orderTableNumber)"
   ></button>
 </p-dialog>
 

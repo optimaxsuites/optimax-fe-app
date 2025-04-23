@@ -403,4 +403,16 @@ export class CheckoutKitchenComponent implements OnInit {
       return new Map(val);
     });
   }
+
+  proceedToOverwriteTableConflict(tableNumber: number) {
+    this.isCreateOrderModalOrderExistsDialogOpen = false;
+    this.isCreateOrderModalOpen = true;
+    this.isEditingOrder = true;
+    this.tableData.update((_) => {
+      return (
+        structuredClone(this.tableStatuses().get(tableNumber)?.orders) ??
+        new Map()
+      );
+    });
+  }
 }
