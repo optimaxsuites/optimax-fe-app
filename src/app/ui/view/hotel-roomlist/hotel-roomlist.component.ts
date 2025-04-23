@@ -111,6 +111,7 @@ export class HotelRoomlistComponent {
 
   openForm = false;
   openLogs = false;
+  openRoom = false;
 
   // For displaying booking details
   selectedBookingDetails: Room | null = null;
@@ -291,6 +292,10 @@ export class HotelRoomlistComponent {
 
   navigateToLogs() {
     this.openLogs = !this.openLogs;
+  }
+
+  navigateToRoom() {
+    this.openRoom = !this.openRoom;
   }
 
   openRoomDetails(room: Room): void {

@@ -30,7 +30,15 @@
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
-            "assets": ["src/favicon.ico", "src/assets"],
+            "assets": [
+              "src/favicon.ico",
+              "src/assets",
+              {
+                "glob": "**/*",
+                "input": "node_modules/dwt/dist",
+                "output": "assets/dwt-resources/"
+              }
+            ],
             "styles": [
               "src/styles.scss",
               "node_modules/primeicons/primeicons.css",

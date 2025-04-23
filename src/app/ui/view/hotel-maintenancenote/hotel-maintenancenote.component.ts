@@ -145,6 +145,48 @@ export class HotelMaintenancenoteComponent implements OnInit {
     }
   }
 
+  addTodo() {
+    if (this.newTodoTitle.trim() === '') return;
+
+    const newTodo: Todo = {
+      id: this.generateId(),
+      title: this.newTodoTitle.trim(),
+      reason: this.newTodoReason.trim() || undefined,
+      completed: false,
+      priority: this.newTodoPriority,
+      roomNumber: this.room?.number,
+      roomId: this.room?.id,
+    };
+
+    this.todos.unshift(newTodo);
+
+    // Update the room's maintenance information
+    if (this.room) {
+      const rooms: Room[] = JSON.parse(localStorage.getItem('rooms') || '[]');
+      const roomIndex = rooms.findIndex((r) => r.id === this.room?.id);
+
+      if (roomIndex !== -1) {
+        // Save the first todo's reason as the maintenance reason
+        if (this.todos.length === 1 && newTodo.reason) {
+          rooms[roomIndex].maintenanceReason = newTodo.reason;
+        }
+
+        // Save all todo titles as maintenance tasks
+        rooms[roomIndex].maintenanceTasks = this.todos.map(
+          (todo) => todo.title
+        );
+
+        localStorage.setItem('rooms', JSON.stringify(rooms));
+      }
+    }
+
+    this.newTodoTitle = '';
+    this.newTodoReason = '';
+    this.saveTodos();
+    this.updateFilteredTodos();
+    this.updateProgress();
+  }
+
   saveTodos() {
     if (this.room) {
       localStorage.setItem(
@@ -167,7 +209,6 @@ export class HotelMaintenancenoteComponent implements OnInit {
 
   completeMaintenance() {
     if (this.room && this.allTasksCompleted) {
-      // Update room status in localStorage
       const storedRooms = localStorage.getItem('rooms');
       if (storedRooms) {
         const rooms: Room[] = JSON.parse(storedRooms);
@@ -175,12 +216,14 @@ export class HotelMaintenancenoteComponent implements OnInit {
 
         if (roomIndex !== -1) {
           rooms[roomIndex].status = 'available';
+          // Clear maintenance information
+          rooms[roomIndex].maintenanceReason = undefined;
+          rooms[roomIndex].maintenanceTasks = undefined;
+
           localStorage.setItem('rooms', JSON.stringify(rooms));
 
-          // Clear maintenance todos
           localStorage.removeItem(`maintenanceTodos_${this.room.id}`);
 
-          // Emit events
           this.maintenanceComplete.emit();
           this.back.emit();
 
@@ -192,27 +235,6 @@ export class HotelMaintenancenoteComponent implements OnInit {
         }
       }
     }
-  }
-
-  addTodo() {
-    if (this.newTodoTitle.trim() === '') return;
-
-    const newTodo: Todo = {
-      id: this.generateId(),
-      title: this.newTodoTitle.trim(),
-      reason: this.newTodoReason.trim() || undefined, // Add reason if provided
-      completed: false,
-      priority: this.newTodoPriority,
-      roomNumber: this.room?.number,
-      roomId: this.room?.id,
-    };
-
-    this.todos.unshift(newTodo);
-    this.newTodoTitle = '';
-    this.newTodoReason = ''; // Clear reason input
-    this.saveTodos();
-    this.updateFilteredTodos();
-    this.updateProgress();
   }
 
   toggleTodo(todo: Todo) {

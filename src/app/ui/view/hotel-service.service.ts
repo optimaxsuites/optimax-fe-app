@@ -23,54 +23,10 @@ export class HotelServiceService {
   private worker: Tesseract.Worker | null = null;
   private isInitialized = false;
   private initializationPromise: Promise<void> | null = null;
+  private initFailCount = 0;
 
   constructor() {
-    // Initialize on service creation
-    this.initializeWorker();
-  }
-
-  private async initializeWorker(): Promise<void> {
-    if (this.isInitialized) return;
-
-    if (this.initializationPromise) {
-      return this.initializationPromise;
-    }
-
-    this.initializationPromise = new Promise(async (resolve, reject) => {
-      try {
-        // Initialize Tesseract worker with optimized settings for ID scanning
-        this.worker = await Tesseract.createWorker();
-
-        // Set logger if needed
-        const logger = {
-          logger: (m: any) => console.log(m),
-        };
-
-        // Load English language data
-        await this.worker.load();
-
-        // Initialize the OCR engine with optimal settings for ID cards
-        await this.worker.reinitialize('eng');
-
-        // Set parameters for ID card scanning
-        await this.worker.setParameters({
-          tessedit_char_whitelist:
-            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-/.',
-          tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
-        });
-
-        this.isInitialized = true;
-        resolve();
-      } catch (error) {
-        console.error('Failed to initialize OCR worker:', error);
-        this.worker = null;
-        reject(error);
-      } finally {
-        this.initializationPromise = null;
-      }
-    });
-
-    return this.initializationPromise;
+    // Initialize on-demand instead of on service creation
   }
 
   async recognizeFromBuffer(imageBuffer: ArrayBuffer): Promise<OCRResult> {
@@ -103,6 +59,25 @@ export class HotelServiceService {
       };
     } catch (error) {
       console.error('OCR processing error:', error);
+
+      // Try reinitializing the worker if recognition fails
+      if (this.worker) {
+        try {
+          await this.worker.terminate();
+          this.worker = null;
+          this.isInitialized = false;
+          await this.initializeWorker();
+
+          // Try once more with the new worker
+          return this.recognizeFromBuffer(imageBuffer);
+        } catch (reinitError) {
+          console.error(
+            'Failed to reinitialize worker for retry:',
+            reinitError
+          );
+        }
+      }
+
       throw new Error('Failed to process document with OCR');
     }
   }
@@ -125,6 +100,81 @@ export class HotelServiceService {
     }
   }
 
+  async terminateWorker() {
+    if (this.worker) {
+      await this.worker.terminate();
+      this.worker = null;
+      this.isInitialized = false;
+    }
+  }
+
+  private async initializeWorker(): Promise<void> {
+    if (this.isInitialized && this.worker) return;
+
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+
+    this.initializationPromise = new Promise(async (resolve, reject) => {
+      try {
+        // Initialize Tesseract worker with optimized settings for ID scanning
+        this.worker = await Tesseract.createWorker();
+        console.log('Tesseract worker created successfully');
+
+        // Initialize with language data
+        await this.worker.load();
+        console.log('Language loaded successfully');
+
+        await this.worker.reinitialize('eng');
+        console.log('Worker initialized successfully');
+
+        // Set parameters optimized for ID cards
+        // Note: these parameters must be set during initialization phase
+        const params = {
+          tessedit_char_whitelist:
+            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-/. ',
+          tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
+          preserve_interword_spaces: '1',
+        };
+
+        await this.worker.setParameters(params);
+        console.log('OCR parameters set successfully');
+
+        this.isInitialized = true;
+        this.initFailCount = 0;
+        resolve();
+      } catch (error) {
+        console.error('Failed to initialize OCR worker:', error);
+        this.worker = null;
+        this.initFailCount++;
+
+        // If we've failed multiple times, try a more basic initialization
+        if (this.initFailCount <= 3) {
+          try {
+            console.log('Trying simplified OCR worker initialization');
+            this.worker = await Tesseract.createWorker();
+            await this.worker.load('eng');
+            await this.worker.reinitialize('eng');
+
+            this.isInitialized = true;
+            resolve();
+          } catch (fallbackError) {
+            console.error('Fallback OCR initialization failed:', fallbackError);
+            this.worker = null;
+            reject(fallbackError);
+          }
+        } else {
+          reject(error);
+        }
+      } finally {
+        this.initializationPromise = null;
+      }
+    });
+
+    return this.initializationPromise;
+  }
+
+  // Enhanced extraction of ID fields from OCR text
   private extractIdFields(text: string): OCRResult['fields'] {
     const fields: OCRResult['fields'] = {};
     const lines = text
@@ -140,89 +190,117 @@ export class HotelServiceService {
     const countryRegex =
       /(Nigeria|United States|United Kingdom|Canada|Ghana|South Africa|Kenya|Germany|France|China|India)/i;
 
-    // Match patterns with special attention to common ID card formats
+    // Common ID card field labels
+    const idLabels = [
+      'id',
+      'id no',
+      'id number',
+      'identification',
+      'document no',
+    ];
+    const nameLabels = ['name', 'full name', 'surname', 'given name'];
+    const dobLabels = ['birth', 'dob', 'born', 'date of birth'];
+    const genderLabels = ['sex', 'gender', 'male', 'female', 'm', 'f'];
+
+    console.log('OCR Text Lines:', lines);
+
+    // First pass: Look for labeled fields
     for (const line of lines) {
-      // Name detection - look for lines with proper name formatting
-      if (!fields.firstName && !fields.lastName && nameRegex.test(line)) {
-        const matches = line.match(nameRegex);
+      const lowerLine = line.toLowerCase();
+
+      // Look for labeled ID number
+      if (idLabels.some((label) => lowerLine.includes(label))) {
+        const matches = line.match(/[A-Z0-9]{6,20}/);
         if (matches) {
-          if (matches[3]) {
-            // Format: FIRST MIDDLE LAST or LAST FIRST MIDDLE
-            const nameParts = [matches[1], matches[2], matches[3]];
+          fields.idNumber = matches[0];
+          console.log('Found ID Number:', fields.idNumber);
+        }
+      }
 
-            // Heuristic: If first part is shorter or equal to other parts, likely FIRST MIDDLE LAST
-            // Otherwise likely LAST FIRST MIDDLE
-            if (
-              nameParts[0].length <=
-              Math.max(nameParts[1].length, nameParts[2].length)
-            ) {
-              fields.firstName = `${nameParts[0]} ${nameParts[1]}`;
-              fields.lastName = nameParts[2];
-            } else {
-              fields.lastName = nameParts[0];
-              fields.firstName = `${nameParts[1]} ${nameParts[2]}`;
-            }
-          } else if (matches[2]) {
-            // Format: FIRST LAST
-            fields.firstName = matches[1];
-            fields.lastName = matches[2];
+      // Look for labeled name
+      if (nameLabels.some((label) => lowerLine.includes(label))) {
+        // Extract the part after the label
+        const namePart = line.split(/:\s*|[\s]{2,}/).pop();
+        if (namePart && nameRegex.test(namePart)) {
+          const nameParts = namePart.split(/\s+/);
+          if (nameParts.length >= 2) {
+            fields.firstName = nameParts[0];
+            fields.lastName = nameParts[nameParts.length - 1];
+            console.log('Found Name:', fields.firstName, fields.lastName);
           }
         }
       }
 
-      // Look for ID number - typically a mix of letters and numbers with consistent format
-      if (!fields.idNumber && idRegex.test(line)) {
-        // Look for lines containing ID/Document number explicitly
-        if (
-          line.toLowerCase().includes('id') ||
-          line.toLowerCase().includes('document') ||
-          line.toLowerCase().includes('no.') ||
-          line.toLowerCase().includes('number')
-        ) {
-          const idMatch = line.match(idRegex);
-          if (idMatch) fields.idNumber = idMatch[1];
-        } else {
-          // If no explicit label, look for patterns matching ID numbers
-          const possibleIds = line.match(/([A-Z0-9]{6,20})/g) || [];
-          if (possibleIds.length === 1) {
-            fields.idNumber = possibleIds[0];
+      // Look for labeled gender
+      if (genderLabels.some((label) => lowerLine.includes(label))) {
+        if (lowerLine.includes('female') || lowerLine.includes('f')) {
+          fields.gender = 'Female';
+        } else if (lowerLine.includes('male') || lowerLine.includes('m')) {
+          fields.gender = 'Male';
+        }
+      }
+
+      // Look for labeled date of birth
+      if (dobLabels.some((label) => lowerLine.includes(label))) {
+        const matches = line.match(dobRegex);
+        if (matches) {
+          fields.dob = matches[0];
+          console.log('Found DOB:', fields.dob);
+        }
+      }
+
+      // Look for country
+      if (countryRegex.test(line)) {
+        const matches = line.match(countryRegex);
+        if (matches) {
+          fields.country = matches[0];
+          console.log('Found Country:', fields.country);
+        }
+      }
+    }
+
+    // Second pass: Look for unlabeled patterns if we haven't found certain fields
+    if (!fields.firstName || !fields.lastName) {
+      for (const line of lines) {
+        if (nameRegex.test(line)) {
+          const nameParts = line.split(/\s+/);
+          if (nameParts.length >= 2) {
+            fields.firstName = fields.firstName || nameParts[0];
+            fields.lastName =
+              fields.lastName || nameParts[nameParts.length - 1];
+            console.log(
+              'Found Name (pattern):',
+              fields.firstName,
+              fields.lastName
+            );
+            break;
           }
         }
       }
+    }
 
-      // Extract date of birth
-      if (!fields.dob && dobRegex.test(line)) {
-        if (
-          line.toLowerCase().includes('birth') ||
-          line.toLowerCase().includes('dob') ||
-          line.toLowerCase().includes('born')
-        ) {
-          const dobMatch = line.match(dobRegex);
-          if (dobMatch) fields.dob = dobMatch[1];
+    if (!fields.idNumber) {
+      for (const line of lines) {
+        const matches = line.match(/[A-Z0-9]{6,20}/);
+        if (matches && !/[a-z]/.test(matches[0])) {
+          fields.idNumber = matches[0];
+          console.log('Found ID Number (pattern):', fields.idNumber);
+          break;
         }
       }
+    }
 
-      // Extract country
-      if (!fields.country && countryRegex.test(line)) {
-        const countryMatch = line.match(countryRegex);
-        if (countryMatch) fields.country = countryMatch[1];
-      }
-
-      // Extract gender from explicit markers
-      if (!fields.gender) {
-        if (line.match(/\b(male|m)\b/i)) fields.gender = 'Male';
-        if (line.match(/\b(female|f)\b/i)) fields.gender = 'Female';
+    if (!fields.dob) {
+      for (const line of lines) {
+        const matches = line.match(dobRegex);
+        if (matches) {
+          fields.dob = matches[0];
+          console.log('Found DOB (pattern):', fields.dob);
+          break;
+        }
       }
     }
 
     return fields;
-  }
-
-  async terminateWorker() {
-    if (this.worker) {
-      await this.worker.terminate();
-      this.worker = null;
-      this.isInitialized = false;
-    }
   }
 }
