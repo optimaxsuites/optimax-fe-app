@@ -141,6 +141,8 @@ export class MenuItemsService {
         { label: 'Shortlets', route: this.navigationLink.getLink('shortletLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-plus' },
         { label: 'Services', route: this.navigationLink.getLink('serviceLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-clock' },
         { label: 'Rooms Checkout',roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-credit-card', route: this.navigationLink.getLink('roomsCheckoutLink'), },
+        { label: 'Services Checkout',roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-credit-card', route: this.navigationLink.getLink('servicesCheckoutLink'), },
+
 
       ],
       locked: true,

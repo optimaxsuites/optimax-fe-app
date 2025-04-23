@@ -243,9 +243,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   
 
   handleCountChange(newCount: number, index: number, variant?: any) {
-    // this.cartItems[index].cartPriceTotal = (
-    //   parseInt(this.cartItems[index].effectivePrice) * newCount
-    // ).toString();
+    this.cartItems[index].cartPriceTotal = (
+      parseInt(this.cartItems[index]?.sellingPrice || '0') * newCount
+    ).toString();
     this.calculateDiscount();
     // this.calculateProductDiscount();
     this.calculateTotals();
