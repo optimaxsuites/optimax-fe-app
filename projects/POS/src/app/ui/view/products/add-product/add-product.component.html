@@ -97,11 +97,13 @@
               bindLabel="name"
               formControlName="selectedBranch"
               [multiple]="userBranch === 'headquarters'"
-
+*ngIf="!isEditMode"
               placeholder="Select branch"
               class="ng-select-custom"
             >
             </ng-select>
+            <p class="name editInput" id="name" *ngIf="isEditMode">{{ activeItem.branch.name }}</p>
+
             <div
               *ngIf="
                 productForm.get('branch')?.invalid &&
@@ -526,7 +528,8 @@
             <thead class="bg-gray-50">
               <tr>
                 @for (prop of variantObjectKeys; track $index) {
-                <th class="px-6 py-3 text-left text-xs font-medium text-white bg-customBlue  uppercase tracking-wider" *ngIf="!(prop === 'Price' || prop === 'Quantity' || prop === 'Sku') || userBranch !== 'headquarters'" >
+                <th class="px-6 py-3 text-left text-xs font-medium text-white bg-customBlue  uppercase tracking-wider" *ngIf="isEditMode || (userBranch !== 'headquarters' || !(prop === 'Price' || prop === 'Quantity' || prop === 'Sku'))"
+                >
                   {{ prop }}
                 </th>
                 }
@@ -538,8 +541,12 @@
             <tbody class="bg-white divide-y divide-gray-200">
               <tr *ngFor="let variant of variants; let i = index" class="hover:bg-gray-50">
                 <td class="px-6 py-4 whitespace-nowrap">{{ variant.name }}</td>
-                <td *ngIf="userBranch !== 'headquarters'" class="px-6 py-4 whitespace-nowrap">{{ variant.price }}</td>
-                <td *ngIf="userBranch !== 'headquarters'" class="px-6 py-4 whitespace-nowrap">{{ variant.quantity }}</td>
+                <td *ngIf="isEditMode || userBranch !== 'headquarters'" class="px-6 py-4 whitespace-nowrap">
+                  {{ variant.price }}
+                </td>
+                <td *ngIf="isEditMode || userBranch !== 'headquarters'" class="px-6 py-4 whitespace-nowrap">
+                  {{ variant.quantity }}
+                </td>                
                 <td class="px-6 py-4 whitespace-nowrap">{{ variant.color }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">{{ variant.size }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">{{ variant.sku }}</td>
@@ -730,7 +737,7 @@
   </div>
 
   <!-- Branch Pricing Table -->
-  <div *ngIf="selecteddBranch?.length > 1" class="mt-4 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+  <div *ngIf="selecteddBranch?.length > 1 && !isEditMode" class="mt-4 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
     <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Branch Pricing</h2>
     
     <div class="overflow-x-auto">
@@ -1010,10 +1017,10 @@
         placeholder="variant name"
       />
      </div>
-     <div>
+     <div *ngIf="isEditMode || userBranch !== 'headquarters'">
       <label for="variant-sku">SKU</label>
 
-      <div class="flex inputAndBtn"  *ngIf="userBranch !== 'headquarters'">
+      <div class="flex inputAndBtn"  >
 
         <input
         type="text"
@@ -1027,7 +1034,7 @@
       </div>
      </div>
 
-     <div *ngIf="userBranch !== 'headquarters'">
+     <div *ngIf="isEditMode || userBranch !== 'headquarters'">
       <label for="Price">Price</label>
 
       <p-inputNumber [(ngModel)]="newVariant.price" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
@@ -1035,7 +1042,7 @@
      </div>
 
 
-     <div *ngIf="userBranch !== 'headquarters'">
+     <div *ngIf="isEditMode || userBranch !== 'headquarters'">
       <label for="quantity">Quantity</label>
 
       <p-inputNumber [(ngModel)]="newVariant.quantity" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>

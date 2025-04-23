@@ -16,13 +16,13 @@ export interface ProductJSONFormat {
 
   createdBy: string | null;
   partNumber: string;
-  tax: number;
+  tax: number | any;
   productBranch?: any;
   variant?: string | null;
   discount?: DiscountDTO;
   productCategory: ProductCategoryDTO;
   productImages: ProductImageDTO[];
-  variants?: VariantDTO[];
+  variants: VariantDTO[];
   isBundle? : boolean;
   bundleItems?: any;
   measurementUnit?: any;
@@ -35,6 +35,8 @@ export interface ProductJSONFormat {
  * There's some extra data we use with each product that wouldn't fit directly with the fetched data interface, `ProductJSONFormat`
  */
 export interface ProductData extends ProductJSONFormat {
+purchasePrice: any;
+branch: any;
 branchDetails?: any;
 imageUrl$?: Observable<unknown>|Subscribable<unknown>|Promise<unknown>;
 showMenu: any;
