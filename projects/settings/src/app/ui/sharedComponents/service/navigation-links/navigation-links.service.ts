@@ -53,7 +53,7 @@ export class NavigationLinksService {
     this.links['serviceLink'] = '/admin/hospitality/service/' +uuidV4();
     this.links['shortletLink'] = '/admin/hospitality/shortlet/' +uuidV4();
     this.links['roomsCheckoutLink'] = '/user/hospitality/checkout/' +uuidV4();
-    this.links['servicesCheckoutLink'] = '/user/hospitality/services' +uuidV4();
+    this.links['servicesCheckoutLink'] = '/user/hospitality/services/' +uuidV4();
 
     
 
