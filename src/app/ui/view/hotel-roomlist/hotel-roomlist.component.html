@@ -1,4 +1,4 @@
-<div class="flex h-full" *ngIf="!openForm && !openLogs">
+<div class="flex h-full" *ngIf="!openForm && !openLogs && !openRoom">
   <!-- Sidebar with filters (always visible) -->
   <aside
     class="w-1/6 bg-gradient-to-b from-customBlueHover to-customBlue text-white p-6 shadow-lg rounded-xl"
@@ -42,6 +42,14 @@
           <i class="pi pi-eye"></i>
           View All Logs
         </button>
+
+        <!-- <button
+          class="flex items-center gap-2 bg-customBlue text-white px-6 py-3 rounded-lg text-xl font-semibold hover:bg-customBlueHover transition duration-300"
+          (click)="navigateToRoom()"
+        >
+          <i class="pi pi-eye"></i>
+          View All Logs
+        </button> -->
       </div>
     </div>
 
@@ -358,3 +366,10 @@
 <div *ngIf="openLogs">
   <app-hotel-logs (back)="navigateToLogs()"></app-hotel-logs>
 </div>
+<div *ngIf="openRoom">
+  <app-room-sidebar
+    [selectedRooms]="selectedRooms"
+    (back)="navigateToRoom()"
+  ></app-room-sidebar>
+</div>
+<p-toast position="top-right"></p-toast>
