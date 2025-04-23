@@ -82,7 +82,7 @@ nav > p {
 }
 .prod {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
 // @apply grid grid-cols-2 gap-3;
 }
 nav {

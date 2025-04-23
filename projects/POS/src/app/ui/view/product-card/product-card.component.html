@@ -9,7 +9,7 @@
   }
   <!-- TODO: Is it alright to load images like this? -->
   <img
-    [src]="imageUrl"
+    [src]="product.imageUrl$"
     alt="product image"
     class="w-full h-2/3 object-cover rounded-xl"
   />
@@ -18,6 +18,6 @@
         <p>#5000</p> -->
 
     <p class=" text-ellipsis  h-10">{{ product.name }}</p>
-    <!-- <p class="h-6">{{ product.effectivePrice | currency: '₦' }}</p> -->
+    <p class="h-8">{{ product.sellingPrice | currency: '₦' }}</p>
   </div>
 </div>

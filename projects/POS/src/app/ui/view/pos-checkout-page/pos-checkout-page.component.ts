@@ -9,6 +9,7 @@ import { RandomTokenService } from '../../sharedComponent/service/random-token/r
 import { BusinessType, ProductCategories } from '../../models/enums';
 import { Business, Cart, ProductData, VariantDTO } from '../../models/interface';
 import { IndustryDataService } from '../../service/industry-data.service';
+import { MetadataService } from '../../service/metadata.service';
 // import { AppResizeDirective } from '../../service/app-resize.directive';
 
 @Component({
@@ -65,7 +66,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     private router: Router,
     public navigationLink: NavigationLinksService,
     private randomTokenService: RandomTokenService,
-    //  public userComponent: UserComponent,
+     public metadataService: MetadataService,
     private registerService: RegisterService,
     private posService: PosServiceService,
     private industryDataService: IndustryDataService
@@ -88,6 +89,8 @@ export class PosCheckoutPageComponent implements OnInit, Business {
       this.tax = cart.tax;
       this.subtotal = cart.subtotal;
     }
+    this.metadataService.fetchMetaData();
+
     this.getProducts();
     this.loadCategory();
 
@@ -142,7 +145,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     const option = this.stateOptions.find((opt) => opt.value === value);
     return option ? option.label : '';
   }
-  addToCart(product: (typeof this.products)[0], chosenVariant?: VariantDTO) {
+  addToCart(product: ProductData, chosenVariant?: VariantDTO) {
  
   
     if (!this.cartItems) this.cartItems = [];
@@ -155,23 +158,23 @@ export class PosCheckoutPageComponent implements OnInit, Business {
         this.cartItems.push(existingItem);
       }
   
-      let existingVariant = existingItem.selectedVariants.find(v => v.id === chosenVariant.id);
+      let existingVariant = existingItem?.selectedVariants.find(v => v.id === chosenVariant.id);
   
       if (existingVariant) {
         existingVariant.selectedQuantity = (existingVariant.selectedQuantity || 0) + 1;
       } else {
-        existingItem.selectedVariants.push({ ...chosenVariant, selectedQuantity: 1 });
+        existingItem?.selectedVariants.push({ ...chosenVariant, selectedQuantity: 1 });
       }
   
-      // existingItem.cartPriceTotal = existingItem.selectedVariants.reduce((acc, v) => acc + (v.price * v.selectedQuantity), 0);
+
     } else {
       if (existingItem) {
         existingItem.count += 1;
-        // existingItem.cartPriceTotal = (parseInt(existingItem.cartPriceTotal) + parseInt(product.effectivePrice)).toString();
+        existingItem.cartPriceTotal = (existingItem.count * parseInt(existingItem.sellingPrice || '0')).toString();
       } else {
         product.count = 1;
+        product.cartPriceTotal = product.sellingPrice || '0'
         this.cartItems.push({ ...product, selectedVariants: [] });
-        // product.cartPriceTotal = product.effectivePrice.toString();
       }
     }
   
@@ -208,6 +211,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
   openItemUpdateModal(index: any) {
     this.itemUpdateModal = true;
+    console.log(index)
     this.productThatNeedsUpdate = index;
   }
 
@@ -215,8 +219,8 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     console.log(this.cartItems);
   
     this.subtotal = this.cartItems.reduce((acc, item) => {
-      // let itemTotal = (item.count ?? 0) * parseFloat(item.effectivePrice || "0");
-      let itemTotal =0
+      let itemTotal = (item.count ?? 0) * parseFloat(item.sellingPrice || "0");
+      // let itemTotal =0
       let variantsTotal = (item.selectedVariants ?? []).reduce(
         (variantAcc, variant) =>
           variantAcc + (variant.selectedQuantity ?? 0) * (Number(variant.price) || 0),
@@ -406,7 +410,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     this.isAllPaymentsModalOpen = !this.isAllPaymentsModalOpen;
   }
   getProducts() {
-    this.posService.getProducts().subscribe(async (data) => {
+    this.metadataService.enrichedProduct$.subscribe(async (data) => {
       if (data) {
         const p = data.sort((a: any, b: any) => {
           const dateA = new Date(
@@ -442,7 +446,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     });
   }
   loadCategory() {
-    this.posService.getCategories().subscribe(async (data) => {
+    this.metadataService.category$.subscribe(async (data) => {
       if (data) {
         //@ts-expect-error
         this.categories = data.map((category) => category.name);
