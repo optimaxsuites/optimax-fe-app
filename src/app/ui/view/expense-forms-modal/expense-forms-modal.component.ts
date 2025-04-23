@@ -25,19 +25,40 @@ throw new Error('Method not implemented.');
     { name: 'Travel' },
     { name: 'Food' },
     { name: 'Accommodation' },
+    { name: 'Entertainment' },
+    {name: 'Transportation' },
+    { name: 'Utilities' },
+    { name: 'Insurance' },
+    { name: 'Healthcare' },
+    { name: 'Office Supplies' },
     { name: 'Other' },
   ];
+ 
 
-  paymentMethods = [
-    { label: 'Cash', value: 'cash' },
-    { label: 'Credit Card', value: 'credit' },
-    { label: 'Debit Card', value: 'debit' },
-  ];
+  Quantity: { name: string }[] = [
+    { name: '1' },
+    { name: '2' },
+    { name: '3' },
+    { name: '4' },
+    { name: '5' },
+    { name: '6' },
+    { name: '7' },
+    { name: '8' },
+    { name: '9' },
+    { name: '10' },
+  ]
+
+  // paymentMethods = [
+  //   { label: 'Cash', value: 'cash' },
+  //   { label: 'Credit Card', value: 'credit' },
+  //   { label: 'Debit Card', value: 'debit' },
+  // ];
 
   projects = [
     { label: 'Project 1', value: 'project1' },
     { label: 'Project 2', value: 'project2' },
     { label: 'Project 3', value: 'project3' },
+    { label: 'None', value: 'None' },
   ];
 
   currentStage: string = 'to-submit';
@@ -111,7 +132,9 @@ throw new Error('Method not implemented.');
       this.assignFile(file, type);
     }
   }
-
+  goBack(){
+    this.router.navigate(['/admin/expenses/:uuid']);
+  }
   
   assignFile(file: File, type: string): void {
     if (type === 'receipt') {
@@ -127,23 +150,61 @@ throw new Error('Method not implemented.');
     const newExpense: Expense = {
       ...this.expenseSummary,
       id: this.expenseSummary.id || this.generateId(),
-      status: this.currentStage,
+      status: 'Pending',
       receiptFile: this.receiptFile, 
       invoiceFile: this.invoiceFile, 
       signature: this.signatureUrl, 
     };
 
-    if (this.expenseSummary.id) {
-      this.expenseService.updateExpense(newExpense);
-    } else {
-      this.expenseService.addExpense(newExpense);
-    }
+    // if (this.expenseSummary.id) {
+    //   this.expenseService.updateExpense(newExpense);
+    // } else {
+    //   this.expenseService.addExpense(newExpense);
+    // }
+      // Save the expense to localStorage
+// Save the expense to localStorage
+this.saveExpenseToLocalStorage(newExpense);
+console.log('Expense saved to localStorage:', newExpense);
 
-    this.router.navigate(['/expenses']);
+ // Reset the form data
+  this.resetForm();
   }
 
+  saveExpenseToLocalStorage(expense: any): void {
+    // Retrieve existing expenses from localStorage, or initialize an empty array
+    let expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+
+    // Add the new expense to the list
+    expenses.push(expense);
+
+    // Save the updated list of expenses back to localStorage
+    localStorage.setItem('expenses', JSON.stringify(expenses));
+  }
   
   generateId(): string {
     return Math.random().toString(36).substr(2, 9);
+  }
+  resetForm(): void {
+    // Reset the expenseSummary object (form data)
+    this.expenseSummary = {
+      name: '',
+      description: '',
+      amount: null,
+      merchant: '',
+      category: null,
+      Quantity: null,
+      taxPercentage: null,
+      project: null,
+      eventDate: '',
+      comment: '',
+    };
+  
+    // Reset file inputs
+    this.receiptFile = null;
+    this.invoiceFile = null;
+    this.signatureUrl = null;  // If you have a signature URL to reset
+  
+    // If using a form reference, you could reset it here (optional if using ngForm)
+    // this.expenseForm.reset(); // This would reset if you are using a template-driven form
   }
 }

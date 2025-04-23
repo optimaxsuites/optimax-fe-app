@@ -32,6 +32,7 @@ import { FloatLabelModule } from 'primeng/floatlabel';
 import { MessagesModule } from 'primeng/messages';
 import { MessageModule } from 'primeng/message';
 import { RippleModule } from 'primeng/ripple';
+import { PrimeIcons, MenuItem } from 'primeng/api';
 
 
 
@@ -65,6 +66,8 @@ import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-
 import { ButtonComponent } from './ui/sharedComponent/view/button/button.component';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { CommonModule } from '@angular/common';
+import { ApprovalReportsComponent } from './ui/view/approval-reports/approval-reports.component';
+import { ChartModule } from 'primeng/chart';
 
 
 @NgModule({
@@ -77,11 +80,12 @@ import { CommonModule } from '@angular/common';
     ExpenseTableComponent,
     UploadRecieptComponent,
     ExpensesComponent,
+    ApprovalReportsComponent,
     
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     CommonModule,
     AppRoutingModule,
     FormsModule,
@@ -113,6 +117,7 @@ import { CommonModule } from '@angular/common';
     SidebarModule,
     TabViewModule,
     ToolbarModule,
+    ChartModule,
     ConfirmDialogModule,
     SplitButtonModule,
     PanelModule,

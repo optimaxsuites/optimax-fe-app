@@ -1,12 +1,21 @@
+
+<div class="form-buttons" (click)=" goBack()">
+
+  <div class="arrow-left">
+    <div></div>
+  </div>
+  </div>
+
+
 <div class="parent-container">
-  <app-back-button></app-back-button>
+ 
   <div class="progress-container">
     <div class="progress-bar" [ngClass]="currentStage"></div>
     <div class="progress-stages">
       <div class="stage" [ngClass]="{ active: currentStage === 'to-submit' }">
-        To Submit
+        Submit
       </div>
-      <div class="stage" [ngClass]="{ active: currentStage === 'submitted' }">
+      <!-- <div class="stage" [ngClass]="{ active: currentStage === 'submitted' }">
         Submitted
       </div>
       <div class="stage" [ngClass]="{ active: currentStage === 'approved' }">
@@ -14,14 +23,14 @@
       </div>
       <div class="stage" [ngClass]="{ active: currentStage === 'paid' }">
         Paid
-      </div>
+      </div> -->
     </div>
   </div>
   <div class="add-expense-container">
     <div class="expense-form">
       <div class="form-left">
         <div class="form-group">
-          <label for="name">Name</label>
+          <label for="name">Expense Name</label>
           <input
             type="text"
             id="name"
@@ -29,6 +38,7 @@
             placeholder="Enter name"
           />
         </div>
+
 
         <div class="form-group">
           <label for="description">Description</label>
@@ -42,15 +52,7 @@
           ></textarea>
         </div>
 
-        <div class="form-group">
-          <label for="event-date">Event Date</label>
-          <input
-            type="date"
-            id="event-date"
-            name="event-date"
-            [(ngModel)]="expenseSummary.eventDate"
-          />
-        </div>
+    
 
         <div class="form-group">
           <label for="amount">Amount</label>
@@ -75,7 +77,7 @@
           />
         </div>
 
-        <div class="form-group">
+        <!-- <div class="form-group">
           <label for="expense-date">Expense Date</label>
           <input
             type="date"
@@ -83,7 +85,7 @@
             name="expense-date"
             [(ngModel)]="expenseSummary.expenseDate"
           />
-        </div>
+        </div> -->
 
         <div class="form-group">
           <label for="category">Category</label>
@@ -97,18 +99,17 @@
           >
           </ng-select>
         </div>
-
         <div class="form-group">
-          <label for="tax-rate">Tax Rate</label>
-          <select
-            id="tax-rate"
-            name="tax-rate"
-            [(ngModel)]="expenseSummary.taxRate"
+          <label for="category">Quantity</label>
+          <ng-select
+            [items]="Quantity"
+            bindLabel="name"
+            bindValue="name"
+            [(ngModel)]="expenseSummary.Quantity"
+            placeholder="Select a Quantity"
+            class="w-full mt-3"
           >
-            <option value="standard">Standard</option>
-            <option value="reduced">Reduced</option>
-            <option value="zero">Zero</option>
-          </select>
+          </ng-select>
         </div>
         <div class="form-group">
           <label for="tax-percentage">Tax Percentage (%)</label>
@@ -122,7 +123,7 @@
         </div>
 
         <hr />
-        <div class="form-group">
+        <!-- <div class="form-group">
           <label for="pay-method">Payment Method</label>
           <ng-select
             [items]="paymentMethods"
@@ -133,7 +134,7 @@
             class="w-full mt-3"
           >
           </ng-select>
-        </div>
+        </div> -->
 
         <div class="form-group">
           <label for="project">Project</label>
@@ -146,6 +147,15 @@
             class="w-full mt-3"
           >
           </ng-select>
+        </div>
+        <div class="form-group">
+          <label for="event-date">Event Date</label>
+          <input
+            type="date"
+            id="event-date"
+            name="event-date"
+            [(ngModel)]="expenseSummary.eventDate"
+          />
         </div>
 
         <hr />

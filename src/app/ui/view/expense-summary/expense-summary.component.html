@@ -1,14 +1,81 @@
-<div class="summary-container">
-    <h2>Expense Summary</h2>
-    <p><strong>Amount:</strong> {{ expenseSummary.amount }}</p>
-    <p><strong>Merchant:</strong> {{ expenseSummary.merchant }}</p>
-    <p><strong>Expense Date:</strong> {{ expenseSummary.expenseDate }}</p>
-    <p><strong>Category:</strong> {{ expenseSummary.category }}</p>
-    <p><strong>Tax Rate:</strong> {{ expenseSummary.taxRate }}</p>
-    <p><strong>Tax Percentage:</strong> {{ expenseSummary.taxPercentage }}</p>
-    <p><strong>Tax Amount:</strong> {{ expenseSummary.taxAmount }}</p>
-    <p><strong>Payment Method:</strong> {{ expenseSummary.payMethod }}</p>
-    <p><strong>Project:</strong> {{ expenseSummary.project }}</p>
-    <p><strong>Comments:</strong> {{ expenseSummary.comments }}</p>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+
+
+
+<div class="table-container">
+  <div class="container-header">
+    <p-toolbar styleClass="mb-4 gap-2">
+      <ng-template pTemplate="left">
+        <app-button text="Delete" class="btn-delete"></app-button>
+      </ng-template>
+
+      <ng-template pTemplate="right">
+        <app-button text="Accept" class="btn-export gap-2"></app-button>
+        <app-button text="Reject" class="btn-delete"></app-button>
+      </ng-template>
+    </p-toolbar>
+
+    <p-table [value]="requests" [paginator]="true" styleClass="p-datatable-striped" [rows]="15">
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+          <th class="table-item">Date</th>
+          <th class="table-item">Expense</th>
+          <th class="table-item">Merchant</th>
+          <th class="table-item">Category</th>
+          <th class="table-item">Amount</th>
+          <th class="table-item">Submitted By</th>
+          <th class="table-item">Status</th>
+          <th class="table-item">Actions</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-request let-i="rowIndex">
+        <tr>
+          <td><p-tableCheckbox [value]="request" /></td>
+          <td class="table-item">{{ request.eventDate }}</td>
+          <td class="table-item">{{ request.name }}</td>
+          <td class="table-item">{{ request.merchant }}</td>
+          <td class="table-item">{{ request.category }}</td>
+          <td class="table-item">{{ request.amount }}</td>
+          <td class="table-item">{{ request.submittedBy }}</td>
+          <td class="tabble-item">
+            <span *ngIf="request.status === 'Pending'" class="material-symbols-outlined status-icon " [ngClass]="'pending-icon'">
+              schedule
+            </span>
+            <span *ngIf="request.status === 'Approved'" class="material-symbols-outlined status-icon" [ngClass]="'approved-icon'">
+              check
+            </span>
+            <span *ngIf="request.status === 'Rejected'" class="material-symbols-outlined status-icon" [ngClass]="'rejected-icon'">
+              close
+            </span>
+          
+            <span class="status-text">
+              {{ request.status }}
+            </span>
+          </td>          
+          
+            
+
+          
+
+          <!-- Action buttons -->
+          <td class="action table-item">
+            <div class="action-wrapper" (mouseenter)="request.showActions = true" (mouseleave)="request.showActions = false">
+              <span class="material-symbols-outlined action-icon ">more_vert</span>
+
+              <div class="action-menu" *ngIf="request.showActions">
+                <div class="menu-item accept" (click)="approve(request)">
+                  <span class="material-symbols-outlined">check_circle</span> Accept
+                </div>
+                <div class="menu-item reject" (click)="reject(request)">
+                  <span class="material-symbols-outlined">cancel</span> Reject
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
   </div>
-  
+</div>

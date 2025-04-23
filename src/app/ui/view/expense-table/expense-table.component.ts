@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ExpenseService, Expense } from '../../service/expense.service';
 import { debounceTime, Subject } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
+
 
 @Component({
   selector: 'app-expense-table',
@@ -16,23 +17,42 @@ export class ExpenseTableComponent implements OnInit {
   searchTerm: string = '';
   private searchTermSubject: Subject<string> = new Subject();
 
+
   constructor(
     private router: Router, 
     private expenseService: ExpenseService,
     private confirmationService: ConfirmationService,
-    private messageService: MessageService 
+    private messageService: MessageService, 
+    private cdr: ChangeDetectorRef
   ) {}
+
+  // Array of predefined color classes
+  colorClasses: string[] = [
+    'color-lightblue',
+    'color-lightgreen',
+    'color-lightyellow',
+    'color-lightcoral',
+    'color-lightpink'
+  ];
 
 
   ngOnInit(): void {
-    this.expenseService.expenses$.subscribe((expenses) => {
-      console.log('Received expenses:', expenses);
-      this.expenses = expenses;
-      this.filteredExpenses = expenses; 
-    });
-    this.searchTermSubject.pipe(debounceTime(300)).subscribe(() => {
-      this.onSearch();
-    });
+    // this.expenseService.expenses$.subscribe((expenses) => {
+    //   console.log('Received expenses:', expenses);
+    //   this.expenses = expenses;
+    //   this.filteredExpenses = expenses; 
+    // });
+    // this.searchTermSubject.pipe(debounceTime(300)).subscribe(() => {
+    //   this.onSearch();
+    // });
+    this.loadExpensesFromLocalStorage();
+    console.log('Loaded expenses from local storage:', this.filteredExpenses);
+     // Trigger change detection to fix ExpressionChangedAfterItHasBeenCheckedError
+
+  }
+  loadExpensesFromLocalStorage(): void {
+    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+    this.filteredExpenses = expenses;
   }
 
   onSearchInputChange(): void {
@@ -51,9 +71,24 @@ export class ExpenseTableComponent implements OnInit {
       this.filteredExpenses = this.expenses; 
     }
   }
-
+  generateRandomColor(): string {
+    const colors = [
+      '#ADD8E6', // lightblue
+      '#90EE90', // lightgreen
+      '#FFFFE0', // lightyellow
+      '#F08080', // lightcoral
+      '#FFB6C1'  // lightpink
+    ];
+    const randomIndex = Math.floor(Math.random() * colors.length);
+    return colors[randomIndex];
+  }
+  
+  navigateToexpense(): void {
+    this.router.navigate(['/expense-summary']);
+  }
   navigateToForm(): void {
-    this.router.navigate(['admin/expenses/expensesForm']);
+    console.log('Navigating to form');
+    this.router.navigate(['/admin/expensesForm']);
   }
 
   editExpense(expense: Expense): void {
@@ -89,7 +124,23 @@ export class ExpenseTableComponent implements OnInit {
     });
   }
 
+  deleteExpense2(expenseId: string): void {
+    // Get data from local storage
+    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+  
+    // Filter out the item to delete
+    const updatedExpenses = expenses.filter((exp: any) => exp.id !== expenseId);
+  
+    // Save back to local storage
+    localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+  
+    // Update your table data
+    this.filteredExpenses = updatedExpenses;
+  }
+  
+
   viewExpenseApproval(expense: Expense): void {
     this.router.navigate(['/expenses/expensesApproval', expense.id]);
   }
+  
 }
