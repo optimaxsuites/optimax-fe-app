@@ -5,13 +5,14 @@ import { ExpenseFormsModalComponent } from './ui/view/expense-forms-modal/expens
 import { ExpenseApprovalComponent } from './ui/view/expense-approval/expense-approval.component';
 import { UploadRecieptComponent } from './ui/view/upload-reciept/upload-reciept.component';
 import { AddPerDiemComponent } from './ui/view/add-per-diem/add-per-diem.component';
+import { ExpenseSummaryComponent } from './ui/view/expense-summary/expense-summary.component';
 
 const routes: Routes = [
    { path: 'admin/expenses/:uuid',
         component: ExpensesComponent,
       },
       {
-        path: 'admin/expenses/expensesForm',
+        path: 'admin/expensesForm',
         component: ExpenseFormsModalComponent,
       },
       {
@@ -26,6 +27,10 @@ const routes: Routes = [
         path: 'Addperdiem',
         component: AddPerDiemComponent,
       },
+      {
+        path:'expense-summary',
+        component:ExpenseSummaryComponent
+      }
 ];
 
 @NgModule({
