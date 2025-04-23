@@ -121,9 +121,7 @@ export class HotelFormComponent implements OnInit {
   isScanning = false;
   scanError: string | null = null;
   scanProgress = 0;
-
-  // Scanner status tracking
-  private scanStatusSubscription: Subscription;
+  scanStatus: string = ''; // Added scanStatus property
 
   countries: string[] = [
     'Nigeria',
@@ -140,6 +138,7 @@ export class HotelFormComponent implements OnInit {
   ];
 
   currentDate: Date = new Date();
+  private statusSubscription: Subscription;
 
   constructor(
     private fb: FormBuilder,
@@ -187,10 +186,14 @@ export class HotelFormComponent implements OnInit {
 
     this.setupFormListeners();
 
-    this.scanStatusSubscription =
-      this.scannerService.scanStatusChanged.subscribe((status) =>
-        this.handleScanStatusUpdate(status)
-      );
+    // this.scanStatusSubscription =
+    //   this.scannerService.scanStatusChanged.subscribe((status) =>
+    //     this.handleScanStatusUpdate(status)
+    //   );
+
+    this.statusSubscription = this.scannerService.scanStatus$.subscribe(
+      (status) => this.handleStatusUpdate(status)
+    );
   }
 
   onAmountInput(event: any): void {
@@ -262,13 +265,6 @@ export class HotelFormComponent implements OnInit {
       }
     }
     this.loadSelectedRooms();
-  }
-
-  onSameGuestCheckin() {
-    this.isSameGuest = true;
-    this.showCheckinForm = false;
-    // Automatically confirm the booking with the existing guest info
-    this.confirmBooking();
   }
 
   setActiveStatus(status: string) {
@@ -755,16 +751,22 @@ export class HotelFormComponent implements OnInit {
     }
   }
 
-  ngOnDestroy() {
-    // Clean up resources
-    if (this.scanStatusSubscription) {
-      this.scanStatusSubscription.unsubscribe();
-    }
-
-    // Terminate OCR worker to free resources
+  ngOnDestroy(): void {
+    this.statusSubscription.unsubscribe();
+    this.scannerService.cleanup();
     this.ocrService.terminateWorker();
+  }
 
-    // Close scanner connection
-    this.scannerService.closeScanner();
+  private handleStatusUpdate(status: ScanStatus): void {
+    this.isScanning =
+      status.status !== 'idle' &&
+      status.status !== 'completed' &&
+      status.status !== 'error';
+    this.scanProgress = status.progress || 0;
+    this.scanStatus = status.message || '';
+
+    if (status.status === 'error') {
+      this.scanError = status.message || 'Scanner error occurred';
+    }
   }
 }

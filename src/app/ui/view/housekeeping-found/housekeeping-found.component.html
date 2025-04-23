@@ -1,0 +1,277 @@
+<div class="p-6 bg-white rounded-lg shadow" *ngIf="!openFoundForm">
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-xl font-semibold">Found Items</h2>
+    <button
+      pButton
+      icon="pi pi-plus"
+      label="Add Found Item"
+      class="p-button-primary"
+      (click)="navigateToHouse()"
+    ></button>
+  </div>
+
+  <div class="flex border-b mb-6">
+    <button
+      [ngClass]="{
+        'border-b-2 border-blue-500 text-blue-600': activeTab === 'unclaimed'
+      }"
+      class="px-4 py-2 font-medium"
+      (click)="switchTab('unclaimed')"
+    >
+      Unclaimed Items ({{ unclaimedItems.length }})
+    </button>
+    <button
+      [ngClass]="{
+        'border-b-2 border-blue-500 text-blue-600': activeTab === 'claimed'
+      }"
+      class="px-4 py-2 font-medium"
+      (click)="switchTab('claimed')"
+    >
+      Claimed Items ({{ claimedItems.length }})
+    </button>
+  </div>
+
+  <!-- Unclaimed Items Table -->
+  <div *ngIf="activeTab === 'unclaimed'">
+    <p-table
+      [value]="unclaimedItems"
+      [paginator]="true"
+      [rows]="10"
+      styleClass="p-datatable-sm"
+      [tableStyle]="{ 'min-width': '50rem' }"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Description</th>
+          <th>Found At</th>
+          <th>Date Found</th>
+          <th>Storage</th>
+          <th>Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-item>
+        <tr>
+          <td>{{ item.description }}</td>
+          <td>{{ item.foundAt }}</td>
+          <td>{{ item.dateFound | date : "mediumDate" }}</td>
+          <td>{{ item.storageLocation }}</td>
+          <td>
+            <button
+              pButton
+              icon="pi pi-eye"
+              class="p-button-rounded p-button-text"
+              (click)="viewDetails(item)"
+              pTooltip="View Details"
+            ></button>
+            <button
+              pButton
+              icon="pi pi-check"
+              class="p-button-rounded p-button-text p-button-success ml-2"
+              (click)="showClaimDialog(item)"
+              pTooltip="Mark as Claimed"
+            ></button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center py-4">No unclaimed items found</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Claimed Items Table -->
+  <div *ngIf="activeTab === 'claimed'">
+    <p-table
+      [value]="claimedItems"
+      [paginator]="true"
+      [rows]="10"
+      styleClass="p-datatable-sm"
+      [tableStyle]="{ 'min-width': '50rem' }"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Description</th>
+          <th>Found At</th>
+          <th>Date Found</th>
+          <th>Claimed By</th>
+          <th>Claim Date</th>
+          <th>Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-item>
+        <tr>
+          <td>{{ item.description }}</td>
+          <td>{{ item.foundAt }}</td>
+          <td>{{ item.dateFound | date : "mediumDate" }}</td>
+          <td>{{ item.claimedBy }}</td>
+          <td>{{ item.claimDate | date : "mediumDate" }}</td>
+          <td>
+            <button
+              pButton
+              icon="pi pi-eye"
+              class="p-button-rounded p-button-text"
+              (click)="viewDetails(item)"
+              pTooltip="View Details"
+            ></button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center py-4">No claimed items found</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Item Details Dialog -->
+  <p-dialog
+    [(visible)]="displayDetailsDialog"
+    [style]="{ width: '50vw' }"
+    [modal]="true"
+    header="Item Details"
+  >
+    <div *ngIf="selectedItem" class="space-y-4">
+      <div>
+        <label class="font-semibold">Description:</label>
+        <p>{{ selectedItem.description }}</p>
+      </div>
+      <div>
+        <label class="font-semibold">Found By:</label>
+        <p>{{ selectedItem.foundBy }}</p>
+      </div>
+      <div>
+        <label class="font-semibold">Found At:</label>
+        <p>{{ selectedItem.foundAt }}</p>
+      </div>
+      <div>
+        <label class="font-semibold">Date Found:</label>
+        <p>{{ selectedItem.dateFound | date : "fullDate" }}</p>
+      </div>
+      <div>
+        <label class="font-semibold">Storage Location:</label>
+        <p>{{ selectedItem.storageLocation }}</p>
+      </div>
+      <div *ngIf="selectedItem.notes">
+        <label class="font-semibold">Notes:</label>
+        <p>{{ selectedItem.notes }}</p>
+      </div>
+      <div *ngIf="selectedItem.status === 'claimed'">
+        <label class="font-semibold">Claimed By:</label>
+        <p>{{ selectedItem.claimedBy }}</p>
+      </div>
+      <div *ngIf="selectedItem.status === 'claimed'">
+        <label class="font-semibold">Claim Date:</label>
+        <p>{{ selectedItem.claimDate | date : "fullDate" }}</p>
+      </div>
+      <div
+        *ngIf="selectedItem.status === 'claimed' && selectedItem.identification"
+      >
+        <label class="font-semibold">Identification:</label>
+        <p>{{ selectedItem.identification }}</p>
+      </div>
+      <div
+        *ngIf="selectedItem.status === 'claimed' && selectedItem.contactNumber"
+      >
+        <label class="font-semibold">Contact Number:</label>
+        <p>{{ selectedItem.contactNumber }}</p>
+      </div>
+    </div>
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        label="Close"
+        icon="pi pi-times"
+        (click)="displayDetailsDialog = false"
+      ></button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Claim Item Dialog -->
+  <p-dialog
+    [(visible)]="displayClaimDialog"
+    [style]="{ width: '40vw' }"
+    [modal]="true"
+    header="Claim Item"
+  >
+    <form [formGroup]="claimForm" (ngSubmit)="submitClaim()" class="space-y-4">
+      <div class="mb-4">
+        <label class="block font-medium mb-1">Your Full Name *</label>
+        <input
+          type="text"
+          formControlName="claimedBy"
+          class="w-full p-2 border rounded"
+          placeholder="Enter full name"
+        />
+        <small
+          class="text-red-500"
+          *ngIf="
+            claimForm.get('claimedBy')?.invalid &&
+            claimForm.get('claimedBy')?.touched
+          "
+        >
+          Full name is required
+        </small>
+      </div>
+      <div class="mb-4">
+        <label class="block font-medium mb-1"
+          >Identification (ID/Passport) *</label
+        >
+        <input
+          type="text"
+          formControlName="identification"
+          class="w-full p-2 border rounded"
+          placeholder="Enter ID or passport number"
+        />
+        <small
+          class="text-red-500"
+          *ngIf="
+            claimForm.get('identification')?.invalid &&
+            claimForm.get('identification')?.touched
+          "
+        >
+          Identification is required
+        </small>
+      </div>
+      <div class="mb-4">
+        <label class="block font-medium mb-1">Contact Number *</label>
+        <input
+          type="text"
+          formControlName="contactNumber"
+          class="w-full p-2 border rounded"
+          placeholder="Enter contact number"
+        />
+        <small
+          class="text-red-500"
+          *ngIf="
+            claimForm.get('contactNumber')?.invalid &&
+            claimForm.get('contactNumber')?.touched
+          "
+        >
+          Contact number is required
+        </small>
+      </div>
+      <div class="flex justify-end gap-2 pt-4">
+        <button
+          type="button"
+          pButton
+          label="Cancel"
+          (click)="displayClaimDialog = false"
+          class="p-button-text"
+        ></button>
+        <button
+          type="submit"
+          pButton
+          label="Claim Item"
+          [disabled]="claimForm.invalid"
+          class="p-button-success"
+        ></button>
+      </div>
+    </form>
+  </p-dialog>
+</div>
+<div *ngIf="openFoundForm">
+  <app-housekeeping-form (back)="navigateToHouse()"></app-housekeeping-form>
+</div>

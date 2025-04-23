@@ -196,6 +196,7 @@ export class HotelLogsComponent implements OnInit {
           (room) =>
             room.status === 'available' ||
             room.status === 'maintenance' ||
+            room.status === 'dirty' ||
             (room.bookingDetails && room.guest)
         )
         .map((room) => this.createBookingLog(room));
@@ -270,27 +271,22 @@ export class HotelLogsComponent implements OnInit {
     const checkinDate = new Date(room.bookingDetails?.checkinDate || today);
     const checkoutDate = new Date(room.bookingDetails?.checkoutDate || today);
 
-    if (room.status === 'available') {
-      return 'available';
-    }
+    if (room.status === 'cancelled') return 'cancelled';
 
-    if (room.status === 'occupied') {
-      return 'checked-in';
-    }
+    if (room.status === 'maintenance') return 'maintenance';
 
-    if (room.status === 'maintenance') {
-      return 'maintenance';
-    }
+    if (room.status === 'occupied') return 'checked-in';
+
+    if (room.status === 'dirty') return 'checked-out';
 
     if (room.status === 'booked') {
       if (checkinDate > today) return 'confirmed';
       if (checkinDate <= today && checkoutDate >= today) return 'no-show';
     }
 
-    if (room.status === 'cancelled') return 'cancelled';
-
-    if (room.status === 'available' && checkoutDate < today) {
-      return 'checked-out';
+    if (room.status === 'available') {
+      if (checkoutDate < today) return 'dirt';
+      return 'available';
     }
 
     return 'unknown';
@@ -471,7 +467,7 @@ export class HotelLogsComponent implements OnInit {
       log.roomStatus === 'booked' ||
       log.roomStatus === 'occupied' ||
       log.roomStatus === 'available' ||
-      log.roomStatus === ' maintenance'
+      log.roomStatus === 'maintenance'
     ) {
       this.viewDetails(log);
     } else {
