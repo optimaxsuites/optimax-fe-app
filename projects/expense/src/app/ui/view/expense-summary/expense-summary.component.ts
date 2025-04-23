@@ -14,11 +14,12 @@ export class ExpenseSummaryComponent {
   searchTerm: string = '';
 
    private searchTermSubject: Subject<string> = new Subject();
+
   constructor(private router: Router) {
     const navigation = this.router.getCurrentNavigation();
     this.expenseSummary = navigation?.extras?.state?.['expenseSummary'];
-  }
-  onSearchInputChange(): void {
+
+  }  onSearchInputChange(): void {
     this.searchTermSubject.next(this.searchTerm);
   }
   generateRandomColor(): string {
@@ -82,5 +83,8 @@ export class ExpenseSummaryComponent {
     request.status = 'Rejected';
     request.showActions = false;
     console.log(`Rejected request ID ${request.id}`);
+  }
+  goBack(){
+    this.router.navigate(['/admin/expenses/:uuid']);
   }
 }
