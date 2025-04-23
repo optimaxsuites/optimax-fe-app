@@ -108,56 +108,57 @@
           >Table {{ selectedOrder?.no }} - {{ selectedOrder?.status }}</span
         >
       </ng-template>
-      @switch (mode) { @case ("chef") {
-      <div class="details-body" style="font-size: 1.7rem">
-        @if(selectedOrder!.orders.size > 0){ @for (item of
-        selectedOrder!.orders; track $index) {
-        <div class="order-item">
-          <span class="item-name"> {{ item[0] }} </span>
-          <span class="item-quantity">
-            {{ item[1].qty }}
-            {{ item[1].qty > 1 ? "Servings" : "Serving" }}</span
-          >
-        </div>
-        } } @else {
-        <div class="order-item">
-          <span class="item-name">Jollof Rice</span>
-          <span class="item-quantity">1 Plate</span>
-        </div>
-        <div class="order-item">
-          <span class="item-name">Chicken</span>
-          <span class="item-quantity">2 Portions</span>
-        </div>
-        }
+      <div style="height: 75vh; overflow-y: auto">
+        @switch (mode) { @case ("chef") {
+        <div class="details-body" style="font-size: 1.7rem">
+          @if(selectedOrder!.orders.size > 0){ @for (item of
+          selectedOrder!.orders; track $index) {
+          <div class="order-item">
+            <span class="item-name"> {{ item[0] }} </span>
+            <span class="item-quantity">
+              {{ item[1].qty }}
+              {{ item[1].qty > 1 ? "Servings" : "Serving" }}</span
+            >
+          </div>
+          } } @else {
+          <div class="order-item">
+            <span class="item-name">Jollof Rice</span>
+            <span class="item-quantity">1 Plate</span>
+          </div>
+          <div class="order-item">
+            <span class="item-name">Chicken</span>
+            <span class="item-quantity">2 Portions</span>
+          </div>
+          }
 
-        <div class="additional-note">
-          <h3>Additional Note:</h3>
-          <p>
-            @if (selectedOrder!.note) {
-            {{ selectedOrder!.note }}
-            }@else { I will like the jollof rice to be spicy and have vegetables
-            in it. The chicken should be soft and tender, spicy and well
-            seasoned. }
-          </p>
+          <div class="additional-note">
+            <h3>Additional Note:</h3>
+            <p>
+              @if (selectedOrder!.note) {
+              {{ selectedOrder!.note }}
+              }@else { I will like the jollof rice to be spicy and have
+              vegetables in it. The chicken should be soft and tender, spicy and
+              well seasoned. }
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div class="details-footer">
-        <button
-          pButton
-          type="button"
-          [label]="
-            selectedOrder?.status == 'Pending'
-              ? 'Start Preparation'
-              : selectedOrder?.status == 'Processing'
-              ? 'Completed'
-              : 'Close'
-          "
-          icon="pi pi-check"
-          class="p-button-success bg-green-100"
-          (click)="toggleOrderStatus(selectedOrder!)"
-        ></button>
-        <!-- <button
+        <div class="details-footer">
+          <button
+            pButton
+            type="button"
+            [label]="
+              selectedOrder?.status == 'Pending'
+                ? 'Start Preparation'
+                : selectedOrder?.status == 'Processing'
+                ? 'Completed'
+                : 'Close'
+            "
+            icon="pi pi-check"
+            class="p-button-success bg-green-100"
+            (click)="toggleOrderStatus(selectedOrder!)"
+          ></button>
+          <!-- <button
           pButton
           type="button"
           label="Mark as Completed"
@@ -165,187 +166,188 @@
           class="p-button-success"
           (click)="markAsCompleted(selectedOrder)"
         ></button> -->
-      </div>
-      } @case ("cashier") {
-      <!-- TODO -->
-      <div class="max-w-full mx-auto bg-white shadow-lg rounded-lg p-4">
-        <h2 class="text-2xl font-bold mb-4 border-b pb-2 text-center">
-          Payment Invoice
-        </h2>
-
-        <!-- Table of items -->
-        <div class="overflow-x-auto">
-          <p-table [value]="selectedOrder!.orders | keyvalue">
-            <ng-template pTemplate="header">
-              <tr>
-                <th>Item</th>
-                <th>Qty</th>
-                <th>Rate</th>
-                <th>Amount</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-rowData>
-              <tr>
-                <td>{{ rowData.key }}</td>
-                <td>{{ rowData.value.qty }}</td>
-                <td>{{ rowData.value.rate }}</td>
-                <td>N{{ rowData.value.qty * rowData.value.rate }}</td>
-              </tr>
-            </ng-template>
-          </p-table>
         </div>
+        } @case ("cashier") {
+        <!-- TODO -->
+        <div class="max-w-full mx-auto bg-white shadow-lg rounded-lg p-4">
+          <h2 class="text-2xl font-bold mb-4 border-b pb-2 text-center">
+            Payment Invoice
+          </h2>
 
-        <!-- Totals & VAT -->
-        <div class="mt-4 space-y-2">
-          <div class="border-t pt-2 flex justify-between">
-            <span>Subtotal</span>
-            <span> {{ orderSubTotal() }} </span>
+          <!-- Table of items -->
+          <div class="overflow-x-auto">
+            <p-table [value]="selectedOrder!.orders | keyvalue">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>Item</th>
+                  <th>Qty</th>
+                  <th>Rate</th>
+                  <th>Amount</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-rowData>
+                <tr>
+                  <td>{{ rowData.key }}</td>
+                  <td>{{ rowData.value.qty }}</td>
+                  <td>{{ rowData.value.rate }}</td>
+                  <td>N{{ rowData.value.qty * rowData.value.rate }}</td>
+                </tr>
+              </ng-template>
+            </p-table>
           </div>
+
+          <!-- Totals & VAT -->
+          <div class="mt-4 space-y-2">
+            <div class="border-t pt-2 flex justify-between">
+              <span>Subtotal</span>
+              <span> {{ orderSubTotal() }} </span>
+            </div>
+            <div class="flex justify-between">
+              <span>Vat</span>
+              <span>N600.00</span>
+            </div>
+            <div class="border-t pt-2 flex justify-between font-bold">
+              <span>Total</span>
+              <span>N{{ orderSubTotal() + 600 }}</span>
+            </div>
+          </div>
+
+          <!-- VAT Type and Payment Method -->
           <div class="flex justify-between">
-            <span>Vat</span>
-            <span>N600.00</span>
-          </div>
-          <div class="border-t pt-2 flex justify-between font-bold">
-            <span>Total</span>
-            <span>N{{ orderSubTotal() + 600 }}</span>
-          </div>
-        </div>
+            <div class="mt-4">
+              <label for="vatType" class="block font-medium mb-1"
+                >Select VAT Type</label
+              >
+              <select
+                id="vatType"
+                class="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-200"
+              >
+                <option>STANDARD</option>
+                <option>ZERO</option>
+              </select>
+            </div>
 
-        <!-- VAT Type and Payment Method -->
-        <div class="flex justify-between">
+            <div class="mt-4">
+              <label for="paymentMethod" class="block font-medium mb-1"
+                >Payment Method</label
+              >
+              <select
+                id="paymentMethod"
+                class="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-200"
+              >
+                <option>CASH</option>
+                <option>CARD</option>
+                <option>TRANSFER</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- <div></div> -->
+
+          <!-- Cash Received -->
           <div class="mt-4">
-            <label for="vatType" class="block font-medium mb-1"
-              >Select VAT Type</label
+            <label for="cashReceived" class="block font-medium mb-1"
+              >Cash Received</label
             >
-            <select
-              id="vatType"
+            <input
+              id="cashReceived"
+              type="text"
               class="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-200"
-            >
-              <option>STANDARD</option>
-              <option>ZERO</option>
-            </select>
+              placeholder="N0.00"
+            />
           </div>
 
-          <div class="mt-4">
-            <label for="paymentMethod" class="block font-medium mb-1"
-              >Payment Method</label
-            >
-            <select
-              id="paymentMethod"
-              class="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-200"
-            >
-              <option>CASH</option>
-              <option>CARD</option>
-              <option>TRANSFER</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- <div></div> -->
-
-        <!-- Cash Received -->
-        <div class="mt-4">
-          <label for="cashReceived" class="block font-medium mb-1"
-            >Cash Received</label
-          >
-          <input
-            id="cashReceived"
-            type="text"
-            class="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-200"
-            placeholder="N0.00"
-          />
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="mt-4 flex space-x-2">
-          <button
-            pButton
-            type="button"
-            label="Cancel"
-            class="p-button-danger flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 focus:outline-none focus:ring focus:ring-red-200"
-            icon="pi pi-times"
-          ></button>
-          <!-- <button
+          <!-- Action Buttons -->
+          <div class="mt-4 flex space-x-2">
+            <button
+              pButton
+              type="button"
+              label="Cancel"
+              class="p-button-danger flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 focus:outline-none focus:ring focus:ring-red-200"
+              icon="pi pi-times"
+            ></button>
+            <!-- <button
             pButton
             type="button"
             label="Hold"
             class="p-button-warning flex-1 bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-yellow-600 focus:outline-none focus:ring focus:ring-yellow-200"
             icon="pi pi-pause"
           ></button> -->
+            <button
+              pButton
+              type="button"
+              label="Paid"
+              class="p-button-success flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200"
+              icon="pi pi-check"
+              (click)="isReceiptModalOpen = true"
+            ></button>
+          </div>
+        </div>
+        } @case ("waiter") {
+        <!-- TODO: Use a component or template or whatever for both this and the chef's template -->
+        <div class="details-body" style="font-size: 1.7rem">
+          @if(selectedOrder!.orders.size > 0){ @for (item of
+          selectedOrder!.orders; track $index) {
+          <div class="order-item">
+            <span class="item-name"> {{ item[0] }} </span>
+            <span class="item-quantity">
+              {{ item[1].qty }}
+              {{ item[1].qty > 1 ? "Servings" : "Serving" }}</span
+            >
+          </div>
+          } } @else {
+          <div class="order-item">
+            <span class="item-name">Jollof Rice</span>
+            <span class="item-quantity">1 Plate</span>
+          </div>
+          <div class="order-item">
+            <span class="item-name">Chicken</span>
+            <span class="item-quantity">2 Portions</span>
+          </div>
+          }
+
+          <div class="additional-note">
+            <h3>Additional Note:</h3>
+            <p>
+              @if (selectedOrder!.note) {
+              {{ selectedOrder!.note }}
+              }@else { I will like the jollof rice to be spicy and have
+              vegetables in it. The chicken should be soft and tender, spicy and
+              well seasoned. }
+            </p>
+          </div>
+        </div>
+
+        <div class="details-footer">
           <button
             pButton
             type="button"
-            label="Paid"
-            class="p-button-success flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200"
+            [label]="
+              selectedOrder?.status == 'Pending'
+                ? 'Edit Order'
+                : selectedOrder?.status == 'Processing'
+                ? 'Processing'
+                : 'Order Completed'
+            "
             icon="pi pi-check"
-            (click)="isReceiptModalOpen = true"
+            class="p-button-success bg-green-300 rounded-md hover:bg-green-400 focus:outline-none focus:ring focus:ring-green-200 font-bold"
+            (click)="
+              overwriteTableOrderData(selectedOrder!);
+              isEditingOrder = true;
+              isCreateOrderModalOpen = true
+            "
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Delete Order"
+            icon="pi pi-check"
+            class="p-button-danger ml-2 bg-red-300 text-white rounded-md hover:bg-red-400 focus:outline-none focus:ring focus:ring-red-200 font-bold"
+            (click)="deleteTable(selectedOrder!); isOrderDetailsOpen = false"
           ></button>
         </div>
-      </div>
-      } @case ("waiter") {
-      <!-- TODO: Use a component or template or whatever for both this and the chef's template -->
-      <div class="details-body" style="font-size: 1.7rem">
-        @if(selectedOrder!.orders.size > 0){ @for (item of
-        selectedOrder!.orders; track $index) {
-        <div class="order-item">
-          <span class="item-name"> {{ item[0] }} </span>
-          <span class="item-quantity">
-            {{ item[1].qty }}
-            {{ item[1].qty > 1 ? "Servings" : "Serving" }}</span
-          >
-        </div>
-        } } @else {
-        <div class="order-item">
-          <span class="item-name">Jollof Rice</span>
-          <span class="item-quantity">1 Plate</span>
-        </div>
-        <div class="order-item">
-          <span class="item-name">Chicken</span>
-          <span class="item-quantity">2 Portions</span>
-        </div>
-        }
-
-        <div class="additional-note">
-          <h3>Additional Note:</h3>
-          <p>
-            @if (selectedOrder!.note) {
-            {{ selectedOrder!.note }}
-            }@else { I will like the jollof rice to be spicy and have vegetables
-            in it. The chicken should be soft and tender, spicy and well
-            seasoned. }
-          </p>
-        </div>
-      </div>
-
-      <div class="details-footer">
-        <button
-          pButton
-          type="button"
-          [label]="
-            selectedOrder?.status == 'Pending'
-              ? 'Edit Order'
-              : selectedOrder?.status == 'Processing'
-              ? 'Processing'
-              : 'Order Completed'
-          "
-          icon="pi pi-check"
-          class="p-button-success bg-green-300 rounded-md hover:bg-green-400 focus:outline-none focus:ring focus:ring-green-200 font-bold"
-          (click)="
-            overwriteTableOrderData(selectedOrder!);
-            isEditingOrder = true;
-            isCreateOrderModalOpen = true
-          "
-        ></button>
-        <button
-          pButton
-          type="button"
-          label="Delete Order"
-          icon="pi pi-check"
-          class="p-button-danger ml-2 bg-red-300 text-white rounded-md hover:bg-red-400 focus:outline-none focus:ring focus:ring-red-200 font-bold"
-          (click)="deleteTable(selectedOrder!); isOrderDetailsOpen = false"
-        ></button>
-      </div>
-      } } </p-panel
+        } }
+      </div> </p-panel
     >}
   </div>
 </div>
