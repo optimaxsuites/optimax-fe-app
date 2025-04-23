@@ -2,6 +2,8 @@
    margin-right: 1rem;
 }
 
+
+
 .status-content {
   display: flex;
   align-items: center;
@@ -150,4 +152,20 @@
   //   border-radius: 50%;  /* Ensures the badge is a circle */
   //   display: inline-block;
   // }
+  .empty-background {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding:  50px 0;
+    color: #aaa;
+    font-size: 18px;
+    margin-bottom: 200px;
+  }
+  
+  .icon-style {
+    margin-top: 100px;
+    font-size: 170px;
+    opacity: 0.3;
+  }
   

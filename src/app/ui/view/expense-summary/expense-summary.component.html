@@ -1,5 +1,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 
+<div class="form-buttons" (click)=" goBack()">
+
+  <div class="arrow-left">
+    <div></div>
+  </div>
+  </div>
 
 
 <div class="table-container">
@@ -15,7 +21,8 @@
       </ng-template>
     </p-toolbar>
 
-    <p-table [value]="requests" [paginator]="true" styleClass="p-datatable-striped" [rows]="15">
+    <div class="table-container ml-5 mr-5">
+    <p-table [value]="requests" [paginator]="true" styleClass="p-datatable-striped" [rows]="15"  >
       <ng-template pTemplate="header">
         <tr>
           <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
@@ -58,24 +65,22 @@
             
 
           
-
-          <!-- Action buttons -->
-          <td class="action table-item">
-            <div class="action-wrapper" (mouseenter)="request.showActions = true" (mouseleave)="request.showActions = false">
-              <span class="material-symbols-outlined action-icon ">more_vert</span>
-
-              <div class="action-menu" *ngIf="request.showActions">
-                <div class="menu-item accept" (click)="approve(request)">
-                  <span class="material-symbols-outlined">check_circle</span> Accept
-                </div>
-                <div class="menu-item reject" (click)="reject(request)">
-                  <span class="material-symbols-outlined">cancel</span> Reject
-                </div>
-              </div>
+          <td class="dropdown-container">
+            <span class="material-symbols-outlined action-icon">more_vert</span>
+            <div class="dropdown-content">
+              <a (click)="approve(request)">
+                <span class="material-symbols-outlined">check_circle</span> Accept
+              </a>
+              <a (click)="reject(request)">
+                <span class="material-symbols-outlined">cancel</span> Reject
+              </a>
             </div>
           </td>
+          
         </tr>
       </ng-template>
     </p-table>
+
+    </div>
   </div>
 </div>
