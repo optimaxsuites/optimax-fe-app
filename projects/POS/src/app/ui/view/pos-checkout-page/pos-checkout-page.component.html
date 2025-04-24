@@ -235,6 +235,7 @@
               (delete)="deleteCartItem(i)"
               (updateItem)="openItemUpdateModal($event)"
               (countChange)="handleCountChange($event, i)"
+              (calculateTotal)="calculateTotals()"
               class="cursor-pointer"
             ></app-cart-item-card>
           </div>
@@ -272,6 +273,7 @@
             <app-all-payments-modal
               [(isModalOpen)]="isAllPaymentsModalOpen"
               (selectedPayments)="processPayment($event)"
+              [cartItem] = "cartItems"
             ></app-all-payments-modal>
 
           </div>

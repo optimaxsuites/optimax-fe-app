@@ -111,7 +111,7 @@ export class CashPaymentComponent implements OnInit {
     ];
   }
   processCashPayment() {
-    if (this.priceValue < this.cart?.total) {
+    if (this.totalPaid < this.cart?.total) {
       console.log(this.priceValue);
       this.messageService.add({
         severity: 'warn',
@@ -208,3 +208,6 @@ export class CashPaymentComponent implements OnInit {
     });
   }
 }
+
+
+

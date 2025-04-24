@@ -363,9 +363,45 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     });
   }
 
-  processPayment(modes: string[]) {
+  processPayment( modes: string[]) {
     if (this.cartItems.length === 0) return;
-
+    const now = new Date().toISOString();
+    const transactionDetails = {
+      id: 0,
+      totalAmount: 0,
+      transactionDate: now,
+      status: "PENDING",
+      order: [
+        {
+          id: 0,
+          orderNumber: this.randomTokenService.getRandomToken(),
+          orderStatus: "PENDING",
+          updatedAt: now,
+          totalAmount: this.total,
+          quantity: 0,
+          customerId: 0,
+          branchId: 1,
+          discountId: 0,
+          paymentId: 0,
+          cashier: 67,
+          orderItems: this.cartItems.map(item => ({
+            id: 0,
+            totalPrice: item.count * parseInt(item.sellingPrice || '0'),
+            quantity: item.count,
+            productId: item.id,
+            productVariantId: 0,
+            orderId: 0
+          }))
+        }
+      ],
+      paymentBreakdown: modes.map(mode => ({
+        id: 0,
+        amountPaid: 0,
+        transactionRefernce: "",
+        paymentId: 0
+      }))
+    };
+    console.log(transactionDetails)
     const cart = {
       cartItems: [...this.cartItems],
       total: this.total,
