@@ -104,7 +104,7 @@ export class AddProductComponent {
   openAddVariant: boolean = false;
   isEditing: boolean = false;
   editingIndex: number | null = null;
-
+Object = Object
  
 
   /**
@@ -256,6 +256,7 @@ export class AddProductComponent {
   originalProducts: ProductData[] = [];
   userBranch = "headquarters"
 Array = Array;
+console = console
 
   constructor(
     private messageService: MessageService,
@@ -348,13 +349,14 @@ Array = Array;
     }
 
 
-    if (this.userBranch !== 'headquarters') {
-      this.productForm.get('selectedBranch')?.disable();
-    } else {
-      this.productForm.get('selectedBranch')?.enable();
-    }
+    // if (this.userBranch !== 'headquarters') {
+    //   this.productForm.get('selectedBranch')?.disable();
+    // } else {
+    //   this.productForm.get('selectedBranch')?.enable();
+    // }
     
     this.productForm.get('selectedBranch')?.valueChanges.subscribe(() => {
+      this.console.log(this.selecteddBranch)
       this.updateBranches();
     });
 
@@ -371,8 +373,8 @@ Array = Array;
       this.branches = data;
   
       if (this.branches.length > 0) {
-        this.productForm.get('selectedBranch')?.setValue(this.branches[1]);
-        this.newVariant.branches = [this.branches[1]]
+        this.productForm.get('selectedBranch')?.setValue(this.branches[0]);
+        this.newVariant.branches = [this.branches[0]]
       }
     });
     
@@ -479,33 +481,48 @@ updateBranches() {
   const branchArray = this.branchess;
   const selectedBranches = this.selecteddBranch;
 
-  if (selectedBranches.length > 1) {
-    selectedBranches.forEach((branch: any) => {
-      const exists = branchArray.controls.some(ctrl => ctrl.get('branchName')?.value.name === branch.name);
+  if (!Array.isArray(selectedBranches) || selectedBranches.length <= 0) return;
 
-      if (!exists) {
-        branchArray.push(
-          this.fb.group({
-            branchName: [branch],
-            sellingPrice: [null, Validators.required],
-            costPrice: [null, Validators.required],
-            quantity: [null, Validators.required],
-            sku: [this.autoGenerateBranchSku(), Validators.required],
-            code: [null, Validators.required],
-            partNumber: [null, Validators.required],
-            tax: [null, Validators.required],
-            supplier: [null, Validators.required],
-            discount: [null],
-            variants: this.fb.array([]),
-          })
-        );
-      }
-    });
-  } else {
-    console.log('Only one branch selected');
+  if (selectedBranches.length === 1) {
+    while (branchArray.length !== 0) {
+      branchArray.removeAt(0);
+    }
   }
-}
 
+  if (selectedBranches.length > 1) {
+    for (let i = branchArray.length - 1; i >= 0; i--) {
+      const formBranch = branchArray.at(i).get('branchName')?.value;
+      const stillSelected = selectedBranches.some((b: any) => b.name === formBranch.name);
+      if (!stillSelected) {
+        branchArray.removeAt(i);
+      }
+    }
+  }
+
+  selectedBranches.forEach((branch: any) => {
+    const exists = branchArray.controls.some(
+      ctrl => ctrl.get('branchName')?.value.name === branch.name
+    );
+
+    if (!exists) {
+      branchArray.push(
+        this.fb.group({
+          branchName: [branch],
+          sellingPrice: [null, Validators.required],
+          costPrice: [null, Validators.required],
+          quantity: [null, Validators.required],
+          sku: [this.autoGenerateBranchSku(), Validators.required],
+          code: [null, Validators.required],
+          partNumber: [null, Validators.required],
+          tax: [null, Validators.required],
+          supplier: [null, Validators.required],
+          discount: [null],
+          variants: this.fb.array([]),
+        })
+      );
+    }
+  });
+}
 
   populateEditBranches() {
     this.selecteddBranch.forEach((branch: any) => {
@@ -547,7 +564,6 @@ if (detail?.variants?.length) {
     });
   }
   
-
   removeBranch(index: number) {
     const branchToRemove = this.branchess.at(index).get('branchName')?.value;
     this.branchess.removeAt(index);
@@ -722,11 +738,7 @@ if (detail?.variants?.length) {
 
     const formValues = this.productForm.value;
 
-    // TODO: Add the rest of the fields, `variant` and `productImages`
-    // console.log("branches", this.branchess.value)
-    // console.log(formData);
-
-   
+  
 
     if(this.selecteddBranch?.length > 1){
       this.createProductPerBranch(this.branchess.value)
@@ -752,13 +764,11 @@ if (detail?.variants?.length) {
           taxId: formValues.tax?.id,
           discountId: formValues.discount?.id,
           supplierId: formValues.supplier?.id,
-          formValuesId: this.selecteddBranch.id, 
+          branchId: formValues.selectedBranch?.id, 
           createdBy: userName,
           createdDate: new Date().toISOString(),
       
       };
-
-      console.log(product)
       const formData = new FormData();
         formData.append('product', JSON.stringify(product));
         if (formValues.image instanceof File) {
@@ -768,12 +778,7 @@ if (detail?.variants?.length) {
       this.posService.addProduct(formData).subscribe(
       async (data) => {
         if (data) {
-          // let savedProducts = localStorage.getItem('products');
-          // let productList: HistoryData = savedProducts
-          //   ? new Map(JSON.parse(savedProducts))
-          //   : new Map();
-          // productList.set(data.id, data);
-          // localStorage.setItem('products', JSON.stringify([...productList]));
+       
           console.log(data)
           this.messageService.add({
             severity: 'success',
@@ -796,6 +801,7 @@ if (detail?.variants?.length) {
         }
       },
       (error) => {
+        this.loading = false;
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -1205,16 +1211,7 @@ return 'AUTO'
 
     this.openAddVariant = true;
   }
-  // loadCategory() {
-  //   this.posService.getCategories().subscribe(async (data) => {
-  //     console.log(data);
-  //     if (data) {
-  //       this.categories = data;
-  //     } else {
-  //       console.log('error loading data');
-  //     }
-  //   });
-  // }
+
   addCategory() {
     let categoryData = this.productData.productCategory;
 
