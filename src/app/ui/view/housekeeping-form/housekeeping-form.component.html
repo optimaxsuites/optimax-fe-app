@@ -3,7 +3,7 @@
   icon="pi pi-times"
   label="Close"
   class="p-button-secondary mb-4"
-  (click)="cancelForm()"
+  (click)="goBack()"
 ></button>
 
 <div class="p-6 bg-gray-50 rounded-lg shadow-sm">
@@ -145,14 +145,14 @@
     <div class="flex justify-end gap-3 pt-4">
       <button
         type="button"
-        (click)="cancelForm()"
+        (click)="goBack()"
         class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
       >
         Cancel
       </button>
       <button
         type="submit"
-        class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
+        class="px-4 py-2 text-white bg-customGreen rounded-md hover:bg-customGreenHover"
         [disabled]="foundForm.invalid"
       >
         Record Found Item

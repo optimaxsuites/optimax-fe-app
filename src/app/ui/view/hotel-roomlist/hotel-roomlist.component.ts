@@ -1,8 +1,6 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { MessageService } from 'primeng/api';
 
-// shared/interfaces/hotel.interfaces.ts
-
 export interface Guest {
   id?: string; // Optional property for guest ID
   title: string;

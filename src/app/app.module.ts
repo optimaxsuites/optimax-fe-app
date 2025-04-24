@@ -41,6 +41,8 @@ import { DropdownModule } from 'primeng/dropdown';
 import { MenuModule } from 'primeng/menu';
 import { HousekeepingLostformComponent } from './ui/view/housekeeping-lostform/housekeeping-lostform.component';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { BarServiceComponent } from './ui/view/bar-service/bar-service.component';
+import { PastryServiceComponent } from './ui/view/pastry-service/pastry-service.component';
 
 @NgModule({
   declarations: [
@@ -66,6 +68,8 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
     HousekeepingFormComponent,
     HousekeepingLostitemComponent,
     HousekeepingLostformComponent,
+    BarServiceComponent,
+    PastryServiceComponent,
   ],
   imports: [
     BrowserAnimationsModule,

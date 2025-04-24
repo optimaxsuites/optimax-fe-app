@@ -12,6 +12,12 @@ interface LostItem {
   dateLost?: Date;
   status: 'pending' | 'found' | 'resolved';
   notes?: string;
+  foundBy?: string;
+  foundContact?: string;
+  foundNotes?: string;
+  foundDate?: Date;
+  itemCategory?: string;
+  roomNumber: string;
 }
 
 @Component({
@@ -26,55 +32,44 @@ export class HousekeepingLostitemComponent implements OnInit {
   filterStatus: string = 'all';
   searchText: string = '';
   openHousekeepingForm: boolean = false;
+  displayDetailsDialog: boolean = false;
 
   statusOptions = [
     { label: 'All Items', value: 'all' },
     { label: 'Pending', value: 'pending' },
     { label: 'Found', value: 'found' },
-    { label: 'Resolved', value: 'resolved' },
   ];
 
-  menuItems = [
-    {
-      label: 'Edit Details',
-      icon: 'pi pi-pencil',
-      command: () => {
-        if (this.selectedItem) {
-          this.onEdit(this.selectedItem);
-        }
+  MenuItems(item: LostItem) {
+    return [
+      {
+        label: 'Edit Details',
+        icon: 'pi pi-pencil',
+        command: () => this.onEdit(item),
+        visible: item.status !== 'found',
       },
-    },
-    {
-      label: 'Mark as Found',
-      icon: 'pi pi-check-circle',
-      command: () => {
-        if (this.selectedItem) {
-          this.onMarkAsFound(this.selectedItem);
-        }
+      {
+        label: 'Mark as Found',
+        icon: 'pi pi-check-circle',
+        command: () => this.onMarkAsFound(item),
+        visible: item.status === 'pending',
       },
-      disabled: this.selectedItem?.status !== 'pending',
-    },
-    {
-      label: 'Mark as Resolved',
-      icon: 'pi pi-check-square',
-      command: () => {
-        if (this.selectedItem) {
-          this.onResolve(this.selectedItem);
-        }
+
+      { separator: true },
+      {
+        label: 'View Details',
+        icon: 'pi pi-eye',
+        command: () => this.viewDetails(item),
       },
-      disabled: this.selectedItem?.status === 'resolved',
-    },
-    { separator: true },
-    {
-      label: 'Delete',
-      icon: 'pi pi-trash',
-      command: () => {
-        if (this.selectedItem) {
-          this.onDelete(this.selectedItem);
-        }
-      },
-    },
-  ];
+    ];
+  }
+
+  displayMarkAsFoundDialog: boolean = false;
+  foundDetails: any = {
+    foundBy: '',
+    contactNumber: '',
+    notes: '',
+  };
 
   constructor(
     private router: Router,
@@ -87,7 +82,7 @@ export class HousekeepingLostitemComponent implements OnInit {
   }
 
   navigateToHouse() {
-    this.openHousekeepingForm = true;
+    this.openHousekeepingForm = !this.openHousekeepingForm;
   }
 
   loadLostItems() {
@@ -127,58 +122,9 @@ export class HousekeepingLostitemComponent implements OnInit {
   }
 
   onEdit(item: LostItem) {
-    this.router.navigate(['/housekeeping/lost-form', item.id]);
-  }
+    this.selectedItem = item;
 
-  onMarkAsFound(item: LostItem) {
-    this.router.navigate(['/housekeeping/mark-as-found'], {
-      queryParams: { lostItemId: item.id },
-    });
-  }
-
-  onResolve(item: LostItem) {
-    this.confirmationService.confirm({
-      message: 'Are you sure you want to mark this item as resolved?',
-      header: 'Confirm Resolution',
-      icon: 'pi pi-exclamation-triangle',
-      accept: () => {
-        // Update the item status
-        const updatedItems = this.lostItems.map((i) => {
-          if (i.id === item.id) {
-            return { ...i, status: 'resolved' as const };
-          }
-          return i;
-        });
-
-        localStorage.setItem('lostItems', JSON.stringify(updatedItems));
-        this.loadLostItems();
-
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Item marked as resolved',
-        });
-      },
-    });
-  }
-
-  onDelete(item: LostItem) {
-    this.confirmationService.confirm({
-      message: 'Are you sure you want to delete this lost item report?',
-      header: 'Confirm Delete',
-      icon: 'pi pi-exclamation-triangle',
-      accept: () => {
-        const updatedItems = this.lostItems.filter((i) => i.id !== item.id);
-        localStorage.setItem('lostItems', JSON.stringify(updatedItems));
-        this.loadLostItems();
-
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Lost item report deleted',
-        });
-      },
-    });
+    this.router.navigate(['/housekeeping/lost-form']);
   }
 
   getStatusClass(status: string) {
@@ -197,5 +143,56 @@ export class HousekeepingLostitemComponent implements OnInit {
   formatDate(date: Date | undefined) {
     if (!date) return 'N/A';
     return new Date(date).toLocaleDateString();
+  }
+
+  viewDetails(item: LostItem) {
+    this.selectedItem = item;
+    this.displayDetailsDialog = true;
+  }
+
+  onMarkAsFound(item: LostItem) {
+    this.selectedItem = item;
+    this.foundDetails = {
+      // Reset form
+      foundBy: '',
+      contactNumber: '',
+      notes: '',
+    };
+    this.displayMarkAsFoundDialog = true;
+  }
+
+  confirmMarkAsFound() {
+    if (!this.foundDetails.foundBy) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Warning',
+        detail: 'Please enter the name of who found the item',
+      });
+      return;
+    }
+
+    const updatedItems = this.lostItems.map((i) => {
+      if (i.id === this.selectedItem?.id) {
+        return {
+          ...i,
+          status: 'found',
+          foundBy: this.foundDetails.foundBy,
+          foundContact: this.foundDetails.contactNumber,
+          foundNotes: this.foundDetails.notes,
+          foundDate: new Date(),
+        };
+      }
+      return i;
+    });
+
+    localStorage.setItem('lostItems', JSON.stringify(updatedItems));
+    this.loadLostItems();
+    this.displayMarkAsFoundDialog = false;
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Item marked as found',
+    });
   }
 }

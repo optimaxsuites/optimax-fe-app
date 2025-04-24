@@ -7,8 +7,38 @@
     <p class="mt-2">Order meals and beverages for guests</p>
   </div>
 
-  <!-- Main Content -->
-  <div class="bg-white shadow-lg rounded-b-xl overflow-hidden">
+  <div class="border-b border-gray-200">
+    <nav class="-mb-px flex">
+      <button
+        (click)="activeView = 'products'"
+        [class]="
+          activeView === 'products'
+            ? 'border-blue-500 text-blue-600'
+            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+        "
+        class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm"
+      >
+        Products
+      </button>
+      <button
+        (click)="activeView = 'orders'"
+        [class]="
+          activeView === 'orders'
+            ? 'border-blue-500 text-blue-600'
+            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+        "
+        class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm"
+      >
+        Orders
+      </button>
+    </nav>
+  </div>
+
+  <!-- Products View -->
+  <div
+    *ngIf="activeView === 'products'"
+    class="bg-white shadow-lg rounded-b-xl overflow-hidden"
+  >
     <!-- Sticky section containing search and categories -->
     <div class="sticky top-0 z-10 bg-white pt-4 px-6 pb-2 border-b">
       <div class="flex justify-between items-center mb-4">
@@ -143,11 +173,12 @@
           <div class="grid grid-cols-1 gap-4">
             <div>
               <label class="block text-gray-700 font-medium mb-1"
-                >Table Number</label
+                >Guest Name:</label
               >
               <input
                 type="text"
-                [(ngModel)]="externalCustomer.tableNumber"
+                placeholder="Enter guest name"
+                [(ngModel)]="externalCustomer.name"
                 class="w-full p-2 border border-gray-300 rounded-md"
               />
             </div>
@@ -327,9 +358,14 @@
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Recent Orders Section -->
-    <div class="border-t border-gray-200 p-6">
+  <!-- Orders View -->
+  <div
+    *ngIf="activeView === 'orders'"
+    class="bg-white shadow-lg rounded-b-xl overflow-hidden"
+  >
+    <div class="p-6">
       <h2 class="text-xl font-semibold text-gray-800 mb-4">
         Recent Kitchen Orders
       </h2>
@@ -384,7 +420,7 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{
                   order.externalCustomer
-                    ? "Table " + order.externalCustomer.tableNumber
+                    ? "Table " + order.externalCustomer.name
                     : "Room " + order.roomNumber
                 }}
               </td>
@@ -488,7 +524,7 @@
 
     <div id="receipt-content" class="border p-4 rounded">
       <div class="text-center mb-4">
-        <h2 class="text-xl font-bold">GRAND HOTEL</h2>
+        <h2 class="text-xl font-bold">Optimax HOTEL</h2>
         <p class="text-sm text-gray-600">123 Luxury Avenue</p>
         <p class="text-sm text-gray-600">Phone: (555) 123-4567</p>
       </div>
@@ -505,7 +541,7 @@
           <span class="font-semibold">Customer:</span>
           {{
             selectedReceipt?.externalCustomer
-              ? "Table " + selectedReceipt?.externalCustomer?.tableNumber
+              ? "Table " + selectedReceipt?.externalCustomer?.name
               : "Room " + selectedReceipt?.roomNumber
           }}
         </p>

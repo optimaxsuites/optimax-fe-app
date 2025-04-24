@@ -1,19 +1,20 @@
 <div class="p-6 bg-white rounded-lg shadow" *ngIf="!openFoundForm">
   <div class="flex justify-between items-center mb-4">
     <h2 class="text-xl font-semibold">Found Items</h2>
+
     <button
-      pButton
-      icon="pi pi-plus"
-      label="Add Found Item"
-      class="p-button-primary"
+      class="flex items-center gap-2 bg-customBlue text-white px-6 py-3 rounded-lg text-xl font-semibold hover:bg-customBlueHover transition duration-300"
       (click)="navigateToHouse()"
-    ></button>
+    >
+      <i class="pi pi-plus"></i>
+      Add Found Item
+    </button>
   </div>
 
   <div class="flex border-b mb-6">
     <button
       [ngClass]="{
-        'border-b-2 border-blue-500 text-blue-600': activeTab === 'unclaimed'
+        'border-b-2 border-green-500 text-green-600': activeTab === 'unclaimed'
       }"
       class="px-4 py-2 font-medium"
       (click)="switchTab('unclaimed')"
@@ -22,7 +23,7 @@
     </button>
     <button
       [ngClass]="{
-        'border-b-2 border-blue-500 text-blue-600': activeTab === 'claimed'
+        'border-b-2 border-green-500 text-green-600': activeTab === 'claimed'
       }"
       class="px-4 py-2 font-medium"
       (click)="switchTab('claimed')"

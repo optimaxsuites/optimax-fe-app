@@ -67,7 +67,7 @@ interface Cart {
 }
 
 interface ExternalCustomer {
-  tableNumber: string;
+  name: string;
 }
 
 interface KitchenOrder {
@@ -76,7 +76,7 @@ interface KitchenOrder {
   roomNumber?: number;
   guestId?: string;
   externalCustomer?: {
-    tableNumber: string;
+    name: string;
   };
   items: {
     id: string;
@@ -105,7 +105,7 @@ interface KitchenOrder {
 })
 export class RoomServiceComponent implements OnInit {
   taxRate: number = 0.08; // 8% tax
-
+  activeView: 'products' | 'orders' = 'products';
   // State variables
   activeCategory: string = 'all';
   searchTerm: string = '';
@@ -141,7 +141,7 @@ export class RoomServiceComponent implements OnInit {
 
   // External customer
   externalCustomer: ExternalCustomer = {
-    tableNumber: '',
+    name: '',
   };
 
   constructor(private router: Router, private messageService: MessageService) {}
@@ -404,7 +404,7 @@ export class RoomServiceComponent implements OnInit {
         id: 'KO-2025-002',
         serviceType: 'kitchen',
         externalCustomer: {
-          tableNumber: '12',
+          name: 'Philip',
         },
         items: [
           {
@@ -528,7 +528,7 @@ export class RoomServiceComponent implements OnInit {
       this.selectedRoom = null;
       this.cart.paymentMethod = 'cash'; // Default for external customers
     } else {
-      this.externalCustomer.tableNumber = '';
+      this.externalCustomer.name = '';
     }
   }
 
@@ -620,7 +620,7 @@ export class RoomServiceComponent implements OnInit {
     }
 
     if (this.isExternalCustomer) {
-      return !!this.externalCustomer.tableNumber;
+      return !!this.externalCustomer.name;
     } else {
       return !!this.selectedRoom;
     }
@@ -663,7 +663,7 @@ export class RoomServiceComponent implements OnInit {
     // Add customer details
     if (this.isExternalCustomer) {
       newOrder.externalCustomer = {
-        tableNumber: this.externalCustomer.tableNumber,
+        name: this.externalCustomer.name,
       };
     } else if (this.selectedRoom) {
       newOrder.roomNumber = this.selectedRoom.number;
@@ -701,7 +701,7 @@ export class RoomServiceComponent implements OnInit {
     if (!this.isExternalCustomer) {
       this.selectedRoom = null;
     } else {
-      this.externalCustomer.tableNumber = '';
+      this.externalCustomer.name = '';
     }
   }
 
