@@ -137,7 +137,7 @@
             <app-cart-item-card
               *ngFor="let item of cartItems; let i = index"
               [item]="item"
-              (delete)="deleteCartItem(i)"
+              (delete)="deleteCartItem(i, $event.isVariant, $event.index)"
               (updateItem)="openItemUpdateModal($event)"
               (countChange)="handleCountChange($event, i)"
               class="cursor-pointer"
@@ -232,7 +232,7 @@
             <app-cart-item-card
               *ngFor="let item of cartItems; let i = index"
               [item]="item"
-              (delete)="deleteCartItem(i)"
+              (delete)="deleteCartItem(i, $event.isVariant, $event.index)"
               (updateItem)="openItemUpdateModal($event)"
               (countChange)="handleCountChange($event, i)"
               (calculateTotal)="calculateTotals()"

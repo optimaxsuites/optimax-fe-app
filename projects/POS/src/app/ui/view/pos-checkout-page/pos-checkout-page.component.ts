@@ -185,20 +185,24 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     console.log(this.cartItems);
   }
 
-  deleteCartItem(index: number) {
-    this.resetProductDiscount(index);
-
-    // this.cartItems[index].cartPriceTotal = this.cartItems[index].effectivePrice;
-    this.cartItems[index].count = 0;
-    this.cartItems.splice(index, 1);
+  deleteCartItem(index: number, isVariant?: boolean, variantIndex?: number) {
+    if (isVariant) {
+      this.cartItems[index].selectedVariants.splice(variantIndex!, 1);
+  
+    } else {
+      this.resetProductDiscount(index);
+      this.cartItems[index].count = 0;
+      this.cartItems.splice(index, 1);
+    }
+  
     this.calculateTotals();
-
     this.calculateDiscount();
-
+  
     if (this.cartItems.length === 0) {
       this.resetDiscount();
     }
   }
+  
   resetProductDiscount(index: number) {
     this.cartItems[index].discountedPrice = 0.0;
     this.productDiscountValue = 0;

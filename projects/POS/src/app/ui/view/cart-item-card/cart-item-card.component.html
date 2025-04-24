@@ -171,7 +171,7 @@
       
 
     </div>
-    <i class="fa-solid fa-xmark z-10 bg-white bg-opacity-30 p-2 items-center shadow rounded-full cursor-pointer absolute mr-2 left-0 top-0 cancel" *ngIf="cart"></i>
+    <i class="fa-solid fa-xmark z-10 bg-white bg-opacity-30 p-2 items-center shadow rounded-full cursor-pointer absolute mr-2 left-0 top-0 cancel" *ngIf="cart" (click)="onDelete(true, $index)"></i>
 
 
 
