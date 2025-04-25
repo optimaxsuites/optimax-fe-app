@@ -7,6 +7,11 @@ import { PosServiceService } from './pos-service.service';
 })
 export class MetadataService {
 
+  private selectedBranchIdSubject = new BehaviorSubject<number | null>(null);
+  selectedBranchId$ = this.selectedBranchIdSubject.asObservable();
+  private loadingSubject = new BehaviorSubject<boolean>(false);
+  loading$ = this.loadingSubject.asObservable();
+
   private discountSubject = new BehaviorSubject<any[]>([]);
   private discountTypesSubject = new BehaviorSubject<any[]>([]);
   private categorySubject = new BehaviorSubject<any[]>([]);
@@ -30,6 +35,9 @@ export class MetadataService {
 
   
   constructor(private posService: PosServiceService) { }
+  setSelectedBranch(id: number) {
+    this.selectedBranchIdSubject.next(id);
+  }
 
   fetchMetaData() {
     this.posService.getDiscount().subscribe(data => this.discountSubject.next(data));
@@ -39,9 +47,19 @@ export class MetadataService {
     this.posService.getTax().subscribe((data) => this.taxSubject.next(data));
     this.posService.getBranches().subscribe((data) => this.branchSubject.next(data));
     this.posService.getProducts().subscribe((data) => this.productSubject.next(data));
-    this.posService.getFilteredProductsWithDetails(1).subscribe(data => 
-      this.enrichedProductSubject.next(data)
-    );
+    this.selectedBranchId$.subscribe((branchId) => {
+      if (branchId != null) {
+        this.loadingSubject.next(true); 
+  
+        this.posService.getFilteredProductsWithDetails(branchId).subscribe(data => {
+          this.enrichedProductSubject.next(data);
+          this.loadingSubject.next(false); 
+        }, error => {
+          this.loadingSubject.next(false); 
+          console.error('❌ Failed to load products for branch:', error);
+        });
+      }
+    });
 
   }
 }

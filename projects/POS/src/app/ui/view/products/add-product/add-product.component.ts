@@ -789,7 +789,6 @@ if (detail?.variants?.length) {
           createdDate: new Date().toISOString(),
       
       };
-      console.log(product)
       const formData = new FormData();
         formData.append('product', JSON.stringify(product));
         if (formValues.image instanceof File) {

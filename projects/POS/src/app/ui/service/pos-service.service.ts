@@ -35,7 +35,7 @@ export class PosServiceService {
     private imageCacheService: ImageCacheService,
     private router: Router
   ) {}
-
+  private productsCache: { [branchId: number]: Observable<any[]> } = {};
   products = [
     {
       id: this.randomTokenService.getRandomToken(),
@@ -529,32 +529,25 @@ export class PosServiceService {
     return this.products$;
   }
 
+  getProductsByBranchId(id: number) {
+
+      return this.products$ = this.http
+        .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/getBy/${id}`)
+        .pipe(
+          catchError(this.handleError),
+          shareReplay(this.shareReplayOptions)
+        ); 
+  }
+
   getFilteredProductsWithDetails(currentBranchId: number) {
-    return this.getProducts().pipe(
+    return this.getProductsByBranchId(currentBranchId).pipe(
       switchMap((products: any[]) => {
-        console.log('📦 All products from API:', products);
-  
-        const filteredProducts = currentBranchId === 1
-          ? products
-          : products
-  
-        console.log('🔍 Current Branch ID:', currentBranchId);
-        console.log('🧹 Filtered Products:', filteredProducts);
-  
-        const enrichedProducts$ = filteredProducts.map(product => {
-          
-  
-         
-  
-       
+        console.log(products)
+        const enrichedProducts$ = products.map(product => {
           const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${product?.productImages[0]?.imgNo}`
           
           return forkJoin([this.imageCacheService.getImage(remoteImageUrl)]).pipe(
-            map(([imageUrl$]) => {
-              
-            
-            // const imageUrl$ = remoteImageUrl ? this.imageCacheService.getImage(remoteImageUrl) : of(null);
-            
+            map(([imageUrl$]) => {            
               return {
                 ...product,
                 imageUrl$
