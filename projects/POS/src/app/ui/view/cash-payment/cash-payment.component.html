@@ -53,74 +53,119 @@
     </div>
 
     <div
-      class="flex flex-col items-center justify-center w-full py-20 paymentBtn"
+      class="flex flex-col items-center justify-center w-full py-20 paymentBtn overflow-y-scroll"
     >
       <span class="text-[16px] mb-2"> Amount due </span>
       <span class="font-semibold text-[30px]">{{ approximateCartTotal | currency:'₦'}}</span>
        
-      <div class="flex flex-col gap-4 mt-3">
+      <div class="flex flex-col gap-4 mt-3 w-1/2">
         <div *ngFor="let mode of navigationState.cart.paymentModes" class="w-full shadow-lg px-3 py-4 rounded-xl">
-        
-          @if(mode === 'loyalty') {
-            <div class="flex justify-between px-3 items-center mb-2">
-              <div class="flex flex-col" >
-                <p class="text-nowrap text-[15px]" *ngIf="customerFound">Customer: {{ customerFound?.name }}</p>
-              <p class="text-nowrap text-[15px]" *ngIf="customerFound" >Available Points: {{customerFound?.loyaltyPoints | currency:'₦'}}</p>
-              </div>            
+          
+          <!-- Loyalty Section -->
+          <ng-container *ngIf="mode === 'loyalty'">
+            <div class="flex flex-col gap-3 mb-2">
+              <!-- Customer Search -->
+              <div class="flex items-center justify-between" >
+                <p class="text-lg font-medium">Customer Loyalty</p>
                 <div class="flex items-center">
-                <input
-                  type="text"
-                  placeholder="customer's phone number"
-                  [(ngModel)]="customerSearch"
-                  class="discount-input "
-                />
-                <button (click)="findCustomer()" class="ml-2 bg-customBlue text-white px-4 py-2 rounded"><i class="fa-solid fa-arrow-right"></i></button>
+                  <input
+                    type="text"
+                    placeholder="Search by phone number"
+                    [(ngModel)]="customerSearch"
+                    class="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-customBlue focus:outline-none"
+                  />
+                  <button (click)="findCustomer()" class="ml-2 bg-customBlue text-white px-4 py-2 rounded-lg">
+                    <i class="fa-solid fa-search"></i>
+                  </button>
+                  <button (click)="openCreateCustomerModal()" class="ml-2 bg-customBlue text-white px-4 py-2 rounded-lg">
+                    <i class="fa-solid fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Customer Information (when found) -->
+              <div *ngIf="customerFound" class="bg-orange-50 p-3 rounded-lg">
+                <div class="flex justify-between items-center">
+                  <div>
+                    <p class="font-medium">{{customerFound.name}}</p>
+                    <p class="text-gray-600">{{customerFound.phone}}</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-medium">Available Points</p>
+                    <p class="text-lg text-customBlue font-bold">{{customerFound.loyaltyPoints | currency:'₦'}}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Customer Not Found Message -->
+              <div *ngIf="customerNotFound" class="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
+                <div class="flex justify-between items-center">
+                  <p>No customer found with this phone number.</p>
+                  <button (click)="openCreateCustomerModal()" class="bg-customGreen text-white px-3 py-2 rounded-lg text-sm">
+                    Create New Customer
+                  </button>
+                </div>
               </div>
             </div>
-
-          }
-  
-          <div class="flex justify-center items-center mb-3 w-full px-3">
-            <p class="w-72 text-[15px] text-nowrap overflow-visible">
-              {{ getPaymentLabel(mode) }}:
-            </p>
+          </ng-container>
+      
+          <!-- Payment Amount Input -->
+          <div class="flex justify-between items-center mb-3 w-full px-3">
+            <p class="text-lg font-medium">{{ getPaymentLabel(mode) }}:</p>
             <div class="flex items-center">
               <input
                 type="text"
                 placeholder="0"
                 [(ngModel)]="paymentValues[mode]"
-                class="discount-input"
-                [attr.max]="mode === 'loyalty' && customerFound ? customerFound.loyaltyPoints : null"
-                [attr.disabled]="mode === 'loyalty' && customerFound ? false : true"
+                class="text-right px-3 py-2 border rounded-lg w-32 focus:ring-2 focus:ring-customBlue focus:outline-none"
+                [disabled]="mode === 'loyalty' && !customerFound"
+                [max]="getLoyaltyMax(mode)"
+
               />
-              <!-- <p-inputNumber 
-                [(ngModel)]="paymentValues[mode]" 
-                inputId="minmaxfraction" 
-                mode="decimal" 
-                placeholder="0"
-                class="discount-input"
-                />  -->
-              <span class="text-5xl ml-2">₦</span>
+              <span class="text-2xl ml-2 font-medium">₦</span>
             </div>
           </div>
-      
+          
+          <!-- Quick Amount Selection -->
+          <div *ngIf="mode !== 'loyalty'" class="border rounded-xl bg-customGreen/50 overflow-hidden">
+            <div class="grid grid-cols-3 divide-x divide-y">
+              <button
+                *ngFor="let opt of getPriceOptions(mode)"
+                class="py-3 text-center font-medium text-lg transition-colors"
+                [class.bg-customBlue]="opt.value === paymentValues[mode]"
+                [class.text-white]="opt.value === paymentValues[mode]"
+                [class.hover:text-white]="opt.value !== paymentValues[mode]"
 
-          <div class="border flex rounded-xl text-3xl divide-x-2 bg-customGreen/50 justify-between items-center font-bold w-full" *ngIf="mode !== 'loyalty'">
-            <span
-              class="w-full cursor-pointer text-center p-3"
-              *ngFor="let opt of getPriceOptions(mode)"
-              [class.text-white]="opt.value === paymentValues[mode]"
-              [class.rounded-xl]="opt.value === paymentValues[mode]"
-              [class.bg-customBlue]="opt.value === paymentValues[mode]"
-              (click)="paymentValues[mode] = opt.value"
-            >
-              {{ opt.label }}
-            </span>
+                [class.hover:bg-customBlue]="opt.value !== paymentValues[mode]"
+                (click)="paymentValues[mode] = opt.value"
+              >
+                {{ opt.label }}
+              </button>
+            </div>
+          </div>
+          
+          <!-- Loyalty-specific Quick Points -->
+          <div *ngIf="mode === 'loyalty' && customerFound" class="border rounded-xl bg-gray-50 overflow-hidden mt-3">
+            <div class="grid grid-cols-3 divide-x bg-customGreen/50">
+              <button
+                *ngFor="let points of [100, 500, 1000]"
+                class="py-3 text-center font-medium transition-colors"
+                [class.bg-customBlue]="points === paymentValues[mode]"
+                [class.text-white]="points === paymentValues[mode]"
+                [class.hover:text-white]="points !== paymentValues[mode]"
+                [class.hover:bg-customBlue]="points !== paymentValues[mode]"
+                [disabled]="customerFound.loyaltyPoints != null && points > customerFound.loyaltyPoints"
+                [class.opacity-50]="customerFound.loyaltyPoints != null && points > customerFound.loyaltyPoints"
+                (click)="paymentValues[mode] = points"
+              >
+                ₦{{ points }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
       
-      <button class="btn rounded-r-xl mt-28" (click)="processCashPayment()">
+      <button class="btn rounded-r-xl mt-14" (click)="processCashPayment()">
         Process
       </button>
     </div>
@@ -208,5 +253,60 @@
 
   <div style="text-align: center; width: 100%;">
     <svg id="barcode"></svg>
+  </div>
+</div>
+
+
+<div *ngIf="showCreateCustomerModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl p-5 w-full max-w-md">
+    <h2 class="text-xl font-bold mb-4">Create New Customer</h2>
+    
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Full Name</label>
+        <input 
+          type="text" 
+          [(ngModel)]="newCustomer.name" 
+          class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-customBlue focus:outline-none"
+          placeholder="Enter customer name"
+        />
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium mb-1">Phone Number</label>
+        <input 
+          type="tel" 
+          [(ngModel)]="newCustomer.phone" 
+          class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-customBlue focus:outline-none"
+          placeholder="Phone number"
+          [value]="customerSearch"
+        />
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium mb-1">Email (Optional)</label>
+        <input 
+          type="email" 
+          [(ngModel)]="newCustomer.email" 
+          class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-customBlue focus:outline-none"
+          placeholder="Email address"
+        />
+      </div>
+    </div>
+    
+    <div class="flex justify-end gap-3 mt-5">
+      <button 
+        (click)="showCreateCustomerModal = false" 
+        class="px-4 py-2 border rounded-lg hover:bg-gray-100"
+      >
+        Cancel
+      </button>
+      <button 
+        (click)="createCustomer()" 
+        class="px-4 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlue/90"
+      >
+        Create Customer
+      </button>
+    </div>
   </div>
 </div>

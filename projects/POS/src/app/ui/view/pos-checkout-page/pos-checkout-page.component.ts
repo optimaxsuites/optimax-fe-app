@@ -334,22 +334,43 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   }
 
   saveCurrentCartItem() {
-    const pausedCart = {
-      name: this.orderName,
-      cart: this.cartItems.map((item) => ({ ...item })),
-      cartDiscount: this.discount,
-      state: 'Open',
-      total: this.total,
-      discountValue: this.discountValue,
-      value: this.value,
-      timestamp: new Date().toLocaleString(),
-      id: this.randomTokenService.getRandomToken(),
-    };
-    const savedItems = localStorage.getItem('savedItems');
-    this.orders = savedItems ? JSON.parse(savedItems) : [];
+    const now = new Date().toISOString();
 
-    this.orders.push(pausedCart);
-    localStorage.setItem('savedItems', JSON.stringify(this.orders));
+    const pausedCart = {
+      // name: this.orderName,
+      // cart: this.cartItems.map((item) => ({ ...item })),
+      // cartDiscount: this.discount,
+      // state: 'Open',
+      // total: this.total,
+      // discountValue: this.discountValue,
+      // value: this.value,
+      // timestamp: new Date().toLocaleString(),
+      // id: this.randomTokenService.getRandomToken(),
+
+          id: 0,
+          orderNumber: this.randomTokenService.getRandomToken(),
+          orderStatus: "UNPAID",
+          updatedAt: now,
+          totalAmount: this.total,
+          quantity: 0,
+          customerId: 1,
+          branchId: 1,
+          cashier: 67,
+          orderItems: this.cartItems.map(item => ({
+            id: 0,
+            totalPrice: item.count * parseInt(item.sellingPrice || '0'),
+            quantity: item.count,
+            productId: item.id,
+            productVariantId: 0,
+            orderId: 0
+          }))
+    };
+    // const savedItems = localStorage.getItem('savedItems');
+    // this.orders = savedItems ? JSON.parse(savedItems) : [];
+
+    // this.orders.push(pausedCart);
+    // localStorage.setItem('savedItems', JSON.stringify(this.orders));
+    console.log(pausedCart)
 
     this.cartItems = [];
     this.orderName = '';
@@ -379,14 +400,12 @@ export class PosCheckoutPageComponent implements OnInit, Business {
         {
           id: 0,
           orderNumber: this.randomTokenService.getRandomToken(),
-          orderStatus: "PENDING",
+          orderStatus: "UNPAID",
           updatedAt: now,
           totalAmount: this.total,
           quantity: 0,
           customerId: 0,
           branchId: 1,
-          discountId: 0,
-          paymentId: 0,
           cashier: 67,
           orderItems: this.cartItems.map(item => ({
             id: 0,
