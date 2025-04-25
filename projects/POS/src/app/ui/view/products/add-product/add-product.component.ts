@@ -373,10 +373,22 @@ console = console
       this.branches = data;
   
       if (this.branches.length > 0) {
-        this.productForm.get('selectedBranch')?.setValue(this.branches[0]);
+        if (this.userBranch === 'headquarters') {
+          this.productForm.patchValue({
+            selectedBranch: [this.branches[0]]
+          });
+        } else {
+          this.productForm.patchValue({
+            selectedBranch: this.branches[0]
+          });
+        }
+        
+        console.log(        this.productForm.get('selectedBranch')?.value)        
         this.newVariant.branches = [this.branches[0]]
       }
     });
+
+    console.log(this.productForm)
     
     this.metadataService.products$.subscribe(data => {this.originalProducts = data});
 
@@ -481,18 +493,25 @@ updateBranches() {
   const branchArray = this.branchess;
   const selectedBranches = this.selecteddBranch;
 
-  if (!Array.isArray(selectedBranches) || selectedBranches.length <= 0) return;
+  // if (!Array.isArray(selectedBranches) || selectedBranches.length <= 0) return;
 
-  if (selectedBranches.length === 1) {
-    while (branchArray.length !== 0) {
-      branchArray.removeAt(0);
-    }
+ 
+if (Array.isArray(selectedBranches) && selectedBranches.length === 1) {
+  while (branchArray.length > 0) {
+
+    branchArray.removeAt(0);
+
   }
+  return
 
-  if (selectedBranches.length > 1) {
-    for (let i = branchArray.length - 1; i >= 0; i--) {
+}
+
+
+  if (branchArray.value.length > 1) {
+    for (let i = branchArray.value.length - 1; i >= 0; i--) {
       const formBranch = branchArray.at(i).get('branchName')?.value;
       const stillSelected = selectedBranches.some((b: any) => b.name === formBranch.name);
+      console.log(stillSelected)
       if (!stillSelected) {
         branchArray.removeAt(i);
       }
@@ -719,6 +738,7 @@ if (detail?.variants?.length) {
     if (this.productForm.invalid) {
       for (const controlName in this.productForm.controls) {
         const control = this.productForm.controls[controlName];
+        console.log(this.productForm.get('branches')?.value)
         if (control.invalid) {
           console.log(`${controlName} is invalid. Errors:`, control.errors);
         }
@@ -764,11 +784,12 @@ if (detail?.variants?.length) {
           taxId: formValues.tax?.id,
           discountId: formValues.discount?.id,
           supplierId: formValues.supplier?.id,
-          branchId: formValues.selectedBranch?.id, 
+          branchId: formValues.selectedBranch?.id || formValues.selectedBranch[0]?.id, 
           createdBy: userName,
           createdDate: new Date().toISOString(),
       
       };
+      console.log(product)
       const formData = new FormData();
         formData.append('product', JSON.stringify(product));
         if (formValues.image instanceof File) {
@@ -1110,8 +1131,8 @@ return 'AUTO'
                   price: [variant.price],
                   sku: [this.generateVariantSku(targetBranch.get('sku')?.value, variant)],
                   quantity: [variant.quantity],
-                  size: [variant.size, Validators.required],
-                  color: [variant.color, Validators.required]
+                  size: [variant.size],
+                  color: [variant.color]
 
                 })
               );

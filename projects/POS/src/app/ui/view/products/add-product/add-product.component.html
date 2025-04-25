@@ -97,12 +97,14 @@
               bindLabel="name"
               formControlName="selectedBranch"
               [multiple]="userBranch === 'headquarters'"
-*ngIf="!isEditMode"
+*ngIf="!isEditMode && userBranch === 'headquarters'"
               placeholder="Select branch"
               class="ng-select-custom"
             >
             </ng-select>
-            <p class="name editInput" id="name" *ngIf="isEditMode">{{ activeItem.branch.name }}</p>
+            <p class="name editInput py-3" id="name" *ngIf="isEditMode">{{ activeItem.branch.name }}</p>
+            <p class="name editInput py-3" id="name" *ngIf="userBranch !== 'headquarters'">{{ selecteddBranch.name }}</p>
+
 
             <div
               *ngIf="
