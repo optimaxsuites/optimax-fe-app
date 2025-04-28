@@ -10,6 +10,7 @@ import { BusinessType, ProductCategories } from '../../models/enums';
 import { Business, Cart, ProductData, VariantDTO } from '../../models/interface';
 import { IndustryDataService } from '../../service/industry-data.service';
 import { MetadataService } from '../../service/metadata.service';
+import { CheckoutService } from '../../service/checkout.service';
 // import { AppResizeDirective } from '../../service/app-resize.directive';
 
 @Component({
@@ -68,7 +69,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     private randomTokenService: RandomTokenService,
      public metadataService: MetadataService,
     private registerService: RegisterService,
-    private posService: PosServiceService,
+    private checkoutService: CheckoutService,
     private industryDataService: IndustryDataService
   ) {
     const navigation = this.router.getCurrentNavigation();
@@ -371,6 +372,14 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     // this.orders.push(pausedCart);
     // localStorage.setItem('savedItems', JSON.stringify(this.orders));
     console.log(pausedCart)
+
+    this.checkoutService.saveOrder(pausedCart).subscribe( 
+      {
+        next: (data) => {
+console.log(data)
+        }
+      }
+    )
 
     this.cartItems = [];
     this.orderName = '';

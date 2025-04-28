@@ -119,6 +119,9 @@ export interface DiscountOption {
 }
 
 export interface Order {
+status: any;
+amount: any;
+createdDate: any;
   timestamp: any;
   name: string;
   cartDiscount: number;

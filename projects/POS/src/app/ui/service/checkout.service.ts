@@ -19,7 +19,17 @@ export class CheckoutService {
         .pipe(catchError(this.handleError));
     }
   
+    saveOrder(data: any){
+      return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/orders', data)
+      .pipe(catchError(this.handleError));
+    }
 
+    getOrders(){
+      return this.http
+      .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/orders')
+      .pipe(catchError(this.handleError));
+    }
   private getBaseApiUrl(): string {
       return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
     }
