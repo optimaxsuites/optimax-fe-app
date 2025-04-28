@@ -17,6 +17,8 @@ export class ExpensesComponent {
       this.onApprovalReportsTabSelected();
     }
   }
+  selectedTab: 'expenses' | 'reports' = 'expenses';
+
   
   onExpensesTabSelected() {
     console.log('Expenses tab selected');

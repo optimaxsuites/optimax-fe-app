@@ -27,7 +27,7 @@
           </app-button>
         
           <div class="absolute -top-4 -right-1 bg-red-500 text-white text-lg w-8 h-8 flex items-center justify-center rounded-full">
-            3
+            {{ getExpenseCount() }}
           </div>
         </div>
 
@@ -84,15 +84,32 @@
           </td>
           <td class="table-item">{{ expense.amount }}</td>
           <td class="table-item">
-            <span class="status-content">
-              <span class="material-symbols-outlined">schedule</span>
+            <span *ngIf="expense.status === 'Pending'" class="material-symbols-outlined status-icon pending-icon">
+              schedule
+            </span>
+            <span *ngIf="expense.status === 'Approved'" class="material-symbols-outlined status-icon approved-icon">
+              check
+            </span>
+            <span *ngIf="expense.status === 'Rejected'" class="material-symbols-outlined status-icon rejected-icon">
+              close
+            </span>
+      
+            <span
+              class="status-text"
+              [ngClass]="{
+                'pending-icon': expense.status === 'Pending',
+                'approved-icon': expense.status === 'Approved',
+                'rejected-icon': expense.status === 'Rejected'
+              }"
+            >
               {{ expense.status }}
             </span>
           </td>
+          
           <td class=" table-item">
-            <span class="material-icons table-item" (click)="viewExpenseApproval(expense)">visibility</span>
-            <span class="material-icons table-item" (click)="editExpense(expense)">edit</span>
-            <span class="material-icons table-item" (click)="confirmDelete(expense)">cancel</span>
+            <span class="material-icons table-item cursor-pointer " (click)="viewExpenseApproval(expense)">visibility</span>
+            <span class="material-icons table-item cursor-pointer" (click)="editExpense(expense)">edit</span>
+            <span class="material-icons table-item  " (click)="confirmDelete(expense)">cancel</span>
           </td>
           
         </tr>
@@ -114,3 +131,164 @@
   </div>
   </div>
 </div>
+
+<!-- Only show this section when an expense is selected -->
+<app-side-modal  *ngIf="isModalOpen" (close)="closeModal()">
+  <h1 class="text-[22px] font-semibold mb-6 border-b pb-2">Edit Expense</h1>
+
+  <form #editForm="ngForm" class="space-y-10">
+
+    <div>
+      <label class="block text-2xl font-medium text-gray-700 mb-1">Merchant:</label>
+      <input
+        [(ngModel)]="selectedExpense.merchant"
+        name="merchant"
+        class="w-full border text-2xl border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <div>
+      <label class="block text-2xlfont-medium text-gray-700 mb-1">Amount:</label>
+      <input
+        [(ngModel)]="selectedExpense.amount"
+        name="amount"
+        type="number"
+        class="w-full border text-2xl  border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+      <div>
+      <label class="block font-medium text-2xl  text-gray-700 mb-1">Expense Date:</label>
+      <input
+        [(ngModel)]="selectedExpense.date"
+        name="date"
+        type="date"
+        class="w-full border text-2xl border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <div>
+      <label class="block text-2xl font-medium text-gray-700 mb-1">Category:</label>
+      <input
+        [(ngModel)]="selectedExpense.category"
+        name="category"
+        class="w-full border text-2xl  border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+
+    <div>
+      <label class="block text-2xl font-medium text-gray-700 mb-1">Comments:</label>
+      <textarea
+        [(ngModel)]="selectedExpense.comment"
+        name="comment"
+        class="w-full border text-2xl border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      ></textarea>
+    </div>
+
+    <!-- Save / Cancel buttons -->
+    <div class="flex justify-end space-x-4 mt-6">
+      <button
+        type="button"
+        class="px-6 py-3 bg-blue-600 text-2xl  text-white rounded-lg hover:bg-blue-700 transition"
+        (click)="saveEditedExpense()"
+      >
+        Save
+      </button>
+      <button
+        type="button"
+        class="px-6 py-3 bg-gray-300 text-2xl  text-gray-800 rounded-lg hover:bg-gray-400 transition"
+        (click)="selectedExpense = null"
+        (click)="closeModal()"
+      >
+        Cancel
+      </button>
+    </div>
+  </form>
+</app-side-modal>
+
+<app-side-modal *ngIf="isModalOpen2"  (close)="closeModal()">
+  <form #editForm="ngForm" class="space-y-10">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+<div class="expense-approval-container p-6 mt-8 max-w-4xl mx-auto bg-white rounded-lg shadow-lg py-28">
+  <h1 class="title text-2xl font-semibold text-gray-800 mb-4">Expense Approval Update</h1>
+
+  <div class="expense-details space-y-4">
+    <!-- Merchant -->
+    <div class="detail-row flex justify-between items-center">
+      <label class="detail-label text-2xl text-gray-700">Merchant:</label>
+      <span class="detail-value text-2xl text-gray-900">{{ selectedExpense.merchant }}</span>
+    </div>
+
+    <!-- Amount -->
+    <div class="detail-row flex justify-between items-center">
+      <label class="detail-label text-2xl text-gray-700">Amount:</label>
+      <span class="detail-value text-2xl text-gray-900">{{ selectedExpense.amount }}</span>
+    </div>
+
+    <!-- Expense Date -->
+    <div class="detail-row flex justify-between items-center">
+      <label class="detail-label text-2xl text-gray-700">Expense Date:</label>
+      <span class="detail-value text-2xl text-gray-900">{{ selectedExpense.eventDate }}</span>
+    </div>
+
+    <!-- Category -->
+    <div class="detail-row flex justify-between items-center">
+      <label class="detail-label text-2xl text-gray-700">Category:</label>
+      <span class="detail-value text-2xl text-gray-900">{{ selectedExpense.category }}</span>
+    </div>
+
+    <!-- Status -->
+    <div class="detail-row flex justify-between items-center">
+      <label class="detail-label text-2xl text-gray-700">Status:</label>
+      <span
+        class="detail-value flex items-center px-3 py-1 rounded-lg text-2xl"
+        [ngClass]="{
+          'text-green-500': selectedExpense.status === 'Approved',
+          'text-red-500': selectedExpense.status === 'Rejected',
+          'text-yellow-500': selectedExpense.status === 'Pending'
+        }"
+      >
+        <mat-icon *ngIf="selectedExpense.status === 'Approved'" class="mr-2 align-middle">check_circle</mat-icon>
+        <mat-icon *ngIf="selectedExpense.status === 'Rejected'" class="mr-2 align-middle">cancel</mat-icon>
+        <mat-icon *ngIf="selectedExpense.status === 'Pending'" class="mr-2 align-middle">access_time</mat-icon>
+        {{ selectedExpense.status }}
+      </span>
+    </div>
+
+    <!-- Comments -->
+    <div class="detail-row flex justify-between items-center">
+      <label class="detail-label text-2xl text-gray-700">Comments:</label>
+      <span class="detail-value text-2xl text-gray-900">{{ selectedExpense.comment }}</span>
+    </div>
+
+    <!-- File Attachments Section -->
+    <!-- <div *ngIf="expense?.receiptFileName || expense?.invoiceFileName">
+      <div class="detail-row">
+        <label class="detail-label">Attachments:</label>
+        <div class="detail-value">
+          <div *ngIf="expense?.receiptFileName">
+            <a (click)="downloadFile(expense?.receiptFileName)">Receipt: {{ expense?.receiptFileName }}</a>
+          </div>
+          <div *ngIf="expense?.invoiceFileName">
+            <a (click)="downloadFile(expense?.invoiceFileName)">Invoice: {{ expense?.invoiceFileName }}</a>
+          </div>
+        </div>
+      </div>
+    </div> -->
+  </div>
+
+
+    <div class="dropdown">
+      <button class="btn btn-more" (click)="toggleDropdown()">More Actions &#x25BC;</button>
+      <ul class="dropdown-content" [class.show]="dropdownOpen">
+        <li (click)="editExpense(expense)">Edit</li>
+        <li (click)="downloadExpense()">Download</li>
+        <li (click)="emailExpense()">Email</li>
+        <li (click)="exportExpense()">Export as PDF</li>
+      </ul>
+    </div>
+  </div>
+
+</form>
+</app-side-modal>

@@ -8,6 +8,7 @@
 
   <!-- Cards -->
 <!-- Cards -->
+<!-- Cards Section -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
   <!-- Total Expenses Card -->
   <div class="bg-sky-600 text-white p-5 rounded-2xl shadow-lg">
@@ -15,9 +16,9 @@
       <span class="material-symbols-outlined text-xl">receipt</span>
       Total Expenses
     </h2>
-    <p class="text-2xl font-bold">₦134,000</p>
-    <p class="text-lg text-white/80 mt-2">This Month: ₦45,000</p>
-    <p class="text-lg text-white/80">Top Category: Travel</p>
+    <p class="text-2xl font-bold">{{ totalExpenses | currency: '₦' }}</p>
+    <!-- <p class="text-lg text-white/80 mt-2">This Month: ₦{{ thisMonthExpenses | currency: '₦' }}</p> -->
+    <p class="text-lg text-white/80">Top Category: {{ topCategory }}</p>
   </div>
 
   <!-- Pending Approvals Card -->
@@ -26,9 +27,9 @@
       <span class="material-symbols-outlined text-xl">pending_actions</span>
       Pending Approvals
     </h2>
-    <p class="text-2xl font-bold">5</p>
-    <p class="text-lg text-white/80 mt-2">Oldest Request: 5 days ago</p>
-    <p class="text-lg text-white/80">Pending Users: 3</p>
+    <p class="text-2xl font-bold">{{ pendingCount }}</p>
+    <p class="text-lg text-white/80 mt-2">    Oldest Request: {{ oldestPendingRequest !== null ? oldestPendingRequest + ' day ago' : 'No pending requests' }}    </p>
+    <p class="text-lg text-white/80">Pending Users: {{ pendingCount }}</p>
   </div>
 
   <!-- Approved Requests Card -->
@@ -37,9 +38,9 @@
       <span class="material-symbols-outlined text-xl">task_alt</span>
       Approved Requests
     </h2>
-    <p class="text-2xl font-bold">25</p>
-    <p class="text-lg text-white/80 mt-2">This Week: 12</p>
-    <p class="text-lg text-white/80">Avg. Amount: ₦5,400</p>
+    <p class="text-2xl font-bold">{{ approvedCount }}</p>
+    <p class="text-lg text-white/80 mt-2">This Week:  {{ thisWeekApprovedCount  + ' Approved'}} </p>
+    <p class="text-lg text-white/80">Avg. Amount: ₦{{ avgApprovedAmount  }}</p>
   </div>
 
   <!-- Rejected Requests Card -->
@@ -48,11 +49,12 @@
       <span class="material-symbols-outlined text-xl">block</span>
       Rejected Requests
     </h2>
-    <p class="text-2xl font-bold">3</p>
-    <p class="text-lg text-white/80 mt-2">Last Rejected: 1 day ago</p>
-    <p class="text-lg text-white/80">Top Reason: Incomplete Info</p>
+    <p class="text-2xl font-bold">{{ rejectedCount }}</p> <!-- You can display the rejected count here -->
+    <p class="text-lg text-white/80 mt-2">Last Rejected: {{ lastRejectedDays }} days ago</p>
+
   </div>
 </div>
+
 
 
 
@@ -102,11 +104,11 @@
       </thead>
       <tbody>
         <tr *ngFor="let item of filteredTableData">
-          <td class="p-2 border">{{ item.expenseName }}</td>
+          <td class="p-2 border">{{ item.name }}</td>
           <td class="p-2 border">{{ item.amount |currency: '₦'  }}</td>
           <td class="p-2 border">{{ item.status }}</td>
-          <td class="p-2 border">{{ item.dateSubmitted | date }}</td>
-          <td class="p-2 border">{{ item.submittedBy }}</td>
+          <td class="p-2 border">{{ item.eventDate | date }}</td>
+          <td class="p-2 border">{{ item.id }}</td>
           <td class="p-2 border">{{ item.approvedBy }}</td>
           <td class="p-2 border">{{ item.approvalDate | date }}</td>
           <td class="p-2 border">{{ item.comment }}</td>

@@ -1,5 +1,10 @@
-<div class="expense-approval-container">
-  <h1 class="title">Expense Approval</h1>
+
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<!--  -->
+
+
+<div class="expense-approval-container ">
+  <h1 class="title">Expense Approval Update</h1>
 
   <div class="expense-details">
     <div class="detail-row">
@@ -12,21 +17,31 @@
     </div>
     <div class="detail-row">
       <label class="detail-label">Expense Date:</label>
-      <span class="detail-value">{{ expense?.date }}</span>
+      <span class="detail-value">{{ expense?.eventDate }}</span>
     </div>
     <div class="detail-row">
       <label class="detail-label">Category:</label>
       <span class="detail-value">{{ expense?.category }}</span>
     </div>
-    <div class="detail-row">
-      <label class="detail-label">Status:</label>
-      <!-- <span class="detail-value" [ngClass]="{
-        'status-approved': expense?.status === 'Approved',
-        'status-rejected': expense?.status === 'Rejected'
-      }">
-        {{ expense?.status }}
-      </span> -->
-    </div>
+<div class="detail-row">
+  <label class="detail-label">Status:</label>
+  <span
+  class="detail-value px-3 py-1 rounded-lg text-sm"
+  [ngClass]="{
+    'text-green-500': expense?.status === 'Approved',
+    'text-red-500': expense?.status === 'Rejected',
+    'text-yellow-500': expense?.status === 'Pending'
+  }"
+  style="color: inherit;"
+>
+  <mat-icon *ngIf="expense?.status === 'Approved'" class="mr-1 align-middle">check_circle</mat-icon>
+  <mat-icon *ngIf="expense?.status === 'Rejected'" class="mr-1 align-middle">cancel</mat-icon>
+  <mat-icon *ngIf="expense?.status === 'Pending'" class="mr-1 align-middle">access_time</mat-icon>
+  {{ expense?.status }}
+</span>
+
+</div>
+
     <div class="detail-row">
       <label class="detail-label">Comments:</label>
       <span class="detail-value">{{ expense?.comment }}</span>
@@ -48,11 +63,6 @@
     </div>
   </div>
 
-  <div class="action-buttons">
-    <div class="primary-actions">
-      <button class="btn btn-approve" (click)="approveExpense()" [disabled]="expense?.status === 'Approved'">Approve</button>
-      <button class="btn btn-reject" (click)="rejectExpense()" [disabled]="expense?.status === 'Rejected'">Reject</button>
-    </div>
 
     <div class="dropdown">
       <button class="btn btn-more" (click)="toggleDropdown()">More Actions &#x25BC;</button>
@@ -64,4 +74,4 @@
       </ul>
     </div>
   </div>
-</div>
+
