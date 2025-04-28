@@ -1,6 +1,6 @@
 .expense-approval-container {
     max-width: 800px;
-    margin: 0 auto;
+    margin: 15rem auto;
     padding: 20px;
     background-color: #fff;
     border-radius: 8px;
@@ -133,7 +133,29 @@
   }
   
 
-
+  .arrow-left{
+    position: relative;
+    background-color: white;
+    height:40px;
+    width:40px;
+    border-radius: 50%;
+    margin: 20px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  .arrow-left:hover{
+    box-shadow: 0px 0px 20px  20px rgba(78, 76, 76, 0.3);
+  }
+  .arrow-left div{
+    position:absolute;
+    height: 14px;
+    width: 14px;
+    border-top: 3px solid #202020;
+    border-left: 3px solid #202020;
+    transform: rotate(-40deg);
+    left: 14.5px;
+    top: 13px;
+  }
 
 
 

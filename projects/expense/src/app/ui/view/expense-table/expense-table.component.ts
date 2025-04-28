@@ -5,6 +5,7 @@ import { debounceTime, Subject } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
 
+
 @Component({
   selector: 'app-expense-table',
   templateUrl: './expense-table.component.html',
@@ -15,16 +16,28 @@ export class ExpenseTableComponent implements OnInit {
   expenses: Expense[] = [];
   filteredExpenses: Expense[] = [];
   searchTerm: string = '';
-  private searchTermSubject: Subject<string> = new Subject();
+  selectedExpense: any = null;
+  currentUserId: string = '';
 
+  private searchTermSubject: Subject<string> = new Subject();
+  sidebarVisible = false;
+  isModalOpen: boolean = false;
+  isModalOpen2: boolean = false;
+  dropdownOpen: boolean = false;
+  expense: any; 
+
+  expenseId: string | null = null;
 
   constructor(
     private router: Router, 
     private expenseService: ExpenseService,
     private confirmationService: ConfirmationService,
     private messageService: MessageService, 
-    private cdr: ChangeDetectorRef
-  ) {}
+    private cdr: ChangeDetectorRef,
+
+  ) {
+    this.loadExpensesFromLocalStorage();
+  }
 
   // Array of predefined color classes
   colorClasses: string[] = [
@@ -34,6 +47,13 @@ export class ExpenseTableComponent implements OnInit {
     'color-lightcoral',
     'color-lightpink'
   ];
+
+  // Example function to update the count
+  getExpenseCount(): number {
+    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+    return expenses.length;
+  }
+  
 
 
   ngOnInit(): void {
@@ -48,12 +68,16 @@ export class ExpenseTableComponent implements OnInit {
     this.loadExpensesFromLocalStorage();
     console.log('Loaded expenses from local storage:', this.filteredExpenses);
      // Trigger change detection to fix ExpressionChangedAfterItHasBeenCheckedError
+     
 
   }
   loadExpensesFromLocalStorage(): void {
     const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
     this.filteredExpenses = expenses;
+    console.log('Loaded expenses from local storage:', this.filteredExpenses);
+    
   }
+  
 
   onSearchInputChange(): void {
     this.searchTermSubject.next(this.searchTerm);
@@ -70,6 +94,14 @@ export class ExpenseTableComponent implements OnInit {
     } else {
       this.filteredExpenses = this.expenses; 
     }
+  }
+  closeModal() {
+    this.isModalOpen = false;
+    this.selectedExpense = null;
+    this.isModalOpen2 = false;
+  }
+  toggleDropdown(): void {
+    this.dropdownOpen = !this.dropdownOpen;
   }
   generateRandomColor(): string {
     const colors = [
@@ -91,11 +123,11 @@ export class ExpenseTableComponent implements OnInit {
     this.router.navigate(['/admin/expensesForm']);
   }
 
-  editExpense(expense: Expense): void {
-    this.router.navigate(['admin/expenses/expensesForm'], {
-      queryParams: { id: expense.id }
-    });
-  }
+  // editExpense(expense: Expense): void {
+  //   this.router.navigate(['admin/expenses/expensesForm'], {
+  //     queryParams: { id: expense.id }
+  //   });
+  // }
 
   confirmDelete(expense: Expense): void {
     this.confirmationService.confirm({
@@ -140,7 +172,66 @@ export class ExpenseTableComponent implements OnInit {
   
 
   viewExpenseApproval(expense: Expense): void {
-    this.router.navigate(['/expenses/expensesApproval', expense.id]);
-  }
+    console.log('Edit function called');
+    console.log('Selected expense:', expense);
+
+    // Clone the expense to avoid modifying the original directly
+    this.selectedExpense = { ...expense };
+    this.isModalOpen2 = true;
+    console.log('Editing expense:', this.selectedExpense);
   
+    // this.router.navigate(['/expensesApproval', expense.id]); // ✅ matches your defined route
+  }
+
+  editExpense(expense: any) {
+    console.log('Edit function called');
+    console.log('Selected expense:', expense);
+
+    // Clone the expense to avoid modifying the original directly
+    this.selectedExpense = { ...expense };
+    this.isModalOpen = true;
+    console.log('Editing expense:', this.selectedExpense);
+  }
+
+  
+  saveEditedExpense(): void {
+    if (!this.selectedExpense) {
+      console.log('No expense selected for editing.');
+      return;
+    }
+
+    console.log('Saving edited expense:', this.selectedExpense);
+
+    // Find the index of the expense in the filteredExpenses array
+    const index = this.filteredExpenses.findIndex(e => e.id === this.selectedExpense.id);
+
+    if (index > -1) {
+      // Update the expense in the array
+      this.filteredExpenses[index] = this.selectedExpense;
+      console.log('Updated expense list:', this.filteredExpenses);
+
+      // Save the updated list back to local storage
+      localStorage.setItem('expenses', JSON.stringify(this.filteredExpenses));
+      console.log('Expenses saved to local storage');
+    } else {
+      console.log('Expense not found in the list');
+    }
+
+    this.closeModal();
+    console.log('Expense edit form closed');
+  }
+
+
+  downloadExpense(): void {
+    // Implement download logic here (e.g., convert to PDF and download)
+  }
+
+  emailExpense(): void {
+    // Implement email logic here (e.g., send the expense as an attachment)
+  }
+
+  exportExpense(): void {
+    // Implement export logic here (e.g., export the expense details as a PDF)
+  }
+
 }

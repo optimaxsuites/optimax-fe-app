@@ -12,6 +12,7 @@ import { MenuItem } from 'primeng/api';
 export class ExpenseSummaryComponent {
   expenseSummary: any;
   searchTerm: string = '';
+  requests: any[] = [];
 
    private searchTermSubject: Subject<string> = new Subject();
 
@@ -33,57 +34,53 @@ export class ExpenseSummaryComponent {
     const randomIndex = Math.floor(Math.random() * colors.length);
     return colors[randomIndex];
   }
-  requests = [
-    {
-      id: 1,
-      eventDate: '2025-04-15',
-      name: 'Transport Allowance',
-      merchant: 'Uber',
-      category: 'Transport',
-      amount: 10000,
-      status: 'Pending',
-      submittedBy: 'John Doe',
-      comment: 'Client visit transportation'
-    },
-    {
-      id: 2,
-      eventDate: '2025-04-14',
-      name: 'Office Supplies',
-      merchant: 'Jumia',
-      category: 'Stationery',
-      amount: 15000,
-      status: 'Pending',
-      submittedBy: 'Jane Smith',
-      comment: 'Bought markers and pens'
-    },
-    {
-      id: 3,
-      eventDate: '2025-04-13',
-      name: 'Team Dinner',
-      merchant: 'Dominos Pizza',
-      category: 'Meals',
-      amount: 20000,
-      status: 'Pending',
-      submittedBy: 'Mike Johnson',
-      comment: 'Dinner after sprint wrap-up'
-    }
-  ];
+
+
+  ngOnInit(): void {
+    this.loadExpensesFromLocalStorage();
+  }
 
   // Method to approve a request
-  approve(request: any) {
+  approve(request: any): void {
     request.status = 'Approved';
     request.showActions = false;
+  
+    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+    const updatedExpenses = expenses.map((item: any) =>
+      item.id === request.id ? { ...item, status: 'Approved' } : item
+    );
+  
+    localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+    this.requests = updatedExpenses;
+  
     console.log(`Approved request ID ${request.id}`);
   }
+  
   getRequests() {
     return this.requests;
   }
   // Method to reject a request
-  reject(request: any) {
+  reject(request: any): void {
     request.status = 'Rejected';
     request.showActions = false;
+  
+    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+    const updatedExpenses = expenses.map((item: any) =>
+      item.id === request.id ? { ...item, status: 'Rejected' } : item
+    );
+  
+    localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+    this.requests = updatedExpenses;
+  
     console.log(`Rejected request ID ${request.id}`);
   }
+  
+  loadExpensesFromLocalStorage(): void {
+    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+    this.requests = expenses;
+    console.log('Loaded expenses into table:', this.requests);
+  }
+  
   goBack(){
     this.router.navigate(['/admin/expenses/:uuid']);
   }

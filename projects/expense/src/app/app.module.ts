@@ -60,6 +60,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 
 
+
 ////////////////
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-button.component';
@@ -68,6 +69,8 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { CommonModule } from '@angular/common';
 import { ApprovalReportsComponent } from './ui/view/approval-reports/approval-reports.component';
 import { ChartModule } from 'primeng/chart';
+import { SideModalComponent } from "./ui/sharedComponent/view/side-modal/side-modal.component";
+
 
 
 @NgModule({
@@ -136,8 +139,11 @@ import { ChartModule } from 'primeng/chart';
     ButtonModule,
     BackButtonComponent,
     ButtonComponent,
-  ],
+    SideModalComponent
+],
   providers: [],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
+
+
 })
 export class AppExpensesModule { }
