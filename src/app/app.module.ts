@@ -42,7 +42,9 @@ import { MenuModule } from 'primeng/menu';
 import { HousekeepingLostformComponent } from './ui/view/housekeeping-lostform/housekeeping-lostform.component';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { BarServiceComponent } from './ui/view/bar-service/bar-service.component';
-import { PastryServiceComponent } from './ui/view/pastry-service/pastry-service.component';
+import { LaundryServiceComponent } from './ui/view/laundry-service/laundry-service.component';
+import { HotelRoomsComponent } from './ui/view/hotel-rooms/hotel-rooms.component';
+import { CheckboxModule } from 'primeng/checkbox';
 
 @NgModule({
   declarations: [
@@ -69,7 +71,8 @@ import { PastryServiceComponent } from './ui/view/pastry-service/pastry-service.
     HousekeepingLostitemComponent,
     HousekeepingLostformComponent,
     BarServiceComponent,
-    PastryServiceComponent,
+    LaundryServiceComponent,
+    HotelRoomsComponent,
   ],
   imports: [
     BrowserAnimationsModule,
@@ -90,6 +93,7 @@ import { PastryServiceComponent } from './ui/view/pastry-service/pastry-service.
     DialogModule,
     InputNumberModule,
     NavTabComponent,
+    CheckboxModule,
   ],
   providers: [MessageService, ConfirmationService],
 

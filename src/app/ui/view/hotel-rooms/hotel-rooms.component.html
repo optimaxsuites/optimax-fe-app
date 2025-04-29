@@ -1,0 +1,231 @@
+<div class="room-creation-container">
+  <!-- Form Header with Icon -->
+  <div class="form-header">
+    <div class="header-icon">
+      <i class="pi pi-home"></i>
+    </div>
+    <div>
+      <h2>Create New Room</h2>
+      <p class="subtitle">
+        Fill in the details to add a new room to your property
+      </p>
+    </div>
+  </div>
+
+  <form [formGroup]="roomForm" (ngSubmit)="onSubmit()" class="room-form">
+    <div class="form-grid">
+      <!-- Left Column -->
+      <div class="form-column">
+        <!-- Room Number -->
+        <div class="form-group">
+          <label for="number" class="required">Room Number</label>
+          <div class="input-with-icon">
+            <i class="pi pi-hashtag"></i>
+            <input
+              pInputText
+              id="number"
+              formControlName="number"
+              type="number"
+              min="100"
+              max="9999"
+              placeholder="e.g. 201"
+            />
+          </div>
+          <small
+            *ngIf="
+              roomForm.get('number')?.invalid && roomForm.get('number')?.touched
+            "
+            class="error-message"
+          >
+            <i class="pi pi-exclamation-circle"></i> Room number must be between
+            100-9999
+          </small>
+        </div>
+
+        <!-- Room Type -->
+        <div class="form-group">
+          <label for="type" class="required">Room Type</label>
+          <div class="input-with-icon">
+            <i class="pi pi-star"></i>
+            <p-dropdown
+              [options]="roomTypes"
+              formControlName="type"
+              id="type"
+              placeholder="Select Type"
+              [style]="{ width: '100%' }"
+            ></p-dropdown>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div class="form-group">
+          <label for="status" class="required">Status</label>
+          <div class="input-with-icon">
+            <i class="pi pi-info-circle"></i>
+            <p-dropdown
+              [options]="roomStatuses"
+              formControlName="status"
+              id="status"
+              placeholder="Select Status"
+              [style]="{ width: '100%' }"
+            ></p-dropdown>
+          </div>
+        </div>
+
+        <!-- Floor -->
+        <div class="form-group">
+          <label for="floor" class="required">Floor</label>
+          <div class="input-with-icon">
+            <i class="pi pi-building"></i>
+            <input
+              pInputText
+              id="floor"
+              formControlName="floor"
+              type="number"
+              min="1"
+              max="99"
+              placeholder="e.g. 2"
+            />
+          </div>
+          <small
+            *ngIf="
+              roomForm.get('floor')?.invalid && roomForm.get('floor')?.touched
+            "
+            class="error-message"
+          >
+            <i class="pi pi-exclamation-circle"></i> Floor must be between 1-99
+          </small>
+        </div>
+
+        <!-- Rate -->
+        <div class="form-group">
+          <label for="rate" class="required">Nightly Rate</label>
+          <div class="input-with-icon">
+            <i class="pi pi-money-bill"></i>
+            <p-inputNumber
+              id="rate"
+              formControlName="rate"
+              mode="currency"
+              currency="USD"
+              [min]="1000"
+              [minFractionDigits]="2"
+              placeholder="0.00"
+              [style]="{ width: '100%' }"
+            ></p-inputNumber>
+          </div>
+          <small
+            *ngIf="
+              roomForm.get('rate')?.invalid && roomForm.get('rate')?.touched
+            "
+            class="error-message"
+          >
+            <i class="pi pi-exclamation-circle"></i> Rate must be at least 1000
+          </small>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="form-column">
+        <!-- Beds -->
+        <div class="form-group">
+          <label for="beds" class="required">Number of Beds</label>
+          <div class="input-with-icon">
+            <i class="pi pi-bed"></i>
+            <input
+              pInputText
+              id="beds"
+              formControlName="beds"
+              type="number"
+              min="1"
+              max="4"
+              placeholder="e.g. 2"
+            />
+          </div>
+          <small
+            *ngIf="
+              roomForm.get('beds')?.invalid && roomForm.get('beds')?.touched
+            "
+            class="error-message"
+          >
+            <i class="pi pi-exclamation-circle"></i> Must be between 1-4 beds
+          </small>
+        </div>
+
+        <!-- Max Occupancy -->
+        <div class="form-group">
+          <label for="maxOccupancy" class="required">Max Occupancy</label>
+          <div class="input-with-icon">
+            <i class="pi pi-users"></i>
+            <input
+              pInputText
+              id="maxOccupancy"
+              formControlName="maxOccupancy"
+              type="number"
+              min="1"
+              max="10"
+              placeholder="e.g. 4"
+            />
+          </div>
+          <small
+            *ngIf="
+              roomForm.get('maxOccupancy')?.invalid &&
+              roomForm.get('maxOccupancy')?.touched
+            "
+            class="error-message"
+          >
+            <i class="pi pi-exclamation-circle"></i> Must be between 1-10 guests
+          </small>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea
+            pInputTextarea
+            id="description"
+            formControlName="description"
+            rows="3"
+            placeholder="Enter room description..."
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Amenities Section -->
+    <div class="amenities-section">
+      <div class="section-header">
+        <i class="pi pi-th-large"></i>
+        <h3>Amenities</h3>
+      </div>
+      <div class="amenities-grid">
+        <div *ngFor="let amenity of amenitiesList" class="amenity-item">
+          <p-checkbox
+            [binary]="true"
+            [label]="amenity"
+            [(ngModel)]="amenitiesSelection[amenity]"
+            (onChange)="toggleAmenity(amenity)"
+          ></p-checkbox>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions">
+      <button
+        pButton
+        type="button"
+        label="Cancel"
+        class="p-button-outlined p-button-secondary"
+        (click)="onCancel()"
+      ></button>
+      <button
+        pButton
+        type="submit"
+        label="Create Room"
+        class="p-button-primary"
+      ></button>
+    </div>
+  </form>
+
+  <p-toast position="top-right"></p-toast>
+</div>

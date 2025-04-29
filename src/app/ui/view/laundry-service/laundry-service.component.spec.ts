@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { PastryServiceComponent } from './pastry-service.component';
+import { LaundryServiceComponent } from './laundry-service.component';
 
-describe('PastryServiceComponent', () => {
-  let component: PastryServiceComponent;
-  let fixture: ComponentFixture<PastryServiceComponent>;
+describe('LaundryServiceComponent', () => {
+  let component: LaundryServiceComponent;
+  let fixture: ComponentFixture<LaundryServiceComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [PastryServiceComponent]
+      declarations: [LaundryServiceComponent]
     })
     .compileComponents();
     
-    fixture = TestBed.createComponent(PastryServiceComponent);
+    fixture = TestBed.createComponent(LaundryServiceComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
