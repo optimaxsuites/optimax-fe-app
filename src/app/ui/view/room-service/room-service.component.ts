@@ -1,5 +1,4 @@
-import { Component, Input, input, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
 import { MessageService } from 'primeng/api';
 
 // Interfaces
@@ -16,10 +15,10 @@ interface MenuItem {
   category: string;
   tags: string[];
   preparationTime: number; // in minutes
-  ingredients?: string[];
   isAvailable: boolean;
-  imageUrl?: string;
   quantity: number;
+  allergens?: string;
+  serviceType: 'kitchen' | 'pastry';
 }
 
 interface Guest {
@@ -67,17 +66,17 @@ interface Cart {
 }
 
 interface ExternalCustomer {
-  tableNumber: string;
+  name: string;
+  tableNumber?: string;
+  dateOfBirth?: Date;
 }
 
-interface KitchenOrder {
+interface Order {
   id: string;
-  serviceType: 'kitchen';
+  serviceType: 'kitchen' | 'pastry';
   roomNumber?: number;
   guestId?: string;
-  externalCustomer?: {
-    tableNumber: string;
-  };
+  externalCustomer?: ExternalCustomer;
   items: {
     id: string;
     name: string;
@@ -86,6 +85,7 @@ interface KitchenOrder {
     quantity: number;
     category: string;
     specialRequests?: string;
+    allergens?: string;
   }[];
   subtotal: number;
   tax: number;
@@ -98,6 +98,11 @@ interface KitchenOrder {
   paymentMethod?: string;
 }
 
+interface OrderTab {
+  id: string;
+  name: string;
+}
+
 @Component({
   selector: 'app-room-service',
   templateUrl: './room-service.component.html',
@@ -107,29 +112,50 @@ export class RoomServiceComponent implements OnInit {
   taxRate: number = 0.08; // 8% tax
 
   // State variables
-  activeCategory: string = 'all';
-  searchTerm: string = '';
+  activeView: 'kitchen' | 'pastry' | 'orders' = 'kitchen';
+  activeKitchenCategory: string = 'all';
+  activePastryCategory: string = 'all';
+  kitchenSearchTerm: string = '';
+  pastrySearchTerm: string = '';
   isExternalCustomer: boolean = false;
   selectedRoom: Room | null = null;
   occupiedRooms: Room[] = [];
   allRooms: Room[] = [];
-  menuItems: MenuItem[] = [];
-  filteredItems: MenuItem[] = [];
-  kitchenOrders: KitchenOrder[] = [];
-  @Input() selectedRooms: Room[] | null = null; // For external customers
-  // Receipt modal
+  kitchenItems: MenuItem[] = [];
+  pastryItems: MenuItem[] = [];
+  filteredKitchenItems: MenuItem[] = [];
+  filteredPastryItems: MenuItem[] = [];
+  orders: Order[] = [];
+  activeTab: string = 'pending';
   showReceiptModal: boolean = false;
-  selectedReceipt: KitchenOrder | null = null;
+  selectedReceipt: Order | null = null;
 
   // Menu categories
-  menuCategories: MenuCategory[] = [
+  kitchenCategories: MenuCategory[] = [
     { id: 'all', name: 'All Items' },
     { id: 'breakfast', name: 'Breakfast' },
-    { id: 'lunch', name: 'Lunch' },
-    { id: 'dinner', name: 'Dinner' },
-    { id: 'appetizers', name: 'Appetizers' },
+    { id: 'main', name: 'Main Courses' },
+    { id: 'soups', name: 'Soups' },
+    { id: 'salads', name: 'Salads' },
     { id: 'desserts', name: 'Desserts' },
-    { id: 'beverages', name: 'Beverages' },
+    { id: 'kids', name: 'Kids Menu' },
+  ];
+
+  pastryCategories: MenuCategory[] = [
+    { id: 'all', name: 'All Items' },
+    { id: 'cakes', name: 'Cakes' },
+    { id: 'pastries', name: 'Pastries' },
+    { id: 'cookies', name: 'Cookies' },
+    { id: 'breads', name: 'Breads' },
+    { id: 'desserts', name: 'Desserts' },
+  ];
+
+  // Order tabs
+  orderTabs: OrderTab[] = [
+    { id: 'pending', name: 'Pending' },
+    { id: 'processing', name: 'Processing' },
+    { id: 'completed', name: 'Completed' },
+    { id: 'all', name: 'All Orders' },
   ];
 
   // Cart
@@ -141,25 +167,38 @@ export class RoomServiceComponent implements OnInit {
 
   // External customer
   externalCustomer: ExternalCustomer = {
-    tableNumber: '',
+    name: '',
   };
 
-  constructor(private router: Router, private messageService: MessageService) {}
+  constructor(private messageService: MessageService) {}
 
   ngOnInit(): void {
-    // Load data
     this.loadMenuItems();
     this.loadRoomsFromLocalStorage();
     this.loadOrders();
 
     // Initial filtering
-    this.filteredItems = [...this.menuItems];
+    this.filteredKitchenItems = [...this.kitchenItems];
+    this.filteredPastryItems = [...this.pastryItems];
 
     // Get only occupied rooms
     this.updateOccupiedRooms();
   }
 
-  // Load rooms from local storage instead of mock data
+  // Get filtered orders based on active tab
+  get filteredOrders(): Order[] {
+    if (this.activeTab === 'all') {
+      return this.orders;
+    }
+    return this.orders.filter((order) => order.status === this.activeTab);
+  }
+
+  // Set active tab
+  setActiveTab(tabId: string): void {
+    this.activeTab = tabId;
+  }
+
+  // Load rooms from local storage
   loadRoomsFromLocalStorage(): void {
     const storedRooms = localStorage.getItem('rooms');
     if (storedRooms) {
@@ -187,420 +226,287 @@ export class RoomServiceComponent implements OnInit {
 
   // Load menu items
   loadMenuItems(): void {
-    this.menuItems = [
-      // Breakfast items
+    // Kitchen items
+    this.kitchenItems = [
       {
         id: 'k1',
         name: 'Continental Breakfast',
-        description: 'Croissant, pastries, fruit, yogurt, coffee or tea',
-        price: 5000, // Changed to Naira
+        description: 'Eggs, toast, bacon, and coffee',
+        price: 4500,
         category: 'breakfast',
-        tags: ['breakfast', 'vegetarian'],
-        preparationTime: 10,
+        tags: ['breakfast', 'eggs'],
+        preparationTime: 15,
         isAvailable: true,
         quantity: 0,
+        serviceType: 'kitchen',
       },
       {
         id: 'k2',
-        name: 'American Breakfast',
-        description:
-          'Eggs any style, bacon, toast, hash browns, coffee or juice',
-        price: 6500, // Changed to Naira
+        name: 'Pancake Stack',
+        description: 'Fluffy pancakes with maple syrup',
+        price: 3500,
         category: 'breakfast',
-        tags: ['breakfast', 'protein'],
-        preparationTime: 15,
+        tags: ['breakfast', 'sweet'],
+        preparationTime: 10,
         isAvailable: true,
         quantity: 0,
+        serviceType: 'kitchen',
       },
       {
         id: 'k3',
-        name: 'Eggs Benedict',
-        description:
-          'Poached eggs, Canadian bacon, hollandaise on English muffin',
-        price: 7500, // Changed to Naira
-        category: 'breakfast',
-        tags: ['breakfast', 'signature'],
+        name: 'Grilled Salmon',
+        description: 'Fresh salmon with vegetables',
+        price: 6500,
+        category: 'main',
+        tags: ['main', 'seafood'],
         preparationTime: 20,
         isAvailable: true,
         quantity: 0,
+        allergens: 'Fish',
+        serviceType: 'kitchen',
       },
       {
         id: 'k4',
-        name: 'Vegetable Omelette',
-        description: 'Three egg omelette with seasonal vegetables and cheese',
-        price: 6000, // Changed to Naira
-        category: 'breakfast',
-        tags: ['breakfast', 'vegetarian'],
-        preparationTime: 15,
+        name: 'Chicken Caesar Salad',
+        description: 'Romaine lettuce, croutons, parmesan',
+        price: 5000,
+        category: 'salads',
+        tags: ['salad', 'chicken'],
+        preparationTime: 12,
         isAvailable: true,
         quantity: 0,
+        allergens: 'Dairy, Gluten',
+        serviceType: 'kitchen',
       },
-
-      // Lunch items
       {
         id: 'k5',
-        name: 'Classic Club Sandwich',
-        description:
-          'Triple-decker with turkey, bacon, lettuce, tomato, served with fries',
-        price: 7000, // Changed to Naira
-        category: 'lunch',
-        tags: ['lunch', 'sandwich'],
-        preparationTime: 15,
+        name: 'Tomato Soup',
+        description: 'Creamy tomato soup with basil',
+        price: 3000,
+        category: 'soups',
+        tags: ['soup', 'vegetarian'],
+        preparationTime: 8,
         isAvailable: true,
         quantity: 0,
+        serviceType: 'kitchen',
       },
       {
         id: 'k6',
-        name: 'Caesar Salad',
-        description: 'Romaine lettuce, croutons, parmesan, and Caesar dressing',
-        price: 6000, // Changed to Naira
-        category: 'lunch',
-        tags: ['lunch', 'salad', 'vegetarian'],
-        preparationTime: 10,
-        isAvailable: true,
-        quantity: 0,
-      },
-      {
-        id: 'k7',
-        name: 'Grilled Chicken Wrap',
-        description:
-          'Grilled chicken, mixed greens, tomato, and aioli in a flour tortilla',
-        price: 6500, // Changed to Naira
-        category: 'lunch',
-        tags: ['lunch', 'wrap'],
+        name: 'Kids Burger Meal',
+        description: 'Beef burger with fries and juice',
+        price: 3500,
+        category: 'kids',
+        tags: ['kids', 'burger'],
         preparationTime: 15,
         isAvailable: true,
         quantity: 0,
+        serviceType: 'kitchen',
       },
-      {
-        id: 'k8',
-        name: 'Angus Beef Burger',
-        description:
-          '8oz beef patty, lettuce, tomato, cheese, and special sauce, with fries',
-        price: 8000, // Changed to Naira
-        category: 'lunch',
-        tags: ['lunch', 'burger'],
-        preparationTime: 18,
-        isAvailable: true,
-        quantity: 0,
-      },
+    ];
 
-      // Dinner items
+    // Pastry items
+    this.pastryItems = [
       {
-        id: 'k9',
-        name: 'Grilled Salmon',
-        description:
-          'Fresh salmon with lemon butter sauce, seasonal vegetables, and rice',
-        price: 12000, // Changed to Naira
-        category: 'dinner',
-        tags: ['dinner', 'seafood'],
-        preparationTime: 25,
+        id: 'p1',
+        name: 'Chocolate Cake Slice',
+        description: 'Rich chocolate cake with ganache',
+        price: 2500,
+        category: 'cakes',
+        tags: ['cake', 'chocolate'],
+        preparationTime: 2,
         isAvailable: true,
         quantity: 0,
+        allergens: 'Dairy, Gluten',
+        serviceType: 'pastry',
       },
       {
-        id: 'k10',
-        name: 'Filet Mignon',
-        description:
-          '8oz tender filet with mashed potatoes and grilled asparagus',
-        price: 15000, // Changed to Naira
-        category: 'dinner',
-        tags: ['dinner', 'steak', 'signature'],
-        preparationTime: 30,
+        id: 'p2',
+        name: 'Croissant',
+        description: 'Buttery French croissant',
+        price: 1500,
+        category: 'pastries',
+        tags: ['pastry', 'breakfast'],
+        preparationTime: 2,
         isAvailable: true,
         quantity: 0,
+        allergens: 'Dairy, Gluten',
+        serviceType: 'pastry',
       },
-
-      // Appetizers
       {
-        id: 'k11',
-        name: 'Bruschetta',
-        description:
-          'Toasted baguette with fresh tomatoes, basil, and balsamic glaze',
-        price: 5000, // Changed to Naira
-        category: 'appetizers',
-        tags: ['appetizer', 'vegetarian'],
-        preparationTime: 10,
+        id: 'p3',
+        name: 'Chocolate Chip Cookie',
+        description: 'Freshly baked cookie with chocolate chips',
+        price: 800,
+        category: 'cookies',
+        tags: ['cookie', 'sweet'],
+        preparationTime: 2,
         isAvailable: true,
         quantity: 0,
+        allergens: 'Dairy, Gluten',
+        serviceType: 'pastry',
       },
-
-      // Desserts
       {
-        id: 'k12',
-        name: 'Chocolate Lava Cake',
-        description:
-          'Warm chocolate cake with a molten center, served with ice cream',
-        price: 4000, // Changed to Naira
+        id: 'p4',
+        name: 'Sourdough Bread',
+        description: 'Artisan sourdough loaf',
+        price: 2000,
+        category: 'breads',
+        tags: ['bread', 'artisan'],
+        preparationTime: 2,
+        isAvailable: true,
+        quantity: 0,
+        allergens: 'Gluten',
+        serviceType: 'pastry',
+      },
+      {
+        id: 'p5',
+        name: 'Tiramisu',
+        description: 'Classic Italian dessert',
+        price: 3000,
         category: 'desserts',
-        tags: ['dessert', 'chocolate'],
-        preparationTime: 15,
+        tags: ['dessert', 'coffee'],
+        preparationTime: 2,
         isAvailable: true,
         quantity: 0,
-      },
-
-      // Beverages
-      {
-        id: 'k13',
-        name: 'Fresh Orange Juice',
-        description: 'Freshly squeezed orange juice',
-        price: 2500, // Changed to Naira
-        category: 'beverages',
-        tags: ['beverage', 'juice'],
-        preparationTime: 5,
-        isAvailable: true,
-        quantity: 0,
+        allergens: 'Dairy, Alcohol',
+        serviceType: 'pastry',
       },
       {
-        id: 'k14',
-        name: 'Premium Coffee',
-        description: 'Premium arabica coffee, freshly brewed',
-        price: 2000, // Changed to Naira
-        category: 'beverages',
-        tags: ['beverage', 'coffee'],
-        preparationTime: 5,
+        id: 'p6',
+        name: 'Fruit Tart',
+        description: 'Seasonal fruits on pastry cream',
+        price: 2800,
+        category: 'desserts',
+        tags: ['dessert', 'fruit'],
+        preparationTime: 2,
         isAvailable: true,
         quantity: 0,
+        allergens: 'Dairy, Gluten',
+        serviceType: 'pastry',
       },
     ];
   }
 
-  // Load order data (mock data for now)
+  // Load orders from local storage
   loadOrders(): void {
-    this.kitchenOrders = [
-      {
-        id: 'KO-2025-001',
-        serviceType: 'kitchen',
-        roomNumber: 101,
-        guestId: 'g1',
-        items: [
-          {
-            id: 'k1',
-            name: 'Continental Breakfast',
-            description: 'Croissant, pastries, fruit, yogurt, coffee or tea',
-            price: 5000,
-            quantity: 2,
-            category: 'breakfast',
-          },
-          {
-            id: 'k13',
-            name: 'Fresh Orange Juice',
-            description: 'Freshly squeezed orange juice',
-            price: 2500,
-            quantity: 2,
-            category: 'beverages',
-          },
-        ],
-        subtotal: 15000,
-        tax: 1200,
-        totalAmount: 16200,
-        status: 'completed',
-        orderDate: new Date('2025-04-17T08:30:00'),
-        completionDate: new Date('2025-04-17T09:15:00'),
-        paymentStatus: 'paid',
-        paymentMethod: 'room-charge',
-      },
-      {
-        id: 'KO-2025-002',
-        serviceType: 'kitchen',
-        externalCustomer: {
-          tableNumber: '12',
-        },
-        items: [
-          {
-            id: 'k8',
-            name: 'Angus Beef Burger',
-            description:
-              '8oz beef patty, lettuce, tomato, cheese, and special sauce, with fries',
-            price: 8000,
-            quantity: 2,
-            category: 'lunch',
-          },
-          {
-            id: 'k14',
-            name: 'Premium Coffee',
-            description: 'Premium arabica coffee, freshly brewed',
-            price: 2000,
-            quantity: 2,
-            category: 'beverages',
-          },
-        ],
-        subtotal: 20000,
-        tax: 1600,
-        totalAmount: 21600,
-        status: 'pending',
-        orderDate: new Date('2025-04-18T12:45:00'),
-        paymentStatus: 'pending',
-        paymentMethod: 'credit-card',
-      },
-      {
-        id: 'KO-2025-003',
-        serviceType: 'kitchen',
-        roomNumber: 301,
-        guestId: 'g4',
-        items: [
-          {
-            id: 'k9',
-            name: 'Grilled Salmon',
-            description:
-              'Fresh salmon with lemon butter sauce, seasonal vegetables, and rice',
-            price: 12000,
-            quantity: 1,
-            category: 'dinner',
-          },
-          {
-            id: 'k10',
-            name: 'Filet Mignon',
-            description:
-              '8oz tender filet with mashed potatoes and grilled asparagus',
-            price: 15000,
-            quantity: 1,
-            category: 'dinner',
-          },
-          {
-            id: 'k12',
-            name: 'Chocolate Lava Cake',
-            description:
-              'Warm chocolate cake with a molten center, served with ice cream',
-            price: 4000,
-            quantity: 2,
-            category: 'desserts',
-          },
-        ],
-        subtotal: 35000,
-        tax: 2800,
-        totalAmount: 37800,
-        status: 'processing',
-        orderDate: new Date('2025-04-18T18:30:00'),
-        paymentStatus: 'pending',
-        paymentMethod: 'room-charge',
-        notes: 'Medium rare for the filet mignon. No nuts in dessert please.',
-      },
-    ];
+    const storedOrders = localStorage.getItem('foodOrders');
+    if (storedOrders) {
+      this.orders = JSON.parse(storedOrders);
+      // Process dates if needed
+      this.orders.forEach((order) => {
+        if (typeof order.orderDate === 'string') {
+          order.orderDate = new Date(order.orderDate);
+        }
+        if (order.completionDate && typeof order.completionDate === 'string') {
+          order.completionDate = new Date(order.completionDate);
+        }
+      });
+    } else {
+      this.orders = [];
+    }
   }
 
-  // Filter occupied rooms
+  // Save orders to local storage
+  saveOrders(): void {
+    localStorage.setItem('foodOrders', JSON.stringify(this.orders));
+  }
+
+  // Update occupied rooms list
   updateOccupiedRooms(): void {
     this.occupiedRooms = this.allRooms.filter(
-      (room) => room.status === 'occupied'
+      (room) => room.status === 'occupied' && room.guest
     );
   }
 
-  // Set active category
-  setActiveCategory(categoryId: string): void {
-    this.activeCategory = categoryId;
-    this.filterItems();
-  }
-
-  // Filter menu items based on search term and active category
-  filterItems(): void {
-    if (this.activeCategory === 'all' && !this.searchTerm) {
-      this.filteredItems = [...this.menuItems];
-      return;
-    }
-
-    this.filteredItems = this.menuItems.filter((item) => {
-      // Filter by category if not "all"
-      const categoryMatch =
-        this.activeCategory === 'all' || item.category === this.activeCategory;
-
-      // Filter by search term
-      const searchMatch =
-        !this.searchTerm ||
-        item.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+  // Filter kitchen items based on search term and category
+  filterKitchenItems(): void {
+    this.filteredKitchenItems = this.kitchenItems.filter((item) => {
+      const matchesSearch =
+        item.name
+          .toLowerCase()
+          .includes(this.kitchenSearchTerm.toLowerCase()) ||
         item.description
           .toLowerCase()
-          .includes(this.searchTerm.toLowerCase()) ||
-        item.tags.some((tag) =>
-          tag.toLowerCase().includes(this.searchTerm.toLowerCase())
-        );
-
-      return categoryMatch && searchMatch;
+          .includes(this.kitchenSearchTerm.toLowerCase());
+      const matchesCategory =
+        this.activeKitchenCategory === 'all' ||
+        item.category === this.activeKitchenCategory;
+      return matchesSearch && matchesCategory && item.isAvailable;
     });
+  }
+
+  // Filter pastry items based on search term and category
+  filterPastryItems(): void {
+    this.filteredPastryItems = this.pastryItems.filter((item) => {
+      const matchesSearch =
+        item.name.toLowerCase().includes(this.pastrySearchTerm.toLowerCase()) ||
+        item.description
+          .toLowerCase()
+          .includes(this.pastrySearchTerm.toLowerCase());
+      const matchesCategory =
+        this.activePastryCategory === 'all' ||
+        item.category === this.activePastryCategory;
+      return matchesSearch && matchesCategory && item.isAvailable;
+    });
+  }
+
+  // Set active kitchen category
+  setActiveKitchenCategory(categoryId: string): void {
+    this.activeKitchenCategory = categoryId;
+    this.filterKitchenItems();
+  }
+
+  // Set active pastry category
+  setActivePastryCategory(categoryId: string): void {
+    this.activePastryCategory = categoryId;
+    this.filterPastryItems();
   }
 
   // Toggle customer type
   toggleCustomerType(): void {
     this.cart.isExternal = this.isExternalCustomer;
-
-    // Reset fields when switching
-    if (this.isExternalCustomer) {
-      this.selectedRoom = null;
-      this.cart.paymentMethod = 'cash'; // Default for external customers
-    } else {
-      this.externalCustomer.tableNumber = '';
+    if (!this.isExternalCustomer) {
+      this.externalCustomer = { name: '' };
     }
   }
 
   // Add item to cart
   addToCart(item: MenuItem): void {
-    // Check if item is already in cart
-    const existingItemIndex = this.cart.items.findIndex(
+    const existingItem = this.cart.items.find(
       (cartItem) => cartItem.item.id === item.id
     );
-
-    if (existingItemIndex > -1) {
-      // Update quantity
-      this.cart.items[existingItemIndex].quantity++;
-      this.cart.items[existingItemIndex].subtotal = this.calculateSubtotal(
-        this.cart.items[existingItemIndex].item.price,
-        this.cart.items[existingItemIndex].quantity
-      );
+    if (existingItem) {
+      existingItem.quantity += 1;
+      existingItem.subtotal = existingItem.item.price * existingItem.quantity;
     } else {
-      // Add new item to cart
       this.cart.items.push({
-        item: { ...item },
+        item: item,
         quantity: 1,
         subtotal: item.price,
+        specialRequests: '',
       });
     }
-
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Item Added',
-      detail: `${item.name} added to cart`,
-    });
   }
 
   // Remove item from cart
   removeFromCart(index: number): void {
-    const removedItem = this.cart.items.splice(index, 1);
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Item Removed',
-      detail: `${removedItem[0].item.name} removed from cart`,
-    });
+    this.cart.items.splice(index, 1);
   }
 
   // Update cart item quantity
   updateCartItemQuantity(cartItem: CartItem, change: number): void {
     const newQuantity = cartItem.quantity + change;
-
-    if (newQuantity <= 0) {
-      // Find item index to remove it
-      const index = this.cart.items.findIndex(
-        (item) => item.item.id === cartItem.item.id
-      );
-      if (index !== -1) {
-        this.removeFromCart(index);
-      }
-    } else {
+    if (newQuantity > 0) {
       cartItem.quantity = newQuantity;
-      cartItem.subtotal = this.calculateSubtotal(
-        cartItem.item.price,
-        cartItem.quantity
-      );
+      cartItem.subtotal = cartItem.item.price * cartItem.quantity;
+    } else {
+      this.removeFromCart(this.cart.items.indexOf(cartItem));
     }
-  }
-
-  // Calculate subtotal for an item
-  calculateSubtotal(price: number, quantity: number): number {
-    return price * quantity;
   }
 
   // Get cart subtotal
   getSubtotal(): number {
-    return this.cart.items.reduce((total, item) => total + item.subtotal, 0);
+    return this.cart.items.reduce((sum, item) => sum + item.subtotal, 0);
   }
 
   // Get tax amount
@@ -608,47 +514,47 @@ export class RoomServiceComponent implements OnInit {
     return this.getSubtotal() * this.taxRate;
   }
 
-  // Get cart total with tax
+  // Get cart total
   getCartTotal(): number {
     return this.getSubtotal() + this.getTaxAmount();
   }
 
-  // Check if order is valid to submit
+  // Check if order is valid
   isOrderValid(): boolean {
-    if (this.cart.items.length === 0) {
+    if (this.cart.items.length === 0) return false;
+
+    // For room orders, a room must be selected
+    if (!this.isExternalCustomer && !this.selectedRoom) {
       return false;
     }
 
-    if (this.isExternalCustomer) {
-      return !!this.externalCustomer.tableNumber;
-    } else {
-      return !!this.selectedRoom;
+    // For external customers, name must be provided
+    if (this.isExternalCustomer && !this.externalCustomer.name) {
+      return false;
     }
+
+    return true;
   }
 
   // Submit order
   submitOrder(): void {
-    if (!this.isOrderValid()) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Invalid Order',
-        detail: 'Please complete all required fields',
-      });
-      return;
-    }
+    if (!this.isOrderValid()) return;
 
-    // Create new kitchen order
-    const newOrder: KitchenOrder = {
-      id: `KO-2025-${this.generateOrderId()}`,
-      serviceType: 'kitchen',
-      items: this.cart.items.map((cartItem) => ({
-        id: cartItem.item.id,
-        name: cartItem.item.name,
-        description: cartItem.item.description,
-        price: cartItem.item.price,
-        quantity: cartItem.quantity,
-        category: cartItem.item.category,
-        specialRequests: cartItem.specialRequests,
+    // Determine service type based on items in cart
+    const serviceType = this.cart.items[0].item.serviceType;
+
+    const newOrder: Order = {
+      id: 'ORD-' + Math.floor(100000 + Math.random() * 900000),
+      serviceType: serviceType,
+      items: this.cart.items.map((item) => ({
+        id: item.item.id,
+        name: item.item.name,
+        description: item.item.description,
+        price: item.item.price,
+        quantity: item.quantity,
+        category: item.item.category,
+        specialRequests: item.specialRequests,
+        allergens: item.item.allergens,
       })),
       subtotal: this.getSubtotal(),
       tax: this.getTaxAmount(),
@@ -660,52 +566,51 @@ export class RoomServiceComponent implements OnInit {
       notes: this.cart.notes,
     };
 
-    // Add customer details
     if (this.isExternalCustomer) {
       newOrder.externalCustomer = {
-        tableNumber: this.externalCustomer.tableNumber,
+        name: this.externalCustomer.name,
       };
     } else if (this.selectedRoom) {
       newOrder.roomNumber = this.selectedRoom.number;
-      if (this.selectedRoom.guest) {
-        newOrder.guestId = this.selectedRoom.guest.id;
-      }
+      newOrder.guestId = this.selectedRoom.guest?.id;
     }
 
-    // Add to orders and reset cart
-    this.kitchenOrders.unshift(newOrder);
+    this.orders.unshift(newOrder);
+    this.saveOrders();
+
+    // Reset cart
+    this.cart.items = [];
+    this.cart.notes = '';
+    if (this.isExternalCustomer) {
+      this.externalCustomer.name = '';
+    } else {
+      this.selectedRoom = null;
+    }
 
     this.messageService.add({
       severity: 'success',
       summary: 'Order Submitted',
-      detail: `Order ${newOrder.id} has been submitted successfully`,
+      detail: `Order #${newOrder.id} has been placed successfully`,
     });
-
-    // Reset cart
-    this.resetCart();
   }
 
-  // Generate a unique order ID
-  generateOrderId(): string {
-    return Math.floor(1000 + Math.random() * 9000).toString();
-  }
-
-  // Reset cart after order
-  resetCart(): void {
-    this.cart = {
-      items: [],
-      isExternal: this.isExternalCustomer,
-      paymentMethod: 'cash',
-    };
-
-    if (!this.isExternalCustomer) {
-      this.selectedRoom = null;
-    } else {
-      this.externalCustomer.tableNumber = '';
+  // Update order status
+  updateOrderStatus(
+    orderId: string,
+    newStatus: 'pending' | 'processing' | 'completed' | 'cancelled'
+  ): void {
+    const order = this.orders.find((o) => o.id === orderId);
+    if (order) {
+      order.status = newStatus;
+      if (newStatus === 'completed') {
+        order.completionDate = new Date();
+        order.paymentStatus = 'paid';
+      }
+      this.saveOrders();
     }
   }
 
-  // Get CSS class for order status
+  // Get status class for styling
   getStatusClass(status: string): string {
     switch (status) {
       case 'pending':
@@ -721,34 +626,8 @@ export class RoomServiceComponent implements OnInit {
     }
   }
 
-  // Update order status
-  updateOrderStatus(
-    orderId: string,
-    newStatus: 'pending' | 'processing' | 'completed' | 'cancelled'
-  ): void {
-    const orderIndex = this.kitchenOrders.findIndex(
-      (order) => order.id === orderId
-    );
-
-    if (orderIndex !== -1) {
-      this.kitchenOrders[orderIndex].status = newStatus;
-
-      // Set completion date if completed
-      if (newStatus === 'completed') {
-        this.kitchenOrders[orderIndex].completionDate = new Date();
-        this.kitchenOrders[orderIndex].paymentStatus = 'paid';
-      }
-
-      this.messageService.add({
-        severity: 'info',
-        summary: 'Status Updated',
-        detail: `Order ${orderId} is now ${newStatus}`,
-      });
-    }
-  }
-
   // Open receipt modal
-  printReceipt(order: KitchenOrder): void {
+  printReceipt(order: Order): void {
     this.selectedReceipt = order;
     this.showReceiptModal = true;
   }
@@ -759,76 +638,62 @@ export class RoomServiceComponent implements OnInit {
     this.selectedReceipt = null;
   }
 
-  // Get guest name for receipt display
-  getGuestNameForRoom(roomNumber?: number): string {
-    if (!roomNumber) return 'N/A';
-
-    const room = this.allRooms.find((r) => r.number === roomNumber);
-    if (room && room.guest) {
-      return `${room.guest.firstName} ${room.guest.lastName}`;
-    }
-    return 'N/A';
+  // Get receipt subtotal
+  getReceiptSubtotal(): number {
+    if (!this.selectedReceipt) return 0;
+    return this.selectedReceipt.items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
   }
 
-  // Get payment method display name
+  // Get receipt tax
+  getReceiptTax(): number {
+    return this.getReceiptSubtotal() * this.taxRate;
+  }
+
+  // Get payment method display text
   getPaymentMethodDisplay(method?: string): string {
     switch (method) {
       case 'room-charge':
-        return 'Room Charge';
+        return 'Charge to Room';
       case 'cash':
         return 'Cash';
       case 'credit-card':
         return 'Credit Card';
       default:
-        return 'Unknown';
+        return 'Not specified';
     }
   }
 
-  // Calculate receipt subtotal
-  getReceiptSubtotal(): number {
-    if (!this.selectedReceipt) return 0;
-
-    return this.selectedReceipt.items.reduce(
-      (total, item) => total + item.price * item.quantity,
-      0
-    );
-  }
-
-  // Calculate receipt tax
-  getReceiptTax(): number {
-    if (!this.selectedReceipt) return 0;
-    return this.selectedReceipt.tax;
+  // Get guest name for room
+  getGuestNameForRoom(roomNumber: number): string {
+    const room = this.allRooms.find((r) => r.number === roomNumber);
+    if (room && room.guest) {
+      return `${room.guest.firstName} ${room.guest.lastName}`;
+    }
+    return 'Unknown guest';
   }
 
   // Download receipt as PDF
   downloadReceipt(): void {
-    if (!this.selectedReceipt) return;
-
-    const content = document.getElementById('receipt-content');
-    if (!content) return;
-
-    const options = {
-      margin: 10,
-      filename: `receipt-${this.selectedReceipt.id}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    };
+    // In a real app, this would generate and download a PDF
+    // For now, we'll just show a message
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Receipt Download',
+      detail: 'Receipt download would be initiated here',
+    });
   }
 
   // Print receipt
   printReceiptPdf(): void {
-    if (!this.selectedReceipt) return;
-
-    const content = document.getElementById('receipt-content');
-    if (!content) return;
-
-    const options = {
-      margin: 10,
-      filename: `receipt-${this.selectedReceipt.id}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    };
+    // In a real app, this would print the receipt
+    // For now, we'll just show a message
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Print Receipt',
+      detail: 'Receipt would be printed here',
+    });
   }
 }

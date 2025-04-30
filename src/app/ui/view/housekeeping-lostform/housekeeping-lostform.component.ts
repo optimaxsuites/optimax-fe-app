@@ -30,6 +30,7 @@ export class HousekeepingLostformComponent implements OnInit {
   isEditMode = false;
   editItemId: string | null = null;
   @Output() back = new EventEmitter<void>();
+  displayClaimDialog = false;
 
   constructor(
     private fb: FormBuilder,
@@ -40,17 +41,19 @@ export class HousekeepingLostformComponent implements OnInit {
     this.lostForm = this.fb.group({
       description: ['', Validators.required],
       guestName: ['', Validators.required],
-      phoneNumber: ['', Validators.pattern(/^\d{10}$/)],
+      phoneNumber: ['', Validators.pattern(/^\d{11}$/)],
       placeOrRoom: ['', Validators.required],
       dateReported: [new Date(), Validators.required],
       dateLost: [null],
       notes: [''],
-      status: ['pending'],
+      status: ['pending', Validators.required],
       itemCategory: [''],
-      valueEstimate: [''],
+      pendingReason: [''],
       roomNumber: [''],
     });
   }
+
+  statusOptions = [{ label: 'Pending', value: 'pending' }];
 
   ngOnInit() {
     // Check if we're editing an existing item
@@ -67,6 +70,7 @@ export class HousekeepingLostformComponent implements OnInit {
 
   goBack(): void {
     this.back.emit();
+    this.displayClaimDialog = false;
   }
 
   loadItemData(id: string) {
@@ -84,7 +88,7 @@ export class HousekeepingLostformComponent implements OnInit {
           dateLost: item.dateLost ? new Date(item.dateLost) : null,
           notes: item.notes || '',
           status: item.status,
-          itemCategory: item.itemCategory || 'other',
+          itemCategory: item.itemCategory || '',
           valueEstimate: item.valueEstimate || '',
           roomNumber: item.roomNumber || '',
         });
