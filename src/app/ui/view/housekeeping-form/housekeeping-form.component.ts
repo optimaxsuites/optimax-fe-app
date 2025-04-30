@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -27,6 +27,7 @@ interface FoundItem {
 })
 export class HousekeepingFormComponent implements OnInit {
   foundForm: FormGroup;
+  @Output() back = new EventEmitter<void>();
 
   constructor(
     private fb: FormBuilder,
@@ -45,6 +46,9 @@ export class HousekeepingFormComponent implements OnInit {
     });
   }
 
+  goBack(): void {
+    this.back.emit();
+  }
   ngOnInit() {
     // Check for pre-filled data from lost item
     this.route.queryParams.subscribe((params) => {
