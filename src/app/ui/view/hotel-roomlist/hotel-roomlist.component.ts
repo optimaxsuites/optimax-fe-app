@@ -1,8 +1,6 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 import { MessageService } from 'primeng/api';
 
-// shared/interfaces/hotel.interfaces.ts
-
 export interface Guest {
   id?: string; // Optional property for guest ID
   title: string;
@@ -112,6 +110,7 @@ export class HotelRoomlistComponent {
   openForm = false;
   openLogs = false;
   openRoom = false;
+  showRoomForm = false;
 
   // For displaying booking details
   selectedBookingDetails: Room | null = null;
@@ -147,138 +146,6 @@ export class HotelRoomlistComponent {
   constructor(private messageService: MessageService) {
     this.loadRooms();
     this.filteredRooms = [...this.rooms];
-  }
-
-  private loadRooms(): void {
-    const storedRooms = localStorage.getItem('rooms');
-    if (storedRooms) {
-      const parsedRooms = JSON.parse(storedRooms);
-
-      // Convert date strings back to Date objects
-      this.rooms = parsedRooms.map((room: any) => {
-        if (room.bookingDetails) {
-          room.bookingDetails.checkinDate = room.bookingDetails.checkinDate
-            ? new Date(room.bookingDetails.checkinDate)
-            : null;
-          room.bookingDetails.checkoutDate = room.bookingDetails.checkoutDate
-            ? new Date(room.bookingDetails.checkoutDate)
-            : null;
-        }
-        return room;
-      });
-    } else {
-      // Initialize with default rooms if none in localStorage
-      this.rooms = [
-        {
-          id: 1,
-          number: 101,
-          type: 'Standard',
-          status: 'available',
-          rate: 15000,
-          floor: 1,
-          beds: 1,
-          maxOccupancy: 3,
-          description: 'Cozy standard room with city view',
-          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
-        },
-
-        {
-          id: 2,
-          number: 102,
-          type: 'Standard',
-          status: 'available',
-          rate: 20000,
-          floor: 1,
-          beds: 1,
-          maxOccupancy: 3,
-          description: 'Cozy standard room with city view',
-          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
-        },
-
-        {
-          id: 3,
-          number: 103,
-          type: 'Suite',
-          status: 'available',
-          rate: 15000,
-          floor: 1,
-          beds: 1,
-          maxOccupancy: 3,
-          description: 'Cozy standard room with city view',
-          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
-        },
-
-        {
-          id: 4,
-          number: 104,
-          type: 'Executive',
-          status: 'available',
-          rate: 15000,
-          floor: 1,
-          beds: 1,
-          maxOccupancy: 3,
-          description: 'Cozy standard room with city view',
-          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
-        },
-
-        {
-          id: 5,
-          number: 205,
-          type: 'Suite',
-          status: 'available',
-          rate: 15000,
-          floor: 2,
-          beds: 2,
-          maxOccupancy: 3,
-          description: 'Cozy standard room with city view',
-          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
-        },
-
-        {
-          id: 6,
-          number: 201,
-          type: 'Deluxe',
-          status: 'available',
-          rate: 13000,
-          floor: 2,
-          beds: 1,
-          maxOccupancy: 3,
-          description: 'Cozy standard room with city view',
-          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
-        },
-
-        {
-          id: 7,
-          number: 301,
-          type: 'Deluxe',
-          status: 'available',
-          rate: 15000,
-          floor: 3,
-          beds: 1,
-          maxOccupancy: 3,
-          description: 'Cozy standard room with city view',
-          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
-        },
-
-        {
-          id: 8,
-          number: 401,
-          type: 'Presidential',
-          status: 'available',
-          rate: 20000,
-          floor: 4,
-          beds: 1,
-          maxOccupancy: 3,
-          description: 'Cozy standard room with city view',
-          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
-        },
-        // ... other default rooms
-      ];
-      localStorage.setItem('rooms', JSON.stringify(this.rooms));
-    }
-
-    // Apply filters after loading
-    this.applyFilters();
   }
 
   selectRoom(room: Room): void {
@@ -462,6 +329,155 @@ export class HotelRoomlistComponent {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }
 
+  resetFilters(): void {
+    this.selectedRoomTypes = ['All Rooms'];
+    this.selectedStatus = { value: 'All Statuses', label: 'All Statuses' };
+    this.searchQuery = '';
+    this.searchDate = null;
+    this.applyFilters();
+  }
+
+  private updateRoomTypes(): void {
+    // Get all unique room types from the rooms array
+    const types = new Set(this.rooms.map((room) => room.type));
+
+    this.roomTypes = ['All Rooms', ...Array.from(types).sort()];
+  }
+
+  // Call this method whenever rooms are loaded or updated
+  private loadRooms(): void {
+    const storedRooms = localStorage.getItem('rooms');
+    if (storedRooms) {
+      const parsedRooms = JSON.parse(storedRooms);
+
+      // Convert date strings back to Date objects
+      this.rooms = parsedRooms.map((room: any) => {
+        if (room.bookingDetails) {
+          room.bookingDetails.checkinDate = room.bookingDetails.checkinDate
+            ? new Date(room.bookingDetails.checkinDate)
+            : null;
+          room.bookingDetails.checkoutDate = room.bookingDetails.checkoutDate
+            ? new Date(room.bookingDetails.checkoutDate)
+            : null;
+        }
+        return room;
+      });
+    } else {
+      // Initialize with default rooms if none in localStorage
+
+      this.rooms = [
+        {
+          id: 1,
+          number: 101,
+          type: 'Standard',
+          status: 'available',
+          rate: 15000,
+          floor: 1,
+          beds: 1,
+          maxOccupancy: 3,
+          description: 'Cozy standard room with city view',
+          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
+        },
+
+        {
+          id: 2,
+          number: 102,
+          type: 'Standard',
+          status: 'available',
+          rate: 20000,
+          floor: 1,
+          beds: 1,
+          maxOccupancy: 3,
+          description: 'Cozy standard room with city view',
+          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
+        },
+
+        {
+          id: 3,
+          number: 103,
+          type: 'Suite',
+          status: 'available',
+          rate: 15000,
+          floor: 1,
+          beds: 1,
+          maxOccupancy: 3,
+          description: 'Cozy standard room with city view',
+          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
+        },
+
+        {
+          id: 4,
+          number: 104,
+          type: 'Executive',
+          status: 'available',
+          rate: 15000,
+          floor: 1,
+          beds: 1,
+          maxOccupancy: 3,
+          description: 'Cozy standard room with city view',
+          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
+        },
+
+        {
+          id: 5,
+          number: 205,
+          type: 'Suite',
+          status: 'available',
+          rate: 15000,
+          floor: 2,
+          beds: 2,
+          maxOccupancy: 3,
+          description: 'Cozy standard room with city view',
+          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
+        },
+
+        {
+          id: 6,
+          number: 201,
+          type: 'Deluxe',
+          status: 'available',
+          rate: 13000,
+          floor: 2,
+          beds: 1,
+          maxOccupancy: 3,
+          description: 'Cozy standard room with city view',
+          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
+        },
+
+        {
+          id: 7,
+          number: 301,
+          type: 'Deluxe',
+          status: 'available',
+          rate: 15000,
+          floor: 3,
+          beds: 1,
+          maxOccupancy: 3,
+          description: 'Cozy standard room with city view',
+          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
+        },
+
+        {
+          id: 8,
+          number: 401,
+          type: 'Presidential',
+          status: 'available',
+          rate: 20000,
+          floor: 4,
+          beds: 1,
+          maxOccupancy: 3,
+          description: 'Cozy standard room with city view',
+          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
+        },
+        // ... other default rooms
+      ];
+      localStorage.setItem('rooms', JSON.stringify(this.rooms));
+    }
+
+    this.updateRoomTypes();
+    this.applyFilters();
+  }
+
   onBookingConfirmed(updatedRooms: Room[]): void {
     // Update local rooms array
     updatedRooms.forEach((updatedRoom) => {
@@ -474,7 +490,9 @@ export class HotelRoomlistComponent {
     // Update localStorage
     localStorage.setItem('rooms', JSON.stringify(this.rooms));
 
-    // Close all modals and reset state
+    // Update room types
+    this.updateRoomTypes();
+
     this.viewingAvailableRooms = false;
     this.openForm = false;
     this.selectedRooms = [];
@@ -484,11 +502,21 @@ export class HotelRoomlistComponent {
     this.applyFilters();
   }
 
-  resetFilters(): void {
-    this.selectedRoomTypes = ['All Rooms'];
-    this.selectedStatus = { value: 'All Statuses', label: 'All Statuses' };
-    this.searchQuery = '';
-    this.searchDate = null;
+  handleNewRoom(newRoom: Room): void {
+    // Add the new room to your rooms array
+    this.rooms.push(newRoom);
+
+    // Update localStorage
+    localStorage.setItem('rooms', JSON.stringify(this.rooms));
+
+    // Update room types
+    this.updateRoomTypes();
+
+    // Apply filters
     this.applyFilters();
+
+    // Hide the form
+
+    this.showRoomForm = !this.showRoomForm;
   }
 }

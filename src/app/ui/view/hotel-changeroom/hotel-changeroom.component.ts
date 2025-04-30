@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
+
 export interface Guest {
   id?: string; // Optional property for guest ID
   title: string;

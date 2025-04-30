@@ -114,7 +114,7 @@
               lostForm.get('phoneNumber')?.touched
             "
           >
-            Please enter a valid 10-digit phone number
+            Please enter a valid 11-digit phone number
           </small>
         </div>
 
@@ -200,19 +200,38 @@
           </small>
         </div>
       </div>
+      <!-- Add this section to your form (housekeeping-lost-form.component.html) -->
+      <div class="bg-white p-5 rounded-lg shadow-sm">
+        <h3 class="text-lg font-medium mb-4 pb-2 border-b border-gray-200">
+          Status Information
+        </h3>
+
+        <div class="grid grid-cols-1 gap-6">
+          <!-- Status -->
+          <div class="space-y-2">
+            <select
+              id="status"
+              class="mt-1 block w-[20%] rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              formControlName="status"
+            >
+              <option value="pending">Pending</option>
+            </select>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="flex justify-end gap-3 pt-4">
       <button
         type="button"
-        (click)="cancelForm()"
+        (click)="goBack()"
         class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
       >
         Cancel
       </button>
       <button
         type="submit"
-        class="px-5 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 flex items-center"
+        class="px-5 py-2 text-white bg-customGreen rounded-md hover:bg-customGreenHover flex items-center"
         [disabled]="lostForm.invalid"
       >
         <i class="pi pi-save mr-2"></i>

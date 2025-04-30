@@ -4,9 +4,10 @@
     class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6"
   >
     <h2 class="text-2xl font-semibold mb-2 md:mb-0">Lost Items Registry</h2>
+
     <button
+      class="flex items-center gap-2 bg-customBlue text-white px-6 py-3 rounded-lg text-xl font-semibold hover:bg-customBlueHover transition duration-300"
       (click)="navigateToHouse()"
-      class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
     >
       <i class="pi pi-plus mr-2"></i>
       Report New Lost Item
@@ -90,9 +91,13 @@
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
-        <tr *ngFor="let item of getFilteredItems()">
+        <tr
+          *ngFor="let item of getFilteredItems()"
+          class="hover:bg-gray-50 cursor-pointer"
+        >
           <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm font-medium text-gray-900">
+            <div class="text-sm text-gray-900">{{ item.itemCategory }}</div>
+            <div class="text-sm font-medium text-gray-500">
               {{ item.description }}
             </div>
             <div class="text-sm text-gray-500" *ngIf="item.notes">
@@ -130,7 +135,7 @@
             <p-menu
               #menu
               [popup]="true"
-              [model]="menuItems"
+              [model]="MenuItems(item)"
               (click)="selectedItem = item"
             ></p-menu>
             <button
@@ -146,10 +151,8 @@
     </table>
   </div>
 
-  <!-- Confirmation Dialog -->
   <p-confirmDialog [style]="{ width: '450px' }"></p-confirmDialog>
 
-  <!-- Toast Message -->
   <p-toast></p-toast>
 </div>
 
@@ -158,3 +161,137 @@
     (back)="navigateToHouse()"
   ></app-housekeeping-lostform>
 </div>
+
+<!-- Add this dialog at the bottom of your template -->
+<p-dialog
+  header="Lost Item Details"
+  [(visible)]="displayDetailsDialog"
+  [style]="{ width: '50vw' }"
+>
+  <div *ngIf="selectedItem" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <h4 class="font-medium mb-2">Item Information</h4>
+      <p><strong>item:</strong> {{ selectedItem.itemCategory }}</p>
+      <p><strong>Description:</strong> {{ selectedItem.description }}</p>
+
+      <p>
+        <strong>Status:</strong>
+        <span
+          class="px-2 py-1 text-xs font-semibold rounded-full border"
+          [ngClass]="getStatusClass(selectedItem.status)"
+        >
+          {{ selectedItem.status | titlecase }}
+        </span>
+      </p>
+    </div>
+
+    <div>
+      <h4 class="font-medium mb-2">Guest Information</h4>
+      <p><strong>Name:</strong> {{ selectedItem.guestName }}</p>
+      <p><strong>Phone:</strong> {{ selectedItem.phoneNumber || "N/A" }}</p>
+      <p><strong>Room Number:</strong> {{ selectedItem.roomNumber }}</p>
+    </div>
+
+    <div>
+      <h4 class="font-medium mb-2">Location Information</h4>
+      <p><strong>Lost Location:</strong> {{ selectedItem.placeOrRoom }}</p>
+      <p>
+        <strong>Reported On:</strong>
+        {{ formatDate(selectedItem.dateReported) }}
+      </p>
+      <p *ngIf="selectedItem.dateLost">
+        <strong>Lost On:</strong> {{ formatDate(selectedItem.dateLost) }}
+      </p>
+    </div>
+
+    <div *ngIf="selectedItem.status === 'found'">
+      <h4 class="font-medium mb-2">Found Information</h4>
+      <p><strong>Found By:</strong> {{ selectedItem.foundBy || "N/A" }}</p>
+      <p><strong>Contact:</strong> {{ selectedItem.foundContact || "N/A" }}</p>
+      <p>
+        <strong>Found Date:</strong>
+        {{ formatDate(selectedItem.foundDate) || "N/A" }}
+      </p>
+      <p><strong>Notes:</strong> {{ selectedItem.foundNotes || "N/A" }}</p>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      pRipple
+      label="Close"
+      (click)="displayDetailsDialog = false"
+      class="p-button-text"
+    ></button>
+    <button
+      pButton
+      pRipple
+      label="Edit"
+      (click)="selectedItem && onEdit(selectedItem)"
+      class="p-button-primary"
+    ></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Mark as Found Dialog -->
+<p-dialog
+  header="Mark Item as Found"
+  [(visible)]="displayMarkAsFoundDialog"
+  [style]="{ width: '450px' }"
+  [modal]="true"
+>
+  <div *ngIf="selectedItem" class="p-fluid">
+    <div class="mb-4">
+      <label for="foundBy">Found By *</label>
+      <input
+        id="foundBy"
+        type="text"
+        [(ngModel)]="foundDetails.foundBy"
+        class="w-full p-2 border border-gray-300 rounded-md"
+        placeholder="Enter the name of the person who found the item"
+        required
+      />
+    </div>
+
+    <div class="mb-4">
+      <label for="contactNumber">Contact Number *</label>
+      <input
+        id="contactNumber"
+        type="text"
+        [(ngModel)]="foundDetails.contactNumber"
+        class="w-full p-2 border border-gray-300 rounded-md"
+        placeholder="Enter the contact number of the person who found the item"
+      />
+    </div>
+
+    <div class="mb-4">
+      <label for="notes">Notes *</label>
+      <textarea
+        id="notes"
+        [(ngModel)]="foundDetails.notes"
+        rows="3"
+        class="w-full p-2 border border-gray-300 rounded-md"
+        placeholder="Additional notes or details about the found item"
+      ></textarea>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-between gap-4">
+      <button
+        pButton
+        pRipple
+        label="Cancel"
+        (click)="displayMarkAsFoundDialog = false"
+        class="p-button-text"
+      ></button>
+      <button
+        pButton
+        pRipple
+        label="Mark as Found"
+        (click)="confirmMarkAsFound()"
+        class="p-button-success"
+      ></button>
+    </div>
+  </ng-template>
+</p-dialog>

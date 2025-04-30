@@ -141,11 +141,11 @@ export class RoomSidebarComponent {
   constructor(public router: Router) {}
 
   serviceTypes = [
-    { name: 'Minibar', path: 'minibar' },
+    { name: 'Sport', path: 'sports' },
     { name: 'Laundry', path: 'laundry' },
     { name: 'Kitchen / Room Service', path: 'room sevice' },
     { name: 'Housekeeping Record', path: 'Housekeeping Record' },
-    { name: 'Spa', path: 'spa' },
+    { name: 'Spa', path: 'room' },
     { name: 'Gym', path: 'gym' },
     { name: 'Bar', path: 'bar' },
   ];

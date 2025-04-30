@@ -5,6 +5,9 @@ import { RoomServiceComponent } from '../ui/view/room-service/room-service.compo
 import { RoomSidebarComponent } from '../ui/view/room-sidebar/room-sidebar.component';
 import { RoomWelcomeNoteComponent } from '../ui/view/room-welcome-note/room-welcome-note.component';
 import { HouseKeepingComponent } from '../ui/view/house-keeping/house-keeping.component';
+import { BarServiceComponent } from '../ui/view/bar-service/bar-service.component';
+import { LaundryServiceComponent } from '../ui/view/laundry-service/laundry-service.component';
+import { HotelRoomsComponent } from '../ui/view/hotel-rooms/hotel-rooms.component';
 
 const routes: Routes = [
   {
@@ -23,13 +26,13 @@ const routes: Routes = [
 
     children: [
       { path: '', component: RoomWelcomeNoteComponent },
-      // { path: 'minibar', component: MinibarComponent },
-      // { path: 'laundry', component: LaundryComponent },
+      // { path: 'pastry', component: PastryServiceComponent },
+      { path: 'laundry', component: LaundryServiceComponent },
       { path: 'room sevice', component: RoomServiceComponent },
       { path: 'Housekeeping Record', component: HouseKeepingComponent },
-      // { path: 'spa', component: SpaComponent },
+      { path: 'rooms', component: HotelRoomsComponent },
       // { path: 'gym', component: GymComponent },
-      // { path: 'bar', component: BarComponent },
+      { path: 'bar', component: BarServiceComponent },
     ],
   },
 ];
