@@ -91,6 +91,9 @@ export class SalesReportComponent {
   dateRange = '30 days';
   selectedTab = 'overview';
   Math = Math
+  currentPage = 1;
+itemsPerPage = 10;
+
   // Filter options
   selectedBranch = 'all';
   selectedPaymentMethod = 'all';
@@ -107,6 +110,23 @@ export class SalesReportComponent {
       this.updateCharts();
     });
   }
+
+  get paginatedBreakdown() {
+    const start = (this.currentPage - 1) * this.itemsPerPage;
+    const end = start + this.itemsPerPage;
+    return this.salesReport?.breakdown?.slice(start, end) || [];
+  }
+  
+  get totalPages() {
+    return Math.ceil((this.salesReport?.breakdown?.length || 0) / this.itemsPerPage);
+  }
+  
+  setPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+    }
+  }
+  
 
   initChartOptions() {
     // Branch sales chart (bar chart)

@@ -60,7 +60,9 @@ export class ExpensesReportComponent implements OnInit {
   branches: BranchDTO[] = [];
   categories: CategoryDTO[] = [];
   filterForm = false
-  
+  productPage = 1;
+productItemsPerPage = 10;
+Math = Math
   // Chart options
   public revenueChartOptions!: any;
   public productSalesChartOptions!: any;
@@ -98,6 +100,22 @@ export class ExpensesReportComponent implements OnInit {
   
   openFilterForm(){
     this.filterForm = !this.filterForm
+  }
+
+  get paginatedProductBreakdown() {
+    const start = (this.productPage - 1) * this.productItemsPerPage;
+    const end = start + this.productItemsPerPage;
+    return this.report?.productPerformanceBreakdown?.slice(start, end) || [];
+  }
+  
+  get productTotalPages() {
+    return Math.ceil((this.report?.productPerformanceBreakdown?.length || 0) / this.productItemsPerPage);
+  }
+  
+  setProductPage(page: number) {
+    if (page >= 1 && page <= this.productTotalPages) {
+      this.productPage = page;
+    }
   }
   loadDummyData(): void {
     // Dummy branches
