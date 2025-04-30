@@ -21,7 +21,7 @@
                 <tr class="top-products-table-row">
                   <th class="top-products-table-head col-1">Date</th>
                   <th class="top-products-table-head col-1">Status</th>
-                  <th class="top-products-table-head col-1">Order Name</th>
+                  <th class="top-products-table-head col-1">Order Number</th>
                   <th class="top-products-table-head col-1">Total Sales</th>
                   <th class="top-products-table-head col-1">Action</th>
                 </tr>
@@ -29,21 +29,21 @@
               <tbody>
                 <tr *ngFor="let order of orders" (click)="orderDetails(order)" style="cursor: pointer">
                   <!-- {{ order?.timestamp | date: 'shortTime' }} -->
-                  <td>{{ order?.createdDate }}</td>
+                  <td>{{ formatDate(order?.updatedAt) | date: 'medium' }}</td>
                   <td>
                     <p
-                      [ngClass]="{ 'text-green-700': order.state === 'Paid' }"
+                      [ngClass]="{ 'text-green-700': order.orderStatus === 'PAID' }"
                       class="mb-0 capitalize font-bold text-yellow-600"
                     >
-                      {{ order.status}}
+                      {{ order.orderStatus}}
                     </p>
                   </td>
-                  <td class="capitalize">{{ order.id }}</td>
-                  <td>₦{{ order.amount }}</td>
+                  <td class="capitalize">{{ order.orderNumber }}</td>
+                  <td>₦{{ order.totalAmount }}</td>
                   <td>
                     <div class="flex gap-3 text-[18px]">
                       <i
-                        *ngIf="order.status == 'UNPAID'"
+                        *ngIf="order.orderStatus == 'UNPAID'"
                         class="fa-solid fa-cart-shopping hover:bg-customGreen/30 p-2 rounded-md"
                         (click)="reOpenCart(order)"
                       ></i>

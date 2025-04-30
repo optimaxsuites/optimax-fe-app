@@ -117,8 +117,52 @@ export interface DiscountOption {
   label: string;
   value: number | string;
 }
+export interface SalesReportDTO {
+  totalRevenue: number;
+  totalTransactions: number;
+  averageOrderValue: number;
+  totalDiscounts: number;
+  totalSalesPerBranch: BranchSalesDTO[];
+  topSellingProducts: TopProductDTO[];
+  paymentMethodBreakdown: PaymentMethodSummaryDTO[];
+  breakdown: SalesReportBreakdownDTO[];
+}
+
+
+export interface BranchSalesDTO {
+  branch: BranchDTO;
+  totalRevenue: number;
+  totalTransactions: number;
+  averageOrderValue: number;
+}
+
+export interface TopProductDTO {
+  product: ProductDTO;
+  quantitySold: number;
+  revenue: number;
+}
+
+export interface PaymentMethodSummaryDTO {
+  paymentMethod: string;
+  revenue: number;
+  transactions: number;
+}
+
+export interface SalesReportBreakdownDTO {
+  date: Date;
+  branch: BranchDTO;
+  cashier?: any;
+  paymentMethod?: string;
+  transactions: number;
+  revenue: number;
+  discounts: number;
+}
 
 export interface Order {
+updatedAt: any;
+orderStatus: any;
+orderNumber: any;
+totalAmount: any;
 status: any;
 amount: any;
 createdDate: any;
@@ -237,6 +281,8 @@ export interface Business {
 /////
 
 interface ProductDTO {
+category: any;
+price: number;
   id: number;
   name: string;
   code: string;
@@ -266,6 +312,7 @@ interface ProductBranchDTO {
 }
 
 export interface BranchDTO {
+location: any;
   id: number;
   name: string;
   description: string;

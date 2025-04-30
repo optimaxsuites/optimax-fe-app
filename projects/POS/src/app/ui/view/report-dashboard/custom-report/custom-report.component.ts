@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { arrOfCustomReports } from '../custom-report-data';
 import { StyleColor } from '../../../models/enums';
-import { ChartOptions } from '../sales-report/sales-report.component';
+// import { ChartOptions } from '../sales-report/sales-report.component';
 import { ApexTitleSubtitle, ChartType } from 'ng-apexcharts';
 
 @Component({
@@ -207,7 +207,7 @@ export class CustomReportComponent implements OnInit {
             'Period 7',
           ],
         },
-      } as ChartOptions;
+      } ;
     });
   }
 

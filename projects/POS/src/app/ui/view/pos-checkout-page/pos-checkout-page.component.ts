@@ -85,6 +85,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
       const cart = this.navigationState.cart;
 
       this.cartItems = [...cart.cartItems];
+      console.log(this.cartItems)
       this.total = cart.total;
       this.displayedDiscount = cart.discount;
       this.tax = cart.tax;
@@ -134,7 +135,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   
   loadOrder(order: any) {
     console.log(order);
-    this.cartItems = order.cart.map((item: any) => ({ ...item }));
+    this.cartItems = order.orderItems.map((item: any) => ({ ...item }));
     this.discount = order.cartDiscount;
     this.discountValue = order.discountValue;
     this.value = order.value;

@@ -1,7 +1,17 @@
-@use "../shared-chart-styles.scss" as chart-styles;
+/* sales-dashboard.component.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-.sales-report {
-  @include chart-styles.reportStyles;
+:host {
+  font-family: 'Inter', sans-serif;
 }
 
-@include chart-styles.sharedChartStyles;
+.apexcharts-tooltip {
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-family: 'Inter', sans-serif;
+}
+
+th {
+  @apply bg-transparent
+}

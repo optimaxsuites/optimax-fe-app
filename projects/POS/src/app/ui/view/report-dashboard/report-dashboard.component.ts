@@ -16,9 +16,9 @@ import { SalesReportComponent } from './sales-report/sales-report.component';
 import { ExpensesReportComponent } from './expenses-report/expenses-report.component';
 import { FinanceReportComponent } from './finance-report/finance-report.component';
 import { InventoryReportComponent } from './inventory-report/inventory-report.component';
-import { CreateReportComponent } from './create-report/create-report.component';
+// import { CreateReportComponent } from './create-report/create-report.component';
 import { SummaryReportComponent } from './summary-report/summary-report.component';
-import { CustomReportComponent } from './custom-report/custom-report.component';
+// import { CustomReportComponent } from './custom-report/custom-report.component';
 
 // Define interfaces using Apex types for type safety
 
@@ -65,14 +65,15 @@ export class ReportDashboardComponent implements OnInit {
   tabsConfig: TabConfig[] = [
     { name: 'Summary', component: SummaryReportComponent },
     {
-      name: 'Sales',
+      name: 'Sales Reports',
       component: SalesReportComponent,
     },
-    { name: 'Expenses', component: ExpensesReportComponent },
-    // { name: 'Finance', component: FinanceReportComponent },
-    { name: 'Inventory', component: InventoryReportComponent },
-    { name: 'Create Report', component: CreateReportComponent },
-    { name: 'Custom Reports', component: CustomReportComponent },
+    { name: 'Product Performance', component: ExpensesReportComponent },
+    { name: 'Discounts Report', component: FinanceReportComponent },
+    { name: 'Staff Reports', component: InventoryReportComponent },
+    { name: 'Branch Report', component: FinanceReportComponent },
+    { name: 'Stock Reports', component: InventoryReportComponent },
+
   ];
 
   // // 1. Sales Summary Report (Line Chart)
