@@ -176,8 +176,8 @@ import { EditIngredientsComponent } from './ui/view/ingredient/edit-ingredients/
     //CheckoutHeaderComponent,
   ],
   imports: [
-    // BrowserModule,
-    // UserModule,
+    BrowserModule,
+   UserModule,
     AppRoutingModule,
     CheckboxModule,
     CommonModule,
@@ -229,7 +229,7 @@ import { EditIngredientsComponent } from './ui/view/ingredient/edit-ingredients/
     InputGroupAddonModule,
     SkeletonModule,
     PaginatorModule,
-    // BrowserAnimationsModule,
+    BrowserAnimationsModule,
   ],
   exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],
   providers: [

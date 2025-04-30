@@ -1,3 +1,30 @@
+<!-- Open Register Modal -->
+<app-modal *ngIf="showOpenRegisterModal" (close)="showOpenRegisterModal = false" header="Open Register">
+  <div class="modal-body">
+    <label>Opening Amount</label>
+    <input type="number" [(ngModel)]="openingAmount" min="0" placeholder="Enter starting cash amount">
+    
+    <div class="modal-actions">
+      <button (click)="showOpenRegisterModal = false">Cancel</button>
+      <button (click)="confirmOpeningRegister()" [disabled]="!openingAmount">Confirm</button>
+    </div>
+  </div>
+</app-modal>
+
+<!-- Close Register Modal -->
+<app-modal *ngIf="showCloseRegisterModal" (close)="showCloseRegisterModal = false" header="Close Register">
+  <div class="modal-body">
+    <p>Current Register: {{ openingAmount | currency }}</p>
+    <label>Closing Amount</label>
+    <input type="number" [(ngModel)]="closingAmount" placeholder="Enter closing cash amount">
+    
+    <div class="modal-actions">
+      <button (click)="showCloseRegisterModal = false">Cancel</button>
+      <button (click)="confirmClosingRegister()" [disabled]="!closingAmount">Confirm Close</button>
+    </div>
+  </div>
+</app-modal>
+
 <div
   class="h-screen flex flex-col"
   [class.pharmacy-layout]="businessType == 'Pharmacy'"

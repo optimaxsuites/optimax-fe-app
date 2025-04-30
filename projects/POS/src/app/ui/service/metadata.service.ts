@@ -64,6 +64,8 @@ export class MetadataService {
   private loadingSubject = new BehaviorSubject<boolean>(false);
   loading$ = this.loadingSubject.asObservable();
 
+
+
   private discountSubject = new BehaviorSubject<any[]>([]);
   private discountTypesSubject = new BehaviorSubject<any[]>([]);
   private categorySubject = new BehaviorSubject<any[]>([]);

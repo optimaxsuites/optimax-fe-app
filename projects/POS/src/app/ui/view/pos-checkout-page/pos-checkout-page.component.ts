@@ -21,6 +21,16 @@ import { CheckoutService } from '../../service/checkout.service';
 })
 export class PosCheckoutPageComponent implements OnInit, Business {
 
+  // Register State Management
+  showOpenRegisterModal = true;
+  showCloseRegisterModal = false;
+  openingAmount: number | null = null;
+  closingAmount: number | null = null;
+  isRegisterOpened = false;
+  closingTotal: number = 0;
+  expectedBalance: number = 0;
+  
+
   scannedSKU: string = '';
   register: string = 'open';
   orderName: string = '';
@@ -77,13 +87,17 @@ export class PosCheckoutPageComponent implements OnInit, Business {
       .state as typeof this.navigationState;
   }
 
+  
   ngOnInit() {
+    // Register initialization
+    this.checkRegisterState();
+    
+    
     if (this.navigationState?.order) {
       this.loadOrder(this.navigationState.order);
     }
     if (this.navigationState?.cart) {
       const cart = this.navigationState.cart;
-
       this.cartItems = [...cart.cartItems];
       console.log(this.cartItems)
       this.total = cart.total;
@@ -92,11 +106,48 @@ export class PosCheckoutPageComponent implements OnInit, Business {
       this.subtotal = cart.subtotal;
     }
     this.metadataService.fetchMetaData();
-
     this.getProducts();
     this.loadCategory();
-
   }
+
+  // New Register Methods
+  checkRegisterState() {
+    const registerState = localStorage.getItem('registerState');
+    if (registerState) {
+      this.isRegisterOpened = JSON.parse(registerState);
+      this.showOpenRegisterModal = !this.isRegisterOpened;
+    }
+  }
+
+  confirmOpeningRegister(): void {
+    if (this.openingAmount !== null && this.openingAmount >= 0) {
+      this.isRegisterOpened = true;
+      this.showOpenRegisterModal = false;
+      localStorage.setItem('registerState', 'true');
+      localStorage.setItem('openingAmount', this.openingAmount.toString());
+     
+    }
+  }
+
+ confirmClosingRegister(): void {
+  if (this.closingAmount !== null) {
+    this.closingTotal = this.calculateClosingTotal();
+    this.isRegisterOpened = false;
+    this.showCloseRegisterModal = false;
+    localStorage.setItem('registerState', 'false');
+    // Add API call here if needed
+  }
+}
+
+// Add this new calculation method
+private calculateClosingTotal(): number {
+  const openingAmount = Number(localStorage.getItem('openingAmount')) || 0;
+  const salesTotal = this.total; // Using your existing cart total
+  this.expectedBalance = openingAmount + salesTotal;
+  return this.closingAmount! - this.expectedBalance;
+}
+
+
 
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
@@ -467,7 +518,7 @@ console.log(data)
   }
 
   closeRegister() {
-    this.registerService.triggerCloseRegister();
+    this.showCloseRegisterModal = true;
   }
   toggleNotesModal() {
     this.isNotesModalOpen = !this.isNotesModalOpen;

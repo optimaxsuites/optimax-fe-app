@@ -129,3 +129,120 @@ app-product-card {
 .left-sidebar button {
   width: calc(8% - 0.5rem); /* Each button takes 50% of the container width, minus gap */
 }
+
+/* Register Modals - SCSS */
+app-modal {
+  .modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+
+    label {
+      font-weight: 500;
+      color: #4a5568; // slate-700
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid #e2e8f0; // slate-200
+      border-radius: 0.375rem;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+
+      &:focus {
+        outline: none;
+        border-color: #4299e1; // blue-400
+        box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+      }
+
+      &::placeholder {
+        color: #a0aec0; // slate-400
+      }
+    }
+
+    .register-summary {
+      background-color: #f8fafc; // slate-50
+      border-radius: 0.375rem;
+      padding: 1rem;
+      border: 1px solid #e2e8f0; // slate-200
+
+      p {
+        margin: 0;
+        padding: 0.5rem 0;
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 1px dashed #e2e8f0; // slate-200
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        strong {
+          color: #4a5568; // slate-700
+        }
+
+        span {
+          font-weight: 500;
+        }
+      }
+    }
+
+    .cash-difference {
+      margin-top: -0.5rem;
+      font-weight: 600;
+      text-align: right;
+
+      &.surplus {
+        color: #38a169; // green-600
+      }
+
+      &.shortage {
+        color: #e53e3e; // red-600
+      }
+    }
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+
+    button {
+      padding: 0.625rem 1.25rem;
+      border-radius: 0.375rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:first-child {
+        background-color: #fff;
+        border: 1px solid #e2e8f0; // slate-200
+        color: #4a5568; // slate-700
+
+        &:hover {
+          background-color: #f8fafc; // slate-50
+        }
+      }
+
+      &:last-child {
+        background-color: #4299e1; // blue-500
+        color: white;
+        border: none;
+
+        &:hover {
+          background-color: #3182ce; // blue-600
+        }
+
+        &:disabled {
+          background-color: #a0aec0; // slate-400
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+}
