@@ -58,7 +58,7 @@ export class HousekeepingFoundComponent implements OnInit {
   }
 
   navigateToHouse() {
-    this.openFoundForm = true;
+    this.openFoundForm = !this.openFoundForm;
   }
 
   loadItems() {

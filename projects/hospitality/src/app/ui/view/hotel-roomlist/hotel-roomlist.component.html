@@ -1,4 +1,7 @@
-<div class="flex h-full" *ngIf="!openForm && !openLogs && !openRoom">
+<div
+  class="flex h-full"
+  *ngIf="!openForm && !openLogs && !openRoom && !showRoomForm"
+>
   <!-- Sidebar with filters (always visible) -->
   <aside
     class="w-1/6 bg-gradient-to-b from-customBlueHover to-customBlue text-white p-6 shadow-lg rounded-xl"
@@ -372,4 +375,11 @@
     (back)="navigateToRoom()"
   ></app-room-sidebar>
 </div>
+
+<app-hotel-rooms
+  *ngIf="showRoomForm"
+  (roomCreated)="handleNewRoom($event)"
+  (cancel)="showRoomForm = false"
+></app-hotel-rooms>
+
 <p-toast position="top-right"></p-toast>

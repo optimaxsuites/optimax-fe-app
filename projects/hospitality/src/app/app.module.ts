@@ -41,7 +41,12 @@ import { DropdownModule } from 'primeng/dropdown';
 import { MenuModule } from 'primeng/menu';
 import { HousekeepingLostformComponent } from './ui/view/housekeeping-lostform/housekeeping-lostform.component';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
-
+import { BarServiceComponent } from './ui/view/bar-service/bar-service.component';
+import { LaundryServiceComponent } from './ui/view/laundry-service/laundry-service.component';
+import { HotelRoomsComponent } from './ui/view/hotel-rooms/hotel-rooms.component';
+import { CheckboxModule } from 'primeng/checkbox';
+import { HotelReceptionistComponent } from './ui/view/hotel-receptionist/hotel-receptionist.component';
+import { DialogService } from 'primeng/dynamicdialog';
 @NgModule({
   declarations: [
     AppComponent,
@@ -66,6 +71,10 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
     HousekeepingFormComponent,
     HousekeepingLostitemComponent,
     HousekeepingLostformComponent,
+    BarServiceComponent,
+    LaundryServiceComponent,
+    HotelRoomsComponent,
+    HotelReceptionistComponent,
   ],
   imports: [
     // BrowserAnimationsModule,
@@ -86,8 +95,9 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
     DialogModule,
     InputNumberModule,
     NavTabComponent,
+    CheckboxModule,
   ],
-  providers: [MessageService, ConfirmationService],
+  providers: [MessageService, ConfirmationService, DialogService],
 
   bootstrap: [AppComponent],
 })

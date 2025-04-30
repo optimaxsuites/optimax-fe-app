@@ -20,6 +20,30 @@ interface BookingLog {
   balanceAmount: number;
   specialRequests?: string;
   createdAt: Date;
+  receptionistId?: string;
+  receptionistName?: string;
+  bookingTime?: Date;
+}
+
+interface Receptionist {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  isOnDuty: boolean;
+  password: string; // For authentication
+  commissionRate?: number; // For commission calculations
+}
+
+interface ReceptionistLog {
+  receptionistId: string;
+  receptionistName: string;
+  loginTime: Date;
+  logoutTime?: Date;
+  sales: BookingLog[];
+  notes?: string;
+  totalSales?: number;
+  commissionEarned?: number;
 }
 
 interface Statistics {
