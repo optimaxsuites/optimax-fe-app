@@ -45,7 +45,8 @@ import { BarServiceComponent } from './ui/view/bar-service/bar-service.component
 import { LaundryServiceComponent } from './ui/view/laundry-service/laundry-service.component';
 import { HotelRoomsComponent } from './ui/view/hotel-rooms/hotel-rooms.component';
 import { CheckboxModule } from 'primeng/checkbox';
-
+import { HotelReceptionistComponent } from './ui/view/hotel-receptionist/hotel-receptionist.component';
+import { DialogService } from 'primeng/dynamicdialog';
 @NgModule({
   declarations: [
     AppComponent,
@@ -73,6 +74,7 @@ import { CheckboxModule } from 'primeng/checkbox';
     BarServiceComponent,
     LaundryServiceComponent,
     HotelRoomsComponent,
+    HotelReceptionistComponent,
   ],
   imports: [
     BrowserAnimationsModule,
@@ -95,7 +97,7 @@ import { CheckboxModule } from 'primeng/checkbox';
     NavTabComponent,
     CheckboxModule,
   ],
-  providers: [MessageService, ConfirmationService],
+  providers: [MessageService, ConfirmationService, DialogService],
 
   bootstrap: [AppComponent],
 })
