@@ -1,567 +1,308 @@
-<div class="createVendor">
+<div class=" w-full mx-auto bg-gray-50 p-12">
 
-    <div class="flex justify-between items-center w-full h-auto">
-        <p class="back" style="cursor: pointer" (click)="openViewProduct()">
-            <i class="fa-solid fa-arrow-left"></i> Back
-          </p>
-          <div class="container-header" style="padding: 0.5rem 1rem !important">
-            <button class="btn create-invoice-btn" (click)="openEdit(activeItem)">
-              Edit
-            </button>
-        
-    </div>
-    </div>
-  
-
-
-
-    <div class="details">
-      <div
-        class="permissionDiv text-gray-700 flex flex-col gap-3 p-3 my-2 bg-white rounded-lg border"
-      >
-        <p class="text-gray-700 font-semibold pb-0 mb-0">General Information</p>
-        <div class="ml-3">
-          <div class="flex items-center justify-between">
-            <label for="name">Name </label>
-        </div>
-           
-            <p class="name editInput" id="name">{{ activeItem.name }}</p>
-
-    </div>
-
-        <div class="detailDiv ml-3">
-          <div class="flex items-center justify-between">
-            <label for="description"
-              >Description </label
-            >
-          </div>
-          <p class="name editInput" id="name">{{ activeItem.description }}</p>
-
-        </div>
-
-        <div class="flex gap-4 items-center w-full">
-          <div class="detailDiv w-full">
-            <div class="flex items-center justify-between">
-              <label for="discountType"
-                >Branch </label
-              >
-           
-            </div>
-
-            <div class="inputAndBtn">
-              <!-- <ng-select
-                [items]="branches"
-                bindLabel="name"
-                [ngModel]="branches"
-                [multiple]="true"
-                placeholder="Select branch"
-                [readonly]="true"
-              >
-              </ng-select> -->
-
-              <p class="name editInput" >{{selectedBranchNames}}</p>
-
-            </div>
-          </div>
-
-
-
-        
-        </div>
-
-
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-2">
+        <button type="button" class="text-gray-600 hover:text-gray-800" (click)="openViewProduct()">
+          <i class="fa-solid fa-arrow-left text-lg"></i>
+        </button>
+        <h1 class="text-2xl font-bold text-gray-800">
+          View Product
+        </h1>
+      </div>
+      <button 
+        class="px-6 py-3 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center gap-2 disabled:opacity-70 cursor-pointer" 
+        type="button" 
+        (click)="openEdit(activeItem)">
       
+       
 
-        <!-- <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">
-          Pricing
-        </p> -->
-        <div class="flex gap-4 items-center w-full">
-         
-          <!-- <div class="detailDiv w-full">
-            <div class="flex items-center justify-between">
-              <label for="selling-price"
-                >Selling price </label
-              >
-              <div
-                *ngIf="
-                  productForm.get('initialPrice')?.invalid &&
-                  productForm.get('initialPrice')?.touched
-                "
-                class="error"
-              >
-                {{ getErrorMessage("initialPrice", "base price") }}
-              </div>
-            </div>
-            <input
-              class="name editInput"
-              type="text"
-              formControlName="initialPrice"
-              id="selling-price"
-              placeholder="selling price"
-            />
-          </div>
-          <div class="detailDiv w-full">
-            <div class="flex items-center justify-between">
-              <label for="tax"
-                >Tax percentage (%) </label
-              >
-              <div
-                *ngIf="
-                  productForm.get('tax')?.invalid &&
-                  productForm.get('tax')?.touched
-                "
-                class="error"
-              >
-                {{ getErrorMessage("tax") }}
-              </div>
-            </div>
-            <input
-              class="name editInput"
-              type="text"
-              formControlName="tax"
-              id="tax"
-              placeholder="tax"
-            />
-          </div> -->
-        </div>
+          <i class="fa-solid fa-save"></i> Edit
 
-      
+      </button>
+    </div>
 
-        <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">
-          Identifiers
-        </p>
+ 
 
-        <div class="flex gap-4 items-center w-full">
-          <!-- <div class="detailDiv w-full">
-            <div class="flex items-center justify-between">
-              <label for="quantity"
-                >Quantity </label
-              >
-              <div
-                *ngIf="
-                  productForm.get('initialQuantity')?.invalid &&
-                  productForm.get('initialQuantity')?.touched
-                "
-                class="error"
-              >
-                {{ getErrorMessage("initialQuantity", "quantity") }}
-              </div>
-            </div>
-            <input
-              id="quantity"
-              formControlName="initialQuantity"
-              class="name editInput"
-              placeholder="Quantity"
-            />
-          </div> -->
-          <div class="detailDiv w-full">
-            <div class="flex items-center justify-between">
-              <label for="partNumber"
-                >Part number </label
-              >
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+   
+
+        <!-- Right Column - Form Fields -->
+        <div class="md:col-span-2">
+          <!-- General Information -->
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">General Information</h2>
             
-            </div>
-            <p class="name editInput" id="name">{{ activeItem.partNumber }}</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Name -->
+              <div class="col-span-2">
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+                  Name
+                </label>
+                <p class="name editInput" id="name">{{ activeItem.name }}</p>
 
-          </div>
-          <div class="detailDiv w-full">
-            <div class="flex items-center justify-between">
-              <label for="sku">SKU </label>
-             
-            </div>
-            <p class="name editInput" id="name">{{ activeItem.sku }}</p>
+              </div>
+    
+              <!-- Description -->
+              <div class="col-span-2">
+                <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <p class="name editInput" id="name">{{ activeItem.description }}</p>
 
-          </div>
-        </div>
+              </div>
+    
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 col-span-2">
+    
+              <!-- Branch -->
+              <div class="">
+                <label for="branch" class="block text-sm font-medium text-gray-700 mb-1">
+                  Branch
+                </label>
+                <p class="name editInput" id="name">{{ activeItem.branch?.name }}</p>
 
-        <div class="flex gap-4 items-center w-full">
-          <!-- <div class="detailDiv w-full">
-            <div class="flex items-center justify-between">
-              <label for="e-quantity"
-                >Effective Quantity </label
-              >
-              <div
-                *ngIf="
-                  productForm.get('effectiveQuantity')?.invalid &&
-                  productForm.get('effectiveQuantity')?.touched
-                "
-                class="error"
-              >
-                {{ getErrorMessage("effectiveQuantity") }}
+              </div>
+    
+              <!-- Category -->
+              <div class="">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Category
+                </label>
+                <p class="name editInput" id="name">{{ activeItem.productCategory.name }}</p>
+
               </div>
             </div>
-            <input
-              class="name editInput"
-              type="text"
-              id="e-quantity"
-              formControlName="effectiveQuantity"
-              placeholder="Effective Quantity"
-              readonly
-            />
-          </div> -->
-          <div class="detailDiv w-full">
-            <div class="flex items-center justify-between">
-              <label for="code">Code </label>
-            
-            </div>
-            <p class="name editInput" id="name">{{ activeItem.code }}</p>
 
-          </div>
-        
-        </div>
-
-        <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">
-          Category 
-        </p>
-        <div class="flex inputAndBtn">
-            <p class="name editInput" id="name">{{ activeItem.productCategory.name }}</p>
-
-        
-        </div>
-
-        <!-- Product Variants -->
-        <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">
-          Variant
-        </p>
-        <div class="editInput">
-          <div class="ml-3 flex justify-between items-center">
-            <p class="pb-0 mb-0">Product Variants</p>
-           
-          </div>
-          <table *ngIf="variants.length > 0" class="min-w-full mt-3 bg-white">
-            <thead>
-              <tr>
-             
-                @for (prop of variantObjectKeys; track $index) {
-                <th class="py-2 px-4 bg-gray-600">{{ prop }}</th>
-                }
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let variant of variants; let i = index">
-                <td class="py-2 px-4 border-b">{{ variant.name }}</td>
-                <!-- <td class="py-2 px-4 border-b">{{ variant.price }}</td>
-                <td class="py-2 px-4 border-b">{{ variant.quantity }}</td> -->
-                <td class="py-2 px-4 border-b">
-                  {{ variant.color.join(", ") }}
-                </td>
-                <td class="py-2 px-4 border-b">{{ variant.size }}</td>
-                <td class="py-2 px-4 border-b">{{ variant.sku }}</td>
-              
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">
-          Shipping and delivery
-        </p>
-        <div class="ml-3">
-          <label for="weight">Item's weight (in KG)</label>
-          <input
-            class="name editInput"
-            [ngModel]="activeItem.weight"
-            placeholder="Weight in kg"
-            id="weight"
-          />
-        </div>
-
-
-        <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">
-          Identifiers
-        </p>
-
-        <div class="flex gap-4 items-center w-full">
-          <!-- <div class="detailDiv w-full">
-            <div class="flex items-center justify-between">
-              <label for="quantity"
-                >Quantity </label
-              >
-              <div
-                *ngIf="
-                  productForm.get('initialQuantity')?.invalid &&
-                  productForm.get('initialQuantity')?.touched
-                "
-                class="error"
-              >
-                {{ getErrorMessage("initialQuantity", "quantity") }}
-              </div>
-            </div>
-            <input
-              id="quantity"
-              formControlName="initialQuantity"
-              class="name editInput"
-              placeholder="Quantity"
-            />
-          </div> -->
-          <div class="detailDiv w-full">
-            <div class="flex items-center justify-between">
-              <label for="measurementUnit"
-                >Measurement Unit </label
-              >
-            
-            </div>
-            <p class="name editInput" id="name">{{ activeItem.measurementUnit }}</p>
-
-          </div>
-          <div class="detailDiv w-full">
-            <div class="flex items-center justify-between">
-              <label for="reorderThreshold">Reorder Threshold </label>
-           
-            </div>
-            <div class="flex inputAndBtn">
-                <p class="name editInput" id="name">{{ activeItem.reorderThreshold }}</p>
-              
-             
-            
             </div>
           </div>
-        </div>
+    
+            <!-- pricing -->
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6" >
+              <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Pricing & Inventory</h2>
+    
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    
+                <!-- cost Price -->
+                <div>
+                  <label for="costPrice" class="block text-sm font-medium text-gray-700 mb-1">
+                    Cost Price
+                  </label>
+                  <p class="name editInput" id="name">{{ activeItem.purchasePrice }}</p>
 
-        <div class="flex gap-4 items-center w-full">
-          <div class="detailDiv w-full">
-            <div class="flex items-center gap-3">
-              <input
-              class="name "
-              type="checkbox"
-              id="isBundle"
-              [ngModel]="activeItem.isBundle"
-              placeholder="Effective Quantity"
-              readonly
-            />
-              <label for="isBundle"
-                >Combo ? </label
-              >
-           
-            </div>
-            
-          </div>
-          <div class="detailDiv w-full">
-            <div class="flex items-center justify-between">
-              <label for="bundleItems">Combo Items </label>
-          
-            </div>
-
-            <ng-select
-            [items]="originalProducts"
-            bindLabel="name"
-            [ngModel]="activeItem.bundleItems"
-            [multiple]="false"
-            placeholder="Products"
-            class="w-full"
-          >
-          </ng-select>
-          </div>
-        
-        </div>
-        <!-- SECTION: Industry-specific details -->
-        <!-- <div class="industry-specific-details">
-          @if (industry == "Pharmacy") {
-          <div class="space-y-4 flex flex-col gap-3">
-            <p class="text-lg text-gray-700 font-semibold  mb-0 mt-2">
-              Industry-specific Details
-            </p>
-            <div class="ml-3">
-              <div class="flex items-center justify-between">
-                <label for="expiryDate"
-                  >Expiry Date </label
-                >
-              </div>
-              <input
-                type="date"
-                class="name editInput"
-                formControlName="expiryDate"
-                id="expiryDate"
-                placeholder="Select expiry date"
-              />
-            </div>
-            <div class="ml-3">
-              <div class="flex items-center justify-between">
-                <label for="dosage"
-                  >Dosage </label
-                >
-              </div>
-              <input
-                type="text"
-                class="name editInput"
-                formControlName="dosage"
-                id="dosage"
-                placeholder="Enter dosage"
-              />
-            </div>
-            <div class="ml-3 flex items-center">
-              <input
-                type="checkbox"
-                class="mr-2"
-                formControlName="prescriptionRequired"
-                id="prescriptionRequired"
-              />
-              <label for="prescriptionRequired">Prescription Required</label>
-            </div>
-          </div>
-          }
-
-          @if (industry == "Hotel") {
-            <div class="space-y-4 flex flex-col gap-3">
-              <p class="text-lg text-gray-700 font-semibold  mb-0 mt-2">
-                Industry-specific Details
-              </p>
-            <div class="w-full ml-3">
-              <label for="roomType">Room Type </label>
-              <input type="text" formControlName="roomType" class="name editInput" id="roomType" placeholder="e.g., Deluxe, Suite"/>
-            </div>
-
-            <div class="w-full ml-3">
-              <label for="bedCount">Number of Beds</label>
-              <input type="number" formControlName="bedCount" class="name editInput" id="bedCount"/>
-            </div>
-            </div>
-            }
-
-            @if (industry == "Kitchen") {
-              <div class="space-y-4 flex flex-col gap-3">
-                <p class="text-lg text-gray-700 font-semibold  mb-0 mt-2">
-                  Industry-specific Details
-                </p>
-               <div class="detailDiv">
-                <label for="ingredient">Select Ingredient:</label>
-                  <ng-select
-                    [items]="dummyIngredients"
-                    bindLabel="name"
-                    [multiple]="true"
-                    [closeOnSelect]="false"
-                    placeholder="Select ingredient"
-                    (change)="onIngredientSelect($event)"
-                  >
-                  </ng-select>
-                  <table *ngIf="selectedIngredients.length > 0" class="min-w-full mt-3 bg-white">
-                    <thead>
-                      <tr>
-                        <th class="py-2 px-4 bg-gray-600">Ingredient</th>
-                
-                        <th class="py-2 px-4 bg-gray-600">Quantity</th>
-        
-        
-                        <th class="py-2 px-4 bg-gray-600"></th> 
-                      </tr>
-                    </thead>
-                    <tbody>
-                @for (ingredient of selectedIngredients; track $index) {
-                      
-                      <tr >
-                        <td class="py-2 px-4 border-b">{{ ingredient.ingredient.name }}</td>
-
-                        <td class="py-2 px-4 border-b flex items-center gap-3">
-                          <p-inputNumber mode="decimal" [min]="0"></p-inputNumber>
-                          <p class="px-2">
-                            {{ingredient.ingredient.measurementUnit}}
-
-                          </p>                        
-                        </td>
-                
-                        <td class="py-2 px-4 border-b text-right">
-                          <button class="text-right" type="button" (click)="removeIngredient($index)">
-                            <i class="fa-solid fa-trash cursor-pointer"></i>
-                          </button>
-                        </td>
-                      </tr>
-        
-                    
-                    
-                }
-        
-                    </tbody>
-                  </table>
-               </div>
-              
-              
-                <div class="detailDiv w-full">
-                  <label for="cookingTime">Cooking Time (in minutes)</label>
-                  <input type="number" formControlName="cookingTime" class="name editInput" id="cookingTime"/>
                 </div>
-              </div>
-              }
-        </div> -->
+      
+                <!-- sellingPrice -->
+                <div class="cols-span-1">
+                  <label for="sellingPrice" class="block text-sm font-medium text-gray-700 mb-1">
+                    Selling Price
+                  </label>
+                    <p class="name editInput" id="name">{{ activeItem.sellingPrice }}</p>
+
+                </div>
+      
+                <!-- quantity -->
+                <div>
+                  <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">
+                    Quantity
+                  </label>
+                  <p class="name editInput" id="name">{{ activeItem.quantity }}</p>
+                </div>
+      
+                <!-- Discount -->
+                <div>
+                  <label for="discount" class="block text-sm font-medium text-gray-700 mb-1">
+                    Discount
+                  </label>
+                   
+                    <p class="name editInput" id="name">{{ activeItem.discount?.name }}</p>
+
+                </div>
+    
+                 <!-- tax -->
+                <div>
+                  <label for="tax" class="block text-sm font-medium text-gray-700 mb-1">
+                    Tax
+                  </label>
+                  <p class="name editInput" id="name">{{ activeItem.tax?.name }}</p>
 
 
+                </div>
+      
+                <!-- Supplier -->
+                <div>
+                  <label for="supplier" class="block text-sm font-medium text-gray-700 mb-1">
+                    Supplier
+                  </label>
+                  <p class="name editInput" id="name">{{ activeItem.supplier?.name }}</p>
 
-
-      </div>
-
-      <div class="imageDiv">
-        <div class="flex flex-col justify-center items-center gap-4">
-          <img
-            class="w-[450px] h-[400px]"
-            [src]="
-             activeItem.imageUrl$"
-            alt="product image"
-          />
-        
-        </div>
-
-        <div
-          class="text-gray-700 flex flex-col gap-6 p-5 my-5 bg-white rounded-lg border"
-        >
-        <p class="text-lg text-gray-700 font-semibold pb-0 mb-0 mt-2">
-          Pricing
-        </p>
-
-        <div class="detailDiv w-full">
-          <div class="flex items-center justify-between">
-            <label for="cost-price"
-              >Cost price </label
-            >
-         
+                </div>
+            </div>
           </div>
-          <p class="name editInput" id="name">{{ activeItem.currentPurchasePrice }}</p>
+    
+          <!-- Identifiers -->
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Identifiers</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Part Number -->
+              <div >
+                <label for="partNumber" class="block text-sm font-medium text-gray-700 mb-1">
+                  Part Number
+                </label>
+                <p class="name editInput" id="name">{{ activeItem.partNumber}}</p>
 
-        </div>
+              </div>
+    
+              <!-- SKU -->
+              <div  >
+                <label for="sku" class="block text-sm font-medium text-gray-700 mb-1">
+                  SKU
+                </label>
+                <p class="name editInput" id="name">{{ activeItem.sku}}</p>
 
-        <table *ngIf="activeItem?.branchDetails?.length > 0" class="min-w-full mt-3 bg-white">
-            <thead>
-              <tr>
-                <th class="py-2 px-4 bg-gray-600">Branch</th>
-                <th class="py-2 px-4 bg-gray-600">Selling price</th>
-                <th class="py-2 px-4 bg-gray-600">Quantity</th>
-                <th class="py-2 px-4 bg-gray-600">Tax</th>
-                <th class="py-2 px-4 bg-gray-600">Discount</th>
-                <th class="py-2 px-4 bg-gray-600">Supplier</th>
-                <th class="py-2 px-4 bg-gray-600"></th> 
-              </tr>
-            </thead>
-            <tbody>
-              <ng-container *ngFor="let branchDetail of activeItem.branchDetails; let i = index; trackBy: trackByBranch">
-                <tr>
-                    <td class="py-2 px-4 capitalize font-semibold">
-                        {{ getNameFromId(branches, branchDetail.productBranch?.branchId )}}
-                      </td>
-                <td colspan="5"></td> 
+              </div>
+    
+              <!-- Code -->
+              <div >
+                <label for="code" class="block text-sm font-medium text-gray-700 mb-1">
+                  Code
+                </label>
+                <p class="name editInput" id="name">{{ activeItem.code }}</p>
 
-                </tr>
-                <tr>
-                  <td class="py-2 px-4 capitalize text-right border-b">Regular</td>
-                  <td class="py-2 px-4 border-b">{{ branchDetail.branchData?.price | currency : "₦" }}</td>
-                  <td class="py-2 px-4 border-b">{{ branchDetail.branchData?.quantity }}</td>
-                  <td class="py-2 px-4 border-b">{{ getNameFromId(taxes, branchDetail.branchData?.taxId) }}</td>
-                  <td class="py-2 px-4 border-b">{{ getNameFromId(discounts, branchDetail.branchData?.discountId) }}</td>
-                  <td class="py-2 px-4 border-b">{{ getNameFromId(suppliers, branchDetail.branchData?.supplierId) }}</td>
-                  <td></td>
-                </tr>
-          
-                <!-- Variants under this branch -->
-                <tr *ngFor="let variant of branchDetail.variants">
-                  <td class="py-2 px-4 border-b  text-right">
-                    {{ variant.name }}
-                  </td>
-                  <td class="py-2 px-4 border-b">{{ variant.price | currency : "₦" }}</td>
-                  <td class="py-2 px-4 border-b">{{ variant.quantity }}</td>
-                  <td colspan="3" class="py-2 px-4 border-b"></td>
-                </tr>
-              </ng-container>
-            </tbody>
-          </table>
-          
+              </div>
+    
+              <!-- Measurement Unit -->
+              <div>
+                <label for="measurementUnit" class="block text-sm font-medium text-gray-700 mb-1">
+                  Measurement Unit
+                </label>
+                <p class="name editInput" id="name">{{ activeItem.measurementUnit }}</p>
+
+              </div>
+    
+              <!-- Reorder Threshold -->
+              <div>
+                <label for="reorderThreshold" class="block text-sm font-medium text-gray-700 mb-1">
+                  Reorder Threshold
+                </label>
+                <p class="name editInput" id="name">{{ activeItem.reorderThreshold }}</p>
+
+              </div>
+    
+              <!-- Weight -->
+              <div>
+                <label for="weight" class="block text-sm font-medium text-gray-700 mb-1">
+                  Weight (in KG)
+                </label>
+                <p class="name editInput" id="name">{{ activeItem.weight }}</p>
+
+              </div>
+            </div>
+          </div>
+    
+        
+    
+          <!-- Bundle/Combo Options -->
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Combo Options</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Is Bundle Checkbox -->
+              <div class="flex items-center">
+                <input
+                  class="h-4 w-4 text-customBlue focus:ring-customBlue border-gray-300 rounded"
+                  type="checkbox"
+                  id="isBundle"
+                  readonly
+[value]="activeItem.isBundle"                
+/>
+                <label for="isBundle" class="ml-2 block text-sm font-medium text-gray-700">
+                  Is this a combo product? 
+                </label>
+               
+              </div>
+    
+              <!-- Bundle Items -->
+              <div>
+                <label for="bundleItems" class="block text-sm font-medium text-gray-700 mb-1">
+                  Combo Items 
+                </label>
+                <ng-select
+                  [items]="activeItem.bundleItems"
+                  bindLabel="name"
+                >
+                </ng-select>
+               
+              </div>
+            </div>
+          </div>
+    
+          <!-- Product Variants -->
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b">
+              <h2 class="text-lg font-semibold text-gray-800">Product Variants</h2>
+            
+            </div>
+            
+            <div *ngIf="activeItem.variants?.length === 0" class="text-center py-8 text-gray-500">
+              No variants for this product. Click "Edit" to create product variations.
+            </div>
+    
+            <div *ngIf="activeItem.variants.length > 0" class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    @for (prop of variantObjectKeys; track $index) {
+                    <th class="px-6 py-3 text-left text-xs font-medium text-white bg-customBlue  uppercase tracking-wider" >
+                      {{ prop }}
+                    </th>
+                    }
+                   
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr *ngFor="let variant of activeItem.variants; let i = index" class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">{{ variant.name }}</td>
+                    <td  class="px-6 py-4 whitespace-nowrap">{{ variant.price }}</td>
+                    <td  class="px-6 py-4 whitespace-nowrap">{{ variant.quantity }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ variant.color }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ variant.size }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ variant.sku }}</td>
+                   
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+    
+       
+  </div>
+    
+         <!-- Left Column - Product Image -->
+         <div class="md:col-span-1">
+          <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div class="flex flex-col items-center gap-4">
+              <div class="w-full aspect-square bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                <img
+                  class="w-full h-full object-contain"
+                  [src]="
+                      activeItem?.imageUrl$ 
+                     
+                  "
+                  alt="product image"
+                />
+              </div>
+              <label 
+                for="image" 
+                class="w-full py-3 px-4 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition cursor-pointer"
+              >
+                <i class="fa-solid fa-upload mr-2"></i> Product Image
+               
+              </label>
+             
+            </div>
+          </div>
         </div>
       </div>
+    
 
-  </div>
+</div>

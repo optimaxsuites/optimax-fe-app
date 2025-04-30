@@ -66,7 +66,7 @@
   border-width: 1px;
   padding: 1.7rem 1.5rem;
   border-radius: 0.5rem;
-  @apply w-1/2 shadow-sm;
+  @apply w-[45%] shadow-sm;
 }
 
 .create-invoice-btn {
@@ -80,7 +80,7 @@
 }
 
 .editInput {
-  @apply border border-gray-300 rounded-md p-1.5 w-full placeholder:text-gray-500;
+  @apply border border-gray-300 rounded-md px-1.5 py-3 w-full placeholder:text-gray-500;
   &.disabled {
     // filter: brightness(0.9);
     background-color: hsl(0, 0%, 97.5%);
@@ -96,7 +96,7 @@
 }
 
 .imageDiv {
-  @apply w-1/2 p-3;
+  @apply w-[55%] p-3;
 }
 
 p {
@@ -158,16 +158,16 @@ label {
 
 
 :host ::ng-deep .p-inputnumber {
-  width: 60px !important;
+  // width: 60px !important;
 
-  @apply p-1 editInput
+  @apply p-1 editInput w-full
 }
 
 :host ::ng-deep .p-element {
-  width: 50px !important;
+  // width: 50px !important;
   &:focus {
     outline: none;
 
   }
-  // @apply  editInput
+  @apply  w-full
 }

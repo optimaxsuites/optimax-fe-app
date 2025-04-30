@@ -26,7 +26,7 @@ export class ProductCardComponent {
   }
 
   onAddToCart() {
-    if (true) {
+    if (this.product.variants.length > 0) {
       // If the product has variants, open the modal and send the chosen variant's id
       this.updateItem.emit(this.product.id);
     } else {

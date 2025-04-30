@@ -9,6 +9,8 @@ import { RandomTokenService } from '../../sharedComponent/service/random-token/r
 import { BusinessType, ProductCategories } from '../../models/enums';
 import { Business, Cart, ProductData, VariantDTO } from '../../models/interface';
 import { IndustryDataService } from '../../service/industry-data.service';
+import { MetadataService } from '../../service/metadata.service';
+import { CheckoutService } from '../../service/checkout.service';
 // import { AppResizeDirective } from '../../service/app-resize.directive';
 
 @Component({
@@ -18,6 +20,16 @@ import { IndustryDataService } from '../../service/industry-data.service';
   providers: [],
 })
 export class PosCheckoutPageComponent implements OnInit, Business {
+
+  // Register State Management
+  showOpenRegisterModal = true;
+  showCloseRegisterModal = false;
+  openingAmount: number | null = null;
+  closingAmount: number | null = null;
+  isRegisterOpened = false;
+  closingTotal: number = 0;
+  expectedBalance: number = 0;
+  
 
   scannedSKU: string = '';
   register: string = 'open';
@@ -65,9 +77,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     private router: Router,
     public navigationLink: NavigationLinksService,
     private randomTokenService: RandomTokenService,
-    //  public userComponent: UserComponent,
+     public metadataService: MetadataService,
     private registerService: RegisterService,
-    private posService: PosServiceService,
+    private checkoutService: CheckoutService,
     private industryDataService: IndustryDataService
   ) {
     const navigation = this.router.getCurrentNavigation();
@@ -75,23 +87,66 @@ export class PosCheckoutPageComponent implements OnInit, Business {
       .state as typeof this.navigationState;
   }
 
+  
   ngOnInit() {
+    // Register initialization
+    this.checkRegisterState();
+    
+    
     if (this.navigationState?.order) {
       this.loadOrder(this.navigationState.order);
     }
     if (this.navigationState?.cart) {
       const cart = this.navigationState.cart;
-
       this.cartItems = [...cart.cartItems];
       this.total = cart.total;
       this.displayedDiscount = cart.discount;
       this.tax = cart.tax;
       this.subtotal = cart.subtotal;
     }
+    this.metadataService.fetchMetaData();
     this.getProducts();
     this.loadCategory();
-
   }
+
+  // New Register Methods
+  checkRegisterState() {
+    const registerState = localStorage.getItem('registerState');
+    if (registerState) {
+      this.isRegisterOpened = JSON.parse(registerState);
+      this.showOpenRegisterModal = !this.isRegisterOpened;
+    }
+  }
+
+  confirmOpeningRegister(): void {
+    if (this.openingAmount !== null && this.openingAmount >= 0) {
+      this.isRegisterOpened = true;
+      this.showOpenRegisterModal = false;
+      localStorage.setItem('registerState', 'true');
+      localStorage.setItem('openingAmount', this.openingAmount.toString());
+     
+    }
+  }
+
+ confirmClosingRegister(): void {
+  if (this.closingAmount !== null) {
+    this.closingTotal = this.calculateClosingTotal();
+    this.isRegisterOpened = false;
+    this.showCloseRegisterModal = false;
+    localStorage.setItem('registerState', 'false');
+    // Add API call here if needed
+  }
+}
+
+// Add this new calculation method
+private calculateClosingTotal(): number {
+  const openingAmount = Number(localStorage.getItem('openingAmount')) || 0;
+  const salesTotal = this.total; // Using your existing cart total
+  this.expectedBalance = openingAmount + salesTotal;
+  return this.closingAmount! - this.expectedBalance;
+}
+
+
 
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
@@ -142,7 +197,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     const option = this.stateOptions.find((opt) => opt.value === value);
     return option ? option.label : '';
   }
-  addToCart(product: (typeof this.products)[0], chosenVariant?: VariantDTO) {
+  addToCart(product: ProductData, chosenVariant?: VariantDTO) {
  
   
     if (!this.cartItems) this.cartItems = [];
@@ -155,23 +210,23 @@ export class PosCheckoutPageComponent implements OnInit, Business {
         this.cartItems.push(existingItem);
       }
   
-      let existingVariant = existingItem.selectedVariants.find(v => v.id === chosenVariant.id);
+      let existingVariant = existingItem?.selectedVariants.find(v => v.id === chosenVariant.id);
   
       if (existingVariant) {
         existingVariant.selectedQuantity = (existingVariant.selectedQuantity || 0) + 1;
       } else {
-        existingItem.selectedVariants.push({ ...chosenVariant, selectedQuantity: 1 });
+        existingItem?.selectedVariants.push({ ...chosenVariant, selectedQuantity: 1 });
       }
   
-      // existingItem.cartPriceTotal = existingItem.selectedVariants.reduce((acc, v) => acc + (v.price * v.selectedQuantity), 0);
+
     } else {
       if (existingItem) {
         existingItem.count += 1;
-        // existingItem.cartPriceTotal = (parseInt(existingItem.cartPriceTotal) + parseInt(product.effectivePrice)).toString();
+        existingItem.cartPriceTotal = (existingItem.count * parseInt(existingItem.sellingPrice || '0')).toString();
       } else {
         product.count = 1;
+        product.cartPriceTotal = product.sellingPrice || '0'
         this.cartItems.push({ ...product, selectedVariants: [] });
-        // product.cartPriceTotal = product.effectivePrice.toString();
       }
     }
   
@@ -182,20 +237,24 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     console.log(this.cartItems);
   }
 
-  deleteCartItem(index: number) {
-    this.resetProductDiscount(index);
-
-    // this.cartItems[index].cartPriceTotal = this.cartItems[index].effectivePrice;
-    this.cartItems[index].count = 0;
-    this.cartItems.splice(index, 1);
+  deleteCartItem(index: number, isVariant?: boolean, variantIndex?: number) {
+    if (isVariant) {
+      this.cartItems[index].selectedVariants.splice(variantIndex!, 1);
+  
+    } else {
+      this.resetProductDiscount(index);
+      this.cartItems[index].count = 0;
+      this.cartItems.splice(index, 1);
+    }
+  
     this.calculateTotals();
-
     this.calculateDiscount();
-
+  
     if (this.cartItems.length === 0) {
       this.resetDiscount();
     }
   }
+  
   resetProductDiscount(index: number) {
     this.cartItems[index].discountedPrice = 0.0;
     this.productDiscountValue = 0;
@@ -208,6 +267,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
   openItemUpdateModal(index: any) {
     this.itemUpdateModal = true;
+    console.log(index)
     this.productThatNeedsUpdate = index;
   }
 
@@ -215,8 +275,8 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     console.log(this.cartItems);
   
     this.subtotal = this.cartItems.reduce((acc, item) => {
-      // let itemTotal = (item.count ?? 0) * parseFloat(item.effectivePrice || "0");
-      let itemTotal =0
+      let itemTotal = (item.count ?? 0) * parseFloat(item.sellingPrice || "0");
+      // let itemTotal =0
       let variantsTotal = (item.selectedVariants ?? []).reduce(
         (variantAcc, variant) =>
           variantAcc + (variant.selectedQuantity ?? 0) * (Number(variant.price) || 0),
@@ -239,9 +299,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   
 
   handleCountChange(newCount: number, index: number, variant?: any) {
-    // this.cartItems[index].cartPriceTotal = (
-    //   parseInt(this.cartItems[index].effectivePrice) * newCount
-    // ).toString();
+    this.cartItems[index].cartPriceTotal = (
+      parseInt(this.cartItems[index]?.sellingPrice || '0') * newCount
+    ).toString();
     this.calculateDiscount();
     // this.calculateProductDiscount();
     this.calculateTotals();
@@ -326,22 +386,51 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   }
 
   saveCurrentCartItem() {
-    const pausedCart = {
-      name: this.orderName,
-      cart: this.cartItems.map((item) => ({ ...item })),
-      cartDiscount: this.discount,
-      state: 'Open',
-      total: this.total,
-      discountValue: this.discountValue,
-      value: this.value,
-      timestamp: new Date().toLocaleString(),
-      id: this.randomTokenService.getRandomToken(),
-    };
-    const savedItems = localStorage.getItem('savedItems');
-    this.orders = savedItems ? JSON.parse(savedItems) : [];
+    const now = new Date().toISOString();
 
-    this.orders.push(pausedCart);
-    localStorage.setItem('savedItems', JSON.stringify(this.orders));
+    const pausedCart = {
+      // name: this.orderName,
+      // cart: this.cartItems.map((item) => ({ ...item })),
+      // cartDiscount: this.discount,
+      // state: 'Open',
+      // total: this.total,
+      // discountValue: this.discountValue,
+      // value: this.value,
+      // timestamp: new Date().toLocaleString(),
+      // id: this.randomTokenService.getRandomToken(),
+
+          id: 0,
+          orderNumber: this.randomTokenService.getRandomToken(),
+          orderStatus: "UNPAID",
+          updatedAt: now,
+          totalAmount: this.total,
+          quantity: 0,
+          customerId: 1,
+          branchId: 1,
+          cashier: 67,
+          orderItems: this.cartItems.map(item => ({
+            id: 0,
+            totalPrice: item.count * parseInt(item.sellingPrice || '0'),
+            quantity: item.count,
+            productId: item.id,
+            productVariantId: 0,
+            orderId: 0
+          }))
+    };
+    // const savedItems = localStorage.getItem('savedItems');
+    // this.orders = savedItems ? JSON.parse(savedItems) : [];
+
+    // this.orders.push(pausedCart);
+    // localStorage.setItem('savedItems', JSON.stringify(this.orders));
+    console.log(pausedCart)
+
+    this.checkoutService.saveOrder(pausedCart).subscribe( 
+      {
+        next: (data) => {
+console.log(data)
+        }
+      }
+    )
 
     this.cartItems = [];
     this.orderName = '';
@@ -359,9 +448,43 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     });
   }
 
-  processPayment(modes: string[]) {
+  processPayment( modes: string[]) {
     if (this.cartItems.length === 0) return;
-
+    const now = new Date().toISOString();
+    const transactionDetails = {
+      id: 0,
+      totalAmount: 0,
+      transactionDate: now,
+      status: "PENDING",
+      order: [
+        {
+          id: 0,
+          orderNumber: this.randomTokenService.getRandomToken(),
+          orderStatus: "UNPAID",
+          updatedAt: now,
+          totalAmount: this.total,
+          quantity: 0,
+          customerId: 0,
+          branchId: 1,
+          cashier: 67,
+          orderItems: this.cartItems.map(item => ({
+            id: 0,
+            totalPrice: item.count * parseInt(item.sellingPrice || '0'),
+            quantity: item.count,
+            productId: item.id,
+            productVariantId: 0,
+            orderId: 0
+          }))
+        }
+      ],
+      paymentBreakdown: modes.map(mode => ({
+        id: 0,
+        amountPaid: 0,
+        transactionRefernce: "",
+        paymentId: 0
+      }))
+    };
+    console.log(transactionDetails)
     const cart = {
       cartItems: [...this.cartItems],
       total: this.total,
@@ -394,7 +517,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   }
 
   closeRegister() {
-    this.registerService.triggerCloseRegister();
+    this.showCloseRegisterModal = true;
   }
   toggleNotesModal() {
     this.isNotesModalOpen = !this.isNotesModalOpen;
@@ -406,7 +529,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     this.isAllPaymentsModalOpen = !this.isAllPaymentsModalOpen;
   }
   getProducts() {
-    this.posService.getProducts().subscribe(async (data) => {
+    this.metadataService.enrichedProduct$.subscribe(async (data) => {
       if (data) {
         const p = data.sort((a: any, b: any) => {
           const dateA = new Date(
@@ -442,7 +565,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     });
   }
   loadCategory() {
-    this.posService.getCategories().subscribe(async (data) => {
+    this.metadataService.category$.subscribe(async (data) => {
       if (data) {
         //@ts-expect-error
         this.categories = data.map((category) => category.name);

@@ -13,7 +13,9 @@ export class CartItemCardComponent implements Business {
   @Input() item: ProductData = {} as any;
   @Input() showDelete: boolean = true;
   @Input() cart?: boolean = true
-  @Output() delete = new EventEmitter<void>();
+  @Output() delete = new EventEmitter<{ isVariant: boolean, index: number }>();
+  @Output() calculateTotal = new EventEmitter<void>();
+
   @Output() countChange = new EventEmitter<number>();
   @Output() updateItem = new EventEmitter<number>();
   imageUrl!: string;
@@ -54,8 +56,8 @@ export class CartItemCardComponent implements Business {
     this.countChange.emit(this.item.count);
   }
 
-  onDelete() {
-    this.delete.emit();
+  onDelete(isVariant: boolean = false, index: number = 0) {
+    this.delete.emit({ isVariant: isVariant, index: index });
   }
   onCountChange(newCount: number) {
     this.countChange.emit(newCount);
@@ -86,6 +88,7 @@ export class CartItemCardComponent implements Business {
       if (variant.selectedQuantity === 0) {
         item.selectedVariants = item.selectedVariants.filter((v: any) => v !== variant);
       }
+      this.calculateTotal.emit()
     }
   
     if (!variant || item.selectedVariants.length === 0) {

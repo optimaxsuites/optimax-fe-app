@@ -6,6 +6,7 @@ import html2canvas from 'html2canvas';
 import {
   BranchDTO,
   DiscountDTO,
+  MeasurementUnit,
   ProductCategoryDTO,
   ProductData,
   ProductJSONFormat,
@@ -55,7 +56,8 @@ export class ProductsComponent implements OnInit {
   viewProduct: boolean = false;
   addProduct: boolean = false;
   activeItem: any = {};
-  isLoading: boolean = true
+  isLoading = this.metadataService.loading$;
+
   /**
    * This stored the ids of any items in the table selected by their checkbox
    *
@@ -82,7 +84,7 @@ export class ProductsComponent implements OnInit {
   tableSection: boolean = true;
   searchTerm: string = '';
   selectedCategories: number[] = [];
-  selectedBranch: number = 5;
+  selectedBranch: number = 1;
 
   categories: any[] = [];
   isImportDialogOpen = false;
@@ -125,6 +127,9 @@ export class ProductsComponent implements OnInit {
     { label: 'Codabar', value: 'Codabar' },
     { label: 'CODE39', value: 'CODE39' },
   ] as const;
+
+    measurementUnits = Object.keys(MeasurementUnit)
+  
   /**
    * Populated from import spreadsheets
    *
@@ -154,7 +159,7 @@ rowsPerPage = 15;
     private posService: PosServiceService,
     private http: HttpClient,
     private imageCacheService: ImageCacheService,
-    private metadataService: MetadataService
+    public metadataService: MetadataService
   ) {}
 
   ngOnInit(): void {
@@ -163,15 +168,37 @@ rowsPerPage = 15;
     this.getDiscountTypes();
     this.metadataService.fetchMetaData();
     this.metadataService.branches$.subscribe(data => (this.branches = data));
+    if (this.selectedBranch) {
+      this.metadataService.setSelectedBranch(this.selectedBranch);
+    }
+    this.setRowsPerPageBasedOnScreenSize();
+
+  window.addEventListener('resize', this.setRowsPerPageBasedOnScreenSize.bind(this));
 
   }
+  ngOnDestroy() {
+    window.removeEventListener('resize', this.setRowsPerPageBasedOnScreenSize.bind(this));
+  }
+  
+  setRowsPerPageBasedOnScreenSize() {
+    const height = window.innerWidth;
+  
+    if (height > 1000) {
+      this.rowsPerPage = 21;
+    } else if (height > 800) {
+      this.rowsPerPage = 15;
+    } else if (height > 600) {
+      this.rowsPerPage = 10;
+    } else {
+      this.rowsPerPage = 5;
+    }
+  }
+  
+  
 
   toggleView() {
     this.tableSections = !this.tableSections;
   }
-
-
-
 
 get paginatedProducts() {
   const startIndex = this.currentPage * this.rowsPerPage;
@@ -213,10 +240,8 @@ onPageChange(event: any) {
         });
         this.products = [...this.originalProducts];
         console.log(this.products)
-        this.isLoading = false;
       } else {
         console.log('error loading data');
-        this.isLoading = false;
       }
     });
 
@@ -510,7 +535,7 @@ onPageChange(event: any) {
         id: 0 || (Math.random().toString(36).substr(2, 50) as any),
         createdDate: new Date().toISOString(),
         createdBy: '',
-        currentPurchasePrice: (
+        costPrice: (
           basePrice -
           (basePrice * discount.value) / 100 -
           (basePrice * taxPercentage) / 100
@@ -529,8 +554,9 @@ onPageChange(event: any) {
         description: description,
         // branch: branch,
         code: code.toString(),
-        originalPurchasePrice: basePrice.toString(),
+        // originalPurchasePrice: basePrice.toString(),
         tax: taxPercentage,
+        // quantity: 0,
         discount: discount,
         // initialQuantity: quantity,
         sku: sku.toString(),

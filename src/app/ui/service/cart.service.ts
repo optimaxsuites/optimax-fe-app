@@ -1,9 +1,11 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { RandomTokenService } from '../../shared/service/random-token/random-token.service';
+// import { RandomTokenService } from '../../shared/service/random-token/random-token.service';
 import { PosServiceService } from './pos-service.service';
-import { NavigationLinksService } from '../../shared/service/navigation-links/navigation-links.service';
+// import { NavigationLinksService } from '../../shared/service/navigation-links/navigation-links.service';
 import { Router } from '@angular/router';
+import { NavigationLinksService } from '../sharedComponent/service/navigation-links/navigation-links.service';
+import { RandomTokenService } from '../sharedComponent/service/random-token/random-token.service';
 
 @Injectable({
   providedIn: 'root',

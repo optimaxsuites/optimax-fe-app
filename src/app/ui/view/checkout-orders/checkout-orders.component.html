@@ -29,21 +29,21 @@
               <tbody>
                 <tr *ngFor="let order of orders" (click)="orderDetails(order)" style="cursor: pointer">
                   <!-- {{ order?.timestamp | date: 'shortTime' }} -->
-                  <td>{{ order?.timestamp }}</td>
+                  <td>{{ order?.createdDate }}</td>
                   <td>
                     <p
                       [ngClass]="{ 'text-green-700': order.state === 'Paid' }"
                       class="mb-0 capitalize font-bold text-yellow-600"
                     >
-                      {{ order.state }}
+                      {{ order.status}}
                     </p>
                   </td>
-                  <td class="capitalize">{{ order.name }}</td>
-                  <td>₦{{ order.total }}</td>
+                  <td class="capitalize">{{ order.id }}</td>
+                  <td>₦{{ order.amount }}</td>
                   <td>
                     <div class="flex gap-3 text-[18px]">
                       <i
-                        *ngIf="order.state == 'Open'"
+                        *ngIf="order.status == 'UNPAID'"
                         class="fa-solid fa-cart-shopping hover:bg-customGreen/30 p-2 rounded-md"
                         (click)="reOpenCart(order)"
                       ></i>

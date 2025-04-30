@@ -63,7 +63,7 @@ export class EditProductComponent {
     quantity: 1,
     sku: '',
     id: 0,
-    color: ['Other'],
+    color: '',
     size: 'Regular',
   };
   newVariant = structuredClone(this.defaultVariant);

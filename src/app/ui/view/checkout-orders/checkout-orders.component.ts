@@ -3,6 +3,7 @@ import { Order, ProductJSONFormat } from '../../models/interface';
 import { Router } from '@angular/router';
 import { RegisterService } from '../../service/register.service';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
+import { MetadataService } from '../../service/metadata.service';
 
 @Component({
   selector: 'app-checkout-orders',
@@ -18,21 +19,30 @@ export class CheckoutOrdersComponent {
   constructor(
     private router: Router,
     public navigationLink: NavigationLinksService,
-    private registerService: RegisterService
+    private registerService: RegisterService,
+    private metadataService: MetadataService
   ) {}
 
   ngOnInit() {
+    this.metadataService.fetchMetaData()
     this.loadSavedItems();
     this.sortOrdersByTimestamp();
     this.userInfoRegData = JSON.parse(sessionStorage['userRegData']);
     this.userRegData = this.userInfoRegData;
+    console.log(this.orders)
+
   }
 
   loadSavedItems() {
-    const savedItems = localStorage.getItem('savedItems');
-    if (savedItems) {
-      this.orders = JSON.parse(savedItems);
-    }
+    this.metadataService.orders$.subscribe(data => {
+      this.orders = [...data]
+      console.log(this.orders)
+
+    })
+    // const savedItems = localStorage.getItem('savedItems');
+    // if (savedItems) {
+    //   this.orders = JSON.parse(savedItems);
+    // }
   }
 
   sortOrdersByTimestamp() {

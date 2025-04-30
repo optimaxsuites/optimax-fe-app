@@ -35,7 +35,7 @@ export class PosServiceService {
     private imageCacheService: ImageCacheService,
     private router: Router
   ) {}
-
+  private productsCache: { [branchId: number]: Observable<any[]> } = {};
   products = [
     {
       id: this.randomTokenService.getRandomToken(),
@@ -529,64 +529,32 @@ export class PosServiceService {
     return this.products$;
   }
 
+  getProductsByBranchId(id: number) {
+
+      return this.products$ = this.http
+        .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/getBy/${id}`)
+        .pipe(
+          catchError(this.handleError),
+          shareReplay(this.shareReplayOptions)
+        ); 
+  }
+
   getFilteredProductsWithDetails(currentBranchId: number) {
-    return this.getProducts().pipe(
+    return this.getProductsByBranchId(currentBranchId).pipe(
       switchMap((products: any[]) => {
-        // console.log('📦 All products from API:', products);
-  
-        const filteredProducts = currentBranchId === 1
-          ? products
-          : products.filter(product =>
-              product.productBranch?.some((pb: { branchId: number }) => pb.branchId === currentBranchId)
-            );
-  
-        // console.log('🔍 Current Branch ID:', currentBranchId);
-        // console.log('🧹 Filtered Products:', filteredProducts);
-  
-        const enrichedProducts$ = filteredProducts.map(product => {
-          const relevantProductBranches = currentBranchId === 1
-            ? product.productBranch
-            : product.productBranch.filter((pb: { branchId: number }) => pb.branchId === currentBranchId);
-  
-          const productBranchDetails$ = relevantProductBranches.map((pb: { dataId: number }) => {
-            const dataId = pb.dataId;
-            // console.log('📥 Fetching for dataId:', dataId);
-  
-            return forkJoin({
-              productBranch: of(pb),
-              branchData: this.getBranchDataById(dataId),
-              variants: this.getVariantsByBranchDataId(dataId)
-            }).pipe(
-              tap(res => {
-                // console.log(`✅ Got data for dataId ${dataId}:`, res);
-              }),
-              catchError(error => {
-                // console.error(`❌ Error loading branchData/variants for dataId ${dataId}:`, error);
-                return of({
-                  productBranch: pb,
-                  branchData: null,
-                  variants: []
-                });
-              })
-            );
-          });
-          const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${product.productImages[0].imgNo}`
+        console.log(products)
+        const enrichedProducts$ = products.map(product => {
+          const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${product?.productImages[0]?.imgNo}`
           
-          return forkJoin([forkJoin(productBranchDetails$), this.imageCacheService.getImage(remoteImageUrl)]).pipe(
-            map(([branchDetails, imageUrl$]) => {
-              
-            
-            // const imageUrl$ = remoteImageUrl ? this.imageCacheService.getImage(remoteImageUrl) : of(null);
-            
-              // console.log('🔗 Branch Details for product:', product.name, branchDetails);
+          return forkJoin([this.imageCacheService.getImage(remoteImageUrl)]).pipe(
+            map(([imageUrl$]) => {            
               return {
                 ...product,
-                branchDetails,
                 imageUrl$
               };
             }),
             catchError(error => {
-              // console.error(`❌ Error enriching product ${product.name}:`, error);
+              console.error(`❌ Error enriching product ${product.name}:`, error);
               return of({ ...product, branchDetails: [] });
             })
           );
@@ -595,7 +563,7 @@ export class PosServiceService {
         return forkJoin(enrichedProducts$);
       }),
       catchError(err => {
-        // console.error('❌ Error fetching product details:', err);
+        console.error('❌ Error fetching product details:', err);
         return of([]);
       })
     );
@@ -603,7 +571,33 @@ export class PosServiceService {
   
   
   
+  deleteProductAndRelated(activeItem: any): Observable<any> {
+    const variantIds = activeItem.variants
+    .map((variant: any) => variant.id) 
+    .filter((id: any) => id);
 
+  
+    const deleteVariants$ = variantIds.length
+      ? forkJoin(
+          variantIds.map((id: any) =>
+            this.http.delete<any>(`${this.getBaseApiUrl()}/x/api/v2/pos/productVariants/${id}`)
+          )
+        ).pipe(tap(() => console.log('Deleted variants:', variantIds)))
+      : of(null);
+    const deleteProduct$ = this.http.delete<any>(`${this.getBaseApiUrl()}/x/api/v2/pos/products/${activeItem.id}`).pipe(
+      tap(() => console.log('Deleted product with ID:', activeItem.id))
+    );
+  
+    return deleteVariants$.pipe(
+      switchMap(() => deleteProduct$)
+    );
+  }
+  
+  deleteBranchVariantData(id: number){
+    return this.http
+    .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/productVariants/${id}`)
+    .pipe(catchError(this.handleError));
+  }
   updateProduct(data: any) {
     return this.http
       .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/products/product', data)

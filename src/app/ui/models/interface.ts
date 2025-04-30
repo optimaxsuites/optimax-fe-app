@@ -7,21 +7,22 @@ export interface ProductJSONFormat {
   description: string;
   sku: string;
   weight: number | null;
-  originalPurchasePrice: string;
-  currentPurchasePrice: string;
+  costPrice: string;
+  sellingPrice?: string;
+  quantity?: number;
 
   // Date String Format: "2025-02-02T22:56:31.935Z"
   createdDate: string;
 
   createdBy: string | null;
   partNumber: string;
-  tax: number;
+  tax: number | any;
   productBranch?: any;
   variant?: string | null;
   discount?: DiscountDTO;
   productCategory: ProductCategoryDTO;
   productImages: ProductImageDTO[];
-  variants?: VariantDTO[];
+  variants: VariantDTO[];
   isBundle? : boolean;
   bundleItems?: any;
   measurementUnit?: any;
@@ -34,6 +35,8 @@ export interface ProductJSONFormat {
  * There's some extra data we use with each product that wouldn't fit directly with the fetched data interface, `ProductJSONFormat`
  */
 export interface ProductData extends ProductJSONFormat {
+purchasePrice: any;
+branch: any;
 branchDetails?: any;
 imageUrl$?: Observable<unknown>|Subscribable<unknown>|Promise<unknown>;
 showMenu: any;
@@ -96,8 +99,8 @@ export interface ProductImageDTO {
 export interface VariantDTO {
   id: number;
   name: string;
-  price?: number;
-  quantity?: number;
+  price: number;
+  quantity: number;
   sku: string;
   variantType?: number;
   selectedQuantity?: number;
@@ -106,93 +109,7 @@ export interface VariantDTO {
   /**
    * Might revert this type to a regular `string`
    */
-  color: (
-    | 'Red'
-    | 'Blue'
-    | 'Green'
-    | 'Yellow'
-    | 'Black'
-    | 'White'
-    | 'Silver'
-    | 'Gold'
-    | 'Purple'
-    | 'Orange'
-    | 'Brown'
-    | 'Pink'
-    | 'Gray'
-    | 'Beige'
-    | 'Cyan'
-    | 'Magenta'
-    | 'Lime'
-    | 'Teal'
-    | 'Navy'
-    | 'Maroon'
-    | 'Olive'
-    | 'Indigo'
-    | 'Violet'
-    | 'Rose'
-    | 'Coral'
-    | 'Turquoise'
-    | 'Lavender'
-    | 'Peach'
-    | 'Khaki'
-    | 'Tan'
-    | 'Cream'
-    | 'Ivory'
-    | 'Fuchsia'
-    | 'Aqua'
-    | 'Mint'
-    | 'Salmon'
-    | 'Crimson'
-    | 'Sienna'
-    | 'Mauve'
-    | 'Burgundy'
-    | 'Cerulean'
-    | 'Azure'
-    | 'Periwinkle'
-    | 'Mulberry'
-    | 'Lilac'
-    | 'Chartreuse'
-    | 'Seafoam'
-    | 'Forest'
-    | 'Rust'
-    | 'Bronze'
-    | 'Copper'
-    | 'Silver'
-    | 'Gold'
-    | 'Platinum'
-    | 'Rainbow'
-    | 'Multicolor'
-    | 'Clear'
-    | 'Transparent'
-    | 'Opaque'
-    | 'Matte'
-    | 'Glossy'
-    | 'Metallic'
-    | 'Neon'
-    | 'Pastel'
-    | 'Dark'
-    | 'Light'
-    | 'Bright'
-    | 'Pale'
-    | 'Dusty'
-    | 'Vintage'
-    | 'Classic'
-    | 'Modern'
-    | 'Contemporary'
-    | 'Trendy'
-    | 'Minimalist'
-    | 'Bold'
-    | 'Subtle'
-    | 'Neutral'
-    | 'Warm'
-    | 'Cool'
-    | 'Earthy'
-    | 'Natural'
-    | 'Artificial'
-    | 'Custom'
-    | 'Other'
-  )[];
+  color: string
   size: 'XXS' | 'XS' | 'Small' | 'Medium' | 'Regular' | 'Large' | 'XL' | 'XXL';
 }
 
@@ -202,6 +119,9 @@ export interface DiscountOption {
 }
 
 export interface Order {
+status: any;
+amount: any;
+createdDate: any;
   timestamp: any;
   name: string;
   cartDiscount: number;

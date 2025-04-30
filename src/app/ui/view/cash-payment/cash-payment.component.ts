@@ -6,6 +6,7 @@ import { NavigationLinksService } from '../../sharedComponent/service/navigation
 import { RandomTokenService } from '../../sharedComponent/service/random-token/random-token.service';
 import { NavigationLinks } from '../../models/enums';
 import JsBarcode from 'jsbarcode';
+import { CustomerService } from '../../service/customer.service';
 
 @Component({
   selector: 'app-cash-payment',
@@ -14,6 +15,7 @@ import JsBarcode from 'jsbarcode';
   providers: [MessageService],
 })
 export class CashPaymentComponent implements OnInit {
+
   navigationState: NavigationState;
   cart: Cart = {} as any;
   priceOptions: any[] = [];
@@ -34,11 +36,21 @@ export class CashPaymentComponent implements OnInit {
   ];
   customerSearch: string = "";  
   customerFound: CustomerDTO | null = null
+  customerNotFound: boolean = false;
+  showCreateCustomerModal: boolean = false;
+  newCustomer: CustomerDTO = {
+    id: 0,
+    name: '',
+    phone: '',
+    email: '',
+    loyaltyPoints: 0
+  };
   
   constructor(
     private router: Router,
     public navigationLink: NavigationLinksService,
     private messageService: MessageService,
+    private customerService: CustomerService,
     private randomTokenService: RandomTokenService
   ) {
     const navigation = this.router.getCurrentNavigation();
@@ -70,12 +82,17 @@ export class CashPaymentComponent implements OnInit {
   get balanceLeft() {
     return Math.max(0, this.cart.total - this.totalPaid);
   }
+  getLoyaltyMax(mode: string): number | null {
+    return mode === 'loyalty' && this.customerFound?.loyaltyPoints != null
+      ? this.customerFound.loyaltyPoints
+      : null;
+  }
   
   getPriceOptions(method: string) {
     return [
       { label: 'Balance', value: this.balanceLeft },
-      { label: '100', value: 100 },
-      { label: '200', value: 200 },
+      { label: '10000', value: 10000 },
+      { label: '20000', value: 20000 },
     ];
   }
   getPaymentLabel(mode: string): string {
@@ -91,16 +108,66 @@ export class CashPaymentComponent implements OnInit {
     const customer = this.customers.find(c => c.phone === this.customerSearch);
     if (customer) {
       this.customerFound = customer;
+      this.customerNotFound = false
       // this.paymentValues['loyalty'] = customer.loyaltyPoints || null;
     } else {
       this.customerFound = null;
+      this.customerNotFound = true
+
       console.log("Customer not found!");
     }
+
   }
-  // selectPrice(method: string, value: number) {
-  //   this.priceValues[method] = value;
-  //   this.paymentValues[method] = value;
-  // }
+
+
+  openCreateCustomerModal(): void {
+    this.showCreateCustomerModal = true;
+    // Pre-fill phone number from search
+    this.newCustomer = {
+      id: 0,
+      name: '',
+      phone: this.customerSearch,
+      email: '',
+      loyaltyPoints: 0
+    };
+  }
+  
+  
+  createCustomer(): void {
+    if (!this.newCustomer.name || !this.newCustomer.phone) {
+      // this.toastr.warning('Name and phone number are required');
+      return;
+    }
+  
+    this.customerService.createCustomer(this.newCustomer).subscribe(
+      (customer) => {
+        this.customerFound = customer;
+        this.customerNotFound = false;
+        this.showCreateCustomerModal = false;
+        // this.toastr.success('Customer created successfully');
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Customer created successfully',
+          key: 'tl',
+          life: 3000,
+        });
+
+      },
+      (error) => {
+        // this.toastr.error('Failed to create customer');
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Error',
+          detail: 'Failed to create customer',
+          key: 'tl',
+          life: 3000,
+        });
+        console.error('Customer creation error:', error);
+      }
+    );
+  }
+  
   
 
   initializePriceOptions() {
@@ -111,7 +178,7 @@ export class CashPaymentComponent implements OnInit {
     ];
   }
   processCashPayment() {
-    if (this.priceValue < this.cart?.total) {
+    if (this.totalPaid < this.cart?.total) {
       console.log(this.priceValue);
       this.messageService.add({
         severity: 'warn',
@@ -208,3 +275,6 @@ export class CashPaymentComponent implements OnInit {
     });
   }
 }
+
+
+

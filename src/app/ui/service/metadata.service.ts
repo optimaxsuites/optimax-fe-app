@@ -1,11 +1,17 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { PosServiceService } from './pos-service.service';
+import { CheckoutService } from './checkout.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MetadataService {
+
+  private selectedBranchIdSubject = new BehaviorSubject<number | null>(null);
+  selectedBranchId$ = this.selectedBranchIdSubject.asObservable();
+  private loadingSubject = new BehaviorSubject<boolean>(false);
+  loading$ = this.loadingSubject.asObservable();
 
   private discountSubject = new BehaviorSubject<any[]>([]);
   private discountTypesSubject = new BehaviorSubject<any[]>([]);
@@ -15,7 +21,7 @@ export class MetadataService {
   private branchSubject = new BehaviorSubject<any[]>([]);
   private productSubject =  new BehaviorSubject<any[]>([]);
   private enrichedProductSubject =  new BehaviorSubject<any[]>([])
-
+  private orderSubject = new BehaviorSubject<any[]>([])
 
   discount$ = this.discountSubject.asObservable();
   discountTypes$ = this.discountTypesSubject.asObservable();
@@ -23,13 +29,18 @@ export class MetadataService {
   category$ = this.categorySubject.asObservable();
   supplier$ = this.supplierSubject.asObservable();
   branches$ = this.branchSubject.asObservable();
+  orders$ = this.orderSubject.asObservable();
+
   products$ = this.productSubject.asObservable();
   enrichedProduct$ = this.enrichedProductSubject.asObservable()
 
 
 
   
-  constructor(private posService: PosServiceService) { }
+  constructor(private posService: PosServiceService, private checkoutService: CheckoutService) { }
+  setSelectedBranch(id: number) {
+    this.selectedBranchIdSubject.next(id);
+  }
 
   fetchMetaData() {
     this.posService.getDiscount().subscribe(data => this.discountSubject.next(data));
@@ -39,9 +50,21 @@ export class MetadataService {
     this.posService.getTax().subscribe((data) => this.taxSubject.next(data));
     this.posService.getBranches().subscribe((data) => this.branchSubject.next(data));
     this.posService.getProducts().subscribe((data) => this.productSubject.next(data));
-    this.posService.getFilteredProductsWithDetails(1).subscribe(data => 
-      this.enrichedProductSubject.next(data)
-    );
+    this.posService.getProducts().subscribe((data) => this.productSubject.next(data));
+    this.checkoutService.getOrders().subscribe((data) => this.orderSubject.next(data));
+    this.selectedBranchId$.subscribe((branchId) => {
+      if (branchId != null) {
+        this.loadingSubject.next(true); 
+  
+        this.posService.getFilteredProductsWithDetails(branchId).subscribe(data => {
+          this.enrichedProductSubject.next(data);
+          this.loadingSubject.next(false); // end loading
+        }, error => {
+          this.loadingSubject.next(false); // end loading on error too
+          console.error('❌ Failed to load products for branch:', error);
+        });
+      }
+    });
 
   }
 }

@@ -115,7 +115,7 @@
     <span class="text-nowrap text-ellipsis whitespace-nowrap overflow-hidden w-64">
       {{ item.name }}
     </span>
-    <!-- <span>{{ item.effectivePrice | currency : "₦" }}</span> -->
+    <span>{{ item.sellingPrice | currency : "₦" }}</span>
   </div>
   <img
   [src]="imageUrl"
@@ -166,12 +166,12 @@
 
     <div class="flex gap-4 items-center ">
       <span class="font-semibold">
-        ₦{{ (variant.selectedQuantity ?? 0) * (variant.price || 0) }}
+        {{ (variant.selectedQuantity ?? 0) * (variant.price || 0) | currency : "₦"}}
       </span>
       
 
     </div>
-    <i class="fa-solid fa-xmark z-10 bg-white bg-opacity-30 p-2 items-center shadow rounded-full cursor-pointer absolute mr-2 left-0 top-0 cancel" *ngIf="cart"></i>
+    <i class="fa-solid fa-xmark z-10 bg-white bg-opacity-30 p-2 items-center shadow rounded-full cursor-pointer absolute mr-2 left-0 top-0 cancel" *ngIf="cart" (click)="onDelete(true, $index)"></i>
 
 
 

@@ -1,3 +1,30 @@
+<!-- Open Register Modal -->
+<app-modal *ngIf="showOpenRegisterModal" (close)="showOpenRegisterModal = false" header="Open Register">
+  <div class="modal-body">
+    <label>Opening Amount</label>
+    <input type="number" [(ngModel)]="openingAmount" min="0" placeholder="Enter starting cash amount">
+    
+    <div class="modal-actions">
+      <button (click)="showOpenRegisterModal = false">Cancel</button>
+      <button (click)="confirmOpeningRegister()" [disabled]="!openingAmount">Confirm</button>
+    </div>
+  </div>
+</app-modal>
+
+<!-- Close Register Modal -->
+<app-modal *ngIf="showCloseRegisterModal" (close)="showCloseRegisterModal = false" header="Close Register">
+  <div class="modal-body">
+    <p>Current Register: {{ openingAmount | currency }}</p>
+    <label>Closing Amount</label>
+    <input type="number" [(ngModel)]="closingAmount" placeholder="Enter closing cash amount">
+    
+    <div class="modal-actions">
+      <button (click)="showCloseRegisterModal = false">Cancel</button>
+      <button (click)="confirmClosingRegister()" [disabled]="!closingAmount">Confirm Close</button>
+    </div>
+  </div>
+</app-modal>
+
 <div
   class="h-screen flex flex-col"
   [class.pharmacy-layout]="businessType == 'Pharmacy'"
@@ -14,6 +41,15 @@
     
 
     <div class="product-view">
+      <div class="gap-3 w-full flex justify-between items-center">
+        <div></div>
+        <div class="w-1/2">
+          <app-searchbar
+            [listToSearch]="categorizedProducts"
+            [(listToUpdate)]="shownProducts"
+          ></app-searchbar>
+        </div>
+      </div>
       <div class="left-sidebar w-auto flex gap-3 flex-wrap overflow-x-auto">
         <button 
           (click)="filterItems($event)" 
@@ -56,14 +92,7 @@
           }
         </select>
         }
-        <div class="gap-3 w-full flex justify-between items-center">
-          <div class="w-1/2">
-            <app-searchbar
-              [listToSearch]="categorizedProducts"
-              [(listToUpdate)]="shownProducts"
-            ></app-searchbar>
-          </div>
-        </div>
+      
 
         <div
           class="gap-3 flex-1 overflow-y-auto"
@@ -135,7 +164,7 @@
             <app-cart-item-card
               *ngFor="let item of cartItems; let i = index"
               [item]="item"
-              (delete)="deleteCartItem(i)"
+              (delete)="deleteCartItem(i, $event.isVariant, $event.index)"
               (updateItem)="openItemUpdateModal($event)"
               (countChange)="handleCountChange($event, i)"
               class="cursor-pointer"
@@ -171,12 +200,7 @@
               <span>Total</span> <span>₦{{ total | number : "1.2-2" }}</span>
             </div>
           </div>
-          <!-- <div class="payment flex justify-between items-center mt-3" >
-                    <p>Cash</p>
-                    <p>Gift card</p>
-                    <p>Card</p>
-                    <p>E-wallet</p>
-                </div> -->
+       
 
           <div class="paymentBtn flex">
             <button class="rounded-l-xl" (click)="toggleAllPaymentsModal()">
@@ -186,14 +210,7 @@
               [(isModalOpen)]="isAllPaymentsModalOpen"
             ></app-all-payments-modal>
 
-            <!-- <button
-              class="rounded-r-xl"
-              (click)="processCashPayment()"
-              [class.half-brightness]="!cartItems.length"
-              [class.cursor-disabled]="!cartItems.length"
-            >
-              Cash
-            </button> -->
+        
           </div>
         </div>
       </div>
@@ -242,9 +259,10 @@
             <app-cart-item-card
               *ngFor="let item of cartItems; let i = index"
               [item]="item"
-              (delete)="deleteCartItem(i)"
+              (delete)="deleteCartItem(i, $event.isVariant, $event.index)"
               (updateItem)="openItemUpdateModal($event)"
               (countChange)="handleCountChange($event, i)"
+              (calculateTotal)="calculateTotals()"
               class="cursor-pointer"
             ></app-cart-item-card>
           </div>
@@ -256,12 +274,7 @@
         </div>
 
         <div class="flex flex-col">
-          <!-- <div class="flex justify-end items-center">
-                    <div class="flex items-center gap-3">
-                    <p>Promo code</p>
-                    <div class=" h-12 w-36 border-2"></div>
-                    </div>
-                </div> -->
+       
           <div class="w-full border-2 flex flex-col gap-3 rounded-xl py-3 px-6">
             <div class="flex justify-between items-center">
               <span>Subtotal</span>
@@ -278,12 +291,7 @@
               <span>Total</span> <span>{{ total | currency : "₦" }}</span>
             </div>
           </div>
-          <!-- <div class="payment flex justify-between items-center mt-3" >
-                    <p>Cash</p>
-                    <p>Gift card</p>
-                    <p>Card</p>
-                    <p>E-wallet</p>
-                </div> -->
+      
 
           <div class="paymentBtn flex">
             <button class="rounded-xl" (click)="toggleAllPaymentsModal()" [disabled]="!cartItems.length" [class.half-brightness]="!cartItems.length" [class.cursor-disabled]="!cartItems.length">
@@ -292,16 +300,9 @@
             <app-all-payments-modal
               [(isModalOpen)]="isAllPaymentsModalOpen"
               (selectedPayments)="processPayment($event)"
+              [cartItem] = "cartItems"
             ></app-all-payments-modal>
 
-            <!-- <button
-              class="rounded-r-xl"
-              (click)="processCashPayment()"
-              [class.half-brightness]="!cartItems.length"
-              [class.cursor-disabled]="!cartItems.length"
-            >
-              Cash
-            </button> -->
           </div>
         </div>
       </div>
@@ -311,136 +312,75 @@
 
   <!-- SECTION: Variants Modal -->
   <app-modal *ngIf="itemUpdateModal" (close)="itemUpdateModal = false">
-    <div class="w-[40vw] flex flex-col justify-between gap-5 py-10">
-      <p-tabView>
-        <!-- Unused Discount Panel -->
-        <!-- <p-tabPanel header="Discount" [headerStyleClass]="'custom-header'">
-        <div class="flex flex-col gap-5 mt-6 px-2">
-          <div class="flex justify-between items-end">
-            <div
-              class="border flex rounded-xl text-3xl justify-between items-center font-bold w-48"
-            >
-              <span
-                class="w-full cursor-pointer text-center p-3"
-                *ngFor="let opt of stateOptions"
-                [class.text-white]="opt.value === value"
-                [class.rounded-xl]="opt.value === value"
-                [class.bg-customBlue]="opt.value === value"
-                (click)="value = opt.value"
-                >{{ opt.label }}</span
+    <div class="w-full flex flex-col rounded-lg overflow-hidden ">
+      <!-- Modal Header -->
+      <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+        <h2 id="modal-title" class="text-2xl font-semibold text-gray-800">
+          Select a Variant
+        </h2>
+      </div>
+      
+      <!-- Modal Body -->
+      <div class="bg-white p-6">
+        <!-- <p-tabView> -->
+          <!-- <p-tabPanel header="" [headerStyleClass]="'custom-header'"> -->
+            <div class="py-4">
+              <div class="grid grid-cols-2 gap-4">
+                <button
+                type="button"
+                class="variant-item flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                (click)="addToCart(productDataFromClickedProduct)"
               >
-            </div>
-
-            <div class="flex items-center">
-              <input
-                type="text"
-                max="100"
-                placeholder="0"
-                class="discount-input"
-                [(ngModel)]="_productDiscountValue"
-              />
-              <span *ngIf="value == 'percentage'" class="text-5xl">%</span>
-              <span *ngIf="value == 'naira'">₦</span>
-            </div>
-          </div>
-
-          <div
-            class="border flex rounded-xl text-3xl divide-x-2 bg-customGreen/50 justify-between items-center font-bold w-full"
-          >
-            <span
-              class="w-full cursor-pointer text-center p-3"
-              *ngFor="let opt of discountOptions"
-              [class.text-white]="opt.value === productDiscountValue"
-              [class.rounded-xl]="opt.value === productDiscountValue"
-              [class.bg-customBlue]="opt.value === productDiscountValue"
-              (click)="productDiscountValue = opt.value"
-              >{{ opt.label }}{{ getLabelForValue(value) }}</span
-            >
-          </div>
-        </div>
-      </p-tabPanel> -->
-        <p-tabPanel header="Variants" [headerStyleClass]="'custom-header'">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <h2 id="modal-title" class="text-3xl font-semibold text-gray-800">
-              Select a Variant
-            </h2>
-          </div>
-
-          <!-- <p-table
-            [value]="chosenProductVariants"
-            styleClass="p-datatable-striped"
-          >
-            <ng-template pTemplate="header">
-              <tr>
-                <th pSortableColumn="name">
-                  Variant
-                  <p-sortIcon field="name"></p-sortIcon>
-                </th>
-                <th pSortableColumn="size">
-                  Size <p-sortIcon field="size"></p-sortIcon>
-                </th>
-                <th pSortableColumn="color">
-                  Color <p-sortIcon field="color"></p-sortIcon>
-                </th>
-                <th pSortableColumn="price">
-                  Price <p-sortIcon field="price"></p-sortIcon>
-                </th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-variant>
-              <tr>
-                <td>
+                <div class="flex flex-col items-start">
+                  <span class="font-medium text-gray-800">{{ productDataFromClickedProduct.name }}</span>
+                 
+                    <span class="text-sm text-gray-600 mt-1">Regular: {{ productDataFromClickedProduct.name }}</span>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+                @for (variant of chosenProductVariants; track $index) {
                   <button
                     type="button"
-                    class="variant-button"
+                    class="variant-item flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors"
                     (click)="addToCart(productDataFromClickedProduct, variant)"
                   >
-                    {{ variant.name }}
+                    <div class="flex flex-col items-start">
+                      <span class="font-medium text-gray-800">{{ variant.name }}</span>
+                      @if (variant.color) {
+                        <div class="flex items-center mt-1">
+                          <span class="w-4 h-4 rounded-full mr-2" [ngStyle]="{'background-color': variant.color}"></span>
+                          <span class="text-sm text-gray-600">{{ variant.color }}</span>
+                        </div>
+                      }
+                      @if (variant.size) {
+                        <span class="text-sm text-gray-600 mt-1">Size: {{ variant.size }}</span>
+                      }
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
                   </button>
-                </td>
-                <td>{{ variant.size }}</td>
-                <td>{{ variant.color }}</td>
-                <td>₦{{ variant.price }}</td>
-              </tr>
-            </ng-template>
-          </p-table> -->
-
-          <!-- Modal body: Row list of variant buttons -->
-          <!-- <div class="px-6 py-4">
-            <div class="flex flex-wrap gap-3">
-              @for (variant of chosenProductVariants; track $index) {
-              <button
-                type="button"
-                class="variant-button"
-                (click)="addToCart(productDataFromClickedProduct, variant.name)"
-              >
-                {{ variant.name }}
-              </button>
-
-              }
+                }
+              </div>
             </div>
-          </div> -->
-        </p-tabPanel>
-      </p-tabView>
-      <div></div>
-
-      <div class="modalBtn flex-end">
+          <!-- </p-tabPanel> -->
+        <!-- </p-tabView> -->
+      </div>
+      
+      <!-- Modal Footer -->
+      <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end">
         <button
-          class="btn create-invoice-btn"
+          class="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors font-medium"
           (click)="itemUpdateModal = false"
         >
           Cancel
         </button>
-
-        <!-- <button
-        class="btn create-invoice-btn"
-        (click)="calculateProductDiscount()"
-      >
-        Save
-      </button> -->
       </div>
     </div>
   </app-modal>
+
   <!--!SECTION  -->
 
   <app-modal
