@@ -1,5 +1,4 @@
-/* sales-dashboard.component.css */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 
 :host {
   font-family: 'Inter', sans-serif;
@@ -11,7 +10,6 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   font-family: 'Inter', sans-serif;
 }
-
 th {
   @apply bg-transparent
 }
