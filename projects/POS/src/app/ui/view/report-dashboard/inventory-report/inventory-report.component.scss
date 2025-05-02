@@ -1,7 +1,4 @@
-@use "../shared-chart-styles.scss" as chart-styles;
 
-.inventory-report {
-  @include chart-styles.reportStyles;
+th {
+  @apply bg-transparent
 }
-
-@include chart-styles.sharedChartStyles;

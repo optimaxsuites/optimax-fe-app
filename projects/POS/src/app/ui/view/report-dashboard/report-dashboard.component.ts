@@ -69,8 +69,9 @@ export class ReportDashboardComponent implements OnInit {
       component: SalesReportComponent,
     },
     { name: 'Product Performance', component: ExpensesReportComponent },
+    { name: 'Cashier Reports', component: InventoryReportComponent },
+
     { name: 'Discounts Report', component: FinanceReportComponent },
-    { name: 'Staff Reports', component: InventoryReportComponent },
     { name: 'Branch Report', component: FinanceReportComponent },
     { name: 'Stock Reports', component: InventoryReportComponent },
 
