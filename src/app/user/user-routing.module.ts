@@ -30,7 +30,6 @@ const routes: Routes = [
       { path: 'laundry', component: LaundryServiceComponent },
       { path: 'room sevice', component: RoomServiceComponent },
       { path: 'Housekeeping Record', component: HouseKeepingComponent },
-      { path: 'rooms', component: HotelRoomsComponent },
       // { path: 'gym', component: GymComponent },
       { path: 'bar', component: BarServiceComponent },
     ],
