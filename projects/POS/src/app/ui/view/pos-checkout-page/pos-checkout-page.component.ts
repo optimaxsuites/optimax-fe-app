@@ -11,6 +11,7 @@ import { Business, Cart, ProductData, VariantDTO } from '../../models/interface'
 import { IndustryDataService } from '../../service/industry-data.service';
 import { MetadataService } from '../../service/metadata.service';
 import { CheckoutService } from '../../service/checkout.service';
+import { MessageService } from 'primeng/api';
 // import { AppResizeDirective } from '../../service/app-resize.directive';
 
 @Component({
@@ -79,6 +80,8 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     private randomTokenService: RandomTokenService,
      public metadataService: MetadataService,
     private registerService: RegisterService,
+        private messageService: MessageService,
+
     private checkoutService: CheckoutService,
     private industryDataService: IndustryDataService
   ) {
@@ -387,48 +390,60 @@ private calculateClosingTotal(): number {
   }
 
   saveCurrentCartItem() {
+    console.log(this.cartItems)
     const now = new Date().toISOString();
 
     const pausedCart = {
-      // name: this.orderName,
-      // cart: this.cartItems.map((item) => ({ ...item })),
-      // cartDiscount: this.discount,
-      // state: 'Open',
-      // total: this.total,
-      // discountValue: this.discountValue,
-      // value: this.value,
-      // timestamp: new Date().toLocaleString(),
-      // id: this.randomTokenService.getRandomToken(),
-
           id: 0,
           orderNumber: this.randomTokenService.getRandomToken(),
           orderStatus: "UNPAID",
           updatedAt: now,
+          createdDate: now,
           totalAmount: this.total,
+          amountTendered: 0,
           quantity: 0,
           customerId: 1,
           branchId: 1,
           cashier: 67,
-          orderItems: this.cartItems.map(item => ({
-            id: 0,
-            totalPrice: item.count * parseInt(item.sellingPrice || '0'),
-            quantity: item.count,
-            productId: item.id,
-            productVariantId: 0,
-            orderId: 0
-          }))
+          orderItem: this.cartItems.map(item => {
+            let orderItems = [{
+              totalPrice: item.count * parseInt(item.sellingPrice || '0'),
+              quantity: item.count,
+              productId: item.id,
+            }];
+          
+            if (item.selectedVariants && item.selectedVariants.length > 0) {
+              item.selectedVariants.forEach(variant => {
+                const selectedQuantity = variant.selectedQuantity ?? 0;  
+                const price = variant.price || 0
+                if (selectedQuantity > 0) {
+                  orderItems.push({
+                    totalPrice: selectedQuantity * price,
+                    quantity: selectedQuantity,
+                    productId: item.id,
+                    productVariantId: variant.id,
+                  }as { totalPrice: number; quantity: number; productId: number; productVariantId: number | null });
+                }
+              });
+            }
+          
+            return orderItems;
+          }).flat()  
     };
-    // const savedItems = localStorage.getItem('savedItems');
-    // this.orders = savedItems ? JSON.parse(savedItems) : [];
 
-    // this.orders.push(pausedCart);
-    // localStorage.setItem('savedItems', JSON.stringify(this.orders));
     console.log(pausedCart)
 
     this.checkoutService.saveOrder(pausedCart).subscribe( 
       {
         next: (data) => {
 console.log(data)
+this.messageService.add({
+  severity: 'success',
+  summary: 'Success',
+  detail: 'Saved',
+  key: 'tl',
+  life: 3000,
+});
         }
       }
     )
@@ -451,41 +466,7 @@ console.log(data)
 
   processPayment( modes: string[]) {
     if (this.cartItems.length === 0) return;
-    const now = new Date().toISOString();
-    const transactionDetails = {
-      id: 0,
-      totalAmount: 0,
-      transactionDate: now,
-      status: "PENDING",
-      order: [
-        {
-          id: 0,
-          orderNumber: this.randomTokenService.getRandomToken(),
-          orderStatus: "UNPAID",
-          updatedAt: now,
-          totalAmount: this.total,
-          quantity: 0,
-          customerId: 0,
-          branchId: 1,
-          cashier: 67,
-          orderItems: this.cartItems.map(item => ({
-            id: 0,
-            totalPrice: item.count * parseInt(item.sellingPrice || '0'),
-            quantity: item.count,
-            productId: item.id,
-            productVariantId: 0,
-            orderId: 0
-          }))
-        }
-      ],
-      paymentBreakdown: modes.map(mode => ({
-        id: 0,
-        amountPaid: 0,
-        transactionRefernce: "",
-        paymentId: 0
-      }))
-    };
-    console.log(transactionDetails)
+    
     const cart = {
       cartItems: [...this.cartItems],
       total: this.total,

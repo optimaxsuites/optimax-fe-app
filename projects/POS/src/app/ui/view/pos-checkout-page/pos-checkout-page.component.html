@@ -250,7 +250,7 @@
           [(isDeliveryModalOpen)]="isDeliveryModalOpen"
         ></app-delivery-modal>
         }
-        <p (click)="saveModal = true">Save</p>
+        <p (click)="saveCurrentCartItem()">Save</p>
       </nav>
 
       <div class="cart-view w-full">
@@ -471,3 +471,6 @@
     </div>
   </app-modal>
 </div>
+
+
+<p-toast position="top-right" key="tl" />
