@@ -17,12 +17,12 @@ import { ProductsComponent } from './ui/view/products/products.component';
 import { ReportDashboardComponent } from './ui/view/report-dashboard/report-dashboard.component';
 
 import { RefundComponent } from './ui/view/refund/refund/refund.component';
-import { SaleComponent } from './ui/view/sales/sale/sale.component';
 import { IngredientComponent } from './ui/view/ingredient/ingredient/ingredient.component';
 import { AddIngredientComponent } from './ui/view/ingredient/add-ingredient/add-ingredient.component';
 import { HotelCheckoutComponent } from './ui/view/hotel-checkout/hotel-checkout.component';
 import { ViewIngredientsComponent } from './ui/view/ingredient/view-ingredients/view-ingredients.component';
 import { EditIngredientsComponent } from './ui/view/ingredient/edit-ingredients/edit-ingredients.component';
+import { SalesComponent } from './ui/view/sales/sales.component';
 
 const routes: Routes = [
   {
@@ -41,7 +41,7 @@ const routes: Routes = [
   },
   {
     path: 'admin/pos/sale/:uuid',
-    component: SaleComponent,
+    component: SalesComponent,
   },
   {
     path: 'admin/pos/report/:uuid',
