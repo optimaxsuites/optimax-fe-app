@@ -8,6 +8,7 @@ import { HouseKeepingComponent } from '../ui/view/house-keeping/house-keeping.co
 import { BarServiceComponent } from '../ui/view/bar-service/bar-service.component';
 import { LaundryServiceComponent } from '../ui/view/laundry-service/laundry-service.component';
 import { HotelRoomsComponent } from '../ui/view/hotel-rooms/hotel-rooms.component';
+import { HotelAdmintableComponent } from '../ui/view/hotel-admintable/hotel-admintable.component';
 
 const routes: Routes = [
   {
@@ -32,6 +33,7 @@ const routes: Routes = [
       { path: 'Housekeeping Record', component: HouseKeepingComponent },
       // { path: 'gym', component: GymComponent },
       { path: 'bar', component: BarServiceComponent },
+      { path: 'admin', component: HotelAdmintableComponent },
     ],
   },
 ];
