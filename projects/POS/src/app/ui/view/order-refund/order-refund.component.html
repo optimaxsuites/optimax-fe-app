@@ -23,126 +23,178 @@
   header="Refund request form"
   class="modal-style"
 >
-<form
-  class="bg-white p-6 rounded-lg shadow-md flex flex-col gap-4 w-full"
-  #refundForm="ngForm"
-  (ngSubmit)="sendRequest()"
->
-<div>
-  <label for="receiptId">Receipt Id:</label>
+  <form
+    class="bg-white p-6 rounded-lg shadow-md flex flex-col gap-4 w-full"
+    #refundForm="ngForm"
+    (ngSubmit)="sendRequest()"
+  >
+    <div>
+      <label for="receiptId">Receipt Id:</label>
 
-  <input
-    type="text"
-    name="receiptId"
-    id="receiptId"
-    [(ngModel)]="refundData.orderId"
-    (ngModelChange)="validateReceipt()"
-    placeholder="RTY1542"
-    required
-    class="w-full px-3 py-2 border rounded-md"
-  />
-</div>
+      <input
+        type="text"
+        name="receiptId"
+        id="receiptId"
+        [(ngModel)]="refundData.orderId"
+        (ngModelChange)="validateReceipt()"
+        placeholder="RTY1542"
+        required
+        class="w-full px-3 py-2 border rounded-md"
+      />
+    </div>
 
-<label *ngIf="orderItems.length">
-  <div>Purchase Date:</div>
-  <p class="editInput">{{refundData.timestamp}}</p>
-</label>
+    <label *ngIf="orderItems.length">
+      <div>Purchase Date:</div>
+      <p class="editInput">{{ refundData.timestamp }}</p>
+    </label>
 
-<label>
-  <div>Full Name:</div>
+    <label>
+      <div>Full Name:</div>
 
-  <input
-    type="text"
-    name="customerName"
-    id="customerName"
-    [(ngModel)]="refundData.customerName"
-    placeholder="Akintola Akinyemi"
-    required
-    class="w-full px-3 py-2 border rounded-md"
-  />
-</label>
+      <input
+        type="text"
+        name="customerName"
+        id="customerName"
+        [(ngModel)]="refundData.customerName"
+        placeholder="Akintola Akinyemi"
+        required
+        class="w-full px-3 py-2 border rounded-md"
+      />
+    </label>
 
-<label>
-  <div>Email:</div>
+    <label>
+      <div>Email:</div>
 
-  <input
-    type="email"
-    name="email"
-    id="email"
-    [(ngModel)]="refundData.emailAddress"
-    placeholder="akintola.akinyemi@example.com"
-    required
-    class="w-full px-3 py-2 border rounded-md mb-4"
-  />
-</label>
+      <input
+        type="email"
+        name="email"
+        id="email"
+        [(ngModel)]="refundData.emailAddress"
+        placeholder="akintola.akinyemi@example.com"
+        required
+        class="w-full px-3 py-2 border rounded-md mb-4"
+      />
+    </label>
 
-
-@if (orderItems.length > 0) {
-  <div class="flex flex-col gap-2">
-    <label for="orderItems" class="font-semibold">Purchased Items:</label>
-    <div class="flex flex-col flex-wrap gap-2">
-      <div *ngFor="let item of orderItems" class="items-center flex">
-        <input
-          type="checkbox"
-          id="item-{{ item.id }}"
-          name="orderItems"
-          value="{{ item.id }}"
-        />
-        <label for="item-{{ item.id }}" class="ml-2 cursor-pointer">{{ item.name }}</label>
+    @if (orderItems.length > 0) {
+    <div class="flex flex-col gap-2">
+      <label for="orderItems" class="font-semibold">Purchased Items:</label>
+      <div class="flex flex-col flex-wrap gap-2">
+        <div *ngFor="let item of orderItems" class="items-center flex">
+          <input
+            type="checkbox"
+            id="item-{{ item.id }}"
+            name="orderItems"
+            value="{{ item.id }}"
+          />
+          <label for="item-{{ item.id }}" class="ml-2 cursor-pointer">{{
+            item.name
+          }}</label>
+        </div>
       </div>
     </div>
-  </div>
-}
+    }
 
-  <p class="font-semibold">Refund Method</p>
-  <ng-select 
-    [items]="refundMethods" 
-    bindLabel="label" 
-    bindValue="value" 
-    [(ngModel)]="selectedRefundMethod"
-    name="refundMethod"
-    (ngModelChange)="updateFormFields($event)"
-    placeholder="Select Refund Method"
-    #refundMethod="ngModel"
-    required>
-  </ng-select>
-  <p *ngIf="refundMethod.invalid && refundMethod.touched" class="text-red-500">Please select a refund method.</p>
+    <p class="font-semibold">Reason For Refund</p>
+    <ng-select
+      [items]="refundReasons"
+      bindLabel="label"
+      bindValue="value"
+      placeholder="Select Refund Reason"
+      required
+    ></ng-select>
 
-  <!-- Bank Transfer Fields -->
-  <div *ngIf="selectedRefundMethod === 'bank'">
-    <input type="text" placeholder="Bank Name" [(ngModel)]="refundDetails.bankName" name="bankName" required />
-    <input type="text" placeholder="Account Number" [(ngModel)]="refundDetails.accountNumber" name="accountNumber" required />
-    <input type="text" placeholder="Account Holder" [(ngModel)]="refundDetails.accountHolder" name="accountHolder" required />
-  </div>
+    <p class="font-semibold">Refund Method</p>
+    <ng-select
+      [items]="refundMethods"
+      bindLabel="label"
+      bindValue="value"
+      [(ngModel)]="selectedRefundMethod"
+      name="refundMethod"
+      (ngModelChange)="updateFormFields($event)"
+      placeholder="Select Refund Method"
+      #refundMethod="ngModel"
+      required
+    >
+    </ng-select>
+    <p
+      *ngIf="refundMethod.invalid && refundMethod.touched"
+      class="text-red-500"
+    >
+      Please select a refund method.
+    </p>
 
-  <!-- Royalty Top-Up -->
-  <div *ngIf="selectedRefundMethod === 'royalty'">
-    <input type="text" placeholder="Customer Loyalty ID" [(ngModel)]="refundDetails.loyaltyId" name="loyaltyId" required />
-  </div>
+    <!-- Bank Transfer Fields -->
+    <div *ngIf="selectedRefundMethod === 'bank'">
+      <input
+        type="text"
+        placeholder="Bank Name"
+        [(ngModel)]="refundDetails.bankName"
+        name="bankName"
+        required
+      />
+      <input
+        type="text"
+        placeholder="Account Number"
+        [(ngModel)]="refundDetails.accountNumber"
+        name="accountNumber"
+        required
+      />
+      <input
+        type="text"
+        placeholder="Account Holder"
+        [(ngModel)]="refundDetails.accountHolder"
+        name="accountHolder"
+        required
+      />
+    </div>
 
-  <!-- Exchange -->
-  <div *ngIf="selectedRefundMethod === 'exchange'">
-    <input type="text" placeholder="New Product" [(ngModel)]="refundDetails.newProduct" name="newProduct" required />
-    <input type="number" placeholder="Price Difference" [(ngModel)]="refundDetails.priceDifference" name="priceDifference" required />
-  </div>
+    <!-- Royalty Top-Up -->
+    <div *ngIf="selectedRefundMethod === 'royalty'">
+      <input
+        type="text"
+        placeholder="Customer Loyalty ID"
+        [(ngModel)]="refundDetails.loyaltyId"
+        name="loyaltyId"
+        required
+      />
+    </div>
 
-  <textarea
-    name="additionalNotes"
-    id="additionalNotes"
-    rows="4"
-    placeholder="Additional Notes"
-    class="w-full px-3 py-2 border rounded-md mb-4"
-  ></textarea>
+    <!-- Exchange -->
+    <div *ngIf="selectedRefundMethod === 'exchange'">
+      <input
+        type="text"
+        placeholder="New Product"
+        [(ngModel)]="refundDetails.newProduct"
+        name="newProduct"
+        required
+      />
+      <input
+        type="number"
+        placeholder="Price Difference"
+        [(ngModel)]="refundDetails.priceDifference"
+        name="priceDifference"
+        required
+      />
+    </div>
 
-  <button
-    type="submit"
-    class="w-full bg-customGreen text-white py-2 rounded-md cursor-pointer"
-    [disabled]="refundForm.invalid"
-  >
-    Submit
-  </button>
-</form>
+    <textarea
+      name="additionalNotes"
+      id="additionalNotes"
+      rows="4"
+      placeholder="Additional Notes"
+      class="w-full px-3 py-2 border rounded-md mb-4"
+    ></textarea>
 
+    <button
+      type="submit"
+      class="w-full bg-customGreen text-white py-2 rounded-md cursor-pointer"
+      [disabled]="refundForm.invalid"
+      (click)="openRequestForm()"
+    >
+      Submit
+    </button>
+  </form>
 </app-modal>
 
 <p class="text-3xl font-bold" *ngIf="requests.length === 0">No request here</p>

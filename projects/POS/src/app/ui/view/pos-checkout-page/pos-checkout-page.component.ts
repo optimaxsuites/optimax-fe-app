@@ -30,7 +30,12 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   isRegisterOpened = false;
   closingTotal: number = 0;
   expectedBalance: number = 0;
-  
+  denominationCounts: { [key: number]: number } = {};
+  openingTotal: number = 0;
+  errorMessage: string | null = null;
+  canFinalize: boolean = false;
+
+  openRegisterModal: boolean = true;
 
   scannedSKU: string = '';
   register: string = 'open';
@@ -89,13 +94,17 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     this.navigationState = navigation?.extras
       .state as typeof this.navigationState;
   }
+  
 
   
   ngOnInit() {
     // Register initialization
     this.checkRegisterState();
     
-    
+    const storedOpeningAmount = localStorage.getItem('openingAmount');
+    this.openingAmount = storedOpeningAmount ? Number(storedOpeningAmount) : 0;
+
+
     if (this.navigationState?.order) {
       this.loadOrder(this.navigationState.order);
     }
@@ -121,26 +130,72 @@ export class PosCheckoutPageComponent implements OnInit, Business {
       this.showOpenRegisterModal = !this.isRegisterOpened;
     }
   }
+  calculateOpeningTotal(): void {
+    // Calculate the total from cash denominations
+    const denomTotal = Object.entries(this.denominationCounts).reduce(
+      (sum, [denom, count]) => sum + Number(denom) * (count || 0),
+      0
+    );
+  
+    this.openingTotal = denomTotal;
+  
+    // Validate totals
+    if (this.openingTotal !== this.openingAmount) {
+      this.errorMessage = 'Mismatch: The cash count total does not match the opening amount.';
+    } else {
+      this.errorMessage = null; // Clear the error if everything matches
+    }
+  
+    // Enable or disable the confirm button
+    this.canFinalize = !this.errorMessage;
+  }
+
+  
+
 
   confirmOpeningRegister(): void {
+    this.calculateOpeningTotal(); // Ensure the opening total is calculated
+    if (this.errorMessage) {
+      return; // Prevent confirmation if there is an error
+    }
+  
     if (this.openingAmount !== null && this.openingAmount >= 0) {
+      if (this.openingTotal !== this.openingAmount) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'The total from cash denominations must equal the opening amount.',
+          key: 'tl',
+          life: 3000,
+        });
+        return; // Prevent the register from opening
+      }
+  
       this.isRegisterOpened = true;
       this.showOpenRegisterModal = false;
       localStorage.setItem('registerState', 'true');
       localStorage.setItem('openingAmount', this.openingAmount.toString());
-     
     }
   }
 
- confirmClosingRegister(): void {
-  if (this.closingAmount !== null) {
-    this.closingTotal = this.calculateClosingTotal();
-    this.isRegisterOpened = false;
-    this.showCloseRegisterModal = false;
-    localStorage.setItem('registerState', 'false');
-    // Add API call here if needed
+  confirmClosingRegister(): void {
+    const openingAmount = Number(localStorage.getItem('openingAmount')) || 0; // Retrieve the opening amount
+  const salesTotal = this.total; // Use the existing cart total
+  this.expectedBalance = openingAmount + salesTotal; // Calculate the expected balance
+
+    if (this.closingAmount !== null) {
+      this.closingTotal = this.calculateClosingTotal();
+      this.isRegisterOpened = false;
+      this.showCloseRegisterModal = false;
+  
+      // Pass openingAmount to the closing modal
+      console.log('Opening Amount:', this.openingAmount);
+      console.log('Closing Amount:', this.closingAmount);
+  
+      localStorage.setItem('registerState', 'false');
+      // Add API call here if needed
+    }
   }
-}
 
 // Add this new calculation method
 private calculateClosingTotal(): number {

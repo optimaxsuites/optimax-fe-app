@@ -1,18 +1,58 @@
 <!-- Open Register Modal -->
-<app-modal *ngIf="showOpenRegisterModal" (close)="showOpenRegisterModal = false" header="Open Register">
+<app-modal *ngIf="showOpenRegisterModal" header="Open Register">
   <div class="modal-body">
-    <label>Opening Amount</label>
-    <input type="number" [(ngModel)]="openingAmount" min="0" placeholder="Enter starting cash amount">
-    
+
+    <div *ngIf="errorMessage" class="error-message">
+      <p class="text-red-500">{{ errorMessage }}</p>
+    </div>
+
+    <div class="input-group">
+      <label>Opening Amount</label>
+      <input 
+        type="number" 
+        [(ngModel)]="openingAmount" 
+        min="0" 
+        placeholder="Enter starting cash amount"
+        class="amount-input"
+      >
+    </div>
+
+    <div class="denomination-section">
+      <h3>Cash Denominations</h3>
+      <div class="denomination-grid">
+        <div class="denomination-row" *ngFor="let denom of [1000, 500, 200, 100, 50, 20, 10, 5]">
+          <label>₦{{denom}}:</label>
+          <input 
+            type="number" 
+            [(ngModel)]="denominationCounts[denom]"
+            min="0"
+            (change)="calculateOpeningTotal()"
+            class="denom-input"
+          >
+          <span class="denom-total">₦{{ (denominationCounts[denom] || 0) * denom | number }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="total-row">
+      <strong>Total:</strong>
+      <span>₦{{ openingTotal | number }}</span>
+    </div>
+
     <div class="modal-actions">
-      <button (click)="showOpenRegisterModal = false">Cancel</button>
-      <button (click)="confirmOpeningRegister()" [disabled]="!openingAmount">Confirm</button>
+      <button 
+        (click)="confirmOpeningRegister()" 
+        [disabled]="!openingAmount || openingAmount < 0"
+        class="confirm-btn"
+      >
+        Confirm Opening
+      </button>
     </div>
   </div>
 </app-modal>
 
 <!-- Close Register Modal -->
-<app-modal *ngIf="showCloseRegisterModal" (close)="showCloseRegisterModal = false" header="Close Register">
+<!-- <app-modal *ngIf="showCloseRegisterModal" (close)="showCloseRegisterModal = false" header="Close Register">
   <div class="modal-body">
     <p>Current Register: {{ openingAmount | currency }}</p>
     <label>Closing Amount</label>
@@ -23,7 +63,7 @@
       <button (click)="confirmClosingRegister()" [disabled]="!closingAmount">Confirm Close</button>
     </div>
   </div>
-</app-modal>
+</app-modal> -->
 
 <div
   class="h-screen flex flex-col"

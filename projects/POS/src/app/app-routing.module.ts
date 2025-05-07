@@ -76,9 +76,9 @@ const routes: Routes = [
     component: ViewIngredientsComponent,
   },
   {
-    path:'edit-ingredient',
-    component: EditIngredientsComponent
-  }
+    path: 'edit-ingredient',
+    component: EditIngredientsComponent,
+  },
   // {
   //   path: 'add-inventory',
   //   component: AddInventoryComponent,
