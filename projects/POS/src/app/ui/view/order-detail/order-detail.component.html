@@ -75,7 +75,7 @@
     </div>
 
     <div class="flex flex-col w-full justify-between h-full paymentBtn">
-      <div *ngIf="navigationState.order.cart.length > 0" class="h-[98%]">
+      <div *ngIf="navigationState.order.orderItems.length > 0" class="h-[98%]">
         <section class="selectClients">
           <div class="asd">
             <div class="top-products-container">
@@ -94,7 +94,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <ng-container *ngFor="let item of navigationState.order.cart" >
+                      <ng-container *ngFor="let item of navigationState.order.orderItems" >
                         <ng-container *ngIf="item.selectedVariants.length > 0; else noVariantTemplate" >
                              <ng-container *ngFor="let variant of item.selectedVariants; let i = index" class="flex flex-col">
                               <tr style=" text-align: center">

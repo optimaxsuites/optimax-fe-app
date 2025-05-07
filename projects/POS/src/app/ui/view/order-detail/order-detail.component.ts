@@ -27,6 +27,8 @@ export class OrderDetailComponent {
     } else {
       localStorage.setItem('viewedState', JSON.stringify(this.navigationState));
     }
+    console.log(this.navigationState)
+
   }
 
   reOpenCart() {

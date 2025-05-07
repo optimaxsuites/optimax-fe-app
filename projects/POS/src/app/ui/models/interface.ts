@@ -173,6 +173,7 @@ createdDate: any;
 }
 
 export interface Cart {
+orderItems: any;
   paymentModes: any;
   changeOffered: any;
   paymentMethod: any;

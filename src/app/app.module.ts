@@ -34,7 +34,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { MessagesModule } from 'primeng/messages';
 import { MessageModule } from 'primeng/message';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { RippleModule } from 'primeng/ripple';
 import { MatTabGroup, MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
@@ -504,7 +504,8 @@ import { AppInitService } from 'projects/POS/src/app/ui/service/app-init.service
     JwtHelperService,
     provideAnimationsAsync(),
     provideNativeDateAdapter(),
-    MessageService
+    MessageService,
+    ConfirmationService
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   bootstrap: [AppComponent],

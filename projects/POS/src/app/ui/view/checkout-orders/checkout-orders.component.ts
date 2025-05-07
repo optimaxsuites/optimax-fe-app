@@ -70,8 +70,8 @@ export class CheckoutOrdersComponent {
 
   orderDetails(order: Order) {
     this.selectedOrder = order;
-    const checkoutLink = this.navigationLink.getLink('orderDetails');
-    this.router.navigate([checkoutLink], { state: { order } });
+    const detailsLink = this.navigationLink.getLink('orderDetails');
+    this.router.navigate([detailsLink], { state: { order } });
   }
   closeRegister() {
     this.registerService.triggerCloseRegister();
