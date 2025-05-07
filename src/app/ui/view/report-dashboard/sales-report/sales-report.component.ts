@@ -1,190 +1,446 @@
-import { Component, OnInit } from '@angular/core';
-import {
-  ApexAxisChartSeries,
-  ApexChart,
-  ApexXAxis,
-  ApexTitleSubtitle,
-  ApexDataLabels,
-  ApexPlotOptions,
-  ApexStroke,
-  ApexFill,
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { 
+  ApexAxisChartSeries, 
+  ApexChart, 
+  ApexXAxis, 
+  ApexDataLabels, 
+  ApexStroke, 
+  ApexYAxis, 
+  ApexTitleSubtitle, 
+  ApexLegend,
   ApexTooltip,
+  ApexFill,
+  ApexPlotOptions,
+  ChartComponent
 } from 'ng-apexcharts';
-import { StyleColor } from '../../../models/enums';
+import { formatDate } from '@angular/common';
+import { SalesReportDTO } from '../../../models/interface';
+import { MetadataService } from '../../../service/metadata.service';
 
-export type ChartOptions = {
+export type BranchChartOptions = {
   series: ApexAxisChartSeries;
   chart: ApexChart;
   xaxis: ApexXAxis;
+  yaxis: ApexYAxis;
+  dataLabels: ApexDataLabels;
+  stroke: ApexStroke;
   title: ApexTitleSubtitle;
-  dataLabels?: ApexDataLabels;
-  plotOptions?: ApexPlotOptions;
-  stroke?: ApexStroke;
-  fill?: ApexFill;
-  tooltip?: ApexTooltip;
+  legend?: ApexLegend;
+  tooltip: ApexTooltip;
+  colors: string[];
 };
+
+export type ProductChartOptions = {
+  series: ApexAxisChartSeries;
+  chart: ApexChart;
+  xaxis: ApexXAxis;
+  yaxis: ApexYAxis;
+  dataLabels: ApexDataLabels;
+  title: ApexTitleSubtitle;
+  stroke: ApexStroke;
+  tooltip: ApexTooltip;
+  colors: string[];
+  plotOptions: ApexPlotOptions;
+  fill: ApexFill;
+};
+
+export type PaymentChartOptions = {
+  series: ApexAxisChartSeries;
+  chart: ApexChart;
+  labels: string[];
+  dataLabels: ApexDataLabels;
+  title: ApexTitleSubtitle;
+  legend: ApexLegend;
+  colors: string[];
+  tooltip: ApexTooltip;
+};
+
+export type TrendChartOptions = {
+  series: ApexAxisChartSeries;
+  chart: ApexChart;
+  xaxis: ApexXAxis;
+  yaxis: ApexYAxis;
+  dataLabels: ApexDataLabels;
+  stroke: ApexStroke;
+  title: ApexTitleSubtitle;
+  legend: ApexLegend;
+  tooltip: ApexTooltip;
+  colors: string[];
+};
+
 
 @Component({
   selector: 'app-sales-report',
   templateUrl: './sales-report.component.html',
   styleUrl: './sales-report.component.scss',
 })
-export class SalesReportComponent implements OnInit {
-  // Daily Sales Report charts
-  public chartOptions24H: ChartOptions;
-  public chartOptionsWeek: ChartOptions;
-  public chartOptionsMonth: ChartOptions;
+export class SalesReportComponent {
+  @ViewChild("branchChart")
+  branchChart!: ChartComponent;
+  @ViewChild("productChart") productChart!: ChartComponent;
+  @ViewChild("paymentChart") paymentChart!: ChartComponent;
+  @ViewChild("trendChart") trendChart!: ChartComponent;
 
-  // Long-Term Sales Report charts
-  public chartOptionsQuarter: ChartOptions;
-  public chartOptionsYear: ChartOptions;
-  public chartOptionsFiveYears: ChartOptions;
-  chartColor = [StyleColor.CELADON_GREEN];
+  public branchChartOptions!: BranchChartOptions;
+  public productChartOptions!: ProductChartOptions;
+  public paymentChartOptions!: PaymentChartOptions;
+  public trendChartOptions!: TrendChartOptions;
 
-  constructor() {
-    // Chart for last 24 hours (line chart with hourly data)
-    this.chartOptions24H = {
-      series: [
-        {
-          name: 'Sales',
-          data: [
-            10, 20, 15, 30, 25, 40, 35, 50, 45, 60, 55, 70, 65, 80, 75, 90, 85,
-            100, 95, 110, 105, 120, 115, 130,
-          ],
-        },
-      ],
+  salesReport!: SalesReportDTO;
+  loading = true;
+  dateRange = '30 days';
+  selectedTab = 'overview';
+  Math = Math
+  currentPage = 1;
+itemsPerPage = 10;
+
+  // Filter options
+  selectedBranch = 'all';
+  selectedPaymentMethod = 'all';
+  selectedCashier = 'all';
+  
+  constructor(private dataService: MetadataService) {
+    this.initChartOptions();
+  }
+
+  ngOnInit() {
+    this.dataService.getSalesReport().subscribe(data => {
+      this.salesReport = data;
+      this.loading = false;
+      this.updateCharts();
+    });
+  }
+
+  get paginatedBreakdown() {
+    const start = (this.currentPage - 1) * this.itemsPerPage;
+    const end = start + this.itemsPerPage;
+    return this.salesReport?.breakdown?.slice(start, end) || [];
+  }
+  
+  get totalPages() {
+    return Math.ceil((this.salesReport?.breakdown?.length || 0) / this.itemsPerPage);
+  }
+  
+  setPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+    }
+  }
+  
+
+  initChartOptions() {
+    // Branch sales chart (bar chart)
+    this.branchChartOptions  = {
+      series: [{
+        name: "Revenue",
+        data: []
+      }],
       chart: {
+        type: "bar",
         height: 350,
-        type: 'line',
+        toolbar: {
+          show: false
+        }
+      },
+      colors: ["#4F46E5"],
+      dataLabels: {
+        enabled: false
+      },
+      stroke: {
+        curve: "smooth",
+        width: 2
       },
       title: {
-        text: 'Last 24 Hours',
+        text: "Revenue by Branch",
+        align: "left",
+        style: {
+          fontSize: '16px',
+          fontWeight: '600',
+          color: '#374151'
+        }
       },
       xaxis: {
-        categories: Array.from({ length: 24 }, (_, i) => `${i}:00`),
+        categories: []
       },
+      yaxis: {
+        title: {
+          text: "Revenue ($)",
+          style: {
+            fontSize: '14px',
+            fontWeight: '500',
+            color: '#6B7280'
+          }
+        }
+      },
+      tooltip: {
+        y: {
+          formatter: function(val) {
+            return "$" + val.toLocaleString();
+          }
+        }
+      }
     };
 
-    // Chart for last week (bar chart with daily data)
-    this.chartOptionsWeek = {
-      series: [
-        {
-          name: 'Sales',
-          data: [150, 200, 180, 220, 210, 230, 250],
-        },
-      ],
+    // Top products chart (horizontal bar)
+    this.productChartOptions = {
+      series: [{
+        name: "Revenue",
+        data: []
+      }],
       chart: {
+        type: "bar",
         height: 350,
-        type: 'bar',
+        toolbar: {
+          show: false
+        }
       },
-      title: {
-        text: 'Last Week',
+      plotOptions: {
+        bar: {
+          horizontal: true,
+          barHeight: '70%',
+          distributed: false
+        }
+      },
+      colors: ["#10B981"],
+      dataLabels: {
+        enabled: true,
+        formatter: function(val) {
+          return "$" + val.toLocaleString();
+        },
+        textAnchor: 'start',
+        style: {
+          fontSize: '12px',
+          colors: ['#fff']
+        },
+        offsetX: 0
+      },
+      stroke: {
+        width: 0
       },
       xaxis: {
-        categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        categories: []
       },
+      yaxis: {
+        labels: {
+          show: true
+        }
+      },
+      title: {
+        text: "Top Selling Products",
+        align: "left",
+        style: {
+          fontSize: '16px',
+          fontWeight: '600',
+          color: '#374151'
+        }
+      },
+      tooltip: {
+        y: {
+          formatter: function(val) {
+            return "$" + val.toLocaleString();
+          }
+        }
+      },
+      fill: {
+        opacity: 1
+      }
     };
 
-    // Chart for last month (area chart with daily data)
-    this.chartOptionsMonth = {
-      series: [
-        {
-          name: 'Sales',
-          data: [
-            500, 600, 550, 700, 650, 800, 750, 900, 850, 1000, 950, 1100, 1050,
-            1200, 1150, 1300, 1250, 1400, 1350, 1500, 1450, 1600, 1550, 1700,
-            1650, 1800, 1750, 1900, 1850, 2000, 1950,
-          ],
-        },
-      ],
+    // Payment methods chart (pie chart)
+    this.paymentChartOptions = {
+      series: [],
       chart: {
-        height: 350,
-        type: 'area',
+        type: "donut",
+        height: 350
       },
+      labels: [],
+      dataLabels: {
+        enabled: true
+      },
+      colors: ["#3B82F6", "#F97316", "#14B8A6", "#EC4899", "#8B5CF6"],
       title: {
-        text: 'Last Month',
+        text: "Payment Method Distribution",
+        align: "left",
+        style: {
+          fontSize: '16px',
+          fontWeight: '600',
+          color: '#374151'
+        }
       },
-      xaxis: {
-        categories: Array.from({ length: 30 }, (_, i) => `Day ${i + 1}`),
+      legend: {
+        position: "bottom"
       },
+      tooltip: {
+        y: {
+          formatter: function(val) {
+            return "$" + val.toLocaleString();
+          }
+        }
+      }
     };
 
-    // Chart for last quarter (bar chart with monthly data for 3 months)
-    this.chartOptionsQuarter = {
+    // Sales trend chart (line chart)
+    this.trendChartOptions = {
       series: [
         {
-          name: 'Sales',
-          data: [3000, 3200, 3100],
+          name: "Revenue",
+          data: []
         },
+        {
+          name: "Discounts",
+          data: []
+        }
       ],
       chart: {
         height: 350,
-        type: 'bar',
+        type: "area",
+        toolbar: {
+          show: false
+        }
       },
+      dataLabels: {
+        enabled: false
+      },
+      stroke: {
+        curve: "smooth",
+        width: 2
+      },
+      colors: ["#6366F1", "#F59E0B"],
       title: {
-        text: 'Last Quarter',
+        text: "Sales Trend (Last 14 Days)",
+        align: "left",
+        style: {
+          fontSize: '16px',
+          fontWeight: '600',
+          color: '#374151'
+        }
       },
       xaxis: {
-        categories: ['Month 1', 'Month 2', 'Month 3'],
+        type: "category",
+        categories: []
       },
-    };
-
-    // Chart for last year (line chart with monthly data)
-    this.chartOptionsYear = {
-      series: [
-        {
-          name: 'Sales',
-          data: [
-            12000, 15000, 13000, 16000, 17000, 18000, 20000, 19000, 21000,
-            22000, 23000, 24000,
-          ],
-        },
-      ],
-      chart: {
-        height: 350,
-        type: 'line',
+      yaxis: {
+        title: {
+          text: "Amount ($)",
+          style: {
+            fontSize: '14px',
+            fontWeight: '500',
+            color: '#6B7280'
+          }
+        }
       },
-      title: {
-        text: 'Last Year',
+      legend: {
+        position: "top",
+        horizontalAlign: "right"
       },
-      xaxis: {
-        categories: [
-          'Jan',
-          'Feb',
-          'Mar',
-          'Apr',
-          'May',
-          'Jun',
-          'Jul',
-          'Aug',
-          'Sep',
-          'Oct',
-          'Nov',
-          'Dec',
-        ],
-      },
-    };
-
-    // Chart for last 5 years (area chart with yearly data)
-    this.chartOptionsFiveYears = {
-      series: [
-        {
-          name: 'Sales',
-          data: [50000, 52000, 54000, 56000, 58000],
-        },
-      ],
-      chart: {
-        height: 350,
-        type: 'area',
-      },
-      title: {
-        text: 'Last 5 Years',
-      },
-      xaxis: {
-        categories: ['2018', '2019', '2020', '2021', '2022'],
-      },
+      tooltip: {
+        y: {
+          formatter: function(val) {
+            return "$" + val.toLocaleString();
+          }
+        }
+      }
     };
   }
 
-  ngOnInit(): void {}
+  updateCharts() {
+    if (!this.salesReport) return;
+
+    // Update branch chart
+    this.branchChartOptions.series = [{
+      name: "Revenue",
+      data: this.salesReport.totalSalesPerBranch.map(b => b.totalRevenue)
+    }];
+    this.branchChartOptions.xaxis = {
+      categories: this.salesReport.totalSalesPerBranch.map(b => b.branch.name)
+    };
+
+    // Update product chart
+    this.productChartOptions.series = [{
+      name: "Revenue",
+      data: this.salesReport.topSellingProducts.map(p => p.revenue)
+    }];
+    this.productChartOptions.xaxis = {
+      categories: this.salesReport.topSellingProducts.map(p => p.product.name)
+    };
+
+    // Update payment method chart
+    // this.paymentChartOptions.series = this.salesReport.paymentMethodBreakdown.map(p => p.revenue);
+    this.paymentChartOptions.labels = this.salesReport.paymentMethodBreakdown.map(p => p.paymentMethod);
+
+    // Prepare data for trend chart
+    const groupedByDate = this.groupBreakdownByDate();
+    const dates = Array.from(groupedByDate.keys()).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    
+    this.trendChartOptions.series = [
+      {
+        name: "Revenue",
+        data: dates.map(date => {
+          const group = groupedByDate.get(date);
+          return group ? group.revenue : 0;
+        })
+      },
+      {
+        name: "Discounts",
+        data: dates.map(date => {
+          const group = groupedByDate.get(date);
+          return group ? group.discounts : 0;
+        })
+      }
+    ];
+    
+    this.trendChartOptions.xaxis = {
+      categories: dates.map(date => formatDate(new Date(date), 'MMM dd', 'en-US'))
+    };
+  }
+
+  groupBreakdownByDate() {
+    const groups = new Map<string, { revenue: number, discounts: number }>();
+    
+    this.salesReport.breakdown.forEach(item => {
+      const dateKey = item.date.toString().split('T')[0];
+      
+      if (!groups.has(dateKey)) {
+        groups.set(dateKey, { revenue: 0, discounts: 0 });
+      }
+      
+      const group = groups.get(dateKey);
+      if (group) {
+        group.revenue += item.revenue;
+        group.discounts += item.discounts;
+      }
+    });
+    
+    return groups;
+  }
+
+  setDateRange(range: string) {
+    this.dateRange = range;
+    // Implementation for changing date range would go here
+  }
+
+  setTab(tab: string) {
+    this.selectedTab = tab;
+  }
+
+  // Methods for filtering
+  applyFilters() {
+    // Implementation for applying filters would go here
+    console.log('Filters applied:', {
+      branch: this.selectedBranch,
+      paymentMethod: this.selectedPaymentMethod,
+      cashier: this.selectedCashier
+    });
+  }
+
+  resetFilters() {
+    this.selectedBranch = 'all';
+    this.selectedPaymentMethod = 'all';
+    this.selectedCashier = 'all';
+    this.applyFilters();
+  }
+
+  formatCurrency(amount: number): string {
+    return '₦' + amount.toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
 }

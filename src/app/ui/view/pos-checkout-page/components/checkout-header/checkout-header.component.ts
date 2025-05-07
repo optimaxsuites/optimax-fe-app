@@ -1,8 +1,9 @@
-import { Component, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter, Input } from '@angular/core';
 import { Router } from '@angular/router';
 import { NavigationLinksService } from '../../../../sharedComponent/service/navigation-links/navigation-links.service';
 import { PosCheckoutPageComponent } from '../../pos-checkout-page.component';
 import { ImageCacheService } from '../../../../service/image-cache.service';
+
 
 @Component({
   selector: 'app-checkout-header',
@@ -13,11 +14,17 @@ import { ImageCacheService } from '../../../../service/image-cache.service';
 export class CheckoutHeaderComponent {
   @Output() toggleSidebar = new EventEmitter<void>();
   @Output() closeRegisterEvent = new EventEmitter<void>();
+  @Input() closingAmount: number = 0; // Add this property
+  @Input() total: number = 0; // Already exists
+
 
   userInfoRegData: any[] = [];
   userRegData: any = {};
   logoUrl!: string;
   profileImgUrl!: string;
+  showCloseRegisterModal = false;
+  showOpeningRegisterModal = true; 
+  openingAmount: number = 0; 
 
   constructor(
     private router: Router,
@@ -27,13 +34,18 @@ export class CheckoutHeaderComponent {
   ) {}
 
   closeRegister() {
-    this.closeRegisterEvent.emit();
+    this.showCloseRegisterModal = true
   }
 
   onToggleSidebar() {
     this.toggleSidebar.emit();
   }
 
+  finalizeRegister(data: any): void {
+    console.log('Register finalized:', data);
+    this.showCloseRegisterModal = false;
+  }
+  
   ngOnInit() {
     this.imageCacheService
       .getImageAsync('/assets/Logo-green.png')

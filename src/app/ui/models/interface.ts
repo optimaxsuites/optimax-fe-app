@@ -23,23 +23,21 @@ export interface ProductJSONFormat {
   productCategory: ProductCategoryDTO;
   productImages: ProductImageDTO[];
   variants: VariantDTO[];
-  isBundle? : boolean;
+  isBundle?: boolean;
   bundleItems?: any;
   measurementUnit?: any;
   reorderThreshold?: number | null;
 }
 
-
-
 /**
  * There's some extra data we use with each product that wouldn't fit directly with the fetched data interface, `ProductJSONFormat`
  */
 export interface ProductData extends ProductJSONFormat {
-purchasePrice: any;
-branch: any;
-branchDetails?: any;
-imageUrl$?: Observable<unknown>|Subscribable<unknown>|Promise<unknown>;
-showMenu: any;
+  purchasePrice: any;
+  branch: any;
+  branchDetails?: any;
+  imageUrl$?: Observable<unknown> | Subscribable<unknown> | Promise<unknown>;
+  showMenu: any;
   // FIXME: REMOVE THIS "any" >~<
   supplier: any;
   // The total price of all instances of a single product in the cart
@@ -109,7 +107,7 @@ export interface VariantDTO {
   /**
    * Might revert this type to a regular `string`
    */
-  color: string
+  color: string;
   size: 'XXS' | 'XS' | 'Small' | 'Medium' | 'Regular' | 'Large' | 'XL' | 'XXL';
 }
 
@@ -117,11 +115,54 @@ export interface DiscountOption {
   label: string;
   value: number | string;
 }
+export interface SalesReportDTO {
+  totalRevenue: number;
+  totalTransactions: number;
+  averageOrderValue: number;
+  totalDiscounts: number;
+  totalSalesPerBranch: BranchSalesDTO[];
+  topSellingProducts: TopProductDTO[];
+  paymentMethodBreakdown: PaymentMethodSummaryDTO[];
+  breakdown: SalesReportBreakdownDTO[];
+}
+
+export interface BranchSalesDTO {
+  branch: BranchDTO;
+  totalRevenue: number;
+  totalTransactions: number;
+  averageOrderValue: number;
+}
+
+export interface TopProductDTO {
+  product: ProductDTO;
+  quantitySold: number;
+  revenue: number;
+}
+
+export interface PaymentMethodSummaryDTO {
+  paymentMethod: string;
+  revenue: number;
+  transactions: number;
+}
+
+export interface SalesReportBreakdownDTO {
+  date: Date;
+  branch: BranchDTO;
+  cashier?: any;
+  paymentMethod?: string;
+  transactions: number;
+  revenue: number;
+  discounts: number;
+}
 
 export interface Order {
-status: any;
-amount: any;
-createdDate: any;
+  updatedAt: any;
+  orderStatus: any;
+  orderNumber: any;
+  totalAmount: any;
+  status: any;
+  amount: any;
+  createdDate: any;
   timestamp: any;
   name: string;
   cartDiscount: number;
@@ -132,7 +173,7 @@ createdDate: any;
 }
 
 export interface Cart {
-paymentModes: any;
+  paymentModes: any;
   changeOffered: any;
   paymentMethod: any;
   state: any;
@@ -220,8 +261,8 @@ export type TaxDTO = {
   id?: number;
   name: string;
   rate: number;
-  order?: number
-}
+  order?: number;
+};
 
 /**
  * This is the interface that should be implemented by components that wish to change behaviour or UI based on the business type.
@@ -237,6 +278,8 @@ export interface Business {
 /////
 
 interface ProductDTO {
+  category: any;
+  price: number;
   id: number;
   name: string;
   code: string;
@@ -266,6 +309,7 @@ interface ProductBranchDTO {
 }
 
 export interface BranchDTO {
+  location: any;
   id: number;
   name: string;
   description: string;
@@ -313,10 +357,10 @@ export interface IngredientDTO {
   sku: string;
   measurementUnit?: (typeof MeasurementUnit)[keyof typeof MeasurementUnit];
   supplier?: SupplierDTO;
-  branches?: BranchDTO[]; 
+  branches?: BranchDTO[];
   purchasePrice: number;
-  currentStock: number; 
-  reorderThreshold?: number; 
+  currentStock: number;
+  reorderThreshold?: number;
   // stockMovements: StockMovementDTO[];
 }
 
@@ -325,7 +369,7 @@ export interface CustomerDTO {
   name: string;
   email?: string;
   phone: string;
-  loyaltyPoints?: number; 
+  loyaltyPoints?: number;
 }
 interface HotelProductDTO extends ProductDTO {}
 
@@ -369,38 +413,135 @@ interface HotelProductDTO extends ProductDTO {}
 //   }
 // }
 
+export const MeasurementUnit = {
+  UNIT: 'UNIT',
+  PIECE: 'Piece',
+  PACK: 'Pack',
+  BOX: 'Box',
+  DOZEN: 'Dozen',
+  KG: 'Kg',
+  GRAM: 'Gram',
+  POUND: 'Pound',
+  TON: 'Ton',
+  LITER: 'Liter',
+  MILLILITER: 'Milliliter',
+  CUBIC_METER: 'Cubic Meter',
+  METER: 'Meter',
+  CENTIMETER: 'Centimeter',
+  INCH: 'Inch',
+  FOOT: 'Foot',
+  YARD: 'Yard',
+  PER_MINUTE: 'Per Minute',
+  PER_HOUR: 'Per Hour',
+  PER_DAY: 'Per Day',
+  PER_WEEK: 'Per Week',
+  PER_MONTH: 'Per Month',
+  PER_YEAR: 'Per Year',
+  PER_SESSION: 'Per Session',
+  PER_VISIT: 'Per Visit',
+  PER_USAGE: 'Per Usage',
+  PER_NIGHT: 'Per Night',
+  PER_PERSON: 'Per Person',
+  PER_ROOM: 'Per Room',
+  PER_KM: 'Per Kilometer',
+  PER_MILE: 'Per Mile',
+  PER_TRIP: 'Per Trip',
+} as const;
 
-export const  MeasurementUnit = {
-  UNIT : "UNIT",
-  PIECE : "Piece",
-  PACK : "Pack",
-  BOX : "Box",
-  DOZEN : "Dozen",
-  KG : "Kg",
-  GRAM : "Gram",
-  POUND : "Pound",
-  TON : "Ton",
-  LITER : "Liter",
-  MILLILITER : "Milliliter",
-  CUBIC_METER : "Cubic Meter",
-  METER : "Meter",
-  CENTIMETER : "Centimeter",
-  INCH : "Inch",
-  FOOT : "Foot",
-  YARD : "Yard",
-  PER_MINUTE : "Per Minute",
-  PER_HOUR : "Per Hour",
-  PER_DAY : "Per Day",
-  PER_WEEK : "Per Week",
-  PER_MONTH : "Per Month",
-  PER_YEAR : "Per Year",
-  PER_SESSION : "Per Session", 
-  PER_VISIT : "Per Visit", 
-  PER_USAGE : "Per Usage",
-  PER_NIGHT : "Per Night",
-  PER_PERSON : "Per Person",
-  PER_ROOM : "Per Room",
-  PER_KM : "Per Kilometer",
-  PER_MILE : "Per Mile",
-  PER_TRIP : "Per Trip",
-}as const
+/**
+ * Represents the  status of a table order.
+ */
+export interface TableOrderStatusDTO {
+  /** Unique identifier (64-bit integer) */
+  id?: number;
+
+  /**
+   * Table number (string)
+   * @maxLength 255
+   * @minLength 0
+   */
+  tableNumber: string;
+
+  /**
+   * Status of the order
+   * @remarks Enum: 'PAID' | 'UNPAID'
+   */
+  status?: 'PAID' | 'UNPAID';
+
+  /** Identifier for water (32-bit integer) */
+  waterId?: number;
+
+  /** Identifier for chef (32-bit integer) */
+  chefId?: number;
+
+  /** Date and time when the order was placed (ISO 8601 format) */
+  orderedOn?: string;
+
+  /** Date and time when the order was processed (ISO 8601 format) */
+  processedOn?: string;
+
+  /** Date and time when the order became ready (ISO 8601 format) */
+  readyOn?: string;
+
+  /** Date and time when the order was completed (ISO 8601 format) */
+  completedOn?: string;
+
+  /**
+   * Additional note
+   * @maxLength 255
+   * @minLength 0
+   */
+  note?: string;
+
+  /** List of items associated with the order */
+  // orderItems?: OrderItemsFullDTO[];
+}
+
+/**
+ * Represents the full status of a table order.
+ */
+export interface TableOrderStatusFullDTO {
+  /** Unique identifier (64-bit integer) */
+  id?: number;
+
+  /**
+   * Table number (string)
+   * @maxLength 255
+   * @minLength 0
+   */
+  tableNumber: string;
+
+  /**
+   * Status of the order
+   * @remarks Enum: 'PAID' | 'UNPAID'
+   */
+  status?: 'PAID' | 'UNPAID';
+
+  /** Identifier for water (32-bit integer) */
+  waterId?: number;
+
+  /** Identifier for chef (32-bit integer) */
+  chefId?: number;
+
+  /** Date and time when the order was placed (ISO 8601 format) */
+  orderedOn?: string;
+
+  /** Date and time when the order was processed (ISO 8601 format) */
+  processedOn?: string;
+
+  /** Date and time when the order became ready (ISO 8601 format) */
+  readyOn?: string;
+
+  /** Date and time when the order was completed (ISO 8601 format) */
+  completedOn?: string;
+
+  /**
+   * Additional note
+   * @maxLength 255
+   * @minLength 0
+   */
+  note?: string;
+
+  /** List of items associated with the order */
+  // orderItems?: OrderItemsFullDTO[];
+}

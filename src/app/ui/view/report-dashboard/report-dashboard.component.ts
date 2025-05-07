@@ -16,9 +16,11 @@ import { SalesReportComponent } from './sales-report/sales-report.component';
 import { ExpensesReportComponent } from './expenses-report/expenses-report.component';
 import { FinanceReportComponent } from './finance-report/finance-report.component';
 import { InventoryReportComponent } from './inventory-report/inventory-report.component';
-import { CreateReportComponent } from './create-report/create-report.component';
+// import { CreateReportComponent } from './create-report/create-report.component';
 import { SummaryReportComponent } from './summary-report/summary-report.component';
-import { CustomReportComponent } from './custom-report/custom-report.component';
+import { PromotionReportComponent } from './promotion-report/promotion-report.component';
+import { StockReportComponent } from './stock-report/stock-report.component';
+// import { CustomReportComponent } from './custom-report/custom-report.component';
 
 // Define interfaces using Apex types for type safety
 
@@ -63,16 +65,18 @@ export type DonutChartOptions = {
 })
 export class ReportDashboardComponent implements OnInit {
   tabsConfig: TabConfig[] = [
-    { name: 'Summary', component: SummaryReportComponent },
+    // { name: 'Summary', component: SummaryReportComponent },
     {
-      name: 'Sales',
+      name: 'Sales Reports',
       component: SalesReportComponent,
     },
-    { name: 'Expenses', component: ExpensesReportComponent },
-    // { name: 'Finance', component: FinanceReportComponent },
-    { name: 'Inventory', component: InventoryReportComponent },
-    { name: 'Create Report', component: CreateReportComponent },
-    { name: 'Custom Reports', component: CustomReportComponent },
+    { name: 'Product Performance', component: ExpensesReportComponent },
+    { name: 'Cashier Reports', component: InventoryReportComponent },
+
+    { name: 'Discounts Report', component: PromotionReportComponent },
+    { name: 'Branch Report', component: FinanceReportComponent },
+    { name: 'Stock Reports', component: StockReportComponent },
+
   ];
 
   // // 1. Sales Summary Report (Line Chart)

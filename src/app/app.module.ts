@@ -117,6 +117,8 @@ import { HotelKeycardComponent } from './ui/view/hotel-keycard/hotel-keycard.com
 import { HotelDooraccessComponent } from './ui/view/hotel-dooraccess/hotel-dooraccess.component';
 import { ViewIngredientsComponent } from './ui/view/ingredient/view-ingredients/view-ingredients.component';
 import { EditIngredientsComponent } from './ui/view/ingredient/edit-ingredients/edit-ingredients.component';
+import { PromotionReportComponent } from './ui/view/report-dashboard/promotion-report/promotion-report.component';
+import { StockReportComponent } from './ui/view/report-dashboard/stock-report/stock-report.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -172,6 +174,8 @@ import { EditIngredientsComponent } from './ui/view/ingredient/edit-ingredients/
     HotelDooraccessComponent,
     ViewIngredientsComponent,
     EditIngredientsComponent,
+    PromotionReportComponent,
+    StockReportComponent,
     //CheckoutKitchenComponent,
     //CheckoutHeaderComponent,
   ],

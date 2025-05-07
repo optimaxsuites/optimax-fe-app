@@ -7,6 +7,7 @@ import { RandomTokenService } from '../../sharedComponent/service/random-token/r
 import { NavigationLinks } from '../../models/enums';
 import JsBarcode from 'jsbarcode';
 import { CustomerService } from '../../service/customer.service';
+import { CheckoutService } from '../../service/checkout.service';
 
 @Component({
   selector: 'app-cash-payment',
@@ -51,7 +52,8 @@ export class CashPaymentComponent implements OnInit {
     public navigationLink: NavigationLinksService,
     private messageService: MessageService,
     private customerService: CustomerService,
-    private randomTokenService: RandomTokenService
+    private randomTokenService: RandomTokenService,
+    private checkoutService: CheckoutService
   ) {
     const navigation = this.router.getCurrentNavigation();
     this.navigationState = navigation?.extras.state as NavigationState;
@@ -178,7 +180,10 @@ export class CashPaymentComponent implements OnInit {
     ];
   }
   processCashPayment() {
+
     if (this.totalPaid < this.cart?.total) {
+
+     
       console.log(this.priceValue);
       this.messageService.add({
         severity: 'warn',
@@ -188,7 +193,74 @@ export class CashPaymentComponent implements OnInit {
         life: 3000,
       });
     } else {
-      this.saveCurrentCartItem();
+      const now = new Date().toISOString();
+      const transactionDetails = {
+        id: 0,
+        totalAmount: this.cart.total,
+        transactionDate: now,
+        status: "PAID",
+        order: [
+          {
+            id: 0,
+            orderNumber: this.randomTokenService.getRandomToken(),
+            orderStatus: "PAID",
+            updatedAt: now,
+            createdDate: now,
+            totalAmount: this.cart.total,
+            amountTendered: 0,
+            quantity: 0,
+            customerId: 1,
+            branchId: 1,
+            cashier: 67,
+            orderItem: this.cart.cartItems.map(item => {
+              let orderItems = [{
+                totalPrice: item.count * parseInt(item.sellingPrice || '0'),
+                quantity: item.count,
+                productId: item.id,
+              }];
+            
+              if (item.selectedVariants && item.selectedVariants.length > 0) {
+                item.selectedVariants.forEach(variant => {
+                  const selectedQuantity = variant.selectedQuantity ?? 0;  
+                  const price = variant.price || 0
+                  if (selectedQuantity > 0) {
+                    orderItems.push({
+                      totalPrice: selectedQuantity * price,
+                      quantity: selectedQuantity,
+                      productId: item.id,
+                      productVariantId: variant.id,
+                    }as { totalPrice: number; quantity: number; productId: number; productVariantId: number | null });
+                  }
+                });
+              }
+            
+              return orderItems;
+            }).flat()  
+      }
+        ],
+        paymentBreakdown: this.cart.paymentModes.map((mode: any) => ({
+          id: 0,
+          amountPaid: this.cart.total,
+          transactionRefernce: "",
+          paymentId: 0
+        }))
+      };
+      console.log(transactionDetails)
+
+      this.checkoutService.makePayment(transactionDetails).subscribe(
+        {
+          next: (data) =>{
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Success',
+              detail: 'Success',
+              key: 'tl',
+              life: 3000,
+            });
+          }
+        }
+      )
+      // this.saveCurrentCartItem();
       const order: any[] = [];
       const checkoutLink = this.navigationLink.getLink('checkoutLink');
       this.router.navigate([checkoutLink]);

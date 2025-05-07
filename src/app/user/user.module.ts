@@ -51,6 +51,7 @@ import { MenuModule } from 'primeng/menu';
 import { BadgeModule } from 'primeng/badge';
 import { MenubarModule } from 'primeng/menubar';
 import { AppResizeDirective } from '../ui/service/app-resize.directive';
+import { CloseRegisterModalComponent } from '../ui/view/close-register-modal/close-register-modal.component';
 // import { ProductVariantModalComponent } from '../ui/view/product-variant-modal/product-variant-modal.component';
 
 @NgModule({
@@ -73,7 +74,8 @@ import { AppResizeDirective } from '../ui/service/app-resize.directive';
     AllPaymentsModalComponent,
     CheckoutKitchenComponent,
     CheckoutHeaderComponent,
-    AppResizeDirective
+    AppResizeDirective,
+    CloseRegisterModalComponent
     // ProductVariantModalComponent,
   ],
   imports: [

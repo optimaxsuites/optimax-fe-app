@@ -1,11 +1,100 @@
 import { Component, computed, Input, OnInit, signal } from '@angular/core';
-import { ProductData } from '../../models/interface';
+import { ProductCategoryDTO, ProductData } from '../../models/interface';
+import { PosServiceService } from '../../service/pos-service.service';
+import { lastValueFrom } from 'rxjs';
+
+/**
+ * Data Transfer Object representing the status of a table order.
+ */
+export interface TableOrderStatusDTO {
+  /**
+   * Unique identifier.
+   * @type {number}
+   * @format int64
+   */
+  id: number;
+
+  /**
+   * Table number.
+   * @type {string}
+   * @minLength 0
+   * @maxLength 255
+   * @required
+   */
+  tableNumber: string;
+
+  /**
+   * Current status of the order.
+   * @type {string}
+   */
+  status: 'PAID' | 'UNPAID';
+
+  /**
+   * Identifier for the waiter.
+   * @type {number}
+   * @format int32
+   */
+  waterId: number;
+
+  /**
+   * Identifier for the chef.
+   * @type {number}
+   * @format int32
+   */
+  chefId: number;
+
+  /**
+   * Timestamp when the order was placed.
+   * @type {string}
+   * @format date-time
+   */
+  orderedOn: string;
+
+  /**
+   * Timestamp when the order began processing.
+   * @type {string}
+   * @format date-time
+   */
+  processedOn: string;
+
+  /**
+   * Timestamp when the order was ready.
+   * @type {string}
+   * @format date-time
+   */
+  readyOn: string;
+
+  /**
+   * Timestamp when the order was completed.
+   * @type {string}
+   * @format date-time
+   */
+  completedOn: string;
+
+  /**
+   * Optional note attached to the order.
+   * @type {string}
+   * @minLength 0
+   * @maxLength 255
+   */
+  note: string;
+
+  /**
+   * Identifiers of the items in this order.
+   * @type {Array<number>}
+   */
+  orderItemsId: number[];
+}
+
+interface TableOrderStatusNEW extends TableOrderStatusDTO {
+  orders: TableOrder;
+}
 
 interface TableStatus {
   /**
    * Table number
    */
-  no: number;
+  tableNumber: number;
   /**
    * `Ready`: Order has been completed. All that's left is to take the prepared meal to the customer.
    *
@@ -17,12 +106,12 @@ interface TableStatus {
   /**
    * To know the waiter that took / created this order
    */
-  waiterId: string;
+  waterId: string;
   /**
    * To determine the prority of the order.
    *
    */
-  orderedOn: Date;
+  orderedOn: string;
   /**
    * A collection of all the meals / drinks / whatever that were ordered
    */
@@ -61,12 +150,12 @@ export class CheckoutKitchenComponent implements OnInit {
   /*
    *the order/card clicked
    */
-  selectedOrder?: TableStatus;
+  selectedOrder?: TableOrderStatusNEW;
 
   /**
-   * The status (and orders) of all the tables in the restaurant
+   * The status (and orders) of all the tables in the restaurant. It is indexed with te table number
    */
-  tableStatuses = signal<Map<number, TableStatus>>(new Map());
+  tableStatuses = signal<Map<number, TableOrderStatusNEW>>(new Map());
 
   testMode = signal<typeof this.mode>('chef');
 
@@ -86,7 +175,7 @@ export class CheckoutKitchenComponent implements OnInit {
    */
   tableData = signal<Map<string, OrderItem>>(new Map());
 
-  // --- MODIFIED: Updated productCategories structure ---
+  // Dummy data
   productCategories = [
     {
       name: 'Food',
@@ -108,59 +197,9 @@ export class CheckoutKitchenComponent implements OnInit {
         { name: 'Plantain (Fried)', rate: 500 },
       ],
     },
-    {
-      name: 'Beverages',
-      subCategories: [
-        { name: 'Espresso', rate: 800 },
-        { name: 'Latte', rate: 1000 },
-        { name: 'Green Tea', rate: 600 },
-        { name: 'Iced Tea', rate: 700 },
-        { name: 'Orange Juice', rate: 900 },
-        { name: 'Apple Juice', rate: 900 },
-        { name: 'Milkshake (Vanilla)', rate: 1200 },
-        { name: 'Bottled Water', rate: 500 },
-        { name: 'Coca-Cola', rate: 600 },
-        { name: 'Sprite', rate: 600 },
-        { name: 'Energy Drink (Red Bull)', rate: 1500 },
-        { name: 'Smoothie (Mango)', rate: 1300 },
-        { name: 'Chapman', rate: 1000 },
-        { name: 'Zobo Drink', rate: 700 },
-      ],
-    },
-    {
-      name: 'BBQ',
-      subCategories: [
-        { name: 'BBQ Chicken Wings', rate: 2500 },
-        { name: 'BBQ Pork Ribs', rate: 3500 },
-        { name: 'Grilled Corn', rate: 800 },
-        { name: 'Beef Suya', rate: 2000 },
-      ],
-    },
-    {
-      name: 'Special',
-      subCategories: [
-        { name: "Chef's Special Pasta", rate: 2800 },
-        { name: 'Seafood Platter', rate: 4500 },
-        { name: 'Lamb Chops', rate: 4000 },
-        { name: 'Special Fried Rice', rate: 2200 },
-        { name: 'House Special Cocktail', rate: 1800 },
-        { name: 'Weekend Brunch Special', rate: 3000 },
-        { name: 'Daily Soup Special', rate: 1000 },
-      ],
-    },
-    {
-      name: 'Appetizer',
-      subCategories: [
-        { name: 'Spring Rolls', rate: 900 },
-        { name: 'Samosa', rate: 900 },
-        { name: 'Peppered Snails', rate: 3000 },
-        { name: 'Gizzard Stir-fry', rate: 1500 },
-        { name: 'Bruschetta', rate: 1200 },
-      ],
-    },
-  ] as const;
+  ];
 
-  selectedSubCategories: Readonly<SubCategoryItem[]> =
+  selectedSubCategories: SubCategoryItem[] =
     this.productCategories[0].subCategories;
 
   productList = [
@@ -212,53 +251,149 @@ export class CheckoutKitchenComponent implements OnInit {
    */
   orderNote = signal('');
 
-  ngOnInit(): void {
-    switch (this.mode) {
-      case 'waiter':
-      // Show all created orders from the waiter that have not yet been completed. Also add a button for creating orders too
-      case 'chef':
-        // Show all pending orders
+  /**
+   * Used to keep track of all the products and their ids
+   */
+  private productNameAndIdMap = new Map<string, number>();
 
-        // Sample data
-        this.createMultipleOrders([
-          { tableNo: 21 },
-          { tableNo: 22 },
-          { tableNo: 23 },
-          { tableNo: 24 },
-          { tableNo: 25 },
-          { tableNo: 26 },
-          { tableNo: 27 },
-          { tableNo: 28 },
-          { tableNo: 29 },
-          { tableNo: 30 },
-          { tableNo: 31 },
-          { tableNo: 32 },
-          { tableNo: 33 },
-          { tableNo: 34 },
-          { tableNo: 35 },
-          { tableNo: 36 },
-          { tableNo: 37 },
-          { tableNo: 38 },
-          { tableNo: 39 },
-          { tableNo: 40 },
-          { tableNo: 41 },
-          { tableNo: 42 },
-          { tableNo: 43 },
-          { tableNo: 44 },
-          { tableNo: 45 },
-          { tableNo: 46 },
-          { tableNo: 47 },
-          { tableNo: 48 },
-          { tableNo: 49 },
-          { tableNo: 50 },
-        ]);
-        break;
-      case 'cashier':
-      // Show all processing and ready orders
-    }
+  constructor(private posService: PosServiceService) {}
+
+  ngOnInit() {
+    (async () => {
+      const fetchedProducts: ProductData[] = await lastValueFrom(
+        this.posService.getProducts()
+      );
+
+      let a = new Map<string, { name: string; rate: number }[]>();
+      fetchedProducts.forEach((d) => {
+        const category = d.productCategory.name;
+
+        if (!a.has(category)) {
+          a.set(category, [
+            { name: d.name, rate: parseInt(d.sellingPrice ?? '0') },
+          ]);
+        } else {
+          const b = a.get(category)!;
+          // Dedupe by name
+          if (b.find((x) => x.name === d.name)) {
+            return;
+          }
+          b.push({ name: d.name, rate: parseInt(d.sellingPrice ?? '0') });
+          a.set(category, b);
+        }
+        this.productNameAndIdMap.set(d.name, d.id);
+      });
+      // Overwrite the categories
+      this.productCategories = [...a.entries()].map(
+        ([category, subCategories]) => {
+          return { name: category, subCategories };
+        }
+      );
+      this.selectedSubCategories = this.productCategories[0].subCategories;
+
+      // Fetch the table statuses
+
+      // FIXME: CHange this once the API is alright
+      this.tableStatuses.update((_) => {
+        const parsedMap = new Map<number, TableOrderStatusNEW>(
+          JSON.parse(localStorage.getItem('tableStatuses') ?? '[]')
+        );
+        parsedMap.forEach((tableOrderStatus) => {
+          tableOrderStatus.orderItemsId.forEach((id) => {
+            const originProduct = fetchedProducts.find((p) => p.id == id);
+
+            if (originProduct) {
+              // Be sure that this is a map
+              if (!tableOrderStatus.orders?.size)
+                tableOrderStatus.orders = new Map();
+
+              if (!tableOrderStatus.orders.has(originProduct.name)) {
+                tableOrderStatus.orders.set(originProduct.name, {
+                  qty: 1,
+                  rate: parseInt(originProduct.sellingPrice ?? '1'),
+                });
+              } else {
+                tableOrderStatus.orders.set(originProduct.name, {
+                  qty:
+                    (tableOrderStatus.orders.get(originProduct.name)?.qty ??
+                      0) + 1,
+                  rate: parseInt(originProduct.sellingPrice ?? '1'),
+                });
+              }
+            }
+          });
+        });
+
+        return parsedMap;
+      });
+      // const fetchedTableOrderStatuses = await lastValueFrom(
+      //   this.posService.getTableOrderStatuses()
+      // );
+      // console.log(fetchedTableOrderStatuses);
+      // this.tableStatuses.update(_=>{
+      //   const parsedMap = new Map<number, TableOrderStatusNEW>();
+      //   fetchedTableOrderStatuses.forEach(d=>{
+      //     const parsedTableOrder = new Map<string, TableOrder>()
+
+      //     d.orderItemsId.forEach(itemId=>{
+      //       const originProduct = fetchedProducts.find(p=>p.id == itemId)
+
+      //       if (originProduct){
+      //         parsedTableOrder.set(originProduct.name,)
+      //       }
+      //     })
+      //   })
+
+      //   return parsedMap
+      // })
+    })();
+
+    // switch (this.mode) {
+    //   case 'waiter':
+    //   // Show all created orders from the waiter that have not yet been completed. Also add a button for creating orders too
+    //   case 'chef':
+    //     // Show all pending orders
+
+    //     // Sample data
+    //     this.createMultipleOrders([
+    //       { tableNo: 21 },
+    //       { tableNo: 22 },
+    //       { tableNo: 23 },
+    //       { tableNo: 24 },
+    //       { tableNo: 25 },
+    //       { tableNo: 26 },
+    //       { tableNo: 27 },
+    //       { tableNo: 28 },
+    //       { tableNo: 29 },
+    //       { tableNo: 30 },
+    //       { tableNo: 31 },
+    //       { tableNo: 32 },
+    //       { tableNo: 33 },
+    //       { tableNo: 34 },
+    //       { tableNo: 35 },
+    //       { tableNo: 36 },
+    //       { tableNo: 37 },
+    //       { tableNo: 38 },
+    //       { tableNo: 39 },
+    //       { tableNo: 40 },
+    //       { tableNo: 41 },
+    //       { tableNo: 42 },
+    //       { tableNo: 43 },
+    //       { tableNo: 44 },
+    //       { tableNo: 45 },
+    //       { tableNo: 46 },
+    //       { tableNo: 47 },
+    //       { tableNo: 48 },
+    //       { tableNo: 49 },
+    //       { tableNo: 50 },
+    //     ]);
+    //     break;
+    //   case 'cashier':
+    //   // Show all processing and ready orders
+    // }
   }
 
-  openOrderDetails(table: TableStatus) {
+  openOrderDetails(table: TableOrderStatusNEW) {
     // When a table-card is clicked, set the order details
     this.selectedOrder = table;
     this.isOrderDetailsOpen = true;
@@ -289,20 +424,67 @@ export class CheckoutKitchenComponent implements OnInit {
 
     if (this.tableStatuses().has(tableNo) && !overwrite) return false;
     else {
+      const creationDate = new Date().toISOString();
+      const orderItemIds = [...orders.keys()]
+        .map((prodName) => {
+          if (orders.get(prodName)!.qty > 1) {
+            const arr: number[] = [];
+            arr.length = orders.get(prodName)!.qty;
+            arr.fill(this.productNameAndIdMap.get(prodName)!);
+            return arr;
+          } else {
+            return this.productNameAndIdMap.get(prodName)!;
+          }
+        })
+        .flat();
       // update the signal by creating a new map
       this.tableStatuses.update(
         (statuses) =>
           new Map(
             statuses.set(tableNo, {
-              no: tableNo,
-              orderedOn: new Date(),
+              id: tableNo,
+              tableNumber: tableNo.toString(),
+              orderedOn: creationDate,
+              processedOn: '',
+              completedOn: '',
+              readyOn: '',
               orders: structuredClone(orders),
-              status: 'Pending',
-              note,
-              waiterId,
+              orderItemsId: orderItemIds,
+              status: 'UNPAID',
+              note: note ?? '',
+              waterId: parseInt(waiterId),
+              // FIXME: Get the actual Chef Id
+              chefId: parseInt(waiterId),
             })
           )
       );
+
+      // SECTION: Push to backend
+      // Convert our data to a format that can be sent to the backend
+      const newTableStatus = this.tableStatuses().get(tableNo)!;
+      const tableOrderStatusDTO: TableOrderStatusDTO = {
+        id: newTableStatus.id,
+        tableNumber: newTableStatus.tableNumber,
+        status: newTableStatus.status,
+        waterId: newTableStatus.waterId,
+        chefId: newTableStatus.chefId,
+        orderedOn: newTableStatus.orderedOn,
+        processedOn: newTableStatus.processedOn,
+        readyOn: newTableStatus.readyOn,
+        completedOn: newTableStatus.completedOn,
+        note: newTableStatus.note,
+        orderItemsId: newTableStatus.orderItemsId,
+      };
+
+      this.posService.addTableOrderStatus(tableOrderStatusDTO);
+      console.log(JSON.stringify(tableOrderStatusDTO));
+
+      // this.posService.addTableOrderStatus()
+      localStorage.setItem(
+        'tableStatuses',
+        JSON.stringify([...this.tableStatuses()])
+      );
+      // !SECTION
 
       return true;
     }
@@ -314,24 +496,33 @@ export class CheckoutKitchenComponent implements OnInit {
       this.createOrder(orderObject.tableNo, orderObject.orders ?? new Map());
     });
   }
-  toggleOrderStatus(tableOrder: TableStatus) {
-    switch (tableOrder.status) {
-      case 'Pending':
-        tableOrder.status = 'Processing';
-        break;
-      case 'Processing':
-        tableOrder.status = 'Ready';
-        break;
-      case 'Ready':
+  toggleOrderStatus(tableOrder: TableOrderStatusNEW) {
+    if (!tableOrder.processedOn) {
+      tableOrder.processedOn = new Date().toISOString();
+    } else if (!tableOrder.completedOn) {
+      tableOrder.completedOn = new Date().toISOString();
+    } else if (!tableOrder.readyOn) {
+      tableOrder.readyOn = new Date().toISOString();
+      tableOrder.status = 'PAID';
       //TODO: Get rid of the table order
     }
+    // switch (tableOrder.status) {
+    //   case 'Pending':
+    //     tableOrder.status = 'Processing';
+    //     break;
+    //   case 'Processing':
+    //     tableOrder.status = 'Ready';
+    //     break;
+    //   case 'Ready':
+    //   //TODO: Get rid of the table order
+    // }
   }
   displayedTableStatuses = computed(() => {
     switch (this.testMode()) {
       case 'waiter':
         // TODO: Use the waiter's id as a comparison here
         return [...this.tableStatuses().values()].filter(
-          (tableStatus) => tableStatus.waiterId == '0'
+          (tableStatus) => tableStatus.waterId == 0
         );
       case 'cashier':
       case 'chef':
@@ -368,13 +559,13 @@ export class CheckoutKitchenComponent implements OnInit {
   /**
    * Whenever a table's order should be edited, call this with the table status to enforce
    */
-  overwriteTableOrderData(tableStatus: TableStatus) {
+  overwriteTableOrderData(tableStatus: TableOrderStatusNEW) {
     const clone = structuredClone(tableStatus);
     this.tableData.update((_) => {
       return clone.orders;
     });
     this.setOrderNote(clone.note ?? '');
-    this.orderTableNumber = clone.no;
+    this.orderTableNumber = this.convertStrToNum(clone.tableNumber);
   }
 
   setOrderNote(note: string) {
@@ -396,12 +587,17 @@ export class CheckoutKitchenComponent implements OnInit {
     });
   }
 
-  deleteTable(tableStatus: TableStatus) {
+  deleteTable(tableStatus: TableOrderStatusNEW) {
     this.tableStatuses.update((val) => {
-      val.delete(tableStatus.no);
+      val.delete(this.convertStrToNum(tableStatus.tableNumber));
 
       return new Map(val);
     });
+
+    localStorage.setItem(
+      'tableStatuses',
+      JSON.stringify([...this.tableStatuses()])
+    );
   }
 
   proceedToOverwriteTableConflict(tableNumber: number) {
@@ -414,5 +610,9 @@ export class CheckoutKitchenComponent implements OnInit {
         new Map()
       );
     });
+  }
+
+  convertStrToNum(str: string) {
+    return parseInt(str);
   }
 }

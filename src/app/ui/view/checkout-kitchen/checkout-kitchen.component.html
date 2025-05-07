@@ -72,24 +72,30 @@
         <div
           class="table-card"
           [ngClass]="{
-            'status-processing': item.status === 'Processing',
-            'status-pending': item.status === 'Pending',
-            'status-completed': item.status === 'Ready'
+            'status-processing': item.processedOn,
+            'status-pending': !item.processedOn,
+            'status-completed': item.completedOn
           }"
           (click)="openOrderDetails(item)"
         >
           <div class="table-card-header">
-            {{ item.status }}
-            @switch (item.status) { @case ("Pending") {
+            @if (!item.processedOn) { Pending
+            <i class="fa-solid fa-clock"></i>
+            }@else if (item.processedOn) { Processing
+            <i class="fa-solid fa-spinner"></i>
+            }@else if (item.completedOn) { Completed
+            <i class="fa-solid fa-check"></i>
+            }
+            <!-- @switch (item.status) { @case ("Pending") {
             <i class="fa-solid fa-clock"></i>
             } @case ("Processing") {
             <i class="fa-solid fa-spinner"></i>
             } @case ("Ready") {
             <i class="fa-solid fa-check"></i>
-            } }
+            } } -->
           </div>
           <div class="table-card-content">
-            <span class="table-number">Table {{ item.no }}</span>
+            <span class="table-number">Table {{ item.tableNumber }}</span>
           </div>
         </div>
         }
@@ -108,7 +114,8 @@
           (click)="isOrderDetailsOpen = false"
         ></i>
         <span class="font-bold ml-auto text-2xl"
-          >Table {{ selectedOrder?.no }} - {{ selectedOrder?.status }}</span
+          >Table {{ selectedOrder?.tableNumber }} -
+          {{ selectedOrder?.status }}</span
         >
       </ng-template>
       <div style="height: 75vh; overflow-y: auto">
@@ -149,9 +156,9 @@
             pButton
             type="button"
             [label]="
-              selectedOrder?.status == 'Pending'
+              !selectedOrder?.processedOn
                 ? 'Start Preparation'
-                : selectedOrder?.status == 'Processing'
+                : !selectedOrder?.completedOn
                 ? 'Completed'
                 : 'Close'
             "
@@ -322,9 +329,9 @@
             pButton
             type="button"
             [label]="
-              selectedOrder?.status == 'Pending'
+              !selectedOrder?.processedOn
                 ? 'Edit Order'
-                : selectedOrder?.status == 'Processing'
+                : !selectedOrder?.completedOn
                 ? 'Order In Progress'
                 : 'Order Completed'
             "
@@ -335,9 +342,13 @@
               isEditingOrder = true;
               isCreateOrderModalOpen = true
             "
-            [disabled]="selectedOrder?.status != 'Pending'"
+            [disabled]="
+              selectedOrder?.processedOn || selectedOrder?.completedOn
+            "
             [class]="
-              selectedOrder?.status != 'Pending' ? 'cursor-not-allowed' : ''
+              selectedOrder?.processedOn || selectedOrder?.completedOn
+                ? 'cursor-not-allowed'
+                : ''
             "
           ></button>
           <button
@@ -586,7 +597,9 @@
             ? ''
             : openOrderDetails(
                 tableStatuses().get(orderTableNumber) ??
-                  tableStatuses().get(selectedOrder!.no)!
+                  tableStatuses().get(
+                    convertStrToNum(selectedOrder!.tableNumber)
+                  )!
               )
         "
       ></button>
