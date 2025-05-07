@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, catchError, finalize, forkJoin, max, min, Observable, of, switchMap, tap } from 'rxjs';
 import { PosServiceService } from './pos-service.service';
 import { CheckoutService } from './checkout.service';
 import { SalesReportDTO, BranchSalesDTO, TopProductDTO, PaymentMethodSummaryDTO, SalesReportBreakdownDTO } from '../models/interface';
@@ -66,15 +66,15 @@ export class MetadataService {
 
 
 
-  private discountSubject = new BehaviorSubject<any[]>([]);
-  private discountTypesSubject = new BehaviorSubject<any[]>([]);
-  private categorySubject = new BehaviorSubject<any[]>([]);
-  private taxSubject = new BehaviorSubject<any[]>([]);
-  private supplierSubject = new BehaviorSubject<any[]>([]);
-  private branchSubject = new BehaviorSubject<any[]>([]);
-  private productSubject =  new BehaviorSubject<any[]>([]);
-  private enrichedProductSubject =  new BehaviorSubject<any[]>([])
-  private orderSubject = new BehaviorSubject<any[]>([])
+   discountSubject = new BehaviorSubject<any[]>([]);
+   discountTypesSubject = new BehaviorSubject<any[]>([]);
+   categorySubject = new BehaviorSubject<any[]>([]);
+   taxSubject = new BehaviorSubject<any[]>([]);
+   supplierSubject = new BehaviorSubject<any[]>([]);
+   branchSubject = new BehaviorSubject<any[]>([]);
+   productSubject =  new BehaviorSubject<any[]>([]);
+   enrichedProductSubject =  new BehaviorSubject<any[]>([])
+   orderSubject = new BehaviorSubject<any[]>([])
 
   discount$ = this.discountSubject.asObservable();
   discountTypes$ = this.discountTypesSubject.asObservable();
@@ -95,7 +95,10 @@ export class MetadataService {
     this.selectedBranchIdSubject.next(id);
   }
 
+
+  
   fetchMetaData() {
+    console.log("began to fetch")
     this.posService.getDiscount().subscribe(data => this.discountSubject.next(data));
     this.posService.getDiscountTypes().subscribe(data => this.discountTypesSubject.next(data));
     this.posService.getCategories().subscribe(data => this.categorySubject.next(data));
@@ -120,6 +123,25 @@ export class MetadataService {
     });
 
   }
+
+  private loadEnrichedProductsByBranch(): Observable<void> {
+    const branchId = this.selectedBranchIdSubject.value;
+    if (!branchId) return of(undefined);
+
+    this.loadingSubject.next(true);
+
+    return this.posService.getFilteredProductsWithDetails(branchId).pipe(
+      tap(data => this.enrichedProductSubject.next(data)),
+      finalize(() => this.loadingSubject.next(false)),
+      catchError((error) => {
+        console.error('❌ Failed to load products for branch:', error);
+        return of(undefined);
+      }),
+      switchMap(() => of(undefined))
+    );
+  }
+
+
 
   getSalesReport(): Observable<SalesReportDTO> {
     const branchSales: BranchSalesDTO[] = this.generateBranchSales();

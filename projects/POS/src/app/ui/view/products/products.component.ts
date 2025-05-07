@@ -166,7 +166,6 @@ rowsPerPage = 15;
     this.loadCategory();
     this.getProducts();
     this.getDiscountTypes();
-    this.metadataService.fetchMetaData();
     this.metadataService.branches$.subscribe(data => (this.branches = data));
     if (this.selectedBranch) {
       this.metadataService.setSelectedBranch(this.selectedBranch);

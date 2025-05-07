@@ -1,20 +1,27 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { AuthenticationService } from './ui/sharedComponent/service/auth-service/authentication.service';
 import { IndustryDataService } from './ui/service/industry-data.service';
+import { MetadataService } from './ui/service/metadata.service';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
-export class AppComponent {
+export class AppComponent implements OnInit{
   title = 'erp-pos';
 
   constructor(
     private authenticationService: AuthenticationService,
-    private industryDataService: IndustryDataService
+    private industryDataService: IndustryDataService,
+    private metadataService: MetadataService
   ) {
     this.userLoginAction();
+
   }
+ngOnInit(): void {
+  // this.metadataService.fetchMetaData()
+}
+
   async userLoginAction(): Promise<void> {
     const loginDetails = {
       username: 'adminnn',

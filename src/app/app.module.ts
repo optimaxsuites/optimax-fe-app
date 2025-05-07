@@ -1,4 +1,4 @@
-import { CUSTOM_ELEMENTS_SCHEMA, NgModule, isDevMode } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, NgModule, isDevMode, APP_INITIALIZER } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -240,6 +240,7 @@ import { AppHrModule } from 'projects/hr/src/app/app.module';
 import { MarketplaceComponent } from './ui/marketplace/view/marketplace/marketplace.component';
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { AppResizeDirective } from '../../projects/POS/src/app/ui/service/app-resize.directive';
+import { AppInitService } from 'projects/POS/src/app/ui/service/app-init.service';
 
 
 @NgModule({
@@ -494,6 +495,12 @@ import { AppResizeDirective } from '../../projects/POS/src/app/ui/service/app-re
       provide: JWT_OPTIONS,
       useValue: JWT_OPTIONS
     },
+      {
+          provide: APP_INITIALIZER,
+          useFactory: (appInitService: AppInitService) => () => appInitService.init(),
+          deps: [AppInitService],
+          multi: true
+        },
     JwtHelperService,
     provideAnimationsAsync(),
     provideNativeDateAdapter(),

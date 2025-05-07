@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
+import { CheckoutService } from '../../service/checkout.service';
+import { MetadataService } from '../../service/metadata.service';
 
 @Component({
   selector: 'app-sales',
@@ -49,7 +51,7 @@ export class SalesComponent implements OnInit {
     'Last Month',
   ];
 
-  constructor(private fb: FormBuilder) {
+  constructor(private fb: FormBuilder, private checkoutService: CheckoutService, private metadataService: MetadataService) {
     this.filterForm = this.fb.group({
       cashier: ['all'],
       status: [[]],
@@ -78,41 +80,54 @@ export class SalesComponent implements OnInit {
 
   initializeSampleData() {
     // Sample transaction data
-    this.transactions = [
-      {
-        orderId: 'ORD-001',
-        cashier: 'John',
-        transactionOrderId: 'TRX-1001',
-        status: 'Completed',
-        date: new Date(),
-        amount: 125.5,
-      },
-      {
-        orderId: 'ORD-002',
-        cashier: 'Ben',
-        transactionOrderId: 'TRX-1002',
-        status: 'Pending',
-        date: new Date(),
-        amount: 75.25,
-      },
-      {
-        orderId: 'ORD-003',
-        cashier: 'Conrad',
-        transactionOrderId: 'TRX-1003',
-        status: 'Completed',
-        date: new Date(),
-        amount: 210.0,
-      },
-      {
-        orderId: 'ORD-004',
-        cashier: 'Winifred',
-        transactionOrderId: 'TRX-1004',
-        status: 'Void',
-        date: new Date(),
-        amount: 50.75,
-      },
-    ];
+    // this.transactions = [
+    //   {
+    //     orderId: 'ORD-001',
+    //     cashier: 'John',
+    //     transactionOrderId: 'TRX-1001',
+    //     status: 'Completed',
+    //     date: new Date(),
+    //     amount: 125.5,
+    //   },
+    //   {
+    //     orderId: 'ORD-002',
+    //     cashier: 'Ben',
+    //     transactionOrderId: 'TRX-1002',
+    //     status: 'Pending',
+    //     date: new Date(),
+    //     amount: 75.25,
+    //   },
+    //   {
+    //     orderId: 'ORD-003',
+    //     cashier: 'Conrad',
+    //     transactionOrderId: 'TRX-1003',
+    //     status: 'Completed',
+    //     date: new Date(),
+    //     amount: 210.0,
+    //   },
+    //   {
+    //     orderId: 'ORD-004',
+    //     cashier: 'Winifred',
+    //     transactionOrderId: 'TRX-1004',
+    //     status: 'Void',
+    //     date: new Date(),
+    //     amount: 50.75,
+    //   },
+    // ];
 
+    // this.checkoutService.getOrders().subscribe({
+    //   next: (data) => {
+    //     this.transactions = data
+    //   }
+    // })
+
+    this.metadataService.orders$.subscribe( {
+      next: (data) => {
+        this.transactions = data
+      }
+    })
+
+    console.log(this.transactions)
     this.filteredTransactions = [...this.transactions];
     this.grossSalesTotal = this.calculateTotal(this.filteredTransactions);
   }
@@ -456,7 +471,7 @@ export class SalesComponent implements OnInit {
 
   calculateTotal(transactions: any[]): number {
     return transactions
-      .filter((t) => t.status !== 'Void')
+      .filter((t) => t.orderStatus !== 'UNPAID')
       .reduce((sum, transaction) => sum + transaction.amount, 0);
   }
 
