@@ -5,11 +5,10 @@ import { HotelRoomsComponent } from './ui/view/hotel-rooms/hotel-rooms.component
 
 const routes: Routes = [
   { path: 'admin/hospitality/room/:uuid', component: HotelRoomsComponent },
-
 ];
 
 @NgModule({
-  imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule],
 })
-export class AppRoutingModule { }
+export class AppRoutingModule {}

@@ -29,6 +29,7 @@ export class HotelRoomsComponent implements OnInit {
   roomStatuses = ['available', 'maintenance', 'dirty'];
   selectedAmenities: string[] = [];
   newAmenity: string = '';
+  openRoomForm = false;
 
   constructor(private fb: FormBuilder, private messageService: MessageService) {
     this.createForm();
@@ -122,6 +123,22 @@ export class HotelRoomsComponent implements OnInit {
 
   onCancel(): void {
     this.cancel.emit();
+  }
+
+  openRoomModal() {
+    this.openRoomForm = true;
+    document.body.classList.add('overflow-hidden'); // Prevent scrolling of background
+  }
+
+  // Close modal
+  closeRoomModal() {
+    this.openRoomForm = false;
+    document.body.classList.remove('overflow-hidden');
+  }
+
+  // Modify your existing "Add Room" button click handler
+  navigateToCreateRoom() {
+    this.openRoomModal();
   }
 
   addAmenity(): void {
