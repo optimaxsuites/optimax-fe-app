@@ -47,6 +47,7 @@ import { HotelRoomsComponent } from './ui/view/hotel-rooms/hotel-rooms.component
 import { CheckboxModule } from 'primeng/checkbox';
 import { HotelReceptionistComponent } from './ui/view/hotel-receptionist/hotel-receptionist.component';
 import { DialogService } from 'primeng/dynamicdialog';
+import { HotelAdmintableComponent } from './ui/view/hotel-admintable/hotel-admintable.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -75,15 +76,16 @@ import { DialogService } from 'primeng/dynamicdialog';
     LaundryServiceComponent,
     HotelRoomsComponent,
     HotelReceptionistComponent,
+    HotelAdmintableComponent,
   ],
   imports: [
-    // BrowserAnimationsModule,
-    // BrowserModule,
+    BrowserAnimationsModule,
+    BrowserModule,
     MenuModule,
     ConfirmDialogModule,
     DropdownModule,
     CommonModule,
-    // UserModule,
+    UserModule,
     AppRoutingModule,
     CalendarModule,
     ToastModule,

@@ -4,15 +4,14 @@
   <!-- Main content area -->
   <main class="flex-1 p-8 overflow-y-auto">
     <app-hotel-roomlist (roomSelected)="handleRoomSelected($event)">
-      ></app-hotel-roomlist
-    >
+    </app-hotel-roomlist>
   </main>
 
   <!-- Room detail -->
   <app-hotel-roomdetails
     #roomDetails
     [room]="selectedRoom"
-    (back)="selectedRoom = null"
+    (back)="(selectedRoom)"
     (statusChanged)="onRoomStatusChanged($event)"
   ></app-hotel-roomdetails>
 </div>
