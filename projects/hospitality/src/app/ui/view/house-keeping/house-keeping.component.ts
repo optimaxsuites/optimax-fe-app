@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { TabConfig } from '../../sharedComponent/service/interface/data';
 import { HousekeepingRecordsComponent } from '../housekeeping-records/housekeeping-records.component';
-import { HousekeepingFormComponent } from '../housekeeping-form/housekeeping-form.component';
 import { HousekeepingFoundComponent } from '../housekeeping-found/housekeeping-found.component';
 import { HousekeepingLostitemComponent } from '../housekeeping-lostitem/housekeeping-lostitem.component';
 

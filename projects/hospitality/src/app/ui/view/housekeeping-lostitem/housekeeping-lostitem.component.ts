@@ -24,7 +24,7 @@ interface LostItem {
   selector: 'app-housekeeping-lostitem',
   templateUrl: './housekeeping-lostitem.component.html',
   styleUrls: ['./housekeeping-lostitem.component.scss'],
-  providers: [MessageService],
+  providers: [MessageService, ConfirmationService],
 })
 export class HousekeepingLostitemComponent implements OnInit {
   lostItems: LostItem[] = [];

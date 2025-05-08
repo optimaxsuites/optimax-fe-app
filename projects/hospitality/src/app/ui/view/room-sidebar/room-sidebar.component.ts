@@ -146,7 +146,7 @@ export class RoomSidebarComponent {
     { name: 'Kitchen / Room Service', path: 'room sevice' },
     { name: 'Housekeeping Record', path: 'Housekeeping Record' },
     { name: 'Spa', path: 'room' },
-    { name: 'Gym', path: 'gym' },
+    { name: 'Gym', path: 'admin' },
     { name: 'Bar', path: 'bar' },
   ];
 
@@ -162,7 +162,6 @@ export class RoomSidebarComponent {
 
   selectService(type: string, path: string): void {
     if (this.selectedService === type) {
-      // Deselect - navigate back to welcome note
       this.selectedService = null;
       this.router.navigate(['/user/hospitality/services/:uuid']);
     } else {
