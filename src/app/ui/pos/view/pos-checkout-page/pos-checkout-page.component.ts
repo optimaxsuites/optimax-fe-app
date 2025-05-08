@@ -5,6 +5,9 @@ import { RandomTokenService } from 'src/app/ui/shared/service/random-token/rando
 import { UserComponent } from 'src/app/user.component';
 import { RegisterService } from '../../service/register.service';
 import { PosServiceService } from '../../service/pos-service.service';
+import { MetadataOverride } from '@angular/core/testing';
+import { MetadataService, ProductDTO } from 'projects/POS/src/app/ui/service/metadata.service';
+import { ProductData } from 'projects/POS/src/app/ui/models/interface';
 
 @Component({
   selector: 'app-pos-checkout-page',
@@ -21,7 +24,7 @@ export class PosCheckoutPageComponent implements OnInit {
   productThatNeedsUpdate: number = 0
   dicountModal:boolean = false
   saveModal:boolean = false
-  products = this.posService.products
+  products: any[] = []
   
   subtotal: number = 0.00;
   tax: number = 0.00;
@@ -49,6 +52,8 @@ export class PosCheckoutPageComponent implements OnInit {
    public userComponent: UserComponent, 
    private registerService: RegisterService,
    private posService: PosServiceService,
+   private metadataservice: MetadataService,
+
    ) {
 
      const navigation = this.router.getCurrentNavigation();
@@ -57,7 +62,11 @@ export class PosCheckoutPageComponent implements OnInit {
     }
 
   ngOnInit() {
-   
+   this.metadataservice.enrichedProduct$.subscribe({
+    next: (data) => {
+      this.products = data
+    }
+   })
     if (this.navigationState?.order) {
       this.loadOrder(this.navigationState.order);
     }

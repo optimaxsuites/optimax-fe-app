@@ -68,6 +68,7 @@ export class CashPaymentComponent implements OnInit {
         JSON.stringify(this.navigationState)
       );
     }
+    console.log(this.navigationState)
   }
   ngOnInit(): void {
     this.cart = this.navigationState?.cart;

@@ -33,6 +33,8 @@ export interface ProductJSONFormat {
  * There's some extra data we use with each product that wouldn't fit directly with the fetched data interface, `ProductJSONFormat`
  */
 export interface ProductData extends ProductJSONFormat {
+productVariant: any;
+product: any;
   purchasePrice: any;
   branch: any;
   branchDetails?: any;
@@ -173,7 +175,10 @@ createdDate: any;
 }
 
 export interface Cart {
-orderItem: any;
+totalAmount: string|number;
+orderStatus?: any;
+orderItem?: any;
+updatedAt?: [];
   paymentModes: any;
   changeOffered: any;
   paymentMethod: any;

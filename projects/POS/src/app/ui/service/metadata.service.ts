@@ -108,7 +108,7 @@ export class MetadataService {
     this.posService.getProducts().subscribe((data) => this.productSubject.next(data));
     this.posService.getProducts().subscribe((data) => this.productSubject.next(data));
     this.checkoutService.getOrders().subscribe((data) => this.orderSubject.next(data));
-    this.selectedBranchId$.subscribe((branchId) => {
+    this.selectedBranchId$.subscribe((branchId =1) => {
       if (branchId != null) {
         this.loadingSubject.next(true); 
   

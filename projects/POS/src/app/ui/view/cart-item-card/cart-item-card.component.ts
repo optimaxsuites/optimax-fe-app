@@ -24,7 +24,7 @@ export class CartItemCardComponent implements Business {
 
   constructor(private industryDataService: IndustryDataService, private imageCacheService: ImageCacheService) {}
   ngOnInit(): void {
-    const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${this.item.productImages[0].imgNo}`;
+    const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${this.item.product.productImages[0].imgNo}`;
     this.imageCacheService.getImage(remoteImageUrl).subscribe((url) => {
       this.imageUrl = url;
     });

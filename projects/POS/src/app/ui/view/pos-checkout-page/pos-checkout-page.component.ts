@@ -110,8 +110,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     }
     if (this.navigationState?.cart) {
       const cart = this.navigationState.cart;
+      console.log(cart)
+
       this.cartItems = [...cart.cartItems];
-      console.log(this.cartItems)
       this.total = cart.total;
       this.displayedDiscount = cart.discount;
       this.tax = cart.tax;
@@ -244,14 +245,64 @@ private calculateClosingTotal(): number {
   
   loadOrder(order: any) {
     console.log(order);
-    this.cartItems = order.orderItems.map((item: any) => ({ ...item }));
+    this.cartItems = this.buildCartFromOrders(order.orderItem)
+    // this.cartItems = order.orderItems.map((item: any) => ({ ...item }));
+    console.log(this.cartItems)
     this.discount = order.cartDiscount;
     this.discountValue = order.discountValue;
     this.value = order.value;
     this.total = order.total;
     this.calculateTotals();
   }
+ 
+  buildCartFromOrders(orders: any): any {
+    const groupedCartItems: any[] = [];
+  
+    orders.forEach((item: any) => {
+      if (!item.productVariant) {
+        // Only match variants with the same product.id
+        const variants = orders.filter((v: any) =>
+          v.productVariant &&
+          item.product &&
+          v.product.id === item.product.id
+        );
+    
+        const selectedVariants = variants.map((v: any) => ({
+          ...v.productVariant,
+          selectedQuantity: v.count,
+        }));
+    
+        const variantTotal = selectedVariants.reduce(
+          (sum: number, variant: any) => sum + (variant.price * variant.selectedQuantity),
+          0
+        );
+    
+        const itemTotal = parseFloat(item.sellingPrice) * item.count;
+        const cartPriceTotal = itemTotal + variantTotal;
+    
+        groupedCartItems.push({
+          ...item,
+          selectedVariants,
+          cartPriceTotal: cartPriceTotal.toString(),
+        });
+      }
+    });
+    
+  
+    const subtotal = groupedCartItems.reduce(
+      (sum, item) => sum + parseFloat(item.cartPriceTotal),
+      0
+    );
+  
+    const taxRate = 0.1; // example: 10%
+    const tax = subtotal * taxRate;
+    const discount = 0;
+    const total = subtotal + tax;
+  
+return  groupedCartItems as any
 
+    // console.log( this.navigationState.order.cart)
+  }
   getLabelForValue(value: string): string {
     const option = this.stateOptions.find((opt) => opt.value === value);
     return option ? option.label : '';

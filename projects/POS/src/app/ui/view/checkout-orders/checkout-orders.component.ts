@@ -70,6 +70,7 @@ export class CheckoutOrdersComponent {
 
   orderDetails(order: Order) {
     this.selectedOrder = order;
+    console.log(order)
     const detailsLink = this.navigationLink.getLink('orderDetails');
     this.router.navigate([detailsLink], { state: { order } });
   }
