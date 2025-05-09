@@ -175,7 +175,12 @@ createdDate: any;
 }
 
 export interface Cart {
-totalAmount: string|number;
+customer: any;
+payment: any;
+amountTendered: number;
+orderNumber: any;
+  orderId: number;
+totalAmount: number;
 orderStatus?: any;
 orderItem?: any;
 updatedAt?: [];

@@ -181,11 +181,7 @@ export class CashPaymentComponent implements OnInit {
     ];
   }
   processCashPayment() {
-
     if (this.totalPaid < this.cart?.total) {
-
-     
-      console.log(this.priceValue);
       this.messageService.add({
         severity: 'warn',
         summary: 'Error',
@@ -193,81 +189,121 @@ export class CashPaymentComponent implements OnInit {
         key: 'tl',
         life: 3000,
       });
-    } else {
-      const now = new Date().toISOString();
-      const transactionDetails = {
-        id: 0,
-        totalAmount: this.cart.total,
-        transactionDate: now,
-        status: "PAID",
-        order: [
-          {
-            id: 0,
-            orderNumber: this.randomTokenService.getRandomToken(),
-            orderStatus: "PAID",
-            updatedAt: now,
-            createdDate: now,
-            totalAmount: this.cart.total,
-            amountTendered: 0,
-            quantity: 0,
-            customerId: 1,
-            branchId: 1,
-            cashier: 67,
-            orderItem: this.cart.cartItems.map(item => {
-              let orderItems = [{
-                totalPrice: item.count * parseInt(item.sellingPrice || '0'),
-                quantity: item.count,
-                productId: item.id,
-              }];
-            
-              if (item.selectedVariants && item.selectedVariants.length > 0) {
-                item.selectedVariants.forEach(variant => {
-                  const selectedQuantity = variant.selectedQuantity ?? 0;  
-                  const price = variant.price || 0
-                  if (selectedQuantity > 0) {
-                    orderItems.push({
-                      totalPrice: selectedQuantity * price,
-                      quantity: selectedQuantity,
-                      productId: item.id,
-                      productVariantId: variant.id,
-                    }as { totalPrice: number; quantity: number; productId: number; productVariantId: number | null });
-                  }
-                });
-              }
-            
-              return orderItems;
-            }).flat()  
-      }
-        ],
-        paymentBreakdown: this.cart.paymentModes.map((mode: any) => ({
-          id: 0,
-          amountPaid: this.cart.total,
-          transactionRefernce: "",
-          paymentId: 0
-        }))
-      };
-      console.log(transactionDetails)
-
-      this.checkoutService.makePayment(transactionDetails).subscribe(
-        {
-          next: (data) =>{
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: 'Success',
-              key: 'tl',
-              life: 3000,
-            });
-          }
-        }
-      )
-      // this.saveCurrentCartItem();
-      const order: any[] = [];
-      const checkoutLink = this.navigationLink.getLink('checkoutLink');
-      this.router.navigate([checkoutLink]);
-      this.printReceipt();
+      return;
     }
+  
+    const now = new Date().toISOString();
+    const paymentPayload = {
+      id: 0,
+      totalAmount: this.cart.total,
+      transactionDate: now,
+      status: "PAID"
+    };
+  
+    // Step 1: Make Payment
+    this.checkoutService.makePayment(paymentPayload).subscribe({
+      next: (paymentId) => {
+        if (!paymentId) {
+          return this.showError("Missing payment ID from response");
+        }
+  
+        // Step 2: Send each Payment Breakdown individually
+        const paymentBreakdownPayloads = this.cart.paymentModes.map((mode: any) => ({
+          id: 0,
+          amountPaid: this.paymentValues[mode],
+          transactionRefernce: "",
+          paymentMethod: mode.toUpperCase(),
+          paymentId: paymentId
+        }));
+  
+        let breakdownCount = 0;
+        for (const breakdown of paymentBreakdownPayloads) {
+          this.checkoutService.savePaymentBreakdown(breakdown).subscribe({
+            next: () => {
+              breakdownCount++;
+              if (breakdownCount === paymentBreakdownPayloads.length) {
+                // All breakdowns saved — Proceed to Step 3
+                this.submitOrder(paymentId, now);
+              }
+            },
+            error: () => this.showError("Failed to save payment breakdown")
+          });
+        }
+      },
+      error: () => this.showError("Failed to process payment")
+    });
   }
+
+  private submitOrder(paymentId: number, now: string) {
+    const orderPayload = {
+      id: 0 | this.cart.orderId,
+      orderNumber: this.randomTokenService.getRandomToken(),
+      orderStatus: "PAID",
+      updatedAt: now,
+      createdDate: now,
+      totalAmount: this.totalPaid,
+      amountTendered: this.totalPaid,
+      quantity: 0,
+      customerId: 1,
+      branchId: 1,
+      cashier: 67,
+      paymentId: paymentId,
+      orderItem: this.cart.cartItems.map(item => {
+        let orderItems = [{
+          totalPrice: item.count * parseInt(item.sellingPrice || '0'),
+          quantity: item.count,
+          productId: item.id,
+        }];
+  
+        if (item.selectedVariants?.length) {
+          item.selectedVariants.forEach(variant => {
+            const selectedQuantity = variant.selectedQuantity ?? 0;
+            const price = variant.price || 0;
+            if (selectedQuantity > 0) {
+              orderItems.push({
+                totalPrice: selectedQuantity * price,
+                quantity: selectedQuantity,
+                productId: item.id,
+                productVariantId: variant.id,
+              }as { totalPrice: number; quantity: number; productId: number; productVariantId: number | null });
+            }
+          });
+        }
+  
+        return orderItems;
+      }).flat()
+    };
+  
+    this.checkoutService.saveOrder(orderPayload).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Payment, Breakdown & Order saved successfully',
+          key: 'tl',
+          life: 3000,
+        });
+  
+        const checkoutLink = this.navigationLink.getLink('checkoutLink');
+        this.router.navigate([checkoutLink]);
+        this.printReceipt();
+      },
+      error: () => this.showError("Failed to save order")
+    });
+  }
+  
+  
+  
+  private showError(msg: string) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: msg,
+      key: 'tl',
+      life: 3000,
+    });
+  }
+  
 
   saveCurrentCartItem() {
     const paidCart = {

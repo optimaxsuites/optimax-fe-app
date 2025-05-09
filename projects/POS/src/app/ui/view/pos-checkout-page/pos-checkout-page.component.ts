@@ -248,10 +248,10 @@ private calculateClosingTotal(): number {
     this.cartItems = this.buildCartFromOrders(order.orderItem)
     // this.cartItems = order.orderItems.map((item: any) => ({ ...item }));
     console.log(this.cartItems)
-    this.discount = order.cartDiscount;
+    this.discount = order.cartDiscount | 0;
     this.discountValue = order.discountValue;
     this.value = order.value;
-    this.total = order.total;
+    this.total = order.totalAmount;
     this.calculateTotals();
   }
  
@@ -269,7 +269,7 @@ private calculateClosingTotal(): number {
     
         const selectedVariants = variants.map((v: any) => ({
           ...v.productVariant,
-          selectedQuantity: v.count,
+          selectedQuantity: v.quantity,
         }));
     
         const variantTotal = selectedVariants.reduce(
@@ -277,13 +277,15 @@ private calculateClosingTotal(): number {
           0
         );
     
-        const itemTotal = parseFloat(item.sellingPrice) * item.count;
+        const itemTotal = parseFloat(item.product.sellingPrice) * parseFloat(item.quantity);
         const cartPriceTotal = itemTotal + variantTotal;
     
         groupedCartItems.push({
-          ...item,
+          orderId: item.id,
+          ...item.product,
+          count: item.quantity,
           selectedVariants,
-          cartPriceTotal: cartPriceTotal.toString(),
+          cartPriceTotal: itemTotal,
         });
       }
     });
