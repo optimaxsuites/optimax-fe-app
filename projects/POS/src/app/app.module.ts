@@ -120,6 +120,9 @@ import { EditIngredientsComponent } from './ui/view/ingredient/edit-ingredients/
 import { PromotionReportComponent } from './ui/view/report-dashboard/promotion-report/promotion-report.component';
 import { StockReportComponent } from './ui/view/report-dashboard/stock-report/stock-report.component';
 import { AppInitService } from './ui/service/app-init.service';
+import { OrderStatusPipe } from './ui/pipes/order-status.pipe';
+import { OrderFilterPipe } from './ui/pipes/order-filter.pipe';
+import { SalesDetailsComponent } from './ui/view/sales/sales-details/sales-details.component';
 
 export function appInitializerFactory(appInitService: AppInitService) {
   return () => appInitService.init();
@@ -181,6 +184,9 @@ export function appInitializerFactory(appInitService: AppInitService) {
     EditIngredientsComponent,
     PromotionReportComponent,
     StockReportComponent,
+    OrderStatusPipe,
+    OrderFilterPipe,
+    SalesDetailsComponent,
     //CheckoutKitchenComponent,
     //CheckoutHeaderComponent,
   ],

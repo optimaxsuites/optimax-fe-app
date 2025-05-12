@@ -90,7 +90,7 @@
           ></app-searchbar>
         </div>
       </div>
-      <div class="left-sidebar w-auto flex gap-3 flex-wrap overflow-x-auto">
+      <div class="left-sidebar w-auto flex gap-3 flex-wrap overflow-x-auto min-h-32">
         <button 
           (click)="filterItems($event)" 
           value="Category" 
@@ -114,26 +114,6 @@
         class="flex flex-col gap-10"
         [class]="businessType == 'Generic' ? 'h-[80vh]' : 'h-full'"
       >
-        @if (businessType == "Generic") {
-        <select
-          name="category"
-          id="category"
-          class="bg-transparent w-52 cursor-pointer h-12 text-2xl pl-4"
-          (change)="filterItems($event)"
-        >
-          <option selected value="Category">Category</option>
-          @for (category of categories; track category) {
-          <option
-            [value]="category"
-            class="py-2 cursor-pointer px-3 border rounded-2xl"
-          >
-            {{ category }}
-          </option>
-          }
-        </select>
-        }
-      
-
         <div
           class="gap-3 flex-1 overflow-y-auto"
           [class]="businessType == 'Generic' ? '' : 'gap-4 p-4'"
@@ -153,7 +133,7 @@
           }
           <!-- @case ("Hotel") {} -->
           @default {
-          <div class="grid grid-cols-5 gap-3 product-area">
+          <div class=" ">
             @for (product of shownProducts; track product.id) {
             <app-product-card
               [product]="product"

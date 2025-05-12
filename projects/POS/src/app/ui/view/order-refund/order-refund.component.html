@@ -20,180 +20,259 @@
 <app-modal
   *ngIf="requestForm"
   (close)="openRequestForm()"
-  header="Refund request form"
+  header="Return Request Form"
   class="modal-style"
 >
   <form
     class="bg-white p-6 rounded-lg shadow-md flex flex-col gap-4 w-full"
-    #refundForm="ngForm"
-    (ngSubmit)="sendRequest()"
+    #returnForm="ngForm"
+    (ngSubmit)="submitReturnRequest()"
   >
-    <div>
-      <label for="receiptId">Receipt Id:</label>
+    <!-- Customer Information -->
+    <div class="space-y-4">
+      <h3 class="font-semibold text-lg border-b pb-2">Customer Information</h3>
+      
+      <div>
+        <label for="name" class="block text-sm font-medium mb-1">Full Name:</label>
+        <input
+          type="text"
+          name="name"
+          id="name"
+          [(ngModel)]="returnData.name"
+          placeholder="Akintola Akinyemi"
+          required
+          class="w-full px-3 py-2 border rounded-md"
+        />
+      </div>
 
-      <input
-        type="text"
-        name="receiptId"
-        id="receiptId"
-        [(ngModel)]="refundData.orderId"
-        (ngModelChange)="validateReceipt()"
-        placeholder="RTY1542"
-        required
-        class="w-full px-3 py-2 border rounded-md"
-      />
+      <div>
+        <label for="phoneNumber" class="block text-sm font-medium mb-1">Phone Number:</label>
+        <input
+          type="tel"
+          name="phoneNumber"
+          id="phoneNumber"
+          [(ngModel)]="returnData.phoneNumber"
+          placeholder="08012345678"
+          required
+          class="w-full px-3 py-2 border rounded-md"
+        />
+      </div>
     </div>
 
-    <label *ngIf="orderItems.length">
-      <div>Purchase Date:</div>
-      <p class="editInput">{{ refundData.timestamp }}</p>
-    </label>
+    <!-- Order Information -->
+    <div class="space-y-4 mt-4">
+      <h3 class="font-semibold text-lg border-b pb-2">Order Information</h3>
+      
+      <div>
+        <label for="orderId" class="block text-sm font-medium mb-1">Receipt/Order ID:</label>
+        <input
+          type="text"
+          name="orderId"
+          id="orderId"
+          [(ngModel)]="returnData.order.id"
+          (ngModelChange)="validateOrder()"
+          placeholder="RTY1542"
+          required
+          class="w-full px-3 py-2 border rounded-md"
+        />
+      </div>
 
-    <label>
-      <div>Full Name:</div>
+      <div *ngIf="orderDetails">
+        <label class="block text-sm font-medium mb-1">Purchase Date:</label>
+        <p class="px-3 py-2 border rounded-md bg-gray-50">{{ formatDate(orderDetails.createdDate) | date:'medium' }}</p>
+      </div>
+    </div>
 
-      <input
-        type="text"
-        name="customerName"
-        id="customerName"
-        [(ngModel)]="refundData.customerName"
-        placeholder="Akintola Akinyemi"
-        required
-        class="w-full px-3 py-2 border rounded-md"
-      />
-    </label>
-
-    <label>
-      <div>Email:</div>
-
-      <input
-        type="email"
-        name="email"
-        id="email"
-        [(ngModel)]="refundData.emailAddress"
-        placeholder="akintola.akinyemi@example.com"
-        required
-        class="w-full px-3 py-2 border rounded-md mb-4"
-      />
-    </label>
-
-    @if (orderItems.length > 0) {
-    <div class="flex flex-col gap-2">
-      <label for="orderItems" class="font-semibold">Purchased Items:</label>
-      <div class="flex flex-col flex-wrap gap-2">
-        <div *ngFor="let item of orderItems" class="items-center flex">
+    <!-- Return Items -->
+    <div *ngIf="orderItems.length > 0" class="space-y-4 mt-4">
+      <h3 class="font-semibold text-lg border-b pb-2">Select Items to Return</h3>
+      
+      <div class="max-h-60 overflow-y-auto border rounded-md p-2">
+        <div *ngFor="let item of orderItems; let i = index" class="flex items-center py-2 border-b last:border-0">
           <input
             type="checkbox"
             id="item-{{ item.id }}"
-            name="orderItems"
-            value="{{ item.id }}"
+            [(ngModel)]="selectedItems[i]"
+            name="selectedItem{{i}}"
+            class="h-5 w-5 text-blue-600"
+            (change)="calculateRefundableAmount()"
           />
-          <label for="item-{{ item.id }}" class="ml-2 cursor-pointer">{{
-            item.name
-          }}</label>
+          <label for="item-{{ item.id }}" class="ml-3 block">
+            <span class="font-medium">{{ item.product.name }}</span>
+            <span class="block text-sm text-gray-500">Qty: {{ item.quantity }} × {{ item.product.sellingPrice | currency: '₦' }}</span>
+          </label>
+          <span class="ml-auto font-medium">{{ item.totalPrice | currency: '₦'}}</span>
         </div>
       </div>
-    </div>
-    }
-
-    <p class="font-semibold">Reason For Refund</p>
-    <ng-select
-      [items]="refundReasons"
-      bindLabel="label"
-      bindValue="value"
-      placeholder="Select Refund Reason"
-      required
-    ></ng-select>
-
-    <p class="font-semibold">Refund Method</p>
-    <ng-select
-      [items]="refundMethods"
-      bindLabel="label"
-      bindValue="value"
-      [(ngModel)]="selectedRefundMethod"
-      name="refundMethod"
-      (ngModelChange)="updateFormFields($event)"
-      placeholder="Select Refund Method"
-      #refundMethod="ngModel"
-      required
-    >
-    </ng-select>
-    <p
-      *ngIf="refundMethod.invalid && refundMethod.touched"
-      class="text-red-500"
-    >
-      Please select a refund method.
-    </p>
-
-    <!-- Bank Transfer Fields -->
-    <div *ngIf="selectedRefundMethod === 'bank'">
-      <input
-        type="text"
-        placeholder="Bank Name"
-        [(ngModel)]="refundDetails.bankName"
-        name="bankName"
-        required
-      />
-      <input
-        type="text"
-        placeholder="Account Number"
-        [(ngModel)]="refundDetails.accountNumber"
-        name="accountNumber"
-        required
-      />
-      <input
-        type="text"
-        placeholder="Account Holder"
-        [(ngModel)]="refundDetails.accountHolder"
-        name="accountHolder"
-        required
-      />
+      
+      <div *ngIf="returnData.refundableAmount > 0" class="flex justify-between font-semibold text-lg px-2">
+        <span>Total Refundable Amount:</span>
+        <span>{{ returnData.refundableAmount | currency: '₦' }}</span>
+      </div>
     </div>
 
-    <!-- Royalty Top-Up -->
-    <div *ngIf="selectedRefundMethod === 'royalty'">
-      <input
-        type="text"
-        placeholder="Customer Loyalty ID"
-        [(ngModel)]="refundDetails.loyaltyId"
-        name="loyaltyId"
-        required
-      />
+    <!-- Return Reason -->
+    <div class="space-y-4 mt-4">
+      <h3 class="font-semibold text-lg border-b pb-2">Return Details</h3>
+      
+      <div>
+        <label for="reason" class="block text-sm font-medium mb-1">Reason For Return:</label>
+        <ng-select
+          id="reason"
+          [items]="returnReasons"
+          bindLabel="label"
+          bindValue="value"
+          [(ngModel)]="returnData.reason"
+          name="reason"
+          placeholder="Select Return Reason"
+          required
+          class="w-full"
+        ></ng-select>
+      </div>
+
+      <div>
+        <label for="refundMethod" class="block text-sm font-medium mb-1">Refund Method:</label>
+        <ng-select
+          id="refundMethod"
+          [items]="refundMethods"
+          bindLabel="label"
+          bindValue="value"
+          [(ngModel)]="returnData.refundMethod"
+          name="refundMethod"
+          (ngModelChange)="onRefundMethodChange($event)"
+          placeholder="Select Refund Method"
+          required
+          class="w-full"
+        ></ng-select>
+      </div>
     </div>
 
-    <!-- Exchange -->
-    <div *ngIf="selectedRefundMethod === 'exchange'">
-      <input
-        type="text"
-        placeholder="New Product"
-        [(ngModel)]="refundDetails.newProduct"
-        name="newProduct"
-        required
-      />
-      <input
-        type="number"
-        placeholder="Price Difference"
-        [(ngModel)]="refundDetails.priceDifference"
-        name="priceDifference"
-        required
-      />
+    <!-- Bank Transfer Details -->
+    <div *ngIf="returnData.refundMethod === 'BANK_TRANSFER'" class="space-y-4 mt-2">
+      <h3 class="font-semibold text-lg border-b pb-2">Bank Details</h3>
+      
+      <div>
+        <label for="bankName" class="block text-sm font-medium mb-1">Bank Name:</label>
+        <input
+          type="text"
+          id="bankName"
+          [(ngModel)]="returnData.bankDetails.bankName"
+          name="bankName"
+          placeholder="Bank Name"
+          required
+          class="w-full px-3 py-2 border rounded-md"
+        />
+      </div>
+      
+      <div>
+        <label for="accountNumber" class="block text-sm font-medium mb-1">Account Number:</label>
+        <input
+          type="text"
+          id="accountNumber"
+          [(ngModel)]="returnData.bankDetails.accountNumber"
+          name="accountNumber"
+          placeholder="Account Number"
+          required
+          class="w-full px-3 py-2 border rounded-md"
+        />
+      </div>
+      
+      <div>
+        <label for="accountName" class="block text-sm font-medium mb-1">Account Holder Name:</label>
+        <input
+          type="text"
+          id="accountName"
+          [(ngModel)]="returnData.bankDetails.accountName"
+          name="accountName"
+          placeholder="Account Holder Name"
+          required
+          class="w-full px-3 py-2 border rounded-md"
+        />
+      </div>
     </div>
 
-    <textarea
-      name="additionalNotes"
-      id="additionalNotes"
-      rows="4"
-      placeholder="Additional Notes"
-      class="w-full px-3 py-2 border rounded-md mb-4"
-    ></textarea>
+    <!-- Royalty Account Details -->
+    <div *ngIf="returnData.refundMethod === 'ROYALTY_POINTS'" class="space-y-4 mt-2">
+      <h3 class="font-semibold text-lg border-b pb-2">Royalty Account Details</h3>
+      
+      <div>
+        <label for="royaltyId" class="block text-sm font-medium mb-1">Royalty Account ID:</label>
+        <input
+          type="text"
+          id="royaltyId"
+          [(ngModel)]="returnData.royaltyAccount.id"
+          name="royaltyId"
+          placeholder="Royalty ID"
+          required
+          class="w-full px-3 py-2 border rounded-md"
+        />
+      </div>
+      
+      <div *ngIf="returnData.royaltyAccount?.name" class="py-2">
+        <span class="block text-sm font-medium">Account Holder:</span>
+        <span class="block px-3 py-2 border rounded-md bg-gray-50">{{ returnData.royaltyAccount.name }}</span>
+      </div>
+    </div>
 
-    <button
-      type="submit"
-      class="w-full bg-customGreen text-white py-2 rounded-md cursor-pointer"
-      [disabled]="refundForm.invalid"
-      (click)="openRequestForm()"
-    >
-      Submit
-    </button>
+    <!-- Exchange Details -->
+    <div *ngIf="returnData.refundMethod === 'EXCHANGE'" class="space-y-4 mt-2">
+      <h3 class="font-semibold text-lg border-b pb-2">Exchange Details</h3>
+      
+      <div>
+        <label for="exchangeProduct" class="block text-sm font-medium mb-1">Product to Exchange For:</label>
+        <ng-select
+          id="exchangeProduct"
+          [items]="availableProducts"
+          bindLabel="name"
+          bindValue="id"
+          [(ngModel)]="returnData.exchangeFor.id"
+          (ngModelChange)="onExchangeProductSelected($event)"
+          name="exchangeProduct"
+          placeholder="Select Product"
+          required
+          class="w-full"
+        ></ng-select>
+      </div>
+      
+      <div *ngIf="returnData.exchangeFor?.id" class="flex justify-between items-center">
+        <span>Price Difference:</span>
+        <span [ngClass]="priceDifference < 0 ? 'text-red-500' : 'text-green-500'">
+          {{ priceDifference < 0 ? 'Customer pays: ' : 'Refund to customer: ' }} 
+          {{ Math.abs(priceDifference) | currency: '₦'}}
+        </span>
+      </div>
+    </div>
+
+    <!-- Additional Comments -->
+    <div class="space-y-2 mt-4">
+      <label for="cashierComment" class="block text-sm font-medium">Additional Comments:</label>
+      <textarea
+        id="cashierComment"
+        [(ngModel)]="returnData.cashierComment"
+        name="cashierComment"
+        rows="3"
+        placeholder="Any additional information about this return"
+        class="w-full px-3 py-2 border rounded-md"
+      ></textarea>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="flex justify-end mt-6">
+      <button
+        type="button"
+        class="px-4 py-2 mr-2 border rounded-md hover:bg-gray-100"
+        (click)="openRequestForm()"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        [disabled]="returnForm.invalid || !hasSelectedItems"
+        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+      >
+        Submit Return Request
+      </button>
+    </div>
   </form>
 </app-modal>
 

@@ -158,6 +158,12 @@ export interface SalesReportBreakdownDTO {
 }
 
 export interface Order {
+  salesperson: any;
+branch: any;
+payment: any;
+amountTendered: any;
+  orderItem: any;
+  customer: any;
 updatedAt: any;
 orderStatus: any;
 orderNumber: any;
@@ -555,4 +561,68 @@ export interface TableOrderStatusFullDTO {
 
   /** List of items associated with the order */
   // orderItems?: OrderItemsFullDTO[];
+}
+
+
+export interface OrderItemDTO {
+totalPrice: any;
+sellingPrice: any;
+  id: number;
+  product: any;
+  quantity: number;
+  unitPrice: number;
+}
+
+
+export interface ReturnItemDTO {
+  id: number;
+  orderItem: OrderItemDTO;
+  quantity: number;
+}
+
+interface BankDetailsDTO {
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+}
+
+export enum RefundMethod {
+  CASH = 'CASH',
+  BANK_TRANSFER = 'BANK_TRANSFER',
+  ROYALTY_TOPUP = 'ROYALTY_POINTS',
+  EXCHANGE = 'EXCHANGE'
+}
+
+export enum ReturnStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  PROCESSED = 'PROCESSED'
+}
+
+export interface UserDTO {
+  id: number;
+  name: string;
+  // Add other relevant user fields
+}
+
+
+
+export interface ReturnDTO {
+  id?: number;
+  name: string;
+  phoneNumber: string;
+  royaltyAccount: CustomerDTO;
+  order: Order;
+  items: ReturnItemDTO[];
+  reason: string;
+  cashierComment: string;
+  adminComment?: string;
+  status: ReturnStatus;
+  processedBy?: UserDTO;
+  createdAt?: Date;
+  refundableAmount: number;
+  refundMethod: RefundMethod;
+  bankDetails: BankDetailsDTO;
+  exchangeFor: ProductData;
 }

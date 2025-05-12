@@ -5,7 +5,7 @@
 }
 
 .product-view {
-  @apply w-[70%] flex flex-col justify-between h-full gap-10 px-4 pt-4 overflow-hidden;
+  @apply w-[70%] flex flex-col justify-between h-full gap-10 px-4 py-4 overflow-hidden;
 }
 
 .cart-view {
@@ -70,7 +70,9 @@ nav {
 }
 
 .prod {
-  @apply grid grid-cols-2 gap-3;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  // @apply  gap-3;
 }
 
 .variant-button {
@@ -101,9 +103,9 @@ app-product-card {
 .left-sidebar {
   @apply flex flex-wrap gap-2 overflow-x-auto;
 
-  button {
-    @apply w-[calc(8%-0.5rem)];
-  }
+  // button {
+  //   @apply w-[calc(8%-0.5rem)];
+  // }
 }
 
 app-modal {

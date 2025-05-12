@@ -118,7 +118,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
       this.tax = cart.tax;
       this.subtotal = cart.subtotal;
     }
-    this.metadataService.fetchMetaData();
+    // this.metadataService.fetchMetaData();
     this.getProducts();
     this.loadCategory();
   }
@@ -621,6 +621,7 @@ this.messageService.add({
   getProducts() {
     this.metadataService.enrichedProduct$.subscribe(async (data) => {
       if (data) {
+        console.log(data)
         const p = data.sort((a: any, b: any) => {
           const dateA = new Date(
             a.createdDate[0],

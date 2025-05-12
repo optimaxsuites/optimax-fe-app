@@ -167,7 +167,15 @@ export class PosServiceService {
       ));
   }
 
-  getFilteredProductsWithDetails(currentBranchId: number) {
+  getProductById(id: number) {
+    return this.http
+      .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/${id}`)
+      .pipe(
+        catchError(this.handleError),
+      );
+  }
+
+  getFilteredProductsWithDetails(currentBranchId: number = 1) {
     return this.getProductsByBranchId(currentBranchId).pipe(
       switchMap((products: any[]) => {
         console.log(products);
@@ -282,6 +290,14 @@ export class PosServiceService {
   getTax() {
     return this.http
       .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/taxes')
+      .pipe(catchError(this.handleError));
+  }
+
+  getOrderById(id: number) {
+    return this.http
+      .get<any>(
+        this.getBaseApiUrl() + `/x/api/v2/pos/orders/${id}`
+      )
       .pipe(catchError(this.handleError));
   }
 

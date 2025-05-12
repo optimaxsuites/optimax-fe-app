@@ -79,8 +79,8 @@ import { HotelAdmintableComponent } from './ui/view/hotel-admintable/hotel-admin
     HotelAdmintableComponent,
   ],
   imports: [
-    BrowserAnimationsModule,
-    BrowserModule,
+    // BrowserAnimationsModule,
+    // BrowserModule,
     MenuModule,
     ConfirmDialogModule,
     DropdownModule,

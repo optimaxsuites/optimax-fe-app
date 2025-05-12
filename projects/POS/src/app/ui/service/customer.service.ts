@@ -18,6 +18,12 @@ export class CustomerService {
           .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/customers', data)
           .pipe(catchError(this.handleError));
       }
+
+      getCustomerById(id: number) {
+        return this.http
+          .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/customers/${id}`)
+          .pipe(catchError(this.handleError));
+      }
     
    private getBaseApiUrl(): string {
         return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;

@@ -2,7 +2,8 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, catchError, finalize, forkJoin, max, min, Observable, of, switchMap, tap } from 'rxjs';
 import { PosServiceService } from './pos-service.service';
 import { CheckoutService } from './checkout.service';
-import { SalesReportDTO, BranchSalesDTO, TopProductDTO, PaymentMethodSummaryDTO, SalesReportBreakdownDTO } from '../models/interface';
+import { SalesReportDTO, BranchSalesDTO, TopProductDTO, PaymentMethodSummaryDTO, SalesReportBreakdownDTO, Order } from '../models/interface';
+import { OrderService } from './order.service';
 export interface BranchDTO {
   id: number;
   name: string;
@@ -59,7 +60,7 @@ export class MetadataService {
 
   private paymentMethods: string[] = ['Credit Card', 'Debit Card', 'Cash', 'Mobile Payment', 'Gift Card']
 
-  private selectedBranchIdSubject = new BehaviorSubject<number | null>(null);
+  private selectedBranchIdSubject = new BehaviorSubject<number | null>(1);
   selectedBranchId$ = this.selectedBranchIdSubject.asObservable();
   private loadingSubject = new BehaviorSubject<boolean>(false);
   loading$ = this.loadingSubject.asObservable();
@@ -75,6 +76,7 @@ export class MetadataService {
    productSubject =  new BehaviorSubject<any[]>([]);
    enrichedProductSubject =  new BehaviorSubject<any[]>([])
    orderSubject = new BehaviorSubject<any[]>([])
+   returnSubject = new BehaviorSubject<any[]>([])
 
   discount$ = this.discountSubject.asObservable();
   discountTypes$ = this.discountTypesSubject.asObservable();
@@ -83,14 +85,14 @@ export class MetadataService {
   supplier$ = this.supplierSubject.asObservable();
   branches$ = this.branchSubject.asObservable();
   orders$ = this.orderSubject.asObservable();
-
+ returns$ = this.returnSubject.asObservable();
   products$ = this.productSubject.asObservable();
   enrichedProduct$ = this.enrichedProductSubject.asObservable()
 
 
 
   
-  constructor(private posService: PosServiceService, private checkoutService: CheckoutService) { }
+  constructor(private posService: PosServiceService, private checkoutService: CheckoutService, private orderService: OrderService) { }
   setSelectedBranch(id: number) {
     this.selectedBranchIdSubject.next(id);
   }
@@ -108,7 +110,10 @@ export class MetadataService {
     this.posService.getProducts().subscribe((data) => this.productSubject.next(data));
     this.posService.getProducts().subscribe((data) => this.productSubject.next(data));
     this.checkoutService.getOrders().subscribe((data) => this.orderSubject.next(data));
-    this.selectedBranchId$.subscribe((branchId =1) => {
+    this.orderService.getReturnRequest().subscribe((data) => this.returnSubject.next(data));
+
+    this.selectedBranchId$.subscribe((branchId) => {
+      console.log("branch id", branchId)
       if (branchId != null) {
         this.loadingSubject.next(true); 
   
