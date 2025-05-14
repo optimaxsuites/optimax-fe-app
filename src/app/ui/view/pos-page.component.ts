@@ -6,6 +6,7 @@ import { ConfigurationComponent } from './configuration/configuration.component'
 import { ManageUsersComponent } from './manage-users/manage-users.component';
 import { TabConfig } from '../sharedComponent/service/interface/data';
 import { SalesComponent } from './sales/sales.component';
+import { MetadataService } from '../service/metadata.service';
 
 @Component({
   selector: 'app-pos-page',
@@ -17,6 +18,11 @@ export class PosPageComponent {
   isDropdownOpen = false;
   selectedTab: string = 'dashboard';
   selectedSetting: string | null = null;
+
+  constructor(private metadataService: MetadataService){
+    // this.metadataService.fetchMetaData();
+
+  }
 
   toggleDropdown() {
     this.isDropdownOpen = !this.isDropdownOpen;

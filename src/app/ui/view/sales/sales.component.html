@@ -1,313 +1,148 @@
-<div class="sales-report-container  relative mx-3" *ngIf="!openSale">
-  <!-- <p-toolbar styleClass="mb-4 gap-2">
-    <ng-template pTemplate="left"> -->
-      <div class="flex w-full items-center justify-between gap-6 px-4 py-3">
-        <!-- Filters Section -->
-          <div class="w-1/2">
-            <div
-              class="flex items-center justify-between bg-gray-100 px-3 py-2 rounded-lg cursor-pointer w-full"
-            >
-              <div class="flex items-center space-x-4 w-full">
-                <button
-                  class="text-gray-600 mr-2 hover:text-gray-900"
-                  (click)="navigateDate(-1)"
-                >
-                  <i class="pi pi-chevron-left"></i>
-                </button>
+@if(!isViewPageOpen){
+  <div class="bg-white rounded-lg shadow-md p-6 m-6">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+      <!-- <h2 class="text-xl font-semibold text-gray-800 mb-4 md:mb-0">Orders List</h2> -->
+      
+      <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
+        <!-- Search input -->
+        <div class="relative flex-[2]">
+          <input
+            type="text"
+            [(ngModel)]="searchText"
+            (input)="applyFiltersAndSort()"
+            placeholder="Search orders..."
+            class="w-full h-full md:w-64 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute right-3 top-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        
+        <!-- Status filter -->
+        <!-- <select
+          [(ngModel)]="statusFilter"
+          (change)="applyFiltersAndSort()"
+          class="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <option *ngFor="let option of statusOptions" [value]="option.value">
+            {{ option.label }}
+          </option>
+        </select> -->
 
-                <div
-                  (click)="toggleCalendar()"
-                  class="flex items-center justify-center space-x-6 px-4 py-2 border rounded-lg cursor-pointer w-full whitespace-nowrap"
-                >
-                  <span class="text-gray-700 text-xl font-semibold">{{
-                    displayDateLabel
-                  }}</span>
-                  <i
-                    [ngClass]="
-                      calendarVisible
-                        ? 'pi pi-chevron-up text-gray-500'
-                        : 'pi pi-chevron-down text-gray-500'
-                    "
-                  ></i>
-                </div>
-
-                <button
-                  class="text-gray-600 ml-2 hover:text-gray-900"
-                  (click)="navigateDate(1)"
-                >
-                  <i class="pi pi-chevron-right"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Cashier Filter -->
-          <div class="w-1/2">
-            <ng-select
-              [items]="cashiers"
-              [multiple]="false"
-              placeholder="Filter by cashier"
-              class="rounded-lg border-gray-300 shadow-sm"
-              [(ngModel)]="selectedCashier"
-              (ngModelChange)="onCashierChange($event)"
-            >
-            </ng-select>
-          </div>
-
-          <!-- Status Filter -->
-          <div class="w-1/2">
-            <ng-select
-              [items]="statusOptions"
-              [multiple]="false"
-              placeholder="Filter by status"
-              class="rounded-lg border-gray-300 shadow-sm"
-              [(ngModel)]="selectedStatus"
-              (ngModelChange)="filterTransactions()"
-            >
-            </ng-select>
-          </div>
-
-        <!-- Summary Filter-->
-        <div class="w-1/3">
+         <!-- Cashier Filter -->
+         <div class="flex-1">
           <ng-select
-            [items]="summaryOptions"
-            placeholder="Select Summary"
+            [items]="cashiers"
+            [multiple]="false"
+            placeholder="Filter by cashier"
             class="rounded-lg border-gray-300 shadow-sm"
-            [(ngModel)]="searchTerm"
-            (ngModelChange)="handleSearchChange()"
+            [(ngModel)]="selectedCashier"
+            (ngModelChange)="applyFiltersAndSort()"
           >
           </ng-select>
         </div>
-      </div>
-    <!-- </ng-template>
-  </p-toolbar> -->
 
-  <!-- Date Range and Total Box -->
-  <div class="summary-box bg-white rounded-lg p-4 shadow-sm mb-4">
-    <div class="summary-content flex justify-between items-center">
-      <div class="date-range-display">
-        <span class="text-gray-700 font-bold">Date Range: </span>
-        <span class="font-extrabold text-2xl text-gray-800">{{
-          displayDateLabel
-        }}</span>
-      </div>
-      <div class="total-sales">
-        <span class="text-gray-700 font-bold">Gross Sales Total: </span>
-        <span class="sales-amount text-2xl font-extrabold text-blue-700"
-          >₦{{ formatCurrency(grossSalesTotal) }}</span
+        <!-- Status Filter -->
+        <div class="flex-1">
+          <ng-select
+            [items]="statusOptions"
+            bindLabel="label"
+            bindValue="value"
+            [multiple]="false"
+            placeholder="Filter by status"
+            class="rounded-lg border-gray-300 shadow-sm"
+            [(ngModel)]="statusFilter"
+            (ngModelChange)="applyFiltersAndSort()"
+          >
+          </ng-select>
+        </div>
+
+      <!-- Summary Filter-->
+      <div class="flex-1">
+        <ng-select
+          [items]="summaryOptions"
+          placeholder="Select Summary"
+          class="rounded-lg border-gray-300 shadow-sm"
+          [(ngModel)]="selectedSummary"
+          (ngModelChange)="applyFiltersAndSort()"
         >
+        </ng-select>
       </div>
+      </div>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full bg-white">
+        <thead>
+          <tr class="bg-gray-100">
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('id')">
+              ID 
+              <span class="ml-1">{{ sortBy === 'id' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('orderNumber')">
+              Order # 
+              <span class="ml-1">{{ sortBy === 'orderNumber' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('customer')">
+              Customer 
+              <span class="ml-1">{{ sortBy === 'customer' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('salesperson')">
+              Salesperson 
+              <span class="ml-1">{{ sortBy === 'salesperson' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('totalAmount')">
+              Amount 
+              <span class="ml-1">{{ sortBy === 'totalAmount' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('orderStatus')">
+              Status 
+              <span class="ml-1">{{ sortBy === 'orderStatus' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('date')">
+              Date 
+              <span class="ml-1">{{ sortBy === 'date' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <tr *ngFor="let order of filteredOrders" class="hover:bg-gray-50">
+            <td class="py-4 px-4 text-sm text-gray-900">{{ order.id }}</td>
+            <td class="py-4 px-4 text-sm text-gray-900">{{ order.orderNumber }}</td>
+            <td class="py-4 px-4 text-sm text-gray-900">{{ order.customer.name }}</td>
+            <td class="py-4 px-4 text-sm text-gray-900">{{ getSalespersonName(order) }}</td>
+            <td class="py-4 px-4 text-sm text-gray-900">₦{{ order.totalAmount.toLocaleString() }}</td>
+            <td class="py-4 px-4 text-sm">
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" [ngClass]="order.orderStatus | orderStatus">
+                {{ order.orderStatus }}
+              </span>
+            </td>
+            <td class="py-4 px-4 text-sm text-gray-900">{{ formatDate(order.createdDate) }}</td>
+            <td class="py-4 px-4 text-sm text-gray-900">
+              <button (click)="viewOrderDetails(order)" class="text-indigo-600 hover:text-indigo-900 font-medium">
+                View Details
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="filteredOrders.length === 0">
+            <td colspan="8" class="py-4 px-4 text-center text-gray-500">
+              No orders found.
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <!-- Sales Transactions Table -->
-  <div class="transactions-table">
-    <p-table
-      [value]="filteredTransactions"
-      [paginator]="true"
-      [rows]="10"
-      [showCurrentPageReport]="true"
-      [rowsPerPageOptions]="[10, 25, 50]"
-      styleClass="p-datatable-gridlines"
-      [tableStyle]="{ 'min-width': '50rem' }"
-      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
-      [globalFilterFields]="[
-        'orderId',
-        'cashier',
-        'transactionOrderId',
-        'status'
-      ]"
-    >
-      <ng-template pTemplate="header">
-        <tr>
-          <th
-            class="table-item"
-            pSortableColumn="orderId"
-            (click)="clearSearch()"
-          >
-            Order ID <p-sortIcon field="orderId"></p-sortIcon>
-          </th>
-          <th
-            class="table-item"
-            pSortableColumn="cashier"
-            (click)="clearSearch()"
-          >
-            Cashier <p-sortIcon field="cashier"></p-sortIcon>
-          </th>
-          <th
-            class="table-item"
-            pSortableColumn="transactionOrderId"
-            (click)="clearSearch()"
-          >
-            Transaction Order ID
-            <p-sortIcon field="transactionOrderId"></p-sortIcon>
-          </th>
-          <th
-            class="table-item"
-            pSortableColumn="status"
-            (click)="clearSearch()"
-          >
-            Status <p-sortIcon field="status"></p-sortIcon>
-          </th>
-          <th class="table-item" pSortableColumn="date" (click)="clearSearch()">
-            Date <p-sortIcon field="date"></p-sortIcon>
-          </th>
-          <th
-            class="table-item"
-            pSortableColumn="amount"
-            (click)="clearSearch()"
-          >
-            Amount <p-sortIcon field="amount"></p-sortIcon>
-          </th>
-        </tr>
-      </ng-template>
+}
 
-      <ng-template pTemplate="body" let-transaction>
-        <tr
-          class="text-xl cursor-pointer hover:bg-gray-50"
-          (click)="goToSaleDetails(transaction)"
-        >
-          <td>{{ transaction.orderId }}</td>
-          <td>{{ transaction.cashier }}</td>
-          <td>{{ transaction.transactionOrderId }}</td>
-          <td>
-            <span
-              [ngClass]="{
-                'bg-green-300 text-green-700':
-                  transaction.status === 'Completed',
-                'bg-gray-300 text-gray-600': transaction.status === 'Pending',
-                'bg-red-200 text-red-600': transaction.status === 'Void'
-              }"
-              class="font-semibold rounded-full px-3 py-2 text-lg"
-            >
-              {{ transaction.status }}
-            </span>
-          </td>
-          <td>{{ formatDate(transaction.date) }}</td>
-          <td>₦{{ formatCurrency(transaction.amount) }}</td>
-        </tr>
-      </ng-template>
-
-      <ng-template pTemplate="emptymessage">
-        <tr>
-          <td colspan="7" class="text-center text-[12px] p-4">
-            No sales transactions found for the selected filters
-          </td>
-        </tr>
-      </ng-template>
-
-      <ng-template pTemplate="paginatorright">
-        <div class="total-display">
-          Total Transactions: {{ filteredTransactions.length }}
-        </div>
-      </ng-template>
-    </p-table>
-  </div>
-</div>
-
-<div
-  *ngIf="calendarVisible"
-  class="calendar-popup-overlay"
-  (click)="toggleCalendar()"
->
-  <div class="calendar-popup" (click)="$event.stopPropagation()">
-    <div
-      class="calendar-container bg-white p-5  shadow-xl border rounded-lg flex gap-6 w-2/3"
-    >
-      <!-- Calendar Section -->
-      <div class="w-2/3">
-        <div class="calendar-header flex justify-between items-center mb-4">
-          <button
-            class="text-gray-500 hover:bg-gray-100 p-2 rounded-full"
-            (click)="navigateMonth(-1)"
-          >
-            <i class="pi pi-chevron-left"></i>
-          </button>
-          <div class="text-xl font-medium text-gray-800">
-            {{ currentMonth }}
-          </div>
-          <button
-            class="text-gray-500 hover:bg-gray-100 p-2 rounded-full"
-            (click)="navigateMonth(1)"
-          >
-            <i class="pi pi-chevron-right"></i>
-          </button>
-        </div>
-
-        <div
-          class="calendar-grid"
-        >
-          <div class="py-2">S</div>
-          <div class="py-2">M</div>
-          <div class="py-2">T</div>
-          <div class="py-2">W</div>
-          <div class="py-2">T</div>
-          <div class="py-2">F</div>
-          <div class="py-2">S</div>
-        </div>
-        <div class="calendar-days">
-          <div *ngFor="let day of calendarDays" [ngClass]="getDayClass(day)" class="calendar-day">
-            <div (click)="selectDay(day)">
-              {{ day.getDate() }}
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-6">
-          <div
-            class="flex justify-between text-xl font-semibold text-gray-600 mb-2"
-          >
-            <div>START</div>
-            <div>END</div>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <input
-              type="date"
-              class="border rounded-md p-4 text-xl w-full"
-              [ngModel]="startDate | date : 'yyyy-MM-dd'"
-              (ngModelChange)="updateStartDate($event)"
-            />
-            <input
-              type="date"
-              class="border rounded-md p-4 text-xl w-full"
-              [ngModel]="endDate | date : 'yyyy-MM-dd'"
-              (ngModelChange)="updateEndDate($event)"
-            />
-          </div>
-        </div>
-
-        <div class="flex justify-end mt-4">
-          <button
-            class="bg-blue-600 hover:bg-blue-700 text-white p-4 px-5 py-2 text-xl rounded-md"
-            (click)="applyCustomDateRange()"
-          >
-            Apply
-          </button>
-        </div>
-      </div>
-
-      <!-- Date Options Section -->
-      <div class="date-shortcuts bg-gray-50 p-5 w-48">
-        <h3 class="text-xl font-semibold text-gray-600 mb-3 pl-2">
-          Quick Select
-        </h3>
-        <div class="flex flex-col gap-2">
-          <div
-            *ngFor="let option of dateOptions"
-            class="px-4 py-3 bg-white hover:bg-blue-50 border border-gray-200 rounded-md text-xl text-gray-700 font-medium cursor-pointer transition-colors shadow-sm hover:border-blue-300"
-            (click)="selectDateOption(option)"
-          >
-            {{ option.label }}
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div *ngIf="openSale">
-  <app-sale-summary
-    [selectedTransaction]="selectedTransaction"
-    (back)="navigateToSale()"
-  ></app-sale-summary>
-</div>
+@if(isViewPageOpen){
+  <app-sales-details
+  [order] = 'activeOrder'
+  (back) = 'closeViewDetail()'
+  >
+  </app-sales-details>
+}

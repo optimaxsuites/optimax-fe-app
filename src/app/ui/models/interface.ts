@@ -33,6 +33,8 @@ export interface ProductJSONFormat {
  * There's some extra data we use with each product that wouldn't fit directly with the fetched data interface, `ProductJSONFormat`
  */
 export interface ProductData extends ProductJSONFormat {
+productVariant: any;
+product: any;
   purchasePrice: any;
   branch: any;
   branchDetails?: any;
@@ -156,13 +158,19 @@ export interface SalesReportBreakdownDTO {
 }
 
 export interface Order {
-  updatedAt: any;
-  orderStatus: any;
-  orderNumber: any;
-  totalAmount: any;
-  status: any;
-  amount: any;
-  createdDate: any;
+  salesperson: any;
+branch: any;
+payment: any;
+amountTendered: any;
+  orderItem: any;
+  customer: any;
+updatedAt: any;
+orderStatus: any;
+orderNumber: any;
+totalAmount: any;
+status: any;
+amount: any;
+createdDate: any;
   timestamp: any;
   name: string;
   cartDiscount: number;
@@ -173,6 +181,15 @@ export interface Order {
 }
 
 export interface Cart {
+customer: any;
+payment: any;
+amountTendered: number;
+orderNumber: any;
+  orderId: number;
+totalAmount: number;
+orderStatus?: any;
+orderItem?: any;
+updatedAt?: [];
   paymentModes: any;
   changeOffered: any;
   paymentMethod: any;
@@ -278,8 +295,8 @@ export interface Business {
 /////
 
 interface ProductDTO {
-  category: any;
-  price: number;
+category: any;
+price: number;
   id: number;
   name: string;
   code: string;
@@ -309,7 +326,7 @@ interface ProductBranchDTO {
 }
 
 export interface BranchDTO {
-  location: any;
+location: any;
   id: number;
   name: string;
   description: string;
@@ -544,4 +561,68 @@ export interface TableOrderStatusFullDTO {
 
   /** List of items associated with the order */
   // orderItems?: OrderItemsFullDTO[];
+}
+
+
+export interface OrderItemDTO {
+totalPrice: any;
+sellingPrice: any;
+  id: number;
+  product: any;
+  quantity: number;
+  unitPrice: number;
+}
+
+
+export interface ReturnItemDTO {
+  id: number;
+  orderItem: OrderItemDTO;
+  quantity: number;
+}
+
+interface BankDetailsDTO {
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+}
+
+export enum RefundMethod {
+  CASH = 'CASH',
+  BANK_TRANSFER = 'BANK_TRANSFER',
+  ROYALTY_TOPUP = 'ROYALTY_POINTS',
+  EXCHANGE = 'EXCHANGE'
+}
+
+export enum ReturnStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  PROCESSED = 'PROCESSED'
+}
+
+export interface UserDTO {
+  id: number;
+  name: string;
+  // Add other relevant user fields
+}
+
+
+
+export interface ReturnDTO {
+  id?: number;
+  name: string;
+  phoneNumber: string;
+  royaltyAccount: CustomerDTO;
+  order: Order;
+  items: ReturnItemDTO[];
+  reason: string;
+  cashierComment: string;
+  adminComment?: string;
+  status: ReturnStatus;
+  processedBy?: UserDTO;
+  createdAt?: Date;
+  refundableAmount: number;
+  refundMethod: RefundMethod;
+  bankDetails: BankDetailsDTO;
+  exchangeFor: ProductData;
 }

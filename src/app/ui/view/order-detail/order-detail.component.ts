@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Navigation, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { NavigationState } from '../../models/interface';
+import { Cart, NavigationState } from '../../models/interface';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
 import JsBarcode from 'jsbarcode';
 @Component({
@@ -27,13 +27,114 @@ export class OrderDetailComponent {
     } else {
       localStorage.setItem('viewedState', JSON.stringify(this.navigationState));
     }
+    console.log(this.navigationState)
+    // this.buildCartFromOrders(this.navigationState.order)
+    // console.log(this.navigationState)
+    
   }
 
+  getSubtotal(): number {
+    return this.navigationState.order.orderItem.reduce((sum: number, item: any) => {
+      const quantity = item.quantity;
+      const variantPrice = item.productVariant?.price;
+      const productPrice = parseFloat(item.product.sellingPrice);
+      const subtotal = variantPrice ? variantPrice * quantity : productPrice * quantity;
+      return sum + subtotal;
+    }, 0);
+  }
+  
+  getTotalTax(): number {
+    return this.navigationState.order.orderItem.reduce((sum: number, item: any) => {
+      const quantity = item.quantity;
+      const variantPrice = item.productVariant?.price;
+      const productPrice = parseFloat(item.product.sellingPrice);
+      const subtotal = variantPrice ? variantPrice * quantity : productPrice * quantity;
+      const taxRate = item.product.tax?.rate || 0;
+      const tax = (taxRate / 100) * subtotal;
+      return sum + tax;
+    }, 0);
+  }
+  
+  getTotalPrice(): number {
+    return this.getSubtotal() + this.getTotalTax();
+  }
+  
+  buildCartFromOrders(orders: any): any {
+    const groupedCartItems: any[] = [];
+  
+    orders.orderItem.forEach((item: any) => {
+      if (!item.productVariant) {
+        // Only match variants with the same product.id
+        const variants = orders.orderItem.filter((v: any) =>
+          v.productVariant &&
+          item.product &&
+          v.product.id === item.product.id
+        );
+    
+        const selectedVariants = variants.map((v: any) => ({
+          ...v.productVariant,
+          selectedQuantity: v.count,
+        }));
+    
+        const variantTotal = selectedVariants.reduce(
+          (sum: number, variant: any) => sum + (variant.price * variant.selectedQuantity),
+          0
+        );
+    
+        const itemTotal = parseFloat(item.sellingPrice) * item.count;
+        const cartPriceTotal = itemTotal + variantTotal;
+    
+        groupedCartItems.push({
+          ...item,
+          selectedVariants,
+          cartPriceTotal: cartPriceTotal.toString(),
+        });
+      }
+    });
+    
+  
+    const subtotal = groupedCartItems.reduce(
+      (sum, item) => sum + parseFloat(item.cartPriceTotal),
+      0
+    );
+  
+    const taxRate = 0.1; // example: 10%
+    const tax = subtotal * taxRate;
+    const discount = 0;
+    const total = subtotal + tax;
+  
+    this.navigationState.order = 
+{
+  ...this.navigationState.order,
+cart: groupedCartItems,
+discount,
+paymentModes: ['cash'], // or dynamic
+subtotal,
+tax,
+total
+} as any
+
+    console.log( this.navigationState.order.cart)
+  }
+  
   reOpenCart() {
     const order = this.navigationState.order;
     const checkoutLink = this.navigationLink.getLink('checkoutLink');
     this.router.navigate([checkoutLink], { state: { order } });
   }
+
+
+  formatDate(parts: any): Date {
+    // const parts = raw.split(',').map(Number);
+    return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
+  }
+  
+// In order-detail.component.ts
+get changeAmount(): number {
+  const tendered = this.navigationState?.order?.amountTendered ?? 0;
+  const total = this.navigationState?.order?.totalAmount ?? 0;
+  return tendered - total;
+}
 
 printReciept() {
   const content = document.getElementById('receipt-container')?.outerHTML;

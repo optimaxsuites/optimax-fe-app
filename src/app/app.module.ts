@@ -1,5 +1,5 @@
 import { ChartModule } from 'primeng/chart';
-import { NgModule, viewChild } from '@angular/core';
+import { NgModule, viewChild,  APP_INITIALIZER} from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -119,6 +119,14 @@ import { ViewIngredientsComponent } from './ui/view/ingredient/view-ingredients/
 import { EditIngredientsComponent } from './ui/view/ingredient/edit-ingredients/edit-ingredients.component';
 import { PromotionReportComponent } from './ui/view/report-dashboard/promotion-report/promotion-report.component';
 import { StockReportComponent } from './ui/view/report-dashboard/stock-report/stock-report.component';
+import { AppInitService } from './ui/service/app-init.service';
+import { OrderStatusPipe } from './ui/pipes/order-status.pipe';
+import { OrderFilterPipe } from './ui/pipes/order-filter.pipe';
+import { SalesDetailsComponent } from './ui/view/sales/sales-details/sales-details.component';
+
+export function appInitializerFactory(appInitService: AppInitService) {
+  return () => appInitService.init();
+}
 @NgModule({
   declarations: [
     AppComponent,
@@ -176,11 +184,14 @@ import { StockReportComponent } from './ui/view/report-dashboard/stock-report/st
     EditIngredientsComponent,
     PromotionReportComponent,
     StockReportComponent,
+    OrderStatusPipe,
+    OrderFilterPipe,
+    SalesDetailsComponent,
     //CheckoutKitchenComponent,
     //CheckoutHeaderComponent,
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
    UserModule,
     AppRoutingModule,
     CheckboxModule,
@@ -233,7 +244,7 @@ import { StockReportComponent } from './ui/view/report-dashboard/stock-report/st
     InputGroupAddonModule,
     SkeletonModule,
     PaginatorModule,
-    BrowserAnimationsModule,
+    // BrowserAnimationsModule,
   ],
   exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],
   providers: [
@@ -245,6 +256,12 @@ import { StockReportComponent } from './ui/view/report-dashboard/stock-report/st
     {
       provide: JWT_OPTIONS,
       useValue: JWT_OPTIONS,
+    },
+    {
+      provide: APP_INITIALIZER,
+      useFactory: (appInitService: AppInitService) => () => appInitService.init(),
+      deps: [AppInitService],
+      multi: true
     },
     JwtHelperService,
     provideHttpClient(withInterceptorsFromDi()),

@@ -35,12 +35,16 @@ export class ProductCardComponent {
     }
   }
   get amountOfProductInCart() {
-    const cartItem = this.cartItems?.find((item) => item.id === this.product.id);
+    const cartItem = this.cartItems?.find(
+      (item) => item.id === this.product.id
+    );
     if (!cartItem) return 0;
     const selectedVariantsQuantity = cartItem.selectedVariants?.length
-      ? cartItem.selectedVariants.reduce((sum, variant) => sum + (variant.selectedQuantity ?? 0), 0)
+      ? cartItem.selectedVariants.reduce(
+          (sum, variant) => sum + (variant.selectedQuantity ?? 0),
+          0
+        )
       : 0;
     return (cartItem.count ?? 0) + selectedVariantsQuantity;
   }
-  
 }

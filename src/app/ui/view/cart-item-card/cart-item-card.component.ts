@@ -18,13 +18,18 @@ export class CartItemCardComponent implements Business {
 
   @Output() countChange = new EventEmitter<number>();
   @Output() updateItem = new EventEmitter<number>();
-  imageUrl!: string;
+  imageUrl!: any;
 
   // count: number = this.item.count
 
   constructor(private industryDataService: IndustryDataService, private imageCacheService: ImageCacheService) {}
   ngOnInit(): void {
-    const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${this.item.productImages[0].imgNo}`;
+
+    if(this.item.imageUrl$){
+      this.imageUrl = this.item.imageUrl$
+      return
+    }
+    const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${this.item.product ? this.item.product.productImages[0].imgNo : this.item.productImages[0].imgNo}`;
     this.imageCacheService.getImage(remoteImageUrl).subscribe((url) => {
       this.imageUrl = url;
     });

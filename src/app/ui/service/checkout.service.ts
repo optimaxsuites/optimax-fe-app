@@ -25,6 +25,12 @@ export class CheckoutService {
       .pipe(catchError(this.handleError));
     }
 
+    savePaymentBreakdown(data: any){
+      return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/paymentBreakdowns', data)
+      .pipe(catchError(this.handleError));
+    }
+
     getOrders(){
       return this.http
       .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/orders')
