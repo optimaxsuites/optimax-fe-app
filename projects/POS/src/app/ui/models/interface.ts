@@ -210,6 +210,10 @@ export interface NavigationState {
 }
 
 export interface Refund {
+  id?: any;
+orderNumber?: any;
+createdAt?: any;
+name: any;
   phoneNumber: string;
   emailAddress: string;
   timestamp: any;
@@ -224,9 +228,20 @@ export interface Refund {
   accountNumber?: string;
   accountHolder?: string;
   loyaltyId?: string;
+  selectedRequest: Refund;
+  royaltyAccountId: number;
+  reason: any;
+  refundableAmount: string|number;
+  returnItems: any;
+
 }
 
-export interface SelectedRequest {
+export interface SelectedRequest extends Refund{
+returnItems: any;
+refundableAmount: string|number;
+reason: any;
+  royaltyAccountId: number;
+// customer: any;
   selectedRequest: Refund;
   phoneNumber: string;
   emailAddress: string;
@@ -382,10 +397,10 @@ export interface IngredientDTO {
 }
 
 export interface CustomerDTO {
-  id: number;
+  id?: number;
   name: string;
   email?: string;
-  phone: string;
+  phoneNumber: string;
   loyaltyPoints?: number;
 }
 interface HotelProductDTO extends ProductDTO {}
@@ -565,6 +580,7 @@ export interface TableOrderStatusFullDTO {
 
 
 export interface OrderItemDTO {
+  productVariant: any;
 totalPrice: any;
 sellingPrice: any;
   id: number;
@@ -609,8 +625,11 @@ export interface UserDTO {
 
 
 export interface ReturnDTO {
+  orderId?: number;
+  returnItems?: ReturnItemDTO[];
+  royaltyAccountId?: number | undefined;
   id?: number;
-  name: string;
+  name?: string;
   phoneNumber: string;
   royaltyAccount: CustomerDTO;
   order: Order;

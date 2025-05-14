@@ -19,6 +19,17 @@ export class OrderService {
           .pipe(catchError(this.handleError));
       }
 
+      sendReturnItemsLog(data: any) {
+        return this.http
+          .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/returnItems', data)
+          .pipe(catchError(this.handleError));
+      }
+
+      getReturnRequestById(id: any) {
+        return this.http
+          .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/returnItems/${id}`)
+          .pipe(catchError(this.handleError));
+      }
   getReturnRequest() {
         return this.http
           .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/itemReturnLogs')

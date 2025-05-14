@@ -32,8 +32,8 @@ export class CashPaymentComponent implements OnInit {
     loyalty: null,
   };
   customers: CustomerDTO[] = [
-    { id: 1, name: "John Doe", phone: "08012345678", loyaltyPoints: 500 },
-    { id: 2, name: "Jane Smith", phone: "08087654321", loyaltyPoints: 300 },
+    { id: 1, name: "John Doe", phoneNumber: "08012345678", loyaltyPoints: 500 },
+    { id: 2, name: "Jane Smith", phoneNumber: "08087654321", loyaltyPoints: 300 },
   ];
   customerSearch: string = "";  
   customerFound: CustomerDTO | null = null
@@ -42,7 +42,7 @@ export class CashPaymentComponent implements OnInit {
   newCustomer: CustomerDTO = {
     id: 0,
     name: '',
-    phone: '',
+    phoneNumber: '',
     email: '',
     loyaltyPoints: 0
   };
@@ -108,7 +108,7 @@ export class CashPaymentComponent implements OnInit {
   }
 
   findCustomer() {
-    const customer = this.customers.find(c => c.phone === this.customerSearch);
+    const customer = this.customers.find(c => c.phoneNumber === this.customerSearch);
     if (customer) {
       this.customerFound = customer;
       this.customerNotFound = false
@@ -129,7 +129,7 @@ export class CashPaymentComponent implements OnInit {
     this.newCustomer = {
       id: 0,
       name: '',
-      phone: this.customerSearch,
+      phoneNumber: this.customerSearch,
       email: '',
       loyaltyPoints: 0
     };
@@ -137,7 +137,7 @@ export class CashPaymentComponent implements OnInit {
   
   
   createCustomer(): void {
-    if (!this.newCustomer.name || !this.newCustomer.phone) {
+    if (!this.newCustomer.name || !this.newCustomer.phoneNumber) {
       // this.toastr.warning('Name and phone number are required');
       return;
     }

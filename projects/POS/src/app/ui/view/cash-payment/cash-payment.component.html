@@ -88,7 +88,7 @@
                 <div class="flex justify-between items-center">
                   <div>
                     <p class="font-medium">{{customerFound.name}}</p>
-                    <p class="text-gray-600">{{customerFound.phone}}</p>
+                    <p class="text-gray-600">{{customerFound.phoneNumber}}</p>
                   </div>
                   <div class="text-right">
                     <p class="font-medium">Available Points</p>
@@ -276,7 +276,7 @@
         <label class="block text-sm font-medium mb-1">Phone Number</label>
         <input 
           type="tel" 
-          [(ngModel)]="newCustomer.phone" 
+          [(ngModel)]="newCustomer.phoneNumber" 
           class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-customBlue focus:outline-none"
           placeholder="Phone number"
           [value]="customerSearch"

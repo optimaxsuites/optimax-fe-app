@@ -9,6 +9,9 @@ import { MetadataService } from '../../service/metadata.service';
 import { PosServiceService } from '../../service/pos-service.service';
 import { CustomerService } from '../../service/customer.service';
 import { OrderService } from '../../service/order.service';
+import { from, Subject } from 'rxjs';
+import { concatMap, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+
 
 @Component({
   selector: 'app-order-refund',
@@ -38,7 +41,7 @@ export class OrderRefundComponent {
     royaltyAccount: {
       id: 0,
       name: '',
-      phone: ''
+      phoneNumber: ''
     },
     exchangeFor: {
      
@@ -60,7 +63,8 @@ export class OrderRefundComponent {
     { label: 'Item Not As Described', value: 'NOT_AS_DESCRIBED' },
     { label: 'Others', value: 'OTHERS' }
   ];
-
+  phoneInput$ = new Subject<string>();
+  orderNumber$ = new Subject<string>()
   refundMethods = [
     { label: 'Cash Refund', value: RefundMethod.CASH },
     { label: 'Bank Transfer', value: RefundMethod.BANK_TRANSFER },
@@ -114,6 +118,18 @@ export class OrderRefundComponent {
   ngOnInit(): void {
     this.loadAvailableProducts();
     this.loadrefundRequests()
+    this.phoneInput$
+    .pipe(
+      debounceTime(500), 
+      distinctUntilChanged() 
+    )
+    .subscribe(phone => this.validateRoyaltyAccount(phone));
+    this.orderNumber$
+    .pipe(
+      debounceTime(500),
+      distinctUntilChanged()
+    )
+    .subscribe(number => this.validateOrder(number))
   }
 
   loadAvailableProducts(): void {
@@ -156,7 +172,7 @@ export class OrderRefundComponent {
       royaltyAccount: {
         id: 0,
         name: '',
-        phone: ''
+        phoneNumber: ''
       },
       exchangeFor: {
     
@@ -164,7 +180,7 @@ export class OrderRefundComponent {
     };
   }
 
-  validateOrder(): void {
+  validateOrder(number: any): void {
     if (!this.returnData.order.id) {
       this.orderItems = [];
       this.orderDetails = null;
@@ -172,7 +188,7 @@ export class OrderRefundComponent {
     }
 
     // Call your service to fetch order details
-    this.posService.getOrderById(parseInt(this.returnData.order.id)).subscribe(
+    this.posService.getOrderByOrderNumber(parseInt(number)).subscribe(
       (order: Order) => {
         this.orderDetails = order;
         this.orderItems = order.orderItem;
@@ -232,21 +248,85 @@ export class OrderRefundComponent {
     this.priceDifference =  this.returnData.refundableAmount - parseInt(this.returnData.exchangeFor.sellingPrice) ;
   }
 
-  validateRoyaltyAccount(): void {
-    if (!this.returnData.royaltyAccount?.id) return;
+  validateRoyaltyAccount(phone: any): void {
+    // if (!this.returnData.royaltyAccount?.id) return;
     
-    // Validate the royalty account
-    this.customerService.getCustomerById(this.returnData.royaltyAccount.id).subscribe(
+    
+    this.customerService.getCustomerByPhone(phone).subscribe(
       (customer: CustomerDTO) => {
+        console.log(customer)
         this.returnData.royaltyAccount = customer;
+        this.returnData.name = customer.name
       },
       (error) => {
         console.error('Error validating royalty account:', error);
+        this.returnData.royaltyAccount = {
+          id: 0,
+          name: '',
+          phoneNumber: ''
+        };
+
         // Show error message to user
       }
     );
   }
 
+  createCustomer(){
+    if (!this.returnData.name || !this.returnData.phoneNumber) {
+      // this.toastr.warning('Name and phone number are required');
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Warning',
+        detail: 'Name and phone number is required ',
+        key: 'tl',
+        life: 3000,
+      });
+      return;
+    }
+
+    if (this.returnData.phoneNumber.length !== 11) {
+      // this.toastr.warning('Name and phone number are required');
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Warning',
+        detail: 'Phone number is invalid',
+        key: 'tl',
+        life: 3000,
+      });
+      return;
+    }
+  
+    this.customerService.createCustomer({
+      name: this.returnData.name,
+      phoneNumber: this.returnData.phoneNumber,
+      loyaltyPoints: 0,
+      email: ''
+    }).subscribe(
+      (customer) => {
+       this.validateRoyaltyAccount(this.returnData.phoneNumber)
+        // this.toastr.success('Customer created successfully');
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Customer created successfully',
+          key: 'tl',
+          life: 3000,
+        });
+
+      },
+      (error) => {
+        // this.toastr.error('Failed to create customer');
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Error',
+          detail: 'Failed to create customer',
+          key: 'tl',
+          life: 3000,
+        });
+        console.error('Customer creation error:', error);
+      }
+    );
+  }
   onRefundMethodChange(method: RefundMethod): void {
     // Reset relevant fields based on the selected method
     if (method !== RefundMethod.BANK_TRANSFER) {
@@ -261,7 +341,7 @@ export class OrderRefundComponent {
       this.returnData.royaltyAccount = {
         id: 0,
         name: '',
-        phone: ''
+        phoneNumber: ''
       };
     }
     
@@ -273,6 +353,7 @@ export class OrderRefundComponent {
       } as ProductData;
       this.priceDifference = 0;
     }
+
   }
   onExchangeProductSelected(productId: number): void {
     if (!productId) return;
@@ -390,19 +471,40 @@ export class OrderRefundComponent {
     }
     
     // Set the current date for the return request
+    this.returnData.orderId = parseInt(this.orderDetails?.orderNumber || "0" )
+    this.returnData.royaltyAccountId = this.returnData.royaltyAccount.id
     this.returnData.createdAt = new Date();
-    
-    // Submit the return request
+    console.log(this.returnData)
+    const returnItems = this.returnData.items.map((item) => ({
+      quantity: 0,
+      totalPricePaid: item.orderItem.totalPrice,
+      productId: item.orderItem.product.id,
+      ...(item.orderItem.productVariant && { variantId: item.orderItem.productVariant.id })
+    }))
     this.orderService.makeRequest(this.returnData).subscribe(
       (response) => {
-        // Handle successful submission
         console.log('Return request submitted successfully:', response);
+        from(returnItems)
+        .pipe(
+          concatMap(item =>
+            this.orderService.sendReturnItemsLog({
+              ...item,
+              itemReturnLogId: response.id
+            })
+          )
+        )
+        .subscribe({
+          next: (res) => console.log('Logged item:', res),
+          error: (err) => console.error('Error logging return item:', err),
+          complete: () => {
+            console.log('All return items logged.');
+            this.openRequestForm();
+          }
+        });
         this.openRequestForm();
-        // Show success message
       },
       (error) => {
         console.error('Error submitting return request:', error);
-        // Show error message
       }
     );
   }
