@@ -80,8 +80,8 @@ export class MenuItemsService {
         // { label: 'Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
       ],
       locked: true,
-      active: false
-
+      active: true,
+      code: "ACCOUNT"
     },
     {
       label: 'Human Resources',
