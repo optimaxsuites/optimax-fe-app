@@ -1,0 +1,98 @@
+<div class="body">
+    <div class="form-container">
+        <div>
+            <div class="d-flex gap-4 my-2">
+                <div class="input-container-50">
+                    <label for="business-name">Business Name <span style="color: red;">*</span></label>
+                    <input type="text" id="business-name" name="business" class="editInput" [(ngModel)]="customerData.firstname" required>
+                    <input type="text" id="business-name" name="business" class="editInput" [(ngModel)]="customerData.lastname" required>
+                </div>
+                <div class="input-container-50">
+                    <label for="client-industry">Client Industry <span style="color: red;">*</span></label>
+                    <ng-select 
+                        [items]="customerTypes"
+                        bindLabel="label"
+                        bindValue="value"
+                        [(ngModel)]="customerData.customerType"
+                        placeholder="Select Customer Type">
+                    </ng-select>
+                </div>
+            </div>
+
+            <div class="d-flex gap-4">
+                <div class="input-container-50">
+                    <label for="email">Email <span style="color: red;">*</span></label>
+                    <input type="email" id="email" name="email" [(ngModel)]="customerData.email" class="editInput">
+                </div>
+                <div class="input-container-50" >
+                    <label for="phone-number">Phone Number <span style="color: red;">*</span></label>
+                    <input type="tel" id="phone-number" name="phone-number" [(ngModel)]="customerData.phoneNumber" placeholder="+234" class="editInput" >
+                </div>
+            </div>
+
+            <div class="input-container-100 my-2">
+                <label for="street-address">Street Address <span style="color: red;">*</span></label>
+                <input type="text" id="street-address" name="street-address" class="editInput" />
+            </div>
+
+            <div class="d-flex gap-4">
+                <div class="input-container-50">
+                    <label for="country">Select Country <span style="color: red;">*</span></label>
+                    <ng-select 
+                        [items]="countries"
+                        bindLabel="name"
+                        bindValue="name"
+                        [(ngModel)]="selectedCountry"
+                        (change)="onCountrySelect($event)"
+                        placeholder="Select Country"
+                        >
+                    </ng-select>
+                </div>
+                <div class="input-container-50 ">
+                    <label for="state">State <span style="color: red;">*</span></label>
+                    <ng-select 
+                        [items]="states"
+                        bindLabel="name"
+                        bindValue="name"
+                        placeholder="Select State"
+                        [(ngModel)]="selectedState"
+                        (change)="onStateSelect($event)">
+                    </ng-select>
+                </div>
+            </div>
+
+            <div class="d-flex my-2 gap-4">
+                <div class="input-container-50">
+                    <label for="city">City <span style="color: red;">*</span></label>
+                    <ng-select 
+                    [items]="cities"
+                    bindLabel="name"
+                    bindValue="name"
+                    placeholder="Select City"
+                    (change)="onCitySelect($event)"
+                    [(ngModel)]="selectedCity">
+                    </ng-select>
+                </div>
+                <div class="input-container-50">
+                    <label for="postal-code">Postal Code</label>
+                    <input type="text" id="postal-code" name="postal-code" class=" editInput" />
+                </div>
+            </div>
+
+            <!-- <div class="d-flex">
+                <div class="form-group">
+                    <label for="vat-number">VAT Number <span class="optional">(optional)</span></label>
+                    <input type="text" id="vat-number" name="vat-number">
+                </div>
+                <div class="form-group">
+                    <label for="unique-key">Unique Key</label>
+                    <input type="text" id="unique-key" name="unique-key">
+                </div>
+            </div> -->
+
+            <div class="form-actions mt-4">
+                <button type="submit" (click)="onSubmit()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
