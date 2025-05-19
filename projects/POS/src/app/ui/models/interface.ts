@@ -629,7 +629,7 @@ export interface ReturnDTO {
   returnItems?: ReturnItemDTO[];
   royaltyAccountId?: number | undefined;
   id?: number;
-  name?: string;
+  name: string;
   phoneNumber: string;
   royaltyAccount: CustomerDTO;
   order: Order;

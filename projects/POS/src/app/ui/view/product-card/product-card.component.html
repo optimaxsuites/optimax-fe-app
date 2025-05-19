@@ -9,7 +9,7 @@
   }
   <!-- TODO: Is it alright to load images like this? -->
   <img
-    [src]="product.imageUrl$"
+    [src]="product.imageUrl$ ?? imageUrl"
     alt="product image"
     class="w-full h-2/3 object-cover rounded-xl"
   />
@@ -17,7 +17,7 @@
     <!-- <p>Nivea lotion - Even glow</p>
         <p>#5000</p> -->
 
-    <p class=" text-ellipsis  h-10">{{ product.name }}</p>
-    <p class="h-8">{{ product.sellingPrice | currency: '₦' }}</p>
+    <p class="text-ellipsis h-10">{{ product.name }}</p>
+    <p class="h-8">{{ product.sellingPrice | currency : "₦" }}</p>
   </div>
 </div>

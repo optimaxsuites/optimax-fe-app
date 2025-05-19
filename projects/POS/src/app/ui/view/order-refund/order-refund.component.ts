@@ -353,7 +353,6 @@ export class OrderRefundComponent {
       } as ProductData;
       this.priceDifference = 0;
     }
-
   }
   onExchangeProductSelected(productId: number): void {
     if (!productId) return;
