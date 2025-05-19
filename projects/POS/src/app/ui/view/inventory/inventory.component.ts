@@ -10,6 +10,7 @@ import { ChangeDetectorRef } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ImageCacheService } from '../../service/image-cache.service';
 import { OverlayPanel } from 'primeng/overlaypanel';
+import { MetadataService } from '../../service/metadata.service';
 
 @Component({
   selector: 'app-inventory',
@@ -24,7 +25,7 @@ export class InventoryComponent {
   rowsPerPage = 15;
   
   products: ProductData[] = [];
-  isLoading: boolean = true
+  // isLoading: boolean = true
   tableSections: boolean = false;
   @Output() productUpdated = new EventEmitter<any>();
   items = [{ showMenu: false }, { showMenu: false }]; // Example list of items
@@ -91,6 +92,8 @@ export class InventoryComponent {
     startDate: '',
     endDate: '',
   };
+  isLoading = this.metadataService.loading$;
+
 
   quantityBasedDiscount: { minQuantity: number } = { minQuantity: 0 };
   productImage: any = '';
@@ -106,7 +109,8 @@ export class InventoryComponent {
     private http: HttpClient,
     private cdRef: ChangeDetectorRef,
     private imageCacheService: ImageCacheService,
-    private productService: PosServiceService
+    private productService: PosServiceService,
+    private metadataService: MetadataService
   ) {}
   onPageChange(event: any) {
     this.currentPage = event.page;
@@ -116,7 +120,7 @@ export class InventoryComponent {
     this.loadCategory();
     this.getProducts();
     this.getDiscountTypes();
-    this.fetchProducts();
+    // this.fetchProducts();
 
  
   }
@@ -153,16 +157,16 @@ export class InventoryComponent {
   }
 
   fetchProducts() {
-    this.isLoading = true;
+    // this.isLoading = true;
     this.productService.getProducts().subscribe({
       next: (data) => {
         this.products = data;
         this.paginatedProducts.splice(0, this.paginatedProducts.length, ...this.products.slice(0, this.rowsPerPage));
-        this.isLoading = false;
+        // this.isLoading = false;
       },
       error: (err) => {
         console.error("Error fetching products", err);
-        this.isLoading = false;
+        // this.isLoading = false;
       }
     });
   }
@@ -247,7 +251,7 @@ export class InventoryComponent {
   }
   
   getProducts() {
-    this.posService.getProducts().subscribe(async (data) => {
+    this.metadataService.enrichedProduct$.subscribe(async (data) => {
       if (data) {
         this.originalProducts = data.sort((a: any, b: any) => {
           const dateA = new Date(
@@ -269,7 +273,7 @@ export class InventoryComponent {
           return dateB.getTime() - dateA.getTime();
         });
         this.products = [...this.originalProducts];
-        console.log(this.products);
+        console.log(this.products)
       } else {
         console.log('error loading data');
       }

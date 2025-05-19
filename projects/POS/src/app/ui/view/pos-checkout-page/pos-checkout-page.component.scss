@@ -101,11 +101,11 @@ app-product-card {
 }
 
 .left-sidebar {
-  @apply flex flex-wrap gap-2 overflow-x-auto;
+  @apply flex flex-wrap gap-2 h-96;
 
-  // button {
-  //   @apply w-[calc(8%-0.5rem)];
-  // }
+  button {
+    @apply w-[calc(8%-0.5rem)];
+  }
 }
 
 app-modal {

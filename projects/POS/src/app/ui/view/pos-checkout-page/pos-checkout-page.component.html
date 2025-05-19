@@ -97,31 +97,34 @@
             ></app-searchbar>
           </div>
         </div>
-      </div>
-      <div class="left-sidebar w-auto flex gap-3 flex-wrap overflow-x-auto min-h-32">
-        <button 
-          (click)="filterItems($event)" 
-          value="Category" 
-          class="py-1.5 text-[10px] px-4 border rounded-md" 
-          [ngClass]="{ 'active-button': selectedCategory === 'Category' }">
-          All
-        </button>
-      
-        <ng-container *ngFor="let category of categories">
-          <button 
-            (click)="filterItems($event)" 
-            [value]="category" 
-            class="py-1.5 text-[10px] px-4 border rounded-md text-nowrap" 
-            [ngClass]="{ 'active-button': selectedCategory === category }">
-            {{ category }}
+        <div
+          class="left-sidebar w-auto flex gap-3 flex-wrap overflow-x-auto "
+        >
+          <button
+            (click)="filterItems($event)"
+            value="Category"
+            class="py-1.5 text-[10px] px-4 border rounded-md"
+            [ngClass]="{ 'active-button': selectedCategory === 'Category' }"
+          >
+            All
           </button>
-        </ng-container>
-      </div>
-      
-      <div
-        class="flex flex-col gap-10"
-        [class]="businessType == 'Generic' ? 'h-[80vh]' : 'h-full'"
-      >
+
+          <ng-container *ngFor="let category of categories">
+            <button
+              (click)="filterItems($event)"
+              [value]="category"
+              class="py-1.5 text-[10px] px-4 border rounded-md text-nowrap"
+              [ngClass]="{ 'active-button': selectedCategory === category }"
+            >
+              {{ category }}
+            </button>
+          </ng-container>
+        </div>
+
+        <div
+          class="flex flex-col gap-10"
+          [class]="businessType == 'Generic' ? 'h-[75vh]' : 'h-full'"
+        >
           <div
             class="gap-3 flex-1 overflow-y-auto"
             [class]="businessType == 'Generic' ? '' : 'gap-4 p-4'"
@@ -153,8 +156,37 @@
             </div>
             } }
           </div>
-          
-         
+          @if (businessType =="Generic") {
+          <nav class="mt-auto nav-options">
+            <p>More</p>
+
+            <!-- ANCHOR: Note Modal Button -->
+            <p (click)="toggleNotesModal()">Note</p>
+            @if (isNotesModalOpen) {
+            <app-notes-modal
+              [(isNotesModalOpen)]="isNotesModalOpen"
+            ></app-notes-modal>
+            }
+            <p
+              (click)="toggleDiscountModal()"
+              [class.will-not-respond-to-click]="!discountModal"
+            >
+              Discount
+            </p>
+            <p [routerLink]="navigationLink.getLink('orderRefund')">
+              Refund or Return
+            </p>
+            <!-- ANCHOR: Delivery Modal Button -->
+            <p (click)="toggleDeliveryModal()">Delivery</p>
+            @if (isDeliveryModalOpen) {
+            <app-delivery-modal
+              [(isDeliveryModalOpen)]="isDeliveryModalOpen"
+            ></app-delivery-modal>
+            }
+            <p (click)="saveModal = true">Save</p>
+          </nav>
+          }
+        </div>
 
         @if (businessType=="Generic") {
         <div class="cart-view">
@@ -173,7 +205,7 @@
             <div *ngIf="cartItems.length == 0" class="empty-cart">
               <p class="text-4xl font-bold text-gray-600">Order is empty</p>
               <p class="text-2xl text-gray-500">
-                Scan items or add from catelog
+                Scan items or add from catalog
               </p>
             </div>
           </div>

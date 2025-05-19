@@ -12,6 +12,7 @@ import { Toast } from 'primeng/toast';
 import { Message, MessageService } from 'primeng/api';
 import { FormGroup } from '@angular/forms';
 import { FormBuilder, Validators } from '@angular/forms'; 
+import { MetadataService } from '../../../service/metadata.service';
 
 interface Branch {
   id: number;
@@ -229,7 +230,8 @@ constructor(
   private posService: PosServiceService,  private http: HttpClient,
   private cdr: ChangeDetectorRef,
   private fb: FormBuilder,
-  private messageService: MessageService
+  private messageService: MessageService,
+  private metadataService: MetadataService
 ) {}
 
 
@@ -252,11 +254,9 @@ ngOnInit(): void {
 
   const savedOptions = localStorage.getItem('dropdownOptions');
   this.options = savedOptions ? JSON.parse(savedOptions) : ['Restock'];
-  const storedSuppliers = localStorage.getItem('suppliers');
-
-  if (storedSuppliers) {
-    this.suppliers = JSON.parse(storedSuppliers);
-  }
+ 
+  this.metadataService.supplier$.subscribe((data) => this.suppliers = data)
+  console.log(this.suppliers)
   
 }
 selectOption(event: any) {
