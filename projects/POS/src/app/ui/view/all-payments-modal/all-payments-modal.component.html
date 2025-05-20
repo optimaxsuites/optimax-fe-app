@@ -8,7 +8,7 @@
   </h2>
 
   <div class="mt-4 space-y-5">
-    <label *ngFor="let payment of paymentOptions" class="flex items-center text-center px-5 w-full bg-gray-100 hover:bg-gray-200 cursor-pointer py-5 rounded text-2xl relative">
+    <label *ngFor="let payment of paymentOptions" class="flex items-center text-center px-5 w-full bg-gray-100 hover:bg-gray-200 cursor-pointer py-3 rounded text-lg relative">
       <input type="checkbox" class="absolute left-3 top-6 transform -translate-y-1/2 w-5 h-5"
              [checked]="selectedPaymentsToGo.includes(payment.value)"
              (change)="togglePayment(payment.value)">
