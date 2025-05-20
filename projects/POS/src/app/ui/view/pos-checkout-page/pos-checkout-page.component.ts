@@ -88,6 +88,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   isNotesModalOpen = false;
   isDeliveryModalOpen = false;
   isAllPaymentsModalOpen = false;
+  isCategorySidebarOpen= false
 
   constructor(
     private router: Router,
@@ -212,6 +213,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     return this.closingAmount! - this.expectedBalance;
   }
 
+  toggleCategorySidebar(){
+    this.isCategorySidebarOpen = !this.isCategorySidebarOpen
+  }
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
     console.log(this.scannedSKU.trim());
@@ -663,17 +667,7 @@ return  groupedCartItems as any
         this.categorizedProducts = this.products;
         this.shownProducts = this.products;
       };
-      // If there are no enriched products, this would just be an empty array which is *technically* truthy
-      if (data?.length) {
-        func(data);
-      } else {
-        console.log(
-          'error loading enriched products. Fallback to regular products'
-        );
-        this.posService.getProducts().subscribe((data) => {
-          func(data);
-        });
-      }
+  
     });
   }
   loadCategory() {
@@ -726,7 +720,5 @@ return  groupedCartItems as any
     document.removeEventListener('mouseup', this.stopResizing);
   };
 }
-function func(data: any[]) {
-  throw new Error('Function not implemented.');
-}
+
 
