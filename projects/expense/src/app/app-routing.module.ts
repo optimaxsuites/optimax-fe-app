@@ -6,6 +6,9 @@ import { ExpenseApprovalComponent } from './ui/view/expense-approval/expense-app
 import { UploadRecieptComponent } from './ui/view/upload-reciept/upload-reciept.component';
 import { AddPerDiemComponent } from './ui/view/add-per-diem/add-per-diem.component';
 import { ExpenseSummaryComponent } from './ui/view/expense-summary/expense-summary.component';
+import { ReimbursementComponent } from './ui/view/reimbursement/reimbursement.component';
+import { DisbursementComponent } from './ui/view/disbursement/disbursement.component';
+
 
 const routes: Routes = [
    { path: 'admin/expenses/:uuid',
@@ -14,6 +17,14 @@ const routes: Routes = [
       {
         path: 'admin/expensesForm',
         component: ExpenseFormsModalComponent,
+      },
+      {
+       path: 'reimbursement',
+       component: ReimbursementComponent,
+      },
+       {
+        path: 'disbursement',
+        component: DisbursementComponent,
       },
       {
         path: 'expensesApproval/:id',
