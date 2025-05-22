@@ -38,10 +38,36 @@
   >
     Approval Reports
   </button>
+<button
+    class="px-4 py-2 text-2xl font-medium"
+    [ngClass]="{
+      'border-b-4 border-green-500 text-green-600': selectedTab === 'reimbursement',
+      'text-gray-600': selectedTab !== 'reimbursement'
+    }"
+    (click)="selectedTab = 'reimbursement'"
+  >
+    Reimbursement
+  </button>
+
+  <button
+    class="px-4 py-2 text-2xl font-medium"
+    [ngClass]="{
+      'border-b-4 border-green-500 text-green-600': selectedTab === 'disbursement',
+      'text-gray-600': selectedTab !== 'disbursement'
+    }"
+    (click)="selectedTab = 'disbursement'"
+  >
+    Disbursement
+  </button>
 </div>
+
+  
+
 
 <!-- Tab Content -->
 <div class="mt-4">
   <app-expense-table *ngIf="selectedTab === 'expenses'"></app-expense-table>
   <app-approval-reports *ngIf="selectedTab === 'reports'"></app-approval-reports>
+  <app-reimbursement *ngIf="selectedTab === 'reimbursement'"></app-reimbursement>
+  <app-disbursement *ngIf="selectedTab === 'disbursement'"></app-disbursement>
 </div>

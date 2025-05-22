@@ -1,0 +1,271 @@
+<div class="ERM1">
+  <!-- Header and Action Buttons -->
+  <div class="ERM2">
+    <h1 class="ERM3">Reimbursement Requests</h1>
+    <div class="ERM4">
+      <!-- Filter Button -->
+      <button class="ERM5" (click)="toggleFilter()">
+        <i class="fas fa-filter ERM6"></i>Filter
+      </button>
+      
+      <!-- Create New Button -->
+      <button class="ERM7" (click)="toggleForm()">
+        <i class="fas fa-plus ERM6"></i>Add New
+      </button>
+    </div>
+  </div>
+
+  <!-- Info Message -->
+  <div class="ERM8">
+    You can only request for this <b>twice a month</b>. Please ensure all details are correct and reasonable before submitting.
+  </div>  
+
+  <!-- Filter Section (Hidden by default) -->
+  <div *ngIf="showFilter" class="ERM9">
+    <h3 class="ERM10">Filter Options</h3>
+    <div class="ERM11">
+      <div>
+        <label class="ERM12">Date Range</label>
+        <input type="date" class="ERM13">
+      </div>
+      <div>
+        <label class="ERM12">Status</label>
+        <select class="ERM13">
+          <option>All</option>
+          <option>Pending</option>
+          <option>Approved</option>
+          <option>Rejected</option>
+        </select>
+      </div>
+      <div>
+        <label class="ERM12">Amount Range</label>
+        <input type="number" placeholder="Min" class="ERM14">
+        <input type="number" placeholder="Max" class="ERM14">
+      </div>
+    </div>
+  </div>
+
+  <!-- Reimbursement Form -->
+  <div *ngIf="showForm" @fadeIn class="ERM15">
+    <h1 class="ERM16">New Reimbursement Request</h1>
+    
+    <form [formGroup]="reimbursementForm" (ngSubmit)="onSubmit()">
+      <div class="ERM17">
+        <!-- Left Column -->
+        <div>
+          <div class="ERM18">
+            <label class="ERM12">Request Type</label>
+            <select formControlName="requestType" required class="ERM19" (change)="onRequestTypeChange(reimbursementForm.get('requestType')?.value)">
+              <option value="" ></option>
+              <option *ngFor="let type of requestTypes" [value]="type.value">{{type.label}}</option>
+            </select>
+            
+            <div *ngIf="showOtherRequestType" class="ERM20">
+              <input type="text" formControlName="otherRequestType" 
+                     maxlength="15" placeholder="Specify other type"
+                     class="ERM19">
+              <p class="ERM21">Max 15 characters</p>
+            </div>
+          </div>
+
+          <div class="ERM18">
+            <label class="ERM12">Date</label>
+            <input type="date" formControlName="date" required class="ERM19">
+          </div>
+
+          <div class="ERM18">
+            <label class="ERM12">Employee ID</label>
+            <input type="text" formControlName="employeeId" required class="ERM19" placeholder="Enter employee ID">
+          </div>
+
+          <div class="ERM18">
+            <label class="ERM12">Department</label>
+            <input type="text" formControlName="department" required class="ERM19" placeholder="Enter department">
+          </div>
+
+          <div class="ERM18">
+            <label class="ERM12">Merchant</label>
+            <input type="text" formControlName="merchant" required class="ERM19" placeholder="Enter merchant name">
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div>
+          <div class="ERM18">
+            <label class="ERM12">Description</label>
+            <textarea formControlName="description" required class="ERM19" rows="3" placeholder="Enter description"></textarea>
+          </div>
+
+          <div class="ERM18">
+            <label class="ERM12">Amount</label>
+            <div class="ERM22">
+              <input type="number" formControlName="amount" required class="ERM23" placeholder="Enter amount" step="0.01">
+              <select formControlName="currency" class="ERM24">
+                <option value="NGN">₦ NGN</option>
+                <option value="USD">$ USD</option>
+                <option value="EUR">€ EUR</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="ERM18">
+            <label class="ERM12">Category</label>
+            <select formControlName="category" required class="ERM19">
+              <option value="">Select Category</option>
+              <option *ngFor="let cat of categories" [value]="cat.value">{{cat.label}}</option>
+            </select>
+          </div>
+
+          <div class="ERM18">
+            <label class="ERM12">Payment Method</label>
+            <select formControlName="paymentMethod" required class="ERM19">
+              <option value="">Select Payment Method</option>
+              <option *ngFor="let method of paymentMethods" [value]="method.value">{{method.label}}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bank Details Section -->
+      <div class="ERM25">
+        <div>
+          <label class="ERM12">Account Number</label>
+          <input type="text" formControlName="accountNumber" required class="ERM19" placeholder="Enter account number">
+        </div>
+        <div>
+          <label class="ERM12">Bank Name</label>
+          <input type="text" formControlName="bankName" required class="ERM19" placeholder="Enter bank name">
+        </div>
+        <div>
+          <label class="ERM12">Receiver's Name</label>
+          <input type="text" formControlName="receiverName" required class="ERM19" placeholder="Enter receiver's name">
+        </div>
+      </div>
+
+      <!-- Receipt Upload Section -->
+      <div class="ERM26">
+        <label class="ERM27">Upload Receipt</label>
+        <div class="ERM28">
+          <!-- Drag and Drop Area -->
+          <div class="ERM29" 
+               [class.ERM30]="isDraggingOver"
+               (dragover)="onDragOver($event)"
+               (dragleave)="onDragLeave($event)">
+            <div class="ERM31">
+              <i class="fas fa-cloud-upload-alt ERM32"></i>
+              <p class="ERM33">Drag and drop your receipt here</p>
+              <p class="ERM34">Supported formats: JPG, PNG, PDF (max 10MB)</p>
+              <label class="ERM35">
+                <span>Browse Files</span>
+                <input type="file" class="ERM36" (change)="onFileSelected($event)" accept=".jpg,.jpeg,.png,.pdf">
+              </label>
+            </div>
+          </div>
+
+          <!-- File Preview Area -->
+          <div class="ERM37" *ngIf="selectedFile">
+            <div class="ERM38">
+              <div class="ERM39">
+                <i class="fas fa-file-alt ERM40"></i>
+              </div>
+              <div class="ERM41">
+                <p class="ERM42">{{ selectedFile.name }}</p>
+                <p class="ERM43">
+                  {{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB
+                </p>
+                <button type="button" class="ERM44" (click)="removeFile()">
+                  <i class="fas fa-trash-alt ERM45"></i> Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Business Expense Toggle -->
+      <div class="ERM46">
+        <label class="ERM47">
+          <input type="checkbox" formControlName="isBusinessExpense" class="ERM48">
+          <div class="ERM49"></div>
+          <span class="ERM50">This is a business expense</span>
+        </label>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="ERM51">
+        <button type="button" (click)="saveAsDraft()" class="ERM52">
+          Save as Draft
+        </button>
+        <button type="submit" class="ERM53" [disabled]="!reimbursementForm.valid">
+          Submit Request
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<!-- Recent Requests Section -->
+<div class="ERM54">
+  <h2 class="ERM55">Recent Requests</h2>
+  <div class="ERM56">
+    <table class="ERM57">
+      <thead>
+        <tr class="ERM58">
+          <th class="ERM59"><input type="checkbox" /></th>
+          <th class="ERM59">REQUEST ID</th>
+          <th class="ERM59">DATE</th>
+          <th class="ERM59">TYPE</th>
+          <th class="ERM59">MERCHANT</th>
+          <th class="ERM59">AMOUNT</th>
+          <th class="ERM59">STATUS</th>
+          <th class="ERM59">ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let req of recentRequests" class="ERM60">
+          <td class="ERM61"><input type="checkbox" /></td>
+          <td class="ERM61">{{ req.id }}</td>
+          <td class="ERM61">{{ req.date | date:'MMM d, y' }}</td>
+          <td class="ERM61">{{ req.type }}</td>
+          <td class="ERM61">{{ req.merchant }}</td>
+          <td class="ERM61"><b>{{ req.amount | currency }}</b></td>
+          <td class="ERM61">
+            <span [ngClass]="{
+              'ERM62': req.status === 'Pending',
+              'ERM63': req.status === 'Approved',
+              'ERM64': req.status === 'Rejected'
+            }" class="ERM65">
+              {{ req.status }}
+            </span>
+          </td>
+          <td class="ERM61">
+            <button class="ERM66" (click)="viewRequest(req)">
+              <i class="fas fa-eye"></i>
+            </button>
+            <button class="ERM67" (click)="deleteRequest(req)">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination Controls -->
+  <div class="ERM68">
+    <span class="ERM69">
+      Showing {{ (currentPage - 1) * pageSize + 1 }} to
+      {{ Math.min(currentPage * pageSize, totalRequests) }} of {{ totalRequests }} results
+    </span>
+    <div class="ERM70">
+      <button class="ERM71" [disabled]="currentPage === 1" (click)="prevPage()">Previous</button>
+      <button *ngFor="let page of totalPagesArray" class="ERM72"
+        [class.ERM73]="page === currentPage"
+        (click)="goToPage(page)">
+        {{ page }}
+      </button>
+      <button class="ERM71" [disabled]="currentPage === totalPages" (click)="nextPage()">Next</button>
+    </div>
+  </div>
+</div>

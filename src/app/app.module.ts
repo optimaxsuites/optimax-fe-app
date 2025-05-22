@@ -70,6 +70,8 @@ import { CommonModule } from '@angular/common';
 import { ApprovalReportsComponent } from './ui/view/approval-reports/approval-reports.component';
 import { ChartModule } from 'primeng/chart';
 import { SideModalComponent } from "./ui/sharedComponent/view/side-modal/side-modal.component";
+import { ReimbursementComponent } from './ui/view/reimbursement/reimbursement.component';
+import { DisbursementComponent } from './ui/view/disbursement/disbursement.component';
 
 
 
@@ -84,6 +86,8 @@ import { SideModalComponent } from "./ui/sharedComponent/view/side-modal/side-mo
     UploadRecieptComponent,
     ExpensesComponent,
     ApprovalReportsComponent,
+    ReimbursementComponent,
+    DisbursementComponent,
     
   ],
   imports: [
