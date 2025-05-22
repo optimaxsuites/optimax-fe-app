@@ -1,146 +1,37 @@
-import { Component, computed, Input, OnInit, signal } from '@angular/core';
-import { ProductCategoryDTO, ProductData } from '../../models/interface';
-import { PosServiceService } from '../../service/pos-service.service';
-import { lastValueFrom } from 'rxjs';
+import { Component, computed, Input, OnInit, signal } from "@angular/core";
+import {
+  BranchDTO,
+  ProductCategoryDTO,
+  ProductData,
+} from "../../models/interface";
+import { PosServiceService } from "../../service/pos-service.service";
+import { lastValueFrom } from "rxjs";
+import { CheckoutService } from "../../service/checkout.service";
+import {
+  OrderGET,
+  OrderItemGET,
+  OrderItemPOST,
+  OrderPOST,
+  TableOrderStatusGET,
+} from "../../models/interfaces/kitchen";
+import { dateToArray } from "../../shared";
 
-/**
- * Data Transfer Object representing the status of a table order.
- */
-export interface TableOrderStatusDTO {
-  /**
-   * Unique identifier.
-   * @type {number}
-   * @format int64
-   */
-  id: number;
+/* `TableOrderStatus` stuff is basically all the relevant data about the customer's orders of that *table* as well as the staff who attended to that order. This `TableOrderStatus` can be broken down into a collection of orders (`Table Order`) and other date like the state of the order (UNPAID or PAID), the ids of the waiter, chef, cashier, etc. */
 
-  /**
-   * Table number.
-   * @type {string}
-   * @minLength 0
-   * @maxLength 255
-   * @required
-   */
-  tableNumber: string;
+/** All the food ordered by a table. Each key is a food item / product and its value is simply the amount of aforementioned product */
+type TableOrder = Map<ProductData, number>;
 
-  /**
-   * Current status of the order.
-   * @type {string}
-   */
-  status: 'PAID' | 'UNPAID';
-
-  /**
-   * Identifier for the waiter.
-   * @type {number}
-   * @format int32
-   */
-  waterId: number;
-
-  /**
-   * Identifier for the chef.
-   * @type {number}
-   * @format int32
-   */
-  chefId: number;
-
-  /**
-   * Timestamp when the order was placed.
-   * @type {string}
-   * @format date-time
-   */
-  orderedOn: string;
-
-  /**
-   * Timestamp when the order began processing.
-   * @type {string}
-   * @format date-time
-   */
-  processedOn: string;
-
-  /**
-   * Timestamp when the order was ready.
-   * @type {string}
-   * @format date-time
-   */
-  readyOn: string;
-
-  /**
-   * Timestamp when the order was completed.
-   * @type {string}
-   * @format date-time
-   */
-  completedOn: string;
-
-  /**
-   * Optional note attached to the order.
-   * @type {string}
-   * @minLength 0
-   * @maxLength 255
-   */
-  note: string;
-
-  /**
-   * Identifiers of the items in this order.
-   * @type {Array<number>}
-   */
-  orderItemsId: number[];
-}
-
-interface TableOrderStatusNEW extends TableOrderStatusDTO {
-  orders: TableOrder;
-}
-
-interface TableStatus {
-  /**
-   * Table number
-   */
-  tableNumber: number;
-  /**
-   * `Ready`: Order has been completed. All that's left is to take the prepared meal to the customer.
-   *
-   * `Processing`: Order is currently being prepared by the kitchen.
-   *
-   * `Pending`: Order has been taken by the waiter and is waiting to be prepared by the kitchen.
-   */
-  status: 'Ready' | 'Processing' | 'Pending';
-  /**
-   * To know the waiter that took / created this order
-   */
-  waterId: string;
-  /**
-   * To determine the prority of the order.
-   *
-   */
-  orderedOn: string;
-  /**
-   * A collection of all the meals / drinks / whatever that were ordered
-   */
-  orders: TableOrder;
-  /**
-   * Extra details about the order
-   */
-  note?: string;
-}
-// type TableOrder = { foodItem: ProductData; amount: number };
-/**
- * A collection of all the items in an order
- */
-type TableOrder = Map<string, OrderItem>;
-
-interface OrderItem {
-  qty: number;
-  rate: number;
-}
-
-interface SubCategoryItem {
-  name: string;
-  rate: number;
-}
+type TableOrderStatusTimeStamps = Partial<{
+  orderedOn: Date;
+  processedOn: Date;
+  completedOn: Date;
+  readyOn: Date;
+}>;
 
 @Component({
-  selector: 'app-checkout-kitchen',
-  templateUrl: './checkout-kitchen.component.html',
-  styleUrls: ['./checkout-kitchen.component.scss'],
+  selector: "app-checkout-kitchen",
+  templateUrl: "./checkout-kitchen.component.html",
+  styleUrls: ["./checkout-kitchen.component.scss"],
 })
 // Used for both the cashier and kitchen
 export class CheckoutKitchenComponent implements OnInit {
@@ -150,84 +41,62 @@ export class CheckoutKitchenComponent implements OnInit {
   /*
    *the order/card clicked
    */
-  selectedOrder?: TableOrderStatusNEW;
+  selectedOrder?: TableOrderStatusGET;
 
   /**
-   * The status (and orders) of all the tables in the restaurant. It is indexed with te table number
+   * The status (and orders) of all the tables in the restaurant. It is indexed with the `id`
    */
-  tableStatuses = signal<Map<number, TableOrderStatusNEW>>(new Map());
+  tableStatuses = signal<Map<number, TableOrderStatusGET>>(new Map());
 
-  testMode = signal<typeof this.mode>('chef');
+  testMode = signal<typeof this.mode>("chef");
 
   changeTestMode(e: Event) {
     this.testMode.update(() => (e.target as HTMLInputElement).value as any);
   }
   // Replace this with the actual orders
   data = [
-    { item: 'Jollof Rice', qty: 1, rate: 'N2,000', amount: 'N2,000' },
-    { item: 'Chicken', qty: 2, rate: 'N1,500', amount: 'N3,000' },
-    { item: 'Chapman', qty: 1, rate: 'N1,000', amount: 'N1,000' },
-    { item: 'Cat Fish', qty: 1, rate: 'N2,000', amount: 'N2,000' },
+    { item: "Jollof Rice", qty: 1, rate: "N2,000", amount: "N2,000" },
+    { item: "Chicken", qty: 2, rate: "N1,500", amount: "N3,000" },
+    { item: "Chapman", qty: 1, rate: "N1,000", amount: "N1,000" },
+    { item: "Cat Fish", qty: 1, rate: "N2,000", amount: "N2,000" },
   ];
 
   /**
-   * This is a collection of all the items in an order for a particular table
+   * This is a collection of all the items in an order for the currently viewed table
    */
-  tableData = signal<Map<string, OrderItem>>(new Map());
+  tableData = signal<TableOrder>(new Map());
 
-  // Dummy data
-  productCategories = [
-    {
-      name: 'Food',
-      subCategories: [
-        { name: 'Chicken', rate: 1500 },
-        { name: 'Beef', rate: 1800 },
-        { name: 'Pork', rate: 1700 },
-        { name: 'Fish (Tilapia)', rate: 2000 },
-        { name: 'Fish (Catfish)', rate: 2200 },
-        { name: 'Vegetable Stir-fry', rate: 1200 },
-        { name: 'Fruit Salad', rate: 800 },
-        { name: 'Mixed Nuts', rate: 600 },
-        { name: 'Egusi Soup', rate: 1300 },
-        { name: 'Vegetable Soup', rate: 1100 },
-        { name: 'Caesar Salad', rate: 1400 },
-        { name: 'Club Sandwich', rate: 1600 },
-        { name: 'Chocolate Cake Slice', rate: 900 },
-        { name: 'French Fries', rate: 700 },
-        { name: 'Plantain (Fried)', rate: 500 },
-      ],
-    },
-  ];
+  /** Each key is a cateogry name, e.g "Drink", "Main Meal", while each value is an array of products that has the aforementioned category */
+  productCategories = new Map<string, ProductData[]>();
 
-  selectedSubCategories: SubCategoryItem[] =
-    this.productCategories[0].subCategories;
+  currCategoryProducts: ProductData[] = [];
 
   productList = [
-    { name: 'Product A', subCategory: 'Sub-Category' },
-    { name: 'Product B', subCategory: 'Sub-Category' },
-    { name: 'Product C', subCategory: 'Sub-Category' },
-    { name: 'Product D', subCategory: 'Sub-Category' },
-    { name: 'Product E', subCategory: 'Sub-Category' },
-    { name: 'Product F', subCategory: 'Sub-Category' },
-    { name: 'Product G', subCategory: 'Sub-Category' },
-    { name: 'Product H', subCategory: 'Sub-Category' },
-    { name: 'Product I', subCategory: 'Sub-Category' },
-    { name: 'Product A', subCategory: 'Sub-Category' },
-    { name: 'Product B', subCategory: 'Sub-Category' },
-    { name: 'Product C', subCategory: 'Sub-Category' },
-    { name: 'Product D', subCategory: 'Sub-Category' },
-    { name: 'Product E', subCategory: 'Sub-Category' },
-    { name: 'Product F', subCategory: 'Sub-Category' },
-    { name: 'Product G', subCategory: 'Sub-Category' },
-    { name: 'Product H', subCategory: 'Sub-Category' },
-    { name: 'Product I', subCategory: 'Sub-Category' },
+    { name: "Product A", subCategory: "Sub-Category" },
+    { name: "Product B", subCategory: "Sub-Category" },
+    { name: "Product C", subCategory: "Sub-Category" },
+    { name: "Product D", subCategory: "Sub-Category" },
+    { name: "Product E", subCategory: "Sub-Category" },
+    { name: "Product F", subCategory: "Sub-Category" },
+    { name: "Product G", subCategory: "Sub-Category" },
+    { name: "Product H", subCategory: "Sub-Category" },
+    { name: "Product I", subCategory: "Sub-Category" },
+    { name: "Product A", subCategory: "Sub-Category" },
+    { name: "Product B", subCategory: "Sub-Category" },
+    { name: "Product C", subCategory: "Sub-Category" },
+    { name: "Product D", subCategory: "Sub-Category" },
+    { name: "Product E", subCategory: "Sub-Category" },
+    { name: "Product F", subCategory: "Sub-Category" },
+    { name: "Product G", subCategory: "Sub-Category" },
+    { name: "Product H", subCategory: "Sub-Category" },
+    { name: "Product I", subCategory: "Sub-Category" },
   ];
 
   // categoryList = ['Main Meal', 'Drinks', 'BBQ', 'Sides', 'Appetizer'];
 
-  get mode(): 'waiter' | 'chef' | 'cashier' {
+  get mode(): "waiter" | "chef" | "cashier" {
     //TODO: Determine the mode to use from the logged in user's id. For now though, just use a toggle to change this
-    return this.testMode() ?? 'chef';
+    return this.testMode() ?? "chef";
   }
 
   isReceiptModalOpen = false;
@@ -249,158 +118,65 @@ export class CheckoutKitchenComponent implements OnInit {
   /**
    * Temporarily stores the note of an order
    */
-  orderNote = signal('');
+  orderNote = signal("");
 
   /**
-   * Used to keep track of all the products and their ids
+   * Used to keep track of product id and their data
    */
-  private productNameAndIdMap = new Map<string, number>();
+  private _productIdAndDataMap = new Map<number, ProductData>();
+  /** TODO */
+  private _fetchedBranches!: BranchDTO[];
+  private readonly _dummyTableOrderStatus = 9999999;
 
-  constructor(private posService: PosServiceService) {}
+  constructor(
+    private posService: PosServiceService,
+    private checkoutService: CheckoutService,
+  ) {}
 
   ngOnInit() {
     (async () => {
-      const fetchedProducts: ProductData[] = await lastValueFrom(
-        this.posService.getProducts()
-      );
-
-      let a = new Map<string, { name: string; rate: number }[]>();
-      fetchedProducts.forEach((d) => {
-        const category = d.productCategory.name;
-
-        if (!a.has(category)) {
-          a.set(category, [
-            { name: d.name, rate: parseInt(d.sellingPrice ?? '0') },
-          ]);
-        } else {
-          const b = a.get(category)!;
-          // Dedupe by name
-          if (b.find((x) => x.name === d.name)) {
-            return;
-          }
-          b.push({ name: d.name, rate: parseInt(d.sellingPrice ?? '0') });
-          a.set(category, b);
-        }
-        this.productNameAndIdMap.set(d.name, d.id);
-      });
-      // Overwrite the categories
-      this.productCategories = [...a.entries()].map(
-        ([category, subCategories]) => {
-          return { name: category, subCategories };
-        }
-      );
-      this.selectedSubCategories = this.productCategories[0].subCategories;
-
-      // Fetch the table statuses
-
-      // FIXME: CHange this once the API is alright
-      this.tableStatuses.update((_) => {
-        const parsedMap = new Map<number, TableOrderStatusNEW>(
-          JSON.parse(localStorage.getItem('tableStatuses') ?? '[]')
-        );
-        parsedMap.forEach((tableOrderStatus) => {
-          tableOrderStatus.orderItemsId.forEach((id) => {
-            const originProduct = fetchedProducts.find((p) => p.id == id);
-
-            if (originProduct) {
-              // Be sure that this is a map
-              if (!tableOrderStatus.orders?.size)
-                tableOrderStatus.orders = new Map();
-
-              if (!tableOrderStatus.orders.has(originProduct.name)) {
-                tableOrderStatus.orders.set(originProduct.name, {
-                  qty: 1,
-                  rate: parseInt(originProduct.sellingPrice ?? '1'),
-                });
-              } else {
-                tableOrderStatus.orders.set(originProduct.name, {
-                  qty:
-                    (tableOrderStatus.orders.get(originProduct.name)?.qty ??
-                      0) + 1,
-                  rate: parseInt(originProduct.sellingPrice ?? '1'),
-                });
-              }
-            }
-          });
+      // Fetch the table statuses.
+      // TODO: Implement a skeleton loader while these are getting fetched
+      this.posService.getTableOrderStatuses().subscribe(async (data) => {
+        this.tableStatuses.update((_) => {
+          return new Map(
+            data.map((tableOrderStatus) => [
+              tableOrderStatus.id,
+              tableOrderStatus,
+            ]),
+          );
         });
-
-        return parsedMap;
+        console.log("Fetch table statuses are: ");
+        console.log(this.tableStatuses());
       });
-      // const fetchedTableOrderStatuses = await lastValueFrom(
-      //   this.posService.getTableOrderStatuses()
-      // );
-      // console.log(fetchedTableOrderStatuses);
-      // this.tableStatuses.update(_=>{
-      //   const parsedMap = new Map<number, TableOrderStatusNEW>();
-      //   fetchedTableOrderStatuses.forEach(d=>{
-      //     const parsedTableOrder = new Map<string, TableOrder>()
 
-      //     d.orderItemsId.forEach(itemId=>{
-      //       const originProduct = fetchedProducts.find(p=>p.id == itemId)
+      // Fetch and store the branches
+      this._fetchedBranches = await lastValueFrom(
+        this.posService.getBranches(),
+      );
 
-      //       if (originProduct){
-      //         parsedTableOrder.set(originProduct.name,)
-      //       }
-      //     })
-      //   })
+      const fetchedProducts: ProductData[] = await lastValueFrom(
+        this.posService.getProducts(),
+      );
 
-      //   return parsedMap
-      // })
+      fetchedProducts.forEach((fetchedProduct) => {
+        const category = fetchedProduct.productCategory.name;
+
+        if (this.productCategories.has(category)) {
+          this.productCategories.get(category)!.push(fetchedProduct);
+        } else {
+          this.productCategories.set(category, [fetchedProduct]);
+        }
+        this._productIdAndDataMap.set(fetchedProduct.id, fetchedProduct);
+      });
+      this.currCategoryProducts = this.productCategories.values().next().value;
     })();
-
-    // switch (this.mode) {
-    //   case 'waiter':
-    //   // Show all created orders from the waiter that have not yet been completed. Also add a button for creating orders too
-    //   case 'chef':
-    //     // Show all pending orders
-
-    //     // Sample data
-    //     this.createMultipleOrders([
-    //       { tableNo: 21 },
-    //       { tableNo: 22 },
-    //       { tableNo: 23 },
-    //       { tableNo: 24 },
-    //       { tableNo: 25 },
-    //       { tableNo: 26 },
-    //       { tableNo: 27 },
-    //       { tableNo: 28 },
-    //       { tableNo: 29 },
-    //       { tableNo: 30 },
-    //       { tableNo: 31 },
-    //       { tableNo: 32 },
-    //       { tableNo: 33 },
-    //       { tableNo: 34 },
-    //       { tableNo: 35 },
-    //       { tableNo: 36 },
-    //       { tableNo: 37 },
-    //       { tableNo: 38 },
-    //       { tableNo: 39 },
-    //       { tableNo: 40 },
-    //       { tableNo: 41 },
-    //       { tableNo: 42 },
-    //       { tableNo: 43 },
-    //       { tableNo: 44 },
-    //       { tableNo: 45 },
-    //       { tableNo: 46 },
-    //       { tableNo: 47 },
-    //       { tableNo: 48 },
-    //       { tableNo: 49 },
-    //       { tableNo: 50 },
-    //     ]);
-    //     break;
-    //   case 'cashier':
-    //   // Show all processing and ready orders
-    // }
   }
 
-  openOrderDetails(table: TableOrderStatusNEW) {
+  openOrderDetails(table: TableOrderStatusGET) {
     // When a table-card is clicked, set the order details
     this.selectedOrder = table;
     this.isOrderDetailsOpen = true;
-  }
-
-  getStatusSeverity(status: any) {
-    return 'success' as const;
   }
 
   /**
@@ -408,140 +184,208 @@ export class CheckoutKitchenComponent implements OnInit {
    * @param orders
    * @param waiterIdd - Dummy. I'll get rid of it later
    * @param overwrite - If true, then the order will be overwritten if it already exists
-   * @returns `true` if an order is added succesfully, otherwise `false` if an order already exists
+   * @returns `true` if an order is added successfully, otherwise `false` if an order already exists
    */
   createOrder(
     tableNo: number,
     orders: TableOrder,
     waiterIdd?: string,
     note?: string,
-    overwrite = false
+    overwrite = false,
+    timeStamps?: TableOrderStatusTimeStamps,
   ) {
-    const ids = ['0', '1'];
+    // const ids = [0, 1];
     // TODO: Get the waiter's id based on their login info
-    const waiterId =
-      waiterIdd ?? ids[Math.round(Math.random() * 100) % ids.length];
+    const waiterId = 0;
 
-    if (this.tableStatuses().has(tableNo) && !overwrite) return false;
+    let isTableNumberUsed = false;
+    /** THis will only have a value if `isTableNumberUsed` is true */
+    let tableStatusToOverwrite: null | TableOrderStatusGET = null;
+    for (const [, tableStatus] of this.tableStatuses()) {
+      if (tableStatus.tableNumber == `${tableNo}`) {
+        isTableNumberUsed = true;
+        tableStatusToOverwrite = tableStatus;
+        break;
+      }
+    }
+
+    if (isTableNumberUsed && !overwrite) return false;
     else {
       const creationDate = new Date().toISOString();
-      const orderItemIds = [...orders.keys()]
-        .map((prodName) => {
-          if (orders.get(prodName)!.qty > 1) {
-            const arr: number[] = [];
-            arr.length = orders.get(prodName)!.qty;
-            arr.fill(this.productNameAndIdMap.get(prodName)!);
-            return arr;
-          } else {
-            return this.productNameAndIdMap.get(prodName)!;
-          }
-        })
-        .flat();
-      // update the signal by creating a new map
-      this.tableStatuses.update(
-        (statuses) =>
-          new Map(
-            statuses.set(tableNo, {
-              id: tableNo,
-              tableNumber: tableNo.toString(),
-              orderedOn: creationDate,
-              processedOn: '',
-              completedOn: '',
-              readyOn: '',
-              orders: structuredClone(orders),
-              orderItemsId: orderItemIds,
-              status: 'UNPAID',
-              note: note ?? '',
-              waterId: parseInt(waiterId),
-              // FIXME: Get the actual Chef Id
-              chefId: parseInt(waiterId),
-            })
-          )
+
+      const orderItems: OrderItemPOST[] = [];
+      let amountTendered = 0;
+
+      orders.forEach((qty, order) => {
+        const totalPrice = qty * parseInt(order.sellingPrice ?? "1");
+
+        amountTendered += totalPrice;
+        orderItems.push({
+          id: 0,
+          orderId: null,
+          productId: order.id,
+          productVariantId: null,
+          quantity: qty,
+          totalPrice: qty * parseInt(order.sellingPrice ?? "1"),
+        });
+      });
+
+      if (overwrite) {
+        // Just remove the old one :p
+        // TODO: Refresh the view.
+        this.deleteTable(tableStatusToOverwrite!);
+      }
+
+      // Create a dummy order since these requests could take a while
+      this._createDummyOrder(
+        this._dummyTableOrderStatus,
+        tableNo,
+        amountTendered,
+        orderItems,
+        timeStamps,
+      );
+      // update the details panel, if need be
+      this.openOrderDetails(
+        this.tableStatuses().get(this._dummyTableOrderStatus)!,
       );
 
-      // SECTION: Push to backend
-      // Convert our data to a format that can be sent to the backend
-      const newTableStatus = this.tableStatuses().get(tableNo)!;
-      const tableOrderStatusDTO: TableOrderStatusDTO = {
-        id: newTableStatus.id,
-        tableNumber: newTableStatus.tableNumber,
-        status: newTableStatus.status,
-        waterId: newTableStatus.waterId,
-        chefId: newTableStatus.chefId,
-        orderedOn: newTableStatus.orderedOn,
-        processedOn: newTableStatus.processedOn,
-        readyOn: newTableStatus.readyOn,
-        completedOn: newTableStatus.completedOn,
-        note: newTableStatus.note,
-        orderItemsId: newTableStatus.orderItemsId,
-      };
-
-      this.posService.addTableOrderStatus(tableOrderStatusDTO);
-      console.log(JSON.stringify(tableOrderStatusDTO));
-
-      // this.posService.addTableOrderStatus()
-      localStorage.setItem(
-        'tableStatuses',
-        JSON.stringify([...this.tableStatuses()])
+      // Build up a new `TableOrderStatusPOST`, then send it to the backend and retrieve the created object by getting it by id
+      const uploadedOrder = lastValueFrom(
+        this.checkoutService.saveOrder({
+          id: 0,
+          amountTendered: amountTendered,
+          branchId: this._fetchedBranches[0].id,
+          cashierId: null,
+          createdDate: creationDate,
+          customerId: null,
+          discountId: null,
+          orderNumber: `${0}`,
+          orderStatus: "UNPAID",
+          paymentId: null,
+          quantity: 1,
+          updatedAt: creationDate,
+          totalAmount: `${1}`,
+          orderItem: orderItems,
+        }),
       );
-      // !SECTION
+
+      uploadedOrder.then((order) => {
+        const uploadedTableOrderStatus = lastValueFrom(
+          this.posService.addTableOrderStatus({
+            id: 0,
+            chefId: 0,
+            completedOn: timeStamps?.completedOn?.toISOString() ?? "",
+            note: note ?? "",
+            orderId: order.id,
+            orderedOn: timeStamps?.orderedOn?.toISOString() ?? creationDate,
+            processedOn: timeStamps?.processedOn?.toISOString() ?? "",
+            readyOn: timeStamps?.readyOn?.toISOString() ?? "",
+            status: "UNPAID",
+            tableNumber: `${tableNo}`,
+            waterId: waiterId,
+          }),
+        );
+
+        uploadedTableOrderStatus.then((uploadedOrderStatus) => {
+          const actualTableOrderStatus = lastValueFrom(
+            this.posService.getTableOrderStatusById(uploadedOrderStatus.id),
+          );
+
+          actualTableOrderStatus.then((actualOrderStatus) => {
+            // update the details panel, if need be
+            this.openOrderDetails(actualOrderStatus);
+
+            // delete the dummy product and replace it
+            this._removeDummyOrder(this._dummyTableOrderStatus);
+
+            // update the signal by creating a new map
+            this.tableStatuses.update(
+              (statuses) =>
+                new Map(statuses.set(actualOrderStatus.id, actualOrderStatus)),
+            );
+
+            console.log("After adding an order, the table statuses are:");
+            console.log(this.tableStatuses());
+          });
+        });
+      });
 
       return true;
     }
   }
+
   createMultipleOrders(
-    tableOrderList: { tableNo: number; orders?: TableOrder }[]
+    tableOrderList: { tableNo: number; orders: TableOrder }[],
   ) {
     tableOrderList.forEach((orderObject) => {
-      this.createOrder(orderObject.tableNo, orderObject.orders ?? new Map());
+      this.createOrder(orderObject.tableNo, orderObject.orders);
     });
   }
-  toggleOrderStatus(tableOrder: TableOrderStatusNEW) {
-    if (!tableOrder.processedOn) {
-      tableOrder.processedOn = new Date().toISOString();
-    } else if (!tableOrder.completedOn) {
-      tableOrder.completedOn = new Date().toISOString();
-    } else if (!tableOrder.readyOn) {
-      tableOrder.readyOn = new Date().toISOString();
-      tableOrder.status = 'PAID';
+
+  toggleOrderStatus(tableOrderStatus: TableOrderStatusGET) {
+    const dateArray = dateToArray(new Date());
+    const tableOrders = this._getTableOrdersFromGETPayload(
+      tableOrderStatus.order.orderItem,
+    );
+    new Date(...[3, 4, 5]);
+
+    //@ts-expect-error
+    let orderedOn = new Date(...tableOrderStatus.orderedOn!),
+      processedOn = tableOrderStatus.processedOn?.length //@ts-expect-error
+        ? new Date(...tableOrderStatus.processedOn)
+        : undefined,
+      completedOn = tableOrderStatus.completedOn?.length //@ts-expect-error
+        ? new Date(...tableOrderStatus.completedOn)
+        : undefined,
+      readyOn = tableOrderStatus.readyOn?.length //@ts-expect-error
+        ? new Date(...tableOrderStatus.readyOn)
+        : undefined;
+
+    if (!tableOrderStatus.processedOn) {
+      tableOrderStatus.processedOn = dateArray;
+      processedOn = new Date();
+    } else if (!tableOrderStatus.completedOn) {
+      tableOrderStatus.completedOn = dateArray;
+      completedOn = new Date();
+    } else if (!tableOrderStatus.readyOn) {
+      tableOrderStatus.readyOn = dateArray;
+      tableOrderStatus.status = "PAID";
+      readyOn = new Date();
       //TODO: Get rid of the table order
     }
-    // switch (tableOrder.status) {
-    //   case 'Pending':
-    //     tableOrder.status = 'Processing';
-    //     break;
-    //   case 'Processing':
-    //     tableOrder.status = 'Ready';
-    //     break;
-    //   case 'Ready':
-    //   //TODO: Get rid of the table order
-    // }
+
+    this.createOrder(
+      parseInt(tableOrderStatus.tableNumber),
+      tableOrders,
+      `${tableOrderStatus.waterId}`,
+      tableOrderStatus.note,
+      true,
+      { orderedOn, processedOn, completedOn, readyOn },
+    );
   }
+
   displayedTableStatuses = computed(() => {
     switch (this.testMode()) {
-      case 'waiter':
+      case "waiter":
         // TODO: Use the waiter's id as a comparison here
         return [...this.tableStatuses().values()].filter(
-          (tableStatus) => tableStatus.waterId == 0
+          (tableStatus) => tableStatus.waterId == 0,
         );
-      case 'cashier':
-      case 'chef':
+      case "cashier":
+      case "chef":
         return [...this.tableStatuses().values()];
     }
   });
 
-  addFoodItemToOrder(foodItem: SubCategoryItem) {
+  addFoodItemToOrder(foodItem: ProductData) {
     this.tableData.update((currentData) => {
       const newData = new Map(currentData); // Create a new map to trigger change detection
-      if (newData.has(foodItem.name)) {
-        const currentItem = newData.get(foodItem.name)!;
-        newData.set(foodItem.name, {
-          qty: currentItem.qty + 1,
-          rate: currentItem.rate, // Keep the original rate when incrementing
-        });
+
+      if (newData.has(foodItem)) {
+        newData.set(foodItem, newData.get(foodItem)! + 1);
       } else {
         // Use the rate from the passed foodItem object
-        newData.set(foodItem.name, { qty: 1, rate: foodItem.rate });
+        newData.set(foodItem, 1);
       }
       return newData;
     });
@@ -550,8 +394,8 @@ export class CheckoutKitchenComponent implements OnInit {
   orderSubTotal = computed(() => {
     let subTotal = 0;
     // Read the signal's value
-    this.tableData().forEach((val) => {
-      subTotal += val.qty * val.rate;
+    this.tableData().forEach((qty, product) => {
+      subTotal += qty * parseInt(product.sellingPrice ?? "1");
     });
     return subTotal;
   });
@@ -559,12 +403,10 @@ export class CheckoutKitchenComponent implements OnInit {
   /**
    * Whenever a table's order should be edited, call this with the table status to enforce
    */
-  overwriteTableOrderData(tableStatus: TableOrderStatusNEW) {
+  overwriteTableOrderData(tableStatus: TableOrderStatusGET) {
     const clone = structuredClone(tableStatus);
-    this.tableData.update((_) => {
-      return clone.orders;
-    });
-    this.setOrderNote(clone.note ?? '');
+    this.updateTableDataFromOrderGET(clone.order);
+    this.setOrderNote(clone.note ?? "");
     this.orderTableNumber = this.convertStrToNum(clone.tableNumber);
   }
 
@@ -572,14 +414,15 @@ export class CheckoutKitchenComponent implements OnInit {
     this.orderNote.update((_) => note);
   }
 
-  reduceFoodItemQtyInOrder(key: string) {
+  reduceFoodItemQtyInOrder(foodItem: ProductData) {
     this.tableData.update((val) => {
-      if (val.has(key)) {
-        const orderItem = val.get(key)!;
+      if (val.has(foodItem)) {
+        const orderItem = val.get(foodItem)!;
 
-        orderItem.qty--;
-        if (orderItem.qty <= 0) {
-          val.delete(key);
+        if (orderItem - 1 <= 0) {
+          val.delete(foodItem);
+        } else {
+          val.set(foodItem, orderItem - 1);
         }
       }
 
@@ -587,32 +430,111 @@ export class CheckoutKitchenComponent implements OnInit {
     });
   }
 
-  deleteTable(tableStatus: TableOrderStatusNEW) {
-    this.tableStatuses.update((val) => {
-      val.delete(this.convertStrToNum(tableStatus.tableNumber));
+  deleteTable(tableStatus: TableOrderStatusGET) {
+    this.posService
+      .deleteTableOrderStatusById(tableStatus.id)
+      .subscribe((data) => {
+        console.log("This should be null: ", data);
+      });
 
+    this.tableStatuses.update((val) => {
+      val.delete(tableStatus.id);
       return new Map(val);
     });
-
-    localStorage.setItem(
-      'tableStatuses',
-      JSON.stringify([...this.tableStatuses()])
-    );
   }
 
   proceedToOverwriteTableConflict(tableNumber: number) {
     this.isCreateOrderModalOrderExistsDialogOpen = false;
     this.isCreateOrderModalOpen = true;
     this.isEditingOrder = true;
-    this.tableData.update((_) => {
-      return (
-        structuredClone(this.tableStatuses().get(tableNumber)?.orders) ??
-        new Map()
-      );
-    });
+    const order = this.tableStatuses().get(tableNumber)?.order;
+    if (order) this.updateTableDataFromOrderGET(order);
   }
 
   convertStrToNum(str: string) {
     return parseInt(str);
+  }
+
+  private updateTableDataFromOrderGET(orderToConvert: OrderGET) {
+    this.tableData.update((_) => {
+      const orderItems = orderToConvert.orderItem;
+
+      return new Map(
+        orderItems.map((item) => {
+          console.log("Updating table date from 'OrderGET'", item);
+          return [item.product, item.quantity];
+        }),
+      );
+    });
+  }
+
+  /** For optimistically updating the UI while the request is getting fetched. It will be deleted when the data is eventually fetched */
+  private _createDummyOrder(
+    id: number,
+    tableNo: number,
+    amountTendered: number,
+    orderItems: OrderItemPOST[],
+    timeStamps?: TableOrderStatusTimeStamps,
+  ) {
+    this.tableStatuses.update((val) => {
+      val.set(id, {
+        id: id,
+        chefId: 0,
+        completedOn: timeStamps?.completedOn
+          ? dateToArray(timeStamps!.completedOn!)
+          : [],
+        note: "",
+        orderedOn: timeStamps?.orderedOn
+          ? dateToArray(timeStamps!.orderedOn!)
+          : [],
+        processedOn: timeStamps?.processedOn
+          ? dateToArray(timeStamps!.processedOn!)
+          : [],
+        readyOn: timeStamps?.readyOn ? dateToArray(timeStamps!.readyOn!) : [],
+        status: "UNPAID",
+        tableNumber: `${tableNo}`,
+        waterId: 0,
+        order: {
+          amountTendered: amountTendered,
+          branch: {},
+          cashierId: 0,
+          createdDate: 1,
+          customer: {},
+          discount: {},
+          id: 0,
+          orderNumber: "0",
+          orderStatus: "UNPAID",
+          payment: {},
+          tax: {},
+          updatedAt: 1,
+          totalAmount: amountTendered,
+          orderItem: orderItems.map((orderItem) => {
+            return {
+              id: orderItem.id,
+              product: this._productIdAndDataMap.get(orderItem.productId),
+              productVariant: null,
+            } as OrderItemGET;
+          }),
+        },
+      });
+
+      return new Map(val);
+    });
+  }
+
+  /** Cleanup for `this.createDummyOrder()` */
+  private _removeDummyOrder(id: number) {
+    this.tableStatuses.update((val) => {
+      val.delete(id);
+      return new Map(val);
+    });
+  }
+
+  private _getTableOrdersFromGETPayload(
+    fetchedOrderItems: OrderItemGET[],
+  ): TableOrder {
+    return new Map(
+      fetchedOrderItems.map((item) => [item.product, item.quantity]),
+    );
   }
 }

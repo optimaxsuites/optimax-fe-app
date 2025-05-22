@@ -426,3 +426,7 @@ body {
   font-size: 1.75rem;
   text-align: center;
 }
+
+::ng-deep .p-panel-header {
+  background-color: transparent;
+}

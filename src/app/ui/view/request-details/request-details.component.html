@@ -15,17 +15,17 @@
             <div   class="flex flex-col gap-3 p-3">
             <div>
               <span>Customer:</span>
-              <p>{{navigationState.customerName }}</p>
+              <p>{{customer.name }}</p>
             </div>
 
             <div>
                 <span>Customer email address</span>
-                <p>{{navigationState.emailAddress }}</p>
+                <p>{{customer.email }}</p>
               </div>
 
               <div>
                 <span>Customer phone number</span>
-                <p>{{navigationState.phoneNumber }}</p>
+                <p>{{customer.phoneNumber }}</p>
               </div>
             <div>
               <span>Order date:</span>
@@ -39,7 +39,7 @@
             </div>
             <div>
                 <span>Reason for request:</span>
-                <p>{{navigationState.refundReason }}</p>
+                <p>{{navigationState.reason }}</p>
               </div>
               <div>
                 <span>Cashier's comment</span>
@@ -52,7 +52,7 @@
 
 
         <div class="flex flex-col  w-full justify-between h-full  paymentBtn">
-            <div *ngIf="navigationState.selectedItems.length > 0" class="h-[98%]">
+            <div *ngIf="navigationState.returnItems.length > 0" class="h-[98%]">
                 <section class="selectClients">
                   <div class="asd">
                     <div class="top-products-container">
@@ -71,7 +71,7 @@
                               </tr>
                             </thead>
                             <tbody>
-                              <tr *ngFor="let item of navigationState.selectedItems"  style="cursor: pointer; text-align: center;">
+                              <tr *ngFor="let item of navigationState.returnItems"  style="cursor: pointer; text-align: center;">
                                 {{ item?.timestamp | date: 'shortTime' }}
                                 <td>{{ item?.name }}</td>
                                 <td>
@@ -94,7 +94,7 @@
               <div class="modalBtn h-full flex-end">
         
                 <button class="btn create-invoice-btn"  >
-                Total Amount requested is : <span class="font-extrabold">{{calculateTotalAmount() | number:'1.2-2'}} </span>
+                Total Amount requested is : <span class="font-extrabold">{{navigationState.refundableAmount | number:'1.2-2'}} </span>
                 </button>
                
               </div>

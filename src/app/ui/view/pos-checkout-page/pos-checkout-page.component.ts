@@ -4,32 +4,32 @@ import {
   HostListener,
   OnInit,
   ViewChild,
-} from '@angular/core';
-import { Router } from '@angular/router';
+} from "@angular/core";
+import { Router } from "@angular/router";
 
 // import { UserComponent } from 'src/app/user.component';
-import { RegisterService } from '../../service/register.service';
-import { PosServiceService } from '../../service/pos-service.service';
-import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
-import { RandomTokenService } from '../../sharedComponent/service/random-token/random-token.service';
-import { BusinessType, ProductCategories } from '../../models/enums';
+import { RegisterService } from "../../service/register.service";
+import { PosServiceService } from "../../service/pos-service.service";
+import { NavigationLinksService } from "../../sharedComponent/service/navigation-links/navigation-links.service";
+import { RandomTokenService } from "../../sharedComponent/service/random-token/random-token.service";
+import { BusinessType, ProductCategories } from "../../models/enums";
 import {
   Business,
   Cart,
   ProductData,
   VariantDTO,
-} from '../../models/interface';
-import { IndustryDataService } from '../../service/industry-data.service';
-import { MetadataService } from '../../service/metadata.service';
-import { CheckoutService } from '../../service/checkout.service';
-import { MessageService } from 'primeng/api';
-import { lastValueFrom } from 'rxjs';
+} from "../../models/interface";
+import { IndustryDataService } from "../../service/industry-data.service";
+import { MetadataService } from "../../service/metadata.service";
+import { CheckoutService } from "../../service/checkout.service";
+import { MessageService } from "primeng/api";
+import { lastValueFrom } from "rxjs";
 // import { AppResizeDirective } from '../../service/app-resize.directive';
 
 @Component({
-  selector: 'app-pos-checkout-page',
-  templateUrl: './pos-checkout-page.component.html',
-  styleUrl: './pos-checkout-page.component.scss',
+  selector: "app-pos-checkout-page",
+  templateUrl: "./pos-checkout-page.component.html",
+  styleUrl: "./pos-checkout-page.component.scss",
   providers: [],
 })
 export class PosCheckoutPageComponent implements OnInit, Business {
@@ -48,9 +48,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
   openRegisterModal: boolean = true;
 
-  scannedSKU: string = '';
-  register: string = 'open';
-  orderName: string = '';
+  scannedSKU: string = "";
+  register: string = "open";
+  orderName: string = "";
   itemUpdateModal: boolean = false;
   productThatNeedsUpdate: number = 0;
   discountModal: boolean = false;
@@ -68,26 +68,27 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   total: number = 0.0;
   cartItems: typeof this.products = [];
   count: number = 1;
-  selectedCategory: string = 'Category';
+  selectedCategory: string = "Category";
   readonly stateOptions = [
-    { label: '₦', value: 'naira' },
-    { label: '%', value: 'percentage' },
+    { label: "₦", value: "naira" },
+    { label: "%", value: "percentage" },
   ] as const;
   readonly discountOptions = [
-    { label: '5', value: 5 },
-    { label: '10', value: 10 },
-    { label: '15', value: 15 },
+    { label: "5", value: 5 },
+    { label: "10", value: 10 },
+    { label: "15", value: 15 },
   ] as const;
   discountValue: number = 0;
   displayedDiscount: number = 0;
   productDiscountValue: number = 0;
-  value: 'naira' | 'percentage' = 'naira';
+  value: "naira" | "percentage" = "naira";
 
   orders: unknown[] = [];
   navigationState: { order: any; cart?: Cart };
   isNotesModalOpen = false;
   isDeliveryModalOpen = false;
   isAllPaymentsModalOpen = false;
+  isCategorySidebarOpen = false;
 
   constructor(
     private router: Router,
@@ -98,7 +99,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     private messageService: MessageService,
     private posService: PosServiceService,
     private checkoutService: CheckoutService,
-    private industryDataService: IndustryDataService
+    private industryDataService: IndustryDataService,
   ) {
     const navigation = this.router.getCurrentNavigation();
     this.navigationState = navigation?.extras
@@ -109,7 +110,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     // Register initialization
     this.checkRegisterState();
 
-    const storedOpeningAmount = localStorage.getItem('openingAmount');
+    const storedOpeningAmount = localStorage.getItem("openingAmount");
     this.openingAmount = storedOpeningAmount ? Number(storedOpeningAmount) : 0;
 
     if (this.navigationState?.order) {
@@ -132,7 +133,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
   // New Register Methods
   checkRegisterState() {
-    const registerState = localStorage.getItem('registerState');
+    const registerState = localStorage.getItem("registerState");
     if (registerState) {
       this.isRegisterOpened = JSON.parse(registerState);
       this.showOpenRegisterModal = !this.isRegisterOpened;
@@ -142,7 +143,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     // Calculate the total from cash denominations
     const denomTotal = Object.entries(this.denominationCounts).reduce(
       (sum, [denom, count]) => sum + Number(denom) * (count || 0),
-      0
+      0,
     );
 
     this.openingTotal = denomTotal;
@@ -150,7 +151,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     // Validate totals
     if (this.openingTotal !== this.openingAmount) {
       this.errorMessage =
-        'Mismatch: The cash count total does not match the opening amount.';
+        "Mismatch: The cash count total does not match the opening amount.";
     } else {
       this.errorMessage = null; // Clear the error if everything matches
     }
@@ -168,11 +169,11 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     if (this.openingAmount !== null && this.openingAmount >= 0) {
       if (this.openingTotal !== this.openingAmount) {
         this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
+          severity: "error",
+          summary: "Error",
           detail:
-            'The total from cash denominations must equal the opening amount.',
-          key: 'tl',
+            "The total from cash denominations must equal the opening amount.",
+          key: "tl",
           life: 3000,
         });
         return; // Prevent the register from opening
@@ -180,13 +181,13 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
       this.isRegisterOpened = true;
       this.showOpenRegisterModal = false;
-      localStorage.setItem('registerState', 'true');
-      localStorage.setItem('openingAmount', this.openingAmount.toString());
+      localStorage.setItem("registerState", "true");
+      localStorage.setItem("openingAmount", this.openingAmount.toString());
     }
   }
 
   confirmClosingRegister(): void {
-    const openingAmount = Number(localStorage.getItem('openingAmount')) || 0; // Retrieve the opening amount
+    const openingAmount = Number(localStorage.getItem("openingAmount")) || 0; // Retrieve the opening amount
     const salesTotal = this.total; // Use the existing cart total
     this.expectedBalance = openingAmount + salesTotal; // Calculate the expected balance
 
@@ -196,28 +197,31 @@ export class PosCheckoutPageComponent implements OnInit, Business {
       this.showCloseRegisterModal = false;
 
       // Pass openingAmount to the closing modal
-      console.log('Opening Amount:', this.openingAmount);
-      console.log('Closing Amount:', this.closingAmount);
+      console.log("Opening Amount:", this.openingAmount);
+      console.log("Closing Amount:", this.closingAmount);
 
-      localStorage.setItem('registerState', 'false');
+      localStorage.setItem("registerState", "false");
       // Add API call here if needed
     }
   }
 
   // Add this new calculation method
   private calculateClosingTotal(): number {
-    const openingAmount = Number(localStorage.getItem('openingAmount')) || 0;
+    const openingAmount = Number(localStorage.getItem("openingAmount")) || 0;
     const salesTotal = this.total; // Using your existing cart total
     this.expectedBalance = openingAmount + salesTotal;
     return this.closingAmount! - this.expectedBalance;
   }
 
-  @HostListener('window:keydown', ['$event'])
+  toggleCategorySidebar() {
+    this.isCategorySidebarOpen = !this.isCategorySidebarOpen;
+  }
+  @HostListener("window:keydown", ["$event"])
   handleKeyDown(event: KeyboardEvent) {
     console.log(this.scannedSKU.trim());
-    if (event.key === 'Enter' && this.scannedSKU.trim() !== '') {
+    if (event.key === "Enter" && this.scannedSKU.trim() !== "") {
       this.processScannedSKU();
-      this.scannedSKU = '';
+      this.scannedSKU = "";
     } else {
       this.scannedSKU += event.key;
     }
@@ -225,7 +229,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
   processScannedSKU() {
     let product = this.categorizedProducts.find(
-      (item) => item.sku === this.scannedSKU.trim()
+      (item) => item.sku === this.scannedSKU.trim(),
     );
 
     if (product) {
@@ -236,7 +240,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     for (const item of this.categorizedProducts) {
       if (item.variants && Array.isArray(item.variants)) {
         const variant = item.variants.find(
-          (v) => v.sku === this.scannedSKU.trim()
+          (v) => v.sku === this.scannedSKU.trim(),
         );
         if (variant) {
           this.addToCart(item, variant);
@@ -245,7 +249,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
       }
     }
 
-    console.log('Product not found');
+    console.log("Product not found");
   }
 
   loadOrder(order: any) {
@@ -268,7 +272,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
         // Only match variants with the same product.id
         const variants = orders.filter(
           (v: any) =>
-            v.productVariant && item.product && v.product.id === item.product.id
+            v.productVariant &&
+            item.product &&
+            v.product.id === item.product.id,
         );
 
         const selectedVariants = variants.map((v: any) => ({
@@ -279,7 +285,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
         const variantTotal = selectedVariants.reduce(
           (sum: number, variant: any) =>
             sum + variant.price * variant.selectedQuantity,
-          0
+          0,
         );
 
         const itemTotal =
@@ -298,7 +304,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
     const subtotal = groupedCartItems.reduce(
       (sum, item) => sum + parseFloat(item.cartPriceTotal),
-      0
+      0,
     );
 
     const taxRate = 0.1; // example: 10%
@@ -312,13 +318,13 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   }
   getLabelForValue(value: string): string {
     const option = this.stateOptions.find((opt) => opt.value === value);
-    return option ? option.label : '';
+    return option ? option.label : "";
   }
   addToCart(product: ProductData, chosenVariant?: VariantDTO) {
     if (!this.cartItems) this.cartItems = [];
 
     let existingItem = this.cartItems.find(
-      (item) => item.name === product.name
+      (item) => item.name === product.name,
     );
 
     if (chosenVariant) {
@@ -328,7 +334,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
       }
 
       let existingVariant = existingItem?.selectedVariants.find(
-        (v) => v.id === chosenVariant.id
+        (v) => v.id === chosenVariant.id,
       );
 
       if (existingVariant) {
@@ -344,11 +350,11 @@ export class PosCheckoutPageComponent implements OnInit, Business {
       if (existingItem) {
         existingItem.count += 1;
         existingItem.cartPriceTotal = (
-          existingItem.count * parseInt(existingItem.sellingPrice || '0')
+          existingItem.count * parseInt(existingItem.sellingPrice || "0")
         ).toString();
       } else {
         product.count = 1;
-        product.cartPriceTotal = product.sellingPrice || '0';
+        product.cartPriceTotal = product.sellingPrice || "0";
         this.cartItems.push({ ...product, selectedVariants: [] });
       }
     }
@@ -397,13 +403,13 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     console.log(this.cartItems);
 
     this.subtotal = this.cartItems.reduce((acc, item) => {
-      let itemTotal = (item.count ?? 0) * parseFloat(item.sellingPrice || '0');
+      let itemTotal = (item.count ?? 0) * parseFloat(item.sellingPrice || "0");
       // let itemTotal =0
       let variantsTotal = (item.selectedVariants ?? []).reduce(
         (variantAcc, variant) =>
           variantAcc +
           (variant.selectedQuantity ?? 0) * (Number(variant.price) || 0),
-        0
+        0,
       );
 
       return acc + itemTotal + variantsTotal;
@@ -411,7 +417,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
     const productDiscount = this.cartItems.reduce(
       (acc, item) => acc + (item.discountedPrice || 0),
-      0
+      0,
     );
     this.displayedDiscount = this.discount + productDiscount;
 
@@ -422,7 +428,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
   handleCountChange(newCount: number, index: number, variant?: any) {
     this.cartItems[index].cartPriceTotal = (
-      parseInt(this.cartItems[index]?.sellingPrice || '0') * newCount
+      parseInt(this.cartItems[index]?.sellingPrice || "0") * newCount
     ).toString();
     this.calculateDiscount();
     // this.calculateProductDiscount();
@@ -436,7 +442,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   }
 
   calculateDiscount() {
-    if (this.value == 'naira') {
+    if (this.value == "naira") {
       this.discount = Number(this.discountValue);
     } else {
       const discountedValue =
@@ -452,9 +458,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   }
 
   set _discountValue(value: number) {
-    if (this.value === 'percentage' && value > 100) {
+    if (this.value === "percentage" && value > 100) {
       this.discountValue = 100;
-    } else if (this.value === 'naira' && value > this.subtotal) {
+    } else if (this.value === "naira" && value > this.subtotal) {
       this.discountValue = this.subtotal;
     } else if (value < 0) {
       this.discountValue = 0;
@@ -465,9 +471,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   }
   validateDiscountValue() {
     const discount = Number(this.discountValue);
-    if (this.value == 'percentage' && discount > 100) {
+    if (this.value == "percentage" && discount > 100) {
       this.discountValue = 100;
-    } else if (this.value == 'naira' && discount > this.subtotal) {
+    } else if (this.value == "naira" && discount > this.subtotal) {
       this.discountValue = this.subtotal;
     } else if (discount < 0) {
       this.discountValue = 0;
@@ -479,9 +485,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   }
 
   set _productDiscountValue(value: number) {
-    if (this.value === 'percentage' && value > 100) {
+    if (this.value === "percentage" && value > 100) {
       this.productDiscountValue = 100;
-    } else if (this.value === 'naira' && value > this.subtotal) {
+    } else if (this.value === "naira" && value > this.subtotal) {
       this.productDiscountValue = this.subtotal;
     } else if (value < 0) {
       this.productDiscountValue = 0;
@@ -514,7 +520,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     const pausedCart = {
       id: 0,
       orderNumber: this.randomTokenService.getRandomToken(),
-      orderStatus: 'UNPAID',
+      orderStatus: "UNPAID",
       updatedAt: now,
       createdDate: now,
       totalAmount: this.total,
@@ -527,7 +533,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
         .map((item) => {
           let orderItems = [
             {
-              totalPrice: item.count * parseInt(item.sellingPrice || '0'),
+              totalPrice: item.count * parseInt(item.sellingPrice || "0"),
               quantity: item.count,
               productId: item.id,
             },
@@ -543,7 +549,12 @@ export class PosCheckoutPageComponent implements OnInit, Business {
                   quantity: selectedQuantity,
                   productId: item.id,
                   productVariantId: variant.id,
-                } as { totalPrice: number; quantity: number; productId: number; productVariantId: number | null });
+                } as {
+                  totalPrice: number;
+                  quantity: number;
+                  productId: number;
+                  productVariantId: number | null;
+                });
               }
             });
           }
@@ -555,21 +566,21 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
     console.log(pausedCart);
 
-    this.checkoutService.saveOrder(pausedCart).subscribe({
+    this.checkoutService.saveOrder(pausedCart as any).subscribe({
       next: (data) => {
         console.log(data);
         this.messageService.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Saved',
-          key: 'tl',
+          severity: "success",
+          summary: "Success",
+          detail: "Saved",
+          key: "tl",
           life: 3000,
         });
       },
     });
 
     this.cartItems = [];
-    this.orderName = '';
+    this.orderName = "";
     this.resetDiscount();
     this.resetProductProperties();
 
@@ -595,7 +606,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
       subtotal: this.subtotal,
       paymentModes: modes,
     };
-    const cashPayment = this.navigationLink.getLink('cashPayment');
+    const cashPayment = this.navigationLink.getLink("cashPayment");
     this.router.navigate([cashPayment], { state: { cart } });
   }
 
@@ -612,7 +623,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     }
 
     this.categorizedProducts = this.products.filter(
-      (val) => val.productCategory.name == filterVal
+      (val) => val.productCategory.name == filterVal,
     );
 
     this.shownProducts = this.categorizedProducts;
@@ -632,15 +643,16 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   }
   getProducts() {
     this.metadataService.enrichedProduct$.subscribe(async (data) => {
-      const func = (d: typeof data) => {
-        const p = d.sort((a: any, b: any) => {
+      if (data) {
+        console.log(data);
+        const p = data.sort((a: any, b: any) => {
           const dateA = new Date(
             a.createdDate[0],
             a.createdDate[1] - 1,
             a.createdDate[2],
             a.createdDate[3],
             a.createdDate[4],
-            a.createdDate[5]
+            a.createdDate[5],
           );
           const dateB = new Date(
             b.createdDate[0],
@@ -648,7 +660,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
             b.createdDate[2],
             b.createdDate[3],
             b.createdDate[4],
-            b.createdDate[5]
+            b.createdDate[5],
           );
           return dateB.getTime() - dateA.getTime();
         }) as any[];
@@ -661,17 +673,6 @@ export class PosCheckoutPageComponent implements OnInit, Business {
         console.log(this.products);
         this.categorizedProducts = this.products;
         this.shownProducts = this.products;
-      };
-      // If there are no enriched products, this would just be an empty array which is *technically* truthy
-      if (data?.length) {
-        func(data);
-      } else {
-        console.log(
-          'error loading enriched products. Fallback to regular products'
-        );
-        this.posService.getProducts().subscribe((data) => {
-          func(data);
-        });
       }
     });
   }
@@ -682,7 +683,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
         //@ts-expect-error
         this.categories = data.map((category) => category.name);
       } else {
-        console.log('error loading categories. Fallback to regular fetching');
+        console.log("error loading categories. Fallback to regular fetching");
         this.posService.getCategories().subscribe((data) => {
           //@ts-expect-error
           this.categories = data.map((category) => category.name);
@@ -692,7 +693,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   }
   get productDataFromClickedProduct() {
     return this.products.find(
-      (product) => product.id === this.productThatNeedsUpdate
+      (product) => product.id === this.productThatNeedsUpdate,
     ) as ProductData;
   }
 
@@ -708,8 +709,8 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   startResizing(event: MouseEvent) {
     this.resizing = true;
 
-    document.addEventListener('mousemove', this.resize);
-    document.addEventListener('mouseup', this.stopResizing);
+    document.addEventListener("mousemove", this.resize);
+    document.addEventListener("mouseup", this.stopResizing);
   }
 
   resize = (event: MouseEvent) => {
@@ -721,7 +722,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
   stopResizing = () => {
     this.resizing = false;
-    document.removeEventListener('mousemove', this.resize);
-    document.removeEventListener('mouseup', this.stopResizing);
+    document.removeEventListener("mousemove", this.resize);
+    document.removeEventListener("mouseup", this.stopResizing);
   };
 }

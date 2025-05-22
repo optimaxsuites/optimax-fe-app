@@ -1,296 +1,145 @@
-<!-- Open Register Modal -->
-<app-modal *ngIf="showOpenRegisterModal" header="Open Register">
-  <div class="modal-body">
-    <div *ngIf="errorMessage" class="error-message">
-      <p class="text-red-500">{{ errorMessage }}</p>
-    </div>
+<div class="max-h-screen h-screen flex flex-col bg-gray-50" [class.pharmacy-layout]="businessType == 'Pharmacy'">
+  <!-- Header -->
+  <header class="bg-white shadow-sm z-10">
+    <app-checkout-header (closeRegisterEvent)="closeRegister()"></app-checkout-header>
+  </header>
 
-    <div class="input-group">
-      <label>Opening Amount</label>
-      <input
-        type="number"
-        [(ngModel)]="openingAmount"
-        min="0"
-        placeholder="Enter starting cash amount"
-        class="amount-input"
-      />
-    </div>
-
-    <div class="denomination-section">
-      <h3>Cash Denominations</h3>
-      <div class="denomination-grid">
-        <div
-          class="denomination-row"
-          *ngFor="let denom of [1000, 500, 200, 100, 50, 20, 10, 5]"
+  <!-- Main Content -->
+  <div class="product-cart-container flex-grow flex overflow-hidden h-screen">
+    <div 
+    class="category-sidebar border-t bg-white shadow-lg transition-all duration-300 ease-in-out overflow-y-auto z-20"
+    [ngClass]="isCategorySidebarOpen ? 'w-64' : 'w-0'"
+  >
+    <div class="flex flex-col p-4">
+      <div class="flex justify-between items-center mb-2">
+        <h3 class="text-lg font-semibold text-gray-800"></h3>
+        <button 
+          (click)="toggleCategorySidebar()" 
+          class="p-2 rounded-full hover:bg-gray-100 transition-colors"
         >
-          <label>₦{{ denom }}:</label>
-          <input
-            type="number"
-            [(ngModel)]="denominationCounts[denom]"
-            min="0"
-            (change)="calculateOpeningTotal()"
-            class="denom-input"
-          />
-          <span class="denom-total"
-            >₦{{ (denominationCounts[denom] || 0) * denom | number }}</span
-          >
-        </div>
+          <i class="fas fa-times text-gray-600"></i>
+        </button>
+      </div>
+      
+      <div class="flex flex-col space-y-2 mt-2">
+        <button (click)="filterItems($event)" value="Category" class="py-3 px-4 rounded-lg  font-medium transition-all duration-200 whitespace-nowrap hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-30" [ngClass]="selectedCategory === 'Category' ? 'bg-customBlue text-white' : 'bg-white text-gray-700 border border-gray-300'" > 
+          All
+         </button> 
+         <ng-container *ngFor="let category of categories"> 
+          <button (click)="filterItems($event)" [value]="category" class="py-3 px-4 rounded-lg  font-medium transition-all duration-200 whitespace-nowrap hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-30" [ngClass]="selectedCategory === category ? 'bg-customBlue text-white' : 'bg-white text-gray-700 border border-gray-300'" > {{ category }}
+             </button>
+         </ng-container> 
       </div>
     </div>
-
-    <div class="total-row">
-      <strong>Total:</strong>
-      <span>₦{{ openingTotal | number }}</span>
-    </div>
-
-    <div class="modal-actions">
-      <button
-        (click)="confirmOpeningRegister()"
-        [disabled]="!openingAmount || openingAmount < 0"
-        class="confirm-btn"
-      >
-        Confirm Opening
-      </button>
-    </div>
-  </div>
-</app-modal>
-
-<!-- Close Register Modal -->
-<!-- <app-modal *ngIf="showCloseRegisterModal" (close)="showCloseRegisterModal = false" header="Close Register">
-  <div class="modal-body">
-    <p>Current Register: {{ openingAmount | currency }}</p>
-    <label>Closing Amount</label>
-    <input
-      type="number"
-      [(ngModel)]="closingAmount"
-      placeholder="Enter closing cash amount"
-    />
-
-    <div class="modal-actions">
-      <button (click)="showCloseRegisterModal = false">Cancel</button>
-      <button (click)="confirmClosingRegister()" [disabled]="!closingAmount">
-        Confirm Close
-      </button>
-    </div>
-  </div>
-</app-modal> -->
-
-<div
-  class="h-screen flex flex-col"
-  [class.pharmacy-layout]="businessType == 'Pharmacy'"
->
-  <div>
-    <app-checkout-header
-      (closeRegisterEvent)="closeRegister()"
-    ></app-checkout-header>
   </div>
 
-  <div class="product-cart-container">
-    <div class="left-side flex" #firstElement>
-      <div class="product-view">
-        <div class="gap-3 w-full flex justify-between items-center">
-          <div></div>
-          <div class="w-1/2">
-            <app-searchbar
-              [listToSearch]="categorizedProducts"
-              [(listToUpdate)]="shownProducts"
-            ></app-searchbar>
-          </div>
-        </div>
-        <div
-          class="left-sidebar w-auto flex gap-3 flex-wrap overflow-x-auto min-h-fit"
-        >
-          <button
-            (click)="filterItems($event)"
-            value="Category"
-            class="py-1.5 text-[10px] px-4 border rounded-md"
-            [ngClass]="{ 'active-button': selectedCategory === 'Category' }"
-          >
-            All
-          </button>
 
-          <ng-container *ngFor="let category of categories">
-            <button
-              (click)="filterItems($event)"
-              [value]="category"
-              class="py-1.5 text-[10px] px-4 border rounded-md text-nowrap"
-              [ngClass]="{ 'active-button': selectedCategory === category }"
+    <!-- Products Section -->
+    <div class="left-side flex flex-col" #firstElement>
+      <div class="product-view flex flex-col h-full">
+        <!-- Search & Category Filter Bar -->
+        <div class="sticky top-0 z-10 bg-white shadow-sm px-3 py-3 mb-2">
+          <!-- Search & Filter Header -->
+          <div class="flex justify-between items-center mb-3">
+            <!-- <h2 class="text-xl font-semibold text-gray-800">Products</h2>
+              -->
+              <button 
+              (click)="toggleCategorySidebar()"
+              class="flex items-center py-2 px-4 rounded-lg font-medium transition-all border duration-200  text-gray-600 hover:text-white hover:bg-customBlue"
             >
-              {{ category }}
+              <i class="fas fa-bars mr-2"></i>
+              Categories
             </button>
-          </ng-container>
+            <div class="w-1/2">
+              <app-searchbar
+                [listToSearch]="categorizedProducts"
+                [(listToUpdate)]="shownProducts"
+                class="w-full"
+              ></app-searchbar>
+            </div>
+          </div>
+
+          <!-- <div class="flex items-center space-x-2 overflow-x-auto pb-2">
+            <button 
+              (click)="toggleCategorySidebar()"
+              class="flex items-center py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 bg-customBlue text-white hover:bg-customBlueHover"
+            >
+              <i class="fas fa-bars mr-2"></i>
+              Categories
+            </button>
+            
+            <div class="left-sidebar flex gap-2 overflow-x-auto pb-2"> 
+              <button (click)="filterItems($event)" value="Category" class="py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-30" [ngClass]="selectedCategory === 'Category' ? 'bg-customBlue text-white' : 'bg-white text-gray-700 border border-gray-300'" > 
+                All
+               </button> 
+               <ng-container *ngFor="let category of categories"> 
+                <button (click)="filterItems($event)" [value]="category" class="py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-30" [ngClass]="selectedCategory === category ? 'bg-customBlue text-white' : 'bg-white text-gray-700 border border-gray-300'" > {{ category }}
+                   </button>
+               </ng-container> 
+              </div> 
+            </div> -->
+
         </div>
 
-        <div
-          class="flex flex-col gap-10"
-          [class]="businessType == 'Generic' ? 'h-[80vh]' : 'h-full'"
-        >
-          <div
-            class="gap-3 flex-1 overflow-y-auto"
-            [class]="businessType == 'Generic' ? '' : 'gap-4 p-4'"
-          >
-            <p>Products</p>
-            @switch (businessType) { @case ('Pharmacy') {
-            <div class="grid grid-cols-5 gap-3 prod">
-              @for (product of shownProducts; track product.id) {
+        <!-- Products Grid -->
+        <div class=" overflow-y-scroll px-3 pb-4 flex-1">
+          <div class="grid grid-cols-5 gap-3 prod">
+            @for (product of shownProducts; track product.id) {
               <app-product-card
                 [product]="product"
                 (addToCart)="addToCart(product)"
                 (updateItem)="openItemUpdateModal($event)"
                 [cartItems]="cartItems"
+                class="transition-transform duration-200 hover:scale-102 hover:shadow-md"
               ></app-product-card>
-              }
-            </div>
             }
-            <!-- @case ("Hotel") {} -->
-            @default {
-            <div class=" ">
-              @for (product of shownProducts; track product.id) {
-              <app-product-card
-                [product]="product"
-                (addToCart)="addToCart(product)"
-                (updateItem)="openItemUpdateModal($event)"
-                [cartItems]="cartItems"
-              ></app-product-card>
-              }
-            </div>
-            } }
           </div>
-          @if (businessType =="Generic") {
-          <nav class="mt-auto nav-options">
-            <p>More</p>
-
-            <!-- ANCHOR: Note Modal Button -->
-            <p (click)="toggleNotesModal()">Note</p>
-            @if (isNotesModalOpen) {
-            <app-notes-modal
-              [(isNotesModalOpen)]="isNotesModalOpen"
-            ></app-notes-modal>
-            }
-            <p
-              (click)="toggleDiscountModal()"
-              [class.will-not-respond-to-click]="!discountModal"
-            >
-              Discount
-            </p>
-            <p [routerLink]="navigationLink.getLink('orderRefund')">
-              Refund or Return
-            </p>
-            <!-- ANCHOR: Delivery Modal Button -->
-            <p (click)="toggleDeliveryModal()">Delivery</p>
-            @if (isDeliveryModalOpen) {
-            <app-delivery-modal
-              [(isDeliveryModalOpen)]="isDeliveryModalOpen"
-            ></app-delivery-modal>
-            }
-            <p (click)="saveModal = true">Save</p>
-          </nav>
-          }
         </div>
 
-        @if (businessType=="Generic") {
-        <div class="cart-view">
-          <div class="overflow-y-auto h-full">
-            <div *ngIf="cartItems.length > 0" class="flex flex-col gap-3">
-              <app-cart-item-card
-                *ngFor="let item of cartItems; let i = index"
-                [item]="item"
-                (delete)="deleteCartItem(i, $event.isVariant, $event.index)"
-                (updateItem)="openItemUpdateModal($event)"
-                (countChange)="handleCountChange($event, i)"
-                class="cursor-pointer"
-              ></app-cart-item-card>
-            </div>
 
-            <div *ngIf="cartItems.length == 0" class="empty-cart">
-              <p class="text-4xl font-bold text-gray-600">Order is empty</p>
-              <p class="text-2xl text-gray-500">
-                Scan items or add from catelog
-              </p>
-            </div>
-          </div>
-
-          <div class="flex flex-col">
-            <!-- <div class="flex justify-end items-center">
-                    <div class="flex items-center gap-3">
-                    <p>Promo code</p>
-                    <div class=" h-12 w-36 border-2"></div>
-                    </div>
-                </div> -->
-            <div
-              class="w-full border-2 flex flex-col gap-3 rounded-xl py-3 px-6"
-            >
-              <div class="flex justify-between items-center">
-                <span>Subtotal</span>
-                <span>₦{{ subtotal | number : "1.2-2" }}</span>
-              </div>
-              <div class="flex justify-between items-center">
-                <span>Tax</span> <span>₦{{ tax | number : "1.2-2" }}</span>
-              </div>
-              <div class="flex justify-between items-center">
-                <span>Discount</span>
-                <span>₦{{ displayedDiscount | number : "1.2-2" }}</span>
-              </div>
-              <div class="flex justify-between font-bold text-2xl items-center">
-                <span>Total</span> <span>₦{{ total | number : "1.2-2" }}</span>
-              </div>
-            </div>
-
-            <div class="paymentBtn flex">
-              <button class="rounded-l-xl" (click)="toggleAllPaymentsModal()">
-                All payments
-              </button>
-              <app-all-payments-modal
-                [(isModalOpen)]="isAllPaymentsModalOpen"
-              ></app-all-payments-modal>
-            </div>
-          </div>
-        </div>
-        }
       </div>
     </div>
 
-    <div
-      class="grabber"
-      appResize
-      [leftResize]="firstElement"
-      [rightResize]="rightElement"
-    ></div>
+    <!-- Resize Handle -->
+    <div class="grabber w-1 bg-gray-200 hover:bg-customBlueHover  transition-colors duration-200 cursor-ew-resize"
+         appResize [leftResize]="firstElement" [rightResize]="rightElement"></div>
 
-    <!-- Extra div at right -->
-    <div class="flex flex-col flex-grow right-side" #rightElement>
-      <nav class="mt-auto nav-options">
-        <p>More</p>
+    <!-- Cart Section -->
+    <div class="right-side flex flex-col bg-white shadow-sm" #rightElement>
+      <!-- Action Bar (Pharmacy Business Type) -->
+      @if (businessType != "Generic") {
+        <nav class="nav-options flex justify-around items-center border-b border-gray-200">
+          <div class="flex w-full divide-x divide-gray-200">
+            <p (click)="toggleNotesModal()" class="py-3 px-4 flex-1 text-center font-medium text-gray-700 hover:bg-customBlueHover hover:text-customBlue  transition-colors duration-200">
+              <i class="far fa-sticky-note mr-2"></i>Note
+            </p>
+            <p 
+              (click)="toggleDiscountModal()" 
+              [class.opacity-50]="!cartItems.length"
+              [class.will-not-respond-to-click]="!cartItems.length"
+              class="py-3 px-4 flex-1 text-center font-medium text-gray-700 hover:bg-customBlueHover hover:text-customBlue  transition-colors duration-200"
+            >
+              <i class="fas fa-percent mr-2"></i>Discount
+            </p>
+            <p [routerLink]="navigationLink.getLink('orderRefund')" class="py-3 px-4 flex-1 text-center font-medium text-gray-700 hover:bg-customBlueHover hover:text-customBlue  transition-colors duration-200">
+              <i class="fas fa-undo mr-2"></i>Refund
+            </p>
+            <p (click)="toggleDeliveryModal()" class="py-3 px-4 flex-1 text-center font-medium text-gray-700 hover:bg-customBlueHover hover:text-customBlue  transition-colors duration-200">
+              <i class="fas fa-truck mr-2"></i>Delivery
+            </p>
+            <p (click)="saveCurrentCartItem()" class="py-3 px-4 flex-1 text-center font-medium text-gray-700 hover:bg-customBlueHover hover:text-customBlue  transition-colors duration-200">
+              <i class="fas fa-save mr-2"></i>Save
+            </p>
+          </div>
+        </nav>
+      }
 
-        <!-- ANCHOR: Note Modal Button -->
-        <p (click)="toggleNotesModal()">Note</p>
-        @if (isNotesModalOpen) {
-        <app-notes-modal
-          [(isNotesModalOpen)]="isNotesModalOpen"
-        ></app-notes-modal>
-        }
-        <p
-          (click)="toggleDiscountModal()"
-          [class.will-not-respond-to-click]="!cartItems.length"
-        >
-          Discount
-        </p>
-        <p [routerLink]="navigationLink.getLink('orderRefund')">
-          Refund or Return
-        </p>
-        <!-- ANCHOR: Delivery Modal Button -->
-        <p (click)="toggleDeliveryModal()">Delivery</p>
-        @if (isDeliveryModalOpen) {
-        <app-delivery-modal
-          [(isDeliveryModalOpen)]="isDeliveryModalOpen"
-        ></app-delivery-modal>
-        }
-        <p (click)="saveCurrentCartItem()">Save</p>
-      </nav>
-
-      <div class="cart-view w-full">
-        <div class="overflow-y-auto h-full">
+      <!-- Cart Items -->
+      <div class="cart-view flex-grow flex flex-col">
+        <div class="flex-grow overflow-y-auto p-4">
+          <!-- Cart Items -->
           <div *ngIf="cartItems.length > 0" class="flex flex-col gap-3">
+            <!-- <h2 class="text-lg font-semibold text-gray-800 mb-2">Cart Items</h2> -->
             <app-cart-item-card
               *ngFor="let item of cartItems; let i = index"
               [item]="item"
@@ -298,84 +147,87 @@
               (updateItem)="openItemUpdateModal($event)"
               (countChange)="handleCountChange($event, i)"
               (calculateTotal)="calculateTotals()"
-              class="cursor-pointer"
+              class="border border-gray-100  shadow-sm hover:shadow-md transition-shadow duration-200"
             ></app-cart-item-card>
           </div>
 
-          <div *ngIf="cartItems.length == 0" class="empty-cart">
-            <p class="text-4xl font-bold text-gray-600">Order is empty</p>
-            <p class="text-2xl text-gray-500">Scan items or add from catalog</p>
+          <!-- Empty Cart -->
+          <div *ngIf="cartItems.length == 0" class="empty-cart h-full flex flex-col justify-center items-center p-8 text-center">
+            <div class="mb-4 text-gray-400">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-600 mb-2">Cart is empty</h3>
+            <p class="text-gray-500"> Scan items or add from catalog</p>
           </div>
         </div>
 
-        <div class="flex flex-col">
-          <div class="w-full border-2 flex flex-col gap-3 rounded-xl py-3 px-6">
-            <div class="flex justify-between items-center">
-              <span>Subtotal</span>
-              <span>{{ subtotal | currency : "₦" }}</span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Tax</span> <span>{{ tax | currency : "₦" }}</span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>Discount</span>
-              <span>{{ displayedDiscount | currency : "₦" }}</span>
-            </div>
-            <div class="flex justify-between font-bold text-2xl items-center">
-              <span>Total</span> <span>{{ total | currency : "₦" }}</span>
+        <!-- Order Summary & Payment -->
+        <div class="flex flex-col p-1 border-t border-gray-200">
+          <!-- Order Summary -->
+          <div class="bg-gray-50 rounded-xl p-2 mb-4">
+            <h3 class="text-lg font-semibold text-gray-800 mb-3">Order Summary</h3>
+            <div class="space-y-2 ">
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600">Subtotal</span>
+                <span class="font-medium">{{ subtotal | currency : "₦" }}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600">Tax</span>
+                <span class="font-medium">{{ tax | currency : "₦" }}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600">Discount</span>
+                <span class="font-medium">{{ displayedDiscount | currency : "₦" }}</span>
+              </div>
+              <div class="flex justify-between items-center pt-2 border-t border-gray-200 mt-2">
+                <span class="text-gray-900 font-semibold">Total</span>
+                <span class="text-xl font-bold text-customBlue ">{{ total | currency : "₦" }}</span>
+              </div>
             </div>
           </div>
 
-          <div class="paymentBtn flex">
-            <button
-              class="rounded-xl"
-              (click)="toggleAllPaymentsModal()"
-              [disabled]="!cartItems.length"
-              [class.half-brightness]="!cartItems.length"
-              [class.cursor-disabled]="!cartItems.length"
-            >
-              Process Transaction
-            </button>
-            <app-all-payments-modal
-              [(isModalOpen)]="isAllPaymentsModalOpen"
-              (selectedPayments)="processPayment($event)"
-              [cartItem]="cartItems"
-            ></app-all-payments-modal>
-          </div>
+          <!-- Payment Button -->
+          <button
+            class="w-full py-4 px-4 bg-customBlue  text-white font-bold text-lg rounded-xl hover:bg-customBlueHover  transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-customBlue  focus:ring-opacity-30"
+            (click)="toggleAllPaymentsModal()"
+            [disabled]="!cartItems.length"
+            [ngClass]="{'opacity-50 cursor-not-allowed': !cartItems.length, 'transform hover:-translate-y-1': cartItems.length}"
+          >
+            Process Transaction
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- SECTION: Variants Modal -->
+  <!-- Modals -->
+  <!-- Variants Modal -->
   <app-modal *ngIf="itemUpdateModal" (close)="itemUpdateModal = false">
     <div class="w-full flex flex-col rounded-lg overflow-hidden">
       <!-- Modal Header -->
       <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
-        <h2 id="modal-title" class="text-2xl font-semibold text-gray-800">
+        <h2 id="modal-title" class="text-xl font-semibold text-gray-800">
           Select a Variant
         </h2>
       </div>
 
       <!-- Modal Body -->
       <div class="bg-white p-6">
-        <!-- <p-tabView> -->
-        <!-- <p-tabPanel header="" [headerStyleClass]="'custom-header'"> -->
         <div class="py-4">
           <div class="grid grid-cols-2 gap-4">
+            <!-- Regular Product -->
             <button
               type="button"
-              class="variant-item flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors"
+              class="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-customBlue hover:text-white hover:bg-customBlueHover transition-colors"
               (click)="addToCart(productDataFromClickedProduct)"
             >
               <div class="flex flex-col items-start">
                 <span class="font-medium text-gray-800">{{
                   productDataFromClickedProduct.name
                 }}</span>
-
-                <span class="text-sm text-gray-600 mt-1"
-                  >Regular: {{ productDataFromClickedProduct.name }}</span
-                >
+                <span class="text-sm text-gray-600 mt-1">Regular</span>
               </div>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -392,56 +244,51 @@
                 />
               </svg>
             </button>
+            
+            <!-- Variants -->
             @for (variant of chosenProductVariants; track $index) {
-            <button
-              type="button"
-              class="variant-item flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-colors"
-              (click)="addToCart(productDataFromClickedProduct, variant)"
-            >
-              <div class="flex flex-col items-start">
-                <span class="font-medium text-gray-800">{{
-                  variant.name
-                }}</span>
-                @if (variant.color) {
-                <div class="flex items-center mt-1">
-                  <span
-                    class="w-4 h-4 rounded-full mr-2"
-                    [ngStyle]="{ 'background-color': variant.color }"
-                  ></span>
-                  <span class="text-sm text-gray-600">{{ variant.color }}</span>
-                </div>
-                } @if (variant.size) {
-                <span class="text-sm text-gray-600 mt-1"
-                  >Size: {{ variant.size }}</span
-                >
-                }
-              </div>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+              <button
+                type="button"
+                class="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-customBlue hover:text-white hover:bg-customBlueHover transition-colors"
+                (click)="addToCart(productDataFromClickedProduct, variant)"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
+                <div class="flex flex-col items-start">
+                  <span class="font-medium text-gray-800">{{ variant.name }}</span>
+                  @if (variant.color) {
+                    <div class="flex items-center mt-1">
+                      <span
+                        class="w-4 h-4 rounded-full mr-2"
+                        [ngStyle]="{ 'background-color': variant.color }"
+                      ></span>
+                      <span class="text-sm text-gray-600">{{ variant.color }}</span>
+                    </div>
+                  }
+                  @if (variant.size) {
+                    <span class="text-sm text-gray-600 mt-1">Size: {{ variant.size }}</span>
+                  }
+                </div>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
             }
           </div>
         </div>
-        <!-- </p-tabPanel> -->
-        <!-- </p-tabView> -->
       </div>
 
       <!-- Modal Footer -->
-      <div
-        class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end"
-      >
+      <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end">
         <button
           class="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors font-medium"
           (click)="itemUpdateModal = false"
@@ -452,95 +299,189 @@
     </div>
   </app-modal>
 
-  <!--!SECTION  -->
-
+  <!-- Discount Modal -->
   <app-modal
     *ngIf="discountModal && cartItems.length > 0"
     (close)="discountModal = false"
   >
-    <div class="flex flex-col justify-between gap-5 py-10 w-[40vw]">
-      <div class="flex flex-col gap-5">
-        <div class="flex justify-between items-end">
-          <div
-            class="border flex rounded-xl text-3xl justify-between items-center font-bold w-48"
+    <div class="flex flex-col gap-5 p-6 mx-auto">
+      <h2 class="text-xl font-semibold text-gray-800 mb-2">Apply Discount</h2>
+      
+      <!-- Discount Type Toggle -->
+      <div class="flex justify-between items-end">
+        <div class="flex bg-gray-100 rounded-xl overflow-hidden">
+          <button 
+            *ngFor="let opt of stateOptions"
+            class="py-2 px-6 text-base font-medium transition-colors duration-200"
+            [ngClass]="opt.value === value ? 'bg-customBlue  text-white' : 'text-gray-700'"
+            (click)="value = opt.value"
           >
-            <span
-              class="w-full cursor-pointer text-center p-3"
-              *ngFor="let opt of stateOptions"
-              [class.text-white]="opt.value === value"
-              [class.rounded-xl]="opt.value === value"
-              [class.bg-customBlue]="opt.value === value"
-              (click)="value = opt.value"
-              >{{ opt.label }}</span
-            >
-          </div>
-
-          <div class="flex items-center">
-            <input
-              type="text"
-              max="100"
-              placeholder="0"
-              class="discount-input"
-              [(ngModel)]="_discountValue"
-              (input)="validateDiscountValue()"
-            />
-            <span *ngIf="value == 'percentage'">%</span>
-            <span *ngIf="value == 'naira'">₦</span>
-          </div>
+            {{ opt.label }}
+          </button>
         </div>
 
-        <div
-          class="border flex rounded-xl text-3xl divide-x-2 bg-customGreen/50 justify-between items-center font-bold w-full"
-        >
-          <span
-            class="w-full cursor-pointer text-center p-3"
-            *ngFor="let opt of discountOptions"
-            [class.text-white]="opt.value === discountValue"
-            [class.rounded-xl]="opt.value === discountValue"
-            [class.bg-customBlue]="opt.value === discountValue"
-            (click)="discountValue = opt.value"
-            >{{ opt.label }}{{ getLabelForValue(value) }}</span
-          >
+        <!-- Discount Value Input -->
+        <div class="flex items-center bg-gray-50 rounded-lg overflow-hidden border border-gray-200 focus-within:border-customBlue  focus-within:ring-2 focus-within:ring-customBlue ">
+          <input
+            type="text"
+            max="100"
+            placeholder="0"
+            class="px-4 py-2 text-xl font-bold text-right bg-transparent border-none focus:outline-none"
+            style="width: 100px;"
+            [(ngModel)]="_discountValue"
+            (input)="validateDiscountValue()"
+          />
+          <span class="pr-4 text-lg font-medium text-gray-600">{{ value == 'percentage' ? '%' : '₦' }}</span>
         </div>
       </div>
-      <div class="modalBtn flex-end">
-        <button class="btn create-invoice-btn" (click)="discountModal = false">
+
+      <!-- Quick Select Buttons -->
+      <div class="grid grid-cols-4 gap-2 mt-2">
+        <button
+          *ngFor="let opt of discountOptions"
+          class="py-3 px-4 rounded-lg text-center font-medium transition-all duration-200"
+          [ngClass]="opt.value === discountValue ? 'bg-customBlue  text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+          (click)="discountValue = opt.value"
+        >
+          {{ opt.label }}{{ getLabelForValue(value) }}
+        </button>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200">
+        <button 
+          class="py-2 px-6 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition-colors duration-200"
+          (click)="discountModal = false"
+        >
           Cancel
         </button>
-
-        <button class="btn create-invoice-btn" (click)="calculateDiscount()">
-          Save
+        <button 
+          class="py-2 px-6 rounded-lg bg-customBlue  text-white font-medium hover:bg-customBlue  transition-colors duration-200"
+          (click)="calculateDiscount()"
+        >
+          Apply Discount
         </button>
       </div>
     </div>
   </app-modal>
 
+  <!-- Save Order Modal -->
   <app-modal
     *ngIf="saveModal && cartItems.length > 0"
     (close)="saveModal = false"
   >
-    <div
-      class="flex items-center gap-3 p-3 my-3 mx-2 border bg-white/50 rounded-xl w-[30vw]"
-    >
-      <label for="orderName" class="font-semibold">Order name:</label>
-      <input
-        class="outline-none text-gray-600"
-        type="text"
-        id="orderName"
-        [(ngModel)]="orderName"
-        placeholder="Type here"
-      />
-    </div>
-    <div class="modalBtn mt-5 flex-end">
-      <button class="btn create-invoice-btn" (click)="saveModal = false">
-        Cancel
-      </button>
-
-      <button class="btn create-invoice-btn" (click)="saveCurrentCartItem()">
-        Save
-      </button>
+    <div class="p-6 max-w-md mx-auto">
+      <h2 class="text-xl font-semibold text-gray-800 mb-4">Save Current Order</h2>
+      
+      <div class="mb-4">
+        <label for="orderName" class="block text-sm font-medium text-gray-700 mb-1">Order Name</label>
+        <div class="relative rounded-md shadow-sm">
+          <input
+            class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-customBlue  focus:border-customBlue "
+            type="text"
+            id="orderName"
+            [(ngModel)]="orderName"
+            placeholder="Enter order name"
+          />
+        </div>
+      </div>
+      
+      <div class="flex justify-end gap-3 mt-6">
+        <button 
+          class="py-2 px-6 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition-colors duration-200"
+          (click)="saveModal = false"
+        >
+          Cancel
+        </button>
+        <button 
+          class="py-2 px-6 rounded-lg bg-customBlue  text-white font-medium hover:bg-customBlue  transition-colors duration-200"
+          (click)="saveCurrentCartItem()"
+        >
+          Save Order
+        </button>
+      </div>
     </div>
   </app-modal>
-</div>
 
-<p-toast position="top-right" key="tl" />
+  <!-- Register Modal -->
+  <app-modal *ngIf="showOpenRegisterModal" header="Open Register">
+    <div class="p-6">
+      <!-- Error Message -->
+      <div *ngIf="errorMessage" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+        <p class="text-red-600">{{ errorMessage }}</p>
+      </div>
+
+      <!-- Opening Amount Input -->
+      <div class="mb-6">
+        <label class="block text-xl font-medium text-gray-700 mb-2">Opening Amount</label>
+        <input
+          type="number"
+          [(ngModel)]="openingAmount"
+          min="0"
+          placeholder="Enter starting cash amount"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-customBlue  focus:border-customBlue  text-lg"
+        />
+      </div>
+
+      <!-- Denominations Section -->
+      <div class="mb-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">Cash Denominations</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div
+            class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+            *ngFor="let denom of [1000, 500, 200, 100, 50, 20, 10, 5]"
+          >
+            <label class="text-lg font-medium text-gray-700">₦{{ denom }}:</label>
+            <div class="flex items-center space-x-3">
+              <input
+                type="number"
+                [(ngModel)]="denominationCounts[denom]"
+                min="0"
+                (change)="calculateOpeningTotal()"
+                class="w-20 px-3 py-2 border border-gray-300 rounded-md text-right focus:outline-none focus:ring-customBlue  focus:border-customBlue "
+              />
+              <span class="w-24 text-right font-medium text-gray-600">
+                ₦{{ (denominationCounts[denom] || 0) * denom | number }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total -->
+      <div class="flex justify-between items-center py-3 px-4 bg-customBlue rounded-lg border border-customBlue  mb-6">
+        <span class="text-lg font-semibold text-gray-800">Total:</span>
+        <span class="text-xl font-bold text-customBlue ">₦{{ openingTotal | number }}</span>
+      </div>
+
+      <!-- Action Button -->
+      <div class="flex justify-end">
+        <button
+          (click)="confirmOpeningRegister()"
+          [disabled]="!openingAmount || openingAmount < 0"
+          class="py-3 px-6 bg-customBlue  text-white font-medium rounded-lg hover:bg-customBlue  transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-4 focus:ring-customBlue "
+        >
+          Confirm Opening
+        </button>
+      </div>
+    </div>
+  </app-modal>
+
+  <!-- Component for Notes, Delivery, and Payments -->
+  @if (isNotesModalOpen) {
+    <app-notes-modal [(isNotesModalOpen)]="isNotesModalOpen"></app-notes-modal>
+  }
+  
+  @if (isDeliveryModalOpen) {
+    <app-delivery-modal [(isDeliveryModalOpen)]="isDeliveryModalOpen"></app-delivery-modal>
+  }
+  
+  <app-all-payments-modal
+    [(isModalOpen)]="isAllPaymentsModalOpen"
+    (selectedPayments)="processPayment($event)"
+    [cartItem]="cartItems"
+  ></app-all-payments-modal>
+  
+  <!-- Toast Notifications -->
+  <p-toast position="top-right" key="tl" />
+</div>

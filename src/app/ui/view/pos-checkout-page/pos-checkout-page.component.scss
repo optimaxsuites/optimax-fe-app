@@ -1,5 +1,9 @@
 @use "./pharmacy-layout.scss";
 
+p{
+  @apply mb-0
+}
+
 .product-cart-container {
   @apply flex w-screen h-full flex-grow overflow-hidden;
 }
@@ -15,9 +19,7 @@
 nav {
   @apply flex justify-around items-center w-full divide-x-2 border-t-2;
 
-  > p {
-    @apply text-gray-600 font-semibold p-5 cursor-pointer mb-0 w-full text-center shadow-sm text-nowrap hover:bg-customGreen/70 hover:brightness-90;
-  }
+
 
   .will-not-respond-to-click {
     @apply cursor-not-allowed;
@@ -85,11 +87,11 @@ app-product-card {
 }
 
 .left-side {
-  @apply w-[62%];
+  @apply w-[65%];
 }
 
 .right-side {
-  @apply w-[38%];
+  @apply w-[35%];
 }
 
 .active-button {
@@ -101,11 +103,11 @@ app-product-card {
 }
 
 .left-sidebar {
-  @apply flex flex-wrap gap-2 overflow-x-auto;
+  @apply flex flex-wrap gap-2 h-96;
 
-  // button {
-  //   @apply w-[calc(8%-0.5rem)];
-  // }
+  button {
+    @apply w-[calc(8%-0.5rem)];
+  }
 }
 
 app-modal {

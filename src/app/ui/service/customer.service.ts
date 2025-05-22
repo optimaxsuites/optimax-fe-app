@@ -24,6 +24,12 @@ export class CustomerService {
           .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/customers/${id}`)
           .pipe(catchError(this.handleError));
       }
+
+      getCustomerByPhone(phone: number) {
+        return this.http
+          .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/customers/get/by/phoneNumber?phoneNumber=${phone}`)
+          .pipe(catchError(this.handleError));
+      } 
     
    private getBaseApiUrl(): string {
         return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;

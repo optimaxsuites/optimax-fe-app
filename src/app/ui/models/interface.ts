@@ -1,5 +1,5 @@
-import { Observable, Subscribable } from 'rxjs';
-import { BusinessType } from './enums';
+import { Observable, Subscribable } from "rxjs";
+import { BusinessType } from "./enums";
 export interface ProductJSONFormat {
   id: number;
   name: string;
@@ -33,8 +33,8 @@ export interface ProductJSONFormat {
  * There's some extra data we use with each product that wouldn't fit directly with the fetched data interface, `ProductJSONFormat`
  */
 export interface ProductData extends ProductJSONFormat {
-productVariant: any;
-product: any;
+  productVariant: any;
+  product: any;
   purchasePrice: any;
   branch: any;
   branchDetails?: any;
@@ -110,7 +110,7 @@ export interface VariantDTO {
    * Might revert this type to a regular `string`
    */
   color: string;
-  size: 'XXS' | 'XS' | 'Small' | 'Medium' | 'Regular' | 'Large' | 'XL' | 'XXL';
+  size: "XXS" | "XS" | "Small" | "Medium" | "Regular" | "Large" | "XL" | "XXL";
 }
 
 export interface DiscountOption {
@@ -159,18 +159,18 @@ export interface SalesReportBreakdownDTO {
 
 export interface Order {
   salesperson: any;
-branch: any;
-payment: any;
-amountTendered: any;
+  branch: any;
+  payment: any;
+  amountTendered: any;
   orderItem: any;
   customer: any;
-updatedAt: any;
-orderStatus: any;
-orderNumber: any;
-totalAmount: any;
-status: any;
-amount: any;
-createdDate: any;
+  updatedAt: any;
+  orderStatus: any;
+  orderNumber: any;
+  totalAmount: any;
+  status: any;
+  amount: any;
+  createdDate: any;
   timestamp: any;
   name: string;
   cartDiscount: number;
@@ -181,15 +181,15 @@ createdDate: any;
 }
 
 export interface Cart {
-customer: any;
-payment: any;
-amountTendered: number;
-orderNumber: any;
+  customer: any;
+  payment: any;
+  amountTendered: number;
+  orderNumber: any;
   orderId: number;
-totalAmount: number;
-orderStatus?: any;
-orderItem?: any;
-updatedAt?: [];
+  totalAmount: number;
+  orderStatus?: any;
+  orderItem?: any;
+  updatedAt?: [];
   paymentModes: any;
   changeOffered: any;
   paymentMethod: any;
@@ -210,6 +210,10 @@ export interface NavigationState {
 }
 
 export interface Refund {
+  id?: any;
+  orderNumber?: any;
+  createdAt?: any;
+  name: any;
   phoneNumber: string;
   emailAddress: string;
   timestamp: any;
@@ -224,9 +228,19 @@ export interface Refund {
   accountNumber?: string;
   accountHolder?: string;
   loyaltyId?: string;
+  selectedRequest: Refund;
+  royaltyAccountId: number;
+  reason: any;
+  refundableAmount: string | number;
+  returnItems: any;
 }
 
-export interface SelectedRequest {
+export interface SelectedRequest extends Refund {
+  returnItems: any;
+  refundableAmount: string | number;
+  reason: any;
+  royaltyAccountId: number;
+  // customer: any;
   selectedRequest: Refund;
   phoneNumber: string;
   emailAddress: string;
@@ -259,7 +273,7 @@ export interface HistoryDTO {
 }
 
 export interface ChangeDTO {
-  returnType: 'customer';
+  returnType: "customer";
 }
 export type supplierData = {
   id?: number;
@@ -295,8 +309,8 @@ export interface Business {
 /////
 
 interface ProductDTO {
-category: any;
-price: number;
+  category: any;
+  price: number;
   id: number;
   name: string;
   code: string;
@@ -326,7 +340,7 @@ interface ProductBranchDTO {
 }
 
 export interface BranchDTO {
-location: any;
+  location: any;
   id: number;
   name: string;
   description: string;
@@ -382,10 +396,10 @@ export interface IngredientDTO {
 }
 
 export interface CustomerDTO {
-  id: number;
+  id?: number;
   name: string;
   email?: string;
-  phone: string;
+  phoneNumber: string;
   loyaltyPoints?: number;
 }
 interface HotelProductDTO extends ProductDTO {}
@@ -431,44 +445,44 @@ interface HotelProductDTO extends ProductDTO {}
 // }
 
 export const MeasurementUnit = {
-  UNIT: 'UNIT',
-  PIECE: 'Piece',
-  PACK: 'Pack',
-  BOX: 'Box',
-  DOZEN: 'Dozen',
-  KG: 'Kg',
-  GRAM: 'Gram',
-  POUND: 'Pound',
-  TON: 'Ton',
-  LITER: 'Liter',
-  MILLILITER: 'Milliliter',
-  CUBIC_METER: 'Cubic Meter',
-  METER: 'Meter',
-  CENTIMETER: 'Centimeter',
-  INCH: 'Inch',
-  FOOT: 'Foot',
-  YARD: 'Yard',
-  PER_MINUTE: 'Per Minute',
-  PER_HOUR: 'Per Hour',
-  PER_DAY: 'Per Day',
-  PER_WEEK: 'Per Week',
-  PER_MONTH: 'Per Month',
-  PER_YEAR: 'Per Year',
-  PER_SESSION: 'Per Session',
-  PER_VISIT: 'Per Visit',
-  PER_USAGE: 'Per Usage',
-  PER_NIGHT: 'Per Night',
-  PER_PERSON: 'Per Person',
-  PER_ROOM: 'Per Room',
-  PER_KM: 'Per Kilometer',
-  PER_MILE: 'Per Mile',
-  PER_TRIP: 'Per Trip',
+  UNIT: "UNIT",
+  PIECE: "Piece",
+  PACK: "Pack",
+  BOX: "Box",
+  DOZEN: "Dozen",
+  KG: "Kg",
+  GRAM: "Gram",
+  POUND: "Pound",
+  TON: "Ton",
+  LITER: "Liter",
+  MILLILITER: "Milliliter",
+  CUBIC_METER: "Cubic Meter",
+  METER: "Meter",
+  CENTIMETER: "Centimeter",
+  INCH: "Inch",
+  FOOT: "Foot",
+  YARD: "Yard",
+  PER_MINUTE: "Per Minute",
+  PER_HOUR: "Per Hour",
+  PER_DAY: "Per Day",
+  PER_WEEK: "Per Week",
+  PER_MONTH: "Per Month",
+  PER_YEAR: "Per Year",
+  PER_SESSION: "Per Session",
+  PER_VISIT: "Per Visit",
+  PER_USAGE: "Per Usage",
+  PER_NIGHT: "Per Night",
+  PER_PERSON: "Per Person",
+  PER_ROOM: "Per Room",
+  PER_KM: "Per Kilometer",
+  PER_MILE: "Per Mile",
+  PER_TRIP: "Per Trip",
 } as const;
 
 /**
  * Represents the  status of a table order.
  */
-export interface TableOrderStatusDTO {
+interface TableOrderStatusDTO {
   /** Unique identifier (64-bit integer) */
   id?: number;
 
@@ -483,7 +497,7 @@ export interface TableOrderStatusDTO {
    * Status of the order
    * @remarks Enum: 'PAID' | 'UNPAID'
    */
-  status?: 'PAID' | 'UNPAID';
+  status?: "PAID" | "UNPAID";
 
   /** Identifier for water (32-bit integer) */
   waterId?: number;
@@ -532,7 +546,7 @@ export interface TableOrderStatusFullDTO {
    * Status of the order
    * @remarks Enum: 'PAID' | 'UNPAID'
    */
-  status?: 'PAID' | 'UNPAID';
+  status?: "PAID" | "UNPAID";
 
   /** Identifier for water (32-bit integer) */
   waterId?: number;
@@ -563,16 +577,15 @@ export interface TableOrderStatusFullDTO {
   // orderItems?: OrderItemsFullDTO[];
 }
 
-
 export interface OrderItemDTO {
-totalPrice: any;
-sellingPrice: any;
+  productVariant: any;
+  totalPrice: any;
+  sellingPrice: any;
   id: number;
   product: any;
   quantity: number;
   unitPrice: number;
 }
-
 
 export interface ReturnItemDTO {
   id: number;
@@ -587,17 +600,17 @@ interface BankDetailsDTO {
 }
 
 export enum RefundMethod {
-  CASH = 'CASH',
-  BANK_TRANSFER = 'BANK_TRANSFER',
-  ROYALTY_TOPUP = 'ROYALTY_POINTS',
-  EXCHANGE = 'EXCHANGE'
+  CASH = "CASH",
+  BANK_TRANSFER = "BANK_TRANSFER",
+  ROYALTY_TOPUP = "ROYALTY_POINTS",
+  EXCHANGE = "EXCHANGE",
 }
 
 export enum ReturnStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-  PROCESSED = 'PROCESSED'
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+  PROCESSED = "PROCESSED",
 }
 
 export interface UserDTO {
@@ -606,9 +619,10 @@ export interface UserDTO {
   // Add other relevant user fields
 }
 
-
-
 export interface ReturnDTO {
+  orderId?: number;
+  returnItems?: ReturnItemDTO[];
+  royaltyAccountId?: number | undefined;
   id?: number;
   name: string;
   phoneNumber: string;
