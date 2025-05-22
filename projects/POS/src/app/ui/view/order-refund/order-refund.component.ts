@@ -14,39 +14,37 @@ import { concatMap, debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 
 @Component({
-  selector: 'app-order-refund',
-  templateUrl: './order-refund.component.html',
-  styleUrl: './order-refund.component.scss',
+  selector: "app-order-refund",
+  templateUrl: "./order-refund.component.html",
+  styleUrl: "./order-refund.component.scss",
   providers: [MessageService],
 })
 export class OrderRefundComponent {
   requestForm = false;
-  @ViewChild('returnForm') returnForm!: NgForm;
+  @ViewChild("returnForm") returnForm!: NgForm;
   returnData: ReturnDTO = {
     id: 0,
-    name: '',
-    phoneNumber: '',
-    order: { id: '', orderItem: [], createdDate: new Date() } as Order,
+    name: "",
+    phoneNumber: "",
+    order: { id: "", orderItem: [], createdDate: new Date() } as Order,
     items: [],
-    reason: '',
-    cashierComment: '',
+    reason: "",
+    cashierComment: "",
     status: ReturnStatus.PENDING,
     refundableAmount: 0,
     refundStatus: RefundStatus.Processing,
     refundMethod: RefundMethod.CASH,
     bankDetails: {
-      bankName: '',
-      accountNumber: '',
-      accountName: ''
+      bankName: "",
+      accountNumber: "",
+      accountName: "",
     },
     royaltyAccount: {
       id: 0,
       name: '',
       phoneNumber: ''
     },
-    exchangeFor: {
-     
-    } as ProductData
+    exchangeFor: {} as ProductData,
   };
   selectedItems: boolean[] = [];
   orderDetails: Order | null = null;
@@ -57,27 +55,23 @@ export class OrderRefundComponent {
   refundDetails: any = {};
   selectedRefundMethod = null;
   returnReasons = [
-    { label: 'Defective Product', value: 'DEFECTIVE' },
-    { label: 'Wrong Item Received', value: 'WRONG_ITEM' },
-    { label: 'Changed Mind', value: 'CHANGED_MIND' },
-    { label: 'Size/Fit Issue', value: 'SIZE_ISSUE' },
-    { label: 'Item Not As Described', value: 'NOT_AS_DESCRIBED' },
-    { label: 'Others', value: 'OTHERS' }
+    { label: "Defective Product", value: "DEFECTIVE" },
+    { label: "Wrong Item Received", value: "WRONG_ITEM" },
+    { label: "Changed Mind", value: "CHANGED_MIND" },
+    { label: "Size/Fit Issue", value: "SIZE_ISSUE" },
+    { label: "Item Not As Described", value: "NOT_AS_DESCRIBED" },
+    { label: "Others", value: "OTHERS" },
   ];
   phoneInput$ = new Subject<string>();
   orderNumber$ = new Subject<string>()
   refundMethods = [
-    { label: 'Cash Refund', value: RefundMethod.CASH },
-    { label: 'Bank Transfer', value: RefundMethod.BANK_TRANSFER },
-    { label: 'Royalty Account Top-up', value: RefundMethod.ROYALTY_TOPUP },
-    { label: 'Exchange for Another Product', value: RefundMethod.EXCHANGE }
+    { label: "Cash Refund", value: RefundMethod.CASH },
+    { label: "Bank Transfer", value: RefundMethod.BANK_TRANSFER },
+    { label: "Royalty Account Top-up", value: RefundMethod.ROYALTY_TOPUP },
+    { label: "Exchange for Another Product", value: RefundMethod.EXCHANGE },
   ];
 
-
-
-
-  scannedReceipt: string = '';
-
+  scannedReceipt: string = "";
 
   //  @HostListener('window:keydown', ['$event'])
   // handleKeyDown(event: KeyboardEvent) {
@@ -112,8 +106,7 @@ export class OrderRefundComponent {
     private metadataService: MetadataService,
     private posService: PosServiceService,
     private customerService: CustomerService,
-    private orderService: OrderService
-
+    private orderService: OrderService,
   ) {}
 
   ngOnInit(): void {
@@ -139,8 +132,8 @@ export class OrderRefundComponent {
         this.availableProducts = products;
       },
       (error) => {
-        console.error('Error loading products:', error);
-      }
+        console.error("Error loading products:", error);
+      },
     );
   }
 
@@ -148,37 +141,35 @@ export class OrderRefundComponent {
     if (this.returnForm) {
       this.returnForm.resetForm();
     }
-    
+
     this.orderItems = [];
     this.selectedItems = [];
     this.orderDetails = null;
     this.hasSelectedItems = false;
     this.priceDifference = 0;
-    
+
     this.returnData = {
-      name: '',
-      phoneNumber: '',
-      order: { id: '', orderItem: [], createdDate: new Date() } as Order,
+      name: "",
+      phoneNumber: "",
+      order: { id: "", orderItem: [], createdDate: new Date() } as Order,
       items: [],
-      reason: '',
-      cashierComment: '',
+      reason: "",
+      cashierComment: "",
       status: ReturnStatus.PENDING,
       refundableAmount: 0,
       refundStatus: RefundStatus.Processing,
       refundMethod: RefundMethod.CASH,
       bankDetails: {
-        bankName: '',
-        accountNumber: '',
-        accountName: ''
+        bankName: "",
+        accountNumber: "",
+        accountName: "",
       },
       royaltyAccount: {
         id: 0,
         name: '',
         phoneNumber: ''
       },
-      exchangeFor: {
-    
-      } as ProductData
+      exchangeFor: {} as ProductData,
     };
   }
 
@@ -194,23 +185,23 @@ export class OrderRefundComponent {
       (order: Order) => {
         this.orderDetails = order;
         this.orderItems = order.orderItem;
-        console.log(this.orderItems)
+        console.log(this.orderItems);
         this.selectedItems = new Array(this.orderItems.length).fill(false);
-        
+
         // Pre-fill customer name if available from the order
         if (order.customer?.name && !this.returnData.name) {
           this.returnData.name = order.customer.name;
         }
-        
+
         // Pre-fill phone number if available from the order
         if (order.customer?.phoneNumber && !this.returnData.phoneNumber) {
           this.returnData.phoneNumber = order.customer.phoneNumber;
         }
       },
       (error) => {
-        console.error('Error fetching order:', error);
+        console.error("Error fetching order:", error);
         // Show an error message to the user
-      }
+      },
     );
   }
 
@@ -218,36 +209,40 @@ export class OrderRefundComponent {
     let total = 0;
     let returnItems: ReturnItemDTO[] = [];
 
-    this.hasSelectedItems = this.selectedItems.some(item => item);
+    this.hasSelectedItems = this.selectedItems.some((item) => item);
 
     this.orderItems.forEach((item, index) => {
       if (this.selectedItems[index]) {
         total += item.totalPrice;
-        
+
         // Create return item
         returnItems.push({
           id: 0, // Will be assigned by the backend
           orderItem: item,
-          quantity: item.quantity // By default return all
+          quantity: item.quantity, // By default return all
         });
       }
     });
 
     this.returnData.refundableAmount = total;
     this.returnData.items = returnItems;
-    
+
     // Recalculate price difference if exchange method is selected
-    if (this.returnData.refundMethod === RefundMethod.EXCHANGE && 
-        this.returnData.exchangeFor?.id) {
+    if (
+      this.returnData.refundMethod === RefundMethod.EXCHANGE &&
+      this.returnData.exchangeFor?.id
+    ) {
       this.calculatePriceDifference();
     }
   }
   calculatePriceDifference(): void {
     if (!this.returnData.exchangeFor?.sellingPrice) return;
-    
-    console.log(this.returnData.exchangeFor.sellingPrice)
-    console.log( this.returnData.refundableAmount)
-    this.priceDifference =  this.returnData.refundableAmount - parseInt(this.returnData.exchangeFor.sellingPrice) ;
+
+    console.log(this.returnData.exchangeFor.sellingPrice);
+    console.log(this.returnData.refundableAmount);
+    this.priceDifference =
+      this.returnData.refundableAmount -
+      parseInt(this.returnData.exchangeFor.sellingPrice);
   }
 
   validateRoyaltyAccount(phone: any): void {
@@ -269,7 +264,7 @@ export class OrderRefundComponent {
         };
 
         // Show error message to user
-      }
+      },
     );
   }
 
@@ -333,12 +328,12 @@ export class OrderRefundComponent {
     // Reset relevant fields based on the selected method
     if (method !== RefundMethod.BANK_TRANSFER) {
       this.returnData.bankDetails = {
-        bankName: '',
-        accountNumber: '',
-        accountName: ''
+        bankName: "",
+        accountNumber: "",
+        accountName: "",
       };
     }
-    
+
     if (method !== RefundMethod.ROYALTY_TOPUP) {
       this.returnData.royaltyAccount = {
         id: 0,
@@ -346,27 +341,27 @@ export class OrderRefundComponent {
         phoneNumber: ''
       };
     }
-    
+
     if (method !== RefundMethod.EXCHANGE) {
       this.returnData.exchangeFor = {
         id: 0,
-        name: '',
-        sellingPrice: ''
+        name: "",
+        sellingPrice: "",
       } as ProductData;
       this.priceDifference = 0;
     }
   }
   onExchangeProductSelected(productId: number): void {
     if (!productId) return;
-    
+
     this.posService.getProductById(productId).subscribe(
       (product: ProductData) => {
         this.returnData.exchangeFor = product;
         this.calculatePriceDifference();
       },
       (error) => {
-        console.error('Error loading product details:', error);
-      }
+        console.error("Error loading product details:", error);
+      },
     );
   }
 
@@ -438,7 +433,7 @@ export class OrderRefundComponent {
   sortRequestByTimestamp() {
     this.requests.sort(
       (a, b) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
   }
 
@@ -448,7 +443,7 @@ export class OrderRefundComponent {
     //   (item: any) => item.id === this.refundData.orderId
     // );
 
-    if (this.orderDetails?.orderStatus === 'PAID') {
+    if (this.orderDetails?.orderStatus === "PAID") {
       // const refundRequests = JSON.parse(
       //   localStorage.getItem('refundRequests') || '[]'
       // );
@@ -456,9 +451,9 @@ export class OrderRefundComponent {
         ...this.returnData,
         timestamp: new Date().toLocaleString(),
       };
-      this.orderService.makeRequest(data).subscribe( data =>
-        console.log(data)
-      )
+      this.orderService
+        .makeRequest(data)
+        .subscribe((data) => console.log(data));
 
       this.reloadPage = true;
       this.requestForm = false;
@@ -470,7 +465,7 @@ export class OrderRefundComponent {
     if (this.returnForm.invalid || !this.hasSelectedItems) {
       return;
     }
-    
+
     // Set the current date for the return request
     this.returnData.orderId = parseInt(this.orderDetails?.id || "0" )
     this.returnData.royaltyAccountId = this.returnData.royaltyAccount.id
@@ -514,15 +509,15 @@ export class OrderRefundComponent {
   }
 
   loadrefundRequests() {
-    this.metadataService.returns$.subscribe(value => {
-      console.log(value)
-      this.requests = value
-    })
+    this.metadataService.returns$.subscribe((value) => {
+      console.log(value);
+      this.requests = value;
+    });
   }
 
   requestDetails(request: Refund) {
     const selectedRequest = request;
-    const checkoutLink = this.navigationLink.getLink('requestDetails');
+    const checkoutLink = this.navigationLink.getLink("requestDetails");
     this.router.navigate([checkoutLink], { state: { selectedRequest } });
   }
 
@@ -532,7 +527,14 @@ export class OrderRefundComponent {
 
   formatDate(parts: any): Date {
     // const parts = raw.split(',').map(Number);
-    return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
+    return new Date(
+      parts[0],
+      parts[1] - 1,
+      parts[2],
+      parts[3],
+      parts[4],
+      parts[5],
+    );
   }
   
   getRefundStatusClass(status: string): string {
