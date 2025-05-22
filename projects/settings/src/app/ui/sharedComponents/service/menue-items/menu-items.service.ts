@@ -174,8 +174,9 @@ export class MenuItemsService {
 
       submenu: [
         { label: 'Expenses', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
-        { label: 'Reimbursements', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
-        { label: 'Retirement', route: "", roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
+        { label: 'Reimbursements', route: this.navigationLink.getLink('reimbursementLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
+        { label: 'Advance', route: this.navigationLink.getLink('advanceLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
+        { label: 'Reports', route: this.navigationLink.getLink('expenseReportLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
 
       ],
     },

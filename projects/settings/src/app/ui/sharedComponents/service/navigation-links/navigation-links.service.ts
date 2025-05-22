@@ -105,6 +105,15 @@ this.links['refundLink'] = '/admin/pos/refunds/' +uuidV4();
 this.links['reportLink'] = '/admin/pos/report/' +uuidV4();
 this.links['ingredientLink'] = 'admin/pos/ingredients/' +uuidV4(); 
 
+
+
+// Expenses ================================================================================================================
+this.links['reimbursementLink'] = 'admin/expenses/reimbursement/' +uuidV4()
+this.links['advanceLink'] = 'admin/expenses/advance/' +uuidV4()
+this.links['expenseReportLink'] = 'admin/expenses/report/' +uuidV4()
+
+
+
   }
 
   getLink(linkName: string): string {
