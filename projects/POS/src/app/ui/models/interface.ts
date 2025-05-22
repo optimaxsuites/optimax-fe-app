@@ -214,6 +214,7 @@ export interface Refund {
 orderNumber?: any;
 createdAt?: any;
 name: any;
+refundStatus: string;
   phoneNumber: string;
   emailAddress: string;
   timestamp: any;
@@ -644,4 +645,16 @@ export interface ReturnDTO {
   refundMethod: RefundMethod;
   bankDetails: BankDetailsDTO;
   exchangeFor: ProductData;
+  refundStatus: RefundStatus
+}
+
+export enum RefundStatus {
+  Pending = 'Pending',
+  Approved = 'Approved',
+  Rejected = 'Rejected',
+  Processing = 'Processing',
+  Canceled = 'Canceled',
+  Expired = 'Expired',
+  UnderReview = 'UnderReview',
+  Chargeback = 'Chargeback',
 }

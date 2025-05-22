@@ -1,7 +1,7 @@
 import { Component, HostListener, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { CustomerDTO, Order, OrderItemDTO, ProductData, Refund, RefundMethod, ReturnDTO, ReturnItemDTO, ReturnStatus } from '../../models/interface';
+import { CustomerDTO, Order, OrderItemDTO, ProductData, Refund, RefundMethod, RefundStatus, ReturnDTO, ReturnItemDTO, ReturnStatus } from '../../models/interface';
 import { RegisterService } from '../../service/register.service';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
 import { NgForm } from '@angular/forms';
@@ -32,6 +32,7 @@ export class OrderRefundComponent {
     cashierComment: '',
     status: ReturnStatus.PENDING,
     refundableAmount: 0,
+    refundStatus: RefundStatus.Processing,
     refundMethod: RefundMethod.CASH,
     bankDetails: {
       bankName: '',
@@ -163,6 +164,7 @@ export class OrderRefundComponent {
       cashierComment: '',
       status: ReturnStatus.PENDING,
       refundableAmount: 0,
+      refundStatus: RefundStatus.Processing,
       refundMethod: RefundMethod.CASH,
       bankDetails: {
         bankName: '',
@@ -470,7 +472,7 @@ export class OrderRefundComponent {
     }
     
     // Set the current date for the return request
-    this.returnData.orderId = parseInt(this.orderDetails?.orderNumber || "0" )
+    this.returnData.orderId = parseInt(this.orderDetails?.id || "0" )
     this.returnData.royaltyAccountId = this.returnData.royaltyAccount.id
     this.returnData.createdAt = new Date();
     console.log(this.returnData)
@@ -479,27 +481,30 @@ export class OrderRefundComponent {
       totalPricePaid: item.orderItem.totalPrice,
       productId: item.orderItem.product.id,
       ...(item.orderItem.productVariant && { variantId: item.orderItem.productVariant.id })
+
     }))
+
+    this.returnData.returnItems = returnItems
     this.orderService.makeRequest(this.returnData).subscribe(
       (response) => {
         console.log('Return request submitted successfully:', response);
-        from(returnItems)
-        .pipe(
-          concatMap(item =>
-            this.orderService.sendReturnItemsLog({
-              ...item,
-              itemReturnLogId: response.id
-            })
-          )
-        )
-        .subscribe({
-          next: (res) => console.log('Logged item:', res),
-          error: (err) => console.error('Error logging return item:', err),
-          complete: () => {
-            console.log('All return items logged.');
-            this.openRequestForm();
-          }
-        });
+        // from(returnItems)
+        // .pipe(
+        //   concatMap(item =>
+        //     this.orderService.sendReturnItemsLog({
+        //       ...item,
+        //       itemReturnLogId: response.id
+        //     })
+        //   )
+        // )
+        // .subscribe({
+        //   next: (res) => console.log('Logged item:', res),
+        //   error: (err) => console.error('Error logging return item:', err),
+        //   complete: () => {
+        //     console.log('All return items logged.');
+        //     this.openRequestForm();
+        //   }
+        // });
         this.openRequestForm();
       },
       (error) => {
@@ -528,6 +533,29 @@ export class OrderRefundComponent {
   formatDate(parts: any): Date {
     // const parts = raw.split(',').map(Number);
     return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
+  }
+  
+  getRefundStatusClass(status: string): string {
+    switch (status) {
+      case 'Pending':
+        return 'text-yellow-500 bg-yellow-100';
+      case 'Approved':
+        return 'text-green-600 bg-green-100';
+      case 'Rejected':
+        return 'text-red-600 bg-red-100';
+      case 'Processing':
+        return 'text-blue-500 bg-blue-100';
+      case 'Canceled':
+        return 'text-gray-500 bg-gray-100';
+      case 'Expired':
+        return 'text-orange-600 bg-orange-100';
+      case 'UnderReview':
+        return 'text-purple-600 bg-purple-100';
+      case 'Chargeback':
+        return 'text-pink-600 bg-pink-100';
+      default:
+        return 'text-gray-800 bg-gray-200';
+    }
   }
   
 }

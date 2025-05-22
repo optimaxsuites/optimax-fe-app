@@ -46,6 +46,7 @@ export class CashPaymentComponent implements OnInit {
     email: '',
     loyaltyPoints: 0
   };
+  isLoading= false
   
   constructor(
     private router: Router,
@@ -189,8 +190,10 @@ export class CashPaymentComponent implements OnInit {
         key: 'tl',
         life: 3000,
       });
+
       return;
     }
+    this.isLoading = true
   
     const now = new Date().toISOString();
     const paymentPayload = {
@@ -283,6 +286,8 @@ export class CashPaymentComponent implements OnInit {
           key: 'tl',
           life: 3000,
         });
+    this.isLoading = false
+
   
         const checkoutLink = this.navigationLink.getLink('checkoutLink');
         this.router.navigate([checkoutLink]);
@@ -302,6 +307,8 @@ export class CashPaymentComponent implements OnInit {
       key: 'tl',
       life: 3000,
     });
+    this.isLoading = false
+
   }
   
 

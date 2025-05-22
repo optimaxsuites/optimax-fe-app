@@ -4,23 +4,13 @@ import { ChangeDetectorRef } from '@angular/core';
 import { Menu, MenuModule } from 'primeng/menu';
 
 import { OverlayPanel, OverlayPanelModule } from 'primeng/overlaypanel';
+import { Refund, RefundMethod, RefundStatus } from '../../../models/interface';
+import { MetadataService } from '../../../service/metadata.service';
 
 
 
 
-interface Refund {
-  orderId: string;
-  cashier: string;
-  Amount_Requested: number;
-  reasonType: string;
-  status: string;
-  returnmode: string;
-  Date: string;
-  TransactionId: string ;
-  RequestedDate: string;
-  cashierComment: string;
-  returnedItems: { itemName: string; quantity: number }[]; 
-}
+
 
 @Component({
   selector: 'app-refund',
@@ -39,22 +29,49 @@ export class RefundComponent {
   isModalOpen: boolean = false;
   selectedRefund: Refund | null = null; // Store the selected refund
   cashierList: string[] = [];
-  selectedCashier: string = '';
-  selectedStatus: string = '';
+  selectedCashier: string  | null= null;
+  selectedStatus: string | null = null;
   startDate: any;
   endDate: any;
-  selectedDay: string = '';
+  selectedDay: string | null = null;
   daysOfWeek: string[] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   isDatePickerOpen = false;
   dateRange: Date[] = [];
   items: any[] = [];
+  statuses: string[] = Object.keys(RefundStatus)
+  refundList: Refund[] = []
+  filteredRefundList: Refund[] = [...this.refundList];
+  returnReasons = [
+    { label: 'Defective Product', value: 'DEFECTIVE' },
+    { label: 'Wrong Item Received', value: 'WRONG_ITEM' },
+    { label: 'Changed Mind', value: 'CHANGED_MIND' },
+    { label: 'Size/Fit Issue', value: 'SIZE_ISSUE' },
+    { label: 'Item Not As Described', value: 'NOT_AS_DESCRIBED' },
+    { label: 'Others', value: 'OTHERS' }
+  ]
+  adminComment: string = ''
+  refundDetails = [
+    { label: 'Customer', value: this.selectedRefund?.name },
+    { label: 'Amount Requested', value: '₦' + this.selectedRefund?.refundableAmount },
+    // { label: 'Reason Type', value: this.getRefundReasonLabel(this.selectedRefund?.reason) },
+    { label: 'Return Mode', value: this.selectedRefund?.refundReason },
+    { label: 'Customer Phone', value: this.selectedRefund?.phoneNumber },
+    { label: 'Payment ID', value: this.selectedRefund?.orderId },
+    { label: 'Royalty Account ID', value: this.selectedRefund?.royaltyAccountId },
+    { label: 'Requested Date', value: this.formatDate(this.selectedRefund?.createdAt) }
+  ];
+    
+ constructor(
 
- 
-
+  private messageService: MessageService,
+  private cdr: ChangeDetectorRef,
+  private metadataService: MetadataService
+) {}
 
   ngOnInit() {
-    this.getCashierList();
-    this.filterTable();
+    this.loadRefund()
+    // this.getCashierList();
+    // this.filterTable();
   }
 
   isMenuOpen = false;
@@ -64,52 +81,26 @@ toggleMenu(event: Event) {
   this.isMenuOpen = !this.isMenuOpen;
 }
 
+
 // Close menu when clicking outside
 @HostListener('document:click')
 closeMenu() {
   this.isMenuOpen = false;
 }
 
-
-  
- constructor(
-
-   private messageService: MessageService,
-   private cdr: ChangeDetectorRef
- ) {}
-  
-
-
-  refundList: Refund[] = [
-    { orderId: 'R001', TransactionId: 'ORD9988776655', cashier: 'John Doe', Amount_Requested: 5000, reasonType: 'Product Defect', status: 'Pending', Date: '2025-03-10', returnmode: 'Cash', returnedItems: [
-      { itemName: 'Phone Case', quantity: 2 },
-      { itemName: 'Screen Protector', quantity: 1 }
-    ],  RequestedDate: '2025-03-09', cashierComment: 'Item damaged on arrival', },
-    { orderId: 'R002', TransactionId: 'ORD9988442233', cashier: 'Jane Smith', Amount_Requested: 7550, reasonType: 'Late Delivery', status: 'Pending', Date: '2025-03-09', returnmode: 'Card', returnedItems: [
-      { itemName: 'Gaming Keyboard', quantity: 1 },
-      { itemName: 'RGB Mouse Pad', quantity: 1 }
-    ],   RequestedDate: '2025-03-08',  cashierComment: 'Delayed shipping caused return', },
-    { orderId: 'R003', TransactionId: 'ORD9988115599', cashier: 'Emily Johnson', Amount_Requested: 3025, reasonType: 'Wrong Item', status: 'Pending', Date: '2025-03-08', returnmode: 'Exchange' ,   returnedItems: [
-      { itemName: 'Office Chair', quantity: 1 }
-    ],     RequestedDate: '2025-03-07', cashierComment: 'Wrong color sent',  },
-    { orderId: 'R004', TransactionId: 'ORD9988001243', cashier: 'Michael Brown', Amount_Requested: 12000, reasonType: 'Customer Dissatisfaction', status: 'Pending', Date: '2025-03-07' , returnmode:'gift card', returnedItems: [
-      { itemName: 'Bluetooth Speaker', quantity: 1 },
-      { itemName: 'Headphones', quantity: 2 },
-      { itemName: 'Portable Power Bank', quantity: 1 }
-    ],     RequestedDate: '2025-03-06',cashierComment: 'Customer unhappy with product quality',  },
-    { orderId: 'R005',TransactionId: 'ORD99889923541', cashier: 'Sarah Wilson', Amount_Requested: 9575, reasonType: 'Duplicate Order', status: 'Pending', Date: '2025-03-06' , returnmode:'cash', returnedItems: [
-      { itemName: 'Gaming Keyboard', quantity: 1 },
-      { itemName: 'RGB Mouse Pad', quantity: 2 },
-      { itemName: 'Mechanical Keyboard', quantity: 1 },
-      { itemName: 'Gaming Mouse', quantity: 1 }
-    ],     RequestedDate: '2025-03-05',   cashierComment: 'Customer ordered twice by mistake', },
-  ];
-  filteredRefundList: Refund[] = [...this.refundList];
-
-
-getCashierList() {
-  this.cashierList = [...new Set(this.refundList.map(refund => refund.cashier))];
+loadRefund(){
+  this.metadataService.returns$.subscribe(value => {
+    console.log(value)
+    this.refundList = value
+    this.filteredRefundList = [...value]
+  })
 }
+
+
+
+// getCashierList() {
+//   this.cashierList = [...new Set(this.refundList.map(refund => refund.cashier))];
+// }
 toggleDatePicker() {
   this.isDatePickerOpen = !this.isDatePickerOpen;
 }
@@ -129,10 +120,10 @@ filterTable() {
     const query = this.searchQuery.toLowerCase();
     this.filteredRefundList = this.filteredRefundList.filter(refund =>
       refund.orderId.toLowerCase().includes(query) ||
-      refund.cashier.toLowerCase().includes(query) ||
-      refund.reasonType.toLowerCase().includes(query) ||
+      // refund.cashier.toLowerCase().includes(query) ||
+      refund.refundReason.toLowerCase().includes(query) ||
       refund.status.toLowerCase().includes(query) ||
-      refund.Date.toLowerCase().includes(query)
+      refund.createdAt.toLowerCase().includes(query)
     );
   }
 
@@ -143,9 +134,9 @@ filterTable() {
     console.log("Filtering from", this.startDate, "to", this.endDate);
   }
   // Apply cashier filter
-  if (this.selectedCashier) {
-    this.filteredRefundList = this.filteredRefundList.filter(refund => refund.cashier === this.selectedCashier);
-  }
+  // if (this.selectedCashier) {
+  //   this.filteredRefundList = this.filteredRefundList.filter(refund => refund.cashier === this.selectedCashier);
+  // }
 
   // Apply status filter
   if (this.selectedStatus) {
@@ -154,7 +145,7 @@ filterTable() {
    // Filter by selected weekday
    if (this.selectedDay) {
     this.filteredRefundList = this.filteredRefundList.filter(refund => {
-      return this.getDayOfWeek(refund.Date) === this.selectedDay;
+      return this.getDayOfWeek(refund.createdAt) === this.selectedDay;
     });
   }
 
@@ -164,7 +155,7 @@ filterTable() {
     const end = new Date(this.endDate);
 
     this.filteredRefundList = this.filteredRefundList.filter(refund => {
-      const refundDate = new Date(refund.Date);
+      const refundDate = new Date(refund.createdAt);
       return refundDate >= start && refundDate <= end;
     });
   }
@@ -183,7 +174,17 @@ getDayOfWeek(dateString: string): string {
   viewRefund(refund: any) {
     this.selectedRefund = refund;
     this.isModalOpen = true;
-    this.dropdownIndex = null; // Close the dropdown
+    this.dropdownIndex = null;
+    this.refundDetails = [
+      { label: 'Customer', value: this.selectedRefund?.name },
+      { label: 'Amount Requested', value: '₦' + this.selectedRefund?.refundableAmount },
+      { label: 'Reason Type', value: this.reason(this.selectedRefund?.reason) },
+      { label: 'Return Mode', value: this.selectedRefund?.refundReason },
+      { label: 'Customer Phone', value: this.selectedRefund?.phoneNumber },
+      { label: 'Payment ID', value: this.selectedRefund?.orderId },
+      { label: 'Royalty Account ID', value: this.selectedRefund?.royaltyAccountId },
+      { label: 'Requested Date', value: this.formatDate(this.selectedRefund?.createdAt) }
+    ]; // Close the dropdown
   }
 
   selectRefund(refund: Refund) {
@@ -196,7 +197,7 @@ getDayOfWeek(dateString: string): string {
       return;
     }
     console.log("Accepted:", refund);
-    refund.status = 'Accepted'; // Update the status of the specific refund
+    refund.refundStatus = 'Accepted'; // Update the status of the specific refund
     if (this.selectedRefund) {
       this.selectedRefund.status = 'Accepted';
       console.log(this.selectedRefund);
@@ -219,7 +220,7 @@ getDayOfWeek(dateString: string): string {
       return;
     }
     console.log("Rejected:", refund);
-  refund.status = 'Rejected'; // Ensure status is updated correctly
+  refund.refundStatus = 'Rejected'; // Ensure status is updated correctly
 
     if (this.selectedRefund) {
       this.selectedRefund.status = 'Rejected';
@@ -250,5 +251,56 @@ getDayOfWeek(dateString: string): string {
     this.cdr.detectChanges(); // Force UI update
   }
   
+  formatDate(dateArray: any[]): string {
+    if (!dateArray || dateArray.length < 3) return 'N/A';
+    
+    const [year, month, day, hour, minute, second] = dateArray;
+    const date = new Date(year, month - 1, day, hour || 0, minute || 0, second || 0);
+    
+    return date.toLocaleString();
+  }
+
+  get selectedReturnReasonLabel(): string | undefined {
+    return this.returnReasons.find(r => r.value === this.selectedRefund?.reason)?.label;
+  }
+
+   reason(reason: string){
+    return this.returnReasons.find(r => r.value === reason)?.label;
+
+  }  
+  getStatusIcon(status?: string): string {
+    switch (status) {
+      case 'Processing':
+        return 'pi-clock';
+      case 'Accepted':
+        return 'pi-check-circle';
+      case 'Rejected':
+        return 'pi-times-circle';
+      default:
+        return 'pi-info-circle';
+    }
+  }
+  getRefundStatusClass(status?: string): string {
+    switch (status) {
+      case 'Pending':
+        return 'text-yellow-500 bg-yellow-100';
+      case 'Approved':
+        return 'text-green-600 bg-green-100';
+      case 'Rejected':
+        return 'text-red-600 bg-red-100';
+      case 'Processing':
+        return 'text-blue-500 bg-blue-100';
+      case 'Canceled':
+        return 'text-gray-500 bg-gray-100';
+      case 'Expired':
+        return 'text-orange-600 bg-orange-100';
+      case 'UnderReview':
+        return 'text-purple-600 bg-purple-100';
+      case 'Chargeback':
+        return 'text-pink-600 bg-pink-100';
+      default:
+        return 'text-gray-800 bg-gray-200';
+    }
+  }
   
 }

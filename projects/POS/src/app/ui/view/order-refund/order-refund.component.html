@@ -267,7 +267,7 @@
       <button
         type="submit"
         [disabled]="returnForm.invalid || !hasSelectedItems"
-        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+        class="px-4 py-2 bg-customBlue text-white rounded-md hover:customblu disabled:bg-gray-400 disabled:cursor-not-allowed"
       >
         Submit Return Request
       </button>
@@ -307,7 +307,15 @@
                     </p>
                   </td>
                   <td class="capitalize">{{ request.name }}</td>
-                  <td>{{ request.status }}</td>
+                  <td>
+                    <span 
+                      class="px-2 py-1 font-medium rounded-full"
+                      [ngClass]="getRefundStatusClass(request.refundStatus)"
+                    >
+                      {{ request.refundStatus }}
+                    </span>
+                  </td>
+                  
                   <td>
                     <div class="flex gap-3 text-[16px]">
                       <!-- <i class="fa-solid fa-cart-shopping hover:bg-customGreen/30 p-2 rounded-md" ></i> -->

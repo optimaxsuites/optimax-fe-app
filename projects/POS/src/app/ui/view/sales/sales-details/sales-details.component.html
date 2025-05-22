@@ -37,16 +37,16 @@
       <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
         <div class="bg-gray-50 p-4 rounded-md">
           <h3 class="text-lg font-medium text-gray-900 mb-3">Customer Information</h3>
-          <p><span class="text-gray-500">Name:</span> {{ order.customer.name }}</p>
-          <p><span class="text-gray-500">Email:</span> {{ order.customer.email || 'N/A' }}</p>
-          <p><span class="text-gray-500">Loyalty Points:</span> {{ order.customer.loyaltyPoints }}</p>
+          <p><span class="text-gray-500">Name:</span> {{ order.customer?.name || "Walk-in"}}</p>
+          <p><span class="text-gray-500">Email:</span> {{ order.customer?.email || 'N/A' }}</p>
+          <p><span class="text-gray-500">Loyalty Points:</span> {{ order.customer?.loyaltyPoints || 'N/A' }}</p>
         </div>
         <div class="bg-gray-50 p-4 rounded-md">
           <h3 class="text-lg font-medium text-gray-900 mb-3">Branch Information</h3>
-          <p><span class="text-gray-500">Branch:</span> {{ order.branch.name }}</p>
-          <p><span class="text-gray-500">Description:</span> {{ order.branch.description }}</p>
-          <p><span class="text-gray-500">Address:</span> {{ order.branch.address }}</p>
-          <p><span class="text-gray-500">Phone:</span> {{ order.branch.phoneNo }}</p>
+          <p><span class="text-gray-500">Branch:</span> {{ order.branch?.name }}</p>
+          <p><span class="text-gray-500">Description:</span> {{ order.branch?.description }}</p>
+          <p><span class="text-gray-500">Address:</span> {{ order.branch?.address }}</p>
+          <p><span class="text-gray-500">Phone:</span> {{ order.branch?.phoneNo }}</p>
         </div>
       <!-- </div> -->
   
