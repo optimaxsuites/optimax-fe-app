@@ -15,6 +15,7 @@ import {
   TableOrderStatusGET,
 } from "../../models/interfaces/kitchen";
 import { dateToArray } from "../../shared";
+import { ImageCacheService } from "../../service/image-cache.service";
 
 /* `TableOrderStatus` stuff is basically all the relevant data about the customer's orders of that *table* as well as the staff who attended to that order. This `TableOrderStatus` can be broken down into a collection of orders (`Table Order`) and other date like the state of the order (UNPAID or PAID), the ids of the waiter, chef, cashier, etc. */
 
@@ -128,9 +129,13 @@ export class CheckoutKitchenComponent implements OnInit {
   private _fetchedBranches!: BranchDTO[];
   private readonly _dummyTableOrderStatus = 9999999;
 
+  /** Indexed with the Product Data's id and the value is the url */
+  productImgMap = new Map<number, string>();
+
   constructor(
     private posService: PosServiceService,
     private checkoutService: CheckoutService,
+    private imageCacheService: ImageCacheService,
   ) {}
 
   ngOnInit() {
@@ -168,6 +173,12 @@ export class CheckoutKitchenComponent implements OnInit {
           this.productCategories.set(category, [fetchedProduct]);
         }
         this._productIdAndDataMap.set(fetchedProduct.id, fetchedProduct);
+
+        // Cache product images
+        const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${fetchedProduct.productImages[0].imgNo}`;
+        this.imageCacheService.getImage(remoteImageUrl).subscribe((url) => {
+          this.productImgMap.set(fetchedProduct.id, url);
+        });
       });
       this.currCategoryProducts = this.productCategories.values().next().value;
     })();
@@ -260,7 +271,7 @@ export class CheckoutKitchenComponent implements OnInit {
           customerId: null,
           discountId: null,
           orderNumber: `${0}`,
-          orderStatus: "UNPAID",
+          orderStatus: timeStamps?.readyOn?.toISOString() ? "PAID" : "UNPAID",
           paymentId: null,
           quantity: 1,
           updatedAt: creationDate,
@@ -280,7 +291,7 @@ export class CheckoutKitchenComponent implements OnInit {
             orderedOn: timeStamps?.orderedOn?.toISOString() ?? creationDate,
             processedOn: timeStamps?.processedOn?.toISOString() ?? "",
             readyOn: timeStamps?.readyOn?.toISOString() ?? "",
-            status: "UNPAID",
+            status: timeStamps?.readyOn?.toISOString() ? "PAID" : "UNPAID",
             tableNumber: `${tableNo}`,
             waterId: waiterId,
           }),
@@ -329,6 +340,7 @@ export class CheckoutKitchenComponent implements OnInit {
     );
     new Date(...[3, 4, 5]);
 
+    // Dunno why typescript erros here since `new Date(...[2025, 3, 12])` works just fine
     //@ts-expect-error
     let orderedOn = new Date(...tableOrderStatus.orderedOn!),
       processedOn = tableOrderStatus.processedOn?.length //@ts-expect-error
