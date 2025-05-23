@@ -8,6 +8,7 @@ import { AddPerDiemComponent } from './ui/view/add-per-diem/add-per-diem.compone
 import { ExpenseSummaryComponent } from './ui/view/expense-summary/expense-summary.component';
 import { ReimbursementComponent } from './ui/view/reimbursement/reimbursement.component';
 import { DisbursementComponent } from './ui/view/disbursement/disbursement.component';
+import { ApprovalReportsComponent } from './ui/view/approval-reports/approval-reports.component';
 
 
 const routes: Routes = [
@@ -19,12 +20,16 @@ const routes: Routes = [
         component: ExpenseFormsModalComponent,
       },
       {
-       path: 'reimbursement',
+       path: 'admin/expenses/reimbursement/:uuid',
        component: ReimbursementComponent,
       },
        {
-        path: 'disbursement',
+        path: 'admin/expenses/advance/:uuid',
         component: DisbursementComponent,
+      },
+      {
+        path: 'admin/expenses/report/:uuid',
+        component: ApprovalReportsComponent,
       },
       {
         path: 'expensesApproval/:id',
