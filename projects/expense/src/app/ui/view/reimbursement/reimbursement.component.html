@@ -1,4 +1,4 @@
-<div class="ERM1 mx-3">
+<div class="ERM1">
   <!-- Header and Action Buttons -->
   <div class="ERM2">
     <h1 class="ERM3">Reimbursement Requests</h1>
@@ -8,9 +8,11 @@
         <i class="fas fa-filter ERM6"></i>Filter
       </button>
       
-      <!-- Create New Button -->
+      <!-- Add New/Close Button -->
       <button class="ERM7" (click)="toggleForm()">
-        <i class="fas fa-plus ERM6"></i>Add New
+        <i class="fas fa-plus ERM6" *ngIf="!showForm"></i>
+        <i class="fas fa-times ERM6" *ngIf="showForm"></i>
+        {{ showForm ? 'Close' : 'Add New' }}
       </button>
     </div>
   </div>
@@ -20,7 +22,7 @@
     You can only request for this <b>twice a month</b>. Please ensure all details are correct and reasonable before submitting.
   </div>  
 
-  <!-- Filter Section (Hidden by default) -->
+  <!-- Filter Section -->
   <div *ngIf="showFilter" class="ERM9">
     <h3 class="ERM10">Filter Options</h3>
     <div class="ERM11">
@@ -55,10 +57,15 @@
         <div>
           <div class="ERM18">
             <label class="ERM12">Request Type</label>
-            <select formControlName="requestType" required class="ERM19" (change)="onRequestTypeChange(reimbursementForm.get('requestType')?.value)">
-              <option value="" ></option>
+            <select formControlName="requestType" required class="ERM19" 
+                    [class.invalid]="fieldErrors['requestType']"
+                    (change)="onRequestTypeChange(reimbursementForm.get('requestType')?.value)">
+              <option value=""></option>
               <option *ngFor="let type of requestTypes" [value]="type.value">{{type.label}}</option>
             </select>
+            <div *ngIf="fieldErrors['requestType']" class="error-message">
+              {{ fieldErrors['requestType'] }}
+            </div>
             
             <div *ngIf="showOtherRequestType" class="ERM20">
               <input type="text" formControlName="otherRequestType" 
@@ -70,22 +77,38 @@
 
           <div class="ERM18">
             <label class="ERM12">Date</label>
-            <input type="date" formControlName="date" required class="ERM19">
+            <input type="date" formControlName="date" required class="ERM19"
+                   [class.invalid]="fieldErrors['date']">
+            <div *ngIf="fieldErrors['date']" class="error-message">
+              {{ fieldErrors['date'] }}
+            </div>
           </div>
 
           <div class="ERM18">
             <label class="ERM12">Employee ID</label>
-            <input type="text" formControlName="employeeId" required class="ERM19" placeholder="Enter employee ID">
+            <input type="text" formControlName="employeeId" required class="ERM19" 
+                   placeholder="Enter employee ID" [class.invalid]="fieldErrors['employeeId']">
+            <div *ngIf="fieldErrors['employeeId']" class="error-message">
+              {{ fieldErrors['employeeId'] }}
+            </div>
           </div>
 
           <div class="ERM18">
             <label class="ERM12">Department</label>
-            <input type="text" formControlName="department" required class="ERM19" placeholder="Enter department">
+            <input type="text" formControlName="department" required class="ERM19" 
+                   placeholder="Enter department" [class.invalid]="fieldErrors['department']">
+            <div *ngIf="fieldErrors['department']" class="error-message">
+              {{ fieldErrors['department'] }}
+            </div>
           </div>
 
           <div class="ERM18">
             <label class="ERM12">Merchant</label>
-            <input type="text" formControlName="merchant" required class="ERM19" placeholder="Enter merchant name">
+            <input type="text" formControlName="merchant" required class="ERM19" 
+                   placeholder="Enter merchant name" [class.invalid]="fieldErrors['merchant']">
+            <div *ngIf="fieldErrors['merchant']" class="error-message">
+              {{ fieldErrors['merchant'] }}
+            </div>
           </div>
         </div>
 
@@ -93,35 +116,51 @@
         <div>
           <div class="ERM18">
             <label class="ERM12">Description</label>
-            <textarea formControlName="description" required class="ERM19" rows="3" placeholder="Enter description"></textarea>
+            <textarea formControlName="description" required class="ERM19" rows="3" 
+                      placeholder="Enter description" [class.invalid]="fieldErrors['description']"></textarea>
+            <div *ngIf="fieldErrors['description']" class="error-message">
+              {{ fieldErrors['description'] }}
+            </div>
           </div>
 
           <div class="ERM18">
             <label class="ERM12">Amount</label>
             <div class="ERM22">
-              <input type="number" formControlName="amount" required class="ERM23" placeholder="Enter amount" step="0.01">
+              <input type="number" formControlName="amount" required class="ERM23" 
+                     placeholder="Enter amount" step="0.01" [class.invalid]="fieldErrors['amount']">
               <select formControlName="currency" class="ERM24">
                 <option value="NGN">₦ NGN</option>
                 <option value="USD">$ USD</option>
                 <option value="EUR">€ EUR</option>
               </select>
             </div>
+            <div *ngIf="fieldErrors['amount']" class="error-message">
+              {{ fieldErrors['amount'] }}
+            </div>
           </div>
 
           <div class="ERM18">
             <label class="ERM12">Category</label>
-            <select formControlName="category" required class="ERM19">
-              <option value="">Select Category</option>
+            <select formControlName="category" required class="ERM19"
+                    [class.invalid]="fieldErrors['category']">
+              <option value=""></option>
               <option *ngFor="let cat of categories" [value]="cat.value">{{cat.label}}</option>
             </select>
+            <div *ngIf="fieldErrors['category']" class="error-message">
+              {{ fieldErrors['category'] }}
+            </div>
           </div>
 
           <div class="ERM18">
             <label class="ERM12">Payment Method</label>
-            <select formControlName="paymentMethod" required class="ERM19">
+            <select formControlName="paymentMethod" required class="ERM19"
+                    [class.invalid]="fieldErrors['paymentMethod']">
               <option value="">Select Payment Method</option>
               <option *ngFor="let method of paymentMethods" [value]="method.value">{{method.label}}</option>
             </select>
+            <div *ngIf="fieldErrors['paymentMethod']" class="error-message">
+              {{ fieldErrors['paymentMethod'] }}
+            </div>
           </div>
         </div>
       </div>
@@ -130,27 +169,44 @@
       <div class="ERM25">
         <div>
           <label class="ERM12">Account Number</label>
-          <input type="text" formControlName="accountNumber" required class="ERM19" placeholder="Enter account number">
+          <input type="text" formControlName="accountNumber" required class="ERM19" 
+                 placeholder="Enter account number" [class.invalid]="fieldErrors['accountNumber']">
+          <div *ngIf="fieldErrors['accountNumber']" class="error-message">
+            {{ fieldErrors['accountNumber'] }}
+          </div>
         </div>
         <div>
           <label class="ERM12">Bank Name</label>
-          <input type="text" formControlName="bankName" required class="ERM19" placeholder="Enter bank name">
+          <input type="text" formControlName="bankName" required class="ERM19" 
+                 placeholder="Enter bank name" [class.invalid]="fieldErrors['bankName']">
+          <div *ngIf="fieldErrors['bankName']" class="error-message">
+            {{ fieldErrors['bankName'] }}
+          </div>
         </div>
         <div>
           <label class="ERM12">Receiver's Name</label>
-          <input type="text" formControlName="receiverName" required class="ERM19" placeholder="Enter receiver's name">
+          <input type="text" formControlName="receiverName" required class="ERM19" 
+                 placeholder="Enter receiver's name" [class.invalid]="fieldErrors['receiverName']">
+          <div *ngIf="fieldErrors['receiverName']" class="error-message">
+            {{ fieldErrors['receiverName'] }}
+          </div>
         </div>
       </div>
 
       <!-- Receipt Upload Section -->
       <div class="ERM26">
         <label class="ERM27">Upload Receipt</label>
+        <div *ngIf="fieldErrors['receipt']" class="error-message">
+          {{ fieldErrors['receipt'] }}
+        </div>
         <div class="ERM28">
           <!-- Drag and Drop Area -->
           <div class="ERM29" 
                [class.ERM30]="isDraggingOver"
+               [class.invalid]="fieldErrors['receipt']"
                (dragover)="onDragOver($event)"
-               (dragleave)="onDragLeave($event)">
+               (dragleave)="onDragLeave($event)"
+               (drop)="onDragLeave($event)">
             <div class="ERM31">
               <i class="fas fa-cloud-upload-alt ERM32"></i>
               <p class="ERM33">Drag and drop your receipt here</p>
@@ -193,10 +249,13 @@
 
       <!-- Form Actions -->
       <div class="ERM51">
+        <button type="button" (click)="cancelForm()" class="ERM52">
+          Cancel
+        </button>
         <button type="button" (click)="saveAsDraft()" class="ERM52">
           Save as Draft
         </button>
-        <button type="submit" class="ERM53" [disabled]="!reimbursementForm.valid">
+        <button type="submit" class="ERM53">
           Submit Request
         </button>
       </div>
@@ -205,31 +264,36 @@
 </div>
 
 
-<!-- Recent Requests Section -->
-<div class="ERM54 mx-4">
+<div class="floating-box">
+  <!-- Recent Requests Section -->
+<div class="ERM54" *ngIf="showRecentRequests">
   <h2 class="ERM55">Recent Requests</h2>
   <div class="ERM56">
     <table class="ERM57">
       <thead>
         <tr class="ERM58">
-          <th class="ERM59"><input type="checkbox" /></th>
+          <th class="ERM59">
+            <input type="checkbox" [(ngModel)]="allChecked" (change)="toggleAllCheckboxes()">
+          </th>
           <th class="ERM59">REQUEST ID</th>
           <th class="ERM59">DATE</th>
           <th class="ERM59">TYPE</th>
           <th class="ERM59">MERCHANT</th>
-          <th class="ERM59">AMOUNT</th>
+          <th class="ERM59 amount-cell">AMOUNT (₦)</th>
           <th class="ERM59">STATUS</th>
           <th class="ERM59">ACTIONS</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let req of recentRequests" class="ERM60">
-          <td class="ERM61"><input type="checkbox" /></td>
+          <td class="ERM61">
+            <input type="checkbox" [(ngModel)]="req.checked">
+          </td>
           <td class="ERM61">{{ req.id }}</td>
           <td class="ERM61">{{ req.date | date:'MMM d, y' }}</td>
           <td class="ERM61">{{ req.type }}</td>
           <td class="ERM61">{{ req.merchant }}</td>
-          <td class="ERM61"><b>{{ req.amount | currency }}</b></td>
+          <td class="ERM61 amount-cell"><b>₦{{ req.amount | number:'1.2-2' }}</b></td>
           <td class="ERM61">
             <span [ngClass]="{
               'ERM62': req.status === 'Pending',
@@ -259,13 +323,18 @@
       {{ Math.min(currentPage * pageSize, totalRequests) }} of {{ totalRequests }} results
     </span>
     <div class="ERM70">
-      <button class="ERM71" [disabled]="currentPage === 1" (click)="prevPage()">Previous</button>
-      <button *ngFor="let page of totalPagesArray" class="ERM72"
-        [class.ERM73]="page === currentPage"
-        (click)="goToPage(page)">
+      <span class="pagination-link" (click)="prevPage()" [class.disabled]="currentPage === 1">
+        Previous
+      </span>
+      <span *ngFor="let page of totalPagesArray" class="pagination-link" 
+            [class.active]="page === currentPage"
+            (click)="goToPage(page)">
         {{ page }}
-      </button>
-      <button class="ERM71" [disabled]="currentPage === totalPages" (click)="nextPage()">Next</button>
+      </span>
+      <span class="pagination-link" (click)="nextPage()" [class.disabled]="currentPage === totalPages">
+        Next
+      </span>
     </div>
   </div>
+</div>
 </div>
