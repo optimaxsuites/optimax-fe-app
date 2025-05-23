@@ -131,6 +131,7 @@
                     <div class="order-item">
                       <span class="item-name">
                         {{ item.product["name"] }}
+                        <div [style]="{'background-image': 'url(' + productImgMap.get(item.product.id) + ')',}"></div>
                       </span>
                       <span class="item-quantity">
                         {{ item.quantity }}
@@ -313,6 +314,7 @@
                     <div class="order-item">
                       <span class="item-name">
                         {{ item.product["name"] }}
+                        <div [style]="{'background-image': 'url(' + productImgMap.get(item.product.id) + ')',}"></div>
                       </span>
                       <span class="item-quantity">
                         {{ item.quantity }}
@@ -563,6 +565,11 @@
           class="subcategory-card"
           (click)="addFoodItemToOrder(p)"
         >
+          <div
+            [style]="{
+              'background-image': 'url(' + productImgMap.get(p.id) + ')',
+            }"
+          ></div>
           {{ p.name }}
         </div>
       }
