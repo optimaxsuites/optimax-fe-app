@@ -204,7 +204,7 @@
 
 .error-message {
   margin-top: 0.25rem;
-  color: #e74c3c;
+  color: #7c0c00;
   font-size: 0.85rem;
 }
 
@@ -223,9 +223,10 @@
   padding: 10px 12px;
   border: 1px solid #dbe3ef;
   border-radius: 5px;
-  background: #f7f9fb;
+  background: #ffffff;
   font-size: 0.95rem;
   transition: border-color 0.2s;
+   box-shadow: 0 4px 16px rgba(68, 65, 65, 0.1);
 }
 
 .form-group input:focus,
