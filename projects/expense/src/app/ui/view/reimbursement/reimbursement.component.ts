@@ -24,6 +24,9 @@ export class ReimbursementComponent implements OnInit {
   Math = Math;
   isDraftMode: boolean = false;
   draftData: any;
+  fieldErrors: { [key: string]: string } = {};
+  showRecentRequests = true;
+  allChecked = false;
 
   requestTypes = [
     { value: 'travel', label: 'Travel' },
@@ -48,6 +51,17 @@ export class ReimbursementComponent implements OnInit {
     { value: 'other', label: 'Other' }
   ];
 
+  recentRequests = [
+    { id: 'REQ-2025-0568', date: new Date(2025, 4, 20), type: 'Travel', merchant: 'Uber', amount: 42.50, status: 'Pending', checked: false },
+    { id: 'REQ-2025-0567', date: new Date(2025, 4, 19), type: 'Meals', merchant: 'Starbucks', amount: 18.75, status: 'Approved', checked: false },
+    { id: 'REQ-2025-0566', date: new Date(2025, 4, 18), type: 'Office Supplies', merchant: 'Amazon', amount: 129.99, status: 'Rejected', checked: false },
+  ];
+  
+  currentPage = 1;
+  pageSize = 5;
+  totalRequests = 42;
+  totalPages = Math.ceil(this.totalRequests / this.pageSize);
+  
   reimbursementForm: FormGroup;
 
   constructor(private fb: FormBuilder) {
@@ -67,150 +81,235 @@ export class ReimbursementComponent implements OnInit {
       bankName: ['', Validators.required],
       receiverName: ['', Validators.required],
       isBusinessExpense: [false],
-      receipt: [null] // Removed required validator for draft purposes
+      receipt: [null]
     });
 
-    // Load draft if exists
-    const draft = localStorage.getItem('draftReimbursement');
-    if (draft) {
-      this.draftData = JSON.parse(draft);
-      this.reimbursementForm.patchValue(this.draftData);
-    }
+    this.loadDraft();
   }
 
   ngOnInit(): void {}
 
-  toggleFilter() {
-    this.showFilter = !this.showFilter;
-  }
-
-  toggleForm() {
-    this.showForm = !this.showForm;
-    if (!this.showForm) {
-      this.selectedFile = null;
-      this.isDraftMode = false;
+  private loadDraft(): void {
+    const draft = localStorage.getItem('draftReimbursement');
+    if (draft) {
+      try {
+        this.draftData = JSON.parse(draft);
+        this.reimbursementForm.patchValue(this.draftData);
+        this.isDraftMode = true;
+      } catch (e) {
+        console.error('Failed to parse draft data', e);
+        localStorage.removeItem('draftReimbursement');
+      }
     }
   }
 
-  onRequestTypeChange(type: string) {
+  toggleFilter(): void {
+    this.showFilter = !this.showFilter;
+  }
+
+  toggleForm(): void {
+    this.showForm = !this.showForm;
+    this.showRecentRequests = !this.showForm;
+    
+    if (this.showForm && this.isDraftMode) {
+      this.reimbursementForm.patchValue(this.draftData);
+    }
+  }
+
+  cancelForm(): void {
+    if (this.reimbursementForm.dirty || this.selectedFile) {
+      if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+        this.resetForm();
+        this.showForm = false;
+        this.showRecentRequests = true;
+      }
+    } else {
+      this.showForm = false;
+      this.showRecentRequests = true;
+    }
+  }
+
+  private resetForm(): void {
+    this.reimbursementForm.reset({
+      currency: 'NGN',
+      isBusinessExpense: false
+    });
+    this.selectedFile = null;
+    this.fieldErrors = {};
+    this.isDraftMode = false;
+  }
+
+  toggleAllCheckboxes(): void {
+    this.allChecked = !this.allChecked;
+    this.recentRequests.forEach(request => request.checked = this.allChecked);
+  }
+
+  onRequestTypeChange(type: string): void {
     this.showOtherRequestType = type === 'other';
     if (!this.showOtherRequestType) {
       this.reimbursementForm.get('otherRequestType')?.reset();
     }
   }
 
-  onFileSelected(event: Event) {
+  onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       this.handleFile(input.files[0]);
     }
   }
 
-  onFileDropped(file: File) {
-    this.handleFile(file);
-  }
-
-  removeFile() {
+  removeFile(): void {
     this.selectedFile = null;
     this.reimbursementForm.patchValue({ receipt: null });
+    this.fieldErrors['receipt'] = '';
   }
 
-  onDragOver(event: DragEvent) {
+  onDragOver(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
     this.isDraggingOver = true;
   }
 
-  onDragLeave(event: DragEvent) {
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingOver = false;
+    
+    if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
+      this.handleFile(event.dataTransfer.files[0]);
+    }
+  }
+
+  onDragLeave(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
     this.isDraggingOver = false;
   }
 
-  private handleFile(file: File) {
-    if (file) {
-      const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-      const maxSize = 10 * 1024 * 1024; // 10MB
-      
-      if (!validTypes.includes(file.type)) {
-        alert('Invalid file type. Please upload JPG, PNG, or PDF.');
-        return;
-      }
-      
-      if (file.size > maxSize) {
-        alert('File is too large. Maximum size is 10MB.');
-        return;
-      }
-      
-      this.selectedFile = file;
-      this.reimbursementForm.patchValue({ receipt: file });
-      this.isDraggingOver = false;
+  private handleFile(file: File): void {
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    
+    if (!validTypes.includes(file.type)) {
+      this.fieldErrors['receipt'] = 'Invalid file type. Please upload JPG, PNG, or PDF.';
+      return;
     }
-  }
-
-  saveAsDraft() {
-    // Save regardless of form validity
-    this.draftData = this.reimbursementForm.value;
-    this.isDraftMode = true;
-    localStorage.setItem('draftReimbursement', JSON.stringify(this.draftData));
-    alert('Draft saved successfully!');
-  }
-
-  finishDraft() {
-    this.isDraftMode = false;
-    if (this.draftData) {
-      this.reimbursementForm.patchValue(this.draftData);
+    
+    if (file.size > maxSize) {
+      this.fieldErrors['receipt'] = 'File is too large. Maximum size is 10MB.';
+      return;
     }
+    
+    this.selectedFile = file;
+    this.reimbursementForm.patchValue({ receipt: file });
+    this.fieldErrors['receipt'] = '';
   }
 
-  onSubmit() {
-    // Manually check receipt if we're submitting (not saving as draft)
-    if (!this.selectedFile) {
-      alert('Please upload a receipt before submitting');
+  saveAsDraft(): void {
+    if (this.reimbursementForm.invalid) {
+      this.validateAllFields();
       return;
     }
 
-    if (this.reimbursementForm.valid) {
-      console.log('Submitting:', this.reimbursementForm.value);
-      // Clear draft after successful submission
-      localStorage.removeItem('draftReimbursement');
-      this.reimbursementForm.reset();
-      this.selectedFile = null;
-      this.showForm = false;
-      // Implement actual submission logic here
-    } else {
-      // Highlight invalid fields
-      this.markFormGroupTouched(this.reimbursementForm);
+    this.draftData = {
+      ...this.reimbursementForm.value,
+      receiptFileName: this.selectedFile?.name
+    };
+    
+    this.isDraftMode = true;
+    localStorage.setItem('draftReimbursement', JSON.stringify(this.draftData));
+    alert('Draft saved successfully!');
+    this.showForm = false;
+    this.showRecentRequests = true;
+  }
+
+  onSubmit(): void {
+    this.fieldErrors = {};
+    this.validateAllFields();
+    
+    if (!this.selectedFile) {
+      this.fieldErrors['receipt'] = 'Receipt is required';
+    }
+
+    if (Object.keys(this.fieldErrors).length > 0) {
+      this.scrollToFirstError();
+      return;
+    }
+
+    console.log('Submitting:', this.reimbursementForm.value);
+    localStorage.removeItem('draftReimbursement');
+    this.resetForm();
+    this.showForm = false;
+    this.showRecentRequests = true;
+    alert('Request submitted successfully!');
+  }
+
+  private validateAllFields(): void {
+    this.validateField('requestType', 'Request type is required');
+    this.validateField('date', 'Date is required');
+    this.validateField('employeeId', 'Employee ID is required');
+    this.validateField('department', 'Department is required');
+    this.validateField('merchant', 'Merchant is required');
+    this.validateField('description', 'Description must be at least 10 characters');
+    this.validateField('amount', 'Amount must be at least 0.01');
+    this.validateField('category', 'Category is required');
+    this.validateField('paymentMethod', 'Payment method is required');
+    this.validateField('accountNumber', 'Valid account number (10+ digits) is required');
+    this.validateField('bankName', 'Bank name is required');
+    this.validateField('receiverName', 'Receiver name is required');
+  }
+
+  private validateField(fieldName: string, errorMessage: string): void {
+    const control = this.reimbursementForm.get(fieldName);
+    if (control && control.invalid && control.errors) {
+      if (control.errors['required']) {
+        this.fieldErrors[fieldName] = errorMessage;
+      } else if (control.errors['minlength']) {
+        this.fieldErrors[fieldName] = errorMessage;
+      } else if (control.errors['min']) {
+        this.fieldErrors[fieldName] = errorMessage;
+      } else if (control.errors['pattern']) {
+        this.fieldErrors[fieldName] = errorMessage;
+      }
     }
   }
 
-  private markFormGroupTouched(formGroup: FormGroup) {
-    Object.values(formGroup.controls).forEach(control => {
-      control.markAsTouched();
-
-      if (control instanceof FormGroup) {
-        this.markFormGroupTouched(control);
+  private scrollToFirstError(): void {
+    setTimeout(() => {
+      const firstErrorElement = document.querySelector('.invalid');
+      if (firstErrorElement) {
+        firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-    });
+    }, 100);
   }
-    
-  recentRequests = [
-    { id: 'REQ-2025-0568', date: new Date(2025, 4, 20), type: 'Travel', merchant: 'Uber', amount: 42.50, status: 'Pending' },
-    { id: 'REQ-2025-0567', date: new Date(2025, 4, 19), type: 'Meals', merchant: 'Starbucks', amount: 18.75, status: 'Approved' },
-    { id: 'REQ-2025-0566', date: new Date(2025, 4, 18), type: 'Office Supplies', merchant: 'Amazon', amount: 129.99, status: 'Rejected' },
-   
-  ];
-  currentPage = 1;
-  pageSize = 5;
-  totalRequests = 42;
-  totalPages = Math.ceil(this.totalRequests / this.pageSize);
-  get totalPagesArray() {
+
+  get totalPagesArray(): number[] {
     return Array(this.totalPages).fill(0).map((x, i) => i + 1);
   }
-  prevPage() { if (this.currentPage > 1) this.currentPage--; }
-  nextPage() { if (this.currentPage < this.totalPages) this.currentPage++; }
-  goToPage(page: number) { this.currentPage = page; }
-  viewRequest(req: any) { /* Show details logic */ }
-  deleteRequest(req: any) { /* Delete logic */ }
   
+  prevPage(): void {
+    if (this.currentPage > 1) this.currentPage--;
+  }
+  
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) this.currentPage++;
+  }
+  
+  goToPage(page: number): void {
+    this.currentPage = page;
+  }
+  
+  viewRequest(req: any): void {
+    // Implement view logic
+    console.log('Viewing request:', req);
+  }
+  
+  deleteRequest(req: any): void {
+    if (confirm('Are you sure you want to delete this request?')) {
+      // Implement delete logic
+      console.log('Deleting request:', req);
+    }
+  }
 }
