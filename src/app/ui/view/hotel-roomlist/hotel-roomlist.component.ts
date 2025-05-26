@@ -27,7 +27,7 @@ export interface BookingDetails {
 
 export interface Room {
   id: number;
-  number: number;
+  number: number | null;
   type: string;
   status: string;
   floor?: number;
@@ -166,6 +166,7 @@ export class HotelRoomlistComponent {
   }
 
   openRoomDetails(room: Room): void {
+    if (!room) return;
     this.roomSelected.emit(room);
   }
 
@@ -214,7 +215,7 @@ export class HotelRoomlistComponent {
       // Search filter (unchanged)
       const searchMatch =
         !this.searchQuery ||
-        room.number.toString().includes(this.searchQuery) ||
+        room.number?.toString().includes(this.searchQuery) ||
         (room.guest &&
           `${room.guest.firstName} ${room.guest.lastName}`
             .toLowerCase()
