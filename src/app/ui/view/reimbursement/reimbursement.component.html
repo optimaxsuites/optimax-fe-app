@@ -1,7 +1,7 @@
-<div class="ERM1">
+<div class="ERM1 mx-5">
   <!-- Header and Action Buttons -->
   <div class="ERM2">
-    <h1 class="ERM3">Reimbursement Requests</h1>
+    <h1 class="ERM3 text-3xl">Reimbursement Requests</h1>
     <div class="ERM4">
       <!-- Filter Button -->
       <button class="ERM5" (click)="toggleFilter()">
@@ -9,7 +9,7 @@
       </button>
       
       <!-- Add New/Close Button -->
-      <button class="ERM7" (click)="toggleForm()">
+      <button class="ERM7 text-xl" (click)="toggleForm()">
         <i class="fas fa-plus ERM6" *ngIf="!showForm"></i>
         <i class="fas fa-times ERM6" *ngIf="showForm"></i>
         {{ showForm ? 'Close' : 'Add New' }}
@@ -220,9 +220,9 @@
     </form>
   </div>
 </div>
-<div class="floating-box">
+<div class="floating-box mx-5" *ngIf="showRecentRequests">
     <!-- Recent Requests Section -->
-    <div class="ERM54" *ngIf="showRecentRequests">
+    <div class="ERM54" >
       <h2 class="ERM55">Recent Requests</h2>
       <div class="ERM56">
         <table class="ERM57">
