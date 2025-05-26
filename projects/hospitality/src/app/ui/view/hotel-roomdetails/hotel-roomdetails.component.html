@@ -1,7 +1,7 @@
 <div
   *ngIf="
     showDetails &&
-    room &&
+    (room || detailedRoom) &&
     detailedRoom &&
     !openForm &&
     !openMessage &&
@@ -23,9 +23,11 @@
       >
         <div>
           <h2 class="text-4xl font-bold text-white">
-            Room {{ detailedRoom.number }}
+            Room {{ detailedRoom?.number }}
           </h2>
-          <p class="text-xl mt-4 mb-6 text-white/90">{{ detailedRoom.type }}</p>
+          <p class="text-xl mt-4 mb-6 text-white/90">
+            {{ detailedRoom?.type }}
+          </p>
         </div>
 
         <!-- Button Group (right-aligned) -->
@@ -63,7 +65,7 @@
         class="absolute -bottom-4 left-6 px-4 py-2 rounded-full shadow-md text-white font-bold flex items-center gap-2"
       >
         <i class="pi pi-circle-fill text-xs"></i>
-        {{ detailedRoom.status | titlecase }}
+        {{ detailedRoom?.status | titlecase }}
       </div>
     </div>
 
@@ -92,7 +94,7 @@
               Room Type
             </p>
             <p class="text-xl font-semibold text-gray-800 mt-1">
-              {{ detailedRoom.type }}
+              {{ detailedRoom?.type }}
             </p>
           </div>
 
@@ -104,19 +106,19 @@
             </p>
             <p class="text-xl font-semibold text-gray-800 mt-1">
               {{
-                detailedRoom.rate | currency : "NGN" : "symbol" : "1.0-0"
+                detailedRoom?.rate | currency : "NGN" : "symbol" : "1.0-0"
               }}/night
             </p>
           </div>
 
-          <div *ngIf="detailedRoom.floor">
+          <div *ngIf="detailedRoom?.floor">
             <p
               class="text-lg font-medium text-gray-500 uppercase tracking-wider"
             >
               Floor
             </p>
             <p class="text-xl font-semibold text-gray-800 mt-1">
-              {{ detailedRoom.floor }}
+              {{ detailedRoom?.floor }}
             </p>
           </div>
 
@@ -127,7 +129,7 @@
               Beds
             </p>
             <p class="text-xl font-semibold text-gray-800 mt-1">
-              {{ detailedRoom.beds }}
+              {{ detailedRoom?.beds }}
               {{ detailedRoom.beds > 1 ? "beds" : "bed" }}
             </p>
           </div>
@@ -137,18 +139,18 @@
       <!-- Column 2: Room Details -->
       <div class="p-6 border-r border-gray-200/50">
         <div class="space-y-4">
-          <div *ngIf="detailedRoom.maxOccupancy">
+          <div *ngIf="detailedRoom?.maxOccupancy">
             <p
               class="text-lg font-medium text-gray-500 uppercase tracking-wider"
             >
               Max Occupancy
             </p>
             <p class="text-xl font-semibold text-gray-800 mt-1">
-              {{ detailedRoom.maxOccupancy }} persons
+              {{ detailedRoom?.maxOccupancy }} persons
             </p>
           </div>
 
-          <div *ngIf="detailedRoom.description">
+          <div *ngIf="detailedRoom?.description">
             <p
               class="text-lg font-medium text-gray-500 uppercase tracking-wider"
             >
@@ -156,7 +158,7 @@
             </p>
             <div class="bg-gray-100/50 p-3 rounded-lg">
               <p class="text-gray-800 font-bold italic text-lg">
-                {{ detailedRoom.description }}
+                {{ detailedRoom?.description }}
               </p>
             </div>
           </div>
@@ -243,7 +245,7 @@
                 Status
               </p>
               <p class="text-xl font-semibold text-gray-800 mt-1 capitalize">
-                {{ detailedRoom.status }}
+                {{ detailedRoom?.status }}
               </p>
             </div>
 

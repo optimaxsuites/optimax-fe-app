@@ -46,13 +46,13 @@
           View All Logs
         </button>
 
-        <!-- <button
+        <button
           class="flex items-center gap-2 bg-customBlue text-white px-6 py-3 rounded-lg text-xl font-semibold hover:bg-customBlueHover transition duration-300"
           (click)="navigateToRoom()"
         >
           <i class="pi pi-eye"></i>
           View All Logs
-        </button> -->
+        </button>
       </div>
     </div>
 
@@ -154,27 +154,27 @@
         <div class="flex justify-between items-start mb-2">
           <div>
             <h3 class="text-2xl font-extrabold text-gray-800">
-              Room {{ room.number }} - {{ room.type }}
+              Room {{ room?.number }} - {{ room?.type }}
             </h3>
             <span
               class="inline-block px-2 py-1 mt-2 text-sm font-extrabold rounded-full bg-white bg-opacity-70 text-gray-800"
             >
-              {{ room.status | titlecase }}
+              {{ room?.status | titlecase }}
             </span>
           </div>
           <span
             *ngIf="room.floor"
             class="text-lg font-medium bg-white bg-opacity-70 px-2 py-1 rounded"
           >
-            Floor {{ room.floor }}
+            Floor {{ room?.floor }}
           </span>
         </div>
 
         <div class="mt-2 flex-1">
           <p *ngIf="room.guest" class="text-xl font-medium truncate">
             <i class="pi pi-user mr-1"></i>
-            {{ room.guest.title }} {{ room.guest.firstName }}
-            {{ room.guest.lastName }}
+            {{ room?.guest?.title }} {{ room?.guest?.firstName }}
+            {{ room?.guest?.lastName }}
           </p>
         </div>
 
@@ -182,21 +182,21 @@
           <div>
             <p *ngIf="room.bookingDetails" class="text-lg mt-1">
               <i class="pi pi-calendar mr-1"></i>
-              {{ room.bookingDetails.checkinDate | date : "shortDate" }} -
-              {{ room.bookingDetails.checkoutDate | date : "shortDate" }}
+              {{ room?.bookingDetails?.checkinDate | date : "shortDate" }} -
+              {{ room?.bookingDetails?.checkoutDate | date : "shortDate" }}
             </p>
-            <p *ngIf="room.bookingDetails" class="text-sm mt-1">
+            <p *ngIf="room?.bookingDetails" class="text-sm mt-1">
               <i class="pi pi-credit-card mr-1"></i>
-              {{ room.bookingDetails.paymentMethod | titlecase }} •
+              {{ room?.bookingDetails?.paymentMethod | titlecase }} •
               {{
-                room.bookingDetails.paidAmount
+                room?.bookingDetails?.paidAmount
                   | currency : "NGN" : "symbol" : "1.0-0"
               }}
               paid
             </p>
           </div>
           <p class="text-xl font-semibold">
-            {{ room.rate | currency : "NGN" : "symbol" : "1.0-0" }}/night
+            {{ room?.rate | currency : "NGN" : "symbol" : "1.0-0" }}/night
           </p>
         </div>
       </div>
@@ -285,9 +285,9 @@
             <div class="flex justify-between items-start">
               <div>
                 <p class="font-bold text-2xl text-gray-800">
-                  {{ room.number }}
+                  {{ room?.number }}
                 </p>
-                <p class="text-xl text-gray-600 mt-1">{{ room.type }}</p>
+                <p class="text-xl text-gray-600 mt-1">{{ room?.type }}</p>
               </div>
               <div
                 (click)="$event.stopPropagation(); toggleRoomSelection(room)"
@@ -303,7 +303,7 @@
 
             <div class="mt-4">
               <p class="text-lg text-gray-700 font-semibold">
-                {{ room.rate | currency : "NGN" : "symbol" : "1.0-0" }}/night
+                {{ room?.rate | currency : "NGN" : "symbol" : "1.0-0" }}/night
               </p>
               <div class="mt-2 flex items-center justify-between">
                 <div class="flex items-center text-green-600">
