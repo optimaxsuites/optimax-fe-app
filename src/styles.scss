@@ -34,6 +34,7 @@ body {
   // margin: 0;
   font-family: "Roboto Slab", serif;
   font-size: var(--xl-font);
+  @apply font-sans antialiased text-gray-800 bg-[#fff] dark:text-gray-200 dark:bg-gray-900 transition-colors duration-300;
 }
 
 h1,
@@ -196,4 +197,19 @@ button.loading {
 // Make sure p-inputNumber spans the full width when w-full class is used
 :host ::ng-deep .w-full .p-inputnumber {
   width: 100%;
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-400 dark:from-blue-500 dark:to-blue-300;
+  }
+
+  .section-padding {
+    @apply py-20 px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Smooth transitions for dark mode */
+  .transition-theme {
+    @apply transition-colors duration-300 ease-in-out;
+  }
 }
