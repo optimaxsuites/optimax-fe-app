@@ -1,0 +1,17 @@
+<div class="flex h-screen bg-gradient-to-b from-gray-200 to-gray-100">
+  <p-toast></p-toast>
+
+  <!-- Main content area -->
+  <main class="flex-1 p-8 overflow-y-auto">
+    <app-hotel-roomlist (roomSelected)="handleRoomSelected($event)">
+    </app-hotel-roomlist>
+  </main>
+
+  <!-- Room detail -->
+  <app-hotel-roomdetails
+    #roomDetails
+    [room]="selectedRoom"
+    (back)="(selectedRoom)"
+    (statusChanged)="onRoomStatusChanged($event)"
+  ></app-hotel-roomdetails>
+</div>

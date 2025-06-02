@@ -1,0 +1,245 @@
+<!-- housekeeping-lost-form.component.html -->
+<div class="p-6 bg-gray-50 rounded-lg shadow-sm">
+  <div class="mb-6 flex justify-between items-center">
+    <h2 class="text-xl font-semibold">
+      {{ isEditMode ? "Edit Lost Item Report" : "Report New Lost Item" }}
+    </h2>
+    <button
+      type="button"
+      (click)="goBack()"
+      class="flex items-center text-gray-600 hover:text-gray-800"
+    >
+      <i class="pi pi-arrow-left mr-2"></i> Back to List
+    </button>
+  </div>
+
+  <form [formGroup]="lostForm" (ngSubmit)="onSubmit()" class="space-y-6">
+    <!-- Item Details Section -->
+    <div class="bg-white p-5 rounded-lg shadow-sm">
+      <h3 class="text-lg font-medium mb-4 pb-2 border-b border-gray-200">
+        Item Details
+      </h3>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Item Category -->
+        <div class="mt-4 space-y-2">
+          <label class="block text-sm font-medium text-gray-700">
+            Item Category
+          </label>
+
+          <textarea
+            formControlName="itemCategory"
+            rows="3"
+            class="w-full p-3 border border-gray-300 rounded-md"
+            placeholder="name of the lost item"
+          ></textarea>
+          <small
+            class="text-red-500"
+            *ngIf="
+              lostForm.get('itemCategory')?.invalid &&
+              lostForm.get('itemCategory')?.touched
+            "
+          >
+            Description is required
+          </small>
+        </div>
+
+        <div class="mt-4 space-y-2">
+          <label class="block text-sm font-medium text-gray-700">
+            Description *
+          </label>
+          <textarea
+            formControlName="description"
+            rows="3"
+            class="w-full p-3 border border-gray-300 rounded-md"
+            placeholder="Detailed description of the lost item"
+          ></textarea>
+          <small
+            class="text-red-500"
+            *ngIf="
+              lostForm.get('description')?.invalid &&
+              lostForm.get('description')?.touched
+            "
+          >
+            Description is required
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Guest Information Section -->
+    <div class="bg-white p-5 rounded-lg shadow-sm">
+      <h3 class="text-lg font-medium mb-4 pb-2 border-b border-gray-200">
+        Guest Information
+      </h3>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Guest Name -->
+        <div class="mt-4 space-y-2">
+          <label class="block text-sm font-medium text-gray-700">
+            Guest Name *
+          </label>
+          <input
+            type="text"
+            formControlName="guestName"
+            class="w-full p-3 border border-gray-300 rounded-md"
+            placeholder="Name of person who lost the item"
+          />
+          <small
+            class="text-red-500"
+            *ngIf="
+              lostForm.get('guestName')?.invalid &&
+              lostForm.get('guestName')?.touched
+            "
+          >
+            Guest name is required
+          </small>
+        </div>
+
+        <!-- Phone Number -->
+        <div class="mt-4 space-y-2">
+          <label class="block text-sm font-medium text-gray-700">
+            Phone Number
+          </label>
+          <input
+            type="tel"
+            formControlName="phoneNumber"
+            class="w-full p-3 border border-gray-300 rounded-md"
+            placeholder="Guest's contact number"
+          />
+          <small
+            class="text-red-500"
+            *ngIf="
+              lostForm.get('phoneNumber')?.invalid &&
+              lostForm.get('phoneNumber')?.touched
+            "
+          >
+            Please enter a valid 11-digit phone number
+          </small>
+        </div>
+
+        <!-- Room Number -->
+        <div class="mt-4 space-y-2">
+          <label class="block text-sm font-medium text-gray-700">
+            Room Number
+          </label>
+          <input
+            type="text"
+            formControlName="roomNumber"
+            class="w-full p-3 border border-gray-300 rounded-md"
+            placeholder="Guest's room number (if applicable)"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Location & Date Section -->
+    <div class="bg-white p-5 rounded-lg shadow-sm">
+      <h3 class="text-lg font-medium mb-4 pb-2 border-b border-gray-200">
+        Location & Date
+      </h3>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Place/Location -->
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-gray-700">
+            Place/Location *
+          </label>
+          <input
+            type="text"
+            formControlName="placeOrRoom"
+            class="w-full p-3 border border-gray-300 rounded-md"
+            placeholder="Where was the item lost?"
+          />
+          <small
+            class="text-red-500"
+            *ngIf="
+              lostForm.get('placeOrRoom')?.invalid &&
+              lostForm.get('placeOrRoom')?.touched
+            "
+          >
+            Location is required
+          </small>
+        </div>
+
+        <!-- Date Lost -->
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-gray-700"
+            >Date Lost</label
+          >
+          <p-calendar
+            formControlName="dateLost"
+            [showIcon]="true"
+            dateFormat="dd/mm/yy"
+            [style]="{ width: '100%' }"
+            [inputStyle]="{ width: '100%' }"
+            placeholder="When was the item lost?"
+          ></p-calendar>
+        </div>
+
+        <!-- Date Reported -->
+        <div class="mt-4 space-y-2">
+          <label class="block text-sm font-medium text-gray-700"
+            >Date Reported *</label
+          >
+          <p-calendar
+            formControlName="dateReported"
+            [showIcon]="true"
+            dateFormat="dd/mm/yy"
+            [style]="{ width: '100%' }"
+            [inputStyle]="{ width: '100%' }"
+          ></p-calendar>
+          <small
+            class="text-red-500"
+            *ngIf="
+              lostForm.get('dateReported')?.invalid &&
+              lostForm.get('dateReported')?.touched
+            "
+          >
+            Date is required
+          </small>
+        </div>
+      </div>
+      <!-- Add this section to your form (housekeeping-lost-form.component.html) -->
+      <div class="bg-white p-5 rounded-lg shadow-sm">
+        <h3 class="text-lg font-medium mb-4 pb-2 border-b border-gray-200">
+          Status Information
+        </h3>
+
+        <div class="grid grid-cols-1 gap-6">
+          <!-- Status -->
+          <div class="space-y-2">
+            <select
+              id="status"
+              class="mt-1 block w-[20%] rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              formControlName="status"
+            >
+              <option value="pending">Pending</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3 pt-4">
+      <button
+        type="button"
+        (click)="goBack()"
+        class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="px-5 py-2 text-white bg-customGreen rounded-md hover:bg-customGreenHover flex items-center"
+        [disabled]="lostForm.invalid"
+      >
+        <i class="pi pi-save mr-2"></i>
+        {{ isEditMode ? "Update Report" : "Submit Report" }}
+      </button>
+    </div>
+  </form>
+
+  <!-- Toast Message -->
+  <p-toast></p-toast>
+</div>
