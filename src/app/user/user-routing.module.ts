@@ -9,6 +9,9 @@ import { BarServiceComponent } from '../ui/view/bar-service/bar-service.componen
 import { LaundryServiceComponent } from '../ui/view/laundry-service/laundry-service.component';
 import { HotelRoomsComponent } from '../ui/view/hotel-rooms/hotel-rooms.component';
 import { HotelAdmintableComponent } from '../ui/view/hotel-admintable/hotel-admintable.component';
+import { HomeComponent } from '../ui/bookings/home/home.component';
+import { AllroomsComponent } from '../ui/bookings/allrooms/allrooms.component';
+import { BookingformComponent } from '../ui/bookings/bookingform/bookingform.component';
 
 const routes: Routes = [
   {
@@ -20,6 +23,14 @@ const routes: Routes = [
     path: 'user/hospitality/checkout/:uuid',
     component: HotelCheckoutComponent,
   },
+
+  {
+    path: 'user/bookings/:uuid',
+    component: HomeComponent,
+  },
+
+  { path: 'user/rooms/:uuid', component: AllroomsComponent },
+  { path: 'user/booking-form/:uuid', component: BookingformComponent },
 
   {
     path: 'user/hospitality/services/:uuid',
