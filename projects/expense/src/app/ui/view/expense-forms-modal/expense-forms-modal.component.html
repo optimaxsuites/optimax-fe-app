@@ -28,8 +28,9 @@
   </div>
   <div class="add-expense-container">
     <div class="expense-form">
-      <div class="form-left">
-        <div class="form-group">
+ <div class="form-left">
+         <div class="floating-box form-subsection">
+          <div class="form-group">
           <label for="name">Expense Name</label>
           <input
             type="text"
@@ -122,8 +123,11 @@
           />
         </div>
 
-        <hr />
-        <!-- <div class="form-group">
+         </div>
+
+       
+        <div class="floating-box form-subsection">
+<!-- <div class="form-group">
           <label for="pay-method">Payment Method</label>
           <ng-select
             [items]="paymentMethods"
@@ -158,8 +162,11 @@
           />
         </div>
 
-        <hr />
-        <div class="form-group">
+        </div>
+        
+        
+         <div class="floating-box form-subsection">
+          <div class="form-group">
           <label for="comment">Comment</label>
           <textarea
             id="comment"
@@ -170,6 +177,8 @@
             placeholder="Enter your comments here..."
           ></textarea>
         </div>
+         </div>
+        
       </div>
 
       <div class="form-right">
@@ -189,7 +198,7 @@
           <p *ngIf="receiptFile">Receipt: {{ receiptFile.name }}</p>
         </div>
 
-        <div
+        <!-- <div
           class="upload-container"
           (click)="invoiceInput.click()"
           (dragover)="onDragOver($event)"
@@ -205,7 +214,7 @@
             Click or drag and drop to upload an Invoice/Receipt
           </p>
           <p *ngIf="invoiceFile">Invoice: {{ invoiceFile.name }}</p>
-        </div>
+        </div> -->
 
         <!-- <div class="signature-container">
           <label for="signature">Signature</label>

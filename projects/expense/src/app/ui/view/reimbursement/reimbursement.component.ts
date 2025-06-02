@@ -17,6 +17,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
 })
 export class ReimbursementComponent implements OnInit {
   showFilter = false;
+  showRequestSection = false;
   showForm = false;
   showOtherRequestType = false;
   isDraggingOver = false;
@@ -27,6 +28,11 @@ export class ReimbursementComponent implements OnInit {
   fieldErrors: { [key: string]: string } = {};
   showRecentRequests = true;
   allChecked = false;
+
+  // Filter variables
+  selectedStatus: string | null = null;
+  selectedDate: Date | null = null;
+  selectedCategory: string | null = null;
 
   requestTypes = [
     { value: 'travel', label: 'Travel' },
@@ -51,15 +57,19 @@ export class ReimbursementComponent implements OnInit {
     { value: 'other', label: 'Other' }
   ];
 
-  recentRequests = [
+  // Main data storage for all requests
+  allRequests = [
     { id: 'REQ-2025-0568', date: new Date(2025, 4, 20), type: 'Travel', merchant: 'Uber', amount: 42.50, status: 'Pending', checked: false },
     { id: 'REQ-2025-0567', date: new Date(2025, 4, 19), type: 'Meals', merchant: 'Starbucks', amount: 18.75, status: 'Approved', checked: false },
     { id: 'REQ-2025-0566', date: new Date(2025, 4, 18), type: 'Office Supplies', merchant: 'Amazon', amount: 129.99, status: 'Rejected', checked: false },
   ];
   
+  // Filtered requests that will be displayed
+  filteredRequests = [...this.allRequests];
+  
   currentPage = 1;
   pageSize = 5;
-  totalRequests = 42;
+  totalRequests = this.allRequests.length;
   totalPages = Math.ceil(this.totalRequests / this.pageSize);
   
   reimbursementForm: FormGroup;
@@ -85,9 +95,125 @@ export class ReimbursementComponent implements OnInit {
     });
 
     this.loadDraft();
+    this.loadSavedRequests(); 
   }
 
-  ngOnInit(): void {}
+  requestTableData = [
+    {
+      date: new Date(2025, 4, 30),
+      requestType: 'Travel',
+      merchant: 'Uber',
+      category: 'Transportation',
+      amount: 5000,
+      employeeId: 'EMP123',
+      status: 'Pending',
+      showDropdown: false
+    }
+  ];
+
+  ngOnInit(): void {
+    this.applyFilters(); 
+  }
+
+  // Load saved requests from localStorage
+  private loadSavedRequests(): void {
+    const savedRequests = localStorage.getItem('submittedRequests');
+    if (savedRequests) {
+      try {
+        const parsedRequests = JSON.parse(savedRequests);
+        this.allRequests = [...this.allRequests, ...parsedRequests];
+        this.filteredRequests = [...this.allRequests];
+        this.totalRequests = this.allRequests.length;
+        this.totalPages = Math.ceil(this.totalRequests / this.pageSize);
+      } catch (e) {
+        console.error('Failed to parse saved requests', e);
+      }
+    }
+  }
+
+  // Save requests to localStorage
+  private saveRequests(): void {
+    localStorage.setItem('submittedRequests', JSON.stringify(this.allRequests));
+  }
+
+  // Apply all active filters to the requests
+  private applyFilters(): void {
+    this.filteredRequests = this.allRequests.filter(request => {
+    
+      if (this.selectedStatus && request.status !== this.selectedStatus) {
+        return false;
+      }
+      
+      // Date filter (simple date comparison)
+     if (
+  this.selectedDate &&
+  (
+    request.date.getDate() !== this.selectedDate.getDate() ||
+    request.date.getMonth() !== this.selectedDate.getMonth() ||
+    request.date.getFullYear() !== this.selectedDate.getFullYear()
+  )
+) {
+  return false;
+}
+
+      
+      // Category filter
+      if (this.selectedCategory && request.type !== this.selectedCategory) {
+        return false;
+      }
+      
+      return true;
+    });
+    
+    this.totalRequests = this.filteredRequests.length;
+    this.totalPages = Math.ceil(this.totalRequests / this.pageSize);
+    this.currentPage = 1; 
+  }
+
+  // Filter by status
+  filterByStatus(status: string | null): void {
+    this.selectedStatus = status;
+    this.applyFilters();
+  }
+
+  // Filter by date
+  filterByDate(date: Date | null): void {
+    this.selectedDate = date;
+    this.applyFilters();
+  }
+
+  // Filter by category
+  filterByCategory(category: string | null): void {
+    this.selectedCategory = category;
+    this.applyFilters();
+  }
+
+  // Clear all filters
+  clearFilters(): void {
+    this.selectedStatus = null;
+    this.selectedDate = null;
+    this.selectedCategory = null;
+    this.applyFilters();
+  }
+
+  toggleDropdown(req: any) {
+    this.requestTableData.forEach(r => {
+      if (r !== req) r.showDropdown = false;
+    });
+    req.showDropdown = !req.showDropdown;
+  }
+  
+  approveRequest(req: any) {
+    req.status = 'Approved';
+    req.showDropdown = false;
+    this.saveRequests();
+  }
+  
+  declineRequest(req: any) {
+    req.status = 'Rejected';
+    req.showDropdown = false;
+    this.saveRequests();
+  }
 
   private loadDraft(): void {
     const draft = localStorage.getItem('draftReimbursement');
@@ -104,12 +230,15 @@ export class ReimbursementComponent implements OnInit {
   }
 
   toggleFilter(): void {
-    this.showFilter = !this.showFilter;
+    if (!this.showForm) {
+      this.showFilter = !this.showFilter;
+    }
   }
 
   toggleForm(): void {
     this.showForm = !this.showForm;
     this.showRecentRequests = !this.showForm;
+    this.showFilter = false; // Hide filter when form is open
     
     if (this.showForm && this.isDraftMode) {
       this.reimbursementForm.patchValue(this.draftData);
@@ -141,7 +270,7 @@ export class ReimbursementComponent implements OnInit {
 
   toggleAllCheckboxes(): void {
     this.allChecked = !this.allChecked;
-    this.recentRequests.forEach(request => request.checked = this.allChecked);
+    this.filteredRequests.forEach(request => request.checked = this.allChecked);
   }
 
   onRequestTypeChange(type: string): void {
@@ -238,12 +367,49 @@ export class ReimbursementComponent implements OnInit {
       return;
     }
 
-    console.log('Submitting:', this.reimbursementForm.value);
+    
+    
+    // Create new request object
+     const newRequest = {
+    id: `REQ-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+    date: new Date(this.reimbursementForm.value.date),
+    type: this.reimbursementForm.value.requestType === 'other' 
+          ? this.reimbursementForm.value.otherRequestType 
+          : this.requestTypes.find(t => t.value === this.reimbursementForm.value.requestType)?.label || this.reimbursementForm.value.requestType,
+    merchant: this.reimbursementForm.value.merchant,
+    amount: this.reimbursementForm.value.amount,
+    status: 'Pending',
+    checked: false, category: this.categories.find(c => c.value === this.reimbursementForm.value.category)?.label || this.reimbursementForm.value.category,
+    employeeId: this.reimbursementForm.value.employeeId
+  };
+     
+  
+
+    // Add to both allRequests and filteredRequests
+    this.allRequests.unshift(newRequest);
+    this.filteredRequests.unshift(newRequest);
+    this.totalRequests = this.allRequests.length;
+    this.totalPages = Math.ceil(this.totalRequests / this.pageSize);
+
+    // Save to localStorage
+    this.saveRequests();
+
+    // Reset form and UI
     localStorage.removeItem('draftReimbursement');
     this.resetForm();
     this.showForm = false;
     this.showRecentRequests = true;
     alert('Request submitted successfully!');
+  }
+
+  toggleRequestSection() {
+    this.showRequestSection = !this.showRequestSection;
+    if (this.showRequestSection) {
+      this.showForm = false;
+      this.showRecentRequests = false;
+    } else {
+      this.showRecentRequests = true;
+    }
   }
 
   private validateAllFields(): void {
@@ -302,14 +468,17 @@ export class ReimbursementComponent implements OnInit {
   }
   
   viewRequest(req: any): void {
-    // Implement view logic
     console.log('Viewing request:', req);
   }
   
   deleteRequest(req: any): void {
     if (confirm('Are you sure you want to delete this request?')) {
-      // Implement delete logic
-      console.log('Deleting request:', req);
+      const index = this.allRequests.findIndex(r => r.id === req.id);
+      if (index !== -1) {
+        this.allRequests.splice(index, 1);
+        this.applyFilters(); 
+        this.saveRequests(); 
+      }
     }
   }
 }

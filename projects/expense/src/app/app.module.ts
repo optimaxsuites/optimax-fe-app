@@ -91,8 +91,8 @@ import { DisbursementComponent } from './ui/view/disbursement/disbursement.compo
     
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     CommonModule,
     AppRoutingModule,
     FormsModule,
