@@ -26,7 +26,7 @@ export interface BookingDetails {
 
 export interface Room {
   id: number;
-  number: number | null; // Allow number to be null
+  number: number;
   type: string;
   status: string;
   floor?: number;

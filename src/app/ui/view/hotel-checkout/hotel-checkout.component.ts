@@ -28,7 +28,7 @@ export interface BookingDetails {
 
 export interface Room {
   id: number;
-  number: number | null; // Allow number to be null
+  number: number;
   type: string;
   status: string;
   floor?: number;
@@ -93,20 +93,12 @@ export class HotelCheckoutComponent {
   selectedRoom: Room | null = null;
 
   handleRoomSelected(room: Room): void {
-    if (!room) return;
-
     this.selectedRoom = room;
-    if (this.roomDetails) {
-      this.roomDetails.showRoomDetailsModal(room);
-    }
+    this.roomDetails.showRoomDetailsModal(room);
   }
 
   onRoomStatusChanged(updatedRoom: Room): void {
-    if (!updatedRoom) return;
-
     this.selectedRoom = updatedRoom;
-    if (this.roomDetails) {
-      this.roomDetails.showRoomDetailsModal(updatedRoom);
-    }
+    this.roomDetails.showRoomDetailsModal(updatedRoom);
   }
 }
