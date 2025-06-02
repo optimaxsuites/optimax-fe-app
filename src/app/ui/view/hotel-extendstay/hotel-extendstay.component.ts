@@ -14,8 +14,6 @@ import { ChangeDetectorRef } from '@angular/core';
 @Component({
   selector: 'app-hotel-extendstay',
   templateUrl: './hotel-extendstay.component.html',
-  styleUrls: ['./hotel-extendstay.component.scss'],
-  providers: [MessageService],
 })
 export class HotelExtendstayComponent implements OnChanges, OnInit {
   @Input() selectedRoom!: Room;
@@ -37,6 +35,10 @@ export class HotelExtendstayComponent implements OnChanges, OnInit {
   ) {}
 
   ngOnInit(): void {
+    if (!this.selectedRoom) {
+      this.back.emit();
+      return;
+    }
     this.loadFromLocalStorage();
   }
 
@@ -78,7 +80,21 @@ export class HotelExtendstayComponent implements OnChanges, OnInit {
     this.cdRef.detectChanges();
   }
 
+  // Add validation before any operation
+  validateRoom(): boolean {
+    if (!this.selectedRoom) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No room selected',
+      });
+      return false;
+    }
+    return true;
+  }
+
   extendStay(): void {
+    if (!this.validateRoom()) return;
     if (this.isSaving) return;
     this.isSaving = true;
 

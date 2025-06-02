@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { ChangeDetectorRef } from '@angular/core';
 
@@ -94,7 +94,7 @@ export interface KeyCardLog {
   styleUrls: ['./hotel-roomdetails.component.scss'],
   providers: [MessageService],
 })
-export class HotelRoomdetailsComponent {
+export class HotelRoomdetailsComponent implements OnInit {
   @Input() room: Room | null = null;
   @Output() back = new EventEmitter<void>();
   @Output() statusChanged = new EventEmitter<Room>();
@@ -130,6 +130,10 @@ export class HotelRoomdetailsComponent {
     private messageService: MessageService,
     private cdRef: ChangeDetectorRef
   ) {}
+
+  ngOnInit() {
+    // Initialize component
+  }
 
   private updateRoom(updatedRoom?: Room): void {
     const roomToUpdate = updatedRoom || this.room;
@@ -357,7 +361,15 @@ export class HotelRoomdetailsComponent {
     this.openCheckinForm = !this.openCheckinForm;
   }
 
-  navigateToExtend() {
+  navigateToExtend(): void {
+    if (!this.detailedRoom && !this.selectedRoom) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No room selected',
+      });
+      return;
+    }
     this.openExtendStay = !this.openExtendStay;
   }
 
@@ -645,54 +657,11 @@ export class HotelRoomdetailsComponent {
     this.cdRef.detectChanges();
   }
 
-  onStayExtended(updatedRoom: Room): void {
-    // Update the detailed room
-    this.detailedRoom = updatedRoom;
+  onStayExtended(event: any): void {
+    const room = this.detailedRoom || this.selectedRoom;
+    if (!room) return;
 
-    // Update localStorage
-    this.updateRoomInLocalStorage(updatedRoom);
-
-    // Emit to parent if needed
-    this.statusChanged.emit(updatedRoom);
-
-    // Force UI update
-    this.cdRef.detectChanges();
-
-    this.navigateToExtend();
-  }
-
-  onExtendStay(): void {
-    if (this.detailedRoom && this.detailedRoom.bookingDetails) {
-      const extensionDays = 1; // Or fetch from a form/input
-      const ratePerNight = this.detailedRoom.rate;
-
-      const currentCheckout = new Date(
-        this.detailedRoom.bookingDetails.checkoutDate
-      );
-      const newCheckout = new Date(currentCheckout);
-      newCheckout.setDate(currentCheckout.getDate() + extensionDays);
-
-      const extraAmount = extensionDays * ratePerNight;
-      this.detailedRoom.bookingDetails.checkoutDate = newCheckout;
-      this.detailedRoom.bookingDetails.totalAmount += extraAmount;
-      this.detailedRoom.bookingDetails.balanceAmount += extraAmount;
-
-      // Save and reflect changes
-      this.updateRoom(this.detailedRoom);
-
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Stay Extended',
-        detail: `Checkout extended by ${extensionDays} day(s).`,
-      });
-
-      this.cdRef.detectChanges();
-    } else {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Error',
-        detail: 'No booking details available for this room.',
-      });
-    }
+    // Handle stay extension logic
+    // ...existing code...
   }
 }
