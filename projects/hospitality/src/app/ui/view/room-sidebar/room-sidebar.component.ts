@@ -75,7 +75,7 @@ export interface BookingDetails {
 
 export interface Room {
   id: number;
-  number: number | null;
+  number: number;
   type: string;
   status: string;
   floor?: number;

@@ -14,7 +14,7 @@ import {
   OrderPOST,
   TableOrderStatusGET,
 } from "../../models/interfaces/kitchen";
-import { arrayToDate, dateToArray } from "../../shared";
+import { dateToArray } from "../../shared";
 import { ImageCacheService } from "../../service/image-cache.service";
 
 /* `TableOrderStatus` stuff is basically all the relevant data about the customer's orders of that *table* as well as the staff who attended to that order. This `TableOrderStatus` can be broken down into a collection of orders (`Table Order`) and other date like the state of the order (UNPAID or PAID), the ids of the waiter, chef, cashier, etc. */
@@ -205,8 +205,6 @@ export class CheckoutKitchenComponent implements OnInit {
     overwrite = false,
     timeStamps?: TableOrderStatusTimeStamps,
   ) {
-    if (!orders.size) return;
-
     // const ids = [0, 1];
     // TODO: Get the waiter's id based on their login info
     const waiterId = 0;
@@ -340,20 +338,20 @@ export class CheckoutKitchenComponent implements OnInit {
     const tableOrders = this._getTableOrdersFromGETPayload(
       tableOrderStatus.order.orderItem,
     );
+    new Date(...[3, 4, 5]);
 
-    let orderedOn = arrayToDate(tableOrderStatus.orderedOn!),
-      processedOn = tableOrderStatus.processedOn?.length
-        ? arrayToDate(tableOrderStatus.processedOn)
+    // Dunno why typescript erros here since `new Date(...[2025, 3, 12])` works just fine
+    //@ts-expect-error
+    let orderedOn = new Date(...tableOrderStatus.orderedOn!),
+      processedOn = tableOrderStatus.processedOn?.length //@ts-expect-error
+        ? new Date(...tableOrderStatus.processedOn)
         : undefined,
-      completedOn = tableOrderStatus.completedOn?.length
-        ? arrayToDate(tableOrderStatus.completedOn)
+      completedOn = tableOrderStatus.completedOn?.length //@ts-expect-error
+        ? new Date(...tableOrderStatus.completedOn)
         : undefined,
-      readyOn = tableOrderStatus.readyOn?.length
-        ? arrayToDate(tableOrderStatus.readyOn)
+      readyOn = tableOrderStatus.readyOn?.length //@ts-expect-error
+        ? new Date(...tableOrderStatus.readyOn)
         : undefined;
-
-    console.log("Ordered on string: ", orderedOn);
-    console.log("Ordered on array: ", tableOrderStatus.orderedOn);
 
     if (!tableOrderStatus.processedOn) {
       tableOrderStatus.processedOn = dateArray;
@@ -382,33 +380,18 @@ export class CheckoutKitchenComponent implements OnInit {
     switch (this.testMode()) {
       case "waiter":
         // TODO: Use the waiter's id as a comparison here
-        return [...this.tableStatuses().values()]
-          .filter((tableStatus) => tableStatus.waterId == 0)
-          .sort((a, b) => {
-            if (a.orderedOn && b.orderedOn) {
-              //@ts-expect-error
-              return new Date(...a.orderedOn) > new Date(...b.orderedOn)
-                ? 1
-                : -1;
-            }
-            return 0;
-          });
+        return [...this.tableStatuses().values()].filter(
+          (tableStatus) => tableStatus.waterId == 0,
+        );
       case "cashier":
       case "chef":
-        return [...this.tableStatuses().values()].sort((a, b) => {
-          if (a.orderedOn && b.orderedOn) {
-            //@ts-expect-error
-            return new Date(...a.orderedOn) > new Date(...b.orderedOn) ? 1 : -1;
-          }
-          return 0;
-        });
+        return [...this.tableStatuses().values()];
     }
   });
 
   addFoodItemToOrder(foodItem: ProductData) {
     this.tableData.update((currentData) => {
-      // Create a new map to trigger change detection
-      const newData = new Map(currentData);
+      const newData = new Map(currentData); // Create a new map to trigger change detection
 
       if (newData.has(foodItem)) {
         newData.set(foodItem, newData.get(foodItem)! + 1);

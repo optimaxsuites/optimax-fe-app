@@ -37,8 +37,8 @@ export interface BookingDetails {
 
 export interface Room {
   id: number;
-  number: number | null; // Allow number, string, or null
-  type: string; // Optional property for room type
+  number: number;
+  type: string;
   status: string;
   floor?: number;
   guest?: Guest; // Optional property for guest
