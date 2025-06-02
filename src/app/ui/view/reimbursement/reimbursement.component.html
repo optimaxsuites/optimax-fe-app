@@ -1,0 +1,356 @@
+<div class="ERM1 mx-5">
+  <!-- Header and Action Buttons -->
+  <div class="ERM2">
+    <h1 class="ERM3 text-3xl">{{ showForm ? 'New Reimbursement Request' : 'Reimbursement Requests' }}</h1>
+    <div class="ERM4">
+      <!-- Filter Button -->
+      <button class="ERM5" (click)="toggleFilter()">
+        <i class="fas fa-filter ERM6"></i>Filter
+      </button>
+      
+      <!-- Add New/Close Button -->
+      <button class="ERM7 text-xl" (click)="toggleForm()">
+        <i class="fas fa-plus ERM6" *ngIf="!showForm"></i>
+        <i class="fas fa-times ERM6" *ngIf="showForm"></i>
+        {{ showForm ? 'Close' : 'Add New' }}
+      </button>
+
+     <button class="ERM5"
+  [class.active]="showRequestSection"
+  (click)="toggleRequestSection()">
+  {{ showRequestSection ? 'Close' : 'New Request' }}
+</button>
+    </div>
+  </div>
+
+  <!-- Info Message -->
+  <div class="ERM8">
+    You can only request for this <b>twice a month</b>. Please ensure all details are correct and reasonable before submitting.
+  </div>  
+
+  <!-- Filter Section -->
+  <div *ngIf="showFilter" class="ERM9">
+    <h3 class="ERM10">Filter Options</h3>
+    <div class="ERM11">
+      <div>
+        <label class="ERM12">Date Range</label>
+        <input type="date" class="ERM13">
+      </div>
+      <div>
+        <label class="ERM12">Status</label>
+        <select class="ERM13">
+          <option>All</option>
+          <option>Pending</option>
+          <option>Approved</option>
+          <option>Rejected</option>
+        </select>
+      </div>
+      <div>
+        <label class="ERM12">Amount Range</label>
+        <input type="number" placeholder="Min" class="ERM14">
+        <input type="number" placeholder="Max" class="ERM14">
+      </div>
+    </div>
+  </div>
+
+  <!-- Reimbursement Form Layout -->
+  <div class="form-wrapper" *ngIf="showForm">
+    <form [formGroup]="reimbursementForm" (ngSubmit)="onSubmit()">
+      <div class="form-container">
+        <!-- Left Side -->
+        <div class="form-left">
+          <!-- Subsection 1 -->
+          <div class="floating-box form-subsection">
+            <h2>Request Information</h2>
+            
+            <!-- Request Type -->
+            <div class="form-group">
+              <label class="required-field">Request Type</label>
+              <select formControlName="requestType" required (change)="onRequestTypeChange(reimbursementForm.get('requestType')?.value)">
+                <option value=""></option>
+                <option *ngFor="let type of requestTypes" [value]="type.value">{{type.label}}</option>
+              </select>
+              <div *ngIf="fieldErrors['requestType']" class="error-message">{{ fieldErrors['requestType'] }}</div>
+            </div>
+
+            <div *ngIf="showOtherRequestType" class="form-group">
+              <label>Specify Request Type</label>
+              <input type="text" formControlName="otherRequestType" maxlength="15" placeholder="Enter other request type">
+              <p class="hint">Max 15 characters</p>
+            </div>
+
+            <!-- Employee ID and Department in one line -->
+            <div class="form-row">
+              <div class="form-group form-col">
+                <label class="required-field">Employee ID</label>
+                <input type="text" formControlName="employeeId" placeholder="Enter employee ID" required>
+                <div *ngIf="fieldErrors['employeeId']" class="error-message">{{ fieldErrors['employeeId'] }}</div>
+              </div>
+              <div class="form-group form-col">
+                <label class="required-field">Department</label>
+                <input type="text" formControlName="department" placeholder="Enter department" required>
+                <div *ngIf="fieldErrors['department']" class="error-message">{{ fieldErrors['department'] }}</div>
+              </div>
+            </div>
+
+            <!-- Category -->
+            <div class="form-group">
+              <label class="required-field">Category</label>
+              <select formControlName="category" required>
+                <option value=""></option>
+                <option *ngFor="let cat of categories" [value]="cat.value">{{cat.label}}</option>
+              </select>
+              <div *ngIf="fieldErrors['category']" class="error-message">{{ fieldErrors['category'] }}</div>
+            </div>
+
+            <!-- Receiver Name -->
+            <div class="form-group">
+              <label class="required-field">Receiver's Name</label>
+              <input type="text" formControlName="receiverName" required placeholder="Enter receiver's name">
+              <div *ngIf="fieldErrors['receiverName']" class="error-message">{{ fieldErrors['receiverName'] }}</div>
+            </div>
+          </div>
+
+          <!-- Subsection 2 -->
+          <div class="floating-box form-subsection">
+            <h2>Expense Details</h2>
+            
+            <!-- Description -->
+            <div class="form-group">
+              <label class="required-field">Description</label>
+              <textarea formControlName="description" rows="3" minlength="8" required placeholder="Enter description (at least 8 words)"></textarea>
+              <div *ngIf="fieldErrors['description']" class="error-message">{{ fieldErrors['description'] }}</div>
+            </div>
+
+            <!-- Merchant and Date in one line -->
+            <div class="form-row">
+              <div class="form-group form-col">
+                <label class="required-field">Merchant</label>
+                <input type="text" formControlName="merchant" placeholder="Enter merchant name" required>
+                <div *ngIf="fieldErrors['merchant']" class="error-message">{{ fieldErrors['merchant'] }}</div>
+              </div>
+              <div class="form-group form-col">
+                <label class="required-field">Date</label>
+                <input type="date" formControlName="date" required>
+                <div *ngIf="fieldErrors['date']" class="error-message">{{ fieldErrors['date'] }}</div>
+              </div>
+            </div>
+
+            <!-- Amount -->
+            <div class="form-group">
+              <label class="required-field">Amount</label>
+              <div class="amount-group">
+                <div class="form-group">
+                  <input type="number" formControlName="amount" step="0.01" placeholder="Enter amount" required>
+                  <div *ngIf="fieldErrors['amount']" class="error-message">{{ fieldErrors['amount'] }}</div>
+                </div>
+                <div class="form-group">
+                  <select formControlName="currency">
+                    <option value="NGN">₦ NGN</option>
+                    <option value="USD">$ USD</option>
+                    <option value="EUR">€ EUR</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Subsection 3 -->
+          <div class="floating-box form-subsection">
+            <h2>Payment Information</h2>
+            
+            <!-- Payment Method -->
+            <div class="form-group">
+              <label class="required-field">Payment Method</label>
+              <select formControlName="paymentMethod" required>
+                <option value="">Select Payment Method</option>
+                <option *ngFor="let method of paymentMethods" [value]="method.value">{{method.label}}</option>
+              </select>
+              <div *ngIf="fieldErrors['paymentMethod']" class="error-message">{{ fieldErrors['paymentMethod'] }}</div>
+            </div>
+
+            <!-- Account Number -->
+            <div class="form-group">
+              <label class="required-field">Account Number</label>
+              <input type="text" formControlName="accountNumber" required placeholder="Enter account number">
+              <div *ngIf="fieldErrors['accountNumber']" class="error-message">{{ fieldErrors['accountNumber'] }}</div>
+            </div>
+
+            <!-- Bank Name -->
+            <div class="form-group">
+              <label class="required-field">Bank Name</label>
+              <input type="text" formControlName="bankName" required placeholder="Enter bank name">
+              <div *ngIf="fieldErrors['bankName']" class="error-message">{{ fieldErrors['bankName'] }}</div>
+            </div>
+          </div>
+
+          <!-- Business Toggle -->
+          <div class="form-toggle">
+            <label>
+              <input type="checkbox" formControlName="isBusinessExpense">
+              <span>This is a business expense</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Right Side -->
+        <div class="form-right">
+          <h2>Receipt Upload</h2>
+          <div class="upload-box" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDragLeave($event)">
+            <div>
+              <i class="fas fa-cloud-upload-alt"></i>
+              <p>Drag and drop your receipt here</p>
+              <p>Supported formats: JPG, PNG, PDF (max 10MB)</p>
+              <label>
+                <span>Browse Files</span>
+                <input type="file" (change)="onFileSelected($event)" accept=".jpg,.jpeg,.png,.pdf">
+              </label>
+            </div>
+          </div>
+
+          <div *ngIf="selectedFile" class="file-preview">
+            <p>{{ selectedFile.name }}</p>
+            <p>{{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB</p>
+            <button type="button" (click)="removeFile()">Remove</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <button type="button" (click)="cancelForm()">Cancel</button>
+        <button type="button" (click)="saveAsDraft()">Save as Draft</button>
+        <button type="submit">Submit Request</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="floating-box mx-5" *ngIf="showRequestSection">
+  
+  <div class="ERM56">
+    <table class="ERM57">
+      <thead>
+        
+        <tr class="ERM58">
+          <th class="ERM59">Date</th>
+          <th class="ERM59">Request Type</th>
+          <th class="ERM59">Merchant</th>
+          <th class="ERM59">Department</th>
+          <th class="ERM59">Amount</th>
+          <th class="ERM59">Employee ID</th>
+          <th class="ERM59">Status</th>
+          <th class="ERM59">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let req of requestTableData" class="ERM60">
+          <td class="ERM61">{{ req.date | date:'yyyy-MM-dd' }}</td>
+          <td class="ERM61">{{ req.requestType }}</td>
+          <td class="ERM61">{{ req.merchant }}</td>
+          <td class="ERM61">{{ req.category }}</td>
+          <td class="ERM61">{{ req.amount }}</td>
+          <td class="ERM61">{{ req.employeeId }}</td>
+          <td class="ERM61">
+            <span [ngClass]="{
+              'ERM62': req.status === 'Pending',
+              'ERM63': req.status === 'Approved',
+              'ERM64': req.status === 'Rejected'
+            }" class="ERM65">
+              {{ req.status }}
+            </span>
+          </td>
+                   <td class="ERM61 action-cell">
+            <!-- Eye icon for details -->
+            <button class="ERM66" (click)="viewRequest(req)">
+              <i class="fas fa-eye"></i>
+            </button>
+            <!-- Three dots menu -->
+            <div class="dropdown" (click)="toggleDropdown(req)">
+              <i class="fas fa-ellipsis-v"></i>
+              <div class="dropdown-menu" *ngIf="req.showDropdown">
+                <button (click)="approveRequest(req)">Approve</button>
+                <button (click)="declineRequest(req)">Decline</button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="floating-box mx-5" *ngIf="showRecentRequests">
+    <!-- Recent Requests Section -->
+    <div class="ERM54" >
+      <h2 class="ERM55">Recent Requests</h2>
+      <div class="ERM56">
+        <table class="ERM57">
+          <thead>
+            <tr class="ERM58">
+              <th class="ERM59">
+                <input type="checkbox" [(ngModel)]="allChecked" (change)="toggleAllCheckboxes()">
+              </th>
+              <th class="ERM59">REQUEST ID</th>
+              <th class="ERM59">DATE</th>
+              <th class="ERM59">TYPE</th>
+              <th class="ERM59">MERCHANT</th>
+              <th class="ERM59 amount-cell">AMOUNT (₦)</th>
+              <th class="ERM59">STATUS</th>
+              <th class="ERM59">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let req  showRecentRequests" class="ERM60">
+              <td class="ERM61">
+                <input type="checkbox" [(ngModel)]="req.checked">
+              </td>
+              <td class="ERM61">{{ req.id }}</td>
+              <td class="ERM61">{{ req.date | date:'MMM d, y' }}</td>
+              <td class="ERM61">{{ req.type }}</td>
+              <td class="ERM61">{{ req.merchant }}</td>
+              <td class="ERM61 amount-cell"><b>₦{{ req.amount | number:'1.2-2' }}</b></td>
+              <td class="ERM61">
+                <span [ngClass]="{
+                  'ERM62': req.status === 'Pending',
+                  'ERM63': req.status === 'Approved',
+                  'ERM64': req.status === 'Rejected'
+                }" class="ERM65">
+                  {{ req.status }}
+                </span>
+              </td>
+              <td class="ERM61">
+                <button class="ERM66" (click)="viewRequest(req)">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="ERM67" (click)="deleteRequest(req)">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div class="ERM68">
+        <span class="ERM69">
+          Showing {{ (currentPage - 1) * pageSize + 1 }} to
+          {{ Math.min(currentPage * pageSize, totalRequests) }} of {{ totalRequests }} results
+        </span>
+        <div class="ERM70">
+          <span class="pagination-link" (click)="prevPage()" [class.disabled]="currentPage === 1">
+            Previous
+          </span>
+          <span *ngFor="let page of totalPagesArray" class="pagination-link" 
+                [class.active]="page === currentPage"
+                (click)="goToPage(page)">
+            {{ page }}
+          </span>
+          <span class="pagination-link" (click)="nextPage()" [class.disabled]="currentPage === totalPages">
+            Next
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
