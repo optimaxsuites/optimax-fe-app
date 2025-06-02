@@ -1,0 +1,594 @@
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 shadow-sm">
+    
+
+    <div class=" px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-700">Cashier Performance Report</h1>
+
+          <p class="mt-1 text-gray-500">Analyze your cashier performance metrics to identify trends and opportunities.</p>
+        </div>
+       <div class="flex items-center space-x-4">
+        <button (click)="exportReport('pdf')" class="bg-customBlue text-white px-3 py-2 rounded-l-md hover:bg-customBlue">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          PDF
+        </button>
+        <button (click)="exportReport('excel')" class="bg-green-600 text-white px-3 py-2 rounded-r-md hover:bg-green-700">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Excel
+        </button>
+        <button class="inline-flex items-center px-4 py-2 border border-transparent font-medium rounded-md shadow-sm text-white bg-customBlue hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue" (click)="openFilterForm()">
+         Apply Filters
+        </button>
+      </div>
+      
+    </div>
+  </div>
+  </header>
+
+  <!-- Filter Section -->
+  <section class="bg-white border-b border-gray-200  shadow rounded-2xl m-6 " *ngIf="filterForm">
+    <div class=" px-4 sm:px-6 lg:px-8 py-4">
+      <h2 class="text-xl font-semibold text-gray-800 mb-6">Report Filters</h2>
+
+      <form class="space-y-6" [formGroup]="reportForm" (ngSubmit)="applyFilter()">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+          <div>
+            <label class="block font-medium text-gray-700 mb-1">Start Date</label>
+            <input type="date" formControlName="startDate"               class="w-full rounded-lg border border-gray-300 focus:border-custombbg-customBlue focus:ring-custombbg-customBlue shadow-sm px-3 py-2">
+
+          </div>
+          <div>
+            <label class="block font-medium text-gray-700 mb-1">End Date</label>
+            <input type="date" formControlName="endDate"               class="w-full rounded-lg border border-gray-300 focus:border-custombbg-customBlue focus:ring-custombbg-customBlue shadow-sm px-3 py-2">
+
+          </div>
+          <div>
+            <label class="block font-medium text-gray-700 mb-1">Branch</label>
+         <ng-select 
+              [multiple]="true"
+              [items]="branches" 
+              bindLabel="name" 
+              bindValue="id"
+              placeholder="Select branches"
+              formControlName="branchIds"
+              class="w-full">
+            </ng-select>
+            <p class="mt-1 text-xs text-gray-500">Leave empty to include all branches.</p>
+          </div>
+          <div>
+            <label class="block font-medium text-gray-700 mb-1">Shift</label>
+          
+            <ng-select 
+            [multiple]="true"
+            [items]="shifts" 
+            bindLabel="name" 
+            bindValue="id"
+            placeholder="Select branches"
+            formControlName="shift"
+            class="w-full">
+          </ng-select>
+          <p class="mt-1 text-xs text-gray-500">Leave empty to include all branches.</p>
+          </div>
+
+        </div>
+        <div class="mt-4 flex justify-end">
+          <button type="button" class="border border-gray-300 rounded-md px-4 py-2 mr-2 bg-white text-gray-700 hover:bg-gray-50">Reset</button>
+          <button type="submit" class="bg-customBlue text-white px-4 py-2 rounded-md hover:bg-customBlue flex items-center">
+            <svg *ngIf="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Apply Filters
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Summary Cards -->
+  <section class="py-6">
+    <div class="px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    
+        <!-- Total Revenue Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-500">Total Revenue</p>
+              <p class="text-2xl font-bold text-gray-700 mt-1">₦{{ getTotalRevenue() | number:'1.0-0' }}</p>
+            </div>
+            <div class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center font-medium text-green-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
+            <span>8.2% from previous period</span>
+          </div>
+        </div>
+    
+        <!-- Total Orders Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-500">Total Orders</p>
+              <p class="text-2xl font-bold text-gray-700 mt-1">{{ getTotalOrders() | number:'1.0-0' }}</p>
+            </div>
+            <div class="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center font-medium text-green-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
+            <span>5.3% from previous period</span>
+          </div>
+        </div>
+    
+        <!-- Average Revenue Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-500">Avg Revenue/Cashier</p>
+              <p class="text-2xl font-bold text-gray-700 mt-1">₦{{ getAverageRevenue() | number:'1.0-0' }}</p>
+            </div>
+            <div class="h-12 w-12 bg-yellow-100 rounded-full flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center font-medium text-red-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+            </svg>
+            <span>2.1% from previous period</span>
+          </div>
+        </div>
+    
+        <!-- Total Refunds Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-500">Total Refunds</p>
+              <p class="text-2xl font-bold text-gray-700 mt-1">{{ getTotalRefunds() | number:'1.0-0' }}</p>
+            </div>
+            <div class="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z" />
+              </svg>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center font-medium text-green-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+            </svg>
+            <span>3.8% from previous period</span>
+          </div>
+        </div>
+    
+      </div>
+    </div>
+    
+  </section>
+
+  <!-- Period Toggle -->
+  <section>
+    <div class=" px-4 sm:px-6 lg:px-8 pb-2">
+      <div class="flex justify-between items-center border-b border-gray-200 pb-3">
+        <div class="flex">
+          <button
+[class.bg-customBlue]="activeTab === 'overview'"
+            [class.text-white]="activeTab === 'overview'" 
+            [class.bg-gray-100]="activeTab !== 'overview'"
+            [class.text-gray-700]="activeTab !== 'overview'"
+            (click)="setActiveTab('overview')" 
+            class="px-4 py-2 rounded-md font-medium mr-2">
+            Overview
+          </button>
+          <button 
+            [class.bg-customBlue]="activeTab === 'detail'"
+            [class.text-white]="activeTab === 'detail'" 
+            [class.bg-gray-100]="activeTab !== 'detail'"
+            [class.text-gray-700]="activeTab !== 'detail'"
+            (click)="setActiveTab('detail')" 
+            class="px-4 py-2 rounded-md font-medium mr-2">
+            Cashier Details
+          </button>
+          <button 
+            [class.bg-customBlue]="activeTab === 'trends'"
+            [class.text-white]="activeTab === 'trends'" 
+            [class.bg-gray-100]="activeTab !== 'trends'"
+            [class.text-gray-700]="activeTab !== 'trends'"
+            (click)="setActiveTab('trends')" 
+            class="px-4 py-2 rounded-md font-medium">
+            Trend Analysis
+          </button>
+        </div>
+        <div class="inline-flex rounded-md shadow-sm" role="group">
+          <button 
+            [class.bg-customBlue]="periodComparison === 'weekly'"
+            [class.text-white]="periodComparison === 'weekly'" 
+            [class.bg-white]="periodComparison !== 'weekly'"
+            [class.text-gray-700]="periodComparison !== 'weekly'"
+            (click)="togglePeriodComparison()" 
+            class="px-4 py-2 font-medium rounded-l-md border border-gray-300">
+            Weekly
+          </button>
+          <button 
+            [class.bg-customBlue]="periodComparison === 'monthly'"
+            [class.text-white]="periodComparison === 'monthly'" 
+            [class.bg-white]="periodComparison !== 'monthly'"
+            [class.text-gray-700]="periodComparison !== 'monthly'"
+            (click)="togglePeriodComparison()" 
+            class="px-4 py-2 font-medium rounded-r-md border border-gray-300 border-l-0">
+            Monthly
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content Section -->
+  <section class="py-6">
+    <div class=" px-4 sm:px-6 lg:px-8">
+      <!-- Overview Tab -->
+      <div *ngIf="activeTab === 'overview'">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <!-- Revenue Chart -->
+          <div class="bg-white rounded-lg shadow p-6 border border-gray-100">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Top Cashiers by Revenue</h3>
+            <div id="revenueChart">
+              <apx-chart
+                [series]="revenueChartOptions.series"
+                [chart]="revenueChartOptions.chart"
+                [xaxis]="revenueChartOptions.xaxis"
+                [yaxis]="revenueChartOptions.yaxis"
+                [dataLabels]="revenueChartOptions.dataLabels"
+                [grid]="revenueChartOptions.grid"
+                [stroke]="revenueChartOptions.stroke"
+                [tooltip]="revenueChartOptions.tooltip"
+                [legend]="revenueChartOptions.legend"
+                [colors]="revenueChartOptions.colors"
+              ></apx-chart>
+            </div>
+          </div>
+
+          <!-- Orders & Refunds Chart -->
+          <div class="bg-white rounded-lg shadow p-6 border border-gray-100">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Orders Handled vs Refunds</h3>
+            <div id="ordersChart">
+              <apx-chart
+                [series]="ordersChartOptions.series"
+                [chart]="ordersChartOptions.chart"
+                [xaxis]="ordersChartOptions.xaxis"
+                [dataLabels]="ordersChartOptions.dataLabels"
+                [plotOptions]="ordersChartOptions.plotOptions"
+                [stroke]="ordersChartOptions.stroke"
+                [tooltip]="ordersChartOptions.tooltip"
+                [legend]="ordersChartOptions.legend"
+                [fill]="ordersChartOptions.fill"
+                [colors]="ordersChartOptions.colors"
+              ></apx-chart>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cashiers Table -->
+        <div class="bg-white rounded-lg shadow border border-gray-100 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h3 class="text-lg font-medium text-gray-900">Cashier Performance Data</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cashier</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orders</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Refunds</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discounts</th>
+                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr *ngFor="let cashier of filteredReportData.cashiers" class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="flex-shrink-0 h-10 w-10 rounded-full bg-customBlueHover/70 flex items-center justify-center text-customBlue font-bold">
+                        {{ cashier.cashier.name.charAt(0) }}
+                      </div>
+                      <div class="ml-4">
+                        <div class="text-sm font-medium text-gray-900">{{ cashier.cashier.name }}</div>
+                        <div class="text-sm text-gray-500">{{ cashier.cashier.email }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">{{ cashier.branch.name }}</div>
+                    <div class="text-sm text-gray-500">{{ cashier.branch.location }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium" [ngClass]="getMetricClass(cashier.ordersHandled, 200, 250)">
+                      {{ cashier.ordersHandled }}
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium" [ngClass]="getMetricClass(cashier.revenueGenerated, 8000, 12000)">
+                      ₦{{ cashier.revenueGenerated | number:'1.0-0' }}
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium" [ngClass]="getMetricClass(20 - cashier.refunds, 10, 15)">
+                      {{ cashier.refunds }}
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium" [ngClass]="getMetricClass(50 - cashier.discountsGiven, 20, 40)">
+                      {{ cashier.discountsGiven }}
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-right font-medium">
+                    <button (click)="selectCashier(cashier)" class="text-customBlue hover:text-customBlue">
+                      Details
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+            <div class="text-sm text-gray-700">
+              Showing <span class="font-medium">{{ filteredReportData.cashiers.length }}</span> cashiers
+            </div>
+            <div class="flex-1 flex justify-center md:justify-end">
+              <nav class="relative z-0 inline-flex shadow-sm -space-x-px" aria-label="Pagination">
+                <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white font-medium text-gray-500 hover:bg-gray-50">
+                  <span class="sr-only">Previous</span>
+                  <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                </a>
+                <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white font-medium text-gray-700 hover:bg-gray-50">1</a>
+                <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-customBluetext-sm font-medium text-customBlue hover:bg-customBlue">2</a>
+                <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white font-medium text-gray-500 hover:bg-gray-50">
+                  <span class="sr-only">Next</span>
+                  <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                  </svg>
+                </a>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cashier Detail Tab -->
+      <div *ngIf="activeTab === 'detail'">
+        <div *ngIf="selectedCashier; else selectCashierPrompt" class="bg-white rounded-lg shadow p-6 border border-gray-100">
+          <div class="border-b border-gray-200 pb-5 mb-5">
+            <div class="flex justify-between items-center">
+              <div class="flex items-center">
+                <div class="h-16 w-16 rounded-full bg-customBlueHover/70 flex items-center justify-center text-customBlue text-2xl font-bold">
+                  {{ selectedCashier.cashier.name.charAt(0) }}
+                </div>
+                <div class="ml-5">
+                  <h3 class="text-xl font-bold text-gray-900">{{ selectedCashier.cashier.name }}</h3>
+                  <p class="text-sm text-gray-500">{{ selectedCashier.cashier.email }}</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm text-gray-500">Branch</div>
+                <div class="text-lg font-semibold text-gray-900">{{ selectedCashier.branch.name }}</div>
+                <div class="text-sm text-gray-500">{{ selectedCashier.branch.location }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="border border-gray-200 rounded-lg p-4">
+              <div class="text-sm text-gray-500">Orders Handled</div>
+              <div class="text-2xl font-bold" [ngClass]="getMetricClass(selectedCashier.ordersHandled, 200, 250)">
+                {{ selectedCashier.ordersHandled }}
+              </div>
+              <div class="text-sm font-medium flex items-center mt-2">
+                <span class="text-green-500 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                  7.2%
+                </span>
+                <span class="text-gray-400 ml-2">vs avg</span>
+              </div>
+            </div>
+            <div class="border border-gray-200 rounded-lg p-4">
+              <div class="text-sm text-gray-500">Revenue Generated</div>
+              <div class="text-2xl font-bold" [ngClass]="getMetricClass(selectedCashier.revenueGenerated, 8000, 12000)">
+                ₦{{ selectedCashier.revenueGenerated | number:'1.0-0' }}
+              </div>
+              <div class="text-sm font-medium flex items-center mt-2">
+                <span class="text-green-500 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                  12.5%
+                </span>
+                <span class="text-gray-400 ml-2">vs avg</span>
+              </div>
+            </div>
+            <div class="border border-gray-200 rounded-lg p-4">
+              <div class="text-sm text-gray-500">Refunds</div>
+              <div class="text-2xl font-bold" [ngClass]="getMetricClass(20 - selectedCashier.refunds, 10, 15)">
+                {{ selectedCashier.refunds }}
+              </div>
+              <div class="text-sm font-medium flex items-center mt-2">
+                <span class="text-red-500 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                  </svg>
+                  5.1%
+                </span>
+                <span class="text-gray-400 ml-2">vs avg</span>
+              </div>
+            </div>
+            <div class="border border-gray-200 rounded-lg p-4">
+              <div class="text-sm text-gray-500">Discounts Given</div>
+              <div class="text-2xl font-bold" [ngClass]="getMetricClass(50 - selectedCashier.discountsGiven, 20, 40)">
+                {{ selectedCashier.discountsGiven }}
+              </div>
+              <div class="text-sm font-medium flex items-center mt-2">
+                <span class="text-red-500 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                  </svg>
+                  3.9%
+                </span>
+                <span class="text-gray-400 ml-2">vs avg</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Performance Over Time Chart -->
+            <div class="border border-gray-200 rounded-lg p-4">
+              <h4 class="text-base font-medium text-gray-900 mb-4">Performance Over Time</h4>
+              <div>
+                <!-- Placeholder for individual performance chart -->
+                <div class="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <p class="text-gray-500">Performance trend chart will appear here</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pie Chart for Refunds/Discounts -->
+            <div class="border border-gray-200 rounded-lg p-4">
+              <h4 class="text-base font-medium text-gray-900 mb-4">Refunds & Discounts Analysis</h4>
+              <div>
+                <div id="refundsChart">
+                  <apx-chart
+                    [series]="refundsChartOptions.series"
+                    [chart]="refundsChartOptions.chart"
+                    [labels]="refundsChartOptions.labels"
+                    [responsive]="refundsChartOptions.responsive"
+                    [dataLabels]="refundsChartOptions.dataLabels"
+                    [legend]="refundsChartOptions.legend"
+                    [colors]="refundsChartOptions.colors"
+                  ></apx-chart>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ng-template #selectCashierPrompt>
+          <div class="bg-white rounded-lg shadow p-6 border border-gray-100 flex flex-col items-center justify-center py-12">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <h3 class="mt-4 text-lg font-medium text-gray-900">No Cashier Selected</h3>
+            <p class="mt-1 text-gray-500">Please select a cashier from the table to view detailed information.</p>
+            <button (click)="setActiveTab('overview')" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm font-medium text-white bg-customBlue hover:bg-customBlue focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue">
+              Go to Overview
+            </button>
+          </div>
+        </ng-template>
+      </div>
+
+      <!-- Trends Tab -->
+      <div *ngIf="activeTab === 'trends'">
+        <div class="bg-white rounded-lg shadow p-6 border border-gray-100">
+          <h3 class="text-lg font-medium text-gray-900 mb-6">Performance Trend Analysis</h3>
+          
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Revenue Trends Chart -->
+            <div class="border border-gray-200 rounded-lg p-4">
+              <h4 class="text-base font-medium text-gray-900 mb-4">Revenue Trends</h4>
+              <div class="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                <p class="text-gray-500">Revenue trend chart will appear here</p>
+              </div>
+            </div>
+
+            <!-- Order Trends Chart -->
+            <div class="border border-gray-200 rounded-lg p-4">
+              <h4 class="text-base font-medium text-gray-900 mb-4">Order Volume Trends</h4>
+              <div class="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                <p class="text-gray-500">Order volume trend chart will appear here</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="border border-gray-200 rounded-lg p-4">
+            <h4 class="text-base font-medium text-gray-900 mb-4">Performance by Branch</h4>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cashiers</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orders</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Refunds</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trend</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr *ngFor="let branch of branches" class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm font-medium text-gray-900">{{ branch.name }}</div>
+                      <div class="text-sm text-gray-500">{{ branch.location }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                      {{ getCashiersByBranch(branch.id).length }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                      {{ getOrdersHandled(branch.id) }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                      ₦{{ getRevenue(branch.id) | number:'1.0-0' }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-500">
+                      {{ getRefunds(branch.id) }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="flex items-center">
+                        <span class="text-green-500 flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                          </svg>
+                          {{ 5 + branch.id }}%
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+                
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

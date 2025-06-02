@@ -1,0 +1,237 @@
+<div class="form-footer" >
+    <p class="back" (click)="navigateToPrevious()">
+      <i class="fa-solid fa-arrow-left"></i> Back
+    </p>
+    <button   (click)="onSubmit()">Add Ingredient</button>
+  </div>
+  
+  
+<div class="flex  flex-row ">
+  <div class="form-container  ">
+    <h2 class="text-2xl font-semibold mb-4 text-gray-800">Add Ingredient</h2>
+
+    <!-- Use ngModel for two-way data binding -->
+    <form (ngSubmit)="onSubmit()" novalidate [formGroup]="ingredientForm" >
+        <!-- Ingredient Name -->
+        <div class="form">
+            <label for="default-input" class="block mb-2 text-[13px]  text-gray-900 dark:text-white text-left"> Name</label>
+            <input formControlName="name" type="text" id="default-input" class=" border-solid border border-gray-300 rounded-lg w-full"  placeholder="Name" id="name"/>
+        </div>
+
+        <!-- SKU -->
+
+       <!-- SKU -->
+<div class="form">
+  <label for="sku" class="block mb-2 text-[13px] text-gray-900 dark:text-white text-left">SKU</label>
+  <div class="relative flex items-center">
+    <input formControlName="sku" type="text" id="sku" class=" border-solid border border-gray-300 rounded-lg w-full"  placeholder="Sku" id="sku" />
+
+    <button
+      type="button"
+      class="absolute right-0 top--3 h-full flex items-center  bg-gray-200  hover:bg-gray-300 focus:outline-none "
+      (click)="generateRandomSku()"
+      style="    border-top-left-radius: 0 !important;
+      border-bottom-left-radius: 0 !important;
+      border-top-right-radius: 8px !important;
+      border-bottom-right-radius: 8px !important;"
+    >
+      <i class="fa-solid fa-arrows-rotate "></i>
+    </button>
+  </div>
+</div>
+
+
+
+        <!-- Code -->
+<!-- Code -->
+<div class="form">
+  <label for="code" class="block mb-2 text-[13px] text-gray-900 dark:text-white text-left">Code</label>
+  <div class="relative flex items-center">
+  <input id="code" type="text" formControlName="code" name="code" class=" border-solid border border-gray-300 rounded-lg w-full"  placeholder="Code" id="code" />
+
+  <button
+    type="button"
+    (click)="generateRandomCode()"
+    class="absolute right-0 top--3 h-full flex items-center  bg-gray-200  hover:bg-gray-300 focus:outline-none "
+    style="    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-top-right-radius: 8px !important;
+    border-bottom-right-radius: 8px !important;"
+  >
+    <i class="fa-solid fa-arrows-rotate"></i>
+  </button>
+</div>
+</div>
+
+
+      <!-- Purchase Price -->
+      <div class="form">
+        <label for="purchase-price" class="block mb-2 text-[13px] text-gray-900 dark:text-white text-left">Purchase Price</label>
+        <input type="text" id="purchase-price" formControlName="purchasePrice"  placeholder="Enter price (e.g., 1,000)" required class=" border-solid border border-gray-300 rounded-lg w-full"  placeholder="Enter a Purchase Price" id="purchase-price" />
+      </div>
+<!-- 
+
+    Current Stock -->
+      <div class="form">
+        <label for="current-stock" class="block mb-2 text-[13px] text-gray-900 dark:text-white text-left">Current Stock</label>
+        <input type="text" id="current-stock" formControlName="currentStock"  placeholder="Enter stock (e.g., 1,000)" required class=" border-solid border border-gray-300 rounded-lg w-full"  placeholder="Enter a Current Stock" id="current-stock"  />
+      </div>
+
+  
+
+      <!-- Reorder Threshold -->
+      <div class="form">
+        <label for="reorder-threshold" class="block mb-2 text-[13px] text-gray-900 dark:text-white text-left">Reorder Threshold</label>
+        <input type="text" id="reorder-threshold" formControlName="reorderThreshold" placeholder="Enter threshold (e.g., 1,000)" class=" border-solid border border-gray-300 rounded-lg w-full"  placeholder="Enter a threshold number" id="threshold-stock" />
+      </div>
+
+      <!-- Measurement Unit -->
+      <div class="form">
+        <label for="measurement-unit" class="block mb-2 text-[13px]  text-gray-900 dark:text-white text-left">Measurement Unit</label>
+        <!-- <select id="measurement-unit" formControlName="measurementUnit" name="measurementUnit" required class="bg-gray-50 border  border-gray-300 text-gray-900 text-xl rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full  dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+          <option value="">Select Unit</option>
+          <option value="" *ngFor="let unit of measurementUnits" [value]="unit">{{unit}}</option>
+        </select> -->
+        <ng-select
+        [items]="measurementUnits"
+        bindLabel="name"
+        [multiple]="false"
+        [closeOnSelect]="false"
+        placeholder="Select ingredient"
+        formControlName="measurementUnit"
+      >
+      </ng-select>
+      </div>
+      
+     
+
+      <div class="w-full ">
+        <label for="dropdown" class="block font-normal  text-left text-[13px]">
+          Supplier <span class="text-red-500">*</span>
+        </label>
+        <p-inputGroup class="relative flex items-center border rounded-md  bg-gray-100 mb-7">
+
+          <!-- <select
+            id="dropdown"
+            class="text-gray-600 bg-gray-100 text-[14px] w-full outline-none p-2 "
+            formControlName="supplier"
+            >
+           
+            <option value="0">-- Select a supplier --</option>
+          <option *ngFor="let supplier of suppliers" [ngValue]="supplier.id">
+            {{ supplier.name}}
+          </select>
+         -->
+         <ng-select
+         [items]="suppliers"
+         bindLabel="name"
+         bindValue="name"
+         [multiple]="false"
+         [closeOnSelect]="false"
+         placeholder="Select supplier"
+         formControlName="supplierName"
+         class="w-full"
+       >
+       </ng-select>
+        <p-inputGroupAddon 
+          class="supplier text-white text-[14px] px-3 cursor-pointer" 
+          (click)="openModal()">
+          <i class="fas fa-plus"></i>
+        </p-inputGroupAddon>
+        </p-inputGroup>
+    </div>
+
+
+
+  
+   
+
+    <!-- Expiration Date -->
+    <!-- <div class="form">
+        <label for="expiration-date" class="block mb-2 text-[13px] text-gray-800 dark:text-white text-left">Expiration Date</label>
+        <input type="date" id="expiration-date" formControlName="expirationDate" class="bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full  dark:bg-gray-700  dark:border-gray-600 dark:text-white" />
+    </div> -->
+
+    <!-- Branch -->
+    <div class="w-full mb-32 ">
+      <label for="branchDropdown" class="block  font-normal text-left text-[13px]">
+        Branch <span class="text-red-500">*</span>
+      </label>
+      <!-- <p-inputGroup class="relative flex items-center border rounded-md overflow-hidden bg-gray-100 mb-7">
+    
+        <select
+          id="branchDropdown"
+          class="text-gray-600 bg-gray-100 text-[14px] w-full outline-none p-2"
+          formControlName="branch"
+          >
+          <option value="0">-- Select a branch --</option>
+          <option *ngFor="let branch of branches" [ngValue]="branch.id">
+            {{ branch.name }}
+          </option>
+        </select>
+        
+
+      </p-inputGroup> -->
+      <ng-select
+        [items]="branches"
+        bindLabel="name"
+        [multiple]="true"
+        [closeOnSelect]="false"
+        placeholder="Select Branch"
+        formControlName="branches"
+      >
+      </ng-select>
+    </div>
+  </form>
+  </div>
+
+
+  <div class="imageDiv">
+    <div class="flex flex-col justify-center items-center gap-4 pr-28 pt-28">
+      <!-- Conditionally show image or icon -->
+      <img
+        *ngIf="previewImage; else iconTemplate"
+        class="w-[450px] h-[400px] object-cover"
+        [src]="previewImage"
+        alt="product image"
+      />
+      
+      <!-- Icon Template for no image -->
+      <ng-template #iconTemplate>
+        <div class="w-[450px] h-[400px] flex justify-center items-center bg-gray-200">
+          <!-- Font Awesome Icon for the image placeholder -->
+          <i class="pi pi-image text-6xl text-gray-500"></i>
+        </div>
+      </ng-template>
+  
+      <!-- Upload Label and Input -->
+      <label for="image" class= "image rounded-xl btn create-invoice-btn p-3 text-white">Upload Image <span style="color: red">*</span></label>
+      <input
+        type="file"
+        (change)="onImageUpload($event)"
+        [(ngModel)]="ingredient.productImages"
+        id="image"
+        hidden
+      />
+      
+      <!-- Error Handling -->
+      <div *ngIf="ingredientForm.get('image')?.invalid && ingredientForm.get('image')?.touched" class="error">
+        Image is required.
+      </div>
+    </div>
+  </div>
+  
+  
+   
+    <!-- Storage Requirements -->
+  
+   <!-- Ingredient Image Upload -->
+<!-- Image Upload Trigger -->
+<!-- If image selected, show it instead of the icon -->
+
+
+
+
+    <app-side-modal *ngIf="isOpen" (close)="closeModal()">
+      <app-supplier></app-supplier>
+     </app-side-modal>

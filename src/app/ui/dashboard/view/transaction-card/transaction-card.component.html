@@ -1,0 +1,14 @@
+<div class="container-sales-card">
+    <div *ngFor="let title of titles; let i = index" class='sales-card bg-{{i+1}}'>
+      <div class="info">
+        <p class='info-tittle'>{{title}}</p>
+        <p class="info-time">
+          {{times[i]}}
+          <i class="fas fa-caret-down"></i>
+        </p>
+      </div>
+      <h2 class='sales-card-content'>{{contents[i]}}</h2>
+    </div>
+</div>
+
+

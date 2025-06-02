@@ -1,0 +1,136 @@
+<div
+  class="p-6 rounded-2xl  max-w-2xl mx-auto h-full min-h-fit"
+>
+
+
+  <p class="text-center">Kindly fill out <span class="font-bold text-[14px] text-customGreen cursor-pointer uppercase" (click)="createExcelSheet()">this</span>  excel sheet provided, following the format outlined in the template. <br> Please ensure all required fields are filled correctly before uploading.</p>
+
+    <div
+    class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center mt-5"
+    (dragover)="onDragOver($event)"
+    (drop)="onDrop($event)"
+    (dragleave)="onDragLeave($event)"
+    [class.border-customGreen]="isDragging"
+  >
+    <p class="text-gray-500" *ngIf="!fileName">
+        Drag and drop your .xlsx file here, or <span class="text-customGreen cursor-pointer font-semibold" (click)="fileInput.click()">click here</span> to upload.
+    </p>
+    <p class="text-gray-500" *ngIf="fileName">
+        File uploaded - {{ fileName }}
+    </p>
+  
+    <input
+      type="file"
+      accept=".xlsx"
+      (change)="onFileSelected($event)"
+      class="hidden"
+      #fileInput
+    />
+    <button
+      class="mt-4 px-4 py-2 text-white bg-customGreen rounded"
+      (click)="readExcelFile()"
+    >
+      {{buttonText}}
+    </button>
+  </div>
+
+  <p *ngIf="alert.length > 0" class="text-center mt-4 text-customRed">
+   {{alert}}
+  </p>
+<p-toast position="top-right" key="tl" />
+
+</div>
+
+
+<!-- <div class="p-8">
+  <p class="back" style="cursor: pointer" (click)="closeModal()">
+    <i class="fa-solid fa-arrow-left"></i> Back
+  </p>
+  
+
+  <form [formGroup]="form">
+
+  <table class="table-auto w-full border">
+    <thead class="bg-blue-100 text-blue-900">
+      <tr>
+        <th *ngFor="let header of headers" class="py-2 px-4 border-b">{{ header }}</th>
+      </tr>
+    </thead>
+    <tbody formArrayName="rows">
+      <tr *ngFor="let row of formArray.controls; let i = index" [formGroupName]="i">
+      <td class="py-2 px-4 border-b text-center font-semibold">
+        {{ i + 1 }}
+      </td>
+
+
+        <td class="py-2 px-4 border-b">
+          <input type="text" formControlName="name" class="w-full p-2 border rounded" />
+        </td>
+  
+        <td class="py-2 px-4 border-b w-96">
+          <textarea formControlName="description" class="w-full p-2 border rounded" rows="3"></textarea>
+        </td>
+  
+        <td class="py-2 px-4 border-b">
+          <ng-select 
+            [items]="branches" 
+            bindLabel="name" 
+            formControlName="branches" 
+            [multiple]="true" 
+            placeholder="Select branch(es)">
+          </ng-select>
+        </td>
+  
+        <td class="py-2 px-4 border-b">
+          <input type="text" formControlName="partNumber" class="w-full p-2 border rounded" />
+        </td>
+  
+        <td class="py-2 px-4 border-b">
+          <input type="text" formControlName="sku" class="w-full p-2 border rounded" />
+        </td>
+  
+        <td class="py-2 px-4 border-b">
+          <input type="text" formControlName="code" class="w-full p-2 border rounded" />
+        </td>
+  
+        <td class="py-2 px-4 border-b w-24">
+          <ng-select 
+            [items]="categories" 
+            bindLabel="name" 
+            formControlName="category" 
+            placeholder="Select category">
+          </ng-select>
+        </td>
+  
+        <td class="py-2 px-4 border-b w-6">
+          <p-inputNumber formControlName="weight" mode="decimal" [min]="0" class="w-6"></p-inputNumber>
+        </td>
+  
+        <td class="py-2 px-4 border-b">
+          <ng-select 
+            [items]="measurementUnits" 
+            bindLabel="name" 
+            formControlName="unit" 
+            placeholder="Select unit">
+          </ng-select>
+        </td>
+  
+        <td class="py-2 px-4 border-b">
+          <p-inputNumber formControlName="reorderThreshold" mode="decimal" [min]="0"></p-inputNumber>
+        </td>
+  
+        <td class="py-2 px-4 border-b text-center">
+          <input type="checkbox" formControlName="isCombo" />
+        </td>
+  
+        <td class="py-2 px-4 border-b">
+          <input type="text" formControlName="comboItems" class="w-full p-2 border rounded" />
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  
+  </form>
+  
+</div> -->
+ 

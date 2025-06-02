@@ -1,0 +1,489 @@
+
+<div class="table-item">
+
+
+  <div class="flex justify-between gap-5 items-center relative">
+    <div *ngFor="let tab of tabs; let i = index" class="relative flex-1 text-center pt-3" [ngClass]="{
+      'text-gray-400': currentTab < i + 1, 
+      'text-green-600 font-bold': currentTab > i + 1, 
+      'text-customBlue font-bold': currentTab === i + 1}">
+      <div class="flex items-center flex-col gap-1 justify-center relative">
+        <span *ngIf="i < tabs.length - 1"  class="h-1 w-80 bg-customBlue absolute -right-[11rem] top-1" [ngClass]="{
+          'bg-gray-400 text-gray-700': currentTab !== i + 1, 
+          'text-white font-bold bg-customBlue': currentTab === i + 1,
+          ' bg-green-600': currentTab > i + 1}">
+        </span>
+        <span class="p-2 rounded-full" [ngClass]="{
+            'bg-gray-400 text-gray-700': currentTab < i + 1,
+          'bg-green-600 text-white': currentTab > i + 1,
+          'bg-customBlue text-white': currentTab === i + 1}">
+        </span>
+        <span class="ml-1 h-24">{{tab}}</span>
+      </div>
+      
+    </div>
+  </div>
+
+  <form [formGroup]="basicForm" (ngSubmit)="onSubmit()" *ngIf="currentTab === 1"  class="flex w-full px-10  gap-10">
+    <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
+      <div class="mb-4">
+      <label for="firstName" class="block text-[13px] font-medium">First Name <span class="ml-1 font-bold text-red-600">*</span></label>
+      <input type="text" formControlName="firstName" id="firstName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" readonly/>
+      <small *ngIf="basicForm.get('firstName')?.touched && basicForm.get('firstName')?.invalid" class="text-red-600">
+        {{ getErrorMessage(basicForm.get("firstName"),'firstName') }}
+      </small>
+      </div>
+
+      <div class="mb-4">
+      <label for="lastName" class="block text-[13px] font-medium">Last Name <span class="ml-1 font-bold text-red-600">*</span></label>
+      <input type="text" formControlName="lastName" id="lastName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+      <small *ngIf="basicForm.get('lastName')?.touched && basicForm.get('lastName')?.invalid" class="text-red-600">
+        {{ getErrorMessage(basicForm.get("lastName"),'lastName') }}
+      </small>
+      </div>
+
+      <div class="mb-4">
+      <label for="email" class="block text-[13px] font-medium">Email <span class="ml-1 font-bold text-red-600">*</span></label>
+      <input type="email" formControlName="email" id="email" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" readonly/>
+      <small *ngIf="basicForm.get('email')?.touched && basicForm.get('email')?.invalid" class="text-red-600">
+        {{ getErrorMessage(basicForm.get("email"),'email') }}
+      </small>
+      </div>
+
+      <div class="mb-4">
+      <label for="profilePhoto" class="block text-[13px] font-medium">Profile Photo <span class="ml-1 font-bold text-red-600">*</span></label>
+      <input type="file" (change)="onProfilePhotoChange($event)" formControlName="profilePhoto" id="profilePhoto" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+      <small *ngIf="basicForm.get('profilePhoto')?.touched && basicForm.get('profilePhoto')?.invalid" class="text-red-600">
+        {{ getErrorMessage(basicForm.get("profilePhoto"),'profilePhoto') }}
+      </small>
+      </div> 
+
+      <div class="mb-4">
+      <label for="phone" class="block text-[13px] font-medium">Phone <span class="ml-1 font-bold text-red-600">*</span></label>
+      <input type="phone" formControlName="phone" id="phone" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+      <small *ngIf="basicForm.get('phone')?.touched && basicForm.get('phone')?.invalid" class="text-red-600">
+        {{ getErrorMessage(basicForm.get("phone"),'phone') }}
+      </small>
+      </div> 
+
+      <div class="mb-4">
+      <label for="address" class="block text-[13px] font-medium">Home Address <span class="ml-1 font-bold text-red-600">*</span></label>
+      <textarea type="text" formControlName="address" col="2" id="address" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" ></textarea>
+      <small *ngIf="basicForm.get('address')?.touched && basicForm.get('address')?.invalid" class="text-red-600">
+        {{ getErrorMessage(basicForm.get("address"),'address') }}
+      </small>
+      </div> 
+
+      <div class="mb-4">
+      <label for="DOB" class="block text-[13px] font-medium">Date of Birth <span class="ml-1 font-bold text-red-600">*</span></label>
+      <input type="date" formControlName="DOB" [max]="maxDate" id="DOB" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+      <small *ngIf="basicForm.get('DOB')?.touched && basicForm.get('DOB')?.invalid" class="text-red-600">
+        {{ getErrorMessage(basicForm.get("DOB"),'DOB') }}
+      </small>
+      </div> 
+
+      <div class="mb-4">
+      <label for="gender" class="block text-[13px] font-medium">Gender <span class="ml-1 font-bold text-red-600">*</span></label>
+      <ng-select 
+      [items]="gender" 
+      bindLabel="name"
+      bindValue="id"
+      placeholder="Select Gender"
+      formControlName="gender"
+      class="w-full mt-1 rounded-md"></ng-select>
+      <small *ngIf="basicForm.get('gender')?.touched && basicForm.get('gender')?.invalid" class="text-red-600">
+        {{ getErrorMessage(basicForm.get("gender"),'gender') }}
+      </small>
+      </div> 
+
+      <div class="mb-4">
+      <label for="maritalStatus" class="block text-[13px] font-medium">Marital Status <span class="ml-1 font-bold text-red-600">*</span></label>
+      <ng-select 
+      [items]="maritalStatuses" 
+      bindLabel="name"
+      bindValue="id"
+      placeholder="Select marital status"
+      formControlName="maritalStatus"
+      class="w-full mt-1 rounded-md"></ng-select>
+      <small *ngIf="basicForm.get('maritalStatus')?.touched && basicForm.get('maritalStatus')?.invalid" class="text-red-600">
+        {{ getErrorMessage(basicForm.get("maritalStatus"),'maritalStatus') }}
+      </small>
+      </div> 
+
+      <div class="mb-4">
+      <label for="gender" class="block text-[13px] font-medium">Religion <span class="ml-1 font-bold text-red-600">*</span></label>
+      <ng-select 
+      [items]="religions" 
+      bindLabel="name"
+      bindValue="id"
+      placeholder="Select Religion"
+      formControlName="religion"
+      class="w-full mt-1 rounded-md"></ng-select>
+      <small *ngIf="basicForm.get('religion')?.touched && basicForm.get('religion')?.invalid" class="text-red-600">
+        {{ getErrorMessage(basicForm.get("religion"),'religion') }}
+      </small>
+      </div> 
+
+
+      <div class="text-right" *ngIf="!basicForm.get('createLogin')?.value">
+      <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg disabled:cursor-not-allowed" >
+        Next
+      </button>
+      </div>
+    </div>
+
+
+  </form>
+
+  <form [formGroup]="employeeForm"   *ngIf="currentTab === 2" class="flex w-full flex-col justify-center item-center">
+    <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
+
+     
+      <div class="mb-4">
+        <label for="department" class="block text-[13px] font-medium">Bank Name <span class="ml-1 font-bold text-red-600">*</span></label>
+        <ng-select 
+        [items]="nigerianBanks" 
+        bindLabel="level"
+        bindValue="level"
+        placeholder="Select Bank"
+        formControlName="bankName"
+        class="w-full mt-1 rounded-md"></ng-select>
+        <small *ngIf="employeeForm.get('bankName')?.touched && employeeForm.get('bankName')?.invalid" class="text-red-600">
+          {{ getErrorMessage(employeeForm.get("bankName"),'bankName') }}
+        </small>
+      </div>
+
+      <div class="mb-4">
+        <label for="accountNumber" class="block text-[13px] font-medium">Bank Account Number <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="text" formControlName="accountNumber" id="accountNumber" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="employeeForm.get('accountName')?.touched && employeeForm.get('accountName')?.invalid" class="text-red-600">
+          {{ getErrorMessage(employeeForm.get("accountName"),'accountName') }}
+        </small>
+      </div>
+
+      <div class="mb-4">
+        <label for="BVN" class="block text-[13px] font-medium">Bank Verification Number(BVN) </label>
+        <input type="text" formControlName="bvn" id="BVN" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="employeeForm.get('bvn')?.touched && employeeForm.get('bvn')?.invalid" class="text-red-600">
+          {{ getErrorMessage(employeeForm.get("bvn"),'bvn') }}
+        </small>
+      </div>
+
+      <div class="mb-4">
+        <label for="NIN" class="block text-[13px] font-medium">National Identification Number(NIN) <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="text" formControlName="nin" id="NIN" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="employeeForm.get('nin')?.touched && employeeForm.get('nin')?.invalid" class="text-red-600">
+          {{ getErrorMessage(employeeForm.get("nin"),'nin') }}
+        </small>
+      </div>
+
+      <div class="text-right">
+        <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
+        <button type="button" (click)="nextTab()" class="bg-customBlue text-white px-4 py-3 rounded-lg" >
+          Next
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <form [formGroup]="NOKForm"  *ngIf="currentTab === 3" class="flex w-full flex-col justify-center item-center">
+
+    <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
+      <div *ngIf="nextOfKinList.length > 0" class="my-4  w-full text-customBlue">
+        <div *ngFor="let kin of nextOfKinList, let i = index" class="bg-white/80 shadow-md rounded-md px-4 py-2 mb-4 flex justify-between">
+          <div class="flex gap-3 items-center">
+            <p class="font-bold text-[15px]">{{i+1}}.</p>
+            <div>
+              <p class="font-bold">{{ kin.fullName }}</p>
+              <p>Emergency Contact: {{ kin.emergencyContact ? 'Yes' : 'No' }}</p>
+            </div>
+          </div>
+
+          <div class="flex gap-2 items-center">
+            <button (click)="editNextOfKin(i)"  class="text-customGreen hover:bg-green-50  rounded-xl"><i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2 "></i></button>
+            <button (click)="deleteNextOfKin(i)"  class="text-red-500 hover:bg-red-50  rounded-xl "><i class="fa-solid fa-trash text-2xl pr-2"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label for="fullName" class="block text-[13px] font-medium">Full Name <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="text" formControlName="fullName" id="fullName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="NOKForm.get('fullName')?.touched && NOKForm.get('fullName')?.invalid" class="text-red-600">
+          {{ getErrorMessage(NOKForm.get("fullName"), 'fullName') }}
+        </small>
+      </div>
+
+      <div class="mb-4">
+        <label for="email" class="block text-[13px] font-medium">Email <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="email" formControlName="email" id="email" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="NOKForm.get('email')?.touched && NOKForm.get('email')?.invalid" class="text-red-600">
+          {{ getErrorMessage(NOKForm.get("email"), 'email') }}
+        </small>
+      </div>
+
+      <div class="mb-4">
+        <label for="phone" class="block text-[13px] font-medium">Phone <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="phone" formControlName="phone" id="phone" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="NOKForm.get('phone')?.touched && NOKForm.get('phone')?.invalid" class="text-red-600">
+          {{ getErrorMessage(NOKForm.get("phone"), 'phone') }}
+        </small>
+      </div> 
+
+      <div class="mb-4">
+        <label for="address" class="block text-[13px] font-medium">Home Address <span class="ml-1 font-bold text-red-600">*</span></label>
+        <textarea type="text" formControlName="address" col="2" id="address" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" ></textarea>
+        <small *ngIf="NOKForm.get('address')?.touched && NOKForm.get('address')?.invalid" class="text-red-600">
+          {{ getErrorMessage(NOKForm.get("address"), 'address') }}
+        </small>
+      </div> 
+
+      <div class="mb-4">
+        <label for="DOB" class="block text-[13px] font-medium">Date of Birth <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="date" formControlName="DOB" [max]="maxDate"  id="DOB" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="NOKForm.get('DOB')?.touched && NOKForm.get('DOB')?.invalid" class="text-red-600">
+          {{ getErrorMessage(NOKForm.get("DOB"), 'DOB') }}
+        </small>
+      </div> 
+
+      <div class="mb-4">
+        <label for="gender" class="block text-[13px] font-medium">Relationship <span class="ml-1 font-bold text-red-600">*</span></label>
+        <ng-select 
+        [items]="nextOfKinRelationships" 
+        bindLabel="name"
+        bindValue="id"
+        placeholder="Select relationship"
+        formControlName="relationship"
+        class="w-full mt-1 rounded-md"></ng-select>
+        <small *ngIf="NOKForm.get('relationship')?.touched && NOKForm.get('relationship')?.invalid" class="text-red-600">
+          {{ getErrorMessage(NOKForm.get("relationship"), 'relationship') }}
+        </small>
+      </div> 
+
+      <div class="flex mb-4 items-center justify-between">
+        <div class=" flex gap-3 items-center">
+          <input type="checkbox" formControlName="emergencyContact" id="emergencyContact" class=" h-7 w-7 accent-customGreen border border-gray-300 rounded-md" />
+          <label for="emergencyContact" class="block text-[13px] font-medium cursor-pointer">Emergency contact</label>
+        </div> 
+        <button type="button" (click)="addNextOfKin()" [disabled]="!NOKForm.valid "  class="text-customGreen disabled:cursor-not-allowed text-nowrap text-[12px]" > + Add new next of kin</button>
+      </div>
+
+      <div class="text-right">
+        <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
+        <button type="button" (click)="nextTabFromNok()" class="bg-customBlue text-white px-4 py-3 rounded-lg" [disabled]="nextOfKinList.length === 0 && !NOKForm.valid">
+          Next
+        </button>
+      </div>
+    
+    </div>
+  </form>
+
+
+  <form [formGroup]="guarantorForm" *ngIf="currentTab === 4" class="flex w-full flex-col justify-center item-center" >
+    <div class="p-4 mx-auto w-1/2 shadow-md rounded-xl text-gray-600 bg-white/60">
+      <div *ngIf="guarantorList.length > 0" class="my-4  w-full text-customBlue">
+        <div *ngFor="let guarant of guarantorList, let i = index" class="bg-white/80 shadow-md rounded-md px-4 py-2 mb-4 flex justify-between">
+          <div class="flex gap-3 items-center">
+            <p class="font-bold text-[15px]">{{i+1}}.</p>
+            <div>
+              <p class="font-bold">{{ guarant.fullName }}</p>
+              <p>Relationship: {{ guarant.relationship }}</p>
+            </div>
+      
+          </div>
+          <div class="flex gap-2 items-center">
+            <button (click)="editGuarantor(i)"  class="text-customGreen hover:bg-green-50  rounded-xl"><i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2 "></i></button>
+            <button (click)="deleteGuarantor(i)"  class="text-red-500 hover:bg-red-50  rounded-xl "><i class="fa-solid fa-trash text-2xl pr-2"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label for="fullName" class="block text-[13px] font-medium">Full Name <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="text" formControlName="fullName" id="fullName" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="guarantorForm.get('fullName')?.touched && guarantorForm.get('fullName')?.invalid" class="text-red-600">
+          {{ getErrorMessage(guarantorForm.get("fullName"), 'fullName') }}
+        </small>
+      </div>
+
+      <div class="mb-4">
+        <label for="email" class="block text-[13px] font-medium">Email <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="email" formControlName="email" id="email" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="guarantorForm.get('email')?.touched && guarantorForm.get('email')?.invalid" class="text-red-600">
+          {{ getErrorMessage(guarantorForm.get("email"), 'email') }}
+        </small>
+      </div>
+
+      <div class="mb-4">
+        <label for="phone" class="block text-[13px] font-medium">Phone <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="phone" formControlName="phone" id="phone" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="guarantorForm.get('phone')?.touched && guarantorForm.get('phone')?.invalid" class="text-red-600">
+          {{ getErrorMessage(guarantorForm.get("phone"), 'phone') }}
+        </small>
+      </div> 
+
+      <div class="mb-4">
+        <label for="address" class="block text-[13px] font-medium">Home Address <span class="ml-1 font-bold text-red-600">*</span></label>
+        <textarea type="text" formControlName="address" col="2" id="address" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" ></textarea>
+        <small *ngIf="guarantorForm.get('address')?.touched && guarantorForm.get('address')?.invalid" class="text-red-600">
+          {{ getErrorMessage(guarantorForm.get("address"), 'address') }}
+        </small>
+      </div> 
+
+      <div class="mb-4">
+        <label for="DOB" class="block text-[13px] font-medium">Date of Birth <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="date" formControlName="DOB" [max]="maxDate" id="DOB" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="guarantorForm.get('DOB')?.touched && guarantorForm.get('DOB')?.invalid" class="text-red-600">
+          {{ getErrorMessage(guarantorForm.get("DOB"), 'DOB') }}
+        </small>
+      </div> 
+
+      <div class="mb-4">
+        <label for="relationship" class="block text-[13px] font-medium">Relationship <span class="ml-1 font-bold text-red-600">*</span></label>
+        <ng-select 
+        [items]="nextOfKinRelationships" 
+        bindLabel="name"
+        bindValue="id"
+        placeholder="Select relationship"
+        formControlName="relationship"
+        class="w-full mt-1 rounded-md"></ng-select>
+        <small *ngIf="guarantorForm.get('relationship')?.touched && guarantorForm.get('relationship')?.invalid" class="text-red-600">
+          {{ getErrorMessage(guarantorForm.get("relationship"), 'relationship') }}
+        </small>
+      </div> 
+    
+      <div class="mb-4">
+        <label for="yearsKnown" class="block text-[13px] font-medium">Years Known <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="text" formControlName="yearsKnown" id="yearsKnown" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="guarantorForm.get('yearsKnown')?.touched && guarantorForm.get('yearsKnown')?.invalid" class="text-red-600">
+          {{ getErrorMessage(guarantorForm.get("yearsKnown"), 'yearsKnown') }}
+        </small>
+      </div>
+
+      <div class="mb-4">
+        <label for="signature" class="block text-[13px] font-medium">Signature <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="file" (change)="onFileChange($event, 'signature')" formControlName="signature" id="signature" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="guarantorForm.get('signature')?.touched && guarantorForm.get('signature')?.invalid" class="text-red-600">
+          {{ getErrorMessage(guarantorForm.get("signature"), 'signature') }}
+        </small>
+      </div> 
+
+      <div class="mb-4">
+        <label for="passportPhoto" class="block text-[13px] font-medium">Passport Photograph <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="file"  (change)="onFileChange($event, 'passportPhoto')" formControlName="passportPhoto" id="passportPhoto" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="guarantorForm.get('passportPhoto')?.touched && guarantorForm.get('passportPhoto')?.invalid" class="text-red-600">
+          {{ getErrorMessage(guarantorForm.get("passportPhoto"), 'passportPhoto') }}
+        </small>
+      </div>
+
+      <div class="mb-4">
+        <label for="idCard" class="block text-[13px] font-medium">ID Card <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="file" (change)="onFileChange($event, 'idCard')" formControlName="idCard" id="idCard" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="guarantorForm.get('idCard')?.touched && guarantorForm.get('idCard')?.invalid" class="text-red-600">
+          {{ getErrorMessage(guarantorForm.get("idCard"), 'idCard') }}
+        </small>
+      </div>
+
+      <div class="mb-4">
+        <label for="idNumber" class="block text-[13px] font-medium">ID Number <span class="ml-1 font-bold text-red-600">*</span></label>
+        <input type="text" formControlName="idNumber" id="idNumber" class="form-input w-full mt-1 p-2 border border-gray-300 rounded-md" />
+        <small *ngIf="guarantorForm.get('idNumber')?.touched && guarantorForm.get('idNumber')?.invalid" class="text-red-600">
+          {{ getErrorMessage(guarantorForm.get("idNumber"), 'idNumber') }}
+        </small>
+      </div>
+
+      <div class="flex flex-end justify-between items-center mb-4 w-full text-end"> 
+        <span></span>
+        <button type="button" (click)="addGuarantor()" [disabled]="!guarantorForm.valid "  class="text-customGreen disabled:cursor-not-allowed text-nowrap text-[12px] flex-end" > + Add new next of kin</button>
+      </div>
+
+      <div class="text-right">
+        <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
+        <button type="button" (click)="nextTabFromGuarantor()" class="bg-customBlue text-white px-4 py-3 rounded-lg" >
+          Next
+        </button>
+      </div>
+    </div>
+  </form>
+
+
+  <form  (ngSubmit)="onSubmit()" *ngIf="currentTab === 5" class="flex w-full flex-col justify-center item-center">
+    <div>
+
+      <div class="p-4 mx-auto w-1/2  rounded-xl text-customBlue gap-10 grid grid-cols-1">
+
+        <div class="p-4 w-full shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-1">
+          <p class="font-bold text-[16px] mb-3">Basic Information</p>
+          <img [src]="imageURL" alt="profileImage" class="h-64 w-64 mx-auto  object-cover rounded-full"/>
+
+            <div *ngFor="let control of getFormControls('basicForm')" >
+              <p class="capitalize"><strong>{{ toTitleCaseWithSpace(control.key) }}:</strong> <span class="ml-1">{{ control.value }}</span></p>
+            </div>
+        </div>
+
+        <div class="p-4 w-full shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-1">
+          <p class="font-bold text-[16px] mb-3">Employment Information</p>
+          <div *ngFor="let control of getFormControls('employeeForm')">
+            <p class="capitalize"><strong>{{ toTitleCaseWithSpace(control.key) }}:</strong>  <span class=" ml-1">{{ control.value }}</span></p>
+          </div>
+        </div>
+      
+        <div class="p-4 w-auto shadow-md rounded-xl text-gray-600 bg-white/60 ">
+          <p class="font-bold text-[16px] mb-3">Next Of Kin Information</p>
+          <div class="grid grid-cols-2">
+            <div *ngFor="let kin of nextOfKinList; let i =index" class="flex flex-col gap-2">
+              <p class="my-2 text-[15px]">Next Of Kin {{i+1}}</p>
+              <p *ngFor="let key of getKeys(kin)">
+                <strong>{{ toTitleCaseWithSpace(key) | titlecase }}:</strong> {{ kin[key] }}
+              </p>
+            </div>
+          </div>
+          
+        </div>
+
+        <div class="p-4 w-full shadow-md rounded-xl text-gray-600 bg-white/60 flex flex-col gap-1">
+          <p class="font-bold text-[16px] mb-3">Guarantor's Information</p>
+          <div class="grid grid-cols-2">
+              <div *ngFor="let kin of guarantorList; let i =index"  class="flex flex-col gap-2">
+                <p class="my-2 text-[15px]">Guarantor {{i+1}}</p>
+                <p *ngFor="let key of getKeys(kin)">
+                  <strong>{{ toTitleCaseWithSpace(key) | titlecase }}:</strong>
+                  <ng-container *ngIf="isFile(kin[key]); else textField">
+                    <button (click)="previewFile(kin[key])" class="text-customGreen  text-nowrap text-[14px] ml-2">
+                      View File
+                    </button>
+                  </ng-container>
+                  
+                  <ng-template #textField>
+                    {{ kin[key] }}
+                  </ng-template>
+                </p>
+              </div>
+          </div>
+        </div>
+
+      </div>
+    
+      <div class="text-right">
+        <button type="button" (click)="previousTab()" class="bg-gray-300 text-black px-4 py-3 rounded-lg mr-2">Previous</button>
+        <button type="submit" class="bg-green-500 text-white px-4 py-3 rounded-lg" [disabled]="employeeForm.invalid"><span [ngClass]="loading ? 'animate-ping' : ''"  >
+          {{loading ? "Loading..." : "Submit"}}
+          </span></button>
+      </div>
+
+    </div>
+  </form>
+
+  <app-modal *ngIf="showModal" (close)="closeModal()"  class="fixed top-0 left-0 w-full h-[100vh] bg-black/50 flex justify-center items-center">
+      <img [src]="fileDataUrl" class="w-full max-h-[80vh]"/>
+  </app-modal>
+  
+  <p-toast></p-toast>
+</div>
+
+<!-- <div *ngIf="formErrors.length > 0" class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded absolute top-0 right-0">
+  <h4 class="font-bold mb-2">Please fix the following errors:</h4>
+  <ul class="list-disc list-inside">
+    <li *ngFor="let error of formErrors">{{ error }}</li>
+  </ul>
+</div> -->

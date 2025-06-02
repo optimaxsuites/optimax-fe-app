@@ -1,0 +1,159 @@
+
+.pending {
+  color: #EAB308; /* Golden yellow */
+}
+
+.accepted {
+  color: green;
+}
+
+.rejected {
+  color: red;
+}
+
+
+
+
+.menu-container .custom-menu {
+  background-color: #ffffff; /* Tailwind's bg-white */
+  display: none;
+  position: absolute;
+  min-width: 80px;
+  box-shadow: 2px 2px 5px hsla(0, 0%, 0%, 0.1); /* Tailwind's shadow-md */
+}
+.menu-container:hover .custom-menu {
+  display: block;
+}
+
+.custom-menu li {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+
+
+#filter-bar {
+  // margin-top: 8rem;
+  padding-top:2rem;
+  // padding-bottom: 2rem;
+  padding-bottom: 2rem;
+  // padding-left: ;
+  margin-left: 2rem;
+  margin-right: 2rem;
+
+
+}
+
+
+::ng-deep app-side-modal .modal-content {
+  width: 50rem !important;
+}
+#filter-bar {
+  // margin-bottom: 7rem;
+
+}
+#status {
+  padding-bottom: 5rem;
+}
+.refund-row {
+  background-color: #f9fafb; /* Tailwind's bg-gray-50 */
+}
+.text-yellow-500 {
+  color: #eab308 !important;
+}
+
+.refund-row:nth-child(odd) {
+  background-color: #ffffff; /* Tailwind's bg-white */
+}
+.search-container {
+  width: 100%;
+  position: relative;
+
+  input {
+    width: 100%;
+    background-color: #e9edea;
+    padding: 0.5rem 1rem;
+    outline: none;
+    border: none;
+    border-radius: 10px;
+    font-size: 1em;
+    margin-bottom: auto;
+  }
+
+  .fa-search {
+    position: absolute;
+    padding: 0.5rem 2rem;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    cursor: pointer;
+  }
+
+}
+// ::ng-deep .p-datatable-tbody tr td {
+//   background-color: green;
+//   font-size: small;
+// }
+::ng-deep .p-datatable .p-datatable-tbody tr td {
+  font-size: 1.2rem !important;
+}
+::ng-deep .p-datepicker {
+  width: 40rem !important;  
+  max-width: 40rem !important;  
+  min-width: 40rem !important;  
+  height: auto !important;
+  overflow: hidden !important;
+}
+
+::ng-deep .p-datepicker-header {
+  width: 100% !important;  /* Ensures it spans the full width */
+  max-width: 40rem !important;  /* Matches the date picker width */
+  background-color: #f3f4f6 !important;  /* Tailwind bg-gray-100 */
+  color: #1f2937 !important;  /* Tailwind text-gray-800 */
+  font-weight: bold !important;
+  text-align: center !important;
+  padding: 1rem !important;
+  border-bottom: 1px solid #d1d5db !important; /* Subtle separator */
+}
+
+::ng-deep .p-datepicker table th {
+  @apply text-gray-700 font-medium ;
+}
+
+::ng-deep .p-datepicker table {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
+}
+::ng-deep .p-calendar .p-inputtext {
+  @apply  w-[15rem] h-[2.5rem] px-3 py-6 border border-gray-300 rounded-md text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+}
+
+.search-container {
+  width: 100%;
+  position: relative;
+
+  input {
+    width: 100%;
+    background-color: #e9edea;
+    padding: 0.5rem 1rem;
+    outline: none;
+    border: none;
+    border-radius: 10px;
+    font-size: 1em;
+    margin-bottom: auto;
+  }
+
+  .fa-search {
+    position: absolute;
+    padding: 0.5rem 2rem;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    cursor: pointer;
+  }
+}
+
+th{
+  @apply text-white uppercase
+}

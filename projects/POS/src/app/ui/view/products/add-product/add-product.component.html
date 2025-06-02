@@ -1,0 +1,1272 @@
+<form
+  [formGroup]="productForm"
+  (ngSubmit)="isEditMode ? updateProduct() : addToProduct()"
+  class=" w-full mx-auto bg-gray-50 p-12"
+>
+  <!-- Header Section -->
+  <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-2">
+      <button type="button" class="text-gray-600 hover:text-gray-800" (click)="triggerClose()">
+        <i class="fa-solid fa-arrow-left text-lg"></i>
+      </button>
+      <h1 class="text-2xl font-bold text-gray-800">
+        {{ isEditMode ? 'Edit Product' : 'Add New Product' }}
+      </h1>
+    </div>
+    <button 
+      class="px-6 py-3 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center gap-2 disabled:opacity-70 cursor-pointer" 
+      type="submit" 
+      [disabled]="loading"
+    >
+      <ng-container *ngIf="loading">
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        {{ isEditMode ? "Updating..." : "Adding..." }}
+      </ng-container>
+      <ng-container *ngIf="!loading">
+        <i class="fa-solid fa-save"></i> {{ isEditMode ? "Update Product" : "Add Product" }}
+      </ng-container>
+    </button>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+   
+
+    <!-- Right Column - Form Fields -->
+    <div class="md:col-span-2">
+      <!-- General Information -->
+      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">General Information</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Name -->
+          <div class="col-span-2">
+            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+              Name <span class="text-red-500">*</span>
+            </label>
+            <input
+              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+              formControlName="name"
+              placeholder="Enter product name"
+              id="name"
+              (blur)="autoGenerateSku()"
+            />
+            <div
+              *ngIf="
+                productForm.get('name')?.invalid &&
+                productForm.get('name')?.touched
+              "
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ getErrorMessage("name") }}
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="col-span-2">
+            <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+              Description <span class="text-red-500">*</span>
+            </label>
+            <textarea
+              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+              formControlName="description"
+              rows="4"
+              placeholder="Enter product description"
+              id="description"
+            ></textarea>
+            <div
+              *ngIf="
+                productForm.get('description')?.invalid &&
+                productForm.get('description')?.touched
+              "
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ getErrorMessage("description") }}
+            </div>
+          </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 col-span-2">
+
+          <!-- Branch -->
+          <div class="">
+            <label for="branch" class="block text-sm font-medium text-gray-700 mb-1">
+              Branch <span class="text-red-500">*</span>
+            </label>
+            <ng-select
+              [items]="branches"
+              bindLabel="name"
+              formControlName="selectedBranch"
+              [multiple]="userBranch === 'headquarters'"
+*ngIf="!isEditMode && userBranch === 'headquarters'"
+              placeholder="Select branch"
+              class="ng-select-custom"
+            >
+            </ng-select>
+            <p class="name editInput py-3" id="name" *ngIf="isEditMode">{{ activeItem.branch.name }}</p>
+            <p class="name editInput py-3" id="name" *ngIf="userBranch !== 'headquarters'">{{ selecteddBranch.name }}</p>
+
+
+            <div
+              *ngIf="
+                productForm.get('branch')?.invalid &&
+                productForm.get('branch')?.touched
+              "
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ getErrorMessage("branch") }}
+            </div>
+          </div>
+
+          <!-- Category -->
+          <div class="">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Category <span class="text-red-500">*</span>
+            </label>
+            <div class="flex gap-2">
+              <ng-select
+                [items]="categories"
+                bindLabel="name"
+                formControlName="category"
+                [multiple]="false"
+                placeholder="Select category"
+                class="flex-1"
+              >
+              </ng-select>
+              <button
+                class="px-3 py-2 bg-customBlue hover:bg-customBlueHover text-white rounded-md transition flex-shrink-0"
+                type="button"
+                (click)="openAddCategory = true"
+              >
+                <i class="fa-solid fa-plus"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+
+        <!-- pricing -->
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6" *ngIf="(selecteddBranch && !Array.isArray(selecteddBranch)) || (Array.isArray(selecteddBranch) && selecteddBranch.length === 1)">
+          <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Pricing & Inventory</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            <!-- cost Price -->
+            <div>
+              <label for="costPrice" class="block text-sm font-medium text-gray-700 mb-1">
+                Cost Price <span class="text-red-500">*</span>
+              </label>
+              <p-inputNumber formControlName="costPrice" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
+
+              <div
+                *ngIf="
+                  productForm.get('costPrice')?.invalid &&
+                  productForm.get('costPrice')?.touched
+                "
+                class="mt-1 text-sm text-red-500"
+              >
+                {{ getErrorMessage("costPrice") }}
+              </div>
+            </div>
+  
+            <!-- sellingPrice -->
+            <div class="cols-span-1">
+              <label for="sellingPrice" class="block text-sm font-medium text-gray-700 mb-1">
+                Selling Price <span class="text-red-500">*</span>
+              </label>
+              <div class="flex gap-2">
+                <p-inputNumber formControlName="sellingPrice" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
+
+               
+              </div>
+              <div
+                *ngIf="
+                  productForm.get('sellingPrice')?.invalid &&
+                  productForm.get('sellingPrice')?.touched
+                "
+                class="mt-1 text-sm text-red-500"
+              >
+                {{ getErrorMessage("sellingPrice") }}
+              </div>
+            </div>
+  
+            <!-- quantity -->
+            <div>
+              <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">
+                Quantity <span class="text-red-500">*</span>
+              </label>
+              <p-inputNumber formControlName="quantity" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
+
+              <div
+                *ngIf="
+                  productForm.get('quantity')?.invalid &&
+                  productForm.get('quantity')?.touched
+                "
+                class="mt-1 text-sm text-red-500"
+              >
+                {{ getErrorMessage("quantity") }}
+              </div>
+            </div>
+  
+            <!-- Discount -->
+            <div>
+              <label for="discount" class="block text-sm font-medium text-gray-700 mb-1">
+                Discount <span class="text-red-500">*</span>
+              </label>
+              <div class="flex gap-1">
+                <ng-select
+                  [items]="discounts"
+                  bindLabel="name"
+                  formControlName="discount"
+                  placeholder="Select discount"
+                  class="flex-1"
+                ></ng-select>
+                <button 
+                  class="px-3 py-1 bg-customBlue hover:customBlueHover text-white rounded transition"
+                  type="button" 
+                  (click)="openAddDiscount = true"
+                >
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
+              <div
+                *ngIf="
+                  productForm.get('discount')?.invalid &&
+                  productForm.get('discount')?.touched
+                "
+                class="mt-1 text-sm text-red-500"
+              >
+                {{ getErrorMessage("discount") }}
+              </div>
+            </div>
+
+             <!-- tax -->
+            <div>
+              <label for="tax" class="block text-sm font-medium text-gray-700 mb-1">
+                Tax <span class="text-red-500">*</span>
+              </label>
+              <div class="flex gap-1">
+                <ng-select
+                  [items]="taxes"
+                  bindLabel="name"
+                  formControlName="tax"
+                  placeholder="Select tax"
+                  class="flex-1"
+                ></ng-select>
+                <button 
+                  class="px-3 py-1 bg-customBlue hover:customBlueHover text-white rounded transition"
+                  type="button" 
+                  (click)="openAddTax = true"
+                >
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
+              <div
+                *ngIf="
+                  productForm.get('tax')?.invalid &&
+                  productForm.get('tax')?.touched
+                "
+                class="mt-1 text-sm text-red-500"
+              >
+                {{ getErrorMessage("tax") }}
+              </div>
+            </div>
+  
+            <!-- Supplier -->
+            <div>
+              <label for="supplier" class="block text-sm font-medium text-gray-700 mb-1">
+                Supplier <span class="text-red-500">*</span>
+              </label>
+              <div class="flex gap-1">
+                <ng-select
+                  [items]="suppliers"
+                  bindLabel="name"
+                  formControlName="supplier"
+                  placeholder="Select supplier"
+                  class="flex-1"
+                ></ng-select>
+                <button 
+                  class="px-3 py-1 bg-customBlue hover:customBlueHover text-white rounded transition"
+                  type="button" 
+                  (click)="openAddSupplier = true"
+                >
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
+              <div
+                *ngIf="
+                  productForm.get('supplier')?.invalid &&
+                  productForm.get('supplier')?.touched
+                "
+                class="mt-1 text-sm text-red-500"
+              >
+                {{ getErrorMessage("supplier") }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+      <!-- Identifiers -->
+      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Identifiers</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Part Number -->
+          <div *ngIf="(selecteddBranch && !Array.isArray(selecteddBranch)) || (Array.isArray(selecteddBranch) && selecteddBranch.length === 1)">
+            <label for="partNumber" class="block text-sm font-medium text-gray-700 mb-1">
+              Part Number <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="partNumber"
+              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+              formControlName="partNumber"
+              placeholder="Enter part number"
+            />
+            <div
+              *ngIf="
+                productForm.get('partNumber')?.invalid &&
+                productForm.get('partNumber')?.touched
+              "
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ getErrorMessage("partNumber") }}
+            </div>
+          </div>
+
+          <!-- SKU -->
+          <div  *ngIf="(selecteddBranch && !Array.isArray(selecteddBranch)) || (Array.isArray(selecteddBranch) && selecteddBranch.length === 1)">
+            <label for="sku" class="block text-sm font-medium text-gray-700 mb-1">
+              SKU <span class="text-red-500">*</span>
+            </label>
+            <div class="flex gap-2">
+              <input
+                id="sku"
+                class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+                formControlName="sku"
+                placeholder="SKU will be autogenerated"
+                readonly
+              />
+              <!-- <button
+                class="px-3 py-2 bg-customBlue hover:bg-customBlueHover text-white rounded-md transition"
+                type="button"
+                (click)="generateRandomSku(productForm, 'sku')"
+              >
+                <i class="fa-solid fa-arrows-rotate"></i>
+              </button> -->
+            </div>
+            <div
+              *ngIf="
+                productForm.get('sku')?.invalid &&
+                productForm.get('sku')?.touched
+              "
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ getErrorMessage("sku") }}
+            </div>
+          </div>
+
+          <!-- Code -->
+          <div *ngIf="(selecteddBranch && !Array.isArray(selecteddBranch)) || (Array.isArray(selecteddBranch) && selecteddBranch.length === 1)">
+            <label for="code" class="block text-sm font-medium text-gray-700 mb-1">
+              Code <span class="text-red-500">*</span>
+            </label>
+            <input
+              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+              formControlName="code"
+              placeholder="Enter code"
+              id="code"
+            />
+            <div
+              *ngIf="
+                productForm.get('code')?.invalid &&
+                productForm.get('code')?.touched
+              "
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ getErrorMessage("code") }}
+            </div>
+          </div>
+
+          <!-- Measurement Unit -->
+          <div>
+            <label for="measurementUnit" class="block text-sm font-medium text-gray-700 mb-1">
+              Measurement Unit <span class="text-red-500">*</span>
+            </label>
+            <ng-select
+              [items]="measurementUnits"
+              bindLabel="name"
+              formControlName="measurementUnit"
+              [multiple]="false"
+              placeholder="Select unit"
+              class="ng-select-custom"
+            >
+            </ng-select>
+            <div
+              *ngIf="
+                productForm.get('measurementUnit')?.invalid &&
+                productForm.get('measurementUnit')?.touched
+              "
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ getErrorMessage("measurementUnit") }}
+            </div>
+          </div>
+
+          <!-- Reorder Threshold -->
+          <div>
+            <label for="reorderThreshold" class="block text-sm font-medium text-gray-700 mb-1">
+              Reorder Threshold <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="reorderThreshold"
+              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+              formControlName="reorderThreshold"
+              placeholder="Enter threshold value"
+              type="number"
+            />
+            <div
+              *ngIf="
+                productForm.get('reorderThreshold')?.invalid &&
+                productForm.get('reorderThreshold')?.touched
+              "
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ getErrorMessage("reorderThreshold") }}
+            </div>
+          </div>
+
+          <!-- Weight -->
+          <div>
+            <label for="weight" class="block text-sm font-medium text-gray-700 mb-1">
+              Weight (in KG)
+            </label>
+            <input
+              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+              formControlName="weight"
+              placeholder="Enter weight in kg"
+              id="weight"
+              type="number"
+              step="0.01"
+            />
+          </div>
+        </div>
+      </div>
+
+    
+
+      <!-- Bundle/Combo Options -->
+      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Combo Options</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Is Bundle Checkbox -->
+          <div class="flex items-center">
+            <input
+              class="h-4 w-4 text-customBlue focus:ring-customBlue border-gray-300 rounded"
+              type="checkbox"
+              id="isBundle"
+              formControlName="isBundle"
+            />
+            <label for="isBundle" class="ml-2 block text-sm font-medium text-gray-700">
+              Is this a combo product? 
+            </label>
+            <div
+              *ngIf="
+                productForm.get('isBundle')?.invalid &&
+                productForm.get('isBundle')?.touched
+              "
+              class="ml-2 text-sm text-red-500"
+            >
+              {{ getErrorMessage("isBundle") }}
+            </div>
+          </div>
+
+          <!-- Bundle Items -->
+          <div>
+            <label for="bundleItems" class="block text-sm font-medium text-gray-700 mb-1">
+              Combo Items 
+            </label>
+            <ng-select
+              [items]="originalProducts"
+              bindLabel="name"
+              formControlName="bundleItems"
+              [multiple]="true"
+              placeholder="Select products"
+              class="ng-select-custom"
+            >
+            </ng-select>
+            <div
+              *ngIf="
+                productForm.get('bundleItems')?.invalid &&
+                productForm.get('bundleItems')?.touched
+              "
+              class="mt-1 text-sm text-red-500"
+            >
+              {{ getErrorMessage("bundleItems") }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product Variants -->
+      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div class="flex justify-between items-center mb-4 pb-2 border-b">
+          <h2 class="text-lg font-semibold text-gray-800">Product Variants</h2>
+          <button
+            type="button"
+            class="text-customGreen hover:text-customGreenHover font-medium flex items-center gap-1"
+            (click)="openAddVariant = true; console.log(selecteddBranch)"
+          >
+            <i class="fa-solid fa-plus"></i> Add Variant
+          </button>
+        </div>
+        
+        <div *ngIf="variants.length === 0" class="text-center py-8 text-gray-500">
+          No variants added yet. Click "Add Variant" to create product variations.
+        </div>
+
+        <div *ngIf="variants.length > 0" class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                @for (prop of variantObjectKeys; track $index) {
+                <th class="px-6 py-3 text-left text-xs font-medium text-white bg-customBlue  uppercase tracking-wider" *ngIf="isEditMode || (userBranch !== 'headquarters' || !(prop === 'Price' || prop === 'Quantity' || prop === 'Sku'))"
+                >
+                  {{ prop }}
+                </th>
+                }
+                <th class="px-6 py-3 text-right text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr *ngFor="let variant of variants; let i = index" class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap">{{ variant.name }}</td>
+                <td *ngIf="isEditMode || userBranch !== 'headquarters'" class="px-6 py-4 whitespace-nowrap">
+                  {{ variant.price }}
+                </td>
+                <td *ngIf="isEditMode || userBranch !== 'headquarters'" class="px-6 py-4 whitespace-nowrap">
+                  {{ variant.quantity }}
+                </td>                
+                <td class="px-6 py-4 whitespace-nowrap">{{ variant.color }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ variant.size }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">{{ variant.sku }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right">
+                  <button type="button" class="text-customBlue hover:text-customBlue mr-3" (click)="editVariant(i)">
+                    <i class="fa-regular fa-pen-to-square"></i>
+                  </button>
+                  <button type="button" class="text-red-600 hover:text-red-900" (click)="deleteVariant(i)">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Industry-specific Details -->
+      @if (industry == "Pharmacy") {
+      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Pharmacy-specific Details</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Expiry Date -->
+          <div>
+            <label for="expiryDate" class="block text-sm font-medium text-gray-700 mb-1">
+              Expiry Date <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+              formControlName="expiryDate"
+              id="expiryDate"
+              placeholder="Select expiry date"
+            />
+          </div>
+
+          <!-- Dosage -->
+          <div>
+            <label for="dosage" class="block text-sm font-medium text-gray-700 mb-1">
+              Dosage <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+              formControlName="dosage"
+              id="dosage"
+              placeholder="Enter dosage"
+            />
+          </div>
+
+          <!-- Prescription Required -->
+          <div class="col-span-2">
+            <div class="flex items-center">
+              <input
+                type="checkbox"
+                class="h-4 w-4 text-customBlue focus:ring-customBlue border-gray-300 rounded"
+                formControlName="prescriptionRequired"
+                id="prescriptionRequired"
+              />
+              <label for="prescriptionRequired" class="ml-2 block text-sm font-medium text-gray-700">
+                Prescription Required
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+
+      @if (industry == "Kitchen") {
+      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Kitchen-specific Details</h2>
+        
+        <div class="space-y-4">
+          <!-- Ingredients -->
+          <div>
+            <label for="ingredient" class="block text-sm font-medium text-gray-700 mb-1">
+              Select Ingredients:
+            </label>
+            <ng-select
+              [items]="dummyIngredients"
+              bindLabel="name"
+              [multiple]="true"
+              [closeOnSelect]="false"
+              placeholder="Select ingredients"
+              (change)="onIngredientSelect($event)"
+              class="ng-select-custom"
+            >
+            </ng-select>
+          </div>
+
+          <!-- Ingredients Table -->
+          <div *ngIf="selectedIngredients.length > 0" class="overflow-x-auto mt-4 border rounded-lg">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ingredient
+                  </th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Quantity
+                  </th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                @for (ingredient of selectedIngredients; track $index) {
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">{{ ingredient.ingredient.name }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center gap-2">
+                      <p-inputNumber mode="decimal" [min]="0"></p-inputNumber>
+                      <span class="text-gray-500">{{ ingredient.ingredient.measurementUnit }}</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-right">
+                    <button type="button" class="text-red-600 hover:text-red-900" (click)="removeIngredient($index)">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Cooking Time -->
+          <div>
+            <label for="cookingTime" class="block text-sm font-medium text-gray-700 mb-1">
+              Cooking Time (in minutes)
+            </label>
+            <input
+              type="number"
+              formControlName="cookingTime"
+              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+              id="cookingTime"
+              min="0"
+            />
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+
+     <!-- Left Column - Product Image -->
+     <div class="md:col-span-1">
+      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <div class="flex flex-col items-center gap-4">
+          <div class="w-full aspect-square bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+            <img
+              class="w-full h-full object-contain"
+              [src]="
+                isEditMode
+                  ? activeItem?.imageUrl$ 
+                  : productImage ||
+                    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s'
+              "
+              alt="product image"
+            />
+          </div>
+          <label 
+            for="image" 
+            class="w-full py-3 px-4 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition cursor-pointer"
+          >
+            <i class="fa-solid fa-upload mr-2"></i> Upload Product Image
+            <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="file"
+            (change)="onImageUpload($event)"
+            id="image"
+            class="hidden"
+          />
+          <div
+            *ngIf="
+              productForm.get('image')?.invalid &&
+              productForm.get('image')?.touched
+            "
+            class="text-sm text-red-500"
+          >
+            Image is required.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Branch Pricing Table -->
+  <div *ngIf="selecteddBranch?.length > 1 && !isEditMode" class="mt-4 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">Branch Pricing</h2>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-white bg-customBlue  uppercase tracking-wider">Branch</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-white bg-customBlue  uppercase tracking-wider">Cost Price</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-white bg-customBlue  uppercase tracking-wider">Selling Price</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-white bg-customBlue  uppercase tracking-wider">Quantity</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-white bg-customBlue  uppercase tracking-wider">SKU</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-white bg-customBlue  uppercase tracking-wider">Code</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-white bg-customBlue  uppercase tracking-wider">Part Number</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-white bg-customBlue  uppercase tracking-wider">Tax</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-white bg-customBlue  uppercase tracking-wider">Discount</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-white bg-customBlue  uppercase tracking-wider">Supplier</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-white bg-customBlue  uppercase tracking-wider">Action</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          @for (branch of branchess.controls; track $index) {
+          <!-- Branch Name Row -->
+          <tr class="bg-gray-50">
+            <td colspan="8" class="px-4 py-3 font-semibold text-gray-700 capitalize">
+              {{ branch.get('branchName')?.value.name }}
+            </td>
+          </tr>
+          
+          <!-- Regular Row -->
+          <tr [formGroup]="branch" class="hover:bg-gray-50">
+            <td class="px-4 py-3 capitalize text-gray-600">Regular</td>
+            <td class="px-4 py-3">
+              <p-inputNumber formControlName="costPrice" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
+            </td>
+            <td class="px-4 py-3">
+              <p-inputNumber formControlName="sellingPrice" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
+            </td>
+            <td class="px-4 py-3">
+              <p-inputNumber formControlName="quantity" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
+            </td>
+            <td class="px-4 py-3">
+              <input formControlName="sku" pInputText class="editInput" readOnly styleClass="w-full"/>
+            </td>
+            <td class="px-4 py-3">
+              <input formControlName="code" pInputText class="editInput" styleClass="w-full"/>
+            </td>
+            <td class="px-4 py-3">
+              <input formControlName="partNumber" pInputText class="editInput" styleClass="w-full"/>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex gap-1">
+                <ng-select
+                  [items]="taxes"
+                  bindLabel="name"
+                  formControlName="tax"
+                  placeholder="Select tax"
+                  class="flex-1"
+                ></ng-select>
+                <button 
+                  class="px-3 py-1 bg-customBlue hover:customBlueHover text-white rounded transition"
+                  type="button" 
+                  (click)="openAddTax = true"
+                >
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex gap-1">
+                <ng-select
+                  [items]="discounts"
+                  bindLabel="name"
+                  formControlName="discount"
+                  placeholder="Select discount"
+                  class="flex-1"
+                ></ng-select>
+                <button 
+                  class="px-3 py-1 bg-customBlue hover:customBlueHover text-white rounded transition"
+                  type="button" 
+                  (click)="openAddDiscount = true"
+                >
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex gap-1">
+                <ng-select
+                  [items]="suppliers"
+                  bindLabel="name"
+                  formControlName="supplier"
+                  placeholder="Select supplier"
+                  class="flex-1"
+                ></ng-select>
+                <button 
+                  class="px-3 py-1 bg-customBlue hover:customBlueHover text-white rounded transition"
+                  type="button" 
+                  (click)="openAddSupplier = true"
+                >
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-right">
+              <button 
+                class="text-red-600 hover:text-red-900" 
+                type="button" 
+                (click)="removeBranch($index)"
+              >
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+          
+          <!-- Variant Rows -->
+          @for (variant of getVariants(branch).controls; track $index) {
+          <tr [formGroup]="variant" class="hover:bg-gray-50 border-t border-gray-100">
+            <td class="px-4 py-3 pl-8 text-gray-600 italic">
+              {{ variant.get('name')?.value }}
+            </td>
+            <td  class="px-4 py-3"></td>
+
+            <td class="px-4 py-3">
+              <p-inputNumber formControlName="price" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
+            </td>
+            <td class="px-4 py-3">
+              <p-inputNumber formControlName="quantity" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
+            </td>
+            <td class="px-4 py-3">
+              <input formControlName="sku" readonly pInputText styleClass="w-full"/>
+            </td>
+            <td colspan="5" class="px-4 py-3"></td>
+            <td class="px-4 py-3 text-right">
+              <button 
+                class="text-red-600 hover:text-red-900" 
+                type="button" 
+                (click)="removeVariant(branch, $index)"
+              >
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+          }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</form>
+
+
+<!-- SECTION: Modal for adding categories -->
+<app-side-modal *ngIf="openAddCategory" (close)="openAddCategory = false">
+  <div class="p-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center h-auto mb-6">
+      <h2 class="text-xl font-bold text-gray-800">Categories</h2>
+      <button
+        class="p-2 text-gray-500 hover:text-gray-700 transition"
+        (click)="openAddCategory = false"
+      >
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Add Category Form -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4 mb-6">
+      <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Add New Category</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <!-- Category Name -->
+        <div>
+          <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+            Category Name <span class="text-red-500">*</span>
+          </label>
+          <input
+            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+            [(ngModel)]="productData.productCategory.name"
+            placeholder="Enter category name"
+            id="name"
+          />
+        </div>
+
+        <!-- Category Code -->
+        <div>
+          <label for="code" class="block text-sm font-medium text-gray-700 mb-1">
+            Category Code <span class="text-red-500">*</span>
+          </label>
+          <input
+            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+            [(ngModel)]="productData.productCategory.code"
+            placeholder="Enter category code"
+            id="code"
+          />
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="mb-4">
+        <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+          Description
+        </label>
+        <textarea
+          class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+          rows="3"
+          [(ngModel)]="productData.productCategory.description"
+          placeholder="Enter category description"
+          id="description"
+        ></textarea>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="flex justify-end mt-4">
+        <button 
+          class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlue transition flex items-center gap-2"
+          (click)="addCategory()"
+        >
+          <i class="fa-solid fa-plus"></i> Add Category
+        </button>
+      </div>
+    </div>
+
+    <!-- Categories List -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4">
+      <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Existing Categories</h3>
+      
+      <div *ngIf="categories.length === 0" class="text-center py-4 text-gray-500">
+        No categories found. Create your first category above.
+      </div>
+      
+      <ul *ngIf="categories.length > 0" class="divide-y divide-gray-200">
+        <li *ngFor="let category of categories" class="py-3 flex justify-between items-center">
+          <div class="flex items-center">
+            <div class="h-8 w-8 bg-customBlue/50 text-customBlue rounded-full flex items-center justify-center mr-3">
+              <i class="fa-solid fa-folder"></i>
+            </div>
+            <span class="font-medium text-gray-700">{{ category.name }}</span>
+          </div>
+          <button 
+            class="text-red-500 hover:text-red-700 transition"
+            (click)="removeCategory(category.id)"
+          >
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</app-side-modal>
+<!-- SECTION: Modal for adding variants -->
+<app-side-modal *ngIf="openAddVariant" (close)="openAddVariant = false">
+  <div class="modal-header flex justify-between items-center text-gray-700 px-4">
+    <h2 class="font-semibold pb-0 mb-0">Variants</h2>
+
+    <div class="flex gap-3">
+      <button
+        class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold"
+        (click)="openAddVariant = false"
+      >
+        Cancel
+      </button>
+      <button class="btn create-invoice-btn" (click)="addVariant()">
+        Save
+      </button>
+    </div>
+  </div>
+
+  <div class="mt-5 mb-2">
+    <div class="flex flex-col gap-3">
+     <div>
+      <label for="variant-name">Name</label>
+      <input
+        type="text"
+        id="variant-name"
+        [(ngModel)]="newVariant.name"
+        class="editInput mb-2 outline-none"
+        placeholder="variant name"
+      />
+     </div>
+     <div *ngIf="isEditMode ||  !Array.isArray(selecteddBranch) || selecteddBranch.length <= 1">
+
+
+      <label for="variant-sku">SKU</label>
+
+      <div class="flex inputAndBtn"  >
+
+        <input
+        type="text"
+        id="variant-sku"
+        [(ngModel)]="newVariant.sku"
+        class="editInput outline-none"
+        readonly
+        placeholder="Variant SKU will be autogenerated"
+        />
+
+      </div>
+     </div>
+
+    <div *ngIf="isEditMode || !Array.isArray(selecteddBranch) || selecteddBranch.length <= 1">
+
+
+      <label for="Price">Price</label>
+
+      <p-inputNumber [(ngModel)]="newVariant.price" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
+
+     </div>
+
+
+    <div *ngIf="isEditMode || !Array.isArray(selecteddBranch) || selecteddBranch.length <= 1 ">
+
+
+      <label for="quantity">Quantity</label>
+
+      <p-inputNumber [(ngModel)]="newVariant.quantity" mode="decimal" [min]="0" styleClass="w-full"></p-inputNumber>
+
+     </div>
+
+      <div>
+        <label for="variant-color">Color</label>
+      <input
+        type="text"
+        id="variant-color"
+        [(ngModel)]="newVariant.color"
+        class="editInput mb-2 outline-none"
+        placeholder="variant color"
+      />
+      </div>
+
+     <div>
+      <label for="variant-size">Size</label>
+     
+      <select
+        name="variant-size"
+        id="variant-size"
+        [(ngModel)]="newVariant.size"
+        class="editInput mb-2 outline-none"
+      >
+        @for (size of variantValues.size; track $index) {
+        <option [value]="size">{{ size }}</option>
+        }
+      </select>
+     </div>
+
+     <div *ngIf="(Array.isArray(selecteddBranch) && selecteddBranch.length > 1)">
+      <label for="">Branch</label>
+      <ng-select
+      [items]="selecteddBranch"
+      bindLabel="name"
+      [(ngModel)]="newVariant.branches"
+      [multiple]="true"
+      placeholder="Select branch">
+      </ng-select>
+     </div>
+    </div>
+  </div>
+</app-side-modal>
+<!-- !SECTION -->
+
+<!-- SECTION: Modal for adding discounts -->
+<app-side-modal *ngIf="openAddDiscount" (close)="openAddDiscount = false">
+  <div class="modal-header flex justify-between items-center text-gray-700">
+    <h2 class="font-semibold pb-0 mb-0">Discount</h2>
+
+    <div class="flex gap-3">
+      <button
+        class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold"
+        (click)="openAddDiscount = false"
+      >
+        Cancel
+      </button>
+      <button class="btn create-invoice-btn" (click)="addDiscount()">
+        Save
+      </button>
+    </div>
+  </div>
+
+  <div class="mt-5 mb-2 flex flex-col gap-4">
+    <div class="detailDiv w-full">
+      <label for="e-price">Name</label>
+      <input
+        class="name editInput"
+        type="text"
+        id="e-price"
+        [(ngModel)]="discount.name"
+        placeholder="Discount name"
+      />
+    </div>
+
+    <div class="detailDiv w-full">
+      <label for="discount">Discount percentage (%)</label>
+      <input
+        id="discount"
+        [(ngModel)]="discount.value"
+        class="name editInput"
+        placeholder="Discount value"
+      />
+    </div>
+
+    <div class="detailDiv w-full">
+      <label for="discountType">Discount Type</label>
+      <ng-select
+        [items]="discountTypes"
+        bindLabel="name"
+        bindValue="id"
+        [(ngModel)]="discount.discountType"
+        [multiple]="true"
+        placeholder="Select discount types"
+      >
+      </ng-select>
+    </div>
+
+    <!-- <div  *ngIf="productData.discount.discountType.includes(2)"> -->
+    <div>
+      <p class="text-lg text-gray-700 ml-3 pb-0 mb-0 mt-2">
+        Discount validity period
+      </p>
+
+      <div class="flex gap-4 items-center w-full">
+        <div class="detailDiv w-full">
+          <label for="start">Start date</label>
+          <input
+            type="date"
+            formControlName="startDate"
+            id="start"
+            class="name editInput"
+          />
+        </div>
+        <div class="detailDiv w-full">
+          <label for="end">End date</label>
+          <input
+            type="date"
+            formControlName="endDate"
+            id="end"
+            class="name editInput"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- <div *ngIf="productData.discount.discountType.includes(3)"> -->
+    <div>
+      <div class="detailDiv w-full">
+        <label for="minQuantity">Minimum quantity</label>
+        <input
+          type="text"
+          id="minQuantity"
+          formControlName="discountMinQuantity"
+          class="name editInput"
+        />
+      </div>
+    </div>
+  </div>
+</app-side-modal>
+
+<app-side-modal *ngIf="openAddSupplier" (close)="openAddSupplier = false">
+ <app-supplier></app-supplier>
+</app-side-modal>
+
+<app-side-modal *ngIf="openAddTax" (close)="openAddTax = false">
+   <app-tax></app-tax>
+</app-side-modal>
+
+
+<!-- SECTION: Modal for displaying and setting branch data like price and quantity -->
+
+<!-- !SECTION -->
+<app-modal *ngIf="addSuccessfull" (close)="addSuccessfull = false">
+  <div class="flex flex-col items-center justify-center gap-3 px-4">
+    <img
+      class="w-96 h-96"
+      src="https://png.pngtree.com/png-vector/20220319/ourmid/pngtree-vector-eps10-icon-of-badge-with-a-check-mark-indicating-success-and-approval-vector-png-image_44982234.jpg"
+      alt=""
+    />
+    <p class="text-4xl font-semibold text-gray-700">
+      Product Added successfully
+    </p>
+    <div class="flex justify-between gap-10 my-5 items-center">
+      <button class="btn create-invoice-btn" (click)="openGenerateBarcode()">
+        Generate Barcode(s)
+      </button>
+      <button class="btn create-invoice-btn">Print Label(s)</button>
+    </div>
+  </div>
+</app-modal>
+
+<app-modal
+  *ngIf="configureBarcode"
+  (close)="configureBarcode = false"
+  header="Configure Barcode"
+  class=""
+>
+  <div class="flex gap-3 mt-2 flex-col w-96">
+    <div class="">
+      <label for="type">Barcode Type</label>
+      <ng-select
+        [items]="barcodes"
+        bindLabel="label"
+        bindValue="value"
+        [(ngModel)]="barcodeConfig.barcodeType"
+        [multiple]="false"
+        placeholder="Select branch"
+      >
+      </ng-select>
+    </div>
+
+    <div class="">
+      <label for="name">Quantity</label>
+      <input
+        class="name editInput"
+        type="number"
+        placeholder="1"
+        id="name"
+        [(ngModel)]="barcodeConfig.barcodeQuantity"
+      />
+    </div>
+
+    <!-- <svg id="barcode"></svg> -->
+
+    <div class="flex justify-between gap-10 my-5 items-center">
+      <button class="btn create-invoice-btn w-full" (click)="generateBarcode()">
+        Get PDF
+      </button>
+      <button class="btn create-invoice-btn w-full" (click)="printBarcode()">
+        Print
+      </button>
+    </div>
+  </div>
+</app-modal>
+
+<p-toast position="top-right" key="tl" />

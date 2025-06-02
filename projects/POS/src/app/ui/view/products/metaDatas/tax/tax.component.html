@@ -1,0 +1,55 @@
+<div class="modal-header flex justify-between items-center text-gray-700">
+    <h2 class="font-semibold pb-0 mb-0">Taxes</h2>
+
+    <div class="flex gap-3">
+      <!-- <button
+        class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold"
+        (click)="openAddDiscount = false"
+      >
+        Cancel
+      </button> -->
+      <button class="btn create-invoice-btn" (click)="addTax()">
+        Save
+      </button>
+    </div>
+  </div>
+
+  <div class="mt-5 mb-2 flex flex-col gap-4">
+    <div class="detailDiv w-full">
+      <label for="e-price">Name</label>
+      <input
+        class="name editInput"
+        type="text"
+        id="e-price"
+        [(ngModel)]="taxData.name"
+        placeholder="Supplier name"
+      />
+    </div>
+
+    <div class="detailDiv w-full">
+      <label for="email">Rate</label>
+      <input
+        id="email"
+        [(ngModel)]="taxData.rate"
+        class="name editInput"
+        placeholder="Supplier value"
+      />
+    </div>
+
+   
+
+    <hr>
+
+  <div
+  *ngFor="let tax of taxes"
+  class="flex flex-col my-3 text-gray-700 font-mono"
+>
+  <div class="flex justify-between items-center">
+    <p>{{ tax.name }}</p>
+    <i
+      class="fa-solid fa-trash cursor-pointer"
+      (click)="removeTax(tax.id)"
+    ></i>
+  </div>
+</div>
+  </div>
