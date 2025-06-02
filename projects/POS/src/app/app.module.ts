@@ -193,7 +193,7 @@ export function appInitializerFactory(appInitService: AppInitService) {
     //CheckoutHeaderComponent,
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
     UserModule,
     AppRoutingModule,
     CheckboxModule,
@@ -246,7 +246,7 @@ export function appInitializerFactory(appInitService: AppInitService) {
     InputGroupAddonModule,
     SkeletonModule,
     PaginatorModule,
-    BrowserAnimationsModule,
+    // BrowserAnimationsModule,
   ],
   exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],
   providers: [
