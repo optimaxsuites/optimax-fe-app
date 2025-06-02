@@ -69,7 +69,7 @@
         } @else {
           <!-- No orders :( -->
           @if (!displayedTableStatuses().length) {
-            No Orders here :(
+            <h3 class="font-bold">No Orders</h3>
           }
         }
         @for (item of displayedTableStatuses(); track $index) {
@@ -131,7 +131,12 @@
                     <div class="order-item">
                       <span class="item-name">
                         {{ item.product["name"] }}
-                        <div [style]="{'background-image': 'url(' + productImgMap.get(item.product.id) + ')',}"></div>
+                        <div
+                          [style]="{
+                            'background-image':
+                              'url(' + productImgMap.get(item.product.id) + ')',
+                          }"
+                        ></div>
                       </span>
                       <span class="item-quantity">
                         {{ item.quantity }}
@@ -314,7 +319,12 @@
                     <div class="order-item">
                       <span class="item-name">
                         {{ item.product["name"] }}
-                        <div [style]="{'background-image': 'url(' + productImgMap.get(item.product.id) + ')',}"></div>
+                        <div
+                          [style]="{
+                            'background-image':
+                              'url(' + productImgMap.get(item.product.id) + ')',
+                          }"
+                        ></div>
                       </span>
                       <span class="item-quantity">
                         {{ item.quantity }}
@@ -498,6 +508,7 @@
   class="create-order-dialog"
 >
   <!-- Contains 2 children; the container for showing selected products, and another for showing the available products that can be selected. -->
+  <!-- Grid -->
   <div class="product-parent-area">
     <div class="order-display">
       <div>
@@ -506,37 +517,46 @@
           type="number"
           name="tableNumber"
           id="tableNumber"
+          class="bg-transparent"
           [(ngModel)]="orderTableNumber"
           [disabled]="isEditingOrder"
         />
       </div>
       <!-- Just putting another slightly smaller div :3 -->
       <div class="overflow-y-auto">
-        <p-table [value]="tableData() | keyvalue">
-          <ng-template pTemplate="header">
-            <tr>
-              <th>Item</th>
-              <th>Qty</th>
-              <th>Rate</th>
-              <th>Amount</th>
-              <th></th>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="body" let-rowData>
-            <tr>
-              <td>{{ rowData.key.name }}</td>
-              <td>{{ rowData.value }}</td>
-              <td>{{ rowData.key.sellingPrice }}</td>
-              <td>₦{{ rowData.value * rowData.key.sellingPrice }}</td>
-              <td>
-                <i
-                  class="fa-solid fa-minus"
-                  (click)="reduceFoodItemQtyInOrder(rowData.key)"
-                ></i>
-              </td>
-            </tr>
-          </ng-template>
-        </p-table>
+        @if (!tableData().size) {
+          <div
+            class="w-[100%] h-[100%] flex items-center justify-center font-bold text-3xl"
+          >
+            Tap a meal to add it to the order.
+          </div>
+        } @else {
+          <p-table [value]="tableData() | keyvalue">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Rate</th>
+                <th>Amount</th>
+                <th></th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-rowData>
+              <tr>
+                <td>{{ rowData.key.name }}</td>
+                <td>{{ rowData.value }}</td>
+                <td>₦{{ rowData.key.sellingPrice }}</td>
+                <td>₦{{ rowData.value * rowData.key.sellingPrice }}</td>
+                <td>
+                  <i
+                    class="fa-solid fa-minus"
+                    (click)="reduceFoodItemQtyInOrder(rowData.key)"
+                  ></i>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        }
 
         <!-- VAT and total -->
         @if (tableData().size > 0) {
@@ -570,72 +590,84 @@
               'background-image': 'url(' + productImgMap.get(p.id) + ')',
             }"
           ></div>
-          {{ p.name }}
+
+          <div class="flex gap-4 p-2">
+            <h3 class="font-bold flex items-center justify-content">
+              {{ p.name }}
+            </h3>
+
+            <button
+              pButton
+              class="p-button-success px-2 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200 whitespace-nowrap min-w-min"
+            >
+              +Add
+            </button>
+          </div>
         </div>
       }
     </div>
-  </div>
 
-  <!-- Contains 2 children; the container for displaying all available product categories, and another for utility buttons like finalizing / cancelling an order -->
-  <div class="bottom-btn-bar">
-    <div class="category-list">
-      @for (category of productCategories | keyvalue; track $index) {
+    <!-- Contains 2 children; the container for displaying all available product categories, and another for utility buttons like finalizing / cancelling an order -->
+    <div class="bottom-btn-bar">
+      <div class="category-list">
+        @for (category of productCategories | keyvalue; track $index) {
+          <button
+            pButton
+            [label]="category.key"
+            class="p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200"
+            (click)="currCategoryProducts = category.value"
+          ></button>
+        }
+      </div>
+
+      <div class="utility-btns">
         <button
           pButton
-          [label]="category.key"
-          class="p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200"
-          (click)="currCategoryProducts = category.value"
+          label="Cancel"
+          class="p-button-danger px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-200 font-bold row-start-2"
+          (click)="
+            setOrderNote('');
+            isCreateOrderModalOpen = false;
+            isEditingOrder = false
+          "
         ></button>
-      }
-    </div>
-
-    <div class="utility-btns">
-      <button
-        pButton
-        label="Cancel"
-        class="p-button-danger px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-200 font-bold"
-        (click)="
-          setOrderNote('');
-          isCreateOrderModalOpen = false;
-          isEditingOrder = false
-        "
-      ></button>
-      <button
-        pButton
-        label="Note"
-        class="p-button-success px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring focus:ring-orange-200 font-bold"
-        (click)="isCreateOrderModalNoteDialogOpen = true"
-      ></button>
-      <!--
-      `openOrderDetails(tableStatuses().get(selectedOrder!.no)!)` is used to refresh the order details
-       -->
-      <button
-        pButton
-        [label]="isEditingOrder ? 'Overwrite' : 'Order'"
-        class="p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200 font-bold"
-        (click)="
-          isCreateOrderModalOrderExistsDialogOpen = !createOrder(
-            orderTableNumber,
-            tableData(),
-            '0',
-            orderNote(),
-            isEditingOrder
-          );
-          isCreateOrderModalOpen = false;
-          isEditingOrder = false;
-          tableData().clear();
-          setOrderNote('');
-          this.isOrderDetailsOpen = false;
-          isCreateOrderModalOrderExistsDialogOpen
-            ? ''
-            : openOrderDetails(
-                tableStatuses().get(orderTableNumber) ??
-                  tableStatuses().get(
-                    convertStrToNum(selectedOrder?.tableNumber ?? '0')
-                  )!
-              )
-        "
-      ></button>
+        <button
+          pButton
+          label="Note"
+          class="p-button-success px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring focus:ring-orange-200 font-bold col-start-2"
+          (click)="isCreateOrderModalNoteDialogOpen = true"
+        ></button>
+        <!--
+        `openOrderDetails(tableStatuses().get(selectedOrder!.no)!)` is used to refresh the order details
+         -->
+        <button
+          pButton
+          [label]="isEditingOrder ? 'Overwrite' : 'Order'"
+          class="p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200 font-bold row-start-2 col-start-2"
+          (click)="
+            isCreateOrderModalOrderExistsDialogOpen = !createOrder(
+              orderTableNumber,
+              tableData(),
+              '0',
+              orderNote(),
+              isEditingOrder
+            );
+            isCreateOrderModalOpen = false;
+            isEditingOrder = false;
+            tableData().clear();
+            setOrderNote('');
+            this.isOrderDetailsOpen = false;
+            isCreateOrderModalOrderExistsDialogOpen
+              ? ''
+              : openOrderDetails(
+                  tableStatuses().get(orderTableNumber) ??
+                    tableStatuses().get(
+                      convertStrToNum(selectedOrder?.tableNumber ?? '0')
+                    )!
+                )
+          "
+        ></button>
+      </div>
     </div>
   </div>
 </p-dialog>

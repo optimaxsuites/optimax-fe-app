@@ -14,3 +14,17 @@ export function dateToArray(date: Date) {
     date.getMilliseconds(), // 0–999
   ];
 }
+
+/** FIXME: Seems like the time arrays from the server are botched :/ and this function doesn't really remedy it */
+export function arrayToDate(array: Array<number>) {
+  const cleanedArr = array.map((val, index) => {
+    // For some reason the second element (the month), keeps on increasing by 1
+    if (index == 1) {
+      return val - 1;
+    }
+    return val;
+  });
+
+  //@ts-expect-error
+  return new Date(...cleanedArr);
+}
