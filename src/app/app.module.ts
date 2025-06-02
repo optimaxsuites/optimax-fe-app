@@ -53,6 +53,12 @@ import { NavbarComponent } from './ui/bookings/navbar/navbar.component';
 import { ThemeComponent } from './ui/bookings/theme/theme.component';
 import { HeropageComponent } from './ui/bookings/heropage/heropage.component';
 import { AboutpageComponent } from './ui/bookings/aboutpage/aboutpage.component';
+import { RoomsCarouselComponent } from './ui/bookings/rooms-carousel/rooms-carousel.component';
+import { AllroomsComponent } from './ui/bookings/allrooms/allrooms.component';
+import { RoomsheroComponent } from './ui/bookings/roomshero/roomshero.component';
+import { RoomdesignComponent } from './ui/bookings/roomdesign/roomdesign.component';
+import { RoomfooterComponent } from './ui/bookings/roomfooter/roomfooter.component';
+import { BookingformComponent } from './ui/bookings/bookingform/bookingform.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -87,6 +93,12 @@ import { AboutpageComponent } from './ui/bookings/aboutpage/aboutpage.component'
     ThemeComponent,
     HeropageComponent,
     AboutpageComponent,
+    RoomsCarouselComponent,
+    AllroomsComponent,
+    RoomsheroComponent,
+    RoomdesignComponent,
+    RoomfooterComponent,
+    BookingformComponent,
   ],
   imports: [
     BrowserAnimationsModule,
