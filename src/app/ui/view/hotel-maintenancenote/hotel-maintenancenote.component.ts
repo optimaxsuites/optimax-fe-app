@@ -39,7 +39,7 @@ export interface BookingDetails {
 
 export interface Room {
   id: number;
-  number: number | null; // Allow number to be null
+  number: number;
   type: string;
   status: string;
   floor?: number;
@@ -138,7 +138,7 @@ export class HotelMaintenancenoteComponent implements OnInit {
       if (this.todos.length === 0 && this.room) {
         this.todos = this.todos.map((todo) => ({
           ...todo,
-          roomNumber: this.room?.number ?? undefined,
+          roomNumber: this.room?.number,
           roomId: this.room?.id,
         }));
       }
@@ -154,7 +154,7 @@ export class HotelMaintenancenoteComponent implements OnInit {
       reason: this.newTodoReason.trim() || undefined,
       completed: false,
       priority: this.newTodoPriority,
-      roomNumber: this.room?.number ?? undefined,
+      roomNumber: this.room?.number,
       roomId: this.room?.id,
     };
 

@@ -33,7 +33,7 @@ const routes: Routes = [
       { path: 'Housekeeping Record', component: HouseKeepingComponent },
       // { path: 'gym', component: GymComponent },
       { path: 'bar', component: BarServiceComponent },
-      // { path: 'admin', component: HotelAdmintableComponent },
+      { path: 'admin', component: HotelAdmintableComponent },
     ],
   },
 ];

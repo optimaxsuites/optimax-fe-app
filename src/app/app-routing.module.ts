@@ -1,10 +1,10 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-
-import { HotelAdmintableComponent } from './ui/view/hotel-admintable/hotel-admintable.component';
+import { HotelCheckoutComponent } from './ui/view/hotel-checkout/hotel-checkout.component';
+import { HotelRoomsComponent } from './ui/view/hotel-rooms/hotel-rooms.component';
 
 const routes: Routes = [
-  { path: 'admin/hospitality/room/:uuid', component: HotelAdmintableComponent  },
+  { path: 'admin/hospitality/room/:uuid', component: HotelRoomsComponent },
 ];
 
 @NgModule({

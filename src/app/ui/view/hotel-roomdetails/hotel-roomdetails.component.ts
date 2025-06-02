@@ -29,7 +29,7 @@ export interface BookingDetails {
 
 export interface Room {
   id: number;
-  number: number | null; // Allow null for rooms without a number
+  number: number;
   type: string;
   status: string;
   floor?: number;
@@ -160,153 +160,23 @@ export class HotelRoomdetailsComponent {
   }
 
   showRoomDetailsModal(room: Room): void {
-    try {
-      // Validate input room object
-      if (!room) {
-        console.error('showRoomDetailsModal: Room object is null or undefined');
-        return;
-      }
+    const storedRooms = localStorage.getItem('rooms');
+    if (storedRooms) {
+      const parsedRooms = JSON.parse(storedRooms);
+      const updatedRoom = parsedRooms.find((r: Room) => r.id === room.id);
 
-      // Validate required room properties
-      if (!room.id) {
-        console.error('showRoomDetailsModal: Room ID is missing', room);
-        // Still proceed but log the issue
-      }
-
-      // Ensure room has a number property (even if null/undefined, we'll handle it in template)
-      if (room.number === undefined || room.number === null) {
-        console.warn(
-          'showRoomDetailsModal: Room number is null/undefined',
-          room
-        );
-        // You might want to set a default or fetch from server
-        room.number = room.number; // Default to 'N/A' if no number
-      }
-
-      // Check localStorage availability
-      let storedRooms: string | null = null;
-      try {
-        storedRooms = localStorage.getItem('rooms');
-      } catch (storageError) {
-        console.warn('localStorage not available:', storageError);
-      }
-
-      if (storedRooms) {
-        try {
-          const parsedRooms = JSON.parse(storedRooms);
-
-          if (Array.isArray(parsedRooms)) {
-            const updatedRoom = parsedRooms.find(
-              (r: Room) => r && r.id && r.id === room.id
-            );
-
-            if (updatedRoom) {
-              // Ensure the updated room also has safe properties
-              this.ensureRoomSafety(updatedRoom);
-              this.processRoomDates(updatedRoom);
-              this.detailedRoom = updatedRoom;
-            } else {
-              this.ensureRoomSafety(room);
-              this.detailedRoom = room;
-            }
-          } else {
-            console.warn('Stored rooms is not an array:', parsedRooms);
-            this.ensureRoomSafety(room);
-            this.detailedRoom = room;
-          }
-        } catch (parseError) {
-          console.error('Error parsing stored rooms:', parseError);
-          this.ensureRoomSafety(room);
-          this.detailedRoom = room;
-        }
+      if (updatedRoom) {
+        this.processRoomDates(updatedRoom);
+        this.detailedRoom = updatedRoom;
       } else {
-        this.ensureRoomSafety(room);
         this.detailedRoom = room;
       }
-
-      this.showDetails = true;
-
-      // Use setTimeout to ensure DOM is ready and change detection runs properly
-      setTimeout(() => {
-        if (this.cdRef) {
-          this.cdRef.detectChanges();
-        }
-      }, 0);
-    } catch (error) {
-      console.error('Error in showRoomDetailsModal:', error);
-
-      // Fallback: try to show room details anyway with safe defaults
-      try {
-        this.ensureRoomSafety(room);
-        this.detailedRoom = room;
-        this.showDetails = true;
-
-        if (this.cdRef) {
-          this.cdRef.detectChanges();
-        }
-      } catch (fallbackError) {
-        console.error('Fallback also failed:', fallbackError);
-        // Last resort: just close any existing modals
-        this.closeModal();
-      }
+    } else {
+      this.detailedRoom = room;
     }
+    this.showDetails = true;
+    this.cdRef.detectChanges(); // Force change detection
   }
-
-  // Helper method to ensure room object has safe properties
-  private ensureRoomSafety(room: Room): void {
-    if (!room) return;
-
-    // Ensure critical properties exist with safe defaults
-    room.number = room?.number ?? null; // Allow null for rooms without a number
-    room.type = room.type ?? 'Unknown';
-    room.status = room.status ?? 'unknown';
-    room.rate = room.rate ?? 0;
-
-    // Ensure nested objects exist
-    if (room.guest) {
-      room.guest.firstName = room.guest.firstName ?? '';
-      room.guest.lastName = room.guest.lastName ?? '';
-      room.guest.title = room.guest.title ?? '';
-    }
-
-    if (room.bookingDetails) {
-      room.bookingDetails.checkinDate = room.bookingDetails.checkinDate ?? null;
-      room.bookingDetails.checkoutDate =
-        room.bookingDetails.checkoutDate ?? null;
-      room.bookingDetails.paymentMethod =
-        room.bookingDetails.paymentMethod ?? 'unknown';
-      room.bookingDetails.paidAmount = room.bookingDetails.paidAmount ?? 0;
-    }
-  }
-
-  // Updated openRoomDetails method (for when clicking room cards)
-  openRoomDetails(room: Room): void {
-    try {
-      if (!room) {
-        console.error('openRoomDetails: Room is null or undefined');
-        return;
-      }
-
-      console.log('Opening room details for:', room);
-      this.showRoomDetailsModal(room);
-    } catch (error) {
-      console.error('Error in openRoomDetails:', error);
-    }
-  }
-
-  // Add method to safely close modal
-  // closeModal(): void {
-  //   try {
-  //     this.showDetails = false;
-  //     this.detailedRoom = null;
-
-  //     if (this.cdRef) {
-  //       this.cdRef.detectChanges();
-  //     }
-  //   } catch (error) {
-  //     console.error('Error closing modal:', error);
-  //   }
-  // }
 
   private processRoomDates(room: Room): void {
     if (room.bookingDetails) {
