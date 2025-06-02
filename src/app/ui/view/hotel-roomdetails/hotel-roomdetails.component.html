@@ -616,7 +616,8 @@
   contentStyleClass="p-0 flex flex-column"
 >
   <app-hotel-extendstay
-    [selectedRoom]="detailedRoom || selectedRoom!"
+    *ngIf="(detailedRoom || selectedRoom) !== null"
+    [selectedRoom]="(detailedRoom || selectedRoom)!"
     (stayExtended)="onStayExtended($event)"
     (back)="navigateToExtend()"
     class="flex flex-column h-full"
