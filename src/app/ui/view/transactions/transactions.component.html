@@ -1,0 +1,163 @@
+<div>
+
+
+  <!-- <app-nav-tab [tabsConfig]="tabsConfig"></app-nav-tab> -->
+
+
+
+
+  <div class="flex w-full justify-end px-20 py-10 gap-10">
+  <p-button 
+    label="Banking Alerts"
+    class="bg-white flex items-center justify-center hover:bg-blue-600 text-blue-500 border-blue-500 border px-6 py-2 rounded transition-all duration-300 text-[1.5rem] font-semibold
+           [&_.p-button-icon]:ml-2 [&_.p-button-icon]:text-[1.5rem] [&:hover_.p-button-icon]:translate-x-1"
+    pRipple
+    iconPos="right"
+  />
+  <p-button 
+    label="Link Accounts"
+    icon="pi pi-angle-down"
+    class="bg-gray-500 flex items-center justify-center hover:bg-gray-600 text-white border-none px-6 py-2 rounded transition-all duration-300 text-[1.5rem] font-semibold
+           [&_.p-button-icon]:ml-2 [&_.p-button-icon]:text-[1.5rem] [&:hover_.p-button-icon]:translate-x-1"
+    pRipple
+    iconPos="right"
+  />
+</div>
+
+
+<!-- Balance display cards -->
+<div class="flex flex-col">
+   <div class="flex w-full">
+     <p-card class="bg-white w-[400px] rounded-lg p-10 mb-6">
+        <div class="flex flex-col justify-between items-start gap-10">
+            <div class="flex items-center justify-between w-full">
+                <div>
+                <h2 class="text-2xl font-bold text-gray-800">Availible Balance</h2>
+                <p class="text-[3rem] font-semibold text-gray-600">&#8358;10,000.00   <p-button  
+                icon="pi pi-eye" 
+                class="[&_.p-button-icon]:text-[1.5rem]"
+                pRipple
+            /></p>
+            </div>
+           
+            <div>
+
+            </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <p-button  
+                icon="pi pi-refresh" 
+                class=""
+                pRipple
+            />
+                <h2 class="text-md font-semibold text-gray-800">1 minute ago</h2>
+            </div>
+        </div>
+    </p-card>
+    <p-card class="bg-white w-[400px] rounded-lg p-10 mb-6">
+        <div class="flex flex-col justify-between items-start gap-10">
+            <div class="flex items-center justify-between w-full">
+                <div>
+                <h2 class="text-2xl font-bold text-gray-800">Bank Balance</h2>
+                <p class="text-[3rem] font-semibold text-gray-600">&#8358;42,870.00   
+                <p-button  
+                icon="pi pi-eye" 
+                class="[&_.p-button-icon]:text-[1.5rem]"
+                pRipple
+            /></p>
+            </div>
+           
+            <div>
+
+            </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <p-button  
+                icon="pi pi-refresh" 
+                class=""
+                pRipple
+            />
+                <h2 class="text-md font-semibold text-gray-800">5 minutes ago</h2>
+            </div>
+        </div>
+    </p-card>
+   </div>
+
+
+<p-card header="Transactions" class="p-3">
+  <p-table [value]="transactions" [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5,10,25]">
+    <ng-template pTemplate="header">
+      <tr class="font-bold uppercase" >
+        <th>Date</th>
+        <th>Description</th>
+        <th>Spent (₦)</th>
+        <th>Received (₦)</th>
+        <th>Assigned To</th>
+        <th>Actions</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-transaction>
+      <tr>
+        <td>{{transaction.date | date:'mediumDate'}}</td>
+        <td>{{transaction.description}}</td>
+        <td>{{transaction.spent | currency:'NGN':'symbol-narrow'}}</td>
+        <td>{{transaction.received | currency:'NGN':'symbol-narrow'}}</td>
+        <td>
+          <p-tag class="text-2xl " [value]="transaction.assignedTo">
+          </p-tag>
+        </td>
+        <td>
+          <div class="flex gap-2">
+            <!-- <p-button *ngIf="transaction.spent > 0" 
+                      icon="pi pi-angle-down" 
+                      class="text-2xl"
+                      [text]="true"
+                      severity="secondary"
+                      id="special-button">
+              Review
+            </p-button> -->
+            <!-- <p-button icon="pi pi-check" 
+                      class=""
+                      severity="success">
+              Confirm
+            </p-button> -->
+
+            <button class="flex items-center border border-1 border-blue-600 rounded-lg px-10 py-3 gap-2 justify-center">
+              <span class="font-semibold">
+                Review
+              </span>
+              <i class="pi pi-angle-down text-2xl"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</p-card>
+</div>
+
+
+<style>
+    /* Add to your component's CSS file */
+/* :host ::ng-deep {
+  .p-datatable {
+    .p-datatable-thead > tr > th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+    }
+    
+    .p-datatable-tbody > tr {
+      &:hover {
+        background-color: #f8f9fa;
+      }
+    }
+  }
+} */
+
+
+ #special-button {
+  font-size: 1.3rem;
+  width: 100%;
+ }
+</style>

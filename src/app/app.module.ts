@@ -60,6 +60,7 @@ import { MessagesModule } from 'primeng/messages';
 import { MessageModule } from 'primeng/message';
 import { RippleModule } from 'primeng/ripple';
 import { TagModule } from 'primeng/tag';
+import { CardModule } from 'primeng/card';
 
 
 
@@ -76,6 +77,12 @@ import { SideModalComponent } from './ui/sharedComponent/view/side-modal/side-mo
 import { AddQuotationItemComponent } from './ui/view/add-quotation-item/add-quotation-item.component';
 import { AddShippingDetailsComponent } from './ui/view/add-shipping-details/add-shipping-details.component';
 import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-button.component';
+import { HttpClientModule } from '@angular/common/http';
+import { TransactionsComponent } from './ui/view/transactions/transactions.component';
+import { NavTabComponent } from "./ui/sharedComponent/view/nav-tab/nav-tab.component";
+import { AccountingReportsComponent } from './ui/view/accounting-reports/accounting-reports.component';
+import { ChartOfAccountsComponent } from './ui/view/chart-of-accounts/chart-of-accounts.component';
+import { PaginatorModule } from 'primeng/paginator';
 
 @NgModule({
   declarations: [
@@ -92,11 +99,14 @@ import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-
     QuotationModalComponent,
     AddNewClientComponent,
     AddQuotationItemComponent,
-    AddShippingDetailsComponent
+    AddShippingDetailsComponent,
+    TransactionsComponent,
+    AccountingReportsComponent,
+    ChartOfAccountsComponent,
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     CommonModule,
     AppRoutingModule,
     FormsModule,
@@ -148,8 +158,12 @@ import { BackButtonComponent } from './ui/sharedComponent/view/back-button/back-
     ButtonModule,
     ButtonComponent,
     SideModalComponent,
-    BackButtonComponent
-  ],
+    BackButtonComponent,
+    HttpClientModule,
+    CardModule,
+    NavTabComponent,
+    PaginatorModule
+],
   providers: [],
   bootstrap: [AppComponent]
 })
