@@ -1,5 +1,6 @@
+<!-- navbar.component.html -->
 <nav
-  class="bg-white dark:bg-gray-900 shadow-lg border-b border-gray-200 dark:border-gray-700 transition-colors duration-300"
+  class="fixed w-full z-30 bg-white dark:bg-gray-900 shadow-lg border-b border-gray-200 dark:border-gray-700 transition-colors duration-300"
 >
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-between items-center h-16">
@@ -28,25 +29,28 @@
       <!-- Desktop Navigation -->
       <div class="hidden md:flex items-center space-x-8">
         <a
-          href="#"
-          class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium transition-colors duration-200"
+          [routerLink]="['/user/bookings', currentUserId]"
+          routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="text-gradient-to-r from-rose-200 via-orange-100 to-amber-200 dark:from-emerald-400 dark:to-teal-500 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium transition-colors duration-200"
           >Home</a
         >
         <a
-          href="#"
-          class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium transition-colors duration-200"
+          [routerLink]="['/user/rooms', currentUserId]"
+          routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold"
+          class="text-gradient-to-r from-rose-200 via-orange-100 to-amber-200 dark:from-emerald-400 dark:to-teal-500 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium transition-colors duration-200"
           >Rooms</a
         >
         <a
-          href="#"
-          class="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium transition-colors duration-200"
+          routerLink="/bookings"
+          routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold"
+          class="text-gradient-to-r from-rose-200 via-orange-100 to-amber-200 dark:from-emerald-400 dark:to-teal-500 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium transition-colors duration-200"
           >Bookings</a
         >
       </div>
 
       <!-- Right side buttons -->
       <div class="hidden md:flex items-center space-x-4">
-        <!-- Dark/Light Mode Toggle -->
         <button
           (click)="toggleDarkMode()"
           class="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
@@ -78,8 +82,8 @@
           </svg>
         </button>
 
-        <!-- Login Button -->
         <button
+          routerLink="/contact"
           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
         >
           Contact Us
@@ -88,7 +92,6 @@
 
       <!-- Mobile menu button -->
       <div class="md:hidden flex items-center space-x-2">
-        <!-- Mobile Dark/Light Mode Toggle -->
         <button
           (click)="toggleDarkMode()"
           class="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
@@ -120,7 +123,6 @@
           </svg>
         </button>
 
-        <!-- Hamburger button -->
         <button
           (click)="toggleMobileMenu()"
           class="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
@@ -170,24 +172,32 @@
       class="px-4 pt-2 pb-6 space-y-1 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700"
     >
       <a
-        href="#"
+        [routerLink]="['/user/bookings', currentUserId]"
+        routerLinkActive="text-blue-600 dark:text-blue-400 bg-gray-100 dark:bg-gray-800 font-semibold"
+        [routerLinkActiveOptions]="{ exact: true }"
+        (click)="isMobileMenuOpen = false"
         class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-sm font-medium transition-colors duration-200"
         >Home</a
       >
       <a
-        href="#"
+        [routerLink]="['/user/rooms', currentUserId]"
+        routerLinkActive="text-blue-600 dark:text-blue-400 bg-gray-100 dark:bg-gray-800 font-semibold"
+        (click)="isMobileMenuOpen = false"
         class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-sm font-medium transition-colors duration-200"
         >Rooms</a
       >
       <a
-        href="#"
+        routerLink="/bookings"
+        routerLinkActive="text-blue-600 dark:text-blue-400 bg-gray-100 dark:bg-gray-800 font-semibold"
+        (click)="isMobileMenuOpen = false"
         class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-sm font-medium transition-colors duration-200"
         >Bookings</a
       >
 
-      <!-- Mobile Login Button -->
       <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
         <button
+          routerLink="/contact"
+          (click)="isMobileMenuOpen = false"
           class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
         >
           Contact Us

@@ -1,4 +1,5 @@
 import { Component, HostListener } from '@angular/core';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-navbar',
@@ -8,8 +9,10 @@ import { Component, HostListener } from '@angular/core';
 export class NavbarComponent {
   isMobileMenuOpen = false;
   isDarkMode = false;
+  currentUserId = '123'; // Replace with actual user ID or get it from your auth service
 
-  constructor() {
+  constructor(private router: Router) {
+    // Check for saved theme preference or use system preference
     this.isDarkMode =
       localStorage.getItem('theme') === 'dark' ||
       (!localStorage.getItem('theme') &&
@@ -25,8 +28,6 @@ export class NavbarComponent {
   toggleDarkMode(): void {
     this.isDarkMode = !this.isDarkMode;
     this.updateTheme();
-
-    // Save preference to localStorage
     localStorage.setItem('theme', this.isDarkMode ? 'dark' : 'light');
   }
 
@@ -39,20 +40,23 @@ export class NavbarComponent {
   }
 
   @HostListener('window:resize', ['$event'])
-  onResize(event: any): void {
-    // Close mobile menu when screen size changes to desktop
-    if (event.target.innerWidth >= 768) {
+  onResize(event: Event): void {
+    // Close mobile menu on desktop view
+    if (window.innerWidth >= 768) {
       this.isMobileMenuOpen = false;
     }
   }
 
   @HostListener('document:click', ['$event'])
-  onDocumentClick(event: Event): void {
-    // Close mobile menu when clicking outside of it
+  onDocumentClick(event: MouseEvent): void {
+    // Close mobile menu when clicking outside
     const target = event.target as HTMLElement;
     const navbar = target.closest('nav');
+    const mobileMenuButton = target.closest(
+      '[aria-label="Toggle navigation menu"]'
+    );
 
-    if (!navbar && this.isMobileMenuOpen) {
+    if (!navbar && !mobileMenuButton && this.isMobileMenuOpen) {
       this.isMobileMenuOpen = false;
     }
   }
