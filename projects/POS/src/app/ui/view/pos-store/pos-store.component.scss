@@ -1,0 +1,86 @@
+/* store-front.component.css */
+// @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap");
+
+// :host {
+//   font-family: "Inter", sans-serif;
+// }
+
+$bg-color: #fafafa;
+$panel-color: #ffffff;
+
+.c-main {
+  background-color: $bg-color;
+  display: grid;
+  grid-template-rows: 1fr 1fr 1.125fr 75%;
+  gap: 0.5rem;
+
+  @media (max-height: 680px) {
+    grid-template-rows: 1fr 1fr 1.2fr 75%;
+  }
+
+  @media (max-height: 540px) {
+    grid-template-rows: 1fr 1fr 1.25fr 57.5%;
+  }
+
+  > * {
+    min-height: 0;
+    overflow: auto;
+  }
+}
+
+.c-category-btns {
+  min-height: max-content;
+  min-width: max-content;
+
+  overflow-y: hidden;
+
+  border-radius: 1rem;
+
+  > button {
+    min-width: max-content;
+    min-height: max-content;
+  }
+}
+
+::ng-deep .c-search-bar {
+  input {
+    height: 3rem;
+    width: 66.667vw;
+    padding: 0 1rem;
+    @apply shadow-md;
+
+    @media (min-width: 768px) {
+      max-width: 50vw;
+    }
+  }
+}
+
+.c-product-container {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: max-content;
+
+  @media (min-width: 646px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(7, 1fr);
+  }
+
+  > * {
+    // aspect-ratio: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .p-card.p-component {
+    border: black thin solid;
+  }
+}

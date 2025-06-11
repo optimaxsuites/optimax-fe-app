@@ -1,0 +1,94 @@
+<div class="c-main h-[100vh] w-[100vw] bg-[#fafafa]">
+  <!-- Top bar containing the logo and utility btns -->
+  <div class="flex items-center justify-between bg-white">
+    <img src="./../../../../assets/Logo-green.png" />
+
+    <div class="flex items-center justify-around gap-4 mr-4">
+      <i class="fa-solid fa-bars text-4xl"></i>
+      <i class="fa-solid fa-gear text-4xl"></i>
+    </div>
+  </div>
+
+  <!-- Container for the search bar -->
+  <div class="flex items-center justify-center flex-col">
+    <p-iconField iconPosition="right" class="c-search-bar">
+      <!-- <p-inputIcon styleClass="pi pi-search" /> -->
+      <p-inputIcon styleClass="fa-solid fa-magnifying-glass" />
+      <input
+        #searchBar
+        type="text"
+        pInputText
+        placeholder="Search"
+        [value]="searchText()"
+        (input)="changeSearchInput(searchBar.value)"
+      />
+    </p-iconField>
+
+    <!-- Text that appears when a search is unsuccessful -->
+    @if (didSearchHaveResults() == "no") {
+    <div class="text-md font-bold">
+      No results were found for the search query.
+    </div>
+    }
+  </div>
+
+  <!-- Container for the row of categories -->
+  <div class="flex items-center justify-around overflow-x-auto min-h-max">
+    <!-- Wrapper -->
+    <div
+      class="flex gap-4 p-4 items-center justify-center bg-white shadow-md min-h-max c-category-btns"
+    >
+      <!-- Default -->
+      <button
+        pButton
+        pRipple
+        [label]="defaultCategory"
+        class="py-3 px-4 min-w-fit rounded-lg font-medium transition-all duration-200 whitespace-nowrap hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-30"
+        [ngClass]="
+          selectedCategory() == defaultCategory
+            ? 'bg-customBlue text-white'
+            : 'bg-white text-gray-700 border border-gray-300'
+        "
+        (click)="changeCategory(defaultCategory)"
+      ></button>
+
+      @for (data of productData() | keyvalue; track $index) {
+      <button
+        pButton
+        pRipple
+        [label]="data.key[0].toUpperCase() + data.key.slice(1)"
+        class="py-3 px-4 min-w-fit rounded-lg font-medium transition-all duration-200 whitespace-nowrap hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-30"
+        [ngClass]="
+          selectedCategory() == data.key
+            ? 'bg-customBlue text-white'
+            : 'bg-white text-gray-700 border border-gray-300'
+        "
+        (click)="changeCategory(data.key)"
+      ></button>
+      }
+    </div>
+  </div>
+
+  <!-- Container for displaying the products -->
+  <div class="c-product-container">
+    @for (product of filteredProducts(); track $index) {
+
+    <div
+      class="border rounded-xl p-2 cursor-pointer h-[20rem] product-card relative transition-transform duration-200  max-h-fit bg-white hover:scale-105 hover:shadow-md"
+    >
+      <!-- TODO: Is it alright to load images like this? -->
+      <img
+        [src]="productImgMap.get(product.id)"
+        [alt]="product.name"
+        class="w-full h-2/3 object-cover rounded-xl"
+      />
+      <div class="flex flex-col w-full mt-4 px-2 h-[10rem] gap-3">
+        <p class="whitespace-nowrap overflow-hidden text-ellipsis h-10">
+          {{ product.name }}
+        </p>
+        <p class="h-8">{{ product.sellingPrice | currency : "₦" }}</p>
+      </div>
+    </div>
+    }
+  </div>
+</div>

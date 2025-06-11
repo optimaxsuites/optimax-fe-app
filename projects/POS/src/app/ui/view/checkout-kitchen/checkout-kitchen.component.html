@@ -86,7 +86,7 @@
               @if (!item.processedOn?.length) {
                 Pending
                 <i class="fa-solid fa-clock"></i>
-              } @else if (item.processedOn?.length) {
+              } @else if (!item.completedOn?.length) {
                 Processing
                 <i class="fa-solid fa-spinner"></i>
               } @else if (item.completedOn?.length) {
