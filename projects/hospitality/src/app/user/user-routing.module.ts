@@ -12,6 +12,7 @@ import { HotelAdmintableComponent } from '../ui/view/hotel-admintable/hotel-admi
 import { HomeComponent } from '../ui/bookings/home/home.component';
 import { AllroomsComponent } from '../ui/bookings/allrooms/allrooms.component';
 import { BookingformComponent } from '../ui/bookings/bookingform/bookingform.component';
+import { MultipleBookingsComponent } from '../ui/bookings/multiple-bookings/multiple-bookings.component';
 
 const routes: Routes = [
   {
@@ -31,6 +32,7 @@ const routes: Routes = [
 
   { path: 'user/rooms/:uuid', component: AllroomsComponent },
   { path: 'user/booking-form/:uuid', component: BookingformComponent },
+  { path: 'user/multiple-rooms/:uuid', component: MultipleBookingsComponent },
 
   {
     path: 'user/hospitality/services/:uuid',
