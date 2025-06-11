@@ -51,7 +51,7 @@
         </div>
 
       </p-card>
-      <p-card class="bg-white w-[400px] rounded-lg p-10 mb-6">
+      <p-card class="w-[400px] rounded-lg p-10 mb-6 relative">
         <div class="flex flex-col justify-between items-start gap-10 relative overflow-hidden">
           <div class="flex items-center justify-between w-full">
             <div>
@@ -84,14 +84,14 @@
 
 
     <div class="px-10">
-      <p-card header="TRANSACTIONS" class="p-3 transaction-card">
+      <p-card header="TRANSACTIONS" class="">
         <div class="card">
           <p-table [value]="filteredTransactions"  [value]="transactions" [paginator]="true" [rows]="5" [tableStyle]="{ 'min-width': '50rem' }"
             [rowsPerPageOptions]="[5, 10, 20]" styleClass="p-datatable-striped custom-table">
             <ng-template pTemplate="header">
               <tr class="font-bold uppercase">
-                <th style="display: flex; align-items: center;" pSortableColumn="date">
-                  <span>Date</span> &nbsp; <p-sortIcon field="date" />
+                <th style="width: 25%;" pSortableColumn="date">
+                  <span>Date  <p-sortIcon field="date" /></span> &nbsp;
                 </th>
                 <th style="width:25%">Description</th>
                 <th style="width:15%">Spent</th>
@@ -257,7 +257,7 @@
       border: 1px dashed #1d4ed8;
       background-color: #1d4ed8;
       color: white;
-      padding: 1rem 2rem;
+      padding: .6rem .6rem;
       margin: 1rem 0rem;
     }
 
