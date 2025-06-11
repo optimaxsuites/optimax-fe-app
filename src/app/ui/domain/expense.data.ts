@@ -26,3 +26,26 @@ comments: any;
   productArray: any[] | undefined;
   journalArray: any[] | undefined;
 }
+export interface ReimbursementRequest {
+  id: string;
+  date: Date;
+  type: string;
+  merchant: string;
+  amount: number;
+  status: string;
+  checked: boolean;
+  category: string;
+  employeeId: string;
+  showDropdown?: boolean;
+   comment?: string;
+  receiptBase64?: string;
+  receiptType?: string;
+  receiptName?: string;
+   paymentMethod?: string;
+  accountNumber?: string;
+  bankName?: string;
+  receiverName?: string;
+  department?: string;
+  description?: string;
+  isBusinessExpense?: boolean;
+}
