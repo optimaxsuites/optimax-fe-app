@@ -162,7 +162,8 @@ import { PaginatorModule } from 'primeng/paginator';
     HttpClientModule,
     CardModule,
     NavTabComponent,
-    PaginatorModule
+    PaginatorModule,
+    DialogModule
 ],
   providers: [],
   bootstrap: [AppComponent]

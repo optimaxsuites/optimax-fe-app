@@ -2,6 +2,7 @@ import { Component, Type } from '@angular/core';
 import { SalesOrderComponent } from '../sales-order/sales-order.component';
 import { QuotationComponent } from '../quotation/quotation.component';
 import { BookKeepingComponent } from '../book-keeping/book-keeping.component';
+import { formatCurrency } from '@angular/common';
 
 export interface TabConfig {
   name: string;
@@ -18,13 +19,15 @@ export interface DropdownOption {
 }
 
 interface Transaction {
-  id: number;
-  date: Date;
+  date: string;
   description: string;
-  spent: number;
-  received: number;
+  spent: number | null;
+  received: number | null;
   assignedTo: string;
-}
+  id: number;
+};
+
+
 
 @Component({
   selector: 'app-transactions',
@@ -32,6 +35,19 @@ interface Transaction {
   styleUrl: './transactions.component.scss'
 })
 export class TransactionsComponent {
+searchTerm = '';
+filteredTransactions: Transaction[] = []; // bind this to p-table
+
+filterTransactions() {
+  const term = this.searchTerm.toLowerCase();
+  this.filteredTransactions = this.transactions.filter(t =>
+    t.description?.toLowerCase().includes(term) ||
+    t.assignedTo?.toLowerCase().includes(term) ||
+    t.date?.toLowerCase().includes(term)
+  );
+}
+
+
   tabsConfig: TabConfig[] = [
     {
       name: 'Report',
@@ -50,33 +66,37 @@ export class TransactionsComponent {
     //   ]
     // }
   ];
-  transactions: Transaction[] = [
+    transactions: Transaction[] = [
     {
       id: 1,
-      date: new Date(),
-      description: 'Office supplies',
-      spent: 2000,
-      received: 0,
-      assignedTo: 'Stationary Expenses'
-    },
-    {
-      id: 2,
-      date: new Date('2023-05-15'),
-      description: 'Client payment',
-      spent: 0,
-      received: 50000,
-      assignedTo: 'Accounts Receivable'
-    },
-    {
-      id: 3,
-      date: new Date('2023-05-10'),
-      description: 'Employee salary',
-      spent: 150000,
-      received: 0,
-      assignedTo: 'Salaries'
+      date: '10/30/2024',
+      description: 'Blending machine',
+      spent: 4400,
+      received: null,
+      assignedTo: 'Kitchen'
     }
+    // Add more transactions as needed
   ];
 
+  selectedTransaction: Transaction | null = null;
+  showReviewModal = false;
+
+  openReviewModal(transaction: Transaction) {
+    this.selectedTransaction = transaction;
+    this.showReviewModal = true;
+  }
+
+  closeReviewModal() {
+    this.showReviewModal = false;
+    this.selectedTransaction = null;
+  }
+
+  get currencyFormatter() {
+  return (amount: number | null): string => {
+    if (!amount) return '';
+    return `₦${amount.toLocaleString()}`;
+  };
+}
   // getSeverity(category: string): string {
   //   switch (category) {
   //     case 'Stationary Expenses':

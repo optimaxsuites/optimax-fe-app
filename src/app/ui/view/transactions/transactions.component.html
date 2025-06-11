@@ -7,157 +7,380 @@
 
 
   <div class="flex w-full justify-end px-20 py-10 gap-10">
-  <p-button 
-    label="Banking Alerts"
-    class="bg-white flex items-center justify-center hover:bg-blue-600 text-blue-500 border-blue-500 border px-6 py-2 rounded transition-all duration-300 text-[1.5rem] font-semibold
-           [&_.p-button-icon]:ml-2 [&_.p-button-icon]:text-[1.5rem] [&:hover_.p-button-icon]:translate-x-1"
-    pRipple
-    iconPos="right"
-  />
-  <p-button 
-    label="Link Accounts"
-    icon="pi pi-angle-down"
-    class="bg-gray-500 flex items-center justify-center hover:bg-gray-600 text-white border-none px-6 py-2 rounded transition-all duration-300 text-[1.5rem] font-semibold
-           [&_.p-button-icon]:ml-2 [&_.p-button-icon]:text-[1.5rem] [&:hover_.p-button-icon]:translate-x-1"
-    pRipple
-    iconPos="right"
-  />
-</div>
+    <p-button label="Banking Alerts"
+      class="font-semibold text-[1.5rem] bg-blue-600 hover:bg-blue-700 text-white border-none px-6 py-2 rounded transition-all duration-300" />
+    <p-button label="Link Accounts" icon="pi pi-angle-down" class="bg-gray-500 flex items-center justify-center hover:bg-gray-600 text-white border-none px-6 py-2 rounded transition-all duration-300 text-[1.5rem] font-semibold
+           [&_.p-button-icon]:ml-2 [&_.p-button-icon]:text-[1.5rem] [&:hover_.p-button-icon]:translate-x-1" pRipple
+      iconPos="right" />
+  </div>
+
+  <hr class="border border-1 border-dashed" />
 
 
-<!-- Balance display cards -->
-<div class="flex flex-col">
-   <div class="flex w-full">
-     <p-card class="bg-white w-[400px] rounded-lg p-10 mb-6">
-        <div class="flex flex-col justify-between items-start gap-10">
-            <div class="flex items-center justify-between w-full">
-                <div>
-                <h2 class="text-2xl font-bold text-gray-800">Availible Balance</h2>
-                <p class="text-[3rem] font-semibold text-gray-600">&#8358;10,000.00   <p-button  
-                icon="pi pi-eye" 
-                class="[&_.p-button-icon]:text-[1.5rem]"
-                pRipple
-            /></p>
+  <!-- Balance display cards -->
+  <div class="flex flex-col">
+    <div class="flex w-full">
+      <p-card class="w-[400px] rounded-lg p-10 mb-6 relative">
+        <div class="flex flex-col justify-between items-start gap-10  relative overflow-hidden">
+          <div class="flex items-center justify-between w-full ">
+            <div>
+              <h2 class="text-2xl font-bold text-gray-800/40 tracking-wider">Register Balance</h2>
+              <p class="text-[3rem] tracking-wider font-semibold text-gray-600">&#8358;10,000.00 <p-button
+                  icon="pi pi-eye" class="[&_.p-button-icon]:text-[1.5rem]" pRipple /></p>
             </div>
-           
+
             <div>
 
             </div>
-            </div>
-            <div class="flex items-center gap-2">
-                <p-button  
-                icon="pi pi-refresh" 
-                class=""
-                pRipple
-            />
-                <h2 class="text-md font-semibold text-gray-800">1 minute ago</h2>
-            </div>
-        </div>
-    </p-card>
-    <p-card class="bg-white w-[400px] rounded-lg p-10 mb-6">
-        <div class="flex flex-col justify-between items-start gap-10">
-            <div class="flex items-center justify-between w-full">
-                <div>
-                <h2 class="text-2xl font-bold text-gray-800">Bank Balance</h2>
-                <p class="text-[3rem] font-semibold text-gray-600">&#8358;42,870.00   
-                <p-button  
-                icon="pi pi-eye" 
-                class="[&_.p-button-icon]:text-[1.5rem]"
-                pRipple
-            /></p>
-            </div>
-           
-            <div>
-
-            </div>
-            </div>
-            <div class="flex items-center gap-2">
-                <p-button  
-                icon="pi pi-refresh" 
-                class=""
-                pRipple
-            />
-                <h2 class="text-md font-semibold text-gray-800">5 minutes ago</h2>
-            </div>
-        </div>
-    </p-card>
-   </div>
-
-
-<p-card header="Transactions" class="p-3">
-  <p-table [value]="transactions" [paginator]="true" [rows]="5" [rowsPerPageOptions]="[5,10,25]">
-    <ng-template pTemplate="header">
-      <tr class="font-bold uppercase" >
-        <th>Date</th>
-        <th>Description</th>
-        <th>Spent (₦)</th>
-        <th>Received (₦)</th>
-        <th>Assigned To</th>
-        <th>Actions</th>
-      </tr>
-    </ng-template>
-
-    <ng-template pTemplate="body" let-transaction>
-      <tr>
-        <td>{{transaction.date | date:'mediumDate'}}</td>
-        <td>{{transaction.description}}</td>
-        <td>{{transaction.spent | currency:'NGN':'symbol-narrow'}}</td>
-        <td>{{transaction.received | currency:'NGN':'symbol-narrow'}}</td>
-        <td>
-          <p-tag class="text-2xl " [value]="transaction.assignedTo">
-          </p-tag>
-        </td>
-        <td>
-          <div class="flex gap-2">
-            <!-- <p-button *ngIf="transaction.spent > 0" 
-                      icon="pi pi-angle-down" 
-                      class="text-2xl"
-                      [text]="true"
-                      severity="secondary"
-                      id="special-button">
-              Review
-            </p-button> -->
-            <!-- <p-button icon="pi pi-check" 
-                      class=""
-                      severity="success">
-              Confirm
-            </p-button> -->
-
-            <button class="flex items-center border border-1 border-blue-600 rounded-lg px-10 py-3 gap-2 justify-center">
-              <span class="font-semibold">
-                Review
-              </span>
-              <i class="pi pi-angle-down text-2xl"></i>
-            </button>
           </div>
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
-</p-card>
-</div>
+          <div class="flex items-center gap-1">
+            <p-button icon="pi pi-refresh" class="" pRipple />
+            <h2 class="text-lg font-semibold text-gray-800/60">1 minute ago</h2>
+          </div>
+
+          <div class="rotate-[-30deg] absolute -top-5 -right-10">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+              stroke="currentColor" class="size-[15rem] opacity-20">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+            </svg>
+
+          </div>
 
 
-<style>
-    /* Add to your component's CSS file */
-/* :host ::ng-deep {
-  .p-datatable {
-    .p-datatable-thead > tr > th {
-      background-color: #f8f9fa;
-      font-weight: 600;
+        </div>
+
+      </p-card>
+      <p-card class="bg-white w-[400px] rounded-lg p-10 mb-6">
+        <div class="flex flex-col justify-between items-start gap-10 relative overflow-hidden">
+          <div class="flex items-center justify-between w-full">
+            <div>
+              <h2 class="text-2xl font-bold text-gray-800/60">Bank Balance</h2>
+              <p class="text-[3rem] font-semibold text-gray-600">&#8358;42,870.00
+                <p-button icon="pi pi-eye" class="[&_.p-button-icon]:text-[1.5rem]" pRipple />
+              </p>
+            </div>
+
+            <div>
+
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <p-button icon="pi pi-refresh" class="" pRipple />
+            <h2 class="text-lg font-semibold text-gray-800/60">1 minute ago</h2>
+          </div>
+
+          <div class="rotate-[-30deg] absolute -top-5 -right-10">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+              stroke="currentColor" class="size-[15rem] opacity-20">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" />
+            </svg>
+
+          </div>
+        </div>
+      </p-card>
+    </div>
+
+
+    <div class="px-10">
+      <p-card header="TRANSACTIONS" class="p-3 transaction-card">
+        <div class="card">
+          <p-table [value]="filteredTransactions"  [value]="transactions" [paginator]="true" [rows]="5" [tableStyle]="{ 'min-width': '50rem' }"
+            [rowsPerPageOptions]="[5, 10, 20]" styleClass="p-datatable-striped custom-table">
+            <ng-template pTemplate="header">
+              <tr class="font-bold uppercase">
+                <th style="display: flex; align-items: center;" pSortableColumn="date">
+                  <span>Date</span> &nbsp; <p-sortIcon field="date" />
+                </th>
+                <th style="width:25%">Description</th>
+                <th style="width:15%">Spent</th>
+                <th style="width:15%">Received</th>
+                <th style="width:15%">Assigned to</th>
+                <th style="width:10%">Action</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-transaction>
+              <tr>
+                <td>{{ transaction.date }}</td>
+                <td>{{ transaction.description }}</td>
+                <td>
+                  <span class="amount spent" *ngIf="transaction.spent">
+                    {{ (transaction.spent) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="amount received" *ngIf="transaction.received">
+                    {{ (transaction.received) }}
+                  </span>
+                  <span class="empty-received" *ngIf="!transaction.received">
+                    -
+                  </span>
+                </td>
+                <td>
+                  <span class="assigned-tag">{{ transaction.assignedTo }}</span>
+                </td>
+                <td>
+                  <p-button label="Review" size="small" severity="secondary" (onClick)="openReviewModal(transaction)"
+                    class="review-btn">
+                  </p-button>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </p-card>
+
+      <!-- Review Modal -->
+      <p-dialog header="Transaction Review" [(visible)]="showReviewModal" [modal]="true" [closable]="true"
+        [style]="{width: '450px'}" class="review-modal">
+
+        <div class="modal-content" *ngIf="selectedTransaction">
+          <div class="review-item">
+            <label>Date:</label>
+            <span>{{ selectedTransaction.date }}</span>
+          </div>
+
+          <div class="review-item">
+            <label>Description:</label>
+            <span>{{ selectedTransaction.description }}</span>
+          </div>
+
+          <div class="review-item">
+            <label>Amount Spent:</label>
+            <span class="amount spent">
+              {{ (selectedTransaction.spent) }}
+            </span>
+          </div>
+
+          <div class="review-item">
+            <label>Amount Received:</label>
+            <span *ngIf="selectedTransaction.received" class="amount received">
+              {{ (selectedTransaction.received) }}
+            </span>
+            <span *ngIf="!selectedTransaction.received" class="empty-received">
+              No amount received
+            </span>
+          </div>
+
+          <div class="review-item">
+            <label>Assigned To:</label>
+            <span class="assigned-tag">{{ selectedTransaction.assignedTo }}</span>
+          </div>
+
+          <div class="review-actions">
+            <p-button label="Approve" icon="pi pi-check" severity="success" size="small" class="mr-2">
+            </p-button>
+            <p-button label="Reject" icon="pi pi-times" severity="danger" size="small">
+            </p-button>
+          </div>
+        </div>
+
+        <ng-template pTemplate="footer">
+          <p-button label="Close" icon="pi pi-times" (onClick)="closeReviewModal()" severity="secondary">
+          </p-button>
+        </ng-template>
+      </p-dialog>
+    </div>
+  </div>
+
+
+  <style>
+    .transaction-card {
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      border: none;
+      background: #ffffff;
     }
-    
-    .p-datatable-tbody > tr {
-      &:hover {
-        background-color: #f8f9fa;
+
+    .transaction-card .p-card-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-weight: 600;
+      font-size: 1.2rem;
+      padding: 1.5rem;
+      border-radius: 12px 12px 0 0;
+    }
+
+    .custom-table {
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .custom-table .p-datatable-thead>tr>th {
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 600;
+      padding: 1rem;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .custom-table .p-datatable-tbody>tr>td {
+      padding: 1rem;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+
+    .custom-table .p-datatable-tbody>tr:hover {
+      background: #f8fafc;
+      transition: background-color 0.2s ease;
+    }
+
+    .amount {
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    .amount.spent {
+      font-size: 1.3rem;
+    }
+
+    .amount.received {
+      font-size: 1.3rem;
+    }
+
+    .empty-received {
+      color: #94a3b8;
+      font-style: italic;
+      font-size: 0.9rem;
+    }
+
+    .assigned-tag {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .review-btn {
+      border-radius: 6px;
+      border: 1px dashed #1d4ed8;
+      background-color: #1d4ed8;
+      color: white;
+      padding: 1rem 2rem;
+      margin: 1rem 0rem;
+    }
+
+    .review-btn .p-button {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+    }
+
+    /* Modal Styles */
+    .review-modal .p-dialog-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 8px 8px 0 0;
+    }
+
+    .modal-content {
+      padding: 1rem 0;
+    }
+
+    .review-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .review-item:last-child {
+      border-bottom: none;
+    }
+
+    .review-item label {
+      font-weight: 600;
+      color: #374151;
+      min-width: 120px;
+    }
+
+    .review-item span {
+      flex: 1;
+      text-align: right;
+    }
+
+    .review-actions {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 2px solid #f1f5f9;
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .review-actions .p-button {
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      border-radius: 6px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .px-10 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+
+      .custom-table .p-datatable-thead>tr>th,
+      .custom-table .p-datatable-tbody>tr>td {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+      }
+
+      .review-modal .p-dialog {
+        width: 95vw !important;
+        margin: 1rem;
+      }
+
+      .review-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+      }
+
+      .review-item span {
+        text-align: left;
       }
     }
-  }
-} */
+
+    /* Pagination and dropdown styling */
+.custom-table .p-paginator {
+  padding: 1rem;
+  justify-content: center;
+  background-color: #f1f5f9;
+  border-top: 1px solid #e2e8f0;
+}
+
+.custom-table .p-dropdown,
+.custom-table .p-paginator .p-paginator-pages .p-paginator-page,
+.custom-table .p-paginator .p-paginator-current {
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin: 0 0.25rem;
+  font-size: 0.9rem;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  transition: all 0.3s ease;
+}
+
+.custom-table .p-dropdown:hover,
+.custom-table .p-paginator .p-paginator-page:hover {
+  background-color: #e0e7ff;
+  cursor: pointer;
+}
+
+.custom-table .p-paginator .p-paginator-page.p-highlight {
+  background-color: #1d4ed8;
+  color: white;
+  font-weight: bold;
+}
 
 
- #special-button {
-  font-size: 1.3rem;
-  width: 100%;
- }
-</style>
+.review-btn:hover {
+  background-color: #2563eb;
+  transform: scale(1.05);
+  transition: all 0.2s ease-in-out;
+}
+
+  </style>
