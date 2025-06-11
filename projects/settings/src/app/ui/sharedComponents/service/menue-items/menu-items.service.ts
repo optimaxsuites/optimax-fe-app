@@ -76,11 +76,10 @@ export class MenuItemsService {
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'fas fa-calculator', // PrimeNG icon class
       submenu: [
-        { label: 'Transactions', route: this.navigationLink.getLink('accountingLink'), roles: ['ROLE_USER'], icon: 'fas fa-file-alt' },
-        { label: 'General ledger', route: this.navigationLink.getLink('accountingLink'), roles: ['ROLE_USER'], icon: 'fas fa-file-alt' },
-        { label: 'Reconciliation', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        { label: '', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        { label: 'Reports', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
+        { label: 'Transactions', route: this.navigationLink.getLink('transactionLink'), roles: ['ROLE_USER'], icon: 'fas fa-file-alt' },
+        { label: 'General ledger', route: this.navigationLink.getLink(''), roles: ['ROLE_USER'], icon: 'fas fa-file-alt' },
+        { label: 'Reconciliation', route:  this.navigationLink.getLink(''), roles: ['ROLE_USER'], icon: 'pi pi-file' },
+        { label: 'Reports', route: this.navigationLink.getLink('accountingReportLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
 
       ],
       locked: true,

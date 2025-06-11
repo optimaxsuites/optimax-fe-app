@@ -8,15 +8,15 @@ import { AccountingReportsComponent } from './ui/view/accounting-reports/account
 const routes: Routes = [
   {
     path: '',
-    redirectTo: '/admin/accounting/dhwy7829iokdw',
+    redirectTo: 'admin/accounting/transaction/dhwy7829iokdw',
     pathMatch: 'full',
   },
   {
-      path: 'admin/accounting/:uuid',
+      path: 'admin/accounting/transaction/:uuid',
       component: AccountingPageComponent,
     },
     {
-      path: 'AccountingReports',
+      path: 'admin/accounting/accounting-reports/:uuid',
       component: AccountingReportsComponent,
     },
     {
@@ -27,7 +27,7 @@ const routes: Routes = [
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forChild(routes)],
   exports: [RouterModule]
 })
 export class AppRoutingModule { }

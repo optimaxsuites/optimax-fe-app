@@ -105,8 +105,8 @@ import { PaginatorModule } from 'primeng/paginator';
     ChartOfAccountsComponent,
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     CommonModule,
     AppRoutingModule,
     FormsModule,
