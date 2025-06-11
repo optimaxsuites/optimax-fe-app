@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 
 interface Room {
   id: number;
@@ -149,7 +150,7 @@ export class AllroomsComponent implements OnInit {
 
   rooms: Room[] = [];
 
-  constructor() {}
+  constructor(private router: Router) {}
 
   ngOnInit(): void {
     this.rooms = [...this.sampleRooms];
@@ -162,6 +163,11 @@ export class AllroomsComponent implements OnInit {
     const halfStar = rating % 2 >= 0.5 ? '½' : '';
     const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
     return '★'.repeat(fullStars) + halfStar + '☆'.repeat(emptyStars);
+  }
+
+  navigateTobooking() {
+    const uuid = 'abc123';
+    this.router.navigate([`/user/multiple-rooms/uuid`]);
   }
 
   getBedType(capacity: number): string {

@@ -7,8 +7,4 @@ import { Component } from '@angular/core';
 })
 export class RoomdesignComponent {
   darkMode = false;
-
-  toggleDarkMode() {
-    this.darkMode = !this.darkMode;
-  }
 }
