@@ -36,7 +36,7 @@ export interface ProductData extends ProductJSONFormat {
   productVariant: any;
   product: any;
   purchasePrice: any;
-  branch: any;
+  branch: BranchDTO;
   branchDetails?: any;
   imageUrl$?: Observable<unknown> | Subscribable<unknown> | Promise<unknown>;
   showMenu: any;

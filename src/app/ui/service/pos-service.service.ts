@@ -22,7 +22,7 @@ import { RandomTokenService } from "../sharedComponent/service/random-token/rand
 import { NavigationLinksService } from "../sharedComponent/service/navigation-links/navigation-links.service";
 import { environment } from "../sharedComponent/service/environments/environment";
 import { ProductCategories } from "../models/enums";
-import { supplierData } from "../models/interface";
+import { ProductData, supplierData } from "../models/interface";
 import { ImageCacheService } from "./image-cache.service";
 import {
   OrderGET,
@@ -148,11 +148,11 @@ export class PosServiceService {
       );
   }
 
-  private products$!: Observable<any>;
+  private products$!: Observable<ProductData[]>;
   getProducts() {
     if (!this.products$) {
       this.products$ = this.http
-        .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/products")
+        .get<ProductData[]>(this.getBaseApiUrl() + "/x/api/v2/pos/products")
         .pipe(
           catchError(this.handleError),
           shareReplay(this.shareReplayOptions),
@@ -304,7 +304,8 @@ export class PosServiceService {
   getOrderByOrderNumber(id: number) {
     return this.http
       .get<any>(
-        this.getBaseApiUrl() + `/x/api/v2/pos/orders/get/by/orderNumer?orderNumber=${id}`
+        this.getBaseApiUrl() +
+          `/x/api/v2/pos/orders/get/by/orderNumer?orderNumber=${id}`,
       )
       .pipe(catchError(this.handleError));
   }

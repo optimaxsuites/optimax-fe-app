@@ -3,30 +3,30 @@
 // For a full list of overridable settings, and general information on folder-specific settings,
 // see the documentation: https://zed.dev/docs/configuring-zed#settings-files
 {
-  "autosave": "off",
+  "autosave": "off"
   // disable the built-in HTML extension auto-install if you like
-  "auto_install_extensions": {
-    "html": false
-  },
+  // "auto_install_extensions": {
+  //   "html": false
+  // },
 
-  "languages": {
-    "HTML": {
-      // prepend "angular", then fall back to the rest (...)
-      "language_servers": ["angular", "!vscode-html-language-server", "..."]
-    },
-    "TypeScript": {
-      // ensure TS files also use Angular first
-      "language_servers": ["angular", "..."]
-    }
-  },
+  // "languages": {
+  //   "HTML": {
+  //     // prepend "angular", then fall back to the rest (...)
+  //     "language_servers": ["angular", "!vscode-html-language-server", "..."]
+  //   },
+  //   "TypeScript": {
+  //     // ensure TS files also use Angular first
+  //     "language_servers": ["angular", "..."]
+  //   }
+  // },
 
-  "lsp": {
-    "angular": {
-      "initialization_options": {
-        // A workaround since it's bringing up tonnes of false positives.
-        // TODO: Remove this later
-        "diagnostics": false
-      }
-    }
-  }
+  // "lsp": {
+  //   "angular": {
+  //     "initialization_options": {
+  //       // A workaround since it's bringing up tonnes of false positives.
+  //       // TODO: Remove this later
+  //       "diagnostics": false
+  //     }
+  //   }
+  // }
 }
