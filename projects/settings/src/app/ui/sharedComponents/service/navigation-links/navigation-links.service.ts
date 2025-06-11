@@ -32,7 +32,7 @@ export class NavigationLinksService {
 
 
 
-    this.links['accountingLink'] = '/admin/accounting/' +uuidV4();
+    this.links['transactionLink'] = '/admin/accounting/transaction' +uuidV4();
 
 // links =========================================================================================================================
     this.links['']
