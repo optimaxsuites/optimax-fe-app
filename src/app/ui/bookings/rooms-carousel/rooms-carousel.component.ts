@@ -50,26 +50,9 @@ export class RoomsCarouselComponent implements OnInit, OnDestroy {
         'Separate Living Area',
       ],
     },
+
     {
       id: 3,
-      name: 'Presidential Suite',
-      type: 'suite',
-      image:
-        'https://images.unsplash.com/photo-1564501049412-61c2a3083791?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      price: 500,
-      description: 'Luxurious suite with panoramic views and premium services',
-      amenities: [
-        'Free WiFi',
-        'Air Conditioning',
-        'Mini Bar',
-        '24/7 Room Service',
-        'Panoramic View',
-        'Private Balcony',
-        'Butler Service',
-      ],
-    },
-    {
-      id: 4,
       name: 'Deluxe Ocean View',
       type: 'deluxe',
       image:
@@ -82,23 +65,6 @@ export class RoomsCarouselComponent implements OnInit, OnDestroy {
         'Mini Bar',
         'Room Service',
         'Ocean View',
-      ],
-    },
-    {
-      id: 5,
-      name: 'Business Executive',
-      type: 'executive',
-      image:
-        'https://images.unsplash.com/photo-1590490360182-c33d57733427?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      price: 250,
-      description:
-        'Perfect for business travelers with work desk and meeting area',
-      amenities: [
-        'Free WiFi',
-        'Air Conditioning',
-        'Work Desk',
-        'Meeting Area',
-        'Business Center Access',
       ],
     },
   ];

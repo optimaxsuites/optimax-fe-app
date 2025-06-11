@@ -59,6 +59,7 @@ import { RoomsheroComponent } from './ui/bookings/roomshero/roomshero.component'
 import { RoomdesignComponent } from './ui/bookings/roomdesign/roomdesign.component';
 import { RoomfooterComponent } from './ui/bookings/roomfooter/roomfooter.component';
 import { BookingformComponent } from './ui/bookings/bookingform/bookingform.component';
+import { MultipleBookingsComponent } from './ui/bookings/multiple-bookings/multiple-bookings.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -99,6 +100,7 @@ import { BookingformComponent } from './ui/bookings/bookingform/bookingform.comp
     RoomdesignComponent,
     RoomfooterComponent,
     BookingformComponent,
+    MultipleBookingsComponent,
   ],
   imports: [
     BrowserAnimationsModule,
