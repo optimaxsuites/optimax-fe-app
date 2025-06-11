@@ -1,1 +1,343 @@
-<p>accounting-reports works!</p>
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css"
+/>
+
+<div class="container">
+    <div class="card filter-card">
+  <div class="header">
+    <h1 class="main-title">Accounting Reports</h1>
+    <div class="button-group">
+      <button class="btn btn-secondary">
+        <i class="ri-download-line icon-margin-right"></i>
+        Export
+      </button>
+      <button class="btn btn-primary">
+        <i class="ri-add-line icon-margin-right"></i>
+        New Report
+      </button>
+    </div>
+  </div>
+  </div>
+
+  <!-- <div class="card filter-card">
+    <div class="grid grid-4-cols gap-4">
+      <div>
+        <label class="label">Report Type</label>
+        <div class="relative">
+          <select class="input-select">
+            <option>Financial Statement</option>
+            <option>Balance Sheet</option>
+            <option>Income Statement</option>
+            <option>Cash Flow</option>
+            <option>Tax Summary</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="label">Date Range</label>
+        <div class="relative">
+          <select class="input-select">
+            <option>This Month</option>
+            <option>Last Month</option>
+            <option>This Quarter</option>
+            <option>Last Quarter</option>
+            <option>This Year</option>
+            <option>Custom Range</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="label">From</label>
+        <div class="relative">
+          <input type="date" class="input-field" value="2025-05-01" />
+        </div>
+      </div>
+
+      <div>
+        <label class="label">To</label>
+        <div class="relative">
+          <input type="date" class="input-field" value="2025-06-09" />
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-end-container mt-4">
+      <button class="btn btn-primary">Generate Report</button>
+    </div>
+  </div> -->
+
+  <div class="grid grid-4-cols gap-4 mb-6">
+    <div class="card summary-card">
+      <div class="flex-between-center">
+        <h3 class="summary-title">Total Revenue</h3>
+        <div class="icon-circle bg-blue-light text-blue-dark">
+          <i class="ri-line-chart-line"></i>
+        </div>
+      </div>
+      <p class="summary-value">₦248,927.43</p>
+      <div class="flex-items-center mt-2 text-sm">
+        <span class="text-green flex-items-center">
+          <i class="ri-arrow-up-s-line"></i>
+          12.5%
+        </span>
+        <span class="text-gray-medium ml-2">vs last month</span>
+      </div>
+    </div>
+
+    <div class="card summary-card">
+      <div class="flex-between-center">
+        <h3 class="summary-title">Total Expenses</h3>
+        <div class="icon-circle bg-red-light text-red-dark">
+          <i class="ri-money-dollar-circle-line"></i>
+        </div>
+      </div>
+      <p class="summary-value">₦142,583.21</p>
+      <div class="flex-items-center mt-2 text-sm">
+        <span class="text-red flex-items-center">
+          <i class="ri-arrow-up-s-line"></i>
+          8.3%
+        </span>
+        <span class="text-gray-medium ml-2">vs last month</span>
+      </div>
+    </div>
+
+    <div class="card summary-card">
+      <div class="flex-between-center">
+        <h3 class="summary-title">Net Profit</h3>
+        <div class="icon-circle bg-green-light text-green-dark">
+          <i class="ri-funds-line"></i>
+        </div>
+      </div>
+      <p class="summary-value">₦106,344.22</p>
+      <div class="flex-items-center mt-2 text-sm">
+        <span class="text-green flex-items-center">
+          <i class="ri-arrow-up-s-line"></i>
+          15.2%
+        </span>
+        <span class="text-gray-medium ml-2">vs last month</span>
+      </div>
+    </div>
+
+    <div class="card summary-card">
+      <div class="flex-between-center">
+        <h3 class="summary-title">Accounts Receivable</h3>
+        <div class="icon-circle bg-purple-light text-purple-dark">
+          <i class="ri-wallet-3-line"></i>
+        </div>
+      </div>
+      <p class="summary-value">₦53,842.67</p>
+      <div class="flex-items-center mt-2 text-sm">
+        <span class="text-red flex-items-center">
+          <i class="ri-arrow-down-s-line"></i>
+          3.8%
+        </span>
+        <span class="text-gray-medium ml-2">vs last month</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-2-cols gap-6 mb-6">
+    <div class="card chart-card">
+      <div class="flex-between-center mb-4">
+        <h3 class="card-title">Revenue vs Expenses</h3>
+        <div class="relative">
+          <select class="input-select-sm">
+            <option>Last 6 Months</option>
+            <option>Last 12 Months</option>
+            <option>YTD</option>
+          </select>
+        </div>
+      </div>
+      <div id="revenue-chart" class="chart-placeholder"></div>
+    </div>
+
+    <div class="card chart-card">
+      <div class="flex-between-center mb-4">
+        <h3 class="card-title">Expense Breakdown</h3>
+        <div class="relative">
+          <select class="input-select-sm">
+            <option>This Month</option>
+            <option>Last Month</option>
+            <option>This Quarter</option>
+            <option>Last Quarter</option>
+          </select>
+        </div>
+      </div>
+      <div id="expense-chart" class="chart-placeholder"></div>
+    </div>
+  </div>
+
+  <!-- Recent Transactions and Saved Reports -->
+  <div class="card recent-transactions-card">
+    <div class="flex-between-center card-header-bordered">
+      <h3 class="card-title">Recently Generated Reports</h3>
+      <button class="text-primary text-sm font-medium">View All</button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="full-width-table">
+        <thead>
+          <tr class="table-header-row">
+            <th class="table-header-cell">Report Name</th>
+            <th class="table-header-cell">Date</th>
+            <th class="table-header-cell">Generated By</th>
+            <th class="table-header-cell">Type</th>
+            <th class="table-header-cell">Status</th>
+            <th class="table-header-cell text-align-right">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-light">
+          <tr>
+            <td class="table-data-cell text-gray-dark">
+              Q2 Financial Statement
+            </td>
+            <td class="table-data-cell text-gray-medium">Jun 08, 2025</td>
+            <td class="table-data-cell text-gray-medium">Rebecca Thompson</td>
+            <td class="table-data-cell text-gray-medium">Financial</td>
+            <td class="table-data-cell">
+              <span class="status-badge status-completed">Completed</span>
+            </td>
+            <td class="table-data-cell text-align-right">
+              <button class="action-button">
+                <i class="ri-more-2-fill"></i>
+              </button>
+            </td>
+          </tr>
+          <tr>
+            <td class="table-data-cell text-gray-dark">
+              Monthly Balance Sheet
+            </td>
+            <td class="table-data-cell text-gray-medium">Jun 07, 2025</td>
+            <td class="table-data-cell text-gray-medium">Samuel Adeyemi</td>
+            <td class="table-data-cell text-gray-medium">Balance Sheet</td>
+            <td class="table-data-cell">
+              <span class="status-badge status-completed">Completed</span>
+            </td>
+            <td class="table-data-cell text-align-right">
+              <button class="action-button">
+                <i class="ri-more-2-fill"></i>
+              </button>
+            </td>
+          </tr>
+          <tr>
+            <td class="table-data-cell text-gray-dark">Annual Tax Report</td>
+            <td class="table-data-cell text-gray-medium">Jun 05, 2025</td>
+            <td class="table-data-cell text-gray-medium">Fatima Bello</td>
+            <td class="table-data-cell text-gray-medium">Tax</td>
+            <td class="table-data-cell">
+              <span class="status-badge status-pending">Pending</span>
+            </td>
+            <td class="table-data-cell text-align-right">
+              <button class="action-button">
+                <i class="ri-more-2-fill"></i>
+              </button>
+            </td>
+          </tr>
+          <tr>
+            <td class="table-data-cell text-gray-dark">Income Statement</td>
+            <td class="table-data-cell text-gray-medium">Jun 03, 2025</td>
+            <td class="table-data-cell text-gray-medium">Chinedu Okafor</td>
+            <td class="table-data-cell text-gray-medium">Financial</td>
+            <td class="table-data-cell">
+              <span class="status-badge status-completed">Completed</span>
+            </td>
+            <td class="table-data-cell text-align-right">
+              <button class="action-button">
+                <i class="ri-more-2-fill"></i>
+              </button>
+            </td>
+          </tr>
+          <tr>
+            <td class="table-data-cell text-gray-dark">Cash Flow Report</td>
+            <td class="table-data-cell text-gray-medium">Jun 01, 2025</td>
+            <td class="table-data-cell text-gray-medium">Aisha Suleiman</td>
+            <td class="table-data-cell text-gray-medium">Cash Flow</td>
+            <td class="table-data-cell">
+              <span class="status-badge status-completed">Completed</span>
+            </td>
+            <td class="table-data-cell text-align-right">
+              <button class="action-button">
+                <i class="ri-more-2-fill"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination-container">
+      <div class="pagination-info">Showing 1 to 5 of 42 entries</div>
+      <div class="pagination-buttons">
+        <button class="pagination-btn disabled" disabled>Previous</button>
+        <button class="pagination-btn active">1</button>
+        <button class="pagination-btn">2</button>
+        <button class="pagination-btn">3</button>
+        <button class="pagination-btn">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card saved-reports-card">
+    <div class="flex-between-center card-header-bordered">
+      <h3 class="card-title">Saved Reports</h3>
+      <button class="text-primary text-sm font-medium">Manage Reports</button>
+    </div>
+
+    <div class="p-4 grid grid-3-cols gap-4">
+      <div class="report-card hover-border-primary">
+        <div class="flex-start-between">
+          <div>
+            <h4 class="report-title">Q2 Financial Statement</h4>
+            <p class="report-date">Last generated: Jun 01, 2025</p>
+          </div>
+          <div class="icon-circle bg-blue-light text-blue-dark">
+            <i class="ri-file-chart-2-line"></i>
+          </div>
+        </div>
+        <div class="flex mt-4 space-x-2">
+          <button class="flex-1 btn btn-primary-sm">View</button>
+          <button class="btn btn-icon-secondary">
+            <i class="ri-download-line text-gray-medium"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="report-card hover-border-primary">
+        <div class="flex-start-between">
+          <div>
+            <h4 class="report-title">Monthly Balance Sheet</h4>
+            <p class="report-date">Last generated: May 31, 2025</p>
+          </div>
+          <div class="icon-circle bg-green-light text-green-dark">
+            <i class="ri-file-list-3-line"></i>
+          </div>
+        </div>
+        <div class="flex mt-4 space-x-2">
+          <button class="flex-1 btn btn-primary-sm">View</button>
+          <button class="btn btn-icon-secondary">
+            <i class="ri-download-line text-gray-medium"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="report-card hover-border-primary">
+        <div class="flex-start-between">
+          <div>
+            <h4 class="report-title">Annual Tax Report</h4>
+            <p class="report-date">Last generated: Jan 15, 2025</p>
+          </div>
+          <div class="icon-circle bg-purple-light text-purple-dark">
+            <i class="ri-government-line"></i>
+          </div>
+        </div>
+        <div class="flex mt-4 space-x-2">
+          <button class="flex-1 btn btn-primary-sm">View</button>
+          <button class="btn btn-icon-secondary">
+            <i class="ri-download-line text-gray-medium"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
