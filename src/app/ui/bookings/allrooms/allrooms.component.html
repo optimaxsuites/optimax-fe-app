@@ -4,9 +4,9 @@
 <div
   class="min-h-screen pt-5 bg-gray-50 dark:bg-gray-900 transition-colors duration-300"
 >
-  <section class="px-12 py-4">
+  <section class="px-12 py-8 mx-auto max-w-4xl">
     <h2
-      class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4 mt-6 ml-2"
+      class="mt-6 mb-4 text-center text-3xl font-bold text-gray-900 dark:text-gray-100"
     >
       <span
         class="bg-gradient-to-r from-rose-600 via-orange-500 to-amber-600 dark:from-purple-400 dark:via-pink-400 dark:to-cyan-400 bg-clip-text text-transparent"
@@ -16,7 +16,7 @@
     </h2>
 
     <p
-      class="text-base text-gray-700 dark:text-gray-300 leading-relaxed ml-4 max-w-2xl"
+      class="max-w-2xl mx-auto text-center text-base text-gray-700 dark:text-gray-300 leading-relaxed"
     >
       Browse through our list of available rooms, each designed with your
       comfort in mind. Whether you’re planning a short stay or a longer visit,
@@ -28,9 +28,10 @@
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="flex flex-col lg:flex-row gap-6">
       <!-- Sidebar Filters -->
-      <div class="lg:w-72 flex-shrink-0">
+      <div class="lg:w-72 flex-shrink-0 mx-auto mb-8">
+        <!-- Added mx-auto, mt-24 and mb-8 -->
         <div
-          class="bg-white border border-gray-400 dark:bg-gray-800 rounded-xl p-6 sticky top-16 shadow-sm dark:border-white/30 z-10"
+          class="bg-white border border-gray-400 dark:bg-gray-800 rounded-xl p-6 sticky top-24 shadow-sm dark:border-white/30 z-10"
         >
           <h3
             class="font-semibold mb-6 text-gray-900 dark:text-gray-100 text-lg tracking-tight"
@@ -166,27 +167,20 @@
       <div class="flex-1">
         <!-- Sort Options -->
         <div
-          class="mb-6 flex items-center justify-between bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-400 dark:border-white/30"
+          class="mb-6 flex items-center justify-between px-4 bg-white dark:bg-gray-800 rounded-xl p-2 shadow-sm border border-gray-400 dark:border-white/30"
         >
           <div
             class="text-sm text-white dark:text-white font-medium bg-gray-500 dark:bg-emerald-600 px-3 py-1 rounded-xl shadow-lg"
           >
             {{ filteredRooms.length }} rooms available
           </div>
-          <div class="flex items-center gap-3">
-            <label class="text-sm text-gray-600 dark:text-gray-400 font-medium">
-              Sort by:
-            </label>
-            <select
-              class="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-500 focus:border-transparent"
-              [(ngModel)]="sortBy"
-              (change)="sortRooms()"
+          <div class="flex items-center mb-4 gap-3">
+            <button
+              (click)="navigateTobooking()"
+              class="w-full mt-4 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-gray-900 px-4 py-3 rounded-lg font-medium text-sm transition-all shadow-sm hover:shadow-md"
             >
-              <option value="recommended">Recommended</option>
-              <option value="price-low">Price (Low to High)</option>
-              <option value="price-high">Price (High to Low)</option>
-              <option value="rating">Rating</option>
-            </select>
+              Multiple Bookings
+            </button>
           </div>
         </div>
 
@@ -207,23 +201,7 @@
                   [alt]="room.name"
                   class="w-full h-full object-cover"
                 />
-                <button
-                  class="absolute top-3 right-3 p-2 rounded-full bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-600 transition-all shadow-sm"
-                >
-                  <svg
-                    class="w-5 h-5 text-gray-600 dark:text-gray-300"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    ></path>
-                  </svg>
-                </button>
+
                 <div
                   class="absolute top-3 left-3"
                   *ngIf="room.amenities.includes('Free cancellation')"
@@ -313,7 +291,7 @@
                     <button
                       class="bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-gray-900 px-4 py-3 rounded-lg font-medium text-sm transition-all w-full shadow-sm hover:shadow-md"
                     >
-                      View Details
+                      Book Now
                     </button>
                   </div>
                 </div>
