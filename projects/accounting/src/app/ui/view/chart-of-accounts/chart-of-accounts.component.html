@@ -13,7 +13,7 @@
         <i class="pi pi-search"></i>
         <input pInputText type="text" (input)="applyFilter($event)" placeholder="Search accounts..." />
       </span>
-      <p-paginator [rows]="rows" [totalRecords]="accounts?.length" 
+      <p-paginator [rows]="rows" [totalRecords]="accounts.length" 
                   (onPageChange)="onPageChange($event)" 
                   [rowsPerPageOptions]="[10, 25, 50]"
                   styleClass="p-paginator-sm"></p-paginator>
