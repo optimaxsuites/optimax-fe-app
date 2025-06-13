@@ -83,6 +83,7 @@ import { NavTabComponent } from "./ui/sharedComponent/view/nav-tab/nav-tab.compo
 import { AccountingReportsComponent } from './ui/view/accounting-reports/accounting-reports.component';
 import { ChartOfAccountsComponent } from './ui/view/chart-of-accounts/chart-of-accounts.component';
 import { PaginatorModule } from 'primeng/paginator';
+import { TransactionSideModalComponent } from './ui/view/transaction-side-modal/transaction-side-modal.component';
 
 @NgModule({
   declarations: [
@@ -103,6 +104,7 @@ import { PaginatorModule } from 'primeng/paginator';
     TransactionsComponent,
     AccountingReportsComponent,
     ChartOfAccountsComponent,
+    TransactionSideModalComponent
   ],
   imports: [
     BrowserModule,

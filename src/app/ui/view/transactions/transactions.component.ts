@@ -1,112 +1,147 @@
-import { Component, Type } from '@angular/core';
+import { Component, OnInit, Type } from '@angular/core';
 import { SalesOrderComponent } from '../sales-order/sales-order.component';
 import { QuotationComponent } from '../quotation/quotation.component';
 import { BookKeepingComponent } from '../book-keeping/book-keeping.component';
-import { formatCurrency } from '@angular/common';
 
 export interface TabConfig {
   name: string;
   component: any;
   hasDropdown?: boolean;
-  dropdownOptions?: DropdownOption[]; 
-  role?: string
+  dropdownOptions?: DropdownOption[];
+  role?: string;
 }
 
 export interface DropdownOption {
-  label: string; 
-  action: string; 
+  label: string;
+  action: string;
   component: Type<any>;
 }
 
 interface Transaction {
+  id: number;
   date: string;
   description: string;
   spent: number | null;
   received: number | null;
   assignedTo: string;
-  id: number;
-};
-
-
+  reviewed?: boolean;
+}
 
 @Component({
   selector: 'app-transactions',
   templateUrl: './transactions.component.html',
-  styleUrl: './transactions.component.scss'
+  styleUrls: ['./transactions.component.scss']
 })
-export class TransactionsComponent {
-searchTerm = '';
-filteredTransactions: Transaction[] = []; // bind this to p-table
+export class TransactionsComponent implements OnInit {
+  searchTerm = '';
+  selectedTransaction: Transaction | null = null;
+  isReviewModalOpen = false;
 
-filterTransactions() {
-  const term = this.searchTerm.toLowerCase();
-  this.filteredTransactions = this.transactions.filter(t =>
-    t.description?.toLowerCase().includes(term) ||
-    t.assignedTo?.toLowerCase().includes(term) ||
-    t.date?.toLowerCase().includes(term)
-  );
-}
+  selectedFilter = '';
+  dateFrom = '';
+  dateTo = '';
 
+  currentPage = 1;
+  rowsPerPage = 5;
+
+  transactions: Transaction[] = [
+    {
+      id: 1,
+      date: '2024-10-30',
+      description: 'Blending machine',
+      spent: 4400.00,
+      received: null,
+      assignedTo: 'Review and Confirm',
+      reviewed: false
+    },
+    // Add more transactions...
+  ];
+
+  filteredTransactions: Transaction[] = [];
 
   tabsConfig: TabConfig[] = [
     {
       name: 'Report',
-      component: SalesOrderComponent,
+      component: SalesOrderComponent
     },
-    { name: 'Products', component: QuotationComponent },
-    { name: 'Inventory', component: BookKeepingComponent },
-
-    // {
-    //   name: 'Settings',
-    //   component: null,
-    //   hasDropdown: true,
-    //   dropdownOptions: [
-    //     { label: 'Configurations', action: 'configurations', component: ConfigurationComponent },
-    //     { label: 'Users', action: 'users', component: ManageUsersComponent }
-    //   ]
-    // }
-  ];
-    transactions: Transaction[] = [
     {
-      id: 1,
-      date: '10/30/2024',
-      description: 'Blending machine',
-      spent: 4400,
-      received: null,
-      assignedTo: 'Kitchen'
+      name: 'Products',
+      component: QuotationComponent
+    },
+    {
+      name: 'Inventory',
+      component: BookKeepingComponent
     }
-    // Add more transactions as needed
   ];
 
-  selectedTransaction: Transaction | null = null;
-  showReviewModal = false;
+  ngOnInit() {
+    this.applyFilter();
+  }
+
+  get paginatedTransactions(): Transaction[] {
+    const start = (this.currentPage - 1) * this.rowsPerPage;
+    return this.filteredTransactions.slice(start, start + this.rowsPerPage);
+  }
+
+  get totalPages(): number {
+    return Math.ceil(this.filteredTransactions.length / this.rowsPerPage);
+  }
+
+  applyFilter() {
+    let filtered = [...this.transactions];
+    const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+
+    if (this.selectedFilter === 'unreviewed') {
+      filtered = filtered.filter(t => !t.reviewed);
+    } else if (this.selectedFilter === 'today') {
+      filtered = filtered.filter(t => new Date(t.date).toDateString() === today);
+    } else if (this.selectedFilter === 'yesterday') {
+      filtered = filtered.filter(t => new Date(t.date).toDateString() === yesterday);
+    }
+
+    if (this.dateFrom && this.dateTo) {
+      const from = new Date(this.dateFrom);
+      const to = new Date(this.dateTo);
+      filtered = filtered.filter(t => {
+        const date = new Date(t.date);
+        return date >= from && date <= to;
+      });
+    }
+
+    this.filteredTransactions = filtered;
+    this.currentPage = 1;
+  }
 
   openReviewModal(transaction: Transaction) {
     this.selectedTransaction = transaction;
-    this.showReviewModal = true;
+    this.isReviewModalOpen = true;
   }
 
   closeReviewModal() {
-    this.showReviewModal = false;
     this.selectedTransaction = null;
+    this.isReviewModalOpen = false;
+  }
+
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+    }
   }
 
   get currencyFormatter() {
-  return (amount: number | null): string => {
-    if (!amount) return '';
-    return `₦${amount.toLocaleString()}`;
-  };
-}
-  // getSeverity(category: string): string {
-  //   switch (category) {
-  //     case 'Stationary Expenses':
-  //       return 'warning';
-  //     case 'Accounts Receivable':
-  //       return 'success';
-  //     case 'Salaries':
-  //       return 'danger';
-  //     default:
-  //       return 'info';
-  //   }
-  // }
+    return (amount: number | null): string => {
+      if (!amount) return '';
+      return `₦${amount.toLocaleString()}`;
+    };
+  }
+
+  handleSearchChange(term: string) {
+    this.searchTerm = term;
+    this.filteredTransactions = this.transactions.filter(t =>
+      t.description?.toLowerCase().includes(term.toLowerCase()) ||
+      t.assignedTo?.toLowerCase().includes(term.toLowerCase()) ||
+      t.date?.toLowerCase().includes(term.toLowerCase())
+    );
+  }
 }
