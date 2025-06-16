@@ -71,24 +71,125 @@
 
   <!-- Container for displaying the products -->
   <div class="c-product-container">
+
+    <!-- Shopping cart button -->
+    <div role="button" class="fixed right-0 top-[40%] z-10 p-4 rounded-l-2xl bg-green-500/85 flex justify-center items-center transition-all hover:bg-opacity-75 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-30 scale-110 md:scale-125 lg:scale-150" (click)="isCartOpen=!isCartOpen">
+      <i class="fa-solid fa-cart-shopping"></i>
+    </div>
+
     @for (product of filteredProducts(); track $index) {
 
     <div
       class="border rounded-xl p-2 cursor-pointer h-[20rem] product-card relative transition-transform duration-200  max-h-fit bg-white hover:scale-105 hover:shadow-md"
+        (click)="selectedProduct = product; product.variants.length && isVariantModalOpen = true"
     >
       <!-- TODO: Is it alright to load images like this? -->
       <img
-        [src]="productImgMap.get(product.id)"
+        [src]="getProductImage(product) |async"
         [alt]="product.name"
         class="w-full h-2/3 object-cover rounded-xl"
       />
-      <div class="flex flex-col w-full mt-4 px-2 h-[10rem] gap-3">
-        <p class="whitespace-nowrap overflow-hidden text-ellipsis h-10">
-          {{ product.name }}
-        </p>
-        <p class="h-8">{{ product.sellingPrice | currency : "₦" }}</p>
-      </div>
+      @if(getProductAndVariantData(product); as data){
+        <div class="flex flex-col w-full mt-4 px-2 h-[10rem] gap-3 *:text-center *:whitespace-nowrap *:overflow-hidden *:text-ellipsis">
+          <p class="h-10">
+            {{ product.name }}
+          </p>
+
+          <p class="h-8">
+            @for (price of data.prices; track $index) {
+              @if($index + 1 != data.prices.length){
+                {{ (price | currency : "₦") + ", " }}
+              }@else {
+                {{ price | currency : "₦" }}
+              }
+            }
+          </p>
+        </div>
+      }
+      
     </div>
     }
   </div>
 </div>
+
+
+<!-- Modals and Dialogs -->
+  <!-- Variants Modal (shamelessly copied from `pos-checkout-page-component`) -->
+  @if (isVariantModalOpen) {
+    <app-modal (close)="isVariantModalOpen = false">
+      <div class="w-[80vw] sm:w-[60vw] lg:w-full flex flex-col rounded-lg overflow-hidden">
+        <!-- Modal Header -->
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+          <h2 id="modal-title" class="text-xl font-semibold text-gray-800">
+            Select a Variant
+          </h2>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="bg-white p-6">
+          <div class="py-4">
+            <div class="grid grid-cols-2 gap-4">
+              <!-- Regular Product -->
+              <button
+                type="button"
+                class="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-customBlue hover:text-white hover:bg-customBlueHover transition-colors"
+                (click)="addToCart(selectedProduct!)"
+              >
+                <div class="flex flex-col items-start">
+                  <span class="font-medium text-gray-800">{{
+                    selectedProduct!.name
+                  }}</span>
+                  <span class="text-sm text-gray-600 mt-1">Regular</span>
+                </div>
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+              
+              <!-- Variants -->
+              @for (variant of selectedProduct!.variants; track $index) {
+                <button
+                  type="button"
+                  class="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-customBlue hover:text-white hover:bg-customBlueHover transition-colors"
+                  (click)="addToCart(selectedProduct!, variant)"
+                >
+                  <div class="flex flex-col items-start">
+                    <span class="font-medium text-gray-800">{{ variant.name }}</span>
+                    @if (variant.color) {
+                      <div class="flex items-center mt-1">
+                        <span
+                          class="w-4 h-4 rounded-full mr-2"
+                          [ngStyle]="{ 'background-color': variant.color }"
+                        ></span>
+                        <span class="text-sm text-gray-600">{{ variant.color }}</span>
+                      </div>
+                    }
+                    @if (variant.size) {
+                      <span class="text-sm text-gray-600 mt-1">Size: {{ variant.size }}</span>
+                    }
+                  </div>
+                  <i class="fa-solid fa-chevron-right"></i>
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end">
+          <button
+            class="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors font-medium"
+            (click)="isVariantModalOpen = false"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </app-modal>
+  }
+
+    <!-- Cart dialog -->
+  <p-dialog header="Cart" 
+        [modal]="true"
+        [(visible)]="isCartOpen" 
+        [position]="shouldCartHaveViewportWidth ? 'bottom':'center'" [style]="{width: shouldCartHaveViewportWidth ? '100vw':'50vw'}"
+        >
+      Bruh</p-dialog>

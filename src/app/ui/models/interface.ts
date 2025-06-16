@@ -1,5 +1,9 @@
 import { Observable, Subscribable } from "rxjs";
 import { BusinessType } from "./enums";
+
+/** Like `satisfies` but for types */
+export type Satisfy<TTypeToSatisfy, TTypeToCheck extends TTypeToSatisfy> = TTypeToCheck
+
 export interface ProductJSONFormat {
   id: number;
   name: string;
