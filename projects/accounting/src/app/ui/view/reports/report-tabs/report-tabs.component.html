@@ -1,0 +1,15 @@
+<div class="report-tabs">
+  <a
+    class="report-tab"
+    [class.active]="isFinancialStatementActive()"
+    (click)="goToFinancialStatement($event)"
+    href="#financial-statement-section"
+  >
+    Financial Statement
+  </a>
+  
+  <a class="report-tab" routerLink="/reports/balance-sheet" routerLinkActive="active">Balance Sheet</a>
+  <a class="report-tab" routerLink="/reports/income-statement" routerLinkActive="active">Income Statement</a>
+  <a class="report-tab" routerLink="/reports/cash-flow" routerLinkActive="active">Cash Flow</a>
+  <a class="report-tab" routerLink="/reports/tax-summary" routerLinkActive="active">Tax Summary</a>
+</div>

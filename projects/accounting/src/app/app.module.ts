@@ -81,6 +81,11 @@ import { HttpClientModule } from '@angular/common/http';
 import { TransactionsComponent } from './ui/view/transactions/transactions.component';
 import { NavTabComponent } from "./ui/sharedComponent/view/nav-tab/nav-tab.component";
 import { AccountingReportsComponent } from './ui/view/accounting-reports/accounting-reports.component';
+import { ReportTabsComponent } from './ui/view/reports/report-tabs/report-tabs.component';
+import { BalanceSheetComponent } from './ui/view/reports/balance-sheet/balance-sheet.component';
+import { IncomeStatementComponent } from './ui/view/reports/income-statement/income-statement.component';
+import { CashFlowComponent } from './ui/view/reports/cash-flow/cash-flow.component';
+import { TaxSummaryComponent } from './ui/view/reports/tax-summary/tax-summary.component';
 import { ChartOfAccountsComponent } from './ui/view/chart-of-accounts/chart-of-accounts.component';
 import { PaginatorModule } from 'primeng/paginator';
 import { TransactionSideModalComponent } from './ui/view/transaction-side-modal/transaction-side-modal.component';
@@ -104,7 +109,11 @@ import { TransactionSideModalComponent } from './ui/view/transaction-side-modal/
     TransactionsComponent,
     AccountingReportsComponent,
     ChartOfAccountsComponent,
-    TransactionSideModalComponent
+    ReportTabsComponent,
+    BalanceSheetComponent,
+    IncomeStatementComponent,
+    CashFlowComponent,
+    TaxSummaryComponent,
   ],
   imports: [
     // BrowserModule,
