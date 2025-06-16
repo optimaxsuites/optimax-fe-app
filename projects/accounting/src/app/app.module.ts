@@ -114,6 +114,7 @@ import { TransactionSideModalComponent } from './ui/view/transaction-side-modal/
     IncomeStatementComponent,
     CashFlowComponent,
     TaxSummaryComponent,
+    TransactionSideModalComponent
   ],
   imports: [
     // BrowserModule,
