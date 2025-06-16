@@ -8,16 +8,25 @@
   </div>
 
   <p-card>
-    <div class="mb-3 flex justify-content-between">
-      <span class="p-input-icon-left">
-        <i class="pi pi-search"></i>
-        <input pInputText type="text" (input)="applyFilter($event)" placeholder="Search accounts..." />
-      </span>
-      <p-paginator [rows]="rows" [totalRecords]="accounts.length" 
-                  (onPageChange)="onPageChange($event)" 
-                  [rowsPerPageOptions]="[10, 25, 50]"
-                  styleClass="p-paginator-sm"></p-paginator>
-    </div>
+  <div class="mb-3 flex justify-content-between align-items-center relative gap-3 p-[2rem]">
+  <!-- Search Input with Icon -->
+  <span class="p-input-icon-left w-full" style="max-width: 400px; position: relative;">
+    <i class="pi pi-search text-gray-500 "></i>
+    <input pInputText 
+           type="text" 
+           (input)="applyFilter($event)" 
+           placeholder="Search accounts by code, name, or type" 
+           class="w-full p-inputtext-xl" 
+           style="padding-left: 3rem; font-size: 17px;" />
+  </span>
+
+  <!-- Paginator -->
+  <p-paginator [rows]="rows" 
+               [totalRecords]="accounts.length"
+               (onPageChange)="onPageChange($event)"
+               [rowsPerPageOptions]="[10, 25, 50]"
+               styleClass="p-paginator-sm border-none"></p-paginator>
+</div>
 
     <p-table [value]="paginatedAccounts" 
              [(selection)]="selectedAccounts" 
