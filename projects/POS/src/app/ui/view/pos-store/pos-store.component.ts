@@ -1,8 +1,9 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
-import { ProductData } from '../../models/interface';
+import { ProductData, VariantDTO } from '../../models/interface';
 import { PosServiceService } from '../../service/pos-service.service';
 import { ImageCacheService } from '../../service/image-cache.service';
 import Fuse, { IFuseOptions } from 'fuse.js';
+import { ProductVariantHelperService } from '../../service/product-variant-helper.service';
 
 /** Indexed by each `category`'s name */
 type ProductDataMap = Map<string, ProductData[]>;
@@ -28,8 +29,6 @@ export class PosStoreComponent implements OnInit {
 
   /** Populated in `ngOnInit` */
   productData = signal<ProductDataMap>(new Map());
-  /** Indexed with the product id. Value is the img url to use for displaying images */
-  productImgMap = new Map<number, string>();
 
   readonly defaultCategory = 'All';
 
@@ -70,9 +69,22 @@ export class PosStoreComponent implements OnInit {
     else return 'yes';
   });
 
+  /** This is just a way for me to detect whether the device is mobile and in portrait mode */
+  readonly shouldCartHaveViewportWidth =
+    window.innerWidth < 640 &&
+    window.matchMedia('(orientation: portrait)').matches;
+
+  isCartOpen = false;
+
+  isVariantModalOpen = false;
+
+  /** Will have a value when `isVariantModalOpen` is true */
+  selectedProduct: ProductData | null = null;
+
   constructor(
     private _posService: PosServiceService,
-    private _imgCacheService: ImageCacheService
+    private _imgCacheService: ImageCacheService,
+    private _variantHelper: ProductVariantHelperService
   ) {}
 
   ngOnInit(): void {
@@ -95,14 +107,16 @@ export class PosStoreComponent implements OnInit {
             return new Map(oldMap).set(categoryName, existingProductArray);
           });
         }
-
-        // Cache product images
-        const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${iteratedProduct.productImages[0].imgNo}`;
-        this._imgCacheService.getImage(remoteImageUrl).subscribe((url) => {
-          this.productImgMap.set(iteratedProduct.id, url);
-        });
       });
     });
+  }
+
+  getProductImage(product: ProductData) {
+    return this._imgCacheService.getProductImage(product);
+  }
+
+  getProductAndVariantData(product: ProductData) {
+    return this._variantHelper.getData(product);
   }
 
   changeCategory(category: string) {
@@ -112,4 +126,11 @@ export class PosStoreComponent implements OnInit {
   changeSearchInput(text: string) {
     this.searchText.set(text);
   }
+
+  //TODO
+  addToCart(
+    product: ProductData,
+    /** If given, the variant's data would overwrite relevant product fields. */
+    variant?: VariantDTO
+  ) {}
 }
