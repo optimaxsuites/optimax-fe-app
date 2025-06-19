@@ -31,42 +31,120 @@ $black: #111827;
 $font-family: "Inter", "Segoe UI", Arial, sans-serif;
 
 
+
+/* Modal Overlay */
+.period-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 2000; 
+  background: rgba(0, 0, 0, 0.25); 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Modal Content */
+.period-modal-content {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  padding: 2rem 2.5rem;
+  min-width: 320px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  z-index: 2100;
+}
+.period-selectors {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.chart-card canvas {
+  width: 100% !important;
+  max-width: 300%;
+  height: 480px !important;
+  margin: 0 auto;
+  display: block;
+}
+
 .fullscreen-modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: #f7f8fa;
-  z-index: 9999;
+  z-index: 3000; 
+  background: rgba(9, 4, 73, 0.25);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  overflow-y: auto;
 }
 
-.fullscreen-modal-content {
-  width: 100vw;
-  max-width: 100vw;
-  margin: 0;
-  padding: 32px 0 0 0;
-  background: #f7f8fa;
-  min-height: 100vh;
-  box-shadow: none;
-  border-radius: 0;
+.fullscreen-modal-content.modal-normal {
+  width: 60vw;
+  max-width: 900px;
+  min-width: 350px;
+  margin: 4vh auto;
+  border-radius: 12px;
+  background: #fff;
   position: relative;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  transition: width 0.3s;
+}
+.fullscreen-modal-content.modal-expanded {
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
+  margin: 0;
+  border-radius: 0;
+  padding: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+}
+.fullscreen-modal-close{
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  background: transparent;
+  border: none;
+  font-size: 2.5rem;
+  cursor: pointer;
+  color: #888;
+  z-index: 10;
+}
+.fullscreen-modal-expand {
+  position: absolute;
+  top: 1.2rem;
+  right: 4.5rem;
+  background: transparent;
+  border: none;
+  font-size: 2.5rem;
+  cursor: pointer;
+  color: #888;
+  z-index: 10;
+}
+.fullscreen-modal-close:hover {
+  color: #0c0c0c;
+}
+.fullscreen-modal-expand:hover {
+  color: #222;
 }
 
-.fullscreen-modal-close {
-  position: absolute;
-  top: 24px;
-  right: 32px;
-  font-size: 2rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  z-index: 10001;
-}
 
 .report-header {
   display: flex;
