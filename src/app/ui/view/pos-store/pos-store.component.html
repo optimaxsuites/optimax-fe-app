@@ -36,7 +36,7 @@
   <div class="flex items-center justify-around overflow-x-auto min-h-max">
     <!-- Wrapper -->
     <div
-      class="flex gap-4 p-4 items-center justify-center bg-white shadow-md min-h-max c-category-btns"
+      class="flex gap-4 p-4 items-center justify-center bg-white shadow-md min-h-max c-category-btns font-[small]"
     >
       <!-- Default -->
       <button
@@ -74,9 +74,13 @@
     <!-- Shopping cart button -->
     <div
       role="button"
-      class="fixed right-0 top-[40%] z-10 p-4 rounded-l-2xl bg-green-500/85 flex justify-center items-center transition-all hover:bg-opacity-75 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-30 scale-110 md:scale-125 lg:scale-150"
+      class="fixed right-0 top-[40%] z-10 p-4 rounded-l-2xl flex justify-center items-center transition-all scale-110 md:scale-125 lg:scale-150"
       (click)="!isCartEmpty() && (isCartOpen = !isCartOpen)"
-      [ngClass]="{ 'cursor-not-allowed bg-gray-500/85': isCartEmpty() }"
+      [ngClass]="{
+        'cursor-not-allowed bg-gray-500/85': isCartEmpty(),
+        'bg-green-500/85 hover:bg-opacity-75 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-30':
+          !isCartEmpty(),
+      }"
     >
       <i class="fa-solid fa-cart-shopping"></i>
     </div>
@@ -109,13 +113,13 @@
         />
         @if (getProductAndVariantData(product); as data) {
           <div
-            class="flex flex-col w-full mt-4 px-2 h-[10rem] gap-3 *:text-center *:whitespace-nowrap *:overflow-hidden *:text-ellipsis"
+            class="flex flex-col w-full mt-4 px-2 h-[10rem] gap-3 *:text-center *:whitespace-nowrap *:overflow-hidden *:text-ellipsis *:m-0"
           >
-            <p class="h-10">
+            <p class="h-10 text-[medium]">
               {{ product.name }}
             </p>
 
-            <p class="h-8">
+            <p class="h-8 text-[small]">
               @for (price of data.prices; track $index) {
                 @if ($index + 1 != data.prices.length) {
                   {{ (price | currency: "₦") + ", " }}
@@ -218,6 +222,7 @@
 <p-dialog
   header="Cart"
   [modal]="true"
+  [dismissableMask]="true"
   [(visible)]="isCartOpen"
   [position]="shouldCartHaveViewportWidth ? 'bottom' : 'center'"
   [style]="{
