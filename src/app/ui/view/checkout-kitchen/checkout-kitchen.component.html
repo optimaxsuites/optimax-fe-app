@@ -370,18 +370,29 @@
                 <button
                   pButton
                   type="button"
-                  [label]="!selectedOrder?.processedOn
+                  [label]="
+                    !selectedOrder?.processedOn
                       ? 'Cancel Order'
                       : !selectedOrder?.completedOn
                         ? 'Order In Progress'
-                        : 'Order Completed'"
-                  [icon]="!selectedOrder?.processedOn ?'pi pi-times':'pi pi-asterisk'"
-                  [class]="!selectedOrder?.processedOn ? 'font-bold rounded-md focus:outline-none focus:ring p-button-danger ml-2 bg-red-500 text-white hover:bg-red-400 focus:ring-red-200':'font-bold rounded-md focus:outline-none focus:ring p-button-success bg-green-500 hover:bg-green-400 focus:ring-green-200 cursor-not-allowed'"
+                        : 'Order Completed'
+                  "
+                  [icon]="
+                    !selectedOrder?.processedOn
+                      ? 'pi pi-times'
+                      : 'pi pi-asterisk'
+                  "
+                  [class]="
+                    !selectedOrder?.processedOn
+                      ? 'font-bold rounded-md focus:outline-none focus:ring p-button-danger ml-2 bg-red-500 text-white hover:bg-red-400 focus:ring-red-200'
+                      : 'font-bold rounded-md focus:outline-none focus:ring p-button-success bg-green-500 hover:bg-green-400 focus:ring-green-200 cursor-not-allowed'
+                  "
                   [disabled]="
                     selectedOrder?.processedOn || selectedOrder?.completedOn
                   "
                   (click)="
-                    !selectedOrder?.processedOn && deleteTable(selectedOrder!); !selectedOrder?.processedOn && isOrderDetailsOpen = false
+                    !selectedOrder?.processedOn && deleteTable(selectedOrder!);
+                    !selectedOrder?.processedOn && (isOrderDetailsOpen = false)
                   "
                 ></button>
               </div>
@@ -509,7 +520,7 @@
           type="number"
           name="tableNumber"
           id="tableNumber"
-          class="bg-transparent"
+          class="bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           [(ngModel)]="orderTableNumber"
           [disabled]="isEditingOrder"
         />

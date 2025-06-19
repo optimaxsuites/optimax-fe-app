@@ -333,7 +333,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
         this.cartItems.push(existingItem);
       }
 
-      let existingVariant = existingItem?.selectedVariants.find(
+      let existingVariant = existingItem?.selectedVariants?.find(
         (v) => v.id === chosenVariant.id,
       );
 
@@ -341,7 +341,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
         existingVariant.selectedQuantity =
           (existingVariant.selectedQuantity || 0) + 1;
       } else {
-        existingItem?.selectedVariants.push({
+        existingItem?.selectedVariants?.push({
           ...chosenVariant,
           selectedQuantity: 1,
         });
@@ -368,7 +368,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
   deleteCartItem(index: number, isVariant?: boolean, variantIndex?: number) {
     if (isVariant) {
-      this.cartItems[index].selectedVariants.splice(variantIndex!, 1);
+      this.cartItems[index].selectedVariants?.splice(variantIndex!, 1);
     } else {
       this.resetProductDiscount(index);
       this.cartItems[index].count = 0;
