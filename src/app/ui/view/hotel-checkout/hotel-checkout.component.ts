@@ -1,87 +1,8 @@
 import { Component, ViewChild } from '@angular/core';
 import { HotelFormComponent } from '../hotel-form/hotel-form.component';
 import { HotelRoomdetailsComponent } from '../hotel-roomdetails/hotel-roomdetails.component';
-
-export interface Guest {
-  id?: string; // Optional property for guest ID
-  title: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  country: string;
-  idNumber: string;
-  gender: string;
-}
-
-export interface BookingDetails {
-  checkinDate: Date;
-  checkoutDate: Date;
-  adults: number;
-  children: number;
-  specialRequests?: string;
-  paymentMethod: string;
-  totalAmount: number;
-  paidAmount: number;
-  balanceAmount: number;
-}
-
-export interface Room {
-  id: number;
-  number: number | null; // Allow number to be null
-  type: string;
-  status: string;
-  floor?: number;
-  guest?: Guest; // Optional property for guest
-  rate: number;
-  bookingDetails?: BookingDetails;
-  beds?: number;
-  maxOccupancy?: number;
-  description?: string;
-  amenities?: string[];
-  currentKey?: RoomKey; // Optional property for current key
-}
-
-export interface Booking {
-  guest: Guest;
-  checkinDate: Date;
-  checkoutDate: Date;
-  adults: number;
-  children: number;
-  specialRequests: string;
-  paymentMethod: string;
-  depositAmount: number;
-  roomIds: number[];
-  roomTypes: string[];
-  roomRates: number[];
-  subtotal: number;
-  taxes: number;
-  total: number;
-  balanceAmount: number;
-  status?: string;
-}
-
-export interface RoomKey {
-  id: string;
-  roomNumber: number;
-  roomId: number;
-  isActive: boolean;
-  assignedDate: Date;
-  deactivationDate: Date;
-  guestIdNumber: string;
-  guestName?: string;
-}
-
-export interface KeyCardLog {
-  id: string;
-  roomNumber: number;
-  roomId: number;
-  keyCardId: string;
-  guestIdNumber: string;
-  accessType: 'GUEST' | 'MASTER' | 'STAFF';
-  timestamp: Date;
-  accessGranted: boolean;
-}
+import { HotelRoomlistComponent } from '../hotel-roomlist/hotel-roomlist.component';
+import { Room } from '../../hospitality/hotelservice.service';
 
 @Component({
   selector: 'app-hotel-checkout',
@@ -108,5 +29,16 @@ export class HotelCheckoutComponent {
     if (this.roomDetails) {
       this.roomDetails.showRoomDetailsModal(updatedRoom);
     }
+  }
+
+  onBookingFormRequested(rooms: Room[]): void {
+    // You can handle the booking form request here
+    // For example, open a booking form modal with the selected rooms
+    console.log('Booking form requested for rooms:', rooms);
+    // You might want to implement a booking form component and show it here
+  }
+
+  onBack(): void {
+    this.selectedRoom = null;
   }
 }
