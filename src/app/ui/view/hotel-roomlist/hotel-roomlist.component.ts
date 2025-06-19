@@ -323,20 +323,25 @@ export class HotelRoomlistComponent implements OnInit {
     return this.roomGuestsMap.has(roomId);
   }
 
-  getRoomTypeName(roomTypeId: number): string {
+  getRoomTypeName(roomTypeId: string): string {
     const roomType = this.roomTypes.find((rt) => rt === `Room ${roomTypeId}`);
     return roomType || `Room ${roomTypeId}`;
   }
 
-  calculateNights(checkinDate: string | Date | undefined, checkoutDate: string | Date | undefined): number {
-  if (!checkinDate || !checkoutDate) return 0;
-  
-  const checkin = typeof checkinDate === 'string' ? new Date(checkinDate) : checkinDate;
-  const checkout = typeof checkoutDate === 'string' ? new Date(checkoutDate) : checkoutDate;
-  
-  const timeDiff = checkout.getTime() - checkin.getTime();
-  return Math.ceil(timeDiff / (1000 * 3600 * 24));
-}
+  calculateNights(
+    checkinDate: string | Date | undefined,
+    checkoutDate: string | Date | undefined
+  ): number {
+    if (!checkinDate || !checkoutDate) return 0;
+
+    const checkin =
+      typeof checkinDate === 'string' ? new Date(checkinDate) : checkinDate;
+    const checkout =
+      typeof checkoutDate === 'string' ? new Date(checkoutDate) : checkoutDate;
+
+    const timeDiff = checkout.getTime() - checkin.getTime();
+    return Math.ceil(timeDiff / (1000 * 3600 * 24));
+  }
   onBookingConfirmed(): void {
     this.loadAllData();
     this.viewingAvailableRooms = false;

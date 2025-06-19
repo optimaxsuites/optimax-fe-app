@@ -183,7 +183,7 @@
               <span
                 class="inline-block px-2 py-1 text-sm font-extrabold rounded-full bg-white bg-opacity-70 text-gray-800"
               >
-                {{ getRoomTypeName(room.roomType.id ?? 0) }}
+                {{ getRoomTypeName(room.roomType.name) }}
               </span>
             </div>
           </div>
@@ -396,7 +396,7 @@
                   {{ room.roomNumber }}
                 </p>
                 <p class="text-xl text-gray-600 mt-1">
-                  {{ getRoomTypeName(room.roomType.id ?? 0) }}
+                  {{ getRoomTypeName(room.roomType.name) }}
                 </p>
               </div>
               <div
