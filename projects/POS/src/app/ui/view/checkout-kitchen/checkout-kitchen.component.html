@@ -407,6 +407,7 @@
 <!-- Reciept Modal -->
 <p-dialog
   header="Payment Receipt"
+  [dismissableMask]="true"
   [(visible)]="isReceiptModalOpen"
   [modal]="true"
   [style]="{ width: '450px' }"
@@ -504,6 +505,7 @@
 <!-- Create Order Modal -->
 <p-dialog
   header="Create Order"
+  [dismissableMask]="true"
   [(visible)]="isCreateOrderModalOpen"
   [modal]="true"
   [style]="{ width: '80rem', height: '70rem' }"
@@ -594,8 +596,10 @@
             }"
           ></div>
 
-          <div class="flex gap-4 p-2">
-            <h3 class="font-bold flex items-center justify-content">
+          <div
+            class="w-full flex gap-4 p-2 justify-center items-center font-bold"
+          >
+            <h3 class="text-xl whitespace-nowrap overflow-hidden text-ellipsis">
               {{ p.name }}
             </h3>
 
@@ -677,6 +681,7 @@
 
 <p-dialog
   header="Order Conflict"
+  [dismissableMask]="true"
   [(visible)]="isCreateOrderModalOrderExistsDialogOpen"
   [modal]="true"
   [style]="{ width: '40rem', height: '30rem' }"
@@ -699,6 +704,7 @@
 
 <p-dialog
   header="Order Notes"
+  [dismissableMask]="true"
   [(visible)]="isCreateOrderModalNoteDialogOpen"
   [style]="{ width: '300px' }"
   [modal]="true"
