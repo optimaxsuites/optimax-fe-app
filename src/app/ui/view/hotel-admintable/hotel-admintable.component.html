@@ -175,21 +175,24 @@
       <ng-template pTemplate="header">
         <tr class="hover:bg-gray-50 transition-colors">
           <th
-            pSortableColumn="number"
+            pSortableColumn="roomNumber"
             class="p-6 text-left uppercase tracking-wide"
           >
             Room Number
             <p-sortIcon
-              field="number"
+              field="roomNumber"
               styleClass="ml-2 text-white"
             ></p-sortIcon>
           </th>
           <th
-            pSortableColumn="type"
+            pSortableColumn="roomType"
             class="p-4 text-left uppercase tracking-wide"
           >
             Type
-            <p-sortIcon field="type" styleClass="ml-2 text-white"></p-sortIcon>
+            <p-sortIcon
+              field="roomType"
+              styleClass="ml-2 text-white"
+            ></p-sortIcon>
           </th>
           <th
             pSortableColumn="floor"
@@ -199,12 +202,12 @@
             <p-sortIcon field="floor" styleClass="ml-2 text-white"></p-sortIcon>
           </th>
           <th
-            pSortableColumn="status"
+            pSortableColumn="roomStatus"
             class="p-4 text-left uppercase tracking-wide"
           >
             Status
             <p-sortIcon
-              field="status"
+              field="roomStatus"
               styleClass="ml-2 text-white"
             ></p-sortIcon>
           </th>
@@ -224,20 +227,22 @@
           <td class="p-4 border-b">
             <div class="flex items-center gap-3">
               <div
-                [ngClass]="getStatusClass(room.status)"
+                [ngClass]="getStatusClass(room.roomStatus)"
                 class="w-3 h-3 rounded-full"
               ></div>
-              <span class="font-semibold">{{ room.number }}</span>
+              <span class="font-semibold">{{ room.roomNumber }}</span>
             </div>
           </td>
-          <td class="p-4 border-b font-medium">{{ room.type }}</td>
-          <td class="p-4 border-b">{{ room.floor || "N/A" }}</td>
+          <td class="p-4 border-b font-medium">
+            {{ getRoomTypeName(room.roomType) }}
+          </td>
+          <td class="p-4 border-b">{{ room.floor }}</td>
           <td class="p-4 border-b">
             <span
-              [ngClass]="getStatusClass(room.status)"
+              [ngClass]="getStatusClass(room.roomStatus)"
               class="px-3 py-1 rounded-full text-xs font-semibold"
             >
-              {{ getStatusText(room.status) }}
+              {{ getStatusText(room.roomStatus) }}
             </span>
           </td>
           <td class="p-4 border-b font-medium">
@@ -256,7 +261,7 @@
               pRipple
               icon="pi pi-trash"
               class="p-button-rounded p-button-text p-button-sm p-button-danger ml-2"
-              (click)="confirmDelete(room)"
+              (click)="confirmDeleteRoom(room)"
             ></button>
           </td>
         </tr>
@@ -283,6 +288,11 @@
 
 <p-toast position="top-right"></p-toast>
 <p-confirmDialog [style]="{ width: '450px' }"></p-confirmDialog>
+
 <div *ngIf="openRoomForm">
-  <app-hotel-rooms (back)="navigateToCreateRoom()"></app-hotel-rooms>
+  <app-hotel-rooms
+    (back)="navigateToCreateRoom()"
+    (roomCreated)="onRoomCreated()"
+  >
+  </app-hotel-rooms>
 </div>

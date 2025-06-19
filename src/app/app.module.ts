@@ -60,6 +60,8 @@ import { RoomdesignComponent } from './ui/bookings/roomdesign/roomdesign.compone
 import { RoomfooterComponent } from './ui/bookings/roomfooter/roomfooter.component';
 import { BookingformComponent } from './ui/bookings/bookingform/bookingform.component';
 import { MultipleBookingsComponent } from './ui/bookings/multiple-bookings/multiple-bookings.component';
+import { FileUploadModule } from 'primeng/fileupload';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 @NgModule({
   declarations: [
     AppComponent,
@@ -122,6 +124,8 @@ import { MultipleBookingsComponent } from './ui/bookings/multiple-bookings/multi
     InputNumberModule,
     NavTabComponent,
     CheckboxModule,
+    FileUploadModule,
+    ProgressSpinnerModule,
   ],
   providers: [MessageService, ConfirmationService, DialogService],
 

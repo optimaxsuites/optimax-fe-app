@@ -1,18 +1,26 @@
 <div
-  class="flex h-full"
+  class="flex h-screen overflow-hidden"
   *ngIf="!openForm && !openLogs && !openRoom && !showRoomForm"
 >
-  <!-- Sidebar with filters (always visible) -->
+  <!-- Sidebar with filters (scrollable) -->
   <aside
-    class="w-1/6 bg-gradient-to-b from-customBlueHover to-customBlue text-white p-6 shadow-lg rounded-xl"
+    class="w-1/6 bg-gradient-to-b from-customBlueHover to-customBlue text-white p-6 shadow-lg rounded-xl overflow-y-auto"
   >
     <div class="h-full">
       <h2 class="text-4xl mt-3 text-white font-bold mb-6">Rooms</h2>
-      <ul class="space-y-3">
+
+      <!-- Loading state for room types -->
+      <div *ngIf="roomTypes.length <= 1" class="space-y-3">
+        <div *ngFor="let _ of [1, 2, 3, 4, 5]" class="animate-pulse">
+          <div class="h-12 bg-blue-400/30 rounded-xl"></div>
+        </div>
+      </div>
+
+      <!-- Loaded state -->
+      <ul class="space-y-3" *ngIf="roomTypes.length > 1">
         <li
           *ngFor="let type of roomTypes"
           [class]="getFilterClass(type)"
-          class="p-4 font-bold text-xl rounded-xl cursor-pointer transition-all duration-300 flex items-center justify-between"
           (click)="toggleRoomTypeSelection(type)"
         >
           <span>{{ type }}</span>
@@ -24,8 +32,8 @@
     </div>
   </aside>
 
-  <!-- Main content area -->
-  <div class="flex-1 p-6">
+  <!-- Main content area (scrollable) -->
+  <div class="flex-1 p-6 overflow-y-auto">
     <!-- Header with buttons -->
     <div class="flex justify-between items-center mt-5 mb-8">
       <h1 class="text-4xl font-bold text-gray-800">Room Status</h1>
@@ -50,8 +58,8 @@
           class="flex items-center gap-2 bg-customBlue text-white px-6 py-3 rounded-lg text-xl font-semibold hover:bg-customBlueHover transition duration-300"
           (click)="navigateToRoom()"
         >
-          <i class="pi pi-eye"></i>
-          View All Logs
+          <i class="pi pi-plus"></i>
+          Add New Room
         </button> -->
       </div>
     </div>
@@ -77,8 +85,7 @@
 
       <!-- Search Controls -->
       <div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-        <!-- Search Input -->
-
+        <!-- Status Dropdown -->
         <div class="mb-4">
           <ng-select
             [items]="statusOptions"
@@ -101,6 +108,7 @@
           </ng-select>
         </div>
 
+        <!-- Search Input -->
         <div class="relative flex-1">
           <i
             class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
@@ -140,70 +148,164 @@
       </div>
     </div>
 
-    <!-- Room Cards Grid -->
-
+    <!-- Loading state for rooms -->
     <div
+      *ngIf="isLoading"
+      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4"
+    >
+      <div *ngFor="let _ of [1, 2, 3, 4, 5, 6, 7, 8]" class="animate-pulse">
+        <div class="h-48 bg-gray-200 rounded-lg"></div>
+      </div>
+    </div>
+
+    <!-- Room Cards Grid -->
+    <div
+      *ngIf="!isLoading && rooms.length > 0"
       class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4"
     >
       <div
         *ngFor="let room of filteredRooms"
-        [ngClass]="statusColors[room.status]"
+        [ngClass]="statusColors[room.roomStatus]"
         class="room-card p-4 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer flex flex-col"
-        (click)="openRoomDetails(room)"
+        (click)="selectRoom(room)"
       >
         <div class="flex justify-between items-start mb-2">
           <div>
             <h3 class="text-2xl font-extrabold text-gray-800">
-              Room {{ room?.number }} - {{ room?.type }}
+              Room {{ room.roomNumber }}
             </h3>
-            <span
-              class="inline-block px-2 py-1 mt-2 text-sm font-extrabold rounded-full bg-white bg-opacity-70 text-gray-800"
-            >
-              {{ room?.status | titlecase }}
-            </span>
+            <div class="flex items-center gap-2 mt-2">
+              <span
+                class="inline-block px-2 py-1 text-sm font-extrabold rounded-full bg-white bg-opacity-70 text-gray-800"
+              >
+                {{ room.roomStatus | titlecase }}
+              </span>
+              <span
+                class="inline-block px-2 py-1 text-sm font-extrabold rounded-full bg-white bg-opacity-70 text-gray-800"
+              >
+                {{ getRoomTypeName(room.roomType.name) }}
+              </span>
+            </div>
           </div>
           <span
             *ngIf="room.floor"
             class="text-lg font-medium bg-white bg-opacity-70 px-2 py-1 rounded"
           >
-            Floor {{ room?.floor }}
+            Floor {{ room.floor }}
           </span>
         </div>
 
-        <div class="mt-2 flex-1">
-          <p *ngIf="room.guest" class="text-xl font-medium truncate">
-            <i class="pi pi-user mr-1"></i>
-            {{ room?.guest?.title }} {{ room?.guest?.firstName }}
-            {{ room?.guest?.lastName }}
-          </p>
-        </div>
-
-        <div class="mt-4 flex justify-between items-end">
-          <div>
-            <p *ngIf="room.bookingDetails" class="text-lg mt-1">
-              <i class="pi pi-calendar mr-1"></i>
-              {{ room?.bookingDetails?.checkinDate | date : "shortDate" }} -
-              {{ room?.bookingDetails?.checkoutDate | date : "shortDate" }}
+        <!-- Guest Information -->
+        <div class="mt-4 flex-1">
+          <div
+            *ngIf="room.id && hasGuest(room.id)"
+            class="bg-white/70 p-3 rounded-lg"
+          >
+            <p class="text-lg font-semibold truncate">
+              <i class="pi pi-user mr-2"></i>
+              {{ getGuestForRoom(room.id)?.title }}
+              {{ getGuestForRoom(room.id)?.firstName }}
+              {{ getGuestForRoom(room.id)?.lastName }}
             </p>
-            <p *ngIf="room?.bookingDetails" class="text-sm mt-1">
-              <i class="pi pi-credit-card mr-1"></i>
-              {{ room?.bookingDetails?.paymentMethod | titlecase }} •
-              {{
-                room?.bookingDetails?.paidAmount
-                  | currency : "NGN" : "symbol" : "1.0-0"
-              }}
-              paid
+            <p class="text-sm mt-1">
+              <i class="pi pi-phone mr-2"></i>
+              {{ getGuestForRoom(room.id)?.phone }}
+            </p>
+            <p class="text-sm mt-1">
+              <i class="pi pi-id-card mr-2"></i>
+              {{ getGuestForRoom(room.id)?.idNumber }}
             </p>
           </div>
-          <p class="text-xl font-semibold">
-            {{ room?.rate | currency : "NGN" : "symbol" : "1.0-0" }}/night
+          <div
+            *ngIf="room.id !== undefined && !hasGuest(room.id)"
+            class="bg-white/70 p-3 rounded-lg text-center"
+          >
+            <p class="text-gray-500">No guest assigned</p>
+          </div>
+        </div>
+
+        <!-- Booking Information -->
+        <div class="mt-4">
+          <div
+            *ngIf="room.id && hasBooking(room.id)"
+            class="bg-white/70 p-3 rounded-lg"
+          >
+            <div class="flex items-center justify-between">
+              <p class="text-sm font-semibold">
+                <i class="pi pi-calendar mr-2"></i>
+                {{
+                  getBookingForRoom(room.id)?.checkinDate | date : "shortDate"
+                }}
+                -
+                {{
+                  getBookingForRoom(room.id)?.checkoutDate | date : "shortDate"
+                }}
+              </p>
+              <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                {{
+                  calculateNights(
+                    getBookingForRoom(room.id)?.checkinDate,
+                    getBookingForRoom(room.id)?.checkoutDate
+                  )
+                }}
+                nights
+              </span>
+            </div>
+            <div class="mt-2 grid grid-cols-2 gap-2">
+              <div>
+                <p class="text-xs">
+                  <i class="pi pi-users mr-1"></i>
+                  {{ getBookingForRoom(room.id)?.adults }} adults
+                </p>
+              </div>
+              <div>
+                <p class="text-xs">
+                  <i class="pi pi-users mr-1"></i>
+                  {{ getBookingForRoom(room.id)?.children || 0 }} children
+                </p>
+              </div>
+            </div>
+            <div class="mt-2">
+              <p
+                class="text-xs truncate"
+                *ngIf="getBookingForRoom(room.id)?.specialRequests"
+              >
+                <i class="pi pi-comment mr-1"></i>
+                {{ getBookingForRoom(room.id)?.specialRequests }}
+              </p>
+            </div>
+          </div>
+          <div
+            *ngIf="room.id !== undefined && !hasBooking(room.id)"
+            class="bg-white/70 p-3 rounded-lg text-center"
+          >
+            <p class="text-gray-500">No active booking</p>
+          </div>
+        </div>
+
+        <!-- Room Rate and Status -->
+        <div class="mt-4 flex justify-between items-center">
+          <div>
+            <p class="text-sm text-gray-700">
+              {{ room.maxOccupancy }} max · {{ room.beds }} beds
+            </p>
+            <p class="text-xs text-gray-600">
+              {{ room.accessible ? "Accessible" : "Not accessible" }} ·
+              {{ room.isSmokingAllowed ? "Smoking" : "Non-smoking" }}
+            </p>
+          </div>
+          <p class="text-lg font-semibold">
+            {{ room.rate | currency : "NGN" : "symbol" : "1.0-0" }}/night
           </p>
         </div>
       </div>
     </div>
 
     <!-- Empty State -->
-    <div *ngIf="filteredRooms.length === 0" class="text-center py-12">
+    <div
+      *ngIf="filteredRooms.length === 0 && rooms.length > 0 && !isLoading"
+      class="text-center py-12"
+    >
       <i class="pi pi-search text-4xl text-gray-400 mb-4"></i>
       <h3 class="text-xl font-medium text-gray-600">No rooms found</h3>
       <p class="text-gray-500">Try adjusting your search or filters</p>
@@ -213,6 +315,12 @@
       >
         Reset Filters
       </button>
+    </div>
+
+    <!-- Initial Loading State -->
+    <div *ngIf="rooms.length === 0 && isLoading" class="text-center py-12">
+      <i class="pi pi-spin pi-spinner text-4xl text-gray-400 mb-4"></i>
+      <h3 class="text-xl font-medium text-gray-600">Loading rooms...</h3>
     </div>
   </div>
 
@@ -285,9 +393,11 @@
             <div class="flex justify-between items-start">
               <div>
                 <p class="font-bold text-2xl text-gray-800">
-                  {{ room?.number }}
+                  {{ room.roomNumber }}
                 </p>
-                <p class="text-xl text-gray-600 mt-1">{{ room?.type }}</p>
+                <p class="text-xl text-gray-600 mt-1">
+                  {{ getRoomTypeName(room.roomType.name) }}
+                </p>
               </div>
               <div
                 (click)="$event.stopPropagation(); toggleRoomSelection(room)"
@@ -302,8 +412,27 @@
             </div>
 
             <div class="mt-4">
-              <p class="text-lg text-gray-700 font-semibold">
-                {{ room?.rate | currency : "NGN" : "symbol" : "1.0-0" }}/night
+              <div class="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p class="font-semibold">Beds:</p>
+                  <p>{{ room.beds }}</p>
+                </div>
+                <div>
+                  <p class="font-semibold">Max Occupancy:</p>
+                  <p>{{ room.maxOccupancy }}</p>
+                </div>
+                <div>
+                  <p class="font-semibold">Floor:</p>
+                  <p>{{ room.floor }}</p>
+                </div>
+                <div>
+                  <p class="font-semibold">Accessible:</p>
+                  <p>{{ room.accessible ? "Yes" : "No" }}</p>
+                </div>
+              </div>
+
+              <p class="text-lg text-gray-700 font-semibold mt-3">
+                {{ room.rate | currency : "NGN" : "symbol" : "1.0-0" }}/night
               </p>
               <div class="mt-2 flex items-center justify-between">
                 <div class="flex items-center text-green-600">
@@ -341,7 +470,7 @@
               Clear Selection
             </button>
             <button
-              (click)="navigateToForm()"
+              (click)="bookSelectedRooms()"
               [disabled]="selectedRooms.length === 0"
               class="flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 hover:from-green-600 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -357,11 +486,12 @@
   </div>
 </div>
 
+<!-- Other components -->
 <div *ngIf="openForm">
   <app-hotel-form
     [selectedRooms]="selectedRooms"
     (back)="navigateToForm()"
-    (bookingConfirmed)="onBookingConfirmed($event)"
+    (bookingConfirmed)="onBookingConfirmed()"
   >
   </app-hotel-form>
 </div>
@@ -369,12 +499,13 @@
 <div *ngIf="openLogs">
   <app-hotel-logs (back)="navigateToLogs()"></app-hotel-logs>
 </div>
-<div *ngIf="openRoom">
+
+<!-- <div *ngIf="openRoom">
   <app-room-sidebar
     [selectedRooms]="selectedRooms"
     (back)="navigateToRoom()"
   ></app-room-sidebar>
-</div>
+</div> -->
 
 <app-hotel-rooms
   *ngIf="showRoomForm"
