@@ -1,7 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, AfterViewInit } from '@angular/core';
+import Chart from 'chart.js/auto';
 import { GeneratedReport } from './report.model';
 
-// Add 'data' and 'canAutoGenerate' to the Report interface
 interface Report {
   title: string;
   description: string;
@@ -17,14 +17,25 @@ interface Report {
   templateUrl: './accounting-reports.component.html',
   styleUrls: ['./accounting-reports.component.scss']
 })
-export class AccountingReportsComponent {
+export class AccountingReportsComponent implements AfterViewInit {
   // Form fields
   reportType = '';
   dateRange = '';
   fromDate = '';
   toDate = '';
   generatedBy = 'Admin';
-  
+
+  modalExpanded = false;
+
+  toggleModalSize() {
+    this.modalExpanded = !this.modalExpanded;
+  }
+
+onExport(){
+  alert('downloading content');
+  alert('processing your request');
+  alert('completed');
+}
 
   // List of generated reports
   reports: GeneratedReport[] = [];
@@ -42,7 +53,7 @@ export class AccountingReportsComponent {
   bankStatement = [
     { date: '2025-06-01', description: 'Deposit', amount: 100000, type: 'credit' },
     { date: '2025-06-02', description: 'Cheque #123', amount: 20000, type: 'debit' }
-    // Bank charge missing
+    // Bank charge  ill include it soon 
   ];
   generalLedger = [
     { date: '2025-06-01', account: 'Cash', debit: 100000, credit: 0, description: 'Opening balance' },
@@ -264,7 +275,7 @@ export class AccountingReportsComponent {
       updated: 'Jun 5, 2025',
       status: 'Published',
       icon: 'notes',
-      canAutoGenerate: false // Partially auto
+      canAutoGenerate: false
     },
     {
       title: 'Statement of Changes in Equity',
@@ -280,18 +291,353 @@ export class AccountingReportsComponent {
       updated: 'Jun 10, 2025',
       status: 'Draft',
       icon: 'summary',
-      canAutoGenerate: false // Partially auto
+      canAutoGenerate: false
     }
   ];
 
   filteredReports: Report[] = [];
+
+  periodModalOpen = false;
+  availablePeriods = ['2023', '2022', '2021', '2020', 'Q1 2023', 'Q2 2023', 'Q3 2023', 'Q4 2023'];
+  selectedPeriod1 = '2023';
+  selectedPeriod2 = '2022';
+
+  comparativeChart: any;
+
+  comparativeData: { [period: string]: { [metric: string]: number } } = {
+    '2023': {
+      'Total Revenue': 85,
+      'Net Profit': 95,
+      'Total Loss': 81,
+      'Total Expenses': 65,
+      'Operating Cash Flow': 50,
+      'POS Module': 80,
+      'HR ': 60
+    },
+    '2022': {
+      'Total Revenue': 82,
+      'Net Profit': 49,
+      'Total Loss': 70,
+      'Total Expenses': 83,
+      'Operating Cash Flow': 40,
+       'POS Module': 74,
+      'HR': 100
+    }
+  };
+
+  // --- Donut Chart Data and Options ---
+  categoryData = [
+    { category: 'Electronics', value: 45 },
+    { category: 'Clothing', value: 28 },
+    { category: 'Food & Beverages', value: 15 },
+    { category: 'Home & Garden', value: 10 },
+    { category: 'Others', value: 2 }
+  ];
+
+  donutChart: any;
 
   constructor() {
     this.filteredReports = [...this.allReports];
     this.autoGenerateStatements();
   }
 
-  // --- Auto-generation logic for each statement ---
+  ngAfterViewInit() {
+    // Revenue vs Expenses Line Chart
+    const revenueCtx = document.getElementById('revenueChart') as HTMLCanvasElement;
+    if (revenueCtx) {
+      new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+          datasets: [
+            {
+              label: 'Revenue',
+              data: [100000, 20000, 30000, 50000, 80000, 100000],
+              borderColor: '#4F8CFF',
+              backgroundColor: 'rgba(79,140,255,0.08)',
+              tension: 0.4,
+              pointBackgroundColor: '#4F8CFF',
+              fill: true
+            },
+            {
+              label: 'Expenses',
+              data: [60000, 52000, 39000, 28000, 60000, 70000],
+              borderColor: '#FF8C4F',
+              backgroundColor: 'rgba(255,140,79,0.08)',
+              tension: 0.4,
+              pointBackgroundColor: '#FF8C4F',
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom',
+              onClick: (e, legendItem, legend) => {
+                const ci = legend.chart;
+                const index = legendItem.datasetIndex;
+                if (typeof index !== 'number') return;
+                const meta = ci.getDatasetMeta(index);
+                meta.hidden = !meta.hidden;
+                ci.update();
+              }
+            },
+            tooltip: {
+              enabled: true,
+              callbacks: {
+                label: function(context) {
+                  return ` ${context.dataset.label}: ${context.parsed.y.toLocaleString()}`;
+                }
+              }
+            }
+          },
+          interaction: {
+            mode: 'nearest',
+            intersect: false
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return value.toLocaleString();
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // --- Donut Chart for Category Distribution ---
+    this.renderCategoryDonutChart();
+
+    // Expense Breakdown Doughnut Chart
+    const expenseCtx = document.getElementById('expenseChart') as HTMLCanvasElement;
+    if (expenseCtx) {
+      new Chart(expenseCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Payroll', 'HR', 'POS', 'Marketing'],
+          datasets: [{
+            data: [35000, 25000, 12000, 18000],
+            backgroundColor: [
+              '#4F8CFF', // Payroll
+              '#6FE7C1', // HR
+              '#FFC36F', // POS
+              '#FF8C4F'  // Marketing
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          cutout: '70%',
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom',
+              onClick: (e, legendItem, legend) => {
+                const ci = legend.chart;
+                const index = legendItem.datasetIndex;
+                if (typeof index !== 'number') return;
+                const meta = ci.getDatasetMeta(index);
+                meta.hidden = !meta.hidden;
+                ci.update();
+              }
+            },
+            tooltip: {
+              enabled: true,
+              callbacks: {
+                label: function(context) {
+                  return ` ${context.label}: ${context.parsed.toLocaleString()}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    this.renderComparativeChart();
+  }
+
+   renderCategoryDonutChart() {
+    const ctx = document.getElementById('categoryDonutChart') as HTMLCanvasElement | null;
+    if (!ctx) return;
+    if (this.donutChart) {
+      this.donutChart.destroy();
+    }
+    const total = this.categoryData.reduce((sum, item) => sum + item.value, 0);
+    this.donutChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: this.categoryData.map(item => item.category),
+        datasets: [{
+          data: this.categoryData.map(item => item.value),
+          backgroundColor: ['#3B82F6', '#EF4444', '#F59E0B', '#10B981', '#8B5CF6'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        cutout: '70%',
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              font: {
+                size: 14,
+                weight: 'bold'
+              },
+              usePointStyle: true,
+              padding: 20
+            }
+          },
+          tooltip: {
+            enabled: true,
+            callbacks: {
+              label: function(context) {
+                const value = context.parsed;
+                const percent = ((value / total) * 100).toFixed(1);
+                return ` ${context.label}: ${percent}% (${value})`;
+              }
+            }
+          }
+        }
+      },
+      plugins: [{
+        id: 'centerText',
+        beforeDraw: (chart: any) => {
+          const { ctx, chartArea } = chart;
+          if (!chartArea) return;
+          const total = chart.data.datasets[0].data.reduce((a: number, b: number) => a + b, 0);
+          const centerX = (chartArea.left + chartArea.right) / 2;
+          const centerY = (chartArea.top + chartArea.bottom) / 2;
+          ctx.save();
+          ctx.font = 'bold 18px Inter, sans-serif';
+          ctx.fillStyle = '#222';
+          ctx.textAlign = 'center';
+          ctx.fillText('Total', centerX, centerY - 10);
+          ctx.font = 'bold 28px Inter, sans-serif';
+          ctx.fillText(total.toString(), centerX, centerY + 20);
+          ctx.restore();
+        }
+      }]
+    });
+  }
+
+  renderComparativeChart() {
+    const ctx = document.getElementById('comparativeChart') as HTMLCanvasElement | null;
+    if (!ctx) return;
+    if (this.comparativeChart) {
+      this.comparativeChart.destroy();
+    }
+
+    // Naira amounts data (replace with your actual values)
+    const nairaAmounts: { [period: string]: { [metric: string]: number } } = {
+      '2023': {
+        'Total Revenue': 8500000,
+        'Net Profit': 9500000,
+        'Total Loss': 8100000,
+        'Total Expenses': 6500000,
+        'Operating Cash Flow': 5000000,
+        'POS module': 8000000,
+        'HR': 6000000
+      },
+      '2022': {
+        'Total Revenue': 8200000,
+        'Net Profit': 4900000,
+        'Total Loss': 7000000,
+        'Total Expenses': 8300000,
+        'Operating Cash Flow': 4000000,
+        'POS Module': 7400000,
+        'HR': 5000000
+      }
+    };
+
+    const period1 = this.selectedPeriod1;
+    const period2 = this.selectedPeriod2;
+    const labels = Object.keys(this.comparativeData[period1]);
+    const data1 = Object.values(this.comparativeData[period1]);
+    const data2 = Object.values(this.comparativeData[period2]);
+
+    this.comparativeChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: period1,
+            data: data1,
+            backgroundColor: '#2471A3',
+            borderColor: '#2471A3',
+            borderWidth: 1
+          },
+          {
+            label: period2,
+            data: data2,
+            backgroundColor: '#F39C12',
+            borderColor: '#F39C12',
+            borderWidth: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            onClick: (e, legendItem, legend) => {
+              const ci = legend.chart;
+              const index = legendItem.datasetIndex;
+              if (typeof index !== 'number') return;
+              const meta = ci.getDatasetMeta(index);
+              meta.hidden = !meta.hidden;
+              ci.update();
+            }
+          },
+          tooltip: {
+            enabled: true,
+            callbacks: {
+              label: (context: any) => {
+                const datasetLabel = context.dataset.label || '';
+                const period = datasetLabel === period1 ? period1 : period2;
+                const nairaValue = nairaAmounts[period][context.label as string] ?? 0;
+                return [
+                  `${context.dataset.label}: ${context.parsed.y}%`,
+                  `Amount: ₦${nairaValue.toLocaleString()}`
+                ];
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            ticks: {
+              callback: (value: string | number) => {
+                return value + '%';
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  applyPeriodComparison() {
+    this.periodModalOpen = false;
+    setTimeout(() => this.renderComparativeChart(), 100); // Ensure modal closes before re-render
+  }
+
   autoGenerateStatements() {
     // 1. Bank Reconciliation Report
     const outstandingCheques = this.cashLedger.filter(
@@ -410,16 +756,12 @@ export class AccountingReportsComponent {
   }
 
   downloadReport(report: Report): void {
-    // Implement download logic
+    
   }
 
-  shareReport(report: Report): void {
-    // Implement share logic
-  }
+  shareReport(report: Report): void {}
 
-  editReport(report: Report): void {
-    // Implement edit logic
-  }
+  editReport(report: Report): void {}
 
   deleteReport(report: Report): void {
     const confirmDelete = confirm(`Delete ${report.title}?`);
@@ -451,7 +793,6 @@ export class AccountingReportsComponent {
       const idx = this.reports.findIndex(r => r.id === newReport.id);
       if (idx > -1) {
         this.reports[idx].status = 'Completed';
-        // Attach data for modal view based on report type
         const reportMap: { [key: string]: any } = {
           'Fixed Asset Movement': this.fixedAssetMovements,
           'AR Aging Report': this.arAgingReport,
@@ -461,7 +802,6 @@ export class AccountingReportsComponent {
           'Inventory Valuation Report': this.inventoryValuationReport,
           'KPI/Ratio Report': this.kpiRatioReport,
           'Deferred Revenue & Prepaids': this.deferredRevenuePrepaids,
-          // Add auto-generated statements
           'Bank Reconciliation Report': this.allReports[0].data,
           'Trial Balance': this.allReports[1].data,
           'General Ledger': this.allReports[2].data,
@@ -476,18 +816,17 @@ export class AccountingReportsComponent {
       }
     }, 2000);
   }
-
-  // Open report modal
-  openReport(report: GeneratedReport) {
-    if (report.status === 'Completed') {
-      this.selectedReport = report;
-      this.modalOpen = true;
-    }
+openReport(report: GeneratedReport) {
+  if (report.status === 'Completed') {
+    this.selectedReport = report;
+    this.modalOpen = true;
+    document.body.style.overflow = 'hidden';
   }
+}
 
-  // Close modal
-  closeModal() {
-    this.modalOpen = false;
-    this.selectedReport = null;
-  }
+closeModal() {
+  this.modalOpen = false;
+  this.selectedReport = null;
+  document.body.style.overflow = '';
+}
 }

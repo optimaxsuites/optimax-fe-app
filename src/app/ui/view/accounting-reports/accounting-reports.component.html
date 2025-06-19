@@ -9,7 +9,7 @@
   <div class="header">
     <h1 class="main-title">Accounting Reports</h1>
     <div class="button-group">
-      <button class="btn btn-secondary">
+      <button class="btn btn-secondary" (click)="onExport()">
         <i class="ri-download-line icon-margin-right"></i>
         Export
       </button>
@@ -20,59 +20,7 @@
     </div>
   </div>
 
-  <div class="card filter-card">
-    <div class="grid grid-4-cols gap-4">
-      <div>
-        <label class="label">Report Type</label>
-        <div class="relative">
-          <select class="input-select" [(ngModel)]="reportType" name="reportType">
-            <option value="">Select Report Type</option>
-            <option>Fixed Asset Movement</option>
-            <option>AR Aging Report</option>
-            <option>AP Aging Report</option>
-            <option>Budget vs Actual</option>
-            <option>Segment/Department Report</option>
-            <option>Inventory Valuation Report</option>
-            <!-- <option>KPI/Ratio Report</option> -->
-            <option>Deferred Revenue & Prepaids</option>
-          </select>
-        </div>
-      </div>
-
-      <div>
-        <label class="label">Date Range</label>
-        <div class="relative">
-          <select class="input-select" [(ngModel)]="dateRange" name="dateRange">
-            <option value="">Select Date Range</option>
-            <option>This Month</option>
-            <option>Last Month</option>
-            <option>This Quarter</option>
-            <option>Last Quarter</option>
-            <option>This Year</option>
-            <option>Custom Range</option>
-          </select>
-        </div>
-      </div>
-
-      <div>
-        <label class="label">From</label>
-        <div class="relative">
-          <input type="date" class="input-field" [(ngModel)]="fromDate" name="fromDate" />
-        </div>
-      </div>
-
-      <div>
-        <label class="label">To</label>
-        <div class="relative">
-          <input type="date" class="input-field" [(ngModel)]="toDate" name="toDate" />
-        </div>
-      </div>
-    </div>
-
-    <div class="flex-end-container mt-4">
-      <button class="btn btn-primary" (click)="onGenerateReport()">Generate Report</button>
-    </div>
-  </div>
+ 
 
   <div class="grid grid-cols-4 gap-4 mb-6">
     <div class="summary-card green">
@@ -194,10 +142,11 @@
   </div>
 
   <div class="statements-grid">
-    <div
-      class="statement-card"
-      *ngFor="let report of filteredReports"
-    >
+   <div
+  class="statement-card"
+  *ngFor="let report of filteredReports"
+  (click)="previewReport(report)"
+>
       <div class="statement-icon">
         <i class="icon-{{ report.icon }}"></i>
       </div>
@@ -236,14 +185,14 @@
     <div class="section-header">
       <h2 class="section-title">Comparative Analysis</h2>
       <div class="section-actions">
-        <button class="btn btn-secondary">
+                <button class="btn btn-secondary" (click)="periodModalOpen = true">
           <i class="icon-period"></i> Change Period
         </button>
       </div>
     </div>
     <div class="comparison-chart">
-      
-    </div>
+  <canvas id="comparativeChart"></canvas>
+</div>
     <div class="comparison-legend">
       <div class="legend-item">
         <div class="legend-color color-current"></div>
@@ -255,6 +204,31 @@
       </div>
     </div>
   </div>
+
+  <!-- Period Selection Modal -->
+<div class="period-modal" *ngIf="periodModalOpen">
+  <div class="period-modal-content">
+    <h3>Select Periods to Compare</h3>
+    <div class="period-selectors">
+      <div>
+        <label>Period 1</label>
+        <select [(ngModel)]="selectedPeriod1">
+          <option *ngFor="let period of availablePeriods" [value]="period">{{ period }}</option>
+        </select>
+      </div>
+      <div>
+        <label>Period 2</label>
+        <select [(ngModel)]="selectedPeriod2">
+          <option *ngFor="let period of availablePeriods" [value]="period">{{ period }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" (click)="applyPeriodComparison()">Compare</button>
+      <button class="btn btn-secondary" (click)="periodModalOpen = false">Cancel</button>
+    </div>
+  </div>
+</div>
 
   <div class="grid grid-2-cols gap-6 mb-6">
     <div class="card chart-card">
@@ -268,7 +242,7 @@
           </select>
         </div>
       </div>
-      <div id="revenue-chart" class="chart-placeholder"></div>
+       <canvas id="revenueChart" class="chart-placeholder"></canvas>
     </div>
 
     <div class="card chart-card">
@@ -283,12 +257,68 @@
           </select>
         </div>
       </div>
-      <div id="expense-chart" class="chart-placeholder"></div>
+       <canvas id="expenseChart"></canvas>
     </div>
   </div>
 
+
+  
   <!-- Recently Generated Reports Table -->
   <div class="card recent-transactions-card">
+     <h2 class="section-title">New Reports</h2>
+     <div class="card filter-card">
+    <div class="grid grid-4-cols gap-4">      
+      <div>
+        <label class="label">Report Type</label>
+        <div class="relative">
+          <select class="input-select" [(ngModel)]="reportType" name="reportType">
+            <option value="">Select Report Type</option>
+            <option>Fixed Asset Movement</option>
+            <option>AR Aging Report</option>
+            <option>AP Aging Report</option>
+            <option>Budget vs Actual</option>
+            <option>Segment/Department Report</option>
+            <option>Inventory Valuation Report</option>
+            <!-- <option>KPI/Ratio Report</option> -->
+            <option>Deferred Revenue & Prepaids</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="label">Date Range</label>
+        <div class="relative">
+          <select class="input-select" [(ngModel)]="dateRange" name="dateRange">
+            <option value="">Select Date Range</option>
+            <option>This Month</option>
+            <option>Last Month</option>
+            <option>This Quarter</option>
+            <option>Last Quarter</option>
+            <option>This Year</option>
+            <option>Custom Range</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="label">From</label>
+        <div class="relative">
+          <input type="date" class="input-field" [(ngModel)]="fromDate" name="fromDate" />
+        </div>
+      </div>
+
+      <div>
+        <label class="label">To</label>
+        <div class="relative">
+          <input type="date" class="input-field" [(ngModel)]="toDate" name="toDate" />
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-end-container mt-4">
+      <button class="btn btn-primary" (click)="onGenerateReport()">Generate Report</button>
+    </div>
+  </div>
     <div class="flex-between-center card-header-bordered">
       <h3 class="card-title">Recently Generated Reports</h3>
       <button class="text-primary text-sm font-medium">View All</button>
@@ -399,12 +429,13 @@
     </div>
   </div>
 
-      <!-- Fullscreen Modal for Viewing Generated Report -->
-    <div class="fullscreen-modal" *ngIf="modalOpen">
-      <div class="fullscreen-modal-content">
+    <div class="fullscreen-modal" [ngClass]="{'modal-expanded-mode': modalExpanded}" *ngIf="modalOpen">
+    <div class="fullscreen-modal-content" [ngClass]="{'modal-expanded': modalExpanded, 'modal-normal': !modalExpanded}">
+      <button class="fullscreen-modal-expand" (click)="toggleModalSize()">
+        <i [ngClass]="modalExpanded ? 'ri-contract-left-line' : 'ri-expand-left-line'"></i>
+      </button>
         <button class="fullscreen-modal-close" (click)="closeModal()">×</button>
-
-        <!-- Bank Reconciliation Report Modal -->
+          <!-- Bank Reconciliation Report Modal -->
 <ng-container *ngIf="selectedReport?.type === 'Bank Reconciliation Report'">
   <div class="report-header">
     <i class="ri-bank-line report-icon"></i>
@@ -919,5 +950,6 @@
             <button class="btn btn-info">Print</button>
           </div>
         </ng-container>
-      </div>
+
     </div>
+  </div>
