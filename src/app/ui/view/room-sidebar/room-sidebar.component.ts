@@ -146,7 +146,7 @@ export class RoomSidebarComponent {
     { name: 'Kitchen / Room Service', path: 'room sevice' },
     { name: 'Housekeeping Record', path: 'Housekeeping Record' },
     { name: 'Spa', path: 'room' },
-    { name: 'Gym', path: 'admin' },
+    { name: 'Gym', path: 'room' },
     { name: 'Bar', path: 'bar' },
   ];
 

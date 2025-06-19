@@ -1,86 +1,14 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { MessageService } from 'primeng/api';
 
-export interface Guest {
-  id?: string; // Optional property for guest ID
-  title: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  country: string;
-  idNumber: string;
-  gender: string;
-}
-
-export interface BookingDetails {
-  checkinDate: Date;
-  checkoutDate: Date;
-  adults: number;
-  children: number;
-  specialRequests?: string;
-  paymentMethod: string;
-  totalAmount: number;
-  paidAmount: number;
-  balanceAmount: number;
-}
-
-export interface Room {
-  id: number;
-  number: number | null;
-  type: string;
-  status: string;
-  floor?: number;
-  guest?: Guest; // Optional property for guest
-  rate: number;
-  bookingDetails?: BookingDetails;
-  beds?: number;
-  maxOccupancy?: number;
-  description?: string;
-  amenities?: string[];
-  currentKey?: RoomKey; // Optional property for current key
-}
-
-export interface Booking {
-  guest: Guest;
-  checkinDate: Date;
-  checkoutDate: Date;
-  adults: number;
-  children: number;
-  specialRequests: string;
-  paymentMethod: string;
-  depositAmount: number;
-  roomIds: number[];
-  roomTypes: string[];
-  roomRates: number[];
-  subtotal: number;
-  taxes: number;
-  total: number;
-  balanceAmount: number;
-  status?: string;
-}
-
-export interface RoomKey {
-  id: string;
-  roomNumber: number;
-  roomId: number;
-  isActive: boolean;
-  assignedDate: Date;
-  deactivationDate: Date;
-  guestIdNumber: string;
-  guestName?: string;
-}
-
-export interface KeyCardLog {
-  id: string;
-  roomNumber: number;
-  roomId: number;
-  keyCardId: string;
-  guestIdNumber: string;
-  accessType: 'GUEST' | 'MASTER' | 'STAFF';
-  timestamp: Date;
-  accessGranted: boolean;
-}
+import { Observable, forkJoin, map } from 'rxjs';
+import {
+  HotelserviceService,
+  Room,
+  RoomStatus,
+  Booking,
+  Guest,
+} from '../../hospitality/hotelservice.service';
 
 @Component({
   selector: 'app-hotel-roomlist',
@@ -88,31 +16,28 @@ export interface KeyCardLog {
   styleUrls: ['./hotel-roomlist.component.scss'],
   providers: [MessageService],
 })
-export class HotelRoomlistComponent {
+export class HotelRoomlistComponent implements OnInit {
   @Output() roomSelected = new EventEmitter<Room>();
   @Output() bookingFormRequested = new EventEmitter<Room[]>();
 
-  roomTypes = [
-    'All Rooms',
-    'Standard',
-    'Deluxe',
-    'Suite',
-    'Executive',
-    'Presidential',
-  ];
+  roomTypes: string[] = ['All Rooms'];
   selectedRoomTypes: string[] = ['All Rooms'];
   searchQuery = '';
   searchDate: Date | null = null;
   viewingAvailableRooms = false;
   selectAll = false;
   selectedRooms: Room[] = [];
+  bookings: Booking[] = [];
+  guests: Guest[] = [];
+  isLoading = true;
+  roomBookingsMap: Map<number, Booking> = new Map();
+  roomGuestsMap: Map<number, Guest> = new Map();
 
   openForm = false;
   openLogs = false;
   openRoom = false;
   showRoomForm = false;
 
-  // For displaying booking details
   selectedBookingDetails: Room | null = null;
   showBookingDetails = false;
 
@@ -122,20 +47,20 @@ export class HotelRoomlistComponent {
   selectedRoom: Room | null = null;
 
   statusColors: { [key: string]: string } = {
-    available: 'bg-green-400',
-    booked: 'bg-amber-300',
-    occupied: 'bg-blue-400',
-    maintenance: 'bg-gray-400',
-    dirty: 'bg-red-400',
+    AVAILABLE: 'bg-green-400',
+    BOOKED: 'bg-amber-300',
+    OCCUPIED: 'bg-blue-400',
+    UNDER_MAINTENANCE: 'bg-gray-400',
+    CLEANING: 'bg-red-400',
   };
 
   statusOptions = [
     { value: 'All Statuses', label: 'All Statuses' },
-    { value: 'available', label: 'Available' },
-    { value: 'booked', label: 'Booked' },
-    { value: 'occupied', label: 'Occupied' },
-    { value: 'maintenance', label: 'Maintenance' },
-    { value: 'dirty', label: 'Dirty' },
+    { value: 'AVAILABLE', label: 'Available' },
+    { value: 'BOOKED', label: 'Booked' },
+    { value: 'OCCUPIED', label: 'Occupied' },
+    { value: 'UNDER_MAINTENANCE', label: 'Maintenance' },
+    { value: 'CLEANING', label: 'Cleaning' },
   ];
 
   selectedStatus: { value: string; label: string } = {
@@ -143,9 +68,13 @@ export class HotelRoomlistComponent {
     label: 'All Statuses',
   };
 
-  constructor(private messageService: MessageService) {
-    this.loadRooms();
-    this.filteredRooms = [...this.rooms];
+  constructor(
+    private messageService: MessageService,
+    private hotelService: HotelserviceService
+  ) {}
+
+  ngOnInit(): void {
+    this.loadAllData();
   }
 
   selectRoom(room: Room): void {
@@ -202,54 +131,17 @@ export class HotelRoomlistComponent {
 
   applyFilters(): void {
     this.filteredRooms = this.rooms.filter((room) => {
-      // Room type filter (unchanged)
+      // Room type filter
       const typeMatch =
         this.selectedRoomTypes.includes('All Rooms') ||
-        this.selectedRoomTypes.includes(room.type);
+        this.selectedRoomTypes.includes(room.roomType.toString());
 
-      // Updated status filter for single selection
+      // Status filter
       const statusMatch =
         this.selectedStatus.value === 'All Statuses' ||
-        this.selectedStatus.value === room.status;
+        this.selectedStatus.value === room.roomStatus;
 
-      // Search filter (unchanged)
-      const searchMatch =
-        !this.searchQuery ||
-        room.number?.toString().includes(this.searchQuery) ||
-        (room.guest &&
-          `${room.guest.firstName} ${room.guest.lastName}`
-            .toLowerCase()
-            .includes(this.searchQuery.toLowerCase()));
-
-      // Date filter (unchanged)
-      let dateMatch = true;
-      if (this.searchDate && room.bookingDetails) {
-        const searchDateObj = new Date(this.searchDate);
-        searchDateObj.setHours(0, 0, 0, 0);
-
-        const checkinDate = room.bookingDetails.checkinDate
-          ? new Date(room.bookingDetails.checkinDate)
-          : null;
-        const checkoutDate = room.bookingDetails.checkoutDate
-          ? new Date(room.bookingDetails.checkoutDate)
-          : null;
-
-        if (checkinDate && checkoutDate) {
-          checkinDate.setHours(0, 0, 0, 0);
-          checkoutDate.setHours(0, 0, 0, 0);
-          dateMatch =
-            searchDateObj >= checkinDate && searchDateObj < checkoutDate;
-        } else {
-          dateMatch = false;
-        }
-      }
-
-      return (
-        typeMatch &&
-        statusMatch &&
-        searchMatch &&
-        (this.searchDate ? dateMatch : true)
-      );
+      return typeMatch && statusMatch;
     });
   }
 
@@ -259,15 +151,21 @@ export class HotelRoomlistComponent {
   }
 
   showAvailableRooms(): void {
-    this.availableRooms = this.rooms.filter(
-      (room) =>
-        room.status === 'available' &&
-        (this.selectedRoomTypes.includes('All Rooms') ||
-          this.selectedRoomTypes.includes(room.type))
-    );
-    this.viewingAvailableRooms = true;
-    this.selectedRooms = [];
-    this.selectAll = false;
+    this.hotelService.getAvailableRooms().subscribe({
+      next: (rooms) => {
+        this.availableRooms = rooms;
+        this.viewingAvailableRooms = true;
+        this.selectedRooms = [];
+        this.selectAll = false;
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load available rooms',
+        });
+      },
+    });
   }
 
   clearDateFilter(): void {
@@ -314,20 +212,10 @@ export class HotelRoomlistComponent {
     this.selectAll = false;
   }
 
-  // Helper for displaying dates
   formatDate(date: Date | string | undefined): string {
     if (!date) return 'N/A';
     const dateObj = typeof date === 'string' ? new Date(date) : date;
     return dateObj.toLocaleDateString();
-  }
-
-  // Calculate stay duration
-  calculateNights(checkin?: Date, checkout?: Date): number {
-    if (!checkin || !checkout) return 0;
-    const checkinDate = new Date(checkin);
-    const checkoutDate = new Date(checkout);
-    const diffTime = checkoutDate.getTime() - checkinDate.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }
 
   resetFilters(): void {
@@ -338,186 +226,155 @@ export class HotelRoomlistComponent {
     this.applyFilters();
   }
 
-  private updateRoomTypes(): void {
-    // Get all unique room types from the rooms array
-    const types = new Set(this.rooms.map((room) => room.type));
+  private loadAllData(): void {
+    this.isLoading = true;
 
-    this.roomTypes = ['All Rooms', ...Array.from(types).sort()];
-  }
-
-  // Call this method whenever rooms are loaded or updated
-  private loadRooms(): void {
-    const storedRooms = localStorage.getItem('rooms');
-    if (storedRooms) {
-      const parsedRooms = JSON.parse(storedRooms);
-
-      // Convert date strings back to Date objects
-      this.rooms = parsedRooms.map((room: any) => {
-        if (room.bookingDetails) {
-          room.bookingDetails.checkinDate = room.bookingDetails.checkinDate
-            ? new Date(room.bookingDetails.checkinDate)
-            : null;
-          room.bookingDetails.checkoutDate = room.bookingDetails.checkoutDate
-            ? new Date(room.bookingDetails.checkoutDate)
-            : null;
-        }
-        return room;
-      });
-    } else {
-      // Initialize with default rooms if none in localStorage
-
-      this.rooms = [
-        {
-          id: 1,
-          number: 101,
-          type: 'Standard',
-          status: 'available',
-          rate: 15000,
-          floor: 1,
-          beds: 1,
-          maxOccupancy: 3,
-          description: 'Cozy standard room with city view',
-          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
-        },
-
-        {
-          id: 2,
-          number: 102,
-          type: 'Standard',
-          status: 'available',
-          rate: 20000,
-          floor: 1,
-          beds: 1,
-          maxOccupancy: 3,
-          description: 'Cozy standard room with city view',
-          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
-        },
-
-        {
-          id: 3,
-          number: 103,
-          type: 'Suite',
-          status: 'available',
-          rate: 15000,
-          floor: 1,
-          beds: 1,
-          maxOccupancy: 3,
-          description: 'Cozy standard room with city view',
-          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
-        },
-
-        {
-          id: 4,
-          number: 104,
-          type: 'Executive',
-          status: 'available',
-          rate: 15000,
-          floor: 1,
-          beds: 1,
-          maxOccupancy: 3,
-          description: 'Cozy standard room with city view',
-          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
-        },
-
-        {
-          id: 5,
-          number: 205,
-          type: 'Suite',
-          status: 'available',
-          rate: 15000,
-          floor: 2,
-          beds: 2,
-          maxOccupancy: 3,
-          description: 'Cozy standard room with city view',
-          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
-        },
-
-        {
-          id: 6,
-          number: 201,
-          type: 'Deluxe',
-          status: 'available',
-          rate: 13000,
-          floor: 2,
-          beds: 1,
-          maxOccupancy: 3,
-          description: 'Cozy standard room with city view',
-          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
-        },
-
-        {
-          id: 7,
-          number: 301,
-          type: 'Deluxe',
-          status: 'available',
-          rate: 15000,
-          floor: 3,
-          beds: 1,
-          maxOccupancy: 3,
-          description: 'Cozy standard room with city view',
-          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
-        },
-
-        {
-          id: 8,
-          number: 401,
-          type: 'Presidential',
-          status: 'available',
-          rate: 20000,
-          floor: 4,
-          beds: 1,
-          maxOccupancy: 3,
-          description: 'Cozy standard room with city view',
-          amenities: ['WiFi', 'TV', 'AC', 'Mini Bar', 'Hair Dryer'],
-        },
-        // ... other default rooms
-      ];
-      localStorage.setItem('rooms', JSON.stringify(this.rooms));
-    }
-
-    this.updateRoomTypes();
-    this.applyFilters();
-  }
-
-  onBookingConfirmed(updatedRooms: Room[]): void {
-    // Update local rooms array
-    updatedRooms.forEach((updatedRoom) => {
-      const index = this.rooms.findIndex((r) => r.id === updatedRoom.id);
-      if (index !== -1) {
-        this.rooms[index] = updatedRoom;
-      }
+    forkJoin([
+      this.hotelService.getRooms(),
+      this.hotelService.getRoomTypes(),
+      this.hotelService.getBookings(),
+      this.hotelService.getGuests(),
+    ]).subscribe({
+      next: ([rooms, roomTypes, bookings, guests]) => {
+        this.rooms = this.enrichRoomsWithGuestAndBookingData(
+          rooms,
+          bookings,
+          guests
+        );
+        this.bookings = bookings;
+        this.guests = guests;
+        this.roomTypes = ['All Rooms', ...roomTypes.map((rt) => rt.name)];
+        this.applyFilters();
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load data',
+        });
+        this.isLoading = false;
+      },
     });
+  }
 
-    // Update localStorage
-    localStorage.setItem('rooms', JSON.stringify(this.rooms));
+  private enrichRoomsWithGuestAndBookingData(
+    rooms: Room[],
+    bookings: Booking[],
+    guests: Guest[]
+  ): Room[] {
+    // Clear existing maps
+    this.roomBookingsMap.clear();
+    this.roomGuestsMap.clear();
 
-    // Update room types
-    this.updateRoomTypes();
+    return rooms.map((room) => {
+      // Find booking for this room
+      const roomBooking = bookings.find((booking) =>
+        booking.rooms.includes(room.id as number)
+      );
 
+      // Find guest for this booking
+      let guest: Guest | undefined;
+      if (roomBooking) {
+        guest =
+          typeof roomBooking.guest === 'number'
+            ? guests.find((g) => g.id === roomBooking.guest)
+            : roomBooking.guest;
+
+        // Add to maps
+        if (roomBooking && guest) {
+          this.roomBookingsMap.set(room.id as number, roomBooking);
+          this.roomGuestsMap.set(room.id as number, guest);
+        }
+      }
+
+      return {
+        ...room,
+        bookingDetails: roomBooking
+          ? {
+              checkinDate: roomBooking.checkinDate,
+              checkoutDate: roomBooking.checkoutDate,
+              adults: roomBooking.adults,
+              children: roomBooking.children,
+              specialRequests: roomBooking.specialRequests,
+              paymentMethod: 'Credit Card',
+              totalAmount: roomBooking.total,
+              paidAmount: roomBooking.depositAmount || 0,
+              balanceAmount: roomBooking.balanceAmount || 0,
+            }
+          : undefined,
+      };
+    });
+  }
+
+  getBookingForRoom(roomId: number): Booking | undefined {
+    return this.roomBookingsMap.get(roomId);
+  }
+
+  getGuestForRoom(roomId: number): Guest | undefined {
+    return this.roomGuestsMap.get(roomId);
+  }
+
+  hasBooking(roomId: number): boolean {
+    return this.roomBookingsMap.has(roomId);
+  }
+
+  hasGuest(roomId: number): boolean {
+    return this.roomGuestsMap.has(roomId);
+  }
+
+  getRoomTypeName(roomTypeId: number): string {
+    const roomType = this.roomTypes.find((rt) => rt === `Room ${roomTypeId}`);
+    return roomType || `Room ${roomTypeId}`;
+  }
+
+  calculateNights(checkinDate: string | Date | undefined, checkoutDate: string | Date | undefined): number {
+  if (!checkinDate || !checkoutDate) return 0;
+  
+  const checkin = typeof checkinDate === 'string' ? new Date(checkinDate) : checkinDate;
+  const checkout = typeof checkoutDate === 'string' ? new Date(checkoutDate) : checkoutDate;
+  
+  const timeDiff = checkout.getTime() - checkin.getTime();
+  return Math.ceil(timeDiff / (1000 * 3600 * 24));
+}
+  onBookingConfirmed(): void {
+    this.loadAllData();
     this.viewingAvailableRooms = false;
     this.openForm = false;
     this.selectedRooms = [];
     this.selectAll = false;
-
-    // Refresh the filtered rooms
-    this.applyFilters();
   }
 
   handleNewRoom(newRoom: Room): void {
-    // Add the new room to your rooms array
-    this.rooms.push(newRoom);
+    this.hotelService.createRoom(newRoom).subscribe({
+      next: (room) => {
+        this.rooms.push(room);
+        this.updateRoomTypes();
+        this.applyFilters();
+        this.showRoomForm = false;
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to create room',
+        });
+      },
+    });
+  }
 
-    // Update localStorage
-    localStorage.setItem('rooms', JSON.stringify(this.rooms));
-
-    // Update room types
-    this.updateRoomTypes();
-
-    // Apply filters
-    this.applyFilters();
-
-    // Hide the form
-
-    this.showRoomForm = !this.showRoomForm;
+  private updateRoomTypes(): void {
+    this.hotelService.getRoomTypes().subscribe({
+      next: (roomTypes) => {
+        this.roomTypes = ['All Rooms', ...roomTypes.map((rt) => rt.name)];
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load room types',
+        });
+      },
+    });
   }
 }
