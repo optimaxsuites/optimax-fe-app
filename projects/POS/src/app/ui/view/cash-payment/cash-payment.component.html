@@ -57,10 +57,10 @@
     >
       <span class="text-[16px] mb-2"> Amount due </span>
       <span class="font-semibold text-[30px]">{{ approximateCartTotal | currency:'₦'}}</span>
-       
+
       <div class="flex flex-col gap-4 mt-3 w-1/2">
         <div *ngFor="let mode of navigationState.cart.paymentModes" class="w-full shadow-lg px-3 py-4 rounded-xl">
-          
+
           <!-- Loyalty Section -->
           <ng-container *ngIf="mode === 'loyalty'">
             <div class="flex flex-col gap-3 mb-2">
@@ -82,7 +82,7 @@
                   </button>
                 </div>
               </div>
-              
+
               <!-- Customer Information (when found) -->
               <div *ngIf="customerFound" class="bg-orange-50 p-3 rounded-lg">
                 <div class="flex justify-between items-center">
@@ -96,7 +96,7 @@
                   </div>
                 </div>
               </div>
-              
+
               <!-- Customer Not Found Message -->
               <div *ngIf="customerNotFound" class="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
                 <div class="flex justify-between items-center">
@@ -108,7 +108,7 @@
               </div>
             </div>
           </ng-container>
-      
+
           <!-- Payment Amount Input -->
           <div class="flex justify-between items-center mb-3 w-full px-3">
             <p class="text-lg font-medium">{{ getPaymentLabel(mode) }}:</p>
@@ -125,7 +125,7 @@
               <span class="text-2xl ml-2 font-medium">₦</span>
             </div>
           </div>
-          
+
           <!-- Quick Amount Selection -->
           <div *ngIf="mode !== 'loyalty'" class="border rounded-xl bg-customGreen/50 overflow-hidden">
             <div class="grid grid-cols-3 divide-x divide-y">
@@ -143,7 +143,7 @@
               </button>
             </div>
           </div>
-          
+
           <!-- Loyalty-specific Quick Points -->
           <div *ngIf="mode === 'loyalty' && customerFound" class="border rounded-xl bg-gray-50 overflow-hidden mt-3">
             <div class="grid grid-cols-3 divide-x bg-customGreen/50">
@@ -223,7 +223,7 @@
 
     <tbody>
       <ng-container *ngFor="let item of navigationState.cart.cartItems">
-        <ng-container *ngIf="item.selectedVariants.length > 0; else noVariantTemplate">
+        <ng-container *ngIf="(item.selectedVariants?.length ?? 0) > 0; else noVariantTemplate">
           <ng-container *ngFor="let variant of item.selectedVariants;">
             <tr style="text-align: center; font-size: 10px;">
               <td style="text-align: left;">{{ item.name }} - {{ variant.name }}</td>
@@ -279,49 +279,49 @@
 <div *ngIf="showCreateCustomerModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
   <div class="bg-white rounded-xl p-5 w-full max-w-md">
     <h2 class="text-xl font-bold mb-4">Create New Customer</h2>
-    
+
     <div class="space-y-4">
       <div>
         <label class="block text-sm font-medium mb-1">Full Name</label>
-        <input 
-          type="text" 
-          [(ngModel)]="newCustomer.name" 
+        <input
+          type="text"
+          [(ngModel)]="newCustomer.name"
           class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-customBlue focus:outline-none"
           placeholder="Enter customer name"
         />
       </div>
-      
+
       <div>
         <label class="block text-sm font-medium mb-1">Phone Number</label>
-        <input 
-          type="tel" 
-          [(ngModel)]="newCustomer.phoneNumber" 
+        <input
+          type="tel"
+          [(ngModel)]="newCustomer.phoneNumber"
           class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-customBlue focus:outline-none"
           placeholder="Phone number"
           [value]="customerSearch"
         />
       </div>
-      
+
       <div>
         <label class="block text-sm font-medium mb-1">Email (Optional)</label>
-        <input 
-          type="email" 
-          [(ngModel)]="newCustomer.email" 
+        <input
+          type="email"
+          [(ngModel)]="newCustomer.email"
           class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-customBlue focus:outline-none"
           placeholder="Email address"
         />
       </div>
     </div>
-    
+
     <div class="flex justify-end gap-3 mt-5">
-      <button 
-        (click)="showCreateCustomerModal = false" 
+      <button
+        (click)="showCreateCustomerModal = false"
         class="px-4 py-2 border rounded-lg hover:bg-gray-100"
       >
         Cancel
       </button>
-      <button 
-        (click)="createCustomer()" 
+      <button
+        (click)="createCustomer()"
         class="px-4 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlue/90"
       >
         Create Customer

@@ -125,7 +125,7 @@
 </div>
   <div class="p-3 flex justify-between gap-4 border rounded-xl items-center" *ngIf="cart">
     <i class="fa-solid fa-minus cursor-pointer" (click)="updateItemQuantity(item, -1)"></i>
-    <input type="text" [(ngModel)]="item.count" class="w-10 text-center outline-none" 
+    <input type="text" [(ngModel)]="item.count" class="w-10 text-center outline-none"
     (ngModelChange)="validateItemCount(item)"/>
     <i class="fa-solid fa-plus cursor-pointer" (click)="updateItemQuantity(item, 1)"></i>
   </div>
@@ -139,7 +139,7 @@
 
 </div>
 
-<div *ngIf="item.selectedVariants.length > 0" class="flex flex-col gap-3 mt-3">
+<div *ngIf="(item.selectedVariants?.length ?? 0) > 0" class="flex flex-col gap-3 mt-3">
   @for (variant of item.selectedVariants; track $index) {
 
   <div class="flex justify-between rounded-2xl items-center border p-3 relative">
@@ -168,7 +168,7 @@
       <span class="font-semibold">
         {{ (variant.selectedQuantity ?? 0) * (variant.price || 0) | currency : "₦"}}
       </span>
-      
+
 
     </div>
     <i class="fa-solid fa-xmark z-10 bg-white bg-opacity-30 p-2 items-center shadow rounded-full cursor-pointer absolute mr-2 left-0 top-0 cancel" *ngIf="cart" (click)="onDelete(true, $index)"></i>

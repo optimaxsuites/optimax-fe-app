@@ -2,7 +2,10 @@ import { Observable, Subscribable } from "rxjs";
 import { BusinessType } from "./enums";
 
 /** Like `satisfies` but for types */
-export type Satisfy<TTypeToSatisfy, TTypeToCheck extends TTypeToSatisfy> = TTypeToCheck
+export type Satisfy<
+  TTypeToSatisfy,
+  TTypeToCheck extends TTypeToSatisfy,
+> = TTypeToCheck;
 
 export interface ProductJSONFormat {
   id: number;
@@ -53,7 +56,7 @@ export interface ProductData extends ProductJSONFormat {
   // The total discount of all instances of a single product in the cart
   discountedPrice: number;
 
-  selectedVariants: VariantDTO[];
+  selectedVariants?: VariantDTO[];
 
   pricingQuantity: any;
 }
