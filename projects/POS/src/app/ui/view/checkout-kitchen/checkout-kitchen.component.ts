@@ -1,21 +1,23 @@
-import { Component, computed, Input, OnInit, signal } from "@angular/core";
+import { Component, computed, Input, OnInit, signal } from '@angular/core';
 import {
   BranchDTO,
   ProductCategoryDTO,
   ProductData,
-} from "../../models/interface";
-import { PosServiceService } from "../../service/pos-service.service";
-import { lastValueFrom } from "rxjs";
-import { CheckoutService } from "../../service/checkout.service";
+  Satisfy,
+} from '../../models/interface';
+import { PosServiceService } from '../../service/pos-service.service';
+import { lastValueFrom } from 'rxjs';
+import { CheckoutService } from '../../service/checkout.service';
 import {
   OrderGET,
   OrderItemGET,
   OrderItemPOST,
   OrderPOST,
   TableOrderStatusGET,
-} from "../../models/interfaces/kitchen";
-import { arrayToDate, dateToArray } from "../../shared";
-import { ImageCacheService } from "../../service/image-cache.service";
+} from '../../models/interfaces/kitchen';
+import { arrayToDate, dateToArray } from '../../shared';
+import { ImageCacheService } from '../../service/image-cache.service';
+import { PaymentServiceService } from '../../service/payment-service.service';
 
 /* `TableOrderStatus` stuff is basically all the relevant data about the customer's orders of that *table* as well as the staff who attended to that order. This `TableOrderStatus` can be broken down into a collection of orders (`Table Order`) and other date like the state of the order (UNPAID or PAID), the ids of the waiter, chef, cashier, etc. */
 
@@ -28,6 +30,40 @@ type TableOrderStatusTimeStamps = Partial<{
   completedOn: Date;
   readyOn: Date;
 }>;
+
+type OrderStatus = {
+  pending: boolean;
+  processing: boolean;
+  completed: boolean;
+  ready: boolean;
+};
+type OrderStatusPending = Satisfy<
+  OrderStatus,
+  { pending: true; completed: false; processing: false; ready: false }
+>;
+type OrderStatusProcessing = Satisfy<
+  OrderStatus,
+  { pending: false; completed: false; processing: true; ready: false }
+>;
+type OrderStatusCompleted = Satisfy<
+  OrderStatus,
+  { pending: false; completed: true; processing: false; ready: false }
+>;
+type OrderStatusReady = Satisfy<
+  OrderStatus,
+  { pending: false; completed: false; processing: false; ready: true }
+>;
+type OrderStatusNone = Satisfy<
+  OrderStatus,
+  { pending: false; completed: false; processing: false; ready: false }
+>;
+/** Used to know where an order is pending, processing, completed, or ready */
+type OrderStatusUnion =
+  | OrderStatusCompleted
+  | OrderStatusPending
+  | OrderStatusProcessing
+  | OrderStatusReady
+  | OrderStatusNone;
 
 @Component({
   selector: 'app-checkout-kitchen',
@@ -42,7 +78,52 @@ export class CheckoutKitchenComponent implements OnInit {
   /*
    *the order/card clicked
    */
-  selectedOrder?: TableOrderStatusGET;
+  selectedOrder = signal<TableOrderStatusGET | null>(null);
+  selectedOrderStatus = computed<OrderStatusUnion>(() => {
+    const order = this.selectedOrder();
+
+    if (!order)
+      return {
+        completed: false,
+        pending: false,
+        processing: false,
+        ready: false,
+      };
+
+    if (order.readyOn) {
+      return {
+        completed: false,
+        pending: false,
+        processing: false,
+        ready: true,
+      };
+    }
+
+    if (order.completedOn) {
+      return {
+        completed: true,
+        pending: false,
+        processing: false,
+        ready: false,
+      };
+    }
+
+    if (order.processedOn) {
+      return {
+        completed: false,
+        pending: false,
+        processing: true,
+        ready: false,
+      };
+    }
+
+    return {
+      completed: false,
+      pending: true,
+      processing: false,
+      ready: false,
+    };
+  });
 
   /**
    * The status (and orders) of all the tables in the restaurant. It is indexed with the `id`
@@ -54,13 +135,6 @@ export class CheckoutKitchenComponent implements OnInit {
   changeTestMode(e: Event) {
     this.testMode.update(() => (e.target as HTMLInputElement).value as any);
   }
-  // Replace this with the actual orders
-  data = [
-    { item: 'Jollof Rice', qty: 1, rate: 'N2,000', amount: 'N2,000' },
-    { item: 'Chicken', qty: 2, rate: 'N1,500', amount: 'N3,000' },
-    { item: 'Chapman', qty: 1, rate: 'N1,000', amount: 'N1,000' },
-    { item: 'Cat Fish', qty: 1, rate: 'N2,000', amount: 'N2,000' },
-  ];
 
   /**
    * This is a collection of all the items in an order for the currently viewed table
@@ -71,29 +145,6 @@ export class CheckoutKitchenComponent implements OnInit {
   productCategories = new Map<string, ProductData[]>();
 
   currCategoryProducts: ProductData[] = [];
-
-  productList = [
-    { name: 'Product A', subCategory: 'Sub-Category' },
-    { name: 'Product B', subCategory: 'Sub-Category' },
-    { name: 'Product C', subCategory: 'Sub-Category' },
-    { name: 'Product D', subCategory: 'Sub-Category' },
-    { name: 'Product E', subCategory: 'Sub-Category' },
-    { name: 'Product F', subCategory: 'Sub-Category' },
-    { name: 'Product G', subCategory: 'Sub-Category' },
-    { name: 'Product H', subCategory: 'Sub-Category' },
-    { name: 'Product I', subCategory: 'Sub-Category' },
-    { name: 'Product A', subCategory: 'Sub-Category' },
-    { name: 'Product B', subCategory: 'Sub-Category' },
-    { name: 'Product C', subCategory: 'Sub-Category' },
-    { name: 'Product D', subCategory: 'Sub-Category' },
-    { name: 'Product E', subCategory: 'Sub-Category' },
-    { name: 'Product F', subCategory: 'Sub-Category' },
-    { name: 'Product G', subCategory: 'Sub-Category' },
-    { name: 'Product H', subCategory: 'Sub-Category' },
-    { name: 'Product I', subCategory: 'Sub-Category' },
-  ];
-
-  // categoryList = ['Main Meal', 'Drinks', 'BBQ', 'Sides', 'Appetizer'];
 
   get mode(): 'waiter' | 'chef' | 'cashier' {
     //TODO: Determine the mode to use from the logged in user's id. For now though, just use a toggle to change this
@@ -129,20 +180,20 @@ export class CheckoutKitchenComponent implements OnInit {
   private _fetchedBranches!: BranchDTO[];
   private readonly _dummyTableOrderStatus = 9999999;
 
-  /** Indexed with the Product Data's id and the value is the url */
-  productImgMap = new Map<number, string>();
+  isPaymentModalOpen = false;
 
   constructor(
-    private posService: PosServiceService,
-    private checkoutService: CheckoutService,
-    private imageCacheService: ImageCacheService
+    private _posService: PosServiceService,
+    private _checkoutService: CheckoutService,
+    private _imageCacheService: ImageCacheService,
+    private _paymentService: PaymentServiceService
   ) {}
 
   ngOnInit() {
     (async () => {
       // Fetch the table statuses.
       // TODO: Implement a skeleton loader while these are getting fetched
-      this.posService.getTableOrderStatuses().subscribe(async (data) => {
+      this._posService.getTableOrderStatuses().subscribe(async (data) => {
         this.tableStatuses.update((_) => {
           return new Map(
             data.map((tableOrderStatus) => [
@@ -157,11 +208,11 @@ export class CheckoutKitchenComponent implements OnInit {
 
       // Fetch and store the branches
       this._fetchedBranches = await lastValueFrom(
-        this.posService.getBranches()
+        this._posService.getBranches()
       );
 
       const fetchedProducts: ProductData[] = await lastValueFrom(
-        this.posService.getProducts()
+        this._posService.getProducts()
       );
 
       fetchedProducts.forEach((fetchedProduct) => {
@@ -173,12 +224,6 @@ export class CheckoutKitchenComponent implements OnInit {
           this.productCategories.set(category, [fetchedProduct]);
         }
         this._productIdAndDataMap.set(fetchedProduct.id, fetchedProduct);
-
-        // Cache product images
-        const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${fetchedProduct.productImages[0].imgNo}`;
-        this.imageCacheService.getImage(remoteImageUrl).subscribe((url) => {
-          this.productImgMap.set(fetchedProduct.id, url);
-        });
       });
       this.currCategoryProducts =
         this.productCategories.values().next().value ?? [];
@@ -187,7 +232,7 @@ export class CheckoutKitchenComponent implements OnInit {
 
   openOrderDetails(table: TableOrderStatusGET) {
     // When a table-card is clicked, set the order details
-    this.selectedOrder = table;
+    this.selectedOrder.set(table);
     this.isOrderDetailsOpen = true;
   }
 
@@ -223,6 +268,12 @@ export class CheckoutKitchenComponent implements OnInit {
       }
     }
 
+    if (timeStamps?.readyOn) {
+      // If it's ready, we're done with it
+      this.deleteTable(tableStatusToOverwrite!);
+      return;
+    }
+
     if (isTableNumberUsed && !overwrite) {
       this.isCreateOrderModalOrderExistsDialogOpen = true;
       return false;
@@ -247,6 +298,17 @@ export class CheckoutKitchenComponent implements OnInit {
       });
 
       if (overwrite) {
+        // Get the previous order's timestamps
+        const { completedOn, orderedOn, processedOn, readyOn } =
+          tableStatusToOverwrite!;
+
+        timeStamps = {
+          completedOn: completedOn ? arrayToDate(completedOn) : undefined,
+          orderedOn: orderedOn ? arrayToDate(orderedOn) : undefined,
+          processedOn: processedOn ? arrayToDate(processedOn) : undefined,
+          readyOn: readyOn ? arrayToDate(readyOn) : undefined,
+        };
+
         // Just remove the old one :p
         // TODO: Refresh the view.
         this.deleteTable(tableStatusToOverwrite!);
@@ -267,7 +329,7 @@ export class CheckoutKitchenComponent implements OnInit {
 
       // Build up a new `TableOrderStatusPOST`, then send it to the backend and retrieve the created object by getting it by id
       const uploadedOrder = await lastValueFrom(
-        this.checkoutService.saveOrder({
+        this._checkoutService.saveOrder({
           id: 0,
           amountTendered: amountTendered,
           branchId: this._fetchedBranches[0].id,
@@ -286,7 +348,7 @@ export class CheckoutKitchenComponent implements OnInit {
       );
 
       const uploadedTableOrderStatus = await lastValueFrom(
-        this.posService.addTableOrderStatus({
+        this._posService.addTableOrderStatus({
           id: 0,
           chefId: 0,
           completedOn: timeStamps?.completedOn?.toISOString() ?? '',
@@ -302,7 +364,7 @@ export class CheckoutKitchenComponent implements OnInit {
       );
 
       const actualTableOrderStatus = await lastValueFrom(
-        this.posService.getTableOrderStatusById(uploadedTableOrderStatus.id)
+        this._posService.getTableOrderStatusById(uploadedTableOrderStatus.id)
       );
 
       // delete the dummy product and replace it
@@ -439,7 +501,7 @@ export class CheckoutKitchenComponent implements OnInit {
    */
   overwriteTableOrderData(tableStatus: TableOrderStatusGET) {
     const clone = structuredClone(tableStatus);
-    this.updateTableDataFromOrderGET(clone.order);
+    this._updateTableDataFromOrderGET(clone.order);
     this.setOrderNote(clone.note ?? '');
     this.orderTableNumber = this.convertStrToNum(clone.tableNumber);
   }
@@ -465,7 +527,7 @@ export class CheckoutKitchenComponent implements OnInit {
   }
 
   deleteTable(tableStatus: TableOrderStatusGET) {
-    this.posService
+    this._posService
       .deleteTableOrderStatusById(tableStatus.id)
       .subscribe((data) => {
         console.log('This should be null: ', data);
@@ -484,14 +546,14 @@ export class CheckoutKitchenComponent implements OnInit {
     this.isCreateOrderModalOpen = true;
     this.isEditingOrder = true;
     const order = this.tableStatuses().get(tableNumber)?.order;
-    if (order) this.updateTableDataFromOrderGET(order);
+    if (order) this._updateTableDataFromOrderGET(order);
   }
 
   convertStrToNum(str: string) {
     return parseInt(str);
   }
 
-  private updateTableDataFromOrderGET(orderToConvert: OrderGET) {
+  private _updateTableDataFromOrderGET(orderToConvert: OrderGET) {
     this.tableData.update((_) => {
       const orderItems = orderToConvert.orderItem;
 
@@ -527,7 +589,7 @@ export class CheckoutKitchenComponent implements OnInit {
           ? dateToArray(timeStamps!.processedOn!)
           : [],
         readyOn: timeStamps?.readyOn ? dateToArray(timeStamps!.readyOn!) : [],
-        status: 'UNPAID',
+        status: timeStamps?.readyOn ? 'PAID' : 'UNPAID',
         tableNumber: `${tableNo}`,
         waterId: 0,
         order: {
@@ -539,7 +601,7 @@ export class CheckoutKitchenComponent implements OnInit {
           discount: {},
           id: 0,
           orderNumber: '0',
-          orderStatus: 'UNPAID',
+          orderStatus: timeStamps?.readyOn ? 'PAID' : 'UNPAID',
           payment: {},
           tax: {},
           updatedAt: 1,
@@ -572,5 +634,34 @@ export class CheckoutKitchenComponent implements OnInit {
     return new Map(
       fetchedOrderItems.map((item) => [item.product, item.quantity])
     );
+  }
+
+  productsInTableOrder(
+    tableOrderStatus = this.selectedOrder() ?? ('' as const)
+  ): ProductData[] {
+    if (typeof tableOrderStatus == 'string') return [];
+
+    return tableOrderStatus.order.orderItem.map(
+      (orderItem) => orderItem.product
+    );
+  }
+
+  getProductImage(product: ProductData) {
+    return this._imageCacheService.getProductImage(product);
+  }
+
+  processPayment(
+    paymentModes: Parameters<
+      PaymentServiceService['processPayment']
+    >[0]['paymentModes']
+  ) {
+    this._paymentService.processPayment({
+      paymentModes,
+      cartItems: this.productsInTableOrder(),
+      discount: 0,
+      subTotal: 0,
+      tax: 0,
+      total: 0,
+    });
   }
 }

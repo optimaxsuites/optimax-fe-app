@@ -118,22 +118,22 @@
             (click)="isOrderDetailsOpen = false"
           ></i>
           <span class="font-bold ml-auto text-2xl"
-            >Table {{ selectedOrder?.tableNumber ?? "???" }}</span
+            >Table {{ selectedOrder()?.tableNumber ?? "???" }}</span
           >
         </ng-template>
         <div style="overflow-y: auto">
           @switch (mode) {
             @case ("chef") {
               <div class="details-body" style="font-size: 1.7rem">
-                @if ((selectedOrder?.order?.orderItem?.length ?? 0) > 0) {
-                  @for (item of selectedOrder!.order.orderItem; track $index) {
+                @if ((selectedOrder()?.order?.orderItem?.length ?? 0) > 0) {
+                  @for (item of selectedOrder()!.order.orderItem; track $index) {
                     <div class="order-item">
                       <span class="item-name">
                         {{ item.product["name"] }}
                         <div
                           [style]="{
                             'background-image':
-                              'url(' + productImgMap.get(item.product.id) + ')',
+                              'url(' + (getProductImage(item.product) | async) + ')',
                           }"
                         ></div>
                       </span>
@@ -157,8 +157,8 @@
                 <div class="additional-note">
                   <h3>Additional Note:</h3>
                   <p>
-                    @if (selectedOrder!.note) {
-                      {{ selectedOrder!.note }}
+                    @if (selectedOrder()?.note) {
+                      {{ selectedOrder()!.note }}
                     } @else {
                       N/A
                     }
@@ -171,15 +171,15 @@
                   pButton
                   type="button"
                   [label]="
-                    !selectedOrder?.processedOn
+                    selectedOrderStatus().pending
                       ? 'Start Preparation'
-                      : !selectedOrder?.completedOn
+                      : selectedOrderStatus().processing
                         ? 'Completed'
                         : 'Close'
                   "
                   icon="pi pi-check"
                   class="p-button-success bg-green-100"
-                  (click)="toggleOrderStatus(selectedOrder!)"
+                  (click)="toggleOrderStatus(selectedOrder()!)"
                 ></button>
                 <!-- <button
           pButton
@@ -200,7 +200,7 @@
 
                 <!-- Table of items -->
                 <div class="overflow-x-auto">
-                  <p-table [value]="selectedOrder!.order.orderItem">
+                  <p-table [value]="selectedOrder()!.order.orderItem">
                     <ng-template pTemplate="header">
                       <tr>
                         <th>Item</th>
@@ -305,7 +305,7 @@
                     label="Paid"
                     class="p-button-success flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200"
                     icon="pi pi-check"
-                    (click)="isReceiptModalOpen = true"
+                    (click)="isPaymentModalOpen = true"
                   ></button>
                 </div>
               </div>
@@ -313,15 +313,15 @@
             @case ("waiter") {
               <!-- TODO: Use a component or template or whatever for both this and the chef's template -->
               <div class="details-body" style="font-size: 1.7rem">
-                @if ((selectedOrder?.order?.orderItem?.length ?? 0) > 0) {
-                  @for (item of selectedOrder!.order.orderItem; track $index) {
+                @if ((selectedOrder()?.order?.orderItem?.length ?? 0) > 0) {
+                  @for (item of selectedOrder()!.order.orderItem; track $index) {
                     <div class="order-item">
                       <span class="item-name">
                         {{ item.product["name"] }}
                         <div
                           [style]="{
                             'background-image':
-                              'url(' + productImgMap.get(item.product.id) + ')',
+                              'url(' + (getProductImage(item.product) | async) + ')',
                           }"
                         ></div>
                       </span>
@@ -345,8 +345,8 @@
                 <div class="additional-note">
                   <h3>Additional Note:</h3>
                   <p>
-                    @if (selectedOrder?.note) {
-                      {{ selectedOrder!.note }}
+                    @if (selectedOrder()?.note) {
+                      {{ selectedOrder()!.note }}
                     } @else {
                       N/A
                     }
@@ -362,7 +362,7 @@
                   icon="pi pi-check"
                   class="p-button-success bg-green-500 rounded-md hover:bg-green-400 focus:outline-none focus:ring focus:ring-green-200 font-bold mr-4"
                   (click)="
-                    overwriteTableOrderData(selectedOrder!);
+                    overwriteTableOrderData(selectedOrder()!);
                     isEditingOrder = true;
                     isCreateOrderModalOpen = true
                   "
@@ -371,28 +371,28 @@
                   pButton
                   type="button"
                   [label]="
-                    !selectedOrder?.processedOn
+                    selectedOrderStatus().pending
                       ? 'Cancel Order'
-                      : !selectedOrder?.completedOn
+                      : selectedOrderStatus().processing
                         ? 'Order In Progress'
                         : 'Order Completed'
                   "
                   [icon]="
-                    !selectedOrder?.processedOn
+                    selectedOrderStatus().pending
                       ? 'pi pi-times'
                       : 'pi pi-asterisk'
                   "
                   [class]="
-                    !selectedOrder?.processedOn
+                    selectedOrderStatus().pending
                       ? 'font-bold rounded-md focus:outline-none focus:ring p-button-danger ml-2 bg-red-500 text-white hover:bg-red-400 focus:ring-red-200'
                       : 'font-bold rounded-md focus:outline-none focus:ring p-button-success bg-green-500 hover:bg-green-400 focus:ring-green-200 cursor-not-allowed'
                   "
                   [disabled]="
-                    selectedOrder?.processedOn || selectedOrder?.completedOn
+                    !selectedOrderStatus().pending
                   "
                   (click)="
-                    !selectedOrder?.processedOn && deleteTable(selectedOrder!);
-                    !selectedOrder?.processedOn && (isOrderDetailsOpen = false)
+                    selectedOrderStatus().pending && deleteTable(selectedOrder()!);
+                    selectedOrderStatus().pending && (isOrderDetailsOpen = false)
                   "
                 ></button>
               </div>
@@ -429,7 +429,7 @@
   <div class="p-4">
     <div class="overflow-x-auto">
       <p-table
-        [value]="selectedOrder?.order?.orderItem ?? data"
+        [value]="selectedOrder()?.order?.orderItem ?? []"
         class="w-full border-gray-300"
       >
         <!-- Table Header -->
@@ -536,7 +536,7 @@
             Tap a meal to add it to the order.
           </div>
         } @else {
-          <p-table [value]="tableData() | keyvalue">
+          <p-table [value]="(tableData() | keyvalue).reverse()">
             <ng-template pTemplate="header">
               <tr>
                 <th>Item</th>
@@ -592,7 +592,7 @@
         >
           <div
             [style]="{
-              'background-image': 'url(' + productImgMap.get(p.id) + ')',
+              'background-image': 'url(' + (getProductImage(p)|async) + ')',
             }"
           ></div>
 
@@ -669,7 +669,7 @@
               : openOrderDetails(
                   tableStatuses().get(orderTableNumber) ??
                     tableStatuses().get(
-                      convertStrToNum(selectedOrder?.tableNumber ?? '0')
+                      convertStrToNum(selectedOrder()?.tableNumber ?? '0')
                     )!
                 )
           "
@@ -737,3 +737,5 @@
     ></button>
   </ng-template>
 </p-dialog>
+
+<app-all-payments-modal [cartItem]="productsInTableOrder()" [(isModalOpen)]="isPaymentModalOpen" (selectedPayments)="processPayment($event)"></app-all-payments-modal>
