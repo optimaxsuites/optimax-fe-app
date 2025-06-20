@@ -3,7 +3,10 @@
 
   <!-- Main content area -->
   <main class="flex-1 p-8 overflow-y-auto">
-    <app-hotel-roomlist (roomSelected)="handleRoomSelected($event)">
+    <app-hotel-roomlist
+      (roomSelected)="handleRoomSelected($event)"
+      (bookingFormRequested)="onBookingFormRequested($event)"
+    >
     </app-hotel-roomlist>
   </main>
 
@@ -11,7 +14,7 @@
   <app-hotel-roomdetails
     #roomDetails
     [room]="selectedRoom"
-    (back)="(selectedRoom)"
+    (back)="onBack()"
     (statusChanged)="onRoomStatusChanged($event)"
   ></app-hotel-roomdetails>
 </div>
