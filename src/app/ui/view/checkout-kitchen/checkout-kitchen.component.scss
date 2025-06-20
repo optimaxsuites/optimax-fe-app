@@ -127,6 +127,7 @@ body {
       min-width: $card-dimension;
       // max-width: 14vw;
       font-weight: bold;
+      user-select: none;
 
       .table-card-header {
         display: flex;
@@ -508,7 +509,7 @@ body {
         display: flex;
 
         > button {
-          max-width: 6.5rem;
+          // max-width: 6.5rem;
           min-width: 6.5rem;
           align-self: center;
         }
