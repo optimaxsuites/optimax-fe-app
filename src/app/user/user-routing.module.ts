@@ -44,7 +44,7 @@ const routes: Routes = [
       { path: 'laundry', component: LaundryServiceComponent },
       { path: 'room sevice', component: RoomServiceComponent },
       { path: 'Housekeeping Record', component: HouseKeepingComponent },
-      // { path: 'gym', component: GymComponent },
+      // { path: 'room', component: HotelRoomsComponent },
       { path: 'bar', component: BarServiceComponent },
       { path: 'admin', component: HotelAdmintableComponent },
     ],

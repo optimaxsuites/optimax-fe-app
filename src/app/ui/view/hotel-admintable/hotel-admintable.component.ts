@@ -1,19 +1,12 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { PrimeNGConfig } from 'primeng/api';
-
-interface Room {
-  id: number;
-  number: number;
-  type: string;
-  status: string;
-  floor?: number;
-  rate: number;
-  beds?: number;
-  maxOccupancy?: number;
-  description?: string;
-  amenities?: string[];
-}
+import {
+  HotelserviceService,
+  Room,
+  RoomStatus,
+} from '../../hospitality/hotelservice.service';
+import { ConfirmationService } from 'primeng/api';
 
 interface Statistics {
   totalRooms: number;
@@ -27,7 +20,7 @@ interface Statistics {
   selector: 'app-hotel-admintable',
   templateUrl: './hotel-admintable.component.html',
   styleUrls: ['./hotel-admintable.component.scss'],
-  providers: [MessageService],
+  providers: [MessageService, ConfirmationService],
 })
 export class HotelAdmintableComponent implements OnInit {
   @Output() back = new EventEmitter();
@@ -45,20 +38,21 @@ export class HotelAdmintableComponent implements OnInit {
 
   statusOptions = [
     { label: 'All Statuses', value: 'all' },
-    { label: 'Available', value: 'available' },
-    { label: 'Occupied', value: 'occupied' },
-    { label: 'Booked', value: 'booked' },
-    { label: 'Maintenance', value: 'maintenance' },
-    { label: 'Dirty', value: 'dirty' },
+    { label: 'Available', value: 'AVAILABLE' },
+    { label: 'Occupied', value: 'OCCUPIED' },
+    { label: 'Booked', value: 'BOOKED' },
+    { label: 'Maintenance', value: 'UNDER_MAINTENANCE' },
+    { label: 'Cleaning', value: 'CLEANING' },
   ];
 
   selectedStatus: any = this.statusOptions[0];
   searchText: string = '';
-  confirmDelete: any;
 
   constructor(
     private messageService: MessageService,
-    private primengConfig: PrimeNGConfig
+    private primengConfig: PrimeNGConfig,
+    private hotelService: HotelserviceService,
+    private confirmationService: ConfirmationService
   ) {}
 
   ngOnInit(): void {
@@ -68,44 +62,41 @@ export class HotelAdmintableComponent implements OnInit {
 
   loadRooms(): void {
     this.loading = true;
-    try {
-      const storedRooms = localStorage.getItem('rooms');
-      if (storedRooms) {
-        this.rooms = JSON.parse(storedRooms);
+    this.hotelService.getRooms().subscribe({
+      next: (rooms) => {
+        this.rooms = rooms;
         this.filteredRooms = [...this.rooms];
         this.calculateStatistics();
-      } else {
+        this.loading = false;
+      },
+      error: (error) => {
         this.messageService.add({
-          severity: 'warn',
-          summary: 'No Data',
-          detail: 'No room data found in local storage',
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load room data',
         });
-      }
-    } catch (error) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to load room data',
-      });
-      console.error('Error loading rooms:', error);
-    } finally {
-      this.loading = false;
-    }
+        console.error('Error loading rooms:', error);
+        this.loading = false;
+      },
+    });
   }
 
   calculateStatistics(): void {
     this.statistics = {
       totalRooms: this.rooms.length,
-      availableRooms: this.rooms.filter((room) => room.status === 'available')
+      availableRooms: this.rooms.filter(
+        (room) => room.roomStatus === 'AVAILABLE'
+      ).length,
+      occupiedRooms: this.rooms.filter((room) => room.roomStatus === 'OCCUPIED')
         .length,
-      occupiedRooms: this.rooms.filter((room) => room.status === 'occupied')
+      bookedRooms: this.rooms.filter((room) => room.roomStatus === 'BOOKED')
         .length,
-      bookedRooms: this.rooms.filter((room) => room.status === 'booked').length,
       maintenanceRooms: this.rooms.filter(
-        (room) => room.status === 'maintenance'
+        (room) => room.roomStatus === 'UNDER_MAINTENANCE'
       ).length,
     };
   }
+
   navigateToCreateRoom() {
     this.openRoomForm = !this.openRoomForm;
   }
@@ -115,38 +106,98 @@ export class HotelAdmintableComponent implements OnInit {
       // Status filter
       const statusMatch =
         this.selectedStatus.value === 'all' ||
-        room.status === this.selectedStatus.value;
+        room.roomStatus === this.selectedStatus.value;
 
       // Search text filter
       const searchMatch =
         !this.searchText ||
-        room.number.toString().includes(this.searchText) ||
-        room.type.toLowerCase().includes(this.searchText.toLowerCase()) ||
-        room.status.toLowerCase().includes(this.searchText.toLowerCase());
+        room.roomNumber.toString().includes(this.searchText) ||
+        (typeof room.roomType === 'object'
+          ? room.roomType.name
+              .toLowerCase()
+              .includes(this.searchText.toLowerCase())
+          : String(room.roomType)
+              .replace(/_/g, ' ')
+              .toLowerCase()
+              .includes(this.searchText.toLowerCase())) ||
+        room.roomStatus.toLowerCase().includes(this.searchText.toLowerCase());
 
       return statusMatch && searchMatch;
     });
   }
 
-  getStatusClass(status: string): string {
+  getStatusClass(status: RoomStatus): string {
     switch (status) {
-      case 'available':
+      case 'AVAILABLE':
         return 'bg-green-100 text-green-800';
-      case 'occupied':
+      case 'OCCUPIED':
         return 'bg-blue-100 text-blue-800';
-      case 'booked':
+      case 'BOOKED':
         return 'bg-amber-100 text-amber-800';
-      case 'maintenance':
+      case 'UNDER_MAINTENANCE':
         return 'bg-gray-100 text-gray-800';
-      case 'dirty':
+      case 'CLEANING':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   }
 
-  getStatusText(status: string): string {
-    return status.charAt(0).toUpperCase() + status.slice(1);
+  getStatusText(status: RoomStatus): string {
+    switch (status) {
+      case 'AVAILABLE':
+        return 'Available';
+      case 'OCCUPIED':
+        return 'Occupied';
+      case 'BOOKED':
+        return 'Booked';
+      case 'UNDER_MAINTENANCE':
+        return 'Maintenance';
+      case 'CLEANING':
+        return 'Cleaning';
+      default:
+        return status;
+    }
+  }
+
+  getRoomTypeName(roomType: any): string {
+    if (typeof roomType === 'object' && roomType !== null) {
+      return roomType.name;
+    }
+    return `Room Type ${roomType}`;
+  }
+
+  confirmDeleteRoom(room: Room): void {
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete room ${room.roomNumber}?`,
+      header: 'Confirm Deletion',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.deleteRoom(room.id);
+      },
+    });
+  }
+
+  deleteRoom(roomId: number): void {
+    this.loading = true;
+    this.hotelService.deleteRoom(roomId).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Room deleted successfully',
+        });
+        this.loadRooms();
+      },
+      error: (error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to delete room',
+        });
+        this.loading = false;
+      },
+    });
   }
 
   goBack(): void {
@@ -157,5 +208,10 @@ export class HotelAdmintableComponent implements OnInit {
     this.selectedStatus = this.statusOptions[0];
     this.searchText = '';
     this.applyFilters();
+  }
+
+  onRoomCreated(): void {
+    this.openRoomForm = false;
+    this.loadRooms();
   }
 }
