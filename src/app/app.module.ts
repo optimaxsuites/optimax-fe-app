@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { NgApexchartsModule } from "ng-apexcharts";
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -109,6 +110,7 @@ import { TransactionSideModalComponent } from './ui/view/transaction-side-modal/
     TransactionsComponent,
     AccountingReportsComponent,
     ChartOfAccountsComponent,
+    TransactionSideModalComponent,
     ReportTabsComponent,
     BalanceSheetComponent,
     IncomeStatementComponent,
@@ -174,7 +176,8 @@ import { TransactionSideModalComponent } from './ui/view/transaction-side-modal/
     CardModule,
     NavTabComponent,
     PaginatorModule,
-    DialogModule
+    DialogModule,
+     NgApexchartsModule
 ],
   providers: [],
   bootstrap: [AppComponent]

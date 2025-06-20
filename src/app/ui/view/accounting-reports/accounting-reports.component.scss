@@ -31,6 +31,49 @@ $black: #111827;
 $font-family: "Inter", "Segoe UI", Arial, sans-serif;
 
 
+.custom-modal-backdrop {
+  position: fixed;
+  z-index: 1200;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.custom-modal-content {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  padding: 2rem;
+  min-width: 420px;
+  max-width: 95vw;
+  animation: fadeInUp 0.3s;
+  position: relative;
+}
+
+.custom-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 2rem;
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.custom-modal-close:hover {
+  color: #222;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(40px);}
+  to { opacity: 1; transform: translateY(0);}
+}
+
+
 
 /* Modal Overlay */
 .period-modal {

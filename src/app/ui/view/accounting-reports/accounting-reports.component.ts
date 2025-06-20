@@ -1,5 +1,20 @@
-import { Component, AfterViewInit } from '@angular/core';
-import Chart from 'chart.js/auto';
+import { Component } from '@angular/core';
+import { trigger, transition, style, animate } from '@angular/animations';
+import {
+  ApexNonAxisChartSeries,
+  ApexResponsive,
+  ApexChart,
+  ApexLegend,
+  ApexDataLabels,
+  ApexFill,
+  ApexTooltip,
+  ApexAxisChartSeries,
+  ApexXAxis,
+  ApexYAxis,
+  ApexPlotOptions,
+  ApexStroke,
+  ApexMarkers
+} from "ng-apexcharts";
 import { GeneratedReport } from './report.model';
 
 interface Report {
@@ -12,18 +27,72 @@ interface Report {
   data?: any;
 }
 
+export type DonutChartOptions = {
+  series: ApexNonAxisChartSeries;
+  chart: ApexChart;
+  labels: string[];
+  legend: ApexLegend;
+  dataLabels: ApexDataLabels;
+  fill: ApexFill;
+  tooltip: ApexTooltip;
+  responsive: ApexResponsive[];
+  plotOptions?: ApexPlotOptions;
+};
+
+export type BarChartOptions = {
+  series: ApexAxisChartSeries;
+  chart: ApexChart;
+  xaxis: ApexXAxis;
+  yaxis: ApexYAxis;
+  dataLabels: ApexDataLabels;
+  tooltip: ApexTooltip;
+  legend: ApexLegend;
+  fill: ApexFill;
+  plotOptions?: ApexPlotOptions;
+  responsive?: ApexResponsive[];
+  colors?: string[];
+  grid?: any;
+};
+
+export type LineChartOptions = {
+  series: ApexAxisChartSeries;
+  chart: ApexChart;
+  xaxis: ApexXAxis;
+  yaxis: ApexYAxis;
+  dataLabels: ApexDataLabels;
+  stroke: ApexStroke;
+  markers: ApexMarkers;
+  tooltip: ApexTooltip;
+  legend: ApexLegend;
+  fill: ApexFill;
+  colors?: string[];
+  responsive?: ApexResponsive[];
+};
+
 @Component({
   selector: 'app-accounting-reports',
   templateUrl: './accounting-reports.component.html',
-  styleUrls: ['./accounting-reports.component.scss']
+  styleUrls: ['./accounting-reports.component.scss'],
+   animations: [
+    trigger('fadeSlideIn', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(40px)' }),
+        animate('250ms cubic-bezier(.4,0,.2,1)', style({ opacity: 1, transform: 'translateY(0)' }))
+      ]),
+      transition(':leave', [
+        animate('200ms cubic-bezier(.4,0,.2,1)', style({ opacity: 0, transform: 'translateY(40px)' }))
+      ])
+    ])
+  ]
 })
-export class AccountingReportsComponent implements AfterViewInit {
+export class AccountingReportsComponent {
   // Form fields
   reportType = '';
   dateRange = '';
   fromDate = '';
   toDate = '';
   generatedBy = 'Admin';
+  newReportModalOpen = false;
 
   modalExpanded = false;
 
@@ -31,12 +100,22 @@ export class AccountingReportsComponent implements AfterViewInit {
     this.modalExpanded = !this.modalExpanded;
   }
 
-onExport(){
-  alert('downloading content');
-  alert('processing your request');
-  alert('completed');
-}
+  onExport() {
+    alert('downloading content');
+    alert('processing your request');
+    alert('completed');
+  }
 
+
+openNewReportModal() {
+    this.newReportModalOpen = true;
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeNewReportModal() {
+    this.newReportModalOpen = false;
+    document.body.style.overflow = '';
+  }
   // List of generated reports
   reports: GeneratedReport[] = [];
 
@@ -53,7 +132,6 @@ onExport(){
   bankStatement = [
     { date: '2025-06-01', description: 'Deposit', amount: 100000, type: 'credit' },
     { date: '2025-06-02', description: 'Cheque #123', amount: 20000, type: 'debit' }
-    // Bank charge  ill include it soon 
   ];
   generalLedger = [
     { date: '2025-06-01', account: 'Cash', debit: 100000, credit: 0, description: 'Opening balance' },
@@ -80,7 +158,6 @@ onExport(){
     { metric: 'Current Ratio', value: 2.1 }
   ];
 
-  // Example data for Fixed Asset Movement
   fixedAssetMovements = [
     {
       assetId: 'FA1023',
@@ -243,7 +320,6 @@ onExport(){
     }
   ];
 
-  // Financial Statement Section Data
   allReports: Report[] = [
     {
       title: 'Bank Reconciliation Report',
@@ -302,340 +378,324 @@ onExport(){
   selectedPeriod1 = '2023';
   selectedPeriod2 = '2022';
 
-  comparativeChart: any;
-
   comparativeData: { [period: string]: { [metric: string]: number } } = {
     '2023': {
       'Total Revenue': 85,
       'Net Profit': 95,
       'Total Loss': 81,
       'Total Expenses': 65,
-      'Operating Cash Flow': 50,
-      'POS Module': 80,
-      'HR ': 60
+      'Operating Cash Flow': 60,
+      'POS Module': 55,
+      'Office productivity': 59,
+      'Human Resource': 40,
+      'Data Logic': 69
     },
     '2022': {
       'Total Revenue': 82,
-      'Net Profit': 49,
-      'Total Loss': 70,
-      'Total Expenses': 83,
-      'Operating Cash Flow': 40,
-       'POS Module': 74,
-      'HR': 100
+      'Information Science': 75,
+      'Total Loss': 79,
+      'Total Expenses': 55,
+      'Operating Cash Flow': 43,
+      'POS Module': 49,
+      'Office productivity': 20,
+      'Human Resource': 60,
+      'Data Logic': 35
     }
   };
 
   // --- Donut Chart Data and Options ---
   categoryData = [
-    { category: 'Electronics', value: 45 },
-    { category: 'Clothing', value: 28 },
-    { category: 'Food & Beverages', value: 15 },
-    { category: 'Home & Garden', value: 10 },
+    { category: 'Payroll', value: 45 },
+    { category: 'HR', value: 28 },
+    { category: 'POS', value: 15 },
+    { category: 'Equipment and maintance', value: 10 },
     { category: 'Others', value: 2 }
   ];
 
-  donutChart: any;
+  // ApexCharts Donut Chart Options
+  public donutChartOptions: DonutChartOptions;
+
+  // ApexCharts Bar Chart Options (Comparative)
+  public barChartOptions: BarChartOptions;
+
+  // ApexCharts Line Chart Options (Revenue vs Expenses)
+  public lineChartOptions: LineChartOptions;
 
   constructor() {
     this.filteredReports = [...this.allReports];
     this.autoGenerateStatements();
-  }
 
-  ngAfterViewInit() {
-    // Revenue vs Expenses Line Chart
-    const revenueCtx = document.getElementById('revenueChart') as HTMLCanvasElement;
-    if (revenueCtx) {
-      new Chart(revenueCtx, {
-        type: 'line',
-        data: {
-          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-          datasets: [
-            {
-              label: 'Revenue',
-              data: [100000, 20000, 30000, 50000, 80000, 100000],
-              borderColor: '#4F8CFF',
-              backgroundColor: 'rgba(79,140,255,0.08)',
-              tension: 0.4,
-              pointBackgroundColor: '#4F8CFF',
-              fill: true
-            },
-            {
-              label: 'Expenses',
-              data: [60000, 52000, 39000, 28000, 60000, 70000],
-              borderColor: '#FF8C4F',
-              backgroundColor: 'rgba(255,140,79,0.08)',
-              tension: 0.4,
-              pointBackgroundColor: '#FF8C4F',
-              fill: true
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              display: true,
-              position: 'bottom',
-              onClick: (e, legendItem, legend) => {
-                const ci = legend.chart;
-                const index = legendItem.datasetIndex;
-                if (typeof index !== 'number') return;
-                const meta = ci.getDatasetMeta(index);
-                meta.hidden = !meta.hidden;
-                ci.update();
-              }
-            },
-            tooltip: {
-              enabled: true,
-              callbacks: {
-                label: function(context) {
-                  return ` ${context.dataset.label}: ${context.parsed.y.toLocaleString()}`;
-                }
-              }
-            }
-          },
-          interaction: {
-            mode: 'nearest',
-            intersect: false
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                callback: function(value) {
-                  return value.toLocaleString();
-                }
-              }
-            }
-          }
-        }
-      });
-    }
-
-    // --- Donut Chart for Category Distribution ---
-    this.renderCategoryDonutChart();
-
-    // Expense Breakdown Doughnut Chart
-    const expenseCtx = document.getElementById('expenseChart') as HTMLCanvasElement;
-    if (expenseCtx) {
-      new Chart(expenseCtx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Payroll', 'HR', 'POS', 'Marketing'],
-          datasets: [{
-            data: [35000, 25000, 12000, 18000],
-            backgroundColor: [
-              '#4F8CFF', // Payroll
-              '#6FE7C1', // HR
-              '#FFC36F', // POS
-              '#FF8C4F'  // Marketing
-            ],
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          cutout: '70%',
-          plugins: {
-            legend: {
-              display: true,
-              position: 'bottom',
-              onClick: (e, legendItem, legend) => {
-                const ci = legend.chart;
-                const index = legendItem.datasetIndex;
-                if (typeof index !== 'number') return;
-                const meta = ci.getDatasetMeta(index);
-                meta.hidden = !meta.hidden;
-                ci.update();
-              }
-            },
-            tooltip: {
-              enabled: true,
-              callbacks: {
-                label: function(context) {
-                  return ` ${context.label}: ${context.parsed.toLocaleString()}`;
-                }
-              }
-            }
-          }
-        }
-      });
-    }
-
-    this.renderComparativeChart();
-  }
-
-   renderCategoryDonutChart() {
-    const ctx = document.getElementById('categoryDonutChart') as HTMLCanvasElement | null;
-    if (!ctx) return;
-    if (this.donutChart) {
-      this.donutChart.destroy();
-    }
+    // Donut Chart
     const total = this.categoryData.reduce((sum, item) => sum + item.value, 0);
-    this.donutChart = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: this.categoryData.map(item => item.category),
-        datasets: [{
-          data: this.categoryData.map(item => item.value),
-          backgroundColor: ['#3B82F6', '#EF4444', '#F59E0B', '#10B981', '#8B5CF6'],
-          borderWidth: 1
-        }]
+    this.donutChartOptions = {
+      series: this.categoryData.map(item => item.value),
+      chart: {
+        type: "donut",
+        width: 600
       },
-      options: {
-        responsive: true,
-        cutout: '70%',
-        plugins: {
-          legend: {
-            display: true,
-            position: 'bottom',
+      labels: this.categoryData.map(item => item.category),
+      legend: {
+        position: "bottom",
+        fontSize: "16px",
+        fontWeight: 600,
+        markers: { width: 16, height: 16, radius: 8 }
+      },
+      dataLabels: {
+        enabled: true,
+        formatter: (val, opts) => {
+          const num = Array.isArray(val) ? 0 : Number(val);
+          return num.toFixed(1) + "%";
+        }
+      },
+      fill: {
+        type: "solid"
+      },
+      tooltip: {
+        y: {
+          formatter: (val) => `${val} (${((val / total) * 100).toFixed(1)}%)`
+        }
+      },
+      responsive: [
+        {
+          breakpoint: 480,
+          options: {
+            chart: { width: 300 },
+            legend: { position: "bottom" }
+          }
+        }
+      ],
+      plotOptions: {
+        pie: {
+          donut: {
             labels: {
-              font: {
-                size: 14,
-                weight: 'bold'
-              },
-              usePointStyle: true,
-              padding: 20
-            }
-          },
-          tooltip: {
-            enabled: true,
-            callbacks: {
-              label: function(context) {
-                const value = context.parsed;
-                const percent = ((value / total) * 100).toFixed(1);
-                return ` ${context.label}: ${percent}% (${value})`;
+              show: true,
+              total: {
+                show: true,
+                label: 'Total',
+                formatter: () => total.toString()
               }
             }
           }
         }
-      },
-      plugins: [{
-        id: 'centerText',
-        beforeDraw: (chart: any) => {
-          const { ctx, chartArea } = chart;
-          if (!chartArea) return;
-          const total = chart.data.datasets[0].data.reduce((a: number, b: number) => a + b, 0);
-          const centerX = (chartArea.left + chartArea.right) / 2;
-          const centerY = (chartArea.top + chartArea.bottom) / 2;
-          ctx.save();
-          ctx.font = 'bold 18px Inter, sans-serif';
-          ctx.fillStyle = '#222';
-          ctx.textAlign = 'center';
-          ctx.fillText('Total', centerX, centerY - 10);
-          ctx.font = 'bold 28px Inter, sans-serif';
-          ctx.fillText(total.toString(), centerX, centerY + 20);
-          ctx.restore();
+      }
+    };
+
+    //  bar chart configuration
+    this.barChartOptions = {
+      series: [
+        {
+          name: this.selectedPeriod1,
+          data: Object.values(this.comparativeData[this.selectedPeriod1])
+        },
+        {
+          name: this.selectedPeriod2,
+          data: Object.values(this.comparativeData[this.selectedPeriod2]).map(val => -val) 
         }
-      }]
-    });
+      ],
+      chart: {
+        type: 'bar',
+        height: 400,
+        width: '100%',
+        stacked: true,
+        toolbar: { show: false }
+      },
+      plotOptions: {
+        bar: {
+          horizontal: true,
+          barHeight: '80%',
+          borderRadius: 4,
+          dataLabels: {
+            position: 'center' 
+          }
+        }
+      },
+      colors: ['#2471A3', '#F39C12'],
+      dataLabels: {
+        enabled: true,
+        offsetX: 0,
+        style: {
+          fontSize: '14px',
+          fontWeight: '20',
+          colors: ['#eaf2f8', '#ffffff'] 
+        },
+        formatter: function(val) {
+          return Math.abs(Number(val)) + '%'; // Show absolute value
+        }
+      },
+      xaxis: {
+        categories: Object.keys(this.comparativeData[this.selectedPeriod1]),
+        labels: {
+          style: { fontSize: '13px' },
+          formatter: function(val) {
+            return Math.abs(Number(val)) + '%'; 
+          }
+        },
+        axisBorder: { show: false },
+        axisTicks: { show: false },
+        min: -100, 
+        max: 100
+      },
+      yaxis: {
+        labels: {
+          style: { fontSize: '13px' },
+          formatter: function(val) {
+            return String(val); 
+          }
+        }
+      },
+      tooltip: {
+        shared: false,
+        intersect: true,
+        custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+          const metricName = w.config.xaxis.categories[dataPointIndex];
+          const period = seriesIndex === 0 ? this.selectedPeriod1 : this.selectedPeriod2;
+          const percentage = Math.abs(series[seriesIndex][dataPointIndex]);
+
+          // Get the actual amount from your data (you'll need to add this)
+          const actualAmount = this.getActualAmount(period, metricName);
+
+          return `
+            <div class="apexcharts-tooltip-title">${metricName}: ${percentage}%</div>
+            <div class="apexcharts-tooltip-series-group">
+              <span class="apexcharts-tooltip-marker" style="background-color: ${seriesIndex === 0 ? '#2471A3' : '#F39C12'}"></span>
+              <div class="apexcharts-tooltip-text">
+                <div class="apexcharts-tooltip-y-group">
+                  <span class="apexcharts-tooltip-text-label">${period}:</span>
+                  <span class="apexcharts-tooltip-text-value">${percentage}%</span>
+                </div>
+                <div class="apexcharts-tooltip-y-group">
+                  <span class="apexcharts-tooltip-text-label">Amount:</span>
+                  <span class="apexcharts-tooltip-text-value">₦${actualAmount.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      },
+      legend: {
+        position: 'top',
+        horizontalAlign: 'center',
+        fontSize: '15px'
+      },
+      fill: { type: 'solid' },
+      grid: {
+        xaxis: { lines: { show: false } },
+        yaxis: { lines: { show: false } },
+        padding: { left: 0, right: 0 }
+      }
+    };
+
+    // Line Chart (Revenue vs Expenses)
+    this.lineChartOptions = {
+      series: [
+        {
+          name: 'Revenue',
+          data: [35000, 40000, 35000, 50000, 60000, 85000]
+        },
+        {
+          name: 'Expenses',
+          data: [20000, 25000, 20000, 30000, 40000, 60000]
+        }
+      ],
+      chart: {
+        type: 'line',
+        height: 400,
+        toolbar: { show: false }
+      },
+      colors: ['#4F8CFF', '#6FE7C1'],
+      dataLabels: {
+        enabled: false
+      },
+      stroke: {
+        curve: 'smooth',
+        width: 3
+      },
+      markers: {
+        size: 5,
+        colors: ['#fff'],
+        strokeColors: ['#4F8CFF', '#6FE7C1'],
+        strokeWidth: 3,
+        hover: { size: 7 }
+      },
+      xaxis: {
+        categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        labels: { style: { fontSize: '13px' } }
+      },
+      yaxis: {
+        min: 0,
+        max: 100000,
+        tickAmount: 5,
+        labels: {
+          formatter: (val) => val.toLocaleString()
+        }
+      },
+      tooltip: {
+        shared: true,
+        intersect: false,
+        x: { show: true },
+        y: {
+          formatter: (val) => val.toLocaleString()
+        }
+      },
+      legend: {
+        position: 'bottom',
+        fontSize: '15px'
+      },
+      fill: { type: 'solid' }
+    };
   }
 
-  renderComparativeChart() {
-    const ctx = document.getElementById('comparativeChart') as HTMLCanvasElement | null;
-    if (!ctx) return;
-    if (this.comparativeChart) {
-      this.comparativeChart.destroy();
-    }
-
-    // Naira amounts data (replace with your actual values)
-    const nairaAmounts: { [period: string]: { [metric: string]: number } } = {
+  // Add this method to your component class
+  getActualAmount(period: string, metricName: string): number {
+    
+    const amountMap: { [period: string]: { [metric: string]: number } } = {
       '2023': {
         'Total Revenue': 8500000,
         'Net Profit': 9500000,
         'Total Loss': 8100000,
         'Total Expenses': 6500000,
-        'Operating Cash Flow': 5000000,
-        'POS module': 8000000,
-        'HR': 6000000
+        'Operating Cash Flow': 6000000,
+        'POS Module': 5500000,
+        'Office Productivity': 5900000,
+        'Human Resource': 4000000,
+        'Data Logic': 6900000
       },
       '2022': {
-        'Total Revenue': 8200000,
-        'Net Profit': 4900000,
-        'Total Loss': 7000000,
-        'Total Expenses': 8300000,
-        'Operating Cash Flow': 4000000,
-        'POS Module': 7400000,
-        'HR': 5000000
+        'Total Revenue': 7600000,
+        'Net Profit': 7500000,
+        'Total Loss': 7900000,
+        'Total Expenses': 5500000,
+        'Operating Cash Flow': 4300000,
+        'POS Module': 4900000,
+        'Office Productivity': 2000000,
+        'Human Resource': 6000000,
+        'Data Logic': 3500000
       }
     };
 
-    const period1 = this.selectedPeriod1;
-    const period2 = this.selectedPeriod2;
-    const labels = Object.keys(this.comparativeData[period1]);
-    const data1 = Object.values(this.comparativeData[period1]);
-    const data2 = Object.values(this.comparativeData[period2]);
-
-    this.comparativeChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: period1,
-            data: data1,
-            backgroundColor: '#2471A3',
-            borderColor: '#2471A3',
-            borderWidth: 1
-          },
-          {
-            label: period2,
-            data: data2,
-            backgroundColor: '#F39C12',
-            borderColor: '#F39C12',
-            borderWidth: 1
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: true,
-            position: 'bottom',
-            onClick: (e, legendItem, legend) => {
-              const ci = legend.chart;
-              const index = legendItem.datasetIndex;
-              if (typeof index !== 'number') return;
-              const meta = ci.getDatasetMeta(index);
-              meta.hidden = !meta.hidden;
-              ci.update();
-            }
-          },
-          tooltip: {
-            enabled: true,
-            callbacks: {
-              label: (context: any) => {
-                const datasetLabel = context.dataset.label || '';
-                const period = datasetLabel === period1 ? period1 : period2;
-                const nairaValue = nairaAmounts[period][context.label as string] ?? 0;
-                return [
-                  `${context.dataset.label}: ${context.parsed.y}%`,
-                  `Amount: ₦${nairaValue.toLocaleString()}`
-                ];
-              }
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            max: 100,
-            ticks: {
-              callback: (value: string | number) => {
-                return value + '%';
-              }
-            }
-          }
-        }
-      }
-    });
+    return amountMap[period]?.[metricName] || 0;
   }
 
   applyPeriodComparison() {
+    // Update bar chart data when periods change
+    this.barChartOptions = {
+      ...this.barChartOptions,
+      series: [
+        {
+          name: this.selectedPeriod1,
+          data: Object.values(this.comparativeData[this.selectedPeriod1])
+        },
+        {
+          name: this.selectedPeriod2,
+          data: Object.values(this.comparativeData[this.selectedPeriod2]).map(val => -val)
+        }
+      ],
+      xaxis: {
+        ...this.barChartOptions.xaxis,
+        categories: Object.keys(this.comparativeData[this.selectedPeriod1])
+      }
+    };
     this.periodModalOpen = false;
-    setTimeout(() => this.renderComparativeChart(), 100); // Ensure modal closes before re-render
   }
 
   autoGenerateStatements() {
@@ -755,9 +815,7 @@ onExport(){
     this.modalOpen = true;
   }
 
-  downloadReport(report: Report): void {
-    
-  }
+  downloadReport(report: Report): void {}
 
   shareReport(report: Report): void {}
 
@@ -816,17 +874,19 @@ onExport(){
       }
     }, 2000);
   }
-openReport(report: GeneratedReport) {
-  if (report.status === 'Completed') {
-    this.selectedReport = report;
-    this.modalOpen = true;
-    document.body.style.overflow = 'hidden';
-  }
-}
 
-closeModal() {
-  this.modalOpen = false;
-  this.selectedReport = null;
-  document.body.style.overflow = '';
-}
+  openReport(report: GeneratedReport) {
+    if (report.status === 'Completed') {
+      this.selectedReport = report;
+      this.modalOpen = true;
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+ 
+ closeModal() {
+    this.modalOpen = false;
+    this.selectedReport = null;
+    document.body.style.overflow = '';
+  }
 }
