@@ -23,9 +23,12 @@
       >
         <div>
           <h2 class="text-4xl font-bold text-white">
-            Room {{ detailedRoom.number }}
+            Room {{ detailedRoom.roomNumber }}
           </h2>
-          <p class="text-xl mt-4 mb-6 text-white/90">{{ detailedRoom.type }}</p>
+          <p class="text-xl mt-4 mb-6 text-white/90">
+            {{ detailedRoom.roomType.name }} -
+            {{ detailedRoom.roomType.description }}
+          </p>
         </div>
 
         <!-- Button Group (right-aligned) -->
@@ -33,7 +36,7 @@
           <!-- Change Room Button (only shows when occupied) -->
 
           <button
-            *ngIf="detailedRoom.status === 'occupied'"
+            *ngIf="detailedRoom.roomStatus === 'OCCUPIED'"
             (click)="navigateToChangeRoom()"
             class="bg-gradient-to-r from-teal-500 to-emerald-600 text-white px-5 py-2.5 rounded-xl font-medium hover:shadow-md transition-all duration-300 flex items-center gap-2 hover:from-teal-600 hover:to-emerald-700 active:scale-[0.98]"
           >
@@ -59,11 +62,11 @@
 
       <!-- Status Badge -->
       <div
-        [ngClass]="statusColors[detailedRoom.status]"
+        [ngClass]="statusColors[detailedRoom.roomStatus]"
         class="absolute -bottom-4 left-6 px-4 py-2 rounded-full shadow-md text-white font-bold flex items-center gap-2"
       >
         <i class="pi pi-circle-fill text-xs"></i>
-        {{ detailedRoom.status | titlecase }}
+        {{ detailedRoom.roomStatus | titlecase }}
       </div>
     </div>
 
@@ -92,7 +95,7 @@
               Room Type
             </p>
             <p class="text-xl font-semibold text-gray-800 mt-1">
-              {{ detailedRoom.type }}
+              {{ detailedRoom.roomType.name }}
             </p>
           </div>
 
@@ -192,7 +195,7 @@
           </div>
 
           <div class="space-y-4">
-            <div *ngIf="detailedRoom.guest">
+            <div *ngIf="currentGuest">
               <p
                 class="text-lg font-medium text-gray-500 uppercase tracking-wider"
               >
@@ -203,25 +206,25 @@
               </p>
             </div>
 
-            <div *ngIf="detailedRoom.guest?.email">
+            <div *ngIf="currentGuest">
               <p
                 class="text-lg font-medium text-gray-500 uppercase tracking-wider"
               >
                 Email
               </p>
               <p class="text-xl font-semibold text-gray-800 mt-1 break-all">
-                {{ detailedRoom.guest?.email }}
+                {{ currentGuest.email }}
               </p>
             </div>
 
-            <div *ngIf="detailedRoom.guest?.phone">
+            <div *ngIf="currentGuest">
               <p
                 class="text-lg font-medium text-gray-500 uppercase tracking-wider"
               >
                 Phone
               </p>
               <p class="text-xl font-semibold text-gray-800 mt-1">
-                {{ detailedRoom.guest?.phone }}
+                {{ currentGuest.phone }}
               </p>
             </div>
           </div>
@@ -243,7 +246,7 @@
                 Status
               </p>
               <p class="text-xl font-semibold text-gray-800 mt-1 capitalize">
-                {{ detailedRoom.status }}
+                {{ detailedRoom.roomStatus }}
               </p>
             </div>
 
@@ -289,7 +292,7 @@
           </div>
 
           <div class="space-y-4">
-            <div *ngIf="detailedRoom.bookingDetails">
+            <div *ngIf="currentBooking">
               <div class="grid grid-cols-1 gap-4">
                 <div>
                   <p
@@ -298,10 +301,7 @@
                     Check-in
                   </p>
                   <p class="text-xl font-semibold text-gray-800 mt-1">
-                    {{
-                      detailedRoom.bookingDetails.checkinDate
-                        | date : "mediumDate"
-                    }}
+                    {{ currentBooking.checkinDate | date : "mediumDate" }}
                   </p>
                 </div>
                 <div>
@@ -311,25 +311,22 @@
                     Check-out
                   </p>
                   <p class="text-xl font-semibold text-gray-800 mt-1">
-                    {{
-                      detailedRoom.bookingDetails.checkoutDate
-                        | date : "mediumDate"
-                    }}
+                    {{ currentBooking.checkoutDate | date : "mediumDate" }}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div *ngIf="detailedRoom.bookingDetails?.adults">
+            <div *ngIf="currentBooking">
               <p
                 class="text-lg font-medium text-gray-500 uppercase tracking-wider"
               >
                 Guests
               </p>
               <p class="text-xl font-semibold text-gray-800 mt-1">
-                {{ detailedRoom.bookingDetails?.adults }} Adults
-                <span *ngIf="detailedRoom.bookingDetails?.children">
-                  • {{ detailedRoom.bookingDetails?.children }} Children
+                {{ currentBooking.adults }} Adults
+                <span *ngIf="currentBooking.children" class="ml-2">
+                  • {{ currentBooking.children }} Children
                 </span>
               </p>
             </div>
@@ -357,14 +354,14 @@
               <div class="bg-gray-100/50 p-3 rounded-lg">
                 <p class="text-gray-800 font-bold text-lg">
                   {{
-                    detailedRoom.maintenanceReason ||
+                    maintenanceRequests[0].reasons ||
                       "Room requires maintenance"
                   }}
                 </p>
               </div>
             </div>
 
-            <div *ngIf="detailedRoom.maintenanceTasks?.length">
+            <div *ngIf="maintenanceRequests[0].tasks.length">
               <p
                 class="text-lg font-medium text-gray-500 uppercase tracking-wider"
               >
@@ -372,7 +369,7 @@
               </p>
               <div class="flex flex-wrap gap-2 mt-2">
                 <span
-                  *ngFor="let task of detailedRoom.maintenanceTasks"
+                  *ngFor="let task of maintenanceRequests[0].tasks"
                   class="bg-gray-200 text-gray-800 px-2 py-1 rounded-full text-sm"
                 >
                   {{ task }}
@@ -380,14 +377,14 @@
               </div>
             </div>
 
-            <div *ngIf="detailedRoom.maintenanceStartDate">
+            <div *ngIf="maintenanceRequests[0].startDate">
               <p
                 class="text-lg font-medium text-gray-500 uppercase tracking-wider"
               >
                 Started On
               </p>
               <p class="text-xl font-semibold text-gray-800 mt-1">
-                {{ detailedRoom.maintenanceStartDate | date : "mediumDate" }}
+                {{ maintenanceRequests[0].startDate | date : "mediumDate" }}
               </p>
             </div>
           </div>
@@ -404,7 +401,7 @@
         </div>
 
         <div class="space-y-4">
-          <div *ngIf="detailedRoom.bookingDetails?.totalAmount">
+          <div *ngIf="currentBooking">
             <p
               class="text-xl font-medium text-gray-500 uppercase tracking-wider"
             >
@@ -414,28 +411,26 @@
               <p class="text-xl font-medium text-blue-600">
                 Total:
                 {{
-                  detailedRoom.bookingDetails?.totalAmount
-                    | currency : "NGN" : "symbol" : "1.0-0"
+                  currentBooking.total | currency : "NGN" : "symbol" : "1.0-0"
                 }}
               </p>
               <p class="text-xl font-medium text-blue-600">
                 Paid:
                 {{
-                  detailedRoom.bookingDetails?.paidAmount
-                    | currency : "NGN" : "symbol" : "1.0-0"
+                  currentBooking.payment | currency : "NGN" : "symbol" : "1.0-0"
                 }}
               </p>
               <p class="text-xl font-medium text-red-600">
                 Balance:
                 {{
-                  detailedRoom.bookingDetails?.balanceAmount
+                  currentBooking.balanceAmount
                     | currency : "NGN" : "symbol" : "1.0-0"
                 }}
               </p>
             </div>
           </div>
 
-          <div *ngIf="detailedRoom.bookingDetails?.specialRequests">
+          <div *ngIf="currentBooking">
             <p
               class="text-xl font-medium text-gray-500 uppercase tracking-wider"
             >
@@ -443,7 +438,7 @@
             </p>
             <div class="bg-yellow-100/50 p-4 rounded-lg">
               <p class="text-gray-700 italic text-lg">
-                "{{ detailedRoom.bookingDetails?.specialRequests }}"
+                "{{ currentBooking.specialRequests }}"
               </p>
             </div>
           </div>
@@ -557,23 +552,22 @@
 
 <div *ngIf="openForm">
   <app-hotel-form
-    [selectedRooms]="selectedRooms ?? []"
+    [selectedRooms]="selectedRooms"
     (back)="navigateToForm()"
-    (bookingConfirmed)="onBookingConfirmed($event)"
-  >
-  </app-hotel-form>
+    (bookingComplete)="onBookingComplete($event)"
+  ></app-hotel-form>
 </div>
 
-<div *ngIf="openCheckinForm">
+<!-- <div *ngIf="openCheckinForm">
   <app-hotel-checkinform
     [selectedRoom]="selectedRoom!"
     (checkinComplete)="onCheckinComplete($event)"
     (back)="navigateTocheck()"
   >
   </app-hotel-checkinform>
-</div>
+</div> -->
 
-<div *ngIf="openMessage">
+<!-- <div *ngIf="openMessage">
   <app-hotel-message
     [room]="detailedRoom!"
     [showCheckout]="true"
@@ -581,13 +575,13 @@
     (checkoutComplete)="onCheckoutComplete($event)"
   >
   </app-hotel-message>
-</div>
+</div> -->
 
 <div *ngIf="openBills">
   <app-hotel-bills (back)="navigateToBills()"></app-hotel-bills>
 </div>
 
-<div *ngIf="openRoom">
+<!-- <div *ngIf="openRoom">
   <app-hotel-changeroom
     [currentRoom]="(detailedRoom || room)!"
     [availableRooms]="getAvailableRooms()"
@@ -602,10 +596,10 @@
     (back)="navigateToNote()"
     (maintenanceComplete)="onCompleteMaintenance()"
   ></app-hotel-maintenancenote>
-</div>
+</div> -->
 
 <!-- parent.component.html update for the dialog -->
-<p-dialog
+<!-- <p-dialog
   [(visible)]="openExtendStay"
   [modal]="true"
   [closable]="false"
@@ -623,6 +617,6 @@
     class="flex flex-column h-full"
   >
   </app-hotel-extendstay>
-</p-dialog>
+</p-dialog> -->
 
 <p-toast position="top-right"></p-toast>

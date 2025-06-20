@@ -1,92 +1,22 @@
-import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  OnInit,
+  OnDestroy,
+} from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { ChangeDetectorRef } from '@angular/core';
-
-// Using the same interface as in roomlist component for consistency
-export interface Guest {
-  id?: string; // Optional property for guest ID
-  title: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  country: string;
-  idNumber: string;
-  gender: string;
-}
-
-export interface BookingDetails {
-  checkinDate: Date;
-  checkoutDate: Date;
-  adults: number;
-  children: number;
-  specialRequests?: string;
-  paymentMethod: string;
-  totalAmount: number;
-  paidAmount: number;
-  balanceAmount: number;
-}
-
-export interface Room {
-  id: number;
-  number: number;
-  type: string;
-  status: string;
-  floor?: number;
-  guest?: Guest; // Optional property for guest
-  rate: number;
-  bookingDetails?: BookingDetails;
-  beds?: number;
-  maxOccupancy?: number;
-  description?: string;
-  amenities?: string[];
-  currentKey?: RoomKey; // Optional property for current key
-  maintenanceReason?: string;
-  maintenanceTasks?: string[];
-  maintenanceStartDate?: Date;
-  maintenanceNotes?: string;
-}
-
-export interface Booking {
-  guest: Guest;
-  checkinDate: Date;
-  checkoutDate: Date;
-  adults: number;
-  children: number;
-  specialRequests: string;
-  paymentMethod: string;
-  depositAmount: number;
-  roomIds: number[];
-  roomTypes: string[];
-  roomRates: number[];
-  subtotal: number;
-  taxes: number;
-  total: number;
-  balanceAmount: number;
-  status?: string;
-}
-
-export interface RoomKey {
-  id: string;
-  roomNumber: number;
-  roomId: number;
-  isActive: boolean;
-  assignedDate: Date;
-  deactivationDate: Date;
-  guestIdNumber: string;
-  guestName?: string;
-}
-
-export interface KeyCardLog {
-  id: string;
-  roomNumber: number;
-  roomId: number;
-  keyCardId: string;
-  guestIdNumber: string;
-  accessType: 'GUEST' | 'MASTER' | 'STAFF';
-  timestamp: Date;
-  accessGranted: boolean;
-}
+import {
+  HotelserviceService,
+  Room,
+  Guest,
+  Booking,
+  RoomStatus,
+  MaintenainceRequest,
+} from '../../hospitality/hotelservice.service';
+import { Subscription, forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-hotel-roomdetails',
@@ -94,15 +24,18 @@ export interface KeyCardLog {
   styleUrls: ['./hotel-roomdetails.component.scss'],
   providers: [MessageService],
 })
-export class HotelRoomdetailsComponent implements OnInit {
+export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
   @Input() room: Room | null = null;
   @Output() back = new EventEmitter<void>();
   @Output() statusChanged = new EventEmitter<Room>();
   @Input() selectedRoom: Room | null = null;
 
+  private subscriptions = new Subscription();
   previousRoom: Room | null = null;
   showDetails: boolean = false;
   detailedRoom: Room | null = null;
+  currentGuest: Guest | null = null;
+  currentBooking: Booking | null = null;
   isAdminView: boolean = true;
   openForm: boolean = false;
   openMessage: boolean = false;
@@ -111,123 +44,574 @@ export class HotelRoomdetailsComponent implements OnInit {
   openCheckinForm: boolean = false;
   openNote: boolean = false;
   openExtendStay: boolean = false;
+  isLoading: boolean = false;
 
   statusColors: any = {
-    available: 'bg-emerald-500',
-    booked: 'bg-amber-500',
-    occupied: 'bg-blue-500',
-    maintenance: 'bg-gray-500',
-    dirty: 'bg-red-500',
+    AVAILABLE: 'bg-emerald-500',
+    BOOKED: 'bg-amber-500',
+    OCCUPIED: 'bg-blue-500',
+    UNDER_MAINTENANCE: 'bg-gray-500',
+    CLEANING: 'bg-red-500',
   };
-  selectedRooms: Room[] | undefined;
-  formType: string | undefined;
 
-  onKeyAssigned: any;
+  selectedRooms: Room[] = [];
+  formType: string | undefined;
   defaultCheckinDate: Date = new Date();
   defaultCheckoutDate: Date = new Date();
 
+  openMaintenanceForm: boolean = false;
+  maintenanceRequests: MaintenainceRequest[] = [];
+  newMaintenanceRequest: MaintenainceRequest = {
+    id: 0,
+    tasks: '',
+    reasons: [],
+    startDate: new Date().toISOString(),
+    notes: '',
+    completed: false,
+    priority: 'Medium',
+    dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    completedAt: '',
+    room: 0,
+  };
+  maintenancePriorities: string[] = ['Low', 'Medium', 'High', 'Critical'];
+  maintenanceReasons: string[] = [
+    'Plumbing',
+    'Electrical',
+    'HVAC',
+    'Furniture',
+    'Appliance',
+    'Structural',
+    'Cleaning',
+    'Other',
+  ];
+
   constructor(
     private messageService: MessageService,
-    private cdRef: ChangeDetectorRef
+    private cdRef: ChangeDetectorRef,
+    private hotelService: HotelserviceService
   ) {}
 
   ngOnInit() {
-    // Initialize component
+    if (this.room) {
+      this.showRoomDetailsModal(this.room);
+    }
   }
 
-  private updateRoom(updatedRoom?: Room): void {
-    const roomToUpdate = updatedRoom || this.room;
-    if (roomToUpdate) {
-      this.updateRoomInLocalStorage(roomToUpdate);
-      this.statusChanged.emit(roomToUpdate);
-    }
+  ngOnDestroy() {
+    this.subscriptions.unsubscribe();
   }
 
   get isAvailable(): boolean {
-    return this.detailedRoom?.status === 'available';
+    return this.detailedRoom?.roomStatus === 'AVAILABLE';
   }
 
   get isBooked(): boolean {
-    return this.detailedRoom?.status === 'booked';
+    return this.detailedRoom?.roomStatus === 'BOOKED';
   }
 
   get isOccupied(): boolean {
-    return this.detailedRoom?.status === 'occupied';
+    return this.detailedRoom?.roomStatus === 'OCCUPIED';
   }
 
   get isMaintenance(): boolean {
-    return this.detailedRoom?.status?.toLowerCase() === 'maintenance';
+    return this.detailedRoom?.roomStatus === 'UNDER_MAINTENANCE';
   }
 
   get isDirty(): boolean {
-    return this.detailedRoom?.status === 'dirty';
+    return this.detailedRoom?.roomStatus === 'CLEANING';
+  }
+
+  getStatusSeverity(status: RoomStatus | undefined): string {
+    switch (status) {
+      case 'AVAILABLE':
+        return 'success';
+      case 'BOOKED':
+        return 'warning';
+      case 'OCCUPIED':
+        return 'info';
+      case 'UNDER_MAINTENANCE':
+        return 'danger';
+      case 'CLEANING':
+        return 'help';
+      default:
+        return '';
+    }
+  }
+
+  getPrioritySeverity(priority: string): string {
+    switch (priority) {
+      case 'Low':
+        return 'info';
+      case 'Medium':
+        return 'warning';
+      case 'High':
+        return 'danger';
+      case 'Critical':
+        return 'danger';
+      default:
+        return '';
+    }
   }
 
   showRoomDetailsModal(room: Room): void {
-    const storedRooms = localStorage.getItem('rooms');
-    if (storedRooms) {
-      const parsedRooms = JSON.parse(storedRooms);
-      const updatedRoom = parsedRooms.find((r: Room) => r.id === room.id);
-
-      if (updatedRoom) {
-        this.processRoomDates(updatedRoom);
-        this.detailedRoom = updatedRoom;
-      } else {
-        this.detailedRoom = room;
-      }
-    } else {
-      this.detailedRoom = room;
+    if (!room || !room.id) {
+      console.error('Invalid room provided');
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Invalid room information',
+      });
+      return;
     }
-    this.showDetails = true;
-    this.cdRef.detectChanges(); // Force change detection
+
+    this.isLoading = true;
+    this.loadCompleteRoomDetails(room.id);
   }
 
-  private processRoomDates(room: Room): void {
-    if (room.bookingDetails) {
-      if (typeof room.bookingDetails.checkinDate === 'string') {
-        room.bookingDetails.checkinDate = new Date(
-          room.bookingDetails.checkinDate
-        );
-      }
-      if (typeof room.bookingDetails.checkoutDate === 'string') {
-        room.bookingDetails.checkoutDate = new Date(
-          room.bookingDetails.checkoutDate
-        );
-      }
+  private loadCompleteRoomDetails(roomId: number): void {
+    this.subscriptions.add(
+      forkJoin({
+        room: this.hotelService.getRoom(roomId),
+        bookings: this.hotelService.getBookings(),
+        guests: this.hotelService.getGuests(),
+        maintenance: this.hotelService.getMaintenanceRequests(),
+      }).subscribe({
+        next: (result) => {
+          const room = result.room;
+          const allBookings = result.bookings;
+          const allGuests = result.guests;
+          const allMaintenance = result.maintenance;
+
+          // Find active booking for this room
+          const activeBooking = allBookings.find(
+            (booking) =>
+              booking.rooms.includes(roomId) &&
+              (booking.status === 'CONFIRMED' ||
+                booking.status === 'CHECKED_IN')
+          );
+
+          // Find maintenance requests for this room
+          this.maintenanceRequests = allMaintenance.filter(
+            (req) => req.room === roomId && !req.completed
+          );
+
+          if (activeBooking) {
+            const guest = this.findGuestForBooking(activeBooking, allGuests);
+            this.assembleCompleteRoomData(room, activeBooking, guest);
+          } else {
+            this.showBasicRoomDetails(room);
+          }
+        },
+        error: (err) => {
+          console.error('Error loading room details:', err);
+          this.handleLoadingError('Failed to load room details');
+        },
+      })
+    );
+  }
+
+  private findGuestForBooking(
+    booking: Booking,
+    allGuests: Guest[]
+  ): Guest | null {
+    if (typeof booking.guest === 'number') {
+      return allGuests.find((guest) => guest.id === booking.guest) || null;
+    } else if (typeof booking.guest === 'object' && booking.guest !== null) {
+      return booking.guest as Guest;
     }
+    return null;
+  }
+
+  private assembleCompleteRoomData(
+    room: Room,
+    booking: Booking,
+    guest: Guest | null
+  ): void {
+    this.detailedRoom = {
+      ...room,
+      roomType: this.getRoomTypeForRoom(room),
+    };
+    this.currentGuest = guest;
+    this.currentBooking = booking;
+    this.isLoading = false;
+    this.cdRef.detectChanges();
+  }
+
+  private showBasicRoomDetails(room: Room): void {
+    this.detailedRoom = {
+      ...room,
+      roomType: this.getRoomTypeForRoom(room),
+    };
+    this.currentGuest = null;
+    this.currentBooking = null;
+    this.isLoading = false;
+    this.cdRef.detectChanges();
+  }
+
+  private getRoomTypeForRoom(room: Room): any {
+    if (typeof room.roomType === 'object' && room.roomType !== null) {
+      return room.roomType;
+    }
+    return {
+      id: room.roomType,
+      name: `Room Type ${room.roomType}`,
+      description: '',
+    };
+  }
+
+  calculateNights(checkinDate: string, checkoutDate: string): number {
+    return this.hotelService.calculateNights(checkinDate, checkoutDate);
+  }
+
+  // Maintenance methods
+  showMaintenanceForm(): void {
+    if (!this.detailedRoom) return;
+
+    this.newMaintenanceRequest = {
+      id: 0,
+      tasks: '',
+      reasons: [],
+      startDate: new Date().toISOString(),
+      notes: '',
+      completed: false,
+      priority: 'Medium',
+      dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      completedAt: '',
+      room: this.detailedRoom.id,
+    };
+
+    this.openMaintenanceForm = true;
+  }
+
+  createMaintenanceRequest(): void {
+    if (!this.detailedRoom) return;
+
+    if (!this.newMaintenanceRequest.tasks) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Tasks field is required',
+      });
+      return;
+    }
+
+    this.isLoading = true;
+    const request: MaintenainceRequest = {
+      ...this.newMaintenanceRequest,
+      room: this.detailedRoom.id,
+    };
+
+    this.subscriptions.add(
+      this.hotelService.createMaintenanceRequest(request).subscribe({
+        next: (createdRequest) => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Maintenance request created',
+          });
+          this.maintenanceRequests.push(createdRequest);
+          this.openMaintenanceForm = false;
+          this.isLoading = false;
+
+          // Put room under maintenance if not already
+          if (this.detailedRoom?.roomStatus !== 'UNDER_MAINTENANCE') {
+            this.onStartMaintenance();
+          }
+        },
+        error: (err) => {
+          console.error('Error creating maintenance request:', err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to create maintenance request',
+          });
+          this.isLoading = false;
+        },
+      })
+    );
+  }
+
+  completeMaintenanceRequest(request: MaintenainceRequest): void {
+    this.isLoading = true;
+    const updatedRequest: MaintenainceRequest = {
+      ...request,
+      completed: true,
+      completedAt: new Date().toISOString(),
+    };
+
+    this.subscriptions.add(
+      this.hotelService
+        .updateMaintenanceRequest(request.id, updatedRequest)
+        .subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Success',
+              detail: 'Maintenance request completed',
+            });
+            request.completed = true;
+            this.maintenanceRequests = this.maintenanceRequests.filter(
+              (req) => !req.completed
+            );
+            this.isLoading = false;
+
+            // If all maintenance completed, mark room as available
+            if (this.maintenanceRequests.length === 0) {
+              this.onCompleteMaintenance();
+            }
+          },
+          error: (err) => {
+            console.error('Error completing maintenance request:', err);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: 'Failed to complete maintenance request',
+            });
+            this.isLoading = false;
+          },
+        })
+    );
+  }
+
+  toggleReasonSelection(reason: string): void {
+    const index = this.newMaintenanceRequest.reasons.indexOf(reason);
+    if (index === -1) {
+      this.newMaintenanceRequest.reasons.push(reason);
+    } else {
+      this.newMaintenanceRequest.reasons.splice(index, 1);
+    }
+  }
+
+  isReasonSelected(reason: string): boolean {
+    return this.newMaintenanceRequest.reasons.includes(reason);
+  }
+
+  // Room status methods
+  onStartMaintenance(): void {
+    if (!this.detailedRoom) return;
+
+    const updatedRoom: Room = {
+      ...this.detailedRoom,
+      roomStatus: 'UNDER_MAINTENANCE',
+      // maintenanceReason:
+      //   this.newMaintenanceRequest.reasons.join(', ') || 'Maintenance required',
+      // maintenanceStartDate: new Date(this.newMaintenanceRequest.startDate),
+    };
+
+    this.updateRoomStatus(
+      updatedRoom,
+      'Maintenance Started',
+      'Room is now under maintenance'
+    );
+  }
+
+  onCompleteMaintenance(): void {
+    if (!this.detailedRoom) return;
+
+    const updatedRoom: Room = {
+      ...this.detailedRoom,
+      roomStatus: 'AVAILABLE',
+    };
+
+    this.updateRoomStatus(
+      updatedRoom,
+      'Maintenance Complete',
+      'Room is now available'
+    );
+  }
+
+  onCompleteCleaning(): void {
+    if (!this.detailedRoom) return;
+
+    const updatedRoom: Room = {
+      ...this.detailedRoom,
+      roomStatus: 'AVAILABLE',
+    };
+
+    this.updateRoomStatus(
+      updatedRoom,
+      'Cleaning Complete',
+      'Room is now available'
+    );
+  }
+
+  private updateRoomStatus(
+    updatedRoom: Room,
+    summary: string,
+    detail: string
+  ): void {
+    this.isLoading = true;
+    this.subscriptions.add(
+      this.hotelService.updateRoom(updatedRoom.id!, updatedRoom).subscribe({
+        next: () => {
+          this.detailedRoom = updatedRoom;
+          this.statusChanged.emit(updatedRoom);
+          this.messageService.add({
+            severity: 'success',
+            summary: summary,
+            detail: detail,
+          });
+          this.isLoading = false;
+          this.cdRef.detectChanges();
+        },
+        error: (err) => {
+          console.error(`Error updating room status:`, err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: `Failed to update room status`,
+          });
+          this.isLoading = false;
+          this.cdRef.detectChanges();
+        },
+      })
+    );
+  }
+
+  // Booking methods
+  onCancelBooking(): void {
+    if (!this.currentBooking?.id) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No Booking Found',
+        detail: 'No active booking found for this room',
+      });
+      return;
+    }
+
+    this.isLoading = true;
+    const updatedBooking: Booking = {
+      ...this.currentBooking,
+      status: 'CANCELLED',
+    };
+
+    this.subscriptions.add(
+      this.hotelService
+        .updateBooking(this.currentBooking.id!, updatedBooking)
+        .subscribe({
+          next: () => {
+            const updatedRoom: Room = {
+              ...this.detailedRoom!,
+              roomStatus: 'AVAILABLE',
+            };
+
+            this.subscriptions.add(
+              this.hotelService
+                .updateRoom(updatedRoom.id!, updatedRoom)
+                .subscribe({
+                  next: () => {
+                    this.detailedRoom = updatedRoom;
+                    this.currentGuest = null;
+                    this.currentBooking = null;
+                    this.statusChanged.emit(updatedRoom);
+                    this.messageService.add({
+                      severity: 'success',
+                      summary: 'Booking Cancelled',
+                      detail:
+                        'Booking has been cancelled and room is now available',
+                    });
+                    this.isLoading = false;
+                    this.cdRef.detectChanges();
+                  },
+                  error: (err) => {
+                    console.error('Error updating room status:', err);
+                    this.handleLoadingError(
+                      'Booking cancelled but failed to update room status'
+                    );
+                  },
+                })
+            );
+          },
+          error: (err) => {
+            console.error('Error cancelling booking:', err);
+            this.handleLoadingError('Failed to cancel booking');
+          },
+        })
+    );
+
+    this.isLoading = true;
+    this.cancelBookingAndUpdateRoom(this.currentBooking);
+  }
+
+  /**
+   * Get booking details for display
+   */
+  getBookingDetails(): any {
+    if (!this.currentBooking) return null;
+
+    const checkinDate = new Date(this.currentBooking.checkinDate);
+    const checkoutDate = new Date(this.currentBooking.checkoutDate);
+    const nights = this.hotelService.calculateNights(
+      this.currentBooking.checkinDate,
+      this.currentBooking.checkoutDate
+    );
+
+    return {
+      id: this.currentBooking.id,
+      checkinDate: checkinDate,
+      checkoutDate: checkoutDate,
+      nights: nights,
+      adults: this.currentBooking.adults,
+      children: this.currentBooking.children,
+      specialRequests: this.currentBooking.specialRequests,
+      totalAmount: this.currentBooking.total,
+      subTotal: this.currentBooking.subTotal,
+      taxes: this.currentBooking.taxes || 0,
+      paidAmount: this.currentBooking.depositAmount || 0,
+      balanceAmount:
+        this.currentBooking.balanceAmount ||
+        this.currentBooking.total - (this.currentBooking.depositAmount || 0),
+      status: this.currentBooking.status,
+    };
+  }
+
+  /**
+   * Handle loading errors consistently
+   */
+  private handleLoadingError(message: string): void {
+    this.isLoading = false;
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: message,
+    });
+    this.cdRef.detectChanges();
   }
 
   closeModal(): void {
     this.showDetails = false;
     this.detailedRoom = null;
+    this.currentGuest = null;
+    this.currentBooking = null;
     this.openForm = false;
-    if (this.previousRoom) {
-      this.detailedRoom = this.previousRoom;
-      this.previousRoom = null;
-    }
-    this.showDetails = true;
+    this.openMessage = false;
+    this.openBills = false;
+    this.openRoom = false;
+    this.openCheckinForm = false;
+    this.openNote = false;
+    this.openExtendStay = false;
+    this.cdRef.detectChanges();
   }
 
-  navigateToMessage() {
+  navigateToMessage(): void {
     this.openMessage = !this.openMessage;
   }
 
-  navigateToBills() {
+  navigateToBills(): void {
     this.openBills = !this.openBills;
   }
 
-  navigateToNote() {
+  navigateToNote(): void {
     this.openNote = !this.openNote;
   }
 
-  navigateToChangeRoom() {
+  navigateToChangeRoom(): void {
     this.openRoom = !this.openRoom;
-    // Close other open modals if needed
     this.openForm = false;
     this.openCheckinForm = false;
   }
 
-  navigateTocheck() {
+  navigateTocheck(): void {
     this.openCheckinForm = !this.openCheckinForm;
   }
 
@@ -243,188 +627,91 @@ export class HotelRoomdetailsComponent implements OnInit {
     this.openExtendStay = !this.openExtendStay;
   }
 
-  onStartMaintenance(): void {
+  navigateToForm(): void {
     if (this.detailedRoom) {
-      this.detailedRoom.status = 'maintenance';
-      this.updateRoom(this.detailedRoom);
-
-      this.messageService.add({
-        severity: 'info',
-        summary: 'Maintenance Started',
-        detail: 'Room is now under maintenance',
-      });
-
-      this.cdRef.detectChanges();
+      this.selectedRooms = [this.detailedRoom];
+      this.formType =
+        this.detailedRoom.roomStatus === 'BOOKED' ? 'checkin' : 'booking';
+      this.openForm = true;
     }
   }
 
-  onCompleteMaintenance(): void {
-    if (this.detailedRoom) {
-      // Clear all maintenance-related data
-      this.detailedRoom.status = 'available';
-      this.detailedRoom.maintenanceReason = undefined;
-      this.detailedRoom.maintenanceTasks = undefined;
-      this.detailedRoom.maintenanceStartDate = undefined;
-      this.detailedRoom.maintenanceNotes = undefined;
+  private cancelBookingAndUpdateRoom(booking: Booking): void {
+    const updatedBooking: Booking = {
+      ...booking,
+      status: 'CANCELLED',
+    };
 
-      this.updateRoom(this.detailedRoom);
+    this.subscriptions.add(
+      this.hotelService.updateBooking(booking.id!, updatedBooking).subscribe({
+        next: () => {
+          const updatedRoom: Room = {
+            ...this.detailedRoom!,
+            roomStatus: 'AVAILABLE',
+          };
 
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Maintenance Complete',
-        detail: 'Room is now available',
-      });
-
-      this.cdRef.detectChanges();
-    }
+          this.updateRoomAfterBookingCancel(updatedRoom);
+        },
+        error: (err) => {
+          console.error('Error cancelling booking:', err);
+          this.handleLoadingError('Failed to cancel booking');
+        },
+      })
+    );
   }
 
-  onCheckinComplete(updatedRoom: Room) {
-    // Update your room list or perform other actions
-    console.log('Room updated:', updatedRoom);
+  private updateRoomAfterBookingCancel(updatedRoom: Room): void {
+    this.subscriptions.add(
+      this.hotelService.updateRoom(updatedRoom.id!, updatedRoom).subscribe({
+        next: () => {
+          this.detailedRoom = updatedRoom;
+          this.currentGuest = null;
+          this.currentBooking = null;
+          this.statusChanged.emit(updatedRoom);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Booking Cancelled',
+            detail: 'Booking has been cancelled and room is now available',
+          });
+          this.isLoading = false;
+          this.cdRef.detectChanges();
+        },
+        error: (err) => {
+          console.error('Error updating room status:', err);
+          this.handleLoadingError(
+            'Booking cancelled but failed to update room status'
+          );
+        },
+      })
+    );
   }
 
-  onAddMaintenanceNotes(): void {
-    // Implementation for adding maintenance notes
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Maintenance Notes',
-      detail: 'Add maintenance notes functionality will be implemented here',
-    });
-  }
-
-  // Helper method to update room in localStorage
-  private updateRoomInLocalStorage(room: Room): void {
-    try {
-      const storedRooms = localStorage.getItem('rooms');
-      const rooms = storedRooms ? JSON.parse(storedRooms) : [];
-
-      const index = rooms.findIndex((r: Room) => r.id === room.id);
-
-      if (index !== -1) {
-        // Update existing room
-        rooms[index] = this.sanitizeRoomData(room);
-      } else {
-        // Add new room
-        rooms.push(this.sanitizeRoomData(room));
-      }
-
-      localStorage.setItem('rooms', JSON.stringify(rooms));
-    } catch (error) {
-      console.error('Error updating localStorage:', error);
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Storage Error',
-        detail: 'Failed to save room data',
-      });
-    }
-  }
-
-  private sanitizeRoomData(room: Room): Room {
-    const sanitizedRoom = { ...room };
-
-    // Ensure dates are properly serialized
-
-    return sanitizedRoom;
-  }
-
-  // In your parent component
-  navigateToForm() {
-    const roomsToBook = this.detailedRoom ? [this.detailedRoom] : [];
-    this.selectedRooms = roomsToBook;
-
-    // Determine if we're doing a check-in (room is booked) or new booking
-    if (this.detailedRoom?.status === 'booked') {
-      this.formType = 'checkin';
-    } else {
-      this.formType = 'booking';
-    }
-
-    this.openForm = !this.openForm;
-  }
-
-  onBookingConfirmed(updatedRooms: Room[]): void {
-    // Update the first room (since we only passed one)
-    if (updatedRooms.length > 0) {
-      this.detailedRoom = { ...updatedRooms[0] };
-      this.processRoomDates(this.detailedRoom);
-      this.updateRoomInLocalStorage(this.detailedRoom);
-
-      // Show success message
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Booking Confirmed',
-        detail: `Room ${this.detailedRoom.number} has been booked`,
-      });
-    }
-
-    this.openForm = false;
-    this.cdRef.detectChanges();
-  }
-
-  onCancelBooking(): void {
-    if (this.detailedRoom) {
-      // Update the room status to 'available'
-      this.detailedRoom.status = 'available';
-
-      // Clear guest and booking details
-      delete this.detailedRoom.guest;
-      delete this.detailedRoom.bookingDetails;
-
-      // Update in localStorage
-      this.updateRoomInLocalStorage(this.detailedRoom);
-
-      // Emit the status change
-      this.statusChanged.emit(this.detailedRoom);
-
-      // Show success message
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Booking Cancelled',
-        detail: `Booking for Room ${this.detailedRoom.number} has been cancelled`,
-      });
-
-      // Close the modal
-      this.closeModal();
-    }
-  }
-  onCompleteCleaning(): void {
-    if (this.detailedRoom) {
-      this.detailedRoom.status = 'available';
-      this.updateRoom(this.detailedRoom);
-
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Cleaning Complete',
-        detail: 'Room is now available',
-      });
-
-      this.cdRef.detectChanges();
-    }
-  }
-
-  // Helper method to get full guest name
   getGuestFullName(): string {
-    if (!this.detailedRoom || !this.detailedRoom.guest) return 'No Guest';
+    if (!this.currentGuest) return 'No Guest';
 
-    const guest = this.detailedRoom.guest;
-    return `${guest.title || ''} ${guest.firstName || ''} ${
-      guest.lastName || ''
-    }`.trim();
+    return `${this.currentGuest.title || ''} ${
+      this.currentGuest.firstName || ''
+    } ${this.currentGuest.lastName || ''}`.trim();
   }
 
-  // Add this to your existing component
-  getAvailableRooms(): Room[] {
-    const storedRooms = localStorage.getItem('rooms');
-    if (storedRooms) {
-      const allRooms: Room[] = JSON.parse(storedRooms);
-      return allRooms.filter(
-        (room) =>
-          room.status === 'available' &&
-          room.id !== (this.detailedRoom?.id || this.room?.id)
-      );
-    }
-    return [];
+  /**
+   * Load available rooms for room change functionality
+   */
+  loadAvailableRooms(): void {
+    this.subscriptions.add(
+      this.hotelService.getAvailableRooms().subscribe({
+        next: (rooms) => {
+          // Filter out the current room
+          const availableRooms = rooms.filter(
+            (room) => room.id !== this.detailedRoom?.id
+          );
+          // You can use this data for room change operations
+        },
+        error: (err) => {
+          console.error('Error loading available rooms:', err);
+        },
+      })
+    );
   }
 
   handleRoomChange(event: {
@@ -433,105 +720,183 @@ export class HotelRoomdetailsComponent implements OnInit {
     maintenanceNote: string;
     oldRoomStatus: Room;
   }): void {
-    try {
-      const storedRooms = localStorage.getItem('rooms');
-      let rooms: Room[] = storedRooms ? JSON.parse(storedRooms) : [];
+    if (!this.detailedRoom || !this.currentBooking) return;
 
-      // Parse maintenance note to extract tasks
-      const maintenanceText = event.maintenanceNote || '';
-      const tasksMatch = maintenanceText.match(/Tasks: (.*)/);
-      const maintenanceTasks = tasksMatch
-        ? tasksMatch[1].split(', ').filter((task) => task.trim().length > 0)
-        : [];
+    this.isLoading = true;
+    const maintenanceTasks =
+      event.maintenanceNote
+        .match(/Tasks: (.*)/)?.[1]
+        .split(', ')
+        .filter(Boolean) || [];
 
-      // Handle old room (set to maintenance)
-      const updatedOldRoom = {
-        ...event.oldRoomStatus,
-        status: 'maintenance',
-        maintenanceReason: event.note,
-        maintenanceTasks: maintenanceTasks,
-        maintenanceStartDate: new Date(),
-        maintenanceNotes: event.maintenanceNote,
-      };
+    // Update old room (set to maintenance)
+    const updatedOldRoom: Room = {
+      ...this.detailedRoom,
+      roomStatus: 'UNDER_MAINTENANCE',
+    };
 
-      // Handle new room (if it's available, clear maintenance details)
-      const updatedNewRoom = {
-        ...event.newRoom,
-        ...(event.newRoom.status === 'Available' && {
-          maintenanceReason: '',
-          maintenanceTasks: [],
-          maintenanceStartDate: undefined,
-          maintenanceNotes: '',
-        }),
-      };
+    // Update new room
+    const updatedNewRoom: Room = {
+      ...event.newRoom,
+      roomStatus: this.detailedRoom.roomStatus,
+    };
 
-      // Update both rooms in list
-      rooms = rooms.map((room) => {
-        if (room.id === updatedNewRoom.id) return updatedNewRoom;
-        if (room.id === updatedOldRoom.id) return updatedOldRoom;
-        return room;
-      });
+    // Update booking to reference new room
+    const updatedBooking: Booking = {
+      ...this.currentBooking,
+      rooms: this.currentBooking.rooms.map((roomId) =>
+        roomId === this.detailedRoom!.id ? updatedNewRoom.id! : roomId
+      ),
+    };
 
-      // Save to localStorage
-      localStorage.setItem('rooms', JSON.stringify(rooms));
+    this.subscriptions.add(
+      forkJoin([
+        this.hotelService.updateRoom(updatedOldRoom.id!, updatedOldRoom),
+        this.hotelService.updateRoom(updatedNewRoom.id!, updatedNewRoom),
+        this.hotelService.updateBooking(updatedBooking.id!, updatedBooking),
+      ]).subscribe({
+        next: () => {
+          this.detailedRoom = updatedNewRoom;
+          this.currentBooking = updatedBooking;
+          this.statusChanged.emit(updatedNewRoom);
+          this.statusChanged.emit(updatedOldRoom);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Room Changed',
+            detail: `Guest moved from Room ${updatedOldRoom.roomNumber} to Room ${updatedNewRoom.roomNumber}`,
+          });
+          this.isLoading = false;
+          this.openRoom = false;
+          this.cdRef.detectChanges();
+        },
+        error: (err) => {
+          console.error('Error changing rooms:', err);
+          this.handleLoadingError('Failed to change rooms');
+        },
+      })
+    );
+  }
 
-      // Update UI
-      if (this.detailedRoom) {
-        this.detailedRoom =
-          rooms.find((r) => r.id === this.detailedRoom?.id) || null;
-      }
-
-      // Success message
+  onBookingConfirmed(updatedRooms: Room[]): void {
+    if (updatedRooms.length > 0 && this.detailedRoom) {
+      this.detailedRoom = { ...updatedRooms[0] };
+      this.statusChanged.emit(this.detailedRoom);
       this.messageService.add({
         severity: 'success',
-        summary: 'Room Changed',
-        detail: `Guest moved from Room ${event.oldRoomStatus.number} to Room ${event.newRoom.number}`,
+        summary: 'Booking Confirmed',
+        detail: `Room ${this.detailedRoom.roomNumber} has been booked`,
       });
 
-      // Close modal and emit changes
-      this.navigateToChangeRoom();
-      this.statusChanged.emit(updatedNewRoom);
-      this.statusChanged.emit(updatedOldRoom);
-    } catch (error) {
-      console.error('Error changing rooms:', error);
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to change rooms',
+      // Reload room details to get the new booking and guest info
+      this.loadCompleteRoomDetails(this.detailedRoom.id!);
+    }
+    this.openForm = false;
+    this.cdRef.detectChanges();
+  }
+
+  onBookingComplete(booking: Booking): void {
+    this.isLoading = true;
+
+    // Update the room status
+    if (
+      this.detailedRoom &&
+      booking.rooms.includes(this.detailedRoom.id as number)
+    ) {
+      const newStatus: RoomStatus =
+        booking.status === 'CHECKED_IN' ? 'OCCUPIED' : 'BOOKED';
+      const updatedRoom: Room = {
+        ...this.detailedRoom,
+        roomStatus: newStatus,
+      };
+
+      this.hotelService.updateRoom(updatedRoom.id!, updatedRoom).subscribe({
+        next: () => {
+          this.detailedRoom = updatedRoom;
+          this.statusChanged.emit(updatedRoom);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Booking Complete',
+            detail: `Room ${updatedRoom.roomNumber} status updated to ${newStatus}`,
+          });
+          this.openForm = false;
+          this.isLoading = false;
+
+          // Reload room details to get the new booking info
+          this.loadCompleteRoomDetails(updatedRoom.id!);
+        },
+        error: (err) => {
+          this.isLoading = false;
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to update room status',
+          });
+        },
       });
+    } else {
+      this.isLoading = false;
+      this.openForm = false;
     }
   }
 
+  onCheckinComplete(updatedRoom: Room): void {
+    this.updateRoomInUI(updatedRoom);
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Check-in Complete',
+      detail: `Room ${updatedRoom.roomNumber} is now occupied`,
+    });
+    this.openCheckinForm = false;
+    this.cdRef.detectChanges();
+  }
+
   onCheckoutComplete(updatedRoom: Room): void {
-    // Update the room in localStorage
-    this.updateRoomInLocalStorage(updatedRoom);
-
-    // Update the detailed room if it's the same room
-    if (this.detailedRoom && this.detailedRoom.id === updatedRoom.id) {
-      this.detailedRoom = updatedRoom;
-    }
-
-    // Emit status change to update parent components
-    this.statusChanged.emit(updatedRoom);
-
-    // Close the message component
-    this.openMessage = false;
-
-    // Show success message
+    this.updateRoomInUI(updatedRoom);
+    // Clear guest and booking info after checkout
+    this.currentGuest = null;
+    this.currentBooking = null;
     this.messageService.add({
       severity: 'success',
       summary: 'Checkout Complete',
-      detail: `Room ${updatedRoom.number} has been marked as dirty`,
+      detail: `Room ${updatedRoom.roomNumber} has been marked for cleaning`,
     });
-
+    this.openMessage = false;
     this.cdRef.detectChanges();
   }
 
   onStayExtended(event: any): void {
-    const room = this.detailedRoom || this.selectedRoom;
-    if (!room) return;
+    if (!this.currentBooking) return;
 
-    // Handle stay extension logic
-    // ...existing code...
+    // Update the booking with new checkout date
+    const updatedBooking: Booking = {
+      ...this.currentBooking,
+      checkoutDate: event.checkoutDate,
+    };
+
+    this.subscriptions.add(
+      this.hotelService
+        .updateBooking(this.currentBooking.id!, updatedBooking)
+        .subscribe({
+          next: (booking) => {
+            this.currentBooking = booking;
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Stay Extended',
+              detail: `Stay extended until ${event.checkoutDate}`,
+            });
+            this.openExtendStay = false;
+            this.cdRef.detectChanges();
+          },
+          error: (err) => {
+            console.error('Error extending stay:', err);
+            this.handleLoadingError('Failed to extend stay');
+          },
+        })
+    );
+  }
+
+  private updateRoomInUI(updatedRoom: Room): void {
+    this.detailedRoom = updatedRoom;
+    this.statusChanged.emit(updatedRoom);
   }
 }
