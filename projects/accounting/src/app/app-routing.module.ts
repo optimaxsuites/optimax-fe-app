@@ -38,7 +38,7 @@ const routes: Routes = [
   { path: 'reports/cash-flow', component: CashFlowComponent },
   { path: 'reports/tax-summary', component: TaxSummaryComponent },
   // ...other routes
-  { path: '', redirectTo: '/reports', pathMatch: 'full' }
+  // { path: '', redirectTo: '/reports', pathMatch: 'full' }
 
     
 ];
