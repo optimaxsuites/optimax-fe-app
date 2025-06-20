@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { NgApexchartsModule } from "ng-apexcharts";
+// import { NgApexchartsModule } from "ng-apexcharts";
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -90,6 +90,10 @@ import { TaxSummaryComponent } from './ui/view/reports/tax-summary/tax-summary.c
 import { ChartOfAccountsComponent } from './ui/view/chart-of-accounts/chart-of-accounts.component';
 import { PaginatorModule } from 'primeng/paginator';
 import { TransactionSideModalComponent } from './ui/view/transaction-side-modal/transaction-side-modal.component';
+import { NewCoaModalComponent } from './ui/view/new-coa-modal/new-coa-modal.component';
+import { ConnectMonoComponent } from './ui/view/connect-mono/connect-mono.component';
+import { NgApexchartsModule } from 'ng-apexcharts';
+
 
 @NgModule({
   declarations: [
@@ -111,6 +115,8 @@ import { TransactionSideModalComponent } from './ui/view/transaction-side-modal/
     AccountingReportsComponent,
     ChartOfAccountsComponent,
     TransactionSideModalComponent,
+    NewCoaModalComponent,
+    ConnectMonoComponent,
     ReportTabsComponent,
     BalanceSheetComponent,
     IncomeStatementComponent,
@@ -178,7 +184,7 @@ import { TransactionSideModalComponent } from './ui/view/transaction-side-modal/
     NavTabComponent,
     PaginatorModule,
     DialogModule,
-     NgApexchartsModule
+    NgApexchartsModule
 ],
   providers: [],
   bootstrap: [AppComponent]

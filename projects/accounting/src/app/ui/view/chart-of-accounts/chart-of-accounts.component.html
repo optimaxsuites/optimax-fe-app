@@ -2,8 +2,19 @@
   <div class="flex justify-content-between align-items-center mb-4">
     <h2>Chart of Accounts</h2>
     <div class="flex gap-2">
-      <button pButton icon="pi pi-file" label="Run Report" class="p-button-secondary"></button>
-      <button pButton icon="pi pi-plus" label="New" class="p-button-primary"></button>
+
+      <!-- Refers users to the report page -->
+      <button pButton icon="pi pi-file" label="Run Report" class="p-button-secondary text-white p-4 bg-customBlue hover:bg-customBlueHover"></button>
+          <button pButton label="Add Account" icon="pi pi-plus" 
+        class="p-button-success mr-2 p-4 bg-customGreen text-white font-semibold hover:bg-customGreenHover"
+        (click)="showAddAccountModal = true">
+</button>
+
+
+
+         <!-- add new button -->
+         <!-- <button pButton icon="pi pi-plus" label="New" class="bg-customBlue hover:customBlueHover text-white p-4 p-button-primary" (click)="openReviewModal(transaction)"></button> -->
+
     </div>
   </div>
 
@@ -68,10 +79,11 @@
           <td style="border-right: 1px solid #dee2e6; font-weight: 500">{{account.balance | currency:'NGN':'symbol-narrow'}}</td>
           <td style="border-right: 1px solid #dee2e6; font-weight: 500">{{account.bankBalance | currency:'NGN':'symbol-narrow'}}</td>
           <td>
-            <button pButton class="p-button-rounded p-button-text p-button-sm" 
-                    style="border: 1px solid #dee2e6">
-              View Register
-            </button>
+  <button pButton class="p-button-rounded p-button-text p-button-sm"
+          style="border: 1px solid #dee2e6"
+          (click)="viewRegister(account)">
+    View Register
+  </button>
           </td>
         </tr>
       </ng-template>
@@ -79,8 +91,102 @@
   </p-card>
 
   <div class="actions mt-4">
-    <button pButton label="Add Account" icon="pi pi-plus" class="p-button-success mr-2"></button>
+
     <button pButton label="Delete Selected" icon="pi pi-trash" class="p-button-danger" 
             [disabled]="!selectedAccounts || selectedAccounts.length === 0"></button>
   </div>
+
+
+
+  <!-- Add Account Modal -->
+<p-dialog 
+  header="Add New Account" 
+  [(visible)]="showAddAccountModal" 
+  [modal]="true" 
+  [style]="{width: '500px'}"
+  [closable]="true">
+
+  <div class="p-fluid space-y-3">
+    <div>
+      <label for="code" class="font-bold text-xl">Code</label>
+      <input pInputText id="code" [(ngModel)]="newAccount.code" placeholder="Enter account code" class="p-5"/>
+    </div>
+
+    <div>
+      <label for="name" class="font-bold text-xl">Name</label>
+      <input pInputText id="name" [(ngModel)]="newAccount.name" placeholder="Enter account name" class="p-5" />
+    </div>
+
+    <div>
+      <label for="type" class="font-bold text-xl">Type</label>
+      <p-dropdown 
+        [options]="accountTypes" 
+        [(ngModel)]="newAccount.type" 
+        placeholder="Select an account type">
+      </p-dropdown>
+    </div>
+
+    <div class="flex flex-row w-full gap-5">
+    <div>
+      <label for="balance" class="font-bold text-xl">Opening Register Balance</label>
+      <input pInputText id="balance" [(ngModel)]="newAccount.balance" placeholder="Enter balance" class="p-5"/>
+    </div>
+
+    <div>
+      <label for="bankBalance" class="font-bold text-xl">Opening Bank Balance</label>
+      <input pInputText id="bankBalance" [(ngModel)]="newAccount.bankBalance" placeholder="Enter bank balance" class="p-5" />
+    </div>
+    </div>
+
+    <div>
+      <label for="details" class="font-bold text-xl">Details</label>
+      <textarea class="w-full h-[100px] border-2 rounded-xl shadow-xl text-lg text-gray-700 p-5" pInputTextarea id="details" [(ngModel)]="newAccount.details" placeholder="Enter details"></textarea>
+    </div>
+  </div>
+
+  <div class="flex justify-content-end mt-4 gap-5">
+    <button pButton label="Cancel" class="p-button-secondary p-button-success p-button-success mr-2 p-4 text-customGreen  font-semibold hover:underline" (click)="showAddAccountModal = false"></button>
+    <button pButton label="Add" class="p-button-success p-button-success mr-2 py-4 px-6 bg-customGreen text-white font-semibold hover:bg-customGreenHover" (click)="addAccount()"></button>
+  </div>
+</p-dialog>
+
+<!-- Register Side Panel -->
+<p-sidebar 
+  [(visible)]="showRegisterSidebar"
+  position="right"
+  [style]="{width: '600px'}"
+  [baseZIndex]="10000">
+  
+  <h3 class="text-3xl font-bold">{{ selectedAccount?.name }} - Register</h3>
+
+  <hr/>
+  
+  <div class="mb-3">
+    <span class="font-bold">Current Balance: </span>
+    <span>{{ selectedAccount?.balance | currency:'NGN':'symbol-narrow' }}</span>
+  </div>
+
+  <p-table [value]="accountTransactions">
+    <ng-template pTemplate="header">
+      <tr>
+        <th style="border-right: 1px solid #dee2e6">Date</th>
+        <th style="border-right: 1px solid #dee2e6">Description</th>
+        <th style="border-right: 1px solid #dee2e6">Debit</th>
+        <th style="border-right: 1px solid #dee2e6">Credit</th>
+        <th style="border-right: 1px solid #dee2e6">Balance</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-tx>
+      <tr>
+        <td style="border-right: 1px solid #dee2e6">{{ tx.date | date:'mediumDate' }}</td>
+        <td style="border-right: 1px solid #dee2e6">{{ tx.description }}</td>
+        <td style="border-right: 1px solid #dee2e6">{{ tx.debit | currency:'NGN':'symbol-narrow' }}</td>
+        <td style="border-right: 1px solid #dee2e6">{{ tx.credit | currency:'NGN':'symbol-narrow' }}</td>
+        <td style="border-right: 1px solid #dee2e6">{{ tx.balance | currency:'NGN':'symbol-narrow' }}</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</p-sidebar>
+
+
 </div>

@@ -8,10 +8,10 @@
 
   <div class="flex w-full justify-end px-20 py-10 gap-10">
     <p-button label="Banking Alerts"
-      class="font-semibold text-[1.5rem] bg-blue-600 hover:bg-blue-700 text-white border-none px-6 py-2 rounded transition-all duration-300" />
-    <p-button label="Link Accounts" icon="pi pi-angle-down" class="bg-gray-500 flex items-center justify-center hover:bg-gray-600 text-white border-none px-6 py-2 rounded transition-all duration-300 text-[1.5rem] font-semibold
-           [&_.p-button-icon]:ml-2 [&_.p-button-icon]:text-[1.5rem] [&:hover_.p-button-icon]:translate-x-1" pRipple
-      iconPos="right" />
+      class="font-semibold text-[1.5rem] bg-customBlue hover:bg-customBlueHover text-white border-none px-6 py-2 rounded transition-all duration-300" />
+
+
+    <app-connect-mono></app-connect-mono>
   </div>
 
   <hr class="border border-1 border-dashed" />
@@ -75,7 +75,9 @@
       </select>
 
       <!-- Optional date range -->
+      <label>From</label>
       <input type="date" [(ngModel)]="dateFrom" (change)="applyFilter()" class="border border-gray-300 rounded-md px-3 py-2 text-xl cursor-pointer" />
+      <label>To</label>
       <input type="date" [(ngModel)]="dateTo" (change)="applyFilter()" class="border border-gray-300 rounded-md px-3 py-2 text-xl cursor-pointer" />
     </div>
 
@@ -111,7 +113,7 @@
           <td class="px-4 py-4 italic text-md">{{ transaction.assignedTo }}</td>
           <td class="px-4 py-4">
             <button
-              class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-1 rounded text-xl"
+              class="bg-customBlue hover:bg-customBlueHover text-white px-5 py-1 rounded text-xl"
               (click)="openReviewModal(transaction)">
               Review
             </button>
@@ -145,7 +147,6 @@
     (close)="closeReviewModal()">
   </transaction-side-modal>
 </div>
-
   </div>
 
 
