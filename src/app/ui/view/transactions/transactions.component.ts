@@ -27,12 +27,16 @@ interface Transaction {
   reviewed?: boolean;
 }
 
+declare const MonoConnect: any;
+
 @Component({
   selector: 'app-transactions',
   templateUrl: './transactions.component.html',
   styleUrls: ['./transactions.component.scss']
 })
 export class TransactionsComponent implements OnInit {
+
+
   searchTerm = '';
   selectedTransaction: Transaction | null = null;
   isReviewModalOpen = false;
