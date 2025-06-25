@@ -200,9 +200,18 @@ body {
         margin-bottom: 0.75rem;
 
         .item-name {
+          position: relative;
           font-weight: 600;
-          display: flex;
-          white-space: nowrap;
+          width: 75%;
+
+          > :first-child {
+            display: inline-block;
+            white-space: nowrap;
+            max-width: 80%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            height: fit-content;
+          }
 
           // font-size: 1rem;
           > :last-child {
@@ -212,7 +221,7 @@ body {
             height: 100%;
             aspect-ratio: 1;
             background-size: cover;
-            background-size: center;
+            background-position: center;
             background-repeat: no-repeat;
           }
         }

@@ -1,6 +1,11 @@
 import { Component, OnInit } from "@angular/core";
 import { Router } from "@angular/router";
-import { Cart, CustomerDTO, NavigationState } from "../../models/interface";
+import {
+  Cart,
+  CustomerDTO,
+  NavigationState,
+  PaymentModes,
+} from "../../models/interface";
 import { MessageService } from "primeng/api";
 import { NavigationLinksService } from "../../sharedComponent/service/navigation-links/navigation-links.service";
 import { RandomTokenService } from "../../sharedComponent/service/random-token/random-token.service";
@@ -17,7 +22,7 @@ import { CheckoutService } from "../../service/checkout.service";
 })
 export class CashPaymentComponent implements OnInit {
   navigationState: NavigationState;
-  cart: Cart = {} as any;
+  cart: Cart = {} as unknown as Cart;
   priceOptions: any[] = [];
   priceValue = 0.0;
   orders: any;
@@ -25,10 +30,11 @@ export class CashPaymentComponent implements OnInit {
   changeOfferedModal: boolean = false;
   receiptID: string = Math.floor(100000 + Math.random() * 900000).toString();
   token: string = "";
-  paymentValues: { [key: string]: number | null } = {
+  paymentValues: Record<PaymentModes, number | null> = {
     cash: null,
     card: null,
     loyalty: null,
+    mobile: null,
   };
   customers: CustomerDTO[] = [
     { id: 1, name: "John Doe", phoneNumber: "08012345678", loyaltyPoints: 500 },
@@ -205,15 +211,13 @@ export class CashPaymentComponent implements OnInit {
         }
 
         // Step 2: Send each Payment Breakdown individually
-        const paymentBreakdownPayloads = this.cart.paymentModes.map(
-          (mode: any) => ({
-            id: 0,
-            amountPaid: this.paymentValues[mode],
-            transactionRefernce: "",
-            paymentMethod: mode.toUpperCase(),
-            paymentId: paymentId,
-          }),
-        );
+        const paymentBreakdownPayloads = this.cart.paymentModes.map((mode) => ({
+          id: 0,
+          amountPaid: this.paymentValues[mode],
+          transactionRefernce: "",
+          paymentMethod: mode.toUpperCase(),
+          paymentId: paymentId,
+        }));
 
         let breakdownCount = 0;
         for (const breakdown of paymentBreakdownPayloads) {

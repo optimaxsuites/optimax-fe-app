@@ -1,23 +1,24 @@
-import { Component, computed, Input, OnInit, signal } from '@angular/core';
+import { Component, computed, Input, OnInit, signal } from "@angular/core";
 import {
   BranchDTO,
   ProductCategoryDTO,
   ProductData,
   Satisfy,
-} from '../../models/interface';
-import { PosServiceService } from '../../service/pos-service.service';
-import { lastValueFrom } from 'rxjs';
-import { CheckoutService } from '../../service/checkout.service';
+} from "../../models/interface";
+import { PosServiceService } from "../../service/pos-service.service";
+import { lastValueFrom } from "rxjs";
+import { CheckoutService } from "../../service/checkout.service";
 import {
   OrderGET,
   OrderItemGET,
   OrderItemPOST,
   OrderPOST,
   TableOrderStatusGET,
-} from '../../models/interfaces/kitchen';
-import { arrayToDate, dateToArray } from '../../shared';
-import { ImageCacheService } from '../../service/image-cache.service';
-import { PaymentServiceService } from '../../service/payment-service.service';
+} from "../../models/interfaces/kitchen";
+import { arrayToDate, dateToArray } from "../../shared";
+import { ImageCacheService } from "../../service/image-cache.service";
+import { PaymentServiceService } from "../../service/payment-service.service";
+import { ProductHelperService } from "../../service/product-helper.service";
 
 /* `TableOrderStatus` stuff is basically all the relevant data about the customer's orders of that *table* as well as the staff who attended to that order. This `TableOrderStatus` can be broken down into a collection of orders (`Table Order`) and other date like the state of the order (UNPAID or PAID), the ids of the waiter, chef, cashier, etc. */
 
@@ -66,9 +67,9 @@ type OrderStatusUnion =
   | OrderStatusNone;
 
 @Component({
-  selector: 'app-checkout-kitchen',
-  templateUrl: './checkout-kitchen.component.html',
-  styleUrls: ['./checkout-kitchen.component.scss'],
+  selector: "app-checkout-kitchen",
+  templateUrl: "./checkout-kitchen.component.html",
+  styleUrls: ["./checkout-kitchen.component.scss"],
 })
 // Used for both the cashier and kitchen
 export class CheckoutKitchenComponent implements OnInit {
@@ -130,7 +131,7 @@ export class CheckoutKitchenComponent implements OnInit {
    */
   tableStatuses = signal<Map<number, TableOrderStatusGET>>(new Map());
 
-  testMode = signal<typeof this.mode>('chef');
+  testMode = signal<typeof this.mode>("chef");
 
   changeTestMode(e: Event) {
     this.testMode.update(() => (e.target as HTMLInputElement).value as any);
@@ -141,18 +142,18 @@ export class CheckoutKitchenComponent implements OnInit {
    */
   tableData = signal<TableOrder>(new Map());
 
-  /** Each key is a cateogry name, e.g "Drink", "Main Meal", while each value is an array of products that has the aforementioned category */
+  /** Each key is a category name, e.g "Drink", "Main Meal", while each value is an array of products **and their variants** that has the aforementioned category */
   productCategories = new Map<string, ProductData[]>();
 
   currCategoryProducts: ProductData[] = [];
 
-  get mode(): 'waiter' | 'chef' | 'cashier' {
+  get mode(): "waiter" | "chef" | "cashier" {
     //TODO: Determine the mode to use from the logged in user's id. For now though, just use a toggle to change this
-    return this.testMode() ?? 'chef';
+    return this.testMode() ?? "chef";
   }
 
   isReceiptModalOpen = false;
-  isCreateOrderModalOpen = false;
+  isCreateOrderModalOpen = signal(false);
   /**
    * This is only true if a waiter accidentally tries to overwrite an order.
    *
@@ -170,7 +171,7 @@ export class CheckoutKitchenComponent implements OnInit {
   /**
    * Temporarily stores the note of an order
    */
-  orderNote = signal('');
+  orderNote = signal("");
 
   /**
    * Used to keep track of product id and their data
@@ -186,7 +187,8 @@ export class CheckoutKitchenComponent implements OnInit {
     private _posService: PosServiceService,
     private _checkoutService: CheckoutService,
     private _imageCacheService: ImageCacheService,
-    private _paymentService: PaymentServiceService
+    private _paymentService: PaymentServiceService,
+    private _productHelperService: ProductHelperService,
   ) {}
 
   ngOnInit() {
@@ -199,32 +201,49 @@ export class CheckoutKitchenComponent implements OnInit {
             data.map((tableOrderStatus) => [
               tableOrderStatus.id,
               tableOrderStatus,
-            ])
+            ]),
           );
         });
-        console.log('Fetch table statuses are: ');
+        console.log("Fetch table statuses are: ");
         console.log(this.tableStatuses());
       });
 
       // Fetch and store the branches
       this._fetchedBranches = await lastValueFrom(
-        this._posService.getBranches()
+        this._posService.getBranches(),
       );
 
       const fetchedProducts: ProductData[] = await lastValueFrom(
-        this._posService.getProducts()
+        this._posService.getProducts(),
       );
 
       fetchedProducts.forEach((fetchedProduct) => {
-        const category = fetchedProduct.productCategory.name;
+        const {
+          productCategory: { name: category },
+          variants: possibleVariants,
+        } = fetchedProduct;
+        // Create separate "products" for each possible variant.
+        const variantProducts = possibleVariants.reduce<ProductData[]>(
+          (acc, val) => [
+            ...acc,
+            { ...fetchedProduct, selectedVariants: [val] },
+          ],
+          [],
+        );
 
         if (this.productCategories.has(category)) {
-          this.productCategories.get(category)!.push(fetchedProduct);
+          this.productCategories
+            .get(category)!
+            .push(fetchedProduct, ...variantProducts);
         } else {
-          this.productCategories.set(category, [fetchedProduct]);
+          this.productCategories.set(category, [
+            fetchedProduct,
+            ...variantProducts,
+          ]);
         }
         this._productIdAndDataMap.set(fetchedProduct.id, fetchedProduct);
       });
+
       this.currCategoryProducts =
         this.productCategories.values().next().value ?? [];
     })();
@@ -249,7 +268,7 @@ export class CheckoutKitchenComponent implements OnInit {
     waiterIdd?: string,
     note?: string,
     overwrite = false,
-    timeStamps?: TableOrderStatusTimeStamps
+    timeStamps?: TableOrderStatusTimeStamps,
   ) {
     if (!orders.size) return;
 
@@ -284,16 +303,18 @@ export class CheckoutKitchenComponent implements OnInit {
       let amountTendered = 0;
 
       orders.forEach((qty, order) => {
-        const totalPrice = qty * parseInt(order.sellingPrice ?? '1');
+        const possibleVariantData = this.getProductData(order);
+        const totalPrice =
+          qty * this.convertStrToNum(possibleVariantData.sellingPrice ?? "1");
 
         amountTendered += totalPrice;
         orderItems.push({
           id: 0,
           orderId: null,
           productId: order.id,
-          productVariantId: null,
+          productVariantId: order.selectedVariants?.[0].id ?? null,
           quantity: qty,
-          totalPrice: qty * parseInt(order.sellingPrice ?? '1'),
+          totalPrice,
         });
       });
 
@@ -320,11 +341,11 @@ export class CheckoutKitchenComponent implements OnInit {
         tableNo,
         amountTendered,
         orderItems,
-        timeStamps
+        timeStamps,
       );
       // update the details panel, if need be
       this.openOrderDetails(
-        this.tableStatuses().get(this._dummyTableOrderStatus)!
+        this.tableStatuses().get(this._dummyTableOrderStatus)!,
       );
 
       // Build up a new `TableOrderStatusPOST`, then send it to the backend and retrieve the created object by getting it by id
@@ -338,40 +359,40 @@ export class CheckoutKitchenComponent implements OnInit {
           customerId: null,
           discountId: null,
           orderNumber: `${0}`,
-          orderStatus: timeStamps?.readyOn?.toISOString() ? 'PAID' : 'UNPAID',
+          orderStatus: timeStamps?.readyOn?.toISOString() ? "PAID" : "UNPAID",
           paymentId: null,
           quantity: 1,
           updatedAt: creationDate,
           totalAmount: `${1}`,
           orderItem: orderItems,
-        })
+        }),
       );
 
       const uploadedTableOrderStatus = await lastValueFrom(
         this._posService.addTableOrderStatus({
           id: 0,
           chefId: 0,
-          completedOn: timeStamps?.completedOn?.toISOString() ?? '',
-          note: note ?? '',
+          completedOn: timeStamps?.completedOn?.toISOString() ?? "",
+          note: note ?? "",
           orderId: uploadedOrder.id,
           orderedOn: timeStamps?.orderedOn?.toISOString() ?? creationDate,
-          processedOn: timeStamps?.processedOn?.toISOString() ?? '',
-          readyOn: timeStamps?.readyOn?.toISOString() ?? '',
-          status: timeStamps?.readyOn?.toISOString() ? 'PAID' : 'UNPAID',
+          processedOn: timeStamps?.processedOn?.toISOString() ?? "",
+          readyOn: timeStamps?.readyOn?.toISOString() ?? "",
+          status: timeStamps?.readyOn?.toISOString() ? "PAID" : "UNPAID",
           tableNumber: `${tableNo}`,
           waterId: waiterId,
-        })
+        }),
       );
 
       const actualTableOrderStatus = await lastValueFrom(
-        this._posService.getTableOrderStatusById(uploadedTableOrderStatus.id)
+        this._posService.getTableOrderStatusById(uploadedTableOrderStatus.id),
       );
 
       // delete the dummy product and replace it
       this._removeDummyOrder(this._dummyTableOrderStatus);
 
-      if (actualTableOrderStatus.status == 'PAID') {
-        // Get rid of the table. This is done here since I can be sure that the seperate order is already created
+      if (actualTableOrderStatus.status == "PAID") {
+        // Get rid of the table. This is done here since I can be sure that the separate order is already created
         this.deleteTable(actualTableOrderStatus);
       } else {
         // update the details panel, if need be
@@ -381,11 +402,11 @@ export class CheckoutKitchenComponent implements OnInit {
         this.tableStatuses.update(
           (statuses) =>
             new Map(
-              statuses.set(actualTableOrderStatus.id, actualTableOrderStatus)
-            )
+              statuses.set(actualTableOrderStatus.id, actualTableOrderStatus),
+            ),
         );
 
-        console.log('After adding an order, the table statuses are:');
+        console.log("After adding an order, the table statuses are:");
         console.log(this.tableStatuses());
       }
 
@@ -395,7 +416,7 @@ export class CheckoutKitchenComponent implements OnInit {
   }
 
   createMultipleOrders(
-    tableOrderList: { tableNo: number; orders: TableOrder }[]
+    tableOrderList: { tableNo: number; orders: TableOrder }[],
   ) {
     tableOrderList.forEach((orderObject) => {
       this.createOrder(orderObject.tableNo, orderObject.orders);
@@ -405,7 +426,7 @@ export class CheckoutKitchenComponent implements OnInit {
   toggleOrderStatus(tableOrderStatus: TableOrderStatusGET) {
     const dateArray = dateToArray(new Date());
     const tableOrders = this._getTableOrdersFromGETPayload(
-      tableOrderStatus.order.orderItem
+      tableOrderStatus.order.orderItem,
     );
 
     let orderedOn = arrayToDate(tableOrderStatus.orderedOn!),
@@ -419,8 +440,8 @@ export class CheckoutKitchenComponent implements OnInit {
         ? arrayToDate(tableOrderStatus.readyOn)
         : undefined;
 
-    console.log('Ordered on string: ', orderedOn);
-    console.log('Ordered on array: ', tableOrderStatus.orderedOn);
+    console.log("Ordered on string: ", orderedOn);
+    console.log("Ordered on array: ", tableOrderStatus.orderedOn);
 
     if (!tableOrderStatus.processedOn) {
       tableOrderStatus.processedOn = dateArray;
@@ -430,24 +451,24 @@ export class CheckoutKitchenComponent implements OnInit {
       completedOn = new Date();
     } else if (!tableOrderStatus.readyOn) {
       tableOrderStatus.readyOn = dateArray;
-      tableOrderStatus.status = 'PAID';
+      tableOrderStatus.status = "PAID";
       readyOn = new Date();
       //TODO: Get rid of the table order
     }
 
     this.createOrder(
-      parseInt(tableOrderStatus.tableNumber),
+      this.convertStrToNum(tableOrderStatus.tableNumber),
       tableOrders,
       `${tableOrderStatus.waterId}`,
       tableOrderStatus.note,
       true,
-      { orderedOn, processedOn, completedOn, readyOn }
+      { orderedOn, processedOn, completedOn, readyOn },
     );
   }
 
   displayedTableStatuses = computed(() => {
     switch (this.testMode()) {
-      case 'waiter':
+      case "waiter":
         // TODO: Use the waiter's id as a comparison here
         return [...this.tableStatuses().values()]
           .filter((tableStatus) => tableStatus.waterId == 0)
@@ -460,8 +481,8 @@ export class CheckoutKitchenComponent implements OnInit {
             }
             return 0;
           });
-      case 'cashier':
-      case 'chef':
+      case "cashier":
+      case "chef":
         return [...this.tableStatuses().values()].sort((a, b) => {
           if (a.orderedOn && b.orderedOn) {
             //@ts-expect-error
@@ -487,13 +508,30 @@ export class CheckoutKitchenComponent implements OnInit {
     });
   }
 
-  orderSubTotal = computed(() => {
-    let subTotal = 0;
-    // Read the signal's value
-    this.tableData().forEach((qty, product) => {
-      subTotal += qty * parseInt(product.sellingPrice ?? '1');
-    });
-    return subTotal;
+  /** The subtotal, tax, discount, and total amounts of `this.tableData()` */
+  orderPriceData = computed(() => {
+    const priceData = { discount: 0, subTotal: 0, tax: 0, total: 0 };
+
+    if (this.isCreateOrderModalOpen()) {
+      this.tableData().forEach((qty, product) => {
+        priceData.discount +=
+          qty * this._productHelperService.getDiscount(product);
+        priceData.subTotal +=
+          qty * this._productHelperService.getPrice(product);
+        priceData.tax += qty * this._productHelperService.getTax(product);
+        priceData.total += qty * this._productHelperService.getRate(product);
+      });
+    } else {
+      // The Cashier is viewing the order or something so default back to checking the `selectedOrder`
+      this.productsInTableOrder().forEach((product) => {
+        priceData.discount += this._productHelperService.getDiscount(product);
+        priceData.subTotal += this._productHelperService.getPrice(product);
+        priceData.tax += this._productHelperService.getTax(product);
+        priceData.total += this._productHelperService.getRate(product);
+      });
+    }
+
+    return priceData;
   });
 
   /**
@@ -502,7 +540,7 @@ export class CheckoutKitchenComponent implements OnInit {
   overwriteTableOrderData(tableStatus: TableOrderStatusGET) {
     const clone = structuredClone(tableStatus);
     this._updateTableDataFromOrderGET(clone.order);
-    this.setOrderNote(clone.note ?? '');
+    this.setOrderNote(clone.note ?? "");
     this.orderTableNumber = this.convertStrToNum(clone.tableNumber);
   }
 
@@ -530,7 +568,7 @@ export class CheckoutKitchenComponent implements OnInit {
     this._posService
       .deleteTableOrderStatusById(tableStatus.id)
       .subscribe((data) => {
-        console.log('This should be null: ', data);
+        console.log("This should be null: ", data);
       });
 
     this.tableStatuses.update((val) => {
@@ -543,14 +581,14 @@ export class CheckoutKitchenComponent implements OnInit {
 
   proceedToOverwriteTableConflict(tableNumber: number) {
     this.isCreateOrderModalOrderExistsDialogOpen = false;
-    this.isCreateOrderModalOpen = true;
+    this.isCreateOrderModalOpen.set(true);
     this.isEditingOrder = true;
     const order = this.tableStatuses().get(tableNumber)?.order;
     if (order) this._updateTableDataFromOrderGET(order);
   }
 
   convertStrToNum(str: string) {
-    return parseInt(str);
+    return parseFloat(str);
   }
 
   private _updateTableDataFromOrderGET(orderToConvert: OrderGET) {
@@ -561,7 +599,7 @@ export class CheckoutKitchenComponent implements OnInit {
         orderItems.map((item) => {
           console.log("Updating table date from 'OrderGET'", item);
           return [item.product, item.quantity];
-        })
+        }),
       );
     });
   }
@@ -572,7 +610,7 @@ export class CheckoutKitchenComponent implements OnInit {
     tableNo: number,
     amountTendered: number,
     orderItems: OrderItemPOST[],
-    timeStamps?: TableOrderStatusTimeStamps
+    timeStamps?: TableOrderStatusTimeStamps,
   ) {
     this.tableStatuses.update((val) => {
       val.set(id, {
@@ -581,7 +619,7 @@ export class CheckoutKitchenComponent implements OnInit {
         completedOn: timeStamps?.completedOn
           ? dateToArray(timeStamps!.completedOn!)
           : [],
-        note: '',
+        note: "",
         orderedOn: timeStamps?.orderedOn
           ? dateToArray(timeStamps!.orderedOn!)
           : [],
@@ -589,7 +627,7 @@ export class CheckoutKitchenComponent implements OnInit {
           ? dateToArray(timeStamps!.processedOn!)
           : [],
         readyOn: timeStamps?.readyOn ? dateToArray(timeStamps!.readyOn!) : [],
-        status: timeStamps?.readyOn ? 'PAID' : 'UNPAID',
+        status: timeStamps?.readyOn ? "PAID" : "UNPAID",
         tableNumber: `${tableNo}`,
         waterId: 0,
         order: {
@@ -600,8 +638,8 @@ export class CheckoutKitchenComponent implements OnInit {
           customer: {},
           discount: {},
           id: 0,
-          orderNumber: '0',
-          orderStatus: timeStamps?.readyOn ? 'PAID' : 'UNPAID',
+          orderNumber: "0",
+          orderStatus: timeStamps?.readyOn ? "PAID" : "UNPAID",
           payment: {},
           tax: {},
           updatedAt: 1,
@@ -629,39 +667,84 @@ export class CheckoutKitchenComponent implements OnInit {
   }
 
   private _getTableOrdersFromGETPayload(
-    fetchedOrderItems: OrderItemGET[]
+    fetchedOrderItems: OrderItemGET[],
   ): TableOrder {
     return new Map(
-      fetchedOrderItems.map((item) => [item.product, item.quantity])
+      fetchedOrderItems.map((item) => [item.product, item.quantity]),
     );
   }
 
   productsInTableOrder(
-    tableOrderStatus = this.selectedOrder() ?? ('' as const)
+    tableOrderStatus = this.selectedOrder() ?? ("" as const),
   ): ProductData[] {
-    if (typeof tableOrderStatus == 'string') return [];
+    if (typeof tableOrderStatus == "string") return [];
 
-    return tableOrderStatus.order.orderItem.map(
-      (orderItem) => orderItem.product
-    );
+    return tableOrderStatus.order.orderItem
+      .map((orderItem) =>
+        new Array<ProductData>(orderItem.quantity).fill(orderItem.product),
+      )
+      .flat();
   }
 
   getProductImage(product: ProductData) {
     return this._imageCacheService.getProductImage(product);
   }
 
+  /** Use this if you the product data has a `selectedVariant`, and you want to access the variant's data easily for display.
+   *
+   * NOTE: **DO NOT SEND THE RESULT OF THIS TO THE SERVER FOR ANY REASON**
+   */
+  getProductData(product: ProductData) {
+    return this._productHelperService.getData(product);
+  }
+
   processPayment(
     paymentModes: Parameters<
-      PaymentServiceService['processPayment']
-    >[0]['paymentModes']
+      PaymentServiceService["processPayment"]
+    >[0]["paymentModes"],
   ) {
+    const products = this.productsInTableOrder();
+    const { discount, subTotal, tax, total } = products.reduce<{
+      discount: number;
+      subTotal: number;
+      tax: number;
+      total: number;
+    }>(
+      (acc, val) => {
+        const {
+          discount: prevDiscount,
+          subTotal: prevSubTotal,
+          tax: prevTax,
+          total: prevTotal,
+        } = acc;
+
+        const variantData = this._productHelperService.isVariant(val);
+        const variants = variantData.isVariant
+          ? variantData.variants[0]
+          : undefined;
+
+        const discount = this._productHelperService.getDiscount(val, variants);
+        const tax = this._productHelperService.getTax(val, variants);
+        const subtotal = this._productHelperService.getPrice(val, variants);
+        const total = this._productHelperService.getRate(val, variants);
+
+        return {
+          discount: prevDiscount + discount,
+          subTotal: prevSubTotal + subtotal,
+          tax: prevTax + tax,
+          total: prevTotal + total,
+        };
+      },
+      { discount: 0, subTotal: 0, tax: 0, total: 0 },
+    );
+
     this._paymentService.processPayment({
       paymentModes,
-      cartItems: this.productsInTableOrder(),
-      discount: 0,
-      subTotal: 0,
-      tax: 0,
-      total: 0,
+      cartItems: products,
+      discount,
+      subTotal,
+      tax,
+      total,
     });
   }
 }

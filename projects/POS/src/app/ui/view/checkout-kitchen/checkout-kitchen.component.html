@@ -60,7 +60,7 @@
             pButton
             label="Take Order"
             class="waiter-order-btn p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200 z-50"
-            (click)="isCreateOrderModalOpen = true"
+            (click)="isCreateOrderModalOpen.set(true)"
           ></button>
 
           @if (!displayedTableStatuses().length) {
@@ -126,14 +126,19 @@
             @case ("chef") {
               <div class="details-body" style="font-size: 1.7rem">
                 @if ((selectedOrder()?.order?.orderItem?.length ?? 0) > 0) {
-                  @for (item of selectedOrder()!.order.orderItem; track $index) {
+                  @for (
+                    item of selectedOrder()!.order.orderItem;
+                    track $index
+                  ) {
                     <div class="order-item">
                       <span class="item-name">
-                        {{ item.product["name"] }}
+                        <span>{{ getProductData(item.product).name }}</span>
                         <div
                           [style]="{
                             'background-image':
-                              'url(' + (getProductImage(item.product) | async) + ')',
+                              'url(' +
+                              (getProductImage(item.product) | async) +
+                              ')',
                           }"
                         ></div>
                       </span>
@@ -211,11 +216,18 @@
                     </ng-template>
                     <ng-template pTemplate="body" let-rowData>
                       <tr>
-                        <td>{{ rowData["product"].name }}</td>
+                        <td>{{ getProductData(rowData["product"]).name }}</td>
                         <td>{{ rowData.quantity }}</td>
-                        <td>{{ rowData.product.sellingPrice }}</td>
                         <td>
-                          N{{ rowData.product.sellingPrice * rowData.quantity }}
+                          {{ getProductData(rowData.product).sellingPrice }}
+                        </td>
+                        <td>
+                          N{{
+                            convertStrToNum(
+                              getProductData(rowData.product).sellingPrice ??
+                                "0"
+                            ) * rowData.quantity
+                          }}
                         </td>
                       </tr>
                     </ng-template>
@@ -224,18 +236,38 @@
 
                 <!-- Totals & VAT -->
                 <div class="mt-4 space-y-2">
-                  <div class="border-t pt-2 flex justify-between">
-                    <span>Subtotal</span>
-                    <span> {{ orderSubTotal() }} </span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span>Vat</span>
-                    <span>N600.00</span>
-                  </div>
-                  <div class="border-t pt-2 flex justify-between font-bold">
-                    <span>Total</span>
-                    <span>N{{ orderSubTotal() + 600 }}</span>
-                  </div>
+                  @if (orderPriceData(); as data) {
+                    <div class="border-t pt-2 flex justify-between">
+                      <span>Subtotal</span>
+                      <span>
+                        {{ data.subTotal | currency: "₦" : "symbol" : "1.0-0" }}
+                      </span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span>VAT</span>
+                      <span>
+                        +
+                        {{
+                          data.tax | currency: "₦" : "symbol" : "1.0-0"
+                        }}</span
+                      >
+                    </div>
+                    <div class="flex justify-between">
+                      <span>Discount</span>
+                      <span>
+                        -
+                        {{
+                          data.discount | currency: "₦" : "symbol" : "1.0-0"
+                        }}</span
+                      >
+                    </div>
+                    <div class="border-t pt-2 flex justify-between font-bold">
+                      <span>Total</span>
+                      <span>
+                        = {{ data.total | currency: "₦" : "symbol" : "1.0-0" }}
+                      </span>
+                    </div>
+                  }
                 </div>
 
                 <!-- VAT Type and Payment Method -->
@@ -314,14 +346,19 @@
               <!-- TODO: Use a component or template or whatever for both this and the chef's template -->
               <div class="details-body" style="font-size: 1.7rem">
                 @if ((selectedOrder()?.order?.orderItem?.length ?? 0) > 0) {
-                  @for (item of selectedOrder()!.order.orderItem; track $index) {
+                  @for (
+                    item of selectedOrder()!.order.orderItem;
+                    track $index
+                  ) {
                     <div class="order-item">
                       <span class="item-name">
-                        {{ item.product["name"] }}
+                        <span>{{ getProductData(item.product)["name"] }}</span>
                         <div
                           [style]="{
                             'background-image':
-                              'url(' + (getProductImage(item.product) | async) + ')',
+                              'url(' +
+                              (getProductImage(item.product) | async) +
+                              ')',
                           }"
                         ></div>
                       </span>
@@ -364,7 +401,7 @@
                   (click)="
                     overwriteTableOrderData(selectedOrder()!);
                     isEditingOrder = true;
-                    isCreateOrderModalOpen = true
+                    isCreateOrderModalOpen.set(true)
                   "
                 ></button>
                 <button
@@ -387,12 +424,12 @@
                       ? 'font-bold rounded-md focus:outline-none focus:ring p-button-danger ml-2 bg-red-500 text-white hover:bg-red-400 focus:ring-red-200'
                       : 'font-bold rounded-md focus:outline-none focus:ring p-button-success bg-green-500 hover:bg-green-400 focus:ring-green-200 cursor-not-allowed'
                   "
-                  [disabled]="
-                    !selectedOrderStatus().pending
-                  "
+                  [disabled]="!selectedOrderStatus().pending"
                   (click)="
-                    selectedOrderStatus().pending && deleteTable(selectedOrder()!);
-                    selectedOrderStatus().pending && (isOrderDetailsOpen = false)
+                    selectedOrderStatus().pending &&
+                      deleteTable(selectedOrder()!);
+                    selectedOrderStatus().pending &&
+                      (isOrderDetailsOpen = false)
                   "
                 ></button>
               </div>
@@ -446,18 +483,30 @@
         <ng-template pTemplate="body" let-rowData>
           <tr>
             <td class="p-2 border-b border-gray-200">
-              {{ rowData?.product?.name ?? "Jollof Rice" }}
+              {{
+                rowData?.product
+                  ? getProductData(rowData!.product).name
+                  : "Jollof Rice"
+              }}
             </td>
             <td class="p-2 border-b border-gray-200">
               {{ rowData?.quantity ?? 1 }}
             </td>
             <td class="p-2 border-b border-gray-200">
-              N{{ rowData?.product?.sellingPrice ?? 2000 }}
+              ₦{{
+                rowData?.product
+                  ? getProductData(rowData!.product).sellingPrice
+                  : 2000
+              }}
             </td>
             <td class="p-2 border-b border-gray-200">
-              N{{
+              ₦{{
                 (rowData?.quantity ?? 1) *
-                  (rowData?.product?.sellingPrice ?? 2000)
+                  (rowData?.product
+                    ? convertStrToNum(
+                        getProductData(rowData!.product).sellingPrice ?? "0"
+                      )
+                    : 2000)
               }}
             </td>
           </tr>
@@ -467,22 +516,26 @@
 
     <!-- Totals Section -->
     <div class="mt-4 space-y-2">
-      <div class="flex justify-between border-t pt-2">
-        <span>Subtotal</span>
-        <span>{{
-          orderSubTotal() | currency: "NGN" : "symbol" : "1.0-0"
-        }}</span>
-      </div>
-      <div class="flex justify-between">
-        <span>Vat</span>
-        <span>{{ 600 | currency: "NGN" : "symbol" : "1.0-0" }}</span>
-      </div>
-      <div class="flex justify-between border-t pt-2 font-bold">
-        <span>Total</span>
-        <span>{{
-          orderSubTotal() + 600 | currency: "NGN" : "symbol" : "1.0-0"
-        }}</span>
-      </div>
+      @if (orderPriceData(); as data) {
+        <div class="flex justify-between border-t pt-2">
+          <span>Subtotal</span>
+          <span>{{ data.subTotal | currency: "₦" : "symbol" : "1.0-0" }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span>VAT</span>
+          <span> + {{ data.tax | currency: "₦" : "symbol" : "1.0-0" }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span>Discount</span>
+          <span>
+            - {{ data.discount | currency: "₦" : "symbol" : "1.0-0" }}</span
+          >
+        </div>
+        <div class="flex justify-between border-t pt-2 font-bold">
+          <span>Total</span>
+          <span> = {{ data.total | currency: "₦" : "symbol" : "1.0-0" }}</span>
+        </div>
+      }
     </div>
   </div>
 
@@ -548,10 +601,17 @@
             </ng-template>
             <ng-template pTemplate="body" let-rowData>
               <tr>
-                <td>{{ rowData.key.name }}</td>
+                <td>{{ getProductData(rowData.key).name }}</td>
                 <td>{{ rowData.value }}</td>
-                <td>₦{{ rowData.key.sellingPrice }}</td>
-                <td>₦{{ rowData.value * rowData.key.sellingPrice }}</td>
+                <td>₦{{ getProductData(rowData.key).sellingPrice }}</td>
+                <td>
+                  ₦{{
+                    rowData.value *
+                      convertStrToNum(
+                        getProductData(rowData.key).sellingPrice ?? "0"
+                      )
+                  }}
+                </td>
                 <td>
                   <i
                     class="fa-solid fa-xmark text-3xl"
@@ -565,20 +625,33 @@
 
         <!-- VAT and total -->
         @if (tableData().size > 0) {
-          <div>
+          <!-- Since `@let` isn't supported yet here :p -->
+          @if (orderPriceData(); as data) {
             <div>
-              <div>Subtotal:</div>
-              <div>N{{ orderSubTotal() }}</div>
+              <div>
+                <div>Subtotal:</div>
+                <div>
+                  {{ data.subTotal | currency: "₦" : "symbol" : "1.0-0" }}
+                </div>
+              </div>
+              <div>
+                <div>VAT:</div>
+                <div>+ {{ data.tax | currency: "₦" : "symbol" : "1.0-0" }}</div>
+              </div>
+              <div>
+                <div>Discount:</div>
+                <div>
+                  - {{ data.discount | currency: "₦" : "symbol" : "1.0-0" }}
+                </div>
+              </div>
+              <div>
+                <div class="font-bold">Total:</div>
+                <div>
+                  = {{ data.total | currency: "₦" : "symbol" : "1.0-0" }}
+                </div>
+              </div>
             </div>
-            <div>
-              <div>VAT:</div>
-              <div>N600</div>
-            </div>
-            <div>
-              <div class="font-bold">Total:</div>
-              <div>N{{ orderSubTotal() + 600 }}</div>
-            </div>
-          </div>
+          }
         }
       </div>
     </div>
@@ -592,7 +665,7 @@
         >
           <div
             [style]="{
-              'background-image': 'url(' + (getProductImage(p)|async) + ')',
+              'background-image': 'url(' + (getProductImage(p) | async) + ')',
             }"
           ></div>
 
@@ -600,7 +673,7 @@
             class="w-full flex gap-4 p-2 justify-center items-center font-bold"
           >
             <h3 class="text-xl whitespace-nowrap overflow-hidden text-ellipsis">
-              {{ p.name }}
+              {{ getProductData(p).name }}
             </h3>
 
             <button
@@ -634,7 +707,7 @@
           class="p-button-danger px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring focus:ring-red-200 font-bold row-start-2"
           (click)="
             setOrderNote('');
-            isCreateOrderModalOpen = false;
+            isCreateOrderModalOpen.set(false);
             isEditingOrder = false
           "
         ></button>
@@ -659,7 +732,7 @@
               orderNote(),
               isEditingOrder
             );
-            isCreateOrderModalOpen = false;
+            isCreateOrderModalOpen.set(false);
             isEditingOrder = false;
             tableData().clear();
             setOrderNote('');
@@ -738,4 +811,8 @@
   </ng-template>
 </p-dialog>
 
-<app-all-payments-modal [cartItem]="productsInTableOrder()" [(isModalOpen)]="isPaymentModalOpen" (selectedPayments)="processPayment($event)"></app-all-payments-modal>
+<app-all-payments-modal
+  [cartItem]="productsInTableOrder()"
+  [(isModalOpen)]="isPaymentModalOpen"
+  (selectedPayments)="processPayment($event)"
+></app-all-payments-modal>

@@ -1,4 +1,4 @@
-import { ProductData } from "../interface";
+import { ProductData, VariantDTO } from "../interface";
 
 // NOTE: Dates are sent as ISO strings, `new Date().toISOString()` and are received as arrays that can be converted back to a Date using `new Date(...dateArray)
 interface TableOrderStatusShared<TDateType> {
@@ -145,5 +145,5 @@ export interface OrderItemGET extends OrderItemShared {
   // TODO: Create the full product interface
   product: ProductData;
   // TODO: Create the full product variant interface
-  productVariant: Record<string, any> | null;
+  productVariant: VariantDTO | null;
 }

@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
-import { PosServiceService } from '../../service/pos-service.service';
-import JsBarcode from 'jsbarcode';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { Component, OnInit } from "@angular/core";
+import { PosServiceService } from "../../service/pos-service.service";
+import JsBarcode from "jsbarcode";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import {
   BranchDTO,
   DiscountDTO,
@@ -10,20 +10,20 @@ import {
   ProductCategoryDTO,
   ProductData,
   ProductJSONFormat,
-} from '../../models/interface';
-import { MessageService } from 'primeng/api';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+} from "../../models/interface";
+import { MessageService } from "primeng/api";
+import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 // import { MatStartDate } from '@angular/material/datepicker';
-import { filter, Observable } from 'rxjs';
+import { filter, Observable } from "rxjs";
 // import xlsx from 'node-xlsx';
 // import * as XLSX from 'xlsx';
 // import readXlsxFile from 'read-excel-file';
-import { map } from 'rxjs/operators';
-import { Workbook, Worksheet } from 'exceljs';
-import { KeyValue } from '@angular/common';
-import { ProductExcelColumns } from '../../models/enums';
-import { ImageCacheService } from '../../service/image-cache.service';
-import { MetadataService } from '../../service/metadata.service';
+import { map } from "rxjs/operators";
+import { Workbook, Worksheet } from "exceljs";
+import { KeyValue } from "@angular/common";
+import { ProductExcelColumns } from "../../models/enums";
+import { ImageCacheService } from "../../service/image-cache.service";
+import { MetadataService } from "../../service/metadata.service";
 /**
  * Responsible for showing the list of available products in `admin/pos`
  *
@@ -33,9 +33,9 @@ import { MetadataService } from '../../service/metadata.service';
  * @implements {OnInit}
  */
 @Component({
-  selector: 'app-products',
-  templateUrl: './products.component.html',
-  styleUrl: './products.component.scss',
+  selector: "app-products",
+  templateUrl: "./products.component.html",
+  styleUrl: "./products.component.scss",
   providers: [MessageService],
 })
 export class ProductsComponent implements OnInit {
@@ -46,7 +46,7 @@ export class ProductsComponent implements OnInit {
    */
   products: ProductData[] = [];
   tableSections: boolean = false;
-  imageUrl: string = ''
+  imageUrl: string = "";
   /**
    * The product data fetched straight from the API. DO NOT TOUCH THIS
    *
@@ -70,66 +70,66 @@ export class ProductsComponent implements OnInit {
   configureBarcode: boolean = false;
 
   discountTypes = [
-    { label: 'Periodic', value: 'periodic' },
-    { label: 'Quantity Based', value: 'quantityBased' },
-    { label: 'Global Discount', value: 'globalDiscount' },
+    { label: "Periodic", value: "periodic" },
+    { label: "Quantity Based", value: "quantityBased" },
+    { label: "Global Discount", value: "globalDiscount" },
   ] as const;
   discountType: string[] = [];
   periodicDiscount: { startDate: string; endDate: string } = {
-    startDate: '',
-    endDate: '',
+    startDate: "",
+    endDate: "",
   };
   quantityBasedDiscount: { minQuantity: number } = { minQuantity: 0 };
-  productImage: any = '';
+  productImage: any = "";
   tableSection: boolean = true;
-  searchTerm: string = '';
+  searchTerm: string = "";
   selectedCategories: number[] = [];
   selectedBranch: number = 1;
 
   categories: any[] = [];
   isImportDialogOpen = false;
-  branches: BranchDTO[] = []
+  branches: BranchDTO[] = [];
   productTableHeaders = {
-    sku: 'SKU',
-    code: 'Code',
-    name: 'Name',
-    price: 'Price',
-    quantity: 'Quantity',
-    category: 'Category',
-    action: '',
+    sku: "SKU",
+    code: "Code",
+    name: "Name",
+    price: "Price",
+    quantity: "Quantity",
+    category: "Category",
+    action: "",
   } as const;
   sortingData = {
     headerToSort: this.productTableHeaders
       .sku as (typeof this.productTableHeaders)[keyof typeof this.productTableHeaders],
-    order: 'asc' as 'asc' | 'desc',
+    order: "asc" as "asc" | "desc",
   };
   barcodeConfig = {
-    barcodeType: 'CODE128',
+    barcodeType: "CODE128",
     barcodeQuantity: 1,
     variants: false,
   };
   barcodes = [
-    { label: 'CODE128 ', value: 'CODE128' },
+    { label: "CODE128 ", value: "CODE128" },
     // { label: 'CODE128 A/B/C', value: 'CODE128' },
-    { label: 'EAN-13', value: 'EAN13' },
-    { label: 'EAN-8', value: 'EAN8' },
+    { label: "EAN-13", value: "EAN13" },
+    { label: "EAN-8", value: "EAN8" },
     // { label: 'EAN-5', value: 'EAN5' },
     // { label: 'EAN-2', value: 'EAN2' },
-    { label: 'UPC (A)', value: 'UPC' },
-    { label: 'UPC (E)', value: 'UPC' },
-    { label: 'ITF', value: 'ITF' },
+    { label: "UPC (A)", value: "UPC" },
+    { label: "UPC (E)", value: "UPC" },
+    { label: "ITF", value: "ITF" },
     // { label: 'ITF-14', value: 'ITF14' },
     // { label: 'MSI10', value: 'MSI10' },
     // { label: 'MSI11', value: 'MSI11' },
     // { label: 'MSI1010', value: 'MSI1010' },
     // { label: 'MSI1110', value: 'MSI1110' },
 
-    { label: 'Codabar', value: 'Codabar' },
-    { label: 'CODE39', value: 'CODE39' },
+    { label: "Codabar", value: "Codabar" },
+    { label: "CODE39", value: "CODE39" },
   ] as const;
 
-    measurementUnits = Object.keys(MeasurementUnit)
-  
+  measurementUnits = Object.keys(MeasurementUnit);
+
   /**
    * Populated from import spreadsheets
    *
@@ -145,43 +145,47 @@ export class ProductsComponent implements OnInit {
    */
   originalOrder = (
     a: KeyValue<string, string>,
-    b: KeyValue<string, string>
+    b: KeyValue<string, string>,
   ): number => 0;
-
 
   //paginator
 
   currentPage = 0;
-rowsPerPage = 15;
+  rowsPerPage = 15;
 
   constructor(
     private messageService: MessageService,
     private posService: PosServiceService,
     private http: HttpClient,
     private imageCacheService: ImageCacheService,
-    public metadataService: MetadataService
+    public metadataService: MetadataService,
   ) {}
 
   ngOnInit(): void {
     this.loadCategory();
     this.getProducts();
     this.getDiscountTypes();
-    this.metadataService.branches$.subscribe(data => (this.branches = data));
+    this.metadataService.branches$.subscribe((data) => (this.branches = data));
     if (this.selectedBranch) {
       this.metadataService.setSelectedBranch(this.selectedBranch);
     }
     this.setRowsPerPageBasedOnScreenSize();
 
-  window.addEventListener('resize', this.setRowsPerPageBasedOnScreenSize.bind(this));
-
+    window.addEventListener(
+      "resize",
+      this.setRowsPerPageBasedOnScreenSize.bind(this),
+    );
   }
   ngOnDestroy() {
-    window.removeEventListener('resize', this.setRowsPerPageBasedOnScreenSize.bind(this));
+    window.removeEventListener(
+      "resize",
+      this.setRowsPerPageBasedOnScreenSize.bind(this),
+    );
   }
-  
+
   setRowsPerPageBasedOnScreenSize() {
     const height = window.innerWidth;
-  
+
     if (height > 1000) {
       this.rowsPerPage = 21;
     } else if (height > 800) {
@@ -192,26 +196,24 @@ rowsPerPage = 15;
       this.rowsPerPage = 5;
     }
   }
-  
-  
 
   toggleView() {
     this.tableSections = !this.tableSections;
   }
 
-get paginatedProducts() {
-  const startIndex = this.currentPage * this.rowsPerPage;
-  return this.products.slice(startIndex, startIndex + this.rowsPerPage);
-}
+  get paginatedProducts() {
+    const startIndex = this.currentPage * this.rowsPerPage;
+    return this.products.slice(startIndex, startIndex + this.rowsPerPage);
+  }
 
-onPageChange(event: any) {
-  this.currentPage = event.page;
-  this.rowsPerPage = event.rows;
-}
-  
+  onPageChange(event: any) {
+    this.currentPage = event.page;
+    this.rowsPerPage = event.rows;
+  }
+
   checkForEmptyFields(obj: any): boolean {
     return Object.values(obj).some(
-      (value) => typeof value === 'string' && value.trim() === ''
+      (value) => typeof value === "string" && value.trim() === "",
     );
   }
 
@@ -225,7 +227,7 @@ onPageChange(event: any) {
             a.createdDate[2],
             a.createdDate[3],
             a.createdDate[4],
-            a.createdDate[5]
+            a.createdDate[5],
           );
           const dateB = new Date(
             b.createdDate[0],
@@ -233,14 +235,14 @@ onPageChange(event: any) {
             b.createdDate[2],
             b.createdDate[3],
             b.createdDate[4],
-            b.createdDate[5]
+            b.createdDate[5],
           );
           return dateB.getTime() - dateA.getTime();
         });
         this.products = [...this.originalProducts];
-        console.log(this.products)
+        console.log(this.products);
       } else {
-        console.log('error loading data');
+        console.log("error loading data");
       }
     });
 
@@ -280,7 +282,7 @@ onPageChange(event: any) {
       if (data) {
         this.discountTypes = data;
       } else {
-        console.log('error loading data');
+        console.log("error loading data");
       }
     });
   }
@@ -290,7 +292,7 @@ onPageChange(event: any) {
       if (data) {
         this.categories = data;
       } else {
-        console.log('error loading data');
+        console.log("error loading data");
       }
     });
   }
@@ -321,7 +323,7 @@ onPageChange(event: any) {
       this.products = [...this.originalProducts];
     } else {
       this.products = this.originalProducts.filter((product) =>
-        this.selectedCategories.includes(product.productCategory?.id)
+        this.selectedCategories.includes(product.productCategory?.id),
       );
     }
   }
@@ -335,10 +337,10 @@ onPageChange(event: any) {
           this.deleteModal = false;
           this.getProducts();
           this.messageService.add({
-            severity: 'success',
-            summary: 'Product deleted',
+            severity: "success",
+            summary: "Product deleted",
             detail: `Product deleted successfully`,
-            key: 'tl',
+            key: "tl",
             life: 3000,
           });
         }
@@ -349,7 +351,7 @@ onPageChange(event: any) {
 
     if (this.listOfSelectedItems.includes(id)) {
       this.listOfSelectedItems = this.listOfSelectedItems.filter(
-        (itemId) => itemId !== id
+        (itemId) => itemId !== id,
       );
     } else {
       this.listOfSelectedItems.push(id);
@@ -363,17 +365,17 @@ onPageChange(event: any) {
         if (data) {
           console.log(
             `Product with id ${id} deleted successfully. It's data was ${JSON.stringify(
-              data
-            )}`
+              data,
+            )}`,
           );
         } else {
           this.deleteMultipleItemsModal = false;
           this.getProducts();
           this.messageService.add({
-            severity: 'success',
-            summary: 'Product deleted',
+            severity: "success",
+            summary: "Product deleted",
             detail: `Product deleted successfully`,
-            key: 'tl',
+            key: "tl",
             life: 3000,
           });
         }
@@ -381,7 +383,7 @@ onPageChange(event: any) {
 
       // Remove the ID from the list
       this.listOfSelectedItems = this.listOfSelectedItems.filter(
-        (itemId) => itemId !== id
+        (itemId) => itemId !== id,
       );
     });
 
@@ -403,7 +405,7 @@ onPageChange(event: any) {
   openDeleteModal(item: any = {}) {
     this.activeItem = item;
     // this.tableSection =!this.tableSection
-    console.log('modal open', this.deleteModal);
+    console.log("modal open", this.deleteModal);
     this.deleteModal = !this.deleteModal;
   }
   toggleMultiDeleteModal() {
@@ -412,7 +414,7 @@ onPageChange(event: any) {
 
   openEdit(item: any = {}) {
     this.activeItem = item;
-    console.log('view', item);
+    console.log("view", item);
     this.tableSection = false;
     this.viewProduct = false;
     this.addProduct = false;
@@ -456,7 +458,7 @@ onPageChange(event: any) {
     // Read the file data
     await workbook.xlsx.load(await xlsxImport.arrayBuffer());
     // console.log(workbook);
-    const worksheet = workbook.getWorksheet('Products to Add') as Worksheet;
+    const worksheet = workbook.getWorksheet("Products to Add") as Worksheet;
     // console.log(this.products);
     // const workSheetImages = worksheet.getImages();
     // // Just something to easily arrange the images in a sensible order
@@ -474,7 +476,7 @@ onPageChange(event: any) {
       const row = worksheet.getRow(i);
 
       const name = row.getCell(ProductExcelColumns.NAME + 1).text;
-      if (name == 'Dummy Product' || name == '') continue;
+      if (name == "Dummy Product" || name == "") continue;
       const description = row.getCell(ProductExcelColumns.DESCRIPTION + 1).text;
       // Just some simple validation on the string provided, other it'll default to a dummy image
       const imgUrl = ((url: string) => {
@@ -482,39 +484,39 @@ onPageChange(event: any) {
           new URL(url);
           return url;
         } catch (_) {
-          return 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s';
+          return "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s";
         }
       })(row.getCell(ProductExcelColumns.IMAGE_URL + 1).text);
       // TODO: Add error handling
       const imgBlob = await (await fetch(imgUrl)).blob();
-      const imgFile = new File([imgBlob], 'img.jpg', {
+      const imgFile = new File([imgBlob], "img.jpg", {
         type: imgBlob.type,
       });
       console.log(imgFile);
       const branchName = row.getCell(ProductExcelColumns.BRANCH + 1).text;
       const code = parseInt(row.getCell(ProductExcelColumns.CODE + 1).text);
       const basePrice = parseInt(
-        row.getCell(ProductExcelColumns.BASE_PRICE + 1).text
+        row.getCell(ProductExcelColumns.BASE_PRICE + 1).text,
       );
       const taxPercentage = parseInt(
-        row.getCell(ProductExcelColumns.TAX_PERCENTAGE + 1).text
+        row.getCell(ProductExcelColumns.TAX_PERCENTAGE + 1).text,
       );
       const discountName = row.getCell(
-        ProductExcelColumns.DISCOUNT_NAME + 1
+        ProductExcelColumns.DISCOUNT_NAME + 1,
       ).text;
       const quantity = parseInt(
-        row.getCell(ProductExcelColumns.QUANTITY + 1).text
+        row.getCell(ProductExcelColumns.QUANTITY + 1).text,
       );
       const sku = parseInt(row.getCell(ProductExcelColumns.SKU + 1).text);
       const partNumber = parseInt(
-        row.getCell(ProductExcelColumns.PART_NUMBER + 1).text
+        row.getCell(ProductExcelColumns.PART_NUMBER + 1).text,
       );
       const categoryName = row.getCell(ProductExcelColumns.CATEGORY + 1).text;
       const variantNames = row
         .getCell(ProductExcelColumns.VARIANTS + 1)
-        .text.split(',');
+        .text.split(",");
       const weight = parseInt(
-        row.getCell(ProductExcelColumns.ITEM_WEIGHT + 1).text
+        row.getCell(ProductExcelColumns.ITEM_WEIGHT + 1).text,
       );
 
       let discount: DiscountDTO = {} as any;
@@ -533,19 +535,19 @@ onPageChange(event: any) {
       this.parsedProductData.push({
         id: 0 || (Math.random().toString(36).substr(2, 50) as any),
         createdDate: new Date().toISOString(),
-        createdBy: '',
+        createdBy: "",
         costPrice: (
           basePrice -
           (basePrice * discount.value) / 100 -
           (basePrice * taxPercentage) / 100
         ).toFixed(2),
         // effectiveQuantity: quantity,
-        variant: '',
+        variant: "",
         productImages: [
           {
             id: 54,
-            name: 'Opera Snapshot_2025-02-03_030901_localhost.png',
-            imgNo: 'd03BR3TK6L3',
+            name: "Opera Snapshot_2025-02-03_030901_localhost.png",
+            imgNo: "d03BR3TK6L3",
           },
         ],
         variants: [],
@@ -554,7 +556,7 @@ onPageChange(event: any) {
         // branch: branch,
         code: code.toString(),
         // originalPurchasePrice: basePrice.toString(),
-        tax: taxPercentage,
+        tax: { rate: taxPercentage, name: "" },
         // quantity: 0,
         discount: discount,
         // initialQuantity: quantity,
@@ -672,14 +674,14 @@ onPageChange(event: any) {
     //   });
   }
   sortProductsByHeader(
-    header: (typeof this.productTableHeaders)[keyof typeof this.productTableHeaders]
+    header: (typeof this.productTableHeaders)[keyof typeof this.productTableHeaders],
   ) {
-    if (header == '') return;
+    if (header == "") return;
     else {
       // Check if the param and the currently chosen header are the same, if so, invert its order
       if (header == this.sortingData.headerToSort) {
         this.sortingData.order =
-          this.sortingData.order == 'asc' ? 'desc' : 'asc';
+          this.sortingData.order == "asc" ? "desc" : "asc";
       } else {
         // Switch to the param's value
         this.sortingData.headerToSort = header;
@@ -690,15 +692,15 @@ onPageChange(event: any) {
         let productAVal: string | number, productBVal: string | number;
 
         switch (header) {
-          case 'Code':
+          case "Code":
             productAVal = productA.code;
             productBVal = productB.code;
             break;
-          case 'SKU':
+          case "SKU":
             productAVal = productA.sku;
             productBVal = productB.sku;
             break;
-          case 'Name':
+          case "Name":
             productAVal = productA.name;
             productBVal = productB.name;
             break;
@@ -710,7 +712,7 @@ onPageChange(event: any) {
           //   productAVal = productA.effectiveQuantity;
           //   productBVal = productB.effectiveQuantity;
           //   break;
-          case 'Category':
+          case "Category":
             productAVal = productA.productCategory.name;
             productBVal = productB.productCategory.name;
             break;
@@ -719,14 +721,14 @@ onPageChange(event: any) {
             productBVal = 0;
         }
 
-        if (typeof productAVal == 'number' && typeof productBVal == 'number') {
-          return this.sortingData.order == 'asc'
+        if (typeof productAVal == "number" && typeof productBVal == "number") {
+          return this.sortingData.order == "asc"
             ? productBVal - productAVal
             : productAVal - productBVal;
         } else {
           const valA = productAVal.toString().toLocaleLowerCase();
           const valB = productBVal.toString().toLocaleLowerCase();
-          return this.sortingData.order == 'asc'
+          return this.sortingData.order == "asc"
             ? valA.localeCompare(valB)
             : valB.localeCompare(valA);
         }
@@ -749,19 +751,19 @@ onPageChange(event: any) {
     const barcodes: { svg: SVGSVGElement; text: string }[] = [];
 
     const sku = this.activeItem?.sku;
-    if (typeof sku === 'string') {
+    if (typeof sku === "string") {
       const displayValue = `${(
-        this.activeItem.name?.split(' ')[0] || ''
+        this.activeItem.name?.split(" ")[0] || ""
       ).toLowerCase()}-${sku}`;
 
       for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
         const barcodeSvg = document.createElementNS(
-          'http://www.w3.org/2000/svg',
-          'svg'
+          "http://www.w3.org/2000/svg",
+          "svg",
         );
         JsBarcode(barcodeSvg, sku, {
           format: this.barcodeConfig.barcodeType,
-          lineColor: '#000',
+          lineColor: "#000",
           width: 3,
           height: 150,
           displayValue: true,
@@ -770,26 +772,26 @@ onPageChange(event: any) {
         barcodes.push({ svg: barcodeSvg, text: displayValue });
       }
     } else {
-      alert('Please fill in the SKU with valid data.');
+      alert("Please fill in the SKU with valid data.");
     }
 
     if (Array.isArray(this.activeItem?.variants)) {
       this.activeItem.variants.forEach(
         (variant: { sku: string; name: string; quantity: number }) => {
           const variantSKU = variant?.sku;
-          if (typeof variantSKU === 'string') {
+          if (typeof variantSKU === "string") {
             const displayValue = `${(
-              variant.name?.split(' ')[0] || ''
+              variant.name?.split(" ")[0] || ""
             ).toLowerCase()}-${variantSKU}`;
 
             for (let i = 0; i < variant.quantity; i++) {
               const barcodeSvg = document.createElementNS(
-                'http://www.w3.org/2000/svg',
-                'svg'
+                "http://www.w3.org/2000/svg",
+                "svg",
               );
               JsBarcode(barcodeSvg, variantSKU, {
                 format: this.barcodeConfig.barcodeType,
-                lineColor: '#000',
+                lineColor: "#000",
                 width: 3,
                 height: 150,
                 displayValue: true,
@@ -798,7 +800,7 @@ onPageChange(event: any) {
               barcodes.push({ svg: barcodeSvg, text: displayValue });
             }
           }
-        }
+        },
       );
     }
 
@@ -816,13 +818,13 @@ onPageChange(event: any) {
 
         const img = new Image();
         img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
           canvas.width = img.width;
           canvas.height = img.height;
           ctx?.drawImage(img, 0, 0);
 
-          const imgData = canvas.toDataURL('image/png');
+          const imgData = canvas.toDataURL("image/png");
           this.printSingleImage(imgData);
         };
         img.src = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
@@ -831,8 +833,8 @@ onPageChange(event: any) {
   }
 
   printSingleImage(imgSrc: string) {
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
+    const iframe = document.createElement("iframe");
+    iframe.style.display = "none";
     document.body.appendChild(iframe);
 
     const doc = iframe.contentWindow?.document;
@@ -865,12 +867,12 @@ onPageChange(event: any) {
 
   convertSvgToPng(svgElement: Node, shouldPrint?: boolean) {
     const svgClone = svgElement.cloneNode(true) as SVGSVGElement;
-    svgClone.setAttribute('width', '300');
-    svgClone.setAttribute('height', '150');
+    svgClone.setAttribute("width", "300");
+    svgClone.setAttribute("height", "150");
 
     if (shouldPrint) {
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
       document.body.appendChild(iframe);
 
       const doc = iframe.contentWindow?.document;
@@ -907,9 +909,9 @@ onPageChange(event: any) {
 
   generatePDF(imgData: string) {
     const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'px',
-      format: 'a4',
+      orientation: "portrait",
+      unit: "px",
+      format: "a4",
     });
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -925,11 +927,11 @@ onPageChange(event: any) {
     for (let i = 0; i < this.barcodeConfig.barcodeQuantity; i++) {
       pdf.addImage(
         imgData,
-        'PNG',
+        "PNG",
         currentX,
         currentY,
         barcodeWidth,
-        barcodeHeight
+        barcodeHeight,
       );
 
       currentX += pdfWidth;
@@ -950,6 +952,6 @@ onPageChange(event: any) {
       }
     }
 
-    pdf.save('barcodes.pdf');
+    pdf.save("barcodes.pdf");
   }
 }

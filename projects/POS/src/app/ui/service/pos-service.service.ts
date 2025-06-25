@@ -364,14 +364,38 @@ export class PosServiceService {
       .get<
         TableOrderStatusGET[]
       >(this.getBaseApiUrl() + "/x/api/v2/pos/tableOrderStatuses")
-      .pipe(catchError(this.handleError));
+      .pipe(
+        catchError(this.handleError),
+        /** Easiest way I could think of for moving the copying the product variant to where it'll be easily accessible */
+        map((data) => {
+          data.forEach((val) => {
+            val.order.orderItem.forEach((orderItem) => {
+              if (orderItem.productVariant)
+                orderItem.product.selectedVariants = [orderItem.productVariant];
+            });
+          });
+
+          return data;
+        }),
+      );
   }
   getTableOrderStatusById(id: number) {
     return this.http
       .get<TableOrderStatusGET>(
         this.getBaseApiUrl() + `/x/api/v2/pos/tableOrderStatuses/${id}`,
       )
-      .pipe(catchError(this.handleError));
+      .pipe(
+        catchError(this.handleError),
+        map((data) => {
+          /** Easiest way I could think of for moving the copying the product variant to where it'll be easily accessible */
+          data.order.orderItem.forEach((orderItem) => {
+            if (orderItem.productVariant)
+              orderItem.product.selectedVariants = [orderItem.productVariant];
+          });
+
+          return data;
+        }),
+      );
   }
   updateTableOrderStatus(id: number, data: TableOrderStatusPOST) {
     return this.http
