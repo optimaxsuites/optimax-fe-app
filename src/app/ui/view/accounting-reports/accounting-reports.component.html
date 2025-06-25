@@ -159,10 +159,10 @@
         </div>
         <div class="statement-actions">
           <button (click)="previewReport(report)">🔍 Preview</button>
-          <button (click)="downloadReport(report)">📥 Download</button>
+          <!-- <button (click)="downloadReport(report)">📥 Download</button>
           <button (click)="shareReport(report)">📤 Share</button>
           <button *ngIf="report.status === 'Draft'" (click)="editReport(report)">✏️ Edit</button>
-          <button (click)="deleteReport(report)">🗑️ Delete</button>
+          <button (click)="deleteReport(report)">🗑️ Delete</button> -->
         </div>
       </div>
     </div>
@@ -323,19 +323,31 @@
               </select>
             </div>
           </div>
-          <div>
-            <label class="label">From</label>
-            <div class="relative">
-              <input type="date" class="input-field" [(ngModel)]="fromDate" name="fromDate" />
-            </div>
-          </div>
-          <div>
-            <label class="label">To</label>
-            <div class="relative">
-              <input type="date" class="input-field" [(ngModel)]="toDate" name="toDate" />
-            </div>
-          </div>
-        </div>
+          <div *ngIf="dateRange === 'Custom Range'">
+      <label class="label">From</label>
+      <div class="relative">
+        <input
+          type="date"
+          class="input-field"
+          [(ngModel)]="fromDate"
+          name="fromDate"
+          [max]="today"
+        />
+      </div>
+    </div>
+    <div *ngIf="dateRange === 'Custom Range'">
+      <label class="label">To</label>
+      <div class="relative">
+        <input
+          type="date"
+          class="input-field"
+          [(ngModel)]="toDate"
+          name="toDate"
+          [max]="today"
+        />
+      </div>
+    </div>
+  </div>
         <div class="flex-end-container mt-4">
           <button class="btn btn-primary" (click)="onGenerateReport()">Generate Report</button>
           <button class="btn btn-secondary ml-2" (click)="closeNewReportModal()">Cancel</button>

@@ -73,7 +73,7 @@ export type LineChartOptions = {
   selector: 'app-accounting-reports',
   templateUrl: './accounting-reports.component.html',
   styleUrls: ['./accounting-reports.component.scss'],
-   animations: [
+  animations: [
     trigger('fadeSlideIn', [
       transition(':enter', [
         style({ opacity: 0, transform: 'translateY(40px)' }),
@@ -86,44 +86,26 @@ export type LineChartOptions = {
   ]
 })
 export class AccountingReportsComponent {
-  // Form fields
+  // --- UI State ---
   reportType = '';
   dateRange = '';
   fromDate = '';
   toDate = '';
   generatedBy = 'Admin';
   newReportModalOpen = false;
-
   modalExpanded = false;
+  reportsPerPage = 7;
+  currentReportPage = 1;
+  today = new Date().toISOString().split('T')[0];
 
-  toggleModalSize() {
-    this.modalExpanded = !this.modalExpanded;
-  }
-
-  onExport() {
-    alert('downloading content');
-    alert('processing your request');
-    alert('completed');
-  }
-
-
-openNewReportModal() {
-    this.newReportModalOpen = true;
-    document.body.style.overflow = 'hidden';
-  }
-
-  closeNewReportModal() {
-    this.newReportModalOpen = false;
-    document.body.style.overflow = '';
-  }
-  // List of generated reports
-  reports: GeneratedReport[] = [];
-
-  // For modal popup
+  // Modal for viewing generated reports
   modalOpen = false;
   selectedReport: GeneratedReport | null = null;
 
-  // Dummy data for auto-generation logic
+  // List of generated reports (recently generated)
+  reports: GeneratedReport[] = [];
+
+  // --- Dummy Data ---
   cashLedger = [
     { date: '2025-06-01', description: 'Deposit', amount: 100000, type: 'debit' },
     { date: '2025-06-02', description: 'Cheque #123', amount: 20000, type: 'credit' },
@@ -157,7 +139,6 @@ openNewReportModal() {
     { metric: 'Debt-to-Equity', value: 0.8 },
     { metric: 'Current Ratio', value: 2.1 }
   ];
-
   fixedAssetMovements = [
     {
       assetId: 'FA1023',
@@ -182,7 +163,6 @@ openNewReportModal() {
       notes: 'Damaged'
     }
   ];
-
   arAgingReport = [
     {
       customer: 'ABC Ltd',
@@ -209,7 +189,6 @@ openNewReportModal() {
       '>90Days': 200000
     }
   ];
-
   apAgingReport = [
     {
       vendor: 'Office Supplies Ltd',
@@ -224,7 +203,6 @@ openNewReportModal() {
       '>90Days': 0
     }
   ];
-
   deferredRevenuePrepaids = [
     {
       customer: 'NextGen Inc.',
@@ -242,7 +220,6 @@ openNewReportModal() {
       coveragePeriod: 'Apr 2025 - Sep 2025'
     }
   ];
-
   kpiRatioReport = [
     {
       metric: 'Current Ratio',
@@ -263,7 +240,6 @@ openNewReportModal() {
       status: 'Above Average'
     }
   ];
-
   inventoryValuationReport = [
     {
       item: 'Laptop - Dell XPS 13',
@@ -280,7 +256,6 @@ openNewReportModal() {
       totalValue: 1250000
     }
   ];
-
   segmentDepartmentReport = [
     {
       segment: 'Retail',
@@ -295,7 +270,6 @@ openNewReportModal() {
       profit: 700000
     }
   ];
-
   budgetVsActual = [
     {
       department: 'Marketing',
@@ -373,11 +347,24 @@ openNewReportModal() {
 
   filteredReports: Report[] = [];
 
+  // --- Chart Data ---
+  categoryData = [
+    { category: 'Payroll', value: 45 },
+    { category: 'HR', value: 28 },
+    { category: 'POS', value: 15 },
+    { category: 'Equipment and maintance', value: 10 },
+    { category: 'Others', value: 2 }
+  ];
+
+  public donutChartOptions: DonutChartOptions;
+  public barChartOptions: BarChartOptions;
+  public lineChartOptions: LineChartOptions;
+
+  // --- Comparative Analysis ---
   periodModalOpen = false;
   availablePeriods = ['2023', '2022', '2021', '2020', 'Q1 2023', 'Q2 2023', 'Q3 2023', 'Q4 2023'];
   selectedPeriod1 = '2023';
   selectedPeriod2 = '2022';
-
   comparativeData: { [period: string]: { [metric: string]: number } } = {
     '2023': {
       'Total Revenue': 85,
@@ -403,24 +390,6 @@ openNewReportModal() {
     }
   };
 
-  // --- Donut Chart Data and Options ---
-  categoryData = [
-    { category: 'Payroll', value: 45 },
-    { category: 'HR', value: 28 },
-    { category: 'POS', value: 15 },
-    { category: 'Equipment and maintance', value: 10 },
-    { category: 'Others', value: 2 }
-  ];
-
-  // ApexCharts Donut Chart Options
-  public donutChartOptions: DonutChartOptions;
-
-  // ApexCharts Bar Chart Options (Comparative)
-  public barChartOptions: BarChartOptions;
-
-  // ApexCharts Line Chart Options (Revenue vs Expenses)
-  public lineChartOptions: LineChartOptions;
-
   constructor() {
     this.filteredReports = [...this.allReports];
     this.autoGenerateStatements();
@@ -431,7 +400,7 @@ openNewReportModal() {
       series: this.categoryData.map(item => item.value),
       chart: {
         type: "donut",
-        width: 600
+        width: 580
       },
       labels: this.categoryData.map(item => item.category),
       legend: {
@@ -480,7 +449,7 @@ openNewReportModal() {
       }
     };
 
-    //  bar chart configuration
+    // Bar Chart
     this.barChartOptions = {
       series: [
         {
@@ -489,7 +458,7 @@ openNewReportModal() {
         },
         {
           name: this.selectedPeriod2,
-          data: Object.values(this.comparativeData[this.selectedPeriod2]).map(val => -val) 
+          data: Object.values(this.comparativeData[this.selectedPeriod2]).map(val => -val)
         }
       ],
       chart: {
@@ -505,7 +474,7 @@ openNewReportModal() {
           barHeight: '80%',
           borderRadius: 4,
           dataLabels: {
-            position: 'center' 
+            position: 'center'
           }
         }
       },
@@ -516,10 +485,10 @@ openNewReportModal() {
         style: {
           fontSize: '14px',
           fontWeight: '20',
-          colors: ['#eaf2f8', '#ffffff'] 
+          colors: ['#eaf2f8', '#ffffff']
         },
         formatter: function(val) {
-          return Math.abs(Number(val)) + '%'; // Show absolute value
+          return Math.abs(Number(val)) + '%';
         }
       },
       xaxis: {
@@ -527,19 +496,19 @@ openNewReportModal() {
         labels: {
           style: { fontSize: '13px' },
           formatter: function(val) {
-            return Math.abs(Number(val)) + '%'; 
+            return Math.abs(Number(val)) + '%';
           }
         },
         axisBorder: { show: false },
         axisTicks: { show: false },
-        min: -100, 
+        min: -100,
         max: 100
       },
       yaxis: {
         labels: {
           style: { fontSize: '13px' },
           formatter: function(val) {
-            return String(val); 
+            return String(val);
           }
         }
       },
@@ -550,10 +519,7 @@ openNewReportModal() {
           const metricName = w.config.xaxis.categories[dataPointIndex];
           const period = seriesIndex === 0 ? this.selectedPeriod1 : this.selectedPeriod2;
           const percentage = Math.abs(series[seriesIndex][dataPointIndex]);
-
-          // Get the actual amount from your data (you'll need to add this)
           const actualAmount = this.getActualAmount(period, metricName);
-
           return `
             <div class="apexcharts-tooltip-title">${metricName}: ${percentage}%</div>
             <div class="apexcharts-tooltip-series-group">
@@ -585,7 +551,7 @@ openNewReportModal() {
       }
     };
 
-    // Line Chart (Revenue vs Expenses)
+    // Line Chart
     this.lineChartOptions = {
       series: [
         {
@@ -645,9 +611,53 @@ openNewReportModal() {
     };
   }
 
-  // Add this method to your component class
+  // --- Modal and Pagination Logic ---
+  toggleModalSize() {
+    this.modalExpanded = !this.modalExpanded;
+  }
+
+  openNewReportModal() {
+    this.newReportModalOpen = true;
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeNewReportModal() {
+    this.newReportModalOpen = false;
+    this.modalExpanded = false;
+    document.body.style.overflow = '';
+  }
+
+  get paginatedReports() {
+    const start = (this.currentReportPage - 1) * this.reportsPerPage;
+    return this.reports.slice(start, start + this.reportsPerPage);
+  }
+
+  get totalReportPages() {
+    return Math.ceil(this.reports.length / this.reportsPerPage);
+  }
+
+  goToReportPage(page: number) {
+    if (page >= 1 && page <= this.totalReportPages) {
+      this.currentReportPage = page;
+    }
+  }
+
+  openReport(report: GeneratedReport) {
+    if (report.status === 'Completed') {
+      this.selectedReport = report;
+      this.modalOpen = true;
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  closeModal() {
+    this.modalOpen = false;
+    this.selectedReport = null;
+    document.body.style.overflow = '';
+  }
+
+  // --- Chart/Comparative/Auto-Generate Logic ---
   getActualAmount(period: string, metricName: string): number {
-    
     const amountMap: { [period: string]: { [metric: string]: number } } = {
       '2023': {
         'Total Revenue': 8500000,
@@ -672,12 +682,10 @@ openNewReportModal() {
         'Data Logic': 3500000
       }
     };
-
     return amountMap[period]?.[metricName] || 0;
   }
 
   applyPeriodComparison() {
-    // Update bar chart data when periods change
     this.barChartOptions = {
       ...this.barChartOptions,
       series: [
@@ -815,22 +823,18 @@ openNewReportModal() {
     this.modalOpen = true;
   }
 
-  downloadReport(report: Report): void {}
-
-  shareReport(report: Report): void {}
-
-  editReport(report: Report): void {}
-
-  deleteReport(report: Report): void {
-    const confirmDelete = confirm(`Delete ${report.title}?`);
-    if (confirmDelete) {
-      this.allReports = this.allReports.filter((r) => r !== report);
-      this.filteredReports = [...this.allReports];
-    }
+  onExport() {
+    alert('downloading content');
+    alert('processing your request');
+    alert('completed');
   }
 
   onGenerateReport() {
-    if (!this.reportType || !this.dateRange || !this.fromDate || !this.toDate) {
+    if (
+      !this.reportType ||
+      !this.dateRange ||
+      (this.dateRange === 'Custom Range' && (!this.fromDate || !this.toDate))
+    ) {
       alert('Please fill all required fields.');
       return;
     }
@@ -844,6 +848,8 @@ openNewReportModal() {
       status: 'Pending'
     };
 
+
+    
     this.reports.unshift(newReport);
 
     // Simulate async report generation
@@ -867,26 +873,10 @@ openNewReportModal() {
           'Statement of Changes in Equity': this.allReports[4].data,
           'Management Report': this.allReports[5].data
         };
-
-        if (reportMap[this.reportType]) {
+ if (reportMap[this.reportType]) {
           this.reports[idx].data = reportMap[this.reportType];
         }
       }
     }, 2000);
-  }
-
-  openReport(report: GeneratedReport) {
-    if (report.status === 'Completed') {
-      this.selectedReport = report;
-      this.modalOpen = true;
-      document.body.style.overflow = 'hidden';
-    }
-  }
-
- 
- closeModal() {
-    this.modalOpen = false;
-    this.selectedReport = null;
-    document.body.style.overflow = '';
   }
 }

@@ -12,11 +12,11 @@ import { TaxSummaryComponent } from './ui/view/reports/tax-summary/tax-summary.c
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'admin/accounting/transaction/dhwy7829iokdw',
+    redirectTo: 'admin/accounting/dhwy7829iokdw',
     pathMatch: 'full',
   },
   {
-      path: 'admin/accounting/transaction/:uuid',
+      path: 'admin/admin/accounting/transaction/:uuid',
       component: AccountingPageComponent,
     },
     {
@@ -24,20 +24,34 @@ const routes: Routes = [
       component: AccountingReportsComponent,
     },
     {
-      path: 'quotation-form',
+      path: 'admin/quotation-form',
       component: QuotationModalComponent,
     },
     {
-      path: 'quotation-form/:id',
+      path: 'admin/quotation-form/:id',
       component: QuotationModalComponent,
     },
 
-     { path: 'reports', component: AccountingReportsComponent },
-  { path: 'reports/balance-sheet', component: BalanceSheetComponent },
-  { path: 'reports/income-statement', component: IncomeStatementComponent },
-  { path: 'reports/cash-flow', component: CashFlowComponent },
-  { path: 'reports/tax-summary', component: TaxSummaryComponent },
-  // ...other routes
+     { 
+      path: 'reports',
+       component: AccountingReportsComponent 
+      },
+  { 
+    path: 'admin/reports/balance-sheet',
+     component: BalanceSheetComponent 
+    },
+  {
+     path: 'admin/reports/income-statement',
+     component: IncomeStatementComponent
+     },
+  {
+     path: 'admin/reports/cash-flow',
+      component: CashFlowComponent 
+    },
+  { 
+    path: 'admin/reports/tax-summary', 
+    component: TaxSummaryComponent
+   },
   // { path: '', redirectTo: '/reports', pathMatch: 'full' }
 
     
