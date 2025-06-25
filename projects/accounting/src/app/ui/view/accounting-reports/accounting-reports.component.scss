@@ -31,6 +31,7 @@ $black: #111827;
 $font-family: "Inter", "Segoe UI", Arial, sans-serif;
 
 
+
 .custom-modal-backdrop {
   position: fixed;
   z-index: 1200;
@@ -42,6 +43,45 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
   overflow-y: auto;
 }
 
+/* Side Modal Styles */
+.side-modal {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 400px;
+  height: 100vh;
+  background: white;
+  z-index: 1000;
+  transition: right 0.3s ease;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+
+  &.open {
+    right: 0;
+  }
+}
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.modal-content {
+  padding: 20px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
 .custom-modal-content {
   background: #fff;
   border-radius: 12px;
@@ -51,6 +91,12 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
   max-width: 95vw;
   animation: fadeInUp 0.3s;
   position: relative;
+  transition: all 0.3s cubic-bezier(.4,0,.2,1);
+  max-width: 95vw;
+  min-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+ 
 }
 
 .custom-modal-close {
@@ -73,7 +119,19 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
   to { opacity: 1; transform: translateY(0);}
 }
 
-
+.custom-modal-content.modal-expanded {
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
+  border-radius: 0;
+  left: 0;
+  top: 0;
+  margin: 0;
+  padding: 2rem;
+  position: fixed;
+  z-index: 1300;
+}
 
 /* Modal Overlay */
 .period-modal {
@@ -421,7 +479,7 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
 .card {
   background: $white;
   border-radius: 10px;
-  box-shadow: 0 2px 8px 0 rgba(16, 30, 54, 0.04);
+  box-shadow: 0 2px 8px 0 rgb(223, 209, 209);
   padding: 24px;
   margin-bottom: 0;
 }
@@ -681,6 +739,7 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
         .section-actions {
             display: flex;
             gap: 10px;
+            padding: 4px 8px;
         }
 
         .statements-grid {
@@ -758,6 +817,7 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  
 }
 .flex-end-container {
   display: flex;
