@@ -3,7 +3,7 @@ import { ProductData, VariantDTO } from "../../models/interface";
 import { PosServiceService } from "../../service/pos-service.service";
 import { ImageCacheService } from "../../service/image-cache.service";
 import Fuse, { IFuseOptions } from "fuse.js";
-import { ProductVariantHelperService } from "../../service/product-variant-helper.service";
+import { ProductHelperService } from "../../service/product-helper.service";
 
 /** Indexed by each `category`'s name */
 type ProductDataMap = Map<string, ProductData[]>;
@@ -97,7 +97,7 @@ export class PosStoreComponent implements OnInit {
   constructor(
     private _posService: PosServiceService,
     private _imgCacheService: ImageCacheService,
-    private _variantHelper: ProductVariantHelperService,
+    private _productHelper: ProductHelperService,
   ) {}
 
   ngOnInit(): void {
@@ -129,9 +129,9 @@ export class PosStoreComponent implements OnInit {
   }
 
   getProductAndVariantData(
-    ...args: Parameters<typeof this._variantHelper.getData>
+    ...args: Parameters<typeof this._productHelper.getCombinedData>
   ) {
-    return this._variantHelper.getData(...args);
+    return this._productHelper.getCombinedData(...args);
   }
 
   changeCategory(category: string) {

@@ -23,7 +23,7 @@ export interface ProductJSONFormat {
 
   createdBy: string | null;
   partNumber: string;
-  tax: number | any;
+  tax: TaxDTO;
   productBranch?: any;
   variant?: string | null;
   discount?: DiscountDTO;
@@ -187,29 +187,32 @@ export interface Order {
   id: string;
 }
 
-export interface Cart {
-  customer: any;
-  payment: any;
-  amountTendered: number;
-  orderNumber: any;
+export type PaymentModes = "card" | "mobile" | "cash" | "loyalty";
+export type Cart = {
+  id: string;
   orderId: number;
-  totalAmount: number;
-  orderStatus?: any;
-  orderItem?: any;
-  updatedAt?: [];
-  paymentModes: any;
-  changeOffered: any;
-  paymentMethod: any;
-  state: any;
-  timestamp: any;
+  paymentModes: PaymentModes[];
   total: number;
   discount: number;
   tax: number;
   subtotal: number;
   cartItems: ProductData[];
+} & Partial<{
+  customer: any;
+  payment: any;
+  amountTendered: number;
+  orderNumber: any;
+  totalAmount: number;
+  orderStatus?: any;
+  orderItem?: any;
+  updatedAt?: [];
+  changeOffered: any;
+  paymentMethod: any;
+  state: any;
+  timestamp: any;
+  /** Doubt we use this */
   cart: ProductData[];
-  id: string;
-}
+}>;
 
 export interface NavigationState {
   cart: Cart;

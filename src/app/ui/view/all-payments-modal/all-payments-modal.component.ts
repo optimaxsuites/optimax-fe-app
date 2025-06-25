@@ -1,100 +1,120 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { ProductData } from '../../models/interface';
+import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Cart, PaymentModes, ProductData } from "../../models/interface";
 
 @Component({
-  selector: 'app-all-payments-modal',
-  templateUrl: './all-payments-modal.component.html',
-  styleUrl: './all-payments-modal.component.scss',
+  selector: "app-all-payments-modal",
+  templateUrl: "./all-payments-modal.component.html",
+  styleUrl: "./all-payments-modal.component.scss",
 })
 export class AllPaymentsModalComponent {
   @Input() isModalOpen = false;
   @Output() isModalOpenChange = new EventEmitter<typeof this.isModalOpen>();
-  @Output() cashPayment = new EventEmitter<void>()
-  @Input() cartItem: ProductData[] = []
+  @Output() cashPayment = new EventEmitter<void>();
+  @Input() cartItem: ProductData[] = [];
 
-  @Output() selectedPayments = new EventEmitter<string[]>(); 
+  @Output() selectedPayments = new EventEmitter<Cart["paymentModes"]>();
 
-  selectedPaymentsToGo: string[] = [];
+  selectedPaymentsToGo: Cart["paymentModes"] = [];
 
+  readonly paymentOptions = [
+    {
+      label: "Credit/Debit Card",
+      value: "card",
+      image:
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTFkT4bdkUrztzXha598tvVXUllrxOXaeRGVw&s",
+    },
+    {
+      label: "Mobile Payment",
+      value: "mobile",
+      image:
+        "https://png.pngtree.com/element_our/png/20181114/mobile-banking-flat-icon-png_238400.jpg",
+    },
+    {
+      label: "Cash",
+      value: "cash",
+      image: "https://cdn-icons-png.flaticon.com/512/1087/1087099.png",
+    },
+    {
+      label: "Loyalty",
+      value: "loyalty",
+      image: "https://cdn-icons-png.flaticon.com/512/1440/1440505.png",
+    },
+  ] as const satisfies Array<{
+    value: PaymentModes;
+    label: string;
+    image: string;
+  }>;
 
-  paymentOptions = [
-    { label: 'Credit/Debit Card', value: 'card', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTFkT4bdkUrztzXha598tvVXUllrxOXaeRGVw&s' },
-    { label: 'Mobile Payment', value: 'mobile', image: 'https://png.pngtree.com/element_our/png/20181114/mobile-banking-flat-icon-png_238400.jpg'},
-    { label: 'Cash', value: 'cash', image: 'https://cdn-icons-png.flaticon.com/512/1087/1087099.png' },
-    { label: 'Loyalty', value: 'loyalty', image: 'https://cdn-icons-png.flaticon.com/512/1440/1440505.png' }
-
-  ];
-
-  ngOnInit(){
-    console.log(this.cartItem)
+  ngOnInit() {
+    console.log(this.cartItem);
   }
   closeModal() {
     this.isModalOpen = false;
     this.isModalOpenChange.emit(this.isModalOpen);
   }
 
-  proceedCashPayment(){
+  proceedCashPayment() {
     const transactionDetail = {
-        id: 0,
-        totalAmount: 0,
-        transactionDate: "2025-04-23T10:22:26.213Z",
-        status: "PENDING",
-        order: [
-          {
-            id: 0,
-            orderNumber: "string",
-            orderStatus: "PAID",
-            updatedAt: "2025-04-23T10:22:26.213Z",
-            totalAmount: "52.08",
-            quantity: 0,
-            customerId: 0,
-            branchId: 0,
-            discountId: 0,
-            paymentId: 0,
-            cashier: 0,
-            orderItems: [
-              {
-                id: 0,
-                totalPrice: 0,
-                quantity: 0,
-                productId: 0,
-                productVariantId: 0,
-                orderId: 0
-              }
-            ]
-          }
-        ],
-        paymentBreakdown: [
-          {
-            id: 0,
-            amountPaid: 0,
-            transactionRefernce: "string",
-            paymentId: 0
-          }
-  ]
-    }
-    this.cashPayment.emit()
+      id: 0,
+      totalAmount: 0,
+      transactionDate: "2025-04-23T10:22:26.213Z",
+      status: "PENDING",
+      order: [
+        {
+          id: 0,
+          orderNumber: "string",
+          orderStatus: "PAID",
+          updatedAt: "2025-04-23T10:22:26.213Z",
+          totalAmount: "52.08",
+          quantity: 0,
+          customerId: 0,
+          branchId: 0,
+          discountId: 0,
+          paymentId: 0,
+          cashier: 0,
+          orderItems: [
+            {
+              id: 0,
+              totalPrice: 0,
+              quantity: 0,
+              productId: 0,
+              productVariantId: 0,
+              orderId: 0,
+            },
+          ],
+        },
+      ],
+      paymentBreakdown: [
+        {
+          id: 0,
+          amountPaid: 0,
+          transactionRefernce: "string",
+          paymentId: 0,
+        },
+      ],
+    };
+    this.cashPayment.emit();
   }
 
-  togglePayment(paymentType: string) {
+  togglePayment(paymentType: PaymentModes) {
     if (this.selectedPaymentsToGo.includes(paymentType)) {
-      this.selectedPaymentsToGo = this.selectedPaymentsToGo.filter(p => p !== paymentType);
+      this.selectedPaymentsToGo = this.selectedPaymentsToGo.filter(
+        (p) => p !== paymentType,
+      );
     } else {
       this.selectedPaymentsToGo.push(paymentType);
     }
   }
 
   confirmPayment() {
-    if(this.selectedPaymentsToGo.length === 0){
-      return
+    if (this.selectedPaymentsToGo.length === 0) {
+      return;
     }
 
-    this.selectedPayments.emit(this.selectedPaymentsToGo); 
-    this.closeModal; 
+    this.selectedPayments.emit(this.selectedPaymentsToGo);
+    this.closeModal;
   }
-
 }
-
 
 // {
 //   "id": 0,

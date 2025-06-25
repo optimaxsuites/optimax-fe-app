@@ -16,6 +16,7 @@ import { BusinessType, ProductCategories } from "../../models/enums";
 import {
   Business,
   Cart,
+  PaymentModes,
   ProductData,
   VariantDTO,
 } from "../../models/interface";
@@ -24,6 +25,7 @@ import { MetadataService } from "../../service/metadata.service";
 import { CheckoutService } from "../../service/checkout.service";
 import { MessageService } from "primeng/api";
 import { lastValueFrom } from "rxjs";
+import { PaymentServiceService } from "../../service/payment-service.service";
 // import { AppResizeDirective } from '../../service/app-resize.directive';
 
 @Component({
@@ -100,6 +102,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     private posService: PosServiceService,
     private checkoutService: CheckoutService,
     private industryDataService: IndustryDataService,
+    private _paymentService: PaymentServiceService,
   ) {
     const navigation = this.router.getCurrentNavigation();
     this.navigationState = navigation?.extras
@@ -594,20 +597,16 @@ export class PosCheckoutPageComponent implements OnInit, Business {
       // product.discount.value = 0.0;
     });
   }
-
-  processPayment(modes: string[]) {
-    if (this.cartItems.length === 0) return;
-
-    const cart = {
+  //
+  processPayment(modes: PaymentModes[]) {
+    this._paymentService.processPayment({
+      paymentModes: modes,
       cartItems: [...this.cartItems],
       total: this.total,
       discount: this.displayedDiscount,
       tax: this.tax,
-      subtotal: this.subtotal,
-      paymentModes: modes,
-    };
-    const cashPayment = this.navigationLink.getLink("cashPayment");
-    this.router.navigate([cashPayment], { state: { cart } });
+      subTotal: this.subtotal,
+    });
   }
 
   // Filters the displayed items based on the selected value in the select element
