@@ -16,6 +16,7 @@ import {
   HistoryData,
   ProductData,
   ProductJSONFormat,
+  ProductJSONFormatPOST,
   supplierData,
 } from "../../../models/interface";
 import { position } from "html2canvas/dist/types/css/property-descriptors/position";
@@ -162,7 +163,7 @@ export class EditInventoryComponent {
     { label: "MSI1110", value: "MSI1110" },
   ];
 
-  productData: ProductJSONFormat = {
+  productData: ProductJSONFormatPOST = {
     name: "",
     code: "",
     description: "",
@@ -191,8 +192,8 @@ export class EditInventoryComponent {
       id: 0,
       name: "",
       code: "",
-      description: "",
-    },
+      description: "",endDate:""
+    },expiryDate:'',
     id: 0,
     createdDate: "",
     createdBy: null,
@@ -722,7 +723,8 @@ export class EditInventoryComponent {
     this.posService.getCategories().subscribe(async (data) => {
       console.log(data);
       if (data) {
-        this.categories = data;
+        // FIXME: Deal with this later
+        this.categories = data as any;
       } else {
         console.log("error loading data");
       }

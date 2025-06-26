@@ -222,7 +222,7 @@
                           {{ getProductData(rowData.product).sellingPrice }}
                         </td>
                         <td>
-                          N{{
+                          ₦{{
                             convertStrToNum(
                               getProductData(rowData.product).sellingPrice ??
                                 "0"
@@ -270,72 +270,21 @@
                   }
                 </div>
 
-                <!-- VAT Type and Payment Method -->
-                <div class="flex justify-between">
-                  <div class="mt-4">
-                    <label for="vatType" class="block font-medium mb-1"
-                      >Select VAT Type</label
-                    >
-                    <select
-                      id="vatType"
-                      class="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-200"
-                    >
-                      <option>STANDARD</option>
-                      <option>ZERO</option>
-                    </select>
-                  </div>
-
-                  <div class="mt-4">
-                    <label for="paymentMethod" class="block font-medium mb-1"
-                      >Payment Method</label
-                    >
-                    <select
-                      id="paymentMethod"
-                      class="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-200"
-                    >
-                      <option>CASH</option>
-                      <option>CARD</option>
-                      <option>TRANSFER</option>
-                    </select>
-                  </div>
-                </div>
-
-                <!-- <div></div> -->
-
-                <!-- Cash Received -->
-                <div class="mt-4">
-                  <label for="cashReceived" class="block font-medium mb-1"
-                    >Cash Received</label
-                  >
-                  <input
-                    id="cashReceived"
-                    type="text"
-                    class="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-200"
-                    placeholder="N0.00"
-                  />
-                </div>
-
                 <!-- Action Buttons -->
-                <div class="mt-4 flex space-x-2">
-                  <button
+                <div class="mt-4 flex justify-center space-x-2">
+                  <!-- <button
                     pButton
                     type="button"
                     label="Cancel"
                     class="p-button-danger flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 focus:outline-none focus:ring focus:ring-red-200"
                     icon="pi pi-times"
-                  ></button>
-                  <!-- <button
-            pButton
-            type="button"
-            label="Hold"
-            class="p-button-warning flex-1 bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-yellow-600 focus:outline-none focus:ring focus:ring-yellow-200"
-            icon="pi pi-pause"
-          ></button> -->
+                  ></button> -->
+
                   <button
                     pButton
                     type="button"
-                    label="Paid"
-                    class="p-button-success flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200"
+                    label="Make Payment"
+                    class="p-button-success flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200 max-w-[50%]"
                     icon="pi pi-check"
                     (click)="isPaymentModalOpen = true"
                   ></button>

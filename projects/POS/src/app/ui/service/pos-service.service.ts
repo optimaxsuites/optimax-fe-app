@@ -22,7 +22,7 @@ import { RandomTokenService } from "../sharedComponent/service/random-token/rand
 import { NavigationLinksService } from "../sharedComponent/service/navigation-links/navigation-links.service";
 import { environment } from "../sharedComponent/service/environments/environment";
 import { ProductCategories } from "../models/enums";
-import { ProductData, supplierData } from "../models/interface";
+import { ProductCategoryGET, ProductCategoryPOST, ProductData, supplierData } from "../models/interface";
 import { ImageCacheService } from "./image-cache.service";
 import {
   OrderGET,
@@ -50,15 +50,15 @@ export class PosServiceService {
   private getBaseApiUrl(): string {
     return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
   }
-  addCategory(data: any) {
+  addCategory(data: ProductCategoryPOST) {
     return this.http
-      .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/productCategories", data)
+      .post<ProductCategoryPOST>(this.getBaseApiUrl() + "/x/api/v2/pos/productCategories", data)
       .pipe(catchError(this.handleError));
   }
 
   getCategories() {
     return this.http
-      .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/productCategories")
+      .get<ProductCategoryGET[]>(this.getBaseApiUrl() + "/x/api/v2/pos/productCategories")
       .pipe(catchError(this.handleError));
   }
   getBranches() {

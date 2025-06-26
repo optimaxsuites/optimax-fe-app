@@ -1,7 +1,7 @@
 import { Component, computed, Input, OnInit, signal } from "@angular/core";
 import {
   BranchDTO,
-  ProductCategoryDTO,
+  ProductCategoryPOST,
   ProductData,
   Satisfy,
 } from "../../models/interface";
@@ -560,7 +560,7 @@ export class CheckoutKitchenComponent implements OnInit {
         }
       }
 
-      return val;
+      return new Map(val);
     });
   }
 

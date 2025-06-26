@@ -4,7 +4,7 @@ import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
 import { MessageService } from 'primeng/api';
 import { PosServiceService } from '../../../service/pos-service.service';
-import { ProductData, VariantDTO } from '../../../models/interface';
+import { ProductCategoryPOST, ProductData, VariantDTO } from '../../../models/interface';
 import { IndustryDataService } from '../../../service/industry-data.service';
 
 @Component({
@@ -43,10 +43,10 @@ export class EditProductComponent {
     discountMinQuantity: 0,
     discountName: '',
   };
-  categoryData = {
+  categoryData:ProductCategoryPOST = {
     name: '',
     code: '',
-    description: '',
+    description: '',endDate:"",id:0
   };
   barcodeConfig = {
     barcodeType: 'CODE128',
@@ -157,11 +157,7 @@ export class EditProductComponent {
     });
   }
   addCategory() {
-    const categoryDetails = {
-      name: this.categoryData.name,
-      code: this.categoryData.code,
-      description: this.categoryData.description,
-    };
+    const categoryDetails = {...this.categoryData};
 
     if (this.checkForEmptyFields(this.categoryData)) {
       console.log('all fiellds are required');
@@ -188,7 +184,7 @@ export class EditProductComponent {
             this.categoryData = {
               name: '',
               code: '',
-              description: '',
+              description: '',endDate:'',id:0
             };
           } else {
             this.messageService.add({
