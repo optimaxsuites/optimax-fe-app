@@ -58,6 +58,7 @@ export class CashPaymentComponent implements OnInit {
 		email: "",
 		loyaltyPoints: 0,
 	};
+	isLoading: boolean = false;
 
 	constructor(
 		private router: Router,
@@ -191,7 +192,9 @@ export class CashPaymentComponent implements OnInit {
 		];
 	}
 	processCashPayment() {
+		this.isLoading = true
 		if (this.totalPaid < this.cart?.total) {
+			this.isLoading = false
 			this.messageService.add({
 				severity: "warn",
 				summary: "Error",
@@ -234,6 +237,7 @@ export class CashPaymentComponent implements OnInit {
 							if (breakdownCount === paymentBreakdownPayloads.length) {
 								// All breakdowns saved — Proceed to Step 3
 								this.submitOrder(paymentId, now);
+								this.isLoading = false
 							}
 						},
 						error: () => this.showError("Failed to save payment breakdown"),
@@ -310,8 +314,15 @@ export class CashPaymentComponent implements OnInit {
 					// const checkoutLink = this.navigationLink.getLink("checkoutLink");
 					// this.router.navigate([checkoutLink]);
 					this.printReceipt();
+					this.isLoading = false
+
 				},
-				error: () => this.showError("Failed to save order"),
+				error: () => {
+					
+					this.showError("Failed to save order")
+
+
+				},
 			});
 	}
 
@@ -323,6 +334,8 @@ export class CashPaymentComponent implements OnInit {
 			key: "tl",
 			life: 3000,
 		});
+		this.isLoading = false
+
 	}
 
 	saveCurrentCartItem() {

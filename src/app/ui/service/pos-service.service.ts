@@ -310,6 +310,7 @@ export class PosServiceService {
       .pipe(catchError(this.handleError));
   }
 
+
   addDiscount(data: any) {
     return this.http
       .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/discounts", data)

@@ -1,26 +1,17 @@
-import { Component, HostListener, ViewChild } from "@angular/core";
-import { Router } from "@angular/router";
-import { MessageService } from "primeng/api";
-import {
-  CustomerDTO,
-  Order,
-  OrderItemDTO,
-  ProductData,
-  Refund,
-  RefundMethod,
-  ReturnDTO,
-  ReturnItemDTO,
-  ReturnStatus,
-} from "../../models/interface";
-import { RegisterService } from "../../service/register.service";
-import { NavigationLinksService } from "../../sharedComponent/service/navigation-links/navigation-links.service";
-import { NgForm } from "@angular/forms";
-import { MetadataService } from "../../service/metadata.service";
-import { PosServiceService } from "../../service/pos-service.service";
-import { CustomerService } from "../../service/customer.service";
-import { OrderService } from "../../service/order.service";
-import { from, Subject } from "rxjs";
-import { concatMap, debounceTime, distinctUntilChanged } from "rxjs/operators";
+import { Component, HostListener, ViewChild } from '@angular/core';
+import { Router } from '@angular/router';
+import { MessageService } from 'primeng/api';
+import { CustomerDTO, Order, OrderItemDTO, ProductData, Refund, RefundMethod, RefundStatus, ReturnDTO, ReturnItemDTO, ReturnStatus } from '../../models/interface';
+import { RegisterService } from '../../service/register.service';
+import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
+import { NgForm } from '@angular/forms';
+import { MetadataService } from '../../service/metadata.service';
+import { PosServiceService } from '../../service/pos-service.service';
+import { CustomerService } from '../../service/customer.service';
+import { OrderService } from '../../service/order.service';
+import { from, Subject } from 'rxjs';
+import { concatMap, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+
 
 @Component({
   selector: "app-order-refund",
@@ -41,6 +32,7 @@ export class OrderRefundComponent {
     cashierComment: "",
     status: ReturnStatus.PENDING,
     refundableAmount: 0,
+    refundStatus: RefundStatus.Processing,
     refundMethod: RefundMethod.CASH,
     bankDetails: {
       bankName: "",
@@ -49,8 +41,8 @@ export class OrderRefundComponent {
     },
     royaltyAccount: {
       id: 0,
-      name: "",
-      phoneNumber: "",
+      name: '',
+      phoneNumber: ''
     },
     exchangeFor: {} as ProductData,
   };
@@ -71,7 +63,7 @@ export class OrderRefundComponent {
     { label: "Others", value: "OTHERS" },
   ];
   phoneInput$ = new Subject<string>();
-  orderNumber$ = new Subject<string>();
+  orderNumber$ = new Subject<string>()
   refundMethods = [
     { label: "Cash Refund", value: RefundMethod.CASH },
     { label: "Bank Transfer", value: RefundMethod.BANK_TRANSFER },
@@ -119,13 +111,19 @@ export class OrderRefundComponent {
 
   ngOnInit(): void {
     this.loadAvailableProducts();
-    this.loadrefundRequests();
+    this.loadrefundRequests()
     this.phoneInput$
-      .pipe(debounceTime(500), distinctUntilChanged())
-      .subscribe((phone) => this.validateRoyaltyAccount(phone));
+    .pipe(
+      debounceTime(500), 
+      distinctUntilChanged() 
+    )
+    .subscribe(phone => this.validateRoyaltyAccount(phone));
     this.orderNumber$
-      .pipe(debounceTime(500), distinctUntilChanged())
-      .subscribe((number) => this.validateOrder(number));
+    .pipe(
+      debounceTime(500),
+      distinctUntilChanged()
+    )
+    .subscribe(number => this.validateOrder(number))
   }
 
   loadAvailableProducts(): void {
@@ -159,6 +157,7 @@ export class OrderRefundComponent {
       cashierComment: "",
       status: ReturnStatus.PENDING,
       refundableAmount: 0,
+      refundStatus: RefundStatus.Processing,
       refundMethod: RefundMethod.CASH,
       bankDetails: {
         bankName: "",
@@ -167,8 +166,8 @@ export class OrderRefundComponent {
       },
       royaltyAccount: {
         id: 0,
-        name: "",
-        phoneNumber: "",
+        name: '',
+        phoneNumber: ''
       },
       exchangeFor: {} as ProductData,
     };
@@ -248,19 +247,20 @@ export class OrderRefundComponent {
 
   validateRoyaltyAccount(phone: any): void {
     // if (!this.returnData.royaltyAccount?.id) return;
-
+    
+    
     this.customerService.getCustomerByPhone(phone).subscribe(
       (customer: CustomerDTO) => {
-        console.log(customer);
+        console.log(customer)
         this.returnData.royaltyAccount = customer;
-        this.returnData.name = customer.name;
+        this.returnData.name = customer.name
       },
       (error) => {
-        console.error("Error validating royalty account:", error);
+        console.error('Error validating royalty account:', error);
         this.returnData.royaltyAccount = {
           id: 0,
-          name: "",
-          phoneNumber: "",
+          name: '',
+          phoneNumber: ''
         };
 
         // Show error message to user
@@ -268,14 +268,14 @@ export class OrderRefundComponent {
     );
   }
 
-  createCustomer() {
+  createCustomer(){
     if (!this.returnData.name || !this.returnData.phoneNumber) {
       // this.toastr.warning('Name and phone number are required');
       this.messageService.add({
-        severity: "warn",
-        summary: "Warning",
-        detail: "Name and phone number is required ",
-        key: "tl",
+        severity: 'warn',
+        summary: 'Warning',
+        detail: 'Name and phone number is required ',
+        key: 'tl',
         life: 3000,
       });
       return;
@@ -284,46 +284,45 @@ export class OrderRefundComponent {
     if (this.returnData.phoneNumber.length !== 11) {
       // this.toastr.warning('Name and phone number are required');
       this.messageService.add({
-        severity: "warn",
-        summary: "Warning",
-        detail: "Phone number is invalid",
-        key: "tl",
+        severity: 'warn',
+        summary: 'Warning',
+        detail: 'Phone number is invalid',
+        key: 'tl',
         life: 3000,
       });
       return;
     }
+  
+    this.customerService.createCustomer({
+      name: this.returnData.name,
+      phoneNumber: this.returnData.phoneNumber,
+      loyaltyPoints: 0,
+      email: ''
+    }).subscribe(
+      (customer) => {
+       this.validateRoyaltyAccount(this.returnData.phoneNumber)
+        // this.toastr.success('Customer created successfully');
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Customer created successfully',
+          key: 'tl',
+          life: 3000,
+        });
 
-    this.customerService
-      .createCustomer({
-        name: this.returnData.name,
-        phoneNumber: this.returnData.phoneNumber,
-        loyaltyPoints: 0,
-        email: "",
-      })
-      .subscribe(
-        (customer) => {
-          this.validateRoyaltyAccount(this.returnData.phoneNumber);
-          // this.toastr.success('Customer created successfully');
-          this.messageService.add({
-            severity: "success",
-            summary: "Success",
-            detail: "Customer created successfully",
-            key: "tl",
-            life: 3000,
-          });
-        },
-        (error) => {
-          // this.toastr.error('Failed to create customer');
-          this.messageService.add({
-            severity: "warn",
-            summary: "Error",
-            detail: "Failed to create customer",
-            key: "tl",
-            life: 3000,
-          });
-          console.error("Customer creation error:", error);
-        },
-      );
+      },
+      (error) => {
+        // this.toastr.error('Failed to create customer');
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Error',
+          detail: 'Failed to create customer',
+          key: 'tl',
+          life: 3000,
+        });
+        console.error('Customer creation error:', error);
+      }
+    );
   }
   onRefundMethodChange(method: RefundMethod): void {
     // Reset relevant fields based on the selected method
@@ -338,8 +337,8 @@ export class OrderRefundComponent {
     if (method !== RefundMethod.ROYALTY_TOPUP) {
       this.returnData.royaltyAccount = {
         id: 0,
-        name: "",
-        phoneNumber: "",
+        name: '',
+        phoneNumber: ''
       };
     }
 
@@ -468,43 +467,44 @@ export class OrderRefundComponent {
     }
 
     // Set the current date for the return request
-    this.returnData.orderId = parseInt(this.orderDetails?.orderNumber || "0");
-    this.returnData.royaltyAccountId = this.returnData.royaltyAccount.id;
+    this.returnData.orderId = parseInt(this.orderDetails?.id || "0" )
+    this.returnData.royaltyAccountId = this.returnData.royaltyAccount.id
     this.returnData.createdAt = new Date();
-    console.log(this.returnData);
+    console.log(this.returnData)
     const returnItems = this.returnData.items.map((item) => ({
       quantity: 0,
       totalPricePaid: item.orderItem.totalPrice,
       productId: item.orderItem.product.id,
-      ...(item.orderItem.productVariant && {
-        variantId: item.orderItem.productVariant.id,
-      }),
-    }));
+      ...(item.orderItem.productVariant && { variantId: item.orderItem.productVariant.id })
+
+    }))
+
+    this.returnData.returnItems = returnItems
     this.orderService.makeRequest(this.returnData).subscribe(
       (response) => {
-        console.log("Return request submitted successfully:", response);
-        from(returnItems)
-          .pipe(
-            concatMap((item) =>
-              this.orderService.sendReturnItemsLog({
-                ...item,
-                itemReturnLogId: response.id,
-              }),
-            ),
-          )
-          .subscribe({
-            next: (res) => console.log("Logged item:", res),
-            error: (err) => console.error("Error logging return item:", err),
-            complete: () => {
-              console.log("All return items logged.");
-              this.openRequestForm();
-            },
-          });
+        console.log('Return request submitted successfully:', response);
+        // from(returnItems)
+        // .pipe(
+        //   concatMap(item =>
+        //     this.orderService.sendReturnItemsLog({
+        //       ...item,
+        //       itemReturnLogId: response.id
+        //     })
+        //   )
+        // )
+        // .subscribe({
+        //   next: (res) => console.log('Logged item:', res),
+        //   error: (err) => console.error('Error logging return item:', err),
+        //   complete: () => {
+        //     console.log('All return items logged.');
+        //     this.openRequestForm();
+        //   }
+        // });
         this.openRequestForm();
       },
       (error) => {
-        console.error("Error submitting return request:", error);
-      },
+        console.error('Error submitting return request:', error);
+      }
     );
   }
 
@@ -536,4 +536,28 @@ export class OrderRefundComponent {
       parts[5],
     );
   }
+  
+  getRefundStatusClass(status: string): string {
+    switch (status) {
+      case 'Pending':
+        return 'text-yellow-500 bg-yellow-100';
+      case 'Approved':
+        return 'text-green-600 bg-green-100';
+      case 'Rejected':
+        return 'text-red-600 bg-red-100';
+      case 'Processing':
+        return 'text-blue-500 bg-blue-100';
+      case 'Canceled':
+        return 'text-gray-500 bg-gray-100';
+      case 'Expired':
+        return 'text-orange-600 bg-orange-100';
+      case 'UnderReview':
+        return 'text-purple-600 bg-purple-100';
+      case 'Chargeback':
+        return 'text-pink-600 bg-pink-100';
+      default:
+        return 'text-gray-800 bg-gray-200';
+    }
+  }
+  
 }

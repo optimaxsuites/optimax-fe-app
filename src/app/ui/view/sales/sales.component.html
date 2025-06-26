@@ -75,7 +75,7 @@
       <table class="min-w-full bg-white">
         <thead>
           <tr class="bg-gray-100">
-            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('id')">
+            <th class="py-3 px-4 text-left  font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('id')">
               ID 
               <span class="ml-1">{{ sortBy === 'id' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
@@ -110,18 +110,18 @@
         </thead>
         <tbody class="divide-y divide-gray-200">
           <tr *ngFor="let order of filteredOrders" class="hover:bg-gray-50">
-            <td class="py-4 px-4 text-sm text-gray-900">{{ order.id }}</td>
-            <td class="py-4 px-4 text-sm text-gray-900">{{ order.orderNumber }}</td>
-            <td class="py-4 px-4 text-sm text-gray-900">{{ order.customer.name }}</td>
-            <td class="py-4 px-4 text-sm text-gray-900">{{ getSalespersonName(order) }}</td>
-            <td class="py-4 px-4 text-sm text-gray-900">₦{{ order.totalAmount.toLocaleString() }}</td>
-            <td class="py-4 px-4 text-sm">
+            <td class="py-4 px-4  text-gray-900">{{ order.id }}</td>
+            <td class="py-4 px-4  text-gray-900">{{ order.orderNumber }}</td>
+            <td class="py-4 px-4  text-gray-900">{{ order.customer?.name || "Walk-in" }}</td>
+            <td class="py-4 px-4  text-gray-900">{{ getSalespersonName(order) }}</td>
+            <td class="py-4 px-4  text-gray-900">₦{{ order.totalAmount.toLocaleString() }}</td>
+            <td class="py-4 px-4 ">
               <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" [ngClass]="order.orderStatus | orderStatus">
                 {{ order.orderStatus }}
               </span>
             </td>
-            <td class="py-4 px-4 text-sm text-gray-900">{{ formatDate(order.createdDate) }}</td>
-            <td class="py-4 px-4 text-sm text-gray-900">
+            <td class="py-4 px-4  text-gray-900">{{ formatDate(order.createdDate) }}</td>
+            <td class="py-4 px-4  text-gray-900">
               <button (click)="viewOrderDetails(order)" class="text-indigo-600 hover:text-indigo-900 font-medium">
                 View Details
               </button>

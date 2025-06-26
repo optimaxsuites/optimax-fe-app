@@ -235,48 +235,50 @@ export interface NavigationState {
 }
 
 export interface Refund {
-	id?: any;
-	orderNumber?: any;
-	createdAt?: any;
-	name: any;
-	phoneNumber: string;
-	emailAddress: string;
-	timestamp: any;
-	orderId: string;
-	customerName: string;
-	refundMeans: string;
-	refundReason: string;
-	cashierComment: string;
-	status: string;
-	selectedItems: any;
-	bankName?: string;
-	accountNumber?: string;
-	accountHolder?: string;
-	loyaltyId?: string;
-	selectedRequest: Refund;
-	royaltyAccountId: number;
-	reason: any;
-	refundableAmount: string | number;
-	returnItems: any;
+  id?: any;
+orderNumber?: any;
+createdAt?: any;
+name: any;
+refundStatus: string;
+  phoneNumber: string;
+  emailAddress: string;
+  timestamp: any;
+  orderId: string;
+  customerName: string;
+  refundMeans: string;
+  refundReason: string;
+  cashierComment: string;
+  status: string;
+  selectedItems: any;
+  bankName?: string;
+  accountNumber?: string;
+  accountHolder?: string;
+  loyaltyId?: string;
+  selectedRequest: Refund;
+  royaltyAccountId: number;
+  reason: any;
+  refundableAmount: string|number;
+  returnItems: any;
+
 }
 
-export interface SelectedRequest extends Refund {
-	returnItems: any;
-	refundableAmount: string | number;
-	reason: any;
-	royaltyAccountId: number;
-	// customer: any;
-	selectedRequest: Refund;
-	phoneNumber: string;
-	emailAddress: string;
-	timestamp: any;
-	orderId: string;
-	customerName: string;
-	refundMeans: string;
-	refundReason: string;
-	cashierComment: string;
-	status: string;
-	selectedItems: any;
+export interface SelectedRequest extends Refund{
+returnItems: any;
+refundableAmount: string|number;
+reason: any;
+  royaltyAccountId: number;
+// customer: any;
+  selectedRequest: Refund;
+  phoneNumber: string;
+  emailAddress: string;
+  timestamp: any;
+  orderId: string;
+  customerName: string;
+  refundMeans: string;
+  refundReason: string;
+  cashierComment: string;
+  status: string;
+  selectedItems: any;
 }
 
 // TODO: Fill this up with the appropriate types
@@ -603,13 +605,13 @@ export interface TableOrderStatusFullDTO {
 }
 
 export interface OrderItemDTO {
-	productVariant: any;
-	totalPrice: any;
-	sellingPrice: any;
-	id: number;
-	product: any;
-	quantity: number;
-	unitPrice: number;
+  productVariant: any;
+totalPrice: any;
+sellingPrice: any;
+  id: number;
+  product: any;
+  quantity: number;
+  unitPrice: number;
 }
 
 export interface ReturnItemDTO {
@@ -645,23 +647,35 @@ export interface UserDTO {
 }
 
 export interface ReturnDTO {
-	orderId?: number;
-	returnItems?: ReturnItemDTO[];
-	royaltyAccountId?: number | undefined;
-	id?: number;
-	name: string;
-	phoneNumber: string;
-	royaltyAccount: CustomerDTO;
-	order: Order;
-	items: ReturnItemDTO[];
-	reason: string;
-	cashierComment: string;
-	adminComment?: string;
-	status: ReturnStatus;
-	processedBy?: UserDTO;
-	createdAt?: Date;
-	refundableAmount: number;
-	refundMethod: RefundMethod;
-	bankDetails: BankDetailsDTO;
-	exchangeFor: ProductData;
+  orderId?: number;
+  returnItems?: ReturnItemDTO[];
+  royaltyAccountId?: number | undefined;
+  id?: number;
+  name: string;
+  phoneNumber: string;
+  royaltyAccount: CustomerDTO;
+  order: Order;
+  items: ReturnItemDTO[];
+  reason: string;
+  cashierComment: string;
+  adminComment?: string;
+  status: ReturnStatus;
+  processedBy?: UserDTO;
+  createdAt?: Date;
+  refundableAmount: number;
+  refundMethod: RefundMethod;
+  bankDetails: BankDetailsDTO;
+  exchangeFor: ProductData;
+  refundStatus: RefundStatus
+}
+
+export enum RefundStatus {
+  Pending = 'Pending',
+  Approved = 'Approved',
+  Rejected = 'Rejected',
+  Processing = 'Processing',
+  Canceled = 'Canceled',
+  Expired = 'Expired',
+  UnderReview = 'UnderReview',
+  Chargeback = 'Chargeback',
 }

@@ -90,7 +90,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   isNotesModalOpen = false;
   isDeliveryModalOpen = false;
   isAllPaymentsModalOpen = false;
-  isCategorySidebarOpen = false;
+  isCategorySidebarOpen= false
 
   constructor(
     private router: Router,
@@ -121,7 +121,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     }
     if (this.navigationState?.cart) {
       const cart = this.navigationState.cart;
-      console.log(cart);
+      console.log(cart)
 
       this.cartItems = [...cart.cartItems];
       this.total = cart.total;
@@ -216,10 +216,10 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     return this.closingAmount! - this.expectedBalance;
   }
 
-  toggleCategorySidebar() {
-    this.isCategorySidebarOpen = !this.isCategorySidebarOpen;
+  toggleCategorySidebar(){
+    this.isCategorySidebarOpen = !this.isCategorySidebarOpen
   }
-  @HostListener("window:keydown", ["$event"])
+  @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
     console.log(this.scannedSKU.trim());
     if (event.key === "Enter" && this.scannedSKU.trim() !== "") {
@@ -257,44 +257,41 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
   loadOrder(order: any) {
     console.log(order);
-    this.cartItems = this.buildCartFromOrders(order.orderItem);
+    this.cartItems = this.buildCartFromOrders(order.orderItem)
     // this.cartItems = order.orderItems.map((item: any) => ({ ...item }));
-    console.log(this.cartItems);
+    console.log(this.cartItems)
     this.discount = order.cartDiscount | 0;
     this.discountValue = order.discountValue;
     this.value = order.value;
     this.total = order.totalAmount;
     this.calculateTotals();
   }
-
+ 
   buildCartFromOrders(orders: any): any {
     const groupedCartItems: any[] = [];
-
+  
     orders.forEach((item: any) => {
       if (!item.productVariant) {
         // Only match variants with the same product.id
-        const variants = orders.filter(
-          (v: any) =>
-            v.productVariant &&
-            item.product &&
-            v.product.id === item.product.id,
+        const variants = orders.filter((v: any) =>
+          v.productVariant &&
+          item.product &&
+          v.product.id === item.product.id
         );
-
+    
         const selectedVariants = variants.map((v: any) => ({
           ...v.productVariant,
           selectedQuantity: v.quantity,
         }));
-
+    
         const variantTotal = selectedVariants.reduce(
-          (sum: number, variant: any) =>
-            sum + variant.price * variant.selectedQuantity,
-          0,
+          (sum: number, variant: any) => sum + (variant.price * variant.selectedQuantity),
+          0
         );
-
-        const itemTotal =
-          parseFloat(item.product.sellingPrice) * parseFloat(item.quantity);
+    
+        const itemTotal = parseFloat(item.product.sellingPrice) * parseFloat(item.quantity);
         const cartPriceTotal = itemTotal + variantTotal;
-
+    
         groupedCartItems.push({
           orderId: item.id,
           ...item.product,
@@ -304,18 +301,19 @@ export class PosCheckoutPageComponent implements OnInit, Business {
         });
       }
     });
-
+    
+  
     const subtotal = groupedCartItems.reduce(
       (sum, item) => sum + parseFloat(item.cartPriceTotal),
       0,
     );
-
+  
     const taxRate = 0.1; // example: 10%
     const tax = subtotal * taxRate;
     const discount = 0;
     const total = subtotal + tax;
-
-    return groupedCartItems as any;
+  
+return  groupedCartItems as any
 
     // console.log( this.navigationState.order.cart)
   }
@@ -643,7 +641,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   getProducts() {
     this.metadataService.enrichedProduct$.subscribe(async (data) => {
       if (data) {
-        console.log(data);
+        console.log(data)
         const p = data.sort((a: any, b: any) => {
           const dateA = new Date(
             a.createdDate[0],
@@ -672,7 +670,8 @@ export class PosCheckoutPageComponent implements OnInit, Business {
         console.log(this.products);
         this.categorizedProducts = this.products;
         this.shownProducts = this.products;
-      }
+      };
+  
     });
   }
   loadCategory() {
@@ -725,3 +724,5 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     document.removeEventListener("mouseup", this.stopResizing);
   };
 }
+
+
