@@ -140,6 +140,12 @@ export class HotelserviceService {
     );
   }
 
+  getRoom(id: number): Observable<Room> {
+    return this.http.get<Room>(`${this.apiUrl}/x/api/v2/hsp/rooms/${id}`, {
+      headers: this.headers,
+    });
+  }
+
   getRooms(filters: RoomFilters = {}): Observable<Room[]> {
     let params = new HttpParams();
 
@@ -357,12 +363,6 @@ export class HotelserviceService {
     );
   }
 
-  getRoom(id: number): Observable<Room> {
-    return this.http.get<Room>(`${this.apiUrl}/x/api/v2/hsp/rooms/${id}`, {
-      headers: this.headers,
-    });
-  }
-
   // Maintenance Request Endpoints
   getMaintenanceRequests(): Observable<MaintenainceRequest[]> {
     return this.http.get<MaintenainceRequest[]>(
@@ -476,5 +476,29 @@ export class HotelserviceService {
 
   calculateTotal(subTotal: number, taxes: number = 0): number {
     return subTotal + taxes;
+  }
+
+  getPayments(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/x/api/v2/hsp/payments`, {
+      headers: this.headers,
+    });
+  }
+
+  createPayment(payment: any): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/x/api/v2/hsp/payments`,
+      payment,
+      { headers: this.headers }
+    );
+  }
+
+  getPayment(id: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/x/api/v2/hsp/payments/${id}`, {
+      headers: this.headers,
+    });
+  }
+
+  getHeaders(): HttpHeaders {
+    return this.headers;
   }
 }
