@@ -1,6 +1,17 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { ApexNonAxisChartSeries, ApexChart, ApexResponsive, ApexLegend, ApexAxisChartSeries, ApexXAxis, ApexDataLabels, ApexStroke, ApexYAxis, ApexTitleSubtitle } from 'ng-apexcharts';
+import { 
+  ApexNonAxisChartSeries,
+  ApexChart, 
+  ApexResponsive, 
+  ApexLegend, 
+  ApexAxisChartSeries, 
+  ApexXAxis, 
+  ApexDataLabels, 
+  ApexStroke, 
+  ApexYAxis, 
+  ApexTitleSubtitle 
+} from 'ng-apexcharts';
 
 export type PieChartOptions = {
   series: ApexNonAxisChartSeries;
@@ -20,15 +31,11 @@ export type LineChartOptions = {
   title: ApexTitleSubtitle;
 };
 
-
-
 @Component({
   selector: 'app-balance-sheet',
   templateUrl: './balance-sheet.component.html',
-  styleUrl: './balance-sheet.component.scss'
+  styleUrls: ['./balance-sheet.component.scss']
 })
-
-
 export class BalanceSheetComponent implements OnInit {
   // Form Controls
   balanceSheetForm: FormGroup;
@@ -38,6 +45,26 @@ export class BalanceSheetComponent implements OnInit {
   searchFilter = '';
   isModalOpen = false;
   newComment = '';
+  isEditing = false;
+  isBalanced = true;
+  asOfDate: string = this.formatDate(new Date());
+  reportStatus: 'Compiling' | 'Under Review' | 'Completed' = 'Compiling';
+
+  simulateReportStatusFlow() {
+  this.reportStatus = 'Compiling';
+
+  // After 10 seconds → Under Review
+  setTimeout(() => {
+    this.reportStatus = 'Under Review';
+  }, 10000);
+
+  // After 30 seconds total → Completed
+  setTimeout(() => {
+    this.reportStatus = 'Completed';
+  }, 30000);
+}
+
+
 
   // Dummy Data Stores
   entityName = 'Acme Corporation Ltd.';
@@ -56,8 +83,8 @@ export class BalanceSheetComponent implements OnInit {
   years = [2023, 2024, 2025];
   selectedYear = 2025;
 
-  // Balance Sheet Dummy Data 
-  balanceSheetData = {
+  // Balance Sheet Data with base values
+  baseData = {
     assets: {
       current: {
         cash: 45000,
@@ -98,31 +125,36 @@ export class BalanceSheetComponent implements OnInit {
     }
   };
 
+  balanceSheetData = {...this.baseData};
+
   // Analytics Calculations
   analytics = {
-    workingCapital: this.balanceSheetData.assets.current.total - this.balanceSheetData.liabilities.current.total,
-    debtToEquity: (this.balanceSheetData.liabilities.total / this.balanceSheetData.equity.total).toFixed(2),
-    currentRatio: (this.balanceSheetData.assets.current.total / this.balanceSheetData.liabilities.current.total).toFixed(2),
-    quickRatio: ((this.balanceSheetData.assets.current.total - this.balanceSheetData.assets.current.inventory) / 
-                this.balanceSheetData.liabilities.current.total).toFixed(2)
+    workingCapital: 0,
+    debtToEquity: '0',
+    currentRatio: '0',
+    quickRatio: '0',
+    totalAssets: 0,
+    totalLiabilities: 0,
+    totalEquity: 0
   };
 
   // Chart Data
   assetChartData = {
-    series: [this.balanceSheetData.assets.current.total, this.balanceSheetData.assets.nonCurrent.total],
+    series: [] as number[],
     labels: ['Current Assets', 'Non-Current Assets']
   };
 
   liabilityTrendData = {
-    series: [{
-      name: 'Total Liabilities',
-      data: [175000, 185000, 190000, 200000]
-    }],
+    series: [] as any[],
     categories: ['Q1', 'Q2', 'Q3', 'Q4']
   };
 
   // Key Findings Autogeneration
-  keyFindings = this.generateKeyFindings();
+  keyFindings: string[] = [];
+
+  // Chart Options
+  public pieChartOptions: Partial<PieChartOptions>;
+  public lineChartOptions: Partial<LineChartOptions>;
 
   constructor(private fb: FormBuilder) {
     this.balanceSheetForm = this.fb.group({
@@ -131,22 +163,60 @@ export class BalanceSheetComponent implements OnInit {
       selectedYear: [2025]
     });
 
-    // Generate 12 months of historical dummy data
+    // Initialize chart options
+    this.pieChartOptions = {
+      series: [],
+      chart: {
+        type: 'pie',
+        height: 350
+      },
+      labels: ['Current Assets', 'Non-Current Assets'],
+      responsive: [{
+        breakpoint: 480,
+        options: {
+          chart: { width: 200 },
+          legend: { position: 'bottom' }
+        }
+      }],
+      legend: { position: 'right' }
+    };
+
+    this.lineChartOptions = {
+      series: [],
+      chart: {
+        height: 350,
+        type: 'line',
+        zoom: { enabled: false }
+      },
+      dataLabels: { enabled: false },
+      stroke: { curve: 'smooth', width: 3 },
+      title: { text: 'Liabilities Over Time', align: 'left' },
+      xaxis: { categories: [] },
+      yaxis: { 
+        labels: { 
+          formatter: (val) => `₦${val.toLocaleString()}` 
+        } 
+      }
+    };
+
     this.generateHistoricalData();
   }
 
-  downloadTable(){
-
-  }
-
   ngOnInit(): void {
-    this.initSavedReports();
+    // this.initSavedReports();
+    this.updateAllCalculations();
+    this.updateCharts();
+    this.simulateReportStatusFlow();
   }
+
+  
+
 
 
   saveReport() {
     const report = {
       ...this.balanceSheetData,
+      analytics: this.analytics,
       metadata: {
         period: this.selectedPeriod,
         savedAt: new Date(),
@@ -157,7 +227,6 @@ export class BalanceSheetComponent implements OnInit {
     this.savedReports.unshift(report);
     this.showToast('Report saved successfully');
 
-    // Simulate annual report (December only)
     if (this.selectedPeriod.month === 'December') {
       this.generateAnnualReport();
     }
@@ -165,61 +234,108 @@ export class BalanceSheetComponent implements OnInit {
 
   private generateAnnualReport() {
     const annualData = {
-      assets: {
-        total: this.balanceSheetData.assets.total * 1.1, 
-        breakdown: this.balanceSheetData.assets
-      },
+      ...this.balanceSheetData,
       year: this.selectedPeriod.year,
       type: 'ANNUAL_SUMMARY'
     };
     this.showToast('Annual report auto-generated');
   }
 
+
+  
   updateReport() {
     this.isUpdating = true;
     
-    // Simulate API call
     setTimeout(() => {
-      // Randomize data slightly to simulate refresh
-      this.balanceSheetData.assets.current.cash = this.randomize(45000, 5);
-      this.balanceSheetData.liabilities.current.accountsPayable = this.randomize(40000, 5);
+      
+      Object.keys(this.balanceSheetData.assets.current).forEach(key => {
+        if (key !== 'total') {
+          const typedKey = key as keyof typeof this.balanceSheetData.assets.current;
+          this.balanceSheetData.assets.current[typedKey] = this.randomize(
+            this.baseData.assets.current[typedKey], 
+            10
+          );
+        }
+      });
+
+      Object.keys(this.balanceSheetData.liabilities.current).forEach(key => {
+  if (key !== 'total') {
+    const typedKey = key as keyof typeof this.balanceSheetData.liabilities.current;
+    this.balanceSheetData.liabilities.current[typedKey] = this.randomize(
+      this.baseData.liabilities.current[typedKey],
+      10
+    );
+  }
+});
+
+
+      this.updateAllCalculations();
+      this.updateCharts();
       
       this.lastUpdated = new Date();
+      this.asOfDate = this.formatDate(this.lastUpdated);
       this.balanceSheetForm.patchValue({ asOfDate: this.lastUpdated });
       this.isUpdating = false;
       this.showToast('Data updated successfully');
     }, 2000);
   }
 
+ 
 
+  private updateAllCalculations() {
+    // Update totals first
+    this.balanceSheetData.assets.current.total = 
+      this.balanceSheetData.assets.current.cash +
+      this.balanceSheetData.assets.current.accountsReceivable +
+      this.balanceSheetData.assets.current.inventory +
+      this.balanceSheetData.assets.current.prepaidExpenses;
 
-  private generateHistoricalData() {
-    this.savedReports = this.periods.map((period, index) => {
-      const monthProgress = (index + 1) / 12;
-      return {
-        assets: {
-          current: {
-            total: Math.round(140000 + (monthProgress * 30000)),
-            breakdown: {
-              cash: Math.round(40000 + (monthProgress * 10000)),
-              accountsReceivable: Math.round(60000 + (monthProgress * 15000))
-            }
-          },
-          nonCurrent: {
-            total: Math.round(380000 + (monthProgress * 20000))
-          }
-        },
-        metadata: {
-          period,
-          savedAt: new Date(2025, index, 15)
-        }
-      };
-    });
+    this.balanceSheetData.assets.nonCurrent.total =
+      this.balanceSheetData.assets.nonCurrent.property +
+      this.balanceSheetData.assets.nonCurrent.equipment +
+      this.balanceSheetData.assets.nonCurrent.investments +
+      this.balanceSheetData.assets.nonCurrent.intangibleAssets;
+
+    this.balanceSheetData.assets.total =
+      this.balanceSheetData.assets.current.total +
+      this.balanceSheetData.assets.nonCurrent.total;
+
+    this.balanceSheetData.liabilities.current.total =
+      this.balanceSheetData.liabilities.current.accountsPayable +
+      this.balanceSheetData.liabilities.current.shortTermDebt +
+      this.balanceSheetData.liabilities.current.accruedExpenses;
+
+    this.balanceSheetData.liabilities.total =
+      this.balanceSheetData.liabilities.current.total +
+      this.balanceSheetData.liabilities.nonCurrent.total;
+
+    this.balanceSheetData.equity.total =
+      this.balanceSheetData.equity.commonStock +
+      this.balanceSheetData.equity.retainedEarnings +
+      this.balanceSheetData.equity.otherComprehensiveIncome;
+
+    // Update analytics
+    this.analytics = {
+      workingCapital: this.balanceSheetData.assets.current.total - 
+                     this.balanceSheetData.liabilities.current.total,
+      debtToEquity: (this.balanceSheetData.liabilities.total / 
+                    this.balanceSheetData.equity.total).toFixed(2),
+      currentRatio: (this.balanceSheetData.assets.current.total / 
+                    this.balanceSheetData.liabilities.current.total).toFixed(2),
+      quickRatio: ((this.balanceSheetData.assets.current.total - 
+                  this.balanceSheetData.assets.current.inventory) / 
+                  this.balanceSheetData.liabilities.current.total).toFixed(2),
+      totalAssets: this.balanceSheetData.assets.total,
+      totalLiabilities: this.balanceSheetData.liabilities.total,
+      totalEquity: this.balanceSheetData.equity.total
+    };
+
+    this.keyFindings = this.generateKeyFindings();
   }
 
   private generateKeyFindings() {
-    const assetsGrowth = ((this.balanceSheetData.assets.total - 500000) / 500000 * 100).toFixed(1);
-    const liabilityRatio = (this.balanceSheetData.liabilities.total / this.balanceSheetData.assets.total * 100).toFixed(1);
+    const assetsGrowth = ((this.analytics.totalAssets - 500000) / 500000 * 100).toFixed(1);
+    const liabilityRatio = (this.analytics.totalLiabilities / this.analytics.totalAssets * 100).toFixed(1);
     
     return [
       `Total assets grew by ${assetsGrowth}% year-to-date`,
@@ -227,10 +343,97 @@ export class BalanceSheetComponent implements OnInit {
       this.balanceSheetData.assets.current.cash > 50000 ? 
         'Strong cash position maintained' : 
         'Review cash flow management',
-      // this.analytics.currentRatio > 2 ? 
-      //   'Healthy current ratio' : 
-        'Monitor short-term obligations'
+      +this.analytics.currentRatio > 2 ? 
+        'Healthy current ratio' : 
+        'Monitor short-term obligations',
+      `Working capital: ₦${this.analytics.workingCapital.toLocaleString()}`
     ];
+  }
+
+
+
+  private updateCharts() {
+    // Update pie chart
+    this.assetChartData.series = [
+      this.balanceSheetData.assets.current.total,
+      this.balanceSheetData.assets.nonCurrent.total
+    ];
+    this.pieChartOptions.series = this.assetChartData.series;
+
+    // Update line chart with quarterly data based on current month
+    const monthIndex = this.periods.findIndex(p => 
+      p.month === this.selectedPeriod.month
+    );
+    const quarter = Math.floor(monthIndex / 3) + 1;
+    
+    // Generate trend data based on current values
+    const baseValue = this.balanceSheetData.liabilities.total;
+    this.liabilityTrendData.series = [{
+      name: 'Total Liabilities',
+      data: [
+        baseValue * 0.85,
+        baseValue * 0.92,
+        baseValue * 0.96,
+        baseValue
+      ]
+    }];
+    
+    this.lineChartOptions.series = this.liabilityTrendData.series;
+  }
+
+
+
+  onPeriodChange(period: any) {
+    this.selectedPeriod = period;
+    const monthIndex = this.periods.findIndex(p => 
+      p.month === period.month && p.year === period.year
+    );
+    
+    
+    const multiplier = 1 + (monthIndex * 0.08); 
+    
+    // Update all values based on base data
+    Object.keys(this.baseData.assets.current).forEach(key => {
+      if (key !== 'total') {
+        const typedKey = key as keyof typeof this.balanceSheetData.assets.current;
+        this.balanceSheetData.assets.current[typedKey] = 
+          Math.round(this.baseData.assets.current[typedKey] * multiplier);
+      }
+    });
+
+    Object.keys(this.baseData.liabilities.current).forEach(key => {
+      if (key !== 'total') {
+        const typedKey = key as keyof typeof this.balanceSheetData.liabilities.current;
+        this.balanceSheetData.liabilities.current[typedKey] = 
+          Math.round(this.baseData.liabilities.current[typedKey] * multiplier * 0.9); // Liabilities grow slightly slower
+      }
+    });
+
+    // Update date display
+    this.asOfDate = `${period.month} 30, ${period.year}`;
+    
+    this.updateAllCalculations();
+    this.updateCharts();
+    this.showToast(`Loaded ${period.month} data`);
+  }
+
+  onYearChange(year: number) {
+    this.selectedYear = year;
+    // Adjust base values for year change
+    const yearMultiplier = 1 + (year - 2023) * 0.15; 
+    
+    Object.keys(this.baseData.assets.current).forEach(key => {
+      if (key !== 'total') {
+        const typedKey = key as keyof typeof this.baseData.assets.current;
+        this.baseData.assets.current[typedKey] =
+          Math.round(this.baseData.assets.current[typedKey] * yearMultiplier); 
+          
+      }
+    });
+
+    this.updateAllCalculations();
+    this.updateCharts();
+    this.showToast(`Showing ${year} data`);
   }
 
  
@@ -238,23 +441,45 @@ export class BalanceSheetComponent implements OnInit {
   toggleFullScreen() {
     this.isFullScreen = !this.isFullScreen;
     setTimeout(() => {
-      window.dispatchEvent(new Event('resize')); // Refresh charts
+      window.dispatchEvent(new Event('resize'));
     }, 300);
   }
 
-  // async shareReport() {
-  //   try {
-  //     await Share.share({
-  //       title: `${this.entityName} Balance Sheet`,
-  //       text: `Balance Sheet as of ${this.selectedPeriod.month} ${this.selectedPeriod.year}`,
-  //       url: '',
-  //       dialogTitle: 'Share Financial Report'
-  //     });
-  //   } catch (e) {
-  //     console.error('Sharing failed:', e);
-  //     this.showToast('Sharing not available');
-  //   }
-  // }
+  downloadTable() {
+    const tableData = {
+      ...this.balanceSheetData,
+      analytics: this.analytics,
+      asOfDate: this.asOfDate
+    };
+    
+    const blob = new Blob([JSON.stringify(tableData, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `balance-sheet-${this.asOfDate.replace(/[ ,]/g, '-')}.json`;
+    a.click();
+  }
+
+  shareReport() {
+    const shareData = {
+      title: `${this.entityName} Balance Sheet`,
+      text: `Balance Sheet as of ${this.asOfDate}\n` +
+            `Total Assets: ₦${this.analytics.totalAssets.toLocaleString()}\n` +
+            `Total Liabilities: ₦${this.analytics.totalLiabilities.toLocaleString()}\n` +
+            `Equity: ₦${this.analytics.totalEquity.toLocaleString()}`,
+      url: window.location.href
+    };
+    
+    if (navigator.share) {
+      navigator.share(shareData).catch((e) => {
+        this.showToast('Sharing failed: ' + e.message);
+      });
+    } else {
+      const text = `${shareData.title}\n${shareData.text}`;
+      prompt('Copy this report data:', text);
+      this.showToast('Report data copied to clipboard');
+    }
+  }
 
   postComment() {
     if (this.newComment.trim()) {
@@ -269,47 +494,50 @@ export class BalanceSheetComponent implements OnInit {
   }
 
 
-  onPeriodChange(period: any) {
-    this.selectedPeriod = period;
-    
-    // Simulate data change
-    const monthIndex = this.periods.findIndex(p => 
-      p.month === period.month && p.year === period.year
-    );
-    
-    // Adjust data based on month progression
-    const progressFactor = (monthIndex + 1) / 12;
-    this.balanceSheetData.assets.current.total = Math.round(140000 + (progressFactor * 30000));
-    this.balanceSheetData.liabilities.current.total = Math.round(70000 + (progressFactor * 10000));
-    
-    this.updateCalculations();
-    this.showToast(`Loaded ${period.month} data`);
+
+  private generateHistoricalData() {
+    this.savedReports = this.periods.map((period, index) => {
+      const multiplier = 1 + (index * 0.08);
+      return {
+        assets: {
+          current: {
+            cash: Math.round(this.baseData.assets.current.cash * multiplier),
+            accountsReceivable: Math.round(this.baseData.assets.current.accountsReceivable * multiplier),
+            inventory: Math.round(this.baseData.assets.current.inventory * multiplier),
+            prepaidExpenses: Math.round(this.baseData.assets.current.prepaidExpenses * multiplier),
+            total: Math.round(this.baseData.assets.current.total * multiplier)
+          },
+          nonCurrent: {
+            property: Math.round(this.baseData.assets.nonCurrent.property * multiplier),
+            equipment: Math.round(this.baseData.assets.nonCurrent.equipment * multiplier),
+            investments: Math.round(this.baseData.assets.nonCurrent.investments * multiplier),
+            intangibleAssets: Math.round(this.baseData.assets.nonCurrent.intangibleAssets * multiplier),
+            total: Math.round(this.baseData.assets.nonCurrent.total * multiplier)
+          },
+          total: Math.round(this.baseData.assets.total * multiplier)
+        },
+        metadata: {
+          period,
+          savedAt: new Date(2025, index, 15)
+        }
+      };
+    });
   }
 
-  onYearChange(year: number) {
-    this.selectedYear = year;
-    // Simulate chart data change
-    this.liabilityTrendData.series[0].data = 
-      [170000, 175000, 182000, 190000].map(v => v * (1 + (year - 2023) * 0.15));
-    this.showToast(`Showing ${year} trend data`);
-  }
+  // private initSavedReports() {
+  //   if (this.savedReports.length === 0) {
+  //     this.savedReports = this.generateHistoricalData();
+  //   }
+  // }
 
-  private updateCalculations() {
-    this.balanceSheetData.assets.total = 
-      this.balanceSheetData.assets.current.total + 
-      this.balanceSheetData.assets.nonCurrent.total;
-      
-    this.analytics = {
-      workingCapital: this.balanceSheetData.assets.current.total - this.balanceSheetData.liabilities.current.total,
-      debtToEquity: (this.balanceSheetData.liabilities.total / this.balanceSheetData.equity.total).toFixed(2),
-      currentRatio: (this.balanceSheetData.assets.current.total / this.balanceSheetData.liabilities.current.total).toFixed(2),
-      quickRatio: ((this.balanceSheetData.assets.current.total - this.balanceSheetData.assets.current.inventory) / 
-                  this.balanceSheetData.liabilities.current.total).toFixed(2)
-    };
-    
-    this.keyFindings = this.generateKeyFindings();
+  openSavedReport(report: any) {
+    this.selectedPeriod = report.metadata.period;
+    this.balanceSheetData = {...report};
+    this.asOfDate = this.formatDate(report.metadata.savedAt);
+    this.updateAllCalculations();
+    this.updateCharts();
+    this.showToast(`Loaded ${report.metadata.period.month} report`);
   }
-
 
 
   private randomize(base: number, percentVariation: number): number {
@@ -318,31 +546,15 @@ export class BalanceSheetComponent implements OnInit {
   }
 
   private showToast(message: string) {
-    console.log('UI Toast:', message); // Replace with actual toast service
+    console.log('UI Toast:', message);
+    // Implement actual toast notification here
   }
 
-  private initSavedReports() {
-    // Preload with 3 sample reports
-    if (this.savedReports.length === 0) {
-      this.savedReports = [
-        {
-          assets: { total: 520000 },
-          metadata: { period: { month: 'April', year: 2025 }, savedAt: new Date('2025-04-15') }
-        },
-        {
-          assets: { total: 480000 },
-          metadata: { period: { month: 'March', year: 2025 }, savedAt: new Date('2025-03-15') }
-        }
-      ];
-    }
-  }
-
-
-
-  openSavedReport(report: any) {
-    this.selectedPeriod = report.metadata.period;
-    this.balanceSheetData.assets.total = report.assets.total;
-    // this.closeModal();
-    this.showToast(`Loaded ${report.metadata.period.month} report`);
+  private formatDate(date: Date): string {
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
   }
 }

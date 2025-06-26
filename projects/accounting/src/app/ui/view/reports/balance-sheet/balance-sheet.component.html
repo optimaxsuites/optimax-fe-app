@@ -1,4 +1,5 @@
-<div class="container" [class.fullscreen]="isFullScreen">
+<app-report-tabs></app-report-tabs>
+
   <!-- Header Section -->
   <div class="header">
     <h1 class="main-title">Balance Sheet Report</h1>
@@ -10,8 +11,7 @@
         <i class="fas fa-sync" [class.spin]="isUpdating"></i> 
         {{ isUpdating ? 'Updating...' : 'Update' }}
       </button>
-      <button class="action-btn" >
-        <i class="ri-share-line"></i> Share
+      <button class="action-btn" (click)="shareReport()"><i class="fas fa-share-alt"></i>Share
       </button>
     </div>
   </div>
@@ -100,10 +100,10 @@
         </h2>
         <div class="section-actions">
           <button class="action-btn" (click)="toggleFullScreen()">
-            <i class="fas fa-expand"></i>
+            <i class="fas fa-expand" style="color: rgb(16, 18, 37);"></i>
           </button>
           <button class="action-btn" (click)="downloadTable()">
-            <i class="fas fa-download"></i>
+            <i class="fas fa-download" style="color: rgb(16, 27, 63);"></i>
           </button>
         </div>
       </div>
@@ -250,12 +250,12 @@
 
   <!-- Summary Section -->
   <section class="summary-section">
-    <!-- <div class="section-header">
+    <div class="section-header">
       <h2><i class="ri-pie-chart-line"></i> Financial Summary</h2>
-      <button class="text-primary" (click)="openModal()">
+      <button class="text-primary" (click)="isModalOpen = true">
         <i class="ri-history-line"></i> View Saved Reports
       </button>
-    </div> -->
+    </div>
     
     <div class="summary-content">
       <h3>Key Findings</h3>
@@ -286,7 +286,7 @@
       </button>
     </div>
   </section>
-</div>
+
 
 <!-- Saved Reports Modal -->
 <!-- <div class="side-modal" [class.open]="isModalOpen">
