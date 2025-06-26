@@ -9,7 +9,6 @@ import {
 } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-
 import { DatePipe } from '@angular/common';
 import {
   HotelserviceService,
@@ -20,6 +19,8 @@ import {
   BookingStatus,
 } from '../../hospitality/hotelservice.service';
 import { switchMap } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../sharedComponent/service/environments/environment.prod';
 
 @Component({
   selector: 'app-hotel-form',
@@ -43,6 +44,8 @@ export class HotelFormComponent implements OnInit {
   scanProgress = 0;
   formattedAmount: string = '';
   rawAmount: string = '';
+  paymentMethods = ['CASH', 'CARD', 'TRANSFER'];
+  paymentStatus = 'PENDING';
 
   // Public access to service methods
   titles = this.hotelService.getTitles();
@@ -52,8 +55,9 @@ export class HotelFormComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private messageService: MessageService,
-    public hotelService: HotelserviceService, // Made public for template access
-    private datePipe: DatePipe
+    public hotelService: HotelserviceService,
+    private datePipe: DatePipe,
+    private http: HttpClient
   ) {
     this.bookingForm = this.fb.group({
       // Guest Information
@@ -79,6 +83,8 @@ export class HotelFormComponent implements OnInit {
       // Payment Information
       paymentMethod: ['', Validators.required],
       depositAmount: [0, [Validators.min(0)]],
+      paymentReference: [''],
+      paymentNote: [''],
     });
   }
 
@@ -212,74 +218,125 @@ export class HotelFormComponent implements OnInit {
         rooms: this.selectedRooms.map((room) => room.id || 0),
         paymentMethod: formValues.paymentMethod,
       },
+      payment: {
+        amountPaid: depositAmount,
+        method: formValues.paymentMethod,
+        status: this.paymentStatus,
+        paidOn: this.datePipe.transform(new Date(), 'yyyy-MM-dd') || '',
+        reference: formValues.paymentReference || '',
+        note: formValues.paymentNote || '',
+      },
       selectedRooms: this.selectedRooms,
     };
   }
 
-  confirmBooking(): void {
+  async confirmBooking(): Promise<void> {
     if (!this.bookingSummary) return;
     if (this.isProcessing) return;
 
     this.isProcessing = true;
 
-    // First create guest
-    this.hotelService.createGuest(this.bookingSummary.guest).subscribe({
-      next: (createdGuest) => {
-        // Then create booking with guest ID
-        const bookingData: Booking = {
-          ...this.bookingSummary.booking,
-          guest: createdGuest.id || 0,
-        };
+    try {
+      // First create guest
+      const createdGuest = await this.hotelService
+        .createGuest(this.bookingSummary.guest)
+        .toPromise();
 
-        this.hotelService.createBooking(bookingData).subscribe({
-          next: (createdBooking) => {
-            // Update room statuses
-            const newRoomStatus: RoomStatus =
-              this.activeStatus === 'CHECKED_IN' ? 'OCCUPIED' : 'BOOKED';
+      // Then create booking with guest ID
+      if (!createdGuest || !createdGuest.id) {
+        throw new Error('Guest creation failed - no guest ID returned');
+      }
 
-            this.updateRoomStatuses(createdBooking.rooms, newRoomStatus);
+      const bookingData: Booking = {
+        ...this.bookingSummary.booking,
+        guest: createdGuest.id,
+      };
 
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: `Booking ${
-                this.activeStatus === 'CHECKED_IN' ? 'checked in' : 'created'
-              } successfully`,
-              life: 5000,
-            });
+      const createdBooking = await this.hotelService
+        .createBooking(bookingData)
+        .toPromise();
 
-            this.bookingComplete.emit(createdBooking);
-            this.closeForm.emit();
-          },
-          error: (err) => {
-            this.handleError('Failed to create booking', err);
-          },
-        });
-      },
-      error: (err) => {
-        this.handleError('Failed to create guest', err);
-      },
-    });
+      // Process payment
+      if (!createdBooking || !createdBooking.id) {
+        throw new Error('Booking creation failed - no booking ID returned');
+      }
+
+      const paymentData = {
+        ...this.bookingSummary.payment,
+        bookingId: createdBooking.id,
+      };
+
+      await this.processPayment(paymentData);
+
+      // Update room statuses
+      const newRoomStatus: RoomStatus =
+        this.activeStatus === 'CHECKED_IN' ? 'OCCUPIED' : 'BOOKED';
+
+      await this.updateRoomStatuses(createdBooking.rooms, newRoomStatus);
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: `Booking ${
+          this.activeStatus === 'CHECKED_IN' ? 'checked in' : 'created'
+        } successfully`,
+        life: 5000,
+      });
+
+      this.bookingComplete.emit(createdBooking);
+      this.closeForm.emit();
+    } catch (err) {
+      this.handleError('Failed to complete booking', err);
+    } finally {
+      this.isProcessing = false;
+    }
   }
 
-  private updateRoomStatuses(roomIds: number[], status: RoomStatus): void {
-    roomIds.forEach((roomId) => {
-      this.hotelService.getRooms().subscribe((rooms) => {
-        const room = rooms.find((r) => r.id === roomId);
-        if (room) {
+  private async processPayment(paymentData: any): Promise<void> {
+    try {
+      // Replace with your actual payment endpoint
+      const paymentUrl = `${environment.apiBaseUrl}/x/api/v2/hsp/payments`;
+      await this.http
+        .post(paymentUrl, paymentData, {
+          headers: this.hotelService.getHeaders(),
+        })
+        .toPromise();
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Payment Processed',
+        detail: 'Payment was successfully recorded',
+        life: 5000,
+      });
+    } catch (err) {
+      console.error('Payment processing error:', err);
+      throw new Error('Failed to process payment');
+    }
+  }
+
+  private updateRoomStatuses(
+    roomIds: number[],
+    status: RoomStatus
+  ): Promise<void[]> {
+    const updatePromises = roomIds.map((roomId) => {
+      return new Promise<void>((resolve, reject) => {
+        this.hotelService.getRoom(roomId).subscribe((room) => {
           const updatedRoom = { ...room, roomStatus: status };
           this.hotelService.updateRoom(roomId, updatedRoom).subscribe({
+            next: () => resolve(),
             error: (err) => {
               console.error(`Failed to update room ${roomId} status`, err);
+              resolve(); // We resolve even if there's an error to continue the flow
             },
           });
-        }
+        });
       });
     });
+
+    return Promise.all(updatePromises);
   }
 
   private handleError(summary: string, error: any): void {
-    this.isProcessing = false;
     console.error(error);
     this.messageService.add({
       severity: 'error',

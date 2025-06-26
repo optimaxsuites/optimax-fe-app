@@ -40,6 +40,8 @@ export class HotelRoomlistComponent implements OnInit {
 
   selectedBookingDetails: Room | null = null;
   showBookingDetails = false;
+  showRoomDetails = false;
+  selectedRoomForDetails: Room | null = null;
 
   rooms: Room[] = [];
   filteredRooms: Room[] = [];
@@ -77,9 +79,20 @@ export class HotelRoomlistComponent implements OnInit {
     this.loadAllData();
   }
 
+  // selectRoom(room: Room): void {
+  //   this.selectedRoom = room;
+  //   this.roomSelected.emit(room);
+  // }
+
   selectRoom(room: Room): void {
-    this.selectedRoom = room;
+    this.selectedRoomForDetails = room;
+    this.showRoomDetails = true;
     this.roomSelected.emit(room);
+  }
+
+  closeRoomDetails(): void {
+    this.showRoomDetails = false;
+    this.selectedRoomForDetails = null;
   }
 
   navigateToForm() {
@@ -133,14 +146,27 @@ export class HotelRoomlistComponent implements OnInit {
       // Room type filter
       const typeMatch =
         this.selectedRoomTypes.includes('All Rooms') ||
-        this.selectedRoomTypes.includes(room.roomType.toString());
+        this.selectedRoomTypes.includes(room.roomType.name);
 
       // Status filter
       const statusMatch =
         this.selectedStatus.value === 'All Statuses' ||
         this.selectedStatus.value === room.roomStatus;
 
-      return typeMatch && statusMatch;
+      // Search filter
+      const searchMatch =
+        !this.searchQuery ||
+        room.roomNumber.toString().includes(this.searchQuery) ||
+        (room.roomType &&
+          room.roomType.name &&
+          room.roomType.name
+            .toLowerCase()
+            .includes(this.searchQuery.toLowerCase()));
+
+      // Date filter (if implemented)
+      // ...
+
+      return typeMatch && statusMatch && searchMatch;
     });
   }
 
@@ -225,7 +251,7 @@ export class HotelRoomlistComponent implements OnInit {
     this.applyFilters();
   }
 
-  private loadAllData(): void {
+  loadAllData(): void {
     this.isLoading = true;
 
     forkJoin([
