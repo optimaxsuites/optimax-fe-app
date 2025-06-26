@@ -1,16 +1,11 @@
 <div
-  class="flex h-screen overflow-hidden"
+  class="flex h-full overflow-hidden"
   *ngIf="!openForm && !openLogs && !openRoom && !showRoomForm"
 >
   <!-- Sidebar with filters (scrollable independently) -->
   <aside
-    class="w-72 bg-gradient-to-b from-customBlueHover to-customBlue text-white shadow-lg flex-shrink-0"
-    style="
-      min-width: 18rem;
-      max-width: 22rem;
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
-    "
+    class="w-72 bg-gradient-to-b from-customBlueHover to-customBlue text-white shadow-xl flex-shrink-0 rounded-l-2xl border border-white/20"
+    style="min-width: 18rem; max-width: 22rem"
   >
     <div class="h-full flex flex-col">
       <!-- Fixed sidebar header -->
@@ -45,9 +40,13 @@
   </aside>
 
   <!-- Main content area -->
-  <div class="flex-1 flex flex-col h-screen overflow-hidden bg-gray-50">
+  <div
+    class="flex-1 flex flex-col h-full overflow-hidden bg-white/80 backdrop-blur-sm rounded-r-2xl shadow-lg border border-white/20"
+  >
     <!-- Fixed Header with buttons -->
-    <div class="bg-white border-b border-gray-200 px-6 py-5 shadow-sm z-30">
+    <div
+      class="bg-white/90 backdrop-blur-sm border-b border-gray-200/50 px-6 py-5 shadow-sm z-30 rounded-tr-2xl"
+    >
       <div class="flex justify-between items-center">
         <h1 class="text-4xl font-bold text-gray-800">Room Status</h1>
         <div class="flex gap-4">
@@ -71,7 +70,9 @@
     </div>
 
     <!-- Fixed Search and Filter Controls -->
-    <div class="bg-white border-b border-gray-200 px-6 py-5 shadow-sm z-20">
+    <div
+      class="bg-white/90 backdrop-blur-sm border-b border-gray-200/50 px-6 py-5 shadow-sm z-20"
+    >
       <!-- Status Legend -->
       <div class="flex flex-wrap gap-6 mb-6">
         <div
@@ -154,7 +155,9 @@
     </div>
 
     <!-- Scrollable Room Grid -->
-    <div class="flex-1 overflow-y-auto p-6">
+    <div
+      class="flex-1 overflow-y-auto p-6 bg-gradient-to-b from-transparent to-gray-50/30"
+    >
       <!-- Loading state for rooms -->
       <div
         *ngIf="isLoading"
