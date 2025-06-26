@@ -12,11 +12,11 @@ import { TaxSummaryComponent } from './ui/view/reports/tax-summary/tax-summary.c
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'admin/accounting/dhwy7829iokdw',
+    redirectTo: 'admin/accounting/transaction/dhwy7829iokdw',
     pathMatch: 'full',
   },
   {
-      path: 'admin/admin/accounting/transaction/:uuid',
+      path: 'admin/accounting/transaction/:uuid',
       component: AccountingPageComponent,
     },
     {
@@ -33,23 +33,23 @@ const routes: Routes = [
     },
 
      { 
-      path: 'reports',
+      path: 'admin/accounting/reports/:uuid',
        component: AccountingReportsComponent 
       },
   { 
-    path: 'admin/reports/balance-sheet',
+    path: 'admin/accounting/reports/balance-sheet',
      component: BalanceSheetComponent 
     },
   {
-     path: 'admin/reports/income-statement',
+     path: 'admin/accounting/reports/income-statement',
      component: IncomeStatementComponent
      },
   {
-     path: 'admin/reports/cash-flow',
+     path: 'admin/accounting/reports/cash-flow',
       component: CashFlowComponent 
     },
   { 
-    path: 'admin/reports/tax-summary', 
+    path: 'admin/accounting/reports/tax-summary', 
     component: TaxSummaryComponent
    },
   // { path: '', redirectTo: '/reports', pathMatch: 'full' }
