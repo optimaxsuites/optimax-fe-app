@@ -201,16 +201,26 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
   gap: 10px;
 }
 .action-btn {
-  padding: 8px 18px;
-  border: none;
+  padding: 8px 15px;
+  border: 1px solid $gray-light;
   border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 500;
-  color: $white;
-  background-color: $primary;
-
+  background-color: $white;
+  color: $primary;
+  font-size: 13px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.action-btn:hover {
+  background-color: $primary-light;
+  border-color: $primary;
+}
+
+.action-btn i {
+  font-size: 12px;
 }
 
 /* Metrics Grid */
