@@ -21,10 +21,6 @@ const routes: Routes = [
       component: AccountingPageComponent,
     },
     {
-      path: 'admin/accounting/accounting-reports/:uuid',
-      component: AccountingReportsComponent,
-    },
-    {
       path: 'admin/quotation-form',
       component: QuotationModalComponent,
     },
