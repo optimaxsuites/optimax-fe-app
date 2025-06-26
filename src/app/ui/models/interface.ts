@@ -8,11 +8,13 @@ export type Satisfy<
 > = TTypeToCheck;
 
 type DateString = string;
-type DateArray = ReadonlyArray<number> & {length:1|2|3|4|5|6|7}
+export type DateArray = ReadonlyArray<number> & {
+	length: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+};
 /** Date String Format: "2025-02-02T22:56:31.935Z". Date Array Format: [2025, 2, 2, 22, 56, 31, 935] */
-export type DateType = DateString | DateArray
+export type DateType = DateString | DateArray;
 
-export interface ProductJSONFormat<TDateType extends "string"|"array"> {
+export interface ProductJSONFormat<TDateType extends "string" | "array"> {
 	id: number;
 	name: string;
 	code: string;
@@ -26,7 +28,7 @@ export interface ProductJSONFormat<TDateType extends "string"|"array"> {
 	/** Date String Format: "2025-02-02T22:56:31.935Z" */
 	createdDate: TDateType extends "string" ? DateString : DateArray;
 	/** Date String Format: "2025-02-02T22:56:31.935Z" */
-  expiryDate: TDateType extends "string" ? DateString : DateArray;
+	expiryDate: TDateType extends "string" ? DateString : DateArray;
 	createdBy: string | null;
 	partNumber: string;
 	tax: TaxDTO;
@@ -42,13 +44,10 @@ export interface ProductJSONFormat<TDateType extends "string"|"array"> {
 	reorderThreshold?: number | null;
 }
 
-export type ProductJSONFormatPOST = ProductJSONFormat<"string">
-export type ProductJSONFormatGET = ProductJSONFormat<"array">
+export type ProductJSONFormatPOST = ProductJSONFormat<"string">;
+export type ProductJSONFormatGET = ProductJSONFormat<"array">;
 
-/**
- * There's some extra data we use with each product that wouldn't fit directly with the fetched data interface, `ProductJSONFormat`
- */
-export interface ProductData extends ProductJSONFormatPOST {
+type ProductDataShared = {
 	productVariant: any;
 	product: any;
 	purchasePrice: any;
@@ -68,7 +67,13 @@ export interface ProductData extends ProductJSONFormatPOST {
 	selectedVariants?: VariantDTO[];
 
 	pricingQuantity: any;
-}
+};
+
+/**
+ * There's some extra data we use with each product that wouldn't fit directly with the fetched data interface, `ProductJSONFormat`
+ */
+export type ProductData = ProductJSONFormatPOST & ProductDataShared;
+export type ProductDataGET = ProductJSONFormatGET & ProductDataShared;
 export type HistoryData = Map<number, ProductData[]>;
 
 export interface DiscountDTO {
@@ -102,12 +107,10 @@ interface ProductCategoryShared<TDateType extends "string" | "array"> {
 	code: string;
 	description: string;
 	/** Date String Format: "2025-02-02T22:56:31.935Z". Date Array Format: [2025, 2, 2, 22, 56, 31, 935] */
-  endDate: TDateType extends "string" ? DateString : DateArray
+	endDate: TDateType extends "string" ? DateString : DateArray;
 }
-export interface ProductCategoryPOST extends ProductCategoryShared<"string"> {
-}
-export interface ProductCategoryGET extends ProductCategoryShared<"array"> {
-}
+export interface ProductCategoryPOST extends ProductCategoryShared<"string"> {}
+export interface ProductCategoryGET extends ProductCategoryShared<"array"> {}
 
 export interface ProductImageDTO {
 	id: number;
@@ -235,50 +238,49 @@ export interface NavigationState {
 }
 
 export interface Refund {
-  id?: any;
-orderNumber?: any;
-createdAt?: any;
-name: any;
-refundStatus: string;
-  phoneNumber: string;
-  emailAddress: string;
-  timestamp: any;
-  orderId: string;
-  customerName: string;
-  refundMeans: string;
-  refundReason: string;
-  cashierComment: string;
-  status: string;
-  selectedItems: any;
-  bankName?: string;
-  accountNumber?: string;
-  accountHolder?: string;
-  loyaltyId?: string;
-  selectedRequest: Refund;
-  royaltyAccountId: number;
-  reason: any;
-  refundableAmount: string|number;
-  returnItems: any;
-
+	id?: any;
+	orderNumber?: any;
+	createdAt?: any;
+	name: any;
+	refundStatus: string;
+	phoneNumber: string;
+	emailAddress: string;
+	timestamp: any;
+	orderId: string;
+	customerName: string;
+	refundMeans: string;
+	refundReason: string;
+	cashierComment: string;
+	status: string;
+	selectedItems: any;
+	bankName?: string;
+	accountNumber?: string;
+	accountHolder?: string;
+	loyaltyId?: string;
+	selectedRequest: Refund;
+	royaltyAccountId: number;
+	reason: any;
+	refundableAmount: string | number;
+	returnItems: any;
 }
 
-export interface SelectedRequest extends Refund{
-returnItems: any;
-refundableAmount: string|number;
-reason: any;
-  royaltyAccountId: number;
-// customer: any;
-  selectedRequest: Refund;
-  phoneNumber: string;
-  emailAddress: string;
-  timestamp: any;
-  orderId: string;
-  customerName: string;
-  refundMeans: string;
-  refundReason: string;
-  cashierComment: string;
-  status: string;
-  selectedItems: any;
+export interface SelectedRequest extends Refund {
+	returnItems: any;
+	refundableAmount: string | number;
+	reason: any;
+	royaltyAccountId: number;
+	// customer: any;
+	selectedRequest: Refund;
+	phoneNumber: string;
+	emailAddress: string;
+	timestamp: any;
+	orderId: string;
+	customerName: string;
+	refundMeans: string;
+	refundReason: string;
+	cashierComment: string;
+	status: string;
+	selectedItems: any;
 }
 
 // TODO: Fill this up with the appropriate types
@@ -605,13 +607,13 @@ export interface TableOrderStatusFullDTO {
 }
 
 export interface OrderItemDTO {
-  productVariant: any;
-totalPrice: any;
-sellingPrice: any;
-  id: number;
-  product: any;
-  quantity: number;
-  unitPrice: number;
+	productVariant: any;
+	totalPrice: any;
+	sellingPrice: any;
+	id: number;
+	product: any;
+	quantity: number;
+	unitPrice: number;
 }
 
 export interface ReturnItemDTO {
@@ -647,35 +649,35 @@ export interface UserDTO {
 }
 
 export interface ReturnDTO {
-  orderId?: number;
-  returnItems?: ReturnItemDTO[];
-  royaltyAccountId?: number | undefined;
-  id?: number;
-  name: string;
-  phoneNumber: string;
-  royaltyAccount: CustomerDTO;
-  order: Order;
-  items: ReturnItemDTO[];
-  reason: string;
-  cashierComment: string;
-  adminComment?: string;
-  status: ReturnStatus;
-  processedBy?: UserDTO;
-  createdAt?: Date;
-  refundableAmount: number;
-  refundMethod: RefundMethod;
-  bankDetails: BankDetailsDTO;
-  exchangeFor: ProductData;
-  refundStatus: RefundStatus
+	orderId?: number;
+	returnItems?: ReturnItemDTO[];
+	royaltyAccountId?: number | undefined;
+	id?: number;
+	name: string;
+	phoneNumber: string;
+	royaltyAccount: CustomerDTO;
+	order: Order;
+	items: ReturnItemDTO[];
+	reason: string;
+	cashierComment: string;
+	adminComment?: string;
+	status: ReturnStatus;
+	processedBy?: UserDTO;
+	createdAt?: Date;
+	refundableAmount: number;
+	refundMethod: RefundMethod;
+	bankDetails: BankDetailsDTO;
+	exchangeFor: ProductData;
+	refundStatus: RefundStatus;
 }
 
 export enum RefundStatus {
-  Pending = 'Pending',
-  Approved = 'Approved',
-  Rejected = 'Rejected',
-  Processing = 'Processing',
-  Canceled = 'Canceled',
-  Expired = 'Expired',
-  UnderReview = 'UnderReview',
-  Chargeback = 'Chargeback',
+	Pending = "Pending",
+	Approved = "Approved",
+	Rejected = "Rejected",
+	Processing = "Processing",
+	Canceled = "Canceled",
+	Expired = "Expired",
+	UnderReview = "UnderReview",
+	Chargeback = "Chargeback",
 }
