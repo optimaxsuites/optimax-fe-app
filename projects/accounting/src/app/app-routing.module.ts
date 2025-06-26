@@ -7,6 +7,7 @@ import { BalanceSheetComponent } from './ui/view/reports/balance-sheet/balance-s
 import { IncomeStatementComponent } from './ui/view/reports/income-statement/income-statement.component';
 import { CashFlowComponent } from './ui/view/reports/cash-flow/cash-flow.component';
 import { TaxSummaryComponent } from './ui/view/reports/tax-summary/tax-summary.component';
+import { ReportTabsComponent } from './ui/view/reports/report-tabs/report-tabs.component';
 
 
 const routes: Routes = [
@@ -34,24 +35,24 @@ const routes: Routes = [
 
      { 
       path: 'admin/accounting/reports/:uuid',
-       component: AccountingReportsComponent 
+       component: ReportTabsComponent 
       },
-  { 
-    path: 'admin/accounting/reports/balance-sheet',
-     component: BalanceSheetComponent 
-    },
-  {
-     path: 'admin/accounting/reports/income-statement',
-     component: IncomeStatementComponent
-     },
-  {
-     path: 'admin/accounting/reports/cash-flow',
-      component: CashFlowComponent 
-    },
-  { 
-    path: 'admin/accounting/reports/tax-summary', 
-    component: TaxSummaryComponent
-   },
+  // { 
+  //   path: 'admin/accounting/reports/balance-sheet',
+  //    component: BalanceSheetComponent 
+  //   },
+  // {
+  //    path: 'admin/accounting/reports/income-statement',
+  //    component: IncomeStatementComponent
+  //    },
+  // {
+  //    path: 'admin/accounting/reports/cash-flow',
+  //     component: CashFlowComponent 
+  //   },
+  // { 
+  //   path: 'admin/accounting/reports/tax-summary', 
+  //   component: TaxSummaryComponent
+  //  },
   // { path: '', redirectTo: '/reports', pathMatch: 'full' }
 
     
