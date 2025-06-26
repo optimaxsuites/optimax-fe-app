@@ -45,7 +45,6 @@ const routes: Routes = [
       { path: 'room sevice', component: RoomServiceComponent },
       { path: 'Housekeeping Record', component: HouseKeepingComponent },
       { path: 'bar', component: BarServiceComponent },
-      { path: 'admin', component: HotelAdmintableComponent },
     ],
   },
 ];
