@@ -9,8 +9,10 @@ import {
   BranchDTO,
   DiscountDTO,
   MeasurementUnit,
-  ProductCategoryDTO,
+  ProductCategoryPOST,
   ProductJSONFormat,
+  ProductJSONFormatGET,
+  ProductJSONFormatPOST,
 } from '../../models/interface';
 import { formatDate } from '@angular/common';
 import { MessageService } from 'primeng/api';
@@ -35,18 +37,18 @@ export class ExcelExportAndImportComponent implements OnInit {
   fileName: string | null = null;
   isDragging = false;
   alert: string = ""
-  file!: File; 
+  file!: File;
   buttonText: string = "Submit"
   levels: any[]=[]
   leaves: any[]=[]
   employmentTypes: any[]=[]
   departments: any[] = []
   measurementUnits = Object.keys(MeasurementUnit)
-  
+
   @Output() fileUploaded = new EventEmitter<File>();
   @Output() close = new EventEmitter<false>();
 
-  @Input() parsedProductArray: ProductJSONFormat[] = [];
+  @Input() parsedProductArray: ProductJSONFormatPOST[] = [];
 
   private categoryNames: string[] = ['Food', 'Medicine'];
   private discountNames: string[] = ['Black Friday', '10%'];
@@ -71,12 +73,12 @@ export class ExcelExportAndImportComponent implements OnInit {
   ];
   headers = [
      'S/N', 'Name', 'Description', 'Branch(es)', 'Part number', 'SKU',
-    'Code', 'Category', 'Weight (KG)', 'Measurement Unit', 'Reorder Threshold', 
+    'Code', 'Category', 'Weight (KG)', 'Measurement Unit', 'Reorder Threshold',
     'Combo?', 'Combo Items',
   ];
   form: FormGroup;
-  
-  constructor(private posService: PosServiceService, 
+
+  constructor(private posService: PosServiceService,
   private messageService: MessageService,
   private metadataService: MetadataService,
   private fb: FormBuilder
@@ -85,7 +87,7 @@ export class ExcelExportAndImportComponent implements OnInit {
       rows: this.fb.array([])
     });
     this.initRows(20);
-  
+
   }
 
 
@@ -390,7 +392,7 @@ addRow(): FormGroup {
       }
     }
   }
-  
+
   createExcelSheet() {
     const branches = this.branches.map(branch => branch.name).join(',');
     const categories = this.categories.map(cat => cat.name).join(',');
@@ -398,23 +400,23 @@ addRow(): FormGroup {
 
 
 
-  
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Employees');
-  
+
     const headers = [
       'Name', 'Description', 'Branch(es)', 'Part number', 'SKU',
-      'Code', 'Category', 'Weight (KG)', 'Measurement Unit', 'Reorder Threshold', 
-      'Combo?', 'Combo Items', 
+      'Code', 'Category', 'Weight (KG)', 'Measurement Unit', 'Reorder Threshold',
+      'Combo?', 'Combo Items',
     ];
     worksheet.addRow(headers);
-  
+
     const rows = [
-      ['Water', 'Table Water', 'Headquarter', 'tablewater1', 'table-water', 'water1', 'Drinks',15, 'UNIT', 5, 
+      ['Water', 'Table Water', 'Headquarter', 'tablewater1', 'table-water', 'water1', 'Drinks',15, 'UNIT', 5,
       false, []]
     ];
     rows.forEach(row => worksheet.addRow(row));
-  
+
     for (let i = 1; i <= 500; i++) {
       worksheet.getCell(`C${i}`).dataValidation = {
         type: 'list',
@@ -449,7 +451,7 @@ addRow(): FormGroup {
       //   error: 'Please select a value from the dropdown.',
       // };
     }
-  
+
     workbook.xlsx.writeBuffer().then((buffer: BlobPart) => {
       const blob = new Blob([buffer], { type: 'application/octet-stream' });
       const link = document.createElement('a');
@@ -458,7 +460,7 @@ addRow(): FormGroup {
       link.click();
     });
   }
-  
+
 
 
   s2ab(s: string) {
@@ -469,14 +471,14 @@ addRow(): FormGroup {
   }
   return buf;
   }
- 
-  
+
+
   readExcelFile(): void {
     const reader = new FileReader();
     reader.onload = (event) => {
       const data = new Uint8Array(event.target?.result as ArrayBuffer);
       const workbook = XLSX.read(data, { type: 'array' });
-      
+
     //   Get the first sheet's data
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
@@ -494,16 +496,16 @@ addRow(): FormGroup {
   async validateData(data: any[]): Promise<void> {
     const requiredFields = [
       'First Name', 'Last Name', 'Email', 'Work Email',
-      'Job Title', 'Department', 'Employment Type', 'Level', 'Supervisor', 
+      'Job Title', 'Department', 'Employment Type', 'Level', 'Supervisor',
       'Status', 'Employment Start Date', 'Appraisal Due Date'
     ];
-  
+
     let skippedCount = 0;
     let successfullyAddedCount = 0;
   console.log(data)
     for (const row of data) {
       const isMissingFields = requiredFields.some(field => !row[field]);
-      
+
       if (isMissingFields) {
         skippedCount++;
         console.warn(`Skipped row due to missing fields:`, row);
@@ -513,24 +515,24 @@ addRow(): FormGroup {
         successfullyAddedCount++;
       }
     }
-  
+
     this.fileName = "";
-  
+
     // Display appropriate message
     if (successfullyAddedCount > 0) {
-      const message = skippedCount > 0 
+      const message = skippedCount > 0
         ? `${successfullyAddedCount} employees added successfully. ${skippedCount} rows were skipped due to errors or duplicates.`
         : 'Employees added successfully!';
       this.messageService.add({ severity: 'success', summary: 'Success', detail: message, key: 'tl', life: 3000 });
     } else {
       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No employees were added due to errors or duplicates. Please check your file.', key: 'tl', life: 3000 });
     }
-  
+
     this.buttonText = "Submit";
     setTimeout(() => { this.close.emit() }, 2000);
   }
-  
-  
+
+
   toLocalDateTime(date: Date | string | null): string {
     if (!date) return '';
     const parsedDate = new Date(date);
@@ -561,10 +563,10 @@ addRow(): FormGroup {
       probationEndDate: this.toLocalDateTime(this.validateDate(item['Probation End Date'])),
       appraisalDueDate: this.toLocalDateTime(this.validateDate(item['Appraisal Due Date'])),
     }));
-    
+
     console.log(newEmployees);
-    
- 
+
+
     return new Promise<boolean>((resolve) => {
       // this.employeeService.addBulkEmployee(newEmployees).subscribe(
       //   {
@@ -582,10 +584,10 @@ addRow(): FormGroup {
 
     });
   }
-  
-  
-  
-  
+
+
+
+
   validateDate(date: string): string | null {
     const parsedDate = new Date(date);
     return isNaN(parsedDate.getTime()) ? null : parsedDate.toISOString().split('T')[0];

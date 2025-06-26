@@ -7,9 +7,10 @@ import {
   BranchDTO,
   DiscountDTO,
   MeasurementUnit,
-  ProductCategoryDTO,
+  ProductCategoryPOST,
   ProductData,
   ProductJSONFormat,
+  ProductJSONFormatPOST,
 } from "../../models/interface";
 import { MessageService } from "primeng/api";
 import { HttpClient, HttpErrorResponse } from "@angular/common/http";
@@ -135,7 +136,7 @@ export class ProductsComponent implements OnInit {
    *
    * @type {ProductJSONFormat[]}
    */
-  parsedProductData: ProductJSONFormat[] = [];
+  parsedProductData: ProductJSONFormatPOST[] = [];
 
   /**
    * This is just to maintain the order used in `productTableHeaders` when it is iterated with `keyValue` in the html template
@@ -152,6 +153,8 @@ export class ProductsComponent implements OnInit {
 
   currentPage = 0;
   rowsPerPage = 15;
+  /** Roughly a hundred years from now */
+  private readonly _defaultExpiryDate = new Date(Date.now() + (100 * 365.25 * 24 * 60 * 60 * 1000));
 
   constructor(
     private messageService: MessageService,
@@ -520,7 +523,7 @@ export class ProductsComponent implements OnInit {
       );
 
       let discount: DiscountDTO = {} as any;
-      let productCategory: ProductCategoryDTO = {} as any;
+      let productCategory: ProductCategoryPOST = {} as any;
       let branch: string = branchName;
 
       this.products.forEach((product) => {
@@ -564,6 +567,7 @@ export class ProductsComponent implements OnInit {
         partNumber: partNumber.toString(),
         productCategory: productCategory,
         weight: weight,
+        expiryDate:this._defaultExpiryDate.toISOString()
       });
 
       // // REVIEW: PLEASE REDO THIS

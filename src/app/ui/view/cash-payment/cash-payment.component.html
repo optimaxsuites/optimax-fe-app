@@ -2,7 +2,7 @@
   <div class="flex justify-between bg-customBlue text-white items-center p-3">
     <p
       class="flex items-center gap-3 cursor-pointer"
-      (click)="navigateBackToCheckout()"
+      (click)="navigateBack()"
     >
       <i class="fa-solid fa-arrow-left"></i> <span>Back</span>
     </p>
@@ -218,7 +218,7 @@
           <tr style="font-size: 10px;">
             <td style="text-align: left;">{{ item?.name }}</td>
             <td >{{ item.count }}</td>
-            <!-- <td>{{ item.initialPrice   }}</td> -->
+            <td>{{ parseFloat(item.sellingPrice ?? "0")  }}</td>
             <td>{{ item.cartPriceTotal   }}</td>
           </tr>
         </ng-template>

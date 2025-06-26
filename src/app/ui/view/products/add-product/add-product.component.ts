@@ -23,6 +23,7 @@ import {
   TaxDTO,
   VariantDTO,
   BranchDTO,
+  ProductJSONFormatPOST,
 } from "../../../models/interface";
 import { IndustryDataService } from "../../../service/industry-data.service";
 import { MetadataService } from "../../../service/metadata.service";
@@ -43,7 +44,10 @@ export class AddProductComponent {
   @Input() activeItem: any;
   @Input() isEditMode: boolean = false;
   productForm!: FormGroup;
-  productData: ProductJSONFormat = {
+  /** Roughly a hundred years from now */
+  private readonly _defaultExpiryDate = new Date(Date.now() + (100 * 365.25 * 24 * 60 * 60 * 1000)
+)
+  productData: ProductJSONFormatPOST = {
     name: "",
     code: "",
     description: "",
@@ -51,6 +55,7 @@ export class AddProductComponent {
     weight: 0,
     costPrice: "",
     sellingPrice: "",
+    expiryDate: this._defaultExpiryDate.toISOString(),
 
     partNumber: "",
     tax: { name: "", rate: 0 },
@@ -61,7 +66,7 @@ export class AddProductComponent {
       id: 0,
       name: "",
       code: "",
-      description: "",
+      description: "",endDate: this._defaultExpiryDate.toISOString()
     },
     id: 0,
     productBranch: [],
@@ -292,6 +297,7 @@ export class AddProductComponent {
       bundleItems: [],
       measurementUnit: [""],
       reorderThreshold: [null],
+      expiryDate:[this._defaultExpiryDate.toISOString()]
     };
 
     this.productForm = this.fb.group(fbGroup);
@@ -678,9 +684,9 @@ export class AddProductComponent {
     }
   }
 
-  checkForEmptyFields(obj: any): boolean {
-    return Object.values(obj).some(
-      (value) => typeof value === "string" && value.trim() === "",
+  checkForEmptyFields<TObj extends object>(obj: TObj, fieldsToIgnore:ReadonlyArray<keyof TObj> = []): boolean {
+    return Object.entries(obj).some(
+      ([key,value]) => typeof value === "string" && (value.trim() === "" && !fieldsToIgnore.includes(key as unknown as keyof TObj)),
     );
   }
   onImageUpload(event: any) {
@@ -1223,16 +1229,12 @@ export class AddProductComponent {
   }
 
   addCategory() {
-    let categoryData = this.productData.productCategory;
+    let categoryData = {...this.productData.productCategory};
+    // The inputted date would be something like `2025-06-07` so we need to force it to an iso string
+    categoryData.endDate = new Date(categoryData.endDate).toISOString()
 
-    const categoryDetails = {
-      name: categoryData.name,
-      code: categoryData.code,
-      description: categoryData.description,
-    };
-
-    if (this.checkForEmptyFields(categoryData)) {
-      console.log("all fiellds are required");
+    if (this.checkForEmptyFields(categoryData, ["endDate", "description"])) {
+      console.log("all fields are required");
       this.messageService.add({
         severity: "error",
         summary: "warn",
@@ -1241,7 +1243,7 @@ export class AddProductComponent {
         life: 3000,
       });
     } else {
-      this.posService.addCategory(categoryDetails).subscribe(
+      this.posService.addCategory(categoryData).subscribe(
         async (data) => {
           console.log(data);
           if (data) {
@@ -1257,7 +1259,7 @@ export class AddProductComponent {
               id: 0,
               name: "",
               code: "",
-              description: "",
+              description: "",endDate:""
             };
           } else {
             this.messageService.add({
@@ -1661,5 +1663,9 @@ export class AddProductComponent {
         form[fieldName] = generatedSku;
       }
     }
+  }
+
+  setExpiryDate(inputEvent:Event){
+    this.productForm.get("expiryDate")?.setValue(new Date((inputEvent.target as unknown as {value:string})?.value ?? this._defaultExpiryDate).toISOString())
   }
 }
