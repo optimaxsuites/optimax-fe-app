@@ -785,6 +785,7 @@ export class AddProductComponent {
           formValues.selectedBranch?.id || formValues.selectedBranch[0]?.id,
         createdBy: userName,
         createdDate: new Date().toISOString(),
+        expiryDate: formValues.expiryDate
       };
       const formData = new FormData();
       formData.append("product", JSON.stringify(product));
@@ -862,6 +863,7 @@ export class AddProductComponent {
           createdDate: new Date().toISOString(),
 
           productImages: formValues.productImages || [],
+          expiryDate: formValues.expiryDate
         };
         console.log(productPayload);
         const formData = new FormData();
