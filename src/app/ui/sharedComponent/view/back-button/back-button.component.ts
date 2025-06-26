@@ -1,11 +1,13 @@
-import { Location } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { Component, EventEmitter, Output } from '@angular/core';
 
 @Component({
   selector: 'app-back-button',
   templateUrl: './back-button.component.html',
   styleUrl: './back-button.component.scss',
-  standalone: true
+  standalone: true,
+  imports: [CommonModule]
+
 })
 export class BackButtonComponent {
 

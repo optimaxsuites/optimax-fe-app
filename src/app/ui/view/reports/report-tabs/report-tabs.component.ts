@@ -1,6 +1,27 @@
-import { Component } from '@angular/core';
+import { Component, Type } from '@angular/core';
 import { Router } from '@angular/router';
 import { ViewportScroller } from '@angular/common';
+import { AccountingReportsComponent } from '../../accounting-reports/accounting-reports.component';
+import { BalanceSheetComponent } from '../balance-sheet/balance-sheet.component';
+import { TaxSummaryComponent } from '../tax-summary/tax-summary.component';
+import { CashFlowComponent } from '../cash-flow/cash-flow.component';
+import { IncomeStatementComponent } from '../income-statement/income-statement.component';
+
+
+export interface TabConfig {
+  name: string;
+  component: any;
+  hasDropdown?: boolean;
+  dropdownOptions?: DropdownOption[]; 
+  role?: string
+}
+
+export interface DropdownOption {
+  label: string; 
+  action: string; 
+  component: Type<any>;
+}
+
 
 @Component({
   selector: 'app-report-tabs',
@@ -8,24 +29,33 @@ import { ViewportScroller } from '@angular/common';
   styleUrls: ['./report-tabs.component.scss']
 })
 export class  ReportTabsComponent {
-  constructor(private router: Router, private viewportScroller: ViewportScroller) {}
 
-  goToFinancialStatement(event: Event) {
-    event.preventDefault();
-    if (this.router.url === '/reports') {
-      setTimeout(() => {
-        this.viewportScroller.scrollToAnchor('financial-statement-section');
-      }, 0);
-    } else {
-      this.router.navigate(['/reports']).then(() => {
-        setTimeout(() => {
-          this.viewportScroller.scrollToAnchor('financial-statement-section');
-        }, 100);
-      });
-    }
-  }
 
-  isFinancialStatementActive(): boolean {
-    return this.router.url === '/reports';
-  }
+    tabsConfig: TabConfig[] = [
+        {
+          name: 'Financial Statement',
+          component: AccountingReportsComponent,
+        },
+  
+        {
+          name: 'Balance Sheet',
+          component: BalanceSheetComponent
+        },
+        { name: 'Income Statement', component: IncomeStatementComponent },
+        { name: 'Cash Flow', component: CashFlowComponent },
+        { name: 'Tax Summary', component: TaxSummaryComponent },
+
+    
+        // {
+        //   name: 'Settings',
+        //   component: null,
+        //   hasDropdown: true,
+        //   dropdownOptions: [
+        //     { label: 'Configurations', action: 'configurations', component: ConfigurationComponent },
+        //     { label: 'Users', action: 'users', component: ManageUsersComponent }
+        //   ]
+        // }
+      ];
+  
+
 }

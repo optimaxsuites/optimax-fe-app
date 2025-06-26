@@ -7,21 +7,18 @@ import { BalanceSheetComponent } from './ui/view/reports/balance-sheet/balance-s
 import { IncomeStatementComponent } from './ui/view/reports/income-statement/income-statement.component';
 import { CashFlowComponent } from './ui/view/reports/cash-flow/cash-flow.component';
 import { TaxSummaryComponent } from './ui/view/reports/tax-summary/tax-summary.component';
+import { ReportTabsComponent } from './ui/view/reports/report-tabs/report-tabs.component';
 
 
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'admin/accounting/dhwy7829iokdw',
+    redirectTo: 'admin/accounting/transaction/dhwy7829iokdw',
     pathMatch: 'full',
   },
   {
-      path: 'admin/admin/accounting/transaction/:uuid',
+      path: 'admin/accounting/transaction/:uuid',
       component: AccountingPageComponent,
-    },
-    {
-      path: 'admin/accounting/accounting-reports/:uuid',
-      component: AccountingReportsComponent,
     },
     {
       path: 'admin/quotation-form',
@@ -33,32 +30,32 @@ const routes: Routes = [
     },
 
      { 
-      path: 'reports',
-       component: AccountingReportsComponent 
+      path: 'admin/accounting/reports/:uuid',
+       component: ReportTabsComponent 
       },
-  { 
-    path: 'admin/reports/balance-sheet',
-     component: BalanceSheetComponent 
-    },
-  {
-     path: 'admin/reports/income-statement',
-     component: IncomeStatementComponent
-     },
-  {
-     path: 'admin/reports/cash-flow',
-      component: CashFlowComponent 
-    },
-  { 
-    path: 'admin/reports/tax-summary', 
-    component: TaxSummaryComponent
-   },
+  // { 
+  //   path: 'admin/accounting/reports/balance-sheet',
+  //    component: BalanceSheetComponent 
+  //   },
+  // {
+  //    path: 'admin/accounting/reports/income-statement',
+  //    component: IncomeStatementComponent
+  //    },
+  // {
+  //    path: 'admin/accounting/reports/cash-flow',
+  //     component: CashFlowComponent 
+  //   },
+  // { 
+  //   path: 'admin/accounting/reports/tax-summary', 
+  //   component: TaxSummaryComponent
+  //  },
   // { path: '', redirectTo: '/reports', pathMatch: 'full' }
 
     
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forChild(routes)],
   exports: [RouterModule]
 })
 export class AppRoutingModule { }

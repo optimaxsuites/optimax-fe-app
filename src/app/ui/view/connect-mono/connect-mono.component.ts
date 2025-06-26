@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import MonoConnect from '@mono.co/connect.js';
+// import MonoConnect from '@mono.co/connect.js';
 
 @Component({
   selector: 'app-connect-mono',

@@ -122,10 +122,11 @@ import { NgApexchartsModule } from 'ng-apexcharts';
     IncomeStatementComponent,
     CashFlowComponent,
     TaxSummaryComponent,
+    TransactionSideModalComponent
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     CommonModule,
     AppRoutingModule,
     FormsModule,
