@@ -333,8 +333,8 @@ export class AddProductComponent {
 				?.setValue(this.activeItem?.discount?.value);
 			this.productForm.get("image")?.setValue(this.activeItem?.imageUrl$);
 			this.productForm
-				.get("purchasePrice")
-				?.setValue(this.activeItem?.currentPurchasePrice);
+				.get("costPrice")
+				?.setValue(this.activeItem?.purchasePrice);
 		}
 
 		// if (this.userBranch !== 'headquarters') {
