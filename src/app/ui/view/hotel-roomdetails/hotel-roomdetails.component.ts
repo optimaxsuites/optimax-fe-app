@@ -30,12 +30,15 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
   @Output() statusChanged = new EventEmitter<Room>();
   @Input() selectedRoom: Room | null = null;
 
-  private subscriptions = new Subscription();
-  previousRoom: Room | null = null;
-  showDetails: boolean = false;
   detailedRoom: Room | null = null;
   currentGuest: Guest | null = null;
   currentBooking: Booking | null = null;
+  isLoading = false;
+
+  private subscriptions = new Subscription();
+  previousRoom: Room | null = null;
+  showDetails: boolean = false;
+
   isAdminView: boolean = true;
   openForm: boolean = false;
   openMessage: boolean = false;
@@ -44,7 +47,6 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
   openCheckinForm: boolean = false;
   openNote: boolean = false;
   openExtendStay: boolean = false;
-  isLoading: boolean = false;
 
   statusColors: any = {
     AVAILABLE: 'bg-emerald-500',
@@ -91,10 +93,49 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
     private hotelService: HotelserviceService
   ) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
     if (this.room) {
-      this.showRoomDetailsModal(this.room);
+      this.loadRoomDetails(this.room.id!);
     }
+  }
+
+  private loadRoomDetails(roomId: number): void {
+    this.isLoading = true;
+
+    forkJoin([
+      this.hotelService.getRoom(roomId),
+      this.hotelService.getBookings(),
+      this.hotelService.getGuests(),
+    ]).subscribe({
+      next: ([room, bookings, guests]) => {
+        this.detailedRoom = room;
+
+        // Find booking for this room
+        const booking = bookings.find((b) => b.rooms.includes(roomId));
+        if (booking) {
+          this.currentBooking = booking;
+
+          // Find guest for this booking
+          if (typeof booking.guest === 'number') {
+            this.currentGuest =
+              guests.find((g) => g.id === booking.guest) || null;
+          } else {
+            this.currentGuest = booking.guest as Guest;
+          }
+        }
+
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Error loading room details:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load room details',
+        });
+        this.isLoading = false;
+      },
+    });
   }
 
   ngOnDestroy() {
@@ -151,21 +192,6 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
       default:
         return '';
     }
-  }
-
-  showRoomDetailsModal(room: Room): void {
-    if (!room || !room.id) {
-      console.error('Invalid room provided');
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Invalid room information',
-      });
-      return;
-    }
-
-    this.isLoading = true;
-    this.loadCompleteRoomDetails(room.id);
   }
 
   private loadCompleteRoomDetails(roomId: number): void {
@@ -898,5 +924,67 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
   private updateRoomInUI(updatedRoom: Room): void {
     this.detailedRoom = updatedRoom;
     this.statusChanged.emit(updatedRoom);
+  }
+
+  showRoomDetailsModal(room: Room): void {
+    if (!room || !room.id) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Invalid room information',
+      });
+      return;
+    }
+
+    this.isLoading = true;
+    this.hotelService.getRoom(room.id).subscribe({
+      next: (detailedRoom) => {
+        this.detailedRoom = detailedRoom;
+        this.isLoading = false;
+
+        // Load additional data if needed (bookings, guests, etc.)
+        if (
+          detailedRoom.roomStatus === 'BOOKED' ||
+          detailedRoom.roomStatus === 'OCCUPIED'
+        ) {
+          this.loadBookingAndGuestDetails(room.id);
+        }
+      },
+      error: (err) => {
+        console.error('Error loading room details:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load room details',
+        });
+        this.isLoading = false;
+      },
+    });
+  }
+
+  private loadBookingAndGuestDetails(roomId: number): void {
+    forkJoin([
+      this.hotelService.getBookings(),
+      this.hotelService.getGuests(),
+    ]).subscribe({
+      next: ([bookings, guests]) => {
+        // Find booking for this room
+        const booking = bookings.find((b) => b.rooms.includes(roomId));
+        if (booking) {
+          this.currentBooking = booking;
+
+          // Find guest for this booking
+          if (typeof booking.guest === 'number') {
+            this.currentGuest =
+              guests.find((g) => g.id === booking.guest) || null;
+          } else {
+            this.currentGuest = booking.guest as Guest;
+          }
+        }
+      },
+      error: (err) => {
+        console.error('Error loading booking/guest details:', err);
+      },
+    });
   }
 }
