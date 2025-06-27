@@ -30,6 +30,12 @@ $black: #111827;
 // Typography
 $font-family: "Inter", "Segoe UI", Arial, sans-serif;
 
+.fieldset {
+  border: 1px solid $gray-light;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
 .container {
   max-width: 1440px;
   margin: 0 auto;
@@ -45,54 +51,7 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
   align-items: center;
   margin-bottom: 24px;
 }
-.header-controls {
-            display: flex;
-            gap: 10px;
-        }
 
-        .dropdown {
-            position: relative;
-            display: inline-block;
-        }
-
-        .dropdown-btn {
-            background-color: var(--white);
-            border: 1px solid var(--gray-light);
-            border-radius: 6px;
-            padding: 8px 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-        }
-
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: var(--white);
-            min-width: 160px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-            z-index: 1;
-            border-radius: 10px;
-            border: 1px solid var(--gray-light);
-        }
-
-        .dropdown-content a {
-            color: var(--secondary-dark);
-            padding: 8px 16px;
-            text-decoration: none;
-            display: block;
-            font-size: 14px;
-        }
-
-        .dropdown-content a:hover {
-            background-color: var(--gray);
-        }
-
-        .dropdown:hover .dropdown-content {
-            display: block;
-        }
 .main-title {
     font-size: 20px;
     font-weight: bold;
@@ -111,7 +70,7 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
   padding: 20px;
   border-radius: 8px;
   background-color: $white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(8, 6, 126, 0.05);
   border-left: 4px solid transparent;
 }
 
@@ -121,6 +80,10 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
 
 .metric-card.negative {
   border-left-color: $danger;
+}
+
+.negative {
+    color: $danger;
 }
 
 .metric-card.neutral {
@@ -290,41 +253,7 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
             }
         }
 
-        .summary-card {
-            padding: 16px;
-            border-radius: 8px;
-            background-color: var(--white);
-            border: 1px solid var(--gray-light);
-        }
-
-        .summary-card-title {
-            font-size: 14px;
-            color: var(--secondary);
-            margin-bottom: 8px;
-        }
-
-        .summary-card-value {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--primary-dark);
-            margin-bottom: 4px;
-        }
-
-        .summary-card-change {
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .positive {
-            color: var(--success-dark);
-        }
-
-        .negative {
-            color: var(--danger-dark);
-        }
-
+       
         .statement-body {
             padding: 24px;
         }
@@ -363,6 +292,7 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
 
         .item-value {
             font-weight: 500;
+            color: green;
         }
 
         .section-total {
@@ -546,3 +476,80 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
             color: var(--primary);
             border: 1px solid var(--primary);
         }
+
+       .modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  background: white;
+  width: 350px;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  padding: 15px 20px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.section {
+  margin: 15px 0;
+}
+
+.section label {
+  font-weight: 500;
+}
+
+.section select {
+  width: 100%;
+  padding: 6px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.cancel-btn, .apply-btn {
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+
+.cancel-btn {
+  background-color: #f0f0f0;
+}
+
+.apply-btn {
+  background-color: #0f3f4f;
+  color: white;
+} 
