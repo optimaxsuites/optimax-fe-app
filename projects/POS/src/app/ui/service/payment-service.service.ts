@@ -24,13 +24,16 @@ export class PaymentServiceService {
 		subTotal: number;
 	}) {
 		const {
-			cartItems,
+			cartItems: inputCartItems,
 			discount,
 			paymentModes,
 			subTotal: subtotal,
 			tax,
 			total,
 		} = args;
+
+		// Use a clone to ensure our mutations don't affect anything important
+		const cartItems = structuredClone(inputCartItems);
 
 		if (cartItems.length === 0) return;
 
