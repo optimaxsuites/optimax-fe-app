@@ -59,11 +59,11 @@ export class ProductHelperService {
 		const properCreatedDate =
 			typeof createdDate === "string"
 				? createdDate
-				: arrayToDate(createdDate).toISOString();
+				: arrayToDate(createdDate ?? [0]).toISOString();
 		const properExpiryDate =
 			typeof expiryDate === "string"
 				? expiryDate
-				: arrayToDate(expiryDate).toISOString();
+				: arrayToDate(expiryDate ?? [0]).toISOString();
 
 		if (!prioritizeSelectedVariants || !selectedVariant)
 			return {
@@ -125,6 +125,14 @@ export class ProductHelperService {
 		return variant ? variant.price : parseFloat(product.sellingPrice ?? "0");
 	}
 
+	/** Gets the amount in stock of the product / variant */
+	getQuantity(
+		product: ProductData,
+		variant = product.selectedVariants?.[0],
+	): number {
+		return variant ? variant.quantity : (product.quantity ?? 1);
+	}
+
 	/** Gets the actual value of the tax */
 	getTax(
 		product: ProductData,
@@ -161,7 +169,7 @@ export class ProductHelperService {
 	): { isVariant: true; variants: VariantDTO[] } | { isVariant: false } {
 		const { selectedVariants: variants } = product;
 
-		if (variants) return { isVariant: true, variants };
+		if (variants?.length) return { isVariant: true, variants };
 		else return { isVariant: false };
 	}
 }
