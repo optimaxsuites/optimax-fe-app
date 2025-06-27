@@ -1,237 +1,309 @@
-import { Component, OnInit, signal, computed } from "@angular/core";
-import { ProductData, VariantDTO } from "../../models/interface";
-import { PosServiceService } from "../../service/pos-service.service";
-import { ImageCacheService } from "../../service/image-cache.service";
+import { Component, computed, OnInit, signal } from "@angular/core";
 import Fuse, { IFuseOptions } from "fuse.js";
+import { ProductData, VariantDTO } from "../../models/interface";
+import { ImageCacheService } from "../../service/image-cache.service";
+import { PaymentServiceService } from "../../service/payment-service.service";
+import { PosServiceService } from "../../service/pos-service.service";
 import { ProductHelperService } from "../../service/product-helper.service";
 
 /** Indexed by each `category`'s name */
 type ProductDataMap = Map<string, ProductData[]>;
 
 type ProductAndVariantCombinedId =
-  `${ProductData["id"]}-${Exclude<ProductData["selectedVariants"], undefined>[0]["id"]}`;
+	`${ProductData["id"]}-${Exclude<ProductData["selectedVariants"], undefined>[0]["id"]}`;
+
+type ConvertedCartProducts = {
+	products: ProductData[];
+	subTotal: number;
+	tax: number;
+	discount: number;
+	total: number;
+};
 
 @Component({
-  selector: "app-pos-store",
-  templateUrl: "./pos-store.component.html",
-  styleUrl: "./pos-store.component.scss",
+	selector: "app-pos-store",
+	templateUrl: "./pos-store.component.html",
+	styleUrl: "./pos-store.component.scss",
 })
 export class PosStoreComponent implements OnInit {
-  private static readonly _fuseOptions: IFuseOptions<ProductData> = {
-    keys: [
-      { name: "sku", weight: 2 },
-      { name: "name", weight: 1.5 },
-      "description",
-      "category",
-    ],
-    includeScore: true,
-    threshold: 0.333, // Lower threshold for less fuzzy matching
-  };
+	private static readonly _fuseOptions: IFuseOptions<ProductData> = {
+		keys: [
+			{ name: "sku", weight: 2 },
+			{ name: "name", weight: 1.5 },
+			"description",
+			"category",
+		],
+		includeScore: true,
+		threshold: 0.333, // Lower threshold for less fuzzy matching
+	};
 
-  private _allProducts: ProductData[] = [];
+	private _allProducts: ProductData[] = [];
 
-  /** Populated in `ngOnInit` */
-  productData = signal<ProductDataMap>(new Map());
+	/** Populated in `ngOnInit` */
+	productData = signal<ProductDataMap>(new Map());
 
-  readonly defaultCategory = "All";
+	readonly defaultCategory = "All";
 
-  /** Populated in `ngOnInit` */
-  selectedCategory = signal(this.defaultCategory);
+	/** Populated in `ngOnInit` */
+	selectedCategory = signal(this.defaultCategory);
 
-  private _productsInChosenCategory = computed(
-    () => this.productData().get(this.selectedCategory()) ?? this._allProducts,
-  );
+	private _productsInChosenCategory = computed(
+		() => this.productData().get(this.selectedCategory()) ?? this._allProducts,
+	);
 
-  searchText = signal("");
+	searchText = signal("");
 
-  private readonly _fuse = new Fuse<ProductData>(
-    this._productsInChosenCategory(),
-    PosStoreComponent._fuseOptions,
-  );
+	private readonly _fuse = new Fuse<ProductData>(
+		this._productsInChosenCategory(),
+		PosStoreComponent._fuseOptions,
+	);
 
-  // TODO: add extra dependencies like search filtering
-  filteredProducts = computed(() => {
-    if (!this.searchText() || !this._productsInChosenCategory().length) {
-      return this._productsInChosenCategory();
-    }
-    this._fuse.setCollection(this._productsInChosenCategory());
+	// TODO: add extra dependencies like search filtering
+	filteredProducts = computed(() => {
+		if (!this.searchText() || !this._productsInChosenCategory().length) {
+			return this._productsInChosenCategory();
+		}
+		this._fuse.setCollection(this._productsInChosenCategory());
 
-    const searchResults = this._fuse
-      .search(this.searchText())
-      .map(({ item }) => item);
+		const searchResults = this._fuse
+			.search(this.searchText())
+			.map(({ item }) => item);
 
-    if (!searchResults.length) return this._productsInChosenCategory();
-    else return searchResults;
-  });
+		if (!searchResults.length) return this._productsInChosenCategory();
+		else return searchResults;
+	});
 
-  didSearchHaveResults = computed<"no_search_yet" | "no" | "yes">(() => {
-    if (!this.searchText() || !this._productsInChosenCategory().length)
-      return "no_search_yet";
-    else if (this.filteredProducts() == this._productsInChosenCategory())
-      return "no";
-    else return "yes";
-  });
+	didSearchHaveResults = computed<"no_search_yet" | "no" | "yes">(() => {
+		if (!this.searchText() || !this._productsInChosenCategory().length)
+			return "no_search_yet";
+		else if (this.filteredProducts() === this._productsInChosenCategory())
+			return "no";
+		else return "yes";
+	});
 
-  /** This is just a way for me to detect whether the device is mobile and in portrait mode */
-  readonly shouldCartHaveViewportWidth =
-    window.innerWidth < 640 &&
-    window.matchMedia("(orientation: portrait)").matches;
+	/** This is just a way for me to detect whether the device is mobile and in portrait mode */
+	readonly shouldCartHaveViewportWidth =
+		window.innerWidth < 640 &&
+		window.matchMedia("(orientation: portrait)").matches;
 
-  isCartOpen = false;
+	isCartOpen = false;
 
-  isVariantModalOpen = false;
+	isVariantModalOpen = false;
 
-  /** Will have a value when `isVariantModalOpen` is true */
-  selectedProduct: ProductData | null = null;
+	/** Will have a value when `isVariantModalOpen` is true */
+	selectedProduct: ProductData | null = null;
 
-  /** Each index is either the number id of a product: `234` or the combined string literal of both the id and a selected variant: `"234-1"`, and it holds a **clone** of the product as well as the quantity. Note that if a string literal representing the product id and variant id is present, then the `selectedVariants` property will be populated with 1 variant. */
-  cartProducts = signal(
-    new Map<
-      ProductData["id"] | ProductAndVariantCombinedId,
-      { product: ProductData; quantity: number; isVariant: boolean }
-    >(),
-  );
+	/** Each index is either the number id of a product: `234` or the combined string literal of both the id and a selected variant: `"234-1"`, and it holds a **clone** of the product as well as the quantity. Note that if a string literal representing the product id and variant id is present, then the `selectedVariants` property will be populated with 1 variant. */
+	cartProducts = signal(
+		new Map<
+			ProductData["id"] | ProductAndVariantCombinedId,
+			{ product: ProductData; quantity: number; isVariant: boolean }
+		>(),
+	);
 
-  isCartEmpty = computed(() => !this.cartProducts().size);
+	isCartEmpty = computed(() => !this.cartProducts().size);
 
-  constructor(
-    private _posService: PosServiceService,
-    private _imgCacheService: ImageCacheService,
-    private _productHelper: ProductHelperService,
-  ) {}
+	/** For easily connecting with the payment service */
+	convertedCartProducts = computed<ConvertedCartProducts>(() =>
+		Array.from(this.cartProducts()).reduce<ConvertedCartProducts>(
+			(
+				{
+					discount: accDiscount,
+					products: accProducts,
+					subTotal: accSubTotal,
+					tax: accTax,
+					total: accTotal,
+				},
+				[_, { product: currProduct, quantity: currQuantity }],
+			) => {
+				accProducts.push(...Array(currQuantity).fill(currProduct));
+				accDiscount +=
+					this._productHelper.getDiscount(currProduct) * currQuantity;
+				accSubTotal += this._productHelper.getPrice(currProduct) * currQuantity;
+				accTax += this._productHelper.getTax(currProduct) * currQuantity;
+				accTotal += this._productHelper.getRate(currProduct) * currQuantity;
 
-  ngOnInit(): void {
-    // Populate the product data
-    this._posService.getProducts().subscribe((data) => {
-      this._allProducts = data;
+				return {
+					products: accProducts,
+					subTotal: accSubTotal,
+					tax: accTax,
+					discount: accDiscount,
+					total: accTotal,
+				};
+			},
+			{ products: [], subTotal: 0, tax: 0, discount: 0, total: 0 },
+		),
+	);
 
-      data.forEach((iteratedProduct) => {
-        const categoryName = iteratedProduct.productCategory.name;
+	isPaymentModalOpen = false;
 
-        if (!this.productData().has(categoryName)) {
-          this.productData.update((oldMap) =>
-            new Map(oldMap).set(categoryName, [iteratedProduct]),
-          );
-        } else {
-          this.productData.update((oldMap) => {
-            const existingProductArray = oldMap.get(categoryName)!;
-            existingProductArray.push(iteratedProduct);
+	constructor(
+		private _posService: PosServiceService,
+		private _imgCacheService: ImageCacheService,
+		private _productHelper: ProductHelperService,
+		private _paymentService: PaymentServiceService,
+	) {}
 
-            return new Map(oldMap).set(categoryName, existingProductArray);
-          });
-        }
-      });
-    });
-  }
+	ngOnInit(): void {
+		// Populate the product data
+		this._posService.getProducts().subscribe((data) => {
+			this._allProducts = data;
 
-  getProductImage(product: ProductData) {
-    return this._imgCacheService.getProductImage(product);
-  }
+			data.forEach((iteratedProduct) => {
+				const categoryName = iteratedProduct.productCategory.name;
 
-  getProductAndVariantData(
-    ...args: Parameters<typeof this._productHelper.getCombinedData>
-  ) {
-    return this._productHelper.getCombinedData(...args);
-  }
+				if (!this.productData().has(categoryName)) {
+					this.productData.update((oldMap) =>
+						new Map(oldMap).set(categoryName, [iteratedProduct]),
+					);
+				} else {
+					this.productData.update((oldMap) => {
+						const existingProductArray = oldMap.get(categoryName);
 
-  changeCategory(category: string) {
-    this.selectedCategory.set(category);
-  }
+						if (!existingProductArray) return new Map(oldMap);
 
-  changeSearchInput(text: string) {
-    this.searchText.set(text);
-  }
+						existingProductArray.push(iteratedProduct);
 
-  //TODO
-  addToCart(
-    product: ProductData,
-    /** If given, the variant's data would overwrite relevant product fields. */
-    variant?: VariantDTO,
-  ) {
-    this.cartProducts.update((previousMap) => {
-      const clonedProductToAdd = structuredClone(product);
+						return new Map(oldMap).set(categoryName, existingProductArray);
+					});
+				}
+			});
+		});
+	}
 
-      if (!variant) {
-        if (!previousMap.has(product.id)) {
-          clonedProductToAdd.selectedVariants = [];
+	getProductImage(product: ProductData) {
+		return this._imgCacheService.getProductImage(product);
+	}
 
-          previousMap.set(product.id, {
-            isVariant: false,
-            product: clonedProductToAdd,
-            quantity: 1,
-          });
-        } else {
-          previousMap.set(product.id, {
-            isVariant: false,
-            product: clonedProductToAdd,
-            quantity: previousMap.get(product.id)!.quantity + 1,
-          });
-        }
-      } else {
-        const combinedId: ProductAndVariantCombinedId = `${product.id}-${variant.id}`;
-        clonedProductToAdd.selectedVariants = [variant];
+	getProductAndVariantData(
+		...args: Parameters<typeof this._productHelper.getCombinedData>
+	) {
+		return this._productHelper.getCombinedData(...args);
+	}
 
-        if (!previousMap.has(combinedId)) {
-          previousMap.set(combinedId, {
-            isVariant: true,
-            product: clonedProductToAdd,
-            quantity: 1,
-          });
-        } else {
-          previousMap.set(combinedId, {
-            isVariant: true,
-            product: clonedProductToAdd,
-            quantity: previousMap.get(combinedId)!.quantity + 1,
-          });
-        }
-      }
-      return new Map(previousMap);
-    });
-  }
+	changeCategory(category: string) {
+		this.selectedCategory.set(category);
+	}
 
-  reduceQuantityInCart(
-    /** If a variant must be reduced / removed, ensure that `selectedVariants` contains a single instance of the aforementioned variant. */
-    product: ProductData,
-  ) {
-    this.cartProducts.update((previousMap) => {
-      const idToUse: ProductData["id"] | ProductAndVariantCombinedId = product
-        .selectedVariants?.[0]
-        ? `${product.id}-${product.selectedVariants[0].id}`
-        : product.id;
+	changeSearchInput(text: string) {
+		this.searchText.set(text);
+	}
 
-      if (previousMap.has(idToUse)) {
-        const originalQuantity = previousMap.get(idToUse)!.quantity;
+	//TODO
+	addToCart(
+		product: ProductData,
+		/** If given, the variant's data would overwrite relevant product fields. */
+		variant?: VariantDTO,
+	) {
+		this.cartProducts.update((previousMap) => {
+			const clonedProductToAdd = structuredClone(product);
 
-        if (originalQuantity > 1) {
-          previousMap.set(idToUse, {
-            isVariant: previousMap.get(idToUse)!.isVariant,
-            product,
-            quantity: originalQuantity - 1,
-          });
-        } else {
-          previousMap.delete(idToUse);
-        }
-      }
+			if (!variant) {
+				if (!previousMap.has(product.id)) {
+					clonedProductToAdd.selectedVariants = [];
 
-      if (!previousMap.size) this.isCartOpen = false;
+					previousMap.set(product.id, {
+						isVariant: false,
+						product: clonedProductToAdd,
+						quantity: 1,
+					});
+				} else {
+					previousMap.set(product.id, {
+						isVariant: false,
+						product: clonedProductToAdd,
+						quantity: previousMap.get(product.id)!.quantity + 1,
+					});
+				}
+			} else {
+				const combinedId: ProductAndVariantCombinedId = `${product.id}-${variant.id}`;
+				clonedProductToAdd.selectedVariants = [variant];
 
-      return new Map(previousMap);
-    });
-  }
+				if (!previousMap.has(combinedId)) {
+					previousMap.set(combinedId, {
+						isVariant: true,
+						product: clonedProductToAdd,
+						quantity: 1,
+					});
+				} else {
+					previousMap.set(combinedId, {
+						isVariant: true,
+						product: clonedProductToAdd,
+						quantity: previousMap.get(combinedId)!.quantity + 1,
+					});
+				}
+			}
+			return new Map(previousMap);
+		});
+	}
 
-  productQuantityInCart(productToCheck: ProductData): number {
-    let countedQuantity = 0;
+	reduceQuantityInCart(
+		/** If a variant must be reduced / removed, ensure that `selectedVariants` contains a single instance of the aforementioned variant. */
+		product: ProductData,
+	) {
+		this.cartProducts.update((previousMap) => {
+			const idToUse: ProductData["id"] | ProductAndVariantCombinedId = product
+				.selectedVariants?.[0]
+				? `${product.id}-${product.selectedVariants[0].id}`
+				: product.id;
 
-    this.cartProducts().forEach(({ product, quantity }) => {
-      if (product.id == productToCheck.id) countedQuantity += quantity;
-    });
+			if (previousMap.has(idToUse)) {
+				const originalQuantity = previousMap.get(idToUse)!.quantity;
 
-    return countedQuantity;
-  }
+				if (originalQuantity > 1) {
+					previousMap.set(idToUse, {
+						isVariant: previousMap.get(idToUse)!.isVariant,
+						product,
+						quantity: originalQuantity - 1,
+					});
+				} else {
+					previousMap.delete(idToUse);
+				}
+			}
 
-  strToNum(string?: string) {
-    const convertedRes = parseFloat(string ?? "0");
+			if (!previousMap.size) this.isCartOpen = false;
 
-    return isNaN(convertedRes) ? 0 : convertedRes;
-  }
+			return new Map(previousMap);
+		});
+	}
+
+	productQuantityInCart(productToCheck: ProductData): number {
+		let countedQuantity = 0;
+
+		this.cartProducts().forEach(({ product, quantity }) => {
+			if (product.id === productToCheck.id) countedQuantity += quantity;
+		});
+
+		return countedQuantity;
+	}
+
+	strToNum(string?: string) {
+		const convertedRes = parseFloat(string ?? "0");
+
+		return Number.isNaN(convertedRes) ? 0 : convertedRes;
+	}
+
+	processPayment(
+		paymentModes: Parameters<
+			PaymentServiceService["processPayment"]
+		>[0]["paymentModes"],
+	) {
+		const {
+			discount,
+			products: cartItems,
+			subTotal,
+			tax,
+			total,
+		} = this.convertedCartProducts();
+
+		// console.log("Cart Products are:", this.convertedCartProducts());
+
+		this._paymentService.processPayment({
+			paymentModes,
+			cartItems,
+			discount,
+			subTotal,
+			tax,
+			total,
+		});
+	}
 }
