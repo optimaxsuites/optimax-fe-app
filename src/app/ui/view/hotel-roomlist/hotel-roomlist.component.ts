@@ -139,18 +139,6 @@ export class HotelRoomlistComponent implements OnInit {
     this.selectedBookingDetails = null;
   }
 
-  bookSelectedRooms(): void {
-    if (this.selectedRooms.length > 0) {
-      this.bookingFormRequested.emit(this.selectedRooms);
-    } else {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'No Rooms Selected',
-        detail: 'Please select at least one room to book',
-      });
-    }
-  }
-
   getFilterClass(type: string): string {
     const baseClasses =
       'p-4 font-bold text-xl rounded-xl cursor-pointer transition-all duration-300 flex items-center justify-between';
@@ -449,5 +437,20 @@ export class HotelRoomlistComponent implements OnInit {
 
     console.log('Opening room details for:', room);
     this.selectRoom(room);
+  }
+
+  bookSelectedRooms(): void {
+    console.log('bookSelectedRooms called, selectedRooms:', this.selectedRooms);
+    if (this.selectedRooms.length > 0) {
+      this.bookingFormRequested.emit(this.selectedRooms);
+      this.openForm = true; // Make sure this is set
+      console.log('openForm set to:', this.openForm);
+    } else {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No Rooms Selected',
+        detail: 'Please select at least one room to book',
+      });
+    }
   }
 }
