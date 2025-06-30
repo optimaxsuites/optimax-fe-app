@@ -80,14 +80,41 @@ export class HotelRoomlistComponent implements OnInit {
   }
 
   // selectRoom(room: Room): void {
-  //   this.selectedRoom = room;
+  //   this.selectedRoomForDetails = room;
+  //   this.showRoomDetails = true;
   //   this.roomSelected.emit(room);
   // }
 
-  selectRoom(room: Room): void {
-    this.selectedRoomForDetails = room;
-    this.showRoomDetails = true;
-    this.roomSelected.emit(room);
+  public loadAllData(): void {
+    this.isLoading = true;
+
+    forkJoin([
+      this.hotelService.getRooms(),
+      this.hotelService.getRoomTypes(),
+      this.hotelService.getBookings(),
+      this.hotelService.getGuests(),
+    ]).subscribe({
+      next: ([rooms, roomTypes, bookings, guests]) => {
+        this.rooms = this.enrichRoomsWithGuestAndBookingData(
+          rooms,
+          bookings,
+          guests
+        );
+        this.bookings = bookings;
+        this.guests = guests;
+        this.roomTypes = ['All Rooms', ...roomTypes.map((rt) => rt.name)];
+        this.applyFilters();
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load data',
+        });
+        this.isLoading = false;
+      },
+    });
   }
 
   closeRoomDetails(): void {
@@ -107,10 +134,13 @@ export class HotelRoomlistComponent implements OnInit {
     this.openRoom = !this.openRoom;
   }
 
+<<<<<<< HEAD
   openRoomDetails(room: Room): void {
     this.roomSelected.emit(room);
   }
 
+=======
+>>>>>>> ce56727290ad25e1eef5051c5dd4b52053407b9a
   closeBookingDetails(): void {
     this.showBookingDetails = false;
     this.selectedBookingDetails = null;
@@ -251,37 +281,37 @@ export class HotelRoomlistComponent implements OnInit {
     this.applyFilters();
   }
 
-  loadAllData(): void {
-    this.isLoading = true;
+  // loadAllData(): void {
+  //   this.isLoading = true;
 
-    forkJoin([
-      this.hotelService.getRooms(),
-      this.hotelService.getRoomTypes(),
-      this.hotelService.getBookings(),
-      this.hotelService.getGuests(),
-    ]).subscribe({
-      next: ([rooms, roomTypes, bookings, guests]) => {
-        this.rooms = this.enrichRoomsWithGuestAndBookingData(
-          rooms,
-          bookings,
-          guests
-        );
-        this.bookings = bookings;
-        this.guests = guests;
-        this.roomTypes = ['All Rooms', ...roomTypes.map((rt) => rt.name)];
-        this.applyFilters();
-        this.isLoading = false;
-      },
-      error: (err) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load data',
-        });
-        this.isLoading = false;
-      },
-    });
-  }
+  //   forkJoin([
+  //     this.hotelService.getRooms(),
+  //     this.hotelService.getRoomTypes(),
+  //     this.hotelService.getBookings(),
+  //     this.hotelService.getGuests(),
+  //   ]).subscribe({
+  //     next: ([rooms, roomTypes, bookings, guests]) => {
+  //       this.rooms = this.enrichRoomsWithGuestAndBookingData(
+  //         rooms,
+  //         bookings,
+  //         guests
+  //       );
+  //       this.bookings = bookings;
+  //       this.guests = guests;
+  //       this.roomTypes = ['All Rooms', ...roomTypes.map((rt) => rt.name)];
+  //       this.applyFilters();
+  //       this.isLoading = false;
+  //     },
+  //     error: (err) => {
+  //       this.messageService.add({
+  //         severity: 'error',
+  //         summary: 'Error',
+  //         detail: 'Failed to load data',
+  //       });
+  //       this.isLoading = false;
+  //     },
+  //   });
+  // }
 
   private enrichRoomsWithGuestAndBookingData(
     rooms: Room[],
@@ -406,5 +436,25 @@ export class HotelRoomlistComponent implements OnInit {
         });
       },
     });
+  }
+
+  selectRoom(room: Room): void {
+    console.log('Selecting room:', room);
+    this.selectedRoom = room;
+    this.roomSelected.emit(room);
+  }
+
+  openRoomDetails(room: Room): void {
+    if (!room || !room.id) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Invalid room information',
+      });
+      return;
+    }
+
+    console.log('Opening room details for:', room);
+    this.selectRoom(room);
   }
 }
