@@ -1,5 +1,5 @@
 import { Component, ViewChild } from '@angular/core';
-import { HotelFormComponent } from '../hotel-form/hotel-form.component';
+
 import { HotelRoomdetailsComponent } from '../hotel-roomdetails/hotel-roomdetails.component';
 import { HotelRoomlistComponent } from '../hotel-roomlist/hotel-roomlist.component';
 import { Room } from '../../hospitality/hotelservice.service';
