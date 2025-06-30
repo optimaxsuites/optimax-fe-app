@@ -13,11 +13,11 @@ import { ReportTabsComponent } from './ui/view/reports/report-tabs/report-tabs.c
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'admin/accounting/transaction/dhwy7829iokdw',
+    redirectTo: 'transaction/dhwy7829iokdw',
     pathMatch: 'full',
   },
   {
-      path: 'admin/accounting/transaction/:uuid',
+      path: 'transaction/:uuid',
       component: AccountingPageComponent,
     },
     {
@@ -30,23 +30,23 @@ const routes: Routes = [
     },
 
      { 
-      path: 'admin/accounting/reports/:uuid',
+      path: 'reports/:uuid',
        component: ReportTabsComponent 
       },
   // { 
-  //   path: 'admin/accounting/reports/balance-sheet',
+  //   path: 'reports/balance-sheet',
   //    component: BalanceSheetComponent 
   //   },
   // {
-  //    path: 'admin/accounting/reports/income-statement',
+  //    path: 'reports/income-statement',
   //    component: IncomeStatementComponent
   //    },
   // {
-  //    path: 'admin/accounting/reports/cash-flow',
+  //    path: 'reports/cash-flow',
   //     component: CashFlowComponent 
   //   },
   // { 
-  //   path: 'admin/accounting/reports/tax-summary', 
+  //   path: 'reports/tax-summary', 
   //   component: TaxSummaryComponent
   //  },
   // { path: '', redirectTo: '/reports', pathMatch: 'full' }
