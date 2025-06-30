@@ -2,7 +2,10 @@
   <p-toast></p-toast>
 
   <!-- Main content area -->
-  <main class="flex-1 p-8 overflow-y-auto">
+  <main
+    class="flex-1 p-8 overflow-y-auto"
+    [ngClass]="{ hidden: showRoomDetails }"
+  >
     <app-hotel-roomlist
       (roomSelected)="handleRoomSelected($event)"
       (bookingFormRequested)="onBookingFormRequested($event)"
@@ -11,10 +14,12 @@
   </main>
 
   <!-- Room detail -->
-  <app-hotel-roomdetails
-    #roomDetails
-    [room]="selectedRoom"
-    (back)="onBack()"
-    (statusChanged)="onRoomStatusChanged($event)"
-  ></app-hotel-roomdetails>
+  <div [ngClass]="{ hidden: !showRoomDetails }">
+    <app-hotel-roomdetails
+      [room]="selectedRoom"
+      (back)="onBack()"
+      (statusChanged)="onRoomStatusChanged($event)"
+    >
+    </app-hotel-roomdetails>
+  </div>
 </div>
