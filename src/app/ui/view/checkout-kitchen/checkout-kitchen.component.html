@@ -657,7 +657,8 @@
           (click)="
             setOrderNote('');
             isCreateOrderModalOpen.set(false);
-            isEditingOrder = false
+            isEditingOrder = false;
+            clearTableData()
           "
         ></button>
         <button
