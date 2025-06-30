@@ -17,9 +17,7 @@ export class HotelCheckoutComponent {
   showRoomDetails: boolean = false;
 
   handleRoomSelected(room: Room): void {
-    if (!room) return;
 
-    console.log('Room selected:', room);
     this.selectedRoom = room;
     this.showRoomDetails = true;
 
@@ -30,6 +28,8 @@ export class HotelCheckoutComponent {
       }
     }, 0);
   }
+
+
 
   onRoomStatusChanged(updatedRoom: Room): void {
     if (!updatedRoom) return;

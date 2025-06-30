@@ -134,6 +134,7 @@ export class HotelRoomlistComponent implements OnInit {
     this.openRoom = !this.openRoom;
   }
 
+
   closeBookingDetails(): void {
     this.showBookingDetails = false;
     this.selectedBookingDetails = null;
