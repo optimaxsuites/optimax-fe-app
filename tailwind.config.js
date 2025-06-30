@@ -43,6 +43,7 @@ module.exports = {
         xl: '1.3em',
         xxl: '1.5em',
       },
+      
     },
   },
   plugins: [],
