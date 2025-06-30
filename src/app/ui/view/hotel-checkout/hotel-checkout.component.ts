@@ -1,5 +1,5 @@
 import { Component, ViewChild } from '@angular/core';
-import { HotelFormComponent } from '../hotel-form/hotel-form.component';
+
 import { HotelRoomdetailsComponent } from '../hotel-roomdetails/hotel-roomdetails.component';
 import { HotelRoomlistComponent } from '../hotel-roomlist/hotel-roomlist.component';
 import { Room } from '../../hospitality/hotelservice.service';
@@ -11,34 +11,55 @@ import { Room } from '../../hospitality/hotelservice.service';
 })
 export class HotelCheckoutComponent {
   @ViewChild(HotelRoomdetailsComponent) roomDetails!: HotelRoomdetailsComponent;
+  @ViewChild(HotelRoomlistComponent) roomList!: HotelRoomlistComponent;
+
   selectedRoom: Room | null = null;
+  showRoomDetails: boolean = false;
 
   handleRoomSelected(room: Room): void {
     if (!room) return;
 
+    console.log('Room selected:', room);
     this.selectedRoom = room;
-    if (this.roomDetails) {
-      this.roomDetails.showRoomDetailsModal(room);
-    }
+    this.showRoomDetails = true;
+
+    // Use setTimeout to ensure the view is updated before calling the method
+    setTimeout(() => {
+      if (this.roomDetails) {
+        this.roomDetails.loadRoomDetails(room.id!);
+      }
+    }, 0);
   }
 
   onRoomStatusChanged(updatedRoom: Room): void {
     if (!updatedRoom) return;
 
+    console.log('Room status changed:', updatedRoom);
     this.selectedRoom = updatedRoom;
-    if (this.roomDetails) {
-      this.roomDetails.showRoomDetailsModal(updatedRoom);
+
+    // Refresh the room list to show updated status
+    if (this.roomList) {
+      this.roomList.loadAllData();
+    }
+
+    // Update room details if currently showing
+    if (this.showRoomDetails && this.roomDetails) {
+      this.roomDetails.loadRoomDetails(updatedRoom.id!);
     }
   }
 
   onBookingFormRequested(rooms: Room[]): void {
-    // You can handle the booking form request here
-    // For example, open a booking form modal with the selected rooms
     console.log('Booking form requested for rooms:', rooms);
-    // You might want to implement a booking form component and show it here
+    // Implement booking form logic here
   }
 
   onBack(): void {
+    this.selectedRoom = null;
+    this.showRoomDetails = false;
+  }
+
+  closeRoomDetails(): void {
+    this.showRoomDetails = false;
     this.selectedRoom = null;
   }
 }

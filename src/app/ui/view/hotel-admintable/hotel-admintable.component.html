@@ -20,7 +20,7 @@
     >
       <!-- Add Room Button -->
       <button
-        class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors shadow-md"
+        class="flex items-center gap-2 bg-customGreen hover:bg-customGreenHover text-white px-4 py-2 rounded-lg transition-colors shadow-md"
         (click)="navigateToCreateRoom()"
       >
         <i class="pi pi-plus"></i>
@@ -234,7 +234,7 @@
             </div>
           </td>
           <td class="p-4 border-b font-medium">
-            {{ getRoomTypeName(room.roomType) }}
+            {{ room.roomType.name }}
           </td>
           <td class="p-4 border-b">{{ room.floor }}</td>
           <td class="p-4 border-b">

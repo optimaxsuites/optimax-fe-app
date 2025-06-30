@@ -80,14 +80,41 @@ export class HotelRoomlistComponent implements OnInit {
   }
 
   // selectRoom(room: Room): void {
-  //   this.selectedRoom = room;
+  //   this.selectedRoomForDetails = room;
+  //   this.showRoomDetails = true;
   //   this.roomSelected.emit(room);
   // }
 
-  selectRoom(room: Room): void {
-    this.selectedRoomForDetails = room;
-    this.showRoomDetails = true;
-    this.roomSelected.emit(room);
+  public loadAllData(): void {
+    this.isLoading = true;
+
+    forkJoin([
+      this.hotelService.getRooms(),
+      this.hotelService.getRoomTypes(),
+      this.hotelService.getBookings(),
+      this.hotelService.getGuests(),
+    ]).subscribe({
+      next: ([rooms, roomTypes, bookings, guests]) => {
+        this.rooms = this.enrichRoomsWithGuestAndBookingData(
+          rooms,
+          bookings,
+          guests
+        );
+        this.bookings = bookings;
+        this.guests = guests;
+        this.roomTypes = ['All Rooms', ...roomTypes.map((rt) => rt.name)];
+        this.applyFilters();
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load data',
+        });
+        this.isLoading = false;
+      },
+    });
   }
 
   closeRoomDetails(): void {
@@ -107,26 +134,9 @@ export class HotelRoomlistComponent implements OnInit {
     this.openRoom = !this.openRoom;
   }
 
-  openRoomDetails(room: Room): void {
-    if (!room) return;
-    this.roomSelected.emit(room);
-  }
-
   closeBookingDetails(): void {
     this.showBookingDetails = false;
     this.selectedBookingDetails = null;
-  }
-
-  bookSelectedRooms(): void {
-    if (this.selectedRooms.length > 0) {
-      this.bookingFormRequested.emit(this.selectedRooms);
-    } else {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'No Rooms Selected',
-        detail: 'Please select at least one room to book',
-      });
-    }
   }
 
   getFilterClass(type: string): string {
@@ -252,37 +262,37 @@ export class HotelRoomlistComponent implements OnInit {
     this.applyFilters();
   }
 
-  loadAllData(): void {
-    this.isLoading = true;
+  // loadAllData(): void {
+  //   this.isLoading = true;
 
-    forkJoin([
-      this.hotelService.getRooms(),
-      this.hotelService.getRoomTypes(),
-      this.hotelService.getBookings(),
-      this.hotelService.getGuests(),
-    ]).subscribe({
-      next: ([rooms, roomTypes, bookings, guests]) => {
-        this.rooms = this.enrichRoomsWithGuestAndBookingData(
-          rooms,
-          bookings,
-          guests
-        );
-        this.bookings = bookings;
-        this.guests = guests;
-        this.roomTypes = ['All Rooms', ...roomTypes.map((rt) => rt.name)];
-        this.applyFilters();
-        this.isLoading = false;
-      },
-      error: (err) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load data',
-        });
-        this.isLoading = false;
-      },
-    });
-  }
+  //   forkJoin([
+  //     this.hotelService.getRooms(),
+  //     this.hotelService.getRoomTypes(),
+  //     this.hotelService.getBookings(),
+  //     this.hotelService.getGuests(),
+  //   ]).subscribe({
+  //     next: ([rooms, roomTypes, bookings, guests]) => {
+  //       this.rooms = this.enrichRoomsWithGuestAndBookingData(
+  //         rooms,
+  //         bookings,
+  //         guests
+  //       );
+  //       this.bookings = bookings;
+  //       this.guests = guests;
+  //       this.roomTypes = ['All Rooms', ...roomTypes.map((rt) => rt.name)];
+  //       this.applyFilters();
+  //       this.isLoading = false;
+  //     },
+  //     error: (err) => {
+  //       this.messageService.add({
+  //         severity: 'error',
+  //         summary: 'Error',
+  //         detail: 'Failed to load data',
+  //       });
+  //       this.isLoading = false;
+  //     },
+  //   });
+  // }
 
   private enrichRoomsWithGuestAndBookingData(
     rooms: Room[],
@@ -407,5 +417,40 @@ export class HotelRoomlistComponent implements OnInit {
         });
       },
     });
+  }
+
+  selectRoom(room: Room): void {
+    console.log('Selecting room:', room);
+    this.selectedRoom = room;
+    this.roomSelected.emit(room);
+  }
+
+  openRoomDetails(room: Room): void {
+    if (!room || !room.id) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Invalid room information',
+      });
+      return;
+    }
+
+    console.log('Opening room details for:', room);
+    this.selectRoom(room);
+  }
+
+  bookSelectedRooms(): void {
+    console.log('bookSelectedRooms called, selectedRooms:', this.selectedRooms);
+    if (this.selectedRooms.length > 0) {
+      this.bookingFormRequested.emit(this.selectedRooms);
+      this.openForm = true; // Make sure this is set
+      console.log('openForm set to:', this.openForm);
+    } else {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No Rooms Selected',
+        detail: 'Please select at least one room to book',
+      });
+    }
   }
 }
