@@ -27,32 +27,32 @@ import { SalesComponent } from './ui/view/sales/sales.component';
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'admin/pos/product/34567whr4567yhsdzr56',
+    redirectTo: 'product/34567whr4567yhsdzr56',
     pathMatch: 'full',
   },
   {
-    path: 'admin/pos/product/:uuid',
+    path: 'product/:uuid',
     component: ProductsComponent,
   },
 
   {
-    path: 'admin/pos/inventory/:uuid',
+    path: 'inventory/:uuid',
     component: InventoryComponent,
   },
   {
-    path: 'admin/pos/sale/:uuid',
+    path: 'sale/:uuid',
     component: SalesComponent,
   },
   {
-    path: 'admin/pos/report/:uuid',
+    path: 'report/:uuid',
     component: ReportDashboardComponent,
   },
   {
-    path: 'admin/pos/refunds/:uuid',
+    path: 'refunds/:uuid',
     component: RefundComponent,
   },
   {
-    path: 'admin/pos/ingredients/:uuid',
+    path: 'ingredients/:uuid',
     component: IngredientComponent,
   },
   // {

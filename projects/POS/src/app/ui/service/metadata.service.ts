@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, catchError, finalize, forkJoin, max, min, Observable, of, switchMap, tap } from 'rxjs';
+import { BehaviorSubject, catchError, finalize, firstValueFrom, forkJoin, max, min, Observable, of, switchMap, take, tap } from 'rxjs';
 import { PosServiceService } from './pos-service.service';
 import { CheckoutService } from './checkout.service';
 import { SalesReportDTO, BranchSalesDTO, TopProductDTO, PaymentMethodSummaryDTO, SalesReportBreakdownDTO, Order } from '../models/interface';
@@ -99,35 +99,66 @@ export class MetadataService {
 
 
   
-  fetchMetaData() {
-    console.log("began to fetch")
-    this.posService.getDiscount().subscribe(data => this.discountSubject.next(data));
-    this.posService.getDiscountTypes().subscribe(data => this.discountTypesSubject.next(data));
-    this.posService.getCategories().subscribe(data => this.categorySubject.next(data));
-    this.posService.getSupplier().subscribe((data) => this.supplierSubject.next(data));
-    this.posService.getTax().subscribe((data) => this.taxSubject.next(data));
-    this.posService.getBranches().subscribe((data) => this.branchSubject.next(data));
-    this.posService.getProducts().subscribe((data) => this.productSubject.next(data));
-    this.posService.getProducts().subscribe((data) => this.productSubject.next(data));
-    this.checkoutService.getOrders().subscribe((data) => this.orderSubject.next(data));
-    this.orderService.getReturnRequest().subscribe((data) => this.returnSubject.next(data));
 
-    this.selectedBranchId$.subscribe((branchId) => {
-      console.log("branch id", branchId)
+ 
+fetchMetaData(): Promise<any> {
+  console.log("🔄 [MetadataService] Starting metadata fetch");
+
+  const token = sessionStorage.getItem("Token");
+  if (!token) {
+    console.warn("⛔ No token found. Skipping metadata fetch.");
+    return Promise.resolve(true);
+  }
+
+  const metadata$ = forkJoin({
+    discounts: this.posService.getDiscount().pipe(catchError(() => of([]))),
+    discountTypes: this.posService.getDiscountTypes().pipe(catchError(() => of([]))),
+    categories: this.posService.getCategories().pipe(catchError(() => of([]))),
+    suppliers: this.posService.getSupplier().pipe(catchError(() => of([]))),
+    taxes: this.posService.getTax().pipe(catchError(() => of([]))),
+    branches: this.posService.getBranches().pipe(catchError(() => of([]))),
+    products: this.posService.getProducts().pipe(catchError(() => of([]))),
+    orders: this.checkoutService.getOrders().pipe(catchError(() => of([]))),
+    returnRequests: this.orderService.getReturnRequest().pipe(catchError(() => of([]))),
+  });
+
+  return firstValueFrom(metadata$).then(data => {
+    this.discountSubject.next(data.discounts);
+    this.discountTypesSubject.next(data.discountTypes);
+    this.categorySubject.next(data.categories);
+    this.supplierSubject.next(data.suppliers);
+    this.taxSubject.next(data.taxes);
+    this.branchSubject.next(data.branches);
+    this.productSubject.next(data.products);
+    this.orderSubject.next(data.orders);
+    this.returnSubject.next(data.returnRequests);
+
+    console.log("✅ [MetadataService] Base metadata loaded");
+
+    return firstValueFrom(this.selectedBranchId$.pipe(take(1))).then(branchId => {
       if (branchId != null) {
-        this.loadingSubject.next(true); 
-  
-        this.posService.getFilteredProductsWithDetails(branchId).subscribe(data => {
-          this.enrichedProductSubject.next(data);
-          this.loadingSubject.next(false); // end loading
-        }, error => {
-          this.loadingSubject.next(false); // end loading on error too
-          console.error('❌ Failed to load products for branch:', error);
+        this.loadingSubject.next(true);
+        return firstValueFrom(
+          this.posService.getFilteredProductsWithDetails(branchId).pipe(
+            catchError(error => {
+              console.error("❌ Failed to load enriched products", error);
+              return of([]);
+            })
+          )
+        ).then(filteredProducts => {
+          this.enrichedProductSubject.next(filteredProducts);
+          this.loadingSubject.next(false);
+          console.log("✅ [MetadataService] Enriched products loaded");
+          return true;
         });
+      } else {
+        console.warn("⚠️ No branch ID selected. Skipping filtered products fetch.");
+        return true;
       }
     });
+  });
+}
 
-  }
 
   private loadEnrichedProductsByBranch(): Observable<void> {
     const branchId = this.selectedBranchIdSubject.value;

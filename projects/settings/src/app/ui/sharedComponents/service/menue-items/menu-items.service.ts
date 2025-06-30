@@ -407,20 +407,21 @@ export class MenuItemsService {
 
 
   constructor(public navigationLink: NavigationLinksService, private appRegisterService: AppRegisterServiceService) {
-    this.appRegisterService.getRegisteredApp().subscribe({
-      next: (app: any) => {
-        this.appList = app
-        this.loadUnlockedModules(); 
-        this.loadUnlockedSettingsModules()
-        console.log(this.appList)
-      },
-      error: (error: any) => {
-        console.error('Error fetching app data:', error);
-      }
-    })
-      
-    
-    
+    const token = sessionStorage.getItem('Token');
+    if (token) {
+      this.appRegisterService.getRegisteredApp().subscribe({
+        next: (app: any) => {
+          this.appList = app;
+          this.loadUnlockedModules(); 
+          this.loadUnlockedSettingsModules();
+        },
+        error: (error: any) => {
+          console.error('Error fetching app data:', error);
+        }
+      });
+    } else {
+      console.log('No token yet — skipping app registration fetch');
+    }
   
    
   }

@@ -13,113 +13,63 @@ import { UserComponent } from './user.component';
 // import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders.component';
 
 import { MasterComponent } from './master.component';
-import { DashboardPageComponent } from './ui/dashboard/view/dashboard-page.component';
 import { SalesPageComponent } from './ui/sales/view/sales-page.component';
 import { QuotationModalComponent } from './ui/sales/view/quotation-modal/quotation-modal.component';
-import { ProformaInvoiceModalComponent } from './ui/sales/view/proforma-invoice-modal/proforma-invoice-modal.component';
-import { DispatchNoteModalComponent } from './ui/sales/view/dispatch-note-modal/dispatch-note-modal.component';
-import { InvoiceModalComponent } from './ui/sales/view/invoice-modal/invoice-modal.component';
-import { AccountingPageComponent } from './ui/accounting/view/accounting-page.component';
-import { PurchasePageComponent } from './ui/purchase/view/purchase-page.component';
-import { RfqComponent } from './ui/purchase/view/rfq/rfq.component';
-import { RfqModalComponent } from './ui/purchase/view/rfq-modal/rfq-modal.component';
-import { InventoryPageComponent } from './ui/inventory/view/inventory-page.component';
-import { InventoryFormComponent } from './ui/inventory/view/inventory-form/inventory-form.component';
-import { ViewProductAsideComponent } from './ui/shared/view/view-product-aside/view-product-aside.component';
-import { SettingsPageComponent } from './ui/settings/view/settings-page.component';
-import { PaymentReceiptsModalComponent } from './ui/accounting/view/payment-receipts-modal/payment-receipts-modal.component';
-import { SalesOrderComponent } from './ui/accounting/view/sales-order/sales-order.component';
-import { PaymentRecordReceivedComponent } from './ui/accounting/view/payment-record-received/payment-record-received.component';
-import { CrmPageComponent } from './ui/crm/view/crm-page.component';
-import { PosPageComponent } from './ui/pos/view/pos-page.component';
-import { VendorCategoryComponent } from './ui/crm/view/vendor-category/vendor-category.component';
-import { VendorIndividualComponent } from './ui/crm/view/vendor-individual/vendor-individual.component';
-import { VendorListComponent } from './ui/crm/view/vendor-list/vendor-list.component';
-import { VendorManagementComponent } from './ui/crm/view/vendorMangement/vendorManagement';
 // import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-orders.component';
 // import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.component';
 // import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';
 import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.component';
-import { ExpensesComponent } from './ui/expenses/view/expenses.component';
-import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-modal/expense-forms-modal.component';
-import { UploadRecieptComponent } from './ui/expenses/view/upload-reciept/upload-reciept.component';
-import { ExpenseApprovalComponent } from './ui/expenses/view/expense-approval/expense-approval.component';
-import { AddPerDiemComponent } from './ui/expenses/view/add-per-diem/add-per-diem.component';
+
 // import { OrderRefundComponent } from './ui/pos/view/order-refund/order-refund.component';
 // import { RequestDetailsComponent } from './ui/pos/view/request-details/request-details.component';
 // import { OpenRegisterComponent } from './ui/pos/view/open-register/open-register.component';
 // import { CloseRegisterComponent } from './ui/pos/view/close-register/close-register.component';
-import { AuthGuard } from './ui/auth/service/auth.guard';
-import { ProcurementPageComponent } from './ui/procurement/view/procurement.page.component';
-import { VendorPageComponent } from './ui/vendor/view/vendor-page.component';
-import { RfqListComponent } from './ui/procurement/view/rfq-list/rfq-list.component';
-import { RfqFormComponent } from './ui/procurement/view/rfq-form/rfq-form.component';
-import { RfqCategoryListComponent } from './ui/procurement/view/rfq-category-list/rfq-category-list.component';
-import { ProcurementSettingsComponent } from './ui/procurement/view/procurement-settings/procurement-settings.component';
-import { VendorRfqComponent } from './ui/vendor/view/vendor-rfq/vendor-rfq.component';
-import { RecuitmentComponent } from './ui/hr/view/recuitment/recuitment.component';
-import { LeaveComponent } from './ui/hr/view/leave/leave.component';
-import { AttendanceComponent } from './ui/hr/view/attendance/attendance.component';
-import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.component';
-
-import { InterviewComponent } from './ui/hr/view/interview/interview.component';
-import { GeneralSettingsComponent } from './ui/settings/view/general/general-settings/general-settings.component';
-import { HrSettingsComponent } from './ui/settings/view/hr/hr-settings/hr-settings.component';
+// import { AuthGuard } from './ui/auth/service/auth.guard';
 import { JopOpeningsComponent } from './jop.openings.component';
-import { EmployeeManagementComponent } from './ui/hr/view/employee/employee-management/employee-management.component';
-import { EmployeePayrollComponent } from './ui/hr/view/payroll/employee-payroll/employee-payroll.component';
 import { CareerJobPostingComponent } from './ui/shared/view/career-job-posting/career-job-posting.component';
 import { JobApplicationFormComponent } from './ui/shared/view/job-application-form/job-application-form.component';
-import { EmployeePayslipListComponent } from './ui/hr/view/payroll/employee-payslip-list/employee-payslip-list.component';
 import { EmployeeOnboardingFormComponent } from 'projects/hr/src/app/ui/view/employee-management/employee-onboarding-form/employee-onboarding-form.component';
-import { PosCheckoutPageComponent } from 'projects/POS/src/app/ui/view/pos-checkout-page/pos-checkout-page.component';
-import { CheckoutOrdersComponent } from 'projects/POS/src/app/ui/view/checkout-orders/checkout-orders.component';
-import { CashPaymentComponent } from 'projects/POS/src/app/ui/view/cash-payment/cash-payment.component';
-import { OrderDetailComponent } from 'projects/POS/src/app/ui/view/order-detail/order-detail.component';
-import { OrderRefundComponent } from 'projects/POS/src/app/ui/view/order-refund/order-refund.component';
-import { RequestDetailsComponent } from 'projects/POS/src/app/ui/view/request-details/request-details.component';
-import { OpenRegisterComponent } from 'projects/POS/src/app/ui/view/open-register/open-register.component';
-import { CloseRegisterComponent } from 'projects/POS/src/app/ui/view/close-register/close-register.component';
 import { MarketplaceComponent } from './ui/marketplace/view/marketplace/marketplace.component';
+import { NotFoundComponent } from './ui/not-found.component';
 
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'user/auth/',
+    redirectTo: 'user/auth/:uuid',
     pathMatch: 'full',
   },
   {
-    path: '',
+    path: 'user/auth',
     component: DefaultComponent,
     children: [
       {
-        path: 'user/auth/:uuid',
+        path: ':uuid',
         component: LoginComponent,
       },
       {
-        path: 'user/auth/sign-up/:uuid',
+        path: 'sign-up/:uuid',
         component: RegisterComponent,
       },
       {
-        path: 'user/auth/emv/:uuid',
+        path: 'emv/:uuid',
         component: MailVerificationComponent,
       },
       {
-        path: 'user/auth/vrs/:uuid',
+        path: 'vrs/:uuid',
         component: VerificationSuccessfullComponent,
       },
       {
-        path: 'user/auth/vrf/:uuid',
+        path: 'vrf/:uuid',
         component: VerificationFailedComponent,
       },
-      {
-        path: 'users/auth/verify',
-        component: VerifyTokenComponent,
-      },
+  
     
     ],
   },
-
+  {
+    path: 'users/auth/verify',
+    component: VerifyTokenComponent,
+  },
   {
     path: 'admin/settings/user-reg/:uuid',
     component: UserRegLayoutComponent,
@@ -135,80 +85,72 @@ const routes: Routes = [
     component: EmployeeOnboardingFormComponent,
   },
   {
-    path: '',
+    path: 'user',
     component: UserComponent,
     // canActivate: [AuthGuard],
     children: [
       {
-        path: '',
+        path: 'checkout',
         loadChildren: () => import('../../projects/POS/src/app/user/user.module').then(m => m.UserModule),
       },
       {
-        path: '',
+        path: 'hospitality',
         loadChildren: () => import('../../projects/hospitality/src/app/user/user.module').then(m => m.UserModule),
       },
     ],
   },
 
   {
-    path: '',
+    path: 'admin',
     component: MasterComponent,
     // canActivate: [AuthGuard],
     children: [
       {
-        path: 'admin/dashboard/:uuid',
+        path: 'dashboard',
         loadChildren: () => import('../../projects/dashboard/src/app/app.module').then(m => m.AppDashboardModule),
       },
       {
-        path: '',
+        path: 'hr',
         loadChildren: () => import('../../projects/hr/src/app/app.module').then(m => m.AppHrModule),
       },
       {
-        path: 'admin/settings',
+        path: 'settings',
         loadChildren: () => import('../../projects/settings/src/app/app.module').then(m => m.AppSettingsModule),
       },
       {
-        path: '',
+        path: 'pos',
         loadChildren: () => import('../../projects/POS/src/app/app.module').then(m => m.AppPOSModule),
       },
       {
-        path: '',
+        path: 'expenses',
         loadChildren: () => import('../../projects/expense/src/app/app.module').then(m => m.AppExpensesModule),
       },
       {
-        path: '',
+        path: 'accounting',
         loadChildren: () => import('../../projects/accounting/src/app/app.module').then(m => m.AppAccountingModule),
       },
       {
-        path: '',
+        path: 'procurement',
         loadChildren: () => import('../../projects/procurement/src/app/app.module').then(m => m.AppModule),
       },
       {
-        path: '',
-        loadChildren: () => import('../../projects/procurement/src/app/app.module').then(m => m.AppModule),
-      },
-      {
-        path: '',
-        loadChildren: () => import('../../projects/inventory/src/app/app.module').then(m => m.AppModule),
-      },
-      {
-        path: '',
+        path: 'crm',
         loadChildren: () => import('../../projects/CRM/src/app/app.module').then(m => m.AppModule),
       },
       {
-        path: '',
+        path: 'vendor',
         loadChildren: () => import('../../projects/vendor/src/app/app.module').then(m => m.AppModule),
       },
       {
-        path: '',
+        path: 'tender',
         loadChildren: () => import('../../projects/tender/src/app/app.module').then(m => m.AppModule),
       },
       {
-        path: '',
+        path: 'productivity',
         loadChildren: () => import('../../projects/productivity/src/app/app.module').then(m => m.AppModule),
       },
       {
-        path: '',
+        path: 'hospitality',
         loadChildren: () => import('../../projects/hospitality/src/app/app.module').then(m => m.AppModule),
       },
       {
@@ -249,6 +191,9 @@ const routes: Routes = [
     path: 'job-application',
     component: JopOpeningsComponent, 
   },
+
+  { path: '**', component: NotFoundComponent }
+
   
 ];
 

@@ -20,35 +20,35 @@ const routes: Routes = [
 
   {
     path: '',
-    redirectTo: 'admin/hr/recruitment/uu',
+    redirectTo: 'recruitment/uu',
     pathMatch: 'full',
   },
   {
-    path: 'admin/hr/recruitment/:uuid',
+    path: 'recruitment/:uuid',
     component: RecruitmentComponent,
   },
   {
-    path: 'admin/hr/leave/:uuid',
+    path: 'leave/:uuid',
     component: LeaveComponent,
   },
   {
-    path: 'admin/hr/attendance/:uuid',
+    path: 'attendance/:uuid',
     component: AttendanceComponent,
   },
   // {
-  //   path: 'admin/hr/employee-management/:uuid',
+  //   path: 'employee-management/:uuid',
   //   component: EmployeeManagementComponent,
   // },
   {
-    path: 'admin/hr/performance/:uuid',
+    path: 'performance/:uuid',
     component: PerformanceComponent,
   },
   {
-    path: 'admin/hr/employee-management/:uuid',
+    path: 'employee-management/:uuid',
     component: EmployeeManagementComponent,
   },
   {
-    path: 'admin/hr/payroll/:uuid',
+    path: 'payroll/:uuid',
     component: EmployeePayrollComponent,
   },
   {
@@ -56,7 +56,7 @@ const routes: Routes = [
     component: EmployeePayslipListComponent,
   },
   // {
-  //   path: 'admin/hr/attendance/:uuid',
+  //   path: 'attendance/:uuid',
   //   component: AttendanceComponent,
   // },
   { path: 'mygoal', component: MygoalComponent },

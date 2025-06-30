@@ -5,7 +5,7 @@ import { EmployeePayslipsListComponent } from './ui/view/employee-payslips-list/
 
 const routes: Routes = [
   {
-    path:'',
+    path:':uuid',
     component: DashboardPageComponent,
   },
   {
