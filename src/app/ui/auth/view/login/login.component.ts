@@ -67,8 +67,8 @@ export class LoginComponent implements OnInit {
   ){}
 
   ngOnInit(): void {
-    const loginLink = this.navigationLink.getLink('signinLink')
-    this.router.navigate([loginLink]);
+    // const loginLink = this.navigationLink.getLink('signinLink')
+    // this.router.navigate([loginLink]);
 
     if (this.authenticationService.isLoggedIn()) {
       this.authenticationService.logout();

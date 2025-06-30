@@ -12,23 +12,23 @@ import { ApprovalReportsComponent } from './ui/view/approval-reports/approval-re
 
 
 const routes: Routes = [
-   { path: 'admin/expenses/:uuid',
+   { path: ':uuid',
         component: ExpensesComponent,
       },
       {
-        path: 'admin/expensesForm',
+        path: 'expensesForm',
         component: ExpenseFormsModalComponent,
       },
       {
-       path: 'admin/expenses/reimbursement/:uuid',
+       path: 'reimbursement/:uuid',
        component: ReimbursementComponent,
       },
        {
-        path: 'admin/expenses/advance/:uuid',
+        path: 'advance/:uuid',
         component: DisbursementComponent,
       },
       {
-        path: 'admin/expenses/report/:uuid',
+        path: 'report/:uuid',
         component: ApprovalReportsComponent,
       },
       {

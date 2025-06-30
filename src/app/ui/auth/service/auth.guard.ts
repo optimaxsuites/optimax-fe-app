@@ -11,7 +11,6 @@ import { NavigationLinksService } from '../../shared/service/navigation-links/na
 export class AuthGuard implements CanActivate {
 
   constructor(
-    private loginService: LoginComponent, 
     private router: Router, 
     private navigationLink: NavigationLinksService,
     private authService: AuthenticationService

@@ -18,26 +18,16 @@ export class AuthInterceptor implements HttpInterceptor {
     ): Observable<HttpEvent<any>> {
         const accessToken = sessionStorage.getItem("Token");
 
-        if (!accessToken) {
-            const loginLink = this.navigationLink.getLink('signinLink')
-            this.router.navigate([loginLink]);
-            return next.handle(request);
-        }
-
-
-
-        const _request = request.clone({
-            headers: request.headers.set(
-                "Authorization",
-                `Bearer ${accessToken}`
-            ),
-
-        });
-        // console.log("na request", _request)
+        if (accessToken) {
+            const _request = request.clone({
+              headers: request.headers.set("Authorization", `Bearer ${accessToken}`)
+            });
+            return next.handle(_request);
+          }
 
 
 
 
-        return next.handle(_request);
+        return next.handle(request);
     }
 }

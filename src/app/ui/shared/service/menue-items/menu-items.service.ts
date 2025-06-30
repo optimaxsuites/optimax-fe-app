@@ -346,17 +346,21 @@ export class MenuItemsService {
   private unlockedModules$ = new BehaviorSubject<MenuItem[]>([]);
 
   constructor(public navigationLink: NavigationLinksService, private marketPlaceService: MarketplaceService) {
+    const token = sessionStorage.getItem('Token');
+  if (token) {
     this.marketPlaceService.getRegisteredApp().subscribe({
       next: (app: any) => {
-        this.appList = app
+        this.appList = app;
         this.loadUnlockedModules(); 
-        this.loadUnlockedSettingsModules()
-        console.log(this.appList)
+        this.loadUnlockedSettingsModules();
       },
       error: (error: any) => {
         console.error('Error fetching app data:', error);
       }
-    })
+    });
+  } else {
+    console.log('No token yet — skipping app registration fetch');
+  }
       
     
     

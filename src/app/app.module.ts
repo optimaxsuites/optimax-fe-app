@@ -241,6 +241,7 @@ import { MarketplaceComponent } from './ui/marketplace/view/marketplace/marketpl
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { AppResizeDirective } from '../../projects/POS/src/app/ui/service/app-resize.directive';
 import { AppInitService } from 'projects/POS/src/app/ui/service/app-init.service';
+import { NotFoundComponent } from './ui/not-found.component';
 
 
 @NgModule({
@@ -410,6 +411,7 @@ import { AppInitService } from 'projects/POS/src/app/ui/service/app-init.service
     PayslipViewComponent,
     EmployeePayslipListComponent,
     MarketplaceComponent,
+    NotFoundComponent,
 
   ],
   imports: [
