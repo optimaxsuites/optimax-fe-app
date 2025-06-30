@@ -22,11 +22,14 @@ export class PaymentServiceService {
 		discount: number;
 		tax: number;
 		subTotal: number;
+		/* In cases like the kitchen where, I want to check if a payemnt was successful */
+		paymentTracking?: { id: number; paymentSuccess: boolean };
 	}) {
 		const {
 			cartItems: inputCartItems,
 			discount,
 			paymentModes,
+			paymentTracking,
 			subTotal: subtotal,
 			tax,
 			total,
@@ -107,6 +110,8 @@ export class PaymentServiceService {
 		const cashPaymentComponentLink =
 			this._navigationService.getLink("cashPayment");
 
-		this._router.navigate([cashPaymentComponentLink], { state: { cart } });
+		this._router.navigate([cashPaymentComponentLink], {
+			state: { cart, paymentTracking, prevUrlBeforePaymentPage: this._router.url },
+		});
 	}
 }

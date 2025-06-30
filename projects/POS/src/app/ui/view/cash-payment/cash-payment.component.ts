@@ -192,9 +192,9 @@ export class CashPaymentComponent implements OnInit {
 		];
 	}
 	processCashPayment() {
-		this.isLoading = true
+		this.isLoading = true;
 		if (this.totalPaid < this.cart?.total) {
-			this.isLoading = false
+			this.isLoading = false;
 			this.messageService.add({
 				severity: "warn",
 				summary: "Error",
@@ -237,7 +237,7 @@ export class CashPaymentComponent implements OnInit {
 							if (breakdownCount === paymentBreakdownPayloads.length) {
 								// All breakdowns saved — Proceed to Step 3
 								this.submitOrder(paymentId, now);
-								this.isLoading = false
+								this.isLoading = false;
 							}
 						},
 						error: () => this.showError("Failed to save payment breakdown"),
@@ -310,18 +310,25 @@ export class CashPaymentComponent implements OnInit {
 						life: 3000,
 					});
 
-					this._location.back();
+					const historyState = history.state;
+					const paymentTrackingHistory = historyState.paymentTracking;
+					this.router.navigateByUrl(historyState.prevUrlBeforePaymentPage, {
+						state: {
+							...historyState,
+							paymentTracking: paymentTrackingHistory
+								? { ...paymentTrackingHistory, paymentSuccess: true }
+								: undefined,
+						},
+					});
+
+					// this._location.historyGo(-1);
 					// const checkoutLink = this.navigationLink.getLink("checkoutLink");
 					// this.router.navigate([checkoutLink]);
 					this.printReceipt();
-					this.isLoading = false
-
+					this.isLoading = false;
 				},
 				error: () => {
-					
-					this.showError("Failed to save order")
-
-
+					this.showError("Failed to save order");
 				},
 			});
 	}
@@ -334,8 +341,7 @@ export class CashPaymentComponent implements OnInit {
 			key: "tl",
 			life: 3000,
 		});
-		this.isLoading = false
-
+		this.isLoading = false;
 	}
 
 	saveCurrentCartItem() {

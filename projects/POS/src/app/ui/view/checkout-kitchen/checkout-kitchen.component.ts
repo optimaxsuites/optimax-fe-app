@@ -197,18 +197,27 @@ export class CheckoutKitchenComponent implements OnInit {
 		(async () => {
 			// Fetch the table statuses.
 			// TODO: Implement a skeleton loader while these are getting fetched
-			this._posService.getTableOrderStatuses().subscribe(async (data) => {
-				this.tableStatuses.update((_) => {
-					return new Map(
-						data.map((tableOrderStatus) => [
-							tableOrderStatus.id,
-							tableOrderStatus,
-						]),
-					);
-				});
-				console.log("Fetch table statuses are: ");
-				console.log(this.tableStatuses());
-			});
+			const fetchedTableOrderStatuses = await lastValueFrom(
+				this._posService.getTableOrderStatuses(),
+			);
+			this.tableStatuses.set(
+				new Map(
+					fetchedTableOrderStatuses.map((tableOrderStatus) => [
+						tableOrderStatus.id,
+						tableOrderStatus,
+					]),
+				),
+			);
+			console.log("Fetch table statuses are: ");
+			console.log(this.tableStatuses());
+			if (history.state.paymentTracking?.paymentSuccess) {
+				const tableOrderStatusToEdit = this.tableStatuses().get(
+					history.state.paymentTracking.id,
+				);
+				if (tableOrderStatusToEdit) {
+					tableOrderStatusToEdit.status = "PAID";
+				}
+			}
 
 			// Fetch and store the branches
 			this._fetchedBranches = await lastValueFrom(
@@ -358,7 +367,7 @@ export class CheckoutKitchenComponent implements OnInit {
 					branchId: this._fetchedBranches[0].id,
 					cashierId: null,
 					createdDate: creationDate,
-					customerId: this._userService.isUser.userId,
+					customerId: null,
 					discountId: null,
 					orderNumber: `${0}`,
 					orderStatus: timeStamps?.readyOn?.toISOString() ? "PAID" : "UNPAID",
@@ -393,7 +402,10 @@ export class CheckoutKitchenComponent implements OnInit {
 			// delete the dummy product and replace it
 			this._removeDummyOrder(this._dummyTableOrderStatus);
 
-			if (actualTableOrderStatus.status == "PAID") {
+			if (
+				actualTableOrderStatus.status === "PAID" &&
+				actualTableOrderStatus.readyOn?.length
+			) {
 				// Get rid of the table. This is done here since I can be sure that the separate order is already created
 				this.deleteTable(actualTableOrderStatus);
 			} else {
@@ -740,6 +752,8 @@ export class CheckoutKitchenComponent implements OnInit {
 			{ discount: 0, subTotal: 0, tax: 0, total: 0 },
 		);
 
+		const selectedOrder = this.selectedOrder();
+
 		this._paymentService.processPayment({
 			paymentModes,
 			cartItems: products,
@@ -747,6 +761,9 @@ export class CheckoutKitchenComponent implements OnInit {
 			subTotal,
 			tax,
 			total,
+			paymentTracking: selectedOrder
+				? { id: selectedOrder.id, paymentSuccess: false }
+				: undefined,
 		});
 	}
 
