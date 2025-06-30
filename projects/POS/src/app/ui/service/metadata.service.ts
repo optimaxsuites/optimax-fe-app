@@ -101,28 +101,28 @@ export class MetadataService {
   
 
  
-fetchMetaData(): Promise<any> {
-  console.log("🔄 [MetadataService] Starting metadata fetch");
-
-  const token = sessionStorage.getItem("Token");
-  if (!token) {
-    console.warn("⛔ No token found. Skipping metadata fetch.");
-    return Promise.resolve(true);
-  }
-
-  const metadata$ = forkJoin({
-    discounts: this.posService.getDiscount().pipe(catchError(() => of([]))),
-    discountTypes: this.posService.getDiscountTypes().pipe(catchError(() => of([]))),
-    categories: this.posService.getCategories().pipe(catchError(() => of([]))),
-    suppliers: this.posService.getSupplier().pipe(catchError(() => of([]))),
-    taxes: this.posService.getTax().pipe(catchError(() => of([]))),
-    branches: this.posService.getBranches().pipe(catchError(() => of([]))),
-    products: this.posService.getProducts().pipe(catchError(() => of([]))),
-    orders: this.checkoutService.getOrders().pipe(catchError(() => of([]))),
-    returnRequests: this.orderService.getReturnRequest().pipe(catchError(() => of([]))),
-  });
-
-  return firstValueFrom(metadata$).then(data => {
+  async fetchMetaData(): Promise<any> {
+    console.log("🔄 [MetadataService] Starting metadata fetch");
+  
+    const token = sessionStorage.getItem("Token");
+    if (!token) {
+      console.warn("⛔ No token found. Skipping metadata fetch.");
+      return Promise.resolve(true);
+    }
+  
+    const metadata$ = forkJoin({
+      discounts: this.posService.getDiscount().pipe(catchError(() => of([]))),
+      discountTypes: this.posService.getDiscountTypes().pipe(catchError(() => of([]))),
+      categories: this.posService.getCategories().pipe(catchError(() => of([]))),
+      suppliers: this.posService.getSupplier().pipe(catchError(() => of([]))),
+      taxes: this.posService.getTax().pipe(catchError(() => of([]))),
+      branches: this.posService.getBranches().pipe(catchError(() => of([]))),
+      products: this.posService.getProducts().pipe(catchError(() => of([]))),
+      orders: this.checkoutService.getOrders().pipe(catchError(() => of([]))),
+      returnRequests: this.orderService.getReturnRequest().pipe(catchError(() => of([]))),
+    });
+  
+    const data = await firstValueFrom(metadata$);
     this.discountSubject.next(data.discounts);
     this.discountTypesSubject.next(data.discountTypes);
     this.categorySubject.next(data.categories);
@@ -132,32 +132,30 @@ fetchMetaData(): Promise<any> {
     this.productSubject.next(data.products);
     this.orderSubject.next(data.orders);
     this.returnSubject.next(data.returnRequests);
-
+  
     console.log("✅ [MetadataService] Base metadata loaded");
-
-    return firstValueFrom(this.selectedBranchId$.pipe(take(1))).then(branchId => {
+  
+    this.selectedBranchId$.pipe(take(1)).subscribe(branchId => {
       if (branchId != null) {
         this.loadingSubject.next(true);
-        return firstValueFrom(
-          this.posService.getFilteredProductsWithDetails(branchId).pipe(
-            catchError(error => {
-              console.error("❌ Failed to load enriched products", error);
-              return of([]);
-            })
-          )
-        ).then(filteredProducts => {
+        this.posService.getFilteredProductsWithDetails(branchId).pipe(
+          catchError(error => {
+            console.error("❌ Failed to load enriched products", error);
+            return of([]);
+          })
+        ).subscribe(filteredProducts => {
           this.enrichedProductSubject.next(filteredProducts);
           this.loadingSubject.next(false);
           console.log("✅ [MetadataService] Enriched products loaded");
-          return true;
         });
       } else {
         console.warn("⚠️ No branch ID selected. Skipping filtered products fetch.");
-        return true;
       }
     });
-  });
-}
+  
+    return true;
+  }
+  
 
 
   private loadEnrichedProductsByBranch(): Observable<void> {

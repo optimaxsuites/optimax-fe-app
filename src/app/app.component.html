@@ -1,6 +1,9 @@
 
 
-
+<div *ngIf="isLoading" class="fixed inset-0 flex items-center justify-center bg-white z-50">
+    <span class="text-[#2EB270] font-bold text-xl animate-pulse">Loading...</span>
+  </div>
+  
 <router-outlet></router-outlet>
 
 
