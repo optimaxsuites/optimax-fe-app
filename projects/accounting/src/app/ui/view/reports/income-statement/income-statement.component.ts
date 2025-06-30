@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-
+// import { jsPDF } from 'jspdf';
+// import html2canvas from 'html2canvas';
 import {
   ChartComponent,
   ApexAxisChartSeries,
@@ -37,63 +38,126 @@ export type ExpenseChartOptions = {
   title: ApexTitleSubtitle;
 };
 
+interface FinancialItem {
+  name: string;
+  amount: number;
+  prevAmount: number;
+  budget?: number;
+  category?: string;
+}
 
+interface Comment {
+  id: number;
+  author: string;
+  text: string;
+  timestamp: string;
+}
 
 @Component({
   selector: 'app-income-statement',
   templateUrl: './income-statement.component.html',
-  styleUrl: './income-statement.component.scss'
+  styleUrls: ['./income-statement.component.scss']
 })
-
-
 export class IncomeStatementComponent implements OnInit {
-  currentDate: Date = new Date(2023, 4, 1); // May 2023 as default
+  @ViewChild('statementContent') statementContent!: ElementRef;
+
+  currentDate: Date = new Date(2023, 4, 1);
   showFilterModal: boolean = false;
+  showCommentsModal: boolean = false;
+  showShareModal: boolean = false;
+  showArchivesModal: boolean = false;
+  
   reportType: string = 'Actual';
   entity: string = 'All Locations';
   period: string = 'This Month';
   showPercentages: boolean = false;
   showVariance: boolean = false;
   includeForecasts: boolean = false;
+  isSaved: boolean = false;
   Math = Math;
 
-  // Dummy data for the balance sheet
-  revenueData = [
-    { name: 'Product Sales', amount: 3125000, prevAmount: 2812500 },
-    { name: 'Service Revenue', amount: 375000, prevAmount: 337500 },
-    { name: 'Subscription Income', amount: 345000, prevAmount: 310500 },
-    { name: 'Other Revenue', amount: 35000, prevAmount: 31500 }
+  comments: Comment[] = [
+    {
+      id: 1,
+      author: 'Jane Smith',
+      text: 'Gross profit margin is improving nicely',
+      timestamp: '2023-05-28T14:25:00'
+    },
+    {
+      id: 2,
+      author: 'John Doe',
+      text: 'We should look into the increased maintenance costs',
+      timestamp: '2023-05-29T09:10:00'
+    }
   ];
 
-  cogsData = [
-    { name: 'Cost of Products Sold', amount: -262500, prevAmount: -236250 },
-    { name: 'Direct Labor', amount: -235000, prevAmount: -211500 },
-    { name: 'Manufacturing Overhead', amount: -215000, prevAmount: -193500 }
+  // Financial Data with budget values added
+  revenueData: FinancialItem[] = [
+    { name: 'Product Sales', amount: 3125000, prevAmount: 2812500, budget: 3000000 },
+    { name: 'Service Revenue', amount: 375000, prevAmount: 337500, budget: 360000 },
+    { name: 'Subscription Income', amount: 345000, prevAmount: 310500, budget: 330000 },
+    { name: 'Other Revenue', amount: 35000, prevAmount: 31500, budget: 34000 }
   ];
 
-  operatingExpenses = [
-    { category: 'Administrative', amount: -214200, prevAmount: -192780 },
-    { category: 'Salaries & Wages', amount: -157600, prevAmount: -141840 },
-    { category: 'Maintenance', amount: -16000, prevAmount: -14400 },
-    { category: 'Logistics/Distribution', amount: -19000, prevAmount: -17100 },
-    { category: 'Other', amount: -131800, prevAmount: -118620 }
+  cogsData: FinancialItem[] = [
+    { name: 'Cost of Products Sold', amount: -262500, prevAmount: -236250, budget: -250000 },
+    { name: 'Direct Labor', amount: -235000, prevAmount: -211500, budget: -225000 },
+    { name: 'Manufacturing Overhead', amount: -215000, prevAmount: -193500, budget: -205000 }
   ];
 
-  otherItems = [
-    { name: 'Interest Income', amount: 11500, prevAmount: 10350 },
-    { name: 'Interest Expense', amount: -13200, prevAmount: -11880 },
-    { name: 'Gain on Sale of Assets', amount: 12800, prevAmount: 11520 }
+  operatingExpenses: FinancialItem[] = [
+    { name: 'Office Supply', amount: -262500, prevAmount: -236250, budget: -250000 },
+    { name: 'Professional Services', amount: -235000, prevAmount: -211500, budget: -250000 },
+    { name: 'Insurance', amount: -215000, prevAmount: -193500, budget: -250000 }
   ];
 
-  taxExpense = { name: 'Income Tax Expense', amount: -19350, prevAmount: -17415 };
+  SalariesWages: FinancialItem[] = [
+    { name: 'Salaries & Wages', amount: -157600, prevAmount: -141840, budget: -250000 },
+    { name: 'Benefits', amount: -157600, prevAmount: -141840, budget: -250000 },
+    { name: 'Payroll Taxes', amount: -157600, prevAmount: -141840, budget: -250000 },
+    { name: 'Training & Development', amount: -157600, prevAmount: -141840, budget: -250000 }
+  ];
+
+  Maintenance: FinancialItem[] = [
+    { name: 'Building Maintenance', amount: -16000, prevAmount: -14400, budget: -250000 },
+    { name: 'Repairs', amount: -16000, prevAmount: -14400, budget: -250000 },
+    { name: 'Equipment Maintenance', amount: -16000, prevAmount: -14400, budget: -250000 }
+  ];
+
+  LogisticsDistribution: FinancialItem[] = [
+    { name: 'Shipping & Freight', amount: -19000, prevAmount: -17100, budget: -250000 },
+    { name: 'Distribution Costs', amount: -19000, prevAmount: -17100, budget: -250000 },
+    { name: 'Travel and Entertainment', amount: -19000, prevAmount: -17100, budget: -250000 }
+  ];
+
+  otherOperatingExpenses: FinancialItem[] = [
+    { name: 'Rent', amount: -214200, prevAmount: -192780, budget: -250000 },
+    { name: 'Marketing & Advertising', amount: -131800, prevAmount: -118620, budget: -250000 },
+    { name: 'Utilities', amount: -131800, prevAmount: -118620, budget: -250000 },
+    { name: 'Depreciation & Amortization', amount: -131800, prevAmount: -118620, budget: -250000 }
+  ];
+
+  otherItems: FinancialItem[] = [
+    { name: 'Interest Income', amount: 11500, prevAmount: 10350, budget: 10000 },
+    { name: 'Interest Expense', amount: -13200, prevAmount: -11880, budget: -12000 },
+    { name: 'Gain on Sale of Assets', amount: 12800, prevAmount: 11520, budget: 10000 }
+  ];
+
+  taxExpense: FinancialItem = { name: 'Income Tax Expense', amount: -19350, prevAmount: -17415, budget: -18000 };
+
+  // Monthly data for charts
+  monthlyData = {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    revenue: [230000, 235000, 240000, 245000, 248000, 250000],
+    expenses: [195000, 198000, 200000, 203000, 205000, 207500],
+    profit: [35000, 37000, 40000, 42000, 43000, 42500]
+  };
 
   // Chart options
   revenueChartOptions: RevenueChartOptions = {} as RevenueChartOptions;
   expenseChartOptions: ExpenseChartOptions = {} as ExpenseChartOptions;
 
-
   constructor() {
-    // Initialize charts
     this.initRevenueChart();
     this.initExpenseChart();
   }
@@ -125,7 +189,6 @@ export class IncomeStatementComponent implements OnInit {
   updateAllData(): void {
     this.updateMetrics();
     this.updateCharts();
-    // In a real app, you would fetch new data based on the selected month
   }
 
   // Metric calculations
@@ -153,12 +216,67 @@ export class IncomeStatementComponent implements OnInit {
     return this.totalPrevRevenue + this.totalPrevCOGS;
   }
 
-  get totalOperatingExpenses(): number {
+  // Category-specific totals
+  get totalAdministrativeExpenses(): number {
     return this.operatingExpenses.reduce((sum, item) => sum + item.amount, 0);
   }
 
-  get totalPrevOperatingExpenses(): number {
+  get totalSalariesWages(): number {
+    return this.SalariesWages.reduce((sum, item) => sum + item.amount, 0);
+  }
+
+  get totalMaintenance(): number {
+    return this.Maintenance.reduce((sum, item) => sum + item.amount, 0);
+  }
+
+  get totalLogisticsDistribution(): number {
+    return this.LogisticsDistribution.reduce((sum, item) => sum + item.amount, 0);
+  }
+
+  get totalOtherOperatingExpenses(): number {
+    return this.otherOperatingExpenses.reduce((sum, item) => sum + item.amount, 0);
+  }
+
+  // Previous period totals
+  get totalPrevAdministrativeExpenses(): number {
     return this.operatingExpenses.reduce((sum, item) => sum + item.prevAmount, 0);
+  }
+
+  get totalPrevSalariesWages(): number {
+    return this.SalariesWages.reduce((sum, item) => sum + item.prevAmount, 0);
+  }
+
+  get totalPrevMaintenance(): number {
+    return this.Maintenance.reduce((sum, item) => sum + item.prevAmount, 0);
+  }
+
+  get totalPrevLogisticsDistribution(): number {
+    return this.LogisticsDistribution.reduce((sum, item) => sum + item.prevAmount, 0);
+  }
+
+  get totalPrevOtherOperatingExpenses(): number {
+    return this.otherOperatingExpenses.reduce((sum, item) => sum + item.prevAmount, 0);
+  }
+
+  // Combined operating expenses
+  get totalOperatingExpenses(): number {
+    return (
+      this.totalAdministrativeExpenses +
+      this.totalSalariesWages +
+      this.totalMaintenance +
+      this.totalLogisticsDistribution +
+      this.totalOtherOperatingExpenses
+    );
+  }
+
+  get totalPrevOperatingExpenses(): number {
+    return (
+      this.totalPrevAdministrativeExpenses +
+      this.totalPrevSalariesWages +
+      this.totalPrevMaintenance +
+      this.totalPrevLogisticsDistribution +
+      this.totalPrevOtherOperatingExpenses
+    );
   }
 
   get operatingIncome(): number {
@@ -177,38 +295,80 @@ export class IncomeStatementComponent implements OnInit {
     return this.netIncomeBeforeTax + this.taxExpense.amount;
   }
 
+  // Budget calculations
+  get totalBudgetRevenue(): number {
+    return this.revenueData.reduce((sum, item) => sum + (item.budget || 0), 0);
+  }
+
+  get totalBudgetCOGS(): number {
+    return this.cogsData.reduce((sum, item) => sum + (item.budget || 0), 0);
+  }
+
+
+
+  get budgetGrossProfit(): number {
+    return this.totalBudgetRevenue + this.totalBudgetCOGS;
+  }
+
+  get totalBudgetOperatingExpenses(): number {
+    return (
+      this.operatingExpenses.reduce((sum, item) => sum + (item.budget || 0), 0) +
+      this.SalariesWages.reduce((sum, item) => sum + (item.budget || 0), 0) +
+      this.Maintenance.reduce((sum, item) => sum + (item.budget || 0), 0) +
+      this.LogisticsDistribution.reduce((sum, item) => sum + (item.budget || 0), 0) +
+      this.otherOperatingExpenses.reduce((sum, item) => sum + (item.budget || 0), 0)
+    );
+  }
+
+  get budgetOperatingIncome(): number {
+    return this.budgetGrossProfit + this.totalBudgetOperatingExpenses;
+  }
+
+  // Variance calculations
+  get revenueVariance(): number {
+    return this.totalRevenue - this.totalBudgetRevenue;
+  }
+
+  get cogsVariance(): number {
+    return this.totalCOGS - this.totalBudgetCOGS;
+  }
+
+  get operatingExpensesVariance(): number {
+    return this.totalOperatingExpenses - this.totalBudgetOperatingExpenses;
+  }
+
   // Percentage calculations
   get grossProfitMargin(): number {
-    return (this.grossProfit / this.totalRevenue) * 100;
+    return this.totalRevenue !== 0 ? (this.grossProfit / this.totalRevenue) * 100 : 0;
   }
 
   get operatingMargin(): number {
-    return (this.operatingIncome / this.totalRevenue) * 100;
+    return this.totalRevenue !== 0 ? (this.operatingIncome / this.totalRevenue) * 100 : 0;
   }
 
   get netProfitMargin(): number {
-    return (this.netIncome / this.totalRevenue) * 100;
+    return this.totalRevenue !== 0 ? (this.netIncome / this.totalRevenue) * 100 : 0;
   }
 
   get revenueGrowth(): number {
-    return ((this.totalRevenue - this.totalPrevRevenue) / this.totalPrevRevenue) * 100;
+    return this.totalPrevRevenue !== 0 ? 
+      ((this.totalRevenue - this.totalPrevRevenue) / this.totalPrevRevenue) * 100 : 0;
   }
 
   get cogsGrowth(): number {
-    return ((this.totalCOGS - this.totalPrevCOGS) / Math.abs(this.totalPrevCOGS)) * 100;
+    return this.totalPrevCOGS !== 0 ? 
+      ((this.totalCOGS - this.totalPrevCOGS) / Math.abs(this.totalPrevCOGS)) * 100 : 0;
   }
 
   get grossProfitGrowth(): number {
-    return ((this.grossProfit - this.prevGrossProfit) / this.prevGrossProfit) * 100;
+    return this.prevGrossProfit !== 0 ? 
+      ((this.grossProfit - this.prevGrossProfit) / this.prevGrossProfit) * 100 : 0;
   }
 
   get operatingExpensesGrowth(): number {
-    return ((this.totalOperatingExpenses - this.totalPrevOperatingExpenses) / Math.abs(this.totalPrevOperatingExpenses)) * 100;
-  }
-
-  // Update metrics cards
-  updateMetrics(): void {
-    
+    return this.totalPrevOperatingExpenses !== 0 ? 
+      ((this.totalOperatingExpenses - this.totalPrevOperatingExpenses) / 
+       Math.abs(this.totalPrevOperatingExpenses)) * 100 : 0;
   }
 
   // Chart initialization
@@ -217,16 +377,20 @@ export class IncomeStatementComponent implements OnInit {
       series: [
         {
           name: "Revenue",
-          data: []
+          data: this.monthlyData.revenue
+        },
+        {
+          name: "Expenses",
+          data: this.monthlyData.expenses
         },
         {
           name: "Profit",
-          data: []
+          data: this.monthlyData.profit
         }
       ],
       chart: {
         height: 350,
-        type: "area",
+        type: "histogram",
         toolbar: {
           show: false
         }
@@ -239,7 +403,7 @@ export class IncomeStatementComponent implements OnInit {
         width: 2
       },
       xaxis: {
-        categories: []
+        categories: this.monthlyData.labels
       },
       tooltip: {
         x: {
@@ -250,7 +414,7 @@ export class IncomeStatementComponent implements OnInit {
         position: "top"
       },
       title: {
-        text: "Revenue & Profit Trend",
+        text: "Revenue & Expenses Trend",
         align: "left"
       }
     };
@@ -258,12 +422,27 @@ export class IncomeStatementComponent implements OnInit {
 
   initExpenseChart(): void {
     this.expenseChartOptions = {
-      series: [],
+      series: [{
+        name: 'Expenses',
+        data: [
+          Math.abs(this.totalAdministrativeExpenses),
+          Math.abs(this.totalSalariesWages),
+          Math.abs(this.totalMaintenance),
+          Math.abs(this.totalLogisticsDistribution),
+          Math.abs(this.totalOtherOperatingExpenses)
+        ]
+      }],
       chart: {
         type: "donut",
         height: 350
       },
-      labels: [],
+      labels: [
+        'Administrative',
+        'Salaries & Wages',
+        'Maintenance',
+        'Logistics & Distribution',
+        'Other Operating Expenses'
+      ],
       plotOptions: {
         pie: {
           donut: {
@@ -286,48 +465,39 @@ export class IncomeStatementComponent implements OnInit {
 
   // Update charts with current data
   updateCharts(): void {
-    // Generate monthly data for the selected year
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const currentYear = this.currentDate.getFullYear();
-    
-    // Revenue chart data
     this.revenueChartOptions.series = [
       {
         name: "Revenue",
-        data: months.map((_, i) => {
-          // Simulate some variation in revenue
-          const base = 2500000;
-          const variation = Math.sin(i * 0.5) * 500000;
-          return base + variation;
-        })
+        data: this.monthlyData.revenue
+      },
+      {
+        name: "Expenses",
+        data: this.monthlyData.expenses
       },
       {
         name: "Profit",
-        data: months.map((_, i) => {
-          // Simulate some variation in profit
-          const base = 500000;
-          const variation = Math.sin(i * 0.5 + 1) * 100000;
-          return base + variation;
-        })
+        data: this.monthlyData.profit
       }
     ];
-    
-    this.revenueChartOptions.xaxis = {
-      categories: months.map((m, i) => `${m} ${currentYear}`)
-    };
 
-    // Expense chart data
-   this.expenseChartOptions.series = [
-  {
-    name: 'Expenses',
-    data: this.operatingExpenses.map(e => Math.abs(e.amount))
-  }
-];
-
-    this.expenseChartOptions.labels = this.operatingExpenses.map(e => e.category);
+    this.expenseChartOptions.series = [{
+      name: 'Expenses',
+      data: [
+        Math.abs(this.totalAdministrativeExpenses),
+        Math.abs(this.totalSalariesWages),
+        Math.abs(this.totalMaintenance),
+        Math.abs(this.totalLogisticsDistribution),
+        Math.abs(this.totalOtherOperatingExpenses)
+      ]
+    }];
   }
 
-  // Filter modal functions
+  // Update metrics cards
+  updateMetrics(): void {
+
+  }
+
+  // Modal functions
   openFilterModal(): void {
     this.showFilterModal = true;
   }
@@ -336,68 +506,122 @@ export class IncomeStatementComponent implements OnInit {
     this.showFilterModal = false;
   }
 
+  toggleCommentsModal(): void {
+    this.showCommentsModal = !this.showCommentsModal;
+  }
+
+  toggleShareModal(): void {
+    this.showShareModal = !this.showShareModal;
+  }
+
+  toggleArchivesModal(): void {
+    this.showArchivesModal = !this.showArchivesModal;
+  }
+
   applyFilters(): void {
-    // In a real app, this would apply the selected filters and refresh data
     this.closeFilterModal();
     this.updateAllData();
+  }
+
+  // Save and export functions
+  saveStatement(): void {
+    this.isSaved = true;
+    const statementData = {
+      period: this.period,
+      reportType: this.reportType,
+      entity: this.entity,
+      dateRange: this.getFormattedDate(),
+      totalRevenue: this.totalRevenue,
+      totalCOGS: this.totalCOGS,
+      grossProfit: this.grossProfit,
+      totalOperatingExpenses: this.totalOperatingExpenses,
+      operatingIncome: this.operatingIncome,
+      netIncome: this.netIncome,
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem('savedIncomeStatement', JSON.stringify(statementData));
+    alert('Income Statement saved successfully!');
+  }
+
+  addComment(text: string): void {
+    const newComment: Comment = {
+      id: this.comments.length + 1,
+      author: 'Current User',
+      text,
+      timestamp: new Date().toISOString()
+    };
+    this.comments = [...this.comments, newComment];
+  }
+
+  async exportToPDF(): Promise<void> {
+    // if (this.statementContent) {
+    //   const canvas = await html2canvas(this.statementContent.nativeElement);
+    //   const imgData = canvas.toDataURL('image/png');
+    //   const pdf = new jsPDF({
+    //     orientation: 'portrait',
+    //     unit: 'mm',
+    //     format: 'a4'
+    //   });
+    //   const imgWidth = 210;
+    //   const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    //   pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+    //   pdf.save(`Income_Statement_${this.getFormattedDate()}.pdf`);
+    // }
+  }
+
+  exportToCSV(): void {
+    let csvContent = 'data:text/csv;charset=utf-8,';
+    csvContent += `Income Statement - ${this.getFormattedDate()}\n\n`;
+    
+    // Add Revenue section
+    csvContent += 'Revenue\n';
+    csvContent += 'Item,Amount,Budget,Variance\n';
+    this.revenueData.forEach(item => {
+      const budget = item.budget || 0;
+      const variance = item.amount - budget;
+      csvContent += `${item.name},${item.amount},${budget},${variance}\n`;
+    });
+    csvContent += `Total Revenue,${this.totalRevenue},${this.totalBudgetRevenue},${this.revenueVariance}\n\n`;
+    
+    //  COGS section
+    csvContent += 'Cost of Goods Sold\n';
+    csvContent += 'Item,Amount,Budget,Variance\n';
+    this.cogsData.forEach(item => {
+      const budget = item.budget || 0;
+      const variance = item.amount - budget;
+      csvContent += `${item.name},${item.amount},${budget},${variance}\n`;
+    });
+    csvContent += `Total COGS,${this.totalCOGS},${this.totalBudgetCOGS},${this.cogsVariance}\n\n`;
+    
+    // Operating Expenses section
+    csvContent += 'Operating Expenses\n';
+    csvContent += 'Category,Amount,Budget,Variance\n';
+    csvContent += `Administrative,${this.totalAdministrativeExpenses},${this.operatingExpenses.reduce((sum, item) => sum + (item.budget || 0), 0)},${this.totalAdministrativeExpenses - this.operatingExpenses.reduce((sum, item) => sum + (item.budget || 0), 0)}\n`;
+    csvContent += `Salaries & Wages,${this.totalSalariesWages},${this.SalariesWages.reduce((sum, item) => sum + (item.budget || 0), 0)},${this.totalSalariesWages - this.SalariesWages.reduce((sum, item) => sum + (item.budget || 0), 0)}\n`;
+    csvContent += `Maintenance,${this.totalMaintenance},${this.Maintenance.reduce((sum, item) => sum + (item.budget || 0), 0)},${this.totalMaintenance - this.Maintenance.reduce((sum, item) => sum + (item.budget || 0), 0)}\n`;
+    csvContent += `Logistics & Distribution,${this.totalLogisticsDistribution},${this.LogisticsDistribution.reduce((sum, item) => sum + (item.budget || 0), 0)},${this.totalLogisticsDistribution - this.LogisticsDistribution.reduce((sum, item) => sum + (item.budget || 0), 0)}\n`;
+    csvContent += `Other Operating Expenses,${this.totalOtherOperatingExpenses},${this.otherOperatingExpenses.reduce((sum, item) => sum + (item.budget || 0), 0)},${this.totalOtherOperatingExpenses - this.otherOperatingExpenses.reduce((sum, item) => sum + (item.budget || 0), 0)}\n`;
+    csvContent += `Total Operating Expenses,${this.totalOperatingExpenses},${this.totalBudgetOperatingExpenses},${this.operatingExpensesVariance}\n\n`;
+    
+    // Summary section
+    csvContent += 'Summary\n';
+    csvContent += `Gross Profit,${this.grossProfit}\n`;
+    csvContent += `Operating Income,${this.operatingIncome}\n`;
+    csvContent += `Net Income Before Tax,${this.netIncomeBeforeTax}\n`;
+    csvContent += `Net Income,${this.netIncome}\n`;
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Income_Statement_${this.getFormattedDate()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   // Print function
   printPage(): void {
     window.print();
-  }
-
-  // Export to Excel
-  exportToExcel(): void {
-    // Prepare data for export
-    const data = [
-      ['Income Statement', '', '', ''],
-      ['', 'Current Period', 'Previous Period', 'Change'],
-      ...this.revenueData.map(item => [
-        item.name,
-        this.formatCurrency(item.amount),
-        this.formatCurrency(item.prevAmount),
-        this.formatPercentage((item.amount - item.prevAmount) / item.prevAmount)
-      ]),
-      ['Total Revenue', this.formatCurrency(this.totalRevenue), this.formatCurrency(this.totalPrevRevenue), this.formatPercentage(this.revenueGrowth)],
-      ['', '', '', ''],
-      ...this.cogsData.map(item => [
-        item.name,
-        this.formatCurrency(item.amount),
-        this.formatCurrency(item.prevAmount),
-        this.formatPercentage((item.amount - item.prevAmount) / Math.abs(item.prevAmount))
-      ]),
-      ['Total COGS', this.formatCurrency(this.totalCOGS), this.formatCurrency(this.totalPrevCOGS), this.formatPercentage(this.cogsGrowth)],
-      ['Gross Profit', this.formatCurrency(this.grossProfit), this.formatCurrency(this.prevGrossProfit), this.formatPercentage(this.grossProfitGrowth)],
-      ['', '', '', ''],
-      ...this.operatingExpenses.map(item => [
-        item.category,
-        this.formatCurrency(item.amount),
-        this.formatCurrency(item.prevAmount),
-        this.formatPercentage((item.amount - item.prevAmount) / Math.abs(item.prevAmount))
-      ]),
-      ['Total Operating Expenses', this.formatCurrency(this.totalOperatingExpenses), this.formatCurrency(this.totalPrevOperatingExpenses), this.formatPercentage(this.operatingExpensesGrowth)],
-      ['Operating Income', this.formatCurrency(this.operatingIncome), '', ''],
-      ['', '', '', ''],
-      ...this.otherItems.map(item => [
-        item.name,
-        this.formatCurrency(item.amount),
-        this.formatCurrency(item.prevAmount),
-        this.formatPercentage((item.amount - item.prevAmount) / (item.prevAmount || 1))
-      ]),
-      ['Total Other Items', this.formatCurrency(this.totalOtherItems), '', ''],
-      ['Net Income Before Tax', this.formatCurrency(this.netIncomeBeforeTax), '', ''],
-      ['Income Tax Expense', this.formatCurrency(this.taxExpense.amount), this.formatCurrency(this.taxExpense.prevAmount), ''],
-      ['Net Profit After Tax', this.formatCurrency(this.netIncome), '', this.formatPercentage(this.netProfitMargin)]
-    ];
-
-    // // Create workbook
-    // const ws: XLSX.WorkSheet = XLSX.utils.aoa_to_sheet(data);
-    // const wb: XLSX.WorkBook = XLSX.utils.book_new();
-    // XLSX.utils.book_append_sheet(wb, ws, 'Income Statement');
-
-    // // Generate and download file
-    // XLSX.writeFile(wb, `Income_Statement_${this.getFormattedDate()}.xlsx`);
   }
 
   // Helper functions
@@ -441,6 +665,11 @@ export class IncomeStatementComponent implements OnInit {
         title: `Operating expenses ${this.operatingExpensesGrowth <= 0 ? 'decreased' : 'increased'}`,
         description: `Operating expenses ${this.operatingExpensesGrowth <= 0 ? 'decreased' : 'increased'} by ${this.formatPercentage(Math.abs(this.operatingExpensesGrowth))}`,
         trend: this.operatingExpensesGrowth <= 0 ? 'positive' : 'negative'
+      },
+      {
+        title: `Revenue ${this.revenueVariance >= 0 ? 'exceeded' : 'fell short of'} budget`,
+        description: `Revenue is ${this.formatCurrency(Math.abs(this.revenueVariance))} ${this.revenueVariance >= 0 ? 'above' : 'below'} budget`,
+        trend: this.revenueVariance >= 0 ? 'positive' : 'negative'
       }
     ];
   }

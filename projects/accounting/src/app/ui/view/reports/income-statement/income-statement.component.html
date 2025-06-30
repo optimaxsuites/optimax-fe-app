@@ -1,4 +1,4 @@
-<div class="container">
+<div class="container" #statementContent>
   <div class="header">
     <h1 class="main-title">Income Statement</h1>
     <div class="statement-controls">
@@ -20,12 +20,19 @@
         <button class="action-btn" (click)="openFilterModal()">
           <i class="fa fa-filter"></i>
         </button>
+
+        <button class="action-btn" (click)="toggleArchivesModal()">
+          <i class="fa fa-archive"></i>
+        </button>
         <button class="action-btn" (click)="printPage()">
           <i class="fa fa-print"></i>
         </button>
-        <button class="action-btn" (click)="exportToExcel()">
-          <i class="fa fa-download"></i>
+        <button class="action-btn" (click)="exportToPDF()">
+          <i class="fa fa-file-pdf"></i>
         </button>
+        <!-- <button class="action-btn" (click)="exportToCSV()">
+          <i class="fa fa-file-excel"></i>
+        </button> -->
       </div>
     </div>
   </div>
@@ -87,6 +94,57 @@
     </div>
   </div>
 
+  <!-- Comments Modal -->
+  <div class="modal-overlay" *ngIf="showCommentsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Comments</h3>
+        <button class="close-btn" (click)="toggleCommentsModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="comment-list">
+          <div class="comment-item" *ngFor="let comment of comments">
+            <div class="comment-header">
+              <span class="comment-author">{{comment.author}}</span>
+              <span class="comment-date">{{comment.timestamp | date:'short'}}</span>
+            </div>
+            <div class="comment-text">{{comment.text}}</div>
+          </div>
+        </div>
+        <div class="comment-input">
+          <textarea placeholder="Add your comment..." #newComment></textarea>
+          <button class="btn btn-primary" (click)="addComment(newComment.value); newComment.value=''">Add Comment</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Archives Modal -->
+  <div class="modal-overlay" *ngIf="showArchivesModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Saved Statements</h3>
+        <button class="close-btn" (click)="toggleArchivesModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="saved-statement" *ngIf="isSaved">
+          <div class="saved-statement-header">
+            <span>Saved Statement ({{getFormattedDate()}})</span>
+            <button class="btn btn-sm btn-secondary">Load</button>
+          </div>
+          <div class="saved-statement-details">
+            <span>Period: {{period}}</span>
+            <span>Revenue: {{formatCurrency(totalRevenue)}}</span>
+            <span>Net Income: {{formatCurrency(netIncome)}}</span>
+          </div>
+        </div>
+        <div class="no-saved" *ngIf="!isSaved">
+          No saved statements found
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Metrics Cards -->
   <div class="metrics-grid">
     <div class="metric-card" [ngClass]="revenueGrowth >= 0 ? 'positive' : 'negative'">
@@ -98,6 +156,9 @@
       <div class="metric-value">{{ formatCurrency(totalRevenue) }}</div>
       <div class="metric-comparison">
         {{ revenueGrowth >= 0 ? '▲' : '▼' }}{{ formatPercentage(Math.abs(revenueGrowth)) }} (YoY)
+        <span *ngIf="reportType === 'Actual vs Budget'">
+          <br>{{ revenueVariance >= 0 ? '▲' : '▼' }}{{ formatCurrency(Math.abs(revenueVariance)) }} vs Budget
+        </span>
       </div>
     </div>
 
@@ -110,6 +171,9 @@
       <div class="metric-value">{{ formatCurrency(totalCOGS) }}</div>
       <div class="metric-comparison">
         {{ cogsGrowth <= 0 ? '▼' : '▲' }}{{ formatPercentage(Math.abs(cogsGrowth)) }} (YoY)
+        <span *ngIf="reportType === 'Actual vs Budget'">
+          <br>{{ cogsVariance <= 0 ? '▼' : '▲' }}{{ formatCurrency(Math.abs(cogsVariance)) }} vs Budget
+        </span>
       </div>
     </div>
 
@@ -122,17 +186,24 @@
       <div class="metric-value">{{ formatCurrency(grossProfit) }}</div>
       <div class="metric-comparison">
         {{ grossProfitGrowth >= 0 ? '▲' : '▼' }}{{ formatPercentage(Math.abs(grossProfitGrowth)) }} (YoY)
+        <span *ngIf="reportType === 'Actual vs Budget'">
+          <br>{{ (grossProfit - budgetGrossProfit) >= 0 ? '▲' : '▼' }}{{ formatCurrency(Math.abs(grossProfit - budgetGrossProfit)) }} vs Budget
+        </span>
       </div>
     </div>
 
-    <div class="metric-card neutral">
+    <div class="metric-card" [ngClass]="operatingExpensesGrowth <= 0 ? 'positive' : 'negative'">
       <div class="metric-header">
         <h3>Operating Expenses</h3>
-        <i class="ri-scales-line"></i>
+        <i class="ri-arrow-up-line trend-up" *ngIf="operatingExpensesGrowth <= 0"></i>
+        <i class="ri-arrow-down-line trend-down" *ngIf="operatingExpensesGrowth > 0"></i>
       </div>
       <div class="metric-value">{{ formatCurrency(totalOperatingExpenses) }}</div>
       <div class="metric-comparison">
         {{ operatingExpensesGrowth <= 0 ? '▼' : '▲' }}{{ formatPercentage(Math.abs(operatingExpensesGrowth)) }} (YoY)
+        <span *ngIf="reportType === 'Actual vs Budget'">
+          <br>{{ operatingExpensesVariance <= 0 ? '▼' : '▲' }}{{ formatCurrency(Math.abs(operatingExpensesVariance)) }} vs Budget
+        </span>
       </div>
     </div>
   </div>
@@ -143,13 +214,15 @@
       <!-- Revenue Section -->
       <div class="statement-section">
         <h2 class="section-title">Revenue</h2>
-        <div class="field">
-          <div class="section-items">
+        <div class="section-items">
           <div class="section-item" *ngFor="let item of revenueData">
             <span class="item-name">{{ item.name }}</span>
             <span class="item-value">{{ formatCurrency(item.amount) }}</span>
             <span class="item-comparison" *ngIf="showVariance">
               {{ formatPercentage((item.amount - item.prevAmount) / item.prevAmount) }}
+            </span>
+            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
+              {{ formatCurrency(item.budget || 0) }}
             </span>
           </div>
           <div class="section-total">
@@ -158,20 +231,25 @@
             <span class="item-comparison" *ngIf="showVariance">
               {{ formatPercentage(revenueGrowth) }}
             </span>
+            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
+              {{ formatCurrency(totalBudgetRevenue) }}
+            </span>
           </div>
-        </div>
         </div>
       </div>
 
       <!-- COGS Section -->
       <div class="statement-section">
-        <h2 class="section-title">Cost of Goods Sold</h2>
+        <h2 class="section-title">Cost of Services</h2>
         <div class="section-items">
           <div class="section-item" *ngFor="let item of cogsData">
             <span class="item-name">{{ item.name }}</span>
             <span class="item-value negative">{{ formatCurrency(item.amount) }}</span>
             <span class="item-comparison" *ngIf="showVariance">
               {{ formatPercentage((item.amount - item.prevAmount) / Math.abs(item.prevAmount)) }}
+            </span>
+            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
+              {{ formatCurrency(item.budget || 0) }}
             </span>
           </div>
           <div class="section-total">
@@ -180,11 +258,14 @@
             <span class="item-comparison" *ngIf="showVariance">
               {{ formatPercentage(cogsGrowth) }}
             </span>
+            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
+              {{ formatCurrency(totalBudgetCOGS) }}
+            </span>
           </div>
         </div>
       </div>
 
-      <!-- Gross Profit -->
+ <!-- Gross Profit -->
       <div class="profit-section">
         <div class="profit-card">
           <h3 class="profit-title">Gross Profit</h3>
@@ -193,41 +274,107 @@
             <div class="profit-meta" *ngIf="showPercentages">
               {{ grossProfitMargin.toFixed(1) }}% of revenue
             </div>
+            <div class="profit-budget" *ngIf="reportType === 'Actual vs Budget'">
+              Budget: {{ formatCurrency(budgetGrossProfit) }}
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Operating Expenses Sections -->
       <div class="statement-section">
-        <h2 class="section-title">Operating Expenses</h2>
-        
-        <div *ngFor="let category of operatingExpenses">
-          <h3 class="section-title" style="font-size: 16px">{{ category.category }}</h3>
-          <div class="section-items">
-            <!-- In a real app, you would list individual items here -->
-            <div class="section-item">
-              <span class="item-name">Total {{ category.category }}</span>
-              <span class="item-value negative">{{ formatCurrency(category.amount) }}</span>
-              <span class="item-comparison" *ngIf="showVariance">
-                {{ formatPercentage((category.amount - category.prevAmount) / Math.abs(category.prevAmount)) }}
-              </span>
-            </div>
+        <h2 class="section-title">Salaries & Wages</h2>
+        <div class="section-items">
+          <div class="section-item" *ngFor="let item of SalariesWages">
+            <span class="item-name">{{ item.name }}</span>
+            <span class="item-value negative">{{ formatCurrency(item.amount) }}</span>
+            <span class="item-comparison" *ngIf="showVariance">
+              {{ formatPercentage((item.amount - item.prevAmount) / Math.abs(item.prevAmount)) }}
+            </span>
+             <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
+              {{ formatCurrency(item.budget || 0) }}
+            </span>
+          </div>
+          <div class="section-total">
+            <span>Total Salaries & Wages</span>
+            <span class="negative">{{ formatCurrency(totalSalariesWages) }}</span>
+            <span class="item-comparison" *ngIf="showVariance">
+              {{ formatPercentage((totalSalariesWages - totalPrevSalariesWages) / Math.abs(totalPrevSalariesWages)) }}
+            </span>
+           
           </div>
         </div>
-        
-        <!-- Total Operating Expenses -->
-        <div class="section-items" style="margin-top: 16px;">
-          <div class="section-total">
-            <span>Total Operating Expenses</span>
-            <span class="negative">{{ formatCurrency(totalOperatingExpenses) }}</span>
+      </div>
+
+      <div class="statement-section">
+        <h2 class="section-title">Maintenance</h2>
+        <div class="section-items">
+          <div class="section-item" *ngFor="let item of Maintenance">
+            <span class="item-name">{{ item.name }}</span>
+            <span class="item-value negative">{{ formatCurrency(item.amount) }}</span>
             <span class="item-comparison" *ngIf="showVariance">
-              {{ formatPercentage(operatingExpensesGrowth) }}
+              {{ formatPercentage((item.amount - item.prevAmount) / Math.abs(item.prevAmount)) }}
+            </span>
+             <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
+              {{ formatCurrency(item.budget || 0) }}
+            </span>
+          </div>
+          <div class="section-total">
+            <span>Total Maintenance</span>
+            <span class="negative">{{ formatCurrency(totalMaintenance) }}</span>
+            <span class="item-comparison" *ngIf="showVariance">
+              {{ formatPercentage((totalMaintenance - totalPrevMaintenance) / Math.abs(totalPrevMaintenance)) }}
             </span>
           </div>
         </div>
       </div>
 
-      <!-- Operating Income -->
+      <div class="statement-section">
+        <h2 class="section-title">Logistics & Distribution</h2>
+        <div class="section-items">
+          <div class="section-item" *ngFor="let item of LogisticsDistribution">
+            <span class="item-name">{{ item.name }}</span>
+            <span class="item-value negative">{{ formatCurrency(item.amount) }}</span>
+            <span class="item-comparison" *ngIf="showVariance">
+              {{ formatPercentage((item.amount - item.prevAmount) / Math.abs(item.prevAmount)) }}
+            </span>
+             <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
+              {{ formatCurrency(item.budget || 0) }}
+            </span>
+          </div>
+          <div class="section-total">
+            <span>Total Logistics & Distribution</span>
+            <span class="negative">{{ formatCurrency(totalLogisticsDistribution) }}</span>
+            <span class="item-comparison" *ngIf="showVariance">
+              {{ formatPercentage((totalLogisticsDistribution - totalPrevLogisticsDistribution) / Math.abs(totalPrevLogisticsDistribution)) }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="statement-section">
+        <h2 class="section-title">Other Operating Expenses</h2>
+        <div class="section-items">
+          <div class="section-item" *ngFor="let item of otherOperatingExpenses">
+            <span class="item-name">{{ item.name }}</span>
+            <span class="item-value negative">{{ formatCurrency(item.amount) }}</span>
+            <span class="item-comparison" *ngIf="showVariance">
+              {{ formatPercentage((item.amount - item.prevAmount) / Math.abs(item.prevAmount)) }}
+            </span>
+             <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
+              {{ formatCurrency(item.budget || 0) }}
+            </span>
+          </div>
+          <div class="section-total">
+            <span>Total Other Operating Expenses</span>
+            <span class="negative">{{ formatCurrency(totalOtherOperatingExpenses) }}</span>
+            <span class="item-comparison" *ngIf="showVariance">
+              {{ formatPercentage((totalOtherOperatingExpenses - totalPrevOtherOperatingExpenses) / Math.abs(totalPrevOtherOperatingExpenses)) }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+          <!-- Operating Income -->
       <div class="profit-section">
         <div class="profit-card">
           <h3 class="profit-title">Operating Income (EBIT)</h3>
@@ -235,6 +382,9 @@
             <div class="profit-value">{{ formatCurrency(operatingIncome) }}</div>
             <div class="profit-meta" *ngIf="showPercentages">
               {{ operatingMargin.toFixed(1) }}% of revenue
+            </div>
+            <div class="profit-budget" *ngIf="reportType === 'Actual vs Budget'">
+              Budget: {{ formatCurrency(budgetOperatingIncome) }}
             </div>
           </div>
         </div>
@@ -252,6 +402,9 @@
             <span class="item-comparison" *ngIf="showVariance && item.prevAmount !== 0">
               {{ formatPercentage((item.amount - item.prevAmount) / Math.abs(item.prevAmount)) }}
             </span>
+            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
+              {{ formatCurrency(item.budget || 0) }}
+            </span>
           </div>
           <div class="section-total">
             <span>Total Other Income & Expenses</span>
@@ -260,26 +413,7 @@
         </div>
       </div>
 
-      <!-- Net Income Before Tax -->
-      <div class="section-items" style="margin-top: 24px">
-        <div class="section-total">
-          <span>Net Profit Before Tax</span>
-          <span>{{ formatCurrency(netIncomeBeforeTax) }}</span>
-        </div>
-      </div>
-
-      <!-- Tax Expense -->
-      <div class="section-items" style="margin-top: 8px">
-        <div class="section-item">
-          <span class="item-name">{{ taxExpense.name }}</span>
-          <span class="item-value negative">{{ formatCurrency(taxExpense.amount) }}</span>
-          <span class="item-comparison" *ngIf="showVariance">
-            {{ formatPercentage((taxExpense.amount - taxExpense.prevAmount) / Math.abs(taxExpense.prevAmount)) }}
-          </span>
-        </div>
-      </div>
-
-      <!-- Net Income -->
+      <!-- Net Income Section -->
       <div class="net-profit">
         <div class="net-profit-card">
           <h3 class="net-profit-title">Net Profit After Tax</h3>
@@ -338,8 +472,12 @@
 
       <!-- Actions Bar -->
       <div class="actions-bar">
-        <button class="btn btn-secondary" (click)="exportToExcel()">Export</button>
-        <button class="btn btn-primary" (click)="printPage()">Print</button>
+        <button class="action-btn" (click)="saveStatement()" [disabled]="isSaved">
+          {{ isSaved ? 'Saved' : 'Save Statement' }}
+        </button>
+        <button class="action-btn" (click)="exportToPDF()">Export PDF</button>
+        <button class="action-btn" (click)="exportToCSV()">Export CSV</button>
+        <button class="action-btn" (click)="toggleCommentsModal()">comments</button>
       </div>
     </div>
   </div>
