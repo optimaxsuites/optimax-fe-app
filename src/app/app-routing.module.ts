@@ -24,7 +24,7 @@ import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.c
 // import { RequestDetailsComponent } from './ui/pos/view/request-details/request-details.component';
 // import { OpenRegisterComponent } from './ui/pos/view/open-register/open-register.component';
 // import { CloseRegisterComponent } from './ui/pos/view/close-register/close-register.component';
-// import { AuthGuard } from './ui/auth/service/auth.guard';
+import { AuthGuard } from './ui/auth/service/auth.guard';
 import { JopOpeningsComponent } from './jop.openings.component';
 import { CareerJobPostingComponent } from './ui/shared/view/career-job-posting/career-job-posting.component';
 import { JobApplicationFormComponent } from './ui/shared/view/job-application-form/job-application-form.component';
@@ -73,12 +73,12 @@ const routes: Routes = [
   {
     path: 'admin/settings/user-reg/:uuid',
     component: UserRegLayoutComponent,
-    // canActivate: [AuthGuard],
+    canActivate: [AuthGuard],
   },
   {
     path: 'business-registration',
     component: BusinessRegComponent,
-    // canActivate: [AuthGuard],
+    canActivate: [AuthGuard],
   },
   {
     path: 'user/onboarding/:id/:uuid',
@@ -87,7 +87,7 @@ const routes: Routes = [
   {
     path: 'user',
     component: UserComponent,
-    // canActivate: [AuthGuard],
+    canActivate: [AuthGuard],
     children: [
       {
         path: 'checkout',
@@ -103,7 +103,7 @@ const routes: Routes = [
   {
     path: 'admin',
     component: MasterComponent,
-    // canActivate: [AuthGuard],
+    canActivate: [AuthGuard],
     children: [
       {
         path: 'dashboard',
