@@ -7,7 +7,6 @@ import {
   RoomTypeDTO,
   RoomStatus,
 } from '../../hospitality/hotelservice.service';
-import { Location } from '@angular/common';
 
 @Component({
   selector: 'app-hotel-rooms',
@@ -39,8 +38,7 @@ export class HotelRoomsComponent {
   constructor(
     private fb: FormBuilder,
     private messageService: MessageService,
-    private hotelService: HotelserviceService,
-    private location: Location
+    private hotelService: HotelserviceService
   ) {
     this.roomStatuses = this.hotelService.getRoomStatuses();
     this.createForms();
@@ -115,14 +113,12 @@ export class HotelRoomsComponent {
       });
       return;
     }
-
     this.creatingRoomType = true;
     const newRoomType: RoomTypeDTO = {
       id: 0,
       name: this.roomTypeForm.value.name,
       description: this.roomTypeForm.value.description,
     };
-
     this.hotelService.createRoomType(newRoomType).subscribe({
       next: (createdRoomType) => {
         this.messageService.add({
@@ -159,15 +155,22 @@ export class HotelRoomsComponent {
       this.markFormGroupTouched(this.roomForm);
       return;
     }
-
     this.loading = true;
     const selectedTypeId = this.roomForm.value.roomType;
     const selectedType = this.roomTypes.find((rt) => rt.id === selectedTypeId);
-
+    if (!selectedType) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Room Type Error',
+        detail: 'Selected room type not found.',
+      });
+      this.loading = false;
+      return;
+    }
     const newRoom: Room = {
       id: 0,
       roomNumber: this.roomForm.value.roomNumber,
-      roomType: selectedType!,
+      roomType: selectedType,
       roomStatus: this.roomForm.value.roomStatus,
       floor: this.roomForm.value.floor,
       rate: this.roomForm.value.rate,
@@ -179,7 +182,6 @@ export class HotelRoomsComponent {
       accessible: this.roomForm.value.accessible,
       isSmokingAllowed: this.roomForm.value.isSmokingAllowed,
     };
-
     this.hotelService.createRoom(newRoom).subscribe({
       next: (createdRoom) => {
         this.messageService.add({
@@ -241,7 +243,6 @@ export class HotelRoomsComponent {
   closeRoomModal() {
     this.openRoomForm = false;
     document.body.classList.remove('overflow-hidden');
-    this.location.back();
   }
 
   addAmenity(): void {
@@ -270,5 +271,9 @@ export class HotelRoomsComponent {
         this.markFormGroupTouched(control);
       }
     });
+  }
+
+  onCancel(): void {
+    this.cancel.emit();
   }
 }

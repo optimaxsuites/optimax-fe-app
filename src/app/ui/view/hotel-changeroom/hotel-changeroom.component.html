@@ -8,7 +8,9 @@
     <div class="relative bg-gradient-to-r from-blue-900 to-emerald-800 p-6">
       <h2 class="text-3xl font-bold text-white">Changing of Room</h2>
       <p class="text-white/90 text-lg mt-1">
-        Moving from Room {{ currentRoom.number }} ({{ currentRoom.type }})
+        Moving from Room {{ currentRoom.roomNumber }} ({{
+          currentRoom.roomType.name
+        }})
       </p>
       <button
         (click)="goBack()"
@@ -29,32 +31,67 @@
           <div>
             <p class="text-xl text-gray-500">Guest Name</p>
             <p class="font-medium text-lg">
-              {{ currentRoom.guest?.title }} {{ currentRoom.guest?.firstName }}
-              {{ currentRoom.guest?.lastName }}
+              {{ getGuestForRoom(currentRoom.id)?.title }}
+              {{ getGuestForRoom(currentRoom.id)?.firstName }}
+              {{ getGuestForRoom(currentRoom.id)?.lastName }}
             </p>
           </div>
+          <div>
+            <p class="text-xl text-gray-500">Phone</p>
+            <p class="font-medium text-lg">
+              {{ getGuestForRoom(currentRoom.id)?.phone }}
+            </p>
+          </div>
+          <div>
+            <p class="text-xl text-gray-500">Email</p>
+            <p class="font-medium text-lg">
+              {{ getGuestForRoom(currentRoom.id)?.email }}
+            </p>
+          </div>
+          <div>
+            <p class="text-xl text-gray-500">ID Number</p>
+            <p class="font-medium text-lg">
+              {{ getGuestForRoom(currentRoom.id)?.idNumber }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Booking Information -->
+      <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-4">
+        <h3 class="font-medium text-2xl text-gray-700 mb-2">
+          Booking Information
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p class="text-xl text-gray-500">Check-In Date</p>
             <p class="font-medium text-lg">
               {{
-                currentRoom.bookingDetails?.checkinDate | date : "mediumDate"
+                getBookingForRoom(currentRoom.id)?.checkinDate
+                  | date : "mediumDate"
               }}
             </p>
           </div>
           <div>
             <p class="text-xl text-gray-500">Check-Out Date</p>
-            <p class="text-lg font-medium">
+            <p class="font-medium text-lg">
               {{
-                currentRoom.bookingDetails?.checkoutDate | date : "mediumDate"
+                getBookingForRoom(currentRoom.id)?.checkoutDate
+                  | date : "mediumDate"
               }}
             </p>
           </div>
           <div>
-            <p class="text-xl text-gray-500">Room Rate</p>
-            <p class="text-lg font-medium">
-              {{
-                currentRoom.rate | currency : "NGN" : "symbol" : "1.0-0"
-              }}/night
+            <p class="text-xl text-gray-500">Adults/Children</p>
+            <p class="font-medium text-lg">
+              {{ getBookingForRoom(currentRoom.id)?.adults }} /
+              {{ getBookingForRoom(currentRoom.id)?.children || 0 }}
+            </p>
+          </div>
+          <div *ngIf="getBookingForRoom(currentRoom.id)?.specialRequests">
+            <p class="text-xl text-gray-500">Special Requests</p>
+            <p class="font-medium text-lg">
+              {{ getBookingForRoom(currentRoom.id)?.specialRequests }}
             </p>
           </div>
         </div>
@@ -112,11 +149,11 @@
         <div class="grid grid-cols-2 gap-2">
           <div>
             <p class="text-xl text-blue-600">Room Number</p>
-            <p class="font-medium text-lg">{{ selectedRoom.number }}</p>
+            <p class="font-medium text-lg">{{ selectedRoom.roomNumber }}</p>
           </div>
           <div>
             <p class="text-xl text-blue-600">Type</p>
-            <p class="text-lg font-medium">{{ selectedRoom.type }}</p>
+            <p class="text-lg font-medium">{{ selectedRoom.roomType.name }}</p>
           </div>
           <div>
             <p class="text-xl text-blue-600">Floor</p>
@@ -155,7 +192,7 @@
           <div>
             <label class="block font-medium text-2xl text-gray-700 mb-8"
               >Maintenance Work for Current Room ({{
-                currentRoom.number
+                currentRoom.roomNumber
               }})</label
             >
             <div class="grid grid-cols-2 text-lg gap-2">
