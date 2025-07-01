@@ -1,0 +1,89 @@
+.sale-summary-container {
+  max-width: 100%;
+  width: 100%;
+  margin: 0 auto;
+
+  .transaction-summary,
+  .sale-items {
+    transition: all 0.3s ease;
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+  }
+
+  .summary-item {
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #f9fafb;
+
+    .label {
+      margin-bottom: 4px;
+    }
+  }
+
+  :host ::ng-deep {
+    .p-datatable {
+      .p-datatable-header {
+        background: #f9fafb;
+        border-top-left-radius: 6px;
+        border-top-right-radius: 6px;
+      }
+
+      .p-datatable-footer {
+        background: #f9fafb;
+      }
+
+      th {
+        background: #f1f5f9;
+        padding: 0.75rem;
+        font-weight: 600;
+      }
+
+      td {
+        padding: 0.75rem;
+      }
+    }
+
+    .p-paginator {
+      background: #f9fafb;
+      border-bottom-left-radius: 6px;
+      border-bottom-right-radius: 6px;
+    }
+
+    .btn-navigate {
+      .p-button {
+        background-color: #3b82f6;
+        border-color: #3b82f6;
+
+        &:hover {
+          background-color: #2563eb;
+          border-color: #2563eb;
+        }
+      }
+    }
+  }
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.payment-info {
+  margin-top: 2rem;
+}
+
+// Additional responsive styles
+@media (max-width: 768px) {
+  .summary-content {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .summary-content {
+    grid-template-columns: 1fr;
+  }
+}

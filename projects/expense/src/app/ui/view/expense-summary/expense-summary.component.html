@@ -1,0 +1,86 @@
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+
+<div class="form-buttons" (click)=" goBack()">
+
+  <div class="arrow-left">
+    <div></div>
+  </div>
+  </div>
+
+
+<div class="table-container">
+  <div class="container-header">
+    <p-toolbar styleClass="mb-4 gap-2">
+      <ng-template pTemplate="left">
+        <app-button text="Delete" class="btn-delete"></app-button>
+      </ng-template>
+
+      <ng-template pTemplate="right">
+        <app-button text="Accept" class="btn-export gap-2"></app-button>
+        <app-button text="Reject" class="btn-delete"></app-button>
+      </ng-template>
+    </p-toolbar>
+
+    <div class="table-container ml-5 mr-5">
+    <p-table [value]="requests" [paginator]="true" styleClass="p-datatable-striped" [rows]="15"  >
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+          <th class="table-item">Date</th>
+          <th class="table-item">Expense</th>
+          <th class="table-item">Merchant</th>
+          <th class="table-item">Category</th>
+          <th class="table-item">Amount</th>
+          <th class="table-item">Submitted By</th>
+          <th class="table-item">Status</th>
+          <th class="table-item">Actions</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-request let-i="rowIndex">
+        <tr>
+          <td><p-tableCheckbox [value]="request" /></td>
+          <td class="table-item">{{ request.eventDate }}</td>
+          <td class="table-item">{{ request.name }}</td>
+          <td class="table-item">{{ request.merchant }}</td>
+          <td class="table-item">{{ request.category }}</td>
+          <td class="table-item">{{ request.amount }}</td>
+          <td class="table-item">{{ request.id }}</td>
+          <td class="tabble-item">
+            <span *ngIf="request.status === 'Pending'" class="material-symbols-outlined status-icon " [ngClass]="'pending-icon'">
+              schedule
+            </span>
+            <span *ngIf="request.status === 'Approved'" class="material-symbols-outlined status-icon" [ngClass]="'approved-icon'">
+              check
+            </span>
+            <span *ngIf="request.status === 'Rejected'" class="material-symbols-outlined status-icon" [ngClass]="'rejected-icon'">
+              close
+            </span>
+          
+            <span class="status-text">
+              {{ request.status }}
+            </span>
+          </td>          
+          
+            
+
+          
+          <td class="dropdown-container">
+            <span class="material-symbols-outlined action-icon">more_vert</span>
+            <div class="dropdown-content">
+              <a (click)="approve(request)">
+                <span class="material-symbols-outlined">check_circle</span> Accept
+              </a>
+              <a (click)="reject(request)">
+                <span class="material-symbols-outlined">cancel</span> Reject
+              </a>
+            </div>
+          </td>
+          
+        </tr>
+      </ng-template>
+    </p-table>
+
+    </div>
+  </div>
+</div>

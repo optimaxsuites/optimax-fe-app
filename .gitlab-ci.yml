@@ -1,0 +1,44 @@
+stages:
+    - update_subtrees
+
+update_subtrees:
+    stage: update_subtrees
+    script:
+        - echo "updating subtrees"
+        - git config user.name "queensheba"
+        - git config user.email "q.oluwadare@centrifugegroup.com"
+        # - git subtree pull --prefix=projects/hr https://oauth2:${LOGIN_TOKEN}@gitlab.com/Simeon0001/erp-hr.git master --squash
+        # - echo "pulled hr"
+        - git subtree pull --prefix=projects/accounting https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-accounting.git main --squash
+        - echo "pulled accounting"
+        # - git subtree pull --prefix=projects/CRM https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-crm.git master --squash
+        # - echo "pulled CRM"
+        # - git subtree pull --prefix=projects/dashboard https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-dashboard.git master --squash
+        # - echo "pulled dashboard"
+        # - git subtree pull --prefix=projects/expense https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-expenses.git master --squash
+        # - echo "pulled expense"
+        # - git subtree pull --prefix=projects/inventory https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/eep-inventory.git master --squash
+        # - echo "pulled inventory"
+        - git subtree pull --prefix=projects/POS https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-pos.git master --squash
+        - echo "pulled POS"
+        # - git subtree pull --prefix=projects/productivity https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-productivity.git master --squash
+        # - echo "pulled productivity"
+        # - git subtree pull --prefix=projects/procurement https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-procurement.git master --squash
+        # - echo "pulled procurement"
+        # - git subtree pull --prefix=projects/purchase https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-purchase.git master --squash
+        # - echo "pulled purchase"
+        # - git subtree pull --prefix=projects/settings https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-settings.git master --squash
+        # - echo "pulled settings"
+        # - git subtree pull --prefix=projects/vendor https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-vendor.git master --squash
+        # - echo "pulled vendor"
+        # - git subtree pull --prefix=projects/tender https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/erp-tender.git master --squash
+        # - echo "pulled tender"
+        - git subtree pull  --prefix=projects/hospitality https://oauth2:${LOGIN_TOKEN}@gitlab.com/queensheba/hospitality.git master --squash
+        - echo "pulled tender"
+        - git checkout -b temp-branch
+        - git checkout mod
+        - git merge temp-branch
+        - git remote set-url origin "https://oauth2:${LOGIN_TOKEN}@gitlab.com/j2yemi/optimax_fe_app.git"
+        - git push origin mod || (echo "Retrying push" && git push origin mod)
+
+    rules:

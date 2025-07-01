@@ -1,0 +1,148 @@
+@if(!isViewPageOpen){
+  <div class="bg-white rounded-lg shadow-md p-6 m-6">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+      <!-- <h2 class="text-xl font-semibold text-gray-800 mb-4 md:mb-0">Orders List</h2> -->
+      
+      <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
+        <!-- Search input -->
+        <div class="relative flex-[2]">
+          <input
+            type="text"
+            [(ngModel)]="searchText"
+            (input)="applyFiltersAndSort()"
+            placeholder="Search orders..."
+            class="w-full h-full md:w-64 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute right-3 top-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        
+        <!-- Status filter -->
+        <!-- <select
+          [(ngModel)]="statusFilter"
+          (change)="applyFiltersAndSort()"
+          class="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <option *ngFor="let option of statusOptions" [value]="option.value">
+            {{ option.label }}
+          </option>
+        </select> -->
+
+         <!-- Cashier Filter -->
+         <div class="flex-1">
+          <ng-select
+            [items]="cashiers"
+            [multiple]="false"
+            placeholder="Filter by cashier"
+            class="rounded-lg border-gray-300 shadow-sm"
+            [(ngModel)]="selectedCashier"
+            (ngModelChange)="applyFiltersAndSort()"
+          >
+          </ng-select>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="flex-1">
+          <ng-select
+            [items]="statusOptions"
+            bindLabel="label"
+            bindValue="value"
+            [multiple]="false"
+            placeholder="Filter by status"
+            class="rounded-lg border-gray-300 shadow-sm"
+            [(ngModel)]="statusFilter"
+            (ngModelChange)="applyFiltersAndSort()"
+          >
+          </ng-select>
+        </div>
+
+      <!-- Summary Filter-->
+      <div class="flex-1">
+        <ng-select
+          [items]="summaryOptions"
+          placeholder="Select Summary"
+          class="rounded-lg border-gray-300 shadow-sm"
+          [(ngModel)]="selectedSummary"
+          (ngModelChange)="applyFiltersAndSort()"
+        >
+        </ng-select>
+      </div>
+      </div>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full bg-white">
+        <thead>
+          <tr class="bg-gray-100">
+            <th class="py-3 px-4 text-left  font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('id')">
+              ID 
+              <span class="ml-1">{{ sortBy === 'id' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('orderNumber')">
+              Order # 
+              <span class="ml-1">{{ sortBy === 'orderNumber' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('customer')">
+              Customer 
+              <span class="ml-1">{{ sortBy === 'customer' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('salesperson')">
+              Salesperson 
+              <span class="ml-1">{{ sortBy === 'salesperson' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('totalAmount')">
+              Amount 
+              <span class="ml-1">{{ sortBy === 'totalAmount' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('orderStatus')">
+              Status 
+              <span class="ml-1">{{ sortBy === 'orderStatus' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('date')">
+              Date 
+              <span class="ml-1">{{ sortBy === 'date' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <tr *ngFor="let order of filteredOrders" class="hover:bg-gray-50">
+            <td class="py-4 px-4  text-gray-900">{{ order.id }}</td>
+            <td class="py-4 px-4  text-gray-900">{{ order.orderNumber }}</td>
+            <td class="py-4 px-4  text-gray-900">{{ order.customer?.name || "Walk-in" }}</td>
+            <td class="py-4 px-4  text-gray-900">{{ getSalespersonName(order) }}</td>
+            <td class="py-4 px-4  text-gray-900">₦{{ order.totalAmount.toLocaleString() }}</td>
+            <td class="py-4 px-4 ">
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" [ngClass]="order.orderStatus | orderStatus">
+                {{ order.orderStatus }}
+              </span>
+            </td>
+            <td class="py-4 px-4  text-gray-900">{{ formatDate(order.createdDate) }}</td>
+            <td class="py-4 px-4  text-gray-900">
+              <button (click)="viewOrderDetails(order)" class="text-indigo-600 hover:text-indigo-900 font-medium">
+                View Details
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="filteredOrders.length === 0">
+            <td colspan="8" class="py-4 px-4 text-center text-gray-500">
+              No orders found.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+}
+
+@if(isViewPageOpen){
+  <app-sales-details
+  [order] = 'activeOrder'
+  (back) = 'closeViewDetail()'
+  >
+  </app-sales-details>
+}

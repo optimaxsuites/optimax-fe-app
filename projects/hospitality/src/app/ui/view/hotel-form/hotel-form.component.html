@@ -1,0 +1,1008 @@
+<div class="max-w-6xl mx-auto p-6">
+  <!-- Selected Rooms Section -->
+  <div class="bg-gray-50 p-6 rounded-lg shadow-sm mb-6">
+    <h3 class="text-2xl font-bold text-gray-800 mb-4">Selected Rooms</h3>
+    <div class="space-y-3">
+      <div
+        *ngFor="let room of selectedRooms"
+        class="bg-white p-4 rounded-lg shadow-xs border border-gray-100 flex justify-between items-center"
+      >
+        <div>
+          <p class="font-semibold text-gray-800">
+            Room {{ room.roomNumber }} - {{ room.roomType.name }}
+            <span *ngIf="room.floor" class="text-sm text-gray-500 ml-2">
+              (Floor {{ room.floor }})
+            </span>
+          </p>
+          <p class="text-gray-600 mt-1">
+            {{ room.maxOccupancy }} guests · {{ room.beds }}
+            {{ room.beds > 1 ? "beds" : "bed" }}
+          </p>
+        </div>
+        <div class="text-right">
+          <p class="font-bold text-blue-600">
+            {{ room.rate | currency : "NGN" : "symbol" : "1.0-0" }}/night
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Booking Form -->
+  <form
+    [formGroup]="bookingForm"
+    (ngSubmit)="onSubmit()"
+    class="bg-white rounded-xl shadow-sm p-6"
+  >
+    <!-- Guest Information Section -->
+    <div class="mb-8">
+      <div class="flex items-center mb-6">
+        <div class="bg-blue-500 p-2 rounded-lg mr-3">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+            />
+          </svg>
+        </div>
+        <h4 class="text-xl font-bold text-gray-800">Guest Information</h4>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Title -->
+        <div class="form-group">
+          <label class="block text-gray-700 font-medium mb-2">
+            Title <span class="text-red-500">*</span>
+          </label>
+          <select
+            formControlName="title"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">Select Title</option>
+            <option
+              *ngFor="let title of hotelService.getTitles()"
+              [value]="title"
+            >
+              {{ title }}
+            </option>
+          </select>
+          <div
+            *ngIf="formErrors.title"
+            class="text-red-500 text-sm mt-1 flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            {{ formErrors.title }}
+          </div>
+        </div>
+
+        <!-- First Name -->
+        <div class="form-group">
+          <label class="block text-gray-700 font-medium mb-2">
+            First Name <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            formControlName="firstName"
+            placeholder="John"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div
+            *ngIf="formErrors.firstName"
+            class="text-red-500 text-sm mt-1 flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            {{ formErrors.firstName }}
+          </div>
+        </div>
+
+        <!-- Last Name -->
+        <div class="form-group">
+          <label class="block text-gray-700 font-medium mb-2">
+            Last Name <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            formControlName="lastName"
+            placeholder="Doe"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div
+            *ngIf="formErrors.lastName"
+            class="text-red-500 text-sm mt-1 flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            {{ formErrors.lastName }}
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label class="block text-gray-700 font-medium mb-2">
+            Email <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            formControlName="email"
+            placeholder="guest@example.com"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div
+            *ngIf="formErrors.email"
+            class="text-red-500 text-sm mt-1 flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            {{ formErrors.email }}
+          </div>
+        </div>
+
+        <!-- Phone -->
+        <div class="form-group">
+          <label class="block text-gray-700 font-medium mb-2">
+            Phone <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="tel"
+            formControlName="phone"
+            placeholder="+2348012345678"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div
+            *ngIf="formErrors.phone"
+            class="text-red-500 text-sm mt-1 flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            {{ formErrors.phone }}
+          </div>
+        </div>
+
+        <!-- Country -->
+        <div class="form-group">
+          <label class="block text-gray-700 font-medium mb-2">
+            Country <span class="text-red-500">*</span>
+          </label>
+          <select
+            formControlName="country"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option
+              *ngFor="let country of hotelService.getCountries()"
+              [value]="country"
+            >
+              {{ country }}
+            </option>
+          </select>
+          <div
+            *ngIf="formErrors.country"
+            class="text-red-500 text-sm mt-1 flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            {{ formErrors.country }}
+          </div>
+        </div>
+
+        <!-- ID Number -->
+        <div class="form-group">
+          <label class="block text-gray-700 font-medium mb-2">
+            ID Number <span class="text-red-500">*</span>
+          </label>
+          <div class="flex gap-2">
+            <input
+              type="text"
+              formControlName="idNumber"
+              placeholder="ID or Passport Number"
+              class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <button
+              type="button"
+              (click)="startIDScan()"
+              class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-lg transition flex items-center"
+              [disabled]="isScanning"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Scan ID
+            </button>
+          </div>
+          <div
+            *ngIf="formErrors.idNumber"
+            class="text-red-500 text-sm mt-1 flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            {{ formErrors.idNumber }}
+          </div>
+        </div>
+
+        <!-- Gender -->
+        <div class="form-group">
+          <label class="block text-gray-700 font-medium mb-2">
+            Gender <span class="text-red-500">*</span>
+          </label>
+          <select
+            formControlName="gender"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">Select Gender</option>
+            <option
+              *ngFor="let gender of hotelService.getGenders()"
+              [value]="gender"
+            >
+              {{ gender }}
+            </option>
+          </select>
+          <div
+            *ngIf="formErrors.gender"
+            class="text-red-500 text-sm mt-1 flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            {{ formErrors.gender }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Booking Details Section -->
+    <div class="mb-8">
+      <div class="flex items-center mb-6">
+        <div class="bg-blue-500 p-2 rounded-lg mr-3">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+        </div>
+        <h4 class="text-xl font-bold text-gray-800">Booking Details</h4>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Check-in Date -->
+        <div class="form-group">
+          <label class="block text-gray-700 font-medium mb-2">
+            Check-in Date <span class="text-red-500">*</span>
+          </label>
+          <p-calendar
+            formControlName="checkinDate"
+            [minDate]="minCheckoutDate()"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            inputId="checkinDate"
+            class="w-full"
+            [style]="{ width: '100%' }"
+            inputStyleClass="w-full px-4 py-2.5 text-lg rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
+          >
+          </p-calendar>
+          <div
+            *ngIf="formErrors.checkinDate"
+            class="text-red-500 text-sm mt-1 flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            {{ formErrors.checkinDate }}
+          </div>
+        </div>
+
+        <!-- Check-out Date -->
+        <div class="form-group">
+          <label class="block text-gray-700 font-medium mb-2">
+            Check-out Date <span class="text-red-500">*</span>
+          </label>
+          <p-calendar
+            formControlName="checkoutDate"
+            [minDate]="minCheckoutDate()"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            inputId="checkoutDate"
+            class="w-full"
+            [style]="{ width: '100%' }"
+            inputStyleClass="w-full px-4 py-2.5 text-lg rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
+          >
+          </p-calendar>
+          <div
+            *ngIf="formErrors.checkoutDate"
+            class="text-red-500 text-sm mt-1 flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            {{ formErrors.checkoutDate }}
+          </div>
+        </div>
+
+        <!-- Adults -->
+        <div class="form-group">
+          <label class="block text-gray-700 font-medium mb-2">
+            Adults <span class="text-red-500">*</span>
+          </label>
+          <input
+            type="number"
+            formControlName="adults"
+            min="1"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div
+            *ngIf="formErrors.adults"
+            class="text-red-500 text-sm mt-1 flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            {{ formErrors.adults }}
+          </div>
+        </div>
+
+        <!-- Children -->
+        <div class="form-group">
+          <label class="block text-gray-700 font-medium mb-2">Children</label>
+          <input
+            type="number"
+            formControlName="children"
+            min="0"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div
+            *ngIf="formErrors.children"
+            class="text-red-500 text-sm mt-1 flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            {{ formErrors.children }}
+          </div>
+        </div>
+
+        <!-- Special Requests -->
+        <div class="form-group md:col-span-2">
+          <label class="block text-gray-700 font-medium mb-2"
+            >Special Requests</label
+          >
+          <textarea
+            formControlName="specialRequests"
+            rows="3"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Any special requirements..."
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Information Section -->
+    <div>
+      <div class="flex items-center mb-6">
+        <div class="bg-blue-500 p-2 rounded-lg mr-3">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+            />
+          </svg>
+        </div>
+        <h4 class="text-xl font-bold text-gray-800">Payment Information</h4>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Payment Method -->
+        <div class="form-group">
+          <label class="block text-gray-700 font-medium mb-2">
+            Payment Method <span class="text-red-500">*</span>
+          </label>
+          <select
+            formControlName="paymentMethod"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">Select Method</option>
+            <option value="CASH">Cash</option>
+            <option value="CARD">Card</option>
+            <option value="TRANSFER">Bank Transfer</option>
+          </select>
+          <div
+            *ngIf="formErrors.paymentMethod"
+            class="text-red-500 text-sm mt-1 flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            {{ formErrors.paymentMethod }}
+          </div>
+        </div>
+
+        <!-- Deposit Amount -->
+        <div class="form-group">
+          <label class="block text-gray-700 font-medium mb-2"
+            >Deposit Amount (₦)</label
+          >
+          <div class="relative">
+            <span
+              class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+              >₦</span
+            >
+            <input
+              type="text"
+              formControlName="depositAmount"
+              class="w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              [value]="formattedAmount"
+              (input)="onAmountInput($event)"
+              (blur)="onBlur()"
+            />
+          </div>
+          <div
+            *ngIf="formErrors.depositAmount"
+            class="text-red-500 text-sm mt-1 flex items-center"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            {{ formErrors.depositAmount }}
+          </div>
+        </div>
+
+        <!-- Payment Reference -->
+        <div class="form-group">
+          <label class="block text-gray-700 font-medium mb-2"
+            >Payment Reference</label
+          >
+          <input
+            type="text"
+            formControlName="paymentReference"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Payment reference number"
+          />
+        </div>
+
+        <!-- Payment Note -->
+        <div class="form-group">
+          <label class="block text-gray-700 font-medium mb-2"
+            >Payment Note</label
+          >
+          <textarea
+            formControlName="paymentNote"
+            rows="2"
+            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Any payment notes..."
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="flex justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
+      <button
+        type="button"
+        (click)="onClose()"
+        class="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="px-6 py-2.5 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition"
+      >
+        Create Booking
+      </button>
+    </div>
+  </form>
+
+  <!-- Booking Summary Modal -->
+  <div
+    *ngIf="bookingSummary"
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+  >
+    <div
+      class="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+    >
+      <!-- Modal Header -->
+      <div
+        class="bg-gradient-to-r from-blue-600 to-blue-800 p-6 text-white rounded-t-xl"
+      >
+        <div class="flex justify-between items-center">
+          <div class="flex items-center space-x-4">
+            <div class="bg-white bg-opacity-20 p-3 rounded-full">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-8 w-8"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold">Booking Confirmation</h3>
+              <p class="text-blue-100">Review your booking details</p>
+            </div>
+          </div>
+          <button
+            (click)="bookingSummary = null"
+            class="text-white hover:text-blue-200"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Content -->
+      <div class="p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <!-- Left Column - Guest Info -->
+          <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+            <div class="flex items-center space-x-3 mb-4">
+              <div class="bg-blue-500 p-2 rounded-lg">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              </div>
+              <h4 class="text-xl font-bold text-gray-800">Guest Information</h4>
+            </div>
+
+            <div class="space-y-3">
+              <p class="text-gray-700">
+                <span class="font-semibold">Name:</span>
+                {{ bookingSummary.guest.title }}
+                {{ bookingSummary.guest.firstName }}
+                {{ bookingSummary.guest.lastName }}
+              </p>
+              <p class="text-gray-700">
+                <span class="font-semibold">Email:</span>
+                {{ bookingSummary.guest.email }}
+              </p>
+              <p class="text-gray-700">
+                <span class="font-semibold">Phone:</span>
+                {{ bookingSummary.guest.phone }}
+              </p>
+              <p class="text-gray-700">
+                <span class="font-semibold">Country:</span>
+                {{ bookingSummary.guest.country }}
+              </p>
+              <p class="text-gray-700">
+                <span class="font-semibold">ID:</span>
+                {{ bookingSummary.guest.idNumber }}
+              </p>
+              <p class="text-gray-700">
+                <span class="font-semibold">Gender:</span>
+                {{ bookingSummary.guest.gender }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Right Column - Booking Info -->
+          <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+            <div class="flex items-center space-x-3 mb-4">
+              <div class="bg-blue-500 p-2 rounded-lg">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <h4 class="text-xl font-bold text-gray-800">Booking Details</h4>
+            </div>
+
+            <div class="space-y-3">
+              <p class="text-gray-700">
+                <span class="font-semibold">Check-in:</span>
+                {{ bookingSummary.booking.checkinDate | date : "mediumDate" }}
+              </p>
+              <p class="text-gray-700">
+                <span class="font-semibold">Check-out:</span>
+                {{ bookingSummary.booking.checkoutDate | date : "mediumDate" }}
+              </p>
+              <p class="text-gray-700">
+                <span class="font-semibold">Duration:</span>
+                {{
+                  calculateNights(
+                    bookingSummary.booking.checkinDate,
+                    bookingSummary.booking.checkoutDate
+                  )
+                }}
+                nights
+              </p>
+              <p class="text-gray-700">
+                <span class="font-semibold">Guests:</span>
+                {{ bookingSummary.booking.adults }} adults,
+                {{ bookingSummary.booking.children }} children
+              </p>
+              <p
+                *ngIf="bookingSummary.booking.specialRequests"
+                class="text-gray-700"
+              >
+                <span class="font-semibold">Special Requests:</span>
+                {{ bookingSummary.booking.specialRequests }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Rooms Section -->
+          <div
+            class="lg:col-span-2 bg-gray-50 p-6 rounded-lg border border-gray-200"
+          >
+            <div class="flex items-center space-x-3 mb-4">
+              <div class="bg-blue-500 p-2 rounded-lg">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                  />
+                </svg>
+              </div>
+              <h4 class="text-xl font-bold text-gray-800">Selected Rooms</h4>
+            </div>
+
+            <div class="space-y-4">
+              <div
+                *ngFor="let room of bookingSummary.selectedRooms"
+                class="bg-white p-4 rounded-lg shadow-sm border border-gray-100"
+              >
+                <div class="flex justify-between items-center">
+                  <div>
+                    <p class="font-semibold text-gray-800">
+                      Room {{ room.roomNumber }} -
+                      {{ getRoomTypeName(room.roomType) }}
+                    </p>
+                    <p class="text-gray-600 mt-1">
+                      {{ room.maxOccupancy }} guests · {{ room.beds }}
+                      {{ room.beds > 1 ? "beds" : "bed" }}
+                    </p>
+                  </div>
+                  <p class="font-bold text-blue-600">
+                    {{
+                      room.rate | currency : "NGN" : "symbol" : "1.0-0"
+                    }}/night
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Summary -->
+          <div
+            class="lg:col-span-2 bg-gray-50 p-6 rounded-lg border border-gray-200"
+          >
+            <div class="flex items-center space-x-3 mb-4">
+              <div class="bg-blue-500 p-2 rounded-lg">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-6 w-6 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <h4 class="text-xl font-bold text-gray-800">Payment Summary</h4>
+            </div>
+
+            <div class="space-y-3">
+              <div class="flex justify-between">
+                <span class="text-gray-700">Subtotal:</span>
+                <span class="font-semibold">{{
+                  bookingSummary.booking.subTotal
+                    | currency : "NGN" : "symbol" : "1.0-0"
+                }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-700">Taxes (7.5%):</span>
+                <span class="font-semibold">{{
+                  bookingSummary.booking.taxes
+                    | currency : "NGN" : "symbol" : "1.0-0"
+                }}</span>
+              </div>
+              <div
+                class="flex justify-between border-t border-gray-200 pt-3 mt-3"
+              >
+                <span class="text-gray-700 font-bold">Total:</span>
+                <span class="font-bold text-blue-600">{{
+                  bookingSummary.booking.total
+                    | currency : "NGN" : "symbol" : "1.0-0"
+                }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-700">Deposit Paid:</span>
+                <span class="font-semibold text-green-600">{{
+                  bookingSummary.booking.depositAmount
+                    | currency : "NGN" : "symbol" : "1.0-0"
+                }}</span>
+              </div>
+              <div
+                class="flex justify-between border-t border-gray-200 pt-3 mt-3"
+              >
+                <span class="text-gray-700 font-bold">Balance Due:</span>
+                <span
+                  class="font-bold"
+                  [class.text-green-600]="
+                    bookingSummary.booking.balanceAmount === 0
+                  "
+                  [class.text-amber-600]="
+                    bookingSummary.booking.balanceAmount > 0
+                  "
+                >
+                  {{
+                    bookingSummary.booking.balanceAmount
+                      | currency : "NGN" : "symbol" : "1.0-0"
+                  }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Selection -->
+        <div class="flex justify-center space-x-4 mt-8">
+          <button
+            (click)="setActiveStatus('CONFIRMED')"
+            class="px-6 py-2.5 rounded-lg font-medium transition"
+            [class.bg-blue-500]="activeStatus === 'CONFIRMED'"
+            [class.text-white]="activeStatus === 'CONFIRMED'"
+            [class.bg-gray-100]="activeStatus !== 'CONFIRMED'"
+            [class.text-gray-700]="activeStatus !== 'CONFIRMED'"
+          >
+            Confirm Booking
+          </button>
+          <button
+            (click)="setActiveStatus('CHECKED_IN')"
+            class="px-6 py-2.5 rounded-lg font-medium transition"
+            [class.bg-blue-500]="activeStatus === 'CHECKED_IN'"
+            [class.text-white]="activeStatus === 'CHECKED_IN'"
+            [class.bg-gray-100]="activeStatus !== 'CHECKED_IN'"
+            [class.text-gray-700]="activeStatus !== 'CHECKED_IN'"
+          >
+            Check In Now
+          </button>
+        </div>
+
+        <!-- Confirmation Actions -->
+        <div
+          class="flex justify-end space-x-4 mt-8 pt-6 border-t border-gray-200"
+        >
+          <button
+            type="button"
+            (click)="bookingSummary = null"
+            class="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition"
+          >
+            Edit Booking
+          </button>
+          <button
+            type="button"
+            (click)="confirmBooking()"
+            [disabled]="isProcessing"
+            class="px-6 py-2.5 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition disabled:opacity-50"
+          >
+            {{ isProcessing ? "Processing..." : "Confirm Booking" }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p-toast position="top-center"></p-toast>

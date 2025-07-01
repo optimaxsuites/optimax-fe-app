@@ -1,0 +1,39 @@
+<div class="p-10">
+    <p class="text-center">Kindly fill out <span class="font-bold text-[14px] text-customGreen cursor-pointer uppercase" (click)="createExcelSheet()">this</span>  excel sheet provided, following the format outlined in the template. <br> Please ensure all required fields are filled correctly before uploading.</p>
+
+    <div
+    class="border-2 border-dashed border-gray-300 p-6 rounded-lg text-center mt-5"
+    (dragover)="onDragOver($event)"
+    (drop)="onDrop($event)"
+    (dragleave)="onDragLeave($event)"
+    [class.border-customGreen]="isDragging"
+  >
+    <p class="text-gray-500" *ngIf="!fileName">
+        Drag and drop your .xlsx file here, or <span class="text-customGreen cursor-pointer font-semibold" (click)="fileInput.click()">click here</span> to upload.
+    </p>
+    <p class="text-gray-500" *ngIf="fileName">
+        File uploaded - {{ fileName }}
+    </p>
+  
+    <input
+      type="file"
+      accept=".xlsx"
+      (change)="onFileSelected($event)"
+      class="hidden"
+      #fileInput
+    />
+    <button
+      class="mt-4 px-4 py-2 text-white bg-customGreen rounded"
+      (click)="readExcelFile()"
+    >
+      {{buttonText}}
+    </button>
+  </div>
+
+  <p *ngIf="alert.length > 0" class="text-center mt-4 text-customRed">
+   {{alert}}
+  </p>
+<p-toast position="top-right" key="tl" />
+ 
+</div>
+

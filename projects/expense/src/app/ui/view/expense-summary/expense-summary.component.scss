@@ -1,0 +1,166 @@
+/* Style for the action icon */
+.action-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}  
+  
+  .action-icon {
+    cursor: pointer;
+    font-size: 24px;
+    color: #555;
+  }
+  
+  .action-menu {
+    position: absolute;
+    top: 30px;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    min-width: 120px;
+  }
+  
+  .menu-item {
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .menu-item:hover {
+    background-color: #f3f3f3;
+  }
+  
+  .accept {
+    color: green;
+  }
+  
+  .reject {
+    color: red;
+  }
+  /* For Pending status */
+.pending-icon {
+    color: #f9a825; /* Yellow color */
+  }
+  
+  .pending-icon + .status-text {
+    color: #f9a825; /* Same color for text */
+  }
+  
+  /* For Approved status */
+  .approved-icon {
+    color: #388e3c; /* Green color */
+  }
+  
+  .approved-icon + .status-text {
+    color: #388e3c; /* Same color for text */
+  }
+  
+  /* For Rejected status */
+  .rejected-icon {
+    color: #d32f2f; /* Red color */
+  }
+  
+  .rejected-icon + .status-text {
+    color: #d32f2f; /* Same color for text */
+  }
+  .tabble-item {
+    align-items: center; /* Aligns the icon and text vertically centered */    
+  }
+
+
+.status-icon {
+    font-size: 18px; /* Reduce icon size here */
+  }
+  
+  .pending-icon {
+    color: #f9a825; /* Yellow color for Pending */
+  }
+  
+  .approved-icon {
+    color: #388e3c; /* Green color for Approved */
+  }
+
+  .arrow-left{
+    position: relative;
+    background-color: white;
+    height:40px;
+    width:40px;
+    border-radius: 50%;
+    margin: 15px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  .arrow-left:hover{
+    box-shadow: 0px 0px 20px  20px rgba(78, 76, 76, 0.3);
+  }
+  .arrow-left div{
+    position:absolute;
+    height: 14px;
+    width: 14px;
+    border-top: 3px solid #202020;
+    border-left: 3px solid #202020;
+    transform: rotate(-40deg);
+    left: 14.5px;
+    top: 13px;
+  }
+
+  .rejected-icon {
+    color: #d32f2f; /* Red color for Rejected */
+  }
+  
+  .status-text {
+    font-weight: bold; /* Optional, makes the status text bold */
+  }
+
+/* Dropdown container */
+.dropdown-container {
+  position: relative; /* Makes sure the dropdown is positioned relative to this container */
+}
+
+/* Action icon */
+.action-icon {
+  cursor: pointer; /* Make the icon clickable */
+}
+
+/* Dropdown content */
+.dropdown-content {
+  display: none; /* Hide dropdown by default */
+  position: absolute; /* Position it relative to the parent (dropdown-container) */
+  top: 100%; /* Position it just below the action icon */
+  right: 0;
+  background-color: white;
+  border: 1px solid #ddd;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1000; /* Ensure it's above the table */
+  min-width: 150px; /* Adjust width as needed */
+  overflow: visible;
+}
+
+/* Show dropdown content on hover */
+.dropdown-container:hover .dropdown-content {
+  display: block; /* Make it visible on hover */
+}
+
+/* Style for dropdown links */
+.dropdown-content a {
+  display: block;
+  padding: 10px 15px;
+  text-decoration: none;
+  color: black;
+  font-size: 14px;
+}
+
+/* Style for links when hovered */
+.dropdown-content a:hover {
+  background-color: #f1f1f1;
+}
+::ng-deep .p-datatable>.p-datatable-wrapper {
+  overflow: visible;
+}
