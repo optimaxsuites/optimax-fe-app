@@ -161,10 +161,13 @@ export class HotelRoomsComponent {
     }
 
     this.loading = true;
+    const selectedTypeId = this.roomForm.value.roomType;
+    const selectedType = this.roomTypes.find((rt) => rt.id === selectedTypeId);
+
     const newRoom: Room = {
       id: 0,
       roomNumber: this.roomForm.value.roomNumber,
-      roomType: this.roomForm.value.roomType,
+      roomType: selectedType!,
       roomStatus: this.roomForm.value.roomStatus,
       floor: this.roomForm.value.floor,
       rate: this.roomForm.value.rate,
