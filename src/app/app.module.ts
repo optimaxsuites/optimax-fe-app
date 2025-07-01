@@ -125,8 +125,8 @@ import { NgApexchartsModule } from 'ng-apexcharts';
     TransactionSideModalComponent
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     CommonModule,
     AppRoutingModule,
     FormsModule,
