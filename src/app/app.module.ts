@@ -105,8 +105,8 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
     MultipleBookingsComponent,
   ],
   imports: [
-    BrowserAnimationsModule,
-    BrowserModule,
+    // BrowserAnimationsModule,
+    // BrowserModule,
     MenuModule,
     ConfirmDialogModule,
     DropdownModule,

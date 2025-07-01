@@ -447,11 +447,6 @@ export class HotelserviceService {
     ];
   }
 
-  // getRoomTypeName(roomTypeId: string): string {
-  //   const roomType = this.roomTypes.find((rt) => rt.id === Number(roomTypeId));
-  //   return roomType ? roomType.name : 'Room ' + roomTypeId;
-  // }
-
   // Utility method to handle errors
   private handleError(error: any): void {
     console.error('An error occurred:', error);

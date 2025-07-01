@@ -17,11 +17,11 @@ import { MultipleBookingsComponent } from '../ui/bookings/multiple-bookings/mult
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'user/hospitality/checkout/34567whr4567yhsdzr56',
+    redirectTo: 'checkout/34567whr4567yhsdzr56',
     pathMatch: 'full',
   },
   {
-    path: 'user/hospitality/checkout/:uuid',
+    path: 'checkout/:uuid',
     component: HotelCheckoutComponent,
   },
 
@@ -35,7 +35,7 @@ const routes: Routes = [
   { path: 'user/multiple-rooms/:uuid', component: MultipleBookingsComponent },
 
   {
-    path: 'user/hospitality/services/:uuid',
+    path: 'services/:uuid',
     component: RoomSidebarComponent,
 
     children: [
@@ -45,6 +45,7 @@ const routes: Routes = [
       { path: 'room sevice', component: RoomServiceComponent },
       { path: 'Housekeeping Record', component: HouseKeepingComponent },
       { path: 'bar', component: BarServiceComponent },
+      // { path: 'admin', component: HotelAdmintableComponent },
     ],
   },
 ];
