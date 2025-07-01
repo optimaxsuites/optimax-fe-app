@@ -6,20 +6,16 @@
     class="flex-1 p-8 overflow-y-auto"
     [ngClass]="{ hidden: showRoomDetails }"
   >
-    <app-hotel-roomlist
-      (roomSelected)="handleRoomSelected($event)"
-      (bookingFormRequested)="onBookingFormRequested($event)"
-    >
+    <app-hotel-roomlist (roomSelected)="handleRoomSelected($event)">
     </app-hotel-roomlist>
   </main>
 
   <!-- Room detail -->
-  <div [ngClass]="{ hidden: !showRoomDetails }">
-    <app-hotel-roomdetails
-      [room]="selectedRoom"
-      (back)="onBack()"
-      (statusChanged)="onRoomStatusChanged($event)"
-    >
-    </app-hotel-roomdetails>
-  </div>
+  <app-hotel-roomdetails
+    *ngIf="showRoomDetails"
+    [room]="selectedRoom"
+    (back)="closeRoomDetails()"
+    (statusChanged)="onRoomStatusChanged($event)"
+  >
+  </app-hotel-roomdetails>
 </div>

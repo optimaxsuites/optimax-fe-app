@@ -18,6 +18,7 @@ export class HotelCheckoutComponent {
 
   handleRoomSelected(room: Room): void {
 <<<<<<< HEAD
+<<<<<<< HEAD
     this.selectedRoom = room;
     this.roomDetails.showRoomDetailsModal(room);
   }
@@ -27,8 +28,9 @@ export class HotelCheckoutComponent {
     this.roomDetails.showRoomDetailsModal(updatedRoom);
 =======
     if (!room) return;
+=======
+>>>>>>> 92b133eaafa6207d2d1ef936b239da24accb3251
 
-    console.log('Room selected:', room);
     this.selectedRoom = room;
     this.showRoomDetails = true;
 
@@ -39,6 +41,8 @@ export class HotelCheckoutComponent {
       }
     }, 0);
   }
+
+
 
   onRoomStatusChanged(updatedRoom: Room): void {
     if (!updatedRoom) return;

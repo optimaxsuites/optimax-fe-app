@@ -29,6 +29,7 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
   @Output() back = new EventEmitter<void>();
   @Output() statusChanged = new EventEmitter<Room>();
   @Input() selectedRoom: Room | null = null;
+  @Input() showDetails: boolean = false;
 
   detailedRoom: Room | null = null;
   currentGuest: Guest | null = null;
@@ -37,9 +38,6 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
 
   private subscriptions = new Subscription();
   previousRoom: Room | null = null;
-  showDetails: boolean = false;
-
-  isAdminView: boolean = true;
   openForm: boolean = false;
   openMessage: boolean = false;
   openBills: boolean = false;
@@ -567,6 +565,7 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
 
   closeModal(): void {
     this.showDetails = false;
+    this.back.emit();
     this.detailedRoom = null;
     this.currentGuest = null;
     this.currentBooking = null;

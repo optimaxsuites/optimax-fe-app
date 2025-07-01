@@ -5,7 +5,7 @@ import { HotelRoomsComponent } from './ui/view/hotel-rooms/hotel-rooms.component
 import { HotelAdmintableComponent } from './ui/view/hotel-admintable/hotel-admintable.component';
 
 const routes: Routes = [
-  { path: 'admin/hospitality/room/:uuid', component: HotelAdmintableComponent },
+  { path: 'room/:uuid', component: HotelAdmintableComponent },
 ];
 
 @NgModule({
