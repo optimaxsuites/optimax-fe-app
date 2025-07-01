@@ -1,85 +1,10 @@
 import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
-
-export interface Guest {
-  id?: string; // Optional property for guest ID
-  title: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  country: string;
-  idNumber: string;
-  gender: string;
-}
-
-export interface BookingDetails {
-  checkinDate: Date;
-  checkoutDate: Date;
-  adults: number;
-  children: number;
-  specialRequests?: string;
-  paymentMethod: string;
-  totalAmount: number;
-  paidAmount: number;
-  balanceAmount: number;
-}
-
-export interface Room {
-  id: number;
-  number: number;
-  type: string;
-  status: string;
-  floor?: number;
-  guest?: Guest; // Optional property for guest
-  rate: number;
-  bookingDetails?: BookingDetails;
-  beds?: number;
-  maxOccupancy?: number;
-  description?: string;
-  amenities?: string[];
-  currentKey?: RoomKey; // Optional property for current key
-}
-
-export interface Booking {
-  guest: Guest;
-  checkinDate: Date;
-  checkoutDate: Date;
-  adults: number;
-  children: number;
-  specialRequests: string;
-  paymentMethod: string;
-  depositAmount: number;
-  roomIds: number[];
-  roomTypes: string[];
-  roomRates: number[];
-  subtotal: number;
-  taxes: number;
-  total: number;
-  balanceAmount: number;
-  status?: string;
-}
-
-export interface RoomKey {
-  id: string;
-  roomNumber: number;
-  roomId: number;
-  isActive: boolean;
-  assignedDate: Date;
-  deactivationDate: Date;
-  guestIdNumber: string;
-  guestName?: string;
-}
-
-export interface KeyCardLog {
-  id: string;
-  roomNumber: number;
-  roomId: number;
-  keyCardId: string;
-  guestIdNumber: string;
-  accessType: 'GUEST' | 'MASTER' | 'STAFF';
-  timestamp: Date;
-  accessGranted: boolean;
-}
+import {
+  HotelserviceService,
+  Room,
+  Booking,
+  Guest,
+} from '../../hospitality/hotelservice.service';
 
 @Component({
   selector: 'app-hotel-changeroom',
@@ -88,12 +13,14 @@ export interface KeyCardLog {
 })
 export class HotelChangeroomComponent implements OnInit {
   @Input() currentRoom!: Room;
-  @Input() availableRooms: Room[] = [];
+  availableRooms: Room[] = [];
   @Output() onChangeRoom = new EventEmitter<{
     newRoom: Room;
     note: string;
     maintenanceNote: string;
     oldRoomStatus: Room;
+    guest?: Guest;
+    booking?: Booking;
   }>();
   @Output() onCancel = new EventEmitter<void>();
   @Output() back = new EventEmitter();
@@ -115,14 +42,66 @@ export class HotelChangeroomComponent implements OnInit {
   selectedTasks: string[] = [];
   filteredRooms: Room[] = [];
 
+  bookings: Booking[] = [];
+  guests: Guest[] = [];
+  roomBookingsMap: Map<number, Booking> = new Map();
+  roomGuestsMap: Map<number, Guest> = new Map();
+
+  constructor(private hotelService: HotelserviceService) {}
+
   ngOnInit() {
-    // Initialize the filtered rooms
-    this.filterAvailableRooms();
+    this.hotelService.getRooms().subscribe((rooms) => {
+      this.availableRooms = rooms;
+      this.filterAvailableRooms();
+    });
+    this.hotelService.getBookings().subscribe((bookings) => {
+      this.bookings = bookings;
+      this.buildRoomBookingsMap();
+    });
+    this.hotelService.getGuests().subscribe((guests) => {
+      this.guests = guests;
+      this.buildRoomGuestsMap();
+    });
+  }
+
+  buildRoomBookingsMap() {
+    this.roomBookingsMap.clear();
+    this.bookings.forEach((booking) => {
+      booking.rooms.forEach((roomId) => {
+        this.roomBookingsMap.set(roomId, booking);
+      });
+    });
+  }
+
+  buildRoomGuestsMap() {
+    this.roomGuestsMap.clear();
+    this.bookings.forEach((booking) => {
+      let guest: Guest | undefined;
+      if (typeof booking.guest === 'number') {
+        guest = this.guests.find((g) => g.id === booking.guest);
+      } else {
+        guest = booking.guest as Guest;
+      }
+      booking.rooms.forEach((roomId) => {
+        if (guest) {
+          this.roomGuestsMap.set(roomId, guest);
+        }
+      });
+    });
+  }
+
+  getBookingForRoom(roomId: number): Booking | undefined {
+    return this.roomBookingsMap.get(roomId);
+  }
+
+  getGuestForRoom(roomId: number): Guest | undefined {
+    return this.roomGuestsMap.get(roomId);
   }
 
   filterAvailableRooms() {
     this.filteredRooms = this.availableRooms.filter(
-      (room) => room.id !== this.currentRoom.id && room.status === 'available'
+      (room) =>
+        room.id !== this.currentRoom.id && room.roomStatus === 'AVAILABLE'
     );
   }
 
@@ -135,19 +114,15 @@ export class HotelChangeroomComponent implements OnInit {
 
     this.isSubmitting = true;
 
-    // Create updated versions of the rooms
-    const newRoom = {
+    // Create updated versions of the rooms (do not add guest/booking directly)
+    const newRoom: Room = {
       ...this.selectedRoom,
-      status: 'occupied',
-      guest: this.currentRoom.guest,
-      bookingDetails: this.currentRoom.bookingDetails,
+      roomStatus: 'OCCUPIED',
     };
 
-    const oldRoom = {
+    const oldRoom: Room = {
       ...this.currentRoom,
-      status: 'maintenance',
-      guest: undefined,
-      bookingDetails: undefined,
+      roomStatus: 'UNDER_MAINTENANCE',
     };
 
     this.onChangeRoom.emit({
@@ -156,6 +131,8 @@ export class HotelChangeroomComponent implements OnInit {
       maintenanceNote:
         this.maintenanceNote + '\nTasks: ' + this.selectedTasks.join(', '),
       oldRoomStatus: oldRoom,
+      guest: this.getGuestForRoom(this.currentRoom.id),
+      booking: this.getBookingForRoom(this.currentRoom.id),
     });
   }
 
