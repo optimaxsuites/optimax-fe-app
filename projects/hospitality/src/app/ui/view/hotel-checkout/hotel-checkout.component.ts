@@ -19,6 +19,7 @@ export class HotelCheckoutComponent {
   handleRoomSelected(room: Room): void {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     this.selectedRoom = room;
     this.roomDetails.showRoomDetailsModal(room);
   }
@@ -31,6 +32,9 @@ export class HotelCheckoutComponent {
 =======
 >>>>>>> 92b133eaafa6207d2d1ef936b239da24accb3251
 
+=======
+
+>>>>>>> 2d458057a8fefad7c46575dd093889284a712cf2
     this.selectedRoom = room;
     this.showRoomDetails = true;
 
@@ -59,7 +63,6 @@ export class HotelCheckoutComponent {
     if (this.showRoomDetails && this.roomDetails) {
       this.roomDetails.loadRoomDetails(updatedRoom.id!);
     }
->>>>>>> ce56727290ad25e1eef5051c5dd4b52053407b9a
   }
 
   onBookingFormRequested(rooms: Room[]): void {

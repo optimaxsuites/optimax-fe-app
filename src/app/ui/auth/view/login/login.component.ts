@@ -105,7 +105,10 @@ export class LoginComponent implements OnInit {
         console.log('Registration complete:', registrationComplete); 
   
         if (registrationComplete) {
+          console.log('routing...')
           const dashboardLink = this.navigationLink.getLink('dashboardLink');
+          console.log(dashboardLink)
+
           this.router.navigate([dashboardLink]);
         } else {
           const registrationLink = this.navigationLink.getLink('userRegistrationLink');

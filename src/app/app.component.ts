@@ -1,5 +1,6 @@
 import { Component, HostListener, ViewEncapsulation } from '@angular/core';
 import { MenuItemsService } from './ui/shared/service/menue-items/menu-items.service';
+import { NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router } from '@angular/router';
 
 declare global {
   interface Window {
@@ -23,12 +24,21 @@ export class AppComponent {
   sidebarVisible2: boolean = false;
 
   screenWidth: number;
+  isLoading = false
 
   // Ensure this property exists and is initialized
   clockedInTime: string | null = null;
 
-  constructor(private menuItemService: MenuItemsService) {
+  constructor(private menuItemService: MenuItemsService, private router: Router) {
     this.screenWidth = window.innerWidth;
+    this.router.events.subscribe((event) => {
+      if (event instanceof NavigationStart) {
+        this.isLoading = true;
+      }
+      if (event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError) {
+        this.isLoading = false;
+      }
+    });
   }
 
   NgOnInit(){

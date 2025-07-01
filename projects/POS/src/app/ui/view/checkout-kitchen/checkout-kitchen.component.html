@@ -1,4 +1,4 @@
-<div>
+  <div>
   <app-checkout-header></app-checkout-header>
 </div>
 
@@ -180,11 +180,12 @@
                       ? 'Start Preparation'
                       : selectedOrderStatus().processing
                         ? 'Completed'
-                        : 'Close'
+                        : selectedOrder()?.status === 'PAID' ? 'Close' : 'Payment has not been made.'
                   "
                   icon="pi pi-check"
                   class="p-button-success bg-green-100"
-                  (click)="toggleOrderStatus(selectedOrder()!)"
+                  [disabled]=" selectedOrderStatus().completed &&  selectedOrder()?.status !== 'PAID'"
+                  (click)="!selectedOrderStatus().completed?toggleOrderStatus(selectedOrder()!) : selectedOrder()?.status === 'PAID' && toggleOrderStatus(selectedOrder()!)"
                 ></button>
                 <!-- <button
           pButton
@@ -657,7 +658,8 @@
           (click)="
             setOrderNote('');
             isCreateOrderModalOpen.set(false);
-            isEditingOrder = false
+            isEditingOrder = false;
+            clearTableData()
           "
         ></button>
         <button

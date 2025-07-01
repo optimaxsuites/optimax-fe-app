@@ -128,13 +128,7 @@ export class HotelRoomlistComponent implements OnInit {
     this.openRoom = !this.openRoom;
   }
 
-<<<<<<< HEAD
-  openRoomDetails(room: Room): void {
-    this.roomSelected.emit(room);
-  }
 
-=======
->>>>>>> ce56727290ad25e1eef5051c5dd4b52053407b9a
   closeBookingDetails(): void {
     this.showBookingDetails = false;
     this.selectedBookingDetails = null;

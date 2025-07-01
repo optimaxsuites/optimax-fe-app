@@ -306,4 +306,8 @@ export class PosStoreComponent implements OnInit {
 			total,
 		});
 	}
+
+	clearCart() {
+		this.cartProducts.set(new Map());
+	}
 }

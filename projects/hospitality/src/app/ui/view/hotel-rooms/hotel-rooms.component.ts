@@ -158,6 +158,7 @@ export class HotelRoomsComponent {
     this.loading = true;
     const selectedTypeId = this.roomForm.value.roomType;
     const selectedType = this.roomTypes.find((rt) => rt.id === selectedTypeId);
+<<<<<<< HEAD
     if (!selectedType) {
       this.messageService.add({
         severity: 'error',
@@ -171,6 +172,13 @@ export class HotelRoomsComponent {
       id: 0,
       roomNumber: this.roomForm.value.roomNumber,
       roomType: selectedType,
+=======
+
+    const newRoom: Room = {
+      id: 0,
+      roomNumber: this.roomForm.value.roomNumber,
+      roomType: selectedType!,
+>>>>>>> 2d458057a8fefad7c46575dd093889284a712cf2
       roomStatus: this.roomForm.value.roomStatus,
       floor: this.roomForm.value.floor,
       rate: this.roomForm.value.rate,
