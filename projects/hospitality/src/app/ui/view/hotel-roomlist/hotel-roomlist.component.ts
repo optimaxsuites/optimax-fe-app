@@ -421,8 +421,9 @@ export class HotelRoomlistComponent implements OnInit {
   }
 
   selectRoom(room: Room): void {
-    console.log('Selecting room:', room);
     this.selectedRoom = room;
+    this.selectedRoomForDetails = room;
+    this.showRoomDetails = true;
     this.roomSelected.emit(room);
   }
 
