@@ -46,6 +46,7 @@ export class HotelFormComponent implements OnInit {
   rawAmount: string = '';
   paymentMethods = ['CASH', 'CARD', 'TRANSFER'];
   paymentStatus = 'PENDING';
+  today: Date = new Date();
 
   // Public access to service methods
   titles = this.hotelService.getTitles();

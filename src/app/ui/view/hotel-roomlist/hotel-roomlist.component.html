@@ -23,9 +23,18 @@
         </div>
 
         <!-- Loaded state -->
-        <ul class="space-y-3" *ngIf="roomTypes.length > 1">
+        <ul class="space-y-3" *ngIf="uniqueRoomTypes.length > 0">
           <li
-            *ngFor="let type of roomTypes"
+            [class]="getFilterClass('All Rooms')"
+            (click)="toggleRoomTypeSelection('All Rooms')"
+          >
+            <span>All Rooms</span>
+            <span *ngIf="selectedRoomTypes.includes('All Rooms')" class="ml-2">
+              <i class="pi pi-check-circle text-xl"></i>
+            </span>
+          </li>
+          <li
+            *ngFor="let type of uniqueRoomTypes"
             [class]="getFilterClass(type)"
             (click)="toggleRoomTypeSelection(type)"
           >
@@ -156,7 +165,7 @@
 
     <!-- Scrollable Room Grid -->
     <div
-      class="flex-1 overflow-y-auto p-6 bg-gradient-to-b from-transparent to-gray-50/30"
+      class="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-transparent to-gray-50/30"
     >
       <!-- Loading state for rooms -->
       <div
@@ -184,17 +193,15 @@
               <h3 class="text-2xl font-extrabold text-gray-800 mb-2">
                 Room {{ room.roomNumber }}
               </h3>
-              <p class="text-lg font-semibold text-gray-700 mb-3">
-                {{ room.roomType.name }}
-              </p>
+
               <div class="flex flex-wrap gap-2">
                 <span
-                  class="inline-block px-3 py-1 text-sm font-bold rounded-full bg-white bg-opacity-80 text-gray-800 shadow-sm"
+                  class="inline-block px-3 py-1 text-lg font-bold rounded-full bg-white bg-opacity-80 text-gray-800 shadow-sm"
                 >
                   {{ room.roomStatus | titlecase }}
                 </span>
                 <span
-                  class="inline-block px-3 py-1 text-sm font-bold rounded-full bg-white bg-opacity-80 text-gray-800 shadow-sm"
+                  class="inline-block px-3 py-1 text-lg font-bold rounded-full bg-white bg-opacity-80 text-gray-800 shadow-sm"
                 >
                   {{ room.roomType.name }}
                 </span>
@@ -224,14 +231,10 @@
                 <i class="pi pi-phone mr-2"></i>
                 {{ getGuestForRoom(room.id)?.phone }}
               </p>
-              <p class="text-sm text-gray-600">
-                <i class="pi pi-id-card mr-2"></i>
-                {{ getGuestForRoom(room.id)?.idNumber }}
-              </p>
             </div>
             <div
               *ngIf="room.id !== undefined && !hasGuest(room.id)"
-              class="bg-white/80 p-4 rounded-lg text-center shadow-sm border border-white/50"
+              class="bg-white/80 p-2 rounded-lg text-center shadow-sm border border-white/50"
             >
               <p class="text-gray-500 font-medium">No guest assigned</p>
             </div>
@@ -274,12 +277,6 @@
                     {{ getBookingForRoom(room.id)?.adults }} adults
                   </p>
                 </div>
-                <div>
-                  <p class="text-xs text-gray-600">
-                    <i class="pi pi-users mr-1"></i>
-                    {{ getBookingForRoom(room.id)?.children || 0 }} children
-                  </p>
-                </div>
               </div>
               <div
                 *ngIf="getBookingForRoom(room.id)?.specialRequests"
@@ -293,7 +290,7 @@
             </div>
             <div
               *ngIf="room.id !== undefined && !hasBooking(room.id)"
-              class="bg-white/80 p-4 rounded-lg text-center shadow-sm border border-white/50"
+              class="bg-white/80 p-2 rounded-lg text-center shadow-sm border border-white/50"
             >
               <p class="text-gray-500 font-medium">No active booking</p>
             </div>
@@ -304,7 +301,7 @@
             class="flex justify-between items-end pt-3 border-t border-white/50"
           >
             <div>
-              <p class="text-sm text-gray-700 font-medium mb-1">
+              <p class="text-lg text-gray-700 font-medium mb-1">
                 {{ room.maxOccupancy }} max · {{ room.beds }} beds
               </p>
               <p class="text-xs text-gray-600">
@@ -400,7 +397,7 @@
         </div>
 
         <!-- Rooms Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
           <div
             *ngFor="let room of availableRooms"
             [class]="
@@ -439,16 +436,8 @@
                   <p>{{ room.beds }}</p>
                 </div>
                 <div>
-                  <p class="font-semibold">Max Occupancy:</p>
-                  <p>{{ room.maxOccupancy }}</p>
-                </div>
-                <div>
                   <p class="font-semibold">Floor:</p>
                   <p>{{ room.floor }}</p>
-                </div>
-                <div>
-                  <p class="font-semibold">Accessible:</p>
-                  <p>{{ room.accessible ? "Yes" : "No" }}</p>
                 </div>
               </div>
 
@@ -523,6 +512,7 @@
   [room]="selectedRoomForDetails"
   (back)="closeRoomDetails()"
   (statusChanged)="loadAllData()"
+  [showDetails]="true"
 ></app-hotel-roomdetails>
 
 <div *ngIf="openLogs">
