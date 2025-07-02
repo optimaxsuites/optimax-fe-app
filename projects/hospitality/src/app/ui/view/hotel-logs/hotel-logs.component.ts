@@ -1,115 +1,40 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { PrimeNGConfig } from 'primeng/api';
+import {
+  HotelserviceService,
+  Room,
+  Booking,
+  Guest,
+} from '../../hospitality/hotelservice.service';
 
+// Add interfaces at the top
 interface BookingLog {
   id: string;
-  roomNumber: number;
+  roomNumber: number | string;
   roomType: string;
-  roomStatus: string; // Current room status (available, booked, occupied)
+  roomStatus: string;
   guestName: string;
   guestEmail?: string;
-  guestPhone: string;
+  guestPhone?: string;
   guestIdNumber?: string;
   checkinDate: Date;
   checkoutDate: Date;
-  status: string; // Booking status (confirmed, checked-in, etc.)
-  paymentMethod: string;
+  status: string;
+  paymentMethod?: string;
   totalAmount: number;
   paidAmount: number;
   balanceAmount: number;
   specialRequests?: string;
   createdAt: Date;
-  receptionistId?: string;
-  receptionistName?: string;
-  bookingTime?: Date;
-}
-
-interface Receptionist {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  isOnDuty: boolean;
-  password: string; // For authentication
-  commissionRate?: number; // For commission calculations
-}
-
-interface ReceptionistLog {
-  receptionistId: string;
-  receptionistName: string;
-  loginTime: Date;
-  logoutTime?: Date;
-  sales: BookingLog[];
-  notes?: string;
-  totalSales?: number;
-  commissionEarned?: number;
 }
 
 interface Statistics {
   totalBookings: number;
   activeStays: number;
   upcomingCheckins: number;
-  totalAvailableRooms: number; // Total available rooms
   totalRevenue: number;
-}
-
-export interface Guest {
-  id?: string; // Optional property for guest ID
-  title: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  country: string;
-  idNumber: string;
-  gender: string;
-}
-
-export interface BookingDetails {
-  checkinDate: Date;
-  checkoutDate: Date;
-  adults: number;
-  children: number;
-  specialRequests?: string;
-  paymentMethod: string;
-  totalAmount: number;
-  paidAmount: number;
-  balanceAmount: number;
-}
-
-export interface Room {
-  id: number;
-  number: number;
-  type: string;
-  status: string;
-  floor?: number;
-  guest?: Guest; // Optional property for guest
-  rate: number;
-  bookingDetails?: BookingDetails;
-  beds?: number;
-  maxOccupancy?: number;
-  description?: string;
-  amenities?: string[];
-}
-
-export interface Booking {
-  guest: Guest;
-  checkinDate: Date;
-  checkoutDate: Date;
-  adults: number;
-  children: number;
-  specialRequests: string;
-  paymentMethod: string;
-  depositAmount: number;
-  roomIds: number[];
-  roomTypes: string[];
-  roomRates: number[];
-  subtotal: number;
-  taxes: number;
-  total: number;
-  balanceAmount: number;
-  status?: string;
+  totalAvailableRooms: number;
 }
 
 @Component({
@@ -156,13 +81,103 @@ export class HotelLogsComponent implements OnInit {
 
   constructor(
     private messageService: MessageService,
-    private primengConfig: PrimeNGConfig
+    private primengConfig: PrimeNGConfig,
+    private hotelService: HotelserviceService
   ) {}
 
   ngOnInit(): void {
     this.primengConfig.ripple = true;
-    this.allRooms = this.getAllRooms();
-    this.loadLogs();
+    this.loadData();
+  }
+
+  private loadData(): void {
+    this.loading = true;
+    Promise.all([
+      this.hotelService.getRooms().toPromise(),
+      this.hotelService.getBookings().toPromise(),
+      this.hotelService.getGuests().toPromise(),
+    ])
+      .then(([rooms, bookings, guests]) => {
+        this.allRooms = rooms || [];
+        this.logs = this.mapBookingsToLogs(
+          bookings || [],
+          rooms || [],
+          guests || []
+        );
+        this.filteredLogs = [...this.logs];
+        this.calculateStatistics();
+      })
+      .catch((error) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load booking logs',
+        });
+        console.error('Error loading logs:', error);
+      })
+      .finally(() => {
+        this.loading = false;
+      });
+  }
+
+  private mapBookingsToLogs(
+    bookings: Booking[],
+    rooms: Room[],
+    guests: Guest[]
+  ): BookingLog[] {
+    return bookings
+      .map((booking) => {
+        const guest =
+          typeof booking.guest === 'number'
+            ? guests.find((g) => g.id === booking.guest)
+            : (booking.guest as Guest);
+        const roomId = booking.rooms[0];
+        const room = rooms.find((r) => r.id === roomId);
+        const guestName = guest
+          ? `${guest.title} ${guest.firstName} ${guest.lastName}`
+          : 'N/A';
+        return {
+          id: `${booking.id}`,
+          roomNumber: room?.roomNumber || '',
+          roomType: room?.roomType?.name || '',
+          roomStatus: room?.roomStatus || '',
+          guestName: guestName,
+          guestEmail: guest?.email,
+          guestPhone: guest?.phone || 'N/A',
+          guestIdNumber: guest?.idNumber,
+          checkinDate: new Date(booking.checkinDate),
+          checkoutDate: new Date(booking.checkoutDate),
+          status: booking.status.toLowerCase(),
+          paymentMethod: 'N/A', // Add if available
+          totalAmount: booking.total,
+          paidAmount: booking.depositAmount || 0,
+          balanceAmount: booking.balanceAmount || 0,
+          specialRequests: booking.specialRequests,
+          createdAt: new Date(booking.checkinDate),
+        };
+      })
+      .sort((a, b) => b.checkinDate.getTime() - a.checkinDate.getTime());
+  }
+
+  private calculateStatistics(): void {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    this.statistics = {
+      totalBookings: this.logs.length,
+      activeStays: this.logs.filter(
+        (log) => log.status === 'checked_in' || log.status === 'occupied'
+      ).length,
+      upcomingCheckins: this.logs.filter(
+        (log) => log.status === 'confirmed' && new Date(log.checkinDate) > today
+      ).length,
+      totalAvailableRooms: this.allRooms.filter(
+        (room) => room.roomStatus === 'AVAILABLE'
+      ).length,
+      totalRevenue: this.logs.reduce(
+        (sum, log) => sum + (log.totalAmount || 0),
+        0
+      ),
+    };
   }
 
   getRoomsByFloor(): { [floor: number]: Room[] } {
@@ -197,146 +212,6 @@ export class HotelLogsComponent implements OnInit {
       default:
         return 'text-white';
     }
-  }
-
-  private loadLogs(): void {
-    this.loading = true;
-
-    try {
-      const storedRooms = localStorage.getItem('rooms');
-      if (!storedRooms) {
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'No Data',
-          detail: 'No room data found in local storage',
-        });
-        return;
-      }
-
-      const rooms: Room[] = JSON.parse(storedRooms);
-
-      this.logs = rooms
-        .filter(
-          (room) =>
-            room.status === 'available' ||
-            room.status === 'maintenance' ||
-            room.status === 'dirty' ||
-            (room.bookingDetails && room.guest)
-        )
-        .map((room) => this.createBookingLog(room));
-
-      this.logs.sort(
-        (a, b) => b.checkinDate.getTime() - a.checkinDate.getTime()
-      );
-
-      this.filteredLogs = [...this.logs];
-      this.calculateStatistics();
-    } catch (error) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to load booking logs',
-      });
-      console.error('Error loading logs:', error);
-    } finally {
-      this.loading = false;
-    }
-  }
-
-  private getAllRooms(): Room[] {
-    const storedRooms = localStorage.getItem('rooms');
-    if (!storedRooms) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'No Data',
-        detail: 'No room data found in local storage',
-      });
-      return [];
-    }
-    return JSON.parse(storedRooms);
-  }
-
-  private createBookingLog(room: Room): BookingLog {
-    const guestName = room.guest
-      ? `${room.guest.title} ${room.guest.firstName} ${room.guest.lastName}`
-      : 'N/A';
-
-    return {
-      id: `${room.id}-${
-        room.bookingDetails?.checkinDate || new Date().toISOString()
-      }`,
-      roomNumber: room.number,
-      roomType: room.type,
-      roomStatus: room.status,
-      guestName: guestName,
-      guestEmail: room.guest?.email,
-      guestPhone: room.guest?.phone || 'N/A',
-      guestIdNumber: room.guest?.idNumber,
-      checkinDate: room.bookingDetails
-        ? new Date(room.bookingDetails.checkinDate)
-        : new Date(),
-      checkoutDate: room.bookingDetails
-        ? new Date(room.bookingDetails.checkoutDate)
-        : new Date(),
-      status: this.determineBookingStatus(room),
-      paymentMethod: room.bookingDetails?.paymentMethod || 'N/A',
-      totalAmount: room.bookingDetails?.totalAmount || 0,
-      paidAmount: room.bookingDetails?.paidAmount || 0,
-      balanceAmount: room.bookingDetails?.balanceAmount || 0,
-      specialRequests: room.bookingDetails?.specialRequests,
-      createdAt: new Date(),
-    };
-  }
-
-  private determineBookingStatus(room: Room): string {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const checkinDate = new Date(room.bookingDetails?.checkinDate || today);
-    const checkoutDate = new Date(room.bookingDetails?.checkoutDate || today);
-
-    if (room.status === 'cancelled') return 'cancelled';
-
-    if (room.status === 'maintenance') return 'maintenance';
-
-    if (room.status === 'occupied') return 'checked-in';
-
-    if (room.status === 'dirty') return 'checked-out';
-
-    if (room.status === 'booked') {
-      if (checkinDate > today) return 'confirmed';
-      if (checkinDate <= today && checkoutDate >= today) return 'no-show';
-    }
-
-    if (room.status === 'available') {
-      if (checkoutDate < today) return 'dirt';
-      return 'available';
-    }
-
-    return 'unknown';
-  }
-
-  private calculateStatistics(): void {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Count only occupied rooms for active stays
-    const occupiedRooms = this.logs.filter(
-      (log) => log.roomStatus === 'occupied'
-    ).length;
-
-    this.statistics = {
-      totalBookings: this.logs.length,
-      activeStays: occupiedRooms,
-      upcomingCheckins: this.logs.filter(
-        (log) =>
-          log.roomStatus === 'booked' && new Date(log.checkinDate) > today
-      ).length,
-      totalAvailableRooms: this.allRooms.filter(
-        (room) => room.status === 'available'
-      ).length,
-      totalRevenue: this.logs.reduce((sum, log) => sum + log.totalAmount, 0),
-    };
   }
 
   applyFilters(): void {

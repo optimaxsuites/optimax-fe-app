@@ -79,12 +79,6 @@ export class HotelRoomlistComponent implements OnInit {
     this.loadAllData();
   }
 
-  // selectRoom(room: Room): void {
-  //   this.selectedRoomForDetails = room;
-  //   this.showRoomDetails = true;
-  //   this.roomSelected.emit(room);
-  // }
-
   public loadAllData(): void {
     this.isLoading = true;
 
@@ -102,7 +96,7 @@ export class HotelRoomlistComponent implements OnInit {
         );
         this.bookings = bookings;
         this.guests = guests;
-        this.roomTypes = ['All Rooms', ...roomTypes.map((rt) => rt.name)];
+        this.roomTypes = ['All Rooms', ...this.uniqueRoomTypes];
         this.applyFilters();
         this.isLoading = false;
       },
@@ -263,38 +257,6 @@ export class HotelRoomlistComponent implements OnInit {
     this.applyFilters();
   }
 
-  // loadAllData(): void {
-  //   this.isLoading = true;
-
-  //   forkJoin([
-  //     this.hotelService.getRooms(),
-  //     this.hotelService.getRoomTypes(),
-  //     this.hotelService.getBookings(),
-  //     this.hotelService.getGuests(),
-  //   ]).subscribe({
-  //     next: ([rooms, roomTypes, bookings, guests]) => {
-  //       this.rooms = this.enrichRoomsWithGuestAndBookingData(
-  //         rooms,
-  //         bookings,
-  //         guests
-  //       );
-  //       this.bookings = bookings;
-  //       this.guests = guests;
-  //       this.roomTypes = ['All Rooms', ...roomTypes.map((rt) => rt.name)];
-  //       this.applyFilters();
-  //       this.isLoading = false;
-  //     },
-  //     error: (err) => {
-  //       this.messageService.add({
-  //         severity: 'error',
-  //         summary: 'Error',
-  //         detail: 'Failed to load data',
-  //       });
-  //       this.isLoading = false;
-  //     },
-  //   });
-  // }
-
   private enrichRoomsWithGuestAndBookingData(
     rooms: Room[],
     bookings: Booking[],
@@ -391,7 +353,7 @@ export class HotelRoomlistComponent implements OnInit {
     this.hotelService.createRoom(newRoom).subscribe({
       next: (room) => {
         this.rooms.push(room);
-        this.updateRoomTypes();
+        this.roomTypes = ['All Rooms', ...this.uniqueRoomTypes];
         this.applyFilters();
         this.showRoomForm = false;
       },
@@ -454,5 +416,10 @@ export class HotelRoomlistComponent implements OnInit {
         detail: 'Please select at least one room to book',
       });
     }
+  }
+
+  get uniqueRoomTypes(): string[] {
+    const types = this.rooms.map((room) => room.roomType.name);
+    return Array.from(new Set(types));
   }
 }
