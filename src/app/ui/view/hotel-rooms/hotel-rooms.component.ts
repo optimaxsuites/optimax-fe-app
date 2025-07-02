@@ -145,6 +145,7 @@ export class HotelRoomsComponent {
   }
 
   // Room Methods (existing)
+
   onSubmit(): void {
     if (this.roomForm.invalid) {
       this.messageService.add({
@@ -155,30 +156,42 @@ export class HotelRoomsComponent {
       this.markFormGroupTouched(this.roomForm);
       return;
     }
+
     this.loading = true;
     const selectedTypeId = this.roomForm.value.roomType;
+
     const selectedType = this.roomTypes.find((rt) => rt.id === selectedTypeId);
-<<<<<<< HEAD
+
     if (!selectedType) {
+
+
+    // Find the selected room type object to get the name
+    const selectedRoomType = this.roomTypes.find(
+      (type) => type.id === selectedTypeId
+    );
+
+    if (!selectedRoomType) {
+
       this.messageService.add({
         severity: 'error',
-        summary: 'Room Type Error',
+        summary: 'Error',
         detail: 'Selected room type not found.',
       });
       this.loading = false;
       return;
     }
-    const newRoom: Room = {
-      id: 0,
-      roomNumber: this.roomForm.value.roomNumber,
-      roomType: selectedType,
-=======
 
     const newRoom: Room = {
       id: 0,
       roomNumber: this.roomForm.value.roomNumber,
-      roomType: selectedType!,
->>>>>>> 2d458057a8fefad7c46575dd093889284a712cf2
+      // roomType: selectedType!,
+
+      roomType: {
+        id: selectedRoomType.id!,
+        name: selectedRoomType.name,
+        description: selectedRoomType.description,
+      },
+
       roomStatus: this.roomForm.value.roomStatus,
       floor: this.roomForm.value.floor,
       rate: this.roomForm.value.rate,
@@ -190,6 +203,7 @@ export class HotelRoomsComponent {
       accessible: this.roomForm.value.accessible,
       isSmokingAllowed: this.roomForm.value.isSmokingAllowed,
     };
+
     this.hotelService.createRoom(newRoom).subscribe({
       next: (createdRoom) => {
         this.messageService.add({
@@ -213,7 +227,7 @@ export class HotelRoomsComponent {
         this.loading = false;
       },
     });
-  }
+    }}
 
   onFileUpload(event: any): void {
     const files = event.files;
