@@ -159,20 +159,44 @@ export class HotelRoomlistComponent implements OnInit {
         this.selectedStatus.value === 'All Statuses' ||
         this.selectedStatus.value === room.roomStatus;
 
-      // Search filter
+      // Guest name filter (searchQuery)
+      const guest = this.roomGuestsMap.get(room.id as number);
+      const guestName = guest
+        ? `${guest.firstName || ''} ${guest.lastName || ''}`
+            .trim()
+            .toLowerCase()
+        : '';
+
+      // Search filter: room number, room type, or guest name
+      const searchLower = this.searchQuery.toLowerCase();
       const searchMatch =
         !this.searchQuery ||
         room.roomNumber.toString().includes(this.searchQuery) ||
         (room.roomType &&
           room.roomType.name &&
-          room.roomType.name
-            .toLowerCase()
-            .includes(this.searchQuery.toLowerCase()));
+          room.roomType.name.toLowerCase().includes(searchLower)) ||
+        (guestName && guestName.includes(searchLower));
 
-      // Date filter (if implemented)
-      // ...
+      // Date filter: check-in or checkout date
+      let dateMatch = true;
+      if (this.searchDate) {
+        const booking = this.roomBookingsMap.get(room.id as number);
+        if (booking) {
+          const checkin = new Date(booking.checkinDate);
+          const checkout = new Date(booking.checkoutDate);
+          const searchDateOnly = new Date(this.searchDate);
+          searchDateOnly.setHours(0, 0, 0, 0);
+          checkin.setHours(0, 0, 0, 0);
+          checkout.setHours(0, 0, 0, 0);
+          dateMatch =
+            checkin.getTime() === searchDateOnly.getTime() ||
+            checkout.getTime() === searchDateOnly.getTime();
+        } else {
+          dateMatch = false;
+        }
+      }
 
-      return typeMatch && statusMatch && searchMatch;
+      return typeMatch && statusMatch && searchMatch && dateMatch;
     });
   }
 
@@ -184,7 +208,9 @@ export class HotelRoomlistComponent implements OnInit {
   showAvailableRooms(): void {
     this.hotelService.getAvailableRooms().subscribe({
       next: (rooms) => {
-        this.availableRooms = rooms;
+        this.availableRooms = rooms.filter(
+          (room) => room.roomStatus === 'AVAILABLE'
+        );
         this.viewingAvailableRooms = true;
         this.selectedRooms = [];
         this.selectAll = false;

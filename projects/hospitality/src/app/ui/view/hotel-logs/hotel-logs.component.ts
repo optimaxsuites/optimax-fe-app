@@ -6,21 +6,22 @@ import {
   Room,
   Booking,
   Guest,
+  RoomStatus,
+  BookingStatus,
 } from '../../hospitality/hotelservice.service';
 
-// Add interfaces at the top
 interface BookingLog {
   id: string;
   roomNumber: number | string;
   roomType: string;
-  roomStatus: string;
+  roomStatus: RoomStatus;
   guestName: string;
   guestEmail?: string;
   guestPhone?: string;
   guestIdNumber?: string;
   checkinDate: Date;
   checkoutDate: Date;
-  status: string;
+  status: BookingStatus;
   paymentMethod?: string;
   totalAmount: number;
   paidAmount: number;
@@ -33,8 +34,8 @@ interface Statistics {
   totalBookings: number;
   activeStays: number;
   upcomingCheckins: number;
-  totalRevenue: number;
   totalAvailableRooms: number;
+  totalRevenue: number;
 }
 
 @Component({
@@ -52,26 +53,25 @@ export class HotelLogsComponent implements OnInit {
   displayDialog = false;
   currentDate = new Date();
   allRooms: Room[] = [];
-
-  dateRange: Date[] | null = null;
-  selectedStatus: any = { value: 'all', label: 'All Statuses' };
-
-  statusOptions = [
-    { value: 'all', label: 'All Statuses' },
-    { value: 'confirmed', label: 'Confirmed' },
-    { value: 'checked-in', label: 'Checked In' },
-    { value: 'checked-out', label: 'Checked Out' },
-    { value: 'cancelled', label: 'Cancelled' },
-    { value: 'no-show', label: 'No Show' },
-  ];
+  allGuests: Guest[] = [];
 
   statistics: Statistics = {
     totalBookings: 0,
     activeStays: 0,
     upcomingCheckins: 0,
-    totalRevenue: 0,
     totalAvailableRooms: 0,
+    totalRevenue: 0,
   };
+
+  selectedStatus: any = { value: 'all', label: 'All Statuses' };
+  statusOptions = [
+    { value: 'all', label: 'All Statuses' },
+    { value: 'CONFIRMED', label: 'Confirmed' },
+    { value: 'CHECKED_IN', label: 'Checked In' },
+    { value: 'CHECKED_OUT', label: 'Checked Out' },
+    { value: 'CANCELLED', label: 'Cancelled' },
+    { value: 'NO_SHOW', label: 'No Show' },
+  ];
 
   filterValues: { [key: string]: string } = {
     roomNumber: '',
@@ -92,28 +92,37 @@ export class HotelLogsComponent implements OnInit {
 
   private loadData(): void {
     this.loading = true;
+
+    // Fetch all necessary data in parallel
     Promise.all([
       this.hotelService.getRooms().toPromise(),
       this.hotelService.getBookings().toPromise(),
       this.hotelService.getGuests().toPromise(),
+      this.hotelService.getAvailableRooms().toPromise(),
     ])
-      .then(([rooms, bookings, guests]) => {
+      .then(([rooms, bookings, guests, availableRooms]) => {
         this.allRooms = rooms || [];
+        this.allGuests = guests || [];
+
+        // Process bookings into logs
         this.logs = this.mapBookingsToLogs(
           bookings || [],
-          rooms || [],
-          guests || []
+          this.allRooms,
+          this.allGuests
         );
+
         this.filteredLogs = [...this.logs];
-        this.calculateStatistics();
+
+        // Calculate statistics
+        this.calculateStatistics(availableRooms?.length || 0);
       })
       .catch((error) => {
+        console.error('Error loading data:', error);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'Failed to load booking logs',
+          detail: 'Failed to load booking data',
         });
-        console.error('Error loading logs:', error);
       })
       .finally(() => {
         this.loading = false;
@@ -127,28 +136,27 @@ export class HotelLogsComponent implements OnInit {
   ): BookingLog[] {
     return bookings
       .map((booking) => {
-        const guest =
-          typeof booking.guest === 'number'
-            ? guests.find((g) => g.id === booking.guest)
-            : (booking.guest as Guest);
-        const roomId = booking.rooms[0];
-        const room = rooms.find((r) => r.id === roomId);
-        const guestName = guest
-          ? `${guest.title} ${guest.firstName} ${guest.lastName}`
-          : 'N/A';
+        // Find guest information
+        const guest = this.findGuest(booking.guest, guests);
+
+        // Find room information (using first room in booking)
+        const room = rooms.find((r) => r.id === booking.rooms[0]);
+
         return {
           id: `${booking.id}`,
-          roomNumber: room?.roomNumber || '',
-          roomType: room?.roomType?.name || '',
-          roomStatus: room?.roomStatus || '',
-          guestName: guestName,
+          roomNumber: room?.roomNumber || 'N/A',
+          roomType: room?.roomType?.name || 'N/A',
+          roomStatus: room?.roomStatus || 'UNDER_MAINTENANCE',
+          guestName: guest
+            ? `${guest.title} ${guest.firstName} ${guest.lastName}`
+            : 'N/A',
           guestEmail: guest?.email,
           guestPhone: guest?.phone || 'N/A',
           guestIdNumber: guest?.idNumber,
           checkinDate: new Date(booking.checkinDate),
           checkoutDate: new Date(booking.checkoutDate),
-          status: booking.status.toLowerCase(),
-          paymentMethod: 'N/A', // Add if available
+          status: booking.status,
+          paymentMethod: 'N/A', // Replace with actual payment method if available
           totalAmount: booking.total,
           paidAmount: booking.depositAmount || 0,
           balanceAmount: booking.balanceAmount || 0,
@@ -159,59 +167,32 @@ export class HotelLogsComponent implements OnInit {
       .sort((a, b) => b.checkinDate.getTime() - a.checkinDate.getTime());
   }
 
-  private calculateStatistics(): void {
+  private findGuest(
+    guestRef: Guest | number,
+    guests: Guest[]
+  ): Guest | undefined {
+    return typeof guestRef === 'number'
+      ? guests.find((g) => g.id === guestRef)
+      : guestRef;
+  }
+
+  private calculateStatistics(availableRoomsCount: number): void {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
     this.statistics = {
       totalBookings: this.logs.length,
-      activeStays: this.logs.filter(
-        (log) => log.status === 'checked_in' || log.status === 'occupied'
-      ).length,
+      activeStays: this.logs.filter((log) => log.status === 'CHECKED_IN')
+        .length,
       upcomingCheckins: this.logs.filter(
-        (log) => log.status === 'confirmed' && new Date(log.checkinDate) > today
+        (log) => log.status === 'CONFIRMED' && new Date(log.checkinDate) > today
       ).length,
-      totalAvailableRooms: this.allRooms.filter(
-        (room) => room.roomStatus === 'AVAILABLE'
-      ).length,
+      totalAvailableRooms: availableRoomsCount,
       totalRevenue: this.logs.reduce(
         (sum, log) => sum + (log.totalAmount || 0),
         0
       ),
     };
-  }
-
-  getRoomsByFloor(): { [floor: number]: Room[] } {
-    return this.allRooms.reduce((acc, room) => {
-      const floor = room.floor || 0;
-      if (!acc[floor]) {
-        acc[floor] = [];
-      }
-      acc[floor].push(room);
-      return acc;
-    }, {} as { [floor: number]: Room[] });
-  }
-
-  // Get floors with rooms
-  getFloors(): number[] {
-    return Object.keys(this.getRoomsByFloor()).map(Number).sort();
-  }
-
-  // Get room status text color based on background
-  getRoomStatusTextColor(status: string): string {
-    switch (status) {
-      case 'available':
-        return 'text-green';
-      case 'booked':
-        return 'text-white';
-      case 'occupied':
-        return 'text-white';
-      case 'maintenance':
-        return 'text-white';
-      case 'dirty':
-        return 'text-white';
-      default:
-        return 'text-white';
-    }
   }
 
   applyFilters(): void {
@@ -220,27 +201,6 @@ export class HotelLogsComponent implements OnInit {
       const statusMatch =
         this.selectedStatus.value === 'all' ||
         log.status === this.selectedStatus.value;
-
-      // Date range filter
-      let dateMatch = true;
-      if (this.dateRange && this.dateRange[0] && this.dateRange[1]) {
-        const startDate = new Date(this.dateRange[0]);
-        startDate.setHours(0, 0, 0, 0);
-
-        const endDate = new Date(this.dateRange[1]);
-        endDate.setHours(23, 59, 59, 999);
-
-        const logCheckin = new Date(log.checkinDate);
-        logCheckin.setHours(0, 0, 0, 0);
-
-        const logCheckout = new Date(log.checkoutDate);
-        logCheckout.setHours(0, 0, 0, 0);
-
-        dateMatch =
-          (logCheckin >= startDate && logCheckin <= endDate) ||
-          (logCheckout >= startDate && logCheckout <= endDate) ||
-          (logCheckin <= startDate && logCheckout >= endDate);
-      }
 
       // Text filters
       const roomNumberMatch =
@@ -253,89 +213,60 @@ export class HotelLogsComponent implements OnInit {
           .toLowerCase()
           .includes(this.filterValues['guestName'].toLowerCase());
 
-      const statusTextMatch =
-        !this.filterValues['status'] ||
-        log.status
-          .toLowerCase()
-          .includes(this.filterValues['status'].toLowerCase());
-
-      return (
-        statusMatch &&
-        dateMatch &&
-        roomNumberMatch &&
-        guestNameMatch &&
-        statusTextMatch
-      );
+      return statusMatch && roomNumberMatch && guestNameMatch;
     });
-
-    this.calculateStatistics();
-  }
-
-  onFilter(event: Event, field: string): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.filterValues[field] = value;
-    this.applyFilters();
-  }
-
-  clearDateFilter(): void {
-    this.dateRange = null;
-    this.applyFilters();
   }
 
   resetFilters(): void {
     this.selectedStatus = { value: 'all', label: 'All Statuses' };
-    this.dateRange = null;
     this.filterValues = {
       roomNumber: '',
       guestName: '',
       status: '',
     };
-    this.applyFilters();
+    this.filteredLogs = [...this.logs];
   }
 
   viewDetails(log: BookingLog): void {
-    console.log('Selected log:', log);
     this.selectedLog = log;
     this.displayDialog = true;
   }
 
   getStatusClass(status: string): string {
     switch (status) {
-      case 'available':
+      case 'AVAILABLE':
         return 'bg-green-300';
-      case 'confirmed':
+      case 'CONFIRMED':
         return 'bg-amber-300';
-      case 'checked-in':
+      case 'CHECKED_IN':
         return 'bg-blue-300';
-      case 'maintenance':
+      case 'UNDER_MAINTENANCE':
         return 'bg-gray-300';
-      case 'checked-out':
+      case 'CHECKED_OUT':
         return 'bg-red-300';
-      case 'no-show':
+      case 'NO_SHOW':
         return 'bg-red-300';
       default:
         return 'bg-gray-300';
     }
   }
 
-  goBack(): void {
-    this.back.emit();
-  }
-
-  getRoomStatusColor(status: string): string {
+  getStatusBadgeClass(status: string): string {
     switch (status) {
-      case 'available':
-        return 'bg-green-500';
-      case 'booked':
-        return 'bg-amber-500';
-      case 'occupied':
-        return 'bg-blue-500';
-      case 'maintenance':
-        return 'bg-gray-500';
-      case 'dirty':
-        return 'bg-red-500';
+      case 'AVAILABLE':
+        return 'bg-green-100 text-green-800';
+      case 'CONFIRMED':
+        return 'bg-amber-100 text-amber-800';
+      case 'CHECKED_IN':
+        return 'bg-blue-100 text-blue-800';
+      case 'UNDER_MAINTENANCE':
+        return 'bg-gray-100 text-gray-800';
+      case 'CHECKED_OUT':
+        return 'bg-red-100 text-red-800';
+      case 'NO_SHOW':
+        return 'bg-red-100 text-red-800';
       default:
-        return 'bg-gray-500';
+        return 'bg-gray-100 text-gray-800';
     }
   }
 
@@ -361,25 +292,11 @@ export class HotelLogsComponent implements OnInit {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }
 
-  onRowClick(log: BookingLog) {
-    if (
-      log.roomStatus === 'booked' ||
-      log.roomStatus === 'occupied' ||
-      log.roomStatus === 'available' ||
-      log.roomStatus === 'maintenance'
-    ) {
-      this.viewDetails(log);
-    } else {
-      console.log(
-        'Room is not booked or occupied:',
-        log.roomNumber,
-        log.roomStatus
-      );
-    }
+  goBack(): void {
+    this.back.emit();
   }
 
   printLogs(): void {
-    // Simple print implementation
     window.print();
   }
 
@@ -409,13 +326,13 @@ export class HotelLogsComponent implements OnInit {
                 border-radius: 10px; 
                 font-size: 12px; 
                 font-weight: bold; 
-                ${this.getStatusClass(printLog.status).replace('.', '')}
+                ${this.getStatusBadgeClass(printLog.status).replace('.', '')}
               }
             </style>
           </head>
           <body>
             <div class="header">
-              <div class="hotel-name">Optimas</div>
+              <div class="hotel-name">Optimas Suites</div>
               <div class="receipt-title">Booking Receipt</div>
               <div>${new Date().toLocaleDateString()}</div>
             </div>
@@ -444,15 +361,11 @@ export class HotelLogsComponent implements OnInit {
               </div>
               <div class="info-row">
                 <div class="info-label">Check-in:</div>
-                <div>${new Date(
-                  printLog.checkinDate
-                ).toLocaleDateString()}</div>
+                <div>${printLog.checkinDate.toLocaleDateString()}</div>
               </div>
               <div class="info-row">
                 <div class="info-label">Check-out:</div>
-                <div>${new Date(
-                  printLog.checkoutDate
-                ).toLocaleDateString()}</div>
+                <div>${printLog.checkoutDate.toLocaleDateString()}</div>
               </div>
               <div class="info-row">
                 <div class="info-label">Duration:</div>
@@ -469,10 +382,6 @@ export class HotelLogsComponent implements OnInit {
             
             <div class="section">
               <div class="section-title">Payment Information</div>
-              <div class="info-row">
-                <div class="info-label">Payment Method:</div>
-                <div>${printLog.paymentMethod}</div>
-              </div>
               <div class="info-row">
                 <div class="info-label">Total Amount:</div>
                 <div>${printLog.totalAmount.toLocaleString('en-NG', {
@@ -508,16 +417,14 @@ export class HotelLogsComponent implements OnInit {
             }
             
             <div class="footer">
-              Thank you for choosing our hotel. We hope you enjoy your stay!
+              Thank you for choosing Optimas Suites!
             </div>
           </body>
         </html>
       `);
       printWindow.document.close();
       printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-      }, 500);
+      setTimeout(() => printWindow.print(), 500);
     }
   }
 }
