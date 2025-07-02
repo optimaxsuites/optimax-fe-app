@@ -35,7 +35,7 @@ import { NotFoundComponent } from './ui/not-found.component';
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'user/auth/:uuid',
+    redirectTo: 'user/auth/4a48c75c-dc92-43cd-a2bb-943eb1fef8f8',
     pathMatch: 'full',
   },
   {
