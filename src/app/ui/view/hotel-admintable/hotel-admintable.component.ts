@@ -274,7 +274,9 @@ export class HotelAdmintableComponent implements OnInit {
     );
     return {
       ...formValue,
-      roomType: selectedType,
+      roomType: selectedType
+        ? selectedType
+        : { id: formValue.roomType, name: '' },
       amenities: this.selectedAmenities,
       images: this.previewImages,
     };
@@ -403,7 +405,11 @@ export class HotelAdmintableComponent implements OnInit {
 
   // Existing methods (keep unchanged)
   navigateToCreateRoom() {
-    this.openCreateRoomModal();
+    this.openRoomForm = true;
+  }
+
+  closeRoomForm() {
+    this.openRoomForm = false;
   }
 
   applyFilters(): void {
