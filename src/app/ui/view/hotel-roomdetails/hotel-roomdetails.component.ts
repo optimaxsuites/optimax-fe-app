@@ -374,35 +374,12 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
   // Room status methods
   onStartMaintenance(): void {
     if (!this.detailedRoom) return;
-
-    const updatedRoom: Room = {
-      ...this.detailedRoom,
-      roomStatus: 'UNDER_MAINTENANCE',
-      // maintenanceReason:
-      //   this.newMaintenanceRequest.reasons.join(', ') || 'Maintenance required',
-      // maintenanceStartDate: new Date(this.newMaintenanceRequest.startDate),
-    };
-
-    this.updateRoomStatus(
-      updatedRoom,
-      'Maintenance Started',
-      'Room is now under maintenance'
-    );
+    this.openNote = true;
   }
 
   onCompleteMaintenance(): void {
-    if (!this.detailedRoom) return;
-
-    const updatedRoom: Room = {
-      ...this.detailedRoom,
-      roomStatus: 'AVAILABLE',
-    };
-
-    this.updateRoomStatus(
-      updatedRoom,
-      'Maintenance Complete',
-      'Room is now available'
-    );
+    this.openNote = false;
+    this.loadRoomDetails(this.detailedRoom!.id);
   }
 
   onCompleteCleaning(): void {
