@@ -463,7 +463,7 @@
         <!-- Available Room Actions -->
         <ng-container *ngIf="isAvailable">
           <button
-            (click)="navigateToForm()"
+            (click)="openForm = true"
             class="bg-gradient-to-r from-emerald-600 to-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-emerald-700 hover:to-green-600"
           >
             <i class="pi pi-calendar-plus"></i>
@@ -471,7 +471,7 @@
           </button>
 
           <button
-            (click)="onStartMaintenance()"
+            (click)="openNote = true"
             class="bg-gradient-to-r from-gray-600 to-slate-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-gray-700 hover:to-slate-600"
           >
             <i class="pi pi-wrench"></i>
@@ -534,7 +534,7 @@
           </button>
 
           <button
-            (click)="navigateToNote()"
+            (click)="openNote = true"
             class="bg-gradient-to-r from-gray-600 to-slate-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-gray-700 hover:to-slate-600"
           >
             <i class="pi pi-pencil"></i>
@@ -546,10 +546,10 @@
   </div>
 </div>
 
-<div *ngIf="openForm">
+<div *ngIf="openForm && detailedRoom">
   <app-hotel-form
-    [selectedRooms]="selectedRooms"
-    (back)="navigateToForm()"
+    [selectedRooms]="[detailedRoom]"
+    (closeForm)="openForm = false"
     (bookingComplete)="onBookingComplete($event)"
   ></app-hotel-form>
 </div>
@@ -585,13 +585,20 @@
   ></app-hotel-changeroom>
 </div>
 
-<!-- <div *ngIf="openNote">
+<div *ngIf="openNote && detailedRoom">
   <app-hotel-maintenancenote
-    [room]="detailedRoom!"
-    (back)="navigateToNote()"
+    [room]="{
+      id: detailedRoom.id,
+      number: detailedRoom.roomNumber,
+      type: detailedRoom.roomType.name,
+      status: detailedRoom.roomStatus,
+      rate: detailedRoom.rate
+    }"
+    [maintenanceRequests]="maintenanceRequests"
+    (back)="openNote = false"
     (maintenanceComplete)="onCompleteMaintenance()"
   ></app-hotel-maintenancenote>
-</div>  -->
+</div>
 
 <!-- parent.component.html update for the dialog -->
 <!-- <p-dialog
