@@ -93,6 +93,7 @@ import { TransactionSideModalComponent } from './ui/view/transaction-side-modal/
 import { NewCoaModalComponent } from './ui/view/new-coa-modal/new-coa-modal.component';
 import { ConnectMonoComponent } from './ui/view/connect-mono/connect-mono.component';
 import { NgApexchartsModule } from 'ng-apexcharts';
+import { IncomeStatementChartsComponent } from './ui/view/reports/income-statement/income-statement-charts/income-statement-charts.component';
 
 
 @NgModule({
@@ -122,11 +123,12 @@ import { NgApexchartsModule } from 'ng-apexcharts';
     IncomeStatementComponent,
     CashFlowComponent,
     TaxSummaryComponent,
-    TransactionSideModalComponent
+    TransactionSideModalComponent,
+    IncomeStatementChartsComponent
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     CommonModule,
     AppRoutingModule,
     FormsModule,

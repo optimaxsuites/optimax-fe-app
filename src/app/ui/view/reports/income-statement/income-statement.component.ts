@@ -61,7 +61,7 @@ interface Comment {
 export class IncomeStatementComponent implements OnInit {
   @ViewChild('statementContent') statementContent!: ElementRef;
 
-  currentDate: Date = new Date(2023, 4, 1);
+  currentDate: Date = new Date(2025, 4, 1);
   showFilterModal: boolean = false;
   showCommentsModal: boolean = false;
   showShareModal: boolean = false;
@@ -209,12 +209,33 @@ export class IncomeStatementComponent implements OnInit {
   }
 
   get grossProfit(): number {
-    return this.totalRevenue + this.totalCOGS;
+    return this.totalRevenue - this.totalCOGS;
   }
 
   get prevGrossProfit(): number {
     return this.totalPrevRevenue + this.totalPrevCOGS;
   }
+
+//for budject
+get totalBudgetAdministrativeExpenses(): number {
+  return this.operatingExpenses.reduce((sum, item) => sum + (item.budget || 0), 0);
+}
+
+get totalBudgetSalariesWages(): number {
+  return this.SalariesWages.reduce((sum, item) => sum + (item.budget || 0), 0);
+}
+
+get totalBudgetMaintenance(): number {
+  return this.Maintenance.reduce((sum, item) => sum + (item.budget || 0), 0);
+}
+
+get totalBudgetLogisticsDistribution(): number {
+  return this.LogisticsDistribution.reduce((sum, item) => sum + (item.budget || 0), 0);
+}
+
+get totalBudgetOtherOperatingExpenses(): number {
+  return this.otherOperatingExpenses.reduce((sum, item) => sum + (item.budget || 0), 0);
+}
 
   // Category-specific totals
   get totalAdministrativeExpenses(): number {
