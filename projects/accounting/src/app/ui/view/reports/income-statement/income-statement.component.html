@@ -224,6 +224,9 @@
             <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
               {{ formatCurrency(item.budget || 0) }}
             </span>
+            <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
+        {{ formatCurrency(item.amount - (item.budget || 0)) }}
+      </span>
           </div>
           <div class="section-total">
             <span>Total Revenue</span>
@@ -233,6 +236,9 @@
             </span>
             <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
               {{ formatCurrency(totalBudgetRevenue) }}
+            </span>
+            <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
+              {{ formatCurrency(totalRevenue - totalBudgetRevenue) }}
             </span>
           </div>
         </div>
@@ -251,6 +257,9 @@
             <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
               {{ formatCurrency(item.budget || 0) }}
             </span>
+            <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
+        {{ formatCurrency(item.amount - (item.budget || 0)) }}
+      </span>
           </div>
           <div class="section-total">
             <span>Total Cost of Goods Sold</span>
@@ -260,6 +269,9 @@
             </span>
             <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
               {{ formatCurrency(totalBudgetCOGS) }}
+            </span>
+            <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
+              {{ formatCurrency(totalCOGS - totalBudgetCOGS) }}
             </span>
           </div>
         </div>
@@ -281,29 +293,38 @@
         </div>
       </div>
 
-      <div class="statement-section">
-        <h2 class="section-title">Salaries & Wages</h2>
-        <div class="section-items">
-          <div class="section-item" *ngFor="let item of SalariesWages">
-            <span class="item-name">{{ item.name }}</span>
-            <span class="item-value negative">{{ formatCurrency(item.amount) }}</span>
-            <span class="item-comparison" *ngIf="showVariance">
-              {{ formatPercentage((item.amount - item.prevAmount) / Math.abs(item.prevAmount)) }}
-            </span>
-             <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
-              {{ formatCurrency(item.budget || 0) }}
-            </span>
-          </div>
-          <div class="section-total">
-            <span>Total Salaries & Wages</span>
-            <span class="negative">{{ formatCurrency(totalSalariesWages) }}</span>
-            <span class="item-comparison" *ngIf="showVariance">
-              {{ formatPercentage((totalSalariesWages - totalPrevSalariesWages) / Math.abs(totalPrevSalariesWages)) }}
-            </span>
-           
-          </div>
-        </div>
-      </div>
+      <!-- Salaries & Wages Section -->
+<div class="statement-section">
+  <h2 class="section-title">Salaries & Wages</h2>
+  <div class="section-items">
+    <div class="section-item" *ngFor="let item of SalariesWages">
+      <span class="item-name">{{ item.name }}</span>
+      <span class="item-value negative">{{ formatCurrency(item.amount) }}</span>
+      <span class="item-comparison" *ngIf="showVariance">
+        {{ formatPercentage((item.amount - item.prevAmount) / Math.abs(item.prevAmount)) }}
+      </span>
+      <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
+        {{ formatCurrency(item.budget || 0) }}
+      </span>
+      <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
+        {{ formatCurrency(item.amount - (item.budget || 0)) }}
+      </span>
+    </div>
+    <div class="section-total total-row">
+      <span><strong>Total Salaries & Wages</strong></span>
+      <span class="negative">{{ formatCurrency(totalSalariesWages) }}</span>
+      <span class="item-comparison" *ngIf="showVariance">
+        {{ formatPercentage((totalSalariesWages - totalPrevSalariesWages) / Math.abs(totalPrevSalariesWages)) }}
+      </span>
+      <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
+        {{ formatCurrency(totalBudgetSalariesWages) }}
+      </span>
+      <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
+        {{ formatCurrency(totalSalariesWages - totalBudgetSalariesWages) }}
+      </span>
+    </div>
+  </div>
+</div>
 
       <div class="statement-section">
         <h2 class="section-title">Maintenance</h2>
@@ -317,12 +338,21 @@
              <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
               {{ formatCurrency(item.budget || 0) }}
             </span>
+             <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
+        {{ formatCurrency(item.amount - (item.budget || 0)) }}
+      </span>
           </div>
           <div class="section-total">
             <span>Total Maintenance</span>
             <span class="negative">{{ formatCurrency(totalMaintenance) }}</span>
             <span class="item-comparison" *ngIf="showVariance">
               {{ formatPercentage((totalMaintenance - totalPrevMaintenance) / Math.abs(totalPrevMaintenance)) }}
+            </span>
+            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
+        {{ formatCurrency(totalBudgetMaintenance) }}
+      </span>
+            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
+              {{ formatCurrency(totalBudgetMaintenance) }}
             </span>
           </div>
         </div>
@@ -340,6 +370,9 @@
              <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
               {{ formatCurrency(item.budget || 0) }}
             </span>
+            <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
+        {{ formatCurrency(item.amount - (item.budget || 0)) }}
+            </span>
           </div>
           <div class="section-total">
             <span>Total Logistics & Distribution</span>
@@ -347,6 +380,12 @@
             <span class="item-comparison" *ngIf="showVariance">
               {{ formatPercentage((totalLogisticsDistribution - totalPrevLogisticsDistribution) / Math.abs(totalPrevLogisticsDistribution)) }}
             </span>
+            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
+        {{ formatCurrency(totalBudgetLogisticsDistribution) }}
+      </span>
+      <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
+        {{ formatCurrency(totalLogisticsDistribution - (totalBudgetLogisticsDistribution || 0)) }}
+      </span>
           </div>
         </div>
       </div>
@@ -363,6 +402,9 @@
              <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
               {{ formatCurrency(item.budget || 0) }}
             </span>
+            <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
+        {{ formatCurrency(item.amount - (item.budget || 0)) }}
+            </span>
           </div>
           <div class="section-total">
             <span>Total Other Operating Expenses</span>
@@ -370,6 +412,12 @@
             <span class="item-comparison" *ngIf="showVariance">
               {{ formatPercentage((totalOtherOperatingExpenses - totalPrevOtherOperatingExpenses) / Math.abs(totalPrevOtherOperatingExpenses)) }}
             </span>
+            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
+              {{ formatCurrency(totalBudgetOtherOperatingExpenses) }}
+              </span>
+              <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
+        {{ formatCurrency(totalOtherOperatingExpenses - (totalBudgetOtherOperatingExpenses || 0)) }}
+              </span>
           </div>
         </div>
       </div>
@@ -409,7 +457,9 @@
           <div class="section-total">
             <span>Total Other Income & Expenses</span>
             <span>{{ formatCurrency(totalOtherItems) }}</span>
+            
           </div>
+          <span></span>
         </div>
       </div>
 
@@ -427,38 +477,21 @@
       </div>
 
       <!-- Charts Section -->
-      <div class="charts-section">
-        <div class="chart-card">
-          <h3 class="chart-title">Revenue & Profit Trend</h3>
-          <div id="revenue-chart">
-            <apx-chart
-              [series]="revenueChartOptions.series"
-              [chart]="revenueChartOptions.chart"
-              [xaxis]="revenueChartOptions.xaxis"
-              [stroke]="revenueChartOptions.stroke"
-              [tooltip]="revenueChartOptions.tooltip"
-              [dataLabels]="revenueChartOptions.dataLabels"
-              [legend]="revenueChartOptions.legend"
-              [title]="revenueChartOptions.title">
-            </apx-chart>
-          </div>
-        </div>
-        <div class="chart-card">
-          <h3 class="chart-title">Expense Distribution</h3>
-          <div id="expense-chart">
-            <apx-chart
-              [series]="expenseChartOptions.series"
-              [chart]="expenseChartOptions.chart"
-              [labels]="expenseChartOptions.labels"
-              [plotOptions]="expenseChartOptions.plotOptions"
-              [fill]="expenseChartOptions.fill"
-              [legend]="expenseChartOptions.legend"
-              [title]="expenseChartOptions.title">
-            </apx-chart>
-          </div>
-        </div>
-      </div>
-
+      <app-income-statement-charts
+  [monthlyData]="{
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    revenue: [230000, 235000, 240000, 245000, 248000, 250000],
+    expenses: [195000, 198000, 200000, 203000, 205000, 207500],
+    profit: [35000, 37000, 40000, 42000, 43000, 42500]
+  }"
+  [expenseDistribution]="{
+    administrative: Math.abs(totalAdministrativeExpenses),
+    salaries: Math.abs(totalSalariesWages),
+    maintenance: Math.abs(totalMaintenance),
+    logistics: Math.abs(totalLogisticsDistribution),
+    other: Math.abs(totalOtherOperatingExpenses)
+  }">
+</app-income-statement-charts>
       <!-- Key Insights -->
       <div class="insights-section">
         <h3 class="insights-title">Key Insights</h3>
