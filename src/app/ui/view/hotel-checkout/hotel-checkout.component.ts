@@ -17,7 +17,6 @@ export class HotelCheckoutComponent {
   showRoomDetails: boolean = false;
 
   handleRoomSelected(room: Room): void {
-
     this.selectedRoom = room;
     this.roomDetails.showRoomDetailsModal(room);
   }
