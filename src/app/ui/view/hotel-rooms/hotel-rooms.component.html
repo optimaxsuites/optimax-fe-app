@@ -53,12 +53,17 @@
                 <div class="flex gap-2">
                   <select formControlName="roomType" class="form-input flex-1">
                     <option value="" disabled>Select room type</option>
-                    <option *ngFor="let type of roomTypes" [value]="type.id">
+
+                    <option
+                      *ngFor="let type of roomTypes$ | async"
+                      [value]="type.id"
+                    >
                       {{ type.name }}
-                      <span *ngIf="type.description">
+                      <span *ngIf="type?.description">
                         - {{ type.description }}</span
                       >
                     </option>
+
                     <option *ngIf="roomTypeLoading" value="" disabled>
                       Loading room types...
                     </option>

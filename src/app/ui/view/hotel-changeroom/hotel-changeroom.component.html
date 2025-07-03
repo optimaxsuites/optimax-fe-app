@@ -9,7 +9,7 @@
       <h2 class="text-3xl font-bold text-white">Changing of Room</h2>
       <p class="text-white/90 text-lg mt-1">
         Moving from Room {{ currentRoom.roomNumber }} ({{
-          currentRoom.roomType.name
+          getRoomTypeName(currentRoom.roomType)
         }})
       </p>
       <button
@@ -110,7 +110,7 @@
           class="text-xl"
         >
           <ng-template ng-label-tmp let-item="item" class="text-xl">
-            Room {{ item.number }} ({{ item.type }}) -
+            Room {{ item.number }} ({{ getRoomTypeName(item.roomType) }}) -
             {{ item.rate | currency : "NGN" : "symbol" : "1.0-0" }}
           </ng-template>
           <ng-template ng-option-tmp let-item="item">
@@ -118,7 +118,7 @@
               <div>
                 <span class="font-medium">Room {{ item.number }}</span>
                 <span class="text-sm text-gray-600 ml-2"
-                  >({{ item.type }})</span
+                  >({{ getRoomTypeName(item.roomType) }})</span
                 >
               </div>
               <span class="font-medium text-blue-700">
@@ -153,7 +153,9 @@
           </div>
           <div>
             <p class="text-xl text-blue-600">Type</p>
-            <p class="text-lg font-medium">{{ selectedRoom.roomType.name }}</p>
+            <p class="text-lg font-medium">
+              {{ getRoomTypeName(selectedRoom.roomType) }}
+            </p>
           </div>
           <div>
             <p class="text-xl text-blue-600">Floor</p>

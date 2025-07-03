@@ -17,6 +17,7 @@ import {
   Guest,
   RoomStatus,
   BookingStatus,
+  RoomTypeDTO,
 } from '../../hospitality/hotelservice.service';
 import { switchMap } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
@@ -47,6 +48,7 @@ export class HotelFormComponent implements OnInit {
   paymentMethods = ['CASH', 'CARD', 'TRANSFER'];
   paymentStatus = 'PENDING';
   today: Date = new Date();
+  roomTypes: RoomTypeDTO[] = [];
 
   // Public access to service methods
   titles = this.hotelService.getTitles();
@@ -91,6 +93,7 @@ export class HotelFormComponent implements OnInit {
 
   ngOnInit(): void {
     this.setupFormListeners();
+    this.loadRoomTypes();
   }
 
   private getDefaultCheckoutDate(): Date {
@@ -109,6 +112,17 @@ export class HotelFormComponent implements OnInit {
           this.bookingForm.get('checkoutDate')?.setValue(newCheckout);
         }
       }
+    });
+  }
+
+  private loadRoomTypes(): void {
+    this.hotelService.getRoomTypes().subscribe({
+      next: (types) => {
+        this.roomTypes = types;
+      },
+      error: (err) => {
+        console.error('Error loading room types:', err);
+      },
     });
   }
 
@@ -395,14 +409,7 @@ export class HotelFormComponent implements OnInit {
   }
 
   getRoomTypeName(roomTypeId: number): string {
-    let roomTypeName = 'Unknown';
-    this.hotelService.getRoomTypes().subscribe((roomTypes) => {
-      const roomType = roomTypes.find((rt) => rt.id === roomTypeId);
-      if (roomType) {
-        roomTypeName = roomType.name;
-      }
-    });
-    return roomTypeName;
+    return this.roomTypes.find((rt) => rt.id === roomTypeId)?.name || '';
   }
 
   onAmountInput(event: any): void {

@@ -3,32 +3,12 @@ import { MessageService } from 'primeng/api';
 import { PrimeNGConfig } from 'primeng/api';
 import {
   HotelserviceService,
-  Room,
   Booking,
   Guest,
-  RoomStatus,
+  Room,
   BookingStatus,
+  RoomTypeDTO,
 } from '../../hospitality/hotelservice.service';
-
-interface BookingLog {
-  id: string;
-  roomNumber: number | string;
-  roomType: string;
-  roomStatus: RoomStatus;
-  guestName: string;
-  guestEmail?: string;
-  guestPhone?: string;
-  guestIdNumber?: string;
-  checkinDate: Date;
-  checkoutDate: Date;
-  status: BookingStatus;
-  paymentMethod?: string;
-  totalAmount: number;
-  paidAmount: number;
-  balanceAmount: number;
-  specialRequests?: string;
-  createdAt: Date;
-}
 
 interface Statistics {
   totalBookings: number;
@@ -36,6 +16,26 @@ interface Statistics {
   upcomingCheckins: number;
   totalAvailableRooms: number;
   totalRevenue: number;
+}
+
+interface BookingLog {
+  id: string;
+  roomNumber: string;
+  roomType: string;
+  roomStatus: string;
+  guestName: string;
+  guestEmail?: string;
+  guestPhone: string;
+  guestIdNumber?: string;
+  checkinDate: Date;
+  checkoutDate: Date;
+  status: BookingStatus;
+  paymentMethod: string;
+  totalAmount: number;
+  paidAmount: number;
+  balanceAmount: number;
+  specialRequests?: string;
+  createdAt: Date;
 }
 
 @Component({
@@ -54,6 +54,7 @@ export class HotelLogsComponent implements OnInit {
   currentDate = new Date();
   allRooms: Room[] = [];
   allGuests: Guest[] = [];
+  roomTypes: RoomTypeDTO[] = [];
 
   statistics: Statistics = {
     totalBookings: 0,
@@ -87,7 +88,23 @@ export class HotelLogsComponent implements OnInit {
 
   ngOnInit(): void {
     this.primengConfig.ripple = true;
+    this.loadRoomTypes();
     this.loadData();
+  }
+
+  private loadRoomTypes(): void {
+    this.hotelService.getRoomTypes().subscribe({
+      next: (types) => {
+        this.roomTypes = types;
+      },
+      error: (err) => {
+        console.error('Error loading room types:', err);
+      },
+    });
+  }
+
+  getRoomTypeName(roomTypeId: number): string {
+    return this.roomTypes.find((rt) => rt.id === roomTypeId)?.name || 'N/A';
   }
 
   private loadData(): void {
@@ -136,7 +153,7 @@ export class HotelLogsComponent implements OnInit {
   ): BookingLog[] {
     return bookings
       .map((booking) => {
-        // Find guest information
+        // Find guest information and ensure roomType is string
         const guest = this.findGuest(booking.guest, guests);
 
         // Find room information (using first room in booking)
@@ -144,8 +161,10 @@ export class HotelLogsComponent implements OnInit {
 
         return {
           id: `${booking.id}`,
-          roomNumber: room?.roomNumber || 'N/A',
-          roomType: room?.roomType?.name || 'N/A',
+          roomNumber:
+            room?.roomNumber !== undefined ? String(room.roomNumber) : 'N/A',
+          roomType:
+            room?.roomType !== undefined ? String(room.roomType) : 'N/A',
           roomStatus: room?.roomStatus || 'UNDER_MAINTENANCE',
           guestName: guest
             ? `${guest.title} ${guest.firstName} ${guest.lastName}`
@@ -357,7 +376,9 @@ export class HotelLogsComponent implements OnInit {
               <div class="section-title">Booking Details</div>
               <div class="info-row">
                 <div class="info-label">Room:</div>
-                <div>${printLog.roomNumber} (${printLog.roomType})</div>
+                <div>${printLog.roomNumber} (${this.getRoomTypeName(
+        Number(printLog.roomType)
+      )})</div>
               </div>
               <div class="info-row">
                 <div class="info-label">Check-in:</div>

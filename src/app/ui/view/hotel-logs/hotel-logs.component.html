@@ -19,7 +19,7 @@
         <div class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
           <!-- Print Button -->
           <button
-            class="flex items-center justify-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded transition-all duration-200 shadow-sm hover:shadow text-xs"
+            class="flex items-center justify-center gap-1 bg-customGreen hover:bg-customGreenHover text-white px-3 py-1.5 rounded transition-all duration-200 shadow-sm hover:shadow text-xs"
             (click)="printLogs()"
           >
             <i class="pi pi-print text-xs"></i>
@@ -178,6 +178,11 @@
     <div
       class="bg-white rounded shadow-sm border border-gray-200 overflow-hidden"
     >
+      <!-- Table Header -->
+      <div class="bg-gray-50 border-b border-gray-200 px-4 py-3">
+        <h3 class="text-lg font-semibold text-gray-800">All Bookings</h3>
+      </div>
+
       <!-- Scrollable Table Content -->
       <div
         class="overflow-x-auto"
@@ -196,55 +201,55 @@
             <tr class="bg-gray-50">
               <th
                 pSortableColumn="roomNumber"
-                class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200"
+                class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200"
               >
                 Room
                 <p-sortIcon field="roomNumber" styleClass="ml-1"></p-sortIcon>
               </th>
               <th
                 pSortableColumn="roomType"
-                class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200"
+                class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200"
               >
                 Type
                 <p-sortIcon field="roomType" styleClass="ml-1"></p-sortIcon>
               </th>
               <th
                 pSortableColumn="guestName"
-                class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200"
+                class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200"
               >
                 Guest
                 <p-sortIcon field="guestName" styleClass="ml-1"></p-sortIcon>
               </th>
               <th
                 pSortableColumn="checkinDate"
-                class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200"
+                class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200"
               >
                 Check-in
                 <p-sortIcon field="checkinDate" styleClass="ml-1"></p-sortIcon>
               </th>
               <th
                 pSortableColumn="checkoutDate"
-                class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200"
+                class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200"
               >
                 Check-out
                 <p-sortIcon field="checkoutDate" styleClass="ml-1"></p-sortIcon>
               </th>
               <th
                 pSortableColumn="status"
-                class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200"
+                class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200"
               >
                 Status
                 <p-sortIcon field="status" styleClass="ml-1"></p-sortIcon>
               </th>
               <th
                 pSortableColumn="totalAmount"
-                class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200"
+                class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200"
               >
                 Amount
                 <p-sortIcon field="totalAmount" styleClass="ml-1"></p-sortIcon>
               </th>
               <th
-                class="px-3 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200"
+                class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200"
               >
                 Actions
               </th>
@@ -253,66 +258,66 @@
 
           <ng-template pTemplate="body" let-log>
             <tr class="hover:bg-gray-50 transition-colors duration-150">
-              <td class="px-3 py-2 border-b border-gray-100">
+              <td class="px-4 py-3 border-b border-gray-100">
                 <div class="flex items-center gap-2">
                   <div
                     [ngClass]="getStatusClass(log.roomStatus)"
                     class="w-2 h-2 rounded-full flex-shrink-0"
                   ></div>
-                  <span class="font-medium text-gray-900 text-xs">{{
+                  <span class="font-medium text-gray-900 text-sm">{{
                     log.roomNumber
                   }}</span>
                 </div>
               </td>
-              <td class="px-3 py-2 border-b border-gray-100">
-                <span class="text-gray-900 font-medium text-xs">{{
-                  log.roomType
+              <td class="px-4 py-3 border-b border-gray-100">
+                <span class="text-gray-900 font-medium text-sm">{{
+                  getRoomTypeName(log.roomType)
                 }}</span>
               </td>
-              <td class="px-3 py-2 border-b border-gray-100">
-                <span class="text-gray-900 font-medium text-xs">{{
+              <td class="px-4 py-3 border-b border-gray-100">
+                <span class="text-gray-900 font-medium text-sm">{{
                   log.guestName
                 }}</span>
                 <span class="text-xs text-gray-500 block">{{
                   log.guestPhone
                 }}</span>
               </td>
-              <td class="px-3 py-2 border-b border-gray-100 text-xs">
+              <td class="px-4 py-3 border-b border-gray-100 text-sm">
                 {{ log.checkinDate | date : "shortDate" }}
                 <span class="text-xs text-gray-500 block">{{
                   getDayDifference(log.checkinDate)
                 }}</span>
               </td>
-              <td class="px-3 py-2 border-b border-gray-100 text-xs">
+              <td class="px-4 py-3 border-b border-gray-100 text-sm">
                 {{ log.checkoutDate | date : "shortDate" }}
                 <span class="text-xs text-gray-500 block">{{
                   getDayDifference(log.checkoutDate)
                 }}</span>
               </td>
-              <td class="px-3 py-2 border-b border-gray-100">
+              <td class="px-4 py-3 border-b border-gray-100">
                 <span
                   [ngClass]="getStatusBadgeClass(log.status)"
-                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                  class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
                 >
                   {{ log.status | titlecase }}
                 </span>
               </td>
               <td
-                class="px-3 py-2 border-b border-gray-100 text-xs font-medium"
+                class="px-4 py-3 border-b border-gray-100 text-sm font-medium"
               >
                 {{ log.totalAmount | currency : "NGN" : "symbol" : "1.0-0" }}
               </td>
-              <td class="px-3 py-2 border-b border-gray-100">
+              <td class="px-4 py-3 border-b border-gray-100">
                 <div class="flex items-center gap-1">
                   <button
-                    class="inline-flex items-center justify-center w-6 h-6 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-200"
+                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-200"
                     (click)="viewDetails(log)"
                     title="View Details"
                   >
                     <i class="pi pi-eye text-xs"></i>
                   </button>
                   <button
-                    class="inline-flex items-center justify-center w-6 h-6 rounded bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors duration-200"
+                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors duration-200"
                     (click)="printBooking(log)"
                     title="Print"
                   >
