@@ -220,25 +220,38 @@ export class HotelserviceService {
     return this.getRoomsByStatus('UNDER_MAINTENANCE');
   }
 
+  // In hotelservice.service.ts
   createRoom(room: Room): Observable<Room> {
-    // Validate room data before sending
     if (!room.roomType || room.roomType <= 0) {
-      return throwError(() => new Error('Invalid room type'));
+      return throwError(() => new Error('Invalid room type ID'));
     }
 
-    console.log('Service: Creating room with data:', room);
+    // Ensure all required fields are present
+    const roomData = {
+      ...room,
+      amenities: room.amenities || [],
+      imageURLs: room.imageURLs || [],
+    };
 
     return this.http
-      .post<Room>(`${this.apiUrl}/x/api/v2/hsp/rooms`, room, {
+      .post<Room>(`${this.apiUrl}/x/api/v2/hsp/rooms`, roomData, {
         headers: this.headers,
       })
       .pipe(
-        tap((createdRoom) => {
-          console.log('Service: Room created successfully:', createdRoom);
-        }),
         catchError((error) => {
-          console.error('Service: Error creating room:', error);
-          return throwError(() => error);
+          console.error('API Error:', error);
+          let errorMsg = 'Unknown error occurred';
+          if (error.error instanceof ErrorEvent) {
+            // Client-side error
+            errorMsg = `Error: ${error.error.message}`;
+          } else {
+            // Server-side error
+            errorMsg = `Error Code: ${error.status}\nMessage: ${error.message}`;
+            if (error.error && error.error.message) {
+              errorMsg = error.error.message;
+            }
+          }
+          return throwError(() => new Error(errorMsg));
         })
       );
   }
