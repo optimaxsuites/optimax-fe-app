@@ -105,133 +105,133 @@ export class HotelRoomsComponent {
     this.roomTypeForm.reset();
   }
 
-  onCreateRoomType(): void {
-    if (this.roomTypeForm.invalid) {
-      this.markFormGroupTouched(this.roomTypeForm);
-      return;
-    }
+  // onCreateRoomType(): void {
+  //   if (this.roomTypeForm.invalid) {
+  //     this.markFormGroupTouched(this.roomTypeForm);
+  //     return;
+  //   }
 
-    this.creatingRoomType = true;
-    const newRoomType: RoomTypeDTO = {
-      name: this.roomTypeForm.value.name,
-      description: this.roomTypeForm.value.description,
-    };
+  //   this.creatingRoomType = true;
+  //   const newRoomType: RoomTypeDTO = {
+  //     name: this.roomTypeForm.value.name,
+  //     description: this.roomTypeForm.value.description,
+  //   };
 
-    this.hotelService.createRoomType(newRoomType).subscribe({
-      next: (createdRoomType) => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: `Room type "${createdRoomType.name}" created successfully`,
-        });
+  //   this.hotelService.createRoomType(newRoomType).subscribe({
+  //     next: (createdRoomType) => {
+  //       this.messageService.add({
+  //         severity: 'success',
+  //         summary: 'Success',
+  //         detail: `Room type "${createdRoomType.name}" created successfully`,
+  //       });
 
-        // Reload room types to get the updated list
-        this.loadRoomTypes();
+  //       // Reload room types to get the updated list
+  //       this.loadRoomTypes();
 
-        // Set the newly created room type as selected
-        if (createdRoomType.id) {
-          this.roomForm.get('roomType')?.setValue(createdRoomType.id);
-        }
+  //       // Set the newly created room type as selected
+  //       if (createdRoomType.id) {
+  //         this.roomForm.get('roomType')?.setValue(createdRoomType.id);
+  //       }
 
-        this.closeRoomTypeModal();
-      },
-      error: (err) => {
-        console.error('Error creating room type:', err);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: err.error?.message || 'Failed to create room type',
-        });
-      },
-      complete: () => {
-        this.creatingRoomType = false;
-      },
-    });
-  }
+  //       this.closeRoomTypeModal();
+  //     },
+  //     error: (err) => {
+  //       console.error('Error creating room type:', err);
+  //       this.messageService.add({
+  //         severity: 'error',
+  //         summary: 'Error',
+  //         detail: err.error?.message || 'Failed to create room type',
+  //       });
+  //     },
+  //     complete: () => {
+  //       this.creatingRoomType = false;
+  //     },
+  //   });
+  // }
 
-  onSubmit(): void {
-    if (this.roomForm.invalid) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Form Error',
-        detail: 'Please complete all required fields correctly.',
-      });
-      this.markFormGroupTouched(this.roomForm);
-      return;
-    }
+  // onSubmit(): void {
+  //   if (this.roomForm.invalid) {
+  //     this.messageService.add({
+  //       severity: 'error',
+  //       summary: 'Form Error',
+  //       detail: 'Please complete all required fields correctly.',
+  //     });
+  //     this.markFormGroupTouched(this.roomForm);
+  //     return;
+  //   }
 
-    this.loading = true;
-    const selectedTypeId = this.roomForm.value.roomType;
+  //   this.loading = true;
+  //   const selectedTypeId = this.roomForm.value.roomType;
 
-    // Additional validation for room type
-    if (!selectedTypeId || selectedTypeId <= 0) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Please select a valid room type.',
-      });
-      this.loading = false;
-      return;
-    }
+  //   // Additional validation for room type
+  //   if (!selectedTypeId || selectedTypeId <= 0) {
+  //     this.messageService.add({
+  //       severity: 'error',
+  //       summary: 'Error',
+  //       detail: 'Please select a valid room type.',
+  //     });
+  //     this.loading = false;
+  //     return;
+  //   }
 
-    // Find the selected room type object to validate it exists
-    const selectedRoomType = this.roomTypes.find(
-      (type) => type && type.id === selectedTypeId
-    );
+  //   // Find the selected room type object to validate it exists
+  //   const selectedRoomType = this.roomTypes.find(
+  //     (type) => type && type.id === selectedTypeId
+  //   );
 
-    if (!selectedRoomType || !selectedRoomType.id) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Selected room type not found. Please refresh and try again.',
-      });
-      this.loading = false;
-      return;
-    }
+  //   if (!selectedRoomType || !selectedRoomType.id) {
+  //     this.messageService.add({
+  //       severity: 'error',
+  //       summary: 'Error',
+  //       detail: 'Selected room type not found. Please refresh and try again.',
+  //     });
+  //     this.loading = false;
+  //     return;
+  //   }
 
-    const newRoom: Room = {
-      id: 0,
-      roomNumber: this.roomForm.value.roomNumber,
-      roomType: selectedRoomType.id, // Remove the non-null assertion
-      roomStatus: this.roomForm.value.roomStatus,
-      floor: this.roomForm.value.floor,
-      rate: this.roomForm.value.rate,
-      beds: this.roomForm.value.beds,
-      maxOccupancy: this.roomForm.value.maxOccupancy,
-      description: this.roomForm.value.description,
-      amenities: this.selectedAmenities,
-      imageURLs: this.previewImages,
-      accessible: this.roomForm.value.accessible,
-      isSmokingAllowed: this.roomForm.value.isSmokingAllowed,
-    };
+  //   const newRoom: Room = {
+  //     id: 0,
+  //     roomNumber: this.roomForm.value.roomNumber,
+  //     roomType: selectedRoomType.id, // Remove the non-null assertion
+  //     roomStatus: this.roomForm.value.roomStatus,
+  //     floor: this.roomForm.value.floor,
+  //     rate: this.roomForm.value.rate,
+  //     beds: this.roomForm.value.beds,
+  //     maxOccupancy: this.roomForm.value.maxOccupancy,
+  //     description: this.roomForm.value.description,
+  //     amenities: this.selectedAmenities,
+  //     imageURLs: this.previewImages,
+  //     accessible: this.roomForm.value.accessible,
+  //     isSmokingAllowed: this.roomForm.value.isSmokingAllowed,
+  //   };
 
-    console.log('Creating room with data:', newRoom); // Debug log
+  //   console.log('Creating room with data:', newRoom); // Debug log
 
-    this.hotelService.createRoom(newRoom).subscribe({
-      next: (createdRoom) => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Room created successfully',
-        });
-        this.roomCreated.emit(createdRoom);
-        this.resetForm();
-        this.openRoomForm = false;
-      },
-      error: (err) => {
-        console.error('Error creating room:', err); // Debug log
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: err.error?.message || 'Failed to create room',
-        });
-        this.loading = false;
-      },
-      complete: () => {
-        this.loading = false;
-      },
-    });
-  }
+  //   this.hotelService.createRoom(newRoom).subscribe({
+  //     next: (createdRoom) => {
+  //       this.messageService.add({
+  //         severity: 'success',
+  //         summary: 'Success',
+  //         detail: 'Room created successfully',
+  //       });
+  //       this.roomCreated.emit(createdRoom);
+  //       this.resetForm();
+  //       this.openRoomForm = false;
+  //     },
+  //     error: (err) => {
+  //       console.error('Error creating room:', err); // Debug log
+  //       this.messageService.add({
+  //         severity: 'error',
+  //         summary: 'Error',
+  //         detail: err.error?.message || 'Failed to create room',
+  //       });
+  //       this.loading = false;
+  //     },
+  //     complete: () => {
+  //       this.loading = false;
+  //     },
+  //   });
+  // }
 
   onFileUpload(event: any): void {
     const files = event.files;
@@ -310,5 +310,132 @@ export class HotelRoomsComponent {
 
   getRoomTypeName(id: number): string {
     return this.getRoomTypeById(id)?.name || '';
+  }
+
+  // In hotel-rooms.component.ts
+  onCreateRoomType(): void {
+    if (this.roomTypeForm.invalid) {
+      this.markFormGroupTouched(this.roomTypeForm);
+      return;
+    }
+
+    this.creatingRoomType = true;
+    const newRoomType: RoomTypeDTO = {
+      name: this.roomTypeForm.value.name,
+      description: this.roomTypeForm.value.description || '', // Ensure description isn't undefined
+    };
+
+    console.log('Creating room type with data:', newRoomType); // Debug log
+
+    this.hotelService.createRoomType(newRoomType).subscribe({
+      next: (createdRoomType) => {
+        console.log('Room type created:', createdRoomType); // Debug log
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: `Room type "${createdRoomType.name}" created successfully`,
+        });
+
+        // Update local state immediately
+        const currentTypes = [...this.roomTypes];
+        currentTypes.push(createdRoomType);
+        this.roomTypes = currentTypes;
+
+        // Update the form control
+        if (createdRoomType.id) {
+          this.roomForm.get('roomType')?.setValue(createdRoomType.id);
+        }
+
+        this.closeRoomTypeModal();
+      },
+      error: (err) => {
+        console.error('Error creating room type:', err); // More detailed error log
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail:
+            err.error?.message || err.message || 'Failed to create room type',
+        });
+      },
+      complete: () => {
+        this.creatingRoomType = false;
+      },
+    });
+  }
+
+  // In hotel-rooms.component.ts
+  onSubmit(): void {
+    if (this.roomForm.invalid) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Form Error',
+        detail: 'Please complete all required fields correctly.',
+      });
+      this.markFormGroupTouched(this.roomForm);
+      return;
+    }
+
+    this.loading = true;
+    const selectedTypeId = this.roomForm.value.roomType;
+
+    // Additional validation
+    if (!selectedTypeId || selectedTypeId <= 0) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Please select a valid room type.',
+      });
+      this.loading = false;
+      return;
+    }
+
+    const newRoom: Room = {
+      id: 0, // or remove if your API doesn't need it
+      roomNumber: this.roomForm.value.roomNumber,
+      roomType: selectedTypeId,
+      roomStatus: this.roomForm.value.roomStatus,
+      floor: this.roomForm.value.floor,
+      rate: this.roomForm.value.rate,
+      beds: this.roomForm.value.beds,
+      maxOccupancy: this.roomForm.value.maxOccupancy,
+      description: this.roomForm.value.description || '',
+      amenities: this.selectedAmenities,
+      imageURLs: this.previewImages,
+      accessible: this.roomForm.value.accessible,
+      isSmokingAllowed: this.roomForm.value.isSmokingAllowed,
+    };
+
+    console.log('Submitting room data:', newRoom); // Debug log
+
+    this.hotelService.createRoom(newRoom).subscribe({
+      next: (createdRoom) => {
+        console.log('Room created successfully:', createdRoom); // Debug log
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Room created successfully',
+        });
+        this.roomCreated.emit(createdRoom);
+        this.resetForm();
+        this.openRoomForm = false;
+      },
+      error: (err) => {
+        console.error('Room creation error:', err); // Detailed error log
+        let errorMessage = 'Failed to create room';
+        if (err.error) {
+          errorMessage = err.error.message || JSON.stringify(err.error);
+        } else if (err.message) {
+          errorMessage = err.message;
+        }
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: errorMessage,
+        });
+      },
+      complete: () => {
+        this.loading = false;
+      },
+    });
   }
 }
