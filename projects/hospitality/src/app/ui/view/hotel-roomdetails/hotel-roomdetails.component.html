@@ -546,16 +546,22 @@
   </div>
 </div>
 
-<!-- Room Details Modal (single overlay) -->
+<!-- Booking Form Modal (single overlay) -->
 <div
   *ngIf="showBookingForm && detailedRoom"
-  class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 max-h-[90vh] overflow-y-auto"
 >
-  <app-hotel-form
-    [selectedRooms]="[detailedRoom]"
-    (closeForm)="showBookingForm = false"
-    (bookingComplete)="onBookingComplete($event)"
-  ></app-hotel-form>
+  <div
+    class="p-0 bg-transparent rounded-2xl w-full max-w-2xl mx-auto flex items-center justify-center"
+  >
+    <div class="w-full">
+      <app-hotel-form
+        [selectedRooms]="[detailedRoom]"
+        (closeForm)="closeBookingForm()"
+        (bookingComplete)="onBookingComplete($event)"
+      ></app-hotel-form>
+    </div>
+  </div>
 </div>
 
 <!-- <div *ngIf="openCheckinForm">
