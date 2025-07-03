@@ -1,13 +1,14 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { FormBuilder, FormGroup } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-
-import { Observable, forkJoin, map } from 'rxjs';
+import { Observable, forkJoin } from 'rxjs';
 import {
   HotelserviceService,
   Room,
   RoomStatus,
   Booking,
   Guest,
+  RoomTypeDTO,
 } from '../../hospitality/hotelservice.service';
 
 @Component({
@@ -20,34 +21,45 @@ export class HotelRoomlistComponent implements OnInit {
   @Output() roomSelected = new EventEmitter<Room>();
   @Output() bookingFormRequested = new EventEmitter<Room[]>();
 
-  roomTypes: string[] = ['All Rooms'];
-  selectedRoomTypes: string[] = ['All Rooms'];
+  // Room type properties
+  roomTypes: RoomTypeDTO[] = [];
+  selectedRoomTypeIds: number[] = [];
+  allRoomTypesSelected = true;
+
+  // Search and filter properties
   searchQuery = '';
   searchDate: Date | null = null;
+  filterForm: FormGroup;
+
+  // Room selection properties
   viewingAvailableRooms = false;
   selectAll = false;
   selectedRooms: Room[] = [];
+
+  // Data properties
   bookings: Booking[] = [];
   guests: Guest[] = [];
   isLoading = true;
   roomBookingsMap: Map<number, Booking> = new Map();
   roomGuestsMap: Map<number, Guest> = new Map();
 
+  // UI state properties
   openForm = false;
   openLogs = false;
   openRoom = false;
   showRoomForm = false;
-
   selectedBookingDetails: Room | null = null;
   showBookingDetails = false;
   showRoomDetails = false;
   selectedRoomForDetails: Room | null = null;
 
+  // Room lists
   rooms: Room[] = [];
   filteredRooms: Room[] = [];
   availableRooms: Room[] = [];
   selectedRoom: Room | null = null;
 
+  // Status properties
   statusColors: { [key: string]: string } = {
     AVAILABLE: 'bg-green-400',
     BOOKED: 'bg-amber-300',
@@ -65,15 +77,19 @@ export class HotelRoomlistComponent implements OnInit {
     { value: 'CLEANING', label: 'Cleaning' },
   ];
 
-  selectedStatus: { value: string; label: string } = {
-    value: 'All Statuses',
-    label: 'All Statuses',
-  };
+  selectedStatus: { value: string; label: string } = this.statusOptions[0];
 
   constructor(
     private messageService: MessageService,
-    private hotelService: HotelserviceService
-  ) {}
+    private hotelService: HotelserviceService,
+    private fb: FormBuilder
+  ) {
+    this.filterForm = this.fb.group({
+      searchQuery: [''],
+      selectedStatus: [this.statusOptions[0]],
+      selectedRoomTypes: [[]],
+    });
+  }
 
   ngOnInit(): void {
     this.loadAllData();
@@ -96,7 +112,7 @@ export class HotelRoomlistComponent implements OnInit {
         );
         this.bookings = bookings;
         this.guests = guests;
-        this.roomTypes = ['All Rooms', ...this.uniqueRoomTypes];
+        this.roomTypes = roomTypes;
         this.applyFilters();
         this.isLoading = false;
       },
@@ -134,10 +150,10 @@ export class HotelRoomlistComponent implements OnInit {
     this.selectedBookingDetails = null;
   }
 
-  getFilterClass(type: string): string {
+  getFilterClass(typeId: number): string {
     const baseClasses =
       'p-4 font-bold text-xl rounded-xl cursor-pointer transition-all duration-300 flex items-center justify-between';
-    return this.selectedRoomTypes.includes(type)
+    return this.isRoomTypeSelected(typeId)
       ? `${baseClasses} bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg border-2 border-emerald-700`
       : `${baseClasses} bg-white border-2 border-gray-200 text-gray-700 hover:border-emerald-300`;
   }
@@ -151,8 +167,8 @@ export class HotelRoomlistComponent implements OnInit {
     this.filteredRooms = this.rooms.filter((room) => {
       // Room type filter
       const typeMatch =
-        this.selectedRoomTypes.includes('All Rooms') ||
-        this.selectedRoomTypes.includes(room.roomType.name);
+        this.selectedRoomTypeIds.length === 0 ||
+        this.selectedRoomTypeIds.includes(room.roomType as number);
 
       // Status filter
       const statusMatch =
@@ -172,9 +188,9 @@ export class HotelRoomlistComponent implements OnInit {
       const searchMatch =
         !this.searchQuery ||
         room.roomNumber.toString().includes(this.searchQuery) ||
-        (room.roomType &&
-          room.roomType.name &&
-          room.roomType.name.toLowerCase().includes(searchLower)) ||
+        this.getRoomTypeName(room.roomType as number)
+          ?.toLowerCase()
+          .includes(searchLower) ||
         (guestName && guestName.includes(searchLower));
 
       // Date filter: check-in or checkout date
@@ -200,8 +216,31 @@ export class HotelRoomlistComponent implements OnInit {
     });
   }
 
-  toggleRoomTypeSelection(type: string): void {
-    this.selectedRoomTypes = [type];
+  toggleRoomTypeSelection(typeId: number): void {
+    const index = this.selectedRoomTypeIds.indexOf(typeId);
+    if (index === -1) {
+      this.selectedRoomTypeIds = [typeId];
+      this.allRoomTypesSelected = false;
+    } else {
+      this.selectedRoomTypeIds = [];
+      this.allRoomTypesSelected = true;
+    }
+    this.applyFilters();
+  }
+
+  isRoomTypeSelected(typeId: number): boolean {
+    return this.selectedRoomTypeIds.includes(typeId);
+  }
+
+  selectAllRoomTypes(): void {
+    if (this.allRoomTypesSelected) {
+      this.selectedRoomTypeIds = [];
+    } else {
+      this.selectedRoomTypeIds = this.roomTypes.map(
+        (type) => type.id as number
+      );
+    }
+    this.allRoomTypesSelected = !this.allRoomTypesSelected;
     this.applyFilters();
   }
 
@@ -276,8 +315,9 @@ export class HotelRoomlistComponent implements OnInit {
   }
 
   resetFilters(): void {
-    this.selectedRoomTypes = ['All Rooms'];
-    this.selectedStatus = { value: 'All Statuses', label: 'All Statuses' };
+    this.selectedRoomTypeIds = [];
+    this.allRoomTypesSelected = true;
+    this.selectedStatus = this.statusOptions[0];
     this.searchQuery = '';
     this.searchDate = null;
     this.applyFilters();
@@ -288,17 +328,14 @@ export class HotelRoomlistComponent implements OnInit {
     bookings: Booking[],
     guests: Guest[]
   ): Room[] {
-    // Clear existing maps
     this.roomBookingsMap.clear();
     this.roomGuestsMap.clear();
 
     return rooms.map((room) => {
-      // Find booking for this room
       const roomBooking = bookings.find((booking) =>
         booking.rooms.includes(room.id as number)
       );
 
-      // Find guest for this booking
       let guest: Guest | undefined;
       if (roomBooking) {
         guest =
@@ -306,7 +343,6 @@ export class HotelRoomlistComponent implements OnInit {
             ? guests.find((g) => g.id === roomBooking.guest)
             : roomBooking.guest;
 
-        // Add to maps
         if (roomBooking && guest) {
           this.roomBookingsMap.set(room.id as number, roomBooking);
           this.roomGuestsMap.set(room.id as number, guest);
@@ -348,11 +384,6 @@ export class HotelRoomlistComponent implements OnInit {
     return this.roomGuestsMap.has(roomId);
   }
 
-  getRoomTypeName(roomTypeId: string): string {
-    const roomType = this.roomTypes.find((rt) => rt === `Room ${roomTypeId}`);
-    return roomType || `Room ${roomTypeId}`;
-  }
-
   calculateNights(
     checkinDate: string | Date | undefined,
     checkoutDate: string | Date | undefined
@@ -367,6 +398,7 @@ export class HotelRoomlistComponent implements OnInit {
     const timeDiff = checkout.getTime() - checkin.getTime();
     return Math.ceil(timeDiff / (1000 * 3600 * 24));
   }
+
   onBookingConfirmed(): void {
     this.loadAllData();
     this.viewingAvailableRooms = false;
@@ -379,30 +411,19 @@ export class HotelRoomlistComponent implements OnInit {
     this.hotelService.createRoom(newRoom).subscribe({
       next: (room) => {
         this.rooms.push(room);
-        this.roomTypes = ['All Rooms', ...this.uniqueRoomTypes];
         this.applyFilters();
         this.showRoomForm = false;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Room created successfully',
+        });
       },
       error: (err) => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
           detail: 'Failed to create room',
-        });
-      },
-    });
-  }
-
-  private updateRoomTypes(): void {
-    this.hotelService.getRoomTypes().subscribe({
-      next: (roomTypes) => {
-        this.roomTypes = ['All Rooms', ...roomTypes.map((rt) => rt.name)];
-      },
-      error: (err) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load room types',
         });
       },
     });
@@ -424,17 +445,13 @@ export class HotelRoomlistComponent implements OnInit {
       });
       return;
     }
-
-    console.log('Opening room details for:', room);
     this.selectRoom(room);
   }
 
   bookSelectedRooms(): void {
-    console.log('bookSelectedRooms called, selectedRooms:', this.selectedRooms);
     if (this.selectedRooms.length > 0) {
       this.bookingFormRequested.emit(this.selectedRooms);
-      this.openForm = true; // Make sure this is set
-      console.log('openForm set to:', this.openForm);
+      this.openForm = true;
     } else {
       this.messageService.add({
         severity: 'warn',
@@ -444,8 +461,11 @@ export class HotelRoomlistComponent implements OnInit {
     }
   }
 
-  get uniqueRoomTypes(): string[] {
-    const types = this.rooms.map((room) => room.roomType.name);
-    return Array.from(new Set(types));
+  getRoomTypeName(id: number): string {
+    return this.roomTypes.find((rt) => rt.id === id)?.name || '';
+  }
+
+  getRoomTypeById(id: number): RoomTypeDTO | undefined {
+    return this.roomTypes.find((t) => t.id === id);
   }
 }

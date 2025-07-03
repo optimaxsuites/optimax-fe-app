@@ -2,329 +2,303 @@
   <app-back-button class="table-item" (click)="goBack()"></app-back-button>
 </div>
 
-<div class="min-h-screen bg-gray-50">
-  <!-- Header Section - Fixed -->
-  <div class="sticky top-0 bg-white shadow-sm border-b border-gray-200 z-20">
-    <div class="max-w-7xl mx-auto px-2 py-4">
-      <div
-        class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4"
+<div class="min-h-screen mx-10 my-10 py-5 px-5 bg-gray-50 p-6">
+  <!-- Header Section - Styled like Housekeeping -->
+  <div
+    class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4"
+  >
+    <div>
+      <h1 class="text-3xl mx-7 pt-5 font-extrabold mb-4 text-gray-600">
+        Room Management
+      </h1>
+      <p class="text-gray-600 mx-7 mb-4 text-lg">
+        View and manage all rooms in the hotel
+      </p>
+    </div>
+
+    <div
+      class="flex flex-col mx-7 pt-5 mb-4 sm:flex-row gap-4 w-full md:w-auto"
+    >
+      <!-- Add Room Button -->
+      <button
+        class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors shadow-md"
+        (click)="navigateToCreateRoom()"
       >
+        <i class="pi pi-plus"></i>
+        <span>Add Room</span>
+      </button>
+
+      <!-- Status Filter -->
+      <ng-select
+        [items]="statusOptions"
+        bindLabel="label"
+        bindValue="value"
+        placeholder="Filter by status..."
+        [(ngModel)]="selectedStatus"
+        (change)="applyFilters()"
+        class="min-w-[200px]"
+      ></ng-select>
+
+      <!-- Search Input -->
+      <div class="relative min-w-[200px]">
+        <input
+          type="text"
+          [(ngModel)]="searchText"
+          (input)="applyFilters()"
+          placeholder="Search rooms..."
+          class="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+        />
+        <i
+          class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"
+        ></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Cards - Styled like Housekeeping -->
+  <div class="grid grid-cols-1 mx-7 my-7 md:grid-cols-5 gap-6 mb-10">
+    <!-- Total Rooms -->
+    <div
+      class="bg-indigo-200 p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+    >
+      <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900 mb-1">Room Management</h1>
-          <p class="text-gray-600 text-sm">
-            View and manage all rooms in the hotel
+          <p class="text-sm font-medium text-gray-700 uppercase tracking-wider">
+            Total Rooms
+          </p>
+          <p class="text-3xl font-bold text-gray-800 mt-2">
+            {{ statistics.totalRooms }}
           </p>
         </div>
-
-        <div class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-          <!-- Add Room Button -->
-          <button
-            class="flex items-center justify-center gap-2 bg-customGreen hover:bg-customGreenHover text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md font-medium text-sm min-w-[120px]"
-            (click)="navigateToCreateRoom()"
-          >
-            <i class="pi pi-plus text-xs"></i>
-            <span>Add Room</span>
-          </button>
-
-          <!-- Status Filter -->
-          <div class="min-w-[180px]">
-            <ng-select
-              [items]="statusOptions"
-              bindLabel="label"
-              bindValue="value"
-              placeholder="Filter by status..."
-              [(ngModel)]="selectedStatus"
-              (change)="applyFilters()"
-              class="custom-select text-sm"
-            >
-            </ng-select>
-          </div>
-
-          <!-- Search Input -->
-          <div class="relative min-w-[200px]">
-            <input
-              type="text"
-              [(ngModel)]="searchText"
-              (input)="applyFilters()"
-              placeholder="Search rooms..."
-              class="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
-            />
-            <i
-              class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"
-            ></i>
-          </div>
+        <div class="p-3 rounded-full bg-indigo-100 text-indigo-600">
+          <i class="pi pi-home text-xl"></i>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Statistics Cards - Fixed -->
-  <div class="sticky top-[88px] bg-gray-50 z-10 border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 py-4">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        <!-- Total Rooms -->
-        <div
-          class="bg-white border-l-4 border-indigo-500 p-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
-        >
-          <div class="flex items-center justify-between">
-            <div>
-              <p
-                class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1"
-              >
-                Total Rooms
-              </p>
-              <p class="text-xl font-bold text-gray-800">
-                {{ statistics.totalRooms }}
-              </p>
-            </div>
-            <div class="p-2 rounded-full bg-indigo-100">
-              <i class="pi pi-home text-indigo-600 text-sm"></i>
-            </div>
-          </div>
-        </div>
-
-        <!-- Available Rooms -->
-        <div
-          class="bg-white border-l-4 border-green-500 p-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
-        >
-          <div class="flex items-center justify-between">
-            <div>
-              <p
-                class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1"
-              >
-                Available
-              </p>
-              <p class="text-xl font-bold text-gray-800">
-                {{ statistics.availableRooms }}
-              </p>
-            </div>
-            <div class="p-2 rounded-full bg-green-100">
-              <i class="pi pi-check-circle text-green-600 text-sm"></i>
-            </div>
-          </div>
-        </div>
-
-        <!-- Occupied Rooms -->
-        <div
-          class="bg-white border-l-4 border-blue-500 p-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
-        >
-          <div class="flex items-center justify-between">
-            <div>
-              <p
-                class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1"
-              >
-                Occupied
-              </p>
-              <p class="text-xl font-bold text-gray-800">
-                {{ statistics.occupiedRooms }}
-              </p>
-            </div>
-            <div class="p-2 rounded-full bg-blue-100">
-              <i class="pi pi-users text-blue-600 text-sm"></i>
-            </div>
-          </div>
-        </div>
-
-        <!-- Booked Rooms -->
-        <div
-          class="bg-white border-l-4 border-amber-500 p-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
-        >
-          <div class="flex items-center justify-between">
-            <div>
-              <p
-                class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1"
-              >
-                Booked
-              </p>
-              <p class="text-xl font-bold text-gray-800">
-                {{ statistics.bookedRooms }}
-              </p>
-            </div>
-            <div class="p-2 rounded-full bg-amber-100">
-              <i class="pi pi-calendar text-amber-600 text-sm"></i>
-            </div>
-          </div>
-        </div>
-
-        <!-- Maintenance Rooms -->
-        <div
-          class="bg-white border-l-4 border-gray-500 p-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
-        >
-          <div class="flex items-center justify-between">
-            <div>
-              <p
-                class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1"
-              >
-                Maintenance
-              </p>
-              <p class="text-xl font-bold text-gray-800">
-                {{ statistics.maintenanceRooms }}
-              </p>
-            </div>
-            <div class="p-2 rounded-full bg-gray-100">
-              <i class="pi pi-wrench text-gray-600 text-sm"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Scrollable Table Container -->
-  <div class="max-w-7xl mx-auto px-4 py-4">
+    <!-- Available Rooms -->
     <div
-      class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
+      class="bg-green-200 p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
     >
-      <!-- Table Header -->
-      <div class="bg-gray-50 border-b border-gray-200 px-4 py-3">
-        <h3 class="text-lg font-semibold text-gray-800">All Rooms</h3>
-      </div>
-
-      <!-- Scrollable Table Content -->
-      <div
-        class="overflow-x-auto"
-        style="max-height: calc(100vh - 380px); overflow-y: auto"
-      >
-        <p-table
-          [value]="filteredRooms"
-          [paginator]="true"
-          [rows]="15"
-          [rowsPerPageOptions]="[15, 25, 50]"
-          [loading]="loading"
-          styleClass="p-datatable-striped p-datatable-gridlines custom-table"
-          [globalFilterFields]="['number', 'type', 'status']"
-        >
-          <ng-template pTemplate="header">
-            <tr class="bg-gray-50">
-              <th
-                pSortableColumn="roomNumber"
-                class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200"
-              >
-                Room Number
-                <p-sortIcon field="roomNumber" styleClass="ml-1"></p-sortIcon>
-              </th>
-              <th
-                pSortableColumn="roomType"
-                class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200"
-              >
-                Type
-                <p-sortIcon field="roomType" styleClass="ml-1"></p-sortIcon>
-              </th>
-              <th
-                pSortableColumn="floor"
-                class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200"
-              >
-                Floor
-                <p-sortIcon field="floor" styleClass="ml-1"></p-sortIcon>
-              </th>
-              <th
-                pSortableColumn="roomStatus"
-                class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200"
-              >
-                Status
-                <p-sortIcon field="roomStatus" styleClass="ml-1"></p-sortIcon>
-              </th>
-              <th
-                pSortableColumn="rate"
-                class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200"
-              >
-                Rate
-                <p-sortIcon field="rate" styleClass="ml-1"></p-sortIcon>
-              </th>
-              <th
-                class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200"
-              >
-                Actions
-              </th>
-            </tr>
-          </ng-template>
-
-          <ng-template pTemplate="body" let-room>
-            <tr class="hover:bg-gray-50 transition-colors duration-150">
-              <td class="px-4 py-3 border-b border-gray-100">
-                <div class="flex items-center gap-2">
-                  <div
-                    [ngClass]="getStatusClass(room.roomStatus)"
-                    class="w-2 h-2 rounded-full flex-shrink-0"
-                  ></div>
-                  <span class="font-semibold text-gray-900 text-sm">{{
-                    room.roomNumber
-                  }}</span>
-                </div>
-              </td>
-              <td class="px-4 py-3 border-b border-gray-100">
-                <span class="text-gray-900 font-medium text-sm">{{
-                  room.roomType.name
-                }}</span>
-              </td>
-              <td class="px-4 py-3 border-b border-gray-100">
-                <span class="text-gray-700 text-sm">{{ room.floor }}</span>
-              </td>
-              <td class="px-4 py-3 border-b border-gray-100">
-                <span
-                  [ngClass]="getStatusBadgeClass(room.roomStatus)"
-                  class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                >
-                  {{ getStatusText(room.roomStatus) }}
-                </span>
-              </td>
-              <td class="px-4 py-3 border-b border-gray-100">
-                <span class="text-gray-900 font-semibold text-sm">{{
-                  room.rate | currency : "NGN" : "symbol" : "1.0-0"
-                }}</span>
-              </td>
-              <td class="px-4 py-3 border-b border-gray-100">
-                <div class="flex items-center gap-1">
-                  <button
-                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-200"
-                    (click)="openEditRoomModal(room)"
-                    title="Edit Room"
-                  >
-                    <i class="pi pi-pencil text-xs"></i>
-                  </button>
-                  <button
-                    class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-200"
-                    (click)="confirmDeleteRoom(room)"
-                    title="Delete Room"
-                  >
-                    <i class="pi pi-trash text-xs"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </ng-template>
-
-          <ng-template pTemplate="emptymessage">
-            <tr>
-              <td colspan="6" class="text-center py-12">
-                <div class="flex flex-col items-center">
-                  <div
-                    class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3"
-                  >
-                    <i class="pi pi-search text-gray-400 text-lg"></i>
-                  </div>
-                  <h3 class="text-base font-medium text-gray-900 mb-1">
-                    No rooms found
-                  </h3>
-                  <p class="text-gray-500 text-sm mb-4">
-                    Try adjusting your search or filters
-                  </p>
-                  <button
-                    (click)="clearFilters()"
-                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium text-sm"
-                  >
-                    Reset Filters
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </ng-template>
-        </p-table>
+      <div class="flex items-center justify-between">
+        <div>
+          <p
+            class="text-sm font-extrabold text-gray-700 uppercase tracking-wider"
+          >
+            Available
+          </p>
+          <p class="text-3xl font-bold text-gray-800 mt-2">
+            {{ statistics.availableRooms }}
+          </p>
+        </div>
+        <div class="p-3 rounded-full bg-green-100 text-green-600">
+          <i class="pi pi-check-circle text-xl"></i>
+        </div>
       </div>
     </div>
+
+    <!-- Occupied Rooms -->
+    <div
+      class="bg-indigo-300 p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+    >
+      <div class="flex items-center justify-between">
+        <div>
+          <p
+            class="text-sm font-extrabold text-gray-700 uppercase tracking-wider"
+          >
+            Occupied
+          </p>
+          <p class="text-3xl font-bold text-gray-800 mt-2">
+            {{ statistics.occupiedRooms }}
+          </p>
+        </div>
+        <div class="p-3 rounded-full bg-indigo-100 text-indigo-600">
+          <i class="pi pi-users text-xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Booked Rooms -->
+    <div
+      class="bg-amber-200 p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+    >
+      <div class="flex items-center justify-between">
+        <div>
+          <p
+            class="text-sm font-extrabold text-gray-700 uppercase tracking-wider"
+          >
+            Booked
+          </p>
+          <p class="text-3xl font-bold text-gray-800 mt-2">
+            {{ statistics.bookedRooms }}
+          </p>
+        </div>
+        <div class="p-3 rounded-full bg-amber-100 text-amber-600">
+          <i class="pi pi-calendar text-xl"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Maintenance Rooms -->
+    <div
+      class="bg-red-200 p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+    >
+      <div class="flex items-center justify-between">
+        <div>
+          <p
+            class="text-sm font-extrabold text-gray-700 uppercase tracking-wider"
+          >
+            Maintenance
+          </p>
+          <p class="text-3xl font-bold text-gray-800 mt-2">
+            {{ statistics.maintenanceRooms }}
+          </p>
+        </div>
+        <div class="p-3 rounded-full bg-red-100 text-red-600">
+          <i class="pi pi-wrench text-xl"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table Section - Styled like Housekeeping -->
+  <div
+    class="bg-white rounded-xl mx-7 my-7 shadow-sm border border-gray-100 overflow-hidden"
+  >
+    <p-table
+      [value]="filteredRooms"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      [loading]="loading"
+      styleClass="p-datatable-striped p-datatable-lg p-datatable-gridlines"
+      [globalFilterFields]="['roomNumber', 'roomType', 'status']"
+    >
+      <ng-template pTemplate="header">
+        <tr class="hover:bg-gray-50 transition-colors">
+          <th
+            pSortableColumn="roomNumber"
+            class="p-6 text-left uppercase tracking-wide"
+          >
+            Room
+            <p-sortIcon
+              field="roomNumber"
+              styleClass="ml-2 text-white"
+            ></p-sortIcon>
+          </th>
+          <th
+            pSortableColumn="roomType"
+            class="p-4 text-left uppercase tracking-wide"
+          >
+            Type
+            <p-sortIcon
+              field="roomType"
+              styleClass="ml-2 text-white"
+            ></p-sortIcon>
+          </th>
+          <th
+            pSortableColumn="floor"
+            class="p-4 text-left uppercase tracking-wide"
+          >
+            Floor
+            <p-sortIcon field="floor" styleClass="ml-2 text-white"></p-sortIcon>
+          </th>
+          <th
+            pSortableColumn="roomStatus"
+            class="p-4 text-left uppercase tracking-wide"
+          >
+            Status
+            <p-sortIcon
+              field="roomStatus"
+              styleClass="ml-2 text-white"
+            ></p-sortIcon>
+          </th>
+          <th
+            pSortableColumn="rate"
+            class="p-4 text-left uppercase tracking-wide"
+          >
+            Rate
+            <p-sortIcon field="rate" styleClass="ml-2 text-white"></p-sortIcon>
+          </th>
+          <th class="p-4 text-left uppercase tracking-wide">Actions</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-room>
+        <tr class="hover:bg-gray-50 transition-colors">
+          <td class="p-4 border-b">
+            <div class="flex items-center gap-3">
+              <div
+                [ngClass]="getStatusClass(room.roomStatus)"
+                class="w-3 h-3 rounded-full"
+              ></div>
+              <span class="font-semibold">{{ room.roomNumber }}</span>
+            </div>
+          </td>
+          <td class="p-4 border-b">
+            <span class="text-gray-900 font-medium">{{
+              getRoomTypeName(room.roomType)
+            }}</span>
+          </td>
+          <td class="p-4 border-b">
+            <span class="text-gray-700">{{ room.floor }}</span>
+          </td>
+          <td class="p-4 border-b">
+            <span
+              [ngClass]="getStatusBadgeClass(room.roomStatus)"
+              class="px-3 py-1 rounded-full text-xs font-semibold"
+            >
+              {{ getStatusText(room.roomStatus) }}
+            </span>
+          </td>
+          <td class="p-4 border-b">
+            <span class="text-gray-900 font-semibold">{{
+              room.rate | currency : "NGN" : "symbol" : "1.0-0"
+            }}</span>
+          </td>
+          <td class="p-4 border-b">
+            <div class="flex items-center gap-1">
+              <button
+                pButton
+                pRipple
+                icon="pi pi-pencil"
+                class="p-button-rounded p-button-text p-button-sm"
+                (click)="openEditRoomModal(room); $event.stopPropagation()"
+                tooltip="Edit Room"
+              ></button>
+              <button
+                pButton
+                pRipple
+                icon="pi pi-trash"
+                class="p-button-rounded p-button-text p-button-sm p-button-danger"
+                (click)="confirmDeleteRoom(room); $event.stopPropagation()"
+                tooltip="Delete Room"
+              ></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center py-12 text-gray-500">
+            <i class="pi pi-search text-4xl mb-4"></i>
+            <p class="text-lg font-medium">No rooms found</p>
+            <p class="mt-1">Try adjusting your search or filters</p>
+            <button
+              (click)="clearFilters()"
+              class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Reset Filters
+            </button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
   </div>
 </div>
 
+<!-- Keep the rest of your existing modals and dialogs -->
 <p-toast position="top-right"></p-toast>
 <p-confirmDialog [style]="{ width: '450px' }"></p-confirmDialog>
 
@@ -333,11 +307,10 @@
     (back)="closeRoomForm()"
     (cancel)="closeRoomForm()"
     (roomCreated)="onRoomCreated()"
-  >
-  </app-hotel-rooms>
+  ></app-hotel-rooms>
 </div>
 
-<!-- Room Edit/Create Modal -->
+<!-- Room Edit/Create Modal (unchanged) -->
 <div
   *ngIf="showRoomModal"
   class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
@@ -491,3 +464,4 @@
     </form>
   </div>
 </div>
+<!-- ... (keep existing modal structure) ... -->

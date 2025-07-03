@@ -26,8 +26,8 @@
             Room {{ detailedRoom.roomNumber }}
           </h2>
           <p class="text-xl mt-4 mb-6 text-white/90">
-            {{ detailedRoom.roomType.name }} -
-            {{ detailedRoom.roomType.description }}
+            {{ getRoomTypeName(detailedRoom.roomType) }} -
+            {{ getRoomTypeDescription(detailedRoom.roomType) }}
           </p>
         </div>
 
@@ -95,7 +95,7 @@
               Room Type
             </p>
             <p class="text-xl font-semibold text-gray-800 mt-1">
-              {{ detailedRoom.roomType.name }}
+              {{ getRoomTypeName(detailedRoom.roomType) }}
             </p>
           </div>
 
@@ -463,7 +463,7 @@
         <!-- Available Room Actions -->
         <ng-container *ngIf="isAvailable">
           <button
-            (click)="openForm = true"
+            (click)="openBookingForm()"
             class="bg-gradient-to-r from-emerald-600 to-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-emerald-700 hover:to-green-600"
           >
             <i class="pi pi-calendar-plus"></i>
@@ -546,7 +546,11 @@
   </div>
 </div>
 
-<div *ngIf="openForm && detailedRoom">
+<!-- Room Details Modal (single overlay) -->
+<div
+  *ngIf="openForm && detailedRoom"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+>
   <app-hotel-form
     [selectedRooms]="[detailedRoom]"
     (closeForm)="openForm = false"
@@ -590,7 +594,7 @@
     [room]="{
       id: detailedRoom.id,
       number: detailedRoom.roomNumber,
-      type: detailedRoom.roomType.name,
+      type: getRoomTypeName(detailedRoom.roomType),
       status: detailedRoom.roomStatus,
       rate: detailedRoom.rate
     }"
