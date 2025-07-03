@@ -105,46 +105,6 @@ export class HotelRoomsComponent {
     this.roomTypeForm.reset();
   }
 
-  // onCreateRoomType(): void {
-  //   if (this.roomTypeForm.invalid) {
-  //     this.messageService.add({
-  //       severity: 'error',
-  //       summary: 'Form Error',
-  //       detail: 'Please provide a valid room type name',
-  //     });
-  //     return;
-  //   }
-  //   this.creatingRoomType = true;
-  //   const newRoomType: RoomTypeDTO = {
-  //     id: 0,
-  //     name: this.roomTypeForm.value.name,
-  //     description: this.roomTypeForm.value.description,
-  //   };
-  //   this.hotelService.createRoomType(newRoomType).subscribe({
-  //     next: (createdRoomType) => {
-  //       this.messageService.add({
-  //         severity: 'success',
-  //         summary: 'Success',
-  //         detail: `Room type "${createdRoomType.name}" created successfully`,
-  //       });
-  //       this.loadRoomTypes();
-  //       this.roomForm.get('roomType')?.setValue(createdRoomType.id);
-  //       this.closeRoomTypeModal();
-  //     },
-  //     error: (err) => {
-  //       this.messageService.add({
-  //         severity: 'error',
-  //         summary: 'Error',
-  //         detail: 'Failed to create room type',
-  //       });
-  //       console.error('Error creating room type:', err);
-  //     },
-  //     complete: () => {
-  //       this.creatingRoomType = false;
-  //     },
-  //   });
-  // }
-
   onCreateRoomType(): void {
     if (this.roomTypeForm.invalid) {
       this.markFormGroupTouched(this.roomTypeForm);
@@ -162,12 +122,21 @@ export class HotelRoomsComponent {
         this.messageService.add({
           severity: 'success',
           summary: 'Success',
-          detail: `Room type created`,
+          detail: `Room type "${createdRoomType.name}" created successfully`,
         });
+
+        // Reload room types to get the updated list
+        this.loadRoomTypes();
+
+        // Set the newly created room type as selected
+        if (createdRoomType.id) {
+          this.roomForm.get('roomType')?.setValue(createdRoomType.id);
+        }
+
         this.closeRoomTypeModal();
-        // The BehaviorSubject will automatically update via the service
       },
       error: (err) => {
+        console.error('Error creating room type:', err);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -194,16 +163,27 @@ export class HotelRoomsComponent {
     this.loading = true;
     const selectedTypeId = this.roomForm.value.roomType;
 
-    // Find the selected room type object to get the name (for display only)
+    // Additional validation for room type
+    if (!selectedTypeId || selectedTypeId <= 0) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Please select a valid room type.',
+      });
+      this.loading = false;
+      return;
+    }
+
+    // Find the selected room type object to validate it exists
     const selectedRoomType = this.roomTypes.find(
       (type) => type && type.id === selectedTypeId
     );
 
-    if (!selectedRoomType) {
+    if (!selectedRoomType || !selectedRoomType.id) {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'Selected room type not found.',
+        detail: 'Selected room type not found. Please refresh and try again.',
       });
       this.loading = false;
       return;
@@ -212,7 +192,7 @@ export class HotelRoomsComponent {
     const newRoom: Room = {
       id: 0,
       roomNumber: this.roomForm.value.roomNumber,
-      roomType: selectedRoomType.id!, // Only the id now
+      roomType: selectedRoomType.id, // Remove the non-null assertion
       roomStatus: this.roomForm.value.roomStatus,
       floor: this.roomForm.value.floor,
       rate: this.roomForm.value.rate,
@@ -224,6 +204,8 @@ export class HotelRoomsComponent {
       accessible: this.roomForm.value.accessible,
       isSmokingAllowed: this.roomForm.value.isSmokingAllowed,
     };
+
+    console.log('Creating room with data:', newRoom); // Debug log
 
     this.hotelService.createRoom(newRoom).subscribe({
       next: (createdRoom) => {
@@ -237,10 +219,11 @@ export class HotelRoomsComponent {
         this.openRoomForm = false;
       },
       error: (err) => {
+        console.error('Error creating room:', err); // Debug log
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'Failed to create room',
+          detail: err.error?.message || 'Failed to create room',
         });
         this.loading = false;
       },

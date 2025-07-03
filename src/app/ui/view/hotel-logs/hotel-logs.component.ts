@@ -8,21 +8,14 @@ import {
   Room,
   BookingStatus,
   RoomTypeDTO,
+  RoomStatus,
 } from '../../hospitality/hotelservice.service';
-
-interface Statistics {
-  totalBookings: number;
-  activeStays: number;
-  upcomingCheckins: number;
-  totalAvailableRooms: number;
-  totalRevenue: number;
-}
 
 interface BookingLog {
   id: string;
   roomNumber: string;
   roomType: string;
-  roomStatus: string;
+  roomStatus: RoomStatus;
   guestName: string;
   guestEmail?: string;
   guestPhone: string;
@@ -36,6 +29,14 @@ interface BookingLog {
   balanceAmount: number;
   specialRequests?: string;
   createdAt: Date;
+}
+
+interface Statistics {
+  totalBookings: number;
+  activeStays: number;
+  upcomingCheckins: number;
+  totalAvailableRooms: number;
+  totalRevenue: number;
 }
 
 @Component({
@@ -55,6 +56,7 @@ export class HotelLogsComponent implements OnInit {
   allRooms: Room[] = [];
   allGuests: Guest[] = [];
   roomTypes: RoomTypeDTO[] = [];
+  availableRooms: Room[] = [];
 
   statistics: Statistics = {
     totalBookings: 0,
@@ -88,37 +90,41 @@ export class HotelLogsComponent implements OnInit {
 
   ngOnInit(): void {
     this.primengConfig.ripple = true;
-    this.loadRoomTypes();
-    this.loadData();
+    this.loadInitialData();
   }
 
-  private loadRoomTypes(): void {
+  private loadInitialData(): void {
+    this.loading = true;
+
+    // Load room types first since we need them for room type names
     this.hotelService.getRoomTypes().subscribe({
       next: (types) => {
         this.roomTypes = types;
+        this.loadRoomsAndBookings();
       },
       error: (err) => {
         console.error('Error loading room types:', err);
+        this.loading = false;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load room types',
+        });
       },
     });
   }
 
-  getRoomTypeName(roomTypeId: number): string {
-    return this.roomTypes.find((rt) => rt.id === roomTypeId)?.name || 'N/A';
-  }
-
-  private loadData(): void {
-    this.loading = true;
-
-    // Fetch all necessary data in parallel
+  private loadRoomsAndBookings(): void {
+    // Load rooms, bookings, and available rooms in parallel
     Promise.all([
       this.hotelService.getRooms().toPromise(),
       this.hotelService.getBookings().toPromise(),
-      this.hotelService.getGuests().toPromise(),
       this.hotelService.getAvailableRooms().toPromise(),
+      this.hotelService.getGuests().toPromise(),
     ])
-      .then(([rooms, bookings, guests, availableRooms]) => {
+      .then(([rooms, bookings, availableRooms, guests]) => {
         this.allRooms = rooms || [];
+        this.availableRooms = availableRooms || [];
         this.allGuests = guests || [];
 
         // Process bookings into logs
@@ -129,9 +135,7 @@ export class HotelLogsComponent implements OnInit {
         );
 
         this.filteredLogs = [...this.logs];
-
-        // Calculate statistics
-        this.calculateStatistics(availableRooms?.length || 0);
+        this.calculateStatistics();
       })
       .catch((error) => {
         console.error('Error loading data:', error);
@@ -153,18 +157,16 @@ export class HotelLogsComponent implements OnInit {
   ): BookingLog[] {
     return bookings
       .map((booking) => {
-        // Find guest information and ensure roomType is string
+        // Find guest information
         const guest = this.findGuest(booking.guest, guests);
 
-        // Find room information (using first room in booking)
+        // Find the primary room (first room in booking)
         const room = rooms.find((r) => r.id === booking.rooms[0]);
 
         return {
           id: `${booking.id}`,
-          roomNumber:
-            room?.roomNumber !== undefined ? String(room.roomNumber) : 'N/A',
-          roomType:
-            room?.roomType !== undefined ? String(room.roomType) : 'N/A',
+          roomNumber: room?.roomNumber?.toString() || 'N/A',
+          roomType: room?.roomType?.toString() || 'N/A',
           roomStatus: room?.roomStatus || 'UNDER_MAINTENANCE',
           guestName: guest
             ? `${guest.title} ${guest.firstName} ${guest.lastName}`
@@ -176,7 +178,7 @@ export class HotelLogsComponent implements OnInit {
           checkoutDate: new Date(booking.checkoutDate),
           status: booking.status,
           paymentMethod: 'N/A', // Replace with actual payment method if available
-          totalAmount: booking.total,
+          totalAmount: booking.total || 0,
           paidAmount: booking.depositAmount || 0,
           balanceAmount: booking.balanceAmount || 0,
           specialRequests: booking.specialRequests,
@@ -195,7 +197,7 @@ export class HotelLogsComponent implements OnInit {
       : guestRef;
   }
 
-  private calculateStatistics(availableRoomsCount: number): void {
+  private calculateStatistics(): void {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -204,14 +206,19 @@ export class HotelLogsComponent implements OnInit {
       activeStays: this.logs.filter((log) => log.status === 'CHECKED_IN')
         .length,
       upcomingCheckins: this.logs.filter(
-        (log) => log.status === 'CONFIRMED' && new Date(log.checkinDate) > today
+        (log) => log.status === 'CONFIRMED' && log.checkinDate > today
       ).length,
-      totalAvailableRooms: availableRoomsCount,
+      totalAvailableRooms: this.availableRooms.length,
       totalRevenue: this.logs.reduce(
         (sum, log) => sum + (log.totalAmount || 0),
         0
       ),
     };
+  }
+
+  getRoomTypeName(roomTypeId: number): string {
+    const type = this.roomTypes.find((rt) => rt.id === roomTypeId);
+    return type?.name || 'N/A';
   }
 
   applyFilters(): void {
@@ -251,7 +258,7 @@ export class HotelLogsComponent implements OnInit {
     this.displayDialog = true;
   }
 
-  getStatusClass(status: string): string {
+  getStatusClass(status: RoomStatus | BookingStatus): string {
     switch (status) {
       case 'AVAILABLE':
         return 'bg-green-300';
@@ -262,15 +269,21 @@ export class HotelLogsComponent implements OnInit {
       case 'UNDER_MAINTENANCE':
         return 'bg-gray-300';
       case 'CHECKED_OUT':
-        return 'bg-red-300';
+      case 'CANCELLED':
       case 'NO_SHOW':
         return 'bg-red-300';
+      case 'BOOKED':
+        return 'bg-purple-300';
+      case 'CLEANING':
+        return 'bg-yellow-300';
+      case 'OCCUPIED':
+        return 'bg-indigo-300';
       default:
         return 'bg-gray-300';
     }
   }
 
-  getStatusBadgeClass(status: string): string {
+  getStatusBadgeClass(status: RoomStatus | BookingStatus): string {
     switch (status) {
       case 'AVAILABLE':
         return 'bg-green-100 text-green-800';
@@ -281,9 +294,15 @@ export class HotelLogsComponent implements OnInit {
       case 'UNDER_MAINTENANCE':
         return 'bg-gray-100 text-gray-800';
       case 'CHECKED_OUT':
-        return 'bg-red-100 text-red-800';
+      case 'CANCELLED':
       case 'NO_SHOW':
         return 'bg-red-100 text-red-800';
+      case 'BOOKED':
+        return 'bg-purple-100 text-purple-800';
+      case 'CLEANING':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'OCCUPIED':
+        return 'bg-indigo-100 text-indigo-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
