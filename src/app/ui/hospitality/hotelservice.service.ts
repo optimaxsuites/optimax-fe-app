@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, tap, catchError, throwError } from 'rxjs';
 import { environment } from '../sharedComponent/service/environments/environment.prod';
 import { MessageService } from 'primeng/api';
 
@@ -120,16 +120,15 @@ export class HotelserviceService {
     private http: HttpClient,
     private messageService: MessageService
   ) {
-    this.getRoomTypes().subscribe(
-      (types) => (this.roomType = types),
-      (error) => this.handleError(error)
-    );
     this.loadInitialRoomTypes();
   }
 
   private loadInitialRoomTypes(): void {
     this.getRoomTypes().subscribe({
-      next: (types) => this.roomTypes$.next(types),
+      next: (types) => {
+        this.roomType = types;
+        this.roomTypes$.next(types);
+      },
       error: (error) => this.handleError(error),
     });
   }
@@ -140,18 +139,36 @@ export class HotelserviceService {
 
   // Room Type Endpoints
   getRoomTypes(): Observable<RoomTypeDTO[]> {
-    return this.http.get<RoomTypeDTO[]>(
-      `${this.apiUrl}/x/api/v2/hsp/roomTypes`,
-      { headers: this.headers }
-    );
+    return this.http
+      .get<RoomTypeDTO[]>(`${this.apiUrl}/x/api/v2/hsp/roomTypes`, {
+        headers: this.headers,
+      })
+      .pipe(
+        catchError((error) => {
+          console.error('Error fetching room types:', error);
+          return throwError(() => error);
+        })
+      );
   }
 
   createRoomType(roomType: RoomTypeDTO): Observable<RoomTypeDTO> {
-    return this.http.post<RoomTypeDTO>(
-      `${this.apiUrl}/x/api/v2/hsp/roomTypes`,
-      roomType,
-      { headers: this.headers }
-    );
+    return this.http
+      .post<RoomTypeDTO>(`${this.apiUrl}/x/api/v2/hsp/roomTypes`, roomType, {
+        headers: this.headers,
+      })
+      .pipe(
+        tap((createdRoomType) => {
+          // Update the BehaviorSubject with the new room type
+          const currentTypes = this.roomTypes$.getValue();
+          const updatedTypes = [...currentTypes, createdRoomType];
+          this.roomTypes$.next(updatedTypes);
+          this.roomType = updatedTypes;
+        }),
+        catchError((error) => {
+          console.error('Error creating room type:', error);
+          return throwError(() => error);
+        })
+      );
   }
 
   getRoom(id: number): Observable<Room> {
@@ -169,6 +186,7 @@ export class HotelserviceService {
 
     return this.http.get<Room[]>(`${this.apiUrl}/x/api/v2/hsp/rooms`, {
       headers: this.headers,
+      params: params,
     });
   }
 
@@ -203,9 +221,26 @@ export class HotelserviceService {
   }
 
   createRoom(room: Room): Observable<Room> {
-    return this.http.post<Room>(`${this.apiUrl}/x/api/v2/hsp/rooms`, room, {
-      headers: this.headers,
-    });
+    // Validate room data before sending
+    if (!room.roomType || room.roomType <= 0) {
+      return throwError(() => new Error('Invalid room type'));
+    }
+
+    console.log('Service: Creating room with data:', room);
+
+    return this.http
+      .post<Room>(`${this.apiUrl}/x/api/v2/hsp/rooms`, room, {
+        headers: this.headers,
+      })
+      .pipe(
+        tap((createdRoom) => {
+          console.log('Service: Room created successfully:', createdRoom);
+        }),
+        catchError((error) => {
+          console.error('Service: Error creating room:', error);
+          return throwError(() => error);
+        })
+      );
   }
 
   updateRoom(id: number, room: Room): Observable<Room> {
