@@ -17,17 +17,24 @@ export class HotelCheckoutComponent {
   showRoomDetails: boolean = false;
 
   handleRoomSelected(room: Room): void {
-
     this.selectedRoom = room;
-    this.showRoomDetails = true;
-
-    // Use setTimeout to ensure the view is updated before calling the method
-    setTimeout(() => {
-      if (this.roomDetails) {
-        this.roomDetails.loadRoomDetails(room.id!);
-      }
-    }, 0);
+    this.roomDetails.showRoomDetailsModal(room);
   }
+
+  // onRoomStatusChanged(updatedRoom: Room): void {
+  //   this.selectedRoom = updatedRoom;
+  //   this.roomDetails.showRoomDetailsModal(updatedRoom);
+  //   if (!room) return;
+  //   this.selectedRoom = room;
+  //   this.showRoomDetails = true;
+
+  //   // Use setTimeout to ensure the view is updated before calling the method
+  //   setTimeout(() => {
+  //     if (this.roomDetails) {
+  //       this.roomDetails.loadRoomDetails(room.id!);
+  //     }
+  //   }, 0);
+  // }
 
 
 
