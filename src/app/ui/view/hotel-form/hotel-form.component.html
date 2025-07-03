@@ -9,7 +9,7 @@
       >
         <div>
           <p class="font-semibold text-gray-800">
-            Room {{ room.roomNumber }} - {{ room.roomType.name }}
+            Room {{ room.roomNumber }} - {{ getRoomTypeName(room.roomType) }}
             <span *ngIf="room.floor" class="text-sm text-gray-500 ml-2">
               (Floor {{ room.floor }})
             </span>

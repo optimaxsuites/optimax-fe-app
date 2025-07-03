@@ -235,7 +235,11 @@ export class HotelAdmintableComponent implements OnInit {
     this.roomForm.patchValue({
       roomNumber: room.roomNumber,
       roomType:
-        typeof room.roomType === 'object' ? room.roomType.id : room.roomType,
+        typeof room.roomType === 'object' &&
+        room.roomType !== null &&
+        'id' in room.roomType
+          ? (room.roomType as { id: number }).id
+          : room.roomType,
       roomStatus: room.roomStatus,
       floor: room.floor,
       rate: room.rate,
@@ -421,8 +425,12 @@ export class HotelAdmintableComponent implements OnInit {
       const searchMatch =
         !this.searchText ||
         room.roomNumber.toString().includes(this.searchText) ||
-        (typeof room.roomType === 'object'
-          ? room.roomType.name
+        (room.roomType &&
+        typeof room.roomType === 'object' &&
+        room.roomType !== null &&
+        'name' in room.roomType &&
+        typeof (room.roomType as any).name === 'string'
+          ? ((room.roomType as any).name as string)
               .toLowerCase()
               .includes(this.searchText.toLowerCase())
           : String(room.roomType)
@@ -469,11 +477,8 @@ export class HotelAdmintableComponent implements OnInit {
     }
   }
 
-  getRoomTypeName(roomType: any): string {
-    if (typeof roomType === 'object' && roomType !== null) {
-      return roomType.name;
-    }
-    return `Room Type ${roomType}`;
+  getRoomTypeName(roomTypeId: number): string {
+    return this.roomTypes.find((rt) => rt.id === roomTypeId)?.name || '';
   }
 
   confirmDeleteRoom(room: Room): void {
