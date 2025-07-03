@@ -11,8 +11,10 @@
       <p>Opening Balance: <span>₦{{ openingAmount | number }}</span></p>
       <p>Sales Total: <span>₦{{ salesTotal | number }}</span></p>
       <p>
-        Close Amount:
+        <label for="closeAmount">Close Amount:</label>
         <input
+          id="closeAmount"
+          name="closeAmount"
           type="number"
           [(ngModel)]="closeAmount"
           min="0"
@@ -20,15 +22,17 @@
         />
       </p>
     </div>
-    <br>
+    <br />
 
     <div class="cash-count-section">
       <h3>Cash Count</h3>
-      <br>
+      <br />
       <div class="denomination-grid">
-        <div class="denomination-row" *ngFor="let denom of denominations">
-          <label> ₦{{ denom }}:</label>
+        <div class="denomination-row" *ngFor="let denom of denominations; let i = index">
+          <label [for]="'denom-' + i">₦{{ denom }}:</label>
           <input
+            [id]="'denom-' + i"
+            [name]="'denom-' + i"
             type="number"
             [(ngModel)]="denominationCounts[denom]"
             min="0"
