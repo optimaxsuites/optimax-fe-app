@@ -463,7 +463,7 @@
         <!-- Available Room Actions -->
         <ng-container *ngIf="isAvailable">
           <button
-            (click)="openBookingForm()"
+            (click)="showBookingForm = true"
             class="bg-gradient-to-r from-emerald-600 to-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center gap-2 hover:from-emerald-700 hover:to-green-600"
           >
             <i class="pi pi-calendar-plus"></i>
@@ -548,12 +548,12 @@
 
 <!-- Room Details Modal (single overlay) -->
 <div
-  *ngIf="openForm && detailedRoom"
+  *ngIf="showBookingForm && detailedRoom"
   class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
 >
   <app-hotel-form
     [selectedRooms]="[detailedRoom]"
-    (closeForm)="openForm = false"
+    (closeForm)="showBookingForm = false"
     (bookingComplete)="onBookingComplete($event)"
   ></app-hotel-form>
 </div>
