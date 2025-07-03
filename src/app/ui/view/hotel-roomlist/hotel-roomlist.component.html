@@ -16,30 +16,34 @@
       <!-- Scrollable sidebar content -->
       <div class="flex-1 overflow-y-auto p-6 pt-4">
         <!-- Loading state for room types -->
-        <div *ngIf="roomTypes.length <= 1" class="space-y-3">
+        <div *ngIf="roomTypes.length === 0" class="space-y-3">
           <div *ngFor="let _ of [1, 2, 3, 4, 5]" class="animate-pulse">
             <div class="h-12 bg-blue-400/30 rounded-xl"></div>
           </div>
         </div>
 
         <!-- Loaded state -->
-        <ul class="space-y-3" *ngIf="uniqueRoomTypes.length > 0">
+        <ul class="space-y-3" *ngIf="roomTypes.length > 0">
           <li
-            [class]="getFilterClass('All Rooms')"
-            (click)="toggleRoomTypeSelection('All Rooms')"
+            [class]="
+              allRoomTypesSelected
+                ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg border-2 border-emerald-700 p-4 font-bold text-xl rounded-xl cursor-pointer transition-all duration-300 flex items-center justify-between'
+                : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-emerald-300 p-4 font-bold text-xl rounded-xl cursor-pointer transition-all duration-300 flex items-center justify-between'
+            "
+            (click)="selectAllRoomTypes()"
           >
-            <span>All Rooms</span>
-            <span *ngIf="selectedRoomTypes.includes('All Rooms')" class="ml-2">
+            <span>All Room Types</span>
+            <span *ngIf="allRoomTypesSelected" class="ml-2">
               <i class="pi pi-check-circle text-xl"></i>
             </span>
           </li>
           <li
-            *ngFor="let type of uniqueRoomTypes"
-            [class]="getFilterClass(type)"
-            (click)="toggleRoomTypeSelection(type)"
+            *ngFor="let type of roomTypes"
+            [class]="getFilterClass(type.id!)"
+            (click)="toggleRoomTypeSelection(type.id!)"
           >
-            <span>{{ type }}</span>
-            <span *ngIf="selectedRoomTypes.includes(type)" class="ml-2">
+            <span>{{ type.name }}</span>
+            <span *ngIf="isRoomTypeSelected(type.id!)" class="ml-2">
               <i class="pi pi-check-circle text-xl"></i>
             </span>
           </li>
@@ -186,7 +190,7 @@
           *ngFor="let room of filteredRooms"
           [ngClass]="statusColors[room.roomStatus]"
           class="room-card p-5 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col border border-gray-200/50"
-          (click)="selectRoom(room)"
+          (click)="openRoomDetails(room)"
         >
           <div class="flex justify-between items-start mb-3">
             <div class="flex-1">
@@ -203,7 +207,7 @@
                 <span
                   class="inline-block px-3 py-1 text-lg font-bold rounded-full bg-white bg-opacity-80 text-gray-800 shadow-sm"
                 >
-                  {{ room.roomType.name }}
+                  {{ getRoomTypeName(room.roomType) }}
                 </span>
               </div>
             </div>
@@ -411,10 +415,10 @@
             <div class="flex justify-between items-start">
               <div>
                 <p class="font-bold text-2xl text-gray-800">
-                  {{ room.roomNumber }}
+                  Room {{ room.roomNumber }}
                 </p>
                 <p class="text-xl text-gray-600 mt-1">
-                  {{ room.roomType.name }}
+                  {{ getRoomTypeName(room.roomType) }}
                 </p>
               </div>
               <div

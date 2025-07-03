@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { environment } from '../sharedComponent/service/environments/environment.prod';
 import { MessageService } from 'primeng/api';
 
@@ -23,7 +23,7 @@ export interface Room {
   amenities: string[];
   imageURLs: string[];
   accessible: boolean;
-  roomType: RoomTypeDTO;
+  roomType: number;
   isSmokingAllowed: boolean;
 }
 
@@ -114,6 +114,8 @@ export class HotelserviceService {
     Authorization: environment.apiKey,
   });
 
+  private roomTypes$ = new BehaviorSubject<RoomTypeDTO[]>([]);
+
   constructor(
     private http: HttpClient,
     private messageService: MessageService
@@ -122,6 +124,18 @@ export class HotelserviceService {
       (types) => (this.roomType = types),
       (error) => this.handleError(error)
     );
+    this.loadInitialRoomTypes();
+  }
+
+  private loadInitialRoomTypes(): void {
+    this.getRoomTypes().subscribe({
+      next: (types) => this.roomTypes$.next(types),
+      error: (error) => this.handleError(error),
+    });
+  }
+
+  getRoomTypesObservable(): Observable<RoomTypeDTO[]> {
+    return this.roomTypes$.asObservable();
   }
 
   // Room Type Endpoints

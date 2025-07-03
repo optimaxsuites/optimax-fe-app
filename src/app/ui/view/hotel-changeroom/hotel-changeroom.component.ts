@@ -4,6 +4,7 @@ import {
   Room,
   Booking,
   Guest,
+  RoomTypeDTO,
 } from '../../hospitality/hotelservice.service';
 
 @Component({
@@ -47,6 +48,8 @@ export class HotelChangeroomComponent implements OnInit {
   roomBookingsMap: Map<number, Booking> = new Map();
   roomGuestsMap: Map<number, Guest> = new Map();
 
+  roomTypes: RoomTypeDTO[] = [];
+
   constructor(private hotelService: HotelserviceService) {}
 
   ngOnInit() {
@@ -61,6 +64,9 @@ export class HotelChangeroomComponent implements OnInit {
     this.hotelService.getGuests().subscribe((guests) => {
       this.guests = guests;
       this.buildRoomGuestsMap();
+    });
+    this.hotelService.getRoomTypes().subscribe((types) => {
+      this.roomTypes = types;
     });
   }
 
@@ -147,5 +153,9 @@ export class HotelChangeroomComponent implements OnInit {
     } else {
       this.selectedTasks.splice(index, 1);
     }
+  }
+
+  getRoomTypeName(roomTypeId: number): string {
+    return this.roomTypes.find((rt) => rt.id === roomTypeId)?.name || '';
   }
 }
