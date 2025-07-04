@@ -127,8 +127,8 @@ import { IncomeStatementChartsComponent } from './ui/view/reports/income-stateme
     IncomeStatementChartsComponent
   ],
   imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
+    // BrowserModule,
+    // BrowserAnimationsModule,
     CommonModule,
     AppRoutingModule,
     FormsModule,
