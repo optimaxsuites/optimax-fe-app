@@ -94,6 +94,9 @@ import { NewCoaModalComponent } from './ui/view/new-coa-modal/new-coa-modal.comp
 import { ConnectMonoComponent } from './ui/view/connect-mono/connect-mono.component';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { IncomeStatementChartsComponent } from './ui/view/reports/income-statement/income-statement-charts/income-statement-charts.component';
+import { ReconcillationComponent } from './ui/view/reconcillation/reconcillation.component';
+import { CalendarModule } from 'primeng/calendar';
+import { AccordionModule } from 'primeng/accordion'
 
 
 @NgModule({
@@ -124,7 +127,8 @@ import { IncomeStatementChartsComponent } from './ui/view/reports/income-stateme
     CashFlowComponent,
     TaxSummaryComponent,
     TransactionSideModalComponent,
-    IncomeStatementChartsComponent
+    IncomeStatementChartsComponent,
+    ReconcillationComponent
   ],
   imports: [
     BrowserModule,
@@ -186,7 +190,11 @@ import { IncomeStatementChartsComponent } from './ui/view/reports/income-stateme
     NavTabComponent,
     PaginatorModule,
     DialogModule,
-    NgApexchartsModule
+    NgApexchartsModule,
+    CalendarModule,
+    TagModule,
+    AccordionModule,
+    TableModule
 ],
   providers: [],
   bootstrap: [AppComponent]
