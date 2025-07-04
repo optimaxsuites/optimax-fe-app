@@ -1,0 +1,24 @@
+<div class="charts-section">
+  <apx-chart
+    *ngIf="revenueChartOptions"
+    [series]="revenueChartOptions.series"
+    [chart]="revenueChartOptions.chart"
+    [xaxis]="revenueChartOptions.xaxis"
+    [stroke]="revenueChartOptions.stroke"
+    [tooltip]="revenueChartOptions.tooltip"
+    [dataLabels]="revenueChartOptions.dataLabels"
+    [legend]="revenueChartOptions.legend"
+    [title]="revenueChartOptions.title">
+  </apx-chart>
+
+  <apx-chart
+    *ngIf="expenseChartOptions"
+    [series]="expenseChartOptions.series"
+    [chart]="expenseChartOptions.chart"
+    [labels]="expenseChartOptions.labels"
+    [plotOptions]="expenseChartOptions.plotOptions"
+    [fill]="expenseChartOptions.fill"
+    [legend]="expenseChartOptions.legend"
+    [title]="expenseChartOptions.title">
+  </apx-chart>
+</div>

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable, tap, catchError, throwError } from 'rxjs';
 import { environment } from '../sharedComponent/service/environments/environment.prod';
 import { MessageService } from 'primeng/api';
 
@@ -23,7 +23,7 @@ export interface Room {
   amenities: string[];
   imageURLs: string[];
   accessible: boolean;
-  roomType: RoomTypeDTO;
+  roomType: number;
   isSmokingAllowed: boolean;
 }
 
@@ -114,30 +114,61 @@ export class HotelserviceService {
     Authorization: environment.apiKey,
   });
 
+  private roomTypes$ = new BehaviorSubject<RoomTypeDTO[]>([]);
+
   constructor(
     private http: HttpClient,
     private messageService: MessageService
   ) {
-    this.getRoomTypes().subscribe(
-      (types) => (this.roomType = types),
-      (error) => this.handleError(error)
-    );
+    this.loadInitialRoomTypes();
+  }
+
+  private loadInitialRoomTypes(): void {
+    this.getRoomTypes().subscribe({
+      next: (types) => {
+        this.roomType = types;
+        this.roomTypes$.next(types);
+      },
+      error: (error) => this.handleError(error),
+    });
+  }
+
+  getRoomTypesObservable(): Observable<RoomTypeDTO[]> {
+    return this.roomTypes$.asObservable();
   }
 
   // Room Type Endpoints
   getRoomTypes(): Observable<RoomTypeDTO[]> {
-    return this.http.get<RoomTypeDTO[]>(
-      `${this.apiUrl}/x/api/v2/hsp/roomTypes`,
-      { headers: this.headers }
-    );
+    return this.http
+      .get<RoomTypeDTO[]>(`${this.apiUrl}/x/api/v2/hsp/roomTypes`, {
+        headers: this.headers,
+      })
+      .pipe(
+        catchError((error) => {
+          console.error('Error fetching room types:', error);
+          return throwError(() => error);
+        })
+      );
   }
 
   createRoomType(roomType: RoomTypeDTO): Observable<RoomTypeDTO> {
-    return this.http.post<RoomTypeDTO>(
-      `${this.apiUrl}/x/api/v2/hsp/roomTypes`,
-      roomType,
-      { headers: this.headers }
-    );
+    return this.http
+      .post<RoomTypeDTO>(`${this.apiUrl}/x/api/v2/hsp/roomTypes`, roomType, {
+        headers: this.headers,
+      })
+      .pipe(
+        tap((createdRoomType) => {
+          // Update the BehaviorSubject with the new room type
+          const currentTypes = this.roomTypes$.getValue();
+          const updatedTypes = [...currentTypes, createdRoomType];
+          this.roomTypes$.next(updatedTypes);
+          this.roomType = updatedTypes;
+        }),
+        catchError((error) => {
+          console.error('Error creating room type:', error);
+          return throwError(() => error);
+        })
+      );
   }
 
   getRoom(id: number): Observable<Room> {
@@ -155,6 +186,7 @@ export class HotelserviceService {
 
     return this.http.get<Room[]>(`${this.apiUrl}/x/api/v2/hsp/rooms`, {
       headers: this.headers,
+      params: params,
     });
   }
 
@@ -188,10 +220,40 @@ export class HotelserviceService {
     return this.getRoomsByStatus('UNDER_MAINTENANCE');
   }
 
+  // In hotelservice.service.ts
   createRoom(room: Room): Observable<Room> {
-    return this.http.post<Room>(`${this.apiUrl}/x/api/v2/hsp/rooms`, room, {
-      headers: this.headers,
-    });
+    if (!room.roomType || room.roomType <= 0) {
+      return throwError(() => new Error('Invalid room type ID'));
+    }
+
+    // Ensure all required fields are present
+    const roomData = {
+      ...room,
+      amenities: room.amenities || [],
+      imageURLs: room.imageURLs || [],
+    };
+
+    return this.http
+      .post<Room>(`${this.apiUrl}/x/api/v2/hsp/rooms`, roomData, {
+        headers: this.headers,
+      })
+      .pipe(
+        catchError((error) => {
+          console.error('API Error:', error);
+          let errorMsg = 'Unknown error occurred';
+          if (error.error instanceof ErrorEvent) {
+            // Client-side error
+            errorMsg = `Error: ${error.error.message}`;
+          } else {
+            // Server-side error
+            errorMsg = `Error Code: ${error.status}\nMessage: ${error.message}`;
+            if (error.error && error.error.message) {
+              errorMsg = error.error.message;
+            }
+          }
+          return throwError(() => new Error(errorMsg));
+        })
+      );
   }
 
   updateRoom(id: number, room: Room): Observable<Room> {

@@ -15,6 +15,7 @@ import {
   Booking,
   RoomStatus,
   MaintenainceRequest,
+  RoomTypeDTO,
 } from '../../hospitality/hotelservice.service';
 import { Subscription, forkJoin } from 'rxjs';
 
@@ -35,6 +36,7 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
   currentGuest: Guest | null = null;
   currentBooking: Booking | null = null;
   isLoading = false;
+  roomTypes: RoomTypeDTO[] = [];
 
   private subscriptions = new Subscription();
   previousRoom: Room | null = null;
@@ -45,6 +47,7 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
   openCheckinForm: boolean = false;
   openNote: boolean = false;
   openExtendStay: boolean = false;
+  showBookingForm: boolean = false;
 
   statusColors: any = {
     AVAILABLE: 'bg-emerald-500',
@@ -92,6 +95,7 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.loadRoomTypes();
     if (this.room && this.room.id) {
       this.loadRoomDetails(this.room.id);
     }
@@ -99,6 +103,27 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subscriptions.unsubscribe();
+  }
+
+  private loadRoomTypes(): void {
+    this.subscriptions.add(
+      this.hotelService.getRoomTypes().subscribe({
+        next: (types) => {
+          this.roomTypes = types;
+        },
+        error: (err) => {
+          console.error('Error loading room types:', err);
+        },
+      })
+    );
+  }
+
+  getRoomTypeName(roomTypeId: number): string {
+    return this.roomTypes.find((t) => t.id === roomTypeId)?.name || 'Unknown';
+  }
+
+  getRoomTypeDescription(roomTypeId: number): string {
+    return this.roomTypes.find((t) => t.id === roomTypeId)?.description || '';
   }
 
   get isAvailable(): boolean {
@@ -212,10 +237,7 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
     booking: Booking,
     guest: Guest | null
   ): void {
-    this.detailedRoom = {
-      ...room,
-      roomType: this.getRoomTypeForRoom(room),
-    };
+    this.detailedRoom = room;
     this.currentGuest = guest;
     this.currentBooking = booking;
     this.isLoading = false;
@@ -223,25 +245,11 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
   }
 
   private showBasicRoomDetails(room: Room): void {
-    this.detailedRoom = {
-      ...room,
-      roomType: this.getRoomTypeForRoom(room),
-    };
+    this.detailedRoom = room;
     this.currentGuest = null;
     this.currentBooking = null;
     this.isLoading = false;
     this.cdRef.detectChanges();
-  }
-
-  private getRoomTypeForRoom(room: Room): any {
-    if (typeof room.roomType === 'object' && room.roomType !== null) {
-      return room.roomType;
-    }
-    return {
-      id: room.roomType,
-      name: `Room Type ${room.roomType}`,
-      description: '',
-    };
   }
 
   calculateNights(checkinDate: string, checkoutDate: string): number {
@@ -374,35 +382,12 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
   // Room status methods
   onStartMaintenance(): void {
     if (!this.detailedRoom) return;
-
-    const updatedRoom: Room = {
-      ...this.detailedRoom,
-      roomStatus: 'UNDER_MAINTENANCE',
-      // maintenanceReason:
-      //   this.newMaintenanceRequest.reasons.join(', ') || 'Maintenance required',
-      // maintenanceStartDate: new Date(this.newMaintenanceRequest.startDate),
-    };
-
-    this.updateRoomStatus(
-      updatedRoom,
-      'Maintenance Started',
-      'Room is now under maintenance'
-    );
+    this.openNote = true;
   }
 
   onCompleteMaintenance(): void {
-    if (!this.detailedRoom) return;
-
-    const updatedRoom: Room = {
-      ...this.detailedRoom,
-      roomStatus: 'AVAILABLE',
-    };
-
-    this.updateRoomStatus(
-      updatedRoom,
-      'Maintenance Complete',
-      'Room is now available'
-    );
+    this.openNote = false;
+    this.loadRoomDetails(this.detailedRoom!.id);
   }
 
   onCompleteCleaning(): void {
@@ -997,5 +982,13 @@ export class HotelRoomdetailsComponent implements OnInit, OnDestroy {
         console.error('Error loading booking/guest details:', err);
       },
     });
+  }
+
+  // Book Room button handler
+  openBookingForm(): void {
+    this.showBookingForm = true;
+  }
+  closeBookingForm(): void {
+    this.showBookingForm = false;
   }
 }

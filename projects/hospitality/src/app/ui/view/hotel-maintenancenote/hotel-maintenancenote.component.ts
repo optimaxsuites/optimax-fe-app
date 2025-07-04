@@ -1,5 +1,9 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { MessageService } from 'primeng/api';
+import {
+  HotelserviceService,
+  MaintenainceRequest,
+} from '../../hospitality/hotelservice.service';
 
 export interface Todo {
   id: number;
@@ -107,6 +111,7 @@ export class HotelMaintenancenoteComponent implements OnInit {
   @Input() room: Room | null = null;
   @Output() back = new EventEmitter<void>();
   @Output() maintenanceComplete = new EventEmitter<void>();
+  @Input() maintenanceRequests: MaintenainceRequest[] = [];
 
   todos: Todo[] = [];
   filteredTodos: Todo[] = [];
@@ -119,81 +124,119 @@ export class HotelMaintenancenoteComponent implements OnInit {
   completionPercentage: number = 0;
   allTasksCompleted: boolean = false;
 
-  constructor(private messageService: MessageService) {}
+  constructor(
+    private messageService: MessageService,
+    private hotelService: HotelserviceService
+  ) {}
 
   ngOnInit() {
-    this.loadTodos();
+    this.fetchMaintenanceRequests();
     this.updateFilteredTodos();
     this.updateProgress();
   }
 
-  loadTodos() {
+  fetchMaintenanceRequests() {
     if (this.room) {
-      const savedTodos = localStorage.getItem(
-        `maintenanceTodos_${this.room.id}`
-      );
-      this.todos = savedTodos ? JSON.parse(savedTodos) : [];
-
-      // Initialize with room data if empty
-      if (this.todos.length === 0 && this.room) {
-        this.todos = this.todos.map((todo) => ({
-          ...todo,
-          roomNumber: this.room?.number,
-          roomId: this.room?.id,
-        }));
-      }
+      this.hotelService.getMaintenanceRequests().subscribe({
+        next: (requests) => {
+          this.todos = requests
+            .filter((req) => req.room === this.room!.id && !req.completed)
+            .map((req) => ({
+              id: req.id,
+              title: req.tasks,
+              reason: req.reasons.join(', '),
+              completed: req.completed,
+              priority: req.priority.toLowerCase() as 'low' | 'medium' | 'high',
+              dueDate: req.dueDate ? new Date(req.dueDate) : undefined,
+              roomNumber: this.room?.number,
+              roomId: this.room?.id,
+            }));
+          this.updateFilteredTodos();
+          this.updateProgress();
+        },
+        error: (err) => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to fetch maintenance requests',
+          });
+        },
+      });
     }
   }
 
   addTodo() {
     if (this.newTodoTitle.trim() === '') return;
-
-    const newTodo: Todo = {
-      id: this.generateId(),
-      title: this.newTodoTitle.trim(),
-      reason: this.newTodoReason.trim() || undefined,
+    if (!this.room) return;
+    const newRequest: MaintenainceRequest = {
+      id: 0,
+      tasks: this.newTodoTitle.trim(),
+      reasons: this.newTodoReason ? [this.newTodoReason.trim()] : [],
+      startDate: new Date().toISOString(),
+      notes: '',
       completed: false,
-      priority: this.newTodoPriority,
-      roomNumber: this.room?.number,
-      roomId: this.room?.id,
+      priority:
+        this.newTodoPriority.charAt(0).toUpperCase() +
+        this.newTodoPriority.slice(1),
+      dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      completedAt: '',
+      room: this.room.id,
     };
-
-    this.todos.unshift(newTodo);
-
-    // Update the room's maintenance information
-    if (this.room) {
-      const rooms: Room[] = JSON.parse(localStorage.getItem('rooms') || '[]');
-      const roomIndex = rooms.findIndex((r) => r.id === this.room?.id);
-
-      if (roomIndex !== -1) {
-        // Save the first todo's reason as the maintenance reason
-        if (this.todos.length === 1 && newTodo.reason) {
-          rooms[roomIndex].maintenanceReason = newTodo.reason;
-        }
-
-        // Save all todo titles as maintenance tasks
-        rooms[roomIndex].maintenanceTasks = this.todos.map(
-          (todo) => todo.title
-        );
-
-        localStorage.setItem('rooms', JSON.stringify(rooms));
-      }
-    }
-
-    this.newTodoTitle = '';
-    this.newTodoReason = '';
-    this.saveTodos();
-    this.updateFilteredTodos();
-    this.updateProgress();
+    this.hotelService.createMaintenanceRequest(newRequest).subscribe({
+      next: (created) => {
+        this.fetchMaintenanceRequests();
+        this.newTodoTitle = '';
+        this.newTodoReason = '';
+        this.updateFilteredTodos();
+        this.updateProgress();
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to add maintenance task',
+        });
+      },
+    });
   }
 
-  saveTodos() {
-    if (this.room) {
-      localStorage.setItem(
-        `maintenanceTodos_${this.room.id}`,
-        JSON.stringify(this.todos)
-      );
-    }
+  toggleTodo(todo: Todo) {
+    if (!this.room) return;
+    const updatedRequest: MaintenainceRequest = {
+      id: todo.id,
+      tasks: todo.title,
+      reasons: todo.reason ? [todo.reason] : [],
+      startDate: todo.dueDate
+        ? todo.dueDate.toISOString()
+        : new Date().toISOString(),
+      notes: '',
+      completed: !todo.completed,
+      priority: todo.priority.charAt(0).toUpperCase() + todo.priority.slice(1),
+      dueDate: todo.dueDate
+        ? todo.dueDate.toISOString()
+        : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      completedAt: !todo.completed ? new Date().toISOString() : '',
+      room: this.room.id,
+    };
+    this.hotelService
+      .updateMaintenanceRequest(todo.id, updatedRequest)
+      .subscribe({
+        next: () => {
+          this.fetchMaintenanceRequests();
+          this.updateFilteredTodos();
+          this.updateProgress();
+          if (this.todos.every((t) => t.completed)) {
+            this.maintenanceComplete.emit();
+          }
+        },
+        error: (err) => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to update maintenance task',
+          });
+        },
+      });
   }
 
   updateRoomStatus() {
@@ -237,17 +280,8 @@ export class HotelMaintenancenoteComponent implements OnInit {
     }
   }
 
-  toggleTodo(todo: Todo) {
-    todo.completed = !todo.completed;
-    this.saveTodos();
-    this.updateFilteredTodos();
-    this.updateProgress();
-    this.updateRoomStatus();
-  }
-
   deleteTodo(todo: Todo) {
     this.todos = this.todos.filter((t) => t.id !== todo.id);
-    this.saveTodos();
     this.updateFilteredTodos();
     this.updateProgress();
     this.updateRoomStatus();
@@ -268,7 +302,6 @@ export class HotelMaintenancenoteComponent implements OnInit {
 
   clearCompleted() {
     this.todos = this.todos.filter((todo) => !todo.completed);
-    this.saveTodos();
     this.updateFilteredTodos();
     this.updateProgress();
   }

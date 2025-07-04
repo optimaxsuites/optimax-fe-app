@@ -6,8 +6,8 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
   styleUrls: ['./close-register-modal.component.scss'],
 })
 export class CloseRegisterModalComponent {
-  @Input() openingAmount: number = 0; // Opening balance passed from parent
-   @Input() closeAmount: number | null = null; // User input for close amount
+  @Input() openingAmount: number = 0; 
+   @Input() closeAmount: number | null = null; 
   @Output() finalizeRegisterEvent = new EventEmitter<any>();
   @Output() closeModalEvent = new EventEmitter<void>();
 
