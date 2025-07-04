@@ -25,17 +25,21 @@ export class MarketplaceService {
 
   registerApp(data: any): Observable<any> {
     return this.http
-        .post<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/appregister", data)
+        .post<any>(this.getBaseApiUrl() + "/x/api/v2/us/modules", data)
         .pipe(catchError(this.handleError));
   }
 
   getRegisteredApp(): Observable<any> {
     return this.http
-        .get<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/applist")
+        .get<any>(this.getBaseApiUrl() + "/x/api/v2/us/modules")
         .pipe(catchError(this.handleError));
   }
 
-
+  registerSubApp(data: any): Observable<any> {
+    return this.http
+        .post<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/appregister", data)
+        .pipe(catchError(this.handleError));
+  }
 
 
   private getBaseApiUrl(): string {

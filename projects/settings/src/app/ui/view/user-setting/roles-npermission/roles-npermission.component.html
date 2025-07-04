@@ -61,19 +61,24 @@
                 @for(permissionKey of Object.keys(role.permissions[moduleKey]); track permissionKey) {
                   <tr class="border-t-4 border-transparent"> 
                     <td class="border border-gray-300 px-4 py-2 capitalize">{{ permissionKey }}</td>
+                  
                     <td class="border border-gray-300 px-4 py-2 text-center">
-                      <input type="checkbox" [checked]="role.permissions[moduleKey][permissionKey].canView" [disabled]="!role.isEditing" class="disabled:accent-customGreen"/>
+                      <input type="checkbox" [(ngModel)]="role.permissions[moduleKey][permissionKey].canView" [disabled]="!role.isEditing" />
                     </td>
+                  
                     <td class="border border-gray-300 px-4 py-2 text-center">
-                      <input type="checkbox" [checked]="role.permissions[moduleKey][permissionKey].canEdit" [disabled]="!role.isEditing" />
+                      <input type="checkbox" [(ngModel)]="role.permissions[moduleKey][permissionKey].canEdit" [disabled]="!role.isEditing" />
                     </td>
+                  
                     <td class="border border-gray-300 px-4 py-2 text-center">
-                      <input type="checkbox" [checked]="role.permissions[moduleKey][permissionKey].canDelete" [disabled]="!role.isEditing" />
+                      <input type="checkbox" [(ngModel)]="role.permissions[moduleKey][permissionKey].canDelete" [disabled]="!role.isEditing" />
                     </td>
+                  
                     <td class="border border-gray-300 px-4 py-2 text-center">
-                      <input type="checkbox" [checked]="role.permissions[moduleKey][permissionKey].canCreate" [disabled]="!role.isEditing" />
+                      <input type="checkbox" [(ngModel)]="role.permissions[moduleKey][permissionKey].canCreate" [disabled]="!role.isEditing" />
                     </td>
                   </tr>
+                  
                 }
               }
             </tbody>
@@ -103,11 +108,11 @@
     </div>
 
     <mat-accordion class="">
-      @for( module of modules; track module.name){
+      @for( module of modules; track module.title){
         <mat-expansion-panel #panel>
           <mat-expansion-panel-header>
             <mat-panel-title class="capitalize">
-              {{ module.name }}
+              {{ module.title }}
             </mat-panel-title>
             <mat-panel-description class="action-buttons p-3">
               <button class="p-3 rounded-xl" >
@@ -129,19 +134,19 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let form of module.forms">
-            <td class="border border-gray-300 px-4 py-2 capitalize">{{ form }}</td>
+          <tr *ngFor="let form of module.appRegister">
+            <td class="border border-gray-300 px-4 py-2 capitalize">{{ form.appName }}</td>
             <td class="border border-gray-300 px-4 py-2 text-center">
-              <input type="checkbox" [(ngModel)]="newRole.permissions[module.name][form].canView" />
+              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].canView" />
             </td>
             <td class="border border-gray-300 px-4 py-2 text-center">
-              <input type="checkbox" [(ngModel)]="newRole.permissions[module.name][form].canEdit" />
+              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].canEdit" />
             </td>
             <td class="border border-gray-300 px-4 py-2 text-center">
-              <input type="checkbox" [(ngModel)]="newRole.permissions[module.name][form].canDelete" />
+              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].canDelete" />
             </td>
             <td class="border border-gray-300 px-4 py-2 text-center">
-              <input type="checkbox" [(ngModel)]="newRole.permissions[module.name][form].canCreate" />
+              <input type="checkbox" [(ngModel)]="newRole.permissions[module.title][form.appName].canCreate" />
             </td>
           </tr>
         </tbody>

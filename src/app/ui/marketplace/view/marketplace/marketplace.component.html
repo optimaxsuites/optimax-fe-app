@@ -48,7 +48,11 @@
         <p-inputGroup class='flex items-center gap-2 w-full'>
 
             <input pInputText id="username" class="editInput w-full" (keyup.enter)="unlockModule()" [(ngModel)]='key' autocomplete="off" />
-            <p-inputGroupAddon (click)="unlockModule()" class="cursor-pointer"> <i class="fa-solid fa-arrow-right text-xl"></i> </p-inputGroupAddon>
+            <p-inputGroupAddon (click)="unlockModule()" class="cursor-pointer">
+              <i *ngIf="!loading" class="fa-solid fa-arrow-right text-xl"></i>
+              <i *ngIf="loading" class="fas fa-spinner fa-spin text-xl"></i>
+            </p-inputGroupAddon>
+            
 
         </p-inputGroup>
     </div>

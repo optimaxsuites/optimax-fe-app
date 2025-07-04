@@ -17,195 +17,362 @@ export class MenuItemsService {
     },
     {
       label: 'Sales',
-      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      code: 'SALES',
       route: this.navigationLink.getLink('salesLink'),
       icon: 'fas fa-chart-line',
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      description: 'The Sales module of OptimaXSuites enables businesses to manage and track customer sales activities, revenue generation, and sales performance analytics.',
+      shortDescription: 'Track customer sales, revenue, and performance metrics.',
       locked: true,
       active: false
-
-      // submenu: [
-      //   { label: 'Quotation', , roles: ['ROLE_USER'], icon: 'pi pi-file' },
-      //   // { label: 'Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
-      //   // { label: 'Proforma Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
-      //   // { label: 'Dispatch Note', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
-      // ],
-    },
+    },    
     {
       label: 'Purchase',
-      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      code: 'PURCHASE',
       route: this.navigationLink.getLink('purchaseLink'),
       icon: 'fas fa-shopping-bag',
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      description: 'The Purchase module of OptimaXSuites helps manage purchase orders, supplier interactions, and buying processes efficiently.',
+      shortDescription: 'Manage purchase orders and buying activities.',
       locked: true,
       active: false
-
-      // submenu: [
-      //   // { label: 'Request For Quotation', route: this.navigationLink.getLink('purchaseLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-      //   // { label: 'Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
-      //   // { label: 'Proforma Invoice', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
-      //   // { label: 'Dispatch Note', route: "", roles: ['ROLE_USER'], icon: 'pi pi-file' },
-      // ],
-    },
+    },    
     {
       label: 'Inventory',
-      roles: ['ROLE_USER' , 'ROLE_ADMIN'],
+      code: 'INVENTORY',
       route: this.navigationLink.getLink('inventoryLink'),
       icon: 'fas fa-box',
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      description: 'The Inventory module of OptimaXSuites enables tracking, management, and optimization of stock levels across locations.',
+      shortDescription: 'Track and manage stock levels and inventory flow.',
       locked: true,
       active: false
-
-      // submenu: [
-      //   { label: 'User Management', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER'], icon: 'pi pi-users' },
-      //   { label: 'Product Management', route: "", roles: ['ROLE_USER'], icon: 'pi pi-box' },
-      // ],
-    },
+    },    
     {
       label: 'Procurement',
-      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      code: 'PROCUREMENT',
       route: this.navigationLink.getLink('procurementLink'),
       icon: 'fas fa-shopping-cart',
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      description: 'The Procurement module of OptimaXSuites supports the end-to-end process of requisitions, supplier selection, and order processing.',
+      shortDescription: 'Manage requisitions, supplier selection, and procurement workflows.',
       locked: true,
       active: false
-
-      // submenu: [
-      //   // { label: 'Request For Quotation', route: this.navigationLink.getLink('rfqLink'), roles: ['ROLE_USER'], icon: 'fas fa-file-alt' },
-      //   // { label: 'Settings', route: this.navigationLink.getLink('procurementSettingsLink'), roles: ['ROLE_USER'], icon: 'pi pi-cog' },
-      // ],
-    },
+    },    
     {
       label: 'Accounting',
+      code: 'Accounting',
+      icon: 'fas fa-calculator',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'fas fa-calculator', // PrimeNG icon class
-      submenu: [
-        { label: 'Transactions', route: this.navigationLink.getLink('transactionLink'), roles: ['ROLE_USER'], icon: 'fas fa-file-alt' },
-        { label: 'General ledger', route: this.navigationLink.getLink(''), roles: ['ROLE_USER'], icon: 'fas fa-file-alt' },
-        { label: 'Reconciliation', route:  this.navigationLink.getLink(''), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-        { label: 'Reports', route: this.navigationLink.getLink('accountingReportLink'), roles: ['ROLE_USER'], icon: 'pi pi-file' },
-
-      ],
+      description: 'The Accounting module of OptimaXSuites provides tools for managing financial transactions, ledgers, reconciliations, and generating financial reports.',
+      shortDescription: 'Manage financial records, ledgers, and accounting reports.',
       locked: true,
       active: true,
-      code: "ACCOUNT"
-    },
+      submenu: [
+        {
+          label: 'Transactions',
+          code: 'ACCT_TXN',
+          route: this.navigationLink.getLink('transactionLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-file-alt',
+          description: 'View and manage financial transactions across the organization.'
+        },
+        {
+          label: 'General ledger',
+          code: 'ACCT_GL',
+          route: this.navigationLink.getLink(''), 
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-file-alt',
+          description: 'Maintain and review the general ledger for accurate financial reporting.'
+        },
+        {
+          label: 'Reconciliation',
+          code: 'ACCT_RECON',
+          route: this.navigationLink.getLink(''), 
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-file',
+          description: 'Match financial records with bank statements for reconciliation purposes.'
+        },
+        {
+          label: 'Reports',
+          code: 'ACCT_REPTS',
+          route: this.navigationLink.getLink('accountingReportLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-file',
+          description: 'Generate various financial statements and reports for analysis.'
+        }
+      ]
+    },    
     {
       label: 'Human Resources',
-      roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'fas fa-users',
       code: 'HR',
-      submenu: [
-        { label: 'Employee Management', route: this.navigationLink.getLink('employeeManagementLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-cog' },
-        { label: 'Recruitment', route: this.navigationLink.getLink('recuitmentLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-plus' },
-        { label: 'Performance', route: this.navigationLink.getLink('performanceLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-clock' },
-        { label: 'Payroll', route: this.navigationLink.getLink('payroll'), roles: ['ROLE_USER'], icon: 'fas fa-dollar-sign' },
-        { label: 'Attendance', route: this.navigationLink.getLink('attendanceLink'), roles: ['ROLE_USER'], icon: 'fas fa-calendar-check' },
-        { label: 'Leave', route: this.navigationLink.getLink('leaveLink'), roles: ['ROLE_USER'], icon: 'fas fa-calendar-minus' },
-      ],
+      icon: 'fas fa-users',
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      description: 'The Human Resources module of OptimaXSuites enables organizations to efficiently manage the employee lifecycle, from recruitment to payroll, leave, and performance tracking.',
+      shortDescription: 'Manage employee data, recruitment, payroll, and performance.',
       locked: true,
-      active: true
-
-    },
-   
+      active: true,
+      submenu: [
+        {
+          label: 'Employee Management',
+          code: 'HR_EMP_MG',
+          route: this.navigationLink.getLink('employeeManagementLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-user-cog',
+          description: 'Manage employee profiles, job roles, departments, and organizational structure.'
+        },
+        {
+          label: 'Recruitment',
+          code: 'HR_RECRUIT',
+          route: this.navigationLink.getLink('recuitmentLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-user-plus',
+          description: 'Handle job postings, candidate applications, interview schedules, and hiring decisions.'
+        },
+        {
+          label: 'Performance',
+          code: 'HR_PERF',
+          route: this.navigationLink.getLink('performanceLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-user-clock',
+          description: 'Monitor employee performance, set goals, and conduct evaluations.'
+        },
+        {
+          label: 'Payroll',
+          code: 'HR_PAYROLL',
+          route: this.navigationLink.getLink('payroll'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-dollar-sign',
+          description: 'Process employee salaries, bonuses, deductions, and payslips.'
+        },
+        {
+          label: 'Attendance',
+          code: 'HR_ATTEND',
+          route: this.navigationLink.getLink('attendanceLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-calendar-check',
+          description: 'Track employee attendance, working hours, and absenteeism.'
+        },
+        {
+          label: 'Leave',
+          code: 'HR_LEAVE',
+          route: this.navigationLink.getLink('leaveLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-calendar-minus',
+          description: 'Manage leave requests, approvals, balances, and policies.'
+        }
+      ]
+    },    
     {
       label: 'Office Productivity',
-      route: this.navigationLink.getLink('productivityLink'),
       code: 'OP',
-
-      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      route: this.navigationLink.getLink('productivityLink'),
       icon: 'fas fa-file-alt',
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      description: 'The Office Productivity module of OptimaXSuites provides tools and integrations to enhance daily work efficiency, document collaboration, scheduling, and internal communication.',
+      shortDescription: 'Boost team efficiency with tools for documents, scheduling, and collaboration.',
       locked: true,
       active: true
-
-    },
+    },    
     {
-      label: 'POS',
-      roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      route: this.navigationLink.getLink('posLink'),
+      label: 'Point of Sale (POS)',
+      code: 'POS',
       icon: 'fas fa-cash-register',
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      description: 'The POS (Point of Sale) module of OptimaXSuites provides a comprehensive system for managing retail operations including products, inventory, sales, and customer checkout.',
+      shortDescription: 'Manage retail sales, inventory, checkout, and reporting.',
+      route: this.navigationLink.getLink('posLink'),
       locked: true,
       active: true,
-      code: 'POS',
-
       submenu: [
-        { label: 'Product', route: this.navigationLink.getLink('productLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-box' },
-        { label: 'Inventory', route: this.navigationLink.getLink('inventoryLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-warehouse' },
-        { label: 'Ingredients', route: this.navigationLink.getLink('ingredientLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-warehouse' },
-        { label: 'Refunds', route: this.navigationLink.getLink('refundLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-receipt' },
-        { label: 'Sales', route: this.navigationLink.getLink('salesLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-receipt' },
-        { label: 'Checkout',roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-credit-card', route: this.navigationLink.getLink('checkoutLink'), },
-        { label: 'Report', route: this.navigationLink.getLink('reportLink'), roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'fa-solid fa-chart-pie' },
-      ],
-    },
+        {
+          label: 'Product',
+          code: 'POS_PDT',
+          route: this.navigationLink.getLink('productLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-box',
+          description: 'Create, update, and categorize products available for sale.'
+        },
+        {
+          label: 'Inventory',
+          code: 'POS_INV',
+          route: this.navigationLink.getLink('inventoryLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-warehouse',
+          description: 'Manage stock levels, warehouse items, and inventory adjustments.'
+        },
+        {
+          label: 'Ingredients',
+          code: 'POS_ING',
+          route: this.navigationLink.getLink('ingredientLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-warehouse',
+          description: 'Track and manage raw materials or ingredients used in product creation.'
+        },
+        {
+          label: 'Refunds',
+          code: 'POS_RFND',
+          route: this.navigationLink.getLink('refundLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-receipt',
+          description: 'Handle refund transactions and maintain refund history.'
+        },
+        {
+          label: 'Sales',
+          code: 'POS_SALES',
+          route: this.navigationLink.getLink('salesLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-receipt',
+          description: 'View and manage sales records, transactions, and revenue data.'
+        },
+        {
+          label: 'Checkout',
+          code: 'POS_CHKOUT',
+          route: this.navigationLink.getLink('checkoutLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-credit-card',
+          description: 'Process payments and manage the customer checkout flow.'
+        },
+        {
+          label: 'Report',
+          code: 'POS_REPRT',
+          route: this.navigationLink.getLink('reportLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'fa-solid fa-chart-pie',
+          description: 'Generate sales and inventory reports for business insights and analytics.'
+        }
+      ]
+    },    
     {
       label: 'Hospitality',
-      roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'fas fa-users',
       code: 'HOP',
-      submenu: [
-        { label: 'Room', route: this.navigationLink.getLink('roomLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-cog' },
-        { label: 'Shortlets', route: this.navigationLink.getLink('shortletLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-plus' },
-        { label: 'Services', route: this.navigationLink.getLink('serviceLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-clock' },
-        { label: 'Rooms Checkout',roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-credit-card', route: this.navigationLink.getLink('roomsCheckoutLink'), },
-        { label: 'Services Checkout',roles: ['ROLE_USER', 'ROLE_ADMIN'], icon: 'pi pi-credit-card', route: this.navigationLink.getLink('servicesCheckoutLink'), },
-
-
-      ],
-      locked: true,
-      active: true
-
-    },
-    {
-      label: 'CRM',
+      icon: 'fas fa-users',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      route: this.navigationLink.getLink('crmLink'),
-      icon: 'fas fa-user-friends',
-      locked: true,
-      active: false
-
-      // submenu: [
-      //   // { label: 'Contacts', route: this.navigationLink.getLink('crmLink'), roles: ['ROLE_USER'], icon: 'pi pi-user' },
-      //   // { label: 'Opportunities', route: "", roles: ['ROLE_USER'], icon: 'pi pi-briefcase' },
-      // ],
-    },
-    {
-      label: 'Expense',
-      roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      route: this.navigationLink.getLink('expensesLink'),
-      icon: 'fas fa-money-bill-wave',
+      description: 'The Hospitality module of OptimaXSuites provides tools to manage room bookings, shortlet accommodations, and additional service offerings, including their checkout processes.',
+      shortDescription: 'Manage room bookings, shortlets, and hospitality services.',
       locked: true,
       active: true,
-      code: 'expense',
-
-
       submenu: [
-        { label: 'Expenses', route: this.navigationLink.getLink('expensesLink'), roles: ['ROLE_USER'], icon: 'pi pi-dollar' },
-        { label: 'Reimbursements', route: this.navigationLink.getLink('reimbursementLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
-        { label: 'Advance', route: this.navigationLink.getLink('advanceLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
-        { label: 'Reports', route: this.navigationLink.getLink('expenseReportLink'), roles: ['ROLE_USER'], icon: 'pi pi-credit-card' },
-
-      ],
-    },
+        {
+          label: 'Room',
+          code: 'HOP_ROOM',
+          route: this.navigationLink.getLink('roomLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-user-cog',
+          description: 'Manage hotel room types, availability, rates, and reservations.'
+        },
+        {
+          label: 'Shortlets',
+          code: 'HOP_SHTLT',
+          route: this.navigationLink.getLink('shortletLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-user-plus',
+          description: 'Handle listings, bookings, and operations for short-term rental accommodations.'
+        },
+        {
+          label: 'Services',
+          code: 'HOP_SERV',
+          route: this.navigationLink.getLink('serviceLink'),
+          roles: ['ROLE_USER'],
+          icon: 'fas fa-user-clock',
+          description: 'Manage add-on services such as laundry, room service, or extra amenities.'
+        },
+        {
+          label: 'Rooms Checkout',
+          code: 'HOP_RM_CHK',
+          route: this.navigationLink.getLink('roomsCheckoutLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-credit-card',
+          description: 'Handle billing and checkout process for room guests.'
+        },
+        {
+          label: 'Services Checkout',
+          code: 'HOP_SR_CHK',
+          route: this.navigationLink.getLink('servicesCheckoutLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-credit-card',
+          description: 'Process payments and billing for hospitality service usage.'
+        }
+      ]
+    },    
     {
-      label: 'Tender',
-      route: this.navigationLink.getLink('tenderLink'),
-
+      label: 'CRM',
+      code: 'CRM',
+      icon: 'fas fa-user-friends',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'fas fa-file-alt',
+      description: 'The CRM module of OptimaXSuites helps businesses manage customer interactions, relationships, and engagement strategies in one centralized place.',
+      shortDescription: 'Track and manage customer interactions and relationships.',
+      route: this.navigationLink.getLink('crmLink'),
       locked: true,
       active: false
-
-    },
+    },    
+    {
+      label: 'Expense',
+      code: 'EXPENSE',
+      icon: 'fas fa-money-bill-wave',
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      description: 'The Expense module of OptimaXSuites enables businesses to track and manage all types of financial outflows including reimbursements, cash advances, and expense reporting.',
+      shortDescription: 'Track and manage expenses, reimbursements, and advances.',
+      route: this.navigationLink.getLink('expensesLink'),
+      locked: true,
+      active: true,
+      submenu: [
+        {
+          label: 'Expenses',
+          code: 'EXP_EXP',
+          route: this.navigationLink.getLink('expensesLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-dollar',
+          description: 'Log and manage day-to-day operational and business-related expenses.'
+        },
+        {
+          label: 'Reimbursements',
+          code: 'EXP_RMBRSE',
+          route: this.navigationLink.getLink('reimbursementLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-credit-card',
+          description: 'Submit and approve employee reimbursements for incurred costs.'
+        },
+        {
+          label: 'Advance',
+          code: 'EXP_ADV',
+          route: this.navigationLink.getLink('advanceLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-credit-card',
+          description: 'Manage advance payment requests and track their utilization.'
+        },
+        {
+          label: 'Reports',
+          code: 'EXP_RPT',
+          route: this.navigationLink.getLink('expenseReportLink'),
+          roles: ['ROLE_USER'],
+          icon: 'pi pi-credit-card',
+          description: 'Generate financial reports based on expense data and categories.'
+        }
+      ]
+    },    
     {
       label: 'Vendor',
-      roles: ['ROLE_USER', 'ROLE_ADMIN'],
-      icon: 'fas fa-user-tie',
+      code: 'VENDOR',
       route: this.navigationLink.getLink('vendorLink'),
+      icon: 'fas fa-user-tie',
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      description: 'The Vendor module of OptimaXSuites helps manage supplier records, performance, contracts, and compliance documentation.',
+      shortDescription: 'Track and manage supplier details, contracts, and compliance.',
       locked: true,
       active: false
-
-      // submenu: [
-      //   { label: 'Registration', route: this.navigationLink.getLink('vendorLink'), roles: ['ROLE_USER'], icon: 'fas fa-user-plus' },
-      //   { label: 'Incoming RFQ ', route: this.navigationLink.getLink('vendorRfqLink'), roles: ['ROLE_USER'], icon: 'fas fa-inbox' },
-      // ],
-    },
+    },    
+    {
+      label: 'Tender',
+      code: 'TENDER',
+      route: this.navigationLink.getLink('tenderLink'),
+      icon: 'fas fa-file-alt',
+      roles: ['ROLE_USER', 'ROLE_ADMIN'],
+      description: 'The Tender module of OptimaXSuites allows organizations to manage procurement notices, bids, and evaluations in a centralized system.',
+      shortDescription: 'Manage procurement notices, bids, and evaluation processes.',
+      locked: true,
+      active: false
+    },    
     {
       label: 'Settings',
       route: this.navigationLink.getLink('settingsLink'),
@@ -306,7 +473,7 @@ export class MenuItemsService {
 
     },
     {
-      label: 'POS',
+      label: 'Point of Sale (POS)',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('posSettings'),
 
@@ -409,16 +576,7 @@ export class MenuItemsService {
   constructor(public navigationLink: NavigationLinksService, private appRegisterService: AppRegisterServiceService) {
     const token = sessionStorage.getItem('Token');
     if (token) {
-      this.appRegisterService.getRegisteredApp().subscribe({
-        next: (app: any) => {
-          this.appList = app;
-          this.loadUnlockedModules(); 
-          this.loadUnlockedSettingsModules();
-        },
-        error: (error: any) => {
-          console.error('Error fetching app data:', error);
-        }
-      });
+     this.getRegisterApps()
     } else {
       console.log('No token yet — skipping app registration fetch');
     }
@@ -426,6 +584,18 @@ export class MenuItemsService {
    
   }
   
+  getRegisterApps(){
+    this.appRegisterService.getRegisteredApp().subscribe({
+      next: (app: any) => {
+        this.appList = app;
+        this.loadUnlockedModules(); 
+        this.loadUnlockedSettingsModules();
+      },
+      error: (error: any) => {
+        console.error('Error fetching app data:', error);
+      }
+    });
+  }
 
   getMenuItemsForRole(role: string): MenuItem[] {
     return this.menuItems.filter(item => item.roles.includes(role));
@@ -457,14 +627,14 @@ export class MenuItemsService {
   }
 
   loadUnlockedModules() {
-    const unlockedRoutes = this.appList.map((app : {description : string}) => app.description)
+    const unlockedRoutes = this.appList.map((app : {name : string}) => app.name)
     // const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
     console.log(unlockedRoutes)
     
     let unlockedCount = 0;
   
     this.menuItems.forEach(module => {
-      if (unlockedRoutes.includes(module.label)) {
+      if (unlockedRoutes.includes(module.code || 'null')) {
         console.log(true)
         module.locked = false;
   
@@ -486,14 +656,14 @@ export class MenuItemsService {
 
   loadUnlockedSettingsModules() {
     // const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
-    const unlockedRoutes = this.appList.map((app : {description : string}) => app.description)
+    const unlockedRoutes = this.appList.map((app : {title : string}) => app.title)
     console.log(unlockedRoutes)
   
     this.settingsMenuItems.forEach((module) => {
       if (module.label === 'General Settings' || module.label === 'User and Roles Management') {
         module.locked = false; 
       } else {
-        module.locked = !unlockedRoutes.includes(module.label);
+        module.locked = !unlockedRoutes.includes(module.label || 'null');
       }
     });
 
@@ -504,16 +674,15 @@ export class MenuItemsService {
   
   getUnlockedModules(): MenuItem[] {
     let unlockedModules = this.menuItems.filter(module => !module.locked || module.label === 'Dashboard');
-  
-    const hasUnlockedModule = unlockedModules.some(module => module.label !== 'Dashboard');
-  
-    if (hasUnlockedModule) {
+
+    const hasUnlocked = unlockedModules.some(module => module.label !== 'Dashboard');
+    if (hasUnlocked) {
       unlockedModules = unlockedModules.map(module =>
         module.label === 'Settings' ? { ...module, locked: false } : module
       );
     }
   
-    return unlockedModules;
+    return [...unlockedModules];
    
   }
 

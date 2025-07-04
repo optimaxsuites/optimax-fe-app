@@ -22,7 +22,7 @@ export class AppRegisterServiceService {
 
   getRegisteredApp(): Observable<any> {
     return this.http
-        .get<any>(this.getBaseApiUrl() + "/x/api/v2/us/ur/applist")
+        .get<any>(this.getBaseApiUrl() + "/x/api/v2/us/modules")
         .pipe(catchError(this.handleError));
   }
 

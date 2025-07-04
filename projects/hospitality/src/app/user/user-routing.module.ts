@@ -26,7 +26,7 @@ const routes: Routes = [
   },
 
   {
-    path: 'user/bookings/:uuid',
+    path: 'bookings/:uuid',
     component: HomeComponent,
   },
 
