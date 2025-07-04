@@ -8,6 +8,7 @@ import { IncomeStatementComponent } from './ui/view/reports/income-statement/inc
 import { CashFlowComponent } from './ui/view/reports/cash-flow/cash-flow.component';
 import { TaxSummaryComponent } from './ui/view/reports/tax-summary/tax-summary.component';
 import { ReportTabsComponent } from './ui/view/reports/report-tabs/report-tabs.component';
+import { ReconcillationComponent } from './ui/view/reconcillation/reconcillation.component';
 
 
 const routes: Routes = [
@@ -21,14 +22,20 @@ const routes: Routes = [
       component: AccountingPageComponent,
     },
     {
-      path: 'admin/quotation-form',
-      component: QuotationModalComponent,
+      path: 'reconcillation/:uuid',
+      component: ReconcillationComponent,
     },
     {
       path: 'admin/quotation-form/:id',
       component: QuotationModalComponent,
     },
 
+  { path: 'reports', component: AccountingReportsComponent },
+  { path: 'reports/balance-sheet', component: BalanceSheetComponent },
+  { path: 'reports/income-statement', component: IncomeStatementComponent },
+  { path: 'reports/cash-flow', component: CashFlowComponent },
+  { path: 'reports/tax-summary', component: TaxSummaryComponent },
+  // ...other routes
      { 
       path: 'reports/:uuid',
        component: ReportTabsComponent 

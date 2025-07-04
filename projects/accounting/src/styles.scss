@@ -77,9 +77,6 @@ h6 {
 }
 
 @media screen and (min-width: 1200px) {
-  html {
-    // font-size: 16px;
-  }
 }
 
 .p-toast {
@@ -187,4 +184,14 @@ h6 {
 }
 .btn-navigate:hover {
   background-color: var(--blue-green-hover);
+}
+
+p-button, p-splitButton, p-calendar  
+{
+    text-wrap: nowrap;
+
+    // .p-button {
+    //     background:#2E6276;
+    //     border: 1px solid #2E6276;
+    // }
 }

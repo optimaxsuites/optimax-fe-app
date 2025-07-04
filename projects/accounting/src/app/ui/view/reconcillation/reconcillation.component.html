@@ -1,0 +1,147 @@
+<div class="reconciliation-container">
+    <!-- Main Content -->
+    <div class="main-content" [class.sidebar-collapsed]="sidebarCollapsed">
+        <div class="header">
+            <h1 class="title" style="color: black;">Reconciliation</h1>
+
+            
+        <button class="sidebar-toggle" (click)="toggleSidebar()">
+            <i [class]="sidebarCollapsed ? 'pi pi-chevron-left' : 'pi pi-chevron-right'"></i>
+        </button>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <div class="form-grid">
+                <!-- Bank Account Selector -->
+                <div class="form-group">
+                    <label class="form-label">Bank Account</label>
+                    <p-dropdown [(ngModel)]="selectedAccount" [options]="accounts" optionLabel="name"
+                        placeholder="Select Account" class="dropdown-full">
+                    </p-dropdown>
+                </div>
+
+                <!-- Date Range -->
+                <div class="date-range-group">
+                    <div class="date-picker">
+                        <label class="form-label">From</label>
+                        <p-calendar [(ngModel)]="fromDate" [showIcon]="true" inputId="fromDate" class="date-input">
+                        </p-calendar>
+                    </div>
+                    <div class="date-picker">
+                        <label class="form-label">To</label>
+                        <p-calendar [(ngModel)]="toDate" [showIcon]="true" inputId="toDate" class="date-input">
+                        </p-calendar>
+                    </div>
+
+                    <div class="fetch-btn">
+                        <p-button label="Fetch Data"  icon="pi pi-check" [loading]="loadingItem" (click)="load()" />
+                    </div>
+                </div>
+
+                <!-- Status Badge -->
+                <div class="status-group">
+                    <span class="status-label">Status:</span>
+                    <p-tag [value]="status" [severity]="getStatusSeverity(status)" class="status-badge">
+                    </p-tag>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <p-splitButton label="Save" icon="pi pi-save"
+                        (onClick)="loadTransactions()" [model]="items" styleClass="save-button">
+                    </p-splitButton>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transaction Tables -->
+        <div class="transaction-tables">
+            <p-accordion [multiple]="true" [activeIndex]="[0]">
+                <p-accordionTab header="Bank Transactions (from Mono)" [selected]="true">
+                    <p-table [value]="bankTransactions" [loading]="loading">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Debit</th>
+                                <th>Credit</th>
+                                <th>Status</th>
+                                <th>Match</th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-transaction>
+                            <tr>
+                                <td>{{transaction.date}}</td>
+                                <td>{{transaction.description}}</td>
+                                <td>{{transaction.debit | currency:'NGN':'symbol-narrow'}}</td>
+                                <td>{{transaction.credit | currency:'NGN':'symbol-narrow'}}</td>
+                                <td>
+                                    <p-tag [value]="transaction.status" 
+                                           [severity]="transaction.status === 'Matched' ? 'success' : 'warning'">
+                                    </p-tag>
+                                </td>
+                                <td>
+                                    <button *ngIf="transaction.status !== 'Matched'" pButton pRipple 
+                                            icon="pi pi-link" class="p-button-sm p-button-outlined"
+                                            (click)="matchTransaction(transaction)"></button>
+                                    <i *ngIf="transaction.status === 'Matched'" class="pi pi-check"></i>
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </p-accordionTab>
+
+                <p-accordionTab header="Optimax Recorded Transactions">
+                    <p-table [value]="erpTransactions" [loading]="loading">
+                        <ng-template pTemplate="header">
+                            <tr>
+                                <th>Date</th>
+                                <th>Reference</th>
+                                <th>Description</th>
+                                <th>Debit</th>
+                                <th>Credit</th>
+                                <th>Account</th>
+                            </tr>
+                        </ng-template>
+                        <ng-template pTemplate="body" let-transaction>
+                            <tr>
+                                <td>{{transaction.date}}</td>
+                                <td>{{transaction.reference}}</td>
+                                <td>{{transaction.description}}</td>
+                                <td>{{transaction.debit | currency:'NGN':'symbol-narrow'}}</td>
+                                <td>{{transaction.credit | currency:'NGN':'symbol-narrow'}}</td>
+                                <td>{{transaction.account}}</td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                </p-accordionTab>
+            </p-accordion>
+        </div>
+    </div>
+
+      <!-- Sidebar -->
+    <div class="sidebar" [class.collapsed]="sidebarCollapsed">
+        
+        <div class="sidebar-content">
+            <h3>Reconciliation Summary</h3>
+            <div class="summary-item">
+                <span>Total Bank Transactions:</span>
+                <strong>15</strong>
+            </div>
+            <div class="summary-item">
+                <span>Matched:</span>
+                <strong class="matched">12 (80%)</strong>
+            </div>
+            <div class="summary-item">
+                <span>Unmatched:</span>
+                <strong class="unmatched">3</strong>
+            </div>
+            <div class="summary-item">
+                <span>Difference:</span>
+                <strong [class.discrepancy]="difference !== '₦0.00'">₦0.00</strong>
+            </div>
+        </div>
+    </div>
+
+</div>
