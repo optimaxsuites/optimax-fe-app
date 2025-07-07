@@ -5,22 +5,18 @@
       <div class="date-controls">
         <button class="date-btn">
           <i class="fa fa-calendar"></i>
-          {{ currentDate | date:'MMM d - MMM d, y' }}
+          {{ currentDate | date:'MMM yyyy' }}
         </button>
         <div class="nav-buttons">
-          <button class="nav-btn" (click)="previousMonth()" [disabled]="currentDate.getMonth() === 0">
+          <button class="nav-btn" (click)="previousMonth()">
             <i class="fa fa-chevron-left"></i>
           </button>
-          <button class="nav-btn" (click)="nextMonth()" [disabled]="currentDate.getMonth() === 11">
+          <button class="nav-btn" (click)="nextMonth()">
             <i class="fa fa-chevron-right"></i>
           </button>
         </div>
       </div>
       <div class="action-buttons">
-        <button class="action-btn" (click)="openFilterModal()">
-          <i class="fa fa-filter"></i>
-        </button>
-
         <button class="action-btn" (click)="toggleArchivesModal()">
           <i class="fa fa-archive"></i>
         </button>
@@ -30,90 +26,44 @@
         <button class="action-btn" (click)="exportToPDF()">
           <i class="fa fa-file-pdf"></i>
         </button>
-        <!-- <button class="action-btn" (click)="exportToCSV()">
+        <button class="action-btn" (click)="exportToCSV()">
           <i class="fa fa-file-excel"></i>
-        </button> -->
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Filter Modal -->
-  <div class="modal-overlay" *ngIf="showFilterModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Filter Options</h3>
-        <button class="close-btn" (click)="closeFilterModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="section">
-          <label>Report Type</label><br />
-          <input type="radio" id="actual" name="report" [(ngModel)]="reportType" value="Actual" />
-          <label for="actual">Actual</label><br />
-          <input type="radio" id="actual-budget" name="report" [(ngModel)]="reportType" value="Actual vs Budget" />
-          <label for="actual-budget">Actual vs Budget</label><br />
-          <input type="radio" id="actual-previous" name="report" [(ngModel)]="reportType" value="Actual vs Previous Year" />
-          <label for="actual-previous">Actual vs Previous Year</label>
-        </div>
-
-        <div class="section">
-          <label for="entity">Entity</label><br />
-          <select id="entity" [(ngModel)]="entity">
-            <option>All Locations</option>
-            <option>Location 1</option>
-            <option>Location 2</option>
-            <option>Location 3</option>
-          </select>
-        </div>
-
-        <div class="section">
-          <label for="period">Period</label><br />
-          <select id="period" [(ngModel)]="period">
-            <option>This Month</option>
-            <option>Last Month</option>
-            <option>This Quarter</option>
-            <option>This Year</option>
-            <option>Custom Range</option>
-          </select>
-        </div>
-
-        <div class="section">
-          <label>Additional Options</label><br />
-          <input type="checkbox" id="percentages" [(ngModel)]="showPercentages" />
-          <label for="percentages">Show Percentages</label><br />
-          <input type="checkbox" id="variance" [(ngModel)]="showVariance" />
-          <label for="variance">Show Variance</label><br />
-          <input type="checkbox" id="forecasts" [(ngModel)]="includeForecasts" />
-          <label for="forecasts">Include Forecasts</label>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button class="cancel-btn" (click)="closeFilterModal()">Cancel</button>
-        <button class="apply-btn" (click)="applyFilters()">Apply Filters</button>
-      </div>
-    </div>
-  </div>
+  <!-- Filter Modal - Now handled by separate component -->
+  <app-income-statement-filter
+    [initialFilters]="activeFilters"
+    (filtersApplied)="onFiltersApplied($event)">
+  </app-income-statement-filter>
 
   <!-- Comments Modal -->
   <div class="modal-overlay" *ngIf="showCommentsModal">
     <div class="modal">
       <div class="modal-header">
         <h3>Comments</h3>
-        <button class="close-btn" (click)="toggleCommentsModal()">&times;</button>
+        <button class="close-btn"
+          (click)="toggleCommentsModal()">&times;</button>
       </div>
       <div class="modal-body">
         <div class="comment-list">
           <div class="comment-item" *ngFor="let comment of comments">
             <div class="comment-header">
               <span class="comment-author">{{comment.author}}</span>
-              <span class="comment-date">{{comment.timestamp | date:'short'}}</span>
+              <span class="comment-date">{{comment.timestamp |
+                date:'short'}}</span>
             </div>
             <div class="comment-text">{{comment.text}}</div>
           </div>
         </div>
         <div class="comment-input">
           <textarea placeholder="Add your comment..." #newComment></textarea>
-          <button class="btn btn-primary" (click)="addComment(newComment.value); newComment.value=''">Add Comment</button>
+          <button class="btn btn-primary"
+            (click)="addComment(newComment.value); newComment.value=''">
+            Add Comment
+          </button>
         </div>
       </div>
     </div>
@@ -124,7 +74,8 @@
     <div class="modal">
       <div class="modal-header">
         <h3>Saved Statements</h3>
-        <button class="close-btn" (click)="toggleArchivesModal()">&times;</button>
+        <button class="close-btn"
+          (click)="toggleArchivesModal()">&times;</button>
       </div>
       <div class="modal-body">
         <div class="saved-statement" *ngIf="isSaved">
@@ -133,7 +84,7 @@
             <button class="btn btn-sm btn-secondary">Load</button>
           </div>
           <div class="saved-statement-details">
-            <span>Period: {{period}}</span>
+            <span>Period: {{activeFilters.period}}</span>
             <span>Revenue: {{formatCurrency(totalRevenue)}}</span>
             <span>Net Income: {{formatCurrency(netIncome)}}</span>
           </div>
@@ -147,67 +98,87 @@
 
   <!-- Metrics Cards -->
   <div class="metrics-grid">
-    <div class="metric-card" [ngClass]="revenueGrowth >= 0 ? 'positive' : 'negative'">
+    <div class="metric-card"
+      [ngClass]="revenueGrowth >= 0 ? 'positive' : 'negative'">
       <div class="metric-header">
         <h3>Total Revenue</h3>
-        <i class="ri-arrow-up-line trend-up" *ngIf="revenueGrowth >= 0"></i>
-        <i class="ri-arrow-down-line trend-down" *ngIf="revenueGrowth < 0"></i>
+        <i class="fa"
+          [ngClass]="revenueGrowth >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'"></i>
       </div>
       <div class="metric-value">{{ formatCurrency(totalRevenue) }}</div>
       <div class="metric-comparison">
-        {{ revenueGrowth >= 0 ? '▲' : '▼' }}{{ formatPercentage(Math.abs(revenueGrowth)) }} (YoY)
-        <span *ngIf="reportType === 'Actual vs Budget'">
-          <br>{{ revenueVariance >= 0 ? '▲' : '▼' }}{{ formatCurrency(Math.abs(revenueVariance)) }} vs Budget
+        {{ revenueGrowth >= 0 ? '▲' : '▼' }}{{
+        formatPercentage(Math.abs(revenueGrowth)) }}
+        <span *ngIf="activeFilters.reportType === 'Actual vs Budget'">
+          <br>{{ revenueVariance >= 0 ? '▲' : '▼' }}{{
+          formatCurrency(Math.abs(revenueVariance)) }} vs Budget
+        </span>
+        <span *ngIf="activeFilters.reportType === 'Actual vs Previous Year'">
+          <br>{{ revenueYearOverYearGrowth >= 0 ? '▲' : '▼' }}{{
+          formatPercentage(Math.abs(revenueYearOverYearGrowth)) }} YoY
         </span>
       </div>
     </div>
 
-    <div class="metric-card" [ngClass]="cogsGrowth <= 0 ? 'positive' : 'negative'">
+    <div class="metric-card"
+      [ngClass]="cogsGrowth <= 0 ? 'positive' : 'negative'">
       <div class="metric-header">
         <h3>Cost of Services</h3>
-        <i class="ri-arrow-up-line trend-up" *ngIf="cogsGrowth <= 0"></i>
-        <i class="ri-arrow-down-line trend-down" *ngIf="cogsGrowth > 0"></i>
+        <i class="fa"
+          [ngClass]="cogsGrowth <= 0 ? 'fa-arrow-down' : 'fa-arrow-up'"></i>
       </div>
       <div class="metric-value">{{ formatCurrency(totalCOGS) }}</div>
       <div class="metric-comparison">
-        {{ cogsGrowth <= 0 ? '▼' : '▲' }}{{ formatPercentage(Math.abs(cogsGrowth)) }} (YoY)
-        <span *ngIf="reportType === 'Actual vs Budget'">
-          <br>{{ cogsVariance <= 0 ? '▼' : '▲' }}{{ formatCurrency(Math.abs(cogsVariance)) }} vs Budget
+        {{ cogsGrowth <= 0 ? '▼' : '▲' }}{{
+        formatPercentage(Math.abs(cogsGrowth)) }}
+        <span *ngIf="activeFilters.reportType === 'Actual vs Budget'">
+          <br>{{ cogsVariance <= 0 ? '▼' : '▲' }}{{
+          formatCurrency(Math.abs(cogsVariance)) }} vs Budget
         </span>
       </div>
     </div>
 
-    <div class="metric-card" [ngClass]="grossProfitGrowth >= 0 ? 'positive' : 'negative'">
+    <div class="metric-card"
+      [ngClass]="grossProfitGrowth >= 0 ? 'positive' : 'negative'">
       <div class="metric-header">
         <h3>Gross Profit</h3>
-        <i class="ri-arrow-up-line trend-up" *ngIf="grossProfitGrowth >= 0"></i>
-        <i class="ri-arrow-down-line trend-down" *ngIf="grossProfitGrowth < 0"></i>
+        <i class="fa"
+          [ngClass]="grossProfitGrowth >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'"></i>
       </div>
       <div class="metric-value">{{ formatCurrency(grossProfit) }}</div>
       <div class="metric-comparison">
-        {{ grossProfitGrowth >= 0 ? '▲' : '▼' }}{{ formatPercentage(Math.abs(grossProfitGrowth)) }} (YoY)
-        <span *ngIf="reportType === 'Actual vs Budget'">
-          <br>{{ (grossProfit - budgetGrossProfit) >= 0 ? '▲' : '▼' }}{{ formatCurrency(Math.abs(grossProfit - budgetGrossProfit)) }} vs Budget
+        {{ grossProfitGrowth >= 0 ? '▲' : '▼' }}{{
+        formatPercentage(Math.abs(grossProfitGrowth)) }}
+        <span *ngIf="activeFilters.reportType === 'Actual vs Budget'">
+          <br>{{ (grossProfit - budgetGrossProfit) >= 0 ? '▲' : '▼' }}{{
+          formatCurrency(Math.abs(grossProfit - budgetGrossProfit)) }} vs Budget
         </span>
       </div>
     </div>
 
-    <div class="metric-card" [ngClass]="operatingExpensesGrowth <= 0 ? 'positive' : 'negative'">
+    <div class="metric-card"
+      [ngClass]="operatingExpensesGrowth <= 0 ? 'positive' : 'negative'">
       <div class="metric-header">
         <h3>Operating Expenses</h3>
-        <i class="ri-arrow-up-line trend-up" *ngIf="operatingExpensesGrowth <= 0"></i>
-        <i class="ri-arrow-down-line trend-down" *ngIf="operatingExpensesGrowth > 0"></i>
+        <i class="fa"
+          [ngClass]="operatingExpensesGrowth <= 0 ? 'fa-arrow-down' : 'fa-arrow-up'"></i>
       </div>
-      <div class="metric-value">{{ formatCurrency(totalOperatingExpenses) }}</div>
+      <div class="metric-value">{{ formatCurrency(totalOperatingExpenses)
+        }}</div>
       <div class="metric-comparison">
-        {{ operatingExpensesGrowth <= 0 ? '▼' : '▲' }}{{ formatPercentage(Math.abs(operatingExpensesGrowth)) }} (YoY)
-        <span *ngIf="reportType === 'Actual vs Budget'">
-          <br>{{ operatingExpensesVariance <= 0 ? '▼' : '▲' }}{{ formatCurrency(Math.abs(operatingExpensesVariance)) }} vs Budget
+        {{ operatingExpensesGrowth <= 0 ? '▼' : '▲' }}{{
+        formatPercentage(Math.abs(operatingExpensesGrowth)) }}
+        <span *ngIf="activeFilters.reportType === 'Actual vs Budget'">
+          <br>{{ operatingExpensesVariance <= 0 ? '▼' : '▲' }}{{
+          formatCurrency(Math.abs(operatingExpensesVariance)) }} vs Budget
         </span>
       </div>
     </div>
   </div>
-  
+  <br>
+  <h1 class="main-title">Profit And Loss Statements</h1>
+  <br>
+
   <!-- Statement Card -->
   <div class="statement-card">
     <div class="statement-body">
@@ -217,28 +188,53 @@
         <div class="section-items">
           <div class="section-item" *ngFor="let item of revenueData">
             <span class="item-name">{{ item.name }}</span>
-            <span class="item-value">{{ formatCurrency(item.amount) }}</span>
-            <span class="item-comparison" *ngIf="showVariance">
-              {{ formatPercentage((item.amount - item.prevAmount) / item.prevAmount) }}
+            <span class="item-value">{{ formatCurrency(getDisplayAmount(item))
+              }}</span>
+
+            <span class="item-comparison"
+              *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual'">
+              {{ formatPercentage((item.amount - item.prevAmount) /
+              item.prevAmount) }}
             </span>
-            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
-              {{ formatCurrency(item.budget || 0) }}
+
+            <span class="item-budget"
+              *ngIf="getComparisonAmount(item) as value">
+              {{ formatCurrency(value) }}
             </span>
-            <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
-        {{ formatCurrency(item.amount - (item.budget || 0)) }}
-      </span>
+
+            <span class="item-variance"
+              *ngIf="activeFilters.showVariance && getComparisonAmount(item) !== null">
+              {{ formatCurrency(getVariance(item) ?? 0) }}
+              <span *ngIf="activeFilters.showPercentages">
+                ({{ formatPercentage(getVariancePercentage(item) ?? 0) }})
+              </span>
+            </span>
           </div>
           <div class="section-total">
             <span>Total Revenue</span>
             <span>{{ formatCurrency(totalRevenue) }}</span>
-            <span class="item-comparison" *ngIf="showVariance">
+
+            <span class="item-comparison"
+              *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual'">
               {{ formatPercentage(revenueGrowth) }}
             </span>
-            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
-              {{ formatCurrency(totalBudgetRevenue) }}
+
+            <span class="item-budget"
+              *ngIf="activeFilters.reportType.includes('vs')">
+              {{ formatCurrency(activeFilters.reportType === 'Actual vs Budget'
+              ? totalBudgetRevenue : totalPrevYearRevenue) }}
             </span>
-            <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
-              {{ formatCurrency(totalRevenue - totalBudgetRevenue) }}
+
+            <span class="item-variance"
+              *ngIf="activeFilters.showVariance && activeFilters.reportType.includes('vs')">
+              {{ formatCurrency(activeFilters.reportType === 'Actual vs Budget'
+              ? revenueVariance : (totalRevenue - totalPrevYearRevenue)) }}
+              <span *ngIf="activeFilters.showPercentages">
+                ({{ formatPercentage(activeFilters.reportType ===
+                'Actual vs Budget' ?
+                (revenueVariance / totalBudgetRevenue * 100) :
+                revenueYearOverYearGrowth) }})
+              </span>
             </span>
           </div>
         </div>
@@ -250,189 +246,421 @@
         <div class="section-items">
           <div class="section-item" *ngFor="let item of cogsData">
             <span class="item-name">{{ item.name }}</span>
-            <span class="item-value negative">{{ formatCurrency(item.amount) }}</span>
-            <span class="item-comparison" *ngIf="showVariance">
-              {{ formatPercentage((item.amount - item.prevAmount) / Math.abs(item.prevAmount)) }}
+            <span class="item-value negative">{{
+              formatCurrency(getDisplayAmount(item)) }}</span>
+
+            <span class="item-comparison"
+              *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual'">
+              {{ formatPercentage((item.amount - item.prevAmount) /
+              Math.abs(item.prevAmount)) }}
             </span>
-            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
-              {{ formatCurrency(item.budget || 0) }}
+
+            <span class="item-budget"
+              *ngIf="getComparisonAmount(item) as value">
+              {{ formatCurrency(value) }}
             </span>
-            <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
-        {{ formatCurrency(item.amount - (item.budget || 0)) }}
-      </span>
+
+            <span class="item-variance"
+              *ngIf="activeFilters.showVariance && getComparisonAmount(item) !== null">
+              {{ formatCurrency(getVariance(item) ?? 0) }}
+              <span *ngIf="activeFilters.showPercentages">
+                ({{ formatPercentage(getVariancePercentage(item) ?? 0) }})
+              </span>
+            </span>
           </div>
           <div class="section-total">
             <span>Total Cost of Goods Sold</span>
             <span class="negative">{{ formatCurrency(totalCOGS) }}</span>
-            <span class="item-comparison" *ngIf="showVariance">
+
+            <span class="item-comparison"
+              *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual'">
               {{ formatPercentage(cogsGrowth) }}
             </span>
-            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
-              {{ formatCurrency(totalBudgetCOGS) }}
+
+            <span class="item-budget"
+              *ngIf="activeFilters.reportType.includes('vs')">
+              {{ formatCurrency(activeFilters.reportType === 'Actual vs Budget'
+              ? totalBudgetCOGS : totalPrevYearCOGS) }}
             </span>
-            <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
-              {{ formatCurrency(totalCOGS - totalBudgetCOGS) }}
+
+            <span class="item-variance"
+              *ngIf="activeFilters.showVariance && activeFilters.reportType.includes('vs')">
+              {{ formatCurrency(activeFilters.reportType === 'Actual vs Budget'
+              ? cogsVariance : (totalCOGS - totalPrevYearCOGS)) }}
+              <span *ngIf="activeFilters.showPercentages">
+                ({{ formatPercentage(activeFilters.reportType ===
+                'Actual vs Budget' ?
+                (cogsVariance / Math.abs(totalBudgetCOGS) * 100) :
+                ((totalCOGS - totalPrevYearCOGS) / Math.abs(totalPrevYearCOGS) *
+                100)) }})
+              </span>
             </span>
           </div>
         </div>
       </div>
 
- <!-- Gross Profit -->
+      <!-- Gross Profit -->
       <div class="profit-section">
         <div class="profit-card">
           <h3 class="profit-title">Gross Profit</h3>
           <div class="text-right">
             <div class="profit-value">{{ formatCurrency(grossProfit) }}</div>
-            <div class="profit-meta" *ngIf="showPercentages">
+            <div class="profit-meta" *ngIf="activeFilters.showPercentages">
               {{ grossProfitMargin.toFixed(1) }}% of revenue
             </div>
-            <div class="profit-budget" *ngIf="reportType === 'Actual vs Budget'">
+            <div class="profit-budget"
+              *ngIf="activeFilters.reportType === 'Actual vs Budget'">
               Budget: {{ formatCurrency(budgetGrossProfit) }}
+              <span class="variance" *ngIf="activeFilters.showVariance">
+                ({{ formatCurrency(grossProfit - budgetGrossProfit) }})
+              </span>
+            </div>
+            <div class="profit-prev-year"
+              *ngIf="activeFilters.reportType === 'Actual vs Previous Year'">
+              Previous Year: {{ formatCurrency(prevYearGrossProfit) }}
+              <span class="variance" *ngIf="activeFilters.showVariance">
+                ({{ formatPercentage(revenueYearOverYearGrowth) }})
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Salaries & Wages Section -->
-<div class="statement-section">
-  <h2 class="section-title">Salaries & Wages</h2>
-  <div class="section-items">
-    <div class="section-item" *ngFor="let item of SalariesWages">
-      <span class="item-name">{{ item.name }}</span>
-      <span class="item-value negative">{{ formatCurrency(item.amount) }}</span>
-      <span class="item-comparison" *ngIf="showVariance">
-        {{ formatPercentage((item.amount - item.prevAmount) / Math.abs(item.prevAmount)) }}
-      </span>
-      <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
-        {{ formatCurrency(item.budget || 0) }}
-      </span>
-      <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
-        {{ formatCurrency(item.amount - (item.budget || 0)) }}
-      </span>
-    </div>
-    <div class="section-total total-row">
-      <span><strong>Total Salaries & Wages</strong></span>
-      <span class="negative">{{ formatCurrency(totalSalariesWages) }}</span>
-      <span class="item-comparison" *ngIf="showVariance">
-        {{ formatPercentage((totalSalariesWages - totalPrevSalariesWages) / Math.abs(totalPrevSalariesWages)) }}
-      </span>
-      <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
-        {{ formatCurrency(totalBudgetSalariesWages) }}
-      </span>
-      <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
-        {{ formatCurrency(totalSalariesWages - totalBudgetSalariesWages) }}
-      </span>
-    </div>
-  </div>
-</div>
-
+      <!-- Operating Expenses Section -->
       <div class="statement-section">
-        <h2 class="section-title">Maintenance</h2>
-        <div class="section-items">
-          <div class="section-item" *ngFor="let item of Maintenance">
-            <span class="item-name">{{ item.name }}</span>
-            <span class="item-value negative">{{ formatCurrency(item.amount) }}</span>
-            <span class="item-comparison" *ngIf="showVariance">
-              {{ formatPercentage((item.amount - item.prevAmount) / Math.abs(item.prevAmount)) }}
-            </span>
-             <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
-              {{ formatCurrency(item.budget || 0) }}
-            </span>
-             <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
-        {{ formatCurrency(item.amount - (item.budget || 0)) }}
-      </span>
-          </div>
-          <div class="section-total">
-            <span>Total Maintenance</span>
-            <span class="negative">{{ formatCurrency(totalMaintenance) }}</span>
-            <span class="item-comparison" *ngIf="showVariance">
-              {{ formatPercentage((totalMaintenance - totalPrevMaintenance) / Math.abs(totalPrevMaintenance)) }}
-            </span>
-            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
-        {{ formatCurrency(totalBudgetMaintenance) }}
-      </span>
-            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
-              {{ formatCurrency(totalBudgetMaintenance) }}
-            </span>
-          </div>
-        </div>
-      </div>
+        <h2 class="section-title">Operating Expenses</h2>
 
-      <div class="statement-section">
-        <h2 class="section-title">Logistics & Distribution</h2>
-        <div class="section-items">
-          <div class="section-item" *ngFor="let item of LogisticsDistribution">
-            <span class="item-name">{{ item.name }}</span>
-            <span class="item-value negative">{{ formatCurrency(item.amount) }}</span>
-            <span class="item-comparison" *ngIf="showVariance">
-              {{ formatPercentage((item.amount - item.prevAmount) / Math.abs(item.prevAmount)) }}
-            </span>
-             <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
-              {{ formatCurrency(item.budget || 0) }}
-            </span>
-            <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
-        {{ formatCurrency(item.amount - (item.budget || 0)) }}
-            </span>
-          </div>
-          <div class="section-total">
-            <span>Total Logistics & Distribution</span>
-            <span class="negative">{{ formatCurrency(totalLogisticsDistribution) }}</span>
-            <span class="item-comparison" *ngIf="showVariance">
-              {{ formatPercentage((totalLogisticsDistribution - totalPrevLogisticsDistribution) / Math.abs(totalPrevLogisticsDistribution)) }}
-            </span>
-            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
-        {{ formatCurrency(totalBudgetLogisticsDistribution) }}
-      </span>
-      <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
-        {{ formatCurrency(totalLogisticsDistribution - (totalBudgetLogisticsDistribution || 0)) }}
-      </span>
-          </div>
-        </div>
-      </div>
+        <!-- Administrative Expenses -->
+        <div class="subsection">
+          <h3 class="subsection-title">Administrative</h3>
+          <div class="section-items">
+            <div class="section-item" *ngFor="let item of operatingExpenses">
+              <span class="item-name">{{ item.name }}</span>
+              <span class="item-value negative">{{
+                formatCurrency(getDisplayAmount(item)) }}</span>
 
-      <div class="statement-section">
-        <h2 class="section-title">Other Operating Expenses</h2>
-        <div class="section-items">
-          <div class="section-item" *ngFor="let item of otherOperatingExpenses">
-            <span class="item-name">{{ item.name }}</span>
-            <span class="item-value negative">{{ formatCurrency(item.amount) }}</span>
-            <span class="item-comparison" *ngIf="showVariance">
-              {{ formatPercentage((item.amount - item.prevAmount) / Math.abs(item.prevAmount)) }}
-            </span>
-             <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
-              {{ formatCurrency(item.budget || 0) }}
-            </span>
-            <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
-        {{ formatCurrency(item.amount - (item.budget || 0)) }}
-            </span>
-          </div>
-          <div class="section-total">
-            <span>Total Other Operating Expenses</span>
-            <span class="negative">{{ formatCurrency(totalOtherOperatingExpenses) }}</span>
-            <span class="item-comparison" *ngIf="showVariance">
-              {{ formatPercentage((totalOtherOperatingExpenses - totalPrevOtherOperatingExpenses) / Math.abs(totalPrevOtherOperatingExpenses)) }}
-            </span>
-            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
-              {{ formatCurrency(totalBudgetOtherOperatingExpenses) }}
+              <span class="item-comparison"
+                *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual'">
+                {{ formatPercentage((item.amount - item.prevAmount) /
+                Math.abs(item.prevAmount)) }}
               </span>
-              <span class="item-variance" *ngIf="reportType === 'Actual vs Budget'">
-        {{ formatCurrency(totalOtherOperatingExpenses - (totalBudgetOtherOperatingExpenses || 0)) }}
+
+              <span class="item-budget"
+                *ngIf="getComparisonAmount(item) as value">
+                {{ formatCurrency(value) }}
               </span>
+
+              <span class="item-variance"
+                *ngIf="activeFilters.showVariance && getComparisonAmount(item) !== null">
+                {{ formatCurrency(getVariance(item) ?? 0) }}
+                <span *ngIf="activeFilters.showPercentages">
+                  ({{ formatPercentage(getVariancePercentage(item) ?? 0) }})
+                </span>
+              </span>
+            </div>
+            <div class="section-total">
+              <span>Total Administrative</span>
+              <span class="negative">{{
+                formatCurrency(totalAdministrativeExpenses) }}</span>
+
+              <span class="item-comparison"
+                *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual'">
+                {{ formatPercentage((totalAdministrativeExpenses -
+                totalPrevAdministrativeExpenses) /
+                Math.abs(totalPrevAdministrativeExpenses)) }}
+              </span>
+
+              <span class="item-budget"
+                *ngIf="activeFilters.reportType.includes('vs')">
+                {{ formatCurrency(activeFilters.reportType ===
+                'Actual vs Budget' ?
+                totalBudgetAdministrativeExpenses :
+                totalPrevYearAdministrativeExpenses) }}
+              </span>
+
+              <!-- <span class="item-variance" *ngIf="activeFilters.showVariance && activeFilters.reportType.includes('vs')">
+          {{ formatCurrency(totalAdministrativeExpenses - (activeFilters.reportType === 'Actual vs Budget' ? 
+            operatingExpenses.reduce((sum, i) => sum + (i.budget || 0), 0) : 
+            totalPrevYearAdministrativeExpenses)) }}
+        </span> -->
+            </div>
           </div>
+        </div>
+
+        <!-- Salaries & Wages -->
+        <div class="subsection">
+          <h3 class="subsection-title">Salaries & Wages</h3>
+          <div class="section-items">
+            <div class="section-item" *ngFor="let item of SalariesWages">
+              <span class="item-name">{{ item.name }}</span>
+              <span class="item-value negative">{{
+                formatCurrency(getDisplayAmount(item)) }}</span>
+
+              <span class="item-comparison"
+                *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual'">
+                {{ formatPercentage((item.amount - item.prevAmount) /
+                Math.abs(item.prevAmount)) }}
+              </span>
+
+              <span class="item-budget"
+                *ngIf="getComparisonAmount(item) as value">
+                {{ formatCurrency(value) }}
+              </span>
+
+              <span class="item-variance"
+                *ngIf="activeFilters.showVariance && getComparisonAmount(item) !== null">
+                {{ formatCurrency(getVariance(item) ?? 0) }}
+                <span *ngIf="activeFilters.showPercentages">
+                  ({{ formatPercentage(getVariancePercentage(item) ?? 0) }})
+                </span>
+              </span>
+            </div>
+            <div class="section-total">
+              <span>Total Salaries & Wages</span>
+              <span class="negative">{{ formatCurrency(totalSalariesWages)
+                }}</span>
+
+              <span class="item-comparison"
+                *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual'">
+                {{ formatPercentage((totalSalariesWages -
+                totalPrevSalariesWages) / Math.abs(totalPrevSalariesWages)) }}
+              </span>
+
+              <!-- <span class="item-budget" *ngIf="activeFilters.reportType.includes('vs')">
+          {{ formatCurrency(activeFilters.reportType === 'Actual vs Budget' ? 
+            SalariesWages.reduce((sum, i) => sum + (i.budget || 0), 0) : 
+            totalPrevYearSalariesWages) }}
+        </span> -->
+
+              <!-- <span class="item-variance" *ngIf="activeFilters.showVariance && activeFilters.reportType.includes('vs')">
+          {{ formatCurrency(totalSalariesWages - (activeFilters.reportType === 'Actual vs Budget' ? 
+            SalariesWages.reduce((sum, i) => sum + (i.budget || 0), 0) : 
+            totalPrevYearSalariesWages)) }}
+        </span> -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Maintenance -->
+        <div class="subsection">
+          <h3 class="subsection-title">Maintenance</h3>
+          <div class="section-items">
+            <div class="section-item" *ngFor="let item of Maintenance">
+              <span class="item-name">{{ item.name }}</span>
+              <span class="item-value negative">{{
+                formatCurrency(getDisplayAmount(item)) }}</span>
+
+              <span class="item-comparison"
+                *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual'">
+                {{ formatPercentage((item.amount - item.prevAmount) /
+                Math.abs(item.prevAmount)) }}
+              </span>
+
+              <span class="item-budget"
+                *ngIf="getComparisonAmount(item) as value">
+                {{ formatCurrency(value) }}
+              </span>
+
+              <span class="item-variance"
+                *ngIf="activeFilters.showVariance && getComparisonAmount(item) !== null">
+                {{ formatCurrency(getVariance(item) ?? 0) }}
+                <span *ngIf="activeFilters.showPercentages">
+                  ({{ formatPercentage(getVariancePercentage(item) ?? 0) }})
+                </span>
+              </span>
+            </div>
+            <div class="section-total">
+              <span>Total Maintenance</span>
+              <span class="negative">{{ formatCurrency(totalMaintenance)
+                }}</span>
+
+              <span class="item-comparison"
+                *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual'">
+                {{ formatPercentage((totalMaintenance - totalPrevMaintenance) /
+                Math.abs(totalPrevMaintenance)) }}
+              </span>
+
+              <!-- <span class="item-budget" *ngIf="activeFilters.reportType.includes('vs')">
+          {{ formatCurrency(activeFilters.reportType === 'Actual vs Budget' ? 
+            Maintenance.reduce((sum, i) => sum + (i.budget || 0), 0) : 
+            totalPrevYearMaintenance) }}
+        </span> -->
+
+              <!-- <span class="item-variance" *ngIf="activeFilters.showVariance && activeFilters.reportType.includes('vs')">
+          {{ formatCurrency(totalMaintenance - (activeFilters.reportType === 'Actual vs Budget' ? 
+            Maintenance.reduce((sum, i) => sum + (i.budget || 0), 0) : 
+            totalPrevYearMaintenance)) }}
+        </span> -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Logistics & Distribution -->
+        <div class="subsection">
+          <h3 class="subsection-title">Logistics & Distribution</h3>
+          <div class="section-items">
+            <div class="section-item"
+              *ngFor="let item of LogisticsDistribution">
+              <span class="item-name">{{ item.name }}</span>
+              <span class="item-value negative">{{
+                formatCurrency(getDisplayAmount(item)) }}</span>
+
+              <span class="item-comparison"
+                *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual'">
+                {{ formatPercentage((item.amount - item.prevAmount) /
+                Math.abs(item.prevAmount)) }}
+              </span>
+
+              <span class="item-budget"
+                *ngIf="getComparisonAmount(item) as value">
+                {{ formatCurrency(value) }}
+              </span>
+
+              <span class="item-variance"
+                *ngIf="activeFilters.showVariance && getComparisonAmount(item) !== null">
+                {{ formatCurrency(getVariance(item) ?? 0) }}
+                <span *ngIf="activeFilters.showPercentages">
+                  ({{ formatPercentage(getVariancePercentage(item) ?? 0) }})
+                </span>
+              </span>
+            </div>
+            <div class="section-total">
+              <span>Total Logistics & Distribution</span>
+              <span class="negative">{{
+                formatCurrency(totalLogisticsDistribution) }}</span>
+
+              <span class="item-comparison"
+                *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual'">
+                {{ formatPercentage((totalLogisticsDistribution -
+                totalPrevLogisticsDistribution) /
+                Math.abs(totalPrevLogisticsDistribution)) }}
+              </span>
+
+              <!-- <span class="item-budget" *ngIf="activeFilters.reportType.includes('vs')">
+          {{ formatCurrency(activeFilters.reportType === 'Actual vs Budget' ? 
+            LogisticsDistribution.reduce((sum, i) => sum + (i.budget || 0), 0) : 
+            totalPrevYearLogisticsDistribution) }}
+        </span> -->
+
+              <!-- <span class="item-variance" *ngIf="activeFilters.showVariance && activeFilters.reportType.includes('vs')">
+          {{ formatCurrency(totalLogisticsDistribution - (activeFilters.reportType === 'Actual vs Budget' ? 
+            LogisticsDistribution.reduce((sum, i) => sum + (i.budget || 0), 0) : 
+            totalPrevYearLogisticsDistribution)) }}
+        </span> -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Other Operating Expenses -->
+        <div class="subsection">
+          <h3 class="subsection-title">Other Operating Expenses</h3>
+          <div class="section-items">
+            <div class="section-item"
+              *ngFor="let item of otherOperatingExpenses">
+              <span class="item-name">{{ item.name }}</span>
+              <span class="item-value negative">{{
+                formatCurrency(getDisplayAmount(item)) }}</span>
+
+              <span class="item-comparison"
+                *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual'">
+                {{ formatPercentage((item.amount - item.prevAmount) /
+                Math.abs(item.prevAmount)) }}
+              </span>
+
+              <span class="item-budget"
+                *ngIf="getComparisonAmount(item) as value">
+                {{ formatCurrency(value) }}
+              </span>
+
+              <span class="item-variance"
+                *ngIf="activeFilters.showVariance && getComparisonAmount(item) !== null">
+                {{ formatCurrency(getVariance(item) ?? 0) }}
+                <span *ngIf="activeFilters.showPercentages">
+                  ({{ formatPercentage(getVariancePercentage(item) ?? 0) }})
+                </span>
+              </span>
+            </div>
+            <div class="section-total">
+              <span>Total Other Operating Expenses</span>
+              <span class="negative">{{
+                formatCurrency(totalOtherOperatingExpenses) }}</span>
+
+              <span class="item-comparison"
+                *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual'">
+                {{ formatPercentage((totalOtherOperatingExpenses -
+                totalPrevOtherOperatingExpenses) /
+                Math.abs(totalPrevOtherOperatingExpenses)) }}
+              </span>
+
+              <!-- <span class="item-budget" *ngIf="activeFilters.reportType.includes('vs')">
+          {{ formatCurrency(activeFilters.reportType === 'Actual vs Budget' ? 
+            otherOperatingExpenses.reduce((sum, i) => sum + (i.budget || 0), 0) : 
+            totalPrevYearOtherOperatingExpenses) }}
+        </span> -->
+
+              <!-- <span class="item-variance" *ngIf="activeFilters.showVariance && activeFilters.reportType.includes('vs')">
+          {{ formatCurrency(totalOtherOperatingExpenses - (activeFilters.reportType === 'Actual vs Budget' ? 
+            otherOperatingExpenses.reduce((sum, i) => sum + (i.budget || 0), 0) : 
+            totalPrevYearOtherOperatingExpenses)) }}
+        </span> -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Total Operating Expenses -->
+        <div class="section-total main-total">
+          <span>Total Operating Expenses</span>
+          <span class="negative">{{ formatCurrency(totalOperatingExpenses)
+            }}</span>
+
+          <span class="item-comparison"
+            *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual'">
+            {{ formatPercentage((totalOperatingExpenses -
+            totalPrevOperatingExpenses) / Math.abs(totalPrevOperatingExpenses))
+            }}
+          </span>
+
+          <span class="item-budget"
+            *ngIf="activeFilters.reportType.includes('vs')">
+            {{ formatCurrency(activeFilters.reportType === 'Actual vs Budget' ?
+            totalBudgetOperatingExpenses :
+            totalPrevYearOperatingExpenses) }}
+          </span>
+
+          <span class="item-variance"
+            *ngIf="activeFilters.showVariance && activeFilters.reportType.includes('vs')">
+            {{ formatCurrency(totalOperatingExpenses - (activeFilters.reportType
+            === 'Actual vs Budget' ?
+            totalBudgetOperatingExpenses :
+            totalPrevYearOperatingExpenses)) }}
+          </span>
         </div>
       </div>
 
-          <!-- Operating Income -->
+      <!-- Operating Income -->
       <div class="profit-section">
         <div class="profit-card">
           <h3 class="profit-title">Operating Income (EBIT)</h3>
           <div class="text-right">
-            <div class="profit-value">{{ formatCurrency(operatingIncome) }}</div>
-            <div class="profit-meta" *ngIf="showPercentages">
+            <div class="profit-value">{{ formatCurrency(operatingIncome)
+              }}</div>
+            <div class="profit-meta" *ngIf="activeFilters.showPercentages">
               {{ operatingMargin.toFixed(1) }}% of revenue
             </div>
-            <div class="profit-budget" *ngIf="reportType === 'Actual vs Budget'">
+            <div class="profit-budget"
+              *ngIf="activeFilters.reportType === 'Actual vs Budget'">
               Budget: {{ formatCurrency(budgetOperatingIncome) }}
+              <span class="variance" *ngIf="activeFilters.showVariance">
+                ({{ formatCurrency(operatingIncome - budgetOperatingIncome) }})
+              </span>
+            </div>
+            <div class="profit-prev-year"
+              *ngIf="activeFilters.reportType === 'Actual vs Previous Year'">
+              Previous Year: {{ formatCurrency(prevYearOperatingIncome) }}
+              <span class="variance" *ngIf="activeFilters.showVariance">
+                ({{ formatPercentage((operatingIncome - prevYearOperatingIncome)
+                / Math.abs(prevYearOperatingIncome) * 100) }})
+              </span>
             </div>
           </div>
         </div>
@@ -444,22 +672,100 @@
         <div class="section-items">
           <div class="section-item" *ngFor="let item of otherItems">
             <span class="item-name">{{ item.name }}</span>
-            <span class="item-value" [ngClass]="{ 'negative': item.amount < 0 }">
-              {{ formatCurrency(item.amount) }}
+            <span class="item-value"
+              [ngClass]="{ 'negative': getDisplayAmount(item) < 0 }">
+              {{ formatCurrency(getDisplayAmount(item)) }}
             </span>
-            <span class="item-comparison" *ngIf="showVariance && item.prevAmount !== 0">
-              {{ formatPercentage((item.amount - item.prevAmount) / Math.abs(item.prevAmount)) }}
+
+            <span class="item-comparison"
+              *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual' && item.prevAmount !== 0">
+              {{ formatPercentage((item.amount - item.prevAmount) /
+              Math.abs(item.prevAmount)) }}
             </span>
-            <span class="item-budget" *ngIf="reportType === 'Actual vs Budget'">
-              {{ formatCurrency(item.budget || 0) }}
+
+            <span class="item-budget"
+              *ngIf="getComparisonAmount(item) as value">
+              {{ formatCurrency(value) }}
+            </span>
+
+            <span class="item-variance"
+              *ngIf="activeFilters.showVariance && getComparisonAmount(item) !== null">
+              {{ formatCurrency(getVariance(item) ?? 0) }}
+              <span *ngIf="activeFilters.showPercentages">
+                ({{ formatPercentage(getVariancePercentage(item) ?? 0) }})
+              </span>
             </span>
           </div>
           <div class="section-total">
             <span>Total Other Income & Expenses</span>
-            <span>{{ formatCurrency(totalOtherItems) }}</span>
-            
+            <span [ngClass]="{ 'negative': totalOtherItems < 0 }">
+              {{ formatCurrency(totalOtherItems) }}
+            </span>
+
+            <span class="item-comparison"
+              *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual' && totalPrevOtherItems !== 0">
+              {{ formatPercentage((totalOtherItems - totalPrevOtherItems) /
+              Math.abs(totalPrevOtherItems)) }}
+            </span>
+
+            <!-- <span class="item-budget" *ngIf="activeFilters.reportType.includes('vs')">
+        {{ formatCurrency(activeFilters.reportType === 'Actual vs Budget' ? 
+          otherItems.reduce((sum, i) => sum + (i.budget || 0), 0) : 
+          totalPrevYearOtherItems) }}
+      </span>
+      
+      <span class="item-variance" *ngIf="activeFilters.showVariance && activeFilters.reportType.includes('vs')">
+        {{ formatCurrency(totalOtherItems - (activeFilters.reportType === 'Actual vs Budget' ? 
+          otherItems.reduce((sum, i) => sum + (i.budget || 0), 0) : 
+          totalPrevYearOtherItems)) }}
+      </span> -->
           </div>
-          <span></span>
+        </div>
+      </div>
+
+      <!-- Tax Expense -->
+      <div class="statement-section">
+        <h2 class="section-title">Income Tax Expense</h2>
+        <div class="section-items">
+          <div class="section-item">
+            <span class="item-name">{{ taxExpense.name }}</span>
+            <span class="item-value negative">{{
+              formatCurrency(getDisplayAmount(taxExpense)) }}</span>
+
+            <span class="item-comparison"
+              *ngIf="activeFilters.showVariance && activeFilters.reportType === 'Actual'">
+              {{ formatPercentage((taxExpense.amount - taxExpense.prevAmount) /
+              Math.abs(taxExpense.prevAmount)) }}
+            </span>
+
+            <span class="item-budget"
+              *ngIf="getComparisonAmount(taxExpense) as value">
+              {{ formatCurrency(value) }}
+            </span>
+
+            <span class="item-variance"
+              *ngIf="activeFilters.showVariance && getComparisonAmount(taxExpense) !== null">
+              {{ formatCurrency(getVariance(taxExpense) ?? 0) }}
+              <span *ngIf="activeFilters.showPercentages">
+                ({{ formatPercentage(getVariancePercentage(taxExpense) ?? 0) }})
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Net Income Before Tax -->
+      <div class="profit-section">
+        <div class="profit-card secondary">
+          <h3 class="profit-title">Net Income Before Tax</h3>
+          <div class="text-right">
+            <div class="profit-value">{{ formatCurrency(netIncomeBeforeTax)
+              }}</div>
+            <div class="profit-prev-year"
+              *ngIf="activeFilters.reportType === 'Actual vs Previous Year'">
+              Previous Year: {{ formatCurrency(prevYearNetIncomeBeforeTax) }}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -469,7 +775,7 @@
           <h3 class="net-profit-title">Net Profit After Tax</h3>
           <div class="text-right">
             <div class="net-profit-value">{{ formatCurrency(netIncome) }}</div>
-            <div class="net-profit-meta" *ngIf="showPercentages">
+            <div class="net-profit-meta" *ngIf="activeFilters.showPercentages">
               {{ netProfitMargin.toFixed(1) }}% of revenue
             </div>
           </div>
@@ -477,26 +783,38 @@
       </div>
 
       <!-- Charts Section -->
-      <app-income-statement-charts
-  [monthlyData]="{
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    revenue: [230000, 235000, 240000, 245000, 248000, 250000],
-    expenses: [195000, 198000, 200000, 203000, 205000, 207500],
-    profit: [35000, 37000, 40000, 42000, 43000, 42500]
-  }"
-  [expenseDistribution]="{
-    administrative: Math.abs(totalAdministrativeExpenses),
-    salaries: Math.abs(totalSalariesWages),
-    maintenance: Math.abs(totalMaintenance),
-    logistics: Math.abs(totalLogisticsDistribution),
-    other: Math.abs(totalOtherOperatingExpenses)
-  }">
-</app-income-statement-charts>
+      <div class="charts-section">
+        <div class="chart-container">
+          <apx-chart
+            [series]="revenueChartOptions.series"
+            [chart]="revenueChartOptions.chart"
+            [xaxis]="revenueChartOptions.xaxis"
+            [stroke]="revenueChartOptions.stroke"
+            [tooltip]="revenueChartOptions.tooltip"
+            [dataLabels]="revenueChartOptions.dataLabels"
+            [legend]="revenueChartOptions.legend"
+            [title]="revenueChartOptions.title">
+          </apx-chart>
+        </div>
+        <div class="chart-container">
+          <apx-chart
+            [series]="expenseChartOptions.series"
+            [chart]="expenseChartOptions.chart"
+            [labels]="expenseChartOptions.labels"
+            [plotOptions]="expenseChartOptions.plotOptions"
+            [fill]="expenseChartOptions.fill"
+            [legend]="expenseChartOptions.legend"
+            [title]="expenseChartOptions.title">
+          </apx-chart>
+        </div>
+      </div>
+
       <!-- Key Insights -->
       <div class="insights-section">
         <h3 class="insights-title">Key Insights</h3>
         <div class="insights-grid">
-          <div class="insight-card" *ngFor="let insight of insights" [ngClass]="insight.trend">
+          <div class="insight-card" *ngFor="let insight of insights"
+            [ngClass]="insight.trend">
             <div class="insight-title">{{ insight.title }}</div>
             <div class="insight-desc">{{ insight.description }}</div>
           </div>
@@ -505,12 +823,13 @@
 
       <!-- Actions Bar -->
       <div class="actions-bar">
-        <button class="action-btn" (click)="saveStatement()" [disabled]="isSaved">
+        <button class="action-btn" (click)="saveStatement()"
+          [disabled]="isSaved">
           {{ isSaved ? 'Saved' : 'Save Statement' }}
         </button>
-        <button class="action-btn" (click)="exportToPDF()">Export PDF</button>
-        <button class="action-btn" (click)="exportToCSV()">Export CSV</button>
-        <button class="action-btn" (click)="toggleCommentsModal()">comments</button>
+        <button class="action-btn" (click)="toggleCommentsModal()">
+          <i class="fa fa-comment"></i> Comments
+        </button>
       </div>
     </div>
   </div>
