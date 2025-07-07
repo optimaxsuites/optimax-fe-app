@@ -34,6 +34,8 @@ export class NavigationLinksService {
 
     this.links['transactionLink'] = '/admin/accounting/transaction/' +uuidV4();
     this.links['accountingReportLink'] = '/admin/accounting/reports/' +uuidV4();
+    this.links['reconciliationLink'] = '/admin/accounting/reconciliation/' +uuidV4();
+
 
 
 // links =========================================================================================================================
