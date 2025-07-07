@@ -66,6 +66,7 @@ import { CardModule } from 'primeng/card';
 
 
 
+
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AngularEditorModule } from '@kolkov/angular-editor';
@@ -94,13 +95,10 @@ import { NewCoaModalComponent } from './ui/view/new-coa-modal/new-coa-modal.comp
 import { ConnectMonoComponent } from './ui/view/connect-mono/connect-mono.component';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { IncomeStatementChartsComponent } from './ui/view/reports/income-statement/income-statement-charts/income-statement-charts.component';
-<<<<<<< HEAD
 import { IncomeStatementFilterComponent } from './ui/view/reports/income-statement/income-statement-filter/income-statement-filter.component';
-=======
-import { ReconcillationComponent } from './ui/view/reconcillation/reconcillation.component';
 import { CalendarModule } from 'primeng/calendar';
+import { ReconcillationComponent } from './ui/view/reconcillation/reconcillation.component';
 import { AccordionModule } from 'primeng/accordion'
->>>>>>> dd78121cd59956b056acbf77d283e8351568caea
 
 
 @NgModule({
@@ -132,11 +130,8 @@ import { AccordionModule } from 'primeng/accordion'
     TaxSummaryComponent,
     TransactionSideModalComponent,
     IncomeStatementChartsComponent,
-<<<<<<< HEAD
-    IncomeStatementFilterComponent
-=======
+    IncomeStatementFilterComponent,
     ReconcillationComponent
->>>>>>> dd78121cd59956b056acbf77d283e8351568caea
   ],
   imports: [
     BrowserModule,
