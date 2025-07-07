@@ -88,7 +88,7 @@ export class MenuItemsService {
         {
           label: 'Reconciliation',
           code: 'ACCT_RECON',
-          route: this.navigationLink.getLink(''), 
+          route: this.navigationLink.getLink('reconciliationLink'), 
           roles: ['ROLE_USER'],
           icon: 'pi pi-file',
           description: 'Match financial records with bank statements for reconciliation purposes.'

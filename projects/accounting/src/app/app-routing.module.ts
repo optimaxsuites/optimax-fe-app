@@ -22,7 +22,7 @@ const routes: Routes = [
       component: AccountingPageComponent,
     },
     {
-      path: 'reconcillation/:uuid',
+      path: 'reconciliation/:uuid',
       component: ReconcillationComponent,
     },
     {
