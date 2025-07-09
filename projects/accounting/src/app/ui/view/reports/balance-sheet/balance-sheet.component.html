@@ -1,16 +1,18 @@
 <div class="container">
-   <!-- Header Section -->
+  <!-- Header Section -->
   <div class="header">
     <h1 class="main-title">Balance Sheet Report</h1>
     <div class="button-group">
       <button class="action-btn" (click)="saveReport()">
         <i class="fas fa-save"></i> Save
       </button>
-      <button class="action-btn" (click)="updateReport()" [disabled]="isUpdating">
-        <i class="fas fa-sync" [class.spin]="isUpdating"></i> 
+      <button class="action-btn" (click)="updateReport()"
+        [disabled]="isUpdating">
+        <i class="fas fa-sync" [class.spin]="isUpdating"></i>
         {{ isUpdating ? 'Updating...' : 'Update' }}
       </button>
-      <button class="action-btn" (click)="shareReport()"><i class="fas fa-share-alt"></i>Share
+      <button class="action-btn" (click)="shareReport()"><i
+          class="fas fa-share-alt"></i>Share
       </button>
     </div>
   </div>
@@ -20,7 +22,8 @@
     <section class="report-header">
       <div class="header-left">
         <div class="report-meta">
-          <span><i class="ri-calendar-line"></i> As of: {{ balanceSheetForm.get('asOfDate')?.value | date:'longDate' }}</span>
+          <span><i class="ri-calendar-line"></i> As of: {{
+            balanceSheetForm.get('asOfDate')?.value | date:'longDate' }}</span>
           <span><i class="ri-building-line"></i> Entity: {{ entityName }}</span>
         </div>
         <span class="status-badge completed">
@@ -31,23 +34,24 @@
         </span>
       </div>
     </section>
-    
+
     <br>
-    
+
     <!-- Period Selection -->
     <div class="period">
       <select [(ngModel)]="selectedYear" (change)="onYearChange(selectedYear)">
         <option *ngFor="let year of years" [value]="year">{{ year }}</option>
       </select>
-      <select [(ngModel)]="selectedPeriod" (change)="onPeriodChange(selectedPeriod)">
+      <select [(ngModel)]="selectedPeriod"
+        (change)="onPeriodChange(selectedPeriod)">
         <option *ngFor="let period of periods" [ngValue]="period">
           {{ period.month }} {{ period.year }}
         </option>
       </select>
     </div>
-    
+
     <br>
-    
+
     <!-- Metrics Section -->
     <div class="metrics-grid">
       <div class="metric-card positive">
@@ -55,7 +59,8 @@
           <h3>Total Assets</h3>
           <i class="ri-arrow-up-line trend-up"></i>
         </div>
-        <div class="metric-value">₦{{ balanceSheetData.assets.total | number }}</div>
+        <div class="metric-value">₦{{ balanceSheetData.assets.total | number
+          }}</div>
         <div class="metric-comparison">▲10% (YoY)</div>
       </div>
 
@@ -64,7 +69,8 @@
           <h3>Total Liabilities</h3>
           <i class="ri-arrow-down-line trend-down"></i>
         </div>
-        <div class="metric-value">₦{{ balanceSheetData.liabilities.total | number }}</div>
+        <div class="metric-value">₦{{ balanceSheetData.liabilities.total |
+          number }}</div>
         <div class="metric-comparison">▼5% (YoY)</div>
       </div>
 
@@ -73,7 +79,8 @@
           <h3>Shareholder Equity</h3>
           <i class="ri-arrow-up-line trend-up"></i>
         </div>
-        <div class="metric-value">₦{{ balanceSheetData.equity.total | number }}</div>
+        <div class="metric-value">₦{{ balanceSheetData.equity.total | number
+          }}</div>
         <div class="metric-comparison">▲15% (YoY)</div>
       </div>
 
@@ -95,7 +102,8 @@
     <section class="balance-sheet-section">
       <div class="section-header">
         <h2>
-          <i class="ri-scales-line"></i> Balance Sheet (As of {{ selectedPeriod.month }} {{ selectedPeriod.year }})
+          <i class="ri-scales-line"></i> Balance Sheet (As of {{
+          selectedPeriod.month }} {{ selectedPeriod.year }})
         </h2>
         <div class="section-actions">
           <button class="action-btn" (click)="toggleFullScreen()">
@@ -106,7 +114,7 @@
           </button>
         </div>
       </div>
-      
+
       <div class="balance-sheet-container">
         <!-- Assets Column -->
         <div class="balance-column">
@@ -115,42 +123,69 @@
           <div class="balance-category">Current Assets</div>
           <div class="balance-item">
             <span>Cash & Cash Equivalents</span>
-            <span class="text-right">₦{{ balanceSheetData.assets.current.cash | number }}</span>
+            <span class="text-right">₦{{ balanceSheetData.assets.current.cash |
+              number }}</span>
           </div>
           <div class="balance-item">
             <span>Accounts Receivable</span>
-            <span class="text-right">₦{{ balanceSheetData.assets.current.accountsReceivable | number }}</span>
+            <span class="text-right">₦{{
+              balanceSheetData.assets.current.accountsReceivable | number
+              }}</span>
           </div>
           <div class="balance-item">
             <span>Inventory</span>
-            <span class="text-right">₦{{ balanceSheetData.assets.current.inventory | number }}</span>
+            <span class="text-right">₦{{
+              balanceSheetData.assets.current.inventory | number }}</span>
           </div>
           <div class="balance-item">
             <span>Prepaid Expenses</span>
-            <span class="text-right">₦{{ balanceSheetData.assets.current.prepaidExpenses | number }}</span>
+            <span class="text-right">₦{{
+              balanceSheetData.assets.current.prepaidExpenses | number }}</span>
+          </div>
+          <div class="balance-item">
+            <span>Cash on Hand</span>
+            <span class="text-right">₦{{ balanceSheetData.assets.current.cashOnHand | number }}</span>
+          </div>
+          <div class="balance-item">
+            <span>Regular Checking Account</span>
+            <span class="text-right">₦{{ balanceSheetData.assets.current.regularCheckingAccount | number }}</span>
+          </div>
+          <div class="balance-item">
+            <span>Payroll Checking Account</span>
+            <span class="text-right">₦{{ balanceSheetData.assets.current.payrollCheckingAccount | number }}</span>
+          </div>
+          <div class="balance-item">
+            <span>Savings Account</span>
+            <span class="text-right">₦{{ balanceSheetData.assets.current.savingsAccount | number }}</span>
           </div>
 
           <div class="balance-category">Non-current Assets</div>
           <div class="balance-item">
             <span>Property, Plant & Equipment</span>
-            <span class="text-right">₦{{ balanceSheetData.assets.nonCurrent.property | number }}</span>
+            <span class="text-right">₦{{
+              balanceSheetData.assets.nonCurrent.property | number }}</span>
           </div>
           <div class="balance-item">
             <span>Equipment</span>
-            <span class="text-right">₦{{ balanceSheetData.assets.nonCurrent.equipment | number }}</span>
+            <span class="text-right">₦{{
+              balanceSheetData.assets.nonCurrent.equipment | number }}</span>
           </div>
           <div class="balance-item">
             <span>Investments</span>
-            <span class="text-right">₦{{ balanceSheetData.assets.nonCurrent.investments | number }}</span>
+            <span class="text-right">₦{{
+              balanceSheetData.assets.nonCurrent.investments | number }}</span>
           </div>
           <div class="balance-item">
             <span>Intangible Assets</span>
-            <span class="text-right">₦{{ balanceSheetData.assets.nonCurrent.intangibleAssets | number }}</span>
+            <span class="text-right">₦{{
+              balanceSheetData.assets.nonCurrent.intangibleAssets | number
+              }}</span>
           </div>
 
           <div class="balance-total">
             <span>Total Assets</span>
-            <span class="text-right bold">₦{{ balanceSheetData.assets.total | number }}</span>
+            <span class="text-right bold">₦{{ balanceSheetData.assets.total |
+              number }}</span>
           </div>
         </div>
 
@@ -161,48 +196,65 @@
           <div class="balance-category">Current Liabilities</div>
           <div class="balance-item">
             <span>Accounts Payable</span>
-            <span class="text-right">₦{{ balanceSheetData.liabilities.current.accountsPayable | number }}</span>
+            <span class="text-right">₦{{
+              balanceSheetData.liabilities.current.accountsPayable | number
+              }}</span>
           </div>
           <div class="balance-item">
             <span>Short-term Debt</span>
-            <span class="text-right">₦{{ balanceSheetData.liabilities.current.shortTermDebt | number }}</span>
+            <span class="text-right">₦{{
+              balanceSheetData.liabilities.current.shortTermDebt | number
+              }}</span>
           </div>
           <div class="balance-item">
             <span>Accrued Expenses</span>
-            <span class="text-right">₦{{ balanceSheetData.liabilities.current.accruedExpenses | number }}</span>
+            <span class="text-right">₦{{
+              balanceSheetData.liabilities.current.accruedExpenses | number
+              }}</span>
           </div>
 
           <div class="balance-category">Non-current Liabilities</div>
           <div class="balance-item">
             <span>Long-term Debt</span>
-            <span class="text-right">₦{{ balanceSheetData.liabilities.nonCurrent.longTermDebt | number }}</span>
+            <span class="text-right">₦{{
+              balanceSheetData.liabilities.nonCurrent.longTermDebt | number
+              }}</span>
           </div>
           <div class="balance-item">
             <span>Deferred Tax</span>
-            <span class="text-right">₦{{ balanceSheetData.liabilities.nonCurrent.deferredTax | number }}</span>
+            <span class="text-right">₦{{
+              balanceSheetData.liabilities.nonCurrent.deferredTax | number
+              }}</span>
           </div>
           <div class="balance-item">
             <span>Lease Obligations</span>
-            <span class="text-right">₦{{ balanceSheetData.liabilities.nonCurrent.leaseObligations | number }}</span>
+            <span class="text-right">₦{{
+              balanceSheetData.liabilities.nonCurrent.leaseObligations | number
+              }}</span>
           </div>
 
           <div class="balance-category">Owner's Equity</div>
           <div class="balance-item">
             <span>Common Stock</span>
-            <span class="text-right">₦{{ balanceSheetData.equity.commonStock | number }}</span>
+            <span class="text-right">₦{{ balanceSheetData.equity.commonStock |
+              number }}</span>
           </div>
           <div class="balance-item">
             <span>Retained Earnings</span>
-            <span class="text-right">₦{{ balanceSheetData.equity.retainedEarnings | number }}</span>
+            <span class="text-right">₦{{
+              balanceSheetData.equity.retainedEarnings | number }}</span>
           </div>
           <div class="balance-item">
             <span>Other Comprehensive Income</span>
-            <span class="text-right">₦{{ balanceSheetData.equity.otherComprehensiveIncome | number }}</span>
+            <span class="text-right">₦{{
+              balanceSheetData.equity.otherComprehensiveIncome | number
+              }}</span>
           </div>
 
           <div class="balance-total">
             <span>Total Liabilities & Equity</span>
-            <span class="text-right bold">₦{{ balanceSheetData.liabilities.total + balanceSheetData.equity.total | number }}</span>
+            <span class="text-right bold">₦{{ balanceSheetData.liabilities.total
+              + balanceSheetData.equity.total | number }}</span>
           </div>
         </div>
       </div>
@@ -215,8 +267,10 @@
       <div class="chart-container">
         <div class="chart-header">
           <h3>Assets Composition</h3>
-          <select class="date-range" [(ngModel)]="selectedYear" (change)="onYearChange(selectedYear)">
-            <option *ngFor="let year of years" [value]="year">{{ year }}</option>
+          <select class="date-range" [(ngModel)]="selectedYear"
+            (change)="onYearChange(selectedYear)">
+            <option *ngFor="let year of years" [value]="year">{{ year
+              }}</option>
           </select>
         </div>
         <apx-chart
@@ -231,8 +285,10 @@
       <div class="chart-container">
         <div class="chart-header">
           <h3>Liabilities Trend</h3>
-          <select class="date-range" [(ngModel)]="selectedYear" (change)="onYearChange(selectedYear)">
-            <option *ngFor="let year of years" [value]="year">{{ year }}</option>
+          <select class="date-range" [(ngModel)]="selectedYear"
+            (change)="onYearChange(selectedYear)">
+            <option *ngFor="let year of years" [value]="year">{{ year
+              }}</option>
           </select>
         </div>
         <apx-chart
@@ -255,7 +311,7 @@
         <i class="ri-history-line"></i> View Saved Reports
       </button>
     </div>
-    
+
     <div class="summary-content">
       <h3>Key Findings</h3>
       <ul>
@@ -274,21 +330,19 @@
           <p>{{ comment.text }}</p>
         </div>
       </div>
-      
+
       <textarea
         class="comment-input"
         [(ngModel)]="newComment"
-        placeholder="Add your comments..."
-      ></textarea>
+        placeholder="Add your comments..."></textarea>
       <button class="action-btn" (click)="postComment()">
         <i class="ri-send-plane-line"></i> Post Comment
       </button>
     </div>
   </section>
 
-
-<!-- Saved Reports Modal -->
-<!-- <div class="side-modal" [class.open]="isModalOpen">
+  <!-- Saved Reports Modal -->
+  <!-- <div class="side-modal" [class.open]="isModalOpen">
   <div class="modal-backdrop" (click)="closeModal()"></div>
   <div class="modal-content">
     <div class="modal-header">
@@ -315,4 +369,3 @@
   </div>
 </div> -->
 </div>
- 

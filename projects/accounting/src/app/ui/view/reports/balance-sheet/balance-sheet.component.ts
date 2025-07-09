@@ -90,6 +90,10 @@ export class BalanceSheetComponent implements OnInit {
         cash: 45000,
         accountsReceivable: 75000,
         inventory: 30000,
+        cashOnHand: 20000,
+        regularCheckingAccount: 50000,
+        payrollCheckingAccount: 25000,
+        savingsAccount: 30000,
         prepaidExpenses: 5000,
         total: 155000
       },
@@ -288,7 +292,12 @@ export class BalanceSheetComponent implements OnInit {
       this.balanceSheetData.assets.current.cash +
       this.balanceSheetData.assets.current.accountsReceivable +
       this.balanceSheetData.assets.current.inventory +
-      this.balanceSheetData.assets.current.prepaidExpenses;
+      this.balanceSheetData.assets.current.prepaidExpenses +
+      this.balanceSheetData.assets.current.regularCheckingAccount +
+      this.balanceSheetData.assets.current.payrollCheckingAccount +
+      this.balanceSheetData.assets.current.savingsAccount +
+      this.balanceSheetData.assets.current.cashOnHand;
+      
 
     this.balanceSheetData.assets.nonCurrent.total =
       this.balanceSheetData.assets.nonCurrent.property +
@@ -505,6 +514,10 @@ export class BalanceSheetComponent implements OnInit {
             accountsReceivable: Math.round(this.baseData.assets.current.accountsReceivable * multiplier),
             inventory: Math.round(this.baseData.assets.current.inventory * multiplier),
             prepaidExpenses: Math.round(this.baseData.assets.current.prepaidExpenses * multiplier),
+            cashOnHand: Math.round(this.baseData.assets.current.cashOnHand * multiplier),
+            regularCheckingAccount: Math.round(this.baseData.assets.current.regularCheckingAccount * multiplier),
+            payrollCheckingAccount: Math.round(this.baseData.assets.current.payrollCheckingAccount * multiplier),
+            savingsAccount: Math.round(this.baseData.assets.current.savingsAccount * multiplier),
             total: Math.round(this.baseData.assets.current.total * multiplier)
           },
           nonCurrent: {
