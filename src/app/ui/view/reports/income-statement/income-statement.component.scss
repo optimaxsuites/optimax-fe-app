@@ -284,6 +284,8 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
             border: 1px solid var(--gray-light);
             border-radius: 8px;
             overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            background-color: #f3f4f6;
         }
 
         .section-item {
@@ -317,7 +319,9 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
         .profit-section {
             margin: 24px 0;
             padding-top: 16px;
+            border-radius: 10px;
             border-top: 2px solid var(--gray-light);
+            background-color: #33405f;
         }
 
         .profit-card {
@@ -331,12 +335,14 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
 
         .profit-title {
             font-weight: 600;
-            color: var(--primary-dark);
+            font-size: 1.8rem;
+            color: #fff;
         }
 
         .profit-value {
             font-weight: 700;
-            color: var(--primary-dark);
+            font-size: 1.7rem;
+            color: #fff;
         }
 
         .profit-meta {
@@ -452,28 +458,33 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
             border: 1px solid var(--primary);
         }
 
-       .modal-overlay {
+      /* comments-modal.css */
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.3);
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 1000;
 }
 
 .modal {
-  background: white;
-  width: 400px;
-  height: 80vh;
-  border-radius: 6px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  padding: 15px 20px;
+  background-color: white;
+  border-radius: 8px;
+  width: 500px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e5e5;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -481,51 +492,122 @@ $font-family: "Inter", "Segoe UI", Arial, sans-serif;
 
 .modal-header h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
 }
 
 .close-btn {
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: 24px;
   cursor: pointer;
+  color: #666;
+  padding: 0;
+  line-height: 1;
 }
 
-.section {
-  margin: 15px 0;
-}
-
-.section label {
-  font-weight: 500;
-}
-
-.section select {
-  width: 100%;
-  padding: 6px;
-  margin-top: 5px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.modal-footer {
+.modal-body {
+  padding: 0;
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 15px;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden;
 }
 
-.cancel-btn, .apply-btn {
-  padding: 6px 12px;
+.comment-list {
+  padding: 20px;
+  overflow-y: auto;
+  flex-grow: 1;
+  max-height: calc(70vh - 150px);
+}
+
+.comment-item {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.comment-item:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.comment-date {
+  color: #888;
+  font-size: 12px;
+}
+
+.comment-text {
+  color: #444;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.comment-input {
+  padding: 16px 20px;
+  border-top: 1px solid #e5e5e5;
+  background-color: #f9f9f9;
+}
+
+.comment-input textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
   border-radius: 4px;
-  border: none;
-  cursor: pointer;
+  resize: none;
+  min-height: 80px;
+  margin-bottom: 12px;
+  font-family: inherit;
+  font-size: 14px;
 }
 
-.cancel-btn {
-  background-color: #f0f0f0;
+.comment-input textarea:focus {
+  outline: none;
+  border-color: #19293f;
+  box-shadow: 0 0 0 2px rgba(74, 137, 220, 0.2);
 }
 
-.apply-btn {
-  background-color: #0f3f4f;
+.btn-primary {
+  background-color: #293c53;
   color: white;
-} 
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-primary:hover {
+  background-color: #162944;
+}
+
+/* Scrollbar styling */
+.comment-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.comment-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.comment-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.comment-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

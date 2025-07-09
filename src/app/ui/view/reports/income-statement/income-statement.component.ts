@@ -1,38 +1,5 @@
 import { Component, OnInit, ViewChild, ElementRef, ChangeDetectionStrategy } from '@angular/core';
-import {
-  ChartComponent,
-  ApexAxisChartSeries,
-  ApexChart,
-  ApexXAxis,
-  ApexDataLabels,
-  ApexTooltip,
-  ApexStroke,
-  ApexLegend,
-  ApexTitleSubtitle,
-  ApexPlotOptions,
-  ApexFill
-} from "ng-apexcharts";
 
-export type RevenueChartOptions = {
-  series: ApexAxisChartSeries;
-  chart: ApexChart;
-  xaxis: ApexXAxis;
-  stroke: ApexStroke;
-  tooltip: ApexTooltip;
-  dataLabels: ApexDataLabels;
-  legend: ApexLegend;
-  title: ApexTitleSubtitle;
-};
-
-export type ExpenseChartOptions = {
-  series: number[];
-  chart: ApexChart;
-  labels: string[];
-  plotOptions: ApexPlotOptions;
-  fill: ApexFill;
-  legend: ApexLegend;
-  title: ApexTitleSubtitle;
-};
 
 interface FinancialItem {
   name: string;
@@ -84,6 +51,10 @@ export class IncomeStatementComponent implements OnInit {
     showVariance: false,
     includeForecasts: false
   };
+
+  totalBudgetOtherItems: number = 0;
+
+
 
   private calculationCache = new Map<string, any>();
 
@@ -159,17 +130,10 @@ export class IncomeStatementComponent implements OnInit {
     profit: [35000, 37000, 40000, 42000, 43000, 42500]
   };
 
-  revenueChartOptions: RevenueChartOptions = {} as RevenueChartOptions;
-  expenseChartOptions: ExpenseChartOptions = {} as ExpenseChartOptions;
-
-  constructor() {
-    this.initRevenueChart();
-    this.initExpenseChart();
-  }
 
   ngOnInit(): void {
     this.updateMetrics();
-    this.updateCharts();
+    
   }
 
   previousMonth(): void {
@@ -186,7 +150,6 @@ export class IncomeStatementComponent implements OnInit {
 
   updateAllData(): void {
     this.updateMetrics();
-    this.updateCharts();
   }
 
   onFiltersApplied(filters: FilterOptions): void {
@@ -216,7 +179,27 @@ export class IncomeStatementComponent implements OnInit {
     }
   }
 
-  
+  getBudgetTotal(items: any[]): number {
+  return items.reduce((sum, i) => sum + (i.budget || 0), 0);
+}
+
+getExpenseVariance(total: number, comparison: number): number {
+  return total - comparison;
+}
+
+getExpenseVariancePercentage(total: number, comparison: number): number {
+  return comparison !== 0 ? ((total - comparison) / Math.abs(comparison)) * 100 : 0;
+}
+
+
+totalBudgetMaintenance: number = this.getBudgetTotal(this.Maintenance);
+totalBudgetLogisticsDistribution: number = this.getBudgetTotal(this.LogisticsDistribution);
+totalBudgetOtherOperatingExpenses: number = this.getBudgetTotal(this.otherOperatingExpenses);
+
+
+
+
+
 
   getComparisonAmount(item: FinancialItem): number | null {
     switch (this.activeFilters.reportType) {
@@ -238,7 +221,13 @@ export class IncomeStatementComponent implements OnInit {
       : null;
   }
 
-    // Memoized calculations
+    // metric calculations
+    get totalBudgetSalariesWages(): number {
+  return this.memoize('totalBudgetSalariesWages', () =>
+    this.SalariesWages.reduce((sum, item) => sum + (item.budget || 0), 0)
+  );
+}
+
   get totalRevenue(): number {
     return this.memoize('totalRevenue', () => 
       this.revenueData.reduce((sum, item) => sum + this.getDisplayAmount(item), 0)
@@ -627,69 +616,6 @@ export class IncomeStatementComponent implements OnInit {
         ((this.totalOperatingExpenses - this.totalPrevOperatingExpenses) / 
          Math.abs(this.totalPrevOperatingExpenses)) * 100 : 0
     );
-  }
-
-  initRevenueChart(): void {
-    this.revenueChartOptions = {
-      series: [
-        { name: "Revenue", data: this.monthlyData.revenue },
-        { name: "Expenses", data: this.monthlyData.expenses },
-        { name: "Profit", data: this.monthlyData.profit }
-      ],
-      chart: {
-        height: 350,
-        type: "histogram",
-        toolbar: { show: false }
-      },
-      dataLabels: { enabled: false },
-      stroke: { curve: "smooth", width: 2 },
-      xaxis: { categories: this.monthlyData.labels },
-      tooltip: { x: { format: "MMM yyyy" } },
-      legend: { position: "top" },
-      title: { text: "Revenue & Expenses Trend", align: "left" }
-    };
-  }
-
-    initExpenseChart(): void {
-    this.expenseChartOptions = {
-      series: [
-        Math.abs(this.totalAdministrativeExpenses),
-        Math.abs(this.totalSalariesWages),
-        Math.abs(this.totalMaintenance),
-        Math.abs(this.totalLogisticsDistribution),
-        Math.abs(this.totalOtherOperatingExpenses)
-      ],
-      chart: { type: "donut", height: 350 },
-      labels: [
-        'Administrative',
-        'Salaries & Wages',
-        'Maintenance',
-        'Logistics & Distribution',
-        'Other Operating Expenses'
-      ],
-      plotOptions: {
-        pie: { donut: { size: "65%" } }
-      },
-      fill: { type: "gradient" },
-      legend: { position: "bottom" },
-      title: { text: "Expense Distribution", align: "left" }
-    };
-  }
-
-  updateCharts(): void {
-    this.revenueChartOptions.series = [
-      { name: "Revenue", data: this.monthlyData.revenue },
-      { name: "Expenses", data: this.monthlyData.expenses },
-      { name: "Profit", data: this.monthlyData.profit }
-    ];
-
-        this.expenseChartOptions.series = [
-      Math.abs(this.totalAdministrativeExpenses),
-      Math.abs(this.totalSalariesWages),
-      Math.abs(this.totalMaintenance),
-      Math.abs(this.totalLogisticsDistribution),
-      Math.abs(this.totalOtherOperatingExpenses)
-    ];
   }
 
   updateMetrics(): void {

@@ -1,24 +1,39 @@
-<div class="charts-section">
-  <apx-chart
-    *ngIf="revenueChartOptions"
-    [series]="revenueChartOptions.series"
-    [chart]="revenueChartOptions.chart"
-    [xaxis]="revenueChartOptions.xaxis"
-    [stroke]="revenueChartOptions.stroke"
-    [tooltip]="revenueChartOptions.tooltip"
-    [dataLabels]="revenueChartOptions.dataLabels"
-    [legend]="revenueChartOptions.legend"
-    [title]="revenueChartOptions.title">
-  </apx-chart>
+<div class="charts-container">
+  <!-- Revenue/Expense Trend Chart -->
+  <div class="chart-card">
+    <div *ngIf="revenueChartOptions" class="chart-wrapper">
+      <apx-chart 
+        [series]="revenueChartOptions['series']"
+        [chart]="revenueChartOptions['chart']"
+        [xaxis]="revenueChartOptions['xaxis']"
+        [yaxis]="revenueChartOptions['yaxis']"
+        [stroke]="revenueChartOptions['stroke']"
+        [tooltip]="revenueChartOptions['tooltip']"
+        [dataLabels]="revenueChartOptions['dataLabels']"
+        [legend]="revenueChartOptions['legend']"
+        [title]="revenueChartOptions['title']"
+        [colors]="revenueChartOptions['colors']"
+        [responsive]="revenueChartOptions['responsive']"
+        [theme]="revenueChartOptions['theme']">
+      </apx-chart>
+    </div>
+  </div>
 
-  <apx-chart
-    *ngIf="expenseChartOptions"
-    [series]="expenseChartOptions.series"
-    [chart]="expenseChartOptions.chart"
-    [labels]="expenseChartOptions.labels"
-    [plotOptions]="expenseChartOptions.plotOptions"
-    [fill]="expenseChartOptions.fill"
-    [legend]="expenseChartOptions.legend"
-    [title]="expenseChartOptions.title">
-  </apx-chart>
+  <!-- Expense Distribution Chart -->
+  <div class="chart-card">
+    <div *ngIf="expenseChartOptions" class="chart-wrapper">
+      <apx-chart 
+        [series]="expenseChartOptions['series']"
+        [chart]="expenseChartOptions['chart']"
+        [labels]="expenseChartOptions['labels']"
+        [plotOptions]="expenseChartOptions['plotOptions']"
+        [fill]="expenseChartOptions['fill']"
+        [legend]="expenseChartOptions['legend']"
+        [title]="expenseChartOptions['title']"
+        [colors]="expenseChartOptions['colors']"
+        [responsive]="expenseChartOptions['responsive']"
+        [dataLabels]="expenseChartOptions['dataLabels']">
+      </apx-chart>
+    </div>
+  </div>
 </div>
