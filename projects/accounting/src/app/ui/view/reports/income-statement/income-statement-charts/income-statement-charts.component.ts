@@ -72,7 +72,7 @@ export class IncomeStatementChartsComponent implements OnChanges {
         toolbar: { show: true }
       },
       dataLabels: { enabled: false },
-      stroke: { curve: 'smooth', width: 2 },
+      stroke: { curve: 'smooth', width: 5 },
       xaxis: { categories: this.monthlyData.labels },
       tooltip: {
         x: { format: 'MMM yyyy' },
@@ -97,63 +97,99 @@ export class IncomeStatementChartsComponent implements OnChanges {
   }
 
   initExpenseChart(): void {
-    this.expenseChartOptions = {
-      series: [
-        Math.abs(this.expenseDistribution.administrative),
-        Math.abs(this.expenseDistribution.salariesAndWages),
-        Math.abs(this.expenseDistribution.maintenance),
-        Math.abs(this.expenseDistribution.logisticsAndDistribution),
-        Math.abs(this.expenseDistribution.otherOperatingExpenses)
-      ],
-      chart: {
-        type: 'donut',
-        height: this.chartHeight,
-        toolbar: { show: true }
-      },
-      labels: [
+  this.expenseChartOptions = {
+    series: [
+      Math.abs(this.expenseDistribution.administrative),
+      Math.abs(this.expenseDistribution.salariesAndWages),
+      Math.abs(this.expenseDistribution.maintenance),
+      Math.abs(this.expenseDistribution.logisticsAndDistribution),
+      Math.abs(this.expenseDistribution.otherOperatingExpenses)
+    ],
+    chart: {
+      type: 'donut',
+      height: this.chartHeight,
+      width : '100%',
+      toolbar: { show: false }
+    },
+    labels: [
         'Administrative',
         'Salaries & Wages',
         'Maintenance',
         'Logistics & Distribution',
-        'Other Operating Expenses'
-      ],
-      plotOptions: {
-        pie: {
-          donut: {
-            size: '45%',
-            
-            labels: {
+        'Other Operating Expenses' 
+    ],
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '55%',
+          labels: {
+            show: true,
+            name: {
+              show: false 
+            },
+            value: {
               show: true,
-              total: {
-                show: true,
-                label: 'Total Expenses',
-                formatter: (w: any) => {
-                  const total = w.globals.seriesTotals.reduce((a: number, b: number) => a + b, 0);
-                  return `${this.currencySymbol}${total.toLocaleString()}`;
-                }
+              fontSize: '16px',
+              fontWeight: 600,
+              color: '#333',
+              offsetY: 0,
+              formatter: (val: string) => {
+                const total = this.expenseChartOptions['series'].reduce((a: number, b: number) => a + b, 0);
+                const percentage = (parseFloat(val) / total * 100).toFixed(1);
+                return `${percentage}%`; 
+              }
+            },
+            total: {
+              show: true,
+              label: 'Total', 
+              color: '#333',
+              fontSize: '16px',
+              fontWeight: 600,
+              formatter: () => {
+                const total = this.expenseChartOptions ['series'].reduce((a: number, b: number) => a + b, 0);
+                return `${this.currencySymbol}${total.toFixed(0)}`; 
               }
             }
           }
         }
+      }
+    },
+    dataLabels: {
+      enabled: false 
+    },
+    legend: {
+      position: 'bottom',
+      horizontalAlign: 'center',
+      fontSize: '12px',
+      markers: {
+        width: 12,
+        height: 12,
+        radius: 12
       },
-      fill: { type: 'gradient' },
-      legend: { position: 'bottom' },
-      title: { text: 'Expense Distribution', align: 'left' },
-      dataLabels: {
-        enabled: false
-      },
-      colors: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'],
-      responsive: [
-        {
-          breakpoint: 480,
-          options: {
-            chart: { height: 300 },
-            legend: { position: 'bottom' }
-          }
-        }
-      ]
-    };
-  }
+      itemMargin: {
+        horizontal: 10,
+        vertical: 5
+      }
+    },
+    colors: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'],
+    title: {
+      text: 'Expense Breakdown', 
+      align: 'left',
+      style: {
+        fontSize: '16px',
+        fontWeight: 'bold'
+      }
+    },
+    subtitle: {
+      text: 'This Month', 
+      align: 'left',
+      margin: 10,
+      style: {
+        fontSize: '14px'
+      }
+    }
+  };
+}
 
   updateCharts(): void {
     if (this.revenueChartOptions && this.expenseChartOptions) {
