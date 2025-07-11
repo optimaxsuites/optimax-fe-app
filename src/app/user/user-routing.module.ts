@@ -16,55 +16,55 @@ import { PosStoreComponent } from "../ui/view/pos-store/pos-store.component";
 const routes: Routes = [
   {
     path: "",
-    redirectTo: "user/checkout/34567whr4567yhsdzr56",
+    redirectTo: "34567whr4567yhsdzr56",
     pathMatch: "full",
   },
   {
-    path: "user/checkout/orders/:uuid",
+    path: "orders/:uuid",
     component: CheckoutOrdersComponent,
   },
   {
-    path: "user/checkout/cash-payment/:uuid",
+    path: "cash-payment/:uuid",
     component: CashPaymentComponent,
   },
   {
-    path: "user/checkout/order/:uuid",
+    path: "order/:uuid",
     component: OrderDetailComponent,
   },
   {
-    path: "user/checkout/refund/:uuid",
+    path: "refund/:uuid",
     component: OrderRefundComponent,
   },
   {
-    path: "user/checkout/refund-request/:uuid",
+    path: "refund-request/:uuid",
     component: RequestDetailsComponent,
   },
   {
-    path: "user/checkout/openRegister/:uuid",
+    path: "openRegister/:uuid",
     component: OpenRegisterComponent,
   },
   {
-    path: "user/checkout/closeRegister/:uuid",
+    path: "closeRegister/:uuid",
     component: CloseRegisterComponent,
   },
   {
-    path: "user/checkout/:uuid",
+    path: ":uuid",
     component: PosCheckoutPageComponent,
   },
   {
-    path: "user/checkout/kitchen/order/:uuid",
+    path: "kitchen/order/:uuid",
     component: KitchenOrderComponent,
   },
   {
-    path: "user/checkout/kitchen/:uuid",
+    path: "kitchen/:uuid",
     component: CheckoutKitchenComponent,
   },
   {
-    path: "user/checkout/hotel/:uuid",
+    path: "hotel/:uuid",
     component: HotelCheckoutComponent,
   },
   {
-    path: "user/store/:uuid",
+    path: "store/:uuid",
     component: PosStoreComponent,
   },
 ];

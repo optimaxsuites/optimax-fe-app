@@ -8,8 +8,15 @@ import { firstValueFrom } from 'rxjs';
 export class AppInitService {
 
   constructor(private metadataService: MetadataService) {}
-  init() {
+  async init(): Promise<any>  {
     console.log('AppInitService: initializing...');
-    return this.metadataService.fetchMetaData();
+    try {
+      return await this.metadataService.fetchMetaData();
+    } catch {
+      return await Promise.resolve();
+    };
   }
+
+  
+  
 }
