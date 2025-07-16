@@ -4,10 +4,16 @@
         <div class="header">
             <h1 class="title" style="color: black;">Reconciliation</h1>
 
+            <div class="view-toggle-container">
+                <button class="view-toggle-btn" (click)="toggleViewMode()">
+                    <i class="pi" [class.pi-table]="viewMode === 'tab'" [class.pi-list]="viewMode === 'accordion'"></i>
+                    {{ viewMode === 'accordion' ? 'Tab View' : 'Accordion View' }}
+                </button>
+            </div>
             
-        <button class="sidebar-toggle" (click)="toggleSidebar()">
-            <i [class]="sidebarCollapsed ? 'pi pi-chevron-left' : 'pi pi-chevron-right'"></i>
-        </button>
+            <button class="sidebar-toggle" (click)="toggleSidebar()">
+                <i [class]="sidebarCollapsed ? 'pi pi-chevron-left' : 'pi pi-chevron-right'"></i>
+            </button>
         </div>
 
         <!-- Control Panel -->
@@ -35,7 +41,7 @@
                     </div>
 
                     <div class="fetch-btn">
-                        <p-button label="Fetch Data"  icon="pi pi-check" [loading]="loadingItem" (click)="load()" />
+                        <p-button label="Fetch Data" icon="pi pi-check" [loading]="loadingItem" (click)="load()" />
                     </div>
                 </div>
 
@@ -57,91 +63,158 @@
 
         <!-- Transaction Tables -->
         <div class="transaction-tables">
-            <p-accordion [multiple]="true" [activeIndex]="[0]">
-                <p-accordionTab header="Bank Transactions (from Mono)" [selected]="true">
-                    <p-table [value]="bankTransactions" [loading]="loading">
-                        <ng-template pTemplate="header">
-                            <tr>
-                                <th>Date</th>
-                                <th>Description</th>
-                                <th>Debit</th>
-                                <th>Credit</th>
-                                <th>Status</th>
-                                <th>Match</th>
-                            </tr>
-                        </ng-template>
-                        <ng-template pTemplate="body" let-transaction>
-                            <tr>
-                                <td>{{transaction.date}}</td>
-                                <td>{{transaction.description}}</td>
-                                <td>{{transaction.debit | currency:'NGN':'symbol-narrow'}}</td>
-                                <td>{{transaction.credit | currency:'NGN':'symbol-narrow'}}</td>
-                                <td>
-                                    <p-tag [value]="transaction.status" 
-                                           [severity]="transaction.status === 'Matched' ? 'success' : 'warning'">
-                                    </p-tag>
-                                </td>
-                                <td>
-                                    <button *ngIf="transaction.status !== 'Matched'" pButton pRipple 
-                                            icon="pi pi-link" class="p-button-sm p-button-outlined"
-                                            (click)="matchTransaction(transaction)"></button>
-                                    <i *ngIf="transaction.status === 'Matched'" class="pi pi-check"></i>
-                                </td>
-                            </tr>
-                        </ng-template>
-                    </p-table>
-                </p-accordionTab>
+            <!-- Accordion View -->
+            <div *ngIf="viewMode === 'accordion'">
+                <p-accordion [multiple]="true" [activeIndex]="[0]">
+                    <p-accordionTab header="Bank Transactions (from Mono)" [selected]="true">
+                        <p-table [value]="bankTransactions" [loading]="loading">
+                            <ng-template pTemplate="header">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Debit</th>
+                                    <th>Credit</th>
+                                    <th>Status</th>
+                                    <th>Match</th>
+                                </tr>
+                            </ng-template>
+                            <ng-template pTemplate="body" let-transaction>
+                                <tr>
+                                    <td>{{transaction.date}}</td>
+                                    <td>{{transaction.description}}</td>
+                                    <td>{{transaction.debit | currency:'NGN':'symbol-narrow'}}</td>
+                                    <td>{{transaction.credit | currency:'NGN':'symbol-narrow'}}</td>
+                                    <td>
+                                        <p-tag [value]="transaction.status" 
+                                               [severity]="transaction.status === 'Matched' ? 'success' : 'warning'">
+                                        </p-tag>
+                                    </td>
+                                    <td>
+                                        <button *ngIf="transaction.status !== 'Matched'" pButton pRipple 
+                                                icon="pi pi-link" class="p-button-sm p-button-outlined"
+                                                (click)="matchTransaction(transaction)"></button>
+                                        <i *ngIf="transaction.status === 'Matched'" class="pi pi-check"></i>
+                                    </td>
+                                </tr>
+                            </ng-template>
+                        </p-table>
+                    </p-accordionTab>
 
-                <p-accordionTab header="Optimax Recorded Transactions">
-                    <p-table [value]="erpTransactions" [loading]="loading">
-                        <ng-template pTemplate="header">
-                            <tr>
-                                <th>Date</th>
-                                <th>Reference</th>
-                                <th>Description</th>
-                                <th>Debit</th>
-                                <th>Credit</th>
-                                <th>Account</th>
-                            </tr>
-                        </ng-template>
-                        <ng-template pTemplate="body" let-transaction>
-                            <tr>
-                                <td>{{transaction.date}}</td>
-                                <td>{{transaction.reference}}</td>
-                                <td>{{transaction.description}}</td>
-                                <td>{{transaction.debit | currency:'NGN':'symbol-narrow'}}</td>
-                                <td>{{transaction.credit | currency:'NGN':'symbol-narrow'}}</td>
-                                <td>{{transaction.account}}</td>
-                            </tr>
-                        </ng-template>
-                    </p-table>
-                </p-accordionTab>
-            </p-accordion>
+                    <p-accordionTab header="Optimax Recorded Transactions">
+                        <p-table [value]="erpTransactions" [loading]="loading">
+                            <ng-template pTemplate="header">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Reference</th>
+                                    <th>Description</th>
+                                    <th>Debit</th>
+                                    <th>Credit</th>
+                                    <th>Account</th>
+                                </tr>
+                            </ng-template>
+                            <ng-template pTemplate="body" let-transaction>
+                                <tr>
+                                    <td>{{transaction.date}}</td>
+                                    <td>{{transaction.reference}}</td>
+                                    <td>{{transaction.description}}</td>
+                                    <td>{{transaction.debit | currency:'NGN':'symbol-narrow'}}</td>
+                                    <td>{{transaction.credit | currency:'NGN':'symbol-narrow'}}</td>
+                                    <td>{{transaction.account}}</td>
+                                </tr>
+                            </ng-template>
+                        </p-table>
+                    </p-accordionTab>
+                </p-accordion>
+            </div>
+
+            <!-- Tab View -->
+            <div *ngIf="viewMode === 'tab'">
+                <p-tabView>
+                    <p-tabPanel header="Bank Transactions (from Mono)">
+                        <p-table [value]="bankTransactions" [loading]="loading">
+                            <ng-template pTemplate="header">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Debit</th>
+                                    <th>Credit</th>
+                                    <th>Status</th>
+                                    <th>Match</th>
+                                </tr>
+                            </ng-template>
+                            <ng-template pTemplate="body" let-transaction>
+                                <tr>
+                                    <td>{{transaction.date}}</td>
+                                    <td>{{transaction.description}}</td>
+                                    <td>{{transaction.debit | currency:'NGN':'symbol-narrow'}}</td>
+                                    <td>{{transaction.credit | currency:'NGN':'symbol-narrow'}}</td>
+                                    <td>
+                                        <p-tag [value]="transaction.status" 
+                                               [severity]="transaction.status === 'Matched' ? 'success' : 'warning'">
+                                        </p-tag>
+                                    </td>
+                                    <td>
+                                        <button *ngIf="transaction.status !== 'Matched'" pButton pRipple 
+                                                icon="pi pi-link" class="p-button-sm p-button-outlined"
+                                                (click)="matchTransaction(transaction)"></button>
+                                        <i *ngIf="transaction.status === 'Matched'" class="pi pi-check"></i>
+                                    </td>
+                                </tr>
+                            </ng-template>
+                        </p-table>
+                    </p-tabPanel>
+                    <p-tabPanel header="Optimax Recorded Transactions">
+                        <p-table [value]="erpTransactions" [loading]="loading">
+                            <ng-template pTemplate="header">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Reference</th>
+                                    <th>Description</th>
+                                    <th>Debit</th>
+                                    <th>Credit</th>
+                                    <th>Account</th>
+                                </tr>
+                            </ng-template>
+                            <ng-template pTemplate="body" let-transaction>
+                                <tr>
+                                    <td>{{transaction.date}}</td>
+                                    <td>{{transaction.reference}}</td>
+                                    <td>{{transaction.description}}</td>
+                                    <td>{{transaction.debit | currency:'NGN':'symbol-narrow'}}</td>
+                                    <td>{{transaction.credit | currency:'NGN':'symbol-narrow'}}</td>
+                                    <td>{{transaction.account}}</td>
+                                </tr>
+                            </ng-template>
+                        </p-table>
+                    </p-tabPanel>
+                </p-tabView>
+            </div>
         </div>
     </div>
 
-      <!-- Sidebar -->
-    <div class="sidebar" [class.collapsed]="sidebarCollapsed">
-        
-        <div class="sidebar-content">
-            <h3>Reconciliation Summary</h3>
-            <div class="summary-item">
-                <span>Total Bank Transactions:</span>
-                <strong>15</strong>
+    <!-- Sidebar -->
+        <!-- <div class="sidebar" [class.collapsed]="sidebarCollapsed">
+            <div class="sidebar-content">
+                <h3>Reconciliation Summary</h3>
+                <div class="summary-item">
+                    <span>Total Bank Transactions:</span>
+                    <strong>{{bankTransactions.length}}</strong>
+                </div>
+                <div class="summary-item">
+                    <span>Matched:</span>
+                    <strong class="matched">
+                        {{bankTransactions.filter(t => t.status === 'Matched').length}} 
+                        ({{ ((bankTransactions.filter(t => t.status === 'Matched').length / bankTransactions.length) * 100 || 0 | number:'1.0-0' }}%)
+                    </strong>
+                </div>
+                <div class="summary-item">
+                    <span>Unmatched:</span>
+                    <strong class="unmatched">{{bankTransactions.filter(t => t.status !== 'Matched').length}}</strong>
+                </div>
+                <div class="summary-item">
+                    <span>Difference:</span>
+                    <strong [class.discrepancy]="difference !== '₦0.00'">{{difference}}</strong>
+                </div>
             </div>
-            <div class="summary-item">
-                <span>Matched:</span>
-                <strong class="matched">12 (80%)</strong>
-            </div>
-            <div class="summary-item">
-                <span>Unmatched:</span>
-                <strong class="unmatched">3</strong>
-            </div>
-            <div class="summary-item">
-                <span>Difference:</span>
-                <strong [class.discrepancy]="difference !== '₦0.00'">₦0.00</strong>
-            </div>
-        </div>
-    </div>
-
+        </div> -->
 </div>

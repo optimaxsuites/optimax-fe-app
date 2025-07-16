@@ -9,6 +9,7 @@ import { CashFlowComponent } from './ui/view/reports/cash-flow/cash-flow.compone
 import { TaxSummaryComponent } from './ui/view/reports/tax-summary/tax-summary.component';
 import { ReportTabsComponent } from './ui/view/reports/report-tabs/report-tabs.component';
 import { ReconcillationComponent } from './ui/view/reconcillation/reconcillation.component';
+import { BankAccountOverviewComponent } from './ui/view/bank-account-overview/bank-account-overview.component';
 
 
 const routes: Routes = [
@@ -35,6 +36,7 @@ const routes: Routes = [
   { path: 'reports/income-statement', component: IncomeStatementComponent },
   { path: 'reports/cash-flow', component: CashFlowComponent },
   { path: 'reports/tax-summary', component: TaxSummaryComponent },
+   { path: 'bankaccountoverview', component: BankAccountOverviewComponent },
   // ...other routes
      { 
       path: 'reports/:uuid',

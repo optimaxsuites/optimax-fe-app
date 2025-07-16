@@ -1,6 +1,7 @@
 import { Component, Type } from '@angular/core';
 import { TransactionsComponent } from './transactions/transactions.component';
 import { ChartOfAccountsComponent } from './chart-of-accounts/chart-of-accounts.component';
+import { BankAccountOverviewComponent } from './bank-account-overview/bank-account-overview.component';
 
 export interface TabConfig {
   name: string;
@@ -33,6 +34,10 @@ export class AccountingPageComponent {
       {
         name: 'Chart of Accounts',
         component: ChartOfAccountsComponent
+      },
+      {
+        name: 'Bank Account Overview',
+        component: BankAccountOverviewComponent
       }
       // { name: 'Products', component: QuotationComponent },
       // { name: 'Inventory', component: BookKeepingComponent },

@@ -98,7 +98,13 @@ import { IncomeStatementChartsComponent } from './ui/view/reports/income-stateme
 import { IncomeStatementFilterComponent } from './ui/view/reports/income-statement/income-statement-filter/income-statement-filter.component';
 import { CalendarModule } from 'primeng/calendar';
 import { ReconcillationComponent } from './ui/view/reconcillation/reconcillation.component';
-import { AccordionModule } from 'primeng/accordion'
+import { AccordionModule } from 'primeng/accordion';
+import { BankAccountOverviewComponent } from './ui/view/bank-account-overview/bank-account-overview.component'
+import { Component, OnInit } from '@angular/core';
+import { DropdownModule } from 'primeng/dropdown';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { TooltipModule } from 'primeng/tooltip';
+import { FileUploadModule } from 'primeng/fileupload'
 
 
 @NgModule({
@@ -131,7 +137,8 @@ import { AccordionModule } from 'primeng/accordion'
     TransactionSideModalComponent,
     IncomeStatementChartsComponent,
     IncomeStatementFilterComponent,
-    ReconcillationComponent
+    ReconcillationComponent,
+    BankAccountOverviewComponent
   ],
   imports: [
     // BrowserModule,
@@ -197,7 +204,18 @@ import { AccordionModule } from 'primeng/accordion'
     CalendarModule,
     TagModule,
     AccordionModule,
-    TableModule
+    TableModule,
+    CommonModule,
+    FormsModule,
+    TableModule,
+    ButtonModule,
+    DropdownModule,
+    InputTextModule,
+    CalendarModule,
+    SelectButtonModule,
+    DialogModule,
+    TooltipModule,
+    FileUploadModule
 ],
   providers: [],
   bootstrap: [AppComponent]

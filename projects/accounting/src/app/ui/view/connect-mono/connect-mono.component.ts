@@ -12,7 +12,7 @@ export class ConnectMonoComponent implements OnInit {
 
   constructor() {
     this.monoInstance = new MonoConnect({
-      key: "test_pk_rcay22tf218wpfo68ry8",
+      key: "live_pk_dsfoxddopzp4ha01xipo",
       onClose: () => console.log('widget closed'),
       onLoad: ()=> console.log('Widget loaded successfully'),
       onSuccess: ({ code }: { code: string }) => console.log(`linked successfully: ${code}`)

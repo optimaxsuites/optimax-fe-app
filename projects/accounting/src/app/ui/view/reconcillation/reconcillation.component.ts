@@ -21,6 +21,7 @@ export class ReconcillationComponent {
   loadingItem = false;
   sidebarCollapsed = false;
   difference = '₦0.00';
+  viewMode: 'accordion' | 'tab' = 'accordion';
 
   // Sample data
   bankTransactions = [
@@ -60,6 +61,10 @@ export class ReconcillationComponent {
         command: () => this.saveAndExit()
       }
     ];
+  }
+
+  toggleViewMode() {
+    this.viewMode = this.viewMode === 'accordion' ? 'tab' : 'accordion';
   }
 
   toggleSidebar() {
