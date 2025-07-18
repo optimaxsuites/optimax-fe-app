@@ -21,21 +21,15 @@
 //   cursor: pointer;
 // }
 
-
-
 .dropdown {
   position: relative;
   display: inline-block;
-
-
 }
-
 
 .dropdown-menu li {
   cursor: pointer;
   // white-space: nowrap;
 }
-
 
 // p-table .p-datatable-wrapper {
 //   overflow: visible !important;
@@ -58,7 +52,7 @@
   z-index: 50; /* Higher value, appears on top */
   align-items: center; /* Align items vertically */
   white-space: nowrap;
-  width: auto; 
+  width: auto;
 }
 
 .row {
@@ -301,8 +295,6 @@ td.table-item.quantity-available {
   width: 100px;
 }
 
-
-
 .quantity-status {
   font-size: 12px;
   margin-top: 5px;
@@ -310,11 +302,9 @@ td.table-item.quantity-available {
   border-radius: 5px;
 }
 
-
 .quantity-low {
   background-color: #fff3e0; /* Light red/orange */
   color: #d84315;
- 
 }
 
 .quantity-available {
@@ -448,17 +438,86 @@ label {
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  p{
+  p {
     @apply text-base text-gray-600;
   }
-@apply gap-5;
+  @apply gap-5;
 }
 
 .card {
-  @apply p-4 rounded-xl
+  @apply p-4 rounded-xl;
 }
 
-::ng-deep .p-paginator{
+::ng-deep .p-paginator {
   @apply w-full;
 }
 
+.modal-backdrop {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Smooth transitions for modal */
+.modal-content {
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Modal scroll container - this allows scrolling within the modal */
+.modal-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+/* Custom scrollbar for modal content */
+.modal-scroll-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-scroll-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.modal-scroll-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.modal-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Ensure the information component fills the container properly */
+.modal-scroll-container app-information {
+  display: block;
+  width: 100%;
+}
+body.modal-open {
+  overflow: hidden !important;
+}
+
+/* New styles for fixed header */
+.fixed-header-container {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding-bottom: 1rem;
+}
+
+.scrollable-content {
+  max-height: calc(100vh - 250px); /* Adjust based on your header height */
+  overflow-y: auto;
+}

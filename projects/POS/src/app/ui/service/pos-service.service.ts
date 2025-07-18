@@ -1,9 +1,9 @@
-import { Injectable, isDevMode } from "@angular/core";
+import { Injectable, isDevMode } from '@angular/core';
 import {
   HttpClient,
   HttpErrorResponse,
   HttpHeaders,
-} from "@angular/common/http";
+} from '@angular/common/http';
 
 import {
   catchError,
@@ -16,29 +16,35 @@ import {
   switchMap,
   tap,
   throwError,
-} from "rxjs";
-import { Router } from "@angular/router";
-import { RandomTokenService } from "../sharedComponent/service/random-token/random-token.service";
-import { NavigationLinksService } from "../sharedComponent/service/navigation-links/navigation-links.service";
-import { environment } from "../sharedComponent/service/environments/environment";
-import { ProductCategories } from "../models/enums";
-import { ProductCategoryGET, ProductCategoryPOST, ProductData, supplierData } from "../models/interface";
-import { ImageCacheService } from "./image-cache.service";
+} from 'rxjs';
+import { Router } from '@angular/router';
+import { RandomTokenService } from '../sharedComponent/service/random-token/random-token.service';
+import { NavigationLinksService } from '../sharedComponent/service/navigation-links/navigation-links.service';
+import { environment } from '../sharedComponent/service/environments/environment';
+import { ProductCategories } from '../models/enums';
+import {
+  ProductCategoryGET,
+  ProductCategoryPOST,
+  ProductData,
+  supplierData,
+  InventoryPayload,
+} from '../models/interface';
+import { ImageCacheService } from './image-cache.service';
 import {
   OrderGET,
   TableOrderStatusGET,
   TableOrderStatusPOST,
-} from "../models/interfaces/kitchen";
+} from '../models/interfaces/kitchen';
 
 @Injectable({
-  providedIn: "root",
+  providedIn: 'root',
 })
 export class PosServiceService {
   constructor(
     private randomTokenService: RandomTokenService,
     private http: HttpClient,
     private imageCacheService: ImageCacheService,
-    private router: Router,
+    private router: Router
   ) {}
   /**
    * These are the options used in `shareReplay()` to cache http requests
@@ -52,25 +58,30 @@ export class PosServiceService {
   }
   addCategory(data: ProductCategoryPOST) {
     return this.http
-      .post<ProductCategoryPOST>(this.getBaseApiUrl() + "/x/api/v2/pos/productCategories", data)
+      .post<ProductCategoryPOST>(
+        this.getBaseApiUrl() + '/x/api/v2/pos/productCategories',
+        data
+      )
       .pipe(catchError(this.handleError));
   }
 
   getCategories() {
     return this.http
-      .get<ProductCategoryGET[]>(this.getBaseApiUrl() + "/x/api/v2/pos/productCategories")
+      .get<ProductCategoryGET[]>(
+        this.getBaseApiUrl() + '/x/api/v2/pos/productCategories'
+      )
       .pipe(catchError(this.handleError));
   }
   getBranches() {
     return this.http
-      .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/branches")
+      .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/branches')
       .pipe(catchError(this.handleError));
   }
 
   deleteCategory(id: number) {
     return this.http
       .delete<any>(
-        this.getBaseApiUrl() + `/x/api/v2/pos/productCategories/${id}`,
+        this.getBaseApiUrl() + `/x/api/v2/pos/productCategories/${id}`
       )
       .pipe(catchError(this.handleError));
   }
@@ -88,25 +99,25 @@ export class PosServiceService {
   }
   addProduct(data: any) {
     return this.http
-      .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/products/product", data)
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/products/product', data)
       .pipe(catchError(this.handleError));
   }
 
   addBranchData(data: any) {
     return this.http
-      .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/branchDatas", data)
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/branchDatas', data)
       .pipe(catchError(this.handleError));
   }
 
   addProductVariant(data: any) {
     return this.http
-      .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/productVariants", data)
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/productVariants', data)
       .pipe(catchError(this.handleError));
   }
 
   addProductBranchData(data: any) {
     return this.http
-      .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/productBranches", data)
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/productBranches', data)
       .pipe(catchError(this.handleError));
   }
 
@@ -122,7 +133,7 @@ export class PosServiceService {
         catchError((error) => {
           console.error(`❌ Error fetching branch data for ID ${id}:`, error);
           return of(null); // return a null fallback to avoid forkJoin breaking
-        }),
+        })
       );
   }
 
@@ -134,17 +145,17 @@ export class PosServiceService {
 
   getVariantsByBranchDataId(id: number) {
     return this.http
-      .get<
-        any[]
-      >(this.getBaseApiUrl() + `/x/api/v2/pos/productVariants/getBy/${id}`)
+      .get<any[]>(
+        this.getBaseApiUrl() + `/x/api/v2/pos/productVariants/getBy/${id}`
+      )
       .pipe(
         catchError((error) => {
           console.error(
             `❌ Error fetching variants for branchDataId ${id}:`,
-            error,
+            error
           );
           return of([]);
-        }),
+        })
       );
   }
 
@@ -152,10 +163,10 @@ export class PosServiceService {
   getProducts() {
     if (!this.products$) {
       this.products$ = this.http
-        .get<ProductData[]>(this.getBaseApiUrl() + "/x/api/v2/pos/products")
+        .get<ProductData[]>(this.getBaseApiUrl() + '/x/api/v2/pos/products')
         .pipe(
           catchError(this.handleError),
-          shareReplay(this.shareReplayOptions),
+          shareReplay(this.shareReplayOptions)
         ); // For caching!
     }
 
@@ -167,7 +178,7 @@ export class PosServiceService {
       .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/getBy/${id}`)
       .pipe(
         catchError(this.handleError),
-        shareReplay(this.shareReplayOptions),
+        shareReplay(this.shareReplayOptions)
       ));
   }
 
@@ -196,19 +207,19 @@ export class PosServiceService {
             catchError((error) => {
               console.error(
                 `❌ Error enriching product ${product.name}:`,
-                error,
+                error
               );
               return of({ ...product, branchDetails: [] });
-            }),
+            })
           );
         });
 
         return forkJoin(enrichedProducts$);
       }),
       catchError((err) => {
-        console.error("❌ Error fetching product details:", err);
+        console.error('❌ Error fetching product details:', err);
         return of([]);
-      }),
+      })
     );
   }
 
@@ -221,16 +232,16 @@ export class PosServiceService {
       ? forkJoin(
           variantIds.map((id: any) =>
             this.http.delete<any>(
-              `${this.getBaseApiUrl()}/x/api/v2/pos/productVariants/${id}`,
-            ),
-          ),
-        ).pipe(tap(() => console.log("Deleted variants:", variantIds)))
+              `${this.getBaseApiUrl()}/x/api/v2/pos/productVariants/${id}`
+            )
+          )
+        ).pipe(tap(() => console.log('Deleted variants:', variantIds)))
       : of(null);
     const deleteProduct$ = this.http
       .delete<any>(
-        `${this.getBaseApiUrl()}/x/api/v2/pos/products/${activeItem.id}`,
+        `${this.getBaseApiUrl()}/x/api/v2/pos/products/${activeItem.id}`
       )
-      .pipe(tap(() => console.log("Deleted product with ID:", activeItem.id)));
+      .pipe(tap(() => console.log('Deleted product with ID:', activeItem.id)));
 
     return deleteVariants$.pipe(switchMap(() => deleteProduct$));
   }
@@ -242,7 +253,7 @@ export class PosServiceService {
   }
   updateProduct(data: any) {
     return this.http
-      .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/products/product", data)
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/products/product', data)
       .pipe(catchError(this.handleError));
   }
 
@@ -258,40 +269,40 @@ export class PosServiceService {
 
   getDiscountTypes() {
     return this.http
-      .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/discountTypes")
+      .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/discountTypes')
       .pipe(catchError(this.handleError));
   }
 
   private discount$!: Observable<any>;
   getDiscount() {
     return this.http
-      .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/discounts")
+      .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/discounts')
       .pipe(catchError(this.handleError));
   }
 
   addIngredient(ingredientData: any) {
     return this.http
       .post<any>(
-        this.getBaseApiUrl() + "/x/api/v2/pos/ingredients",
-        ingredientData,
+        this.getBaseApiUrl() + '/x/api/v2/pos/ingredients',
+        ingredientData
       )
       .pipe(catchError(this.handleError));
   }
   getIngredient() {
     return this.http
-      .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/ingredients")
+      .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/ingredients')
       .pipe(catchError(this.handleError));
   }
 
   getSupplier() {
     return this.http
-      .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/suppliers")
+      .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/suppliers')
       .pipe(catchError(this.handleError));
   }
 
   getTax() {
     return this.http
-      .get<any>(this.getBaseApiUrl() + "/x/api/v2/pos/taxes")
+      .get<any>(this.getBaseApiUrl() + '/x/api/v2/pos/taxes')
       .pipe(catchError(this.handleError));
   }
 
@@ -305,31 +316,30 @@ export class PosServiceService {
     return this.http
       .get<any>(
         this.getBaseApiUrl() +
-          `/x/api/v2/pos/orders/get/by/orderNumer?orderNumber=${id}`,
+          `/x/api/v2/pos/orders/get/by/orderNumer?orderNumber=${id}`
       )
       .pipe(catchError(this.handleError));
   }
 
-
   addDiscount(data: any) {
     return this.http
-      .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/discounts", data)
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/discounts', data)
       .pipe(catchError(this.handleError));
   }
 
   addSupplier(data: any) {
     return this.http
-      .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/suppliers", data)
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/suppliers', data)
       .pipe(catchError(this.handleError));
   }
 
   addTax(data: any) {
     return this.http
-      .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/taxes", data)
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/taxes', data)
       .pipe(catchError(this.handleError));
   }
   private handleError(error: HttpErrorResponse) {
-    let errorMessage = "An unknown error occurred!";
+    let errorMessage = 'An unknown error occurred!';
     if (error.error instanceof ErrorEvent) {
       // Client-side error
       errorMessage = `Error: ${error.error.message}`;
@@ -337,15 +347,15 @@ export class PosServiceService {
       // Server-side error
       if (error.status === 500) {
         errorMessage =
-          "Server error: " + error.error.message ||
-          "Check form details and try again.";
+          'Server error: ' + error.error.message ||
+          'Check form details and try again.';
       } else if (error.status === 404) {
-        errorMessage = "Resource not found. Please try again.";
+        errorMessage = 'Resource not found. Please try again.';
       } else if (error.status === 0) {
         errorMessage =
-          "Unable to connect to the server. Please check your internet connection.";
+          'Unable to connect to the server. Please check your internet connection.';
       } else {
-        errorMessage = error.error.message || "An unexpected error occurred.";
+        errorMessage = error.error.message || 'An unexpected error occurred.';
       }
     }
     return throwError(() => errorMessage);
@@ -354,16 +364,16 @@ export class PosServiceService {
   addTableOrderStatus(data: TableOrderStatusPOST) {
     return this.http
       .post<TableOrderStatusPOST>(
-        this.getBaseApiUrl() + "/x/api/v2/pos/tableOrderStatuses",
-        data,
+        this.getBaseApiUrl() + '/x/api/v2/pos/tableOrderStatuses',
+        data
       )
       .pipe(catchError(this.handleError));
   }
   getTableOrderStatuses() {
     return this.http
-      .get<
-        TableOrderStatusGET[]
-      >(this.getBaseApiUrl() + "/x/api/v2/pos/tableOrderStatuses")
+      .get<TableOrderStatusGET[]>(
+        this.getBaseApiUrl() + '/x/api/v2/pos/tableOrderStatuses'
+      )
       .pipe(
         catchError(this.handleError),
         /** Easiest way I could think of for moving the copying the product variant to where it'll be easily accessible */
@@ -376,13 +386,13 @@ export class PosServiceService {
           });
 
           return data;
-        }),
+        })
       );
   }
   getTableOrderStatusById(id: number) {
     return this.http
       .get<TableOrderStatusGET>(
-        this.getBaseApiUrl() + `/x/api/v2/pos/tableOrderStatuses/${id}`,
+        this.getBaseApiUrl() + `/x/api/v2/pos/tableOrderStatuses/${id}`
       )
       .pipe(
         catchError(this.handleError),
@@ -394,22 +404,57 @@ export class PosServiceService {
           });
 
           return data;
-        }),
+        })
       );
   }
   updateTableOrderStatus(id: number, data: TableOrderStatusPOST) {
     return this.http
       .put<TableOrderStatusPOST>(
         this.getBaseApiUrl() + `/x/api/v2/pos/tableOrderStatuses/${id}`,
-        data,
+        data
       )
       .pipe(catchError(this.handleError));
   }
   deleteTableOrderStatusById(id: number) {
     return this.http
       .delete<TableOrderStatusGET>(
-        this.getBaseApiUrl() + `/x/api/v2/pos/tableOrderStatuses/${id}`,
+        this.getBaseApiUrl() + `/x/api/v2/pos/tableOrderStatuses/${id}`
       )
+      .pipe(catchError(this.handleError));
+  }
+
+  // INVENTORY ENDPOINTS
+  addInventory(data: InventoryPayload) {
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/inventories', data)
+      .pipe(catchError(this.handleError));
+  }
+
+  getInventories() {
+    return this.http
+      .get<InventoryPayload[]>(
+        this.getBaseApiUrl() + '/x/api/v2/pos/inventories'
+      )
+      .pipe(catchError(this.handleError));
+  }
+
+  getInventoryById(id: number) {
+    return this.http
+      .get<InventoryPayload>(
+        this.getBaseApiUrl() + `/x/api/v2/pos/inventories/${id}`
+      )
+      .pipe(catchError(this.handleError));
+  }
+
+  updateInventory(id: number, data: InventoryPayload) {
+    return this.http
+      .put<any>(this.getBaseApiUrl() + `/x/api/v2/pos/inventories/${id}`, data)
+      .pipe(catchError(this.handleError));
+  }
+
+  deleteInventory(id: number) {
+    return this.http
+      .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/inventories/${id}`)
       .pipe(catchError(this.handleError));
   }
 }
