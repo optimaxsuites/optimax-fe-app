@@ -1,9 +1,24 @@
-import { Component, OnInit , Input, Output, EventEmitter, HostListener, ViewChild} from '@angular/core';
+import {
+  Component,
+  OnInit,
+  Input,
+  Output,
+  EventEmitter,
+  HostListener,
+  ViewChild,
+  Renderer2,
+  Inject,
+  OnDestroy,
+} from '@angular/core';
 import { PosServiceService } from '../../service/pos-service.service';
 import JsBarcode from 'jsbarcode';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { ProductData, ProductJSONFormat } from '../../models/interface';
+import {
+  ProductData,
+  ProductJSONFormat,
+  InventoryPayload,
+} from '../../models/interface';
 import { MessageService } from 'primeng/api';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef } from '@angular/core';
@@ -11,34 +26,33 @@ import { Observable } from 'rxjs';
 import { ImageCacheService } from '../../service/image-cache.service';
 import { OverlayPanel } from 'primeng/overlaypanel';
 import { MetadataService } from '../../service/metadata.service';
+import { DOCUMENT } from '@angular/common';
 
 @Component({
   selector: 'app-inventory',
   templateUrl: './inventory.component.html',
   styleUrl: './inventory.component.scss',
 })
-
-export class InventoryComponent {
-  
+export class InventoryComponent implements OnInit, OnDestroy {
   @ViewChild('op') op!: OverlayPanel;
+  selectedProduct: any = null;
   currentPage = 0;
   rowsPerPage = 15;
-  
+
+  // Use enriched products from MetadataService
   products: ProductData[] = [];
-  // isLoading: boolean = true
+  inventories: InventoryPayload[] = [];
   tableSections: boolean = false;
   @Output() productUpdated = new EventEmitter<any>();
-  items = [{ showMenu: false }, { showMenu: false }]; // Example list of items
+  items = [{ showMenu: false }, { showMenu: false }];
 
   dropdownVisible: boolean[] = [];
-  selectedAction!: string; 
+  selectedAction!: string;
   originalProducts: any[] = [];
-  viewProduct: 
-  boolean = false;
-  viewInventory: 
-  boolean = false;
+  viewProduct: boolean = false;
+  viewInventory: boolean = false;
   addProduct: boolean = false;
-  inventoryItems = []; 
+  inventoryItems = [];
   activeItem: any = {};
   deleteModal: boolean = false;
   editProduct: boolean = false;
@@ -46,41 +60,9 @@ export class InventoryComponent {
   addInventory: boolean = false;
   mode: string = '';
   discountType: string[] = [];
-  sidebarVisible: boolean = false; // Controls sidebar visibility
+  sidebarVisible: boolean = false;
 
-
-
-
-
-  // ingredients = [
-  //   { id: 1, name: 'Flour', code: 'ING001', description: 'All-purpose flour for baking and cooking', sku: 'FLR-1001', weight: 1.0, initialPrice: '500', effectivePrice: '450', initialQuantity: 50, effectiveQuantity: 40, createdDate: '2025-03-14T10:00:00.000Z', createdBy: 'Admin', partNumber: 'FLR-001', tax: 5, branch: 'Main Branch', variant: null, discount: { amount: 50, percentage: 10 }, productCategory: { id: 1, name: 'Baking' }, productImages: [{ url: 'flour.jpg', alt: 'Flour' }], variants: [] },
-  //   { id: 2, name: 'Sugar', code: 'ING002', description: 'Granulated white sugar', sku: 'SGR-1002', weight: 1.0, initialPrice: '300', effectivePrice: '280', initialQuantity: 30, effectiveQuantity: 20, createdDate: '2025-03-14T10:10:00.000Z', createdBy: 'Admin', partNumber: 'SGR-002', tax: 5, branch: 'Main Branch', variant: null, discount: { amount: 20, percentage: 7 }, productCategory: { id: 2, name: 'Sweeteners' }, productImages: [{ url: 'sugar.jpg', alt: 'Sugar' }], variants: [] },
-  //   { id: 3, name: 'Salt', code: 'ING003', description: 'Refined table salt', sku: 'SLT-1003', weight: 0.5, initialPrice: '100', effectivePrice: '90', initialQuantity: 20, effectiveQuantity: 15, createdDate: '2025-03-14T10:20:00.000Z', createdBy: 'Admin', partNumber: 'SLT-003', tax: 5, branch: 'Main Branch', variant: null, discount: { amount: 10, percentage: 5 }, productCategory: { id: 3, name: 'Seasoning' }, productImages: [{ url: 'salt.jpg', alt: 'Salt' }], variants: [] },
-  //   { id: 4, name: 'Butter', code: 'ING004', description: 'Unsalted butter', sku: 'BTR-1004', weight: 0.5, initialPrice: '700', effectivePrice: '680', initialQuantity: 25, effectiveQuantity: 18, createdDate: '2025-03-14T10:30:00.000Z', createdBy: 'Admin', partNumber: 'BTR-004', tax: 5, branch: 'Main Branch', variant: null, discount: { amount: 20, percentage: 3 }, productCategory: { id: 4, name: 'Dairy' }, productImages: [{ url: 'butter.jpg', alt: 'Butter' }], variants: [] },
-  //   { id: 5, name: 'Eggs', code: 'ING005', description: 'Fresh farm eggs', sku: 'EGG-1005', weight: 0.5, initialPrice: '150', effectivePrice: '140', initialQuantity: 50, effectiveQuantity: 35, createdDate: '2025-03-14T10:40:00.000Z', createdBy: 'Admin', partNumber: 'EGG-005', tax: 5, branch: 'Main Branch', variant: null, discount: { amount: 10, percentage: 5 }, productCategory: { id: 5, name: 'Protein' }, productImages: [{ url: 'eggs.jpg', alt: 'Eggs' }], variants: [] },
-  //   { id: 6, name: 'Milk', code: 'ING006', description: 'Fresh whole milk', sku: 'MLK-1006', weight: 1.0, initialPrice: '400', effectivePrice: '380', initialQuantity: 30, effectiveQuantity: 20, createdDate: '2025-03-14T10:50:00.000Z', createdBy: 'Admin', partNumber: 'MLK-006', tax: 5, branch: 'Main Branch', variant: null, discount: { amount: 20, percentage: 5 }, productCategory: { id: 6, name: 'Dairy' }, productImages: [{ url: 'milk.jpg', alt: 'Milk' }], variants: [] },
-  //   { id: 7, name: 'Cheese', code: 'ING007', description: 'Cheddar cheese', sku: 'CHS-1007', weight: 0.5, initialPrice: '900', effectivePrice: '880', initialQuantity: 15, effectiveQuantity: 10, createdDate: '2025-03-14T11:00:00.000Z', createdBy: 'Admin', partNumber: 'CHS-007', tax: 5, branch: 'Main Branch', variant: null, discount: { amount: 20, percentage: 3 }, productCategory: { id: 7, name: 'Dairy' }, productImages: [{ url: 'cheese.jpg', alt: 'Cheese' }], variants: [] },
-  //   { id: 8, name: 'Tomato Sauce', code: 'ING008', description: 'Rich tomato sauce', sku: 'TMS-1008', weight: 1.0, initialPrice: '250', effectivePrice: '230', initialQuantity: 25, effectiveQuantity: 18, createdDate: '2025-03-14T11:10:00.000Z', createdBy: 'Admin', partNumber: 'TMS-008', tax: 5, branch: 'Main Branch', variant: null, discount: { amount: 20, percentage: 5 }, productCategory: { id: 8, name: 'Condiments' }, productImages: [{ url: 'tomato_sauce.jpg', alt: 'Tomato Sauce' }], variants: [] },
-  //   { id: 9, name: 'Vegetable Oil', code: 'ING009', description: 'Pure vegetable oil', sku: 'VGO-1009', weight: 1.0, initialPrice: '600', effectivePrice: '580', initialQuantity: 20, effectiveQuantity: 15, createdDate: '2025-03-14T11:20:00.000Z', createdBy: 'Admin', partNumber: 'VGO-009', tax: 5, branch: 'Main Branch', variant: null, discount: { amount: 20, percentage: 3 }, productCategory: { id: 9, name: 'Oils' }, productImages: [{ url: 'vegetable_oil.jpg', alt: 'Vegetable Oil' }], variants: [] },
-  //   { id: 10, name: 'Onions', code: 'ING010', description: 'Fresh onions', sku: 'ONN-1010', weight: 1.0, initialPrice: '200', effectivePrice: '180', initialQuantity: 50, effectiveQuantity: 40, createdDate: '2025-03-14T11:30:00.000Z', createdBy: 'Admin', partNumber: 'ONN-010', tax: 5, branch: 'Main Branch', variant: null, discount: { amount: 20, percentage: 10 }, productCategory: { id: 10, name: 'Vegetables' }, productImages: [{ url: 'onions.jpg', alt: 'Onions' }], variants: [] },
-  //   { id: 11, name: 'Garlic', code: 'ING011', description: 'Fresh garlic cloves', sku: 'GRL-1011', weight: 0.5, initialPrice: '150', effectivePrice: '130', initialQuantity: 30, effectiveQuantity: 20, createdDate: '2025-03-14T11:40:00.000Z', createdBy: 'Admin', partNumber: 'GRL-011', tax: 5, branch: 'Main Branch', variant: null, discount: { amount: 20, percentage: 5 }, productCategory: { id: 11, name: 'Vegetables' }, productImages: [{ url: 'garlic.jpg', alt: 'Garlic' }], variants: [] },
-  //   { id: 12, name: 'Rice', code: 'ING016', description: 'Long grain white rice', sku: 'RIC-1016', weight: 5.0, initialPrice: '1500', effectivePrice: '1400', initialQuantity: 40, effectiveQuantity: 30, createdDate: '2025-03-14T12:30:00.000Z', createdBy: 'Admin', partNumber: 'RIC-016', tax: 5, branch: 'Main Branch', variant: null, discount: { amount: 100, percentage: 7 }, productCategory: { id: 12, name: 'Grains' }, productImages: [{ url: 'rice.jpg', alt: 'Rice' }], variants: [] },
-  // { id: 13, name: 'Beans', code: 'ING017', description: 'Black beans', sku: 'BNS-1017', weight: 2.0, initialPrice: '800', effectivePrice: '750', initialQuantity: 25, effectiveQuantity: 18, createdDate: '2025-03-14T12:40:00.000Z', createdBy: 'Admin', partNumber: 'BNS-017', tax: 5, branch: 'Main Branch', variant: null, discount: { amount: 50, percentage: 6 }, productCategory: { id: 13, name: 'Grains' }, productImages: [{ url: 'beans.jpg', alt: 'Beans' }], variants: [] },
-  // { id: 14, name: 'Chicken', code: 'ING018', description: 'Fresh whole chicken', sku: 'CHK-1018', weight: 2.5, initialPrice: '2500', effectivePrice: '2400', initialQuantity: 30, effectiveQuantity: 20, createdDate: '2025-03-14T12:50:00.000Z', createdBy: 'Admin', partNumber: 'CHK-018', tax: 5, branch: 'Main Branch', variant: null, discount: { amount: 100, percentage: 4 }, productCategory: { id: 14, name: 'Meat' }, productImages: [{ url: 'chicken.jpg', alt: 'Chicken' }], variants: [] },
-  // { id: 15, name: 'Beef', code: 'ING019', description: 'Lean beef', sku: 'BEF-1019', weight: 2.0, initialPrice: '3000', effectivePrice: '2900', initialQuantity: 20, effectiveQuantity: 15, createdDate: '2025-03-14T13:00:00.000Z', createdBy: 'Admin', partNumber: 'BEF-019', tax: 5, branch: 'Main Branch', variant: null, discount: { amount: 100, percentage: 3 }, productCategory: { id: 15, name: 'Meat' }, productImages: [{ url: 'beef.jpg', alt: 'Beef' }], variants: [] }
-  // ];
-  
-
-
-
-
-
-
-
-
-  actions = [
-    { label: 'Edit', value: 'edit' },
-  ];
+  actions = [{ label: 'Edit', value: 'edit' }];
 
   discountTypes = [
     { label: 'Periodic', value: 'periodic' },
@@ -94,7 +76,6 @@ export class InventoryComponent {
   };
   isLoading = this.metadataService.loading$;
 
-
   quantityBasedDiscount: { minQuantity: number } = { minQuantity: 0 };
   productImage: any = '';
   tableSection: boolean = true;
@@ -102,6 +83,9 @@ export class InventoryComponent {
   selectedCategories: number[] = [];
   categories: any[] = [];
   isImportDialogOpen = false;
+  showInformation = false;
+  selectedProductId: number | null = null;
+  private originalBodyOverflow: string = '';
 
   constructor(
     private messageService: MessageService,
@@ -110,114 +94,148 @@ export class InventoryComponent {
     private cdRef: ChangeDetectorRef,
     private imageCacheService: ImageCacheService,
     private productService: PosServiceService,
-    private metadataService: MetadataService
+    private metadataService: MetadataService,
+    @Inject(DOCUMENT) private document: Document,
+    private renderer: Renderer2
   ) {}
+
   onPageChange(event: any) {
     this.currentPage = event.page;
     this.rowsPerPage = event.rows;
   }
+
   ngOnInit(): void {
+    this.originalBodyOverflow = this.document.body.style.overflow || 'auto';
+
     this.loadCategory();
     this.getProducts();
     this.getDiscountTypes();
-    // this.fetchProducts();
-
- 
   }
+
+  ngOnDestroy(): void {
+    // Ensure modal is closed and body scroll is restored when component is destroyed
+    if (this.showInformation) {
+      this.closeInformation();
+    }
+
+    // Restore original body overflow state
+    this.renderer.setStyle(
+      this.document.body,
+      'overflow',
+      this.originalBodyOverflow
+    );
+    this.renderer.removeClass(this.document.body, 'modal-open');
+  }
+
+  // In your component class
+
   get paginatedProducts() {
     const startIndex = this.currentPage * this.rowsPerPage;
     return this.products.slice(startIndex, startIndex + this.rowsPerPage);
-
   }
-  
+
   toggleDropdown2(item: any, event?: Event) {
     if (event) {
-      event.stopPropagation(); // Stop event propagation
+      event.stopPropagation();
     }
-    (item as any).showMenu = !(item as any).showMenu;
+    // If already open, close it (toggle)
+    if (item.showMenu) {
+      item.showMenu = false;
+      return;
+    }
+    // Otherwise, close all and open this one
+    if (this.products && Array.isArray(this.products)) {
+      this.products.forEach((p: any) => (p.showMenu = false));
+    }
+    if (this.paginatedProducts && Array.isArray(this.paginatedProducts)) {
+      this.paginatedProducts.forEach((p: any) => (p.showMenu = false));
+    }
+    item.showMenu = true;
   }
 
   @HostListener('document:click')
   closeAllDropdowns() {
-    this.items.forEach((item) => (item.showMenu = false));
+    if (this.products && Array.isArray(this.products)) {
+      this.products.forEach((p: any) => (p.showMenu = false));
+    }
+    if (this.paginatedProducts && Array.isArray(this.paginatedProducts)) {
+      this.paginatedProducts.forEach((p: any) => (p.showMenu = false));
+    }
   }
 
   closeDropdown(item: any) {
     item.showMenu = false;
   }
+
+  // Use the same image loading approach as the first component
   getImageUrl(item: any): Observable<string> {
     const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${item.productImages[0].imgNo}`;
     return this.imageCacheService.getImage(remoteImageUrl);
   }
 
-
   toggleView() {
     this.tableSections = !this.tableSections;
-    console.log("Table Section Toggled:", this.tableSections); // Debugging
+    console.log('Table Section Toggled:', this.tableSections);
   }
 
   fetchProducts() {
-    // this.isLoading = true;
     this.productService.getProducts().subscribe({
       next: (data) => {
         this.products = data;
-        this.paginatedProducts.splice(0, this.paginatedProducts.length, ...this.products.slice(0, this.rowsPerPage));
-        // this.isLoading = false;
+        this.paginatedProducts.splice(
+          0,
+          this.paginatedProducts.length,
+          ...this.products.slice(0, this.rowsPerPage)
+        );
       },
       error: (err) => {
-        console.error("Error fetching products", err);
-        // this.isLoading = false;
-      }
+        console.error('Error fetching products', err);
+      },
     });
   }
 
   openEditInventory(item: any = {}, mode: string) {
     this.mode = mode;
 
-   if (mode === 'parent') {
-    this.activeItem =  { id: 0,
-      name: "",
-      code: "",
-      description: "",
-      sku: "",
-      weight: 0,
-      initialPrice: "",
-      effectivePrice: "",
-      initialQuantity: Number,
-      effectiveQuantity: Number,
-      // Date String Format: "2025-02-02T22:56:31.935Z"
-      createdDate: "",
-    
-      createdBy: "" ,
-      partNumber: "",
-      tax: Number,
-      branch: "",
-      variant: "" ,
-      discount: {},
-      productCategory: {},
-      productImages: [],
-      variants: [],
-      supplier: '',
-      cartPriceTotal: '',
-      count: 0,
-      discountedPrice: 0,
-
-      selectedVariant: '',
-
-      pricingQuantity: 0,
+    if (mode === 'parent') {
+      this.activeItem = {
+        id: 0,
+        name: '',
+        code: '',
+        description: '',
+        sku: '',
+        weight: 0,
+        initialPrice: '',
+        effectivePrice: '',
+        initialQuantity: Number,
+        effectiveQuantity: Number,
+        createdDate: '',
+        createdBy: '',
+        partNumber: '',
+        tax: Number,
+        branch: '',
+        variant: '',
+        discount: {},
+        productCategory: {},
+        productImages: [],
+        variants: [],
+        supplier: '',
+        cartPriceTotal: '',
+        count: 0,
+        discountedPrice: 0,
+        selectedVariant: '',
+        pricingQuantity: 0,
+      };
     }
-   }
-   if(mode === 'child'){
-    this.activeItem = item || {};
-
-   }
+    if (mode === 'child') {
+      this.activeItem = item || {};
+    }
     this.tableSection = false;
     this.viewProduct = false;
     this.addProduct = false;
     this.editInventory = !this.editInventory;
-    this.tableSections = false;  // Hide the product list
+    this.tableSections = false;
   }
-  
 
   closeView() {
     this.viewProduct = false;
@@ -231,25 +249,35 @@ export class InventoryComponent {
 
   getMenuItems(item: any) {
     return [
-      { label: 'View', icon: 'pi pi-eye', command: () => this.openViewInventory(item) },
-      { label: 'Edit', icon: 'pi pi-pencil', command: () => this.openEditInventory(item, 'child') },
-      { label: 'Delete', icon: 'pi pi-trash', command: () => this.openDeleteModal(item) }
+      {
+        label: 'View',
+        icon: 'pi pi-eye',
+        command: () => this.openViewInventory(item),
+      },
+      {
+        label: 'Edit',
+        icon: 'pi pi-pencil',
+        command: () => this.openEditInventory(item, 'child'),
+      },
+      {
+        label: 'Delete',
+        icon: 'pi pi-trash',
+        command: () => this.openDeleteModal(item),
+      },
     ];
   }
- 
-  
+
   toggleDropdown(index: number): void {
     this.dropdownVisible[index] = !this.dropdownVisible[index];
-    
   }
-
 
   onActionChange(item: any): void {
     if (this.selectedAction === 'edit') {
       this.openEditInventory(item, 'child');
     }
   }
-  
+
+  // Load products using enriched products from MetadataService (same as first component)
   getProducts() {
     this.metadataService.enrichedProduct$.subscribe(async (data) => {
       if (data) {
@@ -273,13 +301,13 @@ export class InventoryComponent {
           return dateB.getTime() - dateA.getTime();
         });
         this.products = [...this.originalProducts];
-        console.log(this.products)
+        console.log('Products loaded:', this.products);
       } else {
         console.log('error loading data');
       }
     });
   }
-  
+
   getDiscountTypes() {
     this.posService.getDiscountTypes().subscribe(async (data) => {
       console.log(data);
@@ -291,7 +319,6 @@ export class InventoryComponent {
     });
   }
 
-
   loadCategory() {
     this.posService.getCategories().subscribe(async (data) => {
       console.log(data);
@@ -302,8 +329,9 @@ export class InventoryComponent {
       }
     });
   }
-    getQuantityClass(quantity: number): string {
-      return quantity >= 10 ? 'quantity-available' : 'quantity-low';
+
+  getQuantityClass(quantity: number): string {
+    return quantity >= 10 ? 'quantity-available' : 'quantity-low';
   }
 
   getTooltipText(item: any): string {
@@ -311,8 +339,7 @@ export class InventoryComponent {
     ${item.productCategory?.name}\nPrice: 
     ${item.effectivePrice}\nStock: ${item.effectiveQuantity}`;
   }
-  
-  
+
   filterProductsBySearch(searchValue: string) {
     this.searchTerm = searchValue;
     if (searchValue.length === 0) {
@@ -322,18 +349,17 @@ export class InventoryComponent {
         this.filterProductsByCategory();
       }
     } else {
-    this.products = this.originalProducts.filter((product) => {
-      const matchesCategory =
-        this.selectedCategories.length === 0 ||
-        this.selectedCategories.includes(product.productCategory?.id);
-      const matchesSearch = product.name
-        .toLowerCase()
-        .includes(this.searchTerm);
-    return matchesCategory && matchesSearch;
+      this.products = this.originalProducts.filter((product) => {
+        const matchesCategory =
+          this.selectedCategories.length === 0 ||
+          this.selectedCategories.includes(product.productCategory?.id);
+        const matchesSearch = product.name
+          .toLowerCase()
+          .includes(this.searchTerm.toLowerCase());
+        return matchesCategory && matchesSearch;
       });
     }
   }
- 
 
   filterProductsByCategory() {
     if (this.selectedCategories.length === 0) {
@@ -351,7 +377,7 @@ export class InventoryComponent {
     this.viewProduct = !this.viewProduct;
     this.viewInventory = !this.viewInventory;
     this.tableSection = !this.tableSection;
-    this.tableSections = false;  // Hide the product list
+    this.tableSections = false;
   }
 
   openViewInventory(item: any = {}) {
@@ -360,7 +386,7 @@ export class InventoryComponent {
     this.viewProduct = !this.viewProduct;
     this.viewInventory = !this.viewInventory;
     this.tableSection = !this.tableSection;
-    this.tableSections = false;  // Hide the product list
+    this.tableSections = false;
   }
 
   openViewEditForm() {
@@ -368,12 +394,11 @@ export class InventoryComponent {
     this.viewInventory = !this.viewInventory;
     this.editProduct = !this.editProduct;
     this.editInventory = !this.editInventory;
-    this.tableSections = false;  // Hide the product list
+    this.tableSections = false;
   }
 
   openDeleteModal(item: any = {}) {
     this.activeItem = item;
-    // this.tableSection =!this.tableSection
     console.log('modal open', this.deleteModal);
     this.deleteModal = !this.deleteModal;
   }
@@ -410,7 +435,8 @@ export class InventoryComponent {
   toggleImportDialog() {
     this.isImportDialogOpen = !this.isImportDialogOpen;
   }
-  closeEditInventory(){
+
+  closeEditInventory() {
     this.tableSection = true;
     this.viewProduct = false;
     this.viewInventory = false;
@@ -419,9 +445,201 @@ export class InventoryComponent {
     this.editInventory = false;
     this.addInventory = false;
     this.getProducts();
-    this.tableSections = false;  // Hide the product list
+    this.tableSections = false;
   }
-  
+
+  showOverlayPanel(event: Event, product: any, op: OverlayPanel) {
+    this.selectedProduct = product;
+    op.toggle(event);
+  }
+
+  openInformation(product: ProductData) {
+    this.selectedProductId = product.id;
+    this.showInformation = true;
+    this.viewInventory = false;
+
+    // Store current scroll position
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+    // Apply modal-open class and prevent scrolling
+    this.renderer.addClass(this.document.body, 'modal-open');
+    this.renderer.setStyle(this.document.body, 'overflow', 'hidden');
+    this.renderer.setStyle(this.document.body, 'position', 'fixed');
+    this.renderer.setStyle(this.document.body, 'top', `-${scrollTop}px`);
+    this.renderer.setStyle(this.document.body, 'width', '100%');
+
+    // Disable pointer events on main content
+    const mainContainer = this.document.querySelector(
+      '.font-sans'
+    ) as HTMLElement;
+    if (mainContainer) {
+      this.renderer.setStyle(mainContainer, 'pointer-events', 'none');
+    }
+  }
+
+  closeInformation() {
+    this.showInformation = false;
+    this.selectedProductId = null;
+
+    // Get the stored scroll position
+    const scrollTop = parseInt(this.document.body.style.top || '0', 10) * -1;
+
+    // Remove modal styles
+    this.renderer.removeClass(this.document.body, 'modal-open');
+    this.renderer.removeStyle(this.document.body, 'overflow');
+    this.renderer.removeStyle(this.document.body, 'position');
+    this.renderer.removeStyle(this.document.body, 'top');
+    this.renderer.removeStyle(this.document.body, 'width');
+
+    // Restore scroll position
+    window.scrollTo(0, scrollTop);
+
+    // Re-enable pointer events on main content
+    const mainContainer = this.document.querySelector(
+      '.font-sans'
+    ) as HTMLElement;
+    if (mainContainer) {
+      this.renderer.removeStyle(mainContainer, 'pointer-events');
+    }
+  }
+
+  // Enhanced backdrop click handler
+  onBackdropClick(event: MouseEvent) {
+    // Only close if clicking directly on the backdrop element
+    const target = event.target as HTMLElement;
+    if (target.classList.contains('modal-backdrop')) {
+      this.closeInformation();
+    }
+  }
+
+  // Prevent scrolling when modal is open - but allow scrolling within modal
+  @HostListener('window:wheel', ['$event'])
+  @HostListener('window:touchmove', ['$event'])
+  onPreventScroll(event: Event) {
+    if (this.showInformation) {
+      // Allow scrolling only within the modal content
+      const target = event.target as HTMLElement;
+      const modalScrollContainer = target.closest('.modal-scroll-container');
+      const modalContent = target.closest('.modal-content');
+
+      // If the event is not within the modal content, prevent it
+      if (!modalContent) {
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+      }
+
+      // If within modal but not in scroll container, prevent it
+      if (modalContent && !modalScrollContainer) {
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+      }
+
+      // Allow scrolling within the modal scroll container
+      return true;
+    }
+    return true;
+  }
+
+  // Enhanced keyboard event handling
+  @HostListener('window:keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent): boolean | void {
+    if (this.showInformation) {
+      // Handle escape key
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        this.closeInformation();
+        return false;
+      }
+
+      // Allow arrow keys and page up/down for scrolling within modal
+      const allowedKeys = [
+        'ArrowUp',
+        'ArrowDown',
+        'PageUp',
+        'PageDown',
+        'Home',
+        'End',
+      ];
+      if (allowedKeys.includes(event.key)) {
+        const target = event.target as HTMLElement;
+        const modalScrollContainer = target.closest('.modal-scroll-container');
+
+        if (modalScrollContainer) {
+          // Allow these keys within the modal
+          return true;
+        }
+      }
+
+      // Prevent other keyboard scrolling on the background
+      if (
+        [
+          'ArrowUp',
+          'ArrowDown',
+          'PageUp',
+          'PageDown',
+          'Home',
+          'End',
+          ' ',
+        ].includes(event.key)
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+      }
+      return false;
+    }
+    return true;
+  }
+
+  // Additional methods for barcode and PDF generation using the imported libraries
+  generateBarcode(code: string, elementId: string) {
+    JsBarcode(`#${elementId}`, code, {
+      format: 'CODE128',
+      width: 2,
+      height: 100,
+      displayValue: true,
+    });
+  }
+
+  async generatePDF(elementId: string, filename: string = 'document.pdf') {
+    const element = document.getElementById(elementId);
+    if (element) {
+      const canvas = await html2canvas(element);
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF();
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(filename);
+    }
+  }
+
+  // Method to print product labels with barcode
+  printProductLabel(item: any) {
+    const barcodeElementId = `barcode-${item.id}`;
+    setTimeout(() => {
+      this.generateBarcode(item.code || item.sku, barcodeElementId);
+    }, 100);
+  }
+
+  // Method to export product data to PDF
+  exportToPDF() {
+    this.generatePDF('product-table', 'products-inventory.pdf');
+  }
 }
-
-

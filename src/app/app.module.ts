@@ -1,5 +1,5 @@
 import { ChartModule } from 'primeng/chart';
-import { NgModule, viewChild,  APP_INITIALIZER} from '@angular/core';
+import { NgModule, viewChild, APP_INITIALIZER } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -97,33 +97,36 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { SkeletonModule } from 'primeng/skeleton';
 import { PaginatorModule } from 'primeng/paginator';
 
-import { CardModule } from "primeng/card";
-import { CheckboxModule } from "primeng/checkbox";
-import { share } from "rxjs";
-import { OrderFilterPipe } from "./ui/pipes/order-filter.pipe";
-import { OrderStatusPipe } from "./ui/pipes/order-status.pipe";
-import { AppInitService } from "./ui/service/app-init.service";
-import { CheckoutKitchenComponent } from "./ui/view/checkout-kitchen/checkout-kitchen.component";
-import { HotelBillsComponent } from "./ui/view/hotel-bills/hotel-bills.component";
-import { HotelChangeroomComponent } from "./ui/view/hotel-changeroom/hotel-changeroom.component";
-import { HotelCheckoutComponent } from "./ui/view/hotel-checkout/hotel-checkout.component";
-import { HotelDooraccessComponent } from "./ui/view/hotel-dooraccess/hotel-dooraccess.component";
-import { HotelFormComponent } from "./ui/view/hotel-form/hotel-form.component";
-import { HotelKeycardComponent } from "./ui/view/hotel-keycard/hotel-keycard.component";
-import { HotelMessageComponent } from "./ui/view/hotel-message/hotel-message.component";
-import { HotelRoomdetailsComponent } from "./ui/view/hotel-roomdetails/hotel-roomdetails.component";
-import { HotelRoomlistComponent } from "./ui/view/hotel-roomlist/hotel-roomlist.component";
-import { EditIngredientsComponent } from "./ui/view/ingredient/edit-ingredients/edit-ingredients.component";
-import { ViewIngredientsComponent } from "./ui/view/ingredient/view-ingredients/view-ingredients.component";
-import { CheckoutHeaderComponent } from "./ui/view/pos-checkout-page/components/checkout-header/checkout-header.component";
-import { CategoryComponent } from "./ui/view/products/metaDatas/category/category.component";
-import { DiscountComponent } from "./ui/view/products/metaDatas/discount/discount.component";
-import { SupplierComponent } from "./ui/view/products/metaDatas/supplier/supplier.component";
-import { TaxComponent } from "./ui/view/products/metaDatas/tax/tax.component";
-import { PromotionReportComponent } from "./ui/view/report-dashboard/promotion-report/promotion-report.component";
-import { StockReportComponent } from "./ui/view/report-dashboard/stock-report/stock-report.component";
-import { SalesDetailsComponent } from "./ui/view/sales/sales-details/sales-details.component";
-
+import { CardModule } from 'primeng/card';
+import { CheckboxModule } from 'primeng/checkbox';
+import { share } from 'rxjs';
+import { OrderFilterPipe } from './ui/pipes/order-filter.pipe';
+import { OrderStatusPipe } from './ui/pipes/order-status.pipe';
+import { AppInitService } from './ui/service/app-init.service';
+import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
+import { HotelBillsComponent } from './ui/view/hotel-bills/hotel-bills.component';
+import { HotelChangeroomComponent } from './ui/view/hotel-changeroom/hotel-changeroom.component';
+import { HotelCheckoutComponent } from './ui/view/hotel-checkout/hotel-checkout.component';
+import { HotelDooraccessComponent } from './ui/view/hotel-dooraccess/hotel-dooraccess.component';
+import { HotelFormComponent } from './ui/view/hotel-form/hotel-form.component';
+import { HotelKeycardComponent } from './ui/view/hotel-keycard/hotel-keycard.component';
+import { HotelMessageComponent } from './ui/view/hotel-message/hotel-message.component';
+import { HotelRoomdetailsComponent } from './ui/view/hotel-roomdetails/hotel-roomdetails.component';
+import { HotelRoomlistComponent } from './ui/view/hotel-roomlist/hotel-roomlist.component';
+import { EditIngredientsComponent } from './ui/view/ingredient/edit-ingredients/edit-ingredients.component';
+import { ViewIngredientsComponent } from './ui/view/ingredient/view-ingredients/view-ingredients.component';
+import { CheckoutHeaderComponent } from './ui/view/pos-checkout-page/components/checkout-header/checkout-header.component';
+import { CategoryComponent } from './ui/view/products/metaDatas/category/category.component';
+import { DiscountComponent } from './ui/view/products/metaDatas/discount/discount.component';
+import { SupplierComponent } from './ui/view/products/metaDatas/supplier/supplier.component';
+import { TaxComponent } from './ui/view/products/metaDatas/tax/tax.component';
+import { PromotionReportComponent } from './ui/view/report-dashboard/promotion-report/promotion-report.component';
+import { StockReportComponent } from './ui/view/report-dashboard/stock-report/stock-report.component';
+import { SalesDetailsComponent } from './ui/view/sales/sales-details/sales-details.component';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { TagModule } from "primeng/tag";
+import { SelectButtonModule } from 'primeng/selectbutton';
 export function appInitializerFactory(appInitService: AppInitService) {
   return () => appInitService.init();
 }
@@ -191,8 +194,8 @@ export function appInitializerFactory(appInitService: AppInitService) {
     //CheckoutHeaderComponent,
   ],
   imports: [
-    // BrowserModule,
-   UserModule,
+    BrowserModule,
+    UserModule,
     AppRoutingModule,
     CheckboxModule,
     CommonModule,
@@ -244,8 +247,13 @@ export function appInitializerFactory(appInitService: AppInitService) {
     InputGroupAddonModule,
     SkeletonModule,
     PaginatorModule,
+    MultiSelectModule,
+    ProgressSpinnerModule,
+     SelectButtonModule,
     // BrowserAnimationsModule,
-  ],
+    
+    TagModule
+],
   exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],
   providers: [
     {
@@ -259,9 +267,10 @@ export function appInitializerFactory(appInitService: AppInitService) {
     },
     {
       provide: APP_INITIALIZER,
-      useFactory: (appInitService: AppInitService) => () => appInitService.init(),
+      useFactory: (appInitService: AppInitService) => () =>
+        appInitService.init(),
       deps: [AppInitService],
-      multi: true
+      multi: true,
     },
     JwtHelperService,
     provideHttpClient(withInterceptorsFromDi()),
