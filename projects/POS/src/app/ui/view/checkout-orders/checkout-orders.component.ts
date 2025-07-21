@@ -12,6 +12,7 @@ import { MetadataService } from '../../service/metadata.service';
 })
 export class CheckoutOrdersComponent {
   orders: Order[] = [];
+  groupedOrders: { month: string; orders: Order[] }[] = [];
   userInfoRegData: any[] = [];
   userRegData: any = {};
   selectedOrder!: Order;
@@ -26,7 +27,6 @@ export class CheckoutOrdersComponent {
   ngOnInit() {
     this.metadataService.fetchMetaData()
     this.loadSavedItems();
-    this.sortOrdersByTimestamp();
     this.userInfoRegData = JSON.parse(sessionStorage['userRegData']);
     this.userRegData = this.userInfoRegData;
     console.log(this.orders)
@@ -35,26 +35,35 @@ export class CheckoutOrdersComponent {
 
   loadSavedItems() {
     this.metadataService.orders$.subscribe(data => {
-      this.orders = [...data]
-      console.log(this.orders)
-
-    })
-    // const savedItems = localStorage.getItem('savedItems');
-    // if (savedItems) {
-    //   this.orders = JSON.parse(savedItems);
-    // }
+      console.log('RAW ORDERS FROM SERVICE:', JSON.stringify(data, null, 2));
+      this.orders = [...data];
+      this.sortOrdersByDate();
+      this.orders = this.orders.filter(order => order.orderStatus !== 'PAID');
+      this.groupOrdersByMonth();
+    });
   }
 
-  sortOrdersByTimestamp() {
+  sortOrdersByDate() {
     this.orders.sort(
-      (a, b) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     );
   }
 
-  formatDate(parts: any): Date {
-    // const parts = raw.split(',').map(Number);
-    return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
+  formatDate(parts: any): Date | null {
+    if (!parts) {
+      return null;
+    }
+    // Handle array format e.g., [2024, 7, 21, 13, 27, 34]
+    if (Array.isArray(parts)) {
+      return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
+    }
+    // Handle string or Date object
+    if (typeof parts === 'string' || parts instanceof Date) {
+      const d = new Date(parts);
+      // Check if the created date is valid
+      return isNaN(d.getTime()) ? null : d;
+    }
+    return null; // Fallback for any other unexpected format
   }
   
 
@@ -76,5 +85,31 @@ export class CheckoutOrdersComponent {
   }
   closeRegister() {
     this.registerService.triggerCloseRegister();
+  }
+
+  groupOrdersByMonth() {
+    const groups: { [key: string]: Order[] } = {};
+    this.orders.forEach(order => {
+      const date = this.formatDate(order.updatedAt);
+      if (date) {
+        const month = date.toLocaleString('default', { month: 'long' });
+        const year = date.getFullYear();
+        const key = `${month} ${year}`;
+        if (!groups[key]) {
+          groups[key] = [];
+        }
+        groups[key].push(order);
+      }
+    });
+    // Sort months descending (most recent first)
+    this.groupedOrders = Object.entries(groups)
+      .map(([month, orders]) => ({ month, orders }))
+      .sort((a, b) => {
+        const [aMonth, aYear] = a.month.split(' ');
+        const [bMonth, bYear] = b.month.split(' ');
+        const aDate = new Date(`${aMonth} 1, ${aYear}`);
+        const bDate = new Date(`${bMonth} 1, ${bYear}`);
+        return bDate.getTime() - aDate.getTime();
+      });
   }
 }

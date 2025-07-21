@@ -250,7 +250,7 @@ export function appInitializerFactory(appInitService: AppInitService) {
     MultiSelectModule,
     ProgressSpinnerModule,
      SelectButtonModule,
-    // BrowserAnimationsModule,
+    BrowserAnimationsModule,
     
     TagModule
 ],

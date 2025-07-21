@@ -34,7 +34,8 @@ export class CheckoutHeaderComponent {
   ) {}
 
   closeRegister() {
-    this.showCloseRegisterModal = true
+    this.closeRegisterEvent.emit();
+    this.showCloseRegisterModal = true;
   }
 
   onToggleSidebar() {

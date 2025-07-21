@@ -30,6 +30,7 @@ const routes: Routes = [
     redirectTo: 'product/34567whr4567yhsdzr56',
     pathMatch: 'full',
   },
+  
   {
     path: 'product/:uuid',
     component: ProductsComponent,
@@ -43,6 +44,11 @@ const routes: Routes = [
     path: 'sale/:uuid',
     component: SalesComponent,
   },
+  {
+  path: 'user/checkout/orders/:uuid',
+  component: CheckoutOrdersComponent,
+},
+
   {
     path: 'report/:uuid',
     component: ReportDashboardComponent,
