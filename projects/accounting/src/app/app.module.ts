@@ -104,7 +104,8 @@ import { Component, OnInit } from '@angular/core';
 import { DropdownModule } from 'primeng/dropdown';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TooltipModule } from 'primeng/tooltip';
-import { FileUploadModule } from 'primeng/fileupload'
+import { FileUploadModule } from 'primeng/fileupload';
+import { ToggleButtonModule } from 'primeng/togglebutton'
 
 
 @NgModule({
@@ -215,7 +216,8 @@ import { FileUploadModule } from 'primeng/fileupload'
     SelectButtonModule,
     DialogModule,
     TooltipModule,
-    FileUploadModule
+    FileUploadModule,
+    ToggleButtonModule
 ],
   providers: [],
   bootstrap: [AppComponent]
