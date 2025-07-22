@@ -364,171 +364,264 @@
 
             }
 
-            
-            
-.reconciliation-container {
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
 
-    .main-content {
+            .transaction-tables {
+  margin-top: 2rem;
+
+  &.side-by-side {
+    .table-wrapper {
+      display: flex;
+      gap: 2rem;
+
+      .table-block {
         flex: 1;
-        display: flex;
-        flex-direction: column;
-        transition: margin-left 0.3s;
-        overflow-y: auto;
+        background: #fff;
+        padding: 1rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
-        &.sidebar-collapsed {
-            margin-right: 50px;
+        h3 {
+          font-size: 1.2rem;
+          margin-bottom: 1rem;
+          color: #333;
         }
 
-        .header {
-            display: flex;
-            align-items: center;
-            padding: 1rem;
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
-
-            .title {
-                margin: 0;
-                font-size: 1.5rem;
-            }
-
-            .view-toggle-container {
-                margin-left: auto;
-                margin-right: 1rem;
-
-                .view-toggle-btn {
-                    background-color: #ffffff;
-                    border: 1px solid #ced4da;
-                    border-radius: 4px;
-                    padding: 0.5rem 1rem;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                    transition: all 0.2s;
-
-                    &:hover {
-                        background-color: #f8f9fa;
-                        border-color: #adb5bd;
-                    }
-
-                    i {
-                        font-size: 1rem;
-                    }
-                }
-            }
-
-            .sidebar-toggle {
-                background: none;
-                border: none;
-                cursor: pointer;
-                font-size: 1.2rem;
-                color: #495057;
-            }
+        ::ng-deep .p-table {
+          width: 100%;
         }
-
-        .control-panel {
-            padding: 1rem;
-            background-color: #ffffff;
-            border-bottom: 1px solid #dee2e6;
-
-            .form-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 1rem;
-
-                .form-group, .date-range-group, .status-group, .action-buttons {
-                    display: flex;
-                    flex-direction: column;
-                }
-
-                .date-range-group {
-                    display: flex;
-                    flex-direction: row;
-                    gap: 1rem;
-                    align-items: flex-end;
-
-                    .date-picker {
-                        display: flex;
-                        flex-direction: column;
-                    }
-
-                    .fetch-btn {
-                        margin-left: auto;
-                    }
-                }
-
-                .status-group {
-                    flex-direction: row;
-                    align-items: center;
-                    gap: 0.5rem;
-
-                    .status-label {
-                        font-weight: 500;
-                    }
-                }
-
-                .action-buttons {
-                    align-items: flex-end;
-                }
-            }
-        }
-
-        .transaction-tables {
-            flex: 1;
-            padding: 1rem;
-            overflow-y: auto;
-        }
+      }
     }
+  }
 
-    .sidebar {
-        width: 300px;
-        background-color: #f8f9fa;
-        border-left: 1px solid #dee2e6;
-        transition: all 0.3s;
-        overflow-y: auto;
-
-        &.collapsed {
-            width: 50px;
-            overflow: hidden;
-
-            .sidebar-content {
-                opacity: 0;
-            }
-        }
-
-        .sidebar-content {
-            padding: 1rem;
-            transition: opacity 0.3s;
-
-            h3 {
-                margin-top: 0;
-                padding-bottom: 0.5rem;
-                border-bottom: 1px solid #dee2e6;
-            }
-
-            .summary-item {
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 0.75rem;
-                padding-bottom: 0.5rem;
-                border-bottom: 1px solid #e9ecef;
-
-                .matched {
-                    color: #28a745;
-                }
-
-                .unmatched {
-                    color: #dc3545;
-                }
-
-                .discrepancy {
-                    color: #ffc107;
-                    font-weight: bold;
-                }
-            }
-        }
+  &.tab-view {
+    ::ng-deep .p-accordion {
+      margin-top: 1rem;
     }
+  }
+}
+
+// .card-btn-item {
+//     margin: 3rem 1rem;
+//     position: relative;
+//     #toggler ::ng-deep .p-togglebutton {
+//         position: absolute;
+//         top: 0;
+//     }
+// }
+
+
+// Add these styles to your SCSS file
+.toggle-view-container {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0 1.5rem;
+  
+  .toggle-view-button {
+    background: #ffffff;
+    border: 1px solid #ced4da;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    
+    &:hover {
+      background: #f8f9fa;
+      border-color: #adb5bd;
+    }
+    
+    &.p-button.p-highlight {
+      background: #e9ecef;
+      border-color: #6c757d;
+    }
+  }
+}
+
+/* Add these new styles to your component SCSS */
+
+.account-header {
+  h1.title {
+    font-size: 1.4rem;
+    margin-bottom: 0.25rem;
+    color: #2c3e50;
+  }
+  
+  .account-period {
+    font-size: 1rem;
+    color: #7f8c8d;
+    font-weight: 500;
+  }
+}
+
+.balance-summary-card {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #3498db;
+  
+  .balance-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+    
+    &:last-child {
+      border-bottom: none;
+    }
+    
+    &.highlight {
+      font-weight: 600;
+      background: #f1f8fe;
+      margin: 0 -1rem;
+      padding: 0.5rem 1rem;
+    }
+    
+    .positive {
+      color: #27ae60;
+    }
+    
+    .negative {
+      color: #e74c3c;
+    }
+  }
+}
+
+.control-panel {
+  .status-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    
+    .action-buttons {
+      display: flex;
+      gap: 0.5rem;
+      
+      .reconcile-button {
+        background-color: #2ecc71;
+        border: none;
+        
+        &:hover {
+          background-color: darken(#2ecc71, 10%);
+        }
+      }
+    }
+  }
+}
+
+.transaction-sections {
+  margin-top: 1.5rem;
+  
+  .section-summary {
+    display: flex;
+    gap: 2rem;
+    padding: 0.75rem 0;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid #eee;
+    font-size: 0.95rem;
+  }
+  
+  .p-accordion {
+    .p-accordion-tab {
+      margin-bottom: 1rem;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      
+      .p-accordion-header {
+        background: #f8f9fa;
+        font-weight: 600;
+        
+        &:hover {
+          background: #e9ecef;
+        }
+      }
+      
+      .p-accordion-content {
+        padding: 0;
+      }
+    }
+  }
+}
+
+.reconciliation-summary {
+  margin-top: 2rem;
+  
+  .summary-card {
+    background: white;
+    border-radius: 6px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    
+    h3 {
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+      color: #2c3e50;
+      font-size: 1.2rem;
+    }
+    
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      
+      .summary-item {
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+        
+        &.highlight {
+          background: #e3f2fd;
+          border-left: 3px solid #2196f3;
+        }
+        
+        span {
+          display: block;
+          color: #7f8c8d;
+          font-size: 0.9rem;
+          margin-bottom: 0.25rem;
+        }
+        
+        strong {
+          font-size: 1.1rem;
+          
+          &.discrepancy {
+            color: #f39c12;
+            font-weight: 600;
+          }
+        }
+      }
+    }
+  }
+}
+
+.sidebar {
+  .sidebar-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+    
+    h4 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      color: #2c3e50;
+      font-size: 1rem;
+    }
+  }
+  
+  .detail-item {
+    margin-bottom: 0.75rem;
+    
+    span {
+      display: block;
+      color: #7f8c8d;
+      font-size: 0.9rem;
+    }
+    
+    strong {
+      font-size: 1rem;
+    }
+    
+    &.highlight {
+      padding: 0.5rem;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+  }
 }
