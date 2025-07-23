@@ -10,6 +10,7 @@ import { TaxSummaryComponent } from './ui/view/reports/tax-summary/tax-summary.c
 import { ReportTabsComponent } from './ui/view/reports/report-tabs/report-tabs.component';
 import { ReconcillationComponent } from './ui/view/reconcillation/reconcillation.component';
 import { BankAccountOverviewComponent } from './ui/view/bank-account-overview/bank-account-overview.component';
+import { GeneralReconcilationComponent } from './ui/view/general-reconcilation/general-reconcilation.component';
 
 
 const routes: Routes = [
@@ -24,12 +25,16 @@ const routes: Routes = [
     },
     {
       path: 'reconcillation/:uuid',
-      component: ReconcillationComponent,
+      component: GeneralReconcilationComponent,
     },
     {
       path: 'admin/quotation-form/:id',
       component: QuotationModalComponent,
     },
+    // {
+    //   path: 'general-reconcilation/:uuid',
+    //   component: GeneralReconcilationComponent
+    // },
 
   { path: 'reports', component: AccountingReportsComponent },
   { path: 'reports/balance-sheet', component: BalanceSheetComponent },

@@ -1,0 +1,273 @@
+<div class="min-h-screen bg-gray-50 p-6">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-customBlue">🏦 Sales Reconciliation</h1>
+    <!-- <p class="text-gray-600">Reconcile POS transactions with bank records</p> -->
+  </div>
+
+  <!-- Filters Section -->
+  <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <h2 class="text-xl font-semibold text-customBlue mb-4">🔍 Filters</h2>
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <!-- Bank Selector -->
+      <div>
+        <label class="block text-xl font-medium text-gray-700 mb-1">Bank</label>
+        <select class="w-full rounded-xl py-5 px-5  border-gray-300 shadow-sm focus:border-customBlue focus:ring-customBlue">
+          <option>GTBank (Default)</option>
+          <option>Access Bank</option>
+          <option>Zenith Bank</option>
+        </select>
+      </div>
+
+      <!-- Account Selector -->
+      <div>
+        <label class="block text-xl font-medium text-gray-700 mb-1">Account</label>
+        <select class="w-full rounded-xl py-5 px-5 border-gray-300 shadow-sm focus:border-customBlue focus:ring-customBlue">
+          <option>0123456789</option>
+          <option>9876543210</option>
+        </select>
+      </div>
+
+      <!-- Date Range -->
+      <div>
+        <label class="block text-xl font-medium text-gray-700 mb-1">Date Range</label>
+        <select class="w-full rounded-xl py-5 px-5 border-gray-300 shadow-sm focus:border-customBlue focus:ring-customBlue">
+          <option>Today (Auto)</option>
+          <option>Custom Range</option>
+        </select>
+      </div>
+
+      <!-- Payment Type -->
+      <div>
+        <label class="block text-xl font-medium text-gray-700 mb-1">Payment Type</label>
+        <select class="w-full rounded-xl py-5 px-5 border-gray-300 shadow-sm focus:border-customBlue focus:ring-customBlue">
+          <option>All Types</option>
+          <option>Cash Only</option>
+          <option>Card Only</option>
+        </select>
+      </div>
+
+      <!-- Search -->
+      <div>
+        <label class="block text-xl font-medium text-gray-700 mb-1">Search</label>
+        <div class="relative">
+          <input type="text" placeholder="Search..." class="w-full border border-1 rounded-xl py-4 px-10 border-gray-300 shadow-sm pl-10 focus:border-customBlue focus:ring-customBlue">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Bank Info -->
+    <div class="mt-4 p-5 bg-blue-50 rounded-xl border ">
+      <p class="text-xl font-medium text-customBlue">
+        <span class="font-bold">Active Bank:</span> GTBank • Account: 0123456789 • Reconciling: 15 Jan 2024 → 15 Jan 2024
+      </p>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <!-- Matched -->
+    <div class="bg-white rounded-lg shadow-md p-4 border-t-4 border-customGreen">
+      <h3 class="text-sm font-medium text-gray-500">Total Matched</h3>
+      <p class="text-2xl font-bold text-customGreen">₦142,300</p>
+    </div>
+
+    <!-- Delayed -->
+    <div class="bg-white rounded-lg shadow-md p-4 border-t-4 border-yellow-400">
+      <h3 class="text-sm font-medium text-gray-500">Delayed Transactions</h3>
+      <p class="text-2xl font-bold text-yellow-600">₦23,500</p>
+    </div>
+
+    <!-- Unmatched -->
+    <div class="bg-white rounded-lg shadow-md p-4 border-t-4 border-red-500">
+      <h3 class="text-sm font-medium text-gray-500">Unmatched Transactions</h3>
+      <p class="text-2xl font-bold text-red-600">₦8,200</p>
+    </div>
+  </div>
+
+  <!-- Toggle View Button -->
+  <div class="flex justify-end mb-4">
+    <button class="flex items-center px-4 py-2 bg-customBlue text-white rounded-md hover:bg-customBlueHover transition">
+      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+      </svg>
+      Toggle Side-by-Side View
+    </button>
+  </div>
+
+  <!-- Transactions Section -->
+  <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+    <!-- ERP Transactions Accordion -->
+    <div class="border-b">
+      <button class="w-full flex justify-between items-center p-4 text-left font-medium text-customBlue hover:bg-gray-50">
+        <span>▾ ERP-Recorded Transactions (142)</span>
+        <span class="text-sm text-gray-500">Last updated: Today, 09:45 AM</span>
+      </button>
+      <div class="p-4">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-md font-bold text-white uppercase tracking-wider">Date/Time</th>
+                <th class="px-6 py-3 text-left text-md font-bold text-white uppercase tracking-wider">Transaction ID</th>
+                <th class="px-6 py-3 text-left text-md font-bold text-white uppercase tracking-wider">Item</th>
+                <th class="px-6 py-3 text-left text-md font-bold text-white uppercase tracking-wider">Type</th>
+                <th class="px-6 py-3 text-left text-md font-bold text-white uppercase tracking-wider">Amount</th>
+                <th class="px-6 py-3 text-left text-md font-bold text-white uppercase tracking-wider">Status</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <!-- Matched -->
+              <tr class="hover:bg-green-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">15/01 09:30:22</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#POS-8876</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">iPhone 15</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Card</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₦650,000</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    ✅ Matched
+                  </span>
+                </td>
+              </tr>
+              <!-- Delayed -->
+              <tr class="hover:bg-yellow-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">15/01 10:15:47</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#POS-8877</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">AirPods Pro</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Cash</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₦280,000</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                    ⚠️ 18min delay
+                  </span>
+                </td>
+              </tr>
+              <!-- Not Found -->
+              <tr class="hover:bg-red-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">15/01 11:03:12</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#POS-8878</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">MacBook Pro</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Card</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₦1,200,000</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                    ❌ Not Found
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bank Transactions Accordion -->
+    <div class="border-b">
+      <button class="w-full flex justify-between items-center p-4 text-left font-medium text-customBlue hover:bg-gray-50">
+        <span>▾ Bank Transactions (138)</span>
+        <span class="text-sm text-gray-500">Last updated: Today, 09:50 AM</span>
+      </button>
+      <div class="p-4">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-md font-bold text-white uppercase tracking-wider">Date/Time</th>
+                <th class="px-6 py-3 text-left text-md font-bold text-white uppercase tracking-wider">Reference ID</th>
+                <th class="px-6 py-3 text-left text-md font-bold text-white uppercase tracking-wider">Description</th>
+                <th class="px-6 py-3 text-left text-md font-bold text-white uppercase tracking-wider">Type</th>
+                <th class="px-6 py-3 text-left text-md font-bold text-white uppercase tracking-wider">Amount</th>
+                <th class="px-6 py-3 text-left text-md font-bold text-white uppercase tracking-wider">Status</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <!-- Matched -->
+              <tr class="hover:bg-green-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">15/01 09:30:45</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">BANK-5567</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">POS Purchase</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Card</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₦650,000</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    ✅ Matched
+                  </span>
+                </td>
+              </tr>
+              <!-- ERP Delay -->
+              <tr class="hover:bg-yellow-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">15/01 10:33:12</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">BANK-5568</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Cash Deposit</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Cash</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₦280,000</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                    ⚠️ ERP Delay
+                  </span>
+                </td>
+              </tr>
+              <!-- No ERP Record -->
+              <tr class="hover:bg-red-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">15/01 11:05:00</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">BANK-5569</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">POS Refund</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Card</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₦75,000</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                    ❌ No ERP Record
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reconciliation Report -->
+  <div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-semibold text-customBlue mb-4">📝 Reconciliation Report</h2>
+    <div class="mb-4">
+      <p><span class="font-medium">Cashier:</span> Adeola Johnson</p>
+      <p><span class="font-medium">Date Range:</span> 15 Jan 2024 (Single Day)</p>
+      <p><span class="font-medium">Discrepancies Found:</span> 3</p>
+    </div>
+    <div class="space-y-2 mb-6">
+      <div class="flex items-center">
+        <span class="w-6 h-6 flex items-center justify-center bg-yellow-100 text-yellow-800 rounded-full mr-2">⚠️</span>
+        <span>Delayed: #POS-8877 (18mins)</span>
+      </div>
+      <div class="flex items-center">
+        <span class="w-6 h-6 flex items-center justify-center bg-red-100 text-red-800 rounded-full mr-2">❌</span>
+        <span>Missing: #POS-8878 (MacBook Pro)</span>
+      </div>
+      <div class="flex items-center">
+        <span class="w-6 h-6 flex items-center justify-center bg-red-100 text-red-800 rounded-full mr-2">❌</span>
+        <span>Extra: BANK-5569 (Refund)</span>
+      </div>
+    </div>
+    <div class="flex space-x-4">
+      <button class="flex items-center px-4 py-2 bg-customBlue text-white rounded-md hover:bg-customBlueHover transition">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+        </svg>
+        Export as PDF
+      </button>
+      <button class="flex items-center px-4 py-2 bg-customGreen text-white rounded-md hover:bg-customGreenHover transition">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        Download Excel
+      </button>
+    </div>
+  </div>
+</div>
