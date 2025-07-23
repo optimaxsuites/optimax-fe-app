@@ -105,7 +105,9 @@ import { DropdownModule } from 'primeng/dropdown';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TooltipModule } from 'primeng/tooltip';
 import { FileUploadModule } from 'primeng/fileupload';
-import { ToggleButtonModule } from 'primeng/togglebutton'
+import { ToggleButtonModule } from 'primeng/togglebutton';
+import { SalesReconcilationComponent } from './ui/view/sales-reconcilation/sales-reconcilation.component';
+import { GeneralReconcilationComponent } from './ui/view/general-reconcilation/general-reconcilation.component'
 
 
 @NgModule({
@@ -139,7 +141,9 @@ import { ToggleButtonModule } from 'primeng/togglebutton'
     IncomeStatementChartsComponent,
     IncomeStatementFilterComponent,
     ReconcillationComponent,
-    BankAccountOverviewComponent
+    BankAccountOverviewComponent,
+    SalesReconcilationComponent,
+    GeneralReconcilationComponent
   ],
   imports: [
     // BrowserModule,

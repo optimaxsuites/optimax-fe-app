@@ -1,5 +1,21 @@
-import { Component } from '@angular/core';
+import { Component, Type } from '@angular/core';
 import { MenuItem, MessageService } from 'primeng/api';
+import { SalesReconcilationComponent } from '../sales-reconcilation/sales-reconcilation.component';
+
+export interface TabConfig {
+  name: string;
+  component: any;
+  hasDropdown?: boolean;
+  dropdownOptions?: DropdownOption[];
+  role?: string;
+}
+
+export interface DropdownOption {
+  label: string;
+  action: string;
+  component: Type<any>;
+}
+
 
 interface BankTransaction {
   date: Date;
@@ -62,6 +78,17 @@ interface Account {
   providers: [MessageService]
 })
 export class ReconcillationComponent {
+    tabsConfig: TabConfig[] = [
+      {
+        name: 'Bank Reconcilation',
+        component: ReconcillationComponent
+      },
+      {
+        name: 'Sales Reconcilation',
+        component: SalesReconcilationComponent
+      },
+    ];
+
   // Form controls
   fromDate: Date | null = null;
   toDate: Date | null = null;
