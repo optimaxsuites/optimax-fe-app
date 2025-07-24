@@ -127,6 +127,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TagModule } from "primeng/tag";
 import { SelectButtonModule } from 'primeng/selectbutton';
+import { CloseRegisterModalComponent } from './ui/view/close-register-modal/close-register-modal.component';
 export function appInitializerFactory(appInitService: AppInitService) {
   return () => appInitService.init();
 }
@@ -192,6 +193,7 @@ export function appInitializerFactory(appInitService: AppInitService) {
     SalesDetailsComponent,
     //CheckoutKitchenComponent,
     //CheckoutHeaderComponent,
+    CloseRegisterModalComponent,
   ],
   imports: [
     BrowserModule,

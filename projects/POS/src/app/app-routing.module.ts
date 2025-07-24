@@ -1,7 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { PosPageComponent } from './ui/view/pos-page.component';
-import { CloseRegisterComponent } from './ui/view/close-register/close-register.component';
 import { OpenRegisterComponent } from './ui/view/open-register/open-register.component';
 import { RequestDetailsComponent } from './ui/view/request-details/request-details.component';
 import { OrderRefundComponent } from './ui/view/order-refund/order-refund.component';

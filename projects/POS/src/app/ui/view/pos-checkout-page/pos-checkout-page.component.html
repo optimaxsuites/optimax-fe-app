@@ -441,13 +441,16 @@
     </div>
   </app-modal>
 
+  <!-- Close Register Modal -->
+  <!-- Removed: now rendered globally in app.component.html -->
+
   <!-- Component for Notes, Delivery, and Payments -->
   @if (isNotesModalOpen) {
     <app-notes-modal [(isNotesModalOpen)]="isNotesModalOpen"></app-notes-modal>
   }
   
   @if (isDeliveryModalOpen) {
-    <app-delivery-modal [(isDeliveryModalOpen)]="isDeliveryModalOpen"></app-delivery-modal>
+    <!-- <app-delivery-modal [(isDeliveryModalOpen)]="isDeliveryModalOpen"></app-delivery-modal> -->
   }
   
   <app-all-payments-modal

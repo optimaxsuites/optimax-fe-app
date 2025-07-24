@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { CloseRegisterComponent } from '../../close-register/close-register.component';
 import { PosServiceService } from '../../../service/pos-service.service';
 import { HttpClient } from '@angular/common/http';
 import { MeasurementUnit, supplierData } from '../../../models/interface';

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { AuthenticationService } from './ui/sharedComponent/service/auth-service/authentication.service';
 import { IndustryDataService } from './ui/service/industry-data.service';
 import { MetadataService } from './ui/service/metadata.service';
+import { RegisterService } from './ui/service/register.service';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -10,17 +11,29 @@ import { MetadataService } from './ui/service/metadata.service';
 export class AppComponent implements OnInit{
   title = 'erp-pos';
 
+  showCloseRegisterModal = false;
+  openingAmount: number = 0;
+  closingAmount: number | null = null;
+  finalizedRegisterData: any = null;
+
   constructor(
     private authenticationService: AuthenticationService,
     private industryDataService: IndustryDataService,
-    private metadataService: MetadataService
+    private metadataService: MetadataService,
+    private registerService: RegisterService
   ) {
     this.userLoginAction();
-
   }
-ngOnInit(): void {
-  // this.metadataService.fetchMetaData()
-}
+
+  ngOnInit(): void {
+    // this.metadataService.fetchMetaData()
+    this.registerService.closeRegister$.subscribe(() => {
+      // Always fetch the latest openingAmount from localStorage before opening the modal
+      const storedOpeningAmount = localStorage.getItem('openingAmount');
+      this.openingAmount = storedOpeningAmount ? Number(storedOpeningAmount) : 0;
+      this.showCloseRegisterModal = true;
+    });
+  }
 
   async userLoginAction(): Promise<void> {
     const loginDetails = {
@@ -77,5 +90,19 @@ ngOnInit(): void {
     sessionStorage.setItem('accessToken', data.accessToken);
     localStorage.setItem('accessToken2', data.accessToken);
     sessionStorage['userRegData'] = JSON.stringify(data);
+  }
+
+  onFinalizeRegister(data: any) {
+    // Save finalized register data to localStorage
+    localStorage.setItem('registerFinalized', 'true');
+    localStorage.setItem('registerFinalizedData', JSON.stringify(data));
+    localStorage.setItem('registerState', 'false');
+    localStorage.setItem('closingAmount', String(data.closeAmount));
+    this.finalizedRegisterData = data;
+    this.showCloseRegisterModal = false;
+  }
+
+  onCloseRegisterModal() {
+    this.showCloseRegisterModal = false;
   }
 }
