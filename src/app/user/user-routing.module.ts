@@ -2,7 +2,6 @@ import { NgModule } from "@angular/core";
 import { RouterModule, Routes } from "@angular/router";
 import { CashPaymentComponent } from "../ui/view/cash-payment/cash-payment.component";
 import { CheckoutOrdersComponent } from "../ui/view/checkout-orders/checkout-orders.component";
-import { CloseRegisterComponent } from "../ui/view/close-register/close-register.component";
 import { OpenRegisterComponent } from "../ui/view/open-register/open-register.component";
 import { OrderDetailComponent } from "../ui/view/order-detail/order-detail.component";
 import { OrderRefundComponent } from "../ui/view/order-refund/order-refund.component";
@@ -42,10 +41,6 @@ const routes: Routes = [
   {
     path: "openRegister/:uuid",
     component: OpenRegisterComponent,
-  },
-  {
-    path: "closeRegister/:uuid",
-    component: CloseRegisterComponent,
   },
   {
     path: ":uuid",

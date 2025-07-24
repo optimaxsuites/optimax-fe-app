@@ -38,7 +38,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   // Register State Management
   showOpenRegisterModal = true;
   showCloseRegisterModal = false;
-  openingAmount: number | null = null;
+  openingAmount: number = 0;
   closingAmount: number | null = null;
   isRegisterOpened = false;
   closingTotal: number = 0;
@@ -627,7 +627,7 @@ return  groupedCartItems as any
   }
 
   closeRegister() {
-    this.showCloseRegisterModal = true;
+    this.registerService.triggerCloseRegister();
   }
   toggleNotesModal() {
     this.isNotesModalOpen = !this.isNotesModalOpen;
