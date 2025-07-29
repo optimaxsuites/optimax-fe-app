@@ -196,7 +196,7 @@ export function appInitializerFactory(appInitService: AppInitService) {
     CloseRegisterModalComponent,
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
     UserModule,
     AppRoutingModule,
     CheckboxModule,
@@ -252,7 +252,7 @@ export function appInitializerFactory(appInitService: AppInitService) {
     MultiSelectModule,
     ProgressSpinnerModule,
      SelectButtonModule,
-    BrowserAnimationsModule,
+    // BrowserAnimationsModule,
     
     TagModule
 ],
