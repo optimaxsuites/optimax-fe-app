@@ -1,0 +1,169 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 500px;
+  padding: 24px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal h2 {
+  margin-top: 0;
+  color: #2d3748;
+  font-size: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 12px;
+}
+
+.error-message {
+  background-color: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+}
+
+.balance-summary p {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0;
+  color: #4a5568;
+}
+
+.balance-summary span {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.balance-summary input {
+  width: 60%;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.balance-summary input:focus {
+  outline: none;
+  border-color: #4299e1;
+}
+
+.cash-count-section h3 {
+  color: #2d3748;
+  margin-bottom: 0;
+}
+
+.denomination-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.denomination-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px;
+  align-items: center;
+  gap: 12px;
+}
+
+.denomination-row label {
+  font-weight: 500;
+  color: #4a5568;
+}
+
+.denomination-row input {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.denomination-row input:focus {
+  outline: none;
+  border-color: #4299e1;
+}
+
+.denom-total {
+  text-align: right;
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+  font-size: 1.05rem;
+}
+
+.total-row span {
+  font-weight: 600;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 24px;
+  gap: 16px;
+}
+
+.modal-actions button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.confirm-btn {
+  background-color: #edf2f7;
+  color: #2d3748;
+}
+
+.confirm-btn:hover {
+  background-color: #e2e8f0;
+}
+
+.confirm-btn.confirmed {
+  background-color: #48bb78;
+  color: white;
+}
+
+.finalize-btn {
+  background-color: #4299e1;
+  color: white;
+}
+
+.finalize-btn:hover:not(:disabled) {
+  background-color: #3182ce;
+}
+
+.finalize-btn:disabled {
+  background-color: #a0aec0;
+  cursor: not-allowed;
+}

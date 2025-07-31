@@ -1,0 +1,177 @@
+<!-- hotel-keycard.component.html -->
+<div class="key-card-assignment" *ngIf="room">
+  <h3>Key Card Management - Room {{ room.number }}</h3>
+
+  <div class="p-grid p-fluid">
+    <div class="p-col-12 p-md-6">
+      <div *ngIf="!assignedKey" class="no-key p-card p-p-3">
+        <h4>No Active Key Assigned</h4>
+        <p>This room currently has no active key card assigned.</p>
+
+        <div class="p-field" *ngIf="guest">
+          <label for="keyType">Key Type</label>
+          <p-dropdown
+            [options]="keyTypes"
+            [(ngModel)]="selectedKeyType"
+            optionLabel="label"
+            optionValue="value"
+            id="keyType"
+          ></p-dropdown>
+        </div>
+
+        <div class="p-field" *ngIf="selectedKeyType === 'master'">
+          <label for="masterKeyType">Master Key Level</label>
+          <p-dropdown
+            [options]="masterKeyLevels"
+            [(ngModel)]="selectedMasterKeyLevel"
+            optionLabel="label"
+            optionValue="value"
+            id="masterKeyType"
+          ></p-dropdown>
+        </div>
+
+        <div class="button-group p-mt-3">
+          <button
+            pButton
+            type="button"
+            label="Create New Key"
+            (click)="createNewKey()"
+            class="p-button-success"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Assign Existing Key"
+            (click)="showAssignDialog()"
+            class="p-button-secondary"
+          ></button>
+        </div>
+
+        <small *ngIf="!guest" class="p-error block p-mt-2">
+          <i class="pi pi-exclamation-triangle"></i> Guest information required
+          to assign key
+        </small>
+      </div>
+
+      <div *ngIf="assignedKey" class="key-details p-card p-p-3">
+        <h4>Key Details</h4>
+        <div class="key-info p-grid">
+          <div class="p-col-6">
+            <p><strong>Key Card ID:</strong> {{ assignedKey.id }}</p>
+            <p>
+              <strong>Type:</strong>
+              {{ getKeyTypeLabel(assignedKey.accessType ?? "UNKNOWN") }}
+            </p>
+          </div>
+          <div class="p-col-6">
+            <p>
+              <strong>Status:</strong>
+              <span
+                [ngClass]="{
+                  'status-badge status-active': assignedKey.isActive,
+                  'status-badge status-inactive': !assignedKey.isActive
+                }"
+              >
+                {{ assignedKey.isActive ? "Active" : "Inactive" }}
+              </span>
+            </p>
+            <p>
+              <strong>Valid until:</strong>
+              {{ assignedKey.deactivationDate | date : "medium" }}
+            </p>
+          </div>
+          <div class="p-col-12" *ngIf="assignedKey.accessType !== 'MASTER'">
+            <p><strong>Assigned to:</strong> {{ assignedKey.guestName }}</p>
+          </div>
+        </div>
+
+        <div class="key-actions p-grid p-mt-3">
+          <div class="p-col-6">
+            <!-- <button
+              pButton
+              type="button"
+              label="Print Key Card"
+              (click)="printKeyCard()"
+              class="p-button-info p-button-sm"
+            ></button> -->
+          </div>
+          <div class="p-col-6">
+            <button
+              pButton
+              type="button"
+              label="Deactivate Key"
+              (click)="deactivateKey()"
+              class="p-button-danger p-button-sm"
+            ></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-col-12 p-md-6">
+      <div class="access-logs p-card p-p-3">
+        <h4>Recent Access Logs</h4>
+        <p-table [value]="accessLogs" [rows]="5" [paginator]="true">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Timestamp</th>
+              <th>Key Type</th>
+              <th>Access</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-log>
+            <tr>
+              <td>{{ log.timestamp | date : "short" }}</td>
+              <td>{{ log.accessType }}</td>
+              <td>
+                <span
+                  [ngClass]="{
+                    'access-granted': log.accessGranted,
+                    'access-denied': !log.accessGranted
+                  }"
+                >
+                  {{ log.accessGranted ? "Granted" : "Denied" }}
+                </span>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+  </div>
+
+  <p-dialog
+    header="Assign Existing Key"
+    [(visible)]="displayAssignDialog"
+    [modal]="true"
+    [style]="{ width: '500px' }"
+  >
+    <div class="p-field">
+      <label for="existingKey">Select Key</label>
+      <p-dropdown
+        [options]="availableKeys"
+        [(ngModel)]="selectedExistingKey"
+        optionLabel="id"
+        optionValue="id"
+        [filter]="true"
+        id="existingKey"
+      ></p-dropdown>
+    </div>
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        type="button"
+        label="Cancel"
+        (click)="displayAssignDialog = false"
+        class="p-button-text"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Assign"
+        (click)="assignExistingKey()"
+        class="p-button-success"
+      ></button>
+    </ng-template>
+  </p-dialog>
+</div>

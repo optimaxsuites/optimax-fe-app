@@ -1,0 +1,590 @@
+<div class="createVendor">
+  <div class="flex justify-between">
+    <p
+      class="back pt-4 text-[12px]"
+      style="cursor: pointer"
+      (click)="closeEdit()"
+    >
+      <i class="fa-solid fa-arrow-left"></i> Back
+    </p>
+  </div>
+
+  <div class="details" id="addInventory">
+    <div
+      class="shadow bg-gray-50 text-gray-700 flex flex-col space-y-5 stl p-5 rounded-2xl border w-[50%]"
+    >
+      <h2
+        [ngClass]="
+          mode === 'create'
+            ? 'text-customBlue font-bold text-2xl sm:text-3xl md:text-4xl'
+            : 'text-cyan-500 font-semibold text-xl sm:text-2xl md:text-3xl'
+        "
+        class="transition-all duration-300 tracking-tight"
+      >
+        {{
+          mode === "create" ? " Add New Inventory" : "✏️ Edit Inventory Item"
+        }}
+      </h2>
+
+      <hr />
+
+      <!-- Product Selection (Edit Mode) -->
+      <div class="field">
+        <label class="text-[13px] font-normal" for="name">Product Name</label>
+        <ng-select
+          [items]="product"
+          bindLabel="name"
+          bindValue="id"
+          [ngModel]="activeItem?.id"
+          (ngModelChange)="activeItem && (activeItem.id = $event)"
+          (change)="onProductChange($event)"
+          class="editInput mb-2 outline-none"
+          placeholder="Select product"
+          required
+        >
+        </ng-select>
+      </div>
+
+      <!-- Product Form -->
+      <div class="flex gap-4">
+        <div class="field w-1/2">
+          <label class="text-[13px] font-normal" for="sku">SKU</label>
+          <input
+            formControlName="sku"
+            class="editInput w-full text-[12px]"
+            id="sku"
+            placeholder="Enter SKU"
+            required
+            [value]="activeItem?.sku"
+          />
+        </div>
+
+        <div class="field w-1/2">
+          <label class="text-[13px] font-normal" for="code">Product Code</label>
+          <input
+            formControlName="code"
+            class="editInput w-full text-[12px]"
+            id="code"
+            placeholder="Enter product code"
+            required
+            [value]="activeItem?.code"
+          />
+        </div>
+      </div>
+
+      <!-- Category and Branch Selection -->
+      <div class="flex gap-4">
+        <div class="field w-1/2">
+          <label class="block font-normal text-[13px]">Category</label>
+          <ng-select
+            [items]="categories"
+            bindLabel="name"
+            bindValue="id"
+            [(ngModel)]="selectedCategory"
+            class="editInput w-full text-[12px]"
+            placeholder="Select category"
+            required
+          >
+          </ng-select>
+        </div>
+
+        <div class="field w-1/2">
+          <label class="block font-normal text-[13px]">Branch</label>
+          <ng-select
+            [items]="branches"
+            bindLabel="name"
+            bindValue="id"
+            [(ngModel)]="selectedBranch"
+            class="editInput w-full text-[12px]"
+            placeholder="Select branch"
+            required
+          >
+          </ng-select>
+        </div>
+      </div>
+
+      <!-- Supplier Selection with Add Button -->
+      <div class="flex gap-4">
+        <!-- Supplier Dropdown -->
+        <div class="field w-1/2">
+          <label class="block font-normal text-[13px]">Supplier</label>
+          <div
+            class="relative flex items-center border rounded-md overflow-hidden"
+          >
+            <ng-select
+              [items]="suppliers"
+              bindLabel="name"
+              bindValue="id"
+              [(ngModel)]="selectedSupplier"
+              class="text-gray-600 text-[14px] w-full outline-none p-2"
+              placeholder="Select a supplier"
+              required
+            >
+            </ng-select>
+          </div>
+        </div>
+
+        <!-- Selling Price Input -->
+        <div class="field mt-3 w-1/2">
+          <label class="block font-normal text-[13px]">Measurement Unit</label>
+          <div class="relative">
+            <input
+              formControlName="measurementUnit"
+              class="editInput w-full text-[12px] bg-gray-100"
+              placeholder="Measurement unit"
+              [value]="activeItem?.measurementUnit"
+              id="measurementUnit"
+              readonly
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-4">
+        <div class="field w-1/2">
+          <label class="block font-normal text-[13px]">Part Number</label>
+          <input
+            formControlName="partNumber"
+            class="editInput w-full text-[12px]"
+            placeholder="Enter part number"
+            [value]="activeItem?.partNumber || 0"
+            id="partNumber"
+          />
+        </div>
+
+        <div class="field w-1/2">
+          <label class="block font-normal text-[13px]">Expiry Date</label>
+          <input
+            formControlName="expiryDate"
+            placeholder=" Expiry date"
+            dateFormat="yy-mm-dd"
+            class="w-full"
+            id="expiryDate"
+            readonly
+            [value]="activeItem?.expiryDate"
+          />
+        </div>
+      </div>
+
+      <p class="text-[13px] text-gray-700 font-semibold">Pricing</p>
+
+      <div class="flex gap-4">
+        <div class="field w-1/2">
+          <label class="block font-normal text-[13px]">Purchase Price*</label>
+          <input
+            formControlName="purchasePrice"
+            type="number"
+            class="editInput w-full text-[12px]"
+            placeholder="Enter purchase price"
+            required
+            [value]="activeItem?.purchasePrice || 0"
+            id="purchasePrice"
+            readonly
+          />
+        </div>
+
+        <div class="field w-1/2">
+          <label class="block font-normal text-[13px]">Selling Price*</label>
+          <div class="relative">
+            <input
+              formControlName="sellingPrice"
+              type="number"
+              class="editInput w-full text-[12px] bg-gray-100"
+              placeholder="Selling price"
+              [value]="activeItem?.sellingPrice || 0"
+              id="sellingPrice"
+              readonly
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Inventory Section -->
+      <p class="text-[13px] text-gray-700 font-semibold">Inventory</p>
+
+      <div class="flex gap-4">
+        <div class="field w-1/2">
+          <label class="block font-normal text-[13px]">Current Quantity</label>
+          <input
+            type="number"
+            [value]="getCurrentQuantity()"
+            class="editInput w-full bg-gray-200 text-[12px]"
+            readonly
+          />
+        </div>
+
+        <div class="field w-1/2">
+          <label class="block font-normal text-[13px]">Reorder Threshold</label>
+          <input
+            formControlName="reorderThreshold"
+            type="number"
+            class="editInput w-full text-[12px]"
+            placeholder="Enter threshold"
+            [value]="activeItem?.reorderThreshold || 0"
+            id="reorderThreshold"
+          />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="block font-normal text-[13px]">New Total Quantity</label>
+        <input
+          type="number"
+          [value]="getCurrentQuantity() + (newQuantity || 0)"
+          class="editInput w-full bg-gray-200 text-[12px]"
+          readonly
+        />
+      </div>
+
+      <!-- Stock Movement Section -->
+      <div class="field">
+        <button
+          class="p-2 bg-blue-500 text-white rounded text-[12px]"
+          (click)="toggleStockMovement()"
+        >
+          {{ showStockMovementSection ? "Hide" : "Show" }} Stock Movement
+          Details
+        </button>
+      </div>
+
+      <!-- Stock Movement Section -->
+      <form
+        *ngIf="showStockMovementSection"
+        [formGroup]="stockMovementForm"
+        class="bg-gray-100 p-3 rounded-md"
+      >
+        <p class="text-[13px] text-gray-700 font-semibold mb-3">
+          Stock Movement Details
+        </p>
+
+        <div class="field">
+          <label class="block font-normal text-[13px]"
+            >Available Quantity</label
+          >
+          <input
+            type="number"
+            [value]="getCurrentQuantity()"
+            class="editInput w-full bg-gray-200 text-[12px]"
+            readonly
+          />
+        </div>
+
+        <!-- Movement Date and Reference -->
+        <div class="flex gap-4 mb-3">
+          <div class="field w-1/2">
+            <label for="createdDate" class="block font-normal text-[13px]">
+              Movement Date:
+            </label>
+            <input
+              type="date"
+              id="createdDate"
+              name="createdDate"
+              formControlName="createdDate"
+              class="editInput w-full text-[12px]"
+            />
+          </div>
+
+          <div class="field w-1/2">
+            <label class="block font-normal text-[13px]">Reference</label>
+            <input
+              formControlName="reference"
+              class="editInput w-full text-[12px]"
+              placeholder="Enter reference (optional)"
+            />
+          </div>
+        </div>
+
+        <!-- Quantity and Supplier -->
+        <div class="flex gap-4">
+          <div class="field w-1/2">
+            <label class="block font-normal text-[13px]">Quantity</label>
+            <input
+              formControlName="quantity"
+              type="number"
+              class="editInput w-full text-[12px]"
+              placeholder="Enter quantity"
+              required
+              min="1"
+            />
+          </div>
+
+          <div class="mb-8 w-[50%] max-w-md">
+            <label
+              for="supplier"
+              class="block text-[13px] font-semibold text-gray-700 mb-2"
+            >
+              Supplier
+            </label>
+            <div class="flex items-stretch space-x-2">
+              <ng-select
+                id="supplier"
+                [items]="suppliers"
+                bindLabel="name"
+                bindValue="id"
+                formControlName="supplierId"
+                class="editInput w-full text-[15px] rounded-md shadow-sm border border-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                placeholder="Select supplier"
+                (change)="onSupplierChange($event)"
+              >
+              </ng-select>
+
+              <button
+                class="bg-green-500 hover:bg-green-600 transition-all text-white text-[15px] px-4 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-200"
+                (click)="openSupplierModal()"
+                title="Add Supplier"
+              >
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Purchase Price and Selling Price -->
+        <div class="flex gap-4 mb-3">
+          <div class="field w-1/2">
+            <label class="block font-normal text-[13px]">Purchase Price*</label>
+            <input
+              formControlName="purchasePrice"
+              type="number"
+              class="editInput w-full text-[12px]"
+              placeholder="Enter purchase price"
+              required
+              min="0"
+              step="0.01"
+            />
+            <small
+              *ngIf="
+                stockMovementForm.get('purchasePrice')?.invalid &&
+                stockMovementForm.get('purchasePrice')?.touched
+              "
+              class="text-red-500 text-xs"
+            >
+              Purchase price is required
+            </small>
+          </div>
+
+          <div class="field w-1/2">
+            <label class="block font-normal text-[13px]"
+              >Base Selling Price</label
+            >
+            <input
+              type="number"
+              [(ngModel)]="priceDetails.basePrice"
+              (ngModelChange)="onBasePriceChange($event)"
+              class="editInput w-full text-[12px]"
+              placeholder="Enter base price"
+              min="0"
+              step="0.01"
+            />
+          </div>
+        </div>
+
+        <div class="bg-white p-3 rounded-md border mb-3">
+          <div class="flex gap-4 mb-3">
+            <div class="field w-1/2">
+              <label class="block font-normal text-[13px]">Tax (%)</label>
+              <input
+                type="number"
+                [(ngModel)]="priceDetails.tax"
+                (ngModelChange)="onTaxChange($event)"
+                class="editInput w-full text-[12px]"
+                placeholder="Enter tax percentage"
+                min="0"
+                max="100"
+                step="0.1"
+              />
+            </div>
+
+            <div class="field w-1/2">
+              <label class="block font-normal text-[13px]">Discount (%)</label>
+              <select
+                [(ngModel)]="priceDetails.discount"
+                (ngModelChange)="onDiscountChange($event)"
+                class="editInput w-full text-[12px]"
+              >
+                <option [ngValue]="null">No Discount</option>
+                <option
+                  *ngFor="let discount of discountOptions"
+                  [value]="discount"
+                >
+                  {{ discount }}%
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Price Breakdown -->
+          <div class="price-breakdown bg-blue-50 p-4 rounded-md">
+            <h4 class="font-bold text-base text-blue-900 mb-3">
+              Price Calculation
+            </h4>
+            <div class="grid grid-cols-2 gap-2 text-sm text-gray-800">
+              <div class="font-medium">Base Price:</div>
+              <div class="text-right font-medium">
+                {{
+                  priceDetails.basePrice | currency : "NGN" : "symbol" : "1.2-2"
+                }}
+              </div>
+
+              <div
+                *ngIf="priceDetails.discount"
+                class="text-red-600 font-medium"
+              >
+                Discount ({{ priceDetails.discount }}%):
+              </div>
+              <div
+                *ngIf="priceDetails.discount"
+                class="text-right text-red-600 font-medium"
+              >
+                -{{
+                  priceDetails.basePrice * (priceDetails.discount / 100)
+                    | currency : "NGN" : "symbol" : "1.2-2"
+                }}
+              </div>
+
+              <div class="font-medium">Price After Discount:</div>
+              <div class="text-right font-medium">
+                {{
+                  getPriceAfterDiscount()
+                    | currency : "NGN" : "symbol" : "1.2-2"
+                }}
+              </div>
+
+              <div class="font-medium">Tax ({{ priceDetails.tax }}%):</div>
+              <div class="text-right font-medium">
+                {{ getTaxAmount() | currency : "NGN" : "symbol" : "1.2-2" }}
+              </div>
+
+              <div class="font-semibold border-t pt-2 mt-2 text-base">
+                Final Price:
+              </div>
+              <div
+                class="font-semibold text-right border-t pt-2 mt-2 text-base"
+              >
+                {{
+                  priceDetails.effectivePrice
+                    | currency : "NGN" : "symbol" : "1.2-2"
+                }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Save Button -->
+        <div class="flex justify-end">
+          <button
+            type="submit"
+            class="p-2 bg-customGreen text-white rounded text-[12px]"
+            (click)="saveStockMovement()"
+          >
+            Record Movement
+            <i *ngIf="isLoading" class="pi pi-spinner pi-spin ml-2"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Supplier Modal -->
+    <div
+      *ngIf="isSupplierModalOpen"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 class="text-lg font-bold mb-4">Add New Supplier</h3>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700"
+              >Supplier Name*</label
+            >
+            <input
+              [(ngModel)]="newSupplier.name"
+              class="w-full p-2 border rounded"
+              placeholder="Supplier name"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700"
+              >Contact Person</label
+            >
+            <input
+              [(ngModel)]="newSupplier.contactPerson"
+              class="w-full p-2 border rounded"
+              placeholder="Contact person"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              [(ngModel)]="newSupplier.email"
+              type="email"
+              class="w-full p-2 border rounded"
+              placeholder="Email"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700"
+              >Phone Number</label
+            >
+            <input
+              [(ngModel)]="newSupplier.phoneNumber"
+              type="tel"
+              class="w-full p-2 border rounded"
+              placeholder="Phone number"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700"
+              >Address</label
+            >
+            <textarea
+              [(ngModel)]="newSupplier.address"
+              class="w-full p-2 border rounded"
+              rows="2"
+              placeholder="Address"
+            ></textarea>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Notes</label>
+            <textarea
+              [(ngModel)]="newSupplier.notes"
+              class="w-full p-2 border rounded"
+              rows="2"
+              placeholder="Notes"
+            ></textarea>
+          </div>
+
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              [(ngModel)]="newSupplier.agreeTerms"
+              class="mr-2"
+            />
+            <label class="text-sm">I agree to the terms and conditions</label>
+          </div>
+        </div>
+
+        <div class="flex justify-end mt-6 space-x-3">
+          <button
+            (click)="closeSupplierModal()"
+            class="px-4 py-2 border rounded text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            (click)="createSupplier()"
+            class="px-4 py-2 bg-customGreen text-white rounded text-sm"
+            [disabled]="!newSupplier.name || !newSupplier.agreeTerms"
+          >
+            Save Supplier
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
