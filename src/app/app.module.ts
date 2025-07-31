@@ -125,9 +125,8 @@ import { StockReportComponent } from './ui/view/report-dashboard/stock-report/st
 import { SalesDetailsComponent } from './ui/view/sales/sales-details/sales-details.component';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { TagModule } from "primeng/tag";
+import { TagModule } from 'primeng/tag';
 import { SelectButtonModule } from 'primeng/selectbutton';
-import { CloseRegisterModalComponent } from './ui/view/close-register-modal/close-register-modal.component';
 export function appInitializerFactory(appInitService: AppInitService) {
   return () => appInitService.init();
 }
@@ -193,10 +192,9 @@ export function appInitializerFactory(appInitService: AppInitService) {
     SalesDetailsComponent,
     //CheckoutKitchenComponent,
     //CheckoutHeaderComponent,
-    CloseRegisterModalComponent,
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
     UserModule,
     AppRoutingModule,
     CheckboxModule,
@@ -251,11 +249,12 @@ export function appInitializerFactory(appInitService: AppInitService) {
     PaginatorModule,
     MultiSelectModule,
     ProgressSpinnerModule,
-     SelectButtonModule,
-    BrowserAnimationsModule,
-    
-    TagModule
-],
+    SelectButtonModule,
+
+    // BrowserAnimationsModule,
+
+    TagModule,
+  ],
   exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],
   providers: [
     {

@@ -31,9 +31,11 @@
     <!-- Customer Information -->
     <div class="space-y-4">
       <h3 class="font-semibold text-lg border-b pb-2">Customer Information</h3>
-      
+
       <div>
-        <label for="name" class="block text-sm font-medium mb-1">Full Name:</label>
+        <label for="name" class="block text-sm font-medium mb-1"
+          >Full Name:</label
+        >
         <input
           type="text"
           name="name"
@@ -46,7 +48,9 @@
       </div>
 
       <div>
-        <label for="phoneNumber" class="block text-sm font-medium mb-1">Phone Number:</label>
+        <label for="phoneNumber" class="block text-sm font-medium mb-1"
+          >Phone Number:</label
+        >
         <input
           type="tel"
           name="phoneNumber"
@@ -63,9 +67,11 @@
     <!-- Order Information -->
     <div class="space-y-4 mt-4">
       <h3 class="font-semibold text-lg border-b pb-2">Order Information</h3>
-      
+
       <div>
-        <label for="orderId" class="block text-sm font-medium mb-1">Receipt Number:</label>
+        <label for="orderId" class="block text-sm font-medium mb-1"
+          >Receipt Number:</label
+        >
         <input
           type="text"
           name="orderId"
@@ -80,44 +86,61 @@
 
       <div *ngIf="orderDetails">
         <label class="block text-sm font-medium mb-1">Purchase Date:</label>
-        <p class="px-3 py-2 border rounded-md bg-gray-50">{{ formatDate(orderDetails.createdDate) | date:'medium' }}</p>
+        <p class="px-3 py-2 border rounded-md bg-gray-50">
+          {{ formatDate(orderDetails.createdDate) | date : "medium" }}
+        </p>
       </div>
     </div>
 
     <!-- Return Items -->
     <div *ngIf="orderItems.length > 0" class="space-y-4 mt-4">
-      <h3 class="font-semibold text-lg border-b pb-2">Select Items to Return</h3>
-      
+      <h3 class="font-semibold text-lg border-b pb-2">
+        Select Items to Return
+      </h3>
+
       <div class="max-h-60 overflow-y-auto border rounded-md p-2">
-        <div *ngFor="let item of orderItems; let i = index" class="flex items-center py-2 border-b last:border-0">
+        <div
+          *ngFor="let item of orderItems; let i = index"
+          class="flex items-center py-2 border-b last:border-0"
+        >
           <input
             type="checkbox"
             id="item-{{ item.id }}"
             [(ngModel)]="selectedItems[i]"
-            name="selectedItem{{i}}"
+            name="selectedItem{{ i }}"
             class="h-5 w-5 text-blue-600"
             (change)="calculateRefundableAmount()"
           />
           <label for="item-{{ item.id }}" class="ml-3 block">
             <span class="font-medium">{{ item.product.name }}</span>
-            <span class="block text-sm text-gray-500">Qty: {{ item.quantity }} × {{ item.product.sellingPrice | currency: '₦' }}</span>
+            <span class="block text-sm text-gray-500"
+              >Qty: {{ item.quantity }} ×
+              {{ item.product.sellingPrice | currency : "₦" }}</span
+            >
           </label>
-          <span class="ml-auto font-medium">{{ item.totalPrice | currency: '₦'}}</span>
+          <span class="ml-auto font-medium">{{
+            item.totalPrice | currency : "₦"
+          }}</span>
         </div>
       </div>
-      
-      <div *ngIf="returnData.refundableAmount > 0" class="flex justify-between font-semibold text-lg px-2">
+
+      <div
+        *ngIf="returnData.refundableAmount > 0"
+        class="flex justify-between font-semibold text-lg px-2"
+      >
         <span>Total Refundable Amount:</span>
-        <span>{{ returnData.refundableAmount | currency: '₦' }}</span>
+        <span>{{ returnData.refundableAmount | currency : "₦" }}</span>
       </div>
     </div>
 
     <!-- Return Reason -->
     <div class="space-y-4 mt-4">
       <h3 class="font-semibold text-lg border-b pb-2">Return Details</h3>
-      
+
       <div>
-        <label for="reason" class="block text-sm font-medium mb-1">Reason For Return:</label>
+        <label for="reason" class="block text-sm font-medium mb-1"
+          >Reason For Return:</label
+        >
         <ng-select
           id="reason"
           [items]="returnReasons"
@@ -132,7 +155,9 @@
       </div>
 
       <div>
-        <label for="refundMethod" class="block text-sm font-medium mb-1">Refund Method:</label>
+        <label for="refundMethod" class="block text-sm font-medium mb-1"
+          >Refund Method:</label
+        >
         <ng-select
           id="refundMethod"
           [items]="refundMethods"
@@ -149,11 +174,16 @@
     </div>
 
     <!-- Bank Transfer Details -->
-    <div *ngIf="returnData.refundMethod === 'BANK_TRANSFER'" class="space-y-4 mt-2">
+    <div
+      *ngIf="returnData.refundMethod === 'BANK_TRANSFER'"
+      class="space-y-4 mt-2"
+    >
       <h3 class="font-semibold text-lg border-b pb-2">Bank Details</h3>
-      
+
       <div>
-        <label for="bankName" class="block text-sm font-medium mb-1">Bank Name:</label>
+        <label for="bankName" class="block text-sm font-medium mb-1"
+          >Bank Name:</label
+        >
         <input
           type="text"
           id="bankName"
@@ -164,9 +194,11 @@
           class="w-full px-3 py-2 border rounded-md"
         />
       </div>
-      
+
       <div>
-        <label for="accountNumber" class="block text-sm font-medium mb-1">Account Number:</label>
+        <label for="accountNumber" class="block text-sm font-medium mb-1"
+          >Account Number:</label
+        >
         <input
           type="text"
           id="accountNumber"
@@ -177,9 +209,11 @@
           class="w-full px-3 py-2 border rounded-md"
         />
       </div>
-      
+
       <div>
-        <label for="accountName" class="block text-sm font-medium mb-1">Account Holder Name:</label>
+        <label for="accountName" class="block text-sm font-medium mb-1"
+          >Account Holder Name:</label
+        >
         <input
           type="text"
           id="accountName"
@@ -193,32 +227,50 @@
     </div>
 
     <!-- Royalty Account Details -->
-    <div *ngIf="returnData.refundMethod === 'ROYALTY_POINTS'" class="space-y-4 mt-2">
-      <h3 class="font-semibold text-lg border-b pb-2">Royalty Account Details</h3>
-      
+    <div
+      *ngIf="returnData.refundMethod === 'ROYALTY_POINTS'"
+      class="space-y-4 mt-2"
+    >
+      <h3 class="font-semibold text-lg border-b pb-2">
+        Royalty Account Details
+      </h3>
+
       <div *ngIf="returnData.royaltyAccount?.id">
-  
         <span class="block text-sm font-medium">Royalty Account ID:</span>
-        <span class="block px-3 py-2 border rounded-md bg-gray-50">{{ returnData.royaltyAccount?.id }}</span>
+        <span class="block px-3 py-2 border rounded-md bg-gray-50">{{
+          returnData.royaltyAccount.id
+        }}</span>
       </div>
-      
+
       <div *ngIf="returnData.royaltyAccount?.name" class="py-2">
         <span class="block text-sm font-medium">Account Holder:</span>
-        <span class="block px-3 py-2 border rounded-md bg-gray-50">{{ returnData.royaltyAccount.name }}</span>
+        <span class="block px-3 py-2 border rounded-md bg-gray-50">{{
+          returnData.royaltyAccount.name
+        }}</span>
       </div>
 
-
       <div *ngIf="this.returnData.royaltyAccount.id === 0" class="py-2">
-         <p class="py-2">Customer doesn't exist in the database. <span>Confirm customer's phone number and name,</span> then click here to create <span class="text-customGreen cursor-pointer" (click)="createCustomer()">customer</span></p>
+        <p class="py-2">
+          Customer doesn't exist in the database.
+          <span>Confirm customer's phone number and name,</span> then click here
+          to create
+          <span
+            class="text-customGreen cursor-pointer"
+            (click)="createCustomer()"
+            >customer</span
+          >
+        </p>
       </div>
     </div>
 
     <!-- Exchange Details -->
     <div *ngIf="returnData.refundMethod === 'EXCHANGE'" class="space-y-4 mt-2">
       <h3 class="font-semibold text-lg border-b pb-2">Exchange Details</h3>
-      
+
       <div>
-        <label for="exchangeProduct" class="block text-sm font-medium mb-1">Product to Exchange For:</label>
+        <label for="exchangeProduct" class="block text-sm font-medium mb-1"
+          >Product to Exchange For:</label
+        >
         <ng-select
           id="exchangeProduct"
           [items]="availableProducts"
@@ -232,19 +284,26 @@
           class="w-full"
         ></ng-select>
       </div>
-      
-      <div *ngIf="returnData.exchangeFor?.id" class="flex justify-between items-center">
+
+      <div
+        *ngIf="returnData.exchangeFor?.id"
+        class="flex justify-between items-center"
+      >
         <span>Price Difference:</span>
-        <span [ngClass]="priceDifference < 0 ? 'text-red-500' : 'text-green-500'">
-          {{ priceDifference < 0 ? 'Customer pays: ' : 'Refund to customer: ' }} 
-          {{ Math.abs(priceDifference) | currency: '₦'}}
+        <span
+          [ngClass]="priceDifference < 0 ? 'text-red-500' : 'text-green-500'"
+        >
+          {{ priceDifference < 0 ? "Customer pays: " : "Refund to customer: " }}
+          {{ Math.abs(priceDifference) | currency : "₦" }}
         </span>
       </div>
     </div>
 
     <!-- Additional Comments -->
     <div class="space-y-2 mt-4">
-      <label for="cashierComment" class="block text-sm font-medium">Additional Comments:</label>
+      <label for="cashierComment" class="block text-sm font-medium"
+        >Additional Comments:</label
+      >
       <textarea
         id="cashierComment"
         [(ngModel)]="returnData.cashierComment"
@@ -295,7 +354,9 @@
               <tbody>
                 <tr *ngFor="let request of requests" style="cursor: pointer">
                   <!-- {{ order?.timestamp || date: 'shortTime' }} -->
-                  <td>{{ formatDate(request?.createdAt) | date:"medium" }}</td>
+                  <td>
+                    {{ formatDate(request?.createdAt) | date : "medium" }}
+                  </td>
                   <td>
                     <p
                       [ngClass]="{
@@ -308,14 +369,14 @@
                   </td>
                   <td class="capitalize">{{ request.name }}</td>
                   <td>
-                    <span 
+                    <span
                       class="px-2 py-1 font-medium rounded-full"
                       [ngClass]="getRefundStatusClass(request.refundStatus)"
                     >
                       {{ request.refundStatus }}
                     </span>
                   </td>
-                  
+
                   <td>
                     <div class="flex gap-3 text-[16px]">
                       <!-- <i class="fa-solid fa-cart-shopping hover:bg-customGreen/30 p-2 rounded-md" ></i> -->

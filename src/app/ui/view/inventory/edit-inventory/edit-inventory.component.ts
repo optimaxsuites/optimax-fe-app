@@ -1,821 +1,749 @@
-import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import {
   Component,
   EventEmitter,
-  HostListener,
   Input,
   Output,
-  ViewChild,
-} from "@angular/core";
-import JsBarcode from "jsbarcode";
-import jsPDF from "jspdf";
-import { PosServiceService } from "../../../service/pos-service.service";
-import { ChangeDetectorRef } from "@angular/core";
-import { Observable } from "rxjs";
+  OnInit,
+  SimpleChanges,
+} from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { PosServiceService } from '../../../service/pos-service.service';
 import {
-  HistoryData,
   ProductData,
-  ProductJSONFormat,
-  ProductJSONFormatPOST,
+  InventoryPayload,
   supplierData,
-} from "../../../models/interface";
-import { position } from "html2canvas/dist/types/css/property-descriptors/position";
-import { Toast } from "primeng/toast";
-import { Message, MessageService } from "primeng/api";
-import { FormGroup } from "@angular/forms";
-import { FormBuilder, Validators } from "@angular/forms";
-import { MetadataService } from "../../../service/metadata.service";
-
-interface Branch {
-  id: number;
-  name: string;
-}
+  ProductCategoryGET,
+  BranchDTO,
+  StockMovementPayload,
+} from '../../../models/interface';
+import { MessageService } from 'primeng/api';
+import { forkJoin } from 'rxjs';
 
 @Component({
-  selector: "app-edit-inventory",
-  templateUrl: "./edit-inventory.component.html",
-  styleUrl: "./edit-inventory.component.scss",
+  selector: 'app-edit-inventory',
+  templateUrl: './edit-inventory.component.html',
+  styleUrls: ['./edit-inventory.component.scss'],
 })
-export class EditInventoryComponent {
-  messages: Message[] = [];
-  newBranchName: string = "";
-  selectedDate: string = "";
-
-  showBranchInput: boolean = false;
-  openAddDiscount: boolean = false;
-  productForm!: FormGroup;
-  // Ensure it's explicitly null
-
-  newPrice: number = 0;
-  newQuantity: number = 0;
-  isVariantEditOpen: boolean = false;
-
-  @Input() product: any;
-  @Output() productUpdated: EventEmitter<any> = new EventEmitter();
-
-  //@ts-ignore
-  @Input() activeItem: ProductData | any;
-  @Input() mode: string = "";
-  @Input() products: ProductData[] = [];
-
+export class EditInventoryComponent implements OnInit {
+  @Input() activeItem: ProductData | null = null;
+  @Input() mode: 'create' | 'edit' = 'create';
+  @Input() product: ProductData[] = [];
   @Output() close = new EventEmitter<void>();
-  isOpen = false;
-  hasSelectedSupplier = false;
-  isVisible: boolean = false;
 
-  currentPriceAndQuantity: { quantity: number; price: number }[] = [];
-  openPriceChange: boolean = false;
-  pricingQuantity: any;
-
-  branchForm!: FormGroup;
-  dropdownOpen: boolean = false;
-  isEditing: boolean = false;
-
-  // sourceName = '';
-  showModal = false;
-  sourceInput = "";
-  options: string[] = [];
-  // options2: string[] = [];
-  source: string = "";
+  productForm: FormGroup;
+  supplierForm: FormGroup;
+  categories: ProductCategoryGET[] = [];
+  branches: BranchDTO[] = [];
   suppliers: supplierData[] = [];
-  newOption: string = "";
-  newOption2: string = "";
-  showInput: boolean = false;
-  showInput2: boolean = false;
-  sourceName: string = "";
+  discountOptions: number[] = [5, 10, 15, 20, 25, 30];
+  isSupplierModalOpen = false;
+  isLoading = false;
 
-  // Form fields
-  supplierName: string = "";
-  contactPerson: string = "";
-  email: string = "";
-  phone: string = "";
-  address: string = "";
-  // products: string = '';
-  notes: string = "";
-  agreeTerms: boolean = false;
-  router: any;
-  selectedCountryCode = "+234"; // Default to Nigeria
-  phonePattern = "^\\+?[1-9]\\d{1,14}$"; // Allows international phone numbers
-  phoneNumber: string = "";
-
-  countryCodes = [
-    { name: "Nigeria", code: "+234" },
-    { name: "United States", code: "+1" },
-    { name: "United Kingdom", code: "+44" },
-    { name: "Canada", code: "+1" },
-    { name: "India", code: "+91" },
-    { name: "Germany", code: "+49" },
-    { name: "France", code: "+33" },
-    { name: "Australia", code: "+61" },
-  ];
-
-  selectedVariant: any = {
-    name: "",
-    price: 0,
-    quantity: 0,
-  };
-
-  openAddVariant: boolean = false;
-  variants: any[] = [];
-  newVariant = {
-    name: "",
-    price: "",
-    quantity: "",
-    sku: "",
-  };
-
-  private defaultSupplier: supplierData = {
-    id: 0,
-    name: "",
-    contactPerson: "",
-    email: "",
-    phoneNumber: 0,
-    address: "",
-    products: " ",
-    notes: "",
-    agreeTerms: false,
-    createdAt: new Date(),
-  };
-
-  selectedSupplier: supplierData = { ...this.defaultSupplier };
-  selectedBranch: any[] = [];
-  selectedCategory: string = "";
-  openCategories: boolean = false;
-  openAddCategory: boolean = false;
-  categories: string[] = [];
-  newCategory: string = "";
-  configureBarcode: boolean = false;
-
-  barcodes: any[] = [
-    { label: "CODE128 ", value: "CODE128" },
-    { label: "CODE128 A/B/C", value: "CODE128" },
-    { label: "EAN-13", value: "EAN13" },
-    { label: "EAN-8", value: "EAN8" },
-    { label: "EAN-5", value: "EAN5" },
-    { label: "EAN-2", value: "EAN2" },
-    { label: "UPC (A)", value: "UPC" },
-    { label: "UPC (E)", value: "UPC" },
-    { label: "ITF", value: "ITF" },
-    { label: "ITF-14", value: "ITF14" },
-    { label: "MSI10", value: "MSI10" },
-    { label: "MSI11", value: "MSI11" },
-    { label: "MSI1010", value: "MSI1010" },
-    { label: "MSI1110", value: "MSI1110" },
-  ];
-
-  productData: ProductJSONFormatPOST = {
-    name: "",
-    code: "",
-    description: "",
-    sku: "",
-    weight: 0,
-    costPrice: "",
-    sellingPrice: "",
-    // initialQuantity: 0,
-    // effectiveQuantity: 0,
-    partNumber: "",
-    tax: { name: "", rate: 0 },
-    // branch: '',
-    // variant: '',
-
-    discount: {
-      id: 0,
-      name: "",
-      value: 0,
-      startDate: new Date(),
-      endDate: new Date(),
-      minQuantity: 0,
-      discountType: { id: 0, code: " ", name: " ", description: " " },
-    },
-
-    productCategory: {
-      id: 0,
-      name: "",
-      code: "",
-      description: "",endDate:""
-    },expiryDate:'',
-    id: 0,
-    createdDate: "",
-    createdBy: null,
-    productImages: [],
-    variants: [],
-  };
-
-  discountOptions = ["Black Friday", "10%", "Test"];
-  startDate: string = ""; // Start Date Property
-  endDate: string = ""; // End Date Property
-  discountTypes: any[] = [];
-
-  showDiscountModal: boolean = false;
-  discountTitle: string = "";
-  discountRate: number = 0;
-  selectedDiscountOption: any;
-  discountStartDate: Date | undefined;
-  discountEndDate: Date | undefined;
-  minimumDiscountQuantity: number = 0;
-
-  discountOptions_2 = [
-    { label: "Percentage", value: "percentage" },
-    { label: "Fixed Amount", value: "fixed" },
-  ];
-
+  // Price details - for stock movement selling price with tax and discount
   priceDetails = {
-    basePrice: null as number | null,
-    tax: null as number | null,
+    basePrice: 0,
+    tax: 0,
     discount: null as number | null,
-    effectivePrice: null as number | null,
-    sellingprice: null as number | null,
+    effectivePrice: 0,
+  };
+
+  // New supplier data
+  newSupplier: supplierData = {
+    name: '',
+    contactPerson: '',
+    email: '',
+    phoneNumber: 0,
+    address: '',
+    notes: '',
+    agreeTerms: false,
+  };
+
+  stockMovementForm: FormGroup;
+  showStockMovementSection = false;
+  minDate: Date = new Date();
+  maxDate: Date = new Date();
+  inventoryId: number | null = null;
+
+  selectedCategory: number | null = null;
+  selectedBranch: number | null = null;
+  selectedSupplier: number | null = null;
+  selectedDate: string = new Date().toISOString().split('T')[0];
+  newQuantity: number = 0;
+  newPrice: number = 0;
+  openPriceChange = false;
+
+  // Preview values for real-time updates
+  previewData = {
+    quantity: 0,
+    purchasePrice: 0,
+    sellingPrice: 0 as number | string,
+    effectiveSellingPrice: 0 as number | string,
   };
 
   constructor(
-    private posService: PosServiceService,
-    private http: HttpClient,
-    private cdr: ChangeDetectorRef,
     private fb: FormBuilder,
-    private messageService: MessageService,
-    private metadataService: MetadataService,
-  ) {}
+    private posService: PosServiceService,
+    private messageService: MessageService
+  ) {
+    this.productForm = this.fb.group({
+      name: ['', Validators.required],
+      code: ['', Validators.required],
+      description: [''],
+      sku: [''],
+      weight: [0],
+      purchasePrice: [0, Validators.required],
+      sellingPrice: [0, Validators.required],
+      quantity: [0, Validators.required],
+      reorderThreshold: [0],
+      measurementUnit: [''],
+      partNumber: [''],
+      expiryDate: [null],
+      isBundle: [false],
+      bundleItems: [[]],
+    });
+
+    this.supplierForm = this.fb.group({
+      name: ['', Validators.required],
+      contactPerson: [''],
+      email: ['', Validators.email],
+      phoneNumber: [''],
+      address: [''],
+      notes: [''],
+    });
+
+    this.stockMovementForm = this.fb.group({
+      quantity: [0, [Validators.required, Validators.min(1)]],
+      reference: [''],
+      purchasePrice: [0, [Validators.required, Validators.min(0)]],
+      sellingPrice: [0, [Validators.min(0)]],
+      supplierId: [null, Validators.required],
+      createdDate: [
+        new Date().toISOString().split('T')[0],
+        Validators.required,
+      ],
+    });
+  }
 
   ngOnInit(): void {
-    this.branchForm = this.fb.group({
-      selectedBranches: [[]], // Store selected objects as an array
-      quantity: [null, Validators.required],
-      price: [null, Validators.required],
+    this.loadInitialData();
+
+    if (this.mode === 'edit' && this.activeItem) {
+      this.prefillForm();
+    }
+
+    this.setupStockMovementWatchers();
+  }
+
+  toggleStockMovement(): void {
+    this.showStockMovementSection = !this.showStockMovementSection;
+    if (this.showStockMovementSection) {
+      this.initializeStockMovementForm();
+    }
+  }
+
+  loadInitialData(): void {
+    this.isLoading = true;
+
+    forkJoin([
+      this.posService.getCategories(),
+      this.posService.getBranches(),
+      this.posService.getSupplier(),
+      this.posService.getDiscount(),
+    ]).subscribe({
+      next: ([categories, branches, suppliers, discounts]) => {
+        this.categories = categories;
+        this.branches = branches;
+        this.suppliers = suppliers;
+
+        if (discounts && discounts.length) {
+          this.discountOptions = discounts.map(
+            (d: { value: number }) => d.value
+          );
+        }
+
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load initial data',
+          life: 3000,
+        });
+        this.isLoading = false;
+      },
+    });
+  }
+
+  prefillForm(): void {
+    if (!this.activeItem) return;
+
+    this.productForm.patchValue({
+      name: this.activeItem.name,
+      sku: this.activeItem.sku,
+      code: this.activeItem.code,
+      description: this.activeItem.description,
+      weight: this.activeItem.weight,
+      purchasePrice: this.activeItem.purchasePrice || 0,
+      sellingPrice: this.activeItem.sellingPrice || 0,
+      quantity: this.activeItem.quantity,
+      reorderThreshold: this.activeItem.reorderThreshold || 0,
+      partNumber: this.activeItem.partNumber || '',
+      measurementUnit: this.activeItem.measurementUnit || '',
+      expiryDate: this.activeItem.expiryDate
+        ? new Date(this.activeItem.expiryDate).toISOString().split('T')[0]
+        : null,
+      isBundle: this.activeItem.isBundle || false,
+      bundleItems: this.activeItem.bundleItems || [],
     });
 
-    if (this.activeItem) {
-      this.variants = this.activeItem.variants ? this.activeItem.variants : [];
-    }
-    console.log("this is variant", this.variants);
+    this.selectedCategory = this.activeItem.productCategory?.id || null;
+    this.selectedBranch = this.activeItem.branch?.id || null;
+    this.selectedSupplier = this.activeItem.supplier?.id || null;
 
-    this.loadFromLocalStorage();
-    this.loadCategory();
-    this.getDiscountTypes();
-    console.log(this.activeItem);
-
-    const savedOptions = localStorage.getItem("dropdownOptions");
-    this.options = savedOptions ? JSON.parse(savedOptions) : ["Restock"];
-
-    this.metadataService.supplier$.subscribe((data) => (this.suppliers = data));
-    console.log(this.suppliers);
-  }
-  selectOption(event: any) {
-    this.activeItem = this.products.find(
-      (item) => item.id === Number(event.target.value),
-    );
-    if (this.activeItem) {
-      this.variants = this.activeItem.variants ? this.activeItem.variants : [];
-    }
-    console.log(this.activeItem);
-  }
-  openVariantEditModal(variant: any) {
-    console.log("Editing Variant:", variant);
-    this.selectedVariant = {
-      ...variant,
-      currentQuantity: variant.quantity,
-      currentPrice: variant.price,
-      newQuantity: 0,
-      newPrice: 0,
+    // Initialize price details for stock movement
+    this.priceDetails = {
+      basePrice: Number(this.activeItem.sellingPrice) || 0,
+      tax: Number(this.activeItem.tax?.rate) || 0,
+      discount: this.activeItem.discount?.value || null,
+      effectivePrice: Number(this.activeItem.sellingPrice) || 0,
     };
-    this.isVariantEditOpen = true;
-    console.log("Modal Opened with Variant:", this.selectedVariant);
-  }
-  togglePriceChange() {
-    this.openPriceChange = true;
 
-    // // If openPriceChange is true, replace selling price with effective price
-    // if (this.openPriceChange) {
-    //   this.priceDetails.sellingprice = this.priceDetails.effectivePrice;
-    // }
-  }
-  updateSellingPrice() {
-    console.log("this is price details", this.priceDetails.effectivePrice);
-    return this.priceDetails.effectivePrice;
+    // Initialize preview data
+    this.previewData = {
+      quantity: this.activeItem.quantity || 0,
+      purchasePrice: this.activeItem.purchasePrice || 0,
+      sellingPrice: this.activeItem.sellingPrice || 0,
+      effectiveSellingPrice: this.activeItem.sellingPrice || 0,
+    };
   }
 
-  saveDiscount() {
-    if (this.discountTitle && this.discountRate) {
-      const newDiscount = `${this.discountTitle} - ${this.discountRate}%`;
-      this.discountOptions.push(newDiscount);
-      this.openAddDiscount = false; // Close modal after saving
-      this.discountTitle = "";
-
-      this.messageService.add({
-        severity: "success",
-        summary: "Success",
-        detail: "Discount added successfully",
-        life: 3000,
-        key: "tg",
-      });
-    } else {
-      this.messageService.add({
-        severity: "error",
-        summary: "Error",
-        detail: "Please fill in all fields",
-        life: 3000,
-        key: "tg",
+  onProductChange(event: any): void {
+    if (event && event.id) {
+      this.posService.getProductById(event.id).subscribe((product) => {
+        this.activeItem = product;
+        this.prefillForm();
+        this.updateProductInList(product);
       });
     }
   }
 
-  // Function to Close Modal
-  closeVariantEditModal() {
-    this.isVariantEditOpen = false;
-    this.selectedVariant = { name: "", price: 0, quantity: 0 };
-  }
-
-  setSelectedVariant(variant: any) {
-    this.selectedVariant = variant;
-    console.log("Selected Variant Set:", this.selectedVariant);
-  }
-
-  // Function to Update Variant
-  updateVariant() {
-    console.log("Before Update:", this.selectedVariant);
-    const index = this.variants.findIndex(
-      (v) =>
-        v.name === this.selectedVariant.name &&
-        v.sku === this.selectedVariant.sku,
-    );
-
+  updateProductInList(updatedProduct: ProductData): void {
+    const index = this.product.findIndex((p) => p.id === updatedProduct.id);
     if (index !== -1) {
-      console.log(`Index Found: ${index}`);
-      console.log("Current Quantity:", this.selectedVariant.quantity);
-      console.log("New Quantity:", this.newQuantity);
-      console.log("Current Price:", this.selectedVariant.price);
-      console.log("New Price:", this.newPrice);
-
-      const historyEntry = {
-        variantName: this.selectedVariant.name,
-        currentPrice: this.selectedVariant.price,
-        newPrice: this.newPrice || 0,
-        currentQuantity: this.selectedVariant.quantity,
-        newQuantity: this.newQuantity || 0,
-        updatedAt: new Date(),
-      };
-
-      //  Fetch all existing histories
-      const storedHistory = localStorage.getItem("variantHistories");
-      let allHistories = storedHistory ? JSON.parse(storedHistory) : [];
-
-      // Add new history entry
-      allHistories.push(historyEntry);
-      console.log(`All Histories:`, allHistories);
-
-      // Save back to Local Storage
-      localStorage.setItem("variantHistories", JSON.stringify(allHistories));
-      console.log("Local Storage Updated", allHistories);
-
-      // Update the variant with new price and quantity
-      this.variants[index].quantity =
-        this.selectedVariant.quantity + (this.newQuantity || 0);
-      this.variants[index].price =
-        this.selectedVariant.price + (this.newPrice || 0);
-
-      // Reset Form Inputs
-      this.newQuantity = 0;
-      this.newPrice = 0;
-
-      this.closeVariantEditModal();
-    } else {
-      console.log("Variant Not Found");
-    }
-
-    this.closeVariantEditModal();
-  }
-
-  saveFullHistory() {
-    // Get Existing Full Histories
-    const fullHistories = JSON.parse(
-      localStorage.getItem("fullHistories") || "[]",
-    );
-    const currentHistory = JSON.parse(
-      localStorage.getItem("variantHistories") || "[]",
-    );
-
-    if (currentHistory.length > 0) {
-      fullHistories.push({
-        historyName: `History ${fullHistories.length + 1}`,
-        historyEntries: currentHistory,
-        savedAt: new Date(),
-      });
-
-      localStorage.setItem("fullHistories", JSON.stringify(fullHistories));
-      console.log(`New Full History Saved:`, fullHistories);
-
-      // Clear current history
-      localStorage.removeItem("variantHistories");
-    } else {
-      console.log("❌ No History to Save");
+      this.product[index] = updatedProduct;
     }
   }
 
-  selectDiscount(discount: any) {
-    this.productData.productCategory = discount;
-    this.productForm.get("discount")?.setValue(discount);
+  openSupplierModal(): void {
+    this.isSupplierModalOpen = true;
   }
 
-  saveToLocalStorage() {
-    const newPricingQuantity = {
-      availableQuantity: (
-        document.getElementById("currentQuantity") as HTMLInputElement
-      )?.value,
-      restockedQuantity: (
-        document.getElementById("restockedQuantity") as HTMLInputElement
-      )?.value,
-      currentQuantity: (
-        document.getElementById("currentQuantity2") as HTMLInputElement
-      )?.value,
-      currentPrice: (
-        document.getElementById("currentPrice") as HTMLInputElement
-      )?.value,
-      currentSellingPrice: (
-        document.getElementById("currentSellingPrice") as HTMLInputElement
-      )?.value,
+  closeSupplierModal(): void {
+    this.isSupplierModalOpen = false;
+    this.supplierForm.reset();
+    this.newSupplier = {
+      name: '',
+      contactPerson: '',
+      email: '',
+      phoneNumber: 0,
+      address: '',
+      notes: '',
+      agreeTerms: false,
     };
-
-    // Retrieve existing data
-    const existingData = localStorage.getItem("pricingQuantity");
-    let pricingList = existingData ? JSON.parse(existingData) : [];
-
-    // Make sure it's always an array
-    if (!Array.isArray(pricingList)) {
-      pricingList = [];
-    }
-    // Append new item without overriding the list
-    pricingList.push(newPricingQuantity);
-    // Save back to local storage
-    localStorage.setItem("pricingQuantity", JSON.stringify(pricingList));
-    console.log("Saved:", newPricingQuantity);
-    console.log("Full List:", pricingList);
   }
 
-  loadFromLocalStorage() {
-    const storedData = JSON.parse(
-      localStorage.getItem("currentPriceAndQuantity") || "[]",
-    );
-    this.currentPriceAndQuantity = storedData;
-  }
-
-  saveProduct() {
-    if (this.activeItem) {
-      let savedProducts = localStorage.getItem("products");
-      let productList: HistoryData = savedProducts
-        ? new Map(JSON.parse(savedProducts))
-        : new Map();
-      console.log("product list", productList);
-
-      const id = this.activeItem.id;
-      const productHistory = productList.get(id) ?? [];
-
-      const updateRecord = {
-        ...this.activeItem,
-        updatedAt: new Date(),
-        supplier: this.selectedSupplier,
-      };
-
-      productHistory.push(updateRecord);
-      productList.set(id, productHistory);
-
-      // Retrieve existing suppliers or initialize an empty array
-      const storedSuppliers = JSON.parse(
-        localStorage.getItem("selectedSuppliers") || "[]",
-      );
-
-      // Add the new supplier to the list
-      storedSuppliers.push(this.selectedSupplier);
-      console.log("storedSuppliers:", storedSuppliers);
-
-      // Save the updated list back to localStorage
-      localStorage.setItem("products", JSON.stringify([...productList]));
-      // Emit event to update UI
-      this.productUpdated.emit(this.activeItem);
-      this.saveToLocalStorage();
-
+  createSupplier(): void {
+    if (!this.newSupplier.name || !this.newSupplier.agreeTerms) {
       this.messageService.add({
-        severity: "success",
-        summary: "Success",
-        detail: "Product updated successfully",
+        severity: 'warn',
+        summary: 'Validation',
+        detail: 'Please fill required fields and agree to terms',
         life: 3000,
-        key: "tg",
-      });
-      console.log("service message");
-
-      this.closeEdit();
-    } else {
-      this.messageService.add({
-        severity: "error",
-        summary: "Error",
-        detail: "An error occurred while updating the product",
-        life: 3000,
-        key: "tg",
-      });
-    }
-
-    this.saveFullHistory();
-    // localStorage.removeItem("ful");
-  }
-
-  changeSelectedSupplier(Event: Event) {
-    const name = (Event.target as HTMLSelectElement).value;
-    console.log("Selected Supplier:", this.selectedSupplier);
-    localStorage.setItem(
-      "selectedSupplier",
-      JSON.stringify(this.selectedSupplier),
-    );
-    this.hasSelectedSupplier = true;
-  }
-
-  toggleDropdown() {
-    this.dropdownOpen = !this.dropdownOpen;
-  }
-
-  getDisplayName(supplier: supplierData): string {
-    return supplier.name;
-  }
-
-  addOption() {
-    if (this.newOption.trim() && !this.options.includes(this.newOption)) {
-      this.options.push(this.newOption);
-      this.updateLocalStorage();
-      this.newOption = "";
-      this.showInput = false;
-    }
-  }
-
-  updateLocalStorage() {
-    localStorage.setItem("dropdownOptions", JSON.stringify(this.options));
-  }
-
-  toggleInput() {
-    this.showInput = !this.showInput;
-  }
-
-  selectSupplier(supplier: any) {
-    localStorage.setItem("selected", JSON.stringify(supplier)); // Store the entire supplier object
-    this.router.navigate(["/supplier-details"]);
-  }
-
-  openSourceModal() {
-    this.showModal = true;
-  }
-
-  closeSourceModal() {
-    this.showModal = false;
-    this.sourceName = "";
-  }
-
-  openModal() {
-    this.isOpen = true;
-  }
-
-  closeModal() {
-    this.isOpen = false;
-  }
-
-  saveSource() {
-    console.log("New Source Added:", this.sourceInput);
-    this.closeSourceModal();
-  }
-
-  saveDate() {
-    // Save the selected date to local storage
-    localStorage.setItem("selectedDate", this.selectedDate);
-  }
-
-  submitForm() {
-    const emailPattern = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
-    const phonePattern = /^[0-9]{10,15}$/;
-    if (!emailPattern.test(this.email)) {
-      this.messageService.add({
-        severity: "error",
-        summary: "Error",
-        detail: "Please enter a valid email address.",
-        life: 3000,
-        key: "tg",
       });
       return;
     }
 
-    if (!phonePattern.test(this.phone)) {
-      this.messageService.add({
-        severity: "error",
-        summary: "Error",
-        detail: "Please enter a valid Phone number",
-        life: 3000,
-        key: "tg",
-      });
-      return;
-    }
-    if (
-      !this.supplierName ||
-      !this.contactPerson ||
-      !this.email ||
-      !this.phone
-    ) {
-      this.messageService.add({
-        severity: "error",
-        summary: "Error",
-        detail: "Please fill in all required fields.",
-        life: 3000,
-        key: "tg",
-      });
-      return;
-    }
-    const storedSuppliers = JSON.parse(
-      localStorage.getItem("suppliers") || "[]",
-    );
-    const lastId =
-      storedSuppliers.length > 0
-        ? storedSuppliers[storedSuppliers.length - 1].id
-        : 0;
+    this.isLoading = true;
+    const supplierData = { ...this.newSupplier };
 
-    const newSupplier: supplierData = {
-      id: lastId + 1,
-      name: this.supplierName.trim(),
-      contactPerson: this.contactPerson,
-      email: this.email,
-      phoneNumber: parseInt(this.phone),
-      address: this.address,
-      // products: this.products,
-      notes: this.notes,
-      agreeTerms: this.agreeTerms,
-      createdAt: new Date(),
+    this.posService.addSupplier(supplierData).subscribe({
+      next: (newSupplier) => {
+        this.suppliers.push(newSupplier);
+        this.stockMovementForm.patchValue({
+          supplierId: newSupplier.id,
+        });
+
+        if (!this.selectedSupplier) {
+          this.selectedSupplier = newSupplier.id;
+        }
+
+        this.closeSupplierModal();
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Supplier created and selected successfully',
+          life: 3000,
+        });
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to create supplier',
+          life: 3000,
+        });
+        this.isLoading = false;
+      },
+    });
+  }
+
+  private resetStockMovementForm(): void {
+    this.stockMovementForm.reset({
+      quantity: 0,
+      reference: '',
+      purchasePrice: 0,
+      sellingPrice: 0,
+      createdDate: new Date().toISOString().split('T')[0],
+      supplierId: null,
+    });
+
+    this.priceDetails = {
+      basePrice: 0,
+      tax: 0,
+      discount: null,
+      effectivePrice: 0,
     };
+  }
 
-    this.suppliers.push(newSupplier);
+  private getOrCreateInventory(): Promise<InventoryPayload | null> {
+    return new Promise((resolve) => {
+      this.posService.getInventories().subscribe({
+        next: (inventories) => {
+          const existingInventory = inventories.find(
+            (inv) =>
+              inv.product?.id === this.activeItem?.id &&
+              inv.branch?.id === this.selectedBranch
+          );
 
-    // Save the updated list back to local storage
-    localStorage.setItem("suppliers", JSON.stringify(this.suppliers));
+          if (existingInventory) {
+            resolve(existingInventory);
+          } else {
+            const newInventory: InventoryPayload = {
+              id: 0,
+              product: { id: this.activeItem?.id } as ProductData,
+              branch: { id: this.selectedBranch } as BranchDTO,
+              availableQuantity: 0,
+              status: 'active',
+              stockMovement: [],
+            };
 
-    console.log("New Supplier Data:", this.suppliers);
-    this.messageService.add({
-      severity: "success",
-      summary: "Success",
-      detail: "Suplier added successfully",
-      life: 3000,
-      key: "tg",
+            this.posService.addInventory(newInventory).subscribe({
+              next: (createdInventory) => {
+                resolve(createdInventory);
+              },
+              error: (err) => {
+                this.messageService.add({
+                  severity: 'error',
+                  summary: 'Error',
+                  detail: 'Failed to create inventory',
+                  life: 3000,
+                });
+                resolve(null);
+              },
+            });
+          }
+        },
+        error: (err) => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to load inventories',
+            life: 3000,
+          });
+          resolve(null);
+        },
+      });
     });
-
-    // Close Modal after submission
-    this.closeModal();
-
-    // Reset Form
-    this.resetForm();
   }
 
-  resetForm() {
-    this.supplierName = "";
-    this.contactPerson = "";
-    this.email = "";
-    this.phone = "";
-    this.address = "";
-    this.agreeTerms = false;
-    this.notes = "";
-    // this.products= '';
-  }
-
-  calculateEffectivePrice() {
-    const basePrice = this.priceDetails.basePrice || 0;
-    const tax = this.priceDetails.tax || 0;
-    const taxAmount = (basePrice * tax) / 100;
-    this.priceDetails.effectivePrice = basePrice + taxAmount;
-    sellingPrice: this.priceDetails.effectivePrice;
-  }
-
-  removeBranch(branchId: number) {
-    let selectedBranches = this.branchForm.value.selectedBranches.filter(
-      (b: { id: number }) => b.id !== branchId,
-    );
-    this.branchForm.patchValue({ selectedBranches });
-  }
-
-  @HostListener("document:click", ["$event"])
-  onClickOutside(event: Event) {
-    const target = event.target as HTMLElement;
-    if (!target.closest(".dropdown-container")) {
-      this.dropdownOpen = false;
+  private refreshProductData(): void {
+    if (this.activeItem?.id) {
+      this.posService
+        .getProductById(this.activeItem.id)
+        .subscribe((product) => {
+          this.activeItem = product;
+          this.updateProductInList(product);
+          this.prefillForm();
+        });
     }
   }
 
-  getDiscountTypes() {
-    this.posService.getDiscountTypes().subscribe(async (data) => {
-      console.log(data);
-      if (data) {
-        this.discountTypes = data;
-      } else {
-        console.log("error loading data");
-      }
-    });
-  }
-
-  checkForEmptyFields(obj: any): boolean {
-    return Object.values(obj).some(
-      (value) => typeof value === "string" && value.trim() === "",
-    );
-  }
-
-  deleteVariant(index: number) {
-    this.variants.splice(index, 1);
-  }
-
-  loadCategory() {
-    this.posService.getCategories().subscribe(async (data) => {
-      console.log(data);
-      if (data) {
-        // FIXME: Deal with this later
-        this.categories = data as any;
-      } else {
-        console.log("error loading data");
-      }
-    });
-  }
-
-  getProduct() {
-    this.posService.getProducts().subscribe((data) => {
-      if (data) {
-        this.product = data;
-        console.log("Products Loaded:", this.product); // Debugging
-      } else {
-        console.log("Error loading products");
-      }
-    });
-  }
-
-  saveSelection(productId: number) {
-    if (this.branchForm.value.selectedBranches.length > 0) {
-      const newQuantity = this.activeItem?.effectiveQuantity;
-      const newPrice = this.activeItem?.effectivePrice;
-
-      // Retrieve previously saved branch lists for this product
-      let savedBranchLists = JSON.parse(
-        localStorage.getItem(`savedBranches_${productId}`) || "[]",
-      );
-      // Create a new list entry
-      const newBranchList = this.branchForm.value.selectedBranches.map(
-        (branch: any) => ({
-          id: branch.id,
-          name: branch.name,
-          quantity: newQuantity,
-          price: newPrice,
-        }),
-      );
-
-      // Add the new list to the existing lists (keeping old ones)
-      savedBranchLists.push(newBranchList);
-      // Save back to local storage
-      localStorage.setItem(
-        `savedBranches_${productId}`,
-        JSON.stringify(savedBranchLists),
-      );
-      this.isEditing = false;
-    } else {
-      console.log("No branches selected!");
-    }
-  }
-
-  closeEdit() {
+  closeEdit(): void {
     this.close.emit();
-    this.activeItem = {
-      id: 0,
-      name: "",
-      code: "",
-      description: "",
-      sku: "",
-      weight: 0,
-      initialPrice: "",
-      effectivePrice: "",
-      initialQuantity: Number,
-      effectiveQuantity: Number,
-      // Date String Format: "2025-02-02T22:56:31.935Z"
-      createdDate: "",
+  }
 
-      createdBy: "",
-      partNumber: "",
-      tax: Number,
-      branch: "",
-      variant: "",
-      discount: {},
-      productCategory: {},
-      productImages: [],
-      variants: [],
-      supplier: "",
-      cartPriceTotal: "",
-      count: 0,
-      discountedPrice: 0,
-      selectedVariant: "",
-      pricingQuantity: 0,
+  getProductValue(field: keyof ProductData): string {
+    return this.activeItem?.[field]?.toString() || '';
+  }
+
+  getCurrentQuantity(): number {
+    return this.activeItem?.quantity || 0;
+  }
+
+  getNewTotalQuantity(): number {
+    const currentQty = this.getCurrentQuantity();
+    const additionalQty = this.stockMovementForm.get('quantity')?.value || 0;
+    return currentQty + additionalQty;
+  }
+
+  onInputChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const value = input.value;
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['activeItem'] || changes['mode']) {
+      if (this.mode === 'create' || !this.activeItem) {
+        this.resetForm();
+      } else if (this.mode === 'edit' && this.activeItem) {
+        this.prefillForm();
+      }
+    }
+  }
+
+  resetForm(): void {
+    this.productForm.reset({
+      name: '',
+      sku: '',
+      code: '',
+      description: '',
+      weight: 0,
+      purchasePrice: 0,
+      sellingPrice: 0,
+      quantity: 0,
+      reorderThreshold: 0,
+    });
+
+    this.resetStockMovementForm();
+
+    this.selectedCategory = null;
+    this.selectedBranch = null;
+    this.selectedSupplier = null;
+    this.newQuantity = 0;
+    this.openPriceChange = false;
+    this.showStockMovementSection = false;
+
+    this.previewData = {
+      quantity: 0,
+      purchasePrice: 0,
+      sellingPrice: 0,
+      effectiveSellingPrice: 0,
     };
   }
 
-  addVariant() {
-    this.variants.push({ ...this.newVariant });
-    this.newVariant = {
-      name: "",
-      price: "",
-      quantity: "",
-      sku: "",
+  onSupplierChange(supplierId: number): void {
+    this.selectedSupplier = supplierId;
+    if (this.mode === 'edit' && this.activeItem) {
+      this.productForm.patchValue({
+        supplierId: supplierId,
+      });
+    }
+  }
+
+  private markFormGroupTouched(formGroup: FormGroup) {
+    Object.values(formGroup.controls).forEach((control) => {
+      control.markAsTouched();
+
+      if (control instanceof FormGroup) {
+        this.markFormGroupTouched(control);
+      }
+    });
+  }
+
+  async saveStockMovement(): Promise<void> {
+    // Validate form
+    if (this.stockMovementForm.invalid) {
+      this.markFormGroupTouched(this.stockMovementForm);
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Validation',
+        detail: 'Please fill all required fields correctly',
+        life: 3000,
+      });
+      return;
+    }
+
+    if (!this.activeItem?.id || !this.selectedBranch) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Product or branch not selected',
+        life: 3000,
+      });
+      return;
+    }
+
+    this.isLoading = true;
+
+    try {
+      // 1. Get or create inventory
+      const inventory = await this.getOrCreateInventory();
+      if (!inventory) {
+        throw new Error('Inventory not available');
+      }
+
+      // 2. Prepare stock movement data
+      const movementData: StockMovementPayload = {
+        quantity: this.stockMovementForm.value.quantity,
+        purchasePrice: this.stockMovementForm.value.purchasePrice,
+        sellingPrice: this.priceDetails.effectivePrice,
+        createdDate: this.stockMovementForm.value.createdDate,
+        supplierId: this.stockMovementForm.value.supplierId,
+        inventoryId: inventory.id,
+        reference: this.stockMovementForm.value.reference || undefined,
+        id: 0,
+        stockMovementsId: 0,
+        createdById: 1, // Replace with actual user ID
+        ingredientId: this.activeItem.id,
+        stockMovement: [],
+      };
+
+      console.log('Stock movement data:', movementData);
+
+      // 3. Create stock movement
+      await this.posService.createStockMovement(movementData).toPromise();
+
+      // 4. Update product with new values
+      const updatedProduct = {
+        ...this.activeItem,
+        quantity: (this.activeItem.quantity || 0) + movementData.quantity,
+        purchasePrice: movementData.purchasePrice,
+        sellingPrice: movementData.sellingPrice,
+        tax: { rate: this.priceDetails.tax },
+        discount: { value: this.priceDetails.discount || 0 },
+      };
+
+      console.log('Updated product:', updatedProduct);
+      await this.posService.updateProduct(updatedProduct).toPromise();
+
+      // 5. Update inventory
+      await this.updateInventoryAfterMovement(
+        inventory.id,
+        movementData.quantity
+      );
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Stock movement recorded successfully',
+        life: 3000,
+      });
+
+      this.resetStockMovementForm();
+      this.showStockMovementSection = false;
+      this.refreshProductData();
+    } catch (error) {
+      console.error('Error in stock movement:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to record stock movement: ' + (error as Error).message,
+        life: 5000,
+      });
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  private async updateInventoryAfterMovement(
+    inventoryId: number,
+    quantity: number
+  ): Promise<void> {
+    try {
+      const inventory = await this.posService
+        .getInventoryById(inventoryId)
+        .toPromise();
+      if (inventory) {
+        const updatedInventory = {
+          ...inventory,
+          availableQuantity: (inventory.availableQuantity || 0) + quantity,
+        };
+        await this.posService
+          .updateInventory(inventoryId, updatedInventory)
+          .toPromise();
+      }
+    } catch (error) {
+      console.error('Error updating inventory:', error);
+      throw error;
+    }
+  }
+
+  //////
+  // Fixed methods for your EditInventoryComponent
+
+  setupStockMovementWatchers(): void {
+    // Watch quantity changes
+    this.stockMovementForm.get('quantity')?.valueChanges.subscribe((value) => {
+      this.previewData.quantity =
+        (this.getCurrentQuantity() || 0) + (value || 0);
+      this.updatePreviewData();
+    });
+
+    // Watch purchase price changes
+    this.stockMovementForm
+      .get('purchasePrice')
+      ?.valueChanges.subscribe((value) => {
+        this.previewData.purchasePrice = value || 0;
+        this.updatePreviewData();
+      });
+
+    // FIXED: Watch selling price changes and update priceDetails.basePrice
+    this.stockMovementForm
+      .get('sellingPrice')
+      ?.valueChanges.subscribe((value) => {
+        // Only update if the change is not from our own calculation
+        if (!this.isUpdatingFromCalculation) {
+          this.priceDetails.basePrice = Number(value) || 0;
+          this.calculateEffectivePrice();
+        }
+      });
+  }
+
+  // Add this flag to prevent circular updates
+  private isUpdatingFromCalculation = false;
+
+  initializeStockMovementForm(): void {
+    const currentDate = new Date().toISOString().split('T')[0];
+
+    this.stockMovementForm.patchValue({
+      purchasePrice: this.activeItem?.purchasePrice || 0,
+      sellingPrice: this.activeItem?.sellingPrice || 0,
+      createdDate: currentDate,
+      supplierId: this.selectedSupplier,
+    });
+
+    // Initialize price details
+    this.priceDetails = {
+      basePrice: Number(this.activeItem?.sellingPrice) || 0,
+      tax: Number(this.activeItem?.tax?.rate) || 0,
+      discount: this.activeItem?.discount?.value || null,
+      effectivePrice: Number(this.activeItem?.sellingPrice) || 0,
     };
-    this.openAddVariant = false;
+
+    this.calculateEffectivePrice();
+  }
+
+  calculateEffectivePrice(): void {
+    const basePrice = Number(this.priceDetails.basePrice) || 0;
+    const taxRate = Number(this.priceDetails.tax) || 0;
+    const discount = Number(this.priceDetails.discount) || 0;
+
+    // Calculate price after discount
+    const priceAfterDiscount = basePrice - (basePrice * discount) / 100;
+
+    // Calculate tax amount
+    const taxAmount = (priceAfterDiscount * taxRate) / 100;
+
+    // Calculate final price
+    const finalPrice = priceAfterDiscount + taxAmount;
+
+    this.priceDetails.effectivePrice = parseFloat(finalPrice.toFixed(2));
+    this.previewData.effectiveSellingPrice = this.priceDetails.effectivePrice;
+
+    // FIXED: Set flag to prevent circular updates
+    this.isUpdatingFromCalculation = true;
+
+    // Update the selling price in the form to show the calculated effective price
+    this.stockMovementForm.patchValue(
+      {
+        sellingPrice: this.priceDetails.effectivePrice,
+      },
+      { emitEvent: false }
+    );
+
+    // Reset flag after update
+    setTimeout(() => {
+      this.isUpdatingFromCalculation = false;
+    }, 0);
+
+    // Update preview
+    this.updatePreviewData();
+  }
+
+  // FIXED: This method should update priceDetails.basePrice from the input
+  updatePrices(): void {
+    // This is called when the base price input changes
+    this.calculateEffectivePrice();
+  }
+
+  // Enhanced method to handle base price changes from the HTML input
+  onBasePriceChange(value: number): void {
+    this.priceDetails.basePrice = value || 0;
+    this.calculateEffectivePrice();
+  }
+
+  // Method to handle tax changes
+  onTaxChange(value: number): void {
+    this.priceDetails.tax = value || 0;
+    this.calculateEffectivePrice();
+  }
+
+  // Method to handle discount changes
+  onDiscountChange(value: number | null): void {
+    this.priceDetails.discount = value;
+    this.calculateEffectivePrice();
+  }
+
+  getPriceAfterDiscount(): number {
+    const basePrice = Number(this.priceDetails.basePrice) || 0;
+    const discount = Number(this.priceDetails.discount) || 0;
+    return basePrice - (basePrice * discount) / 100;
+  }
+
+  getTaxAmount(): number {
+    const priceAfterDiscount = this.getPriceAfterDiscount();
+    const taxRate = Number(this.priceDetails.tax) || 0;
+    return priceAfterDiscount * (taxRate / 100);
+  }
+
+  private ensureNumber(value: number | string): number {
+    return typeof value === 'string' ? parseFloat(value) || 0 : value;
+  }
+
+  getPriceBreakdownText(): string {
+    const base = this.ensureNumber(this.priceDetails.basePrice);
+    const discount = this.priceDetails.discount || 0;
+    const tax = this.priceDetails.tax;
+    const discountAmount = base * (discount / 100);
+    const priceAfterDiscount = base - discountAmount;
+    const taxAmount = priceAfterDiscount * (tax / 100);
+    const effectivePrice = this.ensureNumber(this.priceDetails.effectivePrice);
+
+    let breakdown = `Price Breakdown:
+  Base: ${base.toFixed(2)}`;
+
+    if (discount) {
+      breakdown += `
+  Discount: -${discount}% (${discountAmount.toFixed(2)})`;
+    }
+
+    breakdown += `
+  Tax: +${tax}% (${taxAmount.toFixed(2)})
+  Total: ${effectivePrice.toFixed(2)}`;
+
+    return breakdown;
+  }
+
+  updatePreviewData(): void {
+    this.productForm.patchValue(
+      {
+        quantity: this.previewData.quantity,
+        purchasePrice: this.previewData.purchasePrice,
+        sellingPrice: this.priceDetails.effectivePrice,
+      },
+      { emitEvent: false }
+    );
   }
 }
