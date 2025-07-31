@@ -1,0 +1,148 @@
+<div class="fixed top-0 left-0 p-2">
+  <button (click)="goBack()" class="p-5 text-2xl">
+    <i class="fa-solid fa-arrow-left"></i>
+  </button>
+</div>
+
+<div *ngIf="product; else loading" class="relative w-full">
+  <button
+    (click)="goBack()"
+    class="absolute top-4 right-6 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg text-lg z-20"
+  >
+    Cancel
+  </button>
+  <div
+    class="overflow-y-auto max-h-[80vh] p-8 pl-10 bg-white border border-gray-200 rounded-lg shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 w-full flex flex-col"
+    style="box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2)"
+  >
+    <!-- All modal content below here -->
+    <h1 class="text-2xl mb-7 mt-3 font-semibold text-center">
+      Product Information
+    </h1>
+    <div class="field">
+      <label class="text-lg font-semibold" for="name">Product Name</label>
+      <input
+        class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800 mb-4"
+        id="name"
+        [value]="product.name"
+        readonly
+      />
+    </div>
+
+    <div class="field">
+      <label class="text-lg font-semibold" for="sku">SKU</label>
+      <input
+        class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800 mb-4"
+        id="sku"
+        [value]="product.sku"
+        readonly
+      />
+    </div>
+
+    <div class="field">
+      <label for="code" class="block font-semibold text-lg">Product Code</label>
+      <input
+        class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800 mb-4"
+        id="code"
+        [value]="product.code"
+        readonly
+      />
+    </div>
+
+    <div class="field">
+      <label for="category" class="block font-semibold text-lg">Category</label>
+      <input
+        class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800"
+        [value]="product.productCategory.name"
+        readonly
+      />
+    </div>
+
+    <div class="mt-9">
+      <h1 class="text-2xl font-semibold text-center">Supplier Details</h1>
+      <ng-container *ngIf="supplier; else noSupplier">
+        <label for="supplierName" class="block font-semibold text-lg"
+          >Supplier Name</label
+        >
+        <input
+          id="supplierName"
+          type="text"
+          class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800 mb-4"
+          [value]="supplier.name"
+          readonly
+        />
+        <label for="contactPerson" class="block font-semibold text-lg"
+          >Contact Person</label
+        >
+        <input
+          id="contactPerson"
+          type="text"
+          class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800 mb-4"
+          [value]="supplier.contactPerson"
+          readonly
+        />
+        <label for="email" class="block font-semibold text-lg">Email</label>
+        <input
+          id="email"
+          type="text"
+          class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800 mb-4"
+          [value]="supplier.email"
+          readonly
+        />
+        <label for="phoneNumber" class="block font-semibold text-lg"
+          >Phone Number</label
+        >
+        <input
+          id="phoneNumber"
+          type="text"
+          class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800 mb-4"
+          [value]="supplier.phoneNumber"
+          readonly
+        />
+        <label for="address" class="block font-semibold text-lg">Address</label>
+        <input
+          id="address"
+          type="text"
+          class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800 mb-4"
+          [value]="supplier.address"
+          readonly
+        />
+      </ng-container>
+      <ng-template #noSupplier>
+        <p class="text-red-600 font-semibold">
+          No supplier found for this product.
+        </p>
+      </ng-template>
+    </div>
+
+    <h1 class="text-2xl font-semibold text-center mt-8">
+      Pricing and Quantity Information
+    </h1>
+    <label class="block font-semibold text-lg">Current Quantity</label>
+    <input
+      type="text"
+      class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800 mb-4"
+      [value]="product.quantity"
+      readonly
+    />
+    <label class="block font-semibold text-lg">Current Purchase Price</label>
+    <input
+      type="text"
+      class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800 mb-4"
+      [value]="product.costPrice"
+      readonly
+    />
+    <label class="block font-semibold text-lg">Current Selling Price</label>
+    <input
+      type="text"
+      class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800"
+      [value]="product.sellingPrice"
+      readonly
+    />
+  </div>
+</div>
+<ng-template #loading>
+  <div class="w-full p-10 text-center text-2xl text-gray-500">
+    Loading product information or product not found.
+  </div>
+</ng-template>

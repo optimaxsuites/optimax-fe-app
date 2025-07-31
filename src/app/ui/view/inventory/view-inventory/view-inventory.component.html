@@ -1,0 +1,236 @@
+<!-- Added a cool gradient background and increased max width -->
+<div class="p-8 bg-gray-100 max-w-8xl mx-auto">
+  <!-- Header with Back and Print -->
+  <div class="flex justify-between items-center mb-8 w-full">
+    <button
+      class="text-gray-800 hover:text-customGreen font-extrabold text-2xl"
+      (click)="closeEditInventory()"
+    >
+      <i class="fa-solid fa-arrow-left mr-3 text-2xl"></i> BACK
+    </button>
+    <button
+      (click)="printPage()"
+      class="bg-customGreen hover:bg-green-700 text-white px-5 py-3 rounded-lg flex items-center font-extrabold text-2xl"
+    >
+      <i class="fa fa-print" aria-hidden="true"></i>
+      PRINT REPORT
+    </button>
+  </div>
+
+  <!-- Loading Spinner or Message -->
+  <div *ngIf="loading" class="flex justify-center items-center min-h-[200px]">
+    <div class="text-2xl font-extrabold text-gray-600">
+      Loading inventory details...
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div
+    *ngIf="!loading"
+    class="overflow-y-auto w-full"
+    style="max-height: calc(100vh - 180px)"
+  >
+    <!-- Product Information Section -->
+    <div class="flex flex-nowrap gap-8 mb-8 w-full">
+      <!-- Left Panel - Product Details -->
+      <div
+        class="bg-white border border-gray-300 rounded-lg shadow-sm p-6 flex-1 min-w-[400px]"
+      >
+        <h2
+          class="text-2xl font-extrabold text-customGreen border-b-2 pb-3 mb-5"
+        >
+          PRODUCT DETAILS
+        </h2>
+        <div class="grid grid-cols-3 gap-8 text-xl font-bold">
+          <div class="mb-4">
+            <p class="text-gray-600 mb-1 font-extrabold text-xl">
+              PRODUCT NAME
+            </p>
+            <p class="font-extrabold text-xl">{{ activeItem.name }}</p>
+          </div>
+          <div class="mb-4">
+            <p class="text-gray-600 mb-1 font-extrabold text-xl">CATEGORY</p>
+            <p class="font-extrabold text-xl">
+              {{ activeItem.productCategory.name }}
+            </p>
+          </div>
+          <div class="mb-4">
+            <p class="text-gray-600 mb-1 font-extrabold text-xl">
+              CURRENT QUANTITY
+            </p>
+            <p class="font-extrabold text-xl">{{ activeItem.quantity }}</p>
+          </div>
+          <div class="mb-4">
+            <p class="text-gray-600 mb-1 font-extrabold text-xl">
+              CURRENT PRICE
+            </p>
+            <p class="font-extrabold text-xl">
+              {{ activeItem.sellingPrice | currency : "₦" }}
+            </p>
+          </div>
+          <div class="mb-4">
+            <p class="text-gray-600 mb-1 font-extrabold text-xl">SKU</p>
+            <p class="font-extrabold text-xl">{{ activeItem.sku }}</p>
+          </div>
+          <div class="mb-4">
+            <p class="text-gray-600 mb-1 font-extrabold text-xl">
+              PRODUCT CODE
+            </p>
+            <p class="font-extrabold text-xl">{{ activeItem.code }}</p>
+          </div>
+        </div>
+      </div>
+      <!-- Right Panel - Product Image -->
+      <div
+        class="bg-white border border-gray-300 rounded-lg shadow-sm p-5 w-72 h-72 flex items-center justify-center"
+      >
+        <img
+          [src]="activeItem.imageUrl$ || 'assets/images/no-image.png'"
+          alt="Product Image"
+          class="max-w-full max-h-full object-contain"
+        />
+      </div>
+    </div>
+
+    <!-- Supplier Information Section -->
+    <div
+      *ngIf="supplier"
+      class="bg-white border border-gray-300 rounded-lg shadow-sm p-6 mb-8 w-full"
+    >
+      <h2 class="text-2xl font-extrabold text-customGreen border-b-2 pb-3 mb-5">
+        SUPPLIER DETAILS
+      </h2>
+      <div class="grid grid-cols-3 gap-8 text-xl font-bold">
+        <div class="mb-4">
+          <p class="text-gray-600 mb-1 font-extrabold text-xl">NAME</p>
+          <p class="font-extrabold text-xl">{{ activeItem.supplier.name }}</p>
+        </div>
+        <div class="mb-4">
+          <p class="text-gray-600 mb-1 font-extrabold text-xl">
+            CONTACT PERSON
+          </p>
+          <p class="font-extrabold text-xl">
+            {{ activeItem.supplier.contactPerson }}
+          </p>
+        </div>
+        <div class="mb-4">
+          <p class="text-gray-600 mb-1 font-extrabold text-xl">EMAIL</p>
+          <p class="font-extrabold text-xl">{{ activeItem.supplier.email }}</p>
+        </div>
+        <div class="mb-4">
+          <p class="text-gray-600 mb-1 font-extrabold text-xl">PHONE NUMBER</p>
+          <p class="font-extrabold text-xl">
+            {{ activeItem.supplier.phoneNumber }}
+          </p>
+        </div>
+        <div class="mb-4">
+          <p class="text-gray-600 mb-1 font-extrabold text-xl">ADDRESS</p>
+          <p class="font-extrabold text-xl">
+            {{ activeItem.supplier.address }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Section -->
+    <div
+      class="bg-white border-2 border-gray-300 rounded-lg shadow-sm overflow-hidden mb-10 w-full"
+    >
+      <div
+        class="px-8 py-5 border-b-2 border-gray-300 flex justify-between items-center"
+      >
+        <h2 class="text-2xl font-extrabold text-gray-800">
+          PRODUCT DETAILS TABLE
+        </h2>
+        <div class="text-xl font-extrabold text-gray-600">
+          LAST UPDATED: {{ Timestamp }}
+        </div>
+      </div>
+      <div class="overflow-x-auto w-full">
+        <table
+          class="w-full divide-y-2 divide-gray-300"
+          style="min-width: 900px"
+        >
+          <thead class="bg-gray-100">
+            <tr>
+              <th
+                class="px-8 py-4 text-left text-xl font-extrabold text-gray-700 uppercase tracking-wider"
+              >
+                NAME
+              </th>
+              <th
+                class="px-8 py-4 text-left text-xl font-extrabold text-gray-700 uppercase tracking-wider"
+              >
+                SKU
+              </th>
+              <th
+                class="px-8 py-4 text-left text-xl font-extrabold text-gray-700 uppercase tracking-wider"
+              >
+                CODE
+              </th>
+              <th
+                class="px-8 py-4 text-left text-xl font-extrabold text-gray-700 uppercase tracking-wider"
+              >
+                CURRENT PRICE
+              </th>
+              <th
+                class="px-8 py-4 text-left text-xl font-extrabold text-gray-700 uppercase tracking-wider"
+              >
+                CURRENT QTY
+              </th>
+              <th
+                class="px-8 py-4 text-left text-xl font-extrabold text-gray-700 uppercase tracking-wider"
+              >
+                CATEGORY
+              </th>
+              <th
+                class="px-8 py-4 text-left text-xl font-extrabold text-gray-700 uppercase tracking-wider"
+              >
+                UPDATED AT
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y-2 divide-gray-300">
+            <tr>
+              <td
+                class="px-8 py-5 whitespace-nowrap text-xl font-extrabold text-gray-900"
+              >
+                {{ activeItem.name }}
+              </td>
+              <td
+                class="px-8 py-5 whitespace-nowrap text-xl font-extrabold text-gray-700"
+              >
+                {{ activeItem.sku }}
+              </td>
+              <td
+                class="px-8 py-5 whitespace-nowrap text-xl font-extrabold text-gray-700"
+              >
+                {{ activeItem.code }}
+              </td>
+              <td
+                class="px-8 py-5 whitespace-nowrap text-xl font-extrabold text-gray-700"
+              >
+                {{ activeItem.sellingPrice | currency : "₦" }}
+              </td>
+              <td
+                class="px-8 py-5 whitespace-nowrap text-xl font-extrabold text-gray-700"
+              >
+                {{ activeItem.quantity }}
+              </td>
+              <td
+                class="px-8 py-5 whitespace-nowrap text-xl font-extrabold text-gray-700"
+              >
+                {{ activeItem.productCategory.name }}
+              </td>
+              <td
+                class="px-8 py-5 whitespace-nowrap text-xl font-extrabold text-gray-700"
+              >
+                {{ Timestamp }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

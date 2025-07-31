@@ -1,0 +1,131 @@
+<div class="bg-white rounded-lg shadow-md p-6">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-xl font-semibold text-gray-800">Order Details</h2>
+      <button (click)="goBack()" class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 transition duration-200">
+        Back to Orders
+      </button>
+    </div>
+  
+    
+  
+    <div *ngIf=" order">
+      <!-- Order Header Information -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-gray-50 p-4 rounded-md">
+          <h3 class="text-sm text-gray-500 uppercase">Order Number</h3>
+          <p class="font-medium text-gray-900">{{ order.orderNumber }}</p>
+        </div>
+        <div class="bg-gray-50 p-4 rounded-md">
+          <h3 class="text-sm text-gray-500 uppercase">Status</h3>
+          <p>
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" [ngClass]="order.orderStatus | orderStatus">
+              {{ order.orderStatus }}
+            </span>
+          </p>
+        </div>
+        <div class="bg-gray-50 p-4 rounded-md">
+          <h3 class="text-sm text-gray-500 uppercase">Date</h3>
+          <p class="font-medium text-gray-900">{{ formatDate(order.createdDate) }}</p>
+        </div>
+        <div class="bg-gray-50 p-4 rounded-md">
+          <h3 class="text-sm text-gray-500 uppercase">Total Amount</h3>
+          <p class="font-medium text-gray-900">₦{{ order.totalAmount.toLocaleString() }}</p>
+        </div>
+      </div>
+  
+      <!-- Customer & Branch Information -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gray-50 p-4 rounded-md">
+          <h3 class="text-lg font-medium text-gray-900 mb-3">Customer Information</h3>
+          <p><span class="text-gray-500">Name:</span> {{ order.customer?.name || "Walk-in"}}</p>
+          <p><span class="text-gray-500">Email:</span> {{ order.customer?.email || 'N/A' }}</p>
+          <p><span class="text-gray-500">Loyalty Points:</span> {{ order.customer?.loyaltyPoints || 'N/A' }}</p>
+        </div>
+        <div class="bg-gray-50 p-4 rounded-md">
+          <h3 class="text-lg font-medium text-gray-900 mb-3">Branch Information</h3>
+          <p><span class="text-gray-500">Branch:</span> {{ order.branch?.name }}</p>
+          <p><span class="text-gray-500">Description:</span> {{ order.branch?.description }}</p>
+          <p><span class="text-gray-500">Address:</span> {{ order.branch?.address }}</p>
+          <p><span class="text-gray-500">Phone:</span> {{ order.branch?.phoneNo }}</p>
+        </div>
+      <!-- </div> -->
+  
+     
+      <!-- Payment Information -->
+      <!-- <div class="grid grid-cols-1 lg:grid-cols-2 gap-6"> -->
+        <div class="bg-gray-50 p-4 rounded-md">
+          <h3 class="text-lg font-medium text-gray-900 mb-3">Order Summary</h3>
+          <div class="flex justify-between py-2 border-b border-gray-200">
+            <span class="text-gray-600">Subtotal ({{ calculateTotalItems() }} items)</span>
+            <span class="font-medium">₦{{ calculateSubtotal().toLocaleString() }}</span>
+          </div>
+          <div class="flex justify-between py-2 border-b border-gray-200">
+            <span class="text-gray-600">Tax (5%)</span>
+            <span class="font-medium">₦{{ calculateTax().toLocaleString() }}</span>
+          </div>
+          <div class="flex justify-between py-2 border-b border-gray-200">
+            <span class="text-gray-600">Discount</span>
+            <span class="font-medium">₦{{ calculateDiscount().toLocaleString() }}</span>
+          </div>
+          <div class="flex justify-between py-3 font-medium text-lg">
+            <span>Total</span>
+            <span>₦{{ calculateTotal().toLocaleString() }}</span>
+          </div>
+        </div>
+  
+        <div *ngIf="order.payment" class="bg-gray-50 p-4 rounded-md">
+          <h3 class="text-lg font-medium text-gray-900 mb-3">Payment Details</h3>
+          <div class="mb-4">
+            <p><span class="text-gray-500">Payment Status:</span> 
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                {{ order.payment.status }}
+              </span>
+            </p>
+            <p><span class="text-gray-500">Transaction Date:</span> {{ formatDate(order.payment.transactionDate) }}</p>
+            <p><span class="text-gray-500">Amount Tendered:</span> ₦{{ order.amountTendered.toLocaleString() }}</p>
+          </div>
+          
+          <h4 class="font-medium text-lg text-gray-700 mb-2">Payment Breakdown</h4>
+          <div class="space-y-2">
+            <div *ngFor="let payment of order.payment.paymentBreakdown" class="flex justify-between items-center p-2 bg-white rounded border border-gray-200">
+              <span class="text-gray-700">{{ payment.paymentMethod }}</span>
+              <span class="font-medium">₦{{ payment.amountPaid.toLocaleString() }}</span>
+            </div>
+          </div>
+        </div>
+  
+        <div *ngIf="!order.payment" class="bg-gray-50 p-4 rounded-md">
+          <h3 class="text-lg font-medium text-gray-900 mb-3">Payment Details</h3>
+          <p class="text-yellow-600">This order has not been paid yet.</p>
+        </div>
+      </div>
+
+       <!-- Order Items Table -->
+       <div class="mb-8">
+        <h3 class="text-lg font-medium text-gray-900 mb-3">Order Items</h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full bg-white border border-gray-200">
+            <thead>
+              <tr class="bg-gray-100">
+                <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">Item</th>
+                <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">Variant</th>
+                <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">Quantity</th>
+                <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">Unit Price</th>
+                <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">Total</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr *ngFor="let item of order.orderItem">
+                <td class="py-4 px-4 text-sm text-gray-900">{{ item.product.name }}</td>
+                <td class="py-4 px-4 text-sm text-gray-900">{{ item.productVariant?.name || 'Standard' }}</td>
+                <td class="py-4 px-4 text-sm text-gray-900">{{ item.quantity }}</td>
+                <td class="py-4 px-4 text-sm text-gray-900">₦{{ (item.productVariant?.price || parseInt(item.product.sellingPrice)).toLocaleString() }}</td>
+                <td class="py-4 px-4 text-sm text-gray-900">₦{{ item.totalPrice.toLocaleString() }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+  
+    </div>
+</div>
