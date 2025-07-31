@@ -23,7 +23,7 @@ export interface ProductJSONFormat<TDateType extends 'string' | 'array'> {
   weight: number | null;
   costPrice: string;
   sellingPrice?: string;
-  quantity?: number;
+  quantity?: number | undefined;
 
   /** Date String Format: "2025-02-02T22:56:31.935Z" */
   createdDate: TDateType extends 'string' ? DateString : DateArray;
@@ -686,8 +686,99 @@ export interface InventoryPayload {
   availableQuantity: number;
   status: string;
   product: ProductData;
-  branch: BranchDTO;
+  branch: BranchPayload;
   stockMovement: StockMovementPayload[];
+}
+
+export interface ProductPayload {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
+  sku: string;
+  weight: number;
+  purchasePrice: string;
+  sellingPrice: string;
+  createdDate: string;
+  createdBy: string;
+  partNumber: string;
+  quantity: number;
+  reorderThreshold: number;
+  measurementUnit: string;
+  discount: DiscountPayload;
+  productCategory: ProductCategoryPayload;
+  productImages: ProductImagePayload[];
+  variants: VariantPayload[];
+  supplier: SupplierPayload;
+  tax: TaxPayload;
+  branch: BranchPayload;
+  bundleItems: BundleItemPayload[];
+  expiryDate: string;
+  isBundle: boolean;
+}
+
+export interface DiscountPayload {
+  id: number;
+  name: string;
+  value: number;
+  startDate: string;
+  endDate: string;
+  minQuantity: number;
+  discountType: number;
+}
+
+export interface ProductCategoryPayload {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
+  endDate: string;
+}
+
+export interface ProductImagePayload {
+  id: number;
+  name: string;
+  imgNo: string;
+}
+
+export interface VariantPayload {
+  id: number;
+  name: string;
+  price: number;
+  quantity: number;
+  sku: string;
+  color: string;
+  size: string;
+}
+
+export interface SupplierPayload {
+  id: number;
+  name: string;
+  contactPerson: string;
+  phoneNumber: string;
+  email: string;
+  address: string;
+}
+
+export interface TaxPayload {
+  id: number;
+  name: string;
+  rate: number;
+}
+
+export interface BranchPayload {
+  id: number;
+  name: string;
+  description: string;
+  address: string;
+  phoneNo: number;
+}
+
+export interface BundleItemPayload {
+  id: number;
+  quantity: number;
+  priceAdjustment: number;
+  productId: number;
 }
 
 export interface StockMovementPayload {
@@ -697,20 +788,19 @@ export interface StockMovementPayload {
   purchasePrice: number;
   sellingPrice: number;
   createdDate: string;
-  stockMovementsId: number; // Note the spelling (matches your DTO)
+  stockMovement: string[];
   createdById: number;
-  supplierId: number;
-  ingredientId: number;
-  inventoryId: number;
-  stockMovement?: any;
+  supplier: SupplierPayload;
+  ingredient: IngredientPayload;
+  inventory: InventoryPayload;
 }
 
 export interface StockMovementsPayload {
   id: number;
   availableQuantity: number;
   status: string;
-  product: ProductData;
-  branch: BranchDTO;
+  product: ProductPayload;
+  branch: BranchPayload;
   stockMovement: string[];
 }
 
@@ -723,8 +813,8 @@ export interface IngredientPayload {
   currentStock: number;
   reorderThreshold: number;
   measurementUnit: string;
-  supplier: SupplierDTO;
-  branch: BranchDTO;
+  supplier: SupplierPayload;
+  branch: BranchPayload;
   stockMovement: string[];
   recipe: RecipePayload;
 }
@@ -732,7 +822,7 @@ export interface IngredientPayload {
 export interface RecipePayload {
   id: number;
   createdDate: string;
-  product: ProductData;
+  product: ProductPayload;
   ingredient: string[];
   createdById: number;
 }

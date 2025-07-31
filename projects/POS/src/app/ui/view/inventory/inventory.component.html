@@ -96,14 +96,16 @@
             text="Add Inventory"
             icon="pi pi-plus"
             class="btn-navigate text-2xl font-extrabold"
-            *ngIf="tableSection"
-            (click)="openEditInventory(null, 'parent')"
+            *ngIf="activeItem"
+            (click)="openEditInventory(activeItem, 'parent')"
           ></app-button>
         </div>
       </div>
     </div>
 
+    <!-- Scrollable content section -->
     <div class="scrollable-content mt-[250px]">
+      <!-- Adjust margin-top to match header height -->
       <!-- Table View -->
       <div
         *ngIf="tableSections"
@@ -421,10 +423,9 @@
   <app-edit-inventory
     *ngIf="editInventory && !showInformation"
     [activeItem]="activeItem"
-    [mode]="activeItem ? 'edit' : 'create'"
-    [activeItem]="activeItem"
+    [mode]="mode"
     (close)="closeEditInventory()"
-    [product]="products"
+    [products]="products"
   ></app-edit-inventory>
 </div>
 <div

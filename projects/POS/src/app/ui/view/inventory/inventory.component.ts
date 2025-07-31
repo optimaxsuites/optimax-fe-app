@@ -27,7 +27,6 @@ import { ImageCacheService } from '../../service/image-cache.service';
 import { OverlayPanel } from 'primeng/overlaypanel';
 import { MetadataService } from '../../service/metadata.service';
 import { DOCUMENT } from '@angular/common';
-import { EditInventoryComponent } from './edit-inventory/edit-inventory.component';
 
 @Component({
   selector: 'app-inventory',
@@ -36,13 +35,9 @@ import { EditInventoryComponent } from './edit-inventory/edit-inventory.componen
 })
 export class InventoryComponent implements OnInit, OnDestroy {
   @ViewChild('op') op!: OverlayPanel;
-  @ViewChild('editInventoryComponent')
-  mode: 'create' | 'edit' = 'create';
-  editInventoryComponent!: EditInventoryComponent;
   selectedProduct: any = null;
   currentPage = 0;
   rowsPerPage = 15;
-  @Output() formReset = new EventEmitter<void>();
 
   // Use enriched products from MetadataService
   products: ProductData[] = [];
@@ -63,7 +58,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
   editProduct: boolean = false;
   editInventory: boolean = false;
   addInventory: boolean = false;
-
+  mode: string = '';
   discountType: string[] = [];
   sidebarVisible: boolean = false;
 
@@ -199,6 +194,49 @@ export class InventoryComponent implements OnInit, OnDestroy {
     });
   }
 
+  openEditInventory(item: any = {}, mode: string) {
+    this.mode = mode;
+
+    if (mode === 'parent') {
+      this.activeItem = {
+        id: 0,
+        name: '',
+        code: '',
+        description: '',
+        sku: '',
+        weight: 0,
+        initialPrice: '',
+        effectivePrice: '',
+        initialQuantity: Number,
+        effectiveQuantity: Number,
+        createdDate: '',
+        createdBy: '',
+        partNumber: '',
+        tax: Number,
+        branch: '',
+        variant: '',
+        discount: {},
+        productCategory: {},
+        productImages: [],
+        variants: [],
+        supplier: '',
+        cartPriceTotal: '',
+        count: 0,
+        discountedPrice: 0,
+        selectedVariant: '',
+        pricingQuantity: 0,
+      };
+    }
+    if (mode === 'child') {
+      this.activeItem = item || {};
+    }
+    this.tableSection = false;
+    this.viewProduct = false;
+    this.addProduct = false;
+    this.editInventory = !this.editInventory;
+    this.tableSections = false;
+  }
+
   closeView() {
     this.viewProduct = false;
   }
@@ -219,7 +257,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
       {
         label: 'Edit',
         icon: 'pi pi-pencil',
-        command: () => this.openEditInventory(item, 'edit'),
+        command: () => this.openEditInventory(item, 'child'),
       },
       {
         label: 'Delete',
@@ -235,7 +273,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
   onActionChange(item: any): void {
     if (this.selectedAction === 'edit') {
-      this.openEditInventory(item, 'edit');
+      this.openEditInventory(item, 'child');
     }
   }
 
@@ -603,48 +641,5 @@ export class InventoryComponent implements OnInit, OnDestroy {
   // Method to export product data to PDF
   exportToPDF() {
     this.generatePDF('product-table', 'products-inventory.pdf');
-  }
-
-  resetFormFields(): void {
-    this.activeItem = {
-      id: 0,
-      name: '',
-      code: '',
-      description: '',
-      sku: '',
-      weight: 0,
-      purchasePrice: '0',
-      sellingPrice: '0',
-      quantity: 0,
-      createdDate: new Date().toISOString(),
-      createdBy: '',
-      partNumber: '',
-      tax: { id: 0, rate: 0 },
-      branch: null,
-      variant: '',
-      discount: null,
-      productCategory: null,
-      productImages: [],
-      variants: [],
-      supplier: null,
-    };
-    this.mode = 'create';
-  }
-
-  openEditInventory(item: any = {}, mode: string) {
-    if (mode === 'parent') {
-      this.resetFormFields();
-      this.mode = 'create';
-      this.activeItem = null;
-    } else {
-      this.mode = 'edit';
-      this.activeItem = item;
-    }
-
-    this.tableSection = false;
-    this.viewProduct = false;
-    this.addProduct = false;
-    this.editInventory = true;
-    this.tableSections = false;
   }
 }

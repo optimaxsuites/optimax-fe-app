@@ -244,6 +244,55 @@ import { AppInitService } from 'projects/POS/src/app/ui/service/app-init.service
 import { NotFoundComponent } from './ui/not-found.component';
 
 
+<<<<<<< HEAD
+=======
+import { CalendarModule } from 'primeng/calendar';
+import { MenuModule } from 'primeng/menu';
+import { IngredientComponent } from './ui/view/ingredient/ingredient/ingredient.component';
+import { AddIngredientComponent } from './ui/view/ingredient/add-ingredient/add-ingredient.component';
+import { KitchenOrderComponent } from './ui/view/kitchen-order/kitchen-order.component';
+// import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
+
+import { InputNumberModule } from 'primeng/inputnumber';
+
+import { SkeletonModule } from 'primeng/skeleton';
+import { PaginatorModule } from 'primeng/paginator';
+
+import { CardModule } from 'primeng/card';
+import { CheckboxModule } from 'primeng/checkbox';
+import { share } from 'rxjs';
+import { OrderFilterPipe } from './ui/pipes/order-filter.pipe';
+import { OrderStatusPipe } from './ui/pipes/order-status.pipe';
+import { AppInitService } from './ui/service/app-init.service';
+import { CheckoutKitchenComponent } from './ui/view/checkout-kitchen/checkout-kitchen.component';
+import { HotelBillsComponent } from './ui/view/hotel-bills/hotel-bills.component';
+import { HotelChangeroomComponent } from './ui/view/hotel-changeroom/hotel-changeroom.component';
+import { HotelCheckoutComponent } from './ui/view/hotel-checkout/hotel-checkout.component';
+import { HotelDooraccessComponent } from './ui/view/hotel-dooraccess/hotel-dooraccess.component';
+import { HotelFormComponent } from './ui/view/hotel-form/hotel-form.component';
+import { HotelKeycardComponent } from './ui/view/hotel-keycard/hotel-keycard.component';
+import { HotelMessageComponent } from './ui/view/hotel-message/hotel-message.component';
+import { HotelRoomdetailsComponent } from './ui/view/hotel-roomdetails/hotel-roomdetails.component';
+import { HotelRoomlistComponent } from './ui/view/hotel-roomlist/hotel-roomlist.component';
+import { EditIngredientsComponent } from './ui/view/ingredient/edit-ingredients/edit-ingredients.component';
+import { ViewIngredientsComponent } from './ui/view/ingredient/view-ingredients/view-ingredients.component';
+import { CheckoutHeaderComponent } from './ui/view/pos-checkout-page/components/checkout-header/checkout-header.component';
+import { CategoryComponent } from './ui/view/products/metaDatas/category/category.component';
+import { DiscountComponent } from './ui/view/products/metaDatas/discount/discount.component';
+import { SupplierComponent } from './ui/view/products/metaDatas/supplier/supplier.component';
+import { TaxComponent } from './ui/view/products/metaDatas/tax/tax.component';
+import { PromotionReportComponent } from './ui/view/report-dashboard/promotion-report/promotion-report.component';
+import { StockReportComponent } from './ui/view/report-dashboard/stock-report/stock-report.component';
+import { SalesDetailsComponent } from './ui/view/sales/sales-details/sales-details.component';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { TagModule } from "primeng/tag";
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { CloseRegisterModalComponent } from './ui/view/close-register-modal/close-register-modal.component';
+export function appInitializerFactory(appInitService: AppInitService) {
+  return () => appInitService.init();
+}
+>>>>>>> parent of fa922566 (Merge branch 'philip' into 'master')
 @NgModule({
   declarations: [
     AppComponent,
@@ -335,6 +384,7 @@ import { NotFoundComponent } from './ui/not-found.component';
     CheckoutHeaderComponent,
     ButtonComponent,
     BackButtonComponent,
+<<<<<<< HEAD
     CheckoutOrdersComponent,
     CashPaymentComponent,
     OrderDetailComponent,
@@ -487,6 +537,106 @@ import { NotFoundComponent } from './ui/not-found.component';
       }),   
       // ToastrModule.forRoot(),
   ],
+=======
+    SaleSummaryComponent,
+    SaleComponent,
+    SaleSummariesComponent,
+    KitchenOrderComponent,
+    // CheckoutKitchenComponent,
+    IngredientComponent,
+    AddIngredientComponent,
+    IngredientComponent,
+    AddIngredientComponent,
+    HotelCheckoutComponent,
+    HotelCheckoutComponent,
+    IngredientComponent,
+    AddIngredientComponent,
+    HotelFormComponent,
+    HotelMessageComponent,
+    HotelRoomlistComponent,
+    HotelRoomdetailsComponent,
+    CategoryComponent,
+    DiscountComponent,
+    SupplierComponent,
+    TaxComponent,
+    HotelBillsComponent,
+    HotelChangeroomComponent,
+    HotelKeycardComponent,
+    HotelDooraccessComponent,
+    ViewIngredientsComponent,
+    EditIngredientsComponent,
+    PromotionReportComponent,
+    StockReportComponent,
+    OrderStatusPipe,
+    OrderFilterPipe,
+    SalesDetailsComponent,
+    //CheckoutKitchenComponent,
+    //CheckoutHeaderComponent,
+    CloseRegisterModalComponent,
+  ],
+  imports: [
+    // BrowserModule,
+    UserModule,
+    AppRoutingModule,
+    CheckboxModule,
+    CommonModule,
+    AppRoutingModule,
+    TableModule,
+    RippleModule,
+    DialogModule,
+    ToastModule,
+    FormsModule,
+    ReactiveFormsModule,
+    SidebarModule,
+    TabViewModule,
+    ToolbarModule,
+    ConfirmDialogModule,
+    SplitButtonModule,
+    PanelModule,
+    DividerModule,
+    OverlayPanelModule,
+    StepperModule,
+    InputTextModule,
+    FloatLabelModule,
+    EditorModule,
+    MessagesModule,
+    MessageModule,
+    RippleModule,
+    TableModule,
+    PasswordModule,
+    ButtonModule,
+    NgSelectModule,
+    LargeSideModalComponent,
+    ButtonComponent,
+    ModalComponent,
+    BadgeModule,
+    MenubarModule,
+    SideModalComponent,
+    SearchbarComponent,
+    NavTabComponent,
+    HttpClientModule,
+    NgApexchartsModule,
+    InputNumberModule,
+    CalendarModule,
+    MenuModule,
+    InputGroupModule,
+    InputGroupAddonModule,
+    ChartModule,
+    DropdownModule,
+    ChartModule,
+    CardModule,
+    InputGroupAddonModule,
+    SkeletonModule,
+    PaginatorModule,
+    MultiSelectModule,
+    ProgressSpinnerModule,
+     SelectButtonModule,
+    // BrowserAnimationsModule,
+    
+    TagModule
+],
+  exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],
+>>>>>>> parent of fa922566 (Merge branch 'philip' into 'master')
   providers: [
     {
       provide: HTTP_INTERCEPTORS,

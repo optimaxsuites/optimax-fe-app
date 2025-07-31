@@ -28,7 +28,6 @@ import {
   ProductData,
   supplierData,
   InventoryPayload,
-  StockMovementPayload,
 } from '../models/interface';
 import { ImageCacheService } from './image-cache.service';
 import {
@@ -141,15 +140,6 @@ export class PosServiceService {
   getVariant() {
     return this.http
       .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/productVariants`)
-      .pipe(catchError(this.handleError));
-  }
-
-  upDateVariant(id: number) {
-    return this.http
-      .put<any>(
-        this.getBaseApiUrl() + `/x/api/v2/pos/productVariants/${id}`,
-        {}
-      )
       .pipe(catchError(this.handleError));
   }
 
@@ -465,33 +455,6 @@ export class PosServiceService {
   deleteInventory(id: number) {
     return this.http
       .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/inventories/${id}`)
-      .pipe(catchError(this.handleError));
-  }
-
-  // Add these methods to your service
-  getStockMovements() {
-    return this.http
-      .get<StockMovementPayload[]>(
-        this.getBaseApiUrl() + '/x/api/v2/pos/stockMovements'
-      )
-      .pipe(catchError(this.handleError));
-  }
-
-  createStockMovement(data: StockMovementPayload) {
-    return this.http
-      .post<StockMovementPayload>(
-        this.getBaseApiUrl() + '/x/api/v2/pos/stockMovements',
-        data
-      )
-      .pipe(catchError(this.handleError));
-  }
-
-  updateStockMovement(id: number, data: StockMovementPayload) {
-    return this.http
-      .put<StockMovementPayload>(
-        this.getBaseApiUrl() + `/x/api/v2/pos/stockMovements/${id}`,
-        data
-      )
       .pipe(catchError(this.handleError));
   }
 }

@@ -1,590 +1,602 @@
-<div class="createVendor">
-  <div class="flex justify-between">
-    <p
-      class="back pt-4 text-[12px]"
-      style="cursor: pointer"
-      (click)="closeEdit()"
-    >
-      <i class="fa-solid fa-arrow-left"></i> Back
-    </p>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=stat_minus_1" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<div class="createVendor"  >
+  <div class="flex justify-between  ">
+    <p class="back pt-4 text-[12px]" style="cursor: pointer; " (click)="closeEdit()"><i class="fa-solid fa-arrow-left  "></i> Back</p>
+    <button  class="p-2  bg-customGreen rounded-2xl text-white text-[12px]" [disabled]=" !selectedSupplier "  (click) =" saveProduct()"    (click)="saveToLocalStorage()" id="addB">Add Inventory</button>
   </div>
+    <div class="details" id="addInventory">
+      <div class=" shadow bg-gray-50 text-gray-700 flex flex-col  space-y-5 stl p-5 rounded-2xl border w-[50%] " >
+        <p class="text-[14px] text-gray-700 font-semibold pb-0  mb-0 text-center">Add-Inventory</p>
+        <hr>
+         <div class="field" >
+          <label class="text-[13px] font-normal " for="name">Product Name</label>
+          <input class="name editInput bg-gray-100 text-[12px] p-2.5 font-normal "  id="name" [value]="activeItem.name" disabled *ngIf="mode === 'child'"/>
+          <!-- <ngSelect class="name editInput bg-gray-100 text-[12px] p-2.5 font-normal "  id="name" [value]="activeItem.name" disabled *ngIf="mode === 'parent'"/> -->
+          <select
+          name="parent"
+          id="parent"
+          *ngIf="mode === 'parent'"
+          
+          (change)="selectOption($event)"
+          class="editInput mb-2 outline-none"  
+          >  
+            <option value="" default>select product</option>
 
-  <div class="details" id="addInventory">
-    <div
-      class="shadow bg-gray-50 text-gray-700 flex flex-col space-y-5 stl p-5 rounded-2xl border w-[50%]"
-    >
-      <h2
-        [ngClass]="
-          mode === 'create'
-            ? 'text-customBlue font-bold text-2xl sm:text-3xl md:text-4xl'
-            : 'text-cyan-500 font-semibold text-xl sm:text-2xl md:text-3xl'
-        "
-        class="transition-all duration-300 tracking-tight"
-      >
-        {{
-          mode === "create" ? " Add New Inventory" : "✏️ Edit Inventory Item"
-        }}
-      </h2>
-
-      <hr />
-
-      <!-- Product Selection (Edit Mode) -->
-      <div class="field">
-        <label class="text-[13px] font-normal" for="name">Product Name</label>
-        <ng-select
-          [items]="product"
-          bindLabel="name"
-          bindValue="id"
-          [ngModel]="activeItem?.id"
-          (ngModelChange)="activeItem && (activeItem.id = $event)"
-          (change)="onProductChange($event)"
-          class="editInput mb-2 outline-none"
-          placeholder="Select product"
-          required
-        >
-        </ng-select>
-      </div>
-
-      <!-- Product Form -->
-      <div class="flex gap-4">
-        <div class="field w-1/2">
+          @for (product of products; track $index) {
+          <option [value]="product.id" >{{ product.name }}</option>
+          }
+          </select>
+        </div>
+  
+        <div class="field" >
           <label class="text-[13px] font-normal" for="sku">SKU</label>
-          <input
-            formControlName="sku"
-            class="editInput w-full text-[12px]"
-            id="sku"
-            placeholder="Enter SKU"
-            required
-            [value]="activeItem?.sku"
-          />
+          <input class="editInput  bg-gray-100  text-[12px] " id="sku" [value]="activeItem.sku" readonly />
         </div>
-
-        <div class="field w-1/2">
-          <label class="text-[13px] font-normal" for="code">Product Code</label>
-          <input
-            formControlName="code"
-            class="editInput w-full text-[12px]"
-            id="code"
-            placeholder="Enter product code"
-            required
-            [value]="activeItem?.code"
-          />
-        </div>
-      </div>
-
-      <!-- Category and Branch Selection -->
-      <div class="flex gap-4">
-        <div class="field w-1/2">
-          <label class="block font-normal text-[13px]">Category</label>
-          <ng-select
-            [items]="categories"
-            bindLabel="name"
-            bindValue="id"
-            [(ngModel)]="selectedCategory"
-            class="editInput w-full text-[12px]"
-            placeholder="Select category"
-            required
-          >
-          </ng-select>
-        </div>
-
-        <div class="field w-1/2">
-          <label class="block font-normal text-[13px]">Branch</label>
-          <ng-select
-            [items]="branches"
-            bindLabel="name"
-            bindValue="id"
-            [(ngModel)]="selectedBranch"
-            class="editInput w-full text-[12px]"
-            placeholder="Select branch"
-            required
-          >
-          </ng-select>
-        </div>
-      </div>
-
-      <!-- Supplier Selection with Add Button -->
-      <div class="flex gap-4">
-        <!-- Supplier Dropdown -->
-        <div class="field w-1/2">
-          <label class="block font-normal text-[13px]">Supplier</label>
-          <div
-            class="relative flex items-center border rounded-md overflow-hidden"
-          >
-            <ng-select
-              [items]="suppliers"
-              bindLabel="name"
-              bindValue="id"
-              [(ngModel)]="selectedSupplier"
-              class="text-gray-600 text-[14px] w-full outline-none p-2"
-              placeholder="Select a supplier"
-              required
-            >
-            </ng-select>
-          </div>
-        </div>
-
-        <!-- Selling Price Input -->
-        <div class="field mt-3 w-1/2">
-          <label class="block font-normal text-[13px]">Measurement Unit</label>
-          <div class="relative">
-            <input
-              formControlName="measurementUnit"
-              class="editInput w-full text-[12px] bg-gray-100"
-              placeholder="Measurement unit"
-              [value]="activeItem?.measurementUnit"
-              id="measurementUnit"
-              readonly
-            />
-          </div>
-        </div>
-      </div>
-
-      <div class="flex gap-4">
-        <div class="field w-1/2">
-          <label class="block font-normal text-[13px]">Part Number</label>
-          <input
-            formControlName="partNumber"
-            class="editInput w-full text-[12px]"
-            placeholder="Enter part number"
-            [value]="activeItem?.partNumber || 0"
-            id="partNumber"
-          />
-        </div>
-
-        <div class="field w-1/2">
-          <label class="block font-normal text-[13px]">Expiry Date</label>
-          <input
-            formControlName="expiryDate"
-            placeholder=" Expiry date"
-            dateFormat="yy-mm-dd"
-            class="w-full"
-            id="expiryDate"
-            readonly
-            [value]="activeItem?.expiryDate"
-          />
-        </div>
-      </div>
-
-      <p class="text-[13px] text-gray-700 font-semibold">Pricing</p>
-
-      <div class="flex gap-4">
-        <div class="field w-1/2">
-          <label class="block font-normal text-[13px]">Purchase Price*</label>
-          <input
-            formControlName="purchasePrice"
-            type="number"
-            class="editInput w-full text-[12px]"
-            placeholder="Enter purchase price"
-            required
-            [value]="activeItem?.purchasePrice || 0"
-            id="purchasePrice"
-            readonly
-          />
-        </div>
-
-        <div class="field w-1/2">
-          <label class="block font-normal text-[13px]">Selling Price*</label>
-          <div class="relative">
-            <input
-              formControlName="sellingPrice"
-              type="number"
-              class="editInput w-full text-[12px] bg-gray-100"
-              placeholder="Selling price"
-              [value]="activeItem?.sellingPrice || 0"
-              id="sellingPrice"
-              readonly
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- Inventory Section -->
-      <p class="text-[13px] text-gray-700 font-semibold">Inventory</p>
-
-      <div class="flex gap-4">
-        <div class="field w-1/2">
-          <label class="block font-normal text-[13px]">Current Quantity</label>
-          <input
-            type="number"
-            [value]="getCurrentQuantity()"
-            class="editInput w-full bg-gray-200 text-[12px]"
-            readonly
-          />
-        </div>
-
-        <div class="field w-1/2">
-          <label class="block font-normal text-[13px]">Reorder Threshold</label>
-          <input
-            formControlName="reorderThreshold"
-            type="number"
-            class="editInput w-full text-[12px]"
-            placeholder="Enter threshold"
-            [value]="activeItem?.reorderThreshold || 0"
-            id="reorderThreshold"
-          />
-        </div>
-      </div>
-
-      <div class="field">
-        <label class="block font-normal text-[13px]">New Total Quantity</label>
-        <input
-          type="number"
-          [value]="getCurrentQuantity() + (newQuantity || 0)"
-          class="editInput w-full bg-gray-200 text-[12px]"
-          readonly
-        />
-      </div>
-
-      <!-- Stock Movement Section -->
-      <div class="field">
-        <button
-          class="p-2 bg-blue-500 text-white rounded text-[12px]"
-          (click)="toggleStockMovement()"
-        >
-          {{ showStockMovementSection ? "Hide" : "Show" }} Stock Movement
-          Details
-        </button>
-      </div>
-
-      <!-- Stock Movement Section -->
-      <form
-        *ngIf="showStockMovementSection"
-        [formGroup]="stockMovementForm"
-        class="bg-gray-100 p-3 rounded-md"
-      >
-        <p class="text-[13px] text-gray-700 font-semibold mb-3">
-          Stock Movement Details
-        </p>
 
         <div class="field">
-          <label class="block font-normal text-[13px]"
-            >Available Quantity</label
-          >
-          <input
-            type="number"
-            [value]="getCurrentQuantity()"
-            class="editInput w-full bg-gray-200 text-[12px]"
-            readonly
-          />
+          <label class="block font-normal text-[13px]">Product Code</label>
+          <input class="editInput w-full text-[12px]  bg-gray-100"   id="code" [value]="activeItem.code" readonly />
+        </div>
+            
+        <div class="field">
+          <label for="category" class="block font-normal text-[13px] ">Category</label>
+          <input class="editInput w-full text-[12px]   bg-gray-100" id="category"   [value]="activeItem.productCategory.name" readonly />
         </div>
 
-        <!-- Movement Date and Reference -->
-        <div class="flex gap-4 mb-3">
-          <div class="field w-1/2">
-            <label for="createdDate" class="block font-normal text-[13px]">
-              Movement Date:
+        <div class="flex gap-4"id="dropdown1">
+          <div class="w-1/2 ">
+            <label for="dropdown" class="block font-normal text-[13px]">Change-type 
+              <span class="text-red-500">*
+              </span>  
             </label>
-            <input
-              type="date"
-              id="createdDate"
-              name="createdDate"
-              formControlName="createdDate"
-              class="editInput w-full text-[12px]"
-            />
+            <input class="editInput w-full bg-gray-100 text-[12px] " value="Restock" id="change-type" readonly /> 
           </div>
 
-          <div class="field w-1/2">
-            <label class="block font-normal text-[13px]">Reference</label>
-            <input
-              formControlName="reference"
-              class="editInput w-full text-[12px]"
-              placeholder="Enter reference (optional)"
-            />
-          </div>
-        </div>
-
-        <!-- Quantity and Supplier -->
-        <div class="flex gap-4">
-          <div class="field w-1/2">
-            <label class="block font-normal text-[13px]">Quantity</label>
-            <input
-              formControlName="quantity"
-              type="number"
-              class="editInput w-full text-[12px]"
-              placeholder="Enter quantity"
-              required
-              min="1"
-            />
-          </div>
-
-          <div class="mb-8 w-[50%] max-w-md">
-            <label
-              for="supplier"
-              class="block text-[13px] font-semibold text-gray-700 mb-2"
-            >
-              Supplier
+          <div class="w-1/2 ">
+            <label for="dropdown" class="block font-normal text-[13px]">
+              Source <span class="text-red-500">*</span>
             </label>
-            <div class="flex items-stretch space-x-2">
-              <ng-select
-                id="supplier"
-                [items]="suppliers"
-                bindLabel="name"
-                bindValue="id"
-                formControlName="supplierId"
-                class="editInput w-full text-[15px] rounded-md shadow-sm border border-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                placeholder="Select supplier"
-                (change)="onSupplierChange($event)"
-              >
-              </ng-select>
+            <p-inputGroup class="relative flex items-center border rounded-md overflow-hidden bg-gray-100">
+<!-- 
+              <div *ngIf="selectedSupplier?.id === 0" class=" absolute text-gray-600 text-[14px] p-2">
+              -- Select a supplier --             
+            </div> -->
+        
+              <!-- <select
+                id="dropdown"
+                class="text-gray-600 bg-gray-100 text-[14px] w-full outline-none p-2"
+                [(ngModel)]="selectedSupplier"
+                (change)="changeSelectedSupplier($event)"
 
-              <button
-                class="bg-green-500 hover:bg-green-600 transition-all text-white text-[15px] px-4 py-2 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-200"
-                (click)="openSupplierModal()"
-                title="Add Supplier"
-              >
-                <i class="fas fa-plus"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Purchase Price and Selling Price -->
-        <div class="flex gap-4 mb-3">
-          <div class="field w-1/2">
-            <label class="block font-normal text-[13px]">Purchase Price*</label>
-            <input
-              formControlName="purchasePrice"
-              type="number"
-              class="editInput w-full text-[12px]"
-              placeholder="Enter purchase price"
-              required
-              min="0"
-              step="0.01"
-            />
-            <small
-              *ngIf="
-                stockMovementForm.get('purchasePrice')?.invalid &&
-                stockMovementForm.get('purchasePrice')?.touched
-              "
-              class="text-red-500 text-xs"
-            >
-              Purchase price is required
-            </small>
-          </div>
-
-          <div class="field w-1/2">
-            <label class="block font-normal text-[13px]"
-              >Base Selling Price</label
-            >
-            <input
-              type="number"
-              [(ngModel)]="priceDetails.basePrice"
-              (ngModelChange)="onBasePriceChange($event)"
-              class="editInput w-full text-[12px]"
-              placeholder="Enter base price"
-              min="0"
-              step="0.01"
-            />
-          </div>
-        </div>
-
-        <div class="bg-white p-3 rounded-md border mb-3">
-          <div class="flex gap-4 mb-3">
-            <div class="field w-1/2">
-              <label class="block font-normal text-[13px]">Tax (%)</label>
-              <input
-                type="number"
-                [(ngModel)]="priceDetails.tax"
-                (ngModelChange)="onTaxChange($event)"
-                class="editInput w-full text-[12px]"
-                placeholder="Enter tax percentage"
-                min="0"
-                max="100"
-                step="0.1"
-              />
-            </div>
-
-            <div class="field w-1/2">
-              <label class="block font-normal text-[13px]">Discount (%)</label>
-              <select
-                [(ngModel)]="priceDetails.discount"
-                (ngModelChange)="onDiscountChange($event)"
-                class="editInput w-full text-[12px]"
-              >
-                <option [ngValue]="null">No Discount</option>
-                <option
-                  *ngFor="let discount of discountOptions"
-                  [value]="discount"
                 >
-                  {{ discount }}%
+            
+
+              <option *ngFor="let supplier of suppliers" [ngValue]="supplier">
+                {{ supplier.name }}
                 </option>
-              </select>
+              </select> -->
+
+                <ng-select
+                [items]="suppliers"
+                bindValue="id"
+                bindLabel="name"
+                [ngModel]="selectedSupplier"
+                (change)="changeSelectedSupplier($event)"
+                class="text-gray-600 bg-gray-100 text-[14px] w-full outline-none p-2"
+                placeholder="Select a supplier"
+                ></ng-select>
+            
+            <p-inputGroupAddon 
+              class="bg-customGreen text-white text-[14px] px-3 cursor-pointer" 
+              (click)="openModal()">
+              <i class="fas fa-plus"></i>
+            </p-inputGroupAddon>
+            </p-inputGroup>
+        </div>
+        </div>
+        
+        <div class="flex w-full gap-4">
+          <div class="w-1/2" id="Branch">
+            <label class="block font-normal text-[13px]">Branch <span class="text-red-500">*</span>
+            </label>
+            <div class="border border-gray-300 p-2 rounded bg-gray-100" id="branch">
+              {{ activeItem.branch.name }}
             </div>
           </div>
-
-          <!-- Price Breakdown -->
-          <div class="price-breakdown bg-blue-50 p-4 rounded-md">
-            <h4 class="font-bold text-base text-blue-900 mb-3">
-              Price Calculation
-            </h4>
-            <div class="grid grid-cols-2 gap-2 text-sm text-gray-800">
-              <div class="font-medium">Base Price:</div>
-              <div class="text-right font-medium">
-                {{
-                  priceDetails.basePrice | currency : "NGN" : "symbol" : "1.2-2"
-                }}
-              </div>
-
-              <div
-                *ngIf="priceDetails.discount"
-                class="text-red-600 font-medium"
-              >
-                Discount ({{ priceDetails.discount }}%):
-              </div>
-              <div
-                *ngIf="priceDetails.discount"
-                class="text-right text-red-600 font-medium"
-              >
-                -{{
-                  priceDetails.basePrice * (priceDetails.discount / 100)
-                    | currency : "NGN" : "symbol" : "1.2-2"
-                }}
-              </div>
-
-              <div class="font-medium">Price After Discount:</div>
-              <div class="text-right font-medium">
-                {{
-                  getPriceAfterDiscount()
-                    | currency : "NGN" : "symbol" : "1.2-2"
-                }}
-              </div>
-
-              <div class="font-medium">Tax ({{ priceDetails.tax }}%):</div>
-              <div class="text-right font-medium">
-                {{ getTaxAmount() | currency : "NGN" : "symbol" : "1.2-2" }}
-              </div>
-
-              <div class="font-semibold border-t pt-2 mt-2 text-base">
-                Final Price:
-              </div>
-              <div
-                class="font-semibold text-right border-t pt-2 mt-2 text-base"
-              >
-                {{
-                  priceDetails.effectivePrice
-                    | currency : "NGN" : "symbol" : "1.2-2"
-                }}
-              </div>
-            </div>
+        
+          <div class="w-1/2">
+            <label for="datePicker" class="block font-normal text-[13px]">Date <span class="text-red-500">*</span></label>
+            <input 
+              type="date" 
+              id="date" 
+              class="w-full border border-gray-300 p-2 rounded" 
+              [(ngModel)]="selectedDate">
           </div>
         </div>
-        <!-- Save Button -->
-        <div class="flex justify-end">
-          <button
-            type="submit"
-            class="p-2 bg-customGreen text-white rounded text-[12px]"
-            (click)="saveStockMovement()"
-          >
-            Record Movement
-            <i *ngIf="isLoading" class="pi pi-spinner pi-spin ml-2"></i>
-          </button>
+        
+
+  <p class="text-[13px] text-gray-700 font-semibold " id="h1Q">
+    Quantity
+  </p>
+  <div class="flex gap-4">
+    <div class="field w-1/2">
+      <label for="lastQuantity" class="block font-normal text-[13px]">Last Quantity Added</label>
+      <input 
+        type="number" 
+        id="lastQuantity" 
+        name="lastQuantity"
+        class="editInput w-full bg-gray-100 text-[12px] " id="lastQuantity"
+        
+        reaquired
+      />
+    </div>
+  
+    <div class="field w-1/2">
+      <label for="currentQuantity" class="block font-normal text-[13px]">Avaliable Quantity</label>
+      <input 
+        type="number" 
+        id="currentQuantity" 
+        name="currentQuantity"
+        class="editInput w-full bg-gray-100  text-[12px] " id="currentQuantity"
+        [(ngModel)] = "activeItem.effectiveQuantity"
+        readonly
+      />
+    </div>
+  </div>
+  
+
+  <div class="flex gap-4">
+    <div class="field w-1/2">
+      <label for="restockedQuantity" class="block font-normal text-[13px]">Restocked Quantity</label>
+      <input 
+        type="number" 
+        id="restockedQuantity" 
+        name="restockedQuantity"
+        class="editInput w-full bg-gray-100 text-[12px] " id="restockedQuantity"
+        required
+      />
+    </div>
+  
+    <div class="field w-1/2">
+      <label for="currentQuantity" class="block font-normal text-[13px]">Current Quantity</label>
+      <input 
+        type="number" 
+        id="currentQuantity" 
+        name="currentQuantity"
+        class="editInput w-full bg-gray-100  text-[12px] " id="currentQuantity2"
+        required
+      />
+    </div>
+</div>
+
+
+  <p class="text-[13px] text-gray-700 font-semibold" id="Pricing">
+    Pricing
+  </p>
+  <div class="flex gap-4">
+    <div class="field w-1/2">
+      <label for="lastPrice" class="block font-normal text-[13px]">Last Purchase Price</label>
+      <input 
+        type="number" 
+        id="lastPrice" 
+        name="lastPrice"
+        class="editInput w-full bg-gray-100 text-[12px] " id="lastPrice"
+        required
+      />
+    </div>  
+  
+    <div class="field w-1/2">
+      <label for="currentPrice" class="block font-normal text-[13px]">Current Purchase Price</label>
+      <input 
+        type="number" 
+        id="currentPrice" 
+        name="currentPrice"
+        class="editInput w-full bg-gray-100 text-[12px] " id="currentPrice"
+
+        required
+      />
+    </div>  
+  </div>
+
+<div class="flex gap-4 ">
+  <div class="field w-1/2">
+    <label for="lastSellingPrice" class="block font-normal text-[13px]">Last Selling Price</label>
+    <input 
+      type="number" 
+      id="lastSellingPrice" 
+      name="lastSellingPrice"
+      class="editInput w-full bg-gray-100  text-[12px] " id="lastSellingPrice"
+      [(ngModel)] = "activeItem.effectivePrice"
+      readonly
+    />
+  </div>  
+
+  <div class="field w-1/2 relative">
+    <label for="currentSellingPrice" class="block font-normal text-[13px]">
+        Current Selling Price
+    </label>
+    <div class="relative">
+      <input 
+        type="number" 
+        id="currentSellingPrice" 
+        name="currentSellingPrice"
+        class="editInput w-full bg-gray-100  text-[12px] " id="currentSellingPrice"
+        [(ngModel)]="priceDetails.effectivePrice " 
+
+      />
+   
+      <p 
+        id="priceChange" (click)="togglePriceChange()"
+  
+      >
+        + Price Change
+      </p>
+    </div>
+</div>
+
+</div>
+
+<div class=" flex-col items-center w-full" id="openprice" *ngIf="openPriceChange">
+  <div class="flex gap-4">
+    <div class="field w-1/2">
+      <label for="basePrice" class="block font-normal text-[13px]">Base Price</label>
+      <input 
+        type="number" 
+        id="basePrice" 
+        name="basePrice"
+        class="editInput w-full bg-gray-100 text-[12px]"
+        [(ngModel)]="priceDetails.basePrice"
+        (input)="calculateEffectivePrice()"
+        [attr.placeholder]="'Enter Base Price'"
+        required
+      />
+    </div>
+  
+    <div class="field w-1/2">
+      <label for="tax" class="block font-normal text-[13px]">Tax Percentage (%)</label>
+      <input 
+        type="number" 
+        id="tax" 
+        name="tax"
+        class="editInput w-full bg-gray-100 text-[12px]"
+        [(ngModel)]="priceDetails.tax"
+        (input)="calculateEffectivePrice()"
+        [attr.placeholder]="'Enter Tax Percentage'"
+        required
+      />
+    </div>
+  </div>
+
+  <div class="field w-full" id="discountField">
+    <label for="discount" class="block font-normal text-[13px]">Discount (%)</label>
+    <div class="flex items-center gap-2">
+    <select
+      id="discount"
+      class="editInput w-full bg-gray-100 text-[12px]"
+      [(ngModel)]="priceDetails.discount"
+      (change)="calculateEffectivePrice()">
+      <option [ngValue]="null" disabled selected>Select Discount</option>
+      <option *ngFor="let discount of discountOptions" [ngValue]="discount">{{discount}}</option>
+    </select>
+      
+    <button
+    class="btn create-invoice-btn text-white bg-customGreen text-[12px] px-3 py-1 rounded"
+    type="button"
+    (click)="openAddDiscount = true">
+    Add
+    </button>
+    
+
+    
+  </div>
+  </div>
+  
+  <div class="field w-full mt-4">
+    <label for="effectivePrice" class="block font-normal text-[13px]">Effective Price</label>
+    <input 
+      type="number" 
+      id="effectivePrice" 
+      name="effectivePrice"
+      class="editInput w-full bg-gray-100 text-[12px]"
+      [(ngModel)]="priceDetails.effectivePrice"
+      readonly
+      [attr.placeholder]="'Calculated Price'"
+      
+    />
+
+
+  </div>
+
+
+
+  <div class="flex gap-4 items-center w-full">
+    <div class="detailDiv w-full">
+      
+    </div>
+  </div>
+
+</div>
+</div>
+   
+<app-side-modal *ngIf="openAddDiscount" (close)="openAddDiscount = false">
+  <div class="p-fluid ">
+    <h1 class="text-[17px] font-bold text-left text-customGreen mt-8">Discount</h1>
+    
+    <div class=" " id="divbox">
+      <label class="block text-[12px] font-medium text-gray-700 ">Name</label>
+      <input type="text" pInputText placeholder="Discount name" [(ngModel)]="discountTitle" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
+    </div>
+    
+    <div class="">
+      <label class="block text-[12px] font-medium text-gray-700">Discount Percentage (%)</label>
+      <input type="number" pInputText placeholder="0" [(ngModel)]="discountRate" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
+    </div>
+
+    <div class=" ">
+      <label  class="block text-[12px] font-medium text-gray-700" >Discount Type</label>
+      <select [(ngModel)]="selectedDiscountOption" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" >
+        <option *ngFor="let option of discountOptions_2" [ngValue]="option.value">{{ option.label }}</option>
+      </select>
+    </div>
+  
+    <div class="flex gap-4 w-full mt-9">
+       <div class="w-full">
+        <label class="block text-[12px] font-medium text-gray-700">Start Date:</label>
+        <input type="date" [(ngModel)]="startDate" class="border rounded-lg p-2 w-full focus:ring focus:ring-blue-300 outline-none">
+        </div>
+      
+        <div class="w-full">
+          <label class="block text-[12px] font-medium text-gray-700">End Date:</label>
+          <input type="date" [(ngModel)]="endDate" class="border rounded-lg p-2 w-full focus:ring focus:ring-blue-300 outline-none">
+        </div>
+    </div>        
+
+    <div class="field">
+      <label class="block text-[12px] font-medium text-gray-700">Minimum Quantity</label>
+      <input type="number" pInputText placeholder="Minimum quantity" [(ngModel)]="minimumDiscountQuantity" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
+    </div>
+
+    <div class="flex justify-end mt-4">
+    <button class="btn save-btn bg-customGreen text-white text-[12px] px-4 py-2 rounded"
+      type="button" (click)="saveDiscount()">
+      Save
+    </button>
+    </div>
+  </div>
+</app-side-modal>
+
+
+  <div class="tableContainer w-[40%] " *ngIf="activeItem?.variants?.length > 0">
+    <div class=" bg-gray-50 shadow rounded-lg p-4 h-1/2">
+      <h2 class="text-lg font-semibold mb-3">Product Variants</h2>
+      <table
+        class="min-w-full bg-white rounded-lg overflow-hidden"
+      >
+        <thead>
+          <tr>
+            <th class="py-2 px-4 bg-gray-600 text-white text-left">Name</th>
+            <th class="py-2 px-4 bg-gray-600 text-white text-left">Price</th>
+            <th class="py-2 px-4 bg-gray-600 text-white text-left">Quantity</th>
+            <th class="py-2 px-4 bg-gray-600 text-white text-left">SKU</th>
+            <th class="py-2 px-4 bg-gray-600 text-white text-left">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let variant of activeItem.variants; let i = index">
+            <td class="py-2 px-4 border-b">{{ variant.name }}</td>
+            <td class="py-2 px-4 border-b">{{ variant.price }}</td>
+            <td class="py-2 px-4 border-b">{{ variant.quantity }}</td>
+            <td class="py-2 px-4 border-b">{{ variant.sku }}</td>
+            <td class="py-2 px-4 border-b">
+              <i
+              class="fa-solid fa-pen cursor-pointer text-blue-500 hover:text-blue-700"
+              (click)="openVariantEditModal(variant)"
+
+              title="Edit"
+            ></i>
+            </td>
+          </tr>
+        </tbody>
+        </table>
+      </div>
+  </div>
+</div>
+  <app-side-modal *ngIf="isOpen" (close)="closeModal()">
+    <h2 class="text-2xl font-semibold my-5 text-center bg-gray-50">Add New Supplier</h2>
+  
+    <div >
+      <form (ngSubmit)="submitForm()">
+        <div class="mb-4">
+          <label class="block text-gray-700 text-xl">Supplier Name</label>
+          
+          <input 
+            type="text" 
+            [(ngModel)]="supplierName" 
+            #supplierNameInput="ngModel" 
+            name="supplierName" 
+            class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800"
+            required
+          />
+          <!-- Error Message (Only Shows if Input is Empty) -->
+          <p *ngIf="supplierNameInput.invalid && supplierNameInput.touched" class="text-red-500 text-sm mt-1">
+            Supplier Name is required.
+          </p>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-gray-700 text-xl">Contact Person</label>
+        
+          <input 
+            type="text" 
+            [(ngModel)]="contactPerson" 
+            #contactPersonInput="ngModel" 
+            name="contactPerson" 
+            class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800"  
+            required
+          />
+        
+          <!-- Error Message (Only Shows if Input is Empty) -->
+          <p *ngIf="contactPersonInput.invalid && contactPersonInput.touched" class="text-red-500 text-sm mt-1">
+            Contact Person is required.
+          </p>
+        </div>
+        
+  
+        <div class="mb-4">
+          <label class="block text-gray-700 text-xl">Email Address</label>
+        
+          <input
+            type="email"
+            [(ngModel)]="email"
+            name="email"
+            #emailInput="ngModel"
+            class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800" 
+            [ngClass]="{'border-red-500': emailInput.invalid && emailInput.dirty}"
+            required
+            email
+          />
+        
+          <!-- Error Messages -->
+          <div *ngIf="emailInput.invalid && emailInput.dirty" class="text-red-500 text-sm">
+            <p *ngIf="emailInput.errors?.['required']">This field is required.</p>
+            <p *ngIf="emailInput.errors?.['email']">Please enter a valid email address.</p>
+          </div>
+        </div>
+        
+  
+        <div class="mb-4">
+          <label class="block text-gray-700 text-xl">Phone Number</label>
+          
+          <div class="flex items-center border border-gray-300 rounded-lg bg-gray-100">
+            <!-- Country Code Selector -->
+            <select
+              [(ngModel)]="selectedCountryCode"
+              name="countryCode"
+              class="bg-gray-200 p-3 border-r outline-none text-gray-700"
+            >
+              <option *ngFor="let country of countryCodes" [value]="country.code">
+                {{ country.name }} ({{ country.code }})
+              </option>
+            </select>
+        
+            <!-- Phone Number Input -->
+            <input
+              type="tel"
+              [(ngModel)]="phone"
+              name="phone"
+              #phoneInput="ngModel"
+              class="p-3 w-full bg-gray-100 text-gray-800 outline-none"
+              [pattern]="phonePattern"
+              [ngClass]="{'border-red-500': phoneInput.invalid && phoneInput.dirty}"
+              required
+            />
+          </div>
+        
+          <!-- Error Message -->
+          <p *ngIf="phoneInput.invalid && phoneInput.dirty" class="text-red-500 text-sm">
+            Enter a valid phone number (e.g., +234 or +1).
+          </p>
+        </div>
+        
+  
+        <div class="mb-4">
+          <label class="block text-gray-700 text-xl">Business Address</label>
+          <input type="text" [(ngModel)]="address" name="address" class="border border-gray-300 rounded-lg p-3 w-full bg-gray-100 text-gray-800"  />
+        </div>
+  
+        <!-- Additional Information -->
+  
+        <label class="block text-gray-700 font-medium mb-2 text-xl">Notes</label>
+        <textarea [(ngModel)]="notes"  class="w-full p-3  bg-gray-200 focus:ring- mb-4" placeholder="Any special instructions or comments " style="border: 1px solid gray; border-radius: 4px;"></textarea>
+  
+        <!-- Terms & Conditions -->
+        <!-- <div class="mb-4 flex items-center">
+          <input type="checkbox" [(ngModel)]="agreeTerms" name="agreeTerms" class="mr-2" />
+          <label for="agreeTerms" class="text-2xl">
+            I agree to the 
+            <a href="/terms-and-conditions" target="_blank" class="text-blue-600 underline">Terms & Conditions</a>
+          </label>
+        </div> -->
+      
+  
+        <!-- Buttons -->
+        <div class="flex justify-end mt-5" >
+          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Save</button>
+          <button type="button" class="ml-2 text-gray-600" (click)="closeModal()">Cancel</button>
         </div>
       </form>
     </div>
 
-    <!-- Supplier Modal -->
-    <div
-      *ngIf="isSupplierModalOpen"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-    >
-      <div class="bg-white rounded-lg p-6 w-full max-w-md">
-        <h3 class="text-lg font-bold mb-4">Add New Supplier</h3>
+  </app-side-modal>
 
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700"
-              >Supplier Name*</label
-            >
-            <input
-              [(ngModel)]="newSupplier.name"
-              class="w-full p-2 border rounded"
-              placeholder="Supplier name"
-              required
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700"
-              >Contact Person</label
-            >
-            <input
-              [(ngModel)]="newSupplier.contactPerson"
-              class="w-full p-2 border rounded"
-              placeholder="Contact person"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Email</label>
-            <input
-              [(ngModel)]="newSupplier.email"
-              type="email"
-              class="w-full p-2 border rounded"
-              placeholder="Email"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700"
-              >Phone Number</label
-            >
-            <input
-              [(ngModel)]="newSupplier.phoneNumber"
-              type="tel"
-              class="w-full p-2 border rounded"
-              placeholder="Phone number"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700"
-              >Address</label
-            >
-            <textarea
-              [(ngModel)]="newSupplier.address"
-              class="w-full p-2 border rounded"
-              rows="2"
-              placeholder="Address"
-            ></textarea>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Notes</label>
-            <textarea
-              [(ngModel)]="newSupplier.notes"
-              class="w-full p-2 border rounded"
-              rows="2"
-              placeholder="Notes"
-            ></textarea>
-          </div>
-
-          <div class="flex items-center">
-            <input
-              type="checkbox"
-              [(ngModel)]="newSupplier.agreeTerms"
-              class="mr-2"
-            />
-            <label class="text-sm">I agree to the terms and conditions</label>
-          </div>
+  <app-side-modal *ngIf="isVariantEditOpen" (close)="closeVariantEditModal()">
+    <h2 class="text-2xl font-bold my-5 text-center">Edit Variant</h2>
+  
+    <div class="bg-white shadow-2xl rounded-lg p-6">
+      <form (ngSubmit)="updateVariant()">
+        <div class="mb-4">
+          <label class="block text-gray-700 text-2xl"> Name</label>
+          <input
+            type="text"
+            [(ngModel)]="selectedVariant.name"
+            name="variantName"
+            class="w-full p-3 bg-gray-200 rounded-md border border-solid border-gray-400"
+            required
+          />
         </div>
-
-        <div class="flex justify-end mt-6 space-x-3">
-          <button
-            (click)="closeSupplierModal()"
-            class="px-4 py-2 border rounded text-sm"
-          >
+  
+        <div class="mb-4">
+          <label class="block text-gray-700 text-2xl">Current Price</label>
+          <input
+            type="number"
+            [(ngModel)]="selectedVariant.price"
+            name="currentPrice"
+            class="w-full p-3 bg-gray-200 rounded-md border border-solid border-gray-400"
+            disabled
+          />
+        </div>
+  
+        <div class="mb-4">
+          <label class="block text-gray-700 text-2xl">New Price</label>
+          <input
+            type="number"
+            [(ngModel)]="newPrice"
+            name="newPrice"
+            class="w-full p-3 bg-gray-200 rounded-md border border-solid border-gray-400"
+          />
+        </div>
+  
+        <div class="mb-4">
+          <label class="block text-gray-700 text-2xl">Current Quantity</label>
+          <input
+            type="number"
+            [(ngModel)]="selectedVariant.quantity"
+            name="currentQuantity"
+            class="w-full p-3 bg-gray-200 rounded-md border border-solid border-gray-400"
+            disabled
+          />
+        </div>
+  
+        <div class="mb-4">
+          <label class="block text-gray-700 text-2xl">New Quantity</label>
+          <input
+            type="number"
+            [(ngModel)]="newQuantity"
+            name="newQuantity"
+            class="w-full p-3 bg-gray-200 rounded-md border border-solid border-gray-400"
+          />
+        </div>
+  
+        <div class="flex justify-end">
+          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">
+            Update
+          </button>
+          <button type="button" class="ml-2 text-gray-600" (click)="closeVariantEditModal()">
             Cancel
           </button>
-          <button
-            (click)="createSupplier()"
-            class="px-4 py-2 bg-customGreen text-white rounded text-sm"
-            [disabled]="!newSupplier.name || !newSupplier.agreeTerms"
-          >
-            Save Supplier
-          </button>
         </div>
-      </div>
+      </form>
     </div>
-  </div>
-</div>
+  </app-side-modal>
+  
