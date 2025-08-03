@@ -42,7 +42,7 @@ import { MatRadioModule } from '@angular/material/radio';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { DropdownModule } from 'primeng/dropdown';
-import { TagModule } from 'primeng/tag';
+//import { TagModule } from 'primeng/tag';
 
 // import { EditorModule } from "@progress/kendo-angular-editor";
 
@@ -146,7 +146,7 @@ import { ModalComponent } from './ui/shared/view/modal/modal.component';
 import { CommisionComponent } from './ui/pos/view/commision/commision.component';
 import { AuthInterceptor } from './ui/auth/service/auth.interceptor.service';
 import { ProfileCardComponent } from './ui/shared/view/profile-card/profile-card.component';
-import { CheckoutHeaderComponent } from './ui/pos/view/pos-checkout-page/components/checkout-header/checkout-header.component';
+//import { CheckoutHeaderComponent } from './ui/pos/view/pos-checkout-page/components/checkout-header/checkout-header.component';
 import { ButtonComponent } from './ui/shared/view/button/button.component';
 import { BackButtonComponent } from './ui/shared/view/back-button/back-button.component';
 import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-orders.component';
@@ -156,8 +156,8 @@ import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.c
 import { ExpensesComponent } from './ui/expenses/view/expenses.component';
 import { ExpenseTableComponent } from './ui/expenses/view/expense-table/expense-table.component';
 import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-modal/expense-forms-modal.component';
-import { CalendarModule } from 'primeng/calendar';
-import { CheckboxModule } from 'primeng/checkbox';
+//import { CalendarModule } from 'primeng/calendar';
+//import { CheckboxModule } from 'primeng/checkbox';
 import { OrderRefundComponent } from './ui/pos/view/order-refund/order-refund.component';
 import { DropdownComponent } from './ui/shared/view/dropdown/dropdown.component';
 import { RequestDetailsComponent } from './ui/pos/view/request-details/request-details.component';
@@ -240,7 +240,7 @@ import { AppHrModule } from 'projects/hr/src/app/app.module';
 import { MarketplaceComponent } from './ui/marketplace/view/marketplace/marketplace.component';
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { AppResizeDirective } from '../../projects/POS/src/app/ui/service/app-resize.directive';
-import { AppInitService } from 'projects/POS/src/app/ui/service/app-init.service';
+//import { AppInitService } from 'projects/POS/src/app/ui/service/app-init.service';
 import { NotFoundComponent } from './ui/not-found.component';
 
 
