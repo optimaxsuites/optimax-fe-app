@@ -445,6 +445,7 @@ export class ProductsComponent implements OnInit {
     this.editProduct = false;
     this.addProduct = false;
     this.getProducts();
+    
   }
 
   toggleImportDialog() {
