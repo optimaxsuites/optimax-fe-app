@@ -93,8 +93,10 @@ export class MetadataService {
 
   
   constructor(private posService: PosServiceService, private checkoutService: CheckoutService, private orderService: OrderService) { }
-  setSelectedBranch(id: number) {
+  async setSelectedBranch(id: number) {
     this.selectedBranchIdSubject.next(id);
+   await this.fetchMetaData()
+
   }
 
 
