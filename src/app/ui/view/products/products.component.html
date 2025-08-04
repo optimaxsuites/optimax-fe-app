@@ -18,7 +18,6 @@
     [items]="branches"
     bindLabel="name"
     bindValue="id"
-    [(ngModel)]="selectedBranch"
     placeholder="Branches"
     [(ngModel)]="selectedBranch"
     (ngModelChange)="metadataService.setSelectedBranch($event)"

@@ -61,7 +61,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   products: ProductData[] = [];
   categorizedProducts: ProductData[] = [];
   shownProducts: ProductData[] = [];
-  cartWidth = 300; // Default width of cart
+  cartWidth = 300; 
   resizing = false;
   subtotal: number = 0.0;
   tax: number = 0.0;
