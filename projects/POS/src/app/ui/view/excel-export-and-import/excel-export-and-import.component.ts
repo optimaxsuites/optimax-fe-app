@@ -44,9 +44,10 @@ export class ExcelExportAndImportComponent implements OnInit {
   employmentTypes: any[]=[]
   departments: any[] = []
   measurementUnits = Object.keys(MeasurementUnit)
+  loading = false; 
 
   @Output() fileUploaded = new EventEmitter<File>();
-  @Output() close = new EventEmitter<false>();
+  @Output() close = new EventEmitter<boolean>();
 
   @Input() parsedProductArray: ProductJSONFormatPOST[] = [];
 
@@ -393,75 +394,126 @@ addRow(): FormGroup {
     }
   }
 
-  createExcelSheet() {
+ createExcelSheet() {
+    // Prepare dropdown options with **Name only** for relational fields
     const branches = this.branches.map(branch => branch.name).join(',');
     const categories = this.categories.map(cat => cat.name).join(',');
-    const measurementUnits = this.measurementUnits.map(type => type).join(',');
-
-
-
+    const measurementUnits = this.measurementUnits.join(',');
+    const discounts = this.discounts.map(discount => discount.name).join(',');
+    const taxes = this.taxes.map(tax => tax.name).join(',');
+    const suppliers = this.suppliers.map(supplier => supplier.name).join(',');
+    const products = this.originalProducts.map(product => product.name).join(',');
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Employees');
+    const worksheet = workbook.addWorksheet('Products');
 
+    // Define headers with required fields marked with *
     const headers = [
-      'Name', 'Description', 'Branch(es)', 'Part number', 'SKU',
-      'Code', 'Category', 'Weight (KG)', 'Measurement Unit', 'Reorder Threshold',
-      'Combo?', 'Combo Items',
+        'Name*', 
+        'Description*', 
+        'Branch*', 
+        'Category*',
+        'Cost Price*',
+        'Selling Price*',
+        'Quantity*',
+        'Expiry Date (YYYY-MM-DD)',
+        'Discount',
+        'Tax',
+        'Supplier',
+        'Part Number',
+        'Code',
+        'Measurement Unit',
+        'Reorder Threshold',
+        'Weight (KG)',
+        'Is Combo? (TRUE/FALSE)',
+        'Combo Items (comma separated names)'
     ];
     worksheet.addRow(headers);
 
-    const rows = [
-      ['Water', 'Table Water', 'Headquarter', 'tablewater1', 'table-water', 'water1', 'Drinks',15, 'UNIT', 5,
-      false, []]
+    // Add sample data row
+    const sampleRow = [
+        'Sample Product', 
+        'Product description', 
+        branches.split(',')[0], // First branch as sample
+        categories.split(',')[0], // First category as sample
+        100, // Cost price
+        150, // Selling price
+        50, // Quantity
+        '', // Expiry date
+        discounts.split(',')[0], // First discount as sample
+        taxes.split(',')[0], // First tax as sample
+        suppliers.split(',')[0], // First supplier as sample
+        'PART123', // Part number
+        'CODE123', // Code
+        measurementUnits.split(',')[0], // First unit as sample
+        10, // Reorder threshold
+        1.5, // Weight
+        false, // Is combo
+        '' // Combo items
     ];
-    rows.forEach(row => worksheet.addRow(row));
+    worksheet.addRow(sampleRow);
 
-    for (let i = 1; i <= 500; i++) {
-      worksheet.getCell(`C${i}`).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae:[`"${branches}"`],
-        showErrorMessage: true,
-        errorTitle: 'Invalid Selection',
-        error: 'Please select a value from the dropdown.',
-      };
-      worksheet.getCell(`G${i}`).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae: [`"${categories}"`],
-        showErrorMessage: true,
-        errorTitle: 'Invalid Selection',
-        error: 'Please select a value from the dropdown.',
-      };
-      worksheet.getCell(`I${i}`).dataValidation = {
-        type: 'list',
-        allowBlank: true,
-        formulae:[`"${measurementUnits}"`],
-        showErrorMessage: true,
-        errorTitle: 'Invalid Selection',
-        error: 'Please select a value from the dropdown.',
-      };
-      // worksheet.getCell(`K${i}`).dataValidation = {
-      //   type: 'list',
-      //   allowBlank: true,
-      //   formulae: ['"Joining, Active,"'],
-      //   showErrorMessage: true,
-      //   errorTitle: 'Invalid Selection',
-      //   error: 'Please select a value from the dropdown.',
-      // };
+    // Add data validation for dropdowns
+    const addDropdownValidation = (column: string, options: string, required: boolean = true) => {
+        for (let i = 2; i <= 500; i++) {
+            worksheet.getCell(`${column}${i}`).dataValidation = {
+                type: 'list',
+                allowBlank: !required,
+                formulae: [`"${options}"`],
+                showErrorMessage: true,
+                errorTitle: 'Invalid Selection',
+                error: 'Please select from the dropdown list.'
+            };
+        }
+    };
+
+    // Apply validation to columns
+    addDropdownValidation('C', branches); // Branch
+    addDropdownValidation('D', categories); // Category
+    addDropdownValidation('I', discounts, false); // Discount
+    addDropdownValidation('J', taxes, false); // Tax
+    addDropdownValidation('K', suppliers, false); // Supplier
+    addDropdownValidation('N', measurementUnits, false); // Measurement Unit
+
+    // Special validation for combo items (uses existing products)
+    for (let i = 2; i <= 500; i++) {
+        worksheet.getCell(`R${i}`).dataValidation = {
+            type: 'list',
+            allowBlank: true,
+            formulae: [`"${products}"`],
+            showErrorMessage: true,
+            errorTitle: 'Invalid Product',
+            error: 'Please select from existing products.'
+        };
     }
 
-    workbook.xlsx.writeBuffer().then((buffer: BlobPart) => {
-      const blob = new Blob([buffer], { type: 'application/octet-stream' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'product_data.xlsx';
-      link.click();
+    // Format numeric columns
+    ['E', 'F', 'G', 'O', 'P'].forEach(col => {
+        for (let i = 2; i <= 500; i++) {
+            worksheet.getCell(`${col}${i}`).numFmt = '0.00';
+        }
     });
-  }
 
+    // Format date column
+    for (let i = 2; i <= 500; i++) {
+        worksheet.getCell(`H${i}`).numFmt = 'yyyy-mm-dd';
+    }
 
+    // Generate and download the file
+    workbook.xlsx.writeBuffer().then((buffer: ArrayBuffer) => {
+        const blob = new Blob([buffer], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'product_import_template.xlsx'; // Ensure .xlsx extension
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    });
+}
 
   s2ab(s: string) {
   const buf = new ArrayBuffer(s.length);
@@ -474,23 +526,209 @@ addRow(): FormGroup {
 
 
   readExcelFile(): void {
-    const reader = new FileReader();
-    reader.onload = (event) => {
+  if (!this.file) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Please select a file first',
+      key: 'tl',
+      life: 3000
+    });
+    return;
+  }
+
+  this.buttonText = "Processing...";
+  const reader = new FileReader();
+  
+  reader.onload = async (event) => {
+    try {
       const data = new Uint8Array(event.target?.result as ArrayBuffer);
       const workbook = XLSX.read(data, { type: 'array' });
-
-    //   Get the first sheet's data
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-
-    //   Convert the sheet to JSON
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
-    // console.log(jsonData)
-      this.addNewEmployee(jsonData);
-    };
-    reader.readAsArrayBuffer(this.file);
+      await this.processProductImport(jsonData);
+    } catch (error) {
+      console.error('Error processing file:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to process the Excel file',
+        key: 'tl',
+        life: 3000
+      });
+      this.buttonText = "Submit";
+    }
+  };
+  
+  reader.readAsArrayBuffer(this.file);
+}
+
+async processProductImport(data: any[]): Promise<void> {
+  const userName = sessionStorage.getItem("username") || 'system';
+  let successCount = 0;
+  let errorCount = 0;
+  this.loading = true;
+
+  const existingCodes = new Set<string>();
+
+  // ✅ Fetch all name-to-ID mappings before the loop
+  const [branches, categories, taxes, discounts, suppliers] = await Promise.all([
+    this.posService.getBranches().toPromise(),
+    this.posService.getCategories().toPromise(),
+    this.posService.getTax().toPromise(),
+    this.posService.getDiscount().toPromise(),
+    this.posService.getSupplier().toPromise()
+  ]);
+
+  const getIdByName = (list: any[], name: string): number | null => {
+    const item = list.find((x) => x.name?.trim().toLowerCase() === name?.trim().toLowerCase());
+    return item ? item.id : null;
+  };
+
+  for (const [index, row] of data.entries()) {
+    const rowNumber = index + 2;
+
+    try {
+      const baseCode = row['Code']?.toString().trim() || 'AUTO-CODE';
+      const uniqueCode = this.generateUniqueCode(baseCode, existingCodes);
+
+      const product = {
+        id: 0,
+        name: String(row['Name*']),
+        description: String(row['Description*']),
+        code: uniqueCode,
+
+        partNumber: row['Part Number'] || '',
+        measurementUnit: row['Measurement Unit'] || 'UNIT',
+        isBundle: String(row['Is Combo? (TRUE/FALSE)']).toLowerCase() === 'true',
+        bundleItems: row['Combo Items (comma separated names)'] 
+          ? this.parseComboItems(String(row['Combo Items (comma separated names)']))
+          : [],
+       productCategoryId: categories ? getIdByName(categories, row['Category*']) : null,
+
+        variants: [],
+        sku: row['SKU'] || '',
+        purchasePrice: Number(row['Cost Price*']),
+        sellingPrice: Number(row['Selling Price*']),
+        quantity: Number(row['Quantity*']),
+        weight: row['Weight (KG)'] ? Number(row['Weight (KG)']) : 0,
+        reorderThreshold: row['Reorder Threshold'] ? Number(row['Reorder Threshold']) : 0,
+        taxId: getIdByName(taxes, row['Tax']),
+        discountId: getIdByName(discounts, row['Discount']),
+        supplierId: getIdByName(suppliers, row['Supplier']),
+        branchId: getIdByName(branches, row['Branch*']),
+        createdBy: userName,
+        createdDate: new Date().toISOString(),
+        expiryDate: row['Expiry Date (YYYY-MM-DD)'] || null
+      };
+
+      const formData = new FormData();
+      formData.append("product", JSON.stringify(product));
+
+      const defaultImage = await this.createDefaultImage();
+      formData.append("files", defaultImage, 'default_product.jpg');
+
+      await new Promise<void>((resolve, reject) => {
+        this.posService.addProduct(formData).subscribe(
+          (response) => {
+            if (response) {
+              successCount++;
+              resolve();
+            } else {
+              reject(new Error('Empty response from server'));
+            }
+          },
+          (error) => reject(error)
+        );
+      });
+
+    } catch (error: unknown) {
+      errorCount++;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`Error importing row ${rowNumber}:`, errorMessage);
+
+      this.messageService.add({
+        severity: 'error',
+        summary: `Row ${rowNumber} Error`,
+        detail: errorMessage,
+        key: 'tl',
+        life: 5000
+      });
+    }
   }
+
+  this.loading = false;
+  if (errorCount === 0) {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Import Successful',
+      detail: `${successCount} products imported successfully`,
+      key: 'tl',
+      life: 3000
+    });
+    this.close.emit(true);
+  } else {
+    this.messageService.add({
+      severity: successCount > 0 ? 'warn' : 'error',
+      summary: 'Import Completed',
+      detail: `${successCount} succeeded, ${errorCount} failed`,
+      key: 'tl',
+      life: 5000
+    });
+  }
+}
+
+
+// Helper methods
+private extractId(value: any): number | null {
+  if (!value) return null;
+  const str = value.toString();
+  const match = str.match(/^(\d+):/);
+  return match ? parseInt(match[1]) : parseInt(str);
+}
+private generateUniqueCode(baseCode: string, existingCodes: Set<string>): string {
+  let newCode = baseCode || 'AUTO-CODE';
+  let counter = 1;
+
+  while (existingCodes.has(newCode)) {
+    newCode = `${baseCode}-${counter}`;
+    counter++;
+  }
+
+  existingCodes.add(newCode); // Mark it as used
+  return newCode;
+}
+
+
+private parseComboItems(input: string): any[] {
+  if (!input) return [];
+  return input.split(',')
+    .map(item => {
+      const id = this.extractId(item.trim());
+      return id ? { productId: id, quantity: 1 } : null;
+    })
+    .filter(item => item !== null);
+}
+
+private createDefaultImage(): Promise<Blob> {
+  return new Promise(resolve => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 200;
+    canvas.height = 200;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#f0f0f0';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#666';
+      ctx.font = '16px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Product Image', canvas.width/2, canvas.height/2);
+    }
+    canvas.toBlob(blob => resolve(blob!), 'image/jpeg', 0.8);
+  });
+}
 
   // Validate the extracted data
   async validateData(data: any[]): Promise<void> {

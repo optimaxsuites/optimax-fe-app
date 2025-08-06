@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+ import { Component, OnInit } from "@angular/core";
 import { PosServiceService } from "../../service/pos-service.service";
 import JsBarcode from "jsbarcode";
 import jsPDF from "jspdf";
