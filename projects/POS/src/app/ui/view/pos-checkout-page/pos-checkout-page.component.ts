@@ -156,7 +156,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
       this.errorMessage =
         "Mismatch: The cash count total does not match the opening amount.";
     } else {
-      this.errorMessage = null; // Clear the error if everything matches
+      this.errorMessage = null; 
     }
 
     // Enable or disable the confirm button
