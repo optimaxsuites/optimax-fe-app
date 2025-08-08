@@ -71,7 +71,6 @@ import { UserRoutingModule } from './user-routing.module';
     RequestDetailsComponent,
     TruncatePipe,
     EditProductComponent,
-    CheckoutHeaderComponent,
     CheckoutOrdersComponent,
     NotesModalComponent,
       // DeliveryModalComponent,

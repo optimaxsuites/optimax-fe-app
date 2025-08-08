@@ -334,7 +334,6 @@ import { AppInitService } from 'projects/POS/src/app/ui/service/app-init.service
     ModalComponent,
     CommisionComponent,
     ModalComponent,
-    CheckoutHeaderComponent,
     ButtonComponent,
     BackButtonComponent,
     CheckoutOrdersComponent,

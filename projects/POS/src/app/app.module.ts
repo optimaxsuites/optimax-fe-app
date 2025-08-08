@@ -115,7 +115,6 @@ import { HotelRoomdetailsComponent } from './ui/view/hotel-roomdetails/hotel-roo
 import { HotelRoomlistComponent } from './ui/view/hotel-roomlist/hotel-roomlist.component';
 import { EditIngredientsComponent } from './ui/view/ingredient/edit-ingredients/edit-ingredients.component';
 import { ViewIngredientsComponent } from './ui/view/ingredient/view-ingredients/view-ingredients.component';
-import { CheckoutHeaderComponent } from './ui/view/pos-checkout-page/components/checkout-header/checkout-header.component';
 import { CategoryComponent } from './ui/view/products/metaDatas/category/category.component';
 import { DiscountComponent } from './ui/view/products/metaDatas/discount/discount.component';
 import { SupplierComponent } from './ui/view/products/metaDatas/supplier/supplier.component';
@@ -191,7 +190,6 @@ export function appInitializerFactory(appInitService: AppInitService) {
     OrderFilterPipe,
     SalesDetailsComponent,
     //CheckoutKitchenComponent,
-    //CheckoutHeaderComponent,
   ],
   imports: [
     // BrowserModule,
