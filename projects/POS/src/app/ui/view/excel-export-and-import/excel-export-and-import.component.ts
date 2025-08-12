@@ -498,6 +498,19 @@ addRow(): FormGroup {
     for (let i = 2; i <= 500; i++) {
         worksheet.getCell(`H${i}`).numFmt = 'yyyy-mm-dd';
     }
+    
+    for (let i = 2; i <= 500; i++) {
+      worksheet.getCell(`H${i}`).dataValidation = {
+        type: 'date',
+        operator: 'between',
+        allowBlank: true, 
+        formulae: [new Date(1900, 0, 1), new Date(2999, 11, 31)],
+        showErrorMessage: true,
+        errorTitle: 'Invalid Date',
+        error: 'Please enter a valid date in the format YYYY-MM-DD.'
+      };
+    }
+
 
     // Generate and download the file
     workbook.xlsx.writeBuffer().then((buffer: ArrayBuffer) => {
@@ -571,7 +584,19 @@ async processProductImport(data: any[]): Promise<void> {
   let errorCount = 0;
   this.loading = true;
 
-  const existingCodes = new Set<string>();
+   // ✅ Before fetching other dropdown data — fetch existing products to get their codes
+// ✅ Fetch existing codes and part numbers
+const dbProducts = (await this.posService.getProducts().toPromise()) || [];
+const dbCodes = new Set(
+  dbProducts.map(p => p.code?.trim().toLowerCase()).filter(Boolean)
+);
+const dbPartNumbers = new Set(
+  dbProducts.map(p => p.partNumber?.trim().toLowerCase()).filter(Boolean)
+);
+
+const existingCodes = new Set<string>(dbCodes);
+const existingPartNumbers = new Set<string>(dbPartNumbers);
+
 
   // ✅ Fetch all name-to-ID mappings before the loop
   const [branches, categories, taxes, discounts, suppliers] = await Promise.all([
@@ -593,6 +618,17 @@ async processProductImport(data: any[]): Promise<void> {
     try {
       const baseCode = row['Code']?.toString().trim() || 'AUTO-CODE';
       const uniqueCode = this.generateUniqueCode(baseCode, existingCodes);
+      if (existingCodes.has(baseCode.toLowerCase())) {
+      throw new Error(`Duplicate code "${baseCode}" already exists`);
+    }
+    existingCodes.add(baseCode.toLowerCase());
+
+    // Check for duplicate part number (if provided)
+    const partNumber = row['Part Number']?.toString().trim();
+    if (partNumber && existingPartNumbers.has(partNumber.toLowerCase())) {
+      throw new Error(`Duplicate part number "${partNumber}" already exists`);
+    }
+    if (partNumber) existingPartNumbers.add(partNumber.toLowerCase());
 
       const product = {
         id: 0,
@@ -692,14 +728,15 @@ private generateUniqueCode(baseCode: string, existingCodes: Set<string>): string
   let newCode = baseCode || 'AUTO-CODE';
   let counter = 1;
 
-  while (existingCodes.has(newCode)) {
+  while (existingCodes.has(newCode.toLowerCase())) {
     newCode = `${baseCode}-${counter}`;
     counter++;
   }
 
-  existingCodes.add(newCode); // Mark it as used
+  existingCodes.add(newCode.toLowerCase()); 
   return newCode;
 }
+
 
 
 private parseComboItems(input: string): any[] {
