@@ -145,12 +145,16 @@
     <div class="w-[75%]  p-2 rounded">
         <div class="py-3 flex flex-col gap-1">
             <label for="name" class="font-semibold text-customBlue">Name</label>
-            <input type="text" placeholder="Role name" id="name" class="editInput" [(ngModel)]="newUser.name">
+            <input type="text" placeholder="User name" id="name" class="editInput" [(ngModel)]="newUser.name">
           </div>
           <div class="py-3 flex flex-col gap-1">
               <label for="name" class="font-semibold text-customBlue">Email</label>
-              <input type="email" placeholder="Role name" id="name" class="editInput" [(ngModel)]="newUser.email">
+              <input type="email" placeholder="Email" id="name" class="editInput" [(ngModel)]="newUser.email">
           </div>
+          <div class="py-3 flex flex-col gap-1">
+            <label for="name" class="font-semibold text-customBlue">Password</label>
+            <input type="email" placeholder="Email" id="name" class="editInput" [(ngModel)]="newUser.password">
+        </div>
           <div class="my-3" *ngIf="Object.keys(newUser.permission).length">
               <h3 class="font-semibold text-customBlue">Permissions</h3>
               <ul>

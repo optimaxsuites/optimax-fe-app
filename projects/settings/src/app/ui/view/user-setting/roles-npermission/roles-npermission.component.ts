@@ -86,6 +86,7 @@ export class RolesNpermissionComponent {
       }
     })
     this.moduleService.getRoles().subscribe((apiRoles: any[]) => {
+      console.log(apiRoles)
       this.roles = apiRoles.map(role => {
         const permissions: any = {};
     

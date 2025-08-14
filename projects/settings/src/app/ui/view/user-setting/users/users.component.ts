@@ -1,5 +1,9 @@
 import { Component } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { AuthenticationService } from '../../../sharedComponents/service/auth-service/authentication.service';
+import { environment } from '../../../sharedComponents/service/environments/environment.prod';
+import { Router } from '@angular/router';
+import { NavigationLinksService } from '../../../sharedComponents/service/navigation-links/navigation-links.service';
 
 
 
@@ -8,6 +12,7 @@ interface user {
   email: string;
   status: string;
   dateCreated: string;
+  password?: string;
   permission: {
     [key: string]: string;
   };
@@ -82,6 +87,7 @@ newUser: user ={
   email: '',
   status: 'Active',
   dateCreated: '',
+  password: '',
   permission: {
     
   },
@@ -90,7 +96,8 @@ selectedModule: string = '';
 selectedRole: string = '';
 
 
-constructor(private confirmationService: ConfirmationService, private messageService: MessageService){
+constructor(private confirmationService: ConfirmationService, private messageService: MessageService, private authenticationService: AuthenticationService,     private router: Router,
+  private navigationLink: NavigationLinksService,){
 
 }
 
@@ -141,8 +148,68 @@ filterBySelectedPosition() {
   }
 
   submitUser() {
-    throw new Error('Method not implemented.');
-    }
+    // this.submitted = true;
+
+    // this.loading = true;
+
+    const signupDetails = {
+        username: this.newUser.name,
+        password: this.newUser.password,
+        email: this.newUser.email,
+        role: ['user'],
+        project : `${environment.project}`,
+        apiKey : `${environment.apiKey}`
+    };
+
+    this.authenticationService.userRegistration(signupDetails).subscribe(
+      async (data) => {
+            // this.loading = false;
+            // this.messageService.add({ severity: 'success', summary: 'Success', detail: 'User registered successfully!' });
+            // Optionally, redirect to another page after successful registration
+            // this.router.navigateByUrl('/email-verification');
+            const emvLink = this.navigationLink.getLink('emvLink')
+            this.router.navigate([emvLink]);
+        },
+        (error) => {
+
+          if (error.toString() == '400') {
+            // Client-side validation error (invalid input)
+            this.messageService.add({ 
+                severity: 'error', 
+                summary: 'Registration Failed', 
+                detail: 'Your account have not been verified. Check your mail to verify!' 
+            });
+        } else if (error.toString() == '409') {
+            // Conflict error (e.g., email already registered)
+            this.messageService.add({ 
+                severity: 'error', 
+                summary: 'Registration Failed', 
+                detail: 'Email address is already registered. Please use a different email or login.' 
+            });
+        } else if (error.toString() == '0') {
+            // Network error or server unreachable
+            this.messageService.add({ 
+                severity: 'error', 
+                summary: 'Registration Failed', 
+                detail: 'Unable to connect to the server. Please check your internet connection.' 
+            });
+        } else {
+            // Other server errors
+            this.messageService.add({ 
+                severity: 'error', 
+                summary: 'Registration Failed', 
+                detail: 'An unexpected error occurred. Please try again later.' 
+            });
+        }
+
+
+            // this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Registration failed' });
+            // console.log("Registration failed");
+            // this.loading = false;
+        }
+    );
+  
+  }
 
     updateUser(user: user) {
       console.log('invoked')
