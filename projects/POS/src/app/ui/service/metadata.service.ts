@@ -30,32 +30,15 @@ export interface UserDTO {
 export class MetadataService {
  
   private branches: any = [
-    { id: 1, name: 'Downtown Store', location: 'Main Street 123' },
-    { id: 2, name: 'Shopping Mall', location: 'Fashion Avenue 45' },
-    { id: 3, name: 'North Side', location: 'Business Park 67' },
-    { id: 4, name: 'East Branch', location: 'Green Road 89' },
-    { id: 5, name: 'West Location', location: 'Blue Highway 101' },
+    
   ];
 
   private products: any = [
-    { id: 1, name: 'Premium Headphones', sku: 'EL-001', price: 199.99, category: 'Electronics' },
-    { id: 2, name: 'Wireless Keyboard', sku: 'EL-002', price: 89.99, category: 'Electronics' },
-    { id: 3, name: 'Designer T-Shirt', sku: 'CL-001', price: 29.99, category: 'Clothing' },
-    { id: 4, name: 'Leather Jacket', sku: 'CL-002', price: 249.99, category: 'Clothing' },
-    { id: 5, name: 'Smart Watch', sku: 'EL-003', price: 299.99, category: 'Electronics' },
-    { id: 6, name: 'Bluetooth Speaker', sku: 'EL-004', price: 129.99, category: 'Electronics' },
-    { id: 7, name: 'Athletic Shoes', sku: 'SH-001', price: 119.99, category: 'Footwear' },
-    { id: 8, name: 'Formal Shoes', sku: 'SH-002', price: 159.99, category: 'Footwear' },
-    { id: 9, name: 'Smartphone Case', sku: 'AC-001', price: 19.99, category: 'Accessories' },
-    { id: 10, name: 'Laptop Bag', sku: 'AC-002', price: 59.99, category: 'Accessories' },
+    
   ];
 
   private users: any = [
-    { id: 1, name: 'John Smith', email: 'john.smith@example.com', role: 'Cashier' },
-    { id: 2, name: 'Emma Johnson', email: 'emma.johnson@example.com', role: 'Cashier' },
-    { id: 3, name: 'Michael Brown', email: 'michael.brown@example.com', role: 'Cashier' },
-    { id: 4, name: 'Lisa Davis', email: 'lisa.davis@example.com', role: 'Cashier' },
-    { id: 5, name: 'James Wilson', email: 'james.wilson@example.com', role: 'Cashier' },
+    
   ];
 
   private paymentMethods: string[] = ['Credit Card', 'Debit Card', 'Cash', 'Mobile Payment', 'Gift Card']

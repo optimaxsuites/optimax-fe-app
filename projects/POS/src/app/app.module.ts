@@ -126,6 +126,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TagModule } from 'primeng/tag';
 import { SelectButtonModule } from 'primeng/selectbutton';
+import { UniquePipe } from './shared/pipes/unique.pipe';
 export function appInitializerFactory(appInitService: AppInitService) {
   return () => appInitService.init();
 }
@@ -189,6 +190,7 @@ export function appInitializerFactory(appInitService: AppInitService) {
     OrderStatusPipe,
     OrderFilterPipe,
     SalesDetailsComponent,
+    UniquePipe,
     //CheckoutKitchenComponent,
   ],
   imports: [

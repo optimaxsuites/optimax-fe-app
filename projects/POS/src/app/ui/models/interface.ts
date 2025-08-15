@@ -364,6 +364,7 @@ interface ProductDTO {
 }
 
 interface ProductBranchDTO {
+  name: string;
   branchId: BranchDTO;
   data: BranchDataDTO;
 }
