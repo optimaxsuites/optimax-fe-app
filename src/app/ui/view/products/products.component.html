@@ -3,31 +3,31 @@
     <!-- `rotate-0` is used to set this as the container of any `fixed` position elements within it -->
 
     <div class="flex gap-3">
-      <ng-select
-      [items]="categories"
-      bindLabel="name"
-      bindValue="id"
-      [(ngModel)]="selectedCategories"
-      [multiple]="true"
-      placeholder="Categories"
-      (change)="filterProductsByCategory()"
-    >
-    </ng-select>
+          <ng-select
+          [items]="categories"
+          bindLabel="name"
+          bindValue="id"
+          [(ngModel)]="selectedCategories"
+          [multiple]="true"
+          placeholder="Categories"
+          (change)="filterProductsByCategory()"
+        >
+        </ng-select>
 
-    <ng-select
-    [items]="branches"
-    bindLabel="name"
-    bindValue="id"
-    placeholder="Branches"
-    [(ngModel)]="selectedBranch"
-    (ngModelChange)="metadataService.setSelectedBranch($event)"
-  >
-  </ng-select>
-    </div>
-  
+        <ng-select
+        [items]="branches"
+        bindLabel="name"
+        bindValue="id"
+        placeholder="Branches"
+        [(ngModel)]="selectedBranch"
+        (ngModelChange)="metadataService.setSelectedBranch($event)"
+      >
+          </ng-select>
+        </div>
+      
 
-    <div class="w-1/2 flex gap-2">
-      <div class="search-container">
+       <div class="w-1/2 flex gap-2">
+        <div class="search-container">
         <input
           type="input"
           class="Search-input"

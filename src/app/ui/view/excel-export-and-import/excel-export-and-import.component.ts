@@ -91,12 +91,33 @@ export class ExcelExportAndImportComponent implements OnInit {
 
   }
 
-
+existingCodes = new Set<string>();
+existingPartNumbers = new Set<string>();
 
   ngOnInit(): void {
-   this.fetchMetaData()
+  this.fetchMetaData();
 
-  }
+  // 🔹 Initialize sets
+  this.existingCodes = new Set<string>();
+  this.existingPartNumbers = new Set<string>();
+
+  // 🔹 Fetch all products from backend to fill the sets
+  this.posService.getProducts().subscribe({
+    next: (products) => {
+      for (const p of products || []) {
+        if (p.code) {
+          this.existingCodes.add(p.code.trim().toLowerCase());
+        }
+        if (p.partNumber) {
+          this.existingPartNumbers.add(p.partNumber.trim().toLowerCase());
+        }
+      }
+    },
+    error: (err) => {
+      console.error('Failed to fetch existing products', err);
+    }
+  });
+}
 
 
   get formArray(): FormArray {
@@ -429,6 +450,26 @@ addRow(): FormGroup {
         'Combo Items (comma separated names)'
     ];
     worksheet.addRow(headers);
+          worksheet.columns = [
+        { width: 25 }, // Name*
+        { width: 30 }, // Description*
+        { width: 20 }, // Branch*
+        { width: 20 }, // Category*
+        { width: 15 }, // Cost Price*
+        { width: 15 }, // Selling Price*
+        { width: 12 }, // Quantity*
+        { width: 25 }, // Expiry Date
+        { width: 20 }, // Discount
+        { width: 16 }, // Tax
+        { width: 20 }, // Supplier
+        { width: 16 }, // Part Number
+        { width: 16 }, // Code
+        { width: 20 }, // Measurement Unit
+        { width: 18 }, // Reorder Threshold
+        { width: 15 }, // Weight (KG)
+        { width: 20 }, // Is Combo?
+        { width: 35 }  // Combo Items
+      ];
 
     // Add sample data row
     const sampleRow = [
@@ -494,10 +535,10 @@ addRow(): FormGroup {
         }
     });
 
-    // Format date column
-    for (let i = 2; i <= 500; i++) {
-        worksheet.getCell(`H${i}`).numFmt = 'yyyy-mm-dd';
-    }
+    
+    // for (let i = 2; i <= 500; i++) {
+    //     worksheet.getCell(`H${i}`).numFmt = 'yyyy-mm-dd';
+    // }
     
     for (let i = 2; i <= 500; i++) {
       worksheet.getCell(`H${i}`).dataValidation = {
@@ -538,7 +579,7 @@ addRow(): FormGroup {
   }
 
 
-  readExcelFile(): void {
+readExcelFile(): void {
   if (!this.file) {
     this.messageService.add({
       severity: 'error',
@@ -552,7 +593,7 @@ addRow(): FormGroup {
 
   this.buttonText = "Processing...";
   const reader = new FileReader();
-  
+
   reader.onload = async (event) => {
     try {
       const data = new Uint8Array(event.target?.result as ArrayBuffer);
@@ -562,6 +603,7 @@ addRow(): FormGroup {
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
 
       await this.processProductImport(jsonData);
+
     } catch (error) {
       console.error('Error processing file:', error);
       this.messageService.add({
@@ -571,12 +613,27 @@ addRow(): FormGroup {
         key: 'tl',
         life: 3000
       });
+
+    } finally {
+     
       this.buttonText = "Submit";
     }
   };
-  
+
+  reader.onerror = () => {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to read the file',
+      key: 'tl',
+      life: 3000
+    });
+    this.buttonText = "Submit"; // also reset here
+  };
+
   reader.readAsArrayBuffer(this.file);
 }
+
 
 async processProductImport(data: any[]): Promise<void> {
   const userName = sessionStorage.getItem("username") || 'system';
@@ -584,19 +641,7 @@ async processProductImport(data: any[]): Promise<void> {
   let errorCount = 0;
   this.loading = true;
 
-   // ✅ Before fetching other dropdown data — fetch existing products to get their codes
-// ✅ Fetch existing codes and part numbers
-const dbProducts = (await this.posService.getProducts().toPromise()) || [];
-const dbCodes = new Set(
-  dbProducts.map(p => p.code?.trim().toLowerCase()).filter(Boolean)
-);
-const dbPartNumbers = new Set(
-  dbProducts.map(p => p.partNumber?.trim().toLowerCase()).filter(Boolean)
-);
-
-const existingCodes = new Set<string>(dbCodes);
-const existingPartNumbers = new Set<string>(dbPartNumbers);
-
+  const existingCodes = new Set<string>();
 
   // ✅ Fetch all name-to-ID mappings before the loop
   const [branches, categories, taxes, discounts, suppliers] = await Promise.all([
@@ -607,28 +652,48 @@ const existingPartNumbers = new Set<string>(dbPartNumbers);
     this.posService.getSupplier().toPromise()
   ]);
 
-  const getIdByName = (list: any[], name: string): number | null => {
-    const item = list.find((x) => x.name?.trim().toLowerCase() === name?.trim().toLowerCase());
-    return item ? item.id : null;
-  };
+ const getIdByName = (list: any[], name: string): number | null => {
+  const cleanName = (name || '').toString().trim().toLowerCase();
+  const item = list.find((x) => (x?.name || '').toString().trim().toLowerCase() === cleanName);
+  return item ? item.id : null;
+};
+
 
   for (const [index, row] of data.entries()) {
     const rowNumber = index + 2;
 
-    try {
-      const baseCode = row['Code']?.toString().trim() || 'AUTO-CODE';
-      const uniqueCode = this.generateUniqueCode(baseCode, existingCodes);
-      if (existingCodes.has(baseCode.toLowerCase())) {
-      throw new Error(`Duplicate code "${baseCode}" already exists`);
-    }
-    existingCodes.add(baseCode.toLowerCase());
+   try {
 
-    // Check for duplicate part number (if provided)
-    const partNumber = row['Part Number']?.toString().trim();
-    if (partNumber && existingPartNumbers.has(partNumber.toLowerCase())) {
-      throw new Error(`Duplicate part number "${partNumber}" already exists`);
+    const baseCode = row['Code']?.toString().trim();
+    if (baseCode) {
+      if (existingCodes.has(baseCode.toLowerCase())) {
+        throw new Error(`Duplicate code "${baseCode}" already exists (row ${rowNumber})`);
+      }
+      existingCodes.add(baseCode.toLowerCase());
     }
-    if (partNumber) existingPartNumbers.add(partNumber.toLowerCase());
+
+    const partNumber = row['Part Number']?.toString().trim();
+    if (partNumber) {
+      if (this.existingPartNumbers?.has(partNumber.toLowerCase())) {
+        throw new Error(`Duplicate part number "${partNumber}" already exists (row ${rowNumber})`);
+      }
+      this.existingPartNumbers?.add(partNumber.toLowerCase());
+    }
+     const name = row['Name*']?.toString().trim();
+    if (!name) {
+      throw new Error(`Product name is missing in row ${rowNumber}`);
+    }
+    let sku = row['SKU']?.toString().trim();
+    if (!sku) {
+      sku = this.generateSKU(name);
+    }
+    row['SKU'] = sku;
+  
+
+    const uniqueCode = this.generateUniqueCode(
+      baseCode || 'AUTO-CODE',
+      existingCodes
+    );
 
       const product = {
         id: 0,
@@ -673,7 +738,7 @@ const existingPartNumbers = new Set<string>(dbPartNumbers);
               successCount++;
               resolve();
             } else {
-              reject(new Error('Empty response from server'));
+              reject(new Error('Empty response from server')); 
             }
           },
           (error) => reject(error)
@@ -737,6 +802,26 @@ private generateUniqueCode(baseCode: string, existingCodes: Set<string>): string
   return newCode;
 }
 
+private existingSKUs = new Set<string>();
+
+private generateSKU(productName: string): string {
+  const prefix = productName
+    .substring(0, 3)
+    .toUpperCase()
+    .padEnd(3, 'X');
+
+  let sku: string;
+  let counter = 1;
+
+  do {
+    const number = counter.toString().padStart(4, '0');
+    sku = `${prefix}-${number}`;
+    counter++;
+  } while (this.existingSKUs.has(sku));
+
+  this.existingSKUs.add(sku);
+  return sku;
+}
 
 
 private parseComboItems(input: string): any[] {

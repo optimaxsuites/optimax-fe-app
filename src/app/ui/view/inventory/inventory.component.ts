@@ -17,6 +17,7 @@ import html2canvas from 'html2canvas';
 import {
   ProductData,
   ProductJSONFormat,
+  BranchDTO,
   InventoryPayload,
 } from '../../models/interface';
 import { MessageService } from 'primeng/api';
@@ -28,6 +29,7 @@ import { OverlayPanel } from 'primeng/overlaypanel';
 import { MetadataService } from '../../service/metadata.service';
 import { DOCUMENT } from '@angular/common';
 import { EditInventoryComponent } from './edit-inventory/edit-inventory.component';
+
 
 @Component({
   selector: 'app-inventory',
@@ -42,6 +44,8 @@ export class InventoryComponent implements OnInit, OnDestroy {
   selectedProduct: any = null;
   currentPage = 0;
   rowsPerPage = 15;
+  selectedBranch: number = 1;
+  branches: BranchDTO[] = [];
   @Output() formReset = new EventEmitter<void>();
 
   // Use enriched products from MetadataService
@@ -99,7 +103,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
     private cdRef: ChangeDetectorRef,
     private imageCacheService: ImageCacheService,
     private productService: PosServiceService,
-    private metadataService: MetadataService,
+    public metadataService: MetadataService,
     @Inject(DOCUMENT) private document: Document,
     private renderer: Renderer2
   ) {}
@@ -115,6 +119,10 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.loadCategory();
     this.getProducts();
     this.getDiscountTypes();
+     this.metadataService.branches$.subscribe((data) => (this.branches = data));
+    if (this.selectedBranch) {
+      this.metadataService.setSelectedBranch(this.selectedBranch);
+    }
   }
 
   ngOnDestroy(): void {

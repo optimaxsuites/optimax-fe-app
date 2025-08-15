@@ -168,35 +168,35 @@ input[readonly] {
 }
 
 /* Button Styling */
-button {
-  padding: 1rem 1.75rem;
-  font-size: 1.2rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s;
-}
+// button {
+//   padding: 1rem 1.75rem;
+//   font-size: 1.2rem;
+//   font-weight: 600;
+//   border: none;
+//   border-radius: 8px;
+//   cursor: pointer;
+//   transition: background-color 0.3s ease, transform 0.2s;
+// }
 
-button[type="button"] {
-  background-color: red;
-  color: #fff;
-}
+// button[type="button"] {
+//   background-color: red;
+//   color: #fff;
+// }
 
-button[type="button"]:hover {
-  background-color: #d1d5db;
-  transform: translateY(-2px);
-}
+// button[type="button"]:hover {
+//   background-color: #d1d5db;
+//   transform: translateY(-2px);
+// }
 
-button[type="submit"] {
-  background-color: green;
-  color: #fff;
-}
+// button[type="submit"] {
+//   background-color: green;
+//   color: #fff;
+// }
 
-button[type="submit"]:hover {
-  background-color: greenyellow;
-  transform: translateY(-2px);
-}
+// button[type="submit"]:hover {
+//   background-color: greenyellow;
+//   transform: translateY(-2px);
+// }
 
 /* Modal Styling */
 .p-inputtext {
@@ -235,22 +235,22 @@ button[type="submit"]:hover {
 }
 
 /* Make the form responsive for smaller screens */
-@media screen and (max-width: 768px) {
-  form {
-    padding: 1.5rem;
-    width: 100%;
-  }
+// @media screen and (max-width: 768px) {
+//   form {
+//     padding: 1.5rem;
+//     width: 100%;
+//   }
 
-  .flex {
-    flex-direction: column;
-    align-items: flex-end;
-  }
+//   .flex {
+//     flex-direction: column;
+//     align-items: flex-end;
+//   }
 
-  button {
-    width: 100%;
-    margin-top: 1.5rem;
-  }
-}
+//   // button {
+//   //   width: 100%;
+//   //   margin-top: 1.5rem;
+//   // }
+// }
 
 .btn-navigate {
   margin-right: 1rem;
@@ -435,22 +435,22 @@ label {
     cursor: pointer;
   }
 }
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  p {
-    @apply text-base text-gray-600;
-  }
-  @apply gap-5;
-}
+// .card-grid {
+//   display: grid;
+//   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+//   p {
+//     @apply text-base text-gray-600;
+//   }
+//   @apply gap-5;
+// }
 
-.card {
-  @apply p-4 rounded-xl;
-}
+// .card {
+//   @apply p-4 rounded-xl;
+// }
 
-::ng-deep .p-paginator {
-  @apply w-full;
-}
+// ::ng-deep .p-paginator {
+//   @apply w-full;
+// }
 
 .modal-backdrop {
   user-select: none;
@@ -517,7 +517,24 @@ body.modal-open {
   padding-bottom: 1rem;
 }
 
-.scrollable-content {
-  max-height: calc(100vh - 250px); /* Adjust based on your header height */
-  overflow-y: auto;
+// .scrollable-content {
+//   max-height: calc(100vh - 250px); /* Adjust based on your header height */
+//   overflow-y: auto;
+// }
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  p{
+    @apply text-base text-gray-600;
+  }
+@apply gap-5;
+}
+
+.card {
+  @apply p-4 rounded-xl
+}
+
+::ng-deep .p-paginator{
+  @apply w-full;
 }
