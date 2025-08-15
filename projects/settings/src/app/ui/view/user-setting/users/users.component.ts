@@ -12,11 +12,13 @@ interface user {
   email: string;
   status: string;
   dateCreated: string;
-  password?: string;
+  password: string;
   permission: {
     [key: string]: string;
   };
-  isEditing?:boolean
+  isEditing?:boolean,
+  authType: string, 
+  accessCode: string,
 }
 @Component({
   selector: 'app-users',
@@ -33,53 +35,21 @@ selectedEmployeeType: any;
 searchTerm: any;
 filteredUsers: any[] = [];
 Object = Object
+autoGenerateCode: boolean = true;
 
 users: user[] = [
   {
     name: "John Doe",
     email: "john.doe@example.com",
     dateCreated: "2024-03-01",
+    password: "",
     status: "active",
     permission: { pos: "admin", "human resources": "manager" },
     isEditing: false,
-
-  },
-  {
-    name: "Jane Smith",
-    email: "jane.smith@example.com",
-    dateCreated: "2024-02-15",
-    status: "inactive",
-    permission: { pos: "cashier", "human resources": "staff" },
-    isEditing: false,
-
-  },
-  {
-    name: "Michael Johnson",
-    email: "michael.johnson@example.com",
-    dateCreated: "2023-12-10",
-    status: "active",
-    permission: { pos: "supervisor", "human resources": "manager" },
-    isEditing: false,
-
-  },
-  {
-    name: "Emily Brown",
-    email: "emily.brown@example.com",
-    dateCreated: "2024-01-25",
-    status: "inactive",
-    permission: { pos: "staff", "human resources": "assistant" },
-    isEditing: false,
-
-  },
-  {
-    name: "David Wilson",
-    email: "david.wilson@example.com",
-    dateCreated: "2023-11-30",
-    status: "active",
-    permission: { pos: "admin", "human resources": "director" },
-    isEditing: false,
-
+    authType: "password",
+    accessCode: ""
   }
+ 
 ];
 
 newUser: user ={
@@ -91,6 +61,8 @@ newUser: user ={
   permission: {
     
   },
+  authType: 'password', 
+  accessCode: '',
 }
 selectedModule: string = ''; 
 selectedRole: string = '';
@@ -146,6 +118,53 @@ filterBySelectedPosition() {
 
    
   }
+
+  onAuthTypeChange(): void {
+    if (this.newUser.authType === 'code') {
+      // Clear password-related fields when switching to code
+      this.newUser.email = '';
+      this.newUser.password = '';
+      this.newUser.permission = {};
+      
+      // Generate code if auto-generate is enabled
+      if (this.autoGenerateCode) {
+        this.generateRandomCode();
+      }
+    } else {
+      // Clear code-related fields when switching to password
+      this.newUser.accessCode = '';
+    }
+  }
+
+  removePermission(module: string): void {
+    delete this.newUser.permission[module];
+  }
+
+   isFormValid(): boolean {
+    if (!this.newUser.name.trim()) {
+      return false;
+    }
+
+    if (this.newUser.authType === 'password') {
+      return this.newUser.email.trim() !== '' && this.newUser.password.trim() !== '';
+    } else if (this.newUser.authType === 'code') {
+      return this.newUser.accessCode.trim() !== '';
+    }
+
+    return false;
+  }
+
+  // Generate a random access code
+  generateRandomCode(): void {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let result = '';
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    this.newUser.accessCode = result;
+  }
+
+
 
   submitUser() {
     // this.submitted = true;
