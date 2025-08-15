@@ -1,3 +1,4 @@
+// src/app/reports/sales-report/sales-report.component.ts
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { 
   ApexAxisChartSeries, 
@@ -14,8 +15,20 @@ import {
   ChartComponent
 } from 'ng-apexcharts';
 import { formatDate } from '@angular/common';
-import { SalesReportDTO } from '../../../models/interface';
-import { MetadataService } from '../../../service/metadata.service';
+import { 
+  SalesReportDTO, 
+  SalesReportBreakdownDTO, 
+  TopProductDTO, 
+  BranchSalesDTO
+} from '../../../models/interface';
+import { ReportService } from '../../../service/report.service';
+import { FormGroup, FormBuilder } from '@angular/forms';
+
+type PaymentMethodBreakdown = {
+  paymentMethod: string;
+  revenue: number;
+  transactions: number;
+};
 
 export type BranchChartOptions = {
   series: ApexAxisChartSeries;
@@ -45,7 +58,7 @@ export type ProductChartOptions = {
 };
 
 export type PaymentChartOptions = {
-  series: ApexAxisChartSeries;
+  series: number[];
   chart: ApexChart;
   labels: string[];
   dataLabels: ApexDataLabels;
@@ -68,15 +81,13 @@ export type TrendChartOptions = {
   colors: string[];
 };
 
-
 @Component({
   selector: 'app-sales-report',
   templateUrl: './sales-report.component.html',
-  styleUrl: './sales-report.component.scss',
+  styleUrls: ['./sales-report.component.scss']
 })
-export class SalesReportComponent {
-  @ViewChild("branchChart")
-  branchChart!: ChartComponent;
+export class SalesReportComponent implements OnInit {
+  @ViewChild("branchChart") branchChart!: ChartComponent;
   @ViewChild("productChart") productChart!: ChartComponent;
   @ViewChild("paymentChart") paymentChart!: ChartComponent;
   @ViewChild("trendChart") trendChart!: ChartComponent;
@@ -90,25 +101,123 @@ export class SalesReportComponent {
   loading = true;
   dateRange = '30 days';
   selectedTab = 'overview';
-  Math = Math
   currentPage = 1;
-itemsPerPage = 10;
+  itemsPerPage = 10;
+  isFilterFormOpen = false;
+  Math = Math;
+  
+  // Summary metrics
+  totalRevenue = 0;
+  totalTransactions = 0;
+  averageOrderValue = 0;
+  totalDiscounts = 0;
 
   // Filter options
   selectedBranch = 'all';
   selectedPaymentMethod = 'all';
   selectedCashier = 'all';
-  
-  constructor(private dataService: MetadataService) {
+  categories: any[] = [];
+  branches: string[] = [];
+  paymentMethods: string[] = [];
+  cashiers: string[] = [];
+
+  // Store original unfiltered data
+  private originalBreakdown: SalesReportBreakdownDTO[] = [];
+  private originalTopSellingProducts: TopProductDTO[] = [];
+  private originalPaymentMethods: PaymentMethodBreakdown[] = [];
+  private originalBranchSales: BranchSalesDTO[] = [];
+
+  filterForm: FormGroup | undefined;
+
+  constructor(
+    private reportService: ReportService,
+    private fb: FormBuilder
+  ) {
     this.initChartOptions();
+    this.initFilterForm();
   }
 
-  ngOnInit() {
-    this.dataService.getSalesReport().subscribe(data => {
-      this.salesReport = data;
-      this.loading = false;
-      this.updateCharts();
+  ngOnInit(): void {
+    this.loadSalesData();
+  }
+
+  initFilterForm() {
+    this.filterForm = this.fb.group({
+      branchIds: ['all'],
+      categoryIds: ['all'],
+      startDate: [null],
+      endDate: [null],
+      includeLowStock: [false]
     });
+  }
+
+  openFilterForm() {
+    this.isFilterFormOpen = !this.isFilterFormOpen;
+  }
+
+  loadSalesData(): void {
+    const payload = {
+      startDate: '2025-08-01T00:00:00.000Z',
+      endDate: '2025-08-13T23:59:59.000Z',
+      branchIds: [],
+      cashierIds: [],
+      paymentMethods: [],
+      groupBy: ''
+    };
+
+    this.reportService.getSalesPerformanceReport(payload).subscribe({
+      next: (data) => {
+        this.salesReport = data;
+        
+        // Store original data for filtering
+        this.originalBreakdown = [...data.breakdown];
+        this.originalTopSellingProducts = [...data.topSellingProducts];
+        this.originalPaymentMethods = [...data.paymentMethodBreakdown];
+        this.originalBranchSales = [...data.totalSalesPerBranch];
+        
+        // Set summary metrics
+        this.totalRevenue = data.totalRevenue;
+        this.totalTransactions = data.totalTransactions;
+        this.averageOrderValue = data.averageOrderValue;
+        this.totalDiscounts = data.totalDiscounts || 0;
+        
+        // Extract filter options
+        this.extractFilterOptions();
+        
+        this.loading = false;
+        this.updateCharts();
+      },
+      error: (err) => {
+        this.loading = false;
+        console.error('Error loading sales data:', err);
+      }
+    });
+  }
+
+  extractFilterOptions() {
+    if (!this.salesReport) return;
+
+    // Extract unique branches
+    this.branches = ['all', ...new Set(
+      this.salesReport.totalSalesPerBranch.map(item => item.branch.name)
+    )];
+    
+    // Extract unique payment methods
+    this.paymentMethods = ['all', ...new Set(
+      this.salesReport.paymentMethodBreakdown.map(item => item.paymentMethod)
+    )];
+    
+    // Extract unique cashiers
+    this.cashiers = ['all', ...new Set(
+      this.salesReport.breakdown
+        .filter(item => item.cashier)
+        .map(item => item.cashier.name)
+    )];
+
+    // Reset filter selections
+    this.selectedBranch = 'all';
+    this.selectedPaymentMethod = 'all';
+    this.selectedCashier = 'all';
   }
 
   get paginatedBreakdown() {
@@ -126,11 +235,10 @@ itemsPerPage = 10;
       this.currentPage = page;
     }
   }
-  
 
   initChartOptions() {
     // Branch sales chart (bar chart)
-    this.branchChartOptions  = {
+    this.branchChartOptions = {
       series: [{
         name: "Revenue",
         data: []
@@ -164,7 +272,7 @@ itemsPerPage = 10;
       },
       yaxis: {
         title: {
-          text: "Revenue ($)",
+          text: "Revenue (₦)",
           style: {
             fontSize: '14px',
             fontWeight: '500',
@@ -174,8 +282,8 @@ itemsPerPage = 10;
       },
       tooltip: {
         y: {
-          formatter: function(val) {
-            return "$" + val.toLocaleString();
+          formatter: (val: number) => {
+            return this.formatCurrency(val);
           }
         }
       }
@@ -204,8 +312,8 @@ itemsPerPage = 10;
       colors: ["#10B981"],
       dataLabels: {
         enabled: true,
-        formatter: function(val) {
-          return "$" + val.toLocaleString();
+        formatter: (val: number) => {
+          return this.formatCurrency(val, false);
         },
         textAnchor: 'start',
         style: {
@@ -236,8 +344,8 @@ itemsPerPage = 10;
       },
       tooltip: {
         y: {
-          formatter: function(val) {
-            return "$" + val.toLocaleString();
+          formatter: (val: number) => {
+            return this.formatCurrency(val);
           }
         }
       },
@@ -255,7 +363,10 @@ itemsPerPage = 10;
       },
       labels: [],
       dataLabels: {
-        enabled: true
+        enabled: true,
+        formatter: (val: number, opts?: any) => {
+          return `${opts.w.config.labels[opts.seriesIndex]}: ${this.formatCurrency(val, false)}`;
+        }
       },
       colors: ["#3B82F6", "#F97316", "#14B8A6", "#EC4899", "#8B5CF6"],
       title: {
@@ -272,8 +383,8 @@ itemsPerPage = 10;
       },
       tooltip: {
         y: {
-          formatter: function(val) {
-            return "$" + val.toLocaleString();
+          formatter: (val: number) => {
+            return this.formatCurrency(val);
           }
         }
       }
@@ -287,7 +398,7 @@ itemsPerPage = 10;
           data: []
         },
         {
-          name: "Discounts",
+          name: "Transactions",
           data: []
         }
       ],
@@ -307,7 +418,7 @@ itemsPerPage = 10;
       },
       colors: ["#6366F1", "#F59E0B"],
       title: {
-        text: "Sales Trend (Last 14 Days)",
+        text: "Sales Trend (Last 30 Days)",
         align: "left",
         style: {
           fontSize: '16px',
@@ -321,7 +432,7 @@ itemsPerPage = 10;
       },
       yaxis: {
         title: {
-          text: "Amount ($)",
+          text: "Amount (₦)",
           style: {
             fontSize: '14px',
             fontWeight: '500',
@@ -335,8 +446,8 @@ itemsPerPage = 10;
       },
       tooltip: {
         y: {
-          formatter: function(val) {
-            return "$" + val.toLocaleString();
+          formatter: (val: number) => {
+            return this.formatCurrency(val);
           }
         }
       }
@@ -355,22 +466,33 @@ itemsPerPage = 10;
       categories: this.salesReport.totalSalesPerBranch.map(b => b.branch.name)
     };
 
-    // Update product chart
+    // Update product chart - aggregate products with the same name
+    const productMap = new Map<string, number>();
+    this.salesReport.topSellingProducts.forEach(product => {
+      const productName = product.product.name;
+      const currentRevenue = productMap.get(productName) || 0;
+      productMap.set(productName, currentRevenue + product.revenue);
+    });
+
+    const sortedProducts = Array.from(productMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10); // Limit to top 10 products
+
     this.productChartOptions.series = [{
       name: "Revenue",
-      data: this.salesReport.topSellingProducts.map(p => p.revenue)
+      data: sortedProducts.map(p => p[1])
     }];
     this.productChartOptions.xaxis = {
-      categories: this.salesReport.topSellingProducts.map(p => p.product.name)
+      categories: sortedProducts.map(p => p[0])
     };
 
     // Update payment method chart
-    // this.paymentChartOptions.series = this.salesReport.paymentMethodBreakdown.map(p => p.revenue);
+    this.paymentChartOptions.series = this.salesReport.paymentMethodBreakdown.map(p => p.revenue);
     this.paymentChartOptions.labels = this.salesReport.paymentMethodBreakdown.map(p => p.paymentMethod);
 
-    // Prepare data for trend chart
-    const groupedByDate = this.groupBreakdownByDate();
-    const dates = Array.from(groupedByDate.keys()).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    // Prepare data for trend chart from current breakdown
+    const groupedByDate = this.groupBreakdownByDate(this.salesReport.breakdown);
+    const dates = Array.from(groupedByDate.keys()).sort((a, b) => a - b);
     
     this.trendChartOptions.series = [
       {
@@ -381,10 +503,10 @@ itemsPerPage = 10;
         })
       },
       {
-        name: "Discounts",
+        name: "Transactions",
         data: dates.map(date => {
           const group = groupedByDate.get(date);
-          return group ? group.discounts : 0;
+          return group ? group.transactions : 0;
         })
       }
     ];
@@ -392,22 +514,28 @@ itemsPerPage = 10;
     this.trendChartOptions.xaxis = {
       categories: dates.map(date => formatDate(new Date(date), 'MMM dd', 'en-US'))
     };
+
+    // Update all charts
+    if (this.branchChart) this.branchChart.updateOptions(this.branchChartOptions);
+    if (this.productChart) this.productChart.updateOptions(this.productChartOptions);
+    if (this.paymentChart) this.paymentChart.updateOptions(this.paymentChartOptions);
+    if (this.trendChart) this.trendChart.updateOptions(this.trendChartOptions);
   }
 
-  groupBreakdownByDate() {
-    const groups = new Map<string, { revenue: number, discounts: number }>();
+  groupBreakdownByDate(breakdown: SalesReportBreakdownDTO[]) {
+    const groups = new Map<number, { revenue: number, transactions: number }>();
     
-    this.salesReport.breakdown.forEach(item => {
-      const dateKey = item.date.toString().split('T')[0];
+    breakdown.forEach(item => {
+      const dateKey = new Date(item.date).getTime();
       
       if (!groups.has(dateKey)) {
-        groups.set(dateKey, { revenue: 0, discounts: 0 });
+        groups.set(dateKey, { revenue: 0, transactions: 0 });
       }
       
       const group = groups.get(dateKey);
       if (group) {
         group.revenue += item.revenue;
-        group.discounts += item.discounts;
+        group.transactions += item.transactions;
       }
     });
     
@@ -416,31 +544,126 @@ itemsPerPage = 10;
 
   setDateRange(range: string) {
     this.dateRange = range;
-    // Implementation for changing date range would go here
+    this.trendChartOptions.title = {
+      ...this.trendChartOptions.title,
+      text: `Sales Trend (Last ${range})`
+    };
+    if (this.trendChart) {
+      this.trendChart.updateOptions(this.trendChartOptions);
+    }
   }
 
   setTab(tab: string) {
     this.selectedTab = tab;
   }
 
-  // Methods for filtering
   applyFilters() {
-    // Implementation for applying filters would go here
-    console.log('Filters applied:', {
-      branch: this.selectedBranch,
-      paymentMethod: this.selectedPaymentMethod,
-      cashier: this.selectedCashier
-    });
+    if (!this.salesReport) return;
+
+    // Start with original data
+    let filteredBreakdown = [...this.originalBreakdown];
+    let filteredProducts = [...this.originalTopSellingProducts];
+    let filteredPayments = [...this.originalPaymentMethods];
+    let filteredBranches = [...this.originalBranchSales];
+
+    // Filter by branch
+    if (this.selectedBranch !== 'all') {
+      filteredBreakdown = filteredBreakdown.filter(item => 
+        item.branch?.name === this.selectedBranch
+      );
+      filteredProducts = filteredProducts.filter(product => 
+        product.product.branches?.some(b => b.name === this.selectedBranch)
+      );
+      filteredBranches = filteredBranches.filter(
+        branch => branch.branch.name === this.selectedBranch
+      );
+    }
+
+    // Filter by payment method
+    if (this.selectedPaymentMethod !== 'all') {
+      filteredBreakdown = filteredBreakdown.filter(
+        item => item.paymentMethod === this.selectedPaymentMethod
+      );
+    }
+
+    // Filter by cashier
+    if (this.selectedCashier !== 'all') {
+      filteredBreakdown = filteredBreakdown.filter(
+        item => item.cashier?.name === this.selectedCashier
+      );
+    }
+
+    // Update the report with filtered data
+    this.salesReport = {
+      ...this.salesReport,
+      breakdown: filteredBreakdown,
+      topSellingProducts: filteredProducts,
+      paymentMethodBreakdown: filteredPayments,
+      totalSalesPerBranch: filteredBranches,
+      totalRevenue: filteredBreakdown.reduce((sum, item) => sum + item.revenue, 0),
+      totalTransactions: filteredBreakdown.reduce((sum, item) => sum + item.transactions, 0),
+      averageOrderValue: filteredBreakdown.length > 0 
+        ? filteredBreakdown.reduce((sum, item) => sum + item.revenue, 0) / filteredBreakdown.length
+        : 0,
+      totalDiscounts: filteredBreakdown.reduce((sum, item) => sum + (item.discounts || 0), 0)
+    };
+
+    // Update summary metrics
+    this.totalRevenue = this.salesReport.totalRevenue;
+    this.totalTransactions = this.salesReport.totalTransactions;
+    this.averageOrderValue = this.salesReport.averageOrderValue;
+    this.totalDiscounts = this.salesReport.totalDiscounts;
+
+    // Reset pagination
+    this.currentPage = 1;
+
+    // Refresh charts
+    this.updateCharts();
   }
 
   resetFilters() {
     this.selectedBranch = 'all';
     this.selectedPaymentMethod = 'all';
     this.selectedCashier = 'all';
-    this.applyFilters();
+
+    // Restore original data
+    if (this.salesReport) {
+      this.salesReport = {
+        ...this.salesReport,
+        breakdown: [...this.originalBreakdown],
+        topSellingProducts: [...this.originalTopSellingProducts],
+        paymentMethodBreakdown: [...this.originalPaymentMethods],
+        totalSalesPerBranch: [...this.originalBranchSales],
+        totalRevenue: this.originalBreakdown.reduce((sum, item) => sum + item.revenue, 0),
+        totalTransactions: this.originalBreakdown.reduce((sum, item) => sum + item.transactions, 0),
+        averageOrderValue: this.originalBreakdown.length > 0 
+          ? this.originalBreakdown.reduce((sum, item) => sum + item.revenue, 0) / this.originalBreakdown.length
+          : 0,
+        totalDiscounts: this.originalBreakdown.reduce((sum, item) => sum + (item.discounts || 0), 0)
+      };
+
+      // Update summary metrics
+      this.totalRevenue = this.salesReport.totalRevenue;
+      this.totalTransactions = this.salesReport.totalTransactions;
+      this.averageOrderValue = this.salesReport.averageOrderValue;
+      this.totalDiscounts = this.salesReport.totalDiscounts;
+    }
+
+    // Reset pagination
+    this.currentPage = 1;
+
+    // Refresh charts
+    this.updateCharts();
   }
 
-  formatCurrency(amount: number): string {
-    return '₦' + amount.toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  formatCurrency(amount: number, includeSymbol: boolean = true): string {
+    return (includeSymbol ? '₦' : '') + amount.toLocaleString('en-NG', { 
+      minimumFractionDigits: 0, 
+      maximumFractionDigits: 2 
+    });
+  }
+
+  convertTimestampToDate(timestamp: number): Date {
+    return new Date(timestamp);
   }
 }

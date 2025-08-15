@@ -187,17 +187,16 @@
         <div class="h-auto">
           <apx-chart
             [series]="revenueChartOptions.series"
-            [chart]="revenueChartOptions.chart"
-            [xaxis]="revenueChartOptions.xaxis"
-            [yaxis]="revenueChartOptions.yaxis"
-            [dataLabels]="revenueChartOptions.dataLabels"
-            [grid]="revenueChartOptions.grid"
-            [stroke]="revenueChartOptions.stroke"
-            [tooltip]="revenueChartOptions.tooltip"
-            [plotOptions]="revenueChartOptions.plotOptions"
-            [fill]="revenueChartOptions.fill"
-            [colors]="revenueChartOptions.colors"
-            [legend]="revenueChartOptions.legend"
+  [chart]="revenueChartOptions.chart"
+  [xaxis]="revenueChartOptions.xaxis || {}"
+  [yaxis]="revenueChartOptions.yaxis || {}"
+  [dataLabels]="revenueChartOptions.dataLabels || {}"
+  [stroke]="revenueChartOptions.stroke || {}"
+  [tooltip]="revenueChartOptions.tooltip || {}"
+  [plotOptions]="revenueChartOptions.plotOptions || {}"
+  [fill]="revenueChartOptions.fill || {}"
+  [colors]="revenueChartOptions.colors || []"
+  [legend]="revenueChartOptions.legend || {}"
           ></apx-chart>
         </div>
       </div>
@@ -212,11 +211,10 @@
               [series]="productSalesChartOptions.series"
               [chart]="productSalesChartOptions.chart"
               [labels]="productSalesChartOptions.labels"
-              [dataLabels]="productSalesChartOptions.dataLabels"
-              [fill]="productSalesChartOptions.fill"
-              [tooltip]="productSalesChartOptions.tooltip"
-              [legend]="productSalesChartOptions.legend"
-              [colors]="productSalesChartOptions.colors"
+              [dataLabels]="productSalesChartOptions.dataLabels ?? {}"
+              [tooltip]="productSalesChartOptions.tooltip ?? {}"
+              [legend]="productSalesChartOptions.legend  ?? {}"
+              [colors]="productSalesChartOptions.colors  ?? []"
             ></apx-chart>
           </div>
         </div>
@@ -228,14 +226,14 @@
             <apx-chart
               [series]="categoryPerformanceChartOptions.series"
               [chart]="categoryPerformanceChartOptions.chart"
-              [xaxis]="categoryPerformanceChartOptions.xaxis"
-              [yaxis]="categoryPerformanceChartOptions.yaxis"
-              [dataLabels]="categoryPerformanceChartOptions.dataLabels"
-              [stroke]="categoryPerformanceChartOptions.stroke"
-              [tooltip]="categoryPerformanceChartOptions.tooltip"
-              [plotOptions]="categoryPerformanceChartOptions.plotOptions"
-              [fill]="categoryPerformanceChartOptions.fill"
-              [colors]="categoryPerformanceChartOptions.colors"
+              [xaxis]="categoryPerformanceChartOptions.xaxis ?? {}"
+              [yaxis]="categoryPerformanceChartOptions.yaxis ?? {}"
+              [dataLabels]="categoryPerformanceChartOptions.dataLabels ?? {}"
+              [stroke]="categoryPerformanceChartOptions.stroke ?? {}"
+              [tooltip]="categoryPerformanceChartOptions.tooltip ?? {}"
+              [plotOptions]="categoryPerformanceChartOptions.plotOptions ?? {}"
+              [fill]="categoryPerformanceChartOptions.fill ?? {}"
+              [colors]="categoryPerformanceChartOptions.colors || []"
             ></apx-chart>
           </div>
         </div>

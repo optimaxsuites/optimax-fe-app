@@ -422,7 +422,22 @@ return  groupedCartItems as any
     );
     this.displayedDiscount = this.discount + productDiscount;
 
-    this.tax = this.subtotal * 0.1;
+    this.tax = this.cartItems.reduce((sum, item) => {
+  let itemTotal = (item.count ?? 0) * parseFloat(item.sellingPrice || '0');
+
+  let variantsTotal = (item.selectedVariants ?? []).reduce(
+    (variantAcc, variant) =>
+      variantAcc + (variant.selectedQuantity ?? 0) * (Number(variant.price) || 0),
+    0
+  );
+
+  let subtotal = itemTotal + variantsTotal;
+
+  let taxRate = item.tax?.rate || item.product?.tax?.rate || 0;
+
+  return sum + ((taxRate / 100) * subtotal);
+}, 0);
+
 
     this.total = this.subtotal + this.tax - this.displayedDiscount;
   }

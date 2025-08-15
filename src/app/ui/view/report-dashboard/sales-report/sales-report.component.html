@@ -9,8 +9,12 @@
           <p class="text-gray-500 mt-1">Analytics and insights for your business</p>
         </div>
         <div class="flex items-center space-x-4">
+
+          <button class="inline-flex items-center px-4 py-2 border border-transparent font-medium rounded-md shadow-sm text-white bg-customBlue hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue" (click)="openFilterForm()">
+                Apply Filters
+               </button>
           <!-- Date Range Selector -->
-          <div class="relative">
+          <!-- <div class="relative">
             <select [(ngModel)]="dateRange" 
                     class="bg-white border border-gray-300 rounded-md py-2 pl-3 pr-8 font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-customBlue focus:border-transparent">
               <option value="7 days">Last 7 days</option>
@@ -19,7 +23,7 @@
               <option value="90 days">Last 90 days</option>
               <option value="12 months">Last 12 months</option>
             </select>
-          </div>
+          </div> -->
           <!-- Export Button -->
           <button class="inline-flex items-center px-4 py-2 border border-transparent font-medium rounded-md shadow-sm text-white bg-customBlue hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -38,6 +42,90 @@
   </div>
 
   <!-- Main Content -->
+   <div class="bg-white rounded-lg shadow p-6 mb-6" *ngIf="isFilterFormOpen">
+        <h2 class="text-lg font-medium text-gray-900 mb-4">Filter Report</h2>
+        
+        <form [formGroup]="filterForm!" (ngSubmit)="applyFilters()">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Branch Selection -->
+        <div>
+          <label for="branches" class="block font-medium text-gray-700 mb-1">Branches</label>
+          <ng-select 
+            id="branches"
+            [multiple]="true"
+            [items]="branches" 
+            bindLabel="name" 
+            bindValue="id"
+            placeholder="Select branches"
+            formControlName="branchIds"
+            class="w-full">
+          </ng-select>
+        </div>
+        
+        <!-- Category Selection -->
+        <!-- <div>
+          <label for="categories" class="block font-medium text-gray-700 mb-1">Categories</label>
+          <ng-select 
+            id="categories"
+            [multiple]="true"
+            [items]="categories" 
+            bindLabel="name" 
+            bindValue="id"
+            placeholder="Select categories"
+            formControlName="categoryIds"
+            class="w-full">
+          </ng-select>
+        </div> -->
+        
+        <!-- Date Range Selection -->
+        <div>
+          <label for="dateRange" class="block font-medium text-gray-700 mb-1">Date Range</label>
+          <div class="flex space-x-2">
+            <input 
+              type="date" 
+              id="startDate"
+              formControlName="startDate"
+              class="block w-full bg-white border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-customBlue focus:border-customBlue">
+            <span class="flex items-center">to</span>
+            <input 
+              type="date" 
+              id="endDate"
+              formControlName="endDate"
+              class="block w-full bg-white border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-customBlue focus:border-customBlue">
+          </div>
+        </div>
+
+        <!-- Low Stock Option -->
+        <div class="flex items-center">
+          <div class="flex items-center h-5">
+            <input 
+              id="lowStock" 
+              type="checkbox" 
+              formControlName="includeLowStock"
+              class="focus:ring-customBlue h-4 w-4 text-customBlue border-gray-300 rounded">
+          </div>
+          <div class="ml-3">
+            <label for="lowStock" class="font-medium text-gray-700">Show only low stock items</label>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-6 flex justify-end space-x-3">
+        <button 
+          type="button" 
+          (click)="resetFilters()"
+          class="px-4 py-2 border border-gray-300 rounded-md shadow-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+          Reset
+        </button>
+        <button 
+          type="submit" 
+          class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm font-medium rounded-md text-white bg-customBlue hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue">
+          Apply
+        </button>
+      </div>
+    </form>
+      </div>
+  
   <div *ngIf="!loading" class=" px-4 sm:px-6 lg:px-8 py-8">
     <!-- KPI Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -166,78 +254,78 @@
     <div *ngIf="selectedTab === 'overview'">
       <!-- First row -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <!-- Sales Trend Chart -->
-        <div class="bg-white p-6 rounded-lg shadow">
-          <div id="trendChart">
-            <apx-chart
-              [series]="trendChartOptions.series"
-              [chart]="trendChartOptions.chart"
-              [xaxis]="trendChartOptions.xaxis"
-              [yaxis]="trendChartOptions.yaxis"
-              [dataLabels]="trendChartOptions.dataLabels"
-              [stroke]="trendChartOptions.stroke"
-              [title]="trendChartOptions.title"
-              [colors]="trendChartOptions.colors"
-              [tooltip]="trendChartOptions.tooltip"
-              [legend]="trendChartOptions.legend"
-            ></apx-chart>
-          </div>
-        </div>
+       <!-- Sales Trend Chart -->
+<div class="bg-white p-6 rounded-lg shadow" *ngIf="trendChartOptions?.series">
+  <div id="trendChart">
+    <apx-chart
+      [series]="trendChartOptions.series || []"
+      [chart]="trendChartOptions.chart || {type: 'line', height: 350}"
+      [xaxis]="trendChartOptions.xaxis || {}"
+      [yaxis]="trendChartOptions.yaxis || {}"
+      [dataLabels]="trendChartOptions.dataLabels || { enabled: false }"
+      [stroke]="trendChartOptions.stroke || {}"
+      [title]="trendChartOptions.title || {}"
+      [colors]="trendChartOptions.colors || []"
+      [tooltip]="trendChartOptions.tooltip || {}"
+      [legend]="trendChartOptions.legend || {}"
+    ></apx-chart>
+  </div>
+</div>
 
         <!-- Payment Methods Chart -->
-        <div class="bg-white p-6 rounded-lg shadow">
-          <div id="paymentChart">
-            <apx-chart
-              [series]="paymentChartOptions.series"
-              [chart]="paymentChartOptions.chart"
-              [labels]="paymentChartOptions.labels"
-              [dataLabels]="paymentChartOptions.dataLabels"
-              [title]="paymentChartOptions.title"
-              [colors]="paymentChartOptions.colors"
-              [tooltip]="paymentChartOptions.tooltip"
-              [legend]="paymentChartOptions.legend"
-            ></apx-chart>
-          </div>
-        </div>
+<div class="bg-white p-6 rounded-lg shadow" *ngIf="paymentChartOptions?.series">
+  <div id="paymentChart">
+    <apx-chart
+      [series]="paymentChartOptions.series || []"
+      [chart]="paymentChartOptions.chart || { type: 'donut', height: 350 }"
+      [labels]="paymentChartOptions.labels || []"
+      [dataLabels]="paymentChartOptions.dataLabels || { enabled: false }"
+      [title]="paymentChartOptions.title || {}"
+      [colors]="paymentChartOptions.colors || []"
+      [tooltip]="paymentChartOptions.tooltip || {}"
+      [legend]="paymentChartOptions.legend || {}"
+    ></apx-chart>
+  </div>
+</div>
       </div>
 
       <!-- Second row -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <!-- Branch Sales Chart -->
-        <div class="bg-white p-6 rounded-lg shadow">
-          <div id="branchChart">
-            <apx-chart
-              [series]="branchChartOptions.series"
-              [chart]="branchChartOptions.chart"
-              [xaxis]="branchChartOptions.xaxis"
-              [yaxis]="branchChartOptions.yaxis"
-              [dataLabels]="branchChartOptions.dataLabels"
-              [stroke]="branchChartOptions.stroke"
-              [title]="branchChartOptions.title"
-              [colors]="branchChartOptions.colors"
-              [tooltip]="branchChartOptions.tooltip"
-            ></apx-chart>
-          </div>
-        </div>
+<div class="bg-white p-6 rounded-lg shadow" *ngIf="branchChartOptions?.series">
+  <div id="branchChart">
+    <apx-chart
+      [series]="branchChartOptions.series || []"
+      [chart]="branchChartOptions.chart || {type: 'bar', height: 350}"
+      [xaxis]="branchChartOptions.xaxis || {}"
+      [yaxis]="branchChartOptions.yaxis || {}"
+      [dataLabels]="branchChartOptions.dataLabels || { enabled: false }"
+      [stroke]="branchChartOptions.stroke || {}"
+      [title]="branchChartOptions.title || {}"
+      [colors]="branchChartOptions.colors || []"
+      [tooltip]="branchChartOptions.tooltip || {}"
+    ></apx-chart>
+  </div>
+</div>
 
         <!-- Top Products Chart -->
-        <div class="bg-white p-6 rounded-lg shadow">
-          <div id="productChart">
-            <apx-chart
-              [series]="productChartOptions.series"
-              [chart]="productChartOptions.chart"
-              [xaxis]="productChartOptions.xaxis"
-              [yaxis]="productChartOptions.yaxis"
-              [dataLabels]="productChartOptions.dataLabels"
-              [stroke]="productChartOptions.stroke"
-              [title]="productChartOptions.title"
-              [colors]="productChartOptions.colors"
-              [tooltip]="productChartOptions.tooltip"
-              [plotOptions]="productChartOptions.plotOptions"
-              [fill]="productChartOptions.fill"
-            ></apx-chart>
-          </div>
-        </div>
+<div class="bg-white p-6 rounded-lg shadow" *ngIf="productChartOptions?.series">
+  <div id="productChart">
+    <apx-chart
+      [series]="productChartOptions.series || []"
+      [chart]="productChartOptions.chart || {type: 'bar', height: 350}"
+      [xaxis]="productChartOptions.xaxis || {}"
+      [yaxis]="productChartOptions.yaxis || {}"
+      [dataLabels]="productChartOptions.dataLabels || { enabled: false }"
+      [stroke]="productChartOptions.stroke || {}"
+      [title]="productChartOptions.title || {}"
+      [colors]="productChartOptions.colors || []"
+      [tooltip]="productChartOptions.tooltip || {}"
+      [plotOptions]="productChartOptions.plotOptions || {}"
+      [fill]="productChartOptions.fill || {}"
+    ></apx-chart>
+  </div>
+</div>
       </div>
     </div>
 
