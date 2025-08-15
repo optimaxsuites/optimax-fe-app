@@ -6,16 +6,20 @@
   </div>
   </div>
 
-
 <div class="parent-container">
+
+
+  <div class="header">
+    <h1>Fill in the details below to submit your expense.</h1>
+  </div>  
  
-  <div class="progress-container">
+  <!--div class="progress-container">
     <div class="progress-bar" [ngClass]="currentStage"></div>
     <div class="progress-stages">
       <div class="stage" [ngClass]="{ active: currentStage === 'to-submit' }">
         Submit
       </div>
-      <!-- <div class="stage" [ngClass]="{ active: currentStage === 'submitted' }">
+      <div class="stage" [ngClass]="{ active: currentStage === 'submitted' }">
         Submitted
       </div>
       <div class="stage" [ngClass]="{ active: currentStage === 'approved' }">
@@ -23,21 +27,28 @@
       </div>
       <div class="stage" [ngClass]="{ active: currentStage === 'paid' }">
         Paid
-      </div> -->
+      </div> 
     </div>
-  </div>
+  </div-->
+  <form #expenseForm="ngForm" (ngSubmit)="submitExpense(expenseForm)">
   <div class="add-expense-container">
     <div class="expense-form">
- <div class="form-left">
+      <div class="form-left">
          <div class="floating-box form-subsection">
           <div class="form-group">
           <label for="name">Expense Name</label>
           <input
             type="text"
             id="name"
+            name="name"
             [(ngModel)]="expenseSummary.name"
+            required
             placeholder="Enter name"
           />
+            <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.name">
+              Name is required.
+            </p>
+          
         </div>
 
 
@@ -49,8 +60,11 @@
             rows="4"
             cols="50"
             [(ngModel)]="expenseSummary.description"
+            required
             placeholder="Enter description"
           ></textarea>
+          <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.description">
+            Description is required.
         </div>
 
     
@@ -60,11 +74,15 @@
           <input
             type="number"
             id="amount"
+            name="amount"
             [(ngModel)]="expenseSummary.amount"
             (input)="onAmountInput($event)"
             min="0"
+            required
             placeholder="Enter amount"
           />
+          <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.amount">
+            Amount is required.
         </div>
 
         <div class="form-group">
@@ -74,8 +92,11 @@
             id="merchant"
             name="merchant"
             [(ngModel)]="expenseSummary.merchant"
+            required
             placeholder="Enter merchant"
           />
+          <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.merchant">
+            Merchant is required.
         </div>
 
         <!-- <div class="form-group">
@@ -95,39 +116,74 @@
             bindLabel="name"
             bindValue="name"
             [(ngModel)]="expenseSummary.category"
+            name="category"
+            required
             placeholder="Select a category"
             class="w-full mt-3"
           >
           </ng-select>
+          <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.category">
+            Category is required.
         </div>
+
         <div class="form-group">
           <label for="category">Quantity</label>
           <ng-select
             [items]="Quantity"
             bindLabel="name"
             bindValue="name"
-            [(ngModel)]="expenseSummary.Quantity"
+            [(ngModel)]="expenseSummary.quantity"
+            name="quantity"
+            required
             placeholder="Select a Quantity"
             class="w-full mt-3"
           >
           </ng-select>
+          <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.quantity">
+            Quantity is required.
         </div>
+
         <div class="form-group">
           <label for="tax-percentage">Tax Percentage (%)</label>
           <input
             type="number"
             id="tax-percentage"
-            name="tax-percentage"
+            name="taxPercentage"
             [(ngModel)]="expenseSummary.taxPercentage"
             placeholder="Enter tax percentage"
           />
         </div>
 
-         </div>
+        <div class="form-group">
+          <label for="event-date">Event Date</label>
+          <input
+            type="date"
+            id="event-date"
+            name="eventDate"
+            [(ngModel)]="expenseSummary.eventDate"
+            required
+          />
+          <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.eventDate">
+            Event Date is required.
+        </div>
+         
+          <div class="form-group">
+          <label for="comment">Comment</label>
+          <textarea
+            id="comment"
+            name="comment"
+            rows="4"
+            cols="50"
+            [(ngModel)]="expenseSummary.comment"
+            placeholder="Enter your comments here..."
+          ></textarea>
+        </div>
+
+        </div>
 
        
-        <div class="floating-box form-subsection">
-<!-- <div class="form-group">
+        <!--div class="floating-box form-subsection"-->
+        <!-- <div class="form-group">
           <label for="pay-method">Payment Method</label>
           <ng-select
             [items]="paymentMethods"
@@ -140,7 +196,7 @@
           </ng-select>
         </div> -->
 
-        <div class="form-group">
+        <!--div class="form-group">
           <label for="project">Project</label>
           <ng-select
             [items]="projects"
@@ -151,33 +207,10 @@
             class="w-full mt-3"
           >
           </ng-select>
-        </div>
-        <div class="form-group">
-          <label for="event-date">Event Date</label>
-          <input
-            type="date"
-            id="event-date"
-            name="event-date"
-            [(ngModel)]="expenseSummary.eventDate"
-          />
-        </div>
+        </div-->
 
-        </div>
         
-        
-         <div class="floating-box form-subsection">
-          <div class="form-group">
-          <label for="comment">Comment</label>
-          <textarea
-            id="comment"
-            name="comment"
-            rows="4"
-            cols="50"
-            [(ngModel)]="expenseSummary.comment"
-            placeholder="Enter your comments here..."
-          ></textarea>
-        </div>
-         </div>
+         
         
       </div>
 
@@ -232,14 +265,20 @@
           </div>
         </div> -->
 
+       
+
         <div class="form-buttons">
-          <button class="footer-button submit-button" (click)="submitExpense()">
+          <button class="footer-button submit-button" type="submit">
             Submit
           </button>
-          <button class="footer-button save-button">Save</button>
-          <button class="footer-button cancel-button">Cancel</button>
+          <!--button class="footer-button save-button">Save</button-->
+          <button type="button" class="footer-button cancel-button" (click)="cancelExpenses()">Cancel</button>
         </div>
       </div>
     </div>
-  </div>
-</div>
+    </div>
+
+  
+   </form>
+
+  <p-toast></p-toast>

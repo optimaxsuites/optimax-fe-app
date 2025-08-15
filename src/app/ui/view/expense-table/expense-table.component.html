@@ -51,19 +51,8 @@
     <!-- Filters and Table Section -->
     <div class="table-with-filters w-full max-w-9xl mx-auto px-4">
       <div class="filter-panel">
-        <!-- Left: Delete Button -->
+        <!-- Left Filter -->
         <div class="filter-left">
-          <button
-            class="btn btn-danger"
-            [disabled]="!selectedExpenses?.length"
-            (click)="deleteSelectedExpenses()"
-          >
-            <span class="material-icons btn-icon">delete</span>
-            Delete
-          </button>
-        </div>
-        <!-- right Filter -->
-        <div class="filter-right">
           <div class="filter-group">
             <label>Category:</label>
             <select [(ngModel)]="selectedCategory" (change)="applyFilters()">
@@ -98,7 +87,7 @@
           </div>
 
           <!-- Optional custom range input (only shown when selectedDateRange === 'custom') -->
-          <div class="filter group" *ngIf="dateRangeType === 'custom'">
+          <div class="filter-group" *ngIf="dateRangeType === 'custom'">
             <label>From:</label>
             <input
               type="date"
@@ -113,12 +102,27 @@
             />
           </div>
         </div>
+
+  <!-- Right: Delete Button -->
+        <div class="filter-right">
+          <button
+            class="btn btn-danger"
+            [disabled]="!selectedExpenses?.length"
+            (click)="deleteSelectedExpenses()"
+          >
+            <span class="material-icons btn-icon">delete</span>
+            Delete
+          </button>
+        </div>
+
       </div>
 
       <!-- Table -->
       <div class="table-container ml-5 mr-5">
         <p-table
           [value]="filteredExpenses"
+          [(selection)]="selectedExpenses"
+          dataKey="id"
           [paginator]="true"
           styleClass="p-datatable-striped"
           [tableStyle]="{
