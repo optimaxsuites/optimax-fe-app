@@ -7,5 +7,5 @@ export const environment = {
     env: "development",
 
     project: 'ERP',
-    apiKey: 'ApiKey b8ed9b1fb4dcf7a3b5ad88b1b51976ec'
+    apiKey: 'ApiKey b784e00442334be0497f434d2a4cbefd'
 };

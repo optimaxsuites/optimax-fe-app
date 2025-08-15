@@ -684,9 +684,9 @@ export enum RefundStatus {
 export interface InventoryPayload {
   id: number;
   availableQuantity: number;
-  status: string;
-  product: ProductData;
-  branch: BranchDTO;
+  status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK'; 
+  productId: number;  
+  branchId: number;   
   stockMovement: StockMovementPayload[];
 }
 
@@ -694,24 +694,67 @@ export interface StockMovementPayload {
   id: number;
   quantity: number;
   reference: string;
-  purchasePrice: number;
-  sellingPrice: number;
-  createdDate: string;
-  stockMovementsId: number; // Note the spelling (matches your DTO)
+sellingPrice: string | number;  
+    purchasePrice: string | number;
+  createdDate: string; 
   createdById: number;
-  supplierId: number;
-  ingredientId: number;
-  inventoryId: number;
-  stockMovement?: any;
+  supplier: {         
+    id: number;
+  };
+  ingredient: {        
+    id: number;
+  };
+  inventory?: {       
+    id: number;
+    availableQuantity: number;
+    status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK';
+    product: ProductData;
+    branch: BranchDTO;
+    stockMovement: string[];
+  };
+  stockMovements?: { 
+    id: number;
+    availableQuantity: number;
+    status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK';
+    product: ProductData;
+    branch: BranchDTO;
+    stockMovement: string[];
+  };
 }
 
 export interface StockMovementsPayload {
   id: number;
   availableQuantity: number;
-  status: string;
+  status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK'; 
   product: ProductData;
   branch: BranchDTO;
   stockMovement: string[];
+}
+
+export interface LegacyInventoryPayload {
+  id: number;
+  availableQuantity: number;
+  status: string;
+  product: ProductData;
+  branch: BranchDTO;
+  stockMovement: StockMovementPayload[];
+}
+
+
+export interface CreateStockMovementPayload {
+  id: number;
+  quantity: number;
+  reference: string;
+sellingPrice: string | number; 
+    purchasePrice: string | number;
+  createdDate: string;
+  createdById: number;
+  supplier: {
+    id: number;
+  };
+  ingredient: {
+    id: number;
+  };
 }
 
 export interface IngredientPayload {

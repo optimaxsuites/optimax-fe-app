@@ -14,8 +14,13 @@ import {
   supplierData,
   ProductCategoryGET,
   BranchDTO,
+  TaxDTO,
+  DiscountDTO,
+  
   StockMovementPayload,
 } from '../../../models/interface';
+import { HttpClient,HttpErrorResponse } from '@angular/common/http';
+import { MetadataService } from '../../../service/metadata.service';
 import { MessageService } from 'primeng/api';
 import { forkJoin } from 'rxjs';
 
@@ -30,24 +35,33 @@ export class EditInventoryComponent implements OnInit {
   @Input() product: ProductData[] = [];
   @Output() close = new EventEmitter<void>();
 
-  productForm: FormGroup;
-  supplierForm: FormGroup;
+  // Initialize forms with definite assignment assertion
+  productForm!: FormGroup;
+  supplierForm!: FormGroup;
+  stockMovementForm!: FormGroup;
+
   categories: ProductCategoryGET[] = [];
   branches: BranchDTO[] = [];
+  taxes: TaxDTO[] = [];
+  discounts: any[] = [];
+  discountTypes: any[] = [];
+	discountType: string[] = [];
   suppliers: supplierData[] = [];
   discountOptions: number[] = [5, 10, 15, 20, 25, 30];
   isSupplierModalOpen = false;
   isLoading = false;
+  openAddTax = false;
+  openAddDiscount = false;
 
-  // Price details - for stock movement selling price with tax and discount
   priceDetails = {
     basePrice: 0,
     tax: 0,
     discount: null as number | null,
     effectivePrice: 0,
+    taxAmount: 0,
+    priceAfterDiscount: 0,
   };
 
-  // New supplier data
   newSupplier: supplierData = {
     name: '',
     contactPerson: '',
@@ -57,12 +71,29 @@ export class EditInventoryComponent implements OnInit {
     notes: '',
     agreeTerms: false,
   };
+  discount: {
+		id: 0;
+		name: "";
+		value: 0;
+		startDate: Date;
+		endDate: Date;
+		minQuantity: 0;
+		discountType: { id: 0; code: ""; description: ""; name: "" };
+	} = {
+		id: 0,
+		name: "",
+		value: 0,
+		startDate: new Date(),
+		endDate: new Date(),
+		minQuantity: 0,
+		discountType: { id: 0, code: "", description: "", name: "" },
+	};
 
-  stockMovementForm: FormGroup;
   showStockMovementSection = false;
   minDate: Date = new Date();
   maxDate: Date = new Date();
   inventoryId: number | null = null;
+  selectedSupplierId: string | null = null;
 
   selectedCategory: number | null = null;
   selectedBranch: number | null = null;
@@ -71,8 +102,8 @@ export class EditInventoryComponent implements OnInit {
   newQuantity: number = 0;
   newPrice: number = 0;
   openPriceChange = false;
-
-  // Preview values for real-time updates
+  openAddSupplier: boolean = false;
+ 
   previewData = {
     quantity: 0,
     purchasePrice: 0,
@@ -83,57 +114,168 @@ export class EditInventoryComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private posService: PosServiceService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private metadataService: MetadataService,
+    private http: HttpClient
   ) {
-    this.productForm = this.fb.group({
-      name: ['', Validators.required],
-      code: ['', Validators.required],
-      description: [''],
-      sku: [''],
-      weight: [0],
-      purchasePrice: [0, Validators.required],
-      sellingPrice: [0, Validators.required],
-      quantity: [0, Validators.required],
-      reorderThreshold: [0],
-      measurementUnit: [''],
-      partNumber: [''],
-      expiryDate: [null],
-      isBundle: [false],
-      bundleItems: [[]],
-    });
+    this.initializeForms();
+  }
 
-    this.supplierForm = this.fb.group({
-      name: ['', Validators.required],
-      contactPerson: [''],
-      email: ['', Validators.email],
-      phoneNumber: [''],
-      address: [''],
-      notes: [''],
-    });
+  // ngOnInit(): void {
+  //   this.fetchMetaData();
+  //   if (this.mode === 'edit' && this.activeItem) {
+  //     this.patchFormValues();
+  //   }
+  // }
+
+ private initializeForms(): void {
+  this.productForm = this.fb.group({
+    name: ['', Validators.required],
+    code: ['', Validators.required],
+    description: [''],
+    sku: [''],
+    weight: [0],
+    purchasePrice: [0, Validators.required],
+    sellingPrice: [0, Validators.required],
+    quantity: [0, Validators.required],
+    reorderThreshold: [0],
+    measurementUnit: [''],
+    partNumber: [''],
+    expiryDate: [null],
+    isBundle: [false],
+    bundleItems: [[]],
+    tax: [null],
+    discount: [null],
+    selectedBranch: [[], Validators.required],
+  });
+
+  this.supplierForm = this.fb.group({
+    name: ['', Validators.required],
+    contactPerson: [''],
+    email: ['', [Validators.email]],
+    phoneNumber: [''],
+    address: [''],
+    notes: [''],
+  });
 
     this.stockMovementForm = this.fb.group({
-      quantity: [0, [Validators.required, Validators.min(1)]],
-      reference: [''],
-      purchasePrice: [0, [Validators.required, Validators.min(0)]],
-      sellingPrice: [0, [Validators.min(0)]],
-      supplierId: [null, Validators.required],
-      createdDate: [
-        new Date().toISOString().split('T')[0],
-        Validators.required,
-      ],
+    quantity: [0, [Validators.required, Validators.min(1)]],
+    reference: [''],
+    purchasePrice: [0, [Validators.required, Validators.min(0)]],
+    sellingPrice: [0, [Validators.min(0)]],
+    supplier: [null, Validators.required],  // This matches the backend structure
+    createdDate: [new Date().toISOString(), Validators.required],
+    tax: [null],
+    discount: [null],
+  });
+  }
+
+  private fetchMetaData(): void {
+    // Corrected observable names to match your service
+    this.metadataService.taxes$.subscribe((taxes: TaxDTO[]) => {
+      this.taxes = taxes;
+      if (this.mode === 'edit' && this.activeItem?.tax) {
+        const selectedTax = this.taxes.find(t => t.id === this.activeItem?.tax?.id);
+        if (selectedTax) {
+          this.productForm.get('tax')?.setValue(selectedTax);
+        }
+      }
+    });
+
+    this.metadataService.discount$.subscribe((discounts: any[]) => {
+      this.discounts = discounts;
+      if (this.mode === 'edit' && this.activeItem?.discount) {
+        const selectedDiscount = this.discounts.find(d => d.id === this.activeItem?.discount?.id);
+        if (selectedDiscount) {
+          this.productForm.get('discount')?.setValue(selectedDiscount);
+        }
+      }
+    });
+
+    this.metadataService.branches$.subscribe((branches: BranchDTO[]) => {
+      this.branches = branches;
+    });
+
+    this.metadataService.category$.subscribe((categories: ProductCategoryGET[]) => {
+      this.categories = categories;
+    });
+
+    this.metadataService.supplier$.subscribe((suppliers: supplierData[]) => {
+      this.suppliers = suppliers;
     });
   }
 
-  ngOnInit(): void {
-    this.loadInitialData();
+  private patchFormValues(): void {
+    if (!this.activeItem) return;
 
-    if (this.mode === 'edit' && this.activeItem) {
-      this.prefillForm();
+    this.productForm.patchValue({
+      name: this.activeItem.name,
+      code: this.activeItem.code,
+      description: this.activeItem.description,
+      sku: this.activeItem.sku,
+      weight: this.activeItem.weight,
+      purchasePrice: this.activeItem.purchasePrice,
+      sellingPrice: this.activeItem.sellingPrice,
+      quantity: this.activeItem.quantity,
+      reorderThreshold: this.activeItem.reorderThreshold,
+      measurementUnit: this.activeItem.measurementUnit,
+      partNumber: this.activeItem.partNumber,
+      expiryDate: this.activeItem.expiryDate,
+      isBundle: this.activeItem.isBundle,
+      bundleItems: this.activeItem.bundleItems || [],
+    });
+
+    if (this.activeItem.tax) {
+      const selectedTax = this.taxes.find(t => t.id === this.activeItem?.tax?.id);
+      if (selectedTax) {
+        this.productForm.get('tax')?.setValue(selectedTax);
+      }
     }
 
-    this.setupStockMovementWatchers();
+    if (this.activeItem.discount) {
+      const selectedDiscount = this.discounts.find(d => d.id === this.activeItem?.discount?.id);
+      if (selectedDiscount) {
+        this.productForm.get('discount')?.setValue(selectedDiscount);
+      }
+    }
   }
 
+  get isEditMode(): boolean {
+    return this.mode === 'edit';
+  }
+
+  getErrorMessage(controlName: string, displayName?: string): string {
+    const control = this.productForm.get(controlName);
+    const name = displayName || controlName;
+
+    if (control && control.errors) {
+      const errors = control.errors;
+      const errorKeys = Object.keys(errors);
+
+      if (errorKeys.length > 0) {
+        switch (errorKeys[0]) {
+          case "required": return `${name} is required.`;
+          case "pattern": return `${name} has an invalid format.`;
+          case "min": return `${name} must be at least ${errors["min"].min}.`;
+          case "minlength": return `${name} must be at least ${errors["minlength"].requiredLength}.`;
+          case "maxlength": return `${name} should not exceed ${errors["maxlength"].requiredLength} characters.`;
+          default: return `${name} has an error.`;
+        }
+      }
+    }
+    return "";
+  }
+  ngOnInit(): void {
+    this.fetchMetaData(); // From first version
+    this.loadInitialData(); // From second version
+
+    if (this.mode === 'edit' && this.activeItem) {
+      this.patchFormValues(); // From first version
+      this.prefillForm(); // From second version
+    }
+
+    this.setupStockMovementWatchers(); // From second version
+  }
   toggleStockMovement(): void {
     this.showStockMovementSection = !this.showStockMovementSection;
     if (this.showStockMovementSection) {
@@ -174,7 +316,89 @@ export class EditInventoryComponent implements OnInit {
       },
     });
   }
-
+  addDiscount() {
+      let discountObj = this.discount;
+  
+      const discountDetails: DiscountDTO = {
+        id: discountObj.id,
+        name: discountObj.name,
+        value: discountObj.value,
+        discountType: discountObj.discountType,
+        endDate: discountObj.endDate,
+        startDate: discountObj.startDate,
+        minQuantity: discountObj.minQuantity,
+      };
+  
+      this.posService.addDiscount(discountDetails).subscribe(
+        async (data) => {
+          console.log(data);
+          if (data) {
+            this.messageService.add({
+              severity: "success",
+              summary: "Discount Added",
+              detail: "Discount added successfully.",
+              key: "tl",
+              life: 3000,
+            });
+            // this.getDiscounts();
+            // TODO: Check whether this piece of code is worth it...
+            discountObj = {
+              id: 0,
+              name: "",
+              value: 0,
+              startDate: new Date(),
+              endDate: new Date(),
+              minQuantity: 0,
+              discountType: { id: 0, code: "", name: "", description: "" },
+            };
+          } else {
+            this.messageService.add({
+              severity: "error",
+              summary: "Failed",
+              detail: "Failed, please try again.",
+              key: "tl",
+              life: 3000,
+            });
+          }
+        },
+        (error: HttpErrorResponse) => {
+          if (error.status === 500) {
+            this.messageService.add({
+              severity: "error",
+              summary: "Authentication Failed",
+              detail: "Check form details and try again.",
+              key: "tl",
+              life: 3000,
+            });
+          } else if (error.status === 404) {
+            this.messageService.add({
+              severity: "error",
+              summary: "Authentication Failed",
+              detail: "Error, try again.",
+              key: "tl",
+              life: 3000,
+            });
+          } else if (error.status === 0) {
+            this.messageService.add({
+              severity: "error",
+              summary: "Server Unreachable",
+              detail:
+                "Unable to connect to the server. Please check your internet connection.",
+              key: "tl",
+              life: 3000,
+            });
+          } else {
+            this.messageService.add({
+              severity: "error",
+              summary: "Error",
+              detail: "An unexpected error occurred.",
+              key: "tl",
+              life: 3000,
+            });
+          }
+        },
+      );
+    }
   prefillForm(): void {
     if (!this.activeItem) return;
 
@@ -202,12 +426,14 @@ export class EditInventoryComponent implements OnInit {
     this.selectedSupplier = this.activeItem.supplier?.id || null;
 
     // Initialize price details for stock movement
-    this.priceDetails = {
-      basePrice: Number(this.activeItem.sellingPrice) || 0,
-      tax: Number(this.activeItem.tax?.rate) || 0,
-      discount: this.activeItem.discount?.value || null,
-      effectivePrice: Number(this.activeItem.sellingPrice) || 0,
-    };
+ this.priceDetails = {
+  basePrice: Number(this.activeItem.sellingPrice) || 0,
+  tax: Number(this.activeItem.tax?.rate) || 0,
+  discount: this.activeItem.discount?.value || null,
+  effectivePrice: Number(this.activeItem.sellingPrice) || 0,
+  taxAmount: 0, // Add this - you can calculate it or set initial value
+  priceAfterDiscount: Number(this.activeItem.sellingPrice) || 0 // Add this
+};
 
     // Initialize preview data
     this.previewData = {
@@ -298,6 +524,7 @@ export class EditInventoryComponent implements OnInit {
       },
     });
   }
+  
 
   private resetStockMovementForm(): void {
     this.stockMovementForm.reset({
@@ -309,12 +536,14 @@ export class EditInventoryComponent implements OnInit {
       supplierId: null,
     });
 
-    this.priceDetails = {
-      basePrice: 0,
-      tax: 0,
-      discount: null,
-      effectivePrice: 0,
-    };
+  this.priceDetails = {
+  basePrice: 0,
+  tax: 0,
+  discount: null,
+  effectivePrice: 0,
+  taxAmount: 0,
+  priceAfterDiscount: 0
+};
   }
 
   private getOrCreateInventory(): Promise<InventoryPayload | null> {
@@ -323,21 +552,21 @@ export class EditInventoryComponent implements OnInit {
         next: (inventories) => {
           const existingInventory = inventories.find(
             (inv) =>
-              inv.product?.id === this.activeItem?.id &&
-              inv.branch?.id === this.selectedBranch
+              inv.productId === this.activeItem?.id && 
+            inv.branchId === this.selectedBranch      
           );
 
           if (existingInventory) {
             resolve(existingInventory);
           } else {
             const newInventory: InventoryPayload = {
-              id: 0,
-              product: { id: this.activeItem?.id } as ProductData,
-              branch: { id: this.selectedBranch } as BranchDTO,
-              availableQuantity: 0,
-              status: 'active',
-              stockMovement: [],
-            };
+            id: 0,
+            productId: this.activeItem?.id || 0,   
+            branchId: this.selectedBranch || 0,     
+            availableQuantity: 0,
+            status: 'IN_STOCK',
+            stockMovement: [],
+          };
 
             this.posService.addInventory(newInventory).subscribe({
               next: (createdInventory) => {
@@ -466,119 +695,229 @@ export class EditInventoryComponent implements OnInit {
     // Validate form
     if (this.stockMovementForm.invalid) {
       this.markFormGroupTouched(this.stockMovementForm);
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Validation',
-        detail: 'Please fill all required fields correctly',
-        life: 3000,
-      });
+      this.showValidationError();
       return;
     }
 
-    if (!this.activeItem?.id || !this.selectedBranch) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Product or branch not selected',
-        life: 3000,
-      });
+    if (!this.validateProductAndBranch()) {
       return;
     }
 
     this.isLoading = true;
 
     try {
-      // 1. Get or create inventory
       const inventory = await this.getOrCreateInventory();
       if (!inventory) {
         throw new Error('Inventory not available');
       }
 
-      // 2. Prepare stock movement data
-      const movementData: StockMovementPayload = {
-        quantity: this.stockMovementForm.value.quantity,
-        purchasePrice: this.stockMovementForm.value.purchasePrice,
-        sellingPrice: this.priceDetails.effectivePrice,
-        createdDate: this.stockMovementForm.value.createdDate,
-        supplierId: this.stockMovementForm.value.supplierId,
-        inventoryId: inventory.id,
-        reference: this.stockMovementForm.value.reference || undefined,
-        id: 0,
-        stockMovementsId: 0,
-        createdById: 1, // Replace with actual user ID
-        ingredientId: this.activeItem.id,
-        stockMovement: [],
-      };
+      const movementData = this.prepareMovementData(inventory.id);
+      await this.processStockMovement(movementData, inventory.id);
 
-      console.log('Stock movement data:', movementData);
+      this.showSuccessMessage();
+      this.resetAfterSuccess();
+    } catch (error) {
+      this.handleMovementError(error);
+    } finally {
+      this.isLoading = false;
+    }
+}
 
-      // 3. Create stock movement
-      await this.posService.createStockMovement(movementData).toPromise();
+private showValidationError(): void {
+    this.messageService.add({
+        severity: 'warn',
+        summary: 'Validation',
+        detail: 'Please fill all required fields correctly',
+        life: 3000,
+    });
+}
 
-      // 4. Update product with new values
-      const updatedProduct = {
-        ...this.activeItem,
-        quantity: (this.activeItem.quantity || 0) + movementData.quantity,
-        purchasePrice: movementData.purchasePrice,
-        sellingPrice: movementData.sellingPrice,
-        tax: { rate: this.priceDetails.tax },
-        discount: { value: this.priceDetails.discount || 0 },
-      };
+private validateProductAndBranch(): boolean {
+  if (!this.activeItem?.id || !this.selectedBranch) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Product or branch not selected',
+      life: 3000,
+    });
+    return false;
+  }
+    return true;
+}
+private getCurrentUserId(): number {
+   
+    const userData = sessionStorage.getItem('currentUser');
+    if (userData) {
+        try {
+            const user = JSON.parse(userData);
+            return user.id || 0;
+        } catch {
+            return 0;
+        }
+    }
+    return 0;
+    
+    
+}
 
-      console.log('Updated product:', updatedProduct);
-      await this.posService.updateProduct(updatedProduct).toPromise();
 
-      // 5. Update inventory
-      await this.updateInventoryAfterMovement(
-        inventory.id,
-        movementData.quantity
-      );
+private prepareMovementData(inventoryId: number): StockMovementPayload {
+    if (!this.activeItem) {
+        throw new Error('No active item selected');
+    }
+const createdDate = this.stockMovementForm.value.createdDate;
+  const formattedDate = createdDate.includes('T') 
+    ? createdDate 
+    : `${createdDate}T00:00:00`;
 
-      this.messageService.add({
+  return {
+    id: 0,
+    quantity: this.stockMovementForm.value.quantity,
+    purchasePrice: this.stockMovementForm.value.purchasePrice,
+    sellingPrice: this.priceDetails.effectivePrice,
+    createdDate: formattedDate,
+    reference: this.stockMovementForm.value.reference || '',
+    createdById: this.getCurrentUserId(),
+    supplier: {
+      id: this.stockMovementForm.value.supplier || this.selectedSupplier || 0  // Fixed: use supplier instead of supplierId
+    },
+    ingredient: {
+      id: this.activeItem.id  // Backend expects ingredient object with id
+    }
+  };
+}
+
+private async processStockMovement(movementData: StockMovementPayload, inventoryId: number): Promise<void> {
+   try {
+    // Create the inventory payload with stock movement
+     const inventoryPayload: InventoryPayload = {
+      id: inventoryId,
+      productId: this.activeItem?.id || 0,
+      branchId: this.selectedBranch || 0,
+      availableQuantity: (this.activeItem?.quantity || 0) + movementData.quantity,
+      status: 'IN_STOCK',
+      stockMovement: [movementData]
+    };
+
+    // Send the complete inventory payload to backend
+    await this.posService.addInventory(inventoryPayload).toPromise();
+
+    // Update the local product data
+    await this.updateLocalProductData(movementData);
+    
+  } catch (error) {
+    console.error('Error processing stock movement:', error);
+    throw error;
+  }
+}
+private async updateLocalProductData(movementData: StockMovementPayload): Promise<void> {
+  if (!this.activeItem) {
+    console.warn('No active item selected for update');
+    return;
+  }
+
+  // Create updated product with proper type conversion
+  const updatedProduct: ProductData = {
+    ...this.activeItem,
+    quantity: (this.activeItem.quantity || 0) + movementData.quantity,
+    purchasePrice: movementData.purchasePrice.toString(), // Convert to string if required by API
+    sellingPrice: movementData.sellingPrice.toString(),  // Convert to string if required by API
+    // Ensure all required fields are included
+    ...(this.activeItem.tax && { tax: this.activeItem.tax }),
+    ...(this.activeItem.discount && { discount: this.activeItem.discount }),
+  };
+
+  try {
+    // Update backend
+    await this.posService.updateProduct(updatedProduct).toPromise();
+    
+    // Update local state only after successful backend update
+    this.activeItem = updatedProduct;
+    this.updateProductInList(updatedProduct);
+    
+  } catch (error) {
+    console.error('Backend update failed:', error);
+    
+    
+    // Create a version with numbers for local use if needed
+    const localUpdatedProduct = {
+      ...updatedProduct,
+      purchasePrice: movementData.purchasePrice, // Keep as number locally
+      sellingPrice: movementData.sellingPrice,   // Keep as number locally
+    };
+    
+    // Fallback to local update
+    // this.activeItem = localUpdatedProduct;
+    // this.updateProductInList(localUpdatedProduct);
+    
+    // Show user warning
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Offline Mode',
+      detail: 'Changes saved locally but not synced with server',
+      life: 3000
+    });
+  }
+}
+
+// private getUpdatedProduct(movementData: StockMovementPayload): any {
+//   if (!this.activeItem) {
+//         throw new Error('No active item selected');
+//     }
+//     return {
+//         ...this.activeItem,
+//         quantity: (this.activeItem.quantity || 0) + movementData.quantity,
+//         purchasePrice: movementData.purchasePrice,
+//         sellingPrice: movementData.sellingPrice,
+//         tax: { rate: this.priceDetails.tax },
+//         discount: { value: this.priceDetails.discount || 0 },
+//     };
+// }
+
+private showSuccessMessage(): void {
+    this.messageService.add({
         severity: 'success',
         summary: 'Success',
         detail: 'Stock movement recorded successfully',
         life: 3000,
-      });
+    });
+}
 
-      this.resetStockMovementForm();
-      this.showStockMovementSection = false;
-      this.refreshProductData();
-    } catch (error) {
-      console.error('Error in stock movement:', error);
-      this.messageService.add({
+private resetAfterSuccess(): void {
+    this.resetStockMovementForm();
+    this.showStockMovementSection = false;
+    this.refreshProductData();
+}
+
+private handleMovementError(error: any): void {
+    console.error('Error in stock movement:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'Failed to record stock movement: ' + (error as Error).message,
+        detail: `Failed to record stock movement: ${errorMessage}`,
         life: 5000,
-      });
-    } finally {
-      this.isLoading = false;
-    }
-  }
-
-  private async updateInventoryAfterMovement(
-    inventoryId: number,
-    quantity: number
-  ): Promise<void> {
+    });
+}
+  private async updateInventoryAfterMovement(inventoryId: number, quantity: number): Promise<void> {
     try {
-      const inventory = await this.posService
-        .getInventoryById(inventoryId)
-        .toPromise();
-      if (inventory) {
+        const inventory = await this.posService.getInventoryById(inventoryId).toPromise();
+        if (!inventory) {
+            throw new Error('Inventory not found');
+        }
+
         const updatedInventory = {
-          ...inventory,
-          availableQuantity: (inventory.availableQuantity || 0) + quantity,
+            ...inventory,
+            availableQuantity: (inventory.availableQuantity || 0) + quantity,
+            lastUpdated: new Date().toISOString()
         };
-        await this.posService
-          .updateInventory(inventoryId, updatedInventory)
-          .toPromise();
-      }
+
+        await this.posService.updateInventory(inventoryId, updatedInventory).toPromise();
     } catch (error) {
-      console.error('Error updating inventory:', error);
-      throw error;
+        console.error('Error updating inventory:', error);
+        throw new Error('Failed to update inventory');
     }
-  }
+}
 
   //////
   // Fixed methods for your EditInventoryComponent
@@ -615,62 +954,105 @@ export class EditInventoryComponent implements OnInit {
   private isUpdatingFromCalculation = false;
 
   initializeStockMovementForm(): void {
-    const currentDate = new Date().toISOString().split('T')[0];
+const currentDate = new Date().toISOString(); // Keeps full format: "2025-08-14T10:30:00.123Z"
 
-    this.stockMovementForm.patchValue({
-      purchasePrice: this.activeItem?.purchasePrice || 0,
-      sellingPrice: this.activeItem?.sellingPrice || 0,
-      createdDate: currentDate,
-      supplierId: this.selectedSupplier,
-    });
+const initialValues = {
+    purchasePrice: this.activeItem?.purchasePrice || 0,
+    sellingPrice: this.activeItem?.sellingPrice || 0,
+    createdDate: currentDate, // Now includes time component
+    supplier: this.selectedSupplier,
+    quantity: 0,
+    reference: ''
+};
 
-    // Initialize price details
+    this.stockMovementForm.patchValue(initialValues);
+
+    this.initializePriceDetails();
+    this.setupStockMovementWatchers();
+}
+
+private initializePriceDetails(): void {
+    const item = this.activeItem;
+    if (!item) {
+        throw new Error('No active item selected');
+    }
+
+    // Explicit type conversion if needed
+    const basePrice = Number(item.sellingPrice) || 0;
+    const taxRate = item.tax ? Number(item.tax.rate) : 0;
+    const discountValue = item.discount?.value !== undefined ? Number(item.discount.value) : null;
+
     this.priceDetails = {
-      basePrice: Number(this.activeItem?.sellingPrice) || 0,
-      tax: Number(this.activeItem?.tax?.rate) || 0,
-      discount: this.activeItem?.discount?.value || null,
-      effectivePrice: Number(this.activeItem?.sellingPrice) || 0,
+        basePrice,
+        tax: taxRate,
+        discount: discountValue,
+        effectivePrice: basePrice,
+        taxAmount: 0,
+        priceAfterDiscount: 0
     };
 
     this.calculateEffectivePrice();
-  }
+}
 
-  calculateEffectivePrice(): void {
-    const basePrice = Number(this.priceDetails.basePrice) || 0;
-    const taxRate = Number(this.priceDetails.tax) || 0;
-    const discount = Number(this.priceDetails.discount) || 0;
+ // Add to your component's properties
+priceCalculationSettings = {
+    decimalPlaces: 2,
+    roundTax: true,
+    roundDiscount: true
+};
+
+calculateEffectivePrice(): void {
+    if (this.isUpdatingFromCalculation) return;
+
+    const basePrice = this.ensureNumber(this.priceDetails.basePrice);
+    const taxRate = this.ensureNumber(this.priceDetails.tax);
+    const discount = this.priceDetails.discount ? this.ensureNumber(this.priceDetails.discount) : 0;
 
     // Calculate price after discount
-    const priceAfterDiscount = basePrice - (basePrice * discount) / 100;
-
+    const priceAfterDiscount = this.calculatePriceAfterDiscount(basePrice, discount);
+    
     // Calculate tax amount
-    const taxAmount = (priceAfterDiscount * taxRate) / 100;
+    const taxAmount = this.calculateTaxAmount(priceAfterDiscount, taxRate);
 
     // Calculate final price
-    const finalPrice = priceAfterDiscount + taxAmount;
+    const finalPrice = this.roundValue(priceAfterDiscount + taxAmount, this.priceCalculationSettings.decimalPlaces);
 
-    this.priceDetails.effectivePrice = parseFloat(finalPrice.toFixed(2));
-    this.previewData.effectiveSellingPrice = this.priceDetails.effectivePrice;
+    this.updatePriceDetails(finalPrice, taxAmount, priceAfterDiscount);
+}
 
-    // FIXED: Set flag to prevent circular updates
+private calculatePriceAfterDiscount(basePrice: number, discount: number): number {
+    const discountAmount = (basePrice * discount) / 100;
+    return this.roundValue(basePrice - discountAmount, this.priceCalculationSettings.decimalPlaces);
+}
+
+private calculateTaxAmount(priceAfterDiscount: number, taxRate: number): number {
+    const taxAmount = (priceAfterDiscount * taxRate) / 100;
+    return this.priceCalculationSettings.roundTax 
+        ? this.roundValue(taxAmount, this.priceCalculationSettings.decimalPlaces)
+        : taxAmount;
+}
+
+private updatePriceDetails(finalPrice: number, taxAmount: number, priceAfterDiscount: number): void {
     this.isUpdatingFromCalculation = true;
 
-    // Update the selling price in the form to show the calculated effective price
-    this.stockMovementForm.patchValue(
-      {
-        sellingPrice: this.priceDetails.effectivePrice,
-      },
-      { emitEvent: false }
-    );
+    this.priceDetails = {
+        ...this.priceDetails,
+        effectivePrice: finalPrice,
+        taxAmount: taxAmount,
+        priceAfterDiscount: priceAfterDiscount
+    };
 
-    // Reset flag after update
-    setTimeout(() => {
-      this.isUpdatingFromCalculation = false;
-    }, 0);
+    this.stockMovementForm.patchValue({
+        sellingPrice: finalPrice
+    }, { emitEvent: false });
 
-    // Update preview
-    this.updatePreviewData();
-  }
+    setTimeout(() => this.isUpdatingFromCalculation = false, 0);
+}
+
+private roundValue(value: number, decimalPlaces: number): number {
+    const factor = Math.pow(10, decimalPlaces);
+    return Math.round(value * factor) / factor;
+}
 
   // FIXED: This method should update priceDetails.basePrice from the input
   updatePrices(): void {
@@ -746,4 +1128,5 @@ export class EditInventoryComponent implements OnInit {
       { emitEvent: false }
     );
   }
+  
 }

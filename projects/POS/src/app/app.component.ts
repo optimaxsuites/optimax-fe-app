@@ -40,7 +40,7 @@ export class AppComponent implements OnInit{
       username: 'adminnn',
       password: '123aa456bb',
       project: 'ERP',
-      apiKey: 'ApiKey 6f4fc8aefc712b4e45b2c78fa472c870',
+      apiKey: 'ApiKey b784e00442334be0497f434d2a4cbefd',
     };
 
     // if (!loginDetails.username || !loginDetails.password) {
