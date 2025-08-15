@@ -50,13 +50,15 @@ export class ExpenseTableComponent implements OnInit {
 
   deleteSelectedExpenses() {
     if (!this.selectedExpenses.length) return;
-    // Remove selected expenses from your main array
-    this.expenses = this.expenses.filter(
-      exp => !this.selectedExpenses.includes(exp)
-    );
+
     this.filteredExpenses = this.filteredExpenses.filter(
       exp => !this.selectedExpenses.includes(exp)
     );
+    
+    this.expenses = this.expenses.filter(
+      exp => !this.selectedExpenses.includes(exp)
+    );
+    
     this.selectedExpenses = [];
     // Optionally show a toast
     this.messageService.add({
@@ -64,6 +66,7 @@ export class ExpenseTableComponent implements OnInit {
       summary: 'Deleted',
       detail: 'Selected expenses have been deleted.'
     });
+  
   }
 
   colorClasses: string[] = [
@@ -241,11 +244,11 @@ export class ExpenseTableComponent implements OnInit {
 
   confirmDelete(expense: Expense): void {
     this.confirmationService.confirm({
-      message: `Are You sure you want to carry out this action?  Clicking on DELETE, would lead to permanent removal of - ${expense.merchant}`,
+      message: `Are you sure you want to carry out this action?  Clicking on <b>DELETE</b>, would lead to permanent removal of - ${expense.merchant}`,
       header: `Delete Expense - ${expense.merchant}`,
       icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger custom-confirm-button',
-      rejectButtonStyleClass: 'p-button-custom-cancel custom-confirm-button',
+      acceptButtonStyleClass: 'p-button-danger',
+      rejectButtonStyleClass: 'p-button-warning',
       acceptIcon: 'pi pi-trash',
       rejectIcon: 'pi pi-times',
       acceptLabel: 'Delete',
@@ -257,20 +260,43 @@ export class ExpenseTableComponent implements OnInit {
   }
 
   deleteExpense(expense: Expense): void {
-    this.expenseService.deleteExpense(expense.id);
+    this.expenses = this.expenses.filter(e => e.id !== expense.id); 
+    this.filteredExpenses = this.filteredExpenses.filter(e => e.id !== expense.id);
+
+    localStorage.setItem('expenses', JSON.stringify(this.expenses));
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Expense Deleted',
+      detail: `Expense for ${expense.merchant} has been successfully deleted.`
+    });
+    /*this.expenseService.deleteExpense(expense.id);
     this.messageService.add({
       severity: 'success',
       summary: 'Expense Deleted',
       detail: `Expense for ${expense.merchant} has been successfully deleted.`
     });
     this.loadExpensesFromLocalStorage();
+    */
   }
 
   deleteExpense2(expenseId: string): void {
+    if (!expenseId) return;
+    this.expenses = this.expenses.filter(e => e.id !== expenseId);
+    this.filteredExpenses = this.filteredExpenses.filter(e => e.id !== expenseId);    
+    localStorage.setItem('expenses', JSON.stringify(this.expenses));
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Expense Deleted',
+      detail: `Expense with ID ${expenseId} has been successfully deleted.`
+    });
+    
+    /*
     const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
     const updatedExpenses = expenses.filter((exp: any) => exp.id !== expenseId);
     localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
     this.filteredExpenses = updatedExpenses;
+    */
   }
 
   viewExpenseApproval(expense: Expense): void {

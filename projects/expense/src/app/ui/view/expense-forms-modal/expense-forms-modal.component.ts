@@ -1,12 +1,15 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ExpenseService, Expense } from '../../service/expense.service';
 import { Router, ActivatedRoute } from '@angular/router';
+import { MessageService } from 'primeng/api';
+import { NgForm } from '@angular/forms';
 
 
 @Component({
   selector: 'app-expense-forms-modal',
   templateUrl: './expense-forms-modal.component.html',
   styleUrls: ['./expense-forms-modal.component.scss'],
+  providers: [MessageService]
 })
 export class ExpenseFormsModalComponent implements OnInit {
 drawStart() {
@@ -76,7 +79,8 @@ throw new Error('Method not implemented.');
   constructor(
     private expenseService: ExpenseService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
@@ -132,9 +136,15 @@ throw new Error('Method not implemented.');
       this.assignFile(file, type);
     }
   }
-  goBack(){
-    this.router.navigate(['/admin/expenses/:uuid']);
+
+  cancelExpenses() {
+    this.router.navigate(['/admin/expenses']);
   }
+
+  goBack(){
+    this.router.navigate(['/admin/expenses']);
+  }
+    
   
   assignFile(file: File, type: string): void {
     if (type === 'receipt') {
@@ -146,7 +156,34 @@ throw new Error('Method not implemented.');
 
 
 
-  submitExpense(): void {
+  submitExpense(form: NgForm): void {
+    if (form.invalid) {
+      form.control.markAllAsTouched();
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Form Invalid',
+        detail: 'Please fill in all required fields.'
+      });
+      return;
+      
+    } 
+
+      if (!this.receiptFile) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Missing Receipt',
+        detail: 'Please upload a receipt file.'
+      });
+      return;
+    }
+
+    if (!this.expenseSummary.category || !this.expenseSummary.quantity) {
+     alert('Please select a category and quantity.');
+      return;
+    }
+
+  
+    
     const newExpense: Expense = {
       ...this.expenseSummary,
       id: this.expenseSummary.id || this.generateId(),
@@ -166,8 +203,15 @@ throw new Error('Method not implemented.');
 this.saveExpenseToLocalStorage(newExpense);
 console.log('Expense saved to localStorage:', newExpense);
 
+this.messageService.add({
+  severity: 'success',
+  summary: 'Expense Submitted',
+  detail: `Expense for ${newExpense.merchant} has been successfully submitted.`
+})
+
  // Reset the form data
   this.resetForm();
+  form.resetForm();
   }
 
   saveExpenseToLocalStorage(expense: any): void {
@@ -192,7 +236,7 @@ console.log('Expense saved to localStorage:', newExpense);
       amount: null,
       merchant: '',
       category: null,
-      Quantity: null,
+      quantity: null,
       taxPercentage: null,
       project: null,
       eventDate: '',

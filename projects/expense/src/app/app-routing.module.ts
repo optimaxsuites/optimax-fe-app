@@ -12,7 +12,12 @@ import { ApprovalReportsComponent } from './ui/view/approval-reports/approval-re
 
 
 const routes: Routes = [
-   { path: ':uuid',
+   { path: ':uuid'},
+  {
+    path: 'expenses',
+    component: ExpensesComponent,
+  },
+   { path: 'expenses/:uuid',
         component: ExpensesComponent,
       },
       {
