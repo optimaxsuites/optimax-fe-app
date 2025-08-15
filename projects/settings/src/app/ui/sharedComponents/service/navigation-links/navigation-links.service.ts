@@ -65,7 +65,7 @@ export class NavigationLinksService {
 //  resources ================================================================================================================
     this.links['posLink'] = '/admin/pos/' +uuidV4();
     this.links['crmLink'] = '/admin/crm/' +uuidV4();
-    this.links['expensesLink'] = '/admin/expenses/' + uuidV4();
+    this.links['expensesLink'] = '/admin/expenses/expense/' + uuidV4();
     this.links['orderDetails'] = '/user/checkout/order/' + uuidV4();
     this.links['productivityLink'] = '/admin/productivity/' +uuidV4();
 

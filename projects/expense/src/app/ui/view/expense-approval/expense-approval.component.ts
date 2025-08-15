@@ -82,7 +82,7 @@ export class ExpenseApprovalComponent implements OnInit {
 
   editExpense(): void {
     if (this.expense) {
-      this.router.navigate(['/expenses/expensesForm'], {
+      this.router.navigate(['/expensesForm'], {
         queryParams: { id: this.expense.id }
       });
     }
