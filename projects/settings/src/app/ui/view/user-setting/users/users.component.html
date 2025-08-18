@@ -52,7 +52,7 @@
         <mat-expansion-panel #panel>
           <mat-expansion-panel-header>
             <mat-panel-title class="capitalize">
-              {{ user.name }}
+              {{ user.username }}
             </mat-panel-title>
             <mat-panel-description class="action-buttons">
               <button (click)="editCompensation(user,  $event)" class="text-customGreen hover:bg-green-50 p-3 rounded-xl">
@@ -69,12 +69,12 @@
           <div class="flex gap-4  flex-col my-2">
             <!-- <p ><strong>Name:</strong> {{ user.name }}</p> -->
             <p><strong>Email:</strong> {{ user.email }}</p>
-            <p><strong>Status:</strong> {{ user.status }}</p>
-            <p><strong>Date Created:</strong> {{ user.dateCreated | date }}</p>
+            <p><strong>Status:</strong> {{ user.accountState }}</p>
+            <p><strong>Role:</strong> {{ getRoleNames(user) }}</p>
 
           </div>
     
-          <div class="">
+          <!-- <div class="">
             <table class="w-full border-collapse border border-gray-300">
               <thead>
                 <tr class="bg-gray-100">
@@ -121,7 +121,7 @@
               </tbody>
               
             </table>
-          </div>
+          </div> -->
         </mat-expansion-panel>
       }
       @empty {<li>There are no items.</li>}
@@ -132,82 +132,6 @@
 
   @if (openAddForm) {
     
-  <!-- <div class="flex w-full justify-between gap-4 px-3 my-4">
- <div class="text-xl font-semibold text-customBlue capitalize flex-1">Create new user</div>
-    
-    <div class="flex items-end">
-        <Button  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3" (click)="openAddForm = false">Cancel</Button>
-       </div>
-</div>
-
-
-<div class="px-4 flex flex-col justify-center items-center w-full">
-    <div class="w-[75%]  p-2 rounded">
-        <div class="py-3 flex flex-col gap-1">
-            <label for="name" class="font-semibold text-customBlue">Name</label>
-            <input type="text" placeholder="User name" id="name" class="editInput" [(ngModel)]="newUser.name">
-          </div>
-          <div class="py-3 flex flex-col gap-1">
-              <label for="name" class="font-semibold text-customBlue">Email</label>
-              <input type="email" placeholder="Email" id="name" class="editInput" [(ngModel)]="newUser.email">
-          </div>
-          <div class="py-3 flex flex-col gap-1">
-            <label for="name" class="font-semibold text-customBlue">Password</label>
-            <input type="email" placeholder="Email" id="name" class="editInput" [(ngModel)]="newUser.password">
-        </div>
-          <div class="my-3" *ngIf="Object.keys(newUser.permission).length">
-              <h3 class="font-semibold text-customBlue">Permissions</h3>
-              <ul>
-                <li *ngFor="let module of Object.keys(newUser.permission)" class="flex capitalize justify-between items-center w-full shadow-md p-3 rounded-md ">
-                  <span class="font-semibold">{{ module }}</span> <span>{{ newUser.permission[module]}} <span class="cursor-pointer ml-3"><i class="fa-solid fa-xmark"></i></span></span>
-                </li>
-              </ul>
-            </div>
-          <div class="flex gap-3 py-3 w-full items-center h-full">
-          
-              <div class="w-full ">
-                  <label for="module" class="text-customBlue">Module</label>
-                  <ng-select
-                  [items]="uniquePositions"
-                  id="'module"
-                  bindLabel="position"
-                  placeholder="Select Module"
-                  [(ngModel)]="selectedModule"
-                  (ngModelChange)="filterBySelectedPosition()"
-                  >
-                </ng-select>
-                
-                </div>
-          
-                <div class="w-full">
-                  <label for="role" class="text-customBlue">Role</label>
-      
-                  <ng-select
-                  [items]="uniqueLevels"
-                  id="'role"
-                  bindLabel="position"
-                  placeholder="Select Role"
-                  [(ngModel)]="selectedRole"
-                  (ngModelChange)="filterBySelectedEmployeeType()">
-                </ng-select>
-                </div>
-      
-                <div (click)="attachModuleToRole()" class="w-[15%] text-customGreen cursor-pointer">+ add</div>
-          </div>
-
-          <div class="text-right my-3">
-            <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-customGreenHover disabled:cursor-not-allowed"
-              (click)="submitUser()" [disabled]="newUser.name === ''">
-              Add
-            </button>
-          </div>
-    </div>
-  
- 
-   
-  </div> -->
-
-
   <div class="flex w-full justify-between gap-4 px-3 my-4">
   <div class="text-xl font-semibold text-customBlue capitalize flex-1">Create new user</div>
   <div class="flex items-end">
@@ -215,14 +139,14 @@
   </div>
 </div>
 
-<div class="px-4 flex flex-col justify-center items-center w-full">
-  <div class="w-[75%] p-2 rounded">
+<div class="px-4 flex flex-col justify-center items-center w-full ">
+  <div class="w-[75%] py-2 px-10 rounded-lg bg-white">
     
     <!-- Authentication Type Selection -->
     <div class="py-3 flex flex-col gap-3">
-      <h3 class="font-semibold text-customBlue">Authentication Type</h3>
+      <h3 class="text-lg font-semibold text-customBlue">Authentication Type</h3>
       <div class="flex gap-4">
-        <label class="flex items-center cursor-pointer">
+        <!-- <label class="flex items-center cursor-pointer">
           <input 
             type="radio" 
             name="authType" 
@@ -233,25 +157,36 @@
           >
           <span class="text-gray-700">Username & Password</span>
           <span class="text-sm text-gray-500 ml-2">(Standard users)</span>
-        </label>
+        </label> -->
         <label class="flex items-center cursor-pointer">
           <input 
-            type="radio" 
+            type="checkbox" 
             name="authType" 
-            value="code" 
+          
             class="mr-2 text-customBlue focus:ring-customBlue" 
-            [(ngModel)]="newUser.authType"
-            (change)="onAuthTypeChange()"
+            [(ngModel)]="codeAuthType"
+            
           >
           <span class="text-gray-700">Access Code</span>
           <span class="text-sm text-gray-500 ml-2">(Quick checkout users)</span>
         </label>
       </div>
+
+       <div class="bg-blue-50 border-l-4 border-customBlue p-3 my-3" *ngIf="codeAuthType">
+        <div class="flex items-start">
+          <i class="fa-solid fa-info-circle text-customBlue mr-2 mt-1"></i>
+          <div class="text-sm text-gray-700">
+            <p class="font-semibold text-customBlue">Code-based Authentication</p>
+            <p>This user will only need to enter their access code to log in. Perfect for checkout stations and quick access scenarios.</p>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Basic Information -->
     <div class="py-3 flex flex-col gap-1">
-      <label for="name" class="font-semibold text-customBlue">Name</label>
+      <label for="name" class="font-semibold text-customBlue">Username</label>
       <input 
         type="text" 
         placeholder="User name" 
@@ -285,113 +220,33 @@
       >
     </div>
 
-    <!-- Access Code Section (only for code-based users) -->
-    <div *ngIf="newUser.authType === 'code'">
-      <div class="py-3 flex flex-col gap-1">
-        <label for="accessCode" class="font-semibold text-customBlue">Access Code</label>
-        <div class="flex gap-2 items-center">
-          <input 
-            type="text" 
-            placeholder="Access code" 
-            id="accessCode" 
-            class="editInput flex-1" 
-            [(ngModel)]="newUser.accessCode"
-            [readonly]="autoGenerateCode"
-          >
-          <button 
-            type="button" 
-            class="bg-customBlue hover:bg-customBlueHover text-white px-3 py-2 rounded-md text-sm"
-            (click)="generateRandomCode()"
-          >
-            Generate
-          </button>
-        </div>
-      </div>
-      
-      <div class="py-2">
-        <label class="flex items-center cursor-pointer">
-          <input 
-            type="checkbox" 
-            class="mr-2 text-customBlue focus:ring-customBlue" 
-            [(ngModel)]="autoGenerateCode"
-          >
-          <span class="text-sm text-gray-700">Auto-generate unique code</span>
-        </label>
-      </div>
-
-      <!-- Code Usage Instructions -->
-      <div class="bg-blue-50 border-l-4 border-customBlue p-3 my-3">
-        <div class="flex items-start">
-          <i class="fa-solid fa-info-circle text-customBlue mr-2 mt-1"></i>
-          <div class="text-sm text-gray-700">
-            <p class="font-semibold text-customBlue">Code-based Authentication</p>
-            <p>This user will only need to enter their access code to log in. Perfect for checkout stations and quick access scenarios.</p>
-          </div>
-        </div>
-      </div>
+    <div class="my-3" *ngIf="selectedRole.length > 0">
+      <h3 class="text-lg font-semibold text-customBlue">Selected roles</h3>
+     <p>{{ selectedRole.join(", ") }}</p>
     </div>
 
-    <!-- User Role/Department (optional field for organization) -->
-    <!-- <div class="py-3 flex flex-col gap-1" *ngIf="newUser.authType === 'password'">
-      <label for="department" class="font-semibold text-customBlue">Department/Role <span class="text-gray-500 text-sm">(Optional)</span></label>
-      <input 
-        type="text" 
-        placeholder="e.g., Sales, Checkout, Admin" 
-        id="department" 
-        class="editInput" 
-        [(ngModel)]="newUser.department"
-      >
-    </div> -->
-
-    <!-- Permissions Section (only for password-based users) -->
-    <div class="my-3" *ngIf="newUser.authType === 'password' && Object.keys(newUser.permission).length">
-      <h3 class="font-semibold text-customBlue">Permissions</h3>
-      <ul>
-        <li *ngFor="let module of Object.keys(newUser.permission)" class="flex capitalize justify-between items-center w-full shadow-md p-3 rounded-md mb-2">
-          <span class="font-semibold">{{ module }}</span> 
-          <span>{{ newUser.permission[module] }} 
-            <span class="cursor-pointer ml-3" (click)="removePermission(module)">
-              <i class="fa-solid fa-xmark text-red-500 hover:text-red-700"></i>
-            </span>
-          </span>
-        </li>
-      </ul>
-    </div>
-
-    <!-- Permission Assignment (only for password-based users) -->
-    <div class="flex gap-3 py-3 w-full items-center h-full" *ngIf="newUser.authType === 'password'">
-      <div class="w-full">
-        <label for="module" class="text-customBlue">Module</label>
-        <ng-select
-          [items]="uniquePositions"
-          id="module"
-          bindLabel="position"
-          placeholder="Select Module"
-          [(ngModel)]="selectedModule"
-          (ngModelChange)="filterBySelectedPosition()"
-        >
-        </ng-select>
-      </div>
+    <div class="flex gap-3 py-3 w-full items-center h-full" >
+     
 
       <div class="w-full">
         <label for="role" class="text-customBlue">Role</label>
         <ng-select
-          [items]="uniqueLevels"
+          [items]="roles"
           id="role"
-          bindLabel="position"
+          bindLabel="name"
+          bindValue="code"
+          [multiple]="true"
           placeholder="Select Role"
           [(ngModel)]="selectedRole"
-          (ngModelChange)="filterBySelectedEmployeeType()"
         >
         </ng-select>
       </div>
 
-      <div (click)="attachModuleToRole()" class="w-[15%] text-customGreen cursor-pointer hover:text-customGreenHover">
+      <!-- <div (click)="attachModuleToRole()" class="w-[15%] text-customGreen cursor-pointer hover:text-customGreenHover">
         + add
-      </div>
+      </div> -->
     </div>
 
-    <!-- Code-based user has limited permissions info -->
     <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 my-3" *ngIf="newUser.authType === 'code'">
       <div class="flex items-start">
         <i class="fa-solid fa-exclamation-triangle text-yellow-600 mr-2 mt-1"></i>

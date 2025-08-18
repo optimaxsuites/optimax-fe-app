@@ -4,6 +4,8 @@ import { AuthenticationService } from '../../../sharedComponents/service/auth-se
 import { environment } from '../../../sharedComponents/service/environments/environment.prod';
 import { Router } from '@angular/router';
 import { NavigationLinksService } from '../../../sharedComponents/service/navigation-links/navigation-links.service';
+import { ModulesService } from '../../../service/modules.service';
+import { UserService } from '../../../sharedComponents/service/user.service';
 
 
 
@@ -26,7 +28,16 @@ interface user {
   styleUrl: './users.component.scss'
 })
 export class UsersComponent {
-
+filterBySelectedEmployeeType() {
+throw new Error('Method not implemented.');
+}
+filterBySelectedPosition() {
+throw new Error('Method not implemented.');
+}
+applyFilters() {
+throw new Error('Method not implemented.');
+}
+codeAuthType: boolean = false
 openAddForm: boolean = false
 uniqueLevels = ['admin', 'checkout', 'inventory manager']
 uniquePositions = ['POS', 'Human resources', 'Office productivity']
@@ -37,18 +48,8 @@ filteredUsers: any[] = [];
 Object = Object
 autoGenerateCode: boolean = true;
 
-users: user[] = [
-  {
-    name: "John Doe",
-    email: "john.doe@example.com",
-    dateCreated: "2024-03-01",
-    password: "",
-    status: "active",
-    permission: { pos: "admin", "human resources": "manager" },
-    isEditing: false,
-    authType: "password",
-    accessCode: ""
-  }
+users: any[] = [
+ 
  
 ];
 
@@ -65,50 +66,42 @@ newUser: user ={
   accessCode: '',
 }
 selectedModule: string = ''; 
-selectedRole: string = '';
-
+selectedRole: string[] = [];
+roles: any[] = []
 
 constructor(private confirmationService: ConfirmationService, private messageService: MessageService, private authenticationService: AuthenticationService,     private router: Router,
-  private navigationLink: NavigationLinksService,){
+  private navigationLink: NavigationLinksService, private moduleService: ModulesService, private userService: UserService){
 
 }
 
-applyFilters() {
-  // this.filteredUsers = this.users.filter((user: { name: any; position: string; firstName: string; lastName: string; }) => {
-  //   const matchesLevelType = this.selectedEmployeeType.length === 0 || 
-  //                            this.selectedEmployeeType.includes(user.level);
+ngOnInit(){
+   this.moduleService.getRoles().subscribe( {
+     next: (data: any[]) => {
+      this.roles = data
+     },
+     error(err) {
+      console.log(err)
+     } 
+    });
 
-  //   const matchesPosition = this.selectedPosition.length === 0 || 
-  //                           this.selectedPosition.includes(user.position);
-
-  //   const matchesSearchTerm = this.searchTerm === '' || 
-  //                             user.firstName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-  //                             user.lastName.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-  //                             user.position.toLowerCase().includes(this.searchTerm.toLowerCase());
-
-  //   return matchesLevelType && matchesPosition && matchesSearchTerm;
-  // });
+    this.fetchUsers()
 }
 
-filterBySelectedEmployeeType() {
-  // this.filteredUsers = this.users.filter((user: { level: any; position: string; firstName: string; lastName: string; }) => {
-  //   return this.selectedEmployeeType.length === 0 || 
-  //                            this.selectedEmployeeType.includes(user.level);
-  // })
-  }
-
-
-filterBySelectedPosition() {
-  //  this.filteredUsers = this.users.filter((user: { level: any; position: string; firstName: string; lastName: string; }) => {
-  //   return this.selectedPosition.length === 0 || 
-  //   this.selectedPosition.includes(user.position);
-  // })
-   }
+fetchUsers(){
+  this.userService.getUsers().subscribe({
+    next: (data) => {
+      this.users = data
+    },
+    error(err){
+      console.log(err)
+    }
+  })
+}
    updateRole(permission: any){
     if (this.selectedModule && this.selectedRole) {
       permission[this.selectedModule] = this.selectedRole;
     this.selectedModule = ''
-    this.selectedRole = ''
+    this.selectedRole = []
     }
    }
 
@@ -119,21 +112,9 @@ filterBySelectedPosition() {
    
   }
 
-  onAuthTypeChange(): void {
-    if (this.newUser.authType === 'code') {
-      // Clear password-related fields when switching to code
-      this.newUser.email = '';
-      this.newUser.password = '';
-      this.newUser.permission = {};
-      
-      // Generate code if auto-generate is enabled
-      if (this.autoGenerateCode) {
-        this.generateRandomCode();
-      }
-    } else {
-      // Clear code-related fields when switching to password
-      this.newUser.accessCode = '';
-    }
+  onAuthTypeChange() {
+
+    this.codeAuthType = !this.codeAuthType
   }
 
   removePermission(module: string): void {
@@ -154,7 +135,6 @@ filterBySelectedPosition() {
     return false;
   }
 
-  // Generate a random access code
   generateRandomCode(): void {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
@@ -175,7 +155,7 @@ filterBySelectedPosition() {
         username: this.newUser.name,
         password: this.newUser.password,
         email: this.newUser.email,
-        role: ['user'],
+        role: this.selectedRole,
         project : `${environment.project}`,
         apiKey : `${environment.apiKey}`
     };
@@ -187,7 +167,21 @@ filterBySelectedPosition() {
             // Optionally, redirect to another page after successful registration
             // this.router.navigateByUrl('/email-verification');
             const emvLink = this.navigationLink.getLink('emvLink')
-            this.router.navigate([emvLink]);
+            if(this.codeAuthType){
+              this.authenticationService.codeActivation(data.ecode).subscribe({
+                next: () => {
+                this.messageService.add({ severity: 'success', summary: 'Success', detail: 'User registered successfully!' });
+                },
+                error: (err) => {
+                  console.log(err)
+                  this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to activate users ecode, Try again later!' });
+                },
+              })
+            }else {
+            this.messageService.add({ severity: 'success', summary: 'Success', detail: 'User registered successfully!' });
+
+            }
+            // this.router.navigate([emvLink]);
         },
         (error) => {
 
@@ -230,7 +224,7 @@ filterBySelectedPosition() {
   
   }
 
-    updateUser(user: user) {
+    updateUser(user: any) {
       console.log('invoked')
       console.log(Object.keys(user.permission).length)
       if(Object.keys(user.permission).length >= 1){
@@ -250,12 +244,12 @@ filterBySelectedPosition() {
         })
       }
     }  
-  confirmDeleteUser(user: user, event: Event) {
+  confirmDeleteUser(user: any, event: Event) {
     event.stopPropagation()
 
     this.confirmationService.confirm({
-      message: `Are You sure you want to carry out this action?  Clicking on DELETE, would lead to permanent removal of ${user.name}'s salary structure`,
-      header: `Delete user - ${user.name}`,
+      message: `Are You sure you want to carry out this action?  Clicking on DELETE, would lead to permanent removal of ${user.username}'s salary structure`,
+      header: `Delete user - ${user.username}`,
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass:"p-btn-danger p-button-text",
       rejectButtonStyleClass:"p-btn-cancel p-button-text",
@@ -273,8 +267,16 @@ filterBySelectedPosition() {
     });
   }
 
-  deleteUser(user: user){
-    this.users = this.users.filter((u: user) => u.name!== user.name);
+  deleteUser(user: any){
+    this.userService.deleteUsers(user.id).subscribe({
+      next: (value) => {
+       this.users = this.users.filter((u: any) => u.username!== user.username);
+        
+      },
+      error(err){
+        console.log(err)
+      }
+    })
   }
   confirmCompensationDelete(arg0: any,$event: MouseEvent) {
     throw new Error('Method not implemented.');
@@ -294,14 +296,19 @@ filterBySelectedPosition() {
 
     attachModuleToRole() {
       if (this.selectedModule && this.selectedRole) {
-        this.newUser.permission[this.selectedModule] = this.selectedRole;
+        // this.newUser.permission[this.selectedModule] = this.selectedRole;
     
         this.selectedModule = '';
-        this.selectedRole = '';
+        this.selectedRole = [];
     
         console.log("Updated User Permissions:", this.newUser.permission);
       } else {
         alert("Please select both a module and a role.");
       }
     }
+
+   getRoleNames(user: any): string {
+  return user?.roles?.map((r: any) => r.name).join(", ") ?? '';
+}
+
 }
