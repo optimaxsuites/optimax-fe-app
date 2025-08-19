@@ -47,7 +47,7 @@ searchTerm: any;
 filteredUsers: any[] = [];
 Object = Object
 autoGenerateCode: boolean = true;
-
+autoVerify: boolean = false;
 users: any[] = [
  
  
@@ -309,6 +309,10 @@ fetchUsers(){
 
    getRoleNames(user: any): string {
   return user?.roles?.map((r: any) => r.name).join(", ") ?? '';
+}
+
+activateUser(user: any, event: any){
+
 }
 
 }

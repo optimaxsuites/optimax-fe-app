@@ -55,6 +55,10 @@
               {{ user.username }}
             </mat-panel-title>
             <mat-panel-description class="action-buttons">
+               <button (click)="activateUser(user,  $event)" class="text-yellow-600 hover:bg-yellow-200 p-3 rounded-xl">
+                <i class="fa-solid fa-power-off cursor-pointer text-2xl pr-2"></i>
+                <span *ngIf="panel.expanded">{{ user.status === "PENDING" ? 'Activate' : 'Deactivate' }}</span>
+              </button>
               <button (click)="editCompensation(user,  $event)" class="text-customGreen hover:bg-green-50 p-3 rounded-xl">
                 <i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2"></i>
                 <span *ngIf="panel.expanded">{{ user.isEditing ? 'Save Changes' : 'Edit' }}</span>
@@ -181,6 +185,46 @@
           </div>
         </div>
       </div>
+
+
+       <!-- <h3 class="text-lg font-semibold text-customBlue">Automatically verify user</h3> -->
+      <div class="flex gap-4 mt-1">
+        <!-- <label class="flex items-center cursor-pointer">
+          <input 
+            type="radio" 
+            name="authType" 
+            value="password" 
+            class="mr-2 text-customBlue focus:ring-customBlue" 
+            [(ngModel)]="newUser.authType"
+            (change)="onAuthTypeChange()"
+          >
+          <span class="text-gray-700">Username & Password</span>
+          <span class="text-sm text-gray-500 ml-2">(Standard users)</span>
+        </label> -->
+        <label class="flex items-center cursor-pointer">
+          <input 
+            type="checkbox" 
+            name="authType" 
+          
+            class="mr-2 text-customBlue focus:ring-customBlue" 
+            [(ngModel)]="autoVerify"
+            
+          >
+          <span class="text-gray-700">Automatically verify account</span>
+          <!-- <span class="text-sm text-gray-500 ml-2">()</span> -->
+        </label>
+      </div>
+
+       <div class="bg-blue-50 border-l-4 border-customBlue p-3 my-3" *ngIf="autoVerify">
+        <div class="flex items-start">
+          <i class="fa-solid fa-info-circle text-customBlue mr-2 mt-1"></i>
+          <div class="text-sm text-gray-700">
+            <p class="font-semibold text-customBlue">Automatically verify account</p>
+            <p>This user will not need to verify their account themselves.</p>
+          </div>
+        </div>
+      </div>
+      
 
     </div>
 
