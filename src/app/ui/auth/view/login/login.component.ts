@@ -164,7 +164,7 @@ async posLoginAction(): Promise<void> {
   }
 
   async passwordLoginAction(): Promise<void> {
-   
+   console.log(this.posCode)
     const loginDetails = {
       eCode: this.posCode,
       apiKey: `${environment.apiKey}`
@@ -172,7 +172,7 @@ async posLoginAction(): Promise<void> {
 
     try {
       const data = await this.authenticationService.userWithLogin(loginDetails).toPromise();
-      this.handleLoginResponse(data);
+      this.handleCodeLoginResponse(data);
     } catch (error) {
       this.handleLoginError(error);
     } finally {
@@ -199,6 +199,30 @@ async posLoginAction(): Promise<void> {
       this.loggedIn = true;
     }
   }
+
+   async handleCodeLoginResponse(data: any): Promise<void> {
+    if (!data) {
+      this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid credentials. Please check and try again.' });
+      this.loggedIn = false;
+    } else {
+      this.loadInitParam(data);
+      const dashboardLink = this.navigationLink.getLink('dashboardLink');
+
+      this.router.navigate([dashboardLink]);
+
+
+      // const registrationComplete = await this.checkUserReg();
+      // if (registrationComplete) {
+      //   const dashboardLink = this.navigationLink.getLink('dashboardLink');
+      //   this.router.navigate([dashboardLink]);
+      // } else {
+      //   const registrationLink = this.navigationLink.getLink('userRegistrationLink');
+      //   this.router.navigate([registrationLink]);
+      // }
+      this.loggedIn = true;
+    }
+  }
+
 
   handleLoginError(error: any): void {
     if (error instanceof HttpErrorResponse) {
@@ -281,7 +305,7 @@ async posLoginAction(): Promise<void> {
 
   if (this.posCode.length === 4) {
       setTimeout(() => {
-        this.loginInfo.username = this.posCode; 
+        // this.loginInfo.username = this.posCode; 
         this.passwordLoginAction();
       }, 300);
     }
