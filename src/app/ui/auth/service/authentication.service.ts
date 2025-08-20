@@ -62,6 +62,14 @@ export class AuthenticationService {
         .pipe(catchError(this.handleError));
   }
 
+  userWithLogin(data: any): Observable<any> {
+    // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/sigin"+"---"+JSON.stringify(data)))
+
+    return this.http
+        .post<any>(this.getBaseApiUrl() + `/x/api/v2/auth/esignin/${data.ecode}/${data.apiKey}`, {})
+        .pipe(catchError(this.handleError));
+  }
+
   getUserPrimaryInfoById(data: string): Observable<any>{
     // console.log((this.getBaseApiUrl() + `/x/api/v2/us/ur/get/user/primary/info/${data}`+"---"+JSON.stringify(data)))
     // const url = `${this.getBaseApiUrl()}/x/api/v2/us/ur/get/user/primary/info/${data}`;

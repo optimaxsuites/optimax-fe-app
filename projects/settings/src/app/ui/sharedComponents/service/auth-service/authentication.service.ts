@@ -90,7 +90,7 @@ export class AuthenticationService {
     // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/signup"+"---"+JSON.stringify(data)))
 
     return this.http
-      .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signup", data)
+      .post<any>(this.getBaseApiUrl() + "/x/api/v2/auth/signup/by/admin", data)
       .pipe(catchError(this.handleError));
   }
 

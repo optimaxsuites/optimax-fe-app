@@ -44,8 +44,16 @@ export class LoginComponent implements OnInit {
   submitted: boolean = false;
   loggedOutMessage1?: string;
   messages: Message[] | undefined;
+  posCode: string = '';
+  pinDots: number[] = [1, 2, 3, 4];
+  
+  // New state variable to toggle between login modes
+  isCodeLogin: boolean = false;
+  
+  // New variable to store the POS code entered via numpad
+  posCodeDisplay: string = '';
 
-  public token!: string; 
+  public token!: string;
   hide = signal(true);
   clickEvent(event: MouseEvent) {
     this.hide.set(!this.hide());
@@ -67,9 +75,6 @@ export class LoginComponent implements OnInit {
   ){}
 
   ngOnInit(): void {
-    // const loginLink = this.navigationLink.getLink('signinLink')
-    // this.router.navigate([loginLink]);
-
     if (this.authenticationService.isLoggedIn()) {
       this.authenticationService.logout();
       this.loggedOutMessage1 = 'You have been logged out. Please log in again';
@@ -77,84 +82,155 @@ export class LoginComponent implements OnInit {
     }
   }
 
+  // Method to toggle the login mode
+  toggleLoginMode(): void {
+    this.isCodeLogin = !this.isCodeLogin;
+    // Clear the form fields when toggling modes
+    this.loginInfo = {};
+    this.posCodeDisplay = '';
+  }
+  
+ 
+async posLoginAction(): Promise<void> {
+ this.loading = true;
+
+ const loginDetails = {
+  username: this.loginInfo.username,
+  password: this.loginInfo.password,
+  project: `${environment.project}`,
+  apiKey: `${environment.apiKey}`
+ };
+
+ if (!this.loginInfo.username || !this.loginInfo.password) {
+  this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
+  this.loading = false;
+  return;
+ }
+
+ try {
+  const data = await this.authenticationService.userLogin(loginDetails).toPromise();
+  this.loadInitParam(data);
+
+  if (!data) {
+  this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
+  this.loggedIn = false;
+  } else {
+  const registrationComplete = await this.checkUserReg();
+  console.log('Registration complete:', registrationComplete)
+
+  if (registrationComplete) {
+   console.log('routing...')
+   const dashboardLink = this.navigationLink.getLink('dashboardLink');
+   console.log(dashboardLink)
+
+
+   this.router.navigate([dashboardLink]);
+  } else {
+   const registrationLink = this.navigationLink.getLink('userRegistrationLink');
+   this.router.navigate([registrationLink]);
+  }
+  this.loggedIn = true;
+  }
+ } catch (error) {
+  if (error instanceof HttpErrorResponse) {
+  if (error.status === 500) {
+   this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
+  }
+  else if (error.status === 404) {
+   this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.' });
+  } else if (error.status === 0) {
+   this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
+  }
+  } else {
+  this.messageService.add({ severity: 'error', summary: 'Unknown Error', detail: 'An unexpected error occurred.' });
+  }
+  this.loggedIn = false;
+ } finally {
+  this.loading = false;
+ }
+ }
+
   async userLoginAction(): Promise<void> {
     this.loading = true;
-  
+
+    // Check which login mode is active and call the appropriate function
+    if (this.isCodeLogin) {
+      await this.passwordLoginAction();
+
+    } else {
+      await this.posLoginAction();
+
+    }
+  }
+
+  async passwordLoginAction(): Promise<void> {
+   
     const loginDetails = {
-      username: this.loginInfo.username,
-      password: this.loginInfo.password,
-      project: `${environment.project}`,
+      eCode: this.posCode,
       apiKey: `${environment.apiKey}`
     };
-  
-    if (!this.loginInfo.username || !this.loginInfo.password) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
-      this.loading = false;
-      return;
-    }
-  
-    try {
-      const data = await this.authenticationService.userLogin(loginDetails).toPromise();
-      this.loadInitParam(data);
-  
-      if (!data) {
-        this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
-        this.loggedIn = false;
-      } else {
-        const registrationComplete = await this.checkUserReg();
-        console.log('Registration complete:', registrationComplete); 
-  
-        if (registrationComplete) {
-          console.log('routing...')
-          const dashboardLink = this.navigationLink.getLink('dashboardLink');
-          console.log(dashboardLink)
 
-          this.router.navigate([dashboardLink]);
-        } else {
-          const registrationLink = this.navigationLink.getLink('userRegistrationLink');
-          this.router.navigate([registrationLink]);
-        }
-        this.loggedIn = true;
-      }
+    try {
+      const data = await this.authenticationService.userWithLogin(loginDetails).toPromise();
+      this.handleLoginResponse(data);
     } catch (error) {
-      if (error instanceof HttpErrorResponse) {
-        if (error.status === 500) {
-          this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
-        } 
-        else if (error.status === 404) {
-          this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.' });
-        } else if (error.status === 0) {
-          this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
-        }
-      } else {
-        this.messageService.add({ severity: 'error', summary: 'Unknown Error', detail: 'An unexpected error occurred.' });
-      }
-      this.loggedIn = false;
+      this.handleLoginError(error);
     } finally {
       this.loading = false;
     }
+  }
+
+
+  async handleLoginResponse(data: any): Promise<void> {
+    if (!data) {
+      this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid credentials. Please check and try again.' });
+      this.loggedIn = false;
+    } else {
+      this.loadInitParam(data);
+
+      const registrationComplete = await this.checkUserReg();
+      if (registrationComplete) {
+        const dashboardLink = this.navigationLink.getLink('dashboardLink');
+        this.router.navigate([dashboardLink]);
+      } else {
+        const registrationLink = this.navigationLink.getLink('userRegistrationLink');
+        this.router.navigate([registrationLink]);
+      }
+      this.loggedIn = true;
+    }
+  }
+
+  handleLoginError(error: any): void {
+    if (error instanceof HttpErrorResponse) {
+      if (error.status === 500) {
+        this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid credentials. Please check and try again.' });
+      }
+      else if (error.status === 404) {
+        this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.' });
+      } else if (error.status === 0) {
+        this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
+      }
+    } else {
+      this.messageService.add({ severity: 'error', summary: 'Unknown Error', detail: 'An unexpected error occurred.' });
+    }
+    this.loggedIn = false;
   }
   
   checkUserReg(): Promise<boolean> {
     return new Promise((resolve, reject) => {
       const userId = sessionStorage.getItem('userid');
-      // console.log('Checking registration for userId:', userId); 
-  
       if (!userId) {
-        resolve(false); 
+        resolve(false);
         return;
       }
-  
+
       this.authenticationService.getUserPrimaryInfoById(userId).subscribe(
         data => {
           sessionStorage["userPrimaryInfoRegData"] = JSON.stringify(data);
-
-          // console.log('User registration data:', data); 
-          resolve(!!data && !!data.id); 
+          resolve(!!data && !!data.id);
         },
         error => {
-          // console.error('Error fetching user info:', error); 
-          resolve(false); 
+          resolve(false);
         }
       );
     });
@@ -163,7 +239,6 @@ export class LoginComponent implements OnInit {
   navigateToSignup(){
     const signupLink = this.navigationLink.getLink('signupLink');
     this.router.navigate([signupLink]);
-    console.log()
   }
 
   loadInitParam(data: any) {
@@ -194,5 +269,27 @@ export class LoginComponent implements OnInit {
         });
   }
 
+
+  onNumpadClick(value: string) {
+  if (value === 'clear') {
+    this.posCode = '';
+  } else if (value === 'delete') {
+    this.posCode = this.posCode.slice(0, -1);
+  } else if (this.posCode.length < this.pinDots.length) {
+    this.posCode += value;
+  }
+
+  if (this.posCode.length === 4) {
+      setTimeout(() => {
+        this.loginInfo.username = this.posCode; 
+        this.passwordLoginAction();
+      }, 300);
+    }
+
 }
 
+// userWithCodeLogin(){
+
+// }
+
+}
