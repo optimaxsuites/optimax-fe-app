@@ -17,32 +17,9 @@ import {
   ApexYAxis
 } from 'ng-apexcharts';
 import { FormBuilder, FormGroup } from '@angular/forms';
-export interface BranchDTO {
-  id: number;
-  name: string;
-  location: string;
-  manager: string;
-  contactInfo: string;
-}
+import { ReportService } from '../../../service/report.service';
+import { BranchReportDTO, BranchPerformanceDTO, BranchReportRequestDTO } from '../../../service/report.service';
 
-export interface BranchReportRequestDTO {
-  startDate: Date;
-  endDate: Date;
-  compareWithPrevious?: boolean;
-}
-
-export interface BranchPerformanceDTO {
-  branch: BranchDTO;
-  totalRevenue: number;
-  productMovement: number;
-  customerFootfall?: number;
-  previousRevenue?: number;
-  revenueGrowthPercent: number;
-}
-
-export interface BranchReportDTO {
-  branches: BranchPerformanceDTO[];
-}
 export type ChartOptions = {
   series?: ApexAxisChartSeries | ApexNonAxisChartSeries;
   chart?: ApexChart;
@@ -91,7 +68,9 @@ filterFormOpen = false
 
   constructor(
     private fb: FormBuilder,
+    private reportService: ReportService
   ) {}
+
 ngOnInit(){
   this.initFilterForm();
   this.loadReportData();
@@ -102,108 +81,30 @@ openFilterForm(){
 
 }
   getBranchReport(request: BranchReportRequestDTO): Observable<BranchReportDTO> {
-  
-    // For demo, we return mock data
-    return of(this.getMockData());
+  const formattedRequest = {
+      startDate: request.startDate.toISOString(),
+      endDate: request.endDate.toISOString(),
+      compareWithPrevious: request.compareWithPrevious
+    };
+
+   return this.reportService.getBranchPerformanceReport(formattedRequest);
   }
   private getMockData(): BranchReportDTO {
     return {
       branches: [
-        {
-          branch: {
-            id: 1,
-            name: 'Downtown Branch',
-            location: 'Central City',
-            manager: 'John Smith',
-            contactInfo: 'downtown@example.com'
-          },
-          totalRevenue: 124500,
-          productMovement: 1245,
-          customerFootfall: 3540,
-          previousRevenue: 115000,
-          revenueGrowthPercent: 8.26
-        },
-        {
-          branch: {
-            id: 2,
-            name: 'Westside Mall',
-            location: 'West End',
-            manager: 'Sarah Johnson',
-            contactInfo: 'westside@example.com'
-          },
-          totalRevenue: 186700,
-          productMovement: 1876,
-          customerFootfall: 4250,
-          previousRevenue: 172000,
-          revenueGrowthPercent: 8.55
-        },
-        {
-          branch: {
-            id: 3,
-            name: 'North Plaza',
-            location: 'North District',
-            manager: 'Michael Chen',
-            contactInfo: 'northplaza@example.com'
-          },
-          totalRevenue: 97800,
-          productMovement: 987,
-          customerFootfall: 2180,
-          previousRevenue: 101200,
-          revenueGrowthPercent: -3.36
-        },
-        {
-          branch: {
-            id: 4,
-            name: 'Eastgate Center',
-            location: 'East Side',
-            manager: 'Emily Rodriguez',
-            contactInfo: 'eastgate@example.com'
-          },
-          totalRevenue: 142300,
-          productMovement: 1423,
-          customerFootfall: 3120,
-          previousRevenue: 138500,
-          revenueGrowthPercent: 2.74
-        },
-        {
-          branch: {
-            id: 5,
-            name: 'Southport Branch',
-            location: 'South District',
-            manager: 'David Wilson',
-            contactInfo: 'southport@example.com'
-          },
-          totalRevenue: 156700,
-          productMovement: 1567,
-          customerFootfall: 3680,
-          previousRevenue: 143200,
-          revenueGrowthPercent: 9.43
-        }
+        
       ]
     };
   }
 
   getBranchMonthlyTrend(branchId: number): Observable<any> {
-    const mockTrendData = {
-      months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-      revenue: [42000, 45600, 48900, 53200, 56700, 58000],
-      customers: [1250, 1380, 1450, 1620, 1740, 1800],
-      products: [420, 456, 489, 532, 567, 580]
-    };
     
-    return of(mockTrendData);
+    return of();
   }
 
   getBranchProductCategories(branchId: number): Observable<any> {
-    const mockCategoryData = [
-      { category: 'Electronics', value: 45 },
-      { category: 'Clothing', value: 28 },
-      { category: 'Food & Beverages', value: 15 },
-      { category: 'Home & Garden', value: 10 },
-      { category: 'Others', value: 2 }
-    ];
     
-    return of(mockCategoryData);
+    return of();
   }
 
   getCustomerDemographics(branchId: number): Observable<any> {
@@ -219,12 +120,9 @@ openFilterForm(){
   }
 
   getHourlyTraffic(branchId: number): Observable<any> {
-    const mockHourlyData = {
-      hours: ['8AM', '9AM', '10AM', '11AM', '12PM', '1PM', '2PM', '3PM', '4PM', '5PM', '6PM', '7PM', '8PM'],
-      traffic: [20, 45, 68, 92, 120, 110, 85, 72, 80, 95, 110, 75, 40]
-    };
     
-    return of(mockHourlyData);
+    
+    return of();
   }
 
   initFilterForm(): void {
@@ -241,17 +139,21 @@ openFilterForm(){
 
   loadReportData(): void {
     this.isLoading = true;
-    
-    this.getBranchReport(this.filterForm.value).subscribe(data => {
-      this.reportData = data;
-      this.calculateSummaryMetrics();
-      this.initializeCharts();
-      
-      if (this.reportData.branches.length > 0) {
-        this.selectBranch(this.reportData.branches[0]);
+    this.getBranchReport(this.filterForm.value).subscribe({
+      next: (data) => {
+        this.reportData = data;
+        this.calculateSummaryMetrics();
+        this.initializeCharts();
+        
+        if (this.reportData.branches.length > 0) {
+          this.selectBranch(this.reportData.branches[0]);
+        }
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading report data:', error);
+        this.isLoading = false;
       }
-      
-      this.isLoading = false;
     });
   }
 
@@ -267,7 +169,18 @@ openFilterForm(){
 
   selectBranch(branch: BranchPerformanceDTO): void {
     this.selectedBranch = branch;
-    this.loadBranchDetails(branch.branch.id);
+    // this.reportService.getBranchMonthlyTrend(branch.branch.id).subscribe(trendData => {
+    //   this.updateTrendChart(trendData);
+    // });
+    // this.reportService.getBranchProductCategories(branch.branch.id).subscribe(categoryData => {
+    //   this.updateCategoryChart(categoryData);
+    // });
+    // this.reportService.getCustomerDemographics(branch.branch.id).subscribe(demographicData => {
+    //   this.updateDemographicChart(demographicData);
+    // });
+    // this.reportService.getHourlyTraffic(branch.branch.id).subscribe(trafficData => {
+    //   this.updateTrafficChart(trafficData);
+    // });
   }
 
   loadBranchDetails(branchId: number): void {
