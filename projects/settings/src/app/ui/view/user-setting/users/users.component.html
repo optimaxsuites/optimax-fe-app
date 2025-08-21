@@ -57,7 +57,7 @@
             <mat-panel-description class="action-buttons">
                <button (click)="activateUser(user,  $event)" class="text-yellow-600 hover:bg-yellow-200 p-3 rounded-xl">
                 <i class="fa-solid fa-power-off cursor-pointer text-2xl pr-2"></i>
-                <span *ngIf="panel.expanded">{{ user.status === "PENDING" ? 'Activate' : 'Deactivate' }}</span>
+                <span *ngIf="panel.expanded">{{ !user.allowEcodeAuth ? 'Activate eCode' : 'Deactivate eCode' }}</span>
               </button>
               <button (click)="editCompensation(user,  $event)" class="text-customGreen hover:bg-green-50 p-3 rounded-xl">
                 <i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2"></i>
@@ -75,6 +75,7 @@
             <p><strong>Email:</strong> {{ user.email }}</p>
             <p><strong>Status:</strong> {{ user.accountState }}</p>
             <p><strong>Role:</strong> {{ getRoleNames(user) }}</p>
+            <p><strong>Application Role:</strong> {{ user.appRoles$ | async}}</p>
             <p><strong>eCode:</strong> {{ user.ecode }}</p>
 
 
@@ -152,18 +153,7 @@
     <div class="py-3 flex flex-col gap-3">
       <h3 class="text-lg font-semibold text-customBlue">Authentication Type</h3>
       <div class="flex gap-4">
-        <!-- <label class="flex items-center cursor-pointer">
-          <input 
-            type="radio" 
-            name="authType" 
-            value="password" 
-            class="mr-2 text-customBlue focus:ring-customBlue" 
-            [(ngModel)]="newUser.authType"
-            (change)="onAuthTypeChange()"
-          >
-          <span class="text-gray-700">Username & Password</span>
-          <span class="text-sm text-gray-500 ml-2">(Standard users)</span>
-        </label> -->
+       
         <label class="flex items-center cursor-pointer">
           <input 
             type="checkbox" 
@@ -191,18 +181,7 @@
 
        <!-- <h3 class="text-lg font-semibold text-customBlue">Automatically verify user</h3> -->
       <div class="flex gap-4 mt-1">
-        <!-- <label class="flex items-center cursor-pointer">
-          <input 
-            type="radio" 
-            name="authType" 
-            value="password" 
-            class="mr-2 text-customBlue focus:ring-customBlue" 
-            [(ngModel)]="newUser.authType"
-            (change)="onAuthTypeChange()"
-          >
-          <span class="text-gray-700">Username & Password</span>
-          <span class="text-sm text-gray-500 ml-2">(Standard users)</span>
-        </label> -->
+        
         <label class="flex items-center cursor-pointer">
           <input 
             type="checkbox" 
@@ -268,7 +247,8 @@
 
     <div class="my-3" *ngIf="selectedRole.length > 0">
       <h3 class="text-lg font-semibold text-customBlue">Selected roles</h3>
-     <p>{{ selectedRole.join(", ") }}</p>
+     <!-- <p>{{ selectedRole.join(", ") }}</p> -->
+      <p>{{getSelectedRoleNames()}}</p>
     </div>
 
     <div class="flex gap-3 py-3 w-full items-center h-full" >
@@ -280,7 +260,6 @@
           [items]="roles"
           id="role"
           bindLabel="name"
-          bindValue="code"
           [multiple]="true"
           placeholder="Select Role"
           [(ngModel)]="selectedRole"

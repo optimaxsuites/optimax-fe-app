@@ -266,6 +266,7 @@ async posLoginAction(): Promise<void> {
   }
 
   loadInitParam(data: any) {
+   
     sessionStorage.setItem("role", data.roles)
     sessionStorage.setItem("username", data.username);
     sessionStorage.setItem("fullname", data.fullname);
@@ -278,6 +279,16 @@ async posLoginAction(): Promise<void> {
     sessionStorage.setItem("accessToken", data.accessToken);
     localStorage.setItem("accessToken2", data.accessToken);
     sessionStorage["userRegData"] = JSON.stringify(data);
+
+     this.authenticationService.getUserApplicationRole(data.id).subscribe({
+      next: (response) => {
+        console.log("User application role:", response);
+        sessionStorage.setItem("userApplicationRole", JSON.stringify(response));
+      },
+      error: (error) => {
+        console.error("Error fetching user application role:", error);
+      }
+    })
   }
 
   async getUserRegInfoData(data: any) {

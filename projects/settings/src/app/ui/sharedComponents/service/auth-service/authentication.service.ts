@@ -94,11 +94,26 @@ export class AuthenticationService {
       .pipe(catchError(this.handleError));
   }
 
-  codeActivation(data: any): Observable<any> {
+  codeActivation(data: any, status: boolean): Observable<any> {
     // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/signup"+"---"+JSON.stringify(data)))
 
     return this.http
-      .post<any>(this.getBaseApiUrl() + `/x/api/v2/us/ur/allow/ecode/auth/${data}/true`, {})
+      .post<any>(this.getBaseApiUrl() + `/x/api/v2/us/ur/allow/ecode/auth/${data}/${status}`, {})
+      .pipe(catchError(this.handleError));
+  }
+
+   userApplicationRole(data: any): Observable<any> {
+    // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/signup"+"---"+JSON.stringify(data)))
+
+    return this.http
+      .post<any>(this.getBaseApiUrl() + `/x/api/v2/us/ur/appuserrolepermission`, data)
+      .pipe(catchError(this.handleError));
+  }
+
+  getUserApplicationRole(id: number): Observable<any> {
+
+    return this.http
+      .get<any>(this.getBaseApiUrl() + `/x/api/v2/us/ur/findappuserrolepermissionbyid?userid=${id}`)
       .pipe(catchError(this.handleError));
   }
 

@@ -7,6 +7,7 @@ import { NavigationLinksService } from '../../../sharedComponents/service/naviga
 import { ModulesService } from '../../../service/modules.service';
 import { UserService } from '../../../sharedComponents/service/user.service';
 
+ import { forkJoin, map } from 'rxjs';
 
 
 interface user {
@@ -90,7 +91,13 @@ ngOnInit(){
 fetchUsers(){
   this.userService.getUsers().subscribe({
     next: (data) => {
-      this.users = data
+      this.users = data.map((user: { id: number; }) => ({
+      ...user,
+      appRoles$: this.authenticationService.getUserApplicationRole(user.id).pipe(
+        map((roles: any[]) => roles?.map(r => r.name).join(", ") ?? '')
+      )
+    }));
+
     },
     error(err){
       console.log(err)
@@ -146,83 +153,95 @@ fetchUsers(){
 
 
 
-  submitUser() {
-    // this.submitted = true;
 
-    // this.loading = true;
+submitUser() {
+  const signupDetails = {
+    username: this.newUser.name,
+    password: this.newUser.password,
+    email: this.newUser.email,
+    project: `${environment.project}`,
+    apiKey: `${environment.apiKey}`
+  };
 
-    const signupDetails = {
-        username: this.newUser.name,
-        password: this.newUser.password,
-        email: this.newUser.email,
-        role: this.selectedRole,
-        project : `${environment.project}`,
-        apiKey : `${environment.apiKey}`
-    };
+  this.authenticationService.userRegistration(signupDetails).subscribe({
+    next: (data) => {
+      // Prepare requests for each role
+      const roleRequests = this.selectedRole.map((role: any) =>
+        this.authenticationService.userApplicationRole({
+          userId: data.id,
+          appRoleId: role.id
+        })
+      );
 
-    this.authenticationService.userRegistration(signupDetails).subscribe(
-      async (data) => {
-            // this.loading = false;
-            // this.messageService.add({ severity: 'success', summary: 'Success', detail: 'User registered successfully!' });
-            // Optionally, redirect to another page after successful registration
-            // this.router.navigateByUrl('/email-verification');
-            const emvLink = this.navigationLink.getLink('emvLink')
-            if(this.codeAuthType){
-              this.authenticationService.codeActivation(data.ecode).subscribe({
-                next: () => {
-                this.messageService.add({ severity: 'success', summary: 'Success', detail: 'User registered successfully!' });
-                },
-                error: (err) => {
-                  console.log(err)
-                  this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to activate users ecode, Try again later!' });
-                },
-              })
-            }else {
-            this.messageService.add({ severity: 'success', summary: 'Success', detail: 'User registered successfully!' });
-
-            }
-            // this.router.navigate([emvLink]);
+      // Run all role requests in parallel and wait for completion
+      forkJoin(roleRequests).subscribe({
+        next: () => {
+          if (this.codeAuthType) {
+            this.authenticationService.codeActivation(data.ecode, true).subscribe({
+              next: () => {
+                this.messageService.add({
+                  severity: 'success',
+                  summary: 'Success',
+                  detail: 'User registered and eCode activated successfully!'
+                });
+              },
+              error: (err) => {
+                console.error(err);
+                this.messageService.add({
+                  severity: 'error',
+                  summary: 'Error',
+                  detail: 'Failed to activate user eCode, try again later!'
+                });
+              }
+            });
+          } else {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Success',
+              detail: 'User registered and roles assigned successfully!'
+            });
+          }
         },
-        (error) => {
-
-          if (error.toString() == '400') {
-            // Client-side validation error (invalid input)
-            this.messageService.add({ 
-                severity: 'error', 
-                summary: 'Registration Failed', 
-                detail: 'Your account have not been verified. Check your mail to verify!' 
-            });
-        } else if (error.toString() == '409') {
-            // Conflict error (e.g., email already registered)
-            this.messageService.add({ 
-                severity: 'error', 
-                summary: 'Registration Failed', 
-                detail: 'Email address is already registered. Please use a different email or login.' 
-            });
-        } else if (error.toString() == '0') {
-            // Network error or server unreachable
-            this.messageService.add({ 
-                severity: 'error', 
-                summary: 'Registration Failed', 
-                detail: 'Unable to connect to the server. Please check your internet connection.' 
-            });
-        } else {
-            // Other server errors
-            this.messageService.add({ 
-                severity: 'error', 
-                summary: 'Registration Failed', 
-                detail: 'An unexpected error occurred. Please try again later.' 
-            });
+        error: (err) => {
+          console.error(err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to assign roles to user, try again later!'
+          });
         }
+      });
+    },
+    error: (error) => {
+      if (error.toString() == '400') {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Registration Failed',
+          detail: 'Your account has not been verified. Check your mail to verify!'
+        });
+      } else if (error.toString() == '409') {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Registration Failed',
+          detail: 'Email address is already registered. Please use a different email or login.'
+        });
+      } else if (error.toString() == '0') {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Registration Failed',
+          detail: 'Unable to connect to the server. Please check your internet connection.'
+        });
+      } else {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Registration Failed',
+          detail: 'An unexpected error occurred. Please try again later.'
+        });
+      }
+    }
+  });
+}
 
-
-            // this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Registration failed' });
-            // console.log("Registration failed");
-            // this.loading = false;
-        }
-    );
-  
-  }
 
     updateUser(user: any) {
       console.log('invoked')
@@ -311,7 +330,36 @@ fetchUsers(){
   return user?.roles?.map((r: any) => r.name).join(", ") ?? '';
 }
 
-activateUser(user: any, event: any){
+getSelectedRoleNames(){
+  return this.selectedRole.map((role: any) => role.name).join(", ");
+}
+
+activateUser(user: any, $event: any){
+      $event.stopPropagation()
+      const status = user.allowEcodeAuth ? false : true;
+      this.authenticationService.codeActivation(user.ecode, status).subscribe({
+              next: () => {
+                this.messageService.add({
+                  severity: 'success',
+                  summary: 'Success',
+                  detail: 'User registered and eCode activated successfully!'
+                });
+      },
+    })
+}
+
+getAppRoleNames(user: any) {
+  // this.authenticationService.getUserApplicationRole(user.id).subscribe({
+  //   next: (response) => {
+  //     console.log("User application role:", response);
+  //     return response?.map((r: any) => r.name).join(", ") ?? '';
+  //   },
+  //   error: (error) => {
+  //     console.error("Error fetching user application role:", error);
+  //   }
+  // })
+
+  // return user?.roles?.map((r: any) => r.name).join(", ") ?? '';
 
 }
 
