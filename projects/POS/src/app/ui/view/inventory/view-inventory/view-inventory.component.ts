@@ -1,9 +1,10 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
-import { ProductData, supplierData } from '../../../models/interface';
+import { ProductData, supplierData, StockMovementByInventory } from '../../../models/interface';
 import { PosServiceService } from '../../../service/pos-service.service';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-view-inventory',
@@ -11,14 +12,19 @@ import { forkJoin } from 'rxjs';
   styleUrl: './view-inventory.component.scss',
 })
 export class ViewInventoryComponent implements OnInit {
-  @Input() activeItem!: ProductData;
+  @Input() activeItem!: any;
+  @Input() updatedProduct: any;
   @Output() edit = new EventEmitter<any>();
   @Output() close = new EventEmitter<void>();
-  @Input() updatedProduct: any;
 
   supplier: supplierData | null = null;
   revivedDate: Date = new Date();
-  loading: boolean = true;
+  loading = true;
+
+  stockMovements: StockMovementByInventory[] = [];
+  isMovementsLoading = false;
+  hasTriedMovements = false;             // show “no data” only after we attempt a load
+  private inventoryId: number | null = null;
 
   constructor(
     private router: Router,
@@ -26,33 +32,50 @@ export class ViewInventoryComponent implements OnInit {
     private messageService: MessageService
   ) {}
 
-  // Removed productImageUrl getter to revert to previous image logic
+  ngOnInit(): void {
+    // capture inventoryId BEFORE we overwrite activeItem
+    const passed = this.activeItem ?? {};
+    this.inventoryId =
+      passed?.inventoryId ??
+      passed?.__inventory?.id ??
+      history.state?.inventoryId ??
+      null;
 
-  ngOnInit() {
-    let productId = this.activeItem?.id;
-    if (!productId && history.state.productId) {
-      productId = history.state.productId;
-    }
-    if (productId) {
-      this.loading = true;
-      forkJoin({
-        product: this.posService.getProductById(productId),
-        suppliers: this.posService.getSupplier(),
-      }).subscribe({
+    // figure out productId
+    const productId = passed?.id ?? history.state?.productId ?? null;
+
+    // fetch product (or use passed) + suppliers
+    this.loading = true;
+    const product$ = productId ? this.posService.getProductById(productId) : of(passed);
+
+    forkJoin({
+      product: product$,
+      suppliers: this.posService.getSupplier(),
+    })
+      .pipe(finalize(() => (this.loading = false)))
+      .subscribe({
         next: ({ product, suppliers }) => {
-          this.activeItem = product;
-          this.revivedDate = new Date(product.createdDate);
-          if (product.supplier) {
-            this.supplier =
-              suppliers.find(
-                (s: supplierData) => s.id === product.supplier.id
-              ) || null;
+          // keep inventoryId merged into activeItem so the template can still see it if needed
+          this.activeItem = { ...product, inventoryId: this.inventoryId, __inventory: passed?.__inventory };
+
+          // handle supplier resolution
+          if (product?.supplier) {
+            this.supplier = suppliers.find((s: supplierData) => s.id === product.supplier.id) || null;
           } else if (suppliers.length === 1) {
             this.supplier = suppliers[0];
           } else {
             this.supplier = null;
           }
-          this.loading = false;
+
+          // createdDate can be ISO or [Y,M,D,H,m,s]
+          this.revivedDate = this.parseApiDate(product?.createdDate);
+
+          // finally load movements if we have an inventory id
+          if (this.inventoryId) {
+            this.loadMovements(this.inventoryId);
+          } else {
+            console.warn('No inventoryId found; skipping stock movements fetch.');
+          }
         },
         error: () => {
           this.messageService.add({
@@ -62,35 +85,54 @@ export class ViewInventoryComponent implements OnInit {
             life: 3000,
             key: 'tg',
           });
-          this.loading = false;
         },
       });
+  }
+
+  private parseApiDate(d: any): Date {
+    if (Array.isArray(d)) {
+      const [y, m = 1, day = 1, h = 0, mi = 0, s = 0] = d;
+      return new Date(y, m - 1, day, h, mi, s);
     }
+    return new Date(d);
   }
 
-  get Timestamp() {
-    return this.revivedDate.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+  // must be public for template usage
+  toIsoString(d: string | number[] | Date): string {
+    if (Array.isArray(d)) {
+      const [y, m = 1, day = 1, h = 0, mi = 0, s = 0] = d;
+      return new Date(y, m - 1, day, h, mi, s).toISOString();
+    }
+    return new Date(d).toISOString();
+  }
+
+  loadMovements(inventoryId: number): void {
+  this.isMovementsLoading = true;
+  this.hasTriedMovements = true;
+
+  this.posService
+    .getStockMovementsByInventory(inventoryId)
+    .pipe(finalize(() => (this.isMovementsLoading = false)))
+    .subscribe({
+      next: (rows: StockMovementByInventory[]) => {
+        const list: StockMovementByInventory[] = rows ?? [];
+        this.stockMovements = [...list].sort(this.movementDateDesc);
+      },
+      error: (err) => {
+        console.error('Failed to load stock movements:', err);
+        this.stockMovements = [];
+      },
     });
+}
+
+  get Timestamp(): string {
+    return this.revivedDate.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   }
 
-  triggerEdit() {
-    this.edit.emit(this.activeItem);
-  }
-
-  triggerClose() {
-    this.close.emit();
-  }
-
-  closeEdit() {
-    this.close.emit();
-  }
-
-  closeEditInventory() {
-    this.closeEdit();
-  }
+  triggerEdit() { this.edit.emit(this.activeItem); }
+  triggerClose() { this.close.emit(); }
+  closeEdit()    { this.close.emit(); }
+  closeEditInventory() { this.close.emit(); }
 
   printPage() {
     const printContents = document.getElementById('printable-area')?.innerHTML;
@@ -102,4 +144,16 @@ export class ViewInventoryComponent implements OnInit {
       location.reload();
     }
   }
+
+  // add this helper inside the class
+private movementDateDesc = (
+  a: StockMovementByInventory,
+  b: StockMovementByInventory
+): number => {
+  return (
+    new Date(this.toIsoString(b.createdDate)).getTime() -
+    new Date(this.toIsoString(a.createdDate)).getTime()
+  );
+};
+
 }

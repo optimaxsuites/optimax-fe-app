@@ -139,6 +139,56 @@
       [value]="product.sellingPrice"
       readonly
     />
+
+    <!-- Stock Movements -->
+<div class="mt-10">
+  <h2 class="text-2xl font-semibold text-center">Stock Movements</h2>
+
+  <div *ngIf="isMovementsLoading" class="w-full p-6 text-center text-gray-500">
+    Loading movement history…
+  </div>
+
+  <div *ngIf="!isMovementsLoading && stockMovements.length === 0" class="w-full p-6 text-center text-gray-500">
+    No stock movements yet.
+  </div>
+
+  <div *ngIf="!isMovementsLoading && stockMovements.length > 0" class="overflow-x-auto mt-4">
+    <table class="min-w-full border border-gray-200 rounded-lg">
+      <thead class="bg-gray-100 text-gray-700">
+        <tr>
+          <th class="px-4 py-2 text-left">Date</th>
+          <th class="px-4 py-2 text-left">Reference</th>
+          <th class="px-4 py-2 text-right">Qty</th>
+          <th class="px-4 py-2 text-right">Purchase</th>
+          <th class="px-4 py-2 text-right">Selling</th>
+          <th class="px-4 py-2 text-left">Supplier</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let mv of stockMovements" class="border-t">
+          <td class="px-4 py-2">
+            {{ toIsoString(mv.createdDate) | date:'medium' }}
+          </td>
+          <td class="px-4 py-2">{{ mv.reference || '-' }}</td>
+          <td class="px-4 py-2 text-right"
+              [ngClass]="mv.quantity >= 0 ? 'text-green-700' : 'text-red-700'">
+            {{ mv.quantity }}
+          </td>
+          <td class="px-4 py-2 text-right">
+            {{ mv.purchasePrice || 0 | currency:'₦' }}
+          </td>
+          <td class="px-4 py-2 text-right">
+            {{ mv.sellingPrice || 0 | currency:'₦' }}
+          </td>
+          <td class="px-4 py-2">
+            {{ mv.supplierId || '-' }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
   </div>
 </div>
 <ng-template #loading>

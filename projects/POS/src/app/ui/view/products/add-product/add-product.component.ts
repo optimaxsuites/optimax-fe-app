@@ -28,7 +28,7 @@ import {
 import { IndustryDataService } from "../../../service/industry-data.service";
 import { MetadataService } from "../../../service/metadata.service";
 import { PosServiceService } from "../../../service/pos-service.service";
-
+import { firstValueFrom } from 'rxjs';
 interface SelectedIngredientDTO {
 	ingredient: IngredientDTO;
 	quantity: number;
@@ -166,6 +166,53 @@ export class AddProductComponent {
 	 * This will be an object indexed with `this.selectedBranchIndex` where each value would be an array of variants for each branch.
 	 */
 	variants: VariantDTO[] = [];
+
+	private async createInventoryForNewProduct(
+  productId: number,
+  branchId: number,
+  initialQty: number,
+  purchasePrice: number,
+  sellingPrice: number,
+  supplierId?: number | null
+) {
+  const nowIso = new Date().toISOString();
+
+  
+  const payload: any = {
+    id: 0,
+    availableQuantity: Number(initialQty) || 0,
+    status: (Number(initialQty) || 0) > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK',
+    productId: productId,             
+    branchId: branchId,
+    stockMovement: [
+      {
+        id: 0,
+        quantity: Number(initialQty) || 0,
+        reference: 'Initial stock',
+        purchasePrice: Number(purchasePrice) || 0,
+        sellingPrice: Number(sellingPrice) || 0,
+        createdDate: nowIso,
+        stockMovementsId: 0,
+        createdById: 0,
+        supplierId: supplierId ?? null
+        
+      }
+    ]
+  };
+
+  try {
+    await firstValueFrom(this.posService.createInventory(payload as any));
+  } catch (err) {
+    console.error('Inventory create failed', err);
+    
+    this.messageService?.add({
+      severity: 'warn',
+      summary: 'Inventory',
+      detail: 'Product was created, but inventory failed. You can add it later from Inventory.',
+      life: 3000
+    });
+  }
+}
 
 	/**
 	 * NOTE: The order of this object is important! See `get variantObjectKeys()`
@@ -805,6 +852,16 @@ export class AddProductComponent {
 				async (data) => {
 					if (data) {
 						console.log(data);
+						const branchId =
+        product.branchId; 
+      await this.createInventoryForNewProduct(
+        data.id,                                  
+        Number(branchId),
+        Number(product.quantity),
+        Number(product.purchasePrice),
+        Number(product.sellingPrice),
+        product.supplierId ?? null
+      );
 						this.messageService.add({
 							severity: "success",
 							summary: "Product Added",
@@ -880,7 +937,17 @@ export class AddProductComponent {
 					formData.append("files", formValues.image);
 				}
 				console.log(formData);
-				await this.posService.addProduct(formData).toPromise();
+				 const created: any = await this.posService.addProduct(formData).toPromise();
+				 if (created?.id) {
+    await this.createInventoryForNewProduct(
+      created.id,
+      Number(branch.branchName?.id),   // branch id used when creating the product
+      Number(branch.quantity),
+      Number(branch.costPrice),
+      Number(branch.sellingPrice),
+      branch.supplier?.id ?? null
+    );
+  }
 			}
 
 			this.messageService.add({

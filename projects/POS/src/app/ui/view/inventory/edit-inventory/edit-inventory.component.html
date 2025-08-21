@@ -307,17 +307,19 @@
        
 
         <!-- Save Button -->
-        <div class="flex justify-end">
-           <button
-        type="button" 
-        class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center gap-2"
-        (click)="saveStockMovement()"
-        [disabled]="isLoading || stockMovementForm.invalid"
-    >
-        <span>Record Movement</span>
-        <i *ngIf="isLoading" class="pi pi-spinner pi-spin ml-2"></i>
-    </button>
-        </div>
+      <div [formGroup]="stockMovementForm">
+  ...
+  <button
+    type="button"
+    class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center gap-2"
+    (click)="saveStockMovement()"
+    [disabled]="isLoading || stockMovementForm.invalid"
+  >
+    <span>Record Movement</span>
+    <i *ngIf="isLoading" class="pi pi-spinner pi-spin ml-2"></i>
+  </button>
+</div>
+
       </div>
    
   </form>

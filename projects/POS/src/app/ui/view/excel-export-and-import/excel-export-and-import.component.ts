@@ -13,11 +13,13 @@ import {
   ProductJSONFormat,
   ProductJSONFormatGET,
   ProductJSONFormatPOST,
+  InventoryStatus,
 } from '../../models/interface';
 import { formatDate } from '@angular/common';
 import { MessageService } from 'primeng/api';
 import { MetadataService } from '../../service/metadata.service';
 import { FormArray, FormBuilder, FormGroup } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 
 interface ProductRow {
   name: string;
@@ -157,6 +159,59 @@ addRow(): FormGroup {
 
 
   }
+
+// Helper: create inventory (with initial movement) after a product is created
+private async createInventoryForNewProduct(
+  productId: number,
+  branchId: number,
+  initialQty: number,
+  purchasePrice: number,
+  sellingPrice: number,
+  supplierId?: number | null
+): Promise<void> {
+  const payload = {
+    availableQuantity: Math.abs(Number(initialQty) || 0),
+    status: (Number(initialQty) || 0) > 0 ? 'IN_STOCK' as InventoryStatus : 'OUT_OF_STOCK' as InventoryStatus,
+
+    productId: Number(productId),          // keep productId (backend confirmed this worked)
+    branchId: Number(branchId),
+    stockMovement: (Number(initialQty) || 0) > 0 ? [
+      {
+        quantity: Math.abs(Number(initialQty) || 0),
+        reference: 'Initial stock',
+        purchasePrice: Number(purchasePrice) || 0,
+        sellingPrice: Number(sellingPrice) || 0,
+        createdDate: new Date().toISOString(),
+        supplierId: supplierId ?? null
+        // DO NOT send id/stockMovementsId/createdById/ingredientId/inventoryId here
+      }
+    ] : []
+  };
+
+  await this.posService.createInventory(payload).toPromise();
+}
+
+
+private toNum(v: any, def = 0): number {
+  const n = Number((v ?? '').toString().replace(/,/g, '').trim());
+  return Number.isFinite(n) ? n : def;
+}
+
+private toBranchId(row: any, fallbackBranchId: number): number {
+  // Try to read “BranchId” or “Branch” from the Excel row; fall back to selected branch
+  return this.toNum(row?.BranchId ?? row?.Branch ?? fallbackBranchId);
+}
+
+private resolveSupplierId(row: any, suppliers: Array<{id:number; name:string}>): number | null {
+  // If your Excel has SupplierId column, use it directly; else try to match by name
+  const excelId = this.toNum(row?.SupplierId, NaN);
+  if (Number.isFinite(excelId)) return excelId;
+
+  const name = (row?.Supplier || row?.SupplierName || '').toString().trim().toLowerCase();
+  if (!name) return null;
+  const hit = suppliers?.find(s => (s.name || '').toLowerCase() === name);
+  return hit?.id ?? null;
+}
 
 
 
@@ -731,19 +786,37 @@ async processProductImport(data: any[]): Promise<void> {
       const defaultImage = await this.createDefaultImage();
       formData.append("files", defaultImage, 'default_product.jpg');
 
-      await new Promise<void>((resolve, reject) => {
-        this.posService.addProduct(formData).subscribe(
-          (response) => {
-            if (response) {
-              successCount++;
-              resolve();
-            } else {
-              reject(new Error('Empty response from server')); 
-            }
-          },
-          (error) => reject(error)
+   await new Promise<void>((resolve, reject) => {
+  this.posService.addProduct(formData).subscribe(
+    async (response) => {
+      if (!response?.id) {
+        return reject(new Error('Empty product response (no id)'));
+      }
+
+      // ✅ Create inventory right after product is created
+      try {
+        await this.createInventoryForNewProduct(
+          response.id,
+          Number(product.branchId || 0),
+          Number(product.quantity || 0),
+          Number(product.purchasePrice || 0),
+          Number(product.sellingPrice || 0),
+          product.supplierId ?? null
         );
-      });
+        // optional: console.log the new inventory id if backend returns it
+        // console.log('Inventory created for product', response.id);
+      } catch (invErr) {
+        // Don’t fail the whole row if inventory creation fails—just warn and continue
+        console.warn('Inventory create failed for product', response.id, invErr);
+      }
+
+      successCount++;
+      resolve();
+    },
+    (error) => reject(error)
+  );
+});
+
 
     } catch (error: unknown) {
       errorCount++;

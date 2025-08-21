@@ -10,6 +10,7 @@ import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
 import { SidebarModule } from 'primeng/sidebar';
 import { DialogModule } from 'primeng/dialog';
+
 import { TabViewModule } from 'primeng/tabview';
 import { BadgeModule } from 'primeng/badge';
 import { MenubarModule } from 'primeng/menubar';
@@ -115,6 +116,8 @@ import { HotelRoomdetailsComponent } from './ui/view/hotel-roomdetails/hotel-roo
 import { HotelRoomlistComponent } from './ui/view/hotel-roomlist/hotel-roomlist.component';
 import { EditIngredientsComponent } from './ui/view/ingredient/edit-ingredients/edit-ingredients.component';
 import { ViewIngredientsComponent } from './ui/view/ingredient/view-ingredients/view-ingredients.component';
+import { CheckoutHeaderComponent } from './ui/view/pos-checkout-page/components/checkout-header/checkout-header.component';
+import { CheckoutOrdersComponent } from './ui/view/checkout-orders/checkout-orders.component';
 import { CategoryComponent } from './ui/view/products/metaDatas/category/category.component';
 import { DiscountComponent } from './ui/view/products/metaDatas/discount/discount.component';
 import { SupplierComponent } from './ui/view/products/metaDatas/supplier/supplier.component';
@@ -163,6 +166,7 @@ export function appInitializerFactory(appInitService: AppInitService) {
     SaleSummariesComponent,
     KitchenOrderComponent,
     // CheckoutKitchenComponent,
+    
     IngredientComponent,
     AddIngredientComponent,
     IngredientComponent,
