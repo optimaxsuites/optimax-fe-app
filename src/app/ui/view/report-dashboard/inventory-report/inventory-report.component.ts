@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { 
   ChartComponent,
   ApexAxisChartSeries,
@@ -16,16 +16,34 @@ import {
   ApexResponsive,
   ApexNonAxisChartSeries
 } from 'ng-apexcharts';
-import { StyleColor } from '../../../models/enums';
 import { FormGroup, FormBuilder } from '@angular/forms';
-import { BranchDTO } from '../../../service/report.service';
-// import { BranchDTO } from '../../../models/interface';
-// import { PieChartOptions } from '../report-dashboard.component';
+import { ReportService, CashierReportRequestDTO } from '../../../service/report.service';
+import { StyleColor } from '../../../models/enums';
+
 interface UserDTO {
   id: number;
   name: string;
   email: string;
   role: string;
+}
+
+interface BranchDTO {
+  id: number;
+  name: string;
+  location: string;
+}
+
+interface CashierPerformanceDTO {
+  cashier: UserDTO;
+  branch: BranchDTO;
+  ordersHandled: number;
+  revenueGenerated: number;
+  refunds: number;
+  discountsGiven: number;
+}
+
+interface CashierReportDTO {
+  cashiers: CashierPerformanceDTO[];
 }
 
 export type RevenueChartOptions = {
@@ -41,7 +59,7 @@ export type RevenueChartOptions = {
   legend: ApexLegend;
   title?: ApexTitleSubtitle;
   colors: string[];
-}
+};
 
 export interface OrdersChartOptions {
   series: ApexAxisChartSeries;
@@ -67,148 +85,142 @@ export interface PieChartOptions {
   dataLabels: ApexDataLabels;
 }
 
-
-interface CashierPerformanceDTO {
-  cashier: UserDTO;
-  branch: BranchDTO;
-  ordersHandled: number;
-  revenueGenerated: number;
-  refunds: number;
-  discountsGiven: number;
-}
-
-interface CashierReportDTO {
-  cashiers: CashierPerformanceDTO[];
-}
-
-interface CashierReportRequestDTO {
-  startDate: Date;
-  endDate: Date;
-  branchIds?: number[];
-  shift?: string;
-}
 @Component({
   selector: 'app-inventory-report',
   templateUrl: './inventory-report.component.html',
-  styleUrl: './inventory-report.component.scss',
+  styleUrls: ['./inventory-report.component.scss'],
 })
-export class InventoryReportComponent implements OnInit {
+export class InventoryReportComponent implements OnInit, AfterViewInit {
   @ViewChild("revenueChart") revenueChart!: ChartComponent;
   @ViewChild("ordersChart") ordersChart!: ChartComponent;
   @ViewChild("refundsChart") refundsChart!: ChartComponent;
   
   public reportForm!: FormGroup;
-  public reportData!: CashierReportDTO;
-  public filteredReportData!: CashierReportDTO;
+  public filteredReportData: CashierReportDTO = { cashiers: [] };
   public branches: BranchDTO[] = [];
   public shifts: string[] = ['Morning', 'Afternoon', 'Evening', 'Night'];
   public activeTab: string = 'overview';
   public selectedCashier: CashierPerformanceDTO | null = null;
   public loading: boolean = false;
   public periodComparison: 'weekly' | 'monthly' = 'weekly';
+  public filterForm: boolean = false;
   
   public revenueChartOptions!: RevenueChartOptions;
   public ordersChartOptions!: OrdersChartOptions;
   public refundsChartOptions!: PieChartOptions;
 
-  filterForm: boolean = false
+
   
-  constructor(private fb: FormBuilder) {
+  constructor(
+    private fb: FormBuilder,
+    private reportService: ReportService
+  ) {
     this.initCharts();
   }
-  
+
   ngOnInit(): void {
     this.initForm();
     this.loadBranches();
-    this.loadDummyData();
-    this.applyFilter();
+    console.log('Component initialized. Loading branches...');
   }
-  
+
+  ngAfterViewInit(): void {
+    setTimeout(() => this.applyFilter(), 100);
+  }
+
   initForm(): void {
-    const today = new Date();
-    const lastMonth = new Date();
-    lastMonth.setMonth(lastMonth.getMonth() - 1);
-    
-    this.reportForm = this.fb.group({
-      startDate: [lastMonth],
-      endDate: [today],
-      branchIds: [[]],
-      shift: ['']
+  const today = new Date();
+  const lastMonth = new Date();
+  lastMonth.setMonth(lastMonth.getMonth() - 1);
+  
+
+  const endDate = new Date(2025, 6, 19);
+  const startDate = new Date(2025, 5, 19); 
+  
+  this.reportForm = this.fb.group({
+    startDate: [startDate],
+    endDate: [endDate],
+    branchIds: [[]], 
+    shift: [''] 
+  });
+  
+  console.log('Form initialized with fixed dates:', {
+    startDate: startDate,
+    endDate: endDate
+  });
+}
+
+  openFilterForm() {
+    this.filterForm = !this.filterForm;
+  }
+
+  
+private formatDate(date: Date): string {
+  return date.toISOString(); 
+}
+
+  loadBranches(): void {
+    this.reportService.getBranches().subscribe({
+      next: (branches) => {
+        this.branches = branches;
+        console.log('Branches loaded successfully:', branches);
+        this.applyFilter(); 
+      },
+      error: (error) => {
+        console.error('Failed to load branches:', error);
+        this.branches = [];
+        this.applyFilter();
+      }
     });
   }
+
+applyFilter(): void {
+  this.loading = true;
+  const formValue = this.reportForm.value;
   
-  openFilterForm(){
-    this.filterForm = !this.filterForm
-  }
-  loadBranches(): void {
-    // In a real app, this would be fetched from a service
-    this.branches = [
-      { id: 1, name: 'Downtown Branch', location: 'Main Street 123' },
-      { id: 2, name: 'Westside Mall', location: 'Commercial Avenue 45' },
-      { id: 3, name: 'East Shopping Center', location: 'East Highway 67' },
-      { id: 4, name: 'North Plaza', location: 'Northern Boulevard 89' },
-    ];
-  }
+  const payload: CashierReportRequestDTO = {
+    startDate: this.formatDate(formValue.startDate),
+    endDate: this.formatDate(formValue.endDate),
+    branchIds: formValue.branchIds?.length ? formValue.branchIds : [0],
+    shift: formValue.shift || "string"
+  };
+
+  console.log('Sending payload to API:', payload);
   
-  loadDummyData(): void {
-    // Generate realistic dummy data
-    const cashiers: CashierPerformanceDTO[] = [];
-    
-    const names = ['John Smith', 'Jane Doe', 'Robert Johnson', 'Lisa Kim', 
-                  'Michael Brown', 'Sarah Garcia', 'David Martinez', 'Emma Wilson',
-                  'Thomas Lee', 'Maria Rodriguez', 'James Taylor', 'Linda Chen'];
-                  
-    for (let i = 0; i < 12; i++) {
-      const branchIndex = i % this.branches.length;
+  this.reportService.getCashierPerformanceReport(payload).subscribe({
+    next: (response) => {
+      console.log(' API Response received:', response);
+      console.log('Number of cashiers:', response?.cashiers?.length || 0);
       
-      cashiers.push({
-        cashier: {
-          id: i + 1,
-          name: names[i],
-          email: names[i].toLowerCase().replace(' ', '.') + '@company.com',
-          role: 'Cashier'
-        },
-        branch: this.branches[branchIndex],
-        ordersHandled: Math.floor(Math.random() * 300) + 150,
-        revenueGenerated: Math.floor(Math.random() * 15000) + 5000,
-        refunds: Math.floor(Math.random() * 20),
-        discountsGiven: Math.floor(Math.random() * 50) + 10
-      });
-    }
-    
-    this.reportData = { cashiers };
-  }
-  
-  applyFilter(): void {
-    this.loading = true;
-    
-    // Simulate API request
-    setTimeout(() => {
-      const formValue = this.reportForm.value;
+      if (!response || !response.cashiers || response.cashiers.length === 0) {
+        console.warn('No cashier data in response');
+      }
       
-      // Filter data based on form values
-      this.filteredReportData = {
-        cashiers: this.reportData.cashiers.filter(cashier => {
-          // Filter by branch if any selected
-          if (formValue.branchIds && formValue.branchIds.length > 0) {
-            if (!formValue.branchIds.includes(cashier.branch.id)) {
-              return false;
-            }
-          }
-          
-          return true;
-        })
-      };
+      this.filteredReportData = response;
+      console.log('Updated filteredReportData:', this.filteredReportData);
       
       this.updateCharts();
       this.loading = false;
-    }, 800);
-  }
-  
+    },
+    error: (error) => {
+      console.error('Error fetching report:', error);
+      console.error('Error details:', {
+        status: error.status,
+        message: error.message,
+        error: error.error
+      });
+      this.loading = false;
+    }
+  }); 
+}
+
+
+
+
+
   initCharts(): void {
-    // Revenue Chart Options
     this.revenueChartOptions = {
-      series: [],
+      series: [{ name: "Revenue", data: [0, 0, 0] }],
       chart: {
         height: 350,
         type: 'line',
@@ -243,17 +255,16 @@ export class InventoryReportComponent implements OnInit {
         size: 1
       },
       xaxis: {
-        categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+        categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
         title: {
-          text: 'Month'
+          text: 'Months'
         }
       },
       yaxis: {
         title: {
-          text: 'Revenue ($)'
+          text: 'Revenue (₦)'
         },
-        min: 0,
-        max: 25000
+        min: 0
       },
       legend: {
         position: 'top',
@@ -273,7 +284,10 @@ export class InventoryReportComponent implements OnInit {
     
     // Orders Chart Options
     this.ordersChartOptions = {
-      series: [],
+      series: [
+        { name: "Orders Handled", data: [0, 0, 0] },
+        { name: "Refunds", data: [0, 0, 0] }
+      ],
       chart: {
         type: 'bar',
         height: 350,
@@ -358,107 +372,140 @@ export class InventoryReportComponent implements OnInit {
       }
     };
   }
+
+    updateCharts(): void {
+  console.log('Updating charts with data:', this.filteredReportData);
   
-  updateCharts(): void {
-    const topPerformers = [...this.filteredReportData.cashiers]
-      .sort((a, b) => b.revenueGenerated - a.revenueGenerated)
-      .slice(0, 5);
-    
-    // Update revenue chart
-    this.revenueChartOptions.series = [{
-      name: 'Revenue',
-      data: topPerformers.map(c => c.revenueGenerated)
-    }];
-    this.revenueChartOptions.xaxis = {
-      categories: topPerformers.map(c => c.cashier.name)
-    };
-    
-    // Update orders chart
+  if (!this.filteredReportData || !this.filteredReportData.cashiers || this.filteredReportData.cashiers.length === 0) {
+    console.warn('No data available for charts');
+    // Set empty data for charts
+    this.revenueChartOptions.series = [{ name: 'Revenue', data: [] }];
+    this.revenueChartOptions.xaxis = { categories: [] };
     this.ordersChartOptions.series = [
-      {
-        name: 'Orders Handled',
-        data: topPerformers.map(c => c.ordersHandled)
-      },
-      {
-        name: 'Refunds',
-        data: topPerformers.map(c => c.refunds)
-      }
+      { name: 'Orders Handled', data: [] },
+      { name: 'Refunds', data: [] }
     ];
-    this.ordersChartOptions.xaxis = {
-      categories: topPerformers.map(c => c.cashier.name)
-    };
+    this.ordersChartOptions.xaxis = { categories: [] };
+    this.refundsChartOptions.series = [];
+    this.refundsChartOptions.labels = [];
+    return;
+  }
+
+  const topPerformers = [...this.filteredReportData.cashiers]
+    .sort((a, b) => (b.revenueGenerated || 0) - (a.revenueGenerated || 0))
+    .slice(0, 5);
+  
+  console.log('Top performers:', topPerformers);
+  
+  // Update revenue chart
+  this.revenueChartOptions.series = [{
+    name: 'Revenue',
+    data: topPerformers.map(c => c.revenueGenerated || 0)
+  }];
+  this.revenueChartOptions.xaxis = {
+    categories: topPerformers.map(c => c.cashier?.name || 'Unknown')
+  };
+  
+  // Update orders chart
+  this.ordersChartOptions.series = [
+    {
+      name: 'Orders Handled',
+      data: topPerformers.map(c => c.ordersHandled || 0)
+    },
+    {
+      name: 'Refunds',
+      data: topPerformers.map(c => c.refunds || 0)
+    }
+  ];
+  this.ordersChartOptions.xaxis = {
+    categories: topPerformers.map(c => c.cashier?.name || 'Unknown')
+  };
+  
+  // Update refunds pie chart
+  const totalRefunds = this.filteredReportData.cashiers.reduce((sum, c) => sum + (c.refunds || 0), 0);
+  
+  if (totalRefunds > 0) {
+    const topRefunders = this.filteredReportData.cashiers
+      .filter(c => (c.refunds || 0) > 0)
+      .slice(0, 4);
     
-    // Update refunds pie chart
-    const totalRefunds = this.filteredReportData.cashiers.reduce((sum, c) => sum + c.refunds, 0);
-    this.refundsChartOptions.series = this.filteredReportData.cashiers
-      .slice(0, 4)
-      .map(c => (c.refunds / totalRefunds) * 100);
-    
-    this.refundsChartOptions.labels = this.filteredReportData.cashiers
-      .slice(0, 4)
-      .map(c => c.cashier.name);
+    this.refundsChartOptions.series = topRefunders.map(c => 
+      ((c.refunds || 0) / totalRefunds) * 100
+    );
+    this.refundsChartOptions.labels = topRefunders.map(c => 
+      c.cashier?.name || 'Unknown'
+    );
+  } else {
+    this.refundsChartOptions.series = [];
+    this.refundsChartOptions.labels = [];
   }
   
+  console.log('Charts updated successfully');
+}
   setActiveTab(tab: string): void {
     this.activeTab = tab;
   }
-  
+
   selectCashier(cashier: CashierPerformanceDTO): void {
     this.selectedCashier = cashier;
     this.activeTab = 'detail';
   }
-  
+
   togglePeriodComparison(): void {
     this.periodComparison = this.periodComparison === 'weekly' ? 'monthly' : 'weekly';
-    // In a real app, this would trigger data refresh
+    this.applyFilter();
   }
-  
+
   getMetricClass(value: number, threshold1: number, threshold2: number): string {
     if (value >= threshold2) return 'text-green-600';
     if (value >= threshold1) return 'text-yellow-500';
     return 'text-red-500';
   }
-  
+
   getAverageRevenue(): number {
     if (!this.filteredReportData?.cashiers.length) return 0;
     const total = this.filteredReportData.cashiers.reduce((sum, c) => sum + c.revenueGenerated, 0);
     return total / this.filteredReportData.cashiers.length;
   }
-  
+
   getTotalOrders(): number {
-    if (!this.filteredReportData?.cashiers.length) return 0;
-    return this.filteredReportData.cashiers.reduce((sum, c) => sum + c.ordersHandled, 0);
+    const cashiers = this.filteredReportData?.cashiers || [];
+    return cashiers.reduce((sum, c) => sum + (c.ordersHandled || 0), 0);
   }
-  
+
   getTotalRevenue(): number {
-    if (!this.filteredReportData?.cashiers.length) return 0;
-    return this.filteredReportData.cashiers.reduce((sum, c) => sum + c.revenueGenerated, 0);
+    const cashiers = this.filteredReportData?.cashiers || [];
+    return cashiers.reduce((sum, c) => sum + (c.revenueGenerated || 0), 0);
   }
-  
+
   getTotalRefunds(): number {
-    if (!this.filteredReportData?.cashiers.length) return 0;
-    return this.filteredReportData.cashiers.reduce((sum, c) => sum + c.refunds, 0);
+    const cashiers = this.filteredReportData?.cashiers || [];
+    return cashiers.reduce((sum, c) => sum + (c.refunds || 0), 0);
   }
-  
+
   exportReport(format: 'pdf' | 'excel'): void {
-    // In a real app, this would trigger export functionality
     console.log(`Exporting report as ${format}...`);
+    const payload: CashierReportRequestDTO = {
+      startDate: this.formatDate(this.reportForm.value.startDate),
+      endDate: this.formatDate(this.reportForm.value.endDate),
+      branchIds: this.reportForm.value.branchIds?.length ? this.reportForm.value.branchIds : [0],
+      shift: this.reportForm.value.shift || "string"
+    };
   }
 
   getCashiersByBranch(branchId: number) {
-    return this.filteredReportData?.cashiers.filter(c => c.branch.id === branchId) || [];
+    return this.filteredReportData?.cashiers?.filter(c => c.branch?.id === branchId) || [];
   }
   
   getOrdersHandled(branchId: number): number {
-    return this.getCashiersByBranch(branchId).reduce((sum, c) => sum + c.ordersHandled, 0);
+    return this.getCashiersByBranch(branchId).reduce((sum, c) => sum + (c.ordersHandled || 0), 0);
   }
   
   getRevenue(branchId: number): number {
-    return this.getCashiersByBranch(branchId).reduce((sum, c) => sum + c.revenueGenerated, 0);
+    return this.getCashiersByBranch(branchId).reduce((sum, c) => sum + (c.revenueGenerated || 0), 0);
   }
   
   getRefunds(branchId: number): number {
-    return this.getCashiersByBranch(branchId).reduce((sum, c) => sum + c.refunds, 0);
+    return this.getCashiersByBranch(branchId).reduce((sum, c) => sum + (c.refunds || 0), 0);
   }
-  
 }

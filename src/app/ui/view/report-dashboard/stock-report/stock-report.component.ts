@@ -1,5 +1,6 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
+import { ReportService } from '../../../service/report.service';
 
 interface InventoryReportRequestDTO {
   branchIds?: number[];
@@ -44,7 +45,7 @@ interface InventoryReportDTO {
   templateUrl: './stock-report.component.html',
   styleUrl: './stock-report.component.scss'
 })
-export class StockReportComponent {
+export class StockReportComponent implements OnInit {
   filterForm!: FormGroup;
   reportData!: InventoryReportDTO;
   
@@ -66,14 +67,16 @@ export class StockReportComponent {
   sortColumn = 'product.name';
   sortDirection = 'asc';
   
-  Math = Math
-  constructor(private fb: FormBuilder) { }
+  Math = Math;
+
+  constructor(
+    private fb: FormBuilder,
+    private reportService: ReportService
+  ) { }
 
   ngOnInit(): void {
     this.initFilters();
-    this.loadDummyData();
-    this.calculateSummaryMetrics();
-    this.initCharts();
+    this.loadInitialData();
   }
 
   initFilters(): void {
@@ -84,69 +87,124 @@ export class StockReportComponent {
     });
   }
 
-  openFilterForm(){
-    this.isFilterFormOpen = !this.isFilterFormOpen
+  loadInitialData(): void {
+    this.isLoading = true;
+    
+    // Load branches and categories concurrently
+    Promise.all([
+      this.loadBranches(),
+      this.loadCategories()
+    ]).then(() => {
+      // Load initial inventory report
+      this.loadInventoryReport();
+    }).catch(error => {
+      console.error('Error loading initial data:', error);
+      this.isLoading = false;
+    });
   }
 
-  loadDummyData(): void {
-    // Dummy branches
-    this.branches = [
-      { id: 1, name: 'Main Store', location: 'Downtown' },
-      { id: 2, name: 'East Branch', location: 'Eastside Mall' },
-      { id: 3, name: 'West Branch', location: 'Westfield Shopping Center' },
-      { id: 4, name: 'North Branch', location: 'North City Plaza' }
-    ];
-
-    // Dummy categories
-    this.categories = [
-      { id: 1, name: 'Electronics' },
-      { id: 2, name: 'Clothing' },
-      { id: 3, name: 'Home Goods' },
-      { id: 4, name: 'Sporting Equipment' },
-      { id: 5, name: 'Office Supplies' }
-    ];
-
-    // Generate dummy inventory items
-    const inventory: InventoryItemDTO[] = [];
-    
-    // Generate 50 random inventory items across branches and categories
-    for (let i = 1; i <= 50; i++) {
-      const branchIndex = Math.floor(Math.random() * this.branches.length);
-      const categoryIndex = Math.floor(Math.random() * this.categories.length);
-      const currentStock = Math.floor(Math.random() * 100);
-      const soldQuantity = Math.floor(Math.random() * 80);
-      const lowStockAlert = currentStock < 10;
-      
-      inventory.push({
-        product: {
-          id: i,
-          name: `Product ${i}`,
-          sku: `SKU-${i.toString().padStart(5, '0')}`,
-          price: Math.round(10 + Math.random() * 990), // $10 to $1000
-          costPrice: Math.round(5 + Math.random() * 500) // $5 to $505
+  loadBranches(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.reportService.getBranches().subscribe({
+        next: (branches) => {
+          this.branches = branches;
+          resolve();
         },
-        category: this.categories[categoryIndex],
-        currentStock: currentStock,
-        soldQuantity: soldQuantity,
-        branch: this.branches[branchIndex],
-        lowStockAlert: lowStockAlert
+        error: (error) => {
+          console.error('Error loading branches:', error);
+          this.branches = [];
+          resolve(); // Continue even if branches fail to load
+        }
       });
+    });
+  }
+
+  loadCategories(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.reportService.getCategories().subscribe({
+        next: (categories) => {
+          this.categories = categories;
+          resolve();
+        },
+        error: (error) => {
+          console.error('Error loading categories:', error);
+          this.categories = [];
+          resolve(); // Continue even if categories fail to load
+        }
+      });
+    });
+  }
+
+  loadInventoryReport(filters?: InventoryReportRequestDTO): void {
+    this.isLoading = true;
+    
+    const requestPayload: InventoryReportRequestDTO = filters || {
+      branchIds: [],
+      categoryIds: [],
+      includeLowStock: false
+    };
+
+    // If no specific branches/categories selected, include all
+    if (!requestPayload.branchIds?.length) {
+      requestPayload.branchIds = this.branches.map(b => b.id);
+    }
+    if (!requestPayload.categoryIds?.length) {
+      requestPayload.categoryIds = this.categories.map(c => c.id);
     }
 
-    this.reportData = { inventory };
+    this.reportService.getInventoryReport(requestPayload).subscribe({
+      next: (data) => {
+        this.reportData = data;
+        this.calculateSummaryMetrics();
+        this.initCharts();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading inventory report:', error);
+        this.isLoading = false;
+        // Initialize empty data structure on error
+        this.reportData = { inventory: [] };
+        this.calculateSummaryMetrics();
+        this.initCharts();
+      }
+    });
+  }
+
+  openFilterForm(): void {
+    this.isFilterFormOpen = !this.isFilterFormOpen;
   }
 
   calculateSummaryMetrics(): void {
+    if (!this.reportData?.inventory) {
+      this.totalItems = 0;
+      this.lowStockItems = 0;
+      this.totalValue = 0;
+      return;
+    }
+
     this.totalItems = this.reportData.inventory.reduce((sum, item) => sum + item.currentStock, 0);
     this.lowStockItems = this.reportData.inventory.filter(item => item.lowStockAlert).length;
     this.totalValue = this.reportData.inventory.reduce((sum, item) => sum + (item.currentStock * item.product.price), 0);
   }
 
   initCharts(): void {
+    if (!this.reportData?.inventory?.length) {
+      this.initEmptyCharts();
+      return;
+    }
+    
     this.initCategoriesChart();
     this.initStockTrendChart();
     this.initBranchComparisonChart();
     this.initSalesVsStockChart();
+  }
+
+  initEmptyCharts(): void {
+    // Initialize empty charts when no data is available
+    this.categoriesChartOptions = this.createEmptyBarChart('Stock by Category');
+    this.stockTrendChartOptions = this.createEmptyLineChart('Inventory Trend (Last 6 Months)');
+    this.branchComparisonChartOptions = this.createEmptyPieChart('Stock Distribution by Branch');
+    this.salesVsStockChartOptions = this.createEmptyRadarChart('Stock vs Sales by Category');
   }
 
   initCategoriesChart(): void {
@@ -155,7 +213,7 @@ export class StockReportComponent {
       const items = this.reportData.inventory.filter(item => item.category.id === category.id);
       const totalStock = items.reduce((sum, item) => sum + item.currentStock, 0);
       return { x: category.name, y: totalStock };
-    });
+    }).filter(item => item.y > 0); // Only show categories with stock
 
     this.categoriesChartOptions = {
       series: [{ data: categoryData }],
@@ -174,7 +232,7 @@ export class StockReportComponent {
         enabled: false
       },
       xaxis: {
-        categories: this.categories.map(c => c.name),
+        categories: categoryData.map(item => item.x),
       },
       title: {
         text: 'Stock by Category',
@@ -184,15 +242,16 @@ export class StockReportComponent {
   }
 
   initStockTrendChart(): void {
-    // Create a stock trend line chart (simulated historical data)
+    // For now, create a simple trend based on current data
+    // In a real implementation, you'd fetch historical data
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    const currentTotal = this.totalItems;
     
-    // Generate random trend data for demonstration
+    // Generate trend data based on current stock (simulated for demo)
     const trendData = months.map((month, index) => {
-      return {
-        x: month,
-        y: Math.floor(1000 + Math.random() * 500 + index * 50) // Increasing trend with randomness
-      };
+      const variance = Math.random() * 0.2 - 0.1; // ±10% variance
+      const value = Math.floor(currentTotal * (0.8 + index * 0.05 + variance));
+      return { x: month, y: value };
     });
 
     this.stockTrendChartOptions = {
@@ -244,21 +303,24 @@ export class StockReportComponent {
 
   initBranchComparisonChart(): void {
     // Compare inventory across branches
-    const branchLabels = this.branches.map(branch => branch.name);
     const branchData = this.branches.map(branch => {
-      return this.reportData.inventory
+      const branchStock = this.reportData.inventory
         .filter(item => item.branch.id === branch.id)
         .reduce((sum, item) => sum + item.currentStock, 0);
-    });
+      return {
+        label: branch.name,
+        value: branchStock
+      };
+    }).filter(item => item.value > 0); // Only show branches with stock
 
     this.branchComparisonChartOptions = {
-      series: branchData,
+      series: branchData.map(item => item.value),
       chart: {
         width: 380,
         type: 'pie',
       },
-      labels: branchLabels,
-      colors: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444'],
+      labels: branchData.map(item => item.label),
+      colors: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'],
       responsive: [{
         breakpoint: 480,
         options: {
@@ -278,21 +340,22 @@ export class StockReportComponent {
   }
 
   initSalesVsStockChart(): void {
-    // Compare sales vs. current stock for top categories
-    const categories = this.categories.slice(0, 5).map(c => c.name);
-    
-    // Get aggregated data by category
-    const stockData: number[] = [];
-    const salesData: number[] = [];
-    
-    this.categories.slice(0, 5).forEach(category => {
+    // Compare sales vs. current stock for categories with data
+    const categoryStats = this.categories.map(category => {
       const items = this.reportData.inventory.filter(item => item.category.id === category.id);
       const totalStock = items.reduce((sum, item) => sum + item.currentStock, 0);
       const totalSold = items.reduce((sum, item) => sum + item.soldQuantity, 0);
       
-      stockData.push(totalStock);
-      salesData.push(totalSold);
-    });
+      return {
+        name: category.name,
+        stock: totalStock,
+        sold: totalSold
+      };
+    }).filter(item => item.stock > 0 || item.sold > 0); // Only show categories with data
+
+    const categories = categoryStats.map(item => item.name);
+    const stockData = categoryStats.map(item => item.stock);
+    const salesData = categoryStats.map(item => item.sold);
 
     this.salesVsStockChartOptions = {
       series: [{
@@ -336,7 +399,7 @@ export class StockReportComponent {
       tooltip: {
         y: {
           formatter: function(val: any) {
-            return val;
+            return val.toString();
           }
         }
       },
@@ -349,43 +412,58 @@ export class StockReportComponent {
     };
   }
 
+  // Helper methods for empty charts
+  createEmptyBarChart(title: string): any {
+    return {
+      series: [{ data: [] }],
+      chart: { type: 'bar', height: 350 },
+      colors: ['#4F46E5'],
+      title: { text: title, align: 'left' },
+      noData: { text: 'No data available' }
+    };
+  }
+
+  createEmptyLineChart(title: string): any {
+    return {
+      series: [{ name: 'Data', data: [] }],
+      chart: { height: 350, type: 'line' },
+      title: { text: title, align: 'left' },
+      noData: { text: 'No data available' }
+    };
+  }
+
+  createEmptyPieChart(title: string): any {
+    return {
+      series: [],
+      chart: { type: 'pie' },
+      labels: [],
+      title: { text: title, align: 'left' },
+      noData: { text: 'No data available' }
+    };
+  }
+
+  createEmptyRadarChart(title: string): any {
+    return {
+      series: [{ name: 'Stock', data: [] }, { name: 'Sales', data: [] }],
+      chart: { type: 'radar', height: 350 },
+      title: { text: title, align: 'left' },
+      xaxis: { categories: [] },
+      noData: { text: 'No data available' }
+    };
+  }
+
   applyFilters(): void {
-    this.isLoading = true;
     const filters = this.filterForm.value as InventoryReportRequestDTO;
-    console.log('Applying filters:', filters);
     
-    // In a real application, this would call a service
-    // For the demo, we'll just simulate a delay and filtering
-    setTimeout(() => {
-      this.isLoading = false;
-      // Apply filters to the dummy data
-      this.loadDummyData(); // Reload dummy data for demo
-      
-      // Filter by branch if selected
-      if (filters.branchIds && filters.branchIds.length > 0) {
-        this.reportData.inventory = this.reportData.inventory.filter(item => 
-          filters.branchIds?.includes(item.branch.id)
-        );
-      }
-      
-      // Filter by category if selected
-      if (filters.categoryIds && filters.categoryIds.length > 0) {
-        this.reportData.inventory = this.reportData.inventory.filter(item => 
-          filters.categoryIds?.includes(item.category.id)
-        );
-      }
-      
-      // Filter by low stock if selected
-      if (filters.includeLowStock) {
-        this.reportData.inventory = this.reportData.inventory.filter(item => 
-          item.lowStockAlert
-        );
-      }
-      
-      // Recalculate metrics and rebuild charts
-      this.calculateSummaryMetrics();
-      this.initCharts();
-    }, 800);
+    // Convert empty arrays to undefined to fetch all data
+    const cleanedFilters: InventoryReportRequestDTO = {
+      branchIds: filters.branchIds?.length ? filters.branchIds : undefined,
+      categoryIds: filters.categoryIds?.length ? filters.categoryIds : undefined,
+      includeLowStock: filters.includeLowStock || false
+    };
+    
+    console.log('Applying filters:', cleanedFilters);
+    this.loadInventoryReport(cleanedFilters);
   }
 
   resetFilters(): void {
@@ -394,9 +472,7 @@ export class StockReportComponent {
       categoryIds: [],
       includeLowStock: false
     });
-    this.loadDummyData();
-    this.calculateSummaryMetrics();
-    this.initCharts();
+    this.loadInventoryReport();
   }
 
   sortData(column: string): void {
@@ -407,19 +483,89 @@ export class StockReportComponent {
       this.sortDirection = 'asc';
     }
     
-    // Sorting logic would be implemented here
-    console.log(`Sorting by ${this.sortColumn} in ${this.sortDirection} order`);
+    // Sort the inventory data
+    this.reportData.inventory.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+      
+      switch (column) {
+        case 'product.name':
+          aValue = a.product.name.toLowerCase();
+          bValue = b.product.name.toLowerCase();
+          break;
+        case 'product.sku':
+          aValue = a.product.sku.toLowerCase();
+          bValue = b.product.sku.toLowerCase();
+          break;
+        case 'category.name':
+          aValue = a.category.name.toLowerCase();
+          bValue = b.category.name.toLowerCase();
+          break;
+        case 'currentStock':
+          aValue = a.currentStock;
+          bValue = b.currentStock;
+          break;
+        case 'product.price':
+          aValue = a.product.price;
+          bValue = b.product.price;
+          break;
+        case 'branch.name':
+          aValue = a.branch.name.toLowerCase();
+          bValue = b.branch.name.toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+      
+      if (aValue < bValue) return this.sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return this.sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    
+    console.log(`Sorted by ${this.sortColumn} in ${this.sortDirection} order`);
   }
 
   exportToCsv(): void {
-    console.log('Exporting to CSV...');
+    if (!this.reportData?.inventory?.length) {
+      console.log('No data to export');
+      return;
+    }
+    
+    const headers = ['Product Name', 'SKU', 'Category', 'Current Stock', 'Price', 'Branch', 'Low Stock Alert'];
+    const csvData = this.reportData.inventory.map(item => [
+      item.product.name,
+      item.product.sku,
+      item.category.name,
+      item.currentStock,
+      item.product.price,
+      item.branch.name,
+      item.lowStockAlert ? 'Yes' : 'No'
+    ]);
+    
+    const csvContent = [headers, ...csvData]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `inventory-report-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
   }
 
   exportToPdf(): void {
     console.log('Exporting to PDF...');
+    // Implement PDF export logic here
   }
 
   printReport(): void {
     console.log('Printing report...');
+    window.print();
+  }
+
+  trackByItemId(index: number, item: InventoryItemDTO): any {
+    return item.product?.id || index;
   }
 }

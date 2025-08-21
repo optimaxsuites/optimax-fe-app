@@ -2,7 +2,13 @@
   <!-- Header -->
   <header class="bg-white border-b border-gray-200 shadow-sm">
     
+<div *ngIf="loading" class="loading-indicator">
+  Loading data...
+</div>
 
+<div *ngIf="!loading && !filteredReportData.cashiers.length" class="no-data">
+  No cashier data available for selected filters
+</div>
     <div class=" px-4 sm:px-6 lg:px-8 py-6">
       <div class="flex items-center justify-between">
         <div>
