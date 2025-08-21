@@ -94,7 +94,7 @@ fetchUsers(){
       this.users = data.map((user: { id: number; }) => ({
       ...user,
       appRoles$: this.authenticationService.getUserApplicationRole(user.id).pipe(
-        map((roles: any[]) => roles?.map(r => r.name).join(", ") ?? '')
+        map(((roleObj: any) => roleObj?.name ?? ''))
       )
     }));
 
