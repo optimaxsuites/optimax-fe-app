@@ -56,6 +56,7 @@ import { ProductCardComponent } from '../ui/view/product-card/product-card.compo
 import { EditProductComponent } from '../ui/view/products/edit-product/edit-product.component';
 import { RequestDetailsComponent } from '../ui/view/request-details/request-details.component';
 import { UserRoutingModule } from './user-routing.module';
+import { PaginatorModule } from 'primeng/paginator';
 // import { ProductVariantModalComponent } from '../ui/view/product-variant-modal/product-variant-modal.component';
 
 @NgModule({
@@ -87,6 +88,7 @@ import { UserRoutingModule } from './user-routing.module';
     CommonModule,
     UserRoutingModule,
     TableModule,
+    PaginatorModule,
     RippleModule,
     DialogModule,
     ToastModule,

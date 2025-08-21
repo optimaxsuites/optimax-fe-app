@@ -1,6 +1,6 @@
-import { Component, Input } from '@angular/core';
-import { Order, ProductJSONFormat } from '../../models/interface';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { Order } from '../../models/interface';
 import { RegisterService } from '../../service/register.service';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
 import { MetadataService } from '../../service/metadata.service';
@@ -8,14 +8,34 @@ import { MetadataService } from '../../service/metadata.service';
 @Component({
   selector: 'app-checkout-orders',
   templateUrl: './checkout-orders.component.html',
-  styleUrl: './checkout-orders.component.scss',
+  styleUrls: ['./checkout-orders.component.scss'],
 })
-export class CheckoutOrdersComponent {
-  orders: Order[] = [];
-  groupedOrders: { month: string; orders: Order[] }[] = [];
-  userInfoRegData: any[] = [];
-  userRegData: any = {};
-  selectedOrder!: Order;
+export class CheckoutOrdersComponent implements OnInit {
+  allOrders: Order[] = [];
+  filteredOrders: Order[] = [];
+  statusFilter: string = 'ALL';
+  groupedOrders: Array<{ key: string; label: string; items: any[] }> = [];
+
+  
+  // pagination - using PrimeNG's built-in pagination
+  rowsPerPage = 15;
+
+  statusOptions = [
+    { value: 'ALL', label: 'All' },
+    { value: 'PAID', label: 'Paid' },
+    { value: 'UNPAID', label: 'Unpaid' },
+    { value: 'PENDING', label: 'Pending' }
+  ];
+  
+  // filters
+  daysFilter = 0;
+  searchText = '';
+  // statusFilter = 'ALL';
+  activeFilter: 'today' | 'all' | 'custom' = 'today';
+  isLoading = true;
+
+  dateFrom!: string;
+  dateTo!: string;
 
   constructor(
     private router: Router,
@@ -24,92 +44,106 @@ export class CheckoutOrdersComponent {
     private metadataService: MetadataService
   ) {}
 
-  ngOnInit() {
-    this.metadataService.fetchMetaData()
-    this.loadSavedItems();
-    this.userInfoRegData = JSON.parse(sessionStorage['userRegData']);
-    this.userRegData = this.userInfoRegData;
-    console.log(this.orders)
-
-  }
-
-  loadSavedItems() {
-    this.metadataService.orders$.subscribe(data => {
-      console.log('RAW ORDERS FROM SERVICE:', JSON.stringify(data, null, 2));
-      this.orders = [...data];
-      this.sortOrdersByDate();
-      this.orders = this.orders.filter(order => order.orderStatus !== 'PAID');
-      this.groupOrdersByMonth();
+  ngOnInit(): void {
+    this.metadataService.fetchMetaData();
+    this.metadataService.orders$.subscribe((data: Order[]) => {
+      this.allOrders = Array.isArray(data) ? [...data] : [];
+      this.isLoading = false;
+      this.applyFilters();
     });
+
+    this.setRangeToToday();
   }
 
-  sortOrdersByDate() {
-    this.orders.sort(
-      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    );
+
+  setRangeToToday(): void {
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    const end = new Date();   end.setHours(23, 59, 59, 999);
+    this.dateFrom = start.toISOString();
+    this.dateTo = end.toISOString();
+    this.daysFilter = 0;
+    this.activeFilter = 'today';
+    this.applyFilters();
   }
 
+  showAllOrders(): void {
+    this.dateFrom = '1970-01-01T00:00:00.000Z';
+    this.dateTo = new Date().toISOString();
+    this.daysFilter = 0;
+    this.activeFilter = 'all';
+    this.applyFilters();
+  }
+
+  onDaysFilterChange(): void {
+    this.activeFilter = 'custom';
+    this.applyFilters();
+  }
+
+  applyFilters(): void {
+    let filtered = [...this.allOrders];
+
+    // Apply date filter
+    if (this.daysFilter > 0) {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - this.daysFilter);
+      filtered = filtered.filter(order => {
+        const orderDate = this.formatDate(order.updatedAt);
+        return orderDate && orderDate >= cutoffDate;
+      });
+    } else {
+      const from = new Date(this.dateFrom).getTime();
+      const to = new Date(this.dateTo).getTime();
+      filtered = filtered.filter(o => {
+        const d = this.formatDate(o.updatedAt);
+        if (!d) return false;
+        const t = d.getTime();
+        return t >= from && t <= to;
+      });
+    }
+
+    // Apply status filter
+    if (this.statusFilter !== 'ALL') {
+      filtered = filtered.filter(order => order.orderStatus === this.statusFilter);
+    }
+
+    // Apply search filter
+    if (this.searchText) {
+      const searchLower = this.searchText.toLowerCase();
+      filtered = filtered.filter(order =>
+        order.orderNumber?.toLowerCase().includes(searchLower) ||
+        (order.customer?.name && order.customer.name.toLowerCase().includes(searchLower)) ||
+        order.totalAmount?.toString().includes(searchLower)
+      );
+    }
+
+    this.filteredOrders = filtered;
+  }
+    get isGroupedView(): boolean {
+    
+    return this.activeFilter === 'all' && !this.daysFilter && !this.dateFrom && !this.dateTo;
+  }
   formatDate(parts: any): Date | null {
-    if (!parts) {
-      return null;
-    }
-    // Handle array format e.g., [2024, 7, 21, 13, 27, 34]
-    if (Array.isArray(parts)) {
-      return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
-    }
-    // Handle string or Date object
+    if (!parts) return null;
+    if (Array.isArray(parts)) return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
     if (typeof parts === 'string' || parts instanceof Date) {
       const d = new Date(parts);
-      // Check if the created date is valid
       return isNaN(d.getTime()) ? null : d;
     }
-    return null; // Fallback for any other unexpected format
-  }
-  
-
-  handleAction(order: Order) {
-    console.log('Action for order:', order);
+    return null;
   }
 
   reOpenCart(order: Order) {
-    this.selectedOrder = order;
     const checkoutLink = this.navigationLink.getLink('checkoutLink');
     this.router.navigate([checkoutLink], { state: { order } });
   }
-
+  
   orderDetails(order: Order) {
-    this.selectedOrder = order;
-    console.log(order)
     const detailsLink = this.navigationLink.getLink('orderDetails');
     this.router.navigate([detailsLink], { state: { order } });
   }
+  
   closeRegister() {
     this.registerService.triggerCloseRegister();
   }
-
-  groupOrdersByMonth() {
-    const groups: { [key: string]: Order[] } = {};
-    this.orders.forEach(order => {
-      const date = this.formatDate(order.updatedAt);
-      if (date) {
-        const month = date.toLocaleString('default', { month: 'long' });
-        const year = date.getFullYear();
-        const key = `${month} ${year}`;
-        if (!groups[key]) {
-          groups[key] = [];
-        }
-        groups[key].push(order);
-      }
-    });
-    // Sort months descending (most recent first)
-    this.groupedOrders = Object.entries(groups)
-      .map(([month, orders]) => ({ month, orders }))
-      .sort((a, b) => {
-        const [aMonth, aYear] = a.month.split(' ');
-        const [bMonth, bYear] = b.month.split(' ');
-        const aDate = new Date(`${aMonth} 1, ${aYear}`);
-        const bDate = new Date(`${bMonth} 1, ${bYear}`);
-        return bDate.getTime() - aDate.getTime();
-      });
-  }
+  
 }

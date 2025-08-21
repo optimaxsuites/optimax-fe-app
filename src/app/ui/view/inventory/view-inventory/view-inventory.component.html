@@ -1,4 +1,4 @@
-<div class="w-full min-h-screen bg-gray-50">
+<div class="w-full min-h-screen bg-gray-50" id="printable-area">
   <div class="mx-auto p-6">
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-2">
@@ -41,7 +41,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 Product Name
               </label>
-              <p class="name editInput">{{ activeItem.name }}</p>
+              <p class="name editInput">{{ activeItem?.name || '-' }}</p>
             </div>
 
             <!-- Category -->
@@ -49,7 +49,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 Category
               </label>
-              <p class="name editInput">{{ activeItem.productCategory.name }}</p>
+              <p class="name editInput">{{ activeItem?.productCategory?.name || '-' }}</p>
             </div>
 
             <!-- Quantity -->
@@ -57,7 +57,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 Current Quantity
               </label>
-              <p class="name editInput">{{ activeItem.quantity }}</p>
+              <p class="name editInput">{{ activeItem?.quantity || 0 }}</p>
             </div>
 
             <!-- Price -->
@@ -65,7 +65,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 Current Price
               </label>
-              <p class="name editInput">{{ activeItem.sellingPrice | currency : "₦" }}</p>
+              <p class="name editInput">{{ activeItem?.sellingPrice | currency : "₦" }}</p>
             </div>
 
             <!-- SKU -->
@@ -73,7 +73,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 SKU
               </label>
-              <p class="name editInput">{{ activeItem.sku }}</p>
+              <p class="name editInput">{{ activeItem?.sku || '-' }}</p>
             </div>
 
             <!-- Product Code -->
@@ -81,13 +81,13 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 Product Code
               </label>
-              <p class="name editInput">{{ activeItem.code }}</p>
+              <p class="name editInput">{{ activeItem?.code || '-' }}</p>
             </div>
           </div>
         </div>
 
         <!-- Supplier Information -->
-        <div *ngIf="supplier" class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div *ngIf="supplier && activeItem?.supplier" class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
           <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
             Supplier Details
           </h2>
@@ -98,7 +98,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 Name
               </label>
-              <p class="name editInput">{{ activeItem.supplier.name }}</p>
+              <p class="name editInput">{{ activeItem?.supplier?.name || '-' }}</p>
             </div>
 
             <!-- Contact Person -->
@@ -106,7 +106,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 Contact Person
               </label>
-              <p class="name editInput">{{ activeItem.supplier.contactPerson }}</p>
+              <p class="name editInput">{{ activeItem?.supplier?.contactPerson || '-' }}</p>
             </div>
 
             <!-- Email -->
@@ -114,7 +114,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 Email
               </label>
-              <p class="name editInput">{{ activeItem.supplier.email }}</p>
+              <p class="name editInput">{{ activeItem?.supplier?.email || '-' }}</p>
             </div>
 
             <!-- Phone -->
@@ -122,7 +122,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 Phone Number
               </label>
-              <p class="name editInput">{{ activeItem.supplier.phoneNumber }}</p>
+              <p class="name editInput">{{ activeItem?.supplier?.phoneNumber || '-' }}</p>
             </div>
 
             <!-- Address -->
@@ -130,69 +130,86 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 Address
               </label>
-              <p class="name editInput">{{ activeItem.supplier.address }}</p>
+              <p class="name editInput">{{ activeItem?.supplier?.address || '-' }}</p>
             </div>
           </div>
         </div>
 
-        <!-- Product Details Table -->
+        <!-- Stock Movements Section -->
         <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
           <div class="flex justify-between items-center mb-4 pb-2 border-b">
-            <h2 class="text-lg font-semibold text-gray-800">Product Details Table</h2>
-            <div class="text-sm text-gray-600">
-              Last Updated: {{ Timestamp }}
+            <h2 class="text-lg font-semibold text-gray-800">Stock Movement History</h2>
+            <div class="text-sm text-gray-600" *ngIf="stockMovements?.length">
+              Total Movements: {{ stockMovements.length }}
             </div>
           </div>
 
-          <div class="overflow-x-auto">
+          <div *ngIf="isMovementsLoading" class="w-full p-6 text-center text-gray-500">
+            <i class="fa fa-spinner fa-spin mr-2"></i>
+            Loading stock movement history...
+          </div>
+
+         <div
+  *ngIf="!isMovementsLoading && hasTriedMovements && (!stockMovements || stockMovements.length === 0)"
+  class="w-full p-6 text-center text-gray-500">
+  <i class="fa fa-info-circle mr-2"></i>
+  No stock movements found for this product.
+</div>
+
+
+          <div *ngIf="!isMovementsLoading && stockMovements && stockMovements.length > 0" class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
                   <th class="px-6 py-3 text-left text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
-                    Name
+                    Date & Time
                   </th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
-                    SKU
+                    Reference
+                  </th>
+                  <th class="px-6 py-3 text-center text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
+                    Quantity Change
+                  </th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
+                    Purchase Price
+                  </th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
+                    Selling Price
                   </th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
-                    Code
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
-                    Current Price
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
-                    Current Qty
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
-                    Updated At
+                    Supplier 
                   </th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <tr class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    {{ activeItem.name }}
+                <tr *ngFor="let movement of stockMovements; let i = index" 
+                    class="hover:bg-gray-50 transition-colors duration-200"
+                    [class.bg-green-50]="movement.quantity > 0"
+                    [class.bg-red-50]="movement.quantity < 0">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {{ toIsoString(movement.createdDate) | date:'medium' }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    {{ activeItem.sku }}
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {{ movement.reference || 'N/A' }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    {{ activeItem.code }}
+                  <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium"
+                      [ngClass]="{
+                        'text-green-700 bg-green-100 rounded-full px-3 py-1': movement.quantity > 0,
+                        'text-red-700 bg-red-100 rounded-full px-3 py-1': movement.quantity < 0,
+                        'text-gray-700': movement.quantity === 0
+                      }">
+                    <span *ngIf="movement.quantity > 0">+{{ movement.quantity }}</span>
+                    <span *ngIf="movement.quantity < 0">{{ movement.quantity }}</span>
+                    <span *ngIf="movement.quantity === 0">{{ movement.quantity }}</span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    {{ activeItem.sellingPrice | currency : "₦" }}
+                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                    {{ (movement.purchasePrice || 0) | currency:'₦':'symbol':'1.2-2' }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    {{ activeItem.quantity }}
+                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                    {{ (movement.sellingPrice || 0) | currency:'₦':'symbol':'1.2-2' }}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    {{ activeItem.productCategory.name }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    {{ Timestamp }}
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {{ movement.supplier?.name || movement.supplierId || 'N/A' }}
                   </td>
                 </tr>
               </tbody>
@@ -201,7 +218,7 @@
         </div>
       </div>
 
-      <!-- Left Column - Product Image -->
+      
       <div class="md:col-span-1">
         <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div class="flex flex-col items-center gap-4">
@@ -211,6 +228,10 @@
                 [src]="activeItem.imageUrl$ || 'assets/images/no-image.png'"
                 alt="product image"
               />
+            </div>
+            <div class="text-center">
+              <h3 class="text-lg font-medium text-gray-800">{{ activeItem?.name }}</h3>
+              <p class="text-sm text-gray-600 mt-1">Created: {{ Timestamp }}</p>
             </div>
           </div>
         </div>

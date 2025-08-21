@@ -780,3 +780,144 @@ export interface RecipePayload {
   ingredient: string[];
   createdById: number;
 }
+// ...existing exports
+
+export interface StockMovementCreateDTO {
+  // id: number;  // <-- omit for create
+  quantity: number;          // negative for OUT
+  reference: string;
+  purchasePrice: number;
+  sellingPrice: number;
+  createdDate: string;       // ISO with Z
+  supplierId?: number | null;
+  ingredientId: number;      // backend "product" id
+  inventoryId: number;
+  createdById?: number;      // omit unless server requires it
+  // stockMovementsId?: number; // only include if server mandates it; otherwise omit
+}
+
+export type InventoryStatus = 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK';
+
+
+export interface InventoryCreatePayload {
+  availableQuantity: number;
+  status: InventoryStatus;
+  branchId: number;
+  productId?: number;     
+  ingredientId?: number; 
+  stockMovement?: StockMovementCreateForInventory[];
+
+
+}
+
+
+
+export interface StockMovementCreateStandalone {
+ 
+  quantity: number;
+  reference?: string;
+  purchasePrice?: number;
+  sellingPrice?: number;
+  createdDate: string;            
+  supplierId?: number | null;
+  inventoryId: number;            
+ 
+}
+
+
+export interface StockMovementCreateForInventory {
+  quantity: number;
+  reference?: string;
+  purchasePrice?: number;
+  sellingPrice?: number;
+  createdDate: string;
+  supplierId?: number | null;
+}
+
+
+
+export interface InventoryUpdatePayload {
+  id: number;
+  availableQuantity: number;
+  status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK';
+  productId: number;
+  branchId: number;
+  stockMovement: StockMovementCreatePayload[];
+}
+
+export interface InventoryResponsePayload {
+  id: number;
+  availableQuantity: number;
+  status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK';
+  productId: number;
+  branchId: number;
+  stockMovement: StockMovementResponsePayload[];
+}
+
+export interface StockMovementCreatePayload {
+  quantity: number;
+  reference: string;
+  purchasePrice: number;
+  sellingPrice: number;
+  createdDate: string; 
+  supplierId?: number | null;
+  ingredientId: number; 
+  inventoryId?: number; 
+  
+}
+
+export interface StockMovementResponsePayload {
+  id: number;
+  quantity: number;
+  reference: string;
+  purchasePrice: number;
+  sellingPrice: number;
+  createdDate: string;
+  stockMovementsId?: number;
+  createdById?: number;
+  supplierId?: number;
+  ingredientId: number;
+  inventoryId: number;
+}
+
+export type StockMovementPostBody = {
+  quantity: number;         
+  reference?: string;
+  purchasePrice?: number;
+  sellingPrice?: number;
+  createdDate: string;        
+  supplierId?: number | null;
+  inventoryId: number;     
+};
+export interface StockMovementByInventory {
+  id: number;
+  quantity: number;               
+  reference?: string | null;
+  purchasePrice?: number | null;
+  sellingPrice?: number | null;
+  createdDate: string | number[]; 
+  supplierId?: number | null;
+  inventoryId: number;
+  createdById?: number | null;
+ 
+  supplier?: {
+    id: number;
+    name: string;
+    contactPerson: string;
+    phoneNumber: string;
+    email: string;
+    address: string;
+  } | null;
+  ingredient?: any | null;
+  inventory?: {
+    id: number;
+    availableQuantity: number;
+    status: string;
+    productId: number;
+    branchId: number;
+    stockMovement: StockMovementByInventory[];
+  } | null;
+}
+
+
+

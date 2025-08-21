@@ -19,6 +19,7 @@ import {
   ProductJSONFormat,
   BranchDTO,
   InventoryPayload,
+  InventoryResponsePayload,
 } from '../../models/interface';
 import { MessageService } from 'primeng/api';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
@@ -29,6 +30,7 @@ import { OverlayPanel } from 'primeng/overlaypanel';
 import { MetadataService } from '../../service/metadata.service';
 import { DOCUMENT } from '@angular/common';
 import { EditInventoryComponent } from './edit-inventory/edit-inventory.component';
+import { BehaviorSubject } from 'rxjs';
 
 
 @Component({
@@ -41,6 +43,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
   @ViewChild('editInventoryComponent')
   mode: 'create' | 'edit' = 'create';
   editInventoryComponent!: EditInventoryComponent;
+  isLoading: boolean = false;
   selectedProduct: any = null;
   currentPage = 0;
   rowsPerPage = 15;
@@ -50,7 +53,8 @@ export class InventoryComponent implements OnInit, OnDestroy {
 
   // Use enriched products from MetadataService
   products: ProductData[] = [];
-  inventories: InventoryPayload[] = [];
+  // inventories: InventoryResponsePayload[] = [];
+  inventories: InventoryResponsePayload[] = [];
   tableSections: boolean = false;
   @Output() productUpdated = new EventEmitter<any>();
   items = [{ showMenu: false }, { showMenu: false }];
@@ -83,13 +87,14 @@ export class InventoryComponent implements OnInit, OnDestroy {
     startDate: '',
     endDate: '',
   };
-  isLoading = this.metadataService.loading$;
+  // isLoading = this.metadataService.loading$;
 
   quantityBasedDiscount: { minQuantity: number } = { minQuantity: 0 };
   productImage: any = '';
   tableSection: boolean = true;
   searchTerm: string = '';
   selectedCategories: number[] = [];
+  // paginatedProducts: any[] = [];
   categories: any[] = [];
   isImportDialogOpen = false;
   showInformation = false;
@@ -114,16 +119,121 @@ export class InventoryComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.originalBodyOverflow = this.document.body.style.overflow || 'auto';
+  this.originalBodyOverflow = this.document.body.style.overflow || 'auto';
+  this.isLoading = true;
 
-    this.loadCategory();
-    this.getProducts();
-    this.getDiscountTypes();
-     this.metadataService.branches$.subscribe((data) => (this.branches = data));
-    if (this.selectedBranch) {
-      this.metadataService.setSelectedBranch(this.selectedBranch);
+  // Load supporting data
+  this.loadCategory();
+  this.getDiscountTypes();
+  
+  // Subscribe to branches
+  this.metadataService.branches$.subscribe((data) => {
+    this.branches = data;
+    console.log('Branches loaded:', this.branches); // Debug log
+  });
+  
+  // Set selected branch and load inventories
+  if (this.selectedBranch) {
+    this.metadataService.setSelectedBranch(this.selectedBranch);
+  }
+  
+  // Load inventories after branch is set
+  this.getInventories();
+}
+onInventoryUpdated(ev: { inventoryId: number; quantity: number; status: string }) {
+   console.log('parent received updated', ev);
+  const updateOne = (arr: any[]) => {
+    const idx = arr?.findIndex(
+      p => p?.inventoryId === ev.inventoryId || p?.__inventory?.id === ev.inventoryId
+    );
+    if (idx > -1) {
+      arr[idx] = { ...arr[idx], quantity: ev.quantity, status: ev.status };
+    }
+  };
+
+  updateOne(this.products);
+  updateOne(this.paginatedProducts);
+
+  
+  this.products = [...this.products];
+  
+}
+
+
+  private mapInventoryToProductRow(inv: any): any {
+  console.log('Mapping inventory item:', inv); 
+  
+  // Handle different response structures
+  const product = inv.product || inv.ingredient || {};
+  const productId = product.id || inv.productId || inv.ingredientId || inv.id;
+  
+  // Handle creation date
+  let createdDateMs = Date.now();
+  if (product.createdDate) {
+    if (Array.isArray(product.createdDate)) {
+      createdDateMs = new Date(
+        product.createdDate[0],
+        (product.createdDate[1] || 1) - 1,
+        product.createdDate[2] || 1,
+        product.createdDate[3] || 0,
+        product.createdDate[4] || 0,
+        product.createdDate[5] || 0
+      ).getTime();
+    } else {
+      createdDateMs = new Date(product.createdDate).getTime();
     }
   }
+
+  const mapped = {
+    // Essential fields for display
+    id: productId,
+    code: product.code || inv.code || '',
+    sku: product.sku || inv.sku || '',
+    name: product.name || inv.name || `Product #${productId}`,
+    sellingPrice: Number(product.sellingPrice || inv.sellingPrice || 0),
+    quantity: inv.availableQuantity !== undefined && inv.availableQuantity !== null
+  ? Number(inv.availableQuantity)
+  : Number(inv.quantity || 0),
+
+    
+    // Category information
+    productCategory: product.productCategory || inv.productCategory || null,
+    
+    // Image handling
+    imageUrl$: product.imageUrl || 
+               (product.productImages && product.productImages[0]?.url) || 
+               (inv.productImages && inv.productImages[0]?.url) || 
+               null,
+    
+    // Additional fields
+    variants: product.variants || [],
+    inventoryId: inv.id,
+    branch: { id: inv.branchId || this.selectedBranch },
+    createdDateMs,
+    
+    // Keep original inventory data for reference
+    __inventory: inv,
+    __originalProduct: product
+  };
+  
+  console.log('Mapped result:', mapped); // Debug log
+  return mapped;
+}
+loadInventories(): void {
+  this.isLoading = true;
+  this.posService.getInventories().subscribe({
+    next: (res) => {
+      console.log('Inventories loaded:', res); // 👈 Debug log
+      this.inventories = res || [];
+      this.isLoading = false;
+    },
+    error: (err) => {
+      console.error('Error fetching inventories:', err);
+      this.isLoading = false;
+    }
+  });
+}
+
 
   ngOnDestroy(): void {
     // Ensure modal is closed and body scroll is restored when component is destroyed
@@ -146,6 +256,58 @@ export class InventoryComponent implements OnInit, OnDestroy {
     const startIndex = this.currentPage * this.rowsPerPage;
     return this.products.slice(startIndex, startIndex + this.rowsPerPage);
   }
+
+  
+  // AFTER
+getInventories(): void {
+  this.isLoading = true;
+  console.log('Loading inventories...'); // Debug log
+  
+  this.posService.getInventories().subscribe({
+    next: (response) => {
+      console.log('Raw inventory response:', response); // Debug log
+      
+      if (!response || !Array.isArray(response)) {
+        console.error('Invalid inventory response:', response);
+        this.products = [];
+        this.originalProducts = [];
+        this.isLoading = false;
+        return;
+      }
+
+      // Map inventory data to product format
+      const mapped = response.map((inv: any) => this.mapInventoryToProductRow(inv));
+      console.log('Mapped inventory data:', mapped); // Debug log
+
+      // Filter by selected branch if needed
+      const filtered = this.selectedBranch
+        ? mapped.filter(p => p.branch?.id === this.selectedBranch)
+        : mapped;
+
+      // Sort by creation date
+      filtered.sort((a, b) => (b.createdDateMs ?? 0) - (a.createdDateMs ?? 0));
+
+      this.originalProducts = filtered;
+      this.products = [...filtered];
+      
+      console.log('Final products array:', this.products); // Debug log
+      this.isLoading = false;
+    },
+    error: (err) => {
+      console.error('Failed to load inventories:', err);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to load inventory data'
+      });
+      this.originalProducts = [];
+      this.products = [];
+      this.isLoading = false;
+    }
+  });
+}
+
+
 
   toggleDropdown2(item: any, event?: Event) {
     if (event) {
@@ -248,35 +410,35 @@ export class InventoryComponent implements OnInit, OnDestroy {
   }
 
   // Load products using enriched products from MetadataService (same as first component)
-  getProducts() {
-    this.metadataService.enrichedProduct$.subscribe(async (data) => {
-      if (data) {
-        this.originalProducts = data.sort((a: any, b: any) => {
-          const dateA = new Date(
-            a.createdDate[0],
-            a.createdDate[1] - 1,
-            a.createdDate[2],
-            a.createdDate[3],
-            a.createdDate[4],
-            a.createdDate[5]
-          );
-          const dateB = new Date(
-            b.createdDate[0],
-            b.createdDate[1] - 1,
-            b.createdDate[2],
-            b.createdDate[3],
-            b.createdDate[4],
-            b.createdDate[5]
-          );
-          return dateB.getTime() - dateA.getTime();
-        });
-        this.products = [...this.originalProducts];
-        console.log('Products loaded:', this.products);
-      } else {
-        console.log('error loading data');
-      }
-    });
-  }
+  // getProducts() {
+  //   this.metadataService.enrichedProduct$.subscribe(async (data) => {
+  //     if (data) {
+  //       this.originalProducts = data.sort((a: any, b: any) => {
+  //         const dateA = new Date(
+  //           a.createdDate[0],
+  //           a.createdDate[1] - 1,
+  //           a.createdDate[2],
+  //           a.createdDate[3],
+  //           a.createdDate[4],
+  //           a.createdDate[5]
+  //         );
+  //         const dateB = new Date(
+  //           b.createdDate[0],
+  //           b.createdDate[1] - 1,
+  //           b.createdDate[2],
+  //           b.createdDate[3],
+  //           b.createdDate[4],
+  //           b.createdDate[5]
+  //         );
+  //         return dateB.getTime() - dateA.getTime();
+  //       });
+  //       this.products = [...this.originalProducts];
+  //       console.log('Products loaded:', this.products);
+  //     } else {
+  //       console.log('error loading data');
+  //     }
+  //   });
+  // }
 
   getDiscountTypes() {
     this.posService.getDiscountTypes().subscribe(async (data) => {
@@ -380,7 +542,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.editProduct = false;
     this.addProduct = false;
     this.editInventory = false;
-    this.getProducts();
+    this.getInventories();
   }
 
   openAddProdut() {
@@ -398,7 +560,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.viewInventory = false;
     this.editProduct = false;
     this.addProduct = false;
-    this.getProducts();
+    this.getInventories();
     this.editInventory = false;
   }
 
@@ -414,7 +576,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.addProduct = false;
     this.editInventory = false;
     this.addInventory = false;
-    this.getProducts();
+    this.getInventories();
     this.tableSections = false;
   }
 
@@ -653,6 +815,21 @@ export class InventoryComponent implements OnInit, OnDestroy {
     this.viewProduct = false;
     this.addProduct = false;
     this.editInventory = true;
+    this.getInventories();
     this.tableSections = false;
   }
+
+
+
+// inventory.component.ts
+placeholderPath = 'assets/images/placeholder-product.jpg'; // make sure this file exists
+
+onImgError(ev: Event) {
+  const img = ev.target as HTMLImageElement;
+  if (img && img.src !== this.placeholderPath) {
+    img.src = this.placeholderPath;
+  }
+}
+
+
 }

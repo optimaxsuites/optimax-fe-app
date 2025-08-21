@@ -1,81 +1,109 @@
+
 @if(!isViewPageOpen){
   <div class="bg-white rounded-lg shadow-md p-6 m-6">
-    <div class="flex flex-col md:flex-row justify-between items-center mb-6">
-      <!-- <h2 class="text-xl font-semibold text-gray-800 mb-4 md:mb-0">Orders List</h2> -->
-      
-      <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
-        <!-- Search input -->
-        <div class="relative flex-[2]">
-          <input
-            type="text"
-            [(ngModel)]="searchText"
-            (input)="applyFiltersAndSort()"
-            placeholder="Search orders..."
-            class="w-full h-full md:w-64 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute right-3 top-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-          </svg>
-        </div>
-        
-        <!-- Status filter -->
-        <!-- <select
-          [(ngModel)]="statusFilter"
-          (change)="applyFiltersAndSort()"
-          class="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+   <div class="flex flex-col gap-4 md:gap-6 mb-6">
+  <!-- Title + Quick Range -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800">Sales Orders</h2>
+
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-gray-500 hidden sm:inline">Quick range:</span>
+      <div class="inline-flex rounded-md border border-gray-300 overflow-hidden">
+        <button
+          type="button"
+          class="px-3 py-2 text-sm"
+          [ngClass]="daysFilter === 1 ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
+          (click)="setDaysFilter(1)"
+          aria-label="Show today's orders"
         >
-          <option *ngFor="let option of statusOptions" [value]="option.value">
-            {{ option.label }}
-          </option>
-        </select> -->
-
-         <!-- Cashier Filter -->
-         <div class="flex-1">
-          <ng-select
-            [items]="cashiers"
-            [multiple]="false"
-            placeholder="Filter by cashier"
-            class="rounded-lg border-gray-300 shadow-sm"
-            [(ngModel)]="selectedCashier"
-            (ngModelChange)="applyFiltersAndSort()"
-          >
-          </ng-select>
-        </div>
-
-        <!-- Status Filter -->
-        <div class="flex-1">
-          <ng-select
-            [items]="statusOptions"
-            bindLabel="label"
-            bindValue="value"
-            [multiple]="false"
-            placeholder="Filter by status"
-            class="rounded-lg border-gray-300 shadow-sm"
-            [(ngModel)]="statusFilter"
-            (ngModelChange)="applyFiltersAndSort()"
-          >
-          </ng-select>
-        </div>
-
-      <!-- Summary Filter-->
-      <div class="flex-1">
-        <ng-select
-          [items]="summaryOptions"
-          placeholder="Select Summary"
-          class="rounded-lg border-gray-300 shadow-sm"
-          [(ngModel)]="selectedSummary"
-          (ngModelChange)="applyFiltersAndSort()"
+          Today
+        </button>
+        <button
+          type="button"
+          class="px-3 py-2 text-sm border-l border-gray-300"
+          [ngClass]="daysFilter === 0 ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
+          (click)="setDaysFilter(0)"
+          aria-label="Show all orders"
         >
-        </ng-select>
-      </div>
+          All
+        </button>
       </div>
     </div>
+  </div>
+
+  <!-- Filters Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+    <!-- Search -->
+    <label class="block">
+      <span class="block text-xs font-medium text-gray-600 mb-1">Search</span>
+      <div class="relative">
+        <input
+          type="text"
+          [(ngModel)]="searchText"
+          (input)="applyFiltersAndSort()"
+          placeholder="Order # "
+          class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          aria-label="Search by order number or customer"
+        />
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute left-3 top-2.5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M8 4a4 4 0 100 8A4 4 0 008 4zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+        </svg>
+      </div>
+    </label>
+
+    <!-- Last X Days -->
+    <label class="block">
+      <span class="block text-xs font-medium text-gray-600 mb-1">Last X days</span>
+      <input
+        type="number"
+        min="1"
+        [(ngModel)]="daysFilter"
+        (input)="applyFiltersAndSort()"
+        placeholder="e.g. 7"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        aria-label="Filter by last X days"
+      />
+      <span class="text-[11px] text-gray-400 mt-1 block">Enter a number to override the quick range above.</span>
+    </label>
+
+    <!-- Cashier -->
+    <label class="block">
+      <span class="block text-xs font-medium text-gray-600 mb-1">Cashier</span>
+      <ng-select
+        [items]="cashiers"
+        placeholder="All cashiers"
+        class="rounded-md border-gray-300 shadow-sm"
+        [(ngModel)]="selectedCashier"
+        (ngModelChange)="applyFiltersAndSort()"
+        aria-label="Filter by cashier"
+      >
+      </ng-select>
+    </label>
+
+    <!-- Status -->
+    <label class="block">
+      <span class="block text-xs font-medium text-gray-600 mb-1">Status</span>
+      <ng-select
+        [items]="statusOptions"
+        bindLabel="label"
+        bindValue="value"
+        placeholder="All statuses"
+        class="rounded-md border-gray-300 shadow-sm"
+        [(ngModel)]="statusFilter"
+        (ngModelChange)="applyFiltersAndSort()"
+        aria-label="Filter by order status"
+      >
+      </ng-select>
+    </label>
+  </div>
+</div>
+
     
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto" *ngIf="filteredOrders.length > 0; else noOrdersTemplate">
       <table class="min-w-full bg-white">
         <thead>
           <tr class="bg-gray-100">
-            <th class="py-3 px-4 text-left  font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('id')">
+            <th class="py-3 px-4 text-left font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('id')">
               ID 
               <span class="ml-1">{{ sortBy === 'id' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
@@ -109,34 +137,77 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
-          <tr *ngFor="let order of filteredOrders" class="hover:bg-gray-50">
-            <td class="py-4 px-4  text-gray-900">{{ order.id }}</td>
-            <td class="py-4 px-4  text-gray-900">{{ order.orderNumber }}</td>
-            <td class="py-4 px-4  text-gray-900">{{ order.customer?.name || "Walk-in" }}</td>
-            <td class="py-4 px-4  text-gray-900">{{ getSalespersonName(order) }}</td>
-            <td class="py-4 px-4  text-gray-900">₦{{ order.totalAmount.toLocaleString() }}</td>
-            <td class="py-4 px-4 ">
+          <tr *ngFor="let order of paginatedOrders" class="hover:bg-gray-50">
+            <td class="py-4 px-4 text-gray-900">{{ order.id }}</td>
+            <td class="py-4 px-4 text-gray-900">{{ order.orderNumber }}</td>
+            <td class="py-4 px-4 text-gray-900">{{ order.customer?.name || "Walk-in" }}</td>
+            <td class="py-4 px-4 text-gray-900">{{ getSalespersonName(order) }}</td>
+            <td class="py-4 px-4 text-gray-900">₦{{ order.totalAmount.toLocaleString() }}</td>
+            <td class="py-4 px-4">
               <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" [ngClass]="order.orderStatus | orderStatus">
                 {{ order.orderStatus }}
               </span>
             </td>
-            <td class="py-4 px-4  text-gray-900">{{ formatDate(order.createdDate) }}</td>
-            <td class="py-4 px-4  text-gray-900">
+            <td class="py-4 px-4 text-gray-900">{{ formatDate(order.createdDate) }}</td>
+            <td class="py-4 px-4 text-gray-900">
               <button (click)="viewOrderDetails(order)" class="text-indigo-600 hover:text-indigo-900 font-medium">
                 View Details
               </button>
             </td>
           </tr>
-          <tr *ngIf="filteredOrders.length === 0">
-            <td colspan="8" class="py-4 px-4 text-center text-gray-500">
-              No orders found.
-            </td>
-          </tr>
         </tbody>
       </table>
     </div>
-  </div>
 
+    <ng-template #noOrdersTemplate>
+      <div *ngIf="filteredOrders.length === 0 && !isLoading" class="px-4 md:px-10 mt-10 text-center">
+        <div class="bg-gray-50 rounded-lg p-8 border border-gray-200">
+          <i class="fa-solid fa-clipboard-list text-4xl text-gray-400 mb-4"></i>
+          <h3 class="text-xl font-semibold text-gray-700 mb-2">
+            <span *ngIf="daysFilter === 1">No orders for today</span>
+            <span *ngIf="daysFilter === 0">No orders found</span>
+            <span *ngIf="daysFilter > 1">No orders in this period</span>
+          </h3>
+          <p class="text-gray-500">
+            <span *ngIf="searchText">No orders match your search "{{ searchText }}"</span>
+            <span *ngIf="!searchText">Try adjusting your filters or check back later</span>
+          </p>
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- Updated Pagination to match ingredient style -->
+    <div class="flex items-center justify-between mt-6" *ngIf="filteredOrders.length > 0">
+      <div class="text-sm text-gray-700">
+        Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to 
+        {{ Math.min(currentPage * itemsPerPage, filteredOrders.length) }} of 
+        {{ filteredOrders.length }} entries
+      </div>
+      
+      <!-- PrimeNG style pagination -->
+      <p-paginator 
+        [rows]="itemsPerPage" 
+        [totalRecords]="filteredOrders.length" 
+        (onPageChange)="onPageChange($event)"
+        [rowsPerPageOptions]="[5,10, 25, 50, 100]"
+        styleClass="pagination-custom">
+      </p-paginator>
+      
+      <div class="flex items-center space-x-2">
+        <!-- <span class="text-sm text-gray-700">Items per page:</span>
+        <select
+          [(ngModel)]="itemsPerPage"
+          (change)="onItemsPerPageChange()"
+          class="px-2 py-1 border border-gray-300 rounded-md text-sm"
+        >
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select> -->
+      </div>
+    </div>
+  </div>
 }
 
 @if(isViewPageOpen){

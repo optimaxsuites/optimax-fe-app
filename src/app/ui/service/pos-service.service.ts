@@ -29,6 +29,15 @@ import {
   supplierData,
   InventoryPayload,
   StockMovementPayload,
+  StockMovementCreateDTO,
+  InventoryCreatePayload,
+  StockMovementCreatePayload,
+  StockMovementResponsePayload,
+  InventoryResponsePayload,
+  InventoryUpdatePayload,
+  StockMovementPostBody,
+  StockMovementByInventory,
+  StockMovementCreateStandalone,
 } from '../models/interface';
 import { ImageCacheService } from './image-cache.service';
 import {
@@ -57,6 +66,8 @@ export class PosServiceService {
   private getBaseApiUrl(): string {
     return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
   }
+
+  
   addCategory(data: ProductCategoryPOST) {
     return this.http
       .post<ProductCategoryPOST>(
@@ -440,9 +451,104 @@ export class PosServiceService {
       .pipe(catchError(this.handleError));
   }
 
-  getInventories() {
+  // getInventories() {
+  //   return this.http
+  //     .get<InventoryPayload[]>(
+  //       this.getBaseApiUrl() + '/x/api/v2/pos/inventories'
+  //     )
+  //     .pipe(catchError(this.handleError));
+  // }
+
+  // getInventoryById(id: number) {
+  //   return this.http
+  //     .get<InventoryPayload>(
+  //       this.getBaseApiUrl() + `/x/api/v2/pos/inventories/${id}`
+  //     )
+  //     .pipe(catchError(this.handleError));
+  // }
+
+  // updateInventory(id: number, data: InventoryPayload) {
+  //   return this.http
+  //     .put<any>(this.getBaseApiUrl() + `/x/api/v2/pos/inventories/${id}`, data)
+  //     .pipe(catchError(this.handleError));
+  // }
+
+  // deleteInventory(id: number) {
+  //   return this.http
+  //     .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/inventories/${id}`)
+  //     .pipe(catchError(this.handleError));
+  // }
+
+  // Add these methods to your service
+  // getStockMovements() {
+  //   return this.http
+  //     .get<StockMovementPayload[]>(
+  //       this.getBaseApiUrl() + '/x/api/v2/pos/stockMovements'
+  //     )
+  //     .pipe(catchError(this.handleError));
+  // }
+
+  // createStockMovement(data: StockMovementPayload) {
+  //   return this.http
+  //     .post<StockMovementPayload>(
+  //       this.getBaseApiUrl() + '/x/api/v2/pos/stockMovements',
+  //       data
+  //     )
+  //     .pipe(catchError(this.handleError));
+  // }
+
+  // updateStockMovement(id: number, data: StockMovementPayload) {
+  //   return this.http
+  //     .put<StockMovementPayload>(
+  //       this.getBaseApiUrl() + `/x/api/v2/pos/stockMovements/${id}`,
+  //       data
+  //     )
+  //     .pipe(catchError(this.handleError));
+  // }
+  //A's inventory 
+
+
+createInventory(data: InventoryCreatePayload) {
+  
+  const parentIdKey: 'productId' | 'ingredientId' = 'productId';
+
+  const createPayload: any = {
+    availableQuantity: Number(data.availableQuantity) || 0,
+    status: data.status,
+    branchId: data.branchId,
+  };
+  
+  createPayload[parentIdKey] = (data as any)[parentIdKey];
+
+
+  if (Array.isArray(data.stockMovement) && data.stockMovement.length > 0) {
+    createPayload.stockMovement = data.stockMovement.map(m => {
+      const mv: any = {
+        quantity: Number(m.quantity),
+        reference: m.reference ?? '',
+        purchasePrice: Number(m.purchasePrice ?? 0),
+        sellingPrice: Number(m.sellingPrice ?? 0),
+        createdDate: m.createdDate, 
+      };
+      
+      if (m.supplierId != null) mv.supplierId = m.supplierId;
+      return mv;
+    });
+  }
+  
+
+  return this.http
+    .post<InventoryResponsePayload>(
+      this.getBaseApiUrl() + '/x/api/v2/pos/inventories',
+      createPayload
+    )
+    .pipe(catchError(this.handleError));
+}
+
+
+getInventories() {
     return this.http
-      .get<InventoryPayload[]>(
+      .get<InventoryResponsePayload[]>(
         this.getBaseApiUrl() + '/x/api/v2/pos/inventories'
       )
       .pipe(catchError(this.handleError));
@@ -450,15 +556,18 @@ export class PosServiceService {
 
   getInventoryById(id: number) {
     return this.http
-      .get<InventoryPayload>(
+      .get<InventoryResponsePayload>(
         this.getBaseApiUrl() + `/x/api/v2/pos/inventories/${id}`
       )
       .pipe(catchError(this.handleError));
   }
 
-  updateInventory(id: number, data: InventoryPayload) {
+   updateInventory(id: number, data: InventoryUpdatePayload) {
     return this.http
-      .put<any>(this.getBaseApiUrl() + `/x/api/v2/pos/inventories/${id}`, data)
+      .put<InventoryResponsePayload>(
+        this.getBaseApiUrl() + `/x/api/v2/pos/inventories/${id}`, 
+        data
+      )
       .pipe(catchError(this.handleError));
   }
 
@@ -468,30 +577,131 @@ export class PosServiceService {
       .pipe(catchError(this.handleError));
   }
 
-  // Add these methods to your service
   getStockMovements() {
     return this.http
-      .get<StockMovementPayload[]>(
+      .get<StockMovementResponsePayload[]>(
         this.getBaseApiUrl() + '/x/api/v2/pos/stockMovements'
       )
       .pipe(catchError(this.handleError));
   }
 
-  createStockMovement(data: StockMovementPayload) {
+  getStockMovementById(id: number) {
     return this.http
-      .post<StockMovementPayload>(
-        this.getBaseApiUrl() + '/x/api/v2/pos/stockMovements',
-        data
+      .get<StockMovementResponsePayload>(
+        this.getBaseApiUrl() + `/x/api/v2/pos/stockMovements/${id}`
       )
       .pipe(catchError(this.handleError));
   }
 
-  updateStockMovement(id: number, data: StockMovementPayload) {
+createStockMovement(data: StockMovementPostBody) {
+  const payload = {
+    quantity: Number(data.quantity),
+    reference: data.reference ?? '',
+    purchasePrice: Number(data.purchasePrice ?? 0),
+    sellingPrice: Number(data.sellingPrice ?? 0),
+    createdDate: data.createdDate,       
+    supplierId: data.supplierId ?? null,
+    inventoryId: Number(data.inventoryId)
+  };
+  return this.http
+    .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/stockMovements', payload)
+    .pipe(catchError(this.handleError));
+}
+
+
+   updateStockMovement(id: number, data: StockMovementCreatePayload) {
     return this.http
-      .put<StockMovementPayload>(
+      .put<StockMovementResponsePayload>(
         this.getBaseApiUrl() + `/x/api/v2/pos/stockMovements/${id}`,
         data
       )
       .pipe(catchError(this.handleError));
   }
+
+//    deleteStockMovement(id: number) {
+//     return this.http
+//       .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/stockMovements/${id}`)
+//       .pipe(catchError(this.handleError));
+//   }
+//  addStock(inventoryId: number, productId: number, quantity: number, purchasePrice: number, sellingPrice: number, supplierId?: number, reference?: string) {
+//     const stockMovement: StockMovementCreatePayload = {
+//       quantity: Number(quantity), // Ensure positive
+//       reference: reference || `STOCK_IN_${Date.now()}`,
+//       purchasePrice: purchasePrice,
+//       sellingPrice: sellingPrice,
+//       createdDate: new Date().toISOString(),
+//       supplierId: supplierId || null,
+//       ingredientId: productId,
+//       inventoryId: inventoryId
+//     };
+
+//     return this.createStockMovement(stockMovement);
+//   }
+  createInventoryWithStock(
+    productId: number, 
+    branchId: number, 
+    initialQuantity: number, 
+    purchasePrice: number, 
+    sellingPrice: number, 
+    supplierId?: number
+  ) {
+    const initialStockMovement: StockMovementCreatePayload = {
+      quantity: Number(initialQuantity),
+      reference: `INITIAL_STOCK_${Date.now()}`,
+      purchasePrice: purchasePrice,
+      sellingPrice: sellingPrice,
+      createdDate: new Date().toISOString(),
+      supplierId: supplierId || null,
+      ingredientId: productId,
+      // Don't include inventoryId - let backend create it
+    };
+
+    const inventoryData: InventoryCreatePayload = {
+      availableQuantity: Number(initialQuantity),
+      status: initialQuantity > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK',
+      productId: productId,
+      branchId: branchId,
+      stockMovement: [initialStockMovement]
+    };
+
+    return this.createInventory(inventoryData);
+  }
+//  createStockForProduct(
+//     productId: number,
+//     branchId: number,
+//     quantity: number,
+//     purchasePrice: number,
+//     sellingPrice: number,
+//     supplierId?: number,
+//     reference?: string
+//   ) {
+//     const stockMovement: StockMovementCreatePayload = {
+//       quantity: Number(quantity),
+//       reference: reference || `STOCK_${Date.now()}`,
+//       purchasePrice: purchasePrice,
+//       sellingPrice: sellingPrice,
+//       createdDate: new Date().toISOString(),
+//       supplierId: supplierId || null,
+//       ingredientId: productId,
+//       // Don't include inventoryId - backend should auto-create inventory
+//     };
+
+//     return this.createStockMovement(stockMovement);
+//   }
+
+
+getStockMovementsByInventory(inventoryId: number) {
+  return this.http
+    .get<StockMovementByInventory[] | StockMovementByInventory | any>(
+      this.getBaseApiUrl() +
+        `/x/api/v2/pos/stockMovements/find/by/inventory/${inventoryId}`
+    )
+    .pipe(catchError(this.handleError));
 }
+
+
+
+
+
+}
+

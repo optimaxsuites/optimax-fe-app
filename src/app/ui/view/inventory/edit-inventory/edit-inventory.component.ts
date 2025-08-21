@@ -16,9 +16,18 @@ import {
   BranchDTO,
   TaxDTO,
   DiscountDTO,
+  InventoryStatus,
+  StockMovementCreateDTO,
+  InventoryResponsePayload,
+  InventoryCreatePayload,
+  StockMovementCreatePayload,
+  InventoryUpdatePayload,
+  StockMovementResponsePayload,
+  StockMovementPostBody,
   
   StockMovementPayload,
 } from '../../../models/interface';
+import { firstValueFrom } from 'rxjs';
 import { HttpClient,HttpErrorResponse } from '@angular/common/http';
 import { MetadataService } from '../../../service/metadata.service';
 import { MessageService } from 'primeng/api';
@@ -34,6 +43,11 @@ export class EditInventoryComponent implements OnInit {
   @Input() mode: 'create' | 'edit' = 'create';
   @Input() product: ProductData[] = [];
   @Output() close = new EventEmitter<void>();
+ @Output() updated = new EventEmitter<{
+  inventoryId: number;
+  quantity: number;
+  status: InventoryStatus;
+}>();
 
   // Initialize forms with definite assignment assertion
   productForm!: FormGroup;
@@ -158,16 +172,18 @@ export class EditInventoryComponent implements OnInit {
     notes: [''],
   });
 
-    this.stockMovementForm = this.fb.group({
-    quantity: [0, [Validators.required, Validators.min(1)]],
-    reference: [''],
-    purchasePrice: [0, [Validators.required, Validators.min(0)]],
-    sellingPrice: [0, [Validators.min(0)]],
-    supplier: [null, Validators.required],  // This matches the backend structure
-    createdDate: [new Date().toISOString(), Validators.required],
-    tax: [null],
-    discount: [null],
-  });
+this.stockMovementForm = this.fb.group({
+  createdDate: [new Date().toISOString().slice(0, 10), Validators.required],
+  reference: [''],
+  quantity: [1, [Validators.required, Validators.min(1)]],                
+  supplier: [null],                                                          
+  
+  purchasePrice: [0, [Validators.required, Validators.min(0)]],
+  sellingPrice: [0, [Validators.min(0)]],
+  tax: [null],
+  discount: [null],
+});
+
   }
 
   private fetchMetaData(): void {
@@ -268,7 +284,7 @@ export class EditInventoryComponent implements OnInit {
   ngOnInit(): void {
     this.fetchMetaData(); // From first version
     this.loadInitialData(); // From second version
-
+    
     if (this.mode === 'edit' && this.activeItem) {
       this.patchFormValues(); // From first version
       this.prefillForm(); // From second version
@@ -453,6 +469,10 @@ export class EditInventoryComponent implements OnInit {
       });
     }
   }
+  testButton() {
+  console.log('TEST BUTTON WORKING!');
+  alert('Basic button functionality works!');
+}
 
   updateProductInList(updatedProduct: ProductData): void {
     const index = this.product.findIndex((p) => p.id === updatedProduct.id);
@@ -528,13 +548,18 @@ export class EditInventoryComponent implements OnInit {
 
   private resetStockMovementForm(): void {
     this.stockMovementForm.reset({
-      quantity: 0,
-      reference: '',
-      purchasePrice: 0,
-      sellingPrice: 0,
-      createdDate: new Date().toISOString().split('T')[0],
-      supplierId: null,
-    });
+  createdDate: new Date().toISOString().split('T')[0],   // "YYYY-MM-DD"
+  reference: '',
+  quantity: 1,                                            // valid after reset
+  supplier: null,                                         // correct control key
+  purchasePrice: this.activeItem?.purchasePrice || 0,
+  sellingPrice: this.activeItem?.sellingPrice || 0,
+  tax: null,
+  discount: null,
+});
+this.stockMovementForm.markAsPristine();
+this.stockMovementForm.markAsUntouched();
+
 
   this.priceDetails = {
   basePrice: 0,
@@ -546,56 +571,56 @@ export class EditInventoryComponent implements OnInit {
 };
   }
 
-  private getOrCreateInventory(): Promise<InventoryPayload | null> {
-    return new Promise((resolve) => {
-      this.posService.getInventories().subscribe({
-        next: (inventories) => {
-          const existingInventory = inventories.find(
-            (inv) =>
-              inv.productId === this.activeItem?.id && 
-            inv.branchId === this.selectedBranch      
-          );
+  // private getOrCreateInventory(): Promise<InventoryPayload | null> {
+  //   return new Promise((resolve) => {
+  //     this.posService.getInventories().subscribe({
+  //       next: (inventories) => {
+  //         const existingInventory = inventories.find(
+  //           (inv) =>
+  //             inv.productId === this.activeItem?.id && 
+  //           inv.branchId === this.selectedBranch      
+  //         );
 
-          if (existingInventory) {
-            resolve(existingInventory);
-          } else {
-            const newInventory: InventoryPayload = {
-            id: 0,
-            productId: this.activeItem?.id || 0,   
-            branchId: this.selectedBranch || 0,     
-            availableQuantity: 0,
-            status: 'IN_STOCK',
-            stockMovement: [],
-          };
+  //         if (existingInventory) {
+  //           resolve(existingInventory);
+  //         } else {
+  //           const newInventory: InventoryPayload = {
+  //           id: 0,
+  //           productId: this.activeItem?.id || 0,   
+  //           branchId: this.selectedBranch || 0,     
+  //           availableQuantity: 0,
+  //           status: 'IN_STOCK',
+  //           stockMovement: [],
+  //         };
 
-            this.posService.addInventory(newInventory).subscribe({
-              next: (createdInventory) => {
-                resolve(createdInventory);
-              },
-              error: (err) => {
-                this.messageService.add({
-                  severity: 'error',
-                  summary: 'Error',
-                  detail: 'Failed to create inventory',
-                  life: 3000,
-                });
-                resolve(null);
-              },
-            });
-          }
-        },
-        error: (err) => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Failed to load inventories',
-            life: 3000,
-          });
-          resolve(null);
-        },
-      });
-    });
-  }
+  //           this.posService.addInventory(newInventory).subscribe({
+  //             next: (createdInventory) => {
+  //               resolve(createdInventory);
+  //             },
+  //             error: (err) => {
+  //               this.messageService.add({
+  //                 severity: 'error',
+  //                 summary: 'Error',
+  //                 detail: 'Failed to create inventory',
+  //                 life: 3000,
+  //               });
+  //               resolve(null);
+  //             },
+  //           });
+  //         }
+  //       },
+  //       error: (err) => {
+  //         this.messageService.add({
+  //           severity: 'error',
+  //           summary: 'Error',
+  //           detail: 'Failed to load inventories',
+  //           life: 3000,
+  //         });
+  //         resolve(null);
+  //       },
+  //     });
+  //   });
+  // }
 
   private refreshProductData(): void {
     if (this.activeItem?.id) {
@@ -691,36 +716,192 @@ export class EditInventoryComponent implements OnInit {
     });
   }
 
-  async saveStockMovement(): Promise<void> {
-    // Validate form
-    if (this.stockMovementForm.invalid) {
-      this.markFormGroupTouched(this.stockMovementForm);
-      this.showValidationError();
-      return;
+  /** Safe ISO maker from "yyyy-MM-dd" or ISO input */
+private toIso(raw: string): string {
+  return raw?.includes('T') ? new Date(raw).toISOString()
+                            : new Date(`${raw}T00:00:00`).toISOString();
+}
+
+/** Try to get inventory id directly from the selected card row */
+private getInventoryIdFromActiveItem(): number | null {
+  const anyItem: any = this.activeItem;
+  return (anyItem?.inventoryId ?? anyItem?.__inventory?.id ?? null) as number | null;
+}
+
+/** Fallback lookup when inventoryId isn’t on the item */
+private async findInventoryIdForProductBranch(productId: number, branchId: number): Promise<number | null> {
+  const list = await firstValueFrom(this.posService.getInventories());
+  const hit = (list || []).find((inv: any) => {
+    // cover all common shapes from the API
+    const pid = inv.productId ?? inv.ingredientId ?? inv.product?.id;
+    const bid = inv.branchId ?? inv.branch?.id;
+    return Number(pid) === Number(productId) && Number(bid) === Number(branchId);
+  });
+  return hit?.id ?? null;
+}
+
+
+  
+
+async saveStockMovement(): Promise<void> {
+  if (this.stockMovementForm.invalid) {
+    this.stockMovementForm.markAllAsTouched();
+    this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Please fill all required fields', life: 2500 });
+    return;
+  }
+  if (!this.activeItem?.id || !this.selectedBranch) {
+    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Product or branch not selected', life: 2500 });
+    return;
+  }
+
+  const rawDate = this.stockMovementForm.value.createdDate as string;
+  const reference = this.stockMovementForm.value.reference || '';
+  const qtyAbs = Math.abs(Number(this.stockMovementForm.value.quantity) || 0);
+  const purchasePrice = Number(this.stockMovementForm.value.purchasePrice) || 0;
+  const sellingPrice = Number(this.stockMovementForm.value.sellingPrice) || 0;
+  const supplierId = this.stockMovementForm.value.supplier ?? this.selectedSupplier ?? null;
+
+  // If you have an action control (IN/OUT). If not, default to IN.
+  const actionCtrl = this.stockMovementForm.get('action');
+  const action: 'IN' | 'OUT' = (actionCtrl?.value as any) || 'IN';
+  const signedQty = action === 'OUT' ? -qtyAbs : qtyAbs;
+
+  this.isLoading = true;
+  try {
+    // 1) Resolve inventory id (prefer what the card gave us, else fetch list)
+    let inventoryId = this.getInventoryIdFromActiveItem();
+    if (!inventoryId) {
+      inventoryId = await this.findInventoryIdForProductBranch(this.activeItem.id, this.selectedBranch);
     }
 
-    if (!this.validateProductAndBranch()) {
-      return;
-    }
-
-    this.isLoading = true;
-
-    try {
-      const inventory = await this.getOrCreateInventory();
-      if (!inventory) {
-        throw new Error('Inventory not available');
+    // 2) If still missing, create ONE inventory (only allow if movement is IN)
+    if (!inventoryId) {
+      if (signedQty <= 0) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'No inventory yet',
+          detail: 'You can’t reduce stock before creating inventory. Please add stock (IN) first.',
+          life: 3500
+        });
+        return;
       }
 
-      const movementData = this.prepareMovementData(inventory.id);
-      await this.processStockMovement(movementData, inventory.id);
+      const createPayload = {
+        availableQuantity: 0, 
+        status: 'IN_STOCK' as InventoryStatus, 
+        productId: this.activeItem.id,
+        branchId: this.selectedBranch,
+        stockMovement: [] 
+      };
+      const created = await firstValueFrom(this.posService.createInventory(createPayload));
+      if (!created?.id) throw new Error('Failed to create inventory');
+      inventoryId = created.id;
 
-      this.showSuccessMessage();
-      this.resetAfterSuccess();
-    } catch (error) {
-      this.handleMovementError(error);
-    } finally {
-      this.isLoading = false;
+    
+      (this.activeItem as any).inventoryId = inventoryId;
     }
+
+    
+    try {
+      const fresh = await firstValueFrom(this.posService.getInventoryById(inventoryId));
+      const projected = Number(fresh?.availableQuantity ?? 0) + signedQty;
+      if (projected < 0) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Insufficient stock',
+          detail: 'This movement would make stock negative.',
+          life: 3000
+        });
+        return;
+      }
+    } catch {
+     
+    }
+
+    
+    const body: StockMovementPostBody = {
+      quantity: signedQty,
+      reference,
+      purchasePrice,
+      sellingPrice,
+      createdDate: this.toIso(rawDate),
+      supplierId,
+      inventoryId
+    };
+    await firstValueFrom(this.posService.createStockMovement(body));
+
+    // 5) Refresh UI
+    const after = await firstValueFrom(this.posService.getInventoryById(inventoryId));
+
+    console.log('emit updated from child', { id: inventoryId, qty: after?.availableQuantity });
+    this.updated.emit({
+  inventoryId,
+  quantity: Number(after?.availableQuantity ?? 0),
+  status: (after?.status ?? 'IN_STOCK') as InventoryStatus
+});
+    if (this.activeItem) {
+   
+      (this.activeItem as any).quantity = after?.availableQuantity ?? (Number((this.activeItem as any).quantity) || 0) + signedQty;
+    }
+
+    this.stockMovementForm.reset({
+      createdDate: new Date().toISOString().slice(0, 10),
+      reference: '',
+      quantity: 1,
+      purchasePrice: 0,
+      sellingPrice: 0,
+      supplier: null,
+    
+    });
+
+    this.messageService.add({ severity: 'success', summary: 'Stock updated', detail: 'Movement recorded', life: 2500 });
+  } catch (err: any) {
+    console.error(err);
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: err?.error?.message || err?.message || 'Failed to record movement',
+      life: 4000
+    });
+  } finally {
+    this.isLoading = false;
+  }
+}
+
+
+
+
+private async getOrCreateInventoryStrict(): Promise<InventoryResponsePayload> {
+  if (!this.activeItem || !this.selectedBranch) {
+    throw new Error('Product and branch are required to resolve inventory');
+  }
+
+  // Try to find existing inventory
+  const allInventories = await firstValueFrom(this.posService.getInventories());
+  const existing = allInventories?.find(
+    inv => inv.productId === this.activeItem!.id && inv.branchId === this.selectedBranch
+  );
+  
+  if (existing) return existing;
+
+  
+  const createPayload: InventoryCreatePayload = {
+    availableQuantity: 0,
+    status: 'IN_STOCK',
+    productId: this.activeItem.id,
+    branchId: this.selectedBranch,
+    stockMovement: []
+  };
+
+  const created = await firstValueFrom(
+    this.posService.createInventory(createPayload)
+  );
+  
+  if (!created || !created.id) {
+    throw new Error('Failed to create inventory');
+  }
+  
+  return created;
 }
 
 private showValidationError(): void {
@@ -761,31 +942,39 @@ private getCurrentUserId(): number {
 }
 
 
-private prepareMovementData(inventoryId: number): StockMovementPayload {
-    if (!this.activeItem) {
-        throw new Error('No active item selected');
-    }
-const createdDate = this.stockMovementForm.value.createdDate;
-  const formattedDate = createdDate.includes('T') 
-    ? createdDate 
-    : `${createdDate}T00:00:00`;
+// e.g. export class EditInventoryComponent implements OnInit { ... }
+
+private prepareMovementApiPayload(inventoryId: number): StockMovementCreatePayload {
+  if (!this.activeItem) throw new Error('No product selected');
+
+  // Format date properly
+  const rawDate = this.stockMovementForm.value.createdDate;
+  const date = rawDate?.includes('T') ? new Date(rawDate) : new Date(`${rawDate}T00:00:00`);
+  const createdDate = date.toISOString();
+
+  // Get quantity (positive for IN, negative for OUT)
+  const quantity = Number(this.stockMovementForm.value.quantity) || 0;
+
+  // Get prices
+  const purchasePrice = Number(this.stockMovementForm.value.purchasePrice) || 0;
+  const sellingPrice = Number(this.priceDetails.effectivePrice) || 0;
+
+  // Handle supplier (can be object or ID)
+  const supplier = this.stockMovementForm.value.supplier;
+  const supplierId = typeof supplier === 'object' ? supplier?.id : supplier;
 
   return {
-    id: 0,
-    quantity: this.stockMovementForm.value.quantity,
-    purchasePrice: this.stockMovementForm.value.purchasePrice,
-    sellingPrice: this.priceDetails.effectivePrice,
-    createdDate: formattedDate,
+    quantity: quantity,
     reference: this.stockMovementForm.value.reference || '',
-    createdById: this.getCurrentUserId(),
-    supplier: {
-      id: this.stockMovementForm.value.supplier || this.selectedSupplier || 0  // Fixed: use supplier instead of supplierId
-    },
-    ingredient: {
-      id: this.activeItem.id  // Backend expects ingredient object with id
-    }
+    purchasePrice: purchasePrice,
+    sellingPrice: sellingPrice,
+    createdDate: createdDate,
+    supplierId: supplierId ?? null,
+    ingredientId: this.activeItem.id,
+    inventoryId: inventoryId
   };
 }
+
 
 private async processStockMovement(movementData: StockMovementPayload, inventoryId: number): Promise<void> {
    try {
@@ -890,34 +1079,47 @@ private resetAfterSuccess(): void {
 }
 
 private handleMovementError(error: any): void {
-    console.error('Error in stock movement:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: `Failed to record stock movement: ${errorMessage}`,
-        life: 5000,
-    });
-}
-  private async updateInventoryAfterMovement(inventoryId: number, quantity: number): Promise<void> {
-    try {
-        const inventory = await this.posService.getInventoryById(inventoryId).toPromise();
-        if (!inventory) {
-            throw new Error('Inventory not found');
-        }
-
-        const updatedInventory = {
-            ...inventory,
-            availableQuantity: (inventory.availableQuantity || 0) + quantity,
-            lastUpdated: new Date().toISOString()
-        };
-
-        await this.posService.updateInventory(inventoryId, updatedInventory).toPromise();
-    } catch (error) {
-        console.error('Error updating inventory:', error);
-        throw new Error('Failed to update inventory');
+  console.error('Error in stock movement:', error);
+  
+  let errorMessage = 'Failed to record stock movement';
+  if (error instanceof HttpErrorResponse) {
+    if (error.status === 400) {
+      errorMessage = 'Invalid data submitted';
+    } else if (error.status === 404) {
+      errorMessage = 'Inventory not found';
+    } else if (error.error?.message) {
+      errorMessage = error.error.message;
     }
+  } else if (error instanceof Error) {
+    errorMessage = error.message;
+  }
+
+  this.messageService.add({
+    severity: 'error',
+    summary: 'Error',
+    detail: errorMessage,
+    life: 5000,
+  });
 }
+//   private async updateInventoryAfterMovement(inventoryId: number, quantity: number): Promise<void> {
+//     try {
+//         const inventory = await this.posService.getInventoryById(inventoryId).toPromise();
+//         if (!inventory) {
+//             throw new Error('Inventory not found');
+//         }
+
+//         const updatedInventory = {
+//             ...inventory,
+//             availableQuantity: (inventory.availableQuantity || 0) + quantity,
+//             lastUpdated: new Date().toISOString()
+//         };
+
+//         await this.posService.updateInventory(inventoryId, updatedInventory).toPromise();
+//     } catch (error) {
+//         console.error('Error updating inventory:', error);
+//         throw new Error('Failed to update inventory');
+//     }
+// }
 
   //////
   // Fixed methods for your EditInventoryComponent
@@ -954,21 +1156,21 @@ private handleMovementError(error: any): void {
   private isUpdatingFromCalculation = false;
 
   initializeStockMovementForm(): void {
-const currentDate = new Date().toISOString(); // Keeps full format: "2025-08-14T10:30:00.123Z"
+const currentDate = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
 
 const initialValues = {
-    purchasePrice: this.activeItem?.purchasePrice || 0,
-    sellingPrice: this.activeItem?.sellingPrice || 0,
-    createdDate: currentDate, // Now includes time component
-    supplier: this.selectedSupplier,
-    quantity: 0,
-    reference: ''
+  purchasePrice: this.activeItem?.purchasePrice || 0,
+  sellingPrice: this.activeItem?.sellingPrice || 0,
+  createdDate: currentDate,
+  supplier: this.selectedSupplier ?? null,
+  quantity: 1,          // keep valid
+  reference: '',
 };
 
-    this.stockMovementForm.patchValue(initialValues);
+this.stockMovementForm.patchValue(initialValues);
 
-    this.initializePriceDetails();
-    this.setupStockMovementWatchers();
+this.initializePriceDetails?.();
+this.setupStockMovementWatchers?.();
 }
 
 private initializePriceDetails(): void {
@@ -1128,5 +1330,118 @@ private roundValue(value: number, decimalPlaces: number): number {
       { emitEvent: false }
     );
   }
-  
+
+  private buildStockMovementCreatePayload(inventoryId?: number): StockMovementCreatePayload {
+  if (!this.activeItem) throw new Error('No product selected');
+
+  const action = (this.stockMovementForm.get('action')?.value as 'IN' | 'OUT') || 'IN';
+  const qty = Math.abs(Number(this.stockMovementForm.value.quantity) || 0);
+  const signedQty = action === 'OUT' ? -qty : qty;
+
+  // Date to ISO with Z
+  const raw = this.stockMovementForm.value.createdDate;         // "YYYY-MM-DD"
+  const date = raw?.includes('T') ? new Date(raw) : new Date(`${raw}T00:00:00`);
+  const createdDate = date.toISOString();
+
+  const purchasePrice = Number(this.stockMovementForm.value.purchasePrice) || 0;
+  const sellingPrice = Number(
+    this.stockMovementForm.value.sellingPrice
+      ?? this.priceDetails?.effectivePrice
+      ?? this.priceDetails?.basePrice
+      ?? 0
+  );
+
+  const supplier = this.stockMovementForm.value.supplier ?? this.selectedSupplier ?? null;
+  const supplierId = typeof supplier === 'object' ? supplier?.id : (supplier ?? null);
+
+  const payload: StockMovementCreatePayload = {
+    quantity: signedQty,                        // +IN, -OUT
+    reference: this.stockMovementForm.value.reference || '',
+    purchasePrice,
+    sellingPrice,
+    createdDate,
+    supplierId: supplierId ?? null,
+    ingredientId: this.activeItem.id,           // backend name for product id
+  };
+  if (inventoryId) payload.inventoryId = inventoryId;
+
+  return payload;
 }
+
+  private async findExistingInventory(productId: number, branchId: number)
+: Promise<InventoryResponsePayload | undefined> {
+  const all = await firstValueFrom(this.posService.getInventories());
+  return all?.find(inv => inv.productId === productId && inv.branchId === branchId);
+}
+
+private buildInventoryCreatePayload(nextQty: number): InventoryCreatePayload {
+  if (!this.activeItem || !this.selectedBranch) {
+    throw new Error('Product and branch are required');
+  }
+  const status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK' =
+    nextQty > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK';
+
+  const movement = this.buildStockMovementCreatePayload(); // no inventoryId on create
+
+  return {
+    availableQuantity: nextQty,
+    status,
+    productId: this.activeItem.id,
+    branchId: this.selectedBranch,
+    stockMovement: [] as any[],
+  };
+}
+private buildInventoryUpdatePayload(
+  existing: InventoryResponsePayload,
+  nextQty: number
+): InventoryUpdatePayload {
+  const status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK' =
+    nextQty > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK';
+
+  const movement = this.buildStockMovementCreatePayload(existing.id); // include inventoryId
+
+  return {
+    id: existing.id,
+    availableQuantity: nextQty,
+    status,
+    productId: existing.productId,
+    branchId: existing.branchId,
+    stockMovement: [movement],
+  };
+}
+// REPLACE your update-body builder with this minimal scalar update:
+private buildInventoryScalarUpdate(existing: InventoryResponsePayload, nextQty: number) {
+  const status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK' =
+    nextQty <= 0 ? 'OUT_OF_STOCK' : 'IN_STOCK';
+
+  // IMPORTANT: no stockMovement key here
+  return {
+    id: existing.id,
+    availableQuantity: nextQty,
+    status,
+    productId: existing.productId,
+    branchId: existing.branchId,
+  } as any;
+}
+
+private buildMovementForPost(inventoryId: number): any {
+  const action = (this.stockMovementForm.get('action')?.value as 'IN' | 'OUT') || 'IN';
+  const qty = Math.abs(Number(this.stockMovementForm.value.quantity) || 0);
+  const signedQty = action === 'OUT' ? -qty : qty;
+
+  const raw = this.stockMovementForm.value.createdDate; // "YYYY-MM-DD"
+  const iso = (raw?.includes('T') ? new Date(raw) : new Date(`${raw}T00:00:00`)).toISOString();
+
+  return {
+    quantity: signedQty,
+    reference: this.stockMovementForm.value.reference || '',
+    createdDate: iso,
+    inventoryId,                
+  };
+}
+
+}
+
+
+
+
