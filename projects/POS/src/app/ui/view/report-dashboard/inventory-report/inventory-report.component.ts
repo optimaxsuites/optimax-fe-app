@@ -17,7 +17,7 @@ import {
   ApexNonAxisChartSeries
 } from 'ng-apexcharts';
 import { FormGroup, FormBuilder } from '@angular/forms';
-import { ReportService, CashierReportRequestDTO } from '../../../service/report.service';
+import { ReportService, CashierReportRequestDTO, BranchDTO, CashierPerformanceDTO, CashierReportDTO } from '../../../service/report.service';
 import { StyleColor } from '../../../models/enums';
 
 interface UserDTO {
@@ -27,24 +27,25 @@ interface UserDTO {
   role: string;
 }
 
-interface BranchDTO {
-  id: number;
-  name: string;
-  location: string;
-}
+// Interfaces are already correct in your code, keeping for completeness
+// interface BranchDTO {
+//   id: number;
+//   name: string;
+//   location: string;
+// }
 
-interface CashierPerformanceDTO {
-  cashier: UserDTO;
-  branch: BranchDTO;
-  ordersHandled: number;
-  revenueGenerated: number;
-  refunds: number;
-  discountsGiven: number;
-}
+// interface CashierPerformanceDTO {
+//   cashier: UserDTO;
+//   branch: BranchDTO;
+//   ordersHandled: number;
+//   revenueGenerated: number;
+//   refunds: number;
+//   discountsGiven: number;
+// }
 
-interface CashierReportDTO {
-  cashiers: CashierPerformanceDTO[];
-}
+// interface CashierReportDTO {
+//   cashiers: CashierPerformanceDTO[];
+// }
 
 export type RevenueChartOptions = {
   series: ApexAxisChartSeries;
@@ -90,7 +91,7 @@ export interface PieChartOptions {
   templateUrl: './inventory-report.component.html',
   styleUrls: ['./inventory-report.component.scss'],
 })
-export class InventoryReportComponent implements OnInit, AfterViewInit {
+export class InventoryReportComponent implements OnInit {
   @ViewChild("revenueChart") revenueChart!: ChartComponent;
   @ViewChild("ordersChart") ordersChart!: ChartComponent;
   @ViewChild("refundsChart") refundsChart!: ChartComponent;
@@ -109,7 +110,6 @@ export class InventoryReportComponent implements OnInit, AfterViewInit {
   public ordersChartOptions!: OrdersChartOptions;
   public refundsChartOptions!: PieChartOptions;
 
-
   
   constructor(
     private fb: FormBuilder,
@@ -124,46 +124,45 @@ export class InventoryReportComponent implements OnInit, AfterViewInit {
     console.log('Component initialized. Loading branches...');
   }
 
-  ngAfterViewInit(): void {
-    setTimeout(() => this.applyFilter(), 100);
-  }
 
   initForm(): void {
-  const today = new Date();
-  const lastMonth = new Date();
-  lastMonth.setMonth(lastMonth.getMonth() - 1);
-  
-
-  const endDate = new Date(2025, 6, 19);
-  const startDate = new Date(2025, 5, 19); 
-  
-  this.reportForm = this.fb.group({
-    startDate: [startDate],
-    endDate: [endDate],
-    branchIds: [[]], 
-    shift: [''] 
-  });
-  
-  console.log('Form initialized with fixed dates:', {
-    startDate: startDate,
-    endDate: endDate
-  });
-}
+    const today = new Date();
+    const lastMonth = new Date();
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    
+    const endDate = today;
+    const startDate = lastMonth; 
+    
+    this.reportForm = this.fb.group({
+      startDate: [startDate],
+      endDate: [endDate],
+      branchIds: [[]], 
+      shift: [''] 
+    });
+    
+    console.log('Form initialized with dynamic dates:', {
+      startDate: startDate,
+      endDate: endDate
+    });
+  }
 
   openFilterForm() {
     this.filterForm = !this.filterForm;
   }
 
   
-private formatDate(date: Date): string {
-  return date.toISOString(); 
-}
+  private formatDate(date: Date): string {
+    return date.toISOString(); 
+  }
 
   loadBranches(): void {
     this.reportService.getBranches().subscribe({
       next: (branches) => {
         this.branches = branches;
         console.log('Branches loaded successfully:', branches);
+        if (this.branches.length > 0) {
+          this.reportForm.get('branchIds')?.setValue([this.branches[0].id]);
+        }
         this.applyFilter(); 
       },
       error: (error) => {
@@ -174,50 +173,49 @@ private formatDate(date: Date): string {
     });
   }
 
-applyFilter(): void {
-  this.loading = true;
-  const formValue = this.reportForm.value;
-  
-  const payload: CashierReportRequestDTO = {
-    startDate: this.formatDate(formValue.startDate),
-    endDate: this.formatDate(formValue.endDate),
-    branchIds: formValue.branchIds?.length ? formValue.branchIds : [0],
-    shift: formValue.shift || "string"
-  };
+  applyFilter(): void {
+    this.loading = true;
+    const formValue = this.reportForm.value;
+    
+    const payload: CashierReportRequestDTO = {
+      startDate: this.formatDate(formValue.startDate),
+      endDate: this.formatDate(formValue.endDate),
+      branchIds: formValue.branchIds?.length ? formValue.branchIds : [],
+      shift: formValue.shift || null 
+    };
 
-  console.log('Sending payload to API:', payload);
-  
-  this.reportService.getCashierPerformanceReport(payload).subscribe({
-    next: (response) => {
-      console.log(' API Response received:', response);
-      console.log('Number of cashiers:', response?.cashiers?.length || 0);
-      
-      if (!response || !response.cashiers || response.cashiers.length === 0) {
-        console.warn('No cashier data in response');
+    console.log('Sending payload to API:', payload);
+    
+    this.reportService.getCashierPerformanceReport(payload).subscribe({
+      next: (response) => {
+        console.log(' API Response received:', response);
+        console.log('Number of cashiers:', response?.cashiers?.length || 0);
+        
+        if (!response || !response.cashiers || response.cashiers.length === 0) {
+          console.warn('No cashier data in response');
+        }
+        
+        this.filteredReportData = response;
+        console.log('Updated filteredReportData:', this.filteredReportData);
+        
+        this.updateCharts();
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Error fetching report:', error);
+        console.error('Error details:', {
+          status: error.status,
+          message: error.message,
+          error: error.error
+        });
+        this.loading = false;
+        this.filteredReportData = { cashiers: [] };
+        this.updateCharts();
       }
-      
-      this.filteredReportData = response;
-      console.log('Updated filteredReportData:', this.filteredReportData);
-      
-      this.updateCharts();
-      this.loading = false;
-    },
-    error: (error) => {
-      console.error('Error fetching report:', error);
-      console.error('Error details:', {
-        status: error.status,
-        message: error.message,
-        error: error.error
-      });
-      this.loading = false;
-    }
-  }); 
-}
+    }); 
+  }
 
-
-
-
-
+  
   initCharts(): void {
     this.revenueChartOptions = {
       series: [{ name: "Revenue", data: [0, 0, 0] }],
