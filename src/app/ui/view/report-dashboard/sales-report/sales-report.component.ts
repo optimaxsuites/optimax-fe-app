@@ -1,4 +1,3 @@
-// src/app/reports/sales-report/sales-report.component.ts
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { 
   ApexAxisChartSeries, 
@@ -23,6 +22,7 @@ import {
 } from '../../../models/interface';
 import { ReportService } from '../../../service/report.service';
 import { FormGroup, FormBuilder } from '@angular/forms';
+import { ProductBranchDTO } from '../../../service/report.service';
 
 type PaymentMethodBreakdown = {
   paymentMethod: string;
@@ -117,9 +117,9 @@ export class SalesReportComponent implements OnInit {
   selectedPaymentMethod = 'all';
   selectedCashier = 'all';
   categories: any[] = [];
-  branches: string[] = [];
+  branches: {id: string, name: string}[] = [];
   paymentMethods: string[] = [];
-  cashiers: string[] = [];
+  cashiers: {id: string, name: string}[] = [];
 
   // Store original unfiltered data
   private originalBreakdown: SalesReportBreakdownDTO[] = [];
@@ -197,22 +197,37 @@ export class SalesReportComponent implements OnInit {
   extractFilterOptions() {
     if (!this.salesReport) return;
 
-    // Extract unique branches
-    this.branches = ['all', ...new Set(
-      this.salesReport.totalSalesPerBranch.map(item => item.branch.name)
-    )];
+    // Extract unique branches with IDs
+    this.branches = [{id: 'all', name: 'All Branches'}];
+    const branchMap = new Map<number, string>();
+    this.salesReport.totalSalesPerBranch.forEach(item => {
+      if (!branchMap.has(item.branch.id)) {
+        branchMap.set(item.branch.id, item.branch.name);
+        this.branches.push({id: item.branch.id.toString(), name: item.branch.name});
+      }
+    });
     
     // Extract unique payment methods
-    this.paymentMethods = ['all', ...new Set(
-      this.salesReport.paymentMethodBreakdown.map(item => item.paymentMethod)
-    )];
+    this.paymentMethods = ['all'];
+    const paymentMap = new Map<string, boolean>();
+    this.salesReport.paymentMethodBreakdown.forEach(item => {
+      if (!paymentMap.has(item.paymentMethod)) {
+        paymentMap.set(item.paymentMethod, true);
+        this.paymentMethods.push(item.paymentMethod);
+      }
+    });
     
     // Extract unique cashiers
-    this.cashiers = ['all', ...new Set(
-      this.salesReport.breakdown
-        .filter(item => item.cashier)
-        .map(item => item.cashier.name)
-    )];
+    this.cashiers = [{id: 'all', name: 'All Cashiers'}];
+    const cashierMap = new Map<number, string>();
+    this.salesReport.breakdown
+      .filter(item => item.cashier)
+      .forEach(item => {
+        if (!cashierMap.has(item.cashier.id)) {
+          cashierMap.set(item.cashier.id, item.cashier.name);
+          this.cashiers.push({id: item.cashier.id.toString(), name: item.cashier.name});
+        }
+      });
 
     // Reset filter selections
     this.selectedBranch = 'all';
@@ -476,7 +491,7 @@ export class SalesReportComponent implements OnInit {
 
     const sortedProducts = Array.from(productMap.entries())
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 10); // Limit to top 10 products
+      .slice(0, 10); 
 
     this.productChartOptions.series = [{
       name: "Revenue",
@@ -568,14 +583,15 @@ export class SalesReportComponent implements OnInit {
 
     // Filter by branch
     if (this.selectedBranch !== 'all') {
+      const branchId = parseInt(this.selectedBranch);
       filteredBreakdown = filteredBreakdown.filter(item => 
-        item.branch?.name === this.selectedBranch
+        item.branch?.id === branchId
       );
       filteredProducts = filteredProducts.filter(product => 
-        product.product.branches?.some(b => b.name === this.selectedBranch)
+       product.product.branches?.some((b: any) => (b as ProductBranchDTO).id === branchId)
       );
       filteredBranches = filteredBranches.filter(
-        branch => branch.branch.name === this.selectedBranch
+        branch => branch.branch.id === branchId
       );
     }
 
@@ -584,12 +600,16 @@ export class SalesReportComponent implements OnInit {
       filteredBreakdown = filteredBreakdown.filter(
         item => item.paymentMethod === this.selectedPaymentMethod
       );
+      filteredPayments = filteredPayments.filter(
+        payment => payment.paymentMethod === this.selectedPaymentMethod
+      );
     }
 
     // Filter by cashier
     if (this.selectedCashier !== 'all') {
+      const cashierId = parseInt(this.selectedCashier);
       filteredBreakdown = filteredBreakdown.filter(
-        item => item.cashier?.name === this.selectedCashier
+        item => item.cashier?.id === cashierId
       );
     }
 

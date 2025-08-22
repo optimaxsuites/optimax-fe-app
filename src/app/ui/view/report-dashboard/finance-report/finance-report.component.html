@@ -1,6 +1,4 @@
-
 <div class="min-h-screen bg-gray-50">
-  <!-- Header -->
   <header class="bg-white shadow">
     <div class=" px-4 sm:px-6 lg:px-8 py-6">
       <div class="flex items-center justify-between">
@@ -9,65 +7,49 @@
           <p class="mt-1 text-gray-500">Analyze branch performance metrics and trends</p>
         </div>
         <div>
-            <button class="inline-flex items-center px-4 py-2 border border-transparent font-medium rounded-md shadow-sm text-white bg-customBlue hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue" (click)="openFilterForm()">
-                Apply Filters
-               </button>
+          <button class="inline-flex items-center px-4 py-2 border border-transparent font-medium rounded-md shadow-sm text-white bg-customBlue hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue" (click)="openFilterForm()">
+            Apply Filters
+          </button>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Main Content -->
   <main class=" px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Filters Section -->
     <div class="px-4 sm:px-6 lg:px-8 py-4 bg-white rounded-lg shadow-md mb-8" *ngIf="filterFormOpen">
-        <h2 class="text-xl font-semibold text-gray-800 mb-6">Report Filters</h2>
+      <h2 class="text-xl font-semibold text-gray-800 mb-6">Report Filters</h2>
       
-        <form [formGroup]="filterForm" (ngSubmit)="onFilterChange()" class="space-y-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div>
-              <label for="startDate" class="block font-medium text-gray-700 mb-1">Start Date</label>
-              <input type="date" id="startDate" formControlName="startDate" 
-                     class="w-full rounded-lg border border-gray-300 focus:border-customBlue focus:ring-customBlue shadow-sm px-3 py-2">
-            </div>
-            <div>
-              <label for="endDate" class="block font-medium text-gray-700 mb-1">End Date</label>
-              <input type="date" id="endDate" formControlName="endDate" 
-                     class="w-full rounded-lg border border-gray-300 focus:border-customBlue focus:ring-customBlue shadow-sm px-3 py-2">
-            </div>
-            <!-- <div class="flex items-center mt-6">
-              <input type="checkbox" id="compareWithPrevious" formControlName="compareWithPrevious" 
-                     class="h-4 w-4 rounded border-gray-300 text-customBlue focus:ring-customBlue">
-              <label for="compareWithPrevious" class="ml-2 text-gray-700">Compare with previous period</label>
-            </div> -->
+      <form [formGroup]="filterForm" (ngSubmit)="onFilterChange()" class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div>
+            <label for="startDate" class="block font-medium text-gray-700 mb-1">Start Date</label>
+            <input type="date" id="startDate" formControlName="startDate" 
+                   class="w-full rounded-lg border border-gray-300 focus:border-customBlue focus:ring-customBlue shadow-sm px-3 py-2">
+          </div>
+          <div>
+            <label for="endDate" class="block font-medium text-gray-700 mb-1">End Date</label>
+            <input type="date" id="endDate" formControlName="endDate" 
+                   class="w-full rounded-lg border border-gray-300 focus:border-customBlue focus:ring-customBlue shadow-sm px-3 py-2">
+          </div>
           </div>
       
-          <div class="flex justify-end">
-            <button type="button"  class="border border-gray-300 rounded-md px-4 py-2 mr-2 bg-white text-gray-700 hover:bg-gray-50">
-              Reset
-            </button>
-            <button type="submit" class="bg-customBlue text-white px-4 py-2 rounded-md hover:bg-customBlue flex items-center">
-              <!-- <svg *ngIf="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg> -->
-              Apply Filters
-            </button>
-          </div>
-        </form>
-      </div>
+        <div class="flex justify-end">
+          <button type="button"  class="border border-gray-300 rounded-md px-4 py-2 mr-2 bg-white text-gray-700 hover:bg-gray-50">
+            Reset
+          </button>
+          <button type="submit" class="bg-customBlue text-white px-4 py-2 rounded-md hover:bg-customBlue flex items-center">
+            Apply Filters
+          </button>
+        </div>
+      </form>
+    </div>
       
-
-    <!-- Loading Indicator -->
     <div *ngIf="isLoading" class="flex justify-center items-center py-12">
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
     </div>
 
-    <!-- Report Content -->
     <div *ngIf="!isLoading && reportData">
-      <!-- Summary Cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <!-- Total Revenue Card -->
         <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-customBlue">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-blue-100 text-customBlue">
@@ -88,7 +70,6 @@
           </div>
         </div>
       
-        <!-- Average Growth Card -->
         <div class="bg-white rounded-lg shadow-md p-6 border-l-4" [ngClass]="{'border-green-600': averageGrowth >= 0, 'border-red-600': averageGrowth < 0}">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-green-100 text-green-600">
@@ -110,7 +91,6 @@
           </div>
         </div>
       
-        <!-- Total Customers Card -->
         <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-600">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-purple-100 text-purple-600">
@@ -129,7 +109,6 @@
           </div>
         </div>
       
-        <!-- Total Products Card -->
         <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-amber-600">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-amber-100 text-amber-600">
@@ -149,10 +128,7 @@
         </div>
       </div>
       
-
-      <!-- Revenue & Growth Charts -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <!-- Revenue Comparison Chart -->
         <div class="bg-white rounded-lg shadow p-6">
           <h2 class="text-lg font-medium text-gray-700 mb-4">Revenue by Branch</h2>
           <div class="h-auto">
@@ -173,7 +149,6 @@
           </div>
         </div>
 
-        <!-- Growth Chart -->
         <div class="bg-white rounded-lg shadow p-6">
           <h2 class="text-lg font-medium text-gray-700 mb-4">Growth Percentage by Branch</h2>
           <div class="h-auto">
@@ -195,7 +170,6 @@
         </div>
       </div>
 
-      <!-- Branch List -->
       <div class="bg-white rounded-lg shadow mb-8">
         <div class="p-6 border-b border-gray-200">
           <h2 class="text-lg font-medium text-gray-700">Branch Details</h2>
@@ -216,10 +190,12 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr *ngFor="let branch of reportData.branches" 
-                  [ngClass]="{'bg-blue-50': selectedBranch?.branch?.id === branch.branch.id}"
-                  (click)="selectBranch(branch)"
-                  class="hover:bg-gray-50 cursor-pointer transition-colors">
+              <tr 
+                *ngFor="let branch of reportData.branches" 
+                (click)="selectBranch(branch)"
+                [ngClass]="{'bg-gray-100': selectedBranch === branch}"
+                class="cursor-pointer hover:bg-gray-50"
+              >
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="text-sm font-medium text-gray-700">{{ branch.branch.name }}</div>
                 </td>
@@ -255,7 +231,6 @@
         </div>
       </div>
 
-      <!-- Branch Detail Dashboard (shown when a branch is selected) -->
       <div *ngIf="selectedBranch">
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-2xl font-bold text-gray-700">{{ selectedBranch.branch.name }} Performance</h2>
@@ -269,9 +244,7 @@
           </div>
         </div>
 
-        <!-- Branch Summary Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <!-- Revenue Card -->
           <div class="bg-white rounded-lg shadow p-6">
             <p class="text-sm font-medium text-gray-500">Total Revenue</p>
             <h3 class="text-2xl font-bold text-gray-700 mb-2">{{ formatCurrency(selectedBranch.totalRevenue) }}</h3>
@@ -284,7 +257,6 @@
             </div>
           </div>
 
-          <!-- Products Card -->
           <div class="bg-white rounded-lg shadow p-6">
             <p class="text-sm font-medium text-gray-500">Product Movement</p>
             <h3 class="text-2xl font-bold text-gray-700 mb-2">{{ selectedBranch.productMovement.toLocaleString() }}</h3>
@@ -293,7 +265,6 @@
             </div>
           </div>
 
-          <!-- Customers Card -->
           <div class="bg-white rounded-lg shadow p-6">
             <p class="text-sm font-medium text-gray-500">Customer Footfall</p>
             <h3 class="text-2xl font-bold text-gray-700 mb-2">{{ selectedBranch.customerFootfall?.toLocaleString() || 'N/A' }}</h3>
@@ -302,7 +273,6 @@
             </div>
           </div>
 
-          <!-- Contact Card -->
           <div class="bg-white rounded-lg shadow p-6">
             <p class="text-sm font-medium text-gray-500">Branch Manager</p>
             <h3 class="text-lg font-bold text-gray-700 mb-1">{{ selectedBranch.branch.manager }}</h3>
@@ -316,9 +286,7 @@
           </div>
         </div>
 
-        <!-- Detailed Charts Section -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <!-- Monthly Trend Chart -->
           <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-lg font-medium text-gray-700 mb-4">Monthly Performance Trend</h2>
             <div class="h-auto">
@@ -341,7 +309,6 @@
             </div>
           </div>
 
-          <!-- Product Category Chart -->
           <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-lg font-medium text-gray-700 mb-4">Product Category Distribution</h2>
             <div class="h-auto">
@@ -359,7 +326,6 @@
             </div>
           </div>
 
-          <!-- Customer Demographics Chart -->
           <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-lg font-medium text-gray-700 mb-4">Customer Demographics</h2>
             <div class="h-auto">
@@ -379,7 +345,6 @@
             </div>
           </div>
 
-          <!-- Hourly Traffic Chart -->
           <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-lg font-medium text-gray-700 mb-4">Hourly Customer Traffic</h2>
             <div class="h-auto">
