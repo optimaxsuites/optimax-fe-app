@@ -1,7 +1,7 @@
 <!-- Search and Filters Section -->
 <div class="bg-gray-50 px-6 py-5 rounded-lg shadow-sm mb-6 m-3">
   <!-- Search and Filters Header -->
-  <!-- <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
     <h2 class="text-xl font-semibold text-gray-800 mb-4 md:mb-0">Refund Management</h2>
     
     <div class="relative w-full md:w-80">
@@ -15,7 +15,7 @@
         <i class="pi pi-search text-gray-400"></i>
       </div>
     </div>
-  </div> -->
+  </div>
   
   <!-- Filter Controls -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -35,8 +35,6 @@
     </div>
 
     <!-- Day Filter -->
-   
-
     <div class="flex-1">
       <ng-select
         [items]="daysOfWeek"
@@ -49,8 +47,8 @@
       </ng-select>
     </div>
 
-    <!-- Cashier Filter -->
-   
+    <!-- Cashier Filter (Commented Out) -->
+    <!--
     <div class="flex-1">
       <ng-select
         [items]="cashierList"
@@ -62,9 +60,9 @@
       >
       </ng-select>
     </div>
+    -->
 
     <!-- Status Filter -->
-    
     <div class="flex-1">
       <ng-select
         [items]="statuses"
@@ -77,88 +75,74 @@
       </ng-select>
     </div>
   </div>
-  <div class="bg-white rounded-lg  overflow-hidden py-5">
+  
+  <!-- Transactions Table -->
+  <div class="bg-white rounded-lg overflow-hidden py-5 mt-4">
     <table class="min-w-full bg-white">
       <thead>
         <tr class="bg-gray-50">
-          <th class="text-sm  text-gray-700 p-3" >
-            Refund ID
-          
-          </th>
-          <th class="text-sm  text-gray-700 p-3" >
-            Customer
-          </th>
-          <th class="text-sm  text-gray-700 p-3" >
-            Amount Requested
-          </th>
-          <th class="text-sm  text-gray-700 p-3" >
-            Reason 
-          </th>
-          <th class="text-sm  text-gray-700 p-3" >
-            Status
-          </th>
-          <th class="text-sm  text-gray-700 p-3" >
-            Date
-          </th>
-          <th class="text-sm  text-gray-700 p-3 text-center">
-            Actions
-          </th>
+          <th class="text-sm text-gray-700 p-3">Refund ID</th>
+          <th class="text-sm text-gray-700 p-3">Customer</th>
+          <th class="text-sm text-gray-700 p-3">Amount Requested</th>
+          <th class="text-sm text-gray-700 p-3">Reason</th>
+          <th class="text-sm text-gray-700 p-3">Status</th>
+          <th class="text-sm text-gray-700 p-3">Date</th>
+          <th class="text-sm text-gray-700 p-3 text-center">Actions</th>
         </tr>
-  </thead>
-  <tbody class="divide-y divide-gray-200">
-
-        <tr  *ngFor="let refund of filteredRefundList" class="hover:bg-gray-50 transition-colors">
-          <td class="p-3 ">{{ refund.id }}</td>
-          <td class="p-3 ">{{ refund.name }}</td>
-          <td class="p-3 ">{{ refund.refundableAmount }}</td>
-          <td class="p-3 ">{{ reason(refund.reason)}}</td>
-          <td class="p-3 ">
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        <tr *ngFor="let refund of filteredRefundList; let i = index" class="hover:bg-gray-50 transition-colors">
+          <td class="p-3">{{ refund.id || 'N/A' }}</td>
+          <td class="p-3">{{ refund.name || 'N/A' }}</td>
+          <td class="p-3">₦{{ refund.refundableAmount || '0' }}</td>
+          <td class="p-3">{{ reason(refund.reason) || 'N/A' }}</td>
+          <td class="p-3">
             <div class="flex items-center gap-2">
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" 
                     [ngClass]="{
-                      'bg-yellow-100 text-yellow-800': refund.status === 'Pending',
-                      'bg-green-100 text-green-800': refund.status === 'Accepted',
-                      'bg-red-100 text-red-800': refund.status === 'Rejected'
+                      'bg-yellow-100 text-yellow-800': refund.refundStatus === 'Pending',
+                      'bg-green-100 text-green-800': refund.refundStatus === 'Accepted',
+                      'bg-red-100 text-red-800': refund.refundStatus === 'Rejected'
                     }">
                 <i class="pi mr-1"
                    [ngClass]="{
-                     'pi-clock': refund.status === 'Pending',
-                     'pi-check-circle': refund.status === 'Accepted',
-                     'pi-times-circle': refund.status === 'Rejected'
+                     'pi-clock': refund.refundStatus === 'Pending',
+                     'pi-check-circle': refund.refundStatus === 'Accepted',
+                     'pi-times-circle': refund.refundStatus === 'Rejected'
                    }">
                 </i>
-                {{ refund.refundStatus }}
+                {{ refund.refundStatus || 'N/A' }}
               </span>
             </div>
           </td>
-          <td class="p-3 ">{{formatDate(refund.createdAt) }}</td>
+          <td class="p-3">{{ formatDate(refund.createdAt) || 'N/A' }}</td>
           <td class="p-3 text-center">
             <!-- Actions dropdown -->
             <div class="relative">
               <button 
                 class="p-2 rounded-full hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                (click)="toggleMenu($event)">
+                (click)="toggleMenu($event); toggleDropdown(i)">
                 <i class="pi pi-ellipsis-v text-gray-600"></i>
               </button>
               
               <div 
                 class="custom-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200" 
-                [ngClass]="{ 'hidden': !isMenuOpen }">
+                [ngClass]="{ 'hidden': dropdownIndex !== i }">
                 <div class="py-1">
                   <a 
-                    class="flex items-center px-4 py-2  text-gray-700 hover:bg-gray-100 cursor-pointer" 
+                    class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 cursor-pointer" 
                     (click)="viewRefund(refund)">
                     <i class="pi pi-eye mr-2 text-gray-500"></i>
                     View Details
                   </a>
                   <a 
-                    class="flex items-center px-4 py-2  text-green-700 hover:bg-gray-100 cursor-pointer" 
+                    class="flex items-center px-4 py-2 text-green-700 hover:bg-gray-100 cursor-pointer" 
                     (click)="acceptRefund(refund)">
                     <i class="pi pi-check-circle mr-2 text-green-500"></i>
                     Accept Refund
                   </a>
                   <a 
-                    class="flex items-center px-4 py-2  text-red-700 hover:bg-gray-100 cursor-pointer" 
+                    class="flex items-center px-4 py-2 text-red-700 hover:bg-gray-100 cursor-pointer" 
                     (click)="rejectRefund(refund)">
                     <i class="pi pi-times-circle mr-2 text-red-500"></i>
                     Reject Refund
@@ -168,10 +152,9 @@
             </div>
           </td>
         </tr>
-  </tbody>
-  
-      <ng-template pTemplate="emptymessage">
-        <tr>
+        
+        <!-- Empty state -->
+        <tr *ngIf="filteredRefundList.length === 0">
           <td colspan="7" class="p-6 text-center">
             <div class="flex flex-col items-center justify-center">
               <i class="pi pi-search text-gray-300 text-5xl mb-4"></i>
@@ -180,13 +163,10 @@
             </div>
           </td>
         </tr>
-      </ng-template>
+      </tbody>
     </table>
   </div>
 </div>
-
-<!-- Transactions Table -->
-
 
 <!-- Detail Modal -->
 <app-side-modal
@@ -194,140 +174,98 @@
   (close)="closeModal()"
   class="bg-white shadow-xl rounded-lg overflow-hidden max-w-lg w-full"
 >
-    <div class="p-6">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-bold text-gray-800">Refund Request Details</h2>
-        <button 
-          (click)="closeModal()" 
-          class="text-gray-400 hover:text-gray-500 focus:outline-none"
-        >
-          <span class="text-xl">×</span>
-        </button>
+  <div class="p-6">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-xl font-bold text-gray-800">Refund Request Details</h2>
+      <button 
+        (click)="closeModal()" 
+        class="text-gray-400 hover:text-gray-500 focus:outline-none"
+      >
+        <span class="text-xl">×</span>
+      </button>
+    </div>
+
+    <div class="space-y-4">
+      <!-- Refund Status Badge -->
+      <div class="mb-6">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
+              [ngClass]="getRefundStatusClass(selectedRefund?.refundStatus)">
+          <i class="pi mr-1" [ngClass]="getStatusIcon(selectedRefund?.refundStatus)"></i>
+          {{ selectedRefund?.refundStatus || 'N/A' }}
+        </span>
       </div>
 
-      <div class="space-y-4">
-        <!-- Refund Status Badge -->
-        <div class="mb-6">
-          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium"
-                [ngClass]="getRefundStatusClass(selectedRefund?.refundStatus)">
-            <span class="mr-1">{{ getStatusIcon(selectedRefund?.refundStatus) }}</span>
-            {{ selectedRefund?.refundStatus }}
-          </span>
-        </div>
-
-        <!-- Refund Details -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ng-container *ngFor="let field of refundDetails">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
-              <div class="w-full p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-800">
-                {{ field.value }}
-              </div>
+      <!-- Refund Details -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ng-container *ngFor="let field of refundDetails">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
+            <div class="w-full p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-800">
+              {{ field.value || 'N/A' }}
             </div>
-          </ng-container>
-        </div>
-
-        <!-- Returned Items -->
-        <div class="mt-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Returned Items</label>
-          <div class="bg-gray-50 border border-gray-200 rounded overflow-hidden">
-            <ul class="divide-y divide-gray-200">
-              <li *ngFor="let item of selectedRefund?.returnItems" class="p-3 flex justify-between items-center">
-                <span class="font-medium text-sm">Product ID: {{ item.productId }}</span>
-                <span class="text-gray-500 text-sm">₦{{ item.totalPricePaid }}</span>
-              </li>
-              <li *ngIf="!selectedRefund?.returnItems?.length" class="p-3 text-sm text-gray-500 text-center">
-                No items returned
-              </li>
-            </ul>
           </div>
-        </div>
+        </ng-container>
+      </div>
 
-        <!-- Cashier Comment -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Cashier's Comment</label>
-          <div class="bg-gray-50 border border-gray-200 rounded p-3 text-sm text-gray-800 min-h-20">
-            {{ selectedRefund?.cashierComment || 'No comment provided' }}
-          </div>
-        </div>
-
-        <!-- Admin Comment -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Your Comment</label>
-          <textarea
-            class="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            rows="3"
-            placeholder="Add your comment here..."
-            [(ngModel)]="adminComment"
-          ></textarea>
+      <!-- Returned Items -->
+      <div class="mt-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Returned Items</label>
+        <div class="bg-gray-50 border border-gray-200 rounded overflow-hidden">
+          <ul class="divide-y divide-gray-200">
+            <li *ngFor="let item of selectedRefund?.returnItems" class="p-3 flex justify-between items-center">
+              <span class="font-medium text-sm">Product ID: {{ item.productId }}</span>
+              <span class="text-gray-500 text-sm">₦{{ item.totalPricePaid }}</span>
+            </li>
+            <li *ngIf="!selectedRefund?.returnItems?.length" class="p-3 text-sm text-gray-500 text-center">
+              No items returned
+            </li>
+          </ul>
         </div>
       </div>
 
-      <!-- Action Buttons -->
-      <div class="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
-        <ng-container *ngIf="selectedRefund?.refundStatus === 'Processing'">
-          <button
-            class="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-            (click)="acceptRefund(selectedRefund)"
-          >
-            <span class="mr-2">✅</span> Accept Refund
-          </button>
-          <button
-            class="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            (click)="rejectRefund(selectedRefund)"
-          >
-            <span class="mr-2">❌</span> Reject Refund
-          </button>
-        </ng-container>
+      <!-- Cashier Comment -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Cashier's Comment</label>
+        <div class="bg-gray-50 border border-gray-200 rounded p-3 text-sm text-gray-800 min-h-20">
+          {{ selectedRefund?.cashierComment || 'No comment provided' }}
+        </div>
+      </div>
 
-        <button
-          (click)="closeModal()"
-          class="inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          Close
-        </button>
+      <!-- Admin Comment -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Your Comment</label>
+        <textarea
+          class="w-full p-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+          rows="3"
+          placeholder="Add your comment here..."
+          [(ngModel)]="adminComment"
+        ></textarea>
       </div>
     </div>
 
+    <!-- Action Buttons -->
+    <div class="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
+      <ng-container *ngIf="selectedRefund?.refundStatus === 'Processing' || selectedRefund?.refundStatus === 'Pending'">
+        <button
+          class="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          (click)="acceptRefund(selectedRefund!)"
+        >
+          <i class="pi pi-check-circle mr-2"></i> Accept Refund
+        </button>
+        <button
+          class="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          (click)="rejectRefund(selectedRefund!)"
+        >
+          <i class="pi pi-times-circle mr-2"></i> Reject Refund
+        </button>
+      </ng-container>
 
-
+      <button
+        (click)="closeModal()"
+        class="inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+      >
+        Close
+      </button>
+    </div>
+  </div>
 </app-side-modal>
-
-<!-- 
-[
-  {
-    "id": 12,
-    "name": "Kemi Adenuga",
-    "phoneNumber": "08118348261",
-    "reason": "CHANGED_MIND",
-    "cashierComment": "",
-    "adminComment": null,
-    "createdAt": [
-      2025,
-      5,
-      20,
-      3,
-      4,
-      39,
-      102000000
-    ],
-    "refundableAmount": 25000,
-    "refundMethod": "ROYALTY_POINTS",
-    "refundStatus": "Processing",
-    "royaltyAccountId": 5,
-    "orderId": 89,
-    "processedById": null,
-    "bankDetailsId": null,
-    "exchangeForId": null,
-    "returnItems": [
-      {
-        "id": 11,
-        "quantity": 0,
-        "totalPricePaid": 25000,
-        "itemReturnLogId": 12,
-        "productId": 264,
-        "variantId": null
-      }
-    ]
-  }
-] -->

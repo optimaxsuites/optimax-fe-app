@@ -343,10 +343,10 @@ getInventories(): void {
   }
 
   // Use the same image loading approach as the first component
-  getImageUrl(item: any): Observable<string> {
-    const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${item.productImages[0].imgNo}`;
-    return this.imageCacheService.getImage(remoteImageUrl);
-  }
+  // getImageUrl(item: any): Observable<string> {
+  //   const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${item.productImages[0].imgNo}`;
+  //   return this.imageCacheService.getImage(remoteImageUrl);
+  // }
 
   toggleView() {
     this.tableSections = !this.tableSections;
@@ -824,12 +824,27 @@ getInventories(): void {
 // inventory.component.ts
 placeholderPath = 'assets/images/placeholder-product.jpg'; // make sure this file exists
 
-onImgError(ev: Event) {
-  const img = ev.target as HTMLImageElement;
-  if (img && img.src !== this.placeholderPath) {
-    img.src = this.placeholderPath;
+
+onImgError(event: Event) {
+  const img = event.target as HTMLImageElement;
+  img.src = 'assets/images/placeholder-product.jpg';
+}getImageUrl(item: any): Observable<string> {
+  // Check if we have image data in the mapped inventory item
+  const productImages = item.__originalProduct?.productImages || 
+                       item.productImages || 
+                       item.__inventory?.product?.productImages;
+                       
+  if (productImages && productImages.length > 0 && productImages[0].imgNo) {
+    const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${productImages[0].imgNo}`;
+    return this.imageCacheService.getImage(remoteImageUrl);
   }
-}
+  
+  // Return placeholder URL as Observable
+  return new Observable(observer => {
+    observer.next('https://via.placeholder.com/300x200?text=No+Image');
+    observer.complete();
+  });
+}}
 
 
-}
+
