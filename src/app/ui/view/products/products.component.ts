@@ -482,7 +482,7 @@ export class ProductsComponent implements OnInit {
       const name = row.getCell(ProductExcelColumns.NAME + 1).text;
       if (name == "Dummy Product" || name == "") continue;
       const description = row.getCell(ProductExcelColumns.DESCRIPTION + 1).text;
-      // Just some simple validation on the string provided, other it'll default to a dummy image
+      
       const imgUrl = ((url: string) => {
         try {
           new URL(url);

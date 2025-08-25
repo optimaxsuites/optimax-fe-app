@@ -59,7 +59,7 @@ export class NavigationLinksService {
 		this.links["checkoutOrderLink"] = "/user/checkout/orders/" + uuidV4();
 		this.links["cashPayment"] = "/user/checkout/cash-payment/" + uuidV4();
 		this.links["orderDetails"] = "/user/checkout/order/" + uuidV4();
-		this.links["orderRefund"] = "/user/checkout/refund/" + uuidV4();
+		this.links["orderRefund"] = "/user/checkout/refund-request/" + uuidV4();
 		this.links["requestDetails"] = "/user/checkout/refund-request/" + uuidV4();
 		this.links["openRegister"] = "/user/checkout/openRegister/" + uuidV4();
 		this.links["closeRegister"] = "/user/checkout/closeRegister/" + uuidV4();

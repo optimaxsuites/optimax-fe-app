@@ -5,6 +5,8 @@ import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { forkJoin, of } from 'rxjs';
 import { finalize } from 'rxjs/operators';
+import { ImageCacheService } from '../../../service/image-cache.service';
+import { filter, Observable } from "rxjs";
 
 @Component({
   selector: 'app-view-inventory',
@@ -29,8 +31,28 @@ export class ViewInventoryComponent implements OnInit {
   constructor(
     private router: Router,
     private posService: PosServiceService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private imageCacheService: ImageCacheService
   ) {}
+
+    getImageUrl(item: any): Observable<string> {
+    // Check if we have image data in different places
+    const productImages = item.__originalProduct?.productImages || 
+                         item.productImages || 
+                         item.__inventory?.product?.productImages ||
+                         item.product?.productImages;
+                         
+    if (productImages && productImages.length > 0 && productImages[0].imgNo) {
+      const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${productImages[0].imgNo}`;
+      return this.imageCacheService.getImage(remoteImageUrl);
+    }
+    
+    // Return placeholder URL as Observable
+    return new Observable(observer => {
+      observer.next('https://via.placeholder.com/300x200?text=No+Image');
+      observer.complete();
+    });
+  }
 
   ngOnInit(): void {
     // capture inventoryId BEFORE we overwrite activeItem

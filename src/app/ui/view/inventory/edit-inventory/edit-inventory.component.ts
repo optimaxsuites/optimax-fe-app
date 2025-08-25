@@ -6,6 +6,7 @@ import {
   OnInit,
   SimpleChanges,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { PosServiceService } from '../../../service/pos-service.service';
 import {
@@ -128,9 +129,11 @@ export class EditInventoryComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private posService: PosServiceService,
+    private router: Router,
     private messageService: MessageService,
     private metadataService: MetadataService,
-    private http: HttpClient
+    private http: HttpClient,
+
   ) {
     this.initializeForms();
   }
@@ -141,6 +144,12 @@ export class EditInventoryComponent implements OnInit {
   //     this.patchFormValues();
   //   }
   // }
+
+private toIsoDate(d: string | null | undefined): string {
+  if (!d) return new Date().toISOString();
+  // input from <input type="date"> is 'YYYY-MM-DD'
+  return new Date(`${d}T00:00:00`).toISOString();
+}
 
  private initializeForms(): void {
   this.productForm = this.fb.group({
@@ -327,6 +336,7 @@ this.stockMovementForm = this.fb.group({
           summary: 'Error',
           detail: 'Failed to load initial data',
           life: 3000,
+          key: "tl"
         });
         this.isLoading = false;
       },
@@ -355,6 +365,7 @@ this.stockMovementForm = this.fb.group({
               detail: "Discount added successfully.",
               key: "tl",
               life: 3000,
+              
             });
             // this.getDiscounts();
             // TODO: Check whether this piece of code is worth it...
@@ -506,6 +517,7 @@ this.stockMovementForm = this.fb.group({
         summary: 'Validation',
         detail: 'Please fill required fields and agree to terms',
         life: 3000,
+        key: "tl"
       });
       return;
     }
@@ -530,6 +542,7 @@ this.stockMovementForm = this.fb.group({
           summary: 'Success',
           detail: 'Supplier created and selected successfully',
           life: 3000,
+          key: "tl"
         });
         this.isLoading = false;
       },
@@ -539,6 +552,7 @@ this.stockMovementForm = this.fb.group({
           summary: 'Error',
           detail: 'Failed to create supplier',
           life: 3000,
+          key: "tl"
         });
         this.isLoading = false;
       },
@@ -746,19 +760,38 @@ private async findInventoryIdForProductBranch(productId: number, branchId: numbe
 async saveStockMovement(): Promise<void> {
   if (this.stockMovementForm.invalid) {
     this.stockMovementForm.markAllAsTouched();
-    this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Please fill all required fields', life: 2500 });
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Validation',
+      detail: 'Please fill all required fields',
+      life: 2500,
+      key: "tl"
+    });
     return;
   }
+  
   if (!this.activeItem?.id || !this.selectedBranch) {
-    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Product or branch not selected', life: 2500 });
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Product or branch not selected',
+      life: 2500,
+      key: "tl"
+    });
     return;
   }
 
-  const rawDate = this.stockMovementForm.value.createdDate as string;
+  const rawDate = this.stockMovementForm.value.createdDate;
   const reference = this.stockMovementForm.value.reference || '';
   const qtyAbs = Math.abs(Number(this.stockMovementForm.value.quantity) || 0);
+  
+  // FIXED: Use the actual form value for purchasePrice and sellingPrice
   const purchasePrice = Number(this.stockMovementForm.value.purchasePrice) || 0;
-  const sellingPrice = Number(this.stockMovementForm.value.sellingPrice) || 0;
+  const sellingPrice = Number(
+  this.priceDetails?.basePrice ?? this.activeItem?.sellingPrice ?? 0
+);
+
+  
   const supplierId = this.stockMovementForm.value.supplier ?? this.selectedSupplier ?? null;
 
   // If you have an action control (IN/OUT). If not, default to IN.
@@ -768,40 +801,39 @@ async saveStockMovement(): Promise<void> {
 
   this.isLoading = true;
   try {
-    // 1) Resolve inventory id (prefer what the card gave us, else fetch list)
+    // 1) Resolve inventory id
     let inventoryId = this.getInventoryIdFromActiveItem();
     if (!inventoryId) {
       inventoryId = await this.findInventoryIdForProductBranch(this.activeItem.id, this.selectedBranch);
     }
 
-    // 2) If still missing, create ONE inventory (only allow if movement is IN)
+    // 2) If still missing, create inventory (only allow if movement is IN)
     if (!inventoryId) {
       if (signedQty <= 0) {
         this.messageService.add({
           severity: 'warn',
           summary: 'No inventory yet',
-          detail: 'You can’t reduce stock before creating inventory. Please add stock (IN) first.',
-          life: 3500
+          detail: 'You can\'t reduce stock before creating inventory. Please add stock (IN) first.',
+          life: 3500,
+          key: "tl"
         });
         return;
       }
 
       const createPayload = {
-        availableQuantity: 0, 
-        status: 'IN_STOCK' as InventoryStatus, 
+        availableQuantity: 0,
+        status: 'IN_STOCK' as InventoryStatus,
         productId: this.activeItem.id,
         branchId: this.selectedBranch,
-        stockMovement: [] 
+        stockMovement: []
       };
       const created = await firstValueFrom(this.posService.createInventory(createPayload));
       if (!created?.id) throw new Error('Failed to create inventory');
       inventoryId = created.id;
-
-    
       (this.activeItem as any).inventoryId = inventoryId;
     }
 
-    
+    // 3) Prevent going negative
     try {
       const fresh = await firstValueFrom(this.posService.getInventoryById(inventoryId));
       const projected = Number(fresh?.availableQuantity ?? 0) + signedQty;
@@ -810,66 +842,108 @@ async saveStockMovement(): Promise<void> {
           severity: 'warn',
           summary: 'Insufficient stock',
           detail: 'This movement would make stock negative.',
-          life: 3000
+          life: 3000,
+          key: "tl"
         });
         return;
       }
     } catch {
-     
+      
     }
 
     
-    const body: StockMovementPostBody = {
+    const createdDate = rawDate 
+  ? new Date(rawDate).toISOString() 
+  : new Date().toISOString();
+    
+  
+    const createdById = this.getCurrentUserId();
+
+    
+    const body: any = {
       quantity: signedQty,
       reference,
       purchasePrice,
-      sellingPrice,
-      createdDate: this.toIso(rawDate),
-      supplierId,
-      inventoryId
+      sellingPrice, // Now using the actual form value (600)
+      createdDate,
+      createdById: createdById || 0,
+      supplierId: supplierId ? Number(supplierId) : null,
+      inventoryId: Number(inventoryId)
     };
+
+    console.log('Sending stock movement payload:', body); // Debug log
+
     await firstValueFrom(this.posService.createStockMovement(body));
 
-    // 5) Refresh UI
-    const after = await firstValueFrom(this.posService.getInventoryById(inventoryId));
+    // SUCCESS - show message
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: 'Stock movement recorded successfully!',
+      life: 2500,
+      key: "tl"
+    });
 
-    console.log('emit updated from child', { id: inventoryId, qty: after?.availableQuantity });
+    // 7) Refresh UI
+    const after = await firstValueFrom(this.posService.getInventoryById(inventoryId));
     this.updated.emit({
-  inventoryId,
-  quantity: Number(after?.availableQuantity ?? 0),
-  status: (after?.status ?? 'IN_STOCK') as InventoryStatus
-});
+      inventoryId,
+      quantity: Number(after?.availableQuantity ?? 0),
+      status: (after?.status ?? 'IN_STOCK') as InventoryStatus
+    });
+    
     if (this.activeItem) {
-   
       (this.activeItem as any).quantity = after?.availableQuantity ?? (Number((this.activeItem as any).quantity) || 0) + signedQty;
     }
 
-    this.stockMovementForm.reset({
-      createdDate: new Date().toISOString().slice(0, 10),
-      reference: '',
-      quantity: 1,
-      purchasePrice: 0,
-      sellingPrice: 0,
-      supplier: null,
-    
-    });
+    // 8) Wait and close
+    setTimeout(() => {
+      this.close.emit();
+    }, 1500);
 
-    this.messageService.add({ severity: 'success', summary: 'Stock updated', detail: 'Movement recorded', life: 2500 });
+    // 9) Reset form
+    this.resetStockMovementForm();
+
   } catch (err: any) {
-    console.error(err);
+    console.error('Stock movement error:', err);
     this.messageService.add({
       severity: 'error',
       summary: 'Error',
       detail: err?.error?.message || err?.message || 'Failed to record movement',
-      life: 4000
+      life: 4000,
+      key: "tl"
     });
   } finally {
     this.isLoading = false;
   }
 }
 
+private formatDateForBackend(dateString: string): string {
+  if (!dateString) return new Date().toISOString();
+  
+  // If it's already in ISO format, return as is
+  if (dateString.includes('T')) {
+    return new Date(dateString).toISOString();
+  }
+  
+  // If it's in YYYY-MM-DD format, convert to ISO
+  const date = new Date(`${dateString}T00:00:00`);
+  return date.toISOString();
+}
 
-
+// ENSURE this method returns a number (not string)
+private getCurrentUserId(): number {
+  const userData = sessionStorage.getItem('currentUser');
+  if (userData) {
+    try {
+      const user = JSON.parse(userData);
+      return Number(user.id) || 0;
+    } catch {
+      return 0;
+    }
+  }
+  return 0;
+}
 
 private async getOrCreateInventoryStrict(): Promise<InventoryResponsePayload> {
   if (!this.activeItem || !this.selectedBranch) {
@@ -910,6 +984,7 @@ private showValidationError(): void {
         summary: 'Validation',
         detail: 'Please fill all required fields correctly',
         life: 3000,
+        key: "tl"
     });
 }
 
@@ -925,21 +1000,21 @@ private validateProductAndBranch(): boolean {
   }
     return true;
 }
-private getCurrentUserId(): number {
+// private getCurrentUserId(): number {
    
-    const userData = sessionStorage.getItem('currentUser');
-    if (userData) {
-        try {
-            const user = JSON.parse(userData);
-            return user.id || 0;
-        } catch {
-            return 0;
-        }
-    }
-    return 0;
+//     const userData = sessionStorage.getItem('currentUser');
+//     if (userData) {
+//         try {
+//             const user = JSON.parse(userData);
+//             return user.id || 0;
+//         } catch {
+//             return 0;
+//         }
+//     }
+//     return 0;
     
     
-}
+// }
 
 
 // e.g. export class EditInventoryComponent implements OnInit { ... }
@@ -1044,7 +1119,8 @@ private async updateLocalProductData(movementData: StockMovementPayload): Promis
       severity: 'warn',
       summary: 'Offline Mode',
       detail: 'Changes saved locally but not synced with server',
-      life: 3000
+      life: 3000,
+      key: "tl"
     });
   }
 }
@@ -1069,6 +1145,7 @@ private showSuccessMessage(): void {
         summary: 'Success',
         detail: 'Stock movement recorded successfully',
         life: 3000,
+        key: "tl"
     });
 }
 
@@ -1099,6 +1176,7 @@ private handleMovementError(error: any): void {
     summary: 'Error',
     detail: errorMessage,
     life: 5000,
+    key: "tl"
   });
 }
 //   private async updateInventoryAfterMovement(inventoryId: number, quantity: number): Promise<void> {
@@ -1141,36 +1219,33 @@ private handleMovementError(error: any): void {
       });
 
     // FIXED: Watch selling price changes and update priceDetails.basePrice
-    this.stockMovementForm
-      .get('sellingPrice')
-      ?.valueChanges.subscribe((value) => {
-        // Only update if the change is not from our own calculation
-        if (!this.isUpdatingFromCalculation) {
-          this.priceDetails.basePrice = Number(value) || 0;
-          this.calculateEffectivePrice();
-        }
-      });
+    //  this.stockMovementForm
+    // .get('sellingPrice')
+    // ?.valueChanges.subscribe((value) => {
+    //   // Only update if the change is not from our own calculation
+    //   if (!this.isUpdatingFromCalculation) {
+    //     this.priceDetails.basePrice = Number(value) || 0;
+    //     this.calculateEffectivePrice();
+    //   }
+    // });
   }
 
   // Add this flag to prevent circular updates
   private isUpdatingFromCalculation = false;
 
-  initializeStockMovementForm(): void {
-const currentDate = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
-
-const initialValues = {
-  purchasePrice: this.activeItem?.purchasePrice || 0,
-  sellingPrice: this.activeItem?.sellingPrice || 0,
-  createdDate: currentDate,
-  supplier: this.selectedSupplier ?? null,
-  quantity: 1,          // keep valid
-  reference: '',
-};
-
-this.stockMovementForm.patchValue(initialValues);
-
-this.initializePriceDetails?.();
-this.setupStockMovementWatchers?.();
+ initializeStockMovementForm(): void {
+  const currentDate = new Date().toISOString().slice(0, 10);
+  
+  const initialValues = {
+    purchasePrice: this.activeItem?.purchasePrice || 0,
+    sellingPrice: this.priceDetails.effectivePrice || this.activeItem?.sellingPrice || 0, // Use effective price
+    createdDate: currentDate,
+    supplier: this.selectedSupplier ?? null,
+    quantity: 1,
+    reference: '',
+  };
+  
+  this.stockMovementForm.patchValue(initialValues);
 }
 
 private initializePriceDetails(): void {
