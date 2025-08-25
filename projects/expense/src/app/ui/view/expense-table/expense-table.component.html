@@ -17,34 +17,60 @@
 <div class="table-container mx-3">
   <!-- Header Section with Buttons -->
   <div class="container-header bg-white p-9 rounded shadow-md mb-4">
-    <div class="flex justify-between items-center">
-      <h1 class="text-2xl font-semibold text-gray-800">Expenses</h1>
+    <div class="flex justify-between items-center mb-6">
+      <div class="header-content">
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">Expenses</h1>
+          <p class="text-gray-600">Manage and track your business expenses</p>
+      
     </div>
 
     <div class="action-bar">
       <div class="left-actions">
         <!-- Add New Button -->
-        <button class="btn btn-primary" (click)="navigateToForm()">
-          <span class="material-icons"></span>
+        <button class="btn btn-primary flex items-center gap-2" (click)="navigateToForm()">
+          <span class="material-icons">add</span>
           Add Expense
         </button>
 
         <!-- Request Button with Badge -->
-        <div class="relative">
-          <button class="btn btn-outline-success" (click)="navigateToexpense()">
+        <div class="relative ml-3">
+          <button class="btn btn-outline-success flex items-center gap-2" (click)="navigateToexpense()">
             <span class="material-icons btn-icon">request_page</span>
             Request
           </button>
-          <div class="relative">
+          
             <div
               class="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full"
             >
               {{ getExpenseCount() }}
-            </div>
+            
           </div>
         </div>
       </div>
     </div>
+  </div>
+
+  <div class="grid grid-cols-4 gap-4">
+  <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+    <div class="text-blue-600 text-xl font-medium">Total Expenses</div>
+    <div class="text-2xl font-bold text-blue-900">{{ getTotalAmount() | currency:'NGN':'symbol':'1.2-2' }}</div>
+  </div>
+
+  <div class="bg-green-50 p-4 rounded-lg border border-green-100">
+  <div class="text-green-600 text-xl font-medium">Approved</div>
+  <div class="text-2xl font-bold text-green-900">{{ getApprovedCount() }}</div>
+  </div>
+
+  <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+  <div class="text-yellow-600 text-xl font-medium">Pending</div>
+  <div class="text-2xl font-bold text-yellow-900">{{ getPendingCount() }}</div>
+  </div>
+
+  <div class="bg-red-50 p-4 rounded-lg border border-red-100">
+    <div class="text-red-600 text-xl font-medium">Rejected</div>
+    <div class="text-2xl font-bold text-red-900">{{ getRejectedCount() }}</div>
+  </div>
+  </div>
   </div>
 
   <div class="floating-box">
@@ -103,7 +129,7 @@
           </div>
         </div>
 
-  <!-- Right: Delete Button -->
+        <!-- Right: Delete Button -->
         <div class="filter-right">
           <button
             class="btn btn-danger"
@@ -115,7 +141,7 @@
           </button>
         </div>
 
-      </div>
+        </div>
 
       <!-- Table -->
       <div class="table-container ml-5 mr-5">
@@ -263,6 +289,9 @@
         class="w-full border text-2xl border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
     </div>
+
+   
+
 
     <div>
       <label class="block font-medium text-2xl text-gray-700 mb-1"

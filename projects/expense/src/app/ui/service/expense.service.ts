@@ -14,6 +14,10 @@ export interface Expense {
   status: string;
   receiptFileName?: string; 
   invoiceFileName?: string; 
+
+  taxPercentage?: number;
+  taxAmount?: number;
+  totalAmount?: number;
 }
 
 @Injectable({

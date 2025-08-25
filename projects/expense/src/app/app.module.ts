@@ -33,6 +33,7 @@ import { MessagesModule } from 'primeng/messages';
 import { MessageModule } from 'primeng/message';
 import { RippleModule } from 'primeng/ripple';
 import { PrimeIcons, MenuItem } from 'primeng/api';
+import { InputNumberModule } from 'primeng/inputnumber';
 
 
 
@@ -145,7 +146,8 @@ import { DisbursementComponent } from './ui/view/disbursement/disbursement.compo
     ButtonModule,
     BackButtonComponent,
     ButtonComponent,
-    SideModalComponent
+    SideModalComponent,
+    InputNumberModule
 ],
   providers: [],
   bootstrap: [AppComponent],

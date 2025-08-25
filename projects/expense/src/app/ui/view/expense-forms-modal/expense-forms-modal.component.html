@@ -1,6 +1,5 @@
 
 <div class="form-buttons" (click)=" goBack()">
-
   <div class="arrow-left">
     <div></div>
   </div>
@@ -72,12 +71,11 @@
         <div class="form-group">
           <label for="amount">Amount</label>
           <input
-            type="number"
+            type="text"
             id="amount"
             name="amount"
-            [(ngModel)]="expenseSummary.amount"
-            (input)="onAmountInput($event)"
-            min="0"
+            [value]="formatAmount(expenseSummary.amount)"
+            (input)="updateAmount($event)"
             required
             placeholder="Enter amount"
           />
@@ -135,7 +133,7 @@
             [(ngModel)]="expenseSummary.quantity"
             name="quantity"
             required
-            placeholder="Select a Quantity"
+            placeholder="Select a quantity"
             class="w-full mt-3"
           >
           </ng-select>

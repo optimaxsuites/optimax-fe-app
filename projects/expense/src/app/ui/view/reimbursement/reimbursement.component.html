@@ -70,7 +70,7 @@
 
             <!-- Request Type -->
             <div class="form-group">
-              <label class="required-field">Request Type</label>
+              <label for="required-field">Request Type</label>
               <select
                 formControlName="requestType"
                 required
@@ -80,6 +80,7 @@
                   )
                 "
               >
+
                 <option value=""></option>
                 <option *ngFor="let type of requestTypes" [value]="type.value">
                   {{ type.label }}
@@ -100,6 +101,7 @@
               />
               <p class="hint">Max 15 characters</p>
             </div>
+
 
             <!-- Employee ID and Department in one line -->
             <div class="form-row">
@@ -132,7 +134,9 @@
             <!-- Category -->
             <div class="form-group">
               <label class="required-field">Category</label>
-              <select formControlName="category" required>
+              <select formControlName="category"
+              placeholder="Select category"
+               required>
                 <option value=""></option>
                 <option *ngFor="let cat of categories" [value]="cat.value">
                   {{ cat.label }}
