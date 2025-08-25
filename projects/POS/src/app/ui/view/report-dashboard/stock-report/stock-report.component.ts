@@ -162,7 +162,6 @@ export class StockReportComponent implements OnInit {
       error: (error) => {
         console.error('Error loading inventory report:', error);
         this.isLoading = false;
-        // Initialize empty data structure on error
         this.reportData = { inventory: [] };
         this.calculateSummaryMetrics();
         this.initCharts();
@@ -200,7 +199,6 @@ export class StockReportComponent implements OnInit {
   }
 
   initEmptyCharts(): void {
-    // Initialize empty charts when no data is available
     this.categoriesChartOptions = this.createEmptyBarChart('Stock by Category');
     this.stockTrendChartOptions = this.createEmptyLineChart('Inventory Trend (Last 6 Months)');
     this.branchComparisonChartOptions = this.createEmptyPieChart('Stock Distribution by Branch');
@@ -213,7 +211,7 @@ export class StockReportComponent implements OnInit {
       const items = this.reportData.inventory.filter(item => item.category.id === category.id);
       const totalStock = items.reduce((sum, item) => sum + item.currentStock, 0);
       return { x: category.name, y: totalStock };
-    }).filter(item => item.y > 0); // Only show categories with stock
+    }).filter(item => item.y > 0);
 
     this.categoriesChartOptions = {
       series: [{ data: categoryData }],
