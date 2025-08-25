@@ -117,6 +117,14 @@ export class AuthenticationService {
       .pipe(catchError(this.handleError));
   }
 
+  delUserApplicationRole(id: number): Observable<any> {
+
+    return this.http
+      .delete<any>(this.getBaseApiUrl() + `/x/api/v2/us/ur/findappuserrolepermissionbyid?userid=${id}`)
+      .pipe(catchError(this.handleError));
+  }
+
+
   userVerification(token: string): Observable<any> {
     // console.log((this.getBaseApiUrl() + "/x/api/v2/us/register/verify?token="+"---"+JSON.stringify(token)))
 

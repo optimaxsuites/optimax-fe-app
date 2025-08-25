@@ -80,6 +80,28 @@
 
 
           </div>
+          
+          <div class="flex flex-col gap-3 py-3 w-full h-full" *ngIf="user.isEditing">
+          <p class="text-nowrap text-customBlue">Assign new role</p>
+          <div class="w-full flex gap-4 item-center"> 
+            <div class="w-full">
+               <!-- <label for="role" class="text-customBlue">Role</label> -->
+                <ng-select
+                  [items]="roles"
+                  id="role"
+                  bindLabel="name"
+                  [multiple]="false"
+                  placeholder="Select Role"
+                  [(ngModel)]="selectedRole"
+                >
+                </ng-select>
+            </div>
+          <button (click)="assignRole(user, $event)"  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3">Assign</button>
+
+          </div>      
+
+          </div>
+          
     
           <!-- <div class="">
             <table class="w-full border-collapse border border-gray-300">
@@ -245,11 +267,11 @@
       >
     </div>
 
-    <div class="my-3" *ngIf="selectedRole.length > 0">
+    <!-- <div class="my-3" *ngIf="selectedRole.length > 0">
       <h3 class="text-lg font-semibold text-customBlue">Selected roles</h3>
-     <!-- <p>{{ selectedRole.join(", ") }}</p> -->
+     <p>{{ selectedRole.join(", ") }}</p>
       <p>{{getSelectedRoleNames()}}</p>
-    </div>
+    </div> -->
 
     <div class="flex gap-3 py-3 w-full items-center h-full" >
      
@@ -260,7 +282,7 @@
           [items]="roles"
           id="role"
           bindLabel="name"
-          [multiple]="true"
+          [multiple]="false"
           placeholder="Select Role"
           [(ngModel)]="selectedRole"
         >

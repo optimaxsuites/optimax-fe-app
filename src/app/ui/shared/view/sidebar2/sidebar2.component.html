@@ -13,7 +13,7 @@
     </button>
   </div>
   <ul>
-    <li *ngFor="let item of menuItems">
+    <li *ngFor="let item of menuItems | async as menuItems">
       <div class="menu-item w-full" (click)="toggleSubMenu(item)">
         <a *ngIf="!item.submenu"
            [routerLink]="item.route"
@@ -58,7 +58,7 @@
       </ul>
     </li>
 
-    <li>
+    <li *ngIf="isSuperUser()">
       <div class="menu-item">
         <a 
           [routerLink]="marketplace.route"

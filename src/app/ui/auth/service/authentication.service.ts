@@ -42,7 +42,11 @@ export class AuthenticationService {
     sessionStorage.removeItem("userid");
     sessionStorage.removeItem("Token");
     sessionStorage.removeItem("userPrimaryInfoRegData");
-
+        const storedRole = sessionStorage.getItem("userApplicationRole");
+          if (storedRole) {
+            console.log("Removing invalid userApplicationRole from sessionStorage");
+            sessionStorage.removeItem("userApplicationRole");
+          } 
 
     // this.router.navigate([''])
     const loginLink = this.navigationLink.getLink('signinLink')

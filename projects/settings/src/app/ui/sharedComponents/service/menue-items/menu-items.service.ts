@@ -11,6 +11,7 @@ export class MenuItemsService {
   private menuItems: MenuItem[] = [
     {
       label: 'Dashboard',
+      code: 'dashboard',
       route: this.navigationLink.getLink('dashboardLink'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'fas fa-tachometer-alt',
@@ -584,12 +585,12 @@ export class MenuItemsService {
    
   }
   
-  getRegisterApps(){
+  async getRegisterApps(){
     this.appRegisterService.getRegisteredApp().subscribe({
       next: (app: any) => {
         this.appList = app;
-        this.loadUnlockedModules(); 
-        this.loadUnlockedSettingsModules();
+         this.loadUnlockedModules(); 
+         this.loadUnlockedSettingsModules();
       },
       error: (error: any) => {
         console.error('Error fetching app data:', error);
@@ -624,9 +625,9 @@ export class MenuItemsService {
   private saveUnlockedModules() {
     const unlockedRoutes = this.menuItems.filter(m => !m.locked).map(m => m.label);
     localStorage.setItem('unlockedModules', JSON.stringify(unlockedRoutes));
-  }
+  } 
 
-  loadUnlockedModules() {
+ loadUnlockedModules() {
     const unlockedRoutes = this.appList.map((app : {name : string}) => app.name)
     // const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
     console.log(unlockedRoutes)
@@ -708,4 +709,60 @@ export class MenuItemsService {
   getUnlockedModulesObservable() {
     return this.unlockedModules$.asObservable();
   }
+
+  getMenuItems$(): Observable<MenuItem[]> {
+  if (this.isSuperUser()) {
+    return this.getUnlockedModulesObservable();
+  }
+
+  return this.getUnlockedModulesObservable().pipe(
+    map(modules => {
+      const allowedCodes = this.getUserPermissions();
+
+      const filterSubmenu = (submenu: any[]) => { return submenu.filter(item => allowedCodes.includes(item.code)); };
+
+      return modules
+        .map(menu => {
+          if (menu.code === 'dashboard') {
+            return menu;
+          }
+
+        
+
+          if (menu.submenu) {
+            const filteredSubmenu = filterSubmenu(menu.submenu);
+            if (filteredSubmenu.length > 0) {
+              return { ...menu, submenu: filteredSubmenu, locked: false };
+            } else {
+              return null;
+            }
+          }
+
+          return allowedCodes.includes(menu.code ?? "") ? menu : null;
+        })
+        .filter(Boolean) as MenuItem[];
+    })
+  );
+}
+
+
+
+  getUserPermissions(): string[] {
+  const user = JSON.parse(sessionStorage.getItem('userApplicationRole') || '{}');
+  if (!user?.appRole?.appRolePermissionList) return [];
+
+  console.log(user.appRole.appRolePermissionList
+    .filter((perm: any) => perm.canView || perm.superuser)
+    .map((perm: any) => perm.appRegister.appCode))
+
+  return user.appRole.appRolePermissionList
+    .filter((perm: any) => perm.canView || perm.superuser)
+    .map((perm: any) => perm.appRegister.appCode);  
+}
+
+isSuperUser(): boolean {
+  const roles = sessionStorage.getItem("role");
+  return roles?.includes("ROLE_ADMIN") ?? false;
+}
+
 }

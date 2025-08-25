@@ -222,22 +222,17 @@ export class UserRegComponent {
                     this.messageService.add({ severity: 'success', summary: 'Authentication Failed', detail: 'Registered successfully.', key: 'tl', life: 3000  });
                       const dashboardLink = this.navigationLink.getLink('dashboardLink');
                       this.router.navigate([dashboardLink]);
-
-                  
                   }
               },
               (error) => {
                 if (error.toString() == "500") {
                     this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Check form details and try again.', key: 'tl', life: 3000  });
-          
                   } 
                   if (error.toString() == "404") {
                     this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Error, try again.', key: 'tl', life: 3000  });
-               
                   }
                   else if (error.toString() == "0") {
                       this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.', key: 'tl', life: 3000  });
-                
                   }
                
               }

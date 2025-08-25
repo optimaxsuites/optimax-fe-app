@@ -67,7 +67,7 @@ newUser: user ={
   accessCode: '',
 }
 selectedModule: string = ''; 
-selectedRole: string[] = [];
+selectedRole: any = {};
 roles: any[] = []
 
 constructor(private confirmationService: ConfirmationService, private messageService: MessageService, private authenticationService: AuthenticationService,     private router: Router,
@@ -94,7 +94,7 @@ fetchUsers(){
       this.users = data.map((user: { id: number; }) => ({
       ...user,
       appRoles$: this.authenticationService.getUserApplicationRole(user.id).pipe(
-        map(((roleObj: any) => roleObj?.name ?? ''))
+        map(((roleObj: any) => roleObj?.appRole.name ?? ''))
       )
     }));
 
@@ -166,15 +166,14 @@ submitUser() {
   this.authenticationService.userRegistration(signupDetails).subscribe({
     next: (data) => {
       // Prepare requests for each role
-      const roleRequests = this.selectedRole.map((role: any) =>
-        this.authenticationService.userApplicationRole({
+      const roleRequest = {
           userId: data.id,
-          appRoleId: role.id
-        })
-      );
+          appRoleId: this.selectedRole?.id
+        }
+      
 
       // Run all role requests in parallel and wait for completion
-      forkJoin(roleRequests).subscribe({
+      this.authenticationService.userApplicationRole(roleRequest).subscribe({
         next: () => {
           if (this.codeAuthType) {
             this.authenticationService.codeActivation(data.ecode, true).subscribe({
@@ -240,6 +239,43 @@ submitUser() {
       }
     }
   });
+}
+
+assignRole(user: any, event: any){
+    const roleRequest = {
+          userId: user.id,
+          appRoleId: this.selectedRole?.id
+    }
+
+    // this.authenticationService.getUserApplicationRole(user.id).subscribe({
+    //   next: (response) => {
+        
+    //   },
+    //   error: (error) => {
+    //     console.error("Error fetching user application role:", error);
+    //   }
+    // })
+
+    this.authenticationService.userApplicationRole(roleRequest).subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Role assigned successfully!'
+          });
+          this.editCompensation(user, event)
+        },
+        error: (err) => {
+          console.error(err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to assign role, try again later!'
+          });
+        }
+      })
+
+
 }
 
 

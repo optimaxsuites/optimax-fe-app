@@ -115,20 +115,23 @@ async posLoginAction(): Promise<void> {
   this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
   this.loggedIn = false;
   } else {
-  const registrationComplete = await this.checkUserReg();
-  console.log('Registration complete:', registrationComplete)
-
-  if (registrationComplete) {
-   console.log('routing...')
-   const dashboardLink = this.navigationLink.getLink('dashboardLink');
-   console.log(dashboardLink)
-
-
+  // const registrationComplete = await this.checkUserReg();
+  // console.log('Registration complete:', registrationComplete)
+  const dashboardLink = this.navigationLink.getLink('dashboardLink');
    this.router.navigate([dashboardLink]);
-  } else {
-   const registrationLink = this.navigationLink.getLink('userRegistrationLink');
-   this.router.navigate([registrationLink]);
-  }
+
+
+  // if (registrationComplete) {
+  //  console.log('routing...')
+  //  const dashboardLink = this.navigationLink.getLink('dashboardLink');
+  //  console.log(dashboardLink)
+
+
+  //  this.router.navigate([dashboardLink]);
+  // } else {
+  //  const registrationLink = this.navigationLink.getLink('userRegistrationLink');
+  //  this.router.navigate([registrationLink]);
+  // }
   this.loggedIn = true;
   }
  } catch (error) {
@@ -283,10 +286,27 @@ async posLoginAction(): Promise<void> {
      this.authenticationService.getUserApplicationRole(data.id).subscribe({
       next: (response) => {
         console.log("User application role:", response);
-        sessionStorage.setItem("userApplicationRole", JSON.stringify(response));
+        // sessionStorage.setItem("userApplicationRole", JSON.stringify(response));
+        if (Array.isArray(data.roles) && data.roles.includes("ROLE_ADMIN")) {
+        console.log("Super user detected");
+        sessionStorage.setItem(
+          "userApplicationRole",
+          JSON.stringify(response)
+        );
+      } else {
+        sessionStorage.setItem(
+          "userApplicationRole",
+          JSON.stringify(response)
+        );
+      }
       },
       error: (error) => {
         console.error("Error fetching user application role:", error);
+         const storedRole = sessionStorage.getItem("userApplicationRole");
+          if (storedRole) {
+            console.log("Removing invalid userApplicationRole from sessionStorage");
+            sessionStorage.removeItem("userApplicationRole");
+          }
       }
     })
   }
