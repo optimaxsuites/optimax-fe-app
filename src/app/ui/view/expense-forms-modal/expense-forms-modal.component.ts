@@ -25,16 +25,12 @@ throw new Error('Method not implemented.');
 
   productData: any = {};
   categories: { name: string }[] = [
-    { name: 'Travel' },
-    { name: 'Food' },
-    { name: 'Accommodation' },
-    { name: 'Entertainment' },
-    {name: 'Transportation' },
-    { name: 'Utilities' },
-    { name: 'Insurance' },
-    { name: 'Healthcare' },
-    { name: 'Office Supplies' },
-    { name: 'Other' },
+     { name: 'Administraitve' },
+     {name: 'Cost of Goods Sold' },
+     { name: 'Employee-Related' },
+     { name: 'Operating Expenses' },
+     { name: 'Sales and Marketing' },
+     { name: 'Others' },
   ];
  
 
@@ -99,14 +95,14 @@ throw new Error('Method not implemented.');
   }
 
   
-  onAmountInput(event: any): void {
-    const input = event.target.value;
-    if (input < 0) {
-      this.expenseSummary.amount = 0; 
-    } else {
-      this.expenseSummary.amount = input;
-    }
-  }
+  // onAmountInput(event: any): void {
+  //   const input = event.target.value;
+  //   if (input < 0) {
+  //     this.expenseSummary.amount = 0; 
+  //   } else {
+  //     this.expenseSummary.amount = input;
+  //   }
+  // }
 
   
   onDragOver(event: DragEvent): void {
@@ -138,11 +134,11 @@ throw new Error('Method not implemented.');
   }
 
   cancelExpenses() {
-    this.router.navigate(['/admin/expenses']);
+    this.router.navigate(['/expense/:uuid']);
   }
 
   goBack(){
-    this.router.navigate(['/admin/expenses']);
+    this.router.navigate(['/expense/:uuid']);
   }
     
   
@@ -193,6 +189,7 @@ throw new Error('Method not implemented.');
       signature: this.signatureUrl, 
     };
 
+    newExpense.amount = Number(newExpense.amount);
     // if (this.expenseSummary.id) {
     //   this.expenseService.updateExpense(newExpense);
     // } else {
@@ -251,4 +248,17 @@ this.messageService.add({
     // If using a form reference, you could reset it here (optional if using ngForm)
     // this.expenseForm.reset(); // This would reset if you are using a template-driven form
   }
+
+formatAmount(value: number | string | null): string {
+
+  const n = Number(value);
+  return !isNaN(n) && value !== null ? n.toLocaleString() : '';
+}
+
+updateAmount(event: any): void {
+  const raw = (event.target.value || '').toString().replace(/,/g, '');
+  const num = Number(raw);
+  this.expenseSummary.amount = !isNaN(num) ? num : null;
+}
+
 }

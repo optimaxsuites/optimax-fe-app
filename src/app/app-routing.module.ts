@@ -12,27 +12,33 @@ import { ApprovalReportsComponent } from './ui/view/approval-reports/approval-re
 
 
 const routes: Routes = [
-  {
-    path: 'admin/expenses',
-    component: ExpensesComponent,
+  //  { path: ':uuid'},
+  // {
+  //   path: 'expenses',
+  //   component: ExpensesComponent,
+  // },
+   {
+    path: '',
+    redirectTo: 'expense/34567whr4567yhsdzr56',
+    pathMatch: 'full',
   },
-   { path: 'admin/expenses/:uuid',
+   { path: 'expense/:uuid',
         component: ExpensesComponent,
       },
       {
-        path: 'admin/expensesForm',
+        path: 'expensesForm',
         component: ExpenseFormsModalComponent,
       },
       {
-       path: 'admin/expenses/reimbursement/:uuid',
+       path: 'reimbursement/:uuid',
        component: ReimbursementComponent,
       },
        {
-        path: 'admin/expenses/advance/:uuid',
+        path: 'advance/:uuid',
         component: DisbursementComponent,
       },
       {
-        path: 'admin/expenses/report/:uuid',
+        path: 'report/:uuid',
         component: ApprovalReportsComponent,
       },
       {

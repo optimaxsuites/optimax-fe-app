@@ -33,7 +33,7 @@ export class ExpenseTableComponent implements OnInit {
   dateFrom: string | null = null;
   dateTo: string | null = null;
 
-  categories = ['Travel', 'Meals', 'Entertainment', 'Supplies', 'Equipment'];
+  categories = ['Administrative', 'Cost of Goods Sold', 'Employee-Related', 'Operating Expenses', 'Sales and Marketing', 'Others'];
   statuses = ['Pending', 'Approved', 'Rejected', 'Paid'];
 
   expense: any;
@@ -48,6 +48,7 @@ export class ExpenseTableComponent implements OnInit {
     this.selectedExpenses = event.value;
   }
 
+  
   deleteSelectedExpenses() {
     if (!this.selectedExpenses.length) return;
 
@@ -239,7 +240,7 @@ export class ExpenseTableComponent implements OnInit {
 
   navigateToForm(): void {
     console.log('Navigating to form');
-    this.router.navigate(['/admin/expensesForm']);
+    this.router.navigate(['/expensesForm']);
   }
 
   confirmDelete(expense: Expense): void {
@@ -334,4 +335,21 @@ export class ExpenseTableComponent implements OnInit {
   exportExpense(): void {
     
   }
+
+  getTotalAmount(): number {
+    return this.expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+  }
+
+  getApprovedCount(): number {
+    return this.expenses.filter(expense => expense.status === 'Approved').length;
+  }
+
+  getPendingCount(): number {
+    return this.expenses.filter(expense => expense.status === 'Pending').length;
+  }
+
+  getRejectedCount(): number {
+    return this.expenses.filter(expense => expense.status === 'Rejected').length;
+  }
 }
+
