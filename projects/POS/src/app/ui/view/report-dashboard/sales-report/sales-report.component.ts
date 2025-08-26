@@ -18,7 +18,8 @@ import {
   SalesReportDTO, 
   SalesReportBreakdownDTO, 
   TopProductDTO, 
-  BranchSalesDTO
+  BranchSalesDTO,
+  BranchDTO 
 } from '../../../models/interface';
 import { ReportService } from '../../../service/report.service';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
@@ -108,10 +109,12 @@ export class SalesReportComponent implements OnInit {
   reportForm!: FormGroup;
   
   // Filter properties
-  branches: {id: string, name: string}[] = [];
+  branches: BranchDTO[] = []; 
   paymentMethods = [
     { id: 'cash', name: 'Cash' },
     { id: 'card', name: 'Card' },
+    { id: 'transfer', name: 'Transfer' },
+    { id: 'wallet', name: 'Wallet' }
   ];
 
   constructor(
@@ -124,7 +127,7 @@ export class SalesReportComponent implements OnInit {
 
   ngOnInit(): void {
     this.setDefaultDateRange();
-    this.loadSalesData();
+    this.loadBranches(); 
   }
 
   createForm(): void {
@@ -163,6 +166,21 @@ export class SalesReportComponent implements OnInit {
   toggleFilterForm(): void {
     this.isFilterFormOpen = !this.isFilterFormOpen;
   }
+  
+  loadBranches(): void {
+    this.reportService.getBranches().subscribe({
+      next: (branches) => {
+        this.branches = branches || [];
+        this.loadSalesData();
+      },
+      error: (err) => {
+        console.error('Error loading branches:', err);
+        this.branches = [];
+        this.loadSalesData();
+      }
+    });
+  }
+
 
   loadSalesData(): void {
     this.loading = true;
@@ -189,8 +207,6 @@ export class SalesReportComponent implements OnInit {
       next: (data) => {
         this.salesReport = data;
         
-        // Extract branches for filter dropdown
-        this.extractBranches();
         
         this.loading = false;
         this.updateCharts();
@@ -198,20 +214,6 @@ export class SalesReportComponent implements OnInit {
       error: (err) => {
         this.loading = false;
         console.error('Error loading sales data:', err);
-      }
-    });
-  }
-
-  extractBranches(): void {
-    if (!this.salesReport) return;
-
-    // Extract unique branches with IDs
-    this.branches = [];
-    const branchMap = new Map<number, string>();
-    this.salesReport.totalSalesPerBranch.forEach(item => {
-      if (!branchMap.has(item.branch.id)) {
-        branchMap.set(item.branch.id, item.branch.name);
-        this.branches.push({id: item.branch.id.toString(), name: item.branch.name});
       }
     });
   }
