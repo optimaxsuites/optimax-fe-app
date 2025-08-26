@@ -1,216 +1,30 @@
 import { Injectable } from '@angular/core';
-import { ApexAxisChartSeries, ApexChart, ApexXAxis, ApexYAxis, ApexDataLabels, ApexGrid, ApexStroke, ApexTooltip, ApexPlotOptions, ApexFill, ApexLegend, ApexResponsive } from 'ng-apexcharts';
-import { SalesReportDTO } from '../models/interface';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-
-export interface SalesReportRequestDTO {
-    startDate: string;
-    endDate: string;
-    branchIds?: number[];
-    cashierIds?: number[];
-    paymentMethodIds?: number[];
-    categoryIds?: number[]; 
-    groupBy?: 'branch' | 'product' | 'category' | '';
-}
-
-export interface InventoryReportRequestDTO {
-    branchIds?: number[];
-    categoryIds?: number[];
-    includeLowStock?: boolean;
-}
-
-export interface InventoryProductDTO {
-    id: number;
-    name: string;
-    sku: string;
-    price: number;
-    costPrice: number;
-}
-
-export interface InventoryItemDTO {
-    product: InventoryProductDTO;
-    category: CategoryDTO;
-    currentStock: number;
-    soldQuantity: number;
-    branch: BranchDTO;
-    lowStockAlert: boolean;
-}
-
-export interface InventoryReportDTO {
-    inventory: InventoryItemDTO[];
-}
-export interface ProductPerformanceReportRequestDTO {
-    startDate: string;
-    endDate: string;
-    branchIds?: number[];
-    categoryIds?: number[];
-    groupBy?: 'product' | 'category' | 'variant';
-}
-export interface PromotionsReportRequestDTO {
-    startDate: Date;
-    endDate: Date;
-    promotionIds?: string[];
-}
-
-export interface DiscountDTO {
-    id: string;
-    name: string;
-    description: string;
-    discountType: 'PERCENTAGE' | 'FIXED_AMOUNT';
-    discountValue: number;
-    active: boolean;
-    code?: string;
-}
-
-export interface BranchDTO {
-    id: number;
-    name: string;
-    location: string;
-    manager: string;
-    contactInfo: string;
-}
-
-export interface BranchReportRequestDTO {
-    startDate: Date;
-    endDate: Date;
-    compareWithPrevious?: boolean;
-}
-
-export interface BranchPerformanceDTO {
-    branch: BranchDTO;
-    totalRevenue: number;
-    productMovement: number;
-    customerFootfall?: number;
-    previousRevenue?: number;
-    revenueGrowthPercent: number;
-}
-
-export interface BranchReportDTO {
-    branches: BranchPerformanceDTO[];
-}
-export interface ProductDTO {
-    id: string;
-    name: string;
-    category: string;
-    price: number;
-    discountedUnits: number;
-    totalDiscountAmount: number;
-}
-
-export interface PromotionPerformanceDTO {
-    promotion: DiscountDTO;
-    usageCount: number;
-    totalDiscountAmount: number;
-    affectedProducts: ProductDTO[];
-    startDate: Date;
-    endDate: Date;
-}
-
-export interface PromotionsReportDTO {
-    promotions: PromotionPerformanceDTO[];
-}
-
-
-export interface BranchDTO {
-    id: number;
-    name: string;
-    location: string;
-}
-
-export interface CategoryDTO {
-    id: number;
-    name: string;
-    description?: string;
-}
-
-export interface ProductDTO {
-    id: string;
-    name: string;
-    sku: string;
-    price: number;
-    branches?: ProductBranchDTO[];
-}
-export interface ProductBranchDTO {
-    id: number;
-    name: string;
-    location?: string;
-}
-
-export interface ProductStatsDTO {
-    product: ProductDTO;
-    quantitySold: number;
-    revenue: number;
-    percentageOfTotal: number;
-}
-
-export interface ProductPerformanceDTO {
-    product: ProductDTO;
-    category: CategoryDTO;
-    variant?: string;
-    quantitySold: number;
-    totalRevenue: number;
-    grossMargin: number;
-    branch?: BranchDTO;
-}
-
-export interface ProductPerformanceReportDTO {
-    totalProductsSold: number;
-    totalRevenue: number;
-    bestsellers: ProductStatsDTO[];
-    underperformers: ProductStatsDTO[];
-    productPerformanceBreakdown: ProductPerformanceDTO[];
-}
-export interface UserDTO {
-    id: number;
-    name: string;
-    email: string;
-    role: string;
-}
-
-export interface CashierPerformanceDTO {
-    cashier: UserDTO;
-    branch: BranchDTO;
-    ordersHandled: number;
-    revenueGenerated: number;
-    refunds: number;
-    discountsGiven: number;
-}
-
-export interface CashierReportDTO {
-    cashiers: CashierPerformanceDTO[];
-}
-
-export interface CashierReportRequestDTO {
-    startDate: string;
-    endDate: string;
-    branchIds?: number[];
-    shift?: string;
-}
-
-// New DTO for Payment Methods
-export interface PaymentMethodDTO {
-    id: string;
-    name: string;
-}
-
-// Chart type definitions
-export type ChartOptions = {
-    series: ApexAxisChartSeries;
-    chart: ApexChart;
-    xaxis: ApexXAxis;
-    yaxis: ApexYAxis | ApexYAxis[];
-    dataLabels: ApexDataLabels;
-    grid: ApexGrid;
-    stroke: ApexStroke;
-    tooltip: ApexTooltip;
-    plotOptions: ApexPlotOptions;
-    fill: ApexFill;
-    legend: ApexLegend;
-    responsive: ApexResponsive[];
-    colors: string[];
-};
+import {
+    BranchDTO,
+    SalesReportDTO,
+    CategoryDTO,
+    ProductPerformanceReportDTO,
+    PromotionsReportDTO,
+    BranchReportDTO,
+    InventoryReportDTO,
+    ProductPerformanceReportRequestDTO,
+    PromotionsReportRequestDTO,
+    BranchReportRequestDTO,
+    InventoryReportRequestDTO,
+    CashierReportDTO,
+    CashierReportRequestDTO,
+    PaymentMethodDTO,
+    ProductStatsDTO,
+    ProductPerformanceDTO,
+    ProductDTO,
+    PromotionPerformanceDTO,
+    BranchPerformanceDTO,
+    InventoryProductDTO,
+    InventoryItemDTO
+} from '../models/interface';
 
 @Injectable({
     providedIn: 'root'
@@ -218,7 +32,16 @@ export type ChartOptions = {
 export class ReportService {
     private baseUrl = 'https://be.optimaxsuites.com/x/api/v2/pos';
 
-    constructor(private http: HttpClient) {}
+    constructor(private http: HttpClient) { }
+
+    getBranches(): Observable<BranchDTO[]> {
+        return this.http.get<BranchDTO[]>(`${this.baseUrl}/branches`).pipe(
+            catchError(err => {
+                console.error('Error fetching branches:', err);
+                return throwError(() => err);
+            })
+        );
+    }
 
     getSalesPerformanceReport(payload: any): Observable<SalesReportDTO> {
         const formattedPayload = {
@@ -227,20 +50,20 @@ export class ReportService {
             branchIds: payload.branchIds || [],
             cashierIds: payload.cashierIds || [],
             paymentMethods: payload.paymentMethods || [],
-            categoryIds: payload.categoryIds || [], 
+            categoryIds: payload.categoryIds || [],
             groupBy: payload.groupBy || ""
         };
         return this.http.post<SalesReportDTO>(
             `${this.baseUrl}/salesreport/salesperformancereport`,
             formattedPayload).pipe(
-            catchError(err => {
-                console.error('Error fetching sales performance report:', err);
-                return throwError(() => err);
-            })
-        );
+                catchError(err => {
+                    console.error('Error fetching sales performance report:', err);
+                    return throwError(() => err);
+                })
+            );
     }
 
-    getProductPerformanceReport(payload: any): Observable<ProductPerformanceReportDTO> {
+    getProductPerformanceReport(payload: ProductPerformanceReportRequestDTO): Observable<ProductPerformanceReportDTO> {
         const formattedPayload = {
             startDate: new Date(payload.startDate).toISOString(),
             endDate: new Date(payload.endDate).toISOString(),
@@ -259,15 +82,7 @@ export class ReportService {
         );
     }
 
-    getBranches(): Observable<BranchDTO[]> {
-        return this.http.get<BranchDTO[]>(`${this.baseUrl}/branches`).pipe(
-            catchError(err => {
-                console.error('Error fetching branches:', err);
-                return throwError(() => err);
-            })
-        );
-    }
-    
+
     getPaymentMethods(): Observable<PaymentMethodDTO[]> {
         return this.http.get<PaymentMethodDTO[]>(`${this.baseUrl}/salesreport/paymentMethods`).pipe(
             catchError(err => {
@@ -317,6 +132,7 @@ export class ReportService {
             })
         );
     }
+
     getPromotionPerformanceReport(payload: PromotionsReportRequestDTO): Observable<PromotionsReportDTO> {
         const startDate = payload.startDate instanceof Date ? payload.startDate : new Date(payload.startDate);
         const endDate = payload.endDate instanceof Date ? payload.endDate : new Date(payload.endDate);
@@ -350,7 +166,8 @@ export class ReportService {
             })
         );
     }
-    getBranchPerformanceReport(payload: any): Observable<BranchReportDTO> {
+
+    getBranchPerformanceReport(payload: BranchReportRequestDTO): Observable<BranchReportDTO> {
         const formattedPayload = {
             startDate: payload.startDate,
             endDate: payload.endDate,
@@ -366,6 +183,7 @@ export class ReportService {
             })
         );
     }
+
     getInventoryReport(payload: InventoryReportRequestDTO): Observable<InventoryReportDTO> {
         const formattedPayload = {
             branchIds: payload.branchIds || [0],
@@ -380,7 +198,7 @@ export class ReportService {
             map(response => {
                 console.log('Service: Raw inventory response received:', response);
                 const normalizedResponse: InventoryReportDTO = {
-                    inventory: Array.isArray(response?.inventory) ? response.inventory.map(item => ({
+                    inventory: Array.isArray(response?.inventory) ? response.inventory.map((item: InventoryItemDTO) => ({
                         ...item,
                         product: {
                             ...item.product,

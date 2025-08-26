@@ -23,7 +23,8 @@ import {
   BranchDTO,
   ProductPerformanceReportRequestDTO,
   ProductPerformanceDTO,
-} from '../../../service/report.service';
+  ProductDTO, // Added for type safety
+} from '../../../models/interface'; // Corrected import path
 import { ReportService } from '../../../service/report.service';
 
 export type ChartOptions = {
@@ -402,9 +403,9 @@ export class ExpensesReportComponent implements OnInit, AfterViewInit {
 
     // Revenue Chart - Top Products
     const topProducts = [...breakdown]
-      .filter((p) => this.isProductPerformanceDTO(p))
+      .filter((p: ProductPerformanceDTO) => this.isProductPerformanceDTO(p))
       .sort(
-        (a, b) =>
+        (a: ProductPerformanceDTO, b: ProductPerformanceDTO) =>
           this.getSafeNumber(b?.totalRevenue) -
           this.getSafeNumber(a?.totalRevenue)
       )
@@ -447,7 +448,7 @@ export class ExpensesReportComponent implements OnInit, AfterViewInit {
     // Product Sales Chart - Bestsellers
     const validBestsellers = (this.report.bestsellers || [])
       .filter(
-        (p) => p?.product?.name && p?.quantitySold != null && p.quantitySold > 0
+        (p: ProductStatsDTO) => p?.product?.name && p?.quantitySold != null && p.quantitySold > 0
       )
       .slice(0, 5);
 
@@ -456,8 +457,8 @@ export class ExpensesReportComponent implements OnInit, AfterViewInit {
     if (validBestsellers.length > 0) {
       this.productSalesChartOptions = {
         ...this.productSalesChartOptions,
-        series: validBestsellers.map((p) => this.getSafeNumber(p.quantitySold)),
-        labels: validBestsellers.map((p) => p.product.name),
+        series: validBestsellers.map((p: ProductStatsDTO) => this.getSafeNumber(p.quantitySold)),
+        labels: validBestsellers.map((p: ProductStatsDTO) => p.product.name),
       };
     } else {
       this.productSalesChartOptions = {
@@ -481,13 +482,13 @@ export class ExpensesReportComponent implements OnInit, AfterViewInit {
     let chartData: MappedBreakdownStats[] = [];
 
     if (groupBy === 'category') {
-      chartData = breakdown.map((c) => ({
+      chartData = breakdown.map((c: ProductPerformanceDTO) => ({
         name: c.category?.name || 'Unknown Category',
         revenue: this.getSafeNumber(c.totalRevenue),
         avgMargin: this.getSafeNumber(c.grossMargin) * 100,
       }));
     } else if (groupBy === 'variant') {
-      const variantData = breakdown.reduce((acc, curr) => {
+      const variantData = breakdown.reduce((acc, curr: ProductPerformanceDTO) => {
         if (!curr?.variant) return acc;
 
         const variantName = curr.variant;
@@ -505,13 +506,13 @@ export class ExpensesReportComponent implements OnInit, AfterViewInit {
         return acc;
       }, {} as Record<string, { name: string; revenue: number; marginSum: number; count: number }>);
 
-      chartData = Object.values(variantData).map((v) => ({
+      chartData = Object.values(variantData).map((v: { name: string; revenue: number; marginSum: number; count: number }) => ({
         name: v.name,
         revenue: v.revenue,
         avgMargin: v.count > 0 ? (v.marginSum / v.count) * 100 : 0,
       }));
     } else {
-      const categoryData = breakdown.reduce((acc, curr) => {
+      const categoryData = breakdown.reduce((acc, curr: ProductPerformanceDTO) => {
         if (!curr?.category?.id || !curr?.category?.name) return acc;
         const categoryId = curr.category.id;
         const categoryName = curr.category.name;
@@ -532,7 +533,7 @@ export class ExpensesReportComponent implements OnInit, AfterViewInit {
 
       chartData = Object.values(categoryData)
         .filter((c) => c !== undefined && c !== null)
-        .map((c) => ({
+        .map((c: { name: string; revenue: number; marginSum: number; count: number }) => ({
           name: c.name || 'Unknown Category',
           revenue: c.revenue || 0,
           avgMargin: c.count > 0 ? (c.marginSum / c.count) * 100 : 0,
@@ -599,13 +600,13 @@ export class ExpensesReportComponent implements OnInit, AfterViewInit {
 
   normalizeBreakdown(breakdown: any): ProductPerformanceDTO[] {
     if (Array.isArray(breakdown)) {
-      return breakdown.filter((item) => this.isProductPerformanceDTO(item));
+      return breakdown.filter((item: any) => this.isProductPerformanceDTO(item));
     }
     if (this.isProductPerformanceDTO(breakdown)) {
       return [breakdown];
     }
     if (breakdown && typeof breakdown === 'object') {
-      return Object.values(breakdown).filter((item) =>
+      return Object.values(breakdown).filter((item: any) =>
         this.isProductPerformanceDTO(item)
       ) as ProductPerformanceDTO[];
     }
