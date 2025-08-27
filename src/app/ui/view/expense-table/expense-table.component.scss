@@ -377,14 +377,14 @@ h1{
   justify-content: center;
   padding: 1rem;
   border-radius: 0.5rem;
-  box-shadow: 0, 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0, 1px 3px rgba(0,0,0,0.1);
   cursor: pointer;
   transition: transform 02s, box-shadow 0.2s;
 }
 
 .summary-card:hover {
   transform: scale(1.05);
-  box-shadow: 0, 0, 0, 0.15;
+  box-shadow: 0,0,0,0.15;
 }
 
 .expense-approval-container {
@@ -396,7 +396,7 @@ h1{
   margin: 0 auto;
 
   .title {
-    font-size: 1.8rem;
+    font-size: 2.3rem;
     font-weight: 700;
     color: #1f2937;
     border-bottom: 2px solid #f3f4f6;
@@ -410,36 +410,126 @@ h1{
   display: flex;
 }
 
-// .expense-approval-container .detail-row {
-//   display: flex;
-//   justify-content: space-between;
-//   align-items: center;
-//   padding: 0.75rem 0;
-//   border-bottom: 1px solid #f3f4f6;
+.expense-approval-container .detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
 
-//   .detail-label {
-//     font-size: 1.1rem;
-//     font-weight: 500;
-//     color: #4b5563;
-//   }
+  .detail-label {
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: #4b5563;
+  }
 
-//   .detail-value {
-//     font-size: 1.1rem;
-//     font-weight: 600;
-//     color: #111827;
-//   }
-// }
+  .detail-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #111827;
+  }
+}
 
-// @media (max-width: 600px) {
-//   .expense-approval-container {
-//     padding: 1.5rem;
-//   }
-//   .expense-approval-container .detail-row {
-//     flex-direction: column;
-//     align-items: flex-start;
-//     gap: 0.5rem;
-//   }
-// }
+@media (max-width: 600px) {
+  .expense-approval-container {
+    padding: 1.5rem;
+  }
+  .expense-approval-container .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
 
 
+.side-modal-content {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  padding: 2rem;
+  max-width: 600px;
+  margin: auto;
+}
 
+.side-modal-content h1 {
+  font-size: 2rem; 
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #f3f4f6;
+  padding-bottom: 0.5rem;
+}
+
+.side-modal-content label {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.3rem;
+  display: block;
+}
+
+.side-modal-content input,
+.side-modal-content textarea {
+  font-size: 1.3rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.side-modal-content input:focus,
+.side-modal-content textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.1);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.dropdown-container {
+  position: relative; /* Makes sure the dropdown is positioned relative to this container */
+}
+
+/* Action icon */
+.action-icon {
+  cursor: pointer; /* Make the icon clickable */
+}
+
+/* Dropdown content */
+.dropdown-content {
+  display: none; /* Hide dropdown by default */
+  position: absolute; /* Position it relative to the parent (dropdown-container) */
+  top: 100%; /* Position it just below the action icon */
+  right: 0;
+  background-color: white;
+  border: 1px solid #ddd;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1000; /* Ensure it's above the table */
+  min-width: 150px; /* Adjust width as needed */
+  overflow: visible;
+}
+
+/* Show dropdown content on hover */
+.dropdown-container:hover .dropdown-content {
+  display: block; /* Make it visible on hover */
+}
+
+/* Style for dropdown links */
+.dropdown-content a {
+  display: block;
+  padding: 10px 15px;
+  text-decoration: none;
+  color: black;
+  font-size: 14px;
+}
+
+/* Style for links when hovered */
+.dropdown-content a:hover {
+  background-color: #f1f1f1;
+}

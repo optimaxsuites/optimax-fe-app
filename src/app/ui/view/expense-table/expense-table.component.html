@@ -33,7 +33,7 @@
         </button>
 
         <!-- Request Button with Badge -->
-        <div class="relative ml-3">
+        <!-- <div class="relative ml-3">
           <button class="btn btn-outline-success flex items-center gap-2" (click)="navigateToexpense()">
             <span class="material-icons btn-icon">request_page</span>
             Request
@@ -45,7 +45,7 @@
               {{ getExpenseCount() }}
             
           </div>
-        </div>
+        </div> -->
       </div>
     </div>
   </div>
@@ -117,8 +117,8 @@
           <!-- Date Range Filter -->
           <div class="filter-group">
             <label>Date Range:</label>
-            <select [(ngModel)]="selectDateRange" (change)="applyDateRange()">
-              <option value="">Date Range</option>
+            <select [(ngModel)]="dateRangeType" (change)="applyDateRange()">
+              <option value="">All Dates</option>
               <option value="today">Today</option>
               <option value="week">This Week</option>
               <option value="month">This Month</option>
@@ -143,7 +143,7 @@
           </div>
         </div>
 
-        <!-- Right: Delete Button -->
+        <!-- Right: Delete Button -->   
         <div class="filter-right">
           <button
             class="btn btn-danger"
@@ -182,6 +182,7 @@
               <th class="table-item">Amount</th>
               <th class="table-item">Status</th>
               <th class="table-item">Actions</th>
+              <th class="table-item">Decision</th>
             </tr>
           </ng-template>
 
@@ -195,7 +196,6 @@
               <td class="table-item">
                 <div
                   class="rounded-[50px] w-44 py-2 pl-4"
-                  [style.background-color]="generateRandomColor()"
                 >
                   {{ expense.category }}
                 </div>
@@ -220,6 +220,7 @@
                 >
                   close
                 </span>
+          
 
                 <span
                   class="status-text"
@@ -250,6 +251,19 @@
                   >cancel</span
                 >
               </td>
+
+               <td class="dropdown-container">
+            <span class="material-symbols-outlined action-icon">more_vert</span>
+            <div class="dropdown-content">
+              <a (click)="approve(expense)">
+                <span class="material-symbols-outlined">check_circle</span> Accept
+              </a>
+              <a (click)="reject(expense)">
+                <span class="material-symbols-outlined">cancel</span> Reject
+              </a>
+            </div>
+          </td>
+
             </tr>
           </ng-template>
 
@@ -278,29 +292,47 @@
 
 <!-- Edit Expense Modal -->
 <app-side-modal *ngIf="isModalOpen" (close)="closeModal()">
-  <h1 class="text-[22px] font-semibold mb-6 border-b pb-2">Edit Expense</h1>
+  <div class="side-modal-content">
+  <h1>Edit Expense</h1>
 
-  <form #editForm="ngForm" class="space-y-10">
+  <form #editForm="ngForm" class="space-y-6">
+   <div>
+      <label>Name:</label
+      >
+      <input
+        [(ngModel)]="selectedExpense.name"
+        name="name"
+      />
+    </div>
+
     <div>
-      <label class="block text-2xl font-medium text-gray-700 mb-1"
+      <label 
         >Merchant:</label
       >
       <input
         [(ngModel)]="selectedExpense.merchant"
         name="merchant"
-        class="w-full border text-2xl border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
     </div>
 
     <div>
-      <label class="block text-2xl font-medium text-gray-700 mb-1"
+      <label 
+        >Category:</label
+      >
+      <input
+        [(ngModel)]="selectedExpense.category"
+        name="category"
+      />
+    </div>
+
+    <div>
+      <label 
         >Amount:</label
       >
       <input
         [(ngModel)]="selectedExpense.amount"
         name="amount"
         type="number"
-        class="w-full border text-2xl border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
     </div>
 
@@ -308,57 +340,47 @@
 
 
     <div>
-      <label class="block font-medium text-2xl text-gray-700 mb-1"
+      <label 
         >Expense Date:</label
       >
       <input
         [(ngModel)]="selectedExpense.date"
         name="date"
         type="date"
-        class="w-full border text-2xl border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
     </div>
 
-    <div>
-      <label class="block text-2xl font-medium text-gray-700 mb-1"
-        >Category:</label
-      >
-      <input
-        [(ngModel)]="selectedExpense.category"
-        name="category"
-        class="w-full border text-2xl border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-    </div>
+    
 
     <div>
-      <label class="block text-2xl font-medium text-gray-700 mb-1"
-        >Comments:</label
+      <label 
+        >Decription:</label
       >
       <textarea
-        [(ngModel)]="selectedExpense.comment"
-        name="comment"
-        class="w-full border text-2xl border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        [(ngModel)]="selectedExpense.description"
+        name="description"
       ></textarea>
     </div>
 
     <!-- Save / Cancel buttons -->
-    <div class="flex justify-end space-x-4 mt-6">
+    <div class="modal-actions">
       <button
         type="button"
-        class="px-6 py-3 bg-blue-600 text-2xl text-white rounded-lg hover:bg-blue-700 transition"
+        class="btn btn-primary"
         (click)="saveEditedExpense()"
       >
         Save
       </button>
       <button
         type="button"
-        class="px-6 py-3 bg-gray-300 text-2xl text-gray-800 rounded-lg hover:bg-gray-400 transition"
+        class="btn btn-outline-success"
         (click)="closeModal()"
       >
         Cancel
       </button>
     </div>
   </form>
+  </div>
 </app-side-modal>
 
 <!-- Expense Approval Modal -->
@@ -371,6 +393,13 @@
     </h1>
 
     <div class="expense-details space-y-4">
+      <div class="detail-row flex justify-between items-center">
+        <label class="detail-label text-2xl text-gray-700">Name:</label>
+        <span class="detail-value text-2xl text-gray-900">{{
+          selectedExpense.name
+        }}</span>
+      </div>
+
       <!-- Merchant -->
       <div class="detail-row flex justify-between items-center">
         <label class="detail-label text-2xl text-gray-700">Merchant:</label>
@@ -379,9 +408,10 @@
         }}</span>
       </div>
 
+
       <!-- Amount -->
       <div class="detail-row flex justify-between items-center">
-        <label class="detail-label text-2xl text-gray-700">Amount:</label>
+        <label class="detail-label text-2xl text-gray-700">Amount(NGN):</label>
         <span class="detail-value text-2xl text-gray-900">{{
           selectedExpense.amount
         }}</span>
@@ -400,6 +430,13 @@
         <label class="detail-label text-2xl text-gray-700">Category:</label>
         <span class="detail-value text-2xl text-gray-900">{{
           selectedExpense.category
+        }}</span>
+      </div>
+
+      <div class="detail-row flex justify-between items-center">
+        <label class="detail-label text-2xl text-gray-700">Description:</label>
+        <span class="detail-value text-2xl text-gray-900">{{
+          selectedExpense.description
         }}</span>
       </div>
 
@@ -433,13 +470,8 @@
         </span>
       </div>
 
-      <!-- Comments -->
-      <div class="detail-row flex justify-between items-center">
-        <label class="detail-label text-2xl text-gray-700">Comments:</label>
-        <span class="detail-value text-2xl text-gray-900">{{
-          selectedExpense.comment
-        }}</span>
-      </div>
+      
+      
     </div>
   </div>
 </app-side-modal>

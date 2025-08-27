@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ExpenseService, Expense } from '../../service/expense.service';
-import { debounceTime, Subject } from 'rxjs';
+import { debounceTime, from, Subject } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
 
 @Component({
@@ -39,6 +39,7 @@ export class ExpenseTableComponent implements OnInit {
   expense: any;
   expenseId: string | null = null;
   selectedExpenses: any[] = [];
+  requests: any;
 
   onRowSelect(event: any) {
     this.selectedExpenses = event.value;
@@ -143,25 +144,86 @@ export class ExpenseTableComponent implements OnInit {
         return false;
       }
 
+      if (this.dateFrom && this.dateTo) {
+        const fromDate = new Date(this.dateFrom);
+        const toDate = new Date(this.dateTo + 'T23:59:59');
+
+        const expenseDate = new Date(expense.date || expense.eventDate);
+
+        if (expenseDate < fromDate || expenseDate > toDate) {
+          return false;
+        }
+      }
+
       return true;
     });
   }
 
   
   applyDateRange(): void {
-    if (this.dateFrom && this.dateTo) {
-      const fromDate = new Date(this.dateFrom);
-      const toDate = new Date(this.dateTo);
-
-      this.filteredExpenses = this.expenses.filter(expense => {
-        const expenseDate = new Date(expense.date)
-          ;
-        return expenseDate >= fromDate && expenseDate <= toDate;
-      });
-    } else {
-      this.filteredExpenses = [...this.expenses];
+    if (!this.dateRangeType) {
+      this.applyFilters();
+      return;
     }
-    this.applyFilters(); 
+
+    const today = new Date();
+    let fromDate = new Date();
+    let toDate = new Date();
+
+    switch (this.dateRangeType) {
+      case 'today':
+        fromDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        toDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+        break;
+
+      case 'week':
+          const dayOfWeek = today.getDay();
+          const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+          fromDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysToMonday);
+          toDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+          break;
+
+      case 'month':
+        fromDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 1);
+        toDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 0, 23, 59, 59);
+        break;
+        
+      case 'custom':
+        if (!this.dateFrom || !this.dateTo) {
+          this.applyFilters();
+          return;
+        }
+
+        fromDate = new Date(this.dateFrom);
+        toDate = new Date(this.dateTo + 'T23:59:59');
+        break;
+
+      default:
+        this.applyFilters();
+        return;
+
+    }
+
+
+    if (this.dateRangeType !== 'custom') {
+      this.dateFrom = fromDate.toISOString().split('T')[0];
+      this.dateTo = toDate.toISOString().split('T')[0];
+    }
+
+    this.applyFilters();
+    // if (this.dateFrom && this.dateTo) {
+    //   const fromDate = new Date(this.dateFrom);
+    //   const toDate = new Date(this.dateTo);
+
+    //   this.filteredExpenses = this.expenses.filter(expense => {
+    //     const expenseDate = new Date(expense.date)
+    //       ;
+    //     return expenseDate >= fromDate && expenseDate <= toDate;
+    //   });
+    // } else {
+    //   this.filteredExpenses = [...this.expenses];
+    // }
+    // this.applyFilters(); 
   }
 
   clearSearch(): void {
@@ -192,29 +254,34 @@ export class ExpenseTableComponent implements OnInit {
 
   selectDateRange(range: string): void {
     this.dateRangeType = range;
+    this.dropdownOpen.dateRange = false;
+
     if (range !== 'custom') {
-      const today = new Date();
-      let fromDate = new Date();
-      switch (range) {
-        case 'today':
-          break;
-        case 'week':
-          fromDate.setDate(today.getDate() - 7);
-          break;
-        case 'month':
-          fromDate.setMonth(today.getMonth() - 1);
-          break;
+      this.dateFrom = null;
+      this.dateTo = null;
       }
-      this.dateFrom = fromDate.toISOString().split('T')[0];
-      this.dateTo = today.toISOString().split('T')[0];
+
+      else if (range === 'custom'){
+        this.dateRangeType = null;
+        this.dateFrom = null;
+        this.dateTo = null;
+
+      }
+
       this.applyDateRange();
-      this.dropdownOpen.dateRange = false;
     }
-  }
+  
 
   applyCustomDateRange(): void {
     if (this.dateFrom && this.dateTo) {
-      this.applyDateRange();
+
+      if (new Date(this.dateFrom) > new Date(this.dateTo)) {
+        const temp = this.dateFrom;
+        this.dateFrom = this.dateTo;
+        this.dateTo = temp;
+      }
+
+      this.applyFilters();
     }
   }
 
@@ -351,5 +418,47 @@ export class ExpenseTableComponent implements OnInit {
   getRejectedCount(): number {
     return this.expenses.filter(expense => expense.status === 'Rejected').length;
   }
+
+
+  approve(request: any): void {
+    request.status = 'Approved';
+    request.showActions = false;
+  
+    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+    const updatedExpenses = expenses.map((item: any) =>
+      item.id === request.id ? { ...item, status: 'Approved' } : item
+    );
+  
+    localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+    this.requests = updatedExpenses;
+  
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Request Approved',  
+      detail: `Expense for ${request.merchant} has been approved successfully.`
+    });
+  }
+  reject(request: any): void {
+    request.status = 'Rejected';
+    request.showActions = false;
+  
+    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+    const updatedExpenses = expenses.map((item: any) =>
+      item.id === request.id ? { ...item, status: 'Rejected' } : item
+    );
+  
+    localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+    this.requests = updatedExpenses;
+  
+    this.messageService.add({
+      severity: 'error', 
+      summary: 'Request Rejected',
+      detail: `Expense for ${request.merchant} has been rejected.`
+    });
+  }
+
+
+
+
 }
 
