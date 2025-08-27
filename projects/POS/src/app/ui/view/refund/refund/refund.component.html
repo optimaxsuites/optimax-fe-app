@@ -153,12 +153,14 @@
                   </a>
                   <a 
                     class="flex items-center px-4 py-2  text-green-700 hover:bg-gray-100 cursor-pointer" 
+                    *ngIf="selectedRefund?.refundStatus === 'Processing' && refundPermission.canEdit"
                     (click)="acceptRefund(refund)">
                     <i class="pi pi-check-circle mr-2 text-green-500"></i>
                     Accept Refund
                   </a>
                   <a 
                     class="flex items-center px-4 py-2  text-red-700 hover:bg-gray-100 cursor-pointer" 
+                    *ngIf="selectedRefund?.refundStatus === 'Processing' && refundPermission.canEdit"
                     (click)="rejectRefund(refund)">
                     <i class="pi pi-times-circle mr-2 text-red-500"></i>
                     Reject Refund
@@ -265,7 +267,7 @@
 
       <!-- Action Buttons -->
       <div class="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
-        <ng-container *ngIf="selectedRefund?.refundStatus === 'Processing'">
+        <ng-container *ngIf="selectedRefund?.refundStatus === 'Processing' && refundPermission.canEdit">
           <button
             class="inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             (click)="acceptRefund(selectedRefund)"

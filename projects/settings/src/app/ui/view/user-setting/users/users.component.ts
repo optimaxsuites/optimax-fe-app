@@ -95,6 +95,9 @@ fetchUsers(){
       ...user,
       appRoles$: this.authenticationService.getUserApplicationRole(user.id).pipe(
         map(((roleObj: any) => roleObj?.appRole.name ?? ''))
+      ),
+      appRolesId$: this.authenticationService.getUserApplicationRole(user.id).pipe(
+        map(((roleObj: any) => roleObj?.appRole.id ?? ''))
       )
     }));
 
@@ -241,42 +244,35 @@ submitUser() {
   });
 }
 
-assignRole(user: any, event: any){
+assignRole(user: any, event: any) {
+  user.appRolesId$.subscribe((appRoleId: number) => {
     const roleRequest = {
-          userId: user.id,
-          appRoleId: this.selectedRole?.id
-    }
-
-    // this.authenticationService.getUserApplicationRole(user.id).subscribe({
-    //   next: (response) => {
-        
-    //   },
-    //   error: (error) => {
-    //     console.error("Error fetching user application role:", error);
-    //   }
-    // })
+      id: appRoleId,
+      userId: user.id,
+      appRoleId: this.selectedRole?.id
+    };
 
     this.authenticationService.userApplicationRole(roleRequest).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Success',
-            detail: 'Role assigned successfully!'
-          });
-          this.editCompensation(user, event)
-        },
-        error: (err) => {
-          console.error(err);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Failed to assign role, try again later!'
-          });
-        }
-      })
-
-
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Role assigned successfully!'
+        });
+        this.editCompensation(user, event);
+      },
+      error: (err) => {
+        console.error(err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to assign role, try again later!'
+        });
+      }
+    });
+  });
 }
+
 
 
     updateUser(user: any) {

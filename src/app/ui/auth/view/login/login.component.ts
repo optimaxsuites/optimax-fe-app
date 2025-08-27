@@ -15,6 +15,7 @@ import { v4 as uuidV4 } from 'uuid';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 import { Message } from 'primeng/api';
 import { environment } from 'src/environments/environment.prod';
+import { hasOnlyCheckoutPermission } from 'projects/POS/src/app/shared/pipes/helper';
 
 
 /** Error when invalid control is dirty, touched, or submitted. */
@@ -64,6 +65,8 @@ export class LoginComponent implements OnInit {
   emailFormControl = new FormControl('', [Validators.required, Validators.email]);
   passwordFormControl = new FormControl('', [Validators.required]);
   matcher = new MyErrorStateMatcher();
+
+  
 
   constructor(
     private authenticationService: AuthenticationService,
@@ -191,14 +194,14 @@ async posLoginAction(): Promise<void> {
     } else {
       this.loadInitParam(data);
 
-      const registrationComplete = await this.checkUserReg();
-      if (registrationComplete) {
-        const dashboardLink = this.navigationLink.getLink('dashboardLink');
-        this.router.navigate([dashboardLink]);
-      } else {
-        const registrationLink = this.navigationLink.getLink('userRegistrationLink');
-        this.router.navigate([registrationLink]);
-      }
+      // const registrationComplete = await this.checkUserReg();
+      // if (registrationComplete) {
+      //   const dashboardLink = this.navigationLink.getLink('dashboardLink');
+      //   this.router.navigate([dashboardLink]);
+      // } else {
+      //   const registrationLink = this.navigationLink.getLink('userRegistrationLink');
+      //   this.router.navigate([registrationLink]);
+      // }
       this.loggedIn = true;
     }
   }
@@ -209,10 +212,6 @@ async posLoginAction(): Promise<void> {
       this.loggedIn = false;
     } else {
       this.loadInitParam(data);
-      const dashboardLink = this.navigationLink.getLink('dashboardLink');
-
-      this.router.navigate([dashboardLink]);
-
 
       // const registrationComplete = await this.checkUserReg();
       // if (registrationComplete) {
@@ -299,6 +298,16 @@ async posLoginAction(): Promise<void> {
           JSON.stringify(response)
         );
       }
+
+      console.log(hasOnlyCheckoutPermission())
+      if (hasOnlyCheckoutPermission()) {
+      
+        const checkoutLink = this.navigationLink.getLink('checkoutLink');
+        this.router.navigate([checkoutLink]); 
+      } else {
+        const dashboardLink = this.navigationLink.getLink('dashboardLink');
+        this.router.navigate([dashboardLink]);
+      }
       },
       error: (error) => {
         console.error("Error fetching user application role:", error);
@@ -309,6 +318,8 @@ async posLoginAction(): Promise<void> {
           }
       }
     })
+
+     
   }
 
   async getUserRegInfoData(data: any) {

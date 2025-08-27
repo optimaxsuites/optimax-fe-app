@@ -83,10 +83,10 @@
             Product Inventory
           </h2>
           <app-button
+          *ngIf="tableSection && inventoryPermission.canCreate"
             text="Add Inventory"
             icon="pi pi-plus"
             class="btn-navigate text-2xl font-extrabold"
-            *ngIf="tableSection"
             (click)="openEditInventory(null, 'parent')"
             
           ></app-button>
@@ -315,6 +315,7 @@
             </li>
             <li
               class="table-item-panel"
+              *ngIf="inventoryPermission.canCreate"
               (click)="openEditInventory(product, 'child')"
             >
               <i class="pi pi-pen-to-square table-item me-2"></i>

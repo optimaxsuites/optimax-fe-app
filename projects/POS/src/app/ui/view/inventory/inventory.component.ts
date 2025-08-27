@@ -31,6 +31,7 @@ import { MetadataService } from '../../service/metadata.service';
 import { DOCUMENT } from '@angular/common';
 import { EditInventoryComponent } from './edit-inventory/edit-inventory.component';
 import { BehaviorSubject } from 'rxjs';
+import { getUserPermissionsFor, isSuperUser } from '../../../shared/pipes/helper';
 
 
 @Component({
@@ -100,6 +101,12 @@ export class InventoryComponent implements OnInit, OnDestroy {
   showInformation = false;
   selectedProductId: number | null = null;
   private originalBodyOverflow: string = '';
+  inventoryPermission = {
+  canView: false,
+  canEdit: false,
+  canDelete: false,
+  canCreate: false,
+  };  
 
   constructor(
     private messageService: MessageService,
@@ -139,6 +146,18 @@ export class InventoryComponent implements OnInit, OnDestroy {
   
   // Load inventories after branch is set
   this.getInventories();
+
+  if (isSuperUser()) {
+        this.inventoryPermission = {
+          canView: true,
+          canEdit: true,
+          canDelete: true,
+          canCreate: true,
+        };
+      }else {
+        this.inventoryPermission = getUserPermissionsFor('POS_INV');
+      }
+  console.log(Object(this.inventoryPermission));
 }
 onInventoryUpdated(ev: { inventoryId: number; quantity: number; status: string }) {
    console.log('parent received updated', ev);

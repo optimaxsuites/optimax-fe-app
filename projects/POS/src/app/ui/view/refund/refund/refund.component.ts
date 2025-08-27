@@ -6,6 +6,7 @@ import { Menu, MenuModule } from 'primeng/menu';
 import { OverlayPanel, OverlayPanelModule } from 'primeng/overlaypanel';
 import { Refund, RefundMethod, RefundStatus } from '../../../models/interface';
 import { MetadataService } from '../../../service/metadata.service';
+import { getUserPermissionsFor, isSuperUser } from '../../../../shared/pipes/helper';
 
 
 
@@ -61,6 +62,12 @@ export class RefundComponent {
     { label: 'Requested Date', value: this.formatDate(this.selectedRefund?.createdAt) }
   ];
     
+  refundPermission = {
+  canView: false,
+  canEdit: false,
+  canDelete: false,
+  canCreate: false,
+  }; 
  constructor(
 
   private messageService: MessageService,
@@ -72,6 +79,17 @@ export class RefundComponent {
     this.loadRefund()
     // this.getCashierList();
     // this.filterTable();
+    if (isSuperUser()) {
+          this.refundPermission = {
+            canView: true,
+            canEdit: true,
+            canDelete: true,
+            canCreate: true,
+          };
+     } else {
+           this.refundPermission = getUserPermissionsFor('POS_RFND');
+      }
+    console.log(Object(this.refundPermission));
   }
 
   isMenuOpen = false;

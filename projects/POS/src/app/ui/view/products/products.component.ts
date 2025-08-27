@@ -25,6 +25,7 @@ import { KeyValue } from "@angular/common";
 import { ProductExcelColumns } from "../../models/enums";
 import { ImageCacheService } from "../../service/image-cache.service";
 import { MetadataService } from "../../service/metadata.service";
+import { getUserPermissionsFor, isSuperUser } from "../../../shared/pipes/helper";
 /**
  * Responsible for showing the list of available products in `admin/pos`
  *
@@ -156,6 +157,13 @@ export class ProductsComponent implements OnInit {
   /** Roughly a hundred years from now */
   private readonly _defaultExpiryDate = new Date(Date.now() + (100 * 365.25 * 24 * 60 * 60 * 1000));
 
+  productPermissions = {
+  canView: false,
+  canEdit: false,
+  canDelete: false,
+  canCreate: false,
+  };  
+
   constructor(
     private messageService: MessageService,
     private posService: PosServiceService,
@@ -178,6 +186,20 @@ export class ProductsComponent implements OnInit {
       "resize",
       this.setRowsPerPageBasedOnScreenSize.bind(this),
     );
+
+    if (isSuperUser()) {
+      this.productPermissions = {
+        canView: true,
+        canEdit: true,
+        canDelete: true,
+        canCreate: true,
+      };
+    }else {
+    this.productPermissions = getUserPermissionsFor('POS_PDT');
+
+    }
+    console.log("permisions loaded")
+    console.log(Object(this.productPermissions));
   }
   ngOnDestroy() {
     window.removeEventListener(
