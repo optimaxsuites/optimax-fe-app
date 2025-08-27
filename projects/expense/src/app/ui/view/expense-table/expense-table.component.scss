@@ -370,3 +370,76 @@ h1{
 }
 
 
+.summary-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0, 1px 3px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 02s, box-shadow 0.2s;
+}
+
+.summary-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0, 0, 0, 0.15;
+}
+
+.expense-approval-container {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(31, 41, 55, 0.08);
+  padding: 2rem 2.5rem;
+  max-width: 700px;
+  margin: 0 auto;
+
+  .title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1f2937;
+    border-bottom: 2px solid #f3f4f6;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
+
+.expense-approval-container .detail-row {
+  display: flex;
+}
+
+// .expense-approval-container .detail-row {
+//   display: flex;
+//   justify-content: space-between;
+//   align-items: center;
+//   padding: 0.75rem 0;
+//   border-bottom: 1px solid #f3f4f6;
+
+//   .detail-label {
+//     font-size: 1.1rem;
+//     font-weight: 500;
+//     color: #4b5563;
+//   }
+
+//   .detail-value {
+//     font-size: 1.1rem;
+//     font-weight: 600;
+//     color: #111827;
+//   }
+// }
+
+// @media (max-width: 600px) {
+//   .expense-approval-container {
+//     padding: 1.5rem;
+//   }
+//   .expense-approval-container .detail-row {
+//     flex-direction: column;
+//     align-items: flex-start;
+//     gap: 0.5rem;
+//   }
+// }
+
+
+

@@ -50,24 +50,38 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-4 gap-4">
-  <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+  
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+  <div class="summary-card bg-blue-100 p-4 rounded-lg border border-blue-100">
+    <div class="flex items-center gap-1 mb-1">
     <div class="text-blue-600 text-xl font-medium">Total Expenses</div>
+        <span class="material-icons text-blue-600 text-3xl mb-2">insights</span>
+        </div>
     <div class="text-2xl font-bold text-blue-900">{{ getTotalAmount() | currency:'NGN':'symbol':'1.2-2' }}</div>
-  </div>
+    </div>
+  
 
-  <div class="bg-green-50 p-4 rounded-lg border border-green-100">
-  <div class="text-green-600 text-xl font-medium">Approved</div>
+  <div class="summary-card bg-green-100 p-4 rounded-lg border border-green-100">
+    <div class="flex items-center gap-1 mb-1">
+        <div class="text-green-600 text-xl font-medium">Approved</div>
+    <span class="material-icons text-green-600 text-3xl mb-2">check_circle</span>
+    </div>
   <div class="text-2xl font-bold text-green-900">{{ getApprovedCount() }}</div>
   </div>
 
-  <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
-  <div class="text-yellow-600 text-xl font-medium">Pending</div>
+  <div class="summary-card bg-yellow-100 p-4 rounded-lg border border-yellow-100">
+    <div class="flex items-center gap-1 mb-1">
+        <div class="text-yellow-600 text-xl font-medium">Pending</div>
+    <span class="material-icons text-yellow-600 text-3xl mb-2">schedule</span>
+    </div>
   <div class="text-2xl font-bold text-yellow-900">{{ getPendingCount() }}</div>
   </div>
 
-  <div class="bg-red-50 p-4 rounded-lg border border-red-100">
-    <div class="text-red-600 text-xl font-medium">Rejected</div>
+  <div class="summary-card bg-red-100 p-4 rounded-lg border border-red-100">
+    <div class="flex items-center gap-1 mb-1">
+          <div class="text-red-600 text-xl font-medium">Rejected</div>
+    <span class="material-icons text-red-600 text-3xl mb-2">cancel</span>
+    </div>
     <div class="text-2xl font-bold text-red-900">{{ getRejectedCount() }}</div>
   </div>
   </div>
@@ -350,7 +364,7 @@
 <!-- Expense Approval Modal -->
 <app-side-modal *ngIf="isModalOpen2" (close)="closeModal()">
   <div
-    class="expense-approval-container p-6 mt-8 max-w-4xl mx-auto bg-white rounded-lg shadow-lg py-28"
+    class="expense-approval-container mt-8"
   >
     <h1 class="title text-2xl font-semibold text-gray-800 mb-4">
       Expense Approval Update
