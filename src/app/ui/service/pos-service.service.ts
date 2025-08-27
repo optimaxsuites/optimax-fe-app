@@ -611,18 +611,20 @@ createStockMovement(data: StockMovementPostBody) {
 
    updateStockMovement(id: number, data: StockMovementCreatePayload) {
     return this.http
-      .put<StockMovementResponsePayload>(
-        this.getBaseApiUrl() + `/x/api/v2/pos/stockMovements/${id}`,
+      .post<StockMovementResponsePayload>(
+        this.getBaseApiUrl() + `/x/api/v2/pos/stockMovements`,
         data
       )
       .pipe(catchError(this.handleError));
   }
 
-//    deleteStockMovement(id: number) {
-//     return this.http
-//       .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/stockMovements/${id}`)
-//       .pipe(catchError(this.handleError));
-//   }
+  
+
+  deleteStockMovement(id: number) {
+  return this.http
+    .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/stockMovements/${id}`)
+    .pipe(catchError(this.handleError));
+}
 //  addStock(inventoryId: number, productId: number, quantity: number, purchasePrice: number, sellingPrice: number, supplierId?: number, reference?: string) {
 //     const stockMovement: StockMovementCreatePayload = {
 //       quantity: Number(quantity), // Ensure positive
