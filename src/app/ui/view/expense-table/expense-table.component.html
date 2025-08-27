@@ -204,19 +204,19 @@
               <td class="table-item">
                 <span
                   *ngIf="expense.status === 'Pending'"
-                  class="material-symbols-outlined status-icon pending-icon"
+                  class="material-icons text-yellow-600 text-3xl mb-2"
                 >
                   schedule
                 </span>
                 <span
                   *ngIf="expense.status === 'Approved'"
-                  class="material-symbols-outlined status-icon approved-icon"
+                  class="material-icons text-green-600 text-3xl mb-2"
                 >
                   check
                 </span>
                 <span
                   *ngIf="expense.status === 'Rejected'"
-                  class="material-symbols-outlined status-icon rejected-icon"
+                  class="material-icons text-red-600 text-3xl mb-2"
                 >
                   close
                 </span>
@@ -225,9 +225,9 @@
                 <span
                   class="status-text"
                   [ngClass]="{
-                    'pending-icon': expense.status === 'Pending',
-                    'approved-icon': expense.status === 'Approved',
-                    'rejected-icon': expense.status === 'Rejected'
+                    'pending-icon text-yellow-600 text-xl font-medium': expense.status === 'Pending',
+                    'approved-icon text-green-600 text-xl font-medium': expense.status === 'Approved',
+                    'rejected-icon text-red-600 text-xl font-medium': expense.status === 'Rejected'
                   }"
                 >
                   {{ expense.status }}
@@ -245,24 +245,27 @@
                   (click)="editExpense(expense)"
                   >edit</span
                 >
-                <span
+                <!-- <span
                   class="material-icons cursor-pointer ml-2"
                   (click)="confirmDelete(expense)"
-                  >cancel</span
-                >
+                  >cancel</span -->
+                
               </td>
 
                <td class="dropdown-container">
             <span class="material-symbols-outlined action-icon">more_vert</span>
             <div class="dropdown-content">
               <a (click)="approve(expense)">
-                <span class="material-symbols-outlined">check_circle</span> Accept
+                <span class="material-icons text-green-600 text-xl font-medium">check_circle</span> Accept
               </a>
-              <a (click)="reject(expense)">
-                <span class="material-symbols-outlined">cancel</span> Reject
+              <a 
+              (click)="reject(expense)">
+                <span class="material-icons text-red-600 text-xl font-medium">cancel</span> Reject
               </a>
             </div>
           </td>
+
+        
 
             </tr>
           </ng-template>

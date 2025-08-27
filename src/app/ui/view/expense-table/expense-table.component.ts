@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { ExpenseService, Expense } from '../../service/expense.service';
 import { debounceTime, from, Subject } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { ExclamationTriangleIcon } from 'primeng/icons/exclamationtriangle';
 
 @Component({
   selector: 'app-expense-table',
@@ -53,23 +54,62 @@ export class ExpenseTableComponent implements OnInit {
   deleteSelectedExpenses() {
     if (!this.selectedExpenses.length) return;
 
-    this.filteredExpenses = this.filteredExpenses.filter(
-      exp => !this.selectedExpenses.includes(exp)
-    );
-    
-    this.expenses = this.expenses.filter(
-      exp => !this.selectedExpenses.includes(exp)
-    );
-    
-    this.selectedExpenses = [];
-    // Optionally show a toast
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Deleted',
-      detail: 'Selected expenses have been deleted.'
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete ${this.selectedExpenses.length} expenses?`,
+      header: `Delete Selected Expenses`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      rejectButtonStyleClass: 'p-button-warning',
+      acceptIcon: 'pi pi-trash',
+      rejectIcon: 'pi pi-times',
+      acceptLabel: 'Delete',
+      rejectLabel: 'Cancel',
+
+      accept: () => {
+        this.selectedExpenses.forEach(exp => this.deleteExpense(exp));
+        this.selectedExpenses = [];
+      }
     });
+
+    // this.filteredExpenses = this.filteredExpenses.filter(
+    //   exp => !this.selectedExpenses.includes(exp)
+    // );
+    
+    // this.expenses = this.expenses.filter(
+    //   exp => !this.selectedExpenses.includes(exp)
+    // );
+    
+    // this.selectedExpenses = [];
+    // // Optionally show a toast
+    // this.messageService.add({
+    //   severity: 'success',
+    //   summary: 'Deleted',
+    //   detail: 'Selected expenses have been deleted.'
+    // });
   
   }
+
+  reject(request: any): void {
+    request.status = 'Rejected';
+    request.showActions = false;
+    
+    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+    const updatedExpenses = expenses.map((item: any) => 
+      item.id === request.id ? { ...item, status: 'Rejected' } : item
+    );
+
+    localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
+    this.requests = updatedExpenses;
+
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Request Rejected',
+      detail: 'Expense for ${request.merchant} has been rejected.'
+    });
+  }
+
+
+
 
   colorClasses: string[] = [
     'color-lightblue',
@@ -438,27 +478,6 @@ export class ExpenseTableComponent implements OnInit {
       detail: `Expense for ${request.merchant} has been approved successfully.`
     });
   }
-  reject(request: any): void {
-    request.status = 'Rejected';
-    request.showActions = false;
-  
-    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
-    const updatedExpenses = expenses.map((item: any) =>
-      item.id === request.id ? { ...item, status: 'Rejected' } : item
-    );
-  
-    localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
-    this.requests = updatedExpenses;
-  
-    this.messageService.add({
-      severity: 'error', 
-      summary: 'Request Rejected',
-      detail: `Expense for ${request.merchant} has been rejected.`
-    });
-  }
-
-
-
 
 }
 
