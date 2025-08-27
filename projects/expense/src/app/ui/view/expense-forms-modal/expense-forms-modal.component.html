@@ -49,23 +49,6 @@
             </p>
           
         </div>
-
-
-        <div class="form-group">
-          <label for="description">Description</label>
-          <textarea
-            id="description"
-            name="description"
-            rows="4"
-            cols="50"
-            [(ngModel)]="expenseSummary.description"
-            required
-            placeholder="Enter description"
-          ></textarea>
-          <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.description">
-            Description is required.
-        </div>
-
     
 
         <div class="form-group">
@@ -164,8 +147,23 @@
           <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.eventDate">
             Event Date is required.
         </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea
+            id="description"
+            name="description"
+            rows="4"
+            cols="50"
+            [(ngModel)]="expenseSummary.description"
+            required
+            placeholder="Enter description"
+          ></textarea>
+          <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.description">
+            Description is required.
+        </div>
          
-          <div class="form-group">
+          <!-- <div class="form-group">
           <label for="comment">Comment</label>
           <textarea
             id="comment"
@@ -175,7 +173,7 @@
             [(ngModel)]="expenseSummary.comment"
             placeholder="Enter your comments here..."
           ></textarea>
-        </div>
+        </div> -->
 
         </div>
 

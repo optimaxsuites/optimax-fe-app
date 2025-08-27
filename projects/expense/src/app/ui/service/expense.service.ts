@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 
 export interface Expense {
+  eventDate: string | number | Date;
   signature: null;
   invoiceFile: null;
   receiptFile: null;
