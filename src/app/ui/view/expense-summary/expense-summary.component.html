@@ -9,17 +9,14 @@
   rel="stylesheet"
 />
 
-<div class="form-buttons" (click)=" goBack()">
-  <div class="arrow-left">
-    <div></div>
-  </div>
-  </div>
 
-  <div class="table-container mx-3">
-    <div class="container-header bg-white p-4 rounded shadow-md mb-4" style="padding-top: 1rem;">
-      <div class="flex justify-between items-center mb-4">
+
+    <div class="table-container mx-3">
+
+    <!-- <div class="container-header bg-white p-9 rounded shadow-md mb-4">
+      <div class="flex justify-between items-center mb-6">
         <div class="header-content">
-          <h1 class="text-3xl font-bold text-gray-900 mb-1" style="margin-top: 0;">Expenses Summary</h1>
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">Expenses Summary</h1>
           <p class="text-gray-600">Manage your expense requests efficiently</p>
       
         </div>
@@ -44,12 +41,14 @@
       </div>
 </div>
   </div>
-</div>
-</div>
+</div> -->
 
-<div class="floating-box">
-<div class="table-card mx-6 my-4">
-<div class="table-content">
+  <div class="floating-box">
+
+
+
+<div class="table-with-filters w-full max-w-9xl mx-auto px-4">
+
   <div class="filter-panel">
 
 
@@ -177,7 +176,17 @@
 
  </div>
 
+<div class="form-buttons" (click)=" goBack()">
+  <div class="arrow-left">
+    <div></div>
+  </div>
+  </div>
+
+
 </div>
+
+
+
 
  <p-toast></p-toast>
  <p-confirmDialog></p-confirmDialog>
