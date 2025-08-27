@@ -223,11 +223,11 @@
         <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div class="flex flex-col items-center gap-4">
             <div class="w-full aspect-square bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-              <img
-                class="w-full h-full object-contain"
-                [src]="activeItem.imageUrl$ || 'assets/images/no-image.png'"
-                alt="product image"
-              />
+             <img
+  class="w-full h-full object-contain"
+  [src]="getImageUrl(activeItem) | async"
+  alt="product image"
+/>
             </div>
             <div class="text-center">
               <h3 class="text-lg font-medium text-gray-800">{{ activeItem?.name }}</h3>

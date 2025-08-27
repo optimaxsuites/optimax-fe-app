@@ -14,7 +14,14 @@ import {
   ChartComponent
 } from "ng-apexcharts";
 import { ReportService } from '../../../service/report.service';
-import { PromotionsReportRequestDTO, PromotionsReportDTO, PromotionPerformanceDTO, DiscountDTO, ProductDTO } from '../../../service/report.service';
+import {
+  PromotionsReportRequestDTO,
+  PromotionsReportDTO,
+  PromotionPerformanceDTO,
+  DiscountDTO,
+  ProductDTO,
+  CategoryDTO
+} from '../../../models/interface';
 
 export type BarChartOptions = {
   series: ApexAxisChartSeries;
@@ -48,7 +55,7 @@ export class PromotionReportComponent implements OnInit {
   @ViewChild("categoryChart") categoryChart!: ChartComponent;
   @ViewChild("timelineChart") timelineChart!: ChartComponent;
   @ViewChild("distributionChart") distributionChart!: ChartComponent;
-  
+
   public barChartOptions!: BarChartOptions;
   public amountChartOptions!: BarChartOptions;
   public categoryPieOptions!: PieChartOptions;
@@ -60,15 +67,13 @@ export class PromotionReportComponent implements OnInit {
   selectedPromotion: PromotionPerformanceDTO | null = null;
   loading: boolean = false;
   filterForm = false;
-  
-  // Add flags to control chart rendering
+
   hasUsageData = false;
   hasAmountData = false;
   hasCategoryData = false;
   hasTimelineData = false;
   hasDistributionData = false;
-  
-  // Stats
+
   totalPromotions = 0;
   totalDiscountAmount = 0;
   totalUsageCount = 0;
@@ -85,20 +90,17 @@ export class PromotionReportComponent implements OnInit {
 
   ngOnInit() {
     this.initForm();
-    // Don't load data immediately to prevent charts from rendering with empty data
-    // this.loadData();
   }
 
   initForm(): void {
     const today = new Date();
     const lastMonth = new Date();
     lastMonth.setMonth(lastMonth.getMonth() - 1);
-    
-    // Format dates for HTML date inputs (YYYY-MM-DD)
+
     const formatDateForInput = (date: Date) => {
       return date.toISOString().split('T')[0];
     };
-    
+
     this.reportForm = this.fb.group({
       startDate: [formatDateForInput(lastMonth)],
       endDate: [formatDateForInput(today)],
@@ -112,16 +114,13 @@ export class PromotionReportComponent implements OnInit {
 
   loadData(): void {
     this.loading = true;
-    
-    // Reset chart visibility flags
     this.resetChartFlags();
-    
+
     const formValue = this.reportForm.value;
-    
-    // Ensure dates are properly formatted
+
     const startDate = formValue.startDate ? new Date(formValue.startDate) : new Date();
     const endDate = formValue.endDate ? new Date(formValue.endDate) : new Date();
-    
+
     const payload: PromotionsReportRequestDTO = {
       startDate: startDate,
       endDate: endDate,
@@ -131,14 +130,14 @@ export class PromotionReportComponent implements OnInit {
     console.log('Loading promotion data with payload:', payload);
 
     this.reportService.getPromotionPerformanceReport(payload).subscribe({
-      next: (response) => {
+      next: (response: PromotionsReportDTO) => {
         console.log('Received promotion data:', response);
         this.reportData = response;
         this.calculateStats();
         this.updateCharts();
         this.loading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Failed to load promotion data:', error);
         this.reportData = { promotions: [] };
         this.calculateStats();
@@ -166,27 +165,25 @@ export class PromotionReportComponent implements OnInit {
       this.mostDiscountedProduct = '';
       return;
     }
-    
+
     this.totalPromotions = this.reportData.promotions.length;
-    this.totalDiscountAmount = this.reportData.promotions.reduce((sum, promo) => sum + (promo.totalDiscountAmount || 0), 0);
-    this.totalUsageCount = this.reportData.promotions.reduce((sum, promo) => sum + (promo.usageCount || 0), 0);
+    this.totalDiscountAmount = this.reportData.promotions.reduce((sum: number, promo: PromotionPerformanceDTO) => sum + (promo.totalDiscountAmount || 0), 0);
+    this.totalUsageCount = this.reportData.promotions.reduce((sum: number, promo: PromotionPerformanceDTO) => sum + (promo.usageCount || 0), 0);
     this.avgDiscountAmount = this.totalUsageCount > 0 ? this.totalDiscountAmount / this.totalUsageCount : 0;
-    
-    // Find most used promotion
+
     if (this.reportData.promotions.length > 0) {
-      const mostUsed = this.reportData.promotions.reduce((prev, current) => 
+      const mostUsed = this.reportData.promotions.reduce((prev: PromotionPerformanceDTO, current: PromotionPerformanceDTO) =>
         ((prev?.usageCount || 0) > (current?.usageCount || 0)) ? prev : current
       );
       this.mostUsedPromotion = mostUsed?.promotion?.name || '';
     }
-    
-    // Find most discounted product
+
     let maxDiscount = 0;
     let maxProduct = '';
-    
-    this.reportData.promotions.forEach(promo => {
+
+    this.reportData.promotions.forEach((promo: PromotionPerformanceDTO) => {
       if (promo.affectedProducts && Array.isArray(promo.affectedProducts)) {
-        promo.affectedProducts.forEach(product => {
+        promo.affectedProducts.forEach((product: ProductDTO) => {
           if ((product.totalDiscountAmount || 0) > maxDiscount) {
             maxDiscount = product.totalDiscountAmount || 0;
             maxProduct = product.name || '';
@@ -194,10 +191,10 @@ export class PromotionReportComponent implements OnInit {
         });
       }
     });
-    
+
     this.mostDiscountedProduct = maxProduct;
   }
-  
+
   initChartOptions() {
     // Usage Chart Options
     this.barChartOptions = {
@@ -232,13 +229,13 @@ export class PromotionReportComponent implements OnInit {
       },
       tooltip: {
         y: {
-          formatter: function(val) {
+          formatter: function(val: number) {
             return val + " uses";
           }
         }
       }
     };
-    
+
     // Amount Chart Options
     this.amountChartOptions = {
       series: [{ name: "Discount Amount", data: [] }],
@@ -272,13 +269,13 @@ export class PromotionReportComponent implements OnInit {
       },
       tooltip: {
         y: {
-          formatter: function(val) {
-            return "$" + val;
+          formatter: function(val: number) {
+            return "₦" + val;
           }
         }
       }
     };
-    
+
     // Category Pie Chart Options
     this.categoryPieOptions = {
       series: [],
@@ -305,8 +302,8 @@ export class PromotionReportComponent implements OnInit {
       },
       tooltip: {
         y: {
-          formatter: function(val) {
-            return "$" + val;
+          formatter: function(val: number) {
+            return "₦" + val;
           }
         }
       },
@@ -314,7 +311,7 @@ export class PromotionReportComponent implements OnInit {
         enabled: true
       }
     };
-    
+
     // Timeline Chart Options
     this.timelineChartOptions = {
       series: [],
@@ -369,7 +366,7 @@ export class PromotionReportComponent implements OnInit {
         }
       }
     };
-    
+
     // Distribution Pie Chart
     this.distributionChartOptions = {
       series: [],
@@ -396,7 +393,7 @@ export class PromotionReportComponent implements OnInit {
       },
       tooltip: {
         y: {
-          formatter: function(val) {
+          formatter: function(val: number) {
             return val + " units";
           }
         }
@@ -406,23 +403,21 @@ export class PromotionReportComponent implements OnInit {
       }
     };
   }
-  
+
   updateCharts() {
-    // Reset all chart flags first
     this.resetChartFlags();
-    
+
     if (!this.reportData?.promotions?.length) {
       console.log('No promotion data available for charts');
       return;
     }
-    
+
     console.log('Updating charts with data:', this.reportData);
-    
-    // Update usage chart
-    const usageData = this.reportData.promotions.map(p => p.usageCount || 0);
-    const promoNames = this.reportData.promotions.map(p => p.promotion?.name || 'Unknown');
-    
-    if (usageData.length > 0 && usageData.some(val => val > 0)) {
+
+    const usageData = this.reportData.promotions.map((p: PromotionPerformanceDTO) => p.usageCount || 0);
+    const promoNames = this.reportData.promotions.map((p: PromotionPerformanceDTO) => p.promotion?.name || 'Unknown');
+
+    if (usageData.length > 0 && usageData.some((val: number) => val > 0)) {
       this.barChartOptions = {
         ...this.barChartOptions,
         series: [{ name: "Usage Count", data: usageData }],
@@ -430,25 +425,23 @@ export class PromotionReportComponent implements OnInit {
       };
       this.hasUsageData = true;
     }
-    
-    // Update amount chart
-    const amountData = this.reportData.promotions.map(p => p.totalDiscountAmount || 0);
-    
-    if (amountData.length > 0 && amountData.some(val => val > 0)) {
+
+    const amountData = this.reportData.promotions.map((p: PromotionPerformanceDTO) => p.totalDiscountAmount || 0);
+
+    if (amountData.length > 0 && amountData.some((val: number) => val > 0)) {
       this.amountChartOptions = {
         ...this.amountChartOptions,
-        series: [{ name: "Discount Amount ($)", data: amountData }],
+        series: [{ name: "Discount Amount (₦)", data: amountData }],
         xaxis: { ...this.amountChartOptions.xaxis, categories: promoNames }
       };
       this.hasAmountData = true;
     }
-    
-    // Update category chart
+
     const categoryMap = new Map<string, number>();
-    
-    this.reportData.promotions.forEach(promo => {
+
+    this.reportData.promotions.forEach((promo: PromotionPerformanceDTO) => {
       if (promo.affectedProducts && Array.isArray(promo.affectedProducts)) {
-        promo.affectedProducts.forEach(product => {
+        promo.affectedProducts.forEach((product: ProductDTO) => {
           if (product && product.category) {
             const currentAmount = categoryMap.get(product.category) || 0;
             categoryMap.set(product.category, currentAmount + (product.totalDiscountAmount || 0));
@@ -456,11 +449,11 @@ export class PromotionReportComponent implements OnInit {
         });
       }
     });
-    
+
     if (categoryMap.size > 0) {
       const categoryLabels = Array.from(categoryMap.keys());
       const categorySeries = Array.from(categoryMap.values());
-      
+
       this.categoryPieOptions = {
         ...this.categoryPieOptions,
         labels: categoryLabels,
@@ -468,11 +461,10 @@ export class PromotionReportComponent implements OnInit {
       };
       this.hasCategoryData = true;
     }
-    
-    // Update timeline chart
+
     const timelineSeries = this.reportData.promotions
-      .filter(promo => promo.startDate && promo.endDate)
-      .map(promo => {
+      .filter((promo: PromotionPerformanceDTO) => promo.startDate && promo.endDate)
+      .map((promo: PromotionPerformanceDTO) => {
         return {
           name: promo.promotion?.name || 'Unknown',
           data: [
@@ -486,7 +478,7 @@ export class PromotionReportComponent implements OnInit {
           ]
         };
       });
-    
+
     if (timelineSeries.length > 0) {
       this.timelineChartOptions = {
         ...this.timelineChartOptions,
@@ -494,23 +486,22 @@ export class PromotionReportComponent implements OnInit {
       };
       this.hasTimelineData = true;
     }
-    
-    // Update product distribution chart if a promotion is selected
+
     if (this.selectedPromotion) {
       this.updateProductDistributionChart();
     }
   }
-  
+
   updateProductDistributionChart() {
     if (!this.selectedPromotion?.affectedProducts?.length) {
       this.hasDistributionData = false;
       return;
     }
-    
-    const productLabels = this.selectedPromotion.affectedProducts.map(p => p.name || 'Unknown');
-    const productSeries = this.selectedPromotion.affectedProducts.map(p => p.discountedUnits || 0);
-    
-    if (productSeries.some(val => val > 0)) {
+
+    const productLabels = this.selectedPromotion.affectedProducts.map((p: ProductDTO) => p.name || 'Unknown');
+    const productSeries = this.selectedPromotion.affectedProducts.map((p: ProductDTO) => p.discountedUnits || 0);
+
+    if (productSeries.some((val: number) => val > 0)) {
       this.distributionChartOptions = {
         ...this.distributionChartOptions,
         labels: productLabels,
@@ -521,37 +512,39 @@ export class PromotionReportComponent implements OnInit {
       this.hasDistributionData = false;
     }
   }
-  
+
   selectPromotion(promotion: PromotionPerformanceDTO) {
     this.selectedPromotion = promotion;
     this.updateProductDistributionChart();
   }
-  
+
   formatDate(date: Date | string): string {
     if (!date) return '';
     const d = new Date(date);
     return d.toLocaleDateString();
   }
-  
+
   formatCurrency(amount: number): string {
     if (!amount) return '₦0.00';
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
   }
-  
+
   formatPercentage(value: number): string {
     if (!value) return '0%';
     return new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 1 }).format(value / 100);
   }
-  
+
   getDiscountDisplay(promotion: DiscountDTO): string {
+    const discountValue = promotion.discountValue ?? 0;
+    
     if (!promotion) return '';
     if (promotion.discountType === 'PERCENTAGE') {
-      return this.formatPercentage(promotion.discountValue);
+      return this.formatPercentage(discountValue);
     } else {
-      return this.formatCurrency(promotion.discountValue);
+      return this.formatCurrency(discountValue);
     }
   }
-  
+
   onSubmit() {
     this.loadData();
     this.selectedPromotion = null;

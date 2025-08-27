@@ -783,8 +783,9 @@ async processProductImport(data: any[]): Promise<void> {
       const formData = new FormData();
       formData.append("product", JSON.stringify(product));
 
-      const defaultImage = await this.createDefaultImage();
-      formData.append("files", defaultImage, 'default_product.jpg');
+      const defaultImage = await this.createDefaultImage(product.name);
+formData.append("files", defaultImage, 'default_product.jpg');
+
 
    await new Promise<void>((resolve, reject) => {
   this.posService.addProduct(formData).subscribe(
@@ -907,23 +908,61 @@ private parseComboItems(input: string): any[] {
     .filter(item => item !== null);
 }
 
-private createDefaultImage(): Promise<Blob> {
-  return new Promise(resolve => {
+// Replace your existing createDefaultImage with this:
+private createDefaultImage(name?: string): Promise<Blob> {
+  return new Promise((resolve) => {
+    const baseSize = 200;
+    const scale = 2; // crisp on retina
     const canvas = document.createElement('canvas');
-    canvas.width = 200;
-    canvas.height = 200;
+    canvas.width = baseSize * scale;
+    canvas.height = baseSize * scale;
+
     const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.fillStyle = '#f0f0f0';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#666';
-      ctx.font = '16px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('Product Image', canvas.width/2, canvas.height/2);
+    if (!ctx) {
+      // fallback to empty blob
+      return resolve(new Blob());
     }
-    canvas.toBlob(blob => resolve(blob!), 'image/jpeg', 0.8);
+
+    // stable color palette
+    const palette = [
+      '#3B82F6', // blue
+      '#10B981', // emerald
+      '#F59E0B', // amber
+      '#EF4444', // red
+      '#8B5CF6', // violet
+      '#06B6D4', // cyan
+      '#F97316', // orange
+      '#14B8A6', // teal
+      '#EC4899', // pink
+      '#84CC16', // lime
+    ];
+
+    const initial = (name?.trim()?.[0] ?? 'P').toUpperCase();
+    const color = palette[initial.charCodeAt(0) % palette.length];
+
+    // background
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // letter
+    ctx.fillStyle = '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // responsive font size
+    const fontPx = Math.floor(baseSize * 0.6);
+    ctx.font = `bold ${fontPx * scale}px Inter, Segoe UI, Arial, sans-serif`;
+
+    ctx.fillText(initial, (baseSize * scale) / 2, (baseSize * scale) / 2);
+
+    canvas.toBlob(
+      (blob) => resolve(blob ?? new Blob()),
+      'image/jpeg',
+      0.9
+    );
   });
 }
+
 
   // Validate the extracted data
   async validateData(data: any[]): Promise<void> {

@@ -1,44 +1,27 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
+import {
+  ApexAxisChartSeries,
+  ApexChart,
+  ApexDataLabels,
+  ApexXAxis,
+  ApexPlotOptions,
+  ApexStroke,
+  ApexLegend,
+  ApexTooltip,
+  ApexNonAxisChartSeries,
+  ApexResponsive,
+  ApexYAxis
+} from "ng-apexcharts";
 import { ReportService } from '../../../service/report.service';
-
-interface InventoryReportRequestDTO {
-  branchIds?: number[];
-  categoryIds?: number[];
-  includeLowStock?: boolean;
-}
-
-interface ProductDTO {
-  id: number;
-  name: string;
-  sku: string;
-  price: number;
-  costPrice: number;
-}
-
-interface CategoryDTO {
-  id: number;
-  name: string;
-}
-
-interface BranchDTO {
-  id: number;
-  name: string;
-  location: string;
-}
-
-interface InventoryItemDTO {
-  product: ProductDTO;
-  category: CategoryDTO;
-  currentStock: number;
-  soldQuantity: number;
-  branch: BranchDTO;
-  lowStockAlert: boolean;
-}
-
-interface InventoryReportDTO {
-  inventory: InventoryItemDTO[];
-}
+import {
+  InventoryReportRequestDTO,
+  ProductDTO,
+  CategoryDTO,
+  BranchDTO,
+  InventoryItemDTO,
+  InventoryReportDTO
+} from '../../../models/interface'; // Corrected import path
 
 @Component({
   selector: 'app-stock-report',
@@ -48,14 +31,14 @@ interface InventoryReportDTO {
 export class StockReportComponent implements OnInit {
   filterForm!: FormGroup;
   reportData!: InventoryReportDTO;
-  
+
   branches: BranchDTO[] = [];
   categories: CategoryDTO[] = [];
-  
+
   totalItems = 0;
   lowStockItems = 0;
   totalValue = 0;
-  
+
   categoriesChartOptions: any;
   stockTrendChartOptions: any;
   branchComparisonChartOptions: any;
@@ -66,7 +49,7 @@ export class StockReportComponent implements OnInit {
   pageSize = 10;
   sortColumn = 'product.name';
   sortDirection = 'asc';
-  
+
   Math = Math;
 
   constructor(
@@ -89,7 +72,7 @@ export class StockReportComponent implements OnInit {
 
   loadInitialData(): void {
     this.isLoading = true;
-    
+
     // Load branches and categories concurrently
     Promise.all([
       this.loadBranches(),
@@ -106,14 +89,14 @@ export class StockReportComponent implements OnInit {
   loadBranches(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.reportService.getBranches().subscribe({
-        next: (branches) => {
+        next: (branches: BranchDTO[]) => {
           this.branches = branches;
           resolve();
         },
         error: (error) => {
           console.error('Error loading branches:', error);
           this.branches = [];
-          resolve(); // Continue even if branches fail to load
+          resolve();
         }
       });
     });
@@ -122,7 +105,7 @@ export class StockReportComponent implements OnInit {
   loadCategories(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.reportService.getCategories().subscribe({
-        next: (categories) => {
+        next: (categories: CategoryDTO[]) => {
           this.categories = categories;
           resolve();
         },
@@ -137,7 +120,7 @@ export class StockReportComponent implements OnInit {
 
   loadInventoryReport(filters?: InventoryReportRequestDTO): void {
     this.isLoading = true;
-    
+
     const requestPayload: InventoryReportRequestDTO = filters || {
       branchIds: [],
       categoryIds: [],
@@ -153,7 +136,7 @@ export class StockReportComponent implements OnInit {
     }
 
     this.reportService.getInventoryReport(requestPayload).subscribe({
-      next: (data) => {
+      next: (data: InventoryReportDTO) => {
         this.reportData = data;
         this.calculateSummaryMetrics();
         this.initCharts();
@@ -181,9 +164,9 @@ export class StockReportComponent implements OnInit {
       return;
     }
 
-    this.totalItems = this.reportData.inventory.reduce((sum, item) => sum + item.currentStock, 0);
-    this.lowStockItems = this.reportData.inventory.filter(item => item.lowStockAlert).length;
-    this.totalValue = this.reportData.inventory.reduce((sum, item) => sum + (item.currentStock * item.product.price), 0);
+    this.totalItems = this.reportData.inventory.reduce((sum: number, item: InventoryItemDTO) => sum + item.currentStock, 0);
+    this.lowStockItems = this.reportData.inventory.filter((item: InventoryItemDTO) => item.lowStockAlert).length;
+    this.totalValue = this.reportData.inventory.reduce((sum: number, item: InventoryItemDTO) => sum + (item.currentStock * item.product.price), 0);
   }
 
   initCharts(): void {
@@ -191,7 +174,7 @@ export class StockReportComponent implements OnInit {
       this.initEmptyCharts();
       return;
     }
-    
+
     this.initCategoriesChart();
     this.initStockTrendChart();
     this.initBranchComparisonChart();
@@ -206,10 +189,9 @@ export class StockReportComponent implements OnInit {
   }
 
   initCategoriesChart(): void {
-    // Aggregate data by category
-    const categoryData = this.categories.map(category => {
-      const items = this.reportData.inventory.filter(item => item.category.id === category.id);
-      const totalStock = items.reduce((sum, item) => sum + item.currentStock, 0);
+    const categoryData = this.categories.map((category: CategoryDTO) => {
+      const items = this.reportData.inventory.filter((item: InventoryItemDTO) => item.category.id === category.id);
+      const totalStock = items.reduce((sum: number, item: InventoryItemDTO) => sum + item.currentStock, 0);
       return { x: category.name, y: totalStock };
     }).filter(item => item.y > 0);
 
@@ -240,14 +222,11 @@ export class StockReportComponent implements OnInit {
   }
 
   initStockTrendChart(): void {
-    // For now, create a simple trend based on current data
-    // In a real implementation, you'd fetch historical data
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
     const currentTotal = this.totalItems;
-    
-    // Generate trend data based on current stock (simulated for demo)
+
     const trendData = months.map((month, index) => {
-      const variance = Math.random() * 0.2 - 0.1; // ±10% variance
+      const variance = Math.random() * 0.2 - 0.1;
       const value = Math.floor(currentTotal * (0.8 + index * 0.05 + variance));
       return { x: month, y: value };
     });
@@ -300,16 +279,15 @@ export class StockReportComponent implements OnInit {
   }
 
   initBranchComparisonChart(): void {
-    // Compare inventory across branches
-    const branchData = this.branches.map(branch => {
+    const branchData = this.branches.map((branch: BranchDTO) => {
       const branchStock = this.reportData.inventory
-        .filter(item => item.branch.id === branch.id)
-        .reduce((sum, item) => sum + item.currentStock, 0);
+        .filter((item: InventoryItemDTO) => item.branch.id === branch.id)
+        .reduce((sum: number, item: InventoryItemDTO) => sum + item.currentStock, 0);
       return {
         label: branch.name,
         value: branchStock
       };
-    }).filter(item => item.value > 0); // Only show branches with stock
+    }).filter(item => item.value > 0);
 
     this.branchComparisonChartOptions = {
       series: branchData.map(item => item.value),
@@ -338,18 +316,17 @@ export class StockReportComponent implements OnInit {
   }
 
   initSalesVsStockChart(): void {
-    // Compare sales vs. current stock for categories with data
-    const categoryStats = this.categories.map(category => {
-      const items = this.reportData.inventory.filter(item => item.category.id === category.id);
-      const totalStock = items.reduce((sum, item) => sum + item.currentStock, 0);
-      const totalSold = items.reduce((sum, item) => sum + item.soldQuantity, 0);
-      
+    const categoryStats = this.categories.map((category: CategoryDTO) => {
+      const items = this.reportData.inventory.filter((item: InventoryItemDTO) => item.category.id === category.id);
+      const totalStock = items.reduce((sum: number, item: InventoryItemDTO) => sum + item.currentStock, 0);
+      const totalSold = items.reduce((sum: number, item: InventoryItemDTO) => sum + item.soldQuantity, 0);
+
       return {
         name: category.name,
         stock: totalStock,
         sold: totalSold
       };
-    }).filter(item => item.stock > 0 || item.sold > 0); // Only show categories with data
+    }).filter(item => item.stock > 0 || item.sold > 0);
 
     const categories = categoryStats.map(item => item.name);
     const stockData = categoryStats.map(item => item.stock);
@@ -396,7 +373,7 @@ export class StockReportComponent implements OnInit {
       },
       tooltip: {
         y: {
-          formatter: function(val: any) {
+          formatter: function(val: number) {
             return val.toString();
           }
         }
@@ -410,7 +387,6 @@ export class StockReportComponent implements OnInit {
     };
   }
 
-  // Helper methods for empty charts
   createEmptyBarChart(title: string): any {
     return {
       series: [{ data: [] }],
@@ -452,14 +428,13 @@ export class StockReportComponent implements OnInit {
 
   applyFilters(): void {
     const filters = this.filterForm.value as InventoryReportRequestDTO;
-    
-    // Convert empty arrays to undefined to fetch all data
+
     const cleanedFilters: InventoryReportRequestDTO = {
       branchIds: filters.branchIds?.length ? filters.branchIds : undefined,
       categoryIds: filters.categoryIds?.length ? filters.categoryIds : undefined,
       includeLowStock: filters.includeLowStock || false
     };
-    
+
     console.log('Applying filters:', cleanedFilters);
     this.loadInventoryReport(cleanedFilters);
   }
@@ -474,18 +449,19 @@ export class StockReportComponent implements OnInit {
   }
 
   sortData(column: string): void {
+    if (!this.reportData?.inventory) return;
+
     if (this.sortColumn === column) {
       this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
     } else {
       this.sortColumn = column;
       this.sortDirection = 'asc';
     }
-    
-    // Sort the inventory data
+
     this.reportData.inventory.sort((a, b) => {
       let aValue: any;
       let bValue: any;
-      
+
       switch (column) {
         case 'product.name':
           aValue = a.product.name.toLowerCase();
@@ -514,12 +490,12 @@ export class StockReportComponent implements OnInit {
         default:
           return 0;
       }
-      
+
       if (aValue < bValue) return this.sortDirection === 'asc' ? -1 : 1;
       if (aValue > bValue) return this.sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-    
+
     console.log(`Sorted by ${this.sortColumn} in ${this.sortDirection} order`);
   }
 
@@ -528,9 +504,9 @@ export class StockReportComponent implements OnInit {
       console.log('No data to export');
       return;
     }
-    
+
     const headers = ['Product Name', 'SKU', 'Category', 'Current Stock', 'Price', 'Branch', 'Low Stock Alert'];
-    const csvData = this.reportData.inventory.map(item => [
+    const csvData = this.reportData.inventory.map((item: InventoryItemDTO) => [
       item.product.name,
       item.product.sku,
       item.category.name,
@@ -539,11 +515,11 @@ export class StockReportComponent implements OnInit {
       item.branch.name,
       item.lowStockAlert ? 'Yes' : 'No'
     ]);
-    
+
     const csvContent = [headers, ...csvData]
       .map(row => row.map(cell => `"${cell}"`).join(','))
       .join('\n');
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
