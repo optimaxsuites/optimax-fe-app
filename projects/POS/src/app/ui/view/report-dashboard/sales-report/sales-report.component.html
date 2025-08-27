@@ -2,28 +2,22 @@
 <div class="min-h-screen bg-gray-50">
   <!-- Header -->
   <header class="bg-white shadow">
-    <div class=" px-4 sm:px-6 lg:px-8 py-6">
+    <div class="px-4 sm:px-6 lg:px-8 py-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-gray-700">Sales Report </h1>
-          <p class="text-gray-500 mt-1">Analytics and insights for your business</p>
+          <h1 class="text-2xl font-bold text-gray-700">Sales Report</h1>
+          <p class="mt-1 text-gray-500">Analytics and insights for your business</p>
         </div>
         <div class="flex items-center space-x-4">
-
-          <button class="inline-flex items-center px-4 py-2 border border-transparent font-medium rounded-md shadow-sm text-white bg-customBlue hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue" (click)="openFilterForm()">
-                Apply Filters
-               </button>
-          <!-- Date Range Selector -->
-          <!-- <div class="relative">
-            <select [(ngModel)]="dateRange" 
-                    class="bg-white border border-gray-300 rounded-md py-2 pl-3 pr-8 font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-customBlue focus:border-transparent">
-              <option value="7 days">Last 7 days</option>
-              <option value="14 days">Last 14 days</option>
-              <option value="30 days">Last 30 days</option>
-              <option value="90 days">Last 90 days</option>
-              <option value="12 months">Last 12 months</option>
-            </select>
-          </div> -->
+          <button
+            class="inline-flex items-center px-4 py-2 border border-transparent font-medium rounded-md shadow-sm text-white bg-customBlue hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue"
+            (click)="toggleFilterForm()">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            {{ isFilterFormOpen ? 'Hide Filters' : 'Apply Filters' }}
+          </button>
+          
           <!-- Export Button -->
           <button class="inline-flex items-center px-4 py-2 border border-transparent font-medium rounded-md shadow-sm text-white bg-customBlue hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -36,280 +30,375 @@
     </div>
   </header>
 
-  <!-- Loading indicator -->
-  <div *ngIf="loading" class="flex justify-center items-center h-64">
-    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-customBlue"></div>
-  </div>
+  <!-- Filter Form -->
+  <div class="px-4 sm:px-6 lg:px-8 py-6">
+    <div class="bg-white shadow rounded-2xl p-8 mb-8" *ngIf="isFilterFormOpen">
+      <h2 class="text-xl font-semibold text-gray-800 mb-6">Report Filters</h2>
 
-  <!-- Main Content -->
-   
-  
-  <div *ngIf="!loading" class=" px-4 sm:px-6 lg:px-8 py-8">
-    <!-- KPI Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <!-- Total Revenue Card -->
-      <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-customBlue">
-        <div class="flex items-center justify-between">
+      <form [formGroup]="reportForm" (ngSubmit)="onSubmit()" class="space-y-6">
+        <!-- Date Range Filters -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Start Date -->
           <div>
-            <p class="text-sm font-medium text-gray-500">Total Revenue</p>
-            <p class="text-2xl font-bold text-gray-700 mt-1">{{ formatCurrency(salesReport.totalRevenue) }}</p>
+            <label for="startDate" class="block font-medium text-gray-700 mb-1">Start Date</label>
+            <input
+              type="date"
+              id="startDate"
+              formControlName="startDate"
+              class="w-full rounded-lg border border-gray-300 focus:border-customBlue focus:ring-customBlue shadow-sm px-3 py-2">
           </div>
-          <div class="h-12 w-12 bg-indigo-100 rounded-full flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-customBlueHover" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        </div>
-        <div class="mt-4 flex items-center font-medium text-green-500">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-          </svg>
-          <span>8.2% from previous period</span>
-        </div>
-      </div>
 
-      <!-- Total Transactions Card -->
-      <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
-        <div class="flex items-center justify-between">
+          <!-- End Date -->
           <div>
-            <p class="text-sm font-medium text-gray-500">Transactions</p>
-            <p class="text-2xl font-bold text-gray-700 mt-1">{{ salesReport.totalTransactions.toLocaleString() }}</p>
-          </div>
-          <div class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
+            <label for="endDate" class="block font-medium text-gray-700 mb-1">End Date</label>
+            <input
+              type="date"
+              id="endDate"
+              formControlName="endDate"
+              class="w-full rounded-lg border border-gray-300 focus:border-customBlue focus:ring-customBlue shadow-sm px-3 py-2">
           </div>
         </div>
-        <div class="mt-4 flex items-center font-medium text-green-500">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-          </svg>
-          <span>5.3% from previous period</span>
-        </div>
-      </div>
 
-      <!-- Average Order Value Card -->
-      <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
-        <div class="flex items-center justify-between">
+        <!-- Multi-Selects Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Branches -->
           <div>
-            <p class="text-sm font-medium text-gray-500">Avg. Order Value</p>
-            <p class="text-2xl font-bold text-gray-700 mt-1">{{ formatCurrency(salesReport.averageOrderValue) }}</p>
+            <label class="block font-medium text-gray-700 mb-1">Branches</label>
+            <ng-select
+              [multiple]="true"
+              [items]="branches"
+              bindLabel="name"
+              bindValue="id"
+              placeholder="Select branches"
+              formControlName="branchIds"
+              class="w-full">
+            </ng-select>
           </div>
-          <div class="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-            </svg>
-          </div>
-        </div>
-        <div class="mt-4 flex items-center font-medium text-green-500">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-          </svg>
-          <span>2.8% from previous period</span>
-        </div>
-      </div>
 
-      <!-- Total Discounts Card -->
-      <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-amber-500">
-        <div class="flex items-center justify-between">
+          <!-- Payment Methods -->
           <div>
-            <p class="text-sm font-medium text-gray-500">Total Discounts</p>
-            <p class="text-2xl font-bold text-gray-700 mt-1">{{ formatCurrency(salesReport.totalDiscounts) }}</p>
+            <label class="block font-medium text-gray-700 mb-1">Payment Methods</label>
+            <ng-select
+              [multiple]="true"
+              [items]="paymentMethods"
+              bindLabel="name"
+              bindValue="id"
+              placeholder="Select payment methods"
+              formControlName="paymentMethodIds"
+              class="w-full">
+            </ng-select>
           </div>
-          <div class="h-12 w-12 bg-amber-100 rounded-full flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </div>
+
+        <!-- Group By -->
+        <div class="grid grid-cols-1 gap-6">
+          <div>
+            <label for="groupBy" class="block font-medium text-gray-700 mb-1">Group By</label>
+            <select
+              id="groupBy"
+              formControlName="groupBy"
+              class="w-full rounded-lg border border-gray-300 focus:border-customBlue focus:ring-customBlue shadow-sm px-3 py-2">
+              <option value="branch">Branch</option>
+              <option value="product">Product</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Submit and Reset Buttons -->
+        <div class="flex justify-end pt-4 space-x-3">
+          <button
+            type="button"
+            (click)="resetFilters()"
+            class="inline-flex items-center px-5 py-2.5 border border-gray-300 font-medium rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+            Reset
+          </button>
+          <button
+            type="submit"
+            class="inline-flex items-center px-5 py-2.5 border border-transparent font-medium rounded-lg shadow-sm text-white bg-customBlue hover:bg-customBlue focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue">
+            <span *ngIf="loading" class="mr-2">
+              <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </span>
+            Generate Report
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Loading indicator -->
+    <div *ngIf="loading" class="flex justify-center items-center h-64">
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-customBlue"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div *ngIf="!loading && report" class="space-y-6">
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Revenue Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-customBlue">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-500">Total Revenue</p>
+              <p class="text-2xl font-bold text-gray-700 mt-1">{{ formatCurrency(report.totalRevenue) }}</p>
+            </div>
+            <div class="h-12 w-12 bg-indigo-100 rounded-full flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-customBlueHover" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center font-medium text-green-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
             </svg>
+            <span>8.2% from previous period</span>
           </div>
         </div>
-        <div class="mt-4 flex items-center font-medium text-red-500">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
-          <span>1.5% from previous period</span>
+
+        <!-- Total Transactions Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-500">Transactions</p>
+              <p class="text-2xl font-bold text-gray-700 mt-1">{{ report.totalTransactions.toLocaleString() }}</p>
+            </div>
+            <div class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center font-medium text-green-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
+            <span>5.3% from previous period</span>
+          </div>
+        </div>
+
+        <!-- Average Order Value Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-500">Avg. Order Value</p>
+              <p class="text-2xl font-bold text-gray-700 mt-1">{{ formatCurrency(report.averageOrderValue) }}</p>
+            </div>
+            <div class="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+              </svg>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center font-medium text-green-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+            </svg>
+            <span>2.8% from previous period</span>
+          </div>
+        </div>
+
+        <!-- Total Discounts Card -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-amber-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-500">Total Discounts</p>
+              <p class="text-2xl font-bold text-gray-700 mt-1">{{ formatCurrency(report.totalDiscounts) }}</p>
+            </div>
+            <div class="h-12 w-12 bg-amber-100 rounded-full flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 01118 0z" />
+              </svg>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center font-medium text-red-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+            <span>1.5% from previous period</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Navigation Tabs -->
-    <div class="bg-white shadow-sm rounded-lg mb-8">
-      <nav class="flex" aria-label="Tabs">
-        <button 
-          (click)="setTab('overview')" 
-          [ngClass]="{'border-customBlue text-customBlueHover': selectedTab === 'overview', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': selectedTab !== 'overview'}"
-          class="py-4 px-6 text-center border-b-2 font-medium text-sm">
-          Overview
-        </button>
-        <button 
-          (click)="setTab('branches')" 
-          [ngClass]="{'border-customBlue text-customBlueHover': selectedTab === 'branches', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': selectedTab !== 'branches'}"
-          class="py-4 px-6 text-center border-b-2 font-medium">
-          Branches
-        </button>
-        <button 
-          (click)="setTab('products')" 
-          [ngClass]="{'border-customBlue text-customBlueHover': selectedTab === 'products', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': selectedTab !== 'products'}"
-          class="py-4 px-6 text-center border-b-2 font-medium">
-          Products
-        </button>
-        <button 
-          (click)="setTab('payments')" 
-          [ngClass]="{'border-customBlue text-customBlueHover': selectedTab === 'payments', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': selectedTab !== 'payments'}"
-          class="py-4 px-6 text-center border-b-2 font-medium">
-          Payment Methods
-        </button>
-        <button 
-          (click)="setTab('details')" 
-          [ngClass]="{'border-customBlue text-customBlueHover': selectedTab === 'details', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': selectedTab !== 'details'}"
-          class="py-4 px-6 text-center border-b-2 font-medium">
-          Detailed Report
-        </button>
-      </nav>
-    </div>
-
-    <!-- Overview Tab Content -->
-    <div *ngIf="selectedTab === 'overview'">
-      <!-- First row -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-       <!-- Sales Trend Chart -->
-<div class="bg-white p-6 rounded-lg shadow" *ngIf="trendChartOptions?.series">
-  <div id="trendChart">
-    <apx-chart
-      [series]="trendChartOptions.series || []"
-      [chart]="trendChartOptions.chart || {type: 'line', height: 350}"
-      [xaxis]="trendChartOptions.xaxis || {}"
-      [yaxis]="trendChartOptions.yaxis || {}"
-      [dataLabels]="trendChartOptions.dataLabels || { enabled: false }"
-      [stroke]="trendChartOptions.stroke || {}"
-      [title]="trendChartOptions.title || {}"
-      [colors]="trendChartOptions.colors || []"
-      [tooltip]="trendChartOptions.tooltip || {}"
-      [legend]="trendChartOptions.legend || {}"
-    ></apx-chart>
-  </div>
-</div>
-
-        <!-- Payment Methods Chart -->
-<div class="bg-white p-6 rounded-lg shadow" *ngIf="paymentChartOptions?.series">
-  <div id="paymentChart">
-    <apx-chart
-      [series]="paymentChartOptions.series || []"
-      [chart]="paymentChartOptions.chart || { type: 'donut', height: 350 }"
-      [labels]="paymentChartOptions.labels || []"
-      [dataLabels]="paymentChartOptions.dataLabels || { enabled: false }"
-      [title]="paymentChartOptions.title || {}"
-      [colors]="paymentChartOptions.colors || []"
-      [tooltip]="paymentChartOptions.tooltip || {}"
-      [legend]="paymentChartOptions.legend || {}"
-    ></apx-chart>
-  </div>
-</div>
+      <!-- Navigation Tabs -->
+      <div class="bg-white shadow-sm rounded-lg mb-8">
+        <nav class="flex" aria-label="Tabs">
+          <button 
+            (click)="setTab('overview')" 
+            [ngClass]="{'border-customBlue text-customBlueHover': selectedTab === 'overview', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': selectedTab !== 'overview'}"
+            class="py-4 px-6 text-center border-b-2 font-medium text-sm">
+            Overview
+          </button>
+          <button 
+            (click)="setTab('branches')" 
+            [ngClass]="{'border-customBlue text-customBlueHover': selectedTab === 'branches', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': selectedTab !== 'branches'}"
+            class="py-4 px-6 text-center border-b-2 font-medium">
+            Branches
+          </button>
+          <button 
+            (click)="setTab('products')" 
+            [ngClass]="{'border-customBlue text-customBlueHover': selectedTab === 'products', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': selectedTab !== 'products'}"
+            class="py-4 px-6 text-center border-b-2 font-medium">
+            Products
+          </button>
+          <button 
+            (click)="setTab('payments')" 
+            [ngClass]="{'border-customBlue text-customBlueHover': selectedTab === 'payments', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': selectedTab !== 'payments'}"
+            class="py-4 px-6 text-center border-b-2 font-medium">
+            Payment Methods
+          </button>
+          <button 
+            (click)="setTab('details')" 
+            [ngClass]="{'border-customBlue text-customBlueHover': selectedTab === 'details', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': selectedTab !== 'details'}"
+            class="py-4 px-6 text-center border-b-2 font-medium">
+            Detailed Report
+          </button>
+        </nav>
       </div>
 
-      <!-- Second row -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Branch Sales Chart -->
-<div class="bg-white p-6 rounded-lg shadow" *ngIf="branchChartOptions?.series">
-  <div id="branchChart">
-    <apx-chart
-      [series]="branchChartOptions.series || []"
-      [chart]="branchChartOptions.chart || {type: 'bar', height: 350}"
-      [xaxis]="branchChartOptions.xaxis || {}"
-      [yaxis]="branchChartOptions.yaxis || {}"
-      [dataLabels]="branchChartOptions.dataLabels || { enabled: false }"
-      [stroke]="branchChartOptions.stroke || {}"
-      [title]="branchChartOptions.title || {}"
-      [colors]="branchChartOptions.colors || []"
-      [tooltip]="branchChartOptions.tooltip || {}"
-    ></apx-chart>
-  </div>
-</div>
+      <!-- Overview Tab Content -->
+      <div *ngIf="selectedTab === 'overview'">
+        <!-- First row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <!-- Sales Trend Chart -->
+          <div class="bg-white p-6 rounded-lg shadow">
+            <div id="trendChart">
+              <apx-chart
+                [series]="trendChartOptions.series"
+                [chart]="trendChartOptions.chart"
+                [xaxis]="trendChartOptions.xaxis"
+                [yaxis]="trendChartOptions.yaxis"
+                [dataLabels]="trendChartOptions.dataLabels"
+                [stroke]="trendChartOptions.stroke"
+                [title]="trendChartOptions.title"
+                [colors]="trendChartOptions.colors"
+                [tooltip]="trendChartOptions.tooltip"
+                [legend]="trendChartOptions.legend"
+              ></apx-chart>
+            </div>
+          </div>
 
-        <!-- Top Products Chart -->
-<div class="bg-white p-6 rounded-lg shadow" *ngIf="productChartOptions?.series">
-  <div id="productChart">
-    <apx-chart
-      [series]="productChartOptions.series || []"
-      [chart]="productChartOptions.chart || {type: 'bar', height: 350}"
-      [xaxis]="productChartOptions.xaxis || {}"
-      [yaxis]="productChartOptions.yaxis || {}"
-      [dataLabels]="productChartOptions.dataLabels || { enabled: false }"
-      [stroke]="productChartOptions.stroke || {}"
-      [title]="productChartOptions.title || {}"
-      [colors]="productChartOptions.colors || []"
-      [tooltip]="productChartOptions.tooltip || {}"
-      [plotOptions]="productChartOptions.plotOptions || {}"
-      [fill]="productChartOptions.fill || {}"
-    ></apx-chart>
-  </div>
-</div>
+          <!-- Payment Methods Chart -->
+          <div class="bg-white p-6 rounded-lg shadow">
+            <div id="paymentChart">
+              <apx-chart
+                [series]="paymentChartOptions.series"
+                [chart]="paymentChartOptions.chart"
+                [labels]="paymentChartOptions.labels"
+                [dataLabels]="paymentChartOptions.dataLabels"
+                [title]="paymentChartOptions.title"
+                [colors]="paymentChartOptions.colors"
+                [tooltip]="paymentChartOptions.tooltip"
+                [legend]="paymentChartOptions.legend"
+              ></apx-chart>
+            </div>
+          </div>
+        </div>
+
+        <!-- Second row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <!-- Branch Sales Chart -->
+          <div class="bg-white p-6 rounded-lg shadow">
+            <div id="branchChart">
+              <apx-chart
+                [series]="branchChartOptions.series"
+                [chart]="branchChartOptions.chart"
+                [xaxis]="branchChartOptions.xaxis"
+                [yaxis]="branchChartOptions.yaxis"
+                [dataLabels]="branchChartOptions.dataLabels"
+                [stroke]="branchChartOptions.stroke"
+                [title]="branchChartOptions.title"
+                [colors]="branchChartOptions.colors"
+                [tooltip]="branchChartOptions.tooltip"
+              ></apx-chart>
+            </div>
+          </div>
+
+          <!-- Top Products Chart -->
+          <div class="bg-white p-6 rounded-lg shadow">
+            <div id="productChart">
+              <apx-chart
+                [series]="productChartOptions.series"
+                [chart]="productChartOptions.chart"
+                [xaxis]="productChartOptions.xaxis"
+                [yaxis]="productChartOptions.yaxis"
+                [dataLabels]="productChartOptions.dataLabels"
+                [stroke]="productChartOptions.stroke"
+                [title]="productChartOptions.title"
+                [colors]="productChartOptions.colors"
+                [tooltip]="productChartOptions.tooltip"
+                [plotOptions]="productChartOptions.plotOptions"
+                [fill]="productChartOptions.fill"
+              ></apx-chart>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- Branches Tab Content -->
-    <div *ngIf="selectedTab === 'branches'" class="bg-white rounded-lg shadow p-6">
-      <h2 class="text-lg font-semibold text-gray-700 mb-4">Branch Performance</h2>
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Order Value</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Growth</th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            <tr *ngFor="let branch of salesReport.totalSalesPerBranch">
-              <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-700">{{ branch.branch.name }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ branch.branch.location }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ formatCurrency(branch.totalRevenue) }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ branch.totalTransactions }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ formatCurrency(branch.averageOrderValue) }}</td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                  +{{ (Math.random() * 10).toFixed(1) }}%
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- Branches Tab Content -->
+      <div *ngIf="selectedTab === 'branches'" class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-700 mb-4">Branch Performance</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Order Value</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Growth</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr *ngFor="let branch of report.totalSalesPerBranch">
+                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-700">{{ branch.branch.name }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ branch.branch.location }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ formatCurrency(branch.totalRevenue) }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ branch.totalTransactions }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ formatCurrency(branch.averageOrderValue) }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    +{{ (Math.random() * 10).toFixed(1) }}%
+                  </span>
+                </td>
+                </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
 
-    <!-- Products Tab Content -->
-    <div *ngIf="selectedTab === 'products'" class="bg-white rounded-lg shadow p-6">
-      <h2 class="text-lg font-semibold text-gray-700 mb-4">Top Selling Products</h2>
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity Sold</th>
-              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            <tr *ngFor="let product of salesReport.topSellingProducts">
-              <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-700">{{ product.product.name }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ product.product.sku }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ product.product.category }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ formatCurrency(product.product.price) }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ product.quantitySold }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ formatCurrency(product.revenue) }}</td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- Products Tab Content -->
+      <div *ngIf="selectedTab === 'products'" class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-700 mb-4">Top Selling Products</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity Sold</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr *ngFor="let product of report.topSellingProducts">
+                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-700">{{ product.product.name }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ product.product.sku }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ product.product.category }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ formatCurrency(product.product.price) }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ product.quantitySold }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ formatCurrency(product.revenue) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
 
-    <!-- Payment Methods Tab Content -->
+     <!-- Payment Methods Tab Content -->
     <div *ngIf="selectedTab === 'payments'" class="bg-white rounded-lg shadow p-6">
       <h2 class="text-lg font-semibold text-gray-700 mb-4">Payment Method Analysis</h2>
       <div class="overflow-x-auto">
@@ -344,143 +433,88 @@
     </div>
 
     <!-- Detailed Report Tab Content -->
-    <div *ngIf="selectedTab === 'details'">
-      <!-- Filters -->
-      <div class="bg-white rounded-lg shadow p-6 mb-8">
-        <div class="flex flex-wrap items-end gap-4">
-          <!-- Branch Filter -->
-          <div class="w-full md:w-auto">
-            <label for="branch" class="block font-medium text-gray-700 mb-1">Branch</label>
-            <select id="branch" [(ngModel)]="selectedBranch" class="block w-full bg-white border border-gray-300 rounded-md py-2 px-3">
-              <option value="all">All Branches</option>
-              <option *ngFor="let branch of salesReport.totalSalesPerBranch" [value]="branch.branch.id">
-                {{ branch.branch.name }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Payment Method Filter -->
-          <div class="w-full md:w-auto">
-            <label for="payment" class="block font-medium text-gray-700 mb-1">Payment Method</label>
-            <select id="payment" [(ngModel)]="selectedPaymentMethod" class="block w-full bg-white border border-gray-300 rounded-md py-2 px-3">
-              <option value="all">All Payment Methods</option>
-              <option *ngFor="let payment of salesReport.paymentMethodBreakdown" [value]="payment.paymentMethod">
-                {{ payment.paymentMethod }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Cashier Filter -->
-          <div class="w-full md:w-auto">
-            <label for="cashier" class="block font-medium text-gray-700 mb-1">Cashier</label>
-            <select id="cashier" [(ngModel)]="selectedCashier" class="block w-full bg-white border border-gray-300 rounded-md py-2 px-3">
-              <option value="all">All Cashiers</option>
-              <option value="1">John Smith</option>
-              <option value="2">Emma Johnson</option>
-              <option value="3">Michael Brown</option>
-              <option value="4">Lisa Davis</option>
-              <option value="5">James Wilson</option>
-            </select>
-          </div>
-
-          <!-- Filter Buttons -->
-          <div class="flex items-center space-x-2 ml-auto">
-            <button (click)="applyFilters()" class="inline-flex items-center px-4 py-2 border border-transparent font-medium rounded-md shadow-sm text-white bg-customBlueHover hover:bg-indigo-700 focus:outline-none">
-              Apply Filters
-            </button>
-            <button (click)="resetFilters()" class="inline-flex items-center px-4 py-2 border border-gray-300 font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
-              Reset
-            </button>
-          </div>
-        </div>
+    <div *ngIf="selectedTab === 'details'" class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-lg font-semibold text-gray-700 mb-4">Detailed Transactions</h2>
+      <p class="text-sm text-gray-500 mb-4">Comprehensive breakdown of all sales transactions</p>
+      
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cashier</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discounts</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr *ngFor="let item of paginatedBreakdown">
+              <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ item.date | date:'MMM d, y' }}</td>
+              <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-700">{{ item.branch.name }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ item.cashier?.name || 'N/A' }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ item.paymentMethod || 'N/A' }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ item.transactions }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ formatCurrency(item.revenue) }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ formatCurrency(item.discounts) }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <!-- Transactions Table -->
-      <div class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="p-6 border-b border-gray-200">
-          <h2 class="text-lg font-semibold text-gray-700">Detailed Transactions</h2>
-          <p class="text-sm text-gray-500 mt-1">Comprehensive breakdown of all sales transactions</p>
+      <!-- Pagination -->
+      <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-4">
+        <div class="flex-1 flex justify-between sm:hidden">
+          <button (click)="setPage(currentPage - 1)" [disabled]="currentPage === 1" class="relative inline-flex items-center px-4 py-2 border border-gray-300 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            Previous
+          </button>
+          <button (click)="setPage(currentPage + 1)" [disabled]="currentPage === totalPages" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            Next
+          </button>
         </div>
-        
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cashier</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discounts</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr *ngFor="let item of paginatedBreakdown">
-                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ item.date | date:'MMM d, y' }}</td>
-                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-700">{{ item.branch.name }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ item.cashier?.name || 'N/A' }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ item.paymentMethod || 'N/A' }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ item.transactions }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ formatCurrency(item.revenue) }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ formatCurrency(item.discounts) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          
+           <!-- Pagination Info -->
+            <p class="text-sm text-gray-700">
+              Showing <span class="font-medium">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
+              to <span class="font-medium">
+                {{
+                  Math.min(currentPage * itemsPerPage, salesReport.breakdown.length)
+                }}
+              </span> of <span class="font-medium">{{ salesReport.breakdown.length }}</span> results
+            </p>
 
-        <!-- Pagination -->
-        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-          <div class="flex-1 flex justify-between sm:hidden">
-            <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-              Previous
-            </a>
-            <a href="#" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-              Next
-            </a>
-          </div>
-          <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-            
-             <!-- Pagination Info -->
-              <p class="text-sm text-gray-700">
-                Showing <span class="font-medium">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
-                to <span class="font-medium">
-                  {{
-                    Math.min(currentPage * itemsPerPage, salesReport.breakdown.length)
-                  }}
-                </span> of <span class="font-medium">{{ salesReport.breakdown.length }}</span> results
-              </p>
+            <!-- Pagination Controls -->
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <button (click)="setPage(currentPage - 1)" [disabled]="currentPage === 1"
+                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white font-medium text-gray-500 hover:bg-gray-50">
+                <span class="sr-only">Previous</span>
+                <!-- Icon -->
+                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              </button>
 
-              <!-- Pagination Controls -->
-              <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                <button (click)="setPage(currentPage - 1)" [disabled]="currentPage === 1"
-                  class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white font-medium text-gray-500 hover:bg-gray-50">
-                  <span class="sr-only">Previous</span>
-                  <!-- Icon -->
-                  <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                  </svg>
+              <ng-container *ngFor="let page of [].constructor(totalPages); let i = index">
+                <button (click)="setPage(i + 1)"
+                  [class.bg-indigo-50]="currentPage === i + 1"
+                  [class.text-customBlueHover]="currentPage === i + 1"
+                  class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white font-medium text-gray-500 hover:bg-gray-50">
+                  {{ i + 1 }}
                 </button>
+              </ng-container>
 
-                <ng-container *ngFor="let page of [].constructor(totalPages); let i = index">
-                  <button (click)="setPage(i + 1)"
-                    [class.bg-indigo-50]="currentPage === i + 1"
-                    [class.text-customBlueHover]="currentPage === i + 1"
-                    class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white font-medium text-gray-500 hover:bg-gray-50">
-                    {{ i + 1 }}
-                  </button>
-                </ng-container>
+              <button (click)="setPage(currentPage + 1)" [disabled]="currentPage === totalPages"
+                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white font-medium text-gray-500 hover:bg-gray-50">
+                <span class="sr-only">Next</span>
+                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </nav>
 
-                <button (click)="setPage(currentPage + 1)" [disabled]="currentPage === totalPages"
-                  class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white font-medium text-gray-500 hover:bg-gray-50">
-                  <span class="sr-only">Next</span>
-                  <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                  </svg>
-                </button>
-              </nav>
-
-          </div>
         </div>
       </div>
     </div>

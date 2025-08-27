@@ -1,5 +1,6 @@
 import { Observable, Subscribable } from 'rxjs';
 import { BusinessType } from './enums';
+import { ApexAxisChartSeries, ApexChart, ApexXAxis, ApexYAxis, ApexDataLabels, ApexGrid, ApexStroke, ApexTooltip, ApexPlotOptions, ApexFill, ApexLegend, ApexResponsive, ApexNonAxisChartSeries, ApexTitleSubtitle } from 'ng-apexcharts';
 
 /** Like `satisfies` but for types */
 export type Satisfy<
@@ -80,6 +81,11 @@ export interface DiscountDTO {
   id: number;
   name: string;
   value: number;
+  code?: string;
+  description?: string;
+  active?: boolean;
+  discountType: DiscountTypeDTO | 'PERCENTAGE' | 'FIXED_AMOUNT';
+  discountValue?: number;
 
   // Date String Format: "2025-02-02T22:56:31.935Z"
   startDate: Date;
@@ -88,10 +94,6 @@ export interface DiscountDTO {
    * The idea behind minimum quantity is when the discount only applies on quantity , for instance by 2 get 1
    */
   minQuantity: number;
-  /**
-   * Maybe named wrongly, but it just means if its cash/currency and not quantity. Also it can be `null` or `undefined` for some reason :p
-   */
-  discountType: DiscountTypeDTO;
 }
 
 export interface DiscountTypeDTO {
@@ -269,7 +271,6 @@ export interface SelectedRequest extends Refund {
   refundableAmount: string | number;
   reason: any;
   royaltyAccountId: number;
-  // customer: any;
   selectedRequest: Refund;
   phoneNumber: string;
   emailAddress: string;
@@ -290,6 +291,10 @@ export interface InventoryProductDTO {
   // The product to be associated to
   productId: number;
   history: HistoryDTO;
+  name: string;
+  sku: string;
+  price: number;
+  id: number | string;
 }
 
 export interface HistoryDTO {
@@ -337,7 +342,7 @@ export interface Business {
 
 /////
 
-interface ProductDTO {
+export interface ProductDTO {
   category: any;
   price: number;
   id: number;
@@ -347,6 +352,8 @@ interface ProductDTO {
   sku: string;
   weight: number;
   createdDate: string;
+  discountedUnits?: number;
+  totalDiscountAmount?: number;
 
   createdBy: string | null;
   partNumber: string;
@@ -376,6 +383,8 @@ export interface BranchDTO {
   description: string;
   address: string;
   phoneNo: number;
+  manager?: string;
+  contactInfo?: string;
 }
 interface BranchDataDTO {
   id: number;
@@ -392,7 +401,7 @@ interface IndustryDTO {
   description: number;
 }
 
-interface SupplierDTO {
+export interface SupplierDTO {
   id: number;
   name: string;
   address: string;
@@ -510,7 +519,7 @@ export const MeasurementUnit = {
 } as const;
 
 /**
- * Represents the  status of a table order.
+ * Represents the status of a table order.
  */
 interface TableOrderStatusDTO {
   /** Unique identifier (64-bit integer) */
@@ -646,6 +655,7 @@ export enum ReturnStatus {
 export interface UserDTO {
   id: number;
   name: string;
+  email?: string;
   // Add other relevant user fields
 }
 
@@ -685,9 +695,9 @@ export enum RefundStatus {
 export interface InventoryPayload {
   id: number;
   availableQuantity: number;
-  status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK'; 
-  productId: number;  
-  branchId: number;   
+  status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK';
+  productId: number;
+  branchId: number;
   stockMovement: StockMovementPayload[];
 }
 
@@ -695,17 +705,17 @@ export interface StockMovementPayload {
   id: number;
   quantity: number;
   reference: string;
-sellingPrice: string | number;  
-    purchasePrice: string | number;
-  createdDate: string; 
+  sellingPrice: string | number;
+  purchasePrice: string | number;
+  createdDate: string;
   createdById: number;
-  supplier: {         
+  supplier: {
     id: number;
   };
-  ingredient: {        
+  ingredient: {
     id: number;
   };
-  inventory?: {       
+  inventory?: {
     id: number;
     availableQuantity: number;
     status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK';
@@ -713,7 +723,7 @@ sellingPrice: string | number;
     branch: BranchDTO;
     stockMovement: string[];
   };
-  stockMovements?: { 
+  stockMovements?: {
     id: number;
     availableQuantity: number;
     status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK';
@@ -726,7 +736,7 @@ sellingPrice: string | number;
 export interface StockMovementsPayload {
   id: number;
   availableQuantity: number;
-  status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK'; 
+  status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK';
   product: ProductData;
   branch: BranchDTO;
   stockMovement: string[];
@@ -746,8 +756,8 @@ export interface CreateStockMovementPayload {
   id: number;
   quantity: number;
   reference: string;
-sellingPrice: string | number; 
-    purchasePrice: string | number;
+  sellingPrice: string | number;
+  purchasePrice: string | number;
   createdDate: string;
   createdById: number;
   supplier: {
@@ -783,16 +793,16 @@ export interface RecipePayload {
 // ...existing exports
 
 export interface StockMovementCreateDTO {
-  // id: number;  // <-- omit for create
-  quantity: number;          // negative for OUT
+  // id: number; // <-- omit for create
+  quantity: number; // negative for OUT
   reference: string;
   purchasePrice: number;
   sellingPrice: number;
-  createdDate: string;       // ISO with Z
+  createdDate: string; // ISO with Z
   supplierId?: number | null;
-  ingredientId: number;      // backend "product" id
+  ingredientId: number; // backend "product" id
   inventoryId: number;
-  createdById?: number;      // omit unless server requires it
+  createdById?: number; // omit unless server requires it
   // stockMovementsId?: number; // only include if server mandates it; otherwise omit
 }
 
@@ -803,25 +813,23 @@ export interface InventoryCreatePayload {
   availableQuantity: number;
   status: InventoryStatus;
   branchId: number;
-  productId?: number;     
-  ingredientId?: number; 
+  productId?: number;
+  ingredientId?: number;
   stockMovement?: StockMovementCreateForInventory[];
 
 
 }
 
-
-
 export interface StockMovementCreateStandalone {
- 
+
   quantity: number;
   reference?: string;
   purchasePrice?: number;
   sellingPrice?: number;
-  createdDate: string;            
+  createdDate: string;
   supplierId?: number | null;
-  inventoryId: number;            
- 
+  inventoryId: number;
+
 }
 
 
@@ -859,11 +867,11 @@ export interface StockMovementCreatePayload {
   reference: string;
   purchasePrice: number;
   sellingPrice: number;
-  createdDate: string; 
+  createdDate: string;
   supplierId?: number | null;
-  ingredientId: number; 
-  inventoryId?: number; 
-  
+  ingredientId: number;
+  inventoryId?: number;
+
 }
 
 export interface StockMovementResponsePayload {
@@ -881,25 +889,25 @@ export interface StockMovementResponsePayload {
 }
 
 export type StockMovementPostBody = {
-  quantity: number;         
+  quantity: number;
   reference?: string;
   purchasePrice?: number;
   sellingPrice?: number;
-  createdDate: string;        
+  createdDate: string;
   supplierId?: number | null;
-  inventoryId: number;     
+  inventoryId: number;
 };
 export interface StockMovementByInventory {
   id: number;
-  quantity: number;               
+  quantity: number;
   reference?: string | null;
   purchasePrice?: number | null;
   sellingPrice?: number | null;
-  createdDate: string | number[]; 
+  createdDate: string | number[];
   supplierId?: number | null;
   inventoryId: number;
   createdById?: number | null;
- 
+
   supplier?: {
     id: number;
     name: string;
@@ -920,4 +928,143 @@ export interface StockMovementByInventory {
 }
 
 
+// These are the report-related DTOs and other types from the  code that were causing conflicts,
+// but which I've included here to ensure the file is complete. I've corrected them where necessary.
+export interface ProductPerformanceReportRequestDTO {
+  startDate: string;
+  endDate: string;
+  branchIds?: number[];
+  categoryIds?: number[];
+  groupBy?: 'product' | 'category' | 'variant';
+}
 
+export interface PromotionsReportRequestDTO {
+  startDate: Date;
+  endDate: Date;
+  promotionIds?: string[];
+}
+
+export interface BranchReportRequestDTO {
+  startDate: Date;
+  endDate: Date;
+  compareWithPrevious?: boolean;
+}
+
+export interface InventoryReportRequestDTO {
+  branchIds?: number[];
+  categoryIds?: number[];
+  includeLowStock?: boolean;
+}
+
+export interface CashierReportRequestDTO {
+  startDate: string;
+  endDate: string;
+  branchIds?: number[];
+  shift?: string;
+}
+
+export interface ProductPerformanceReportDTO {
+  totalProductsSold: number;
+  totalRevenue: number;
+  bestsellers: ProductStatsDTO[];
+  underperformers: ProductStatsDTO[];
+  productPerformanceBreakdown: ProductPerformanceDTO[];
+}
+
+export interface PromotionsReportDTO {
+  promotions: PromotionPerformanceDTO[];
+}
+
+export interface BranchReportDTO {
+  branches: BranchPerformanceDTO[];
+}
+
+export interface InventoryReportDTO {
+  inventory: InventoryItemDTO[];
+}
+
+export interface CashierReportDTO {
+  cashiers: CashierPerformanceDTO[];
+}
+
+export interface ProductStatsDTO {
+  product: ProductDTO;
+  quantitySold: number;
+  revenue: number;
+  percentageOfTotal: number;
+}
+
+export interface ProductPerformanceDTO {
+  product: ProductDTO;
+  category: CategoryDTO;
+  variant?: string;
+  quantitySold: number;
+  totalRevenue: number;
+  grossMargin: number;
+  branch?: BranchDTO;
+}
+
+export interface PromotionPerformanceDTO {
+  promotion: DiscountDTO;
+  usageCount: number;
+  totalDiscountAmount: number;
+  affectedProducts: ProductDTO[];
+  startDate: Date;
+  endDate: Date;
+}
+
+export interface BranchPerformanceDTO {
+  branch: BranchDTO;
+  totalRevenue: number;
+  productMovement: number;
+  customerFootfall?: number;
+  previousRevenue?: number;
+  revenueGrowthPercent: number;
+}
+
+export interface CashierPerformanceDTO {
+  cashier: UserDTO;
+  branch: BranchDTO;
+  ordersHandled: number;
+  revenueGenerated: number;
+  refunds: number;
+  discountsGiven: number;
+}
+
+export interface InventoryItemDTO {
+  product: InventoryProductDTO;
+  category: CategoryDTO;
+  currentStock: number;
+  soldQuantity: number;
+  branch: BranchDTO;
+  lowStockAlert: boolean;
+}
+
+export interface PaymentMethodDTO {
+  id: string;
+  name: string;
+}
+
+export type ChartOptions = {
+  series?: ApexAxisChartSeries | ApexNonAxisChartSeries;
+  chart?: ApexChart;
+  xaxis?: ApexXAxis;
+  yaxis?: ApexYAxis | ApexYAxis[];
+  dataLabels?: ApexDataLabels;
+  grid?: ApexGrid;
+  stroke?: ApexStroke;
+  tooltip?: ApexTooltip;
+  plotOptions?: ApexPlotOptions;
+  fill?: ApexFill;
+  legend?: ApexLegend;
+  responsive?: ApexResponsive[];
+  colors?: string[];
+  title?: ApexTitleSubtitle;
+  labels?: string[];
+};
+
+export interface CategoryDTO {
+  id: number;
+  name: string;
+  description?: string;
+}

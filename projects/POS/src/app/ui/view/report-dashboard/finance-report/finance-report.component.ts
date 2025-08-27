@@ -18,33 +18,19 @@ import {
 } from 'ng-apexcharts';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { ReportService } from '../../../service/report.service';
-import { BranchReportDTO, BranchPerformanceDTO, BranchReportRequestDTO } from '../../../service/report.service';
-
-export type ChartOptions = {
-  series?: ApexAxisChartSeries | ApexNonAxisChartSeries;
-  chart?: ApexChart;
-  xaxis?: ApexXAxis;
-  yaxis?: ApexYAxis | ApexYAxis[];
-  dataLabels?: ApexDataLabels;
-  grid?: ApexGrid;
-  stroke?: ApexStroke;
-  title?: ApexTitleSubtitle;
-  colors?: string[];
-  tooltip?: ApexTooltip;
-  fill?: ApexFill;
-  legend?: ApexLegend;
-  responsive?: ApexResponsive[];
-  plotOptions?: ApexPlotOptions;
-  labels?: string[];
-};
-
+import {
+  BranchReportDTO,
+  BranchPerformanceDTO,
+  BranchReportRequestDTO,
+  BranchDTO,
+  ChartOptions
+} from '../../../models/interface'; // Corrected import path
 
 @Component({
   selector: 'app-finance-report',
   templateUrl: './finance-report.component.html',
   styleUrl: './finance-report.component.scss'
 })
-
 export class FinanceReportComponent implements OnInit {
   filterForm!: FormGroup;
   reportData!: BranchReportDTO;
@@ -55,12 +41,12 @@ export class FinanceReportComponent implements OnInit {
   totalCustomers = 0;
   totalProducts = 0;
 
-  revenueChartOptions!: any;
-  growthChartOptions!: any;
-  categoryChartOptions!: any;
-  trendChartOptions!: any;
-  demographicChartOptions!: any;
-  trafficChartOptions!: any;
+  public revenueChartOptions!: ChartOptions;
+  public growthChartOptions!: ChartOptions;
+  public categoryChartOptions!: ChartOptions;
+  public trendChartOptions!: ChartOptions;
+  public demographicChartOptions!: ChartOptions;
+  public trafficChartOptions!: ChartOptions;
 
   Math = Math;
   filterFormOpen = false;
@@ -68,7 +54,7 @@ export class FinanceReportComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private reportService: ReportService
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.initFilterForm();
@@ -80,9 +66,9 @@ export class FinanceReportComponent implements OnInit {
   }
 
   getBranchReport(request: BranchReportRequestDTO): Observable<BranchReportDTO> {
-    const formattedRequest = {
-      startDate: request.startDate.toISOString(),
-      endDate: request.endDate.toISOString(),
+    const formattedRequest: BranchReportRequestDTO = {
+      startDate: new Date(request.startDate),
+      endDate: new Date(request.endDate),
       compareWithPrevious: request.compareWithPrevious
     };
     return this.reportService.getBranchPerformanceReport(formattedRequest);
@@ -103,11 +89,11 @@ export class FinanceReportComponent implements OnInit {
   loadReportData(): void {
     this.isLoading = true;
     this.getBranchReport(this.filterForm.value).subscribe({
-      next: (data) => {
+      next: (data: BranchReportDTO) => {
         this.reportData = data;
         this.calculateSummaryMetrics();
         this.initializeCharts();
-        
+
         if (this.reportData.branches.length > 0) {
           this.selectedBranch = this.reportData.branches[0];
           this.loadBranchDetails(this.selectedBranch.branch.id);
@@ -117,18 +103,25 @@ export class FinanceReportComponent implements OnInit {
       error: (error) => {
         console.error('Error loading report data:', error);
         this.isLoading = false;
+        // Handle error case by providing empty data
+        this.reportData = { branches: [] };
+        this.calculateSummaryMetrics();
+        this.initializeCharts();
       }
     });
   }
 
   calculateSummaryMetrics(): void {
-    this.totalCompanyRevenue = this.reportData.branches.reduce((sum, branch) => sum + branch.totalRevenue, 0);
+    const branches = this.reportData?.branches || [];
+
+    this.totalCompanyRevenue = branches.reduce((sum: number, branch: BranchPerformanceDTO) => sum + (branch.totalRevenue || 0), 0);
     
-    const branchesWithGrowth = this.reportData.branches.filter(b => b.revenueGrowthPercent !== undefined);
-    this.averageGrowth = branchesWithGrowth.reduce((sum, branch) => sum + branch?.revenueGrowthPercent, 0) / branchesWithGrowth.length;
+    const branchesWithGrowth = branches.filter((b: BranchPerformanceDTO) => b.revenueGrowthPercent !== undefined && b.revenueGrowthPercent !== null);
+    const totalGrowth = branchesWithGrowth.reduce((sum: number, branch: BranchPerformanceDTO) => sum + (branch?.revenueGrowthPercent || 0), 0);
+    this.averageGrowth = branchesWithGrowth.length > 0 ? totalGrowth / branchesWithGrowth.length : 0;
     
-    this.totalCustomers = this.reportData.branches.reduce((sum, branch) => sum + (branch.customerFootfall || 0), 0);
-    this.totalProducts = this.reportData.branches.reduce((sum, branch) => sum + branch.productMovement, 0);
+    this.totalCustomers = branches.reduce((sum: number, branch: BranchPerformanceDTO) => sum + (branch.customerFootfall || 0), 0);
+    this.totalProducts = branches.reduce((sum: number, branch: BranchPerformanceDTO) => sum + (branch.productMovement || 0), 0);
   }
 
   selectBranch(branch: BranchPerformanceDTO): void {
@@ -163,8 +156,9 @@ export class FinanceReportComponent implements OnInit {
   }
 
   initializeCharts(): void {
-    const branchNames = this.reportData.branches.map(b => b.branch.name);
-    const revenues = this.reportData.branches.map(b => b.totalRevenue);
+    const branches = this.reportData?.branches || [];
+    const branchNames = branches.map((b: BranchPerformanceDTO) => b.branch.name);
+    const revenues = branches.map((b: BranchPerformanceDTO) => b.totalRevenue);
     
     // Revenue Comparison Chart
     this.revenueChartOptions = {
@@ -185,9 +179,9 @@ export class FinanceReportComponent implements OnInit {
       stroke: { show: true, width: 2, colors: ['transparent'] },
       xaxis: { categories: branchNames, labels: { style: { colors: '#64748B', fontSize: '12px' } } },
       yaxis: {
-        title: { text: 'Revenue ($)', style: { fontSize: '14px', fontWeight: 500, color: '#64748B' } },
+        title: { text: 'Revenue (₦)', style: { fontSize: '14px', fontWeight: 500, color: '#64748B' } },
         labels: {
-          formatter: function (val: number) { return val.toFixed(2); },
+          formatter: (val: number) => this.formatCurrency(val),
           style: { colors: '#64748B' }
         }
       } 
@@ -197,7 +191,7 @@ export class FinanceReportComponent implements OnInit {
     this.growthChartOptions = {
       series: [{
         name: 'Growth %',
-        data: this.reportData.branches.map(b => b.revenueGrowthPercent || 0)
+        data: branches.map((b: BranchPerformanceDTO) => b.revenueGrowthPercent || 0)
       }],
       chart: {
         type: 'bar',
@@ -206,26 +200,27 @@ export class FinanceReportComponent implements OnInit {
         toolbar: { show: false },
         animations: { enabled: true, easing: 'easeinout', speed: 800, animateGradually: { enabled: true, delay: 150 }, dynamicAnimation: { enabled: true, speed: 350 } }
       },
-      colors: this.reportData.branches.map(b => (b.revenueGrowthPercent || 0) >= 0 ? '#10B981' : '#EF4444'),
+      colors: branches.map((b: BranchPerformanceDTO) => (b.revenueGrowthPercent || 0) >= 0 ? '#10B981' : '#EF4444'),
       plotOptions: { bar: { horizontal: false, columnWidth: '55%', borderRadius: 5, distributed: true } },
       dataLabels: {
         enabled: true,
-        formatter: function(val: number) { return ( val as number).toFixed(1) + '%'; },
+        formatter: (val: number) => val.toFixed(1) + '%',
         style: { fontSize: '12px', colors: ['#fff'] },
         background: { enabled: true, foreColor: '#333', padding: 4, borderRadius: 2, borderWidth: 1, borderColor: '#fff', opacity: 0.9 }
       },
       stroke: { show: true, width: 1, colors: ['transparent'] },
-      xaxis: { categories: this.reportData.branches.map(b => b.branch.name), labels: { style: { colors: '#64748B', fontSize: '12px' } } },
+      xaxis: { categories: branches.map((b: BranchPerformanceDTO) => b.branch.name), labels: { style: { colors: '#64748B', fontSize: '12px' } } },
       yaxis: {
         title: { text: 'Growth (%)', style: { fontSize: '14px', fontWeight: 500, color: '#64748B' } },
-        labels: { formatter: function (val: number) { return val.toFixed(2) + '%'; }, style: { colors: '#64748B' } }
+        labels: { formatter: (val: number) => val.toFixed(2) + '%', style: { colors: '#64748B' } }
       },
       fill: {
         opacity: 1, type: 'gradient', gradient: { shade: 'dark', type: 'vertical', shadeIntensity: 0.3, gradientToColors: undefined, inverseColors: false, opacityFrom: 1, opacityTo: 0.8, stops: [0, 100] }
       },
-      tooltip: { y: { formatter: function (val: number) { return val.toFixed(2) + '%'; } } }
+      tooltip: { y: { formatter: (val: number) => val.toFixed(2) + '%', } }
     };
-  } 
+
+  }
 
   updateTrendChart(trendData: any): void {
     this.trendChartOptions = {
@@ -241,11 +236,11 @@ export class FinanceReportComponent implements OnInit {
       labels: trendData.months,
       xaxis: { type: 'category', labels: { style: { colors: '#64748B', fontSize: '12px' } } },
       yaxis: [
-        { title: { text: 'Revenue', style: { fontSize: '14px', fontWeight: 500, color: '#64748B' } }, labels: { formatter: function (val: { toLocaleString: () => string; }) { return '$' + val.toLocaleString(); }, style: { colors: '#64748B' } } },
+        { title: { text: 'Revenue', style: { fontSize: '14px', fontWeight: 500, color: '#64748B' } }, labels: { formatter: (val: number) => this.formatCurrency(val), style: { colors: '#64748B' } } },
         { opposite: true, title: { text: 'Customers', style: { fontSize: '14px', fontWeight: 500, color: '#64748B' } }, labels: { style: { colors: '#64748B' } } }
       ],
       tooltip: {
-        shared: true, intersect: false, y: { formatter: function (val: { toLocaleString: () => string; }, { seriesIndex }: any) { return seriesIndex === 0 ? '$' + val.toLocaleString() : val.toLocaleString(); } }
+        shared: true, intersect: false, y: { formatter: (val: number, { seriesIndex }: any) => { return seriesIndex === 0 ? this.formatCurrency(val) : val.toLocaleString(); } }
       },
       legend: { position: 'top', horizontalAlign: 'left', fontSize: '14px', fontWeight: 500, markers: { width: 12, height: 12, radius: 12 } },
       grid: { borderColor: '#E2E8F0', strokeDashArray: 4 }
@@ -254,9 +249,9 @@ export class FinanceReportComponent implements OnInit {
 
   updateCategoryChart(categoryData: any): void {
     this.categoryChartOptions = {
-      series: categoryData.map((item: { value: any; }) => item.value),
+      series: categoryData.map((item: any) => item.value),
       chart: { type: 'donut', height: 350, fontFamily: 'Inter, sans-serif' },
-      labels: categoryData.map((item: { category: any; }) => item.category),
+      labels: categoryData.map((item: any) => item.category),
       colors: ['#3B82F6', '#EF4444', '#F59E0B', '#10B981', '#8B5CF6'],
       legend: { position: 'bottom', fontSize: '14px', fontWeight: 500, markers: { width: 12, height: 12, radius: 12 } },
       plotOptions: {
@@ -276,15 +271,15 @@ export class FinanceReportComponent implements OnInit {
   updateDemographicChart(demographicData: any): void {
     this.demographicChartOptions = {
       series: [
-        { name: 'Male', data: demographicData.map((item: { male: any; }) => item.male) },
-        { name: 'Female', data: demographicData.map((item: { female: any; }) => item.female) },
-        { name: 'Other', data: demographicData.map((item: { other: any; }) => item.other) }
+        { name: 'Male', data: demographicData.map((item: any) => item.male) },
+        { name: 'Female', data: demographicData.map((item: any) => item.female) },
+        { name: 'Other', data: demographicData.map((item: any) => item.other) }
       ],
       chart: { type: 'bar', height: 350, stacked: true, fontFamily: 'Inter, sans-serif', toolbar: { show: false } },
       plotOptions: { bar: { horizontal: false, columnWidth: '55%', borderRadius: 5 } },
       dataLabels: { enabled: false },
       stroke: { width: 2, colors: ['transparent'] },
-      xaxis: { categories: demographicData.map((item: { age: any; }) => item.age), labels: { style: { colors: '#64748B', fontSize: '12px' } } },
+      xaxis: { categories: demographicData.map((item: any) => item.age), labels: { style: { colors: '#64748B', fontSize: '12px' } } },
       yaxis: { title: { text: 'Customer Count', style: { fontSize: '14px', fontWeight: 500, color: '#64748B' } }, labels: { style: { colors: '#64748B' } } },
       fill: { opacity: 1 },
       colors: ['#3B82F6', '#EC4899', '#F59E0B'],
@@ -325,4 +320,5 @@ export class FinanceReportComponent implements OnInit {
   getGrowthIcon(growth: number): string {
     return growth >= 0 ? 'trending_up' : 'trending_down';
   }
+
 }

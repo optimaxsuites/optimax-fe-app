@@ -5,14 +5,14 @@
   [class.overflow-hidden]="showInformation"
 >
   <!-- Loading Spinner or Message -->
-  <div *ngIf="isLoading" class="flex justify-center items-center min-h-[300px]">
+  <!-- <div *ngIf="isLoading" class="flex justify-center items-center min-h-[300px]">
     <div class="flex flex-col items-center">
       <span class="pi pi-spin pi-spinner text-4xl text-gray-400 mt-20"></span>
       <div class="mt-4 text-2xl font-extrabold text-gray-500">
         Loading products...
       </div>
     </div>
-  </div>
+  </div> -->
 
   <!-- Search and Filter Section -->
 <div *ngIf="tableSection && !isLoading" class="max-w-9xl mx-12 mt-8 space-y-8">
@@ -285,11 +285,10 @@
   >
     <!-- Image + Menu -->
     <div class="relative">
-  <img
-  [src]="product.imageUrl$"
-  alt="{{ product.name }}"
+<img
+  [src]="getImageUrl(product) | async"
+  alt="{{product.name}}"
   class="w-full h-48 object-cover"
-  onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDMwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMjUgNzVIMTc1VjEyNUgxMjVWNzVaIiBmaWxsPSIjOUI5QjlCIi8+CjxwYXRoIGQ9Ik0xNDAgOTBIMTYwVjExMEgxNDBWOTBaIiBmaWxsPSIjRjNGNEY2Ii8+CjxyZWN0IHg9IjEwMCIgeT0iMTMwIiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwIiBmaWxsPSIjOUI5QjlCIi8+CjxyZWN0IHg9IjEyMCIgeT0iMTQ1IiB3aWR0aD0iNjAiIGhlaWdodD0iNiIgZmlsbD0iIzlCOUI5QiIvPgo8L3N2Zz4K'"
 />
 
 

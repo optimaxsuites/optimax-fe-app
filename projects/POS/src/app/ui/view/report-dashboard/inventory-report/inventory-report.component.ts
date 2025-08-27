@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
-import { 
+import {
   ChartComponent,
   ApexAxisChartSeries,
   ApexChart,
@@ -17,35 +17,12 @@ import {
   ApexNonAxisChartSeries
 } from 'ng-apexcharts';
 import { FormGroup, FormBuilder } from '@angular/forms';
-import { ReportService, CashierReportRequestDTO, BranchDTO, CashierPerformanceDTO, CashierReportDTO } from '../../../service/report.service';
+import {  ReportService,} from '../../../service/report.service';
+
+import { CashierReportDTO, CashierReportRequestDTO, CashierPerformanceDTO, BranchDTO } from '../../../models/interface';
 import { StyleColor } from '../../../models/enums';
 
-interface UserDTO {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-}
 
-// Interfaces are already correct in your code, keeping for completeness
-// interface BranchDTO {
-//   id: number;
-//   name: string;
-//   location: string;
-// }
-
-// interface CashierPerformanceDTO {
-//   cashier: UserDTO;
-//   branch: BranchDTO;
-//   ordersHandled: number;
-//   revenueGenerated: number;
-//   refunds: number;
-//   discountsGiven: number;
-// }
-
-// interface CashierReportDTO {
-//   cashiers: CashierPerformanceDTO[];
-// }
 
 export type RevenueChartOptions = {
   series: ApexAxisChartSeries;
@@ -95,7 +72,7 @@ export class InventoryReportComponent implements OnInit {
   @ViewChild("revenueChart") revenueChart!: ChartComponent;
   @ViewChild("ordersChart") ordersChart!: ChartComponent;
   @ViewChild("refundsChart") refundsChart!: ChartComponent;
-  
+
   public reportForm!: FormGroup;
   public filteredReportData: CashierReportDTO = { cashiers: [] };
   public branches: BranchDTO[] = [];
@@ -105,12 +82,12 @@ export class InventoryReportComponent implements OnInit {
   public loading: boolean = false;
   public periodComparison: 'weekly' | 'monthly' = 'weekly';
   public filterForm: boolean = false;
-  
+
   public revenueChartOptions!: RevenueChartOptions;
   public ordersChartOptions!: OrdersChartOptions;
   public refundsChartOptions!: PieChartOptions;
 
-  
+
   constructor(
     private fb: FormBuilder,
     private reportService: ReportService
@@ -124,22 +101,21 @@ export class InventoryReportComponent implements OnInit {
     console.log('Component initialized. Loading branches...');
   }
 
-
   initForm(): void {
     const today = new Date();
     const lastMonth = new Date();
     lastMonth.setMonth(lastMonth.getMonth() - 1);
-    
+
     const endDate = today;
-    const startDate = lastMonth; 
-    
+    const startDate = lastMonth;
+
     this.reportForm = this.fb.group({
       startDate: [startDate],
       endDate: [endDate],
-      branchIds: [[]], 
-      shift: [''] 
+      branchIds: [[]],
+      shift: ['']
     });
-    
+
     console.log('Form initialized with dynamic dates:', {
       startDate: startDate,
       endDate: endDate
@@ -150,9 +126,9 @@ export class InventoryReportComponent implements OnInit {
     this.filterForm = !this.filterForm;
   }
 
-  
+
   private formatDate(date: Date): string {
-    return date.toISOString(); 
+    return date.toISOString();
   }
 
   loadBranches(): void {
@@ -163,7 +139,7 @@ export class InventoryReportComponent implements OnInit {
         if (this.branches.length > 0) {
           this.reportForm.get('branchIds')?.setValue([this.branches[0].id]);
         }
-        this.applyFilter(); 
+        this.applyFilter();
       },
       error: (error) => {
         console.error('Failed to load branches:', error);
@@ -176,28 +152,28 @@ export class InventoryReportComponent implements OnInit {
   applyFilter(): void {
     this.loading = true;
     const formValue = this.reportForm.value;
-    
+
     const payload: CashierReportRequestDTO = {
       startDate: this.formatDate(formValue.startDate),
       endDate: this.formatDate(formValue.endDate),
       branchIds: formValue.branchIds?.length ? formValue.branchIds : [],
-      shift: formValue.shift || null 
+      shift: formValue.shift || null
     };
 
     console.log('Sending payload to API:', payload);
-    
+
     this.reportService.getCashierPerformanceReport(payload).subscribe({
       next: (response) => {
         console.log(' API Response received:', response);
         console.log('Number of cashiers:', response?.cashiers?.length || 0);
-        
+
         if (!response || !response.cashiers || response.cashiers.length === 0) {
           console.warn('No cashier data in response');
         }
-        
+
         this.filteredReportData = response;
         console.log('Updated filteredReportData:', this.filteredReportData);
-        
+
         this.updateCharts();
         this.loading = false;
       },
@@ -212,10 +188,10 @@ export class InventoryReportComponent implements OnInit {
         this.filteredReportData = { cashiers: [] };
         this.updateCharts();
       }
-    }); 
+    });
   }
 
-  
+
   initCharts(): void {
     this.revenueChartOptions = {
       series: [{ name: "Revenue", data: [0, 0, 0] }],
@@ -273,13 +249,13 @@ export class InventoryReportComponent implements OnInit {
       },
       tooltip: {
         y: {
-          formatter: function(value) {
-            return "$" + value.toFixed(2);
+          formatter: function(value: number) {
+            return "₦" + value.toFixed(2);
           }
         }
       }
     };
-    
+
     // Orders Chart Options
     this.ordersChartOptions = {
       series: [
@@ -326,7 +302,7 @@ export class InventoryReportComponent implements OnInit {
       },
       tooltip: {
         y: {
-          formatter: function(val) {
+          formatter: function(val: number) {
             return val + " orders";
           }
         }
@@ -336,7 +312,7 @@ export class InventoryReportComponent implements OnInit {
         horizontalAlign: 'left'
       }
     };
-    
+
     // Refunds Pie Chart
     this.refundsChartOptions = {
       series: [],
@@ -371,75 +347,75 @@ export class InventoryReportComponent implements OnInit {
     };
   }
 
-    updateCharts(): void {
-  console.log('Updating charts with data:', this.filteredReportData);
-  
-  if (!this.filteredReportData || !this.filteredReportData.cashiers || this.filteredReportData.cashiers.length === 0) {
-    console.warn('No data available for charts');
-    // Set empty data for charts
-    this.revenueChartOptions.series = [{ name: 'Revenue', data: [] }];
-    this.revenueChartOptions.xaxis = { categories: [] };
+  updateCharts(): void {
+    console.log('Updating charts with data:', this.filteredReportData);
+
+    if (!this.filteredReportData || !this.filteredReportData.cashiers || this.filteredReportData.cashiers.length === 0) {
+      console.warn('No data available for charts');
+      this.revenueChartOptions.series = [{ name: 'Revenue', data: [] }];
+      this.revenueChartOptions.xaxis = { categories: [] };
+      this.ordersChartOptions.series = [
+        { name: 'Orders Handled', data: [] },
+        { name: 'Refunds', data: [] }
+      ];
+      this.ordersChartOptions.xaxis = { categories: [] };
+      this.refundsChartOptions.series = [];
+      this.refundsChartOptions.labels = [];
+      return;
+    }
+
+    const topPerformers = [...this.filteredReportData.cashiers]
+      .sort((a, b) => (b.revenueGenerated || 0) - (a.revenueGenerated || 0))
+      .slice(0, 5);
+
+    console.log('Top performers:', topPerformers);
+
+    // Update revenue chart
+    this.revenueChartOptions.series = [{
+      name: 'Revenue',
+      data: topPerformers.map((c: CashierPerformanceDTO) => c.revenueGenerated || 0)
+    }];
+    this.revenueChartOptions.xaxis = {
+      categories: topPerformers.map((c: CashierPerformanceDTO) => c.cashier?.name || 'Unknown')
+    };
+
+    // Update orders chart
     this.ordersChartOptions.series = [
-      { name: 'Orders Handled', data: [] },
-      { name: 'Refunds', data: [] }
+      {
+        name: 'Orders Handled',
+        data: topPerformers.map((c: CashierPerformanceDTO) => c.ordersHandled || 0)
+      },
+      {
+        name: 'Refunds',
+        data: topPerformers.map((c: CashierPerformanceDTO) => c.refunds || 0)
+      }
     ];
-    this.ordersChartOptions.xaxis = { categories: [] };
-    this.refundsChartOptions.series = [];
-    this.refundsChartOptions.labels = [];
-    return;
+    this.ordersChartOptions.xaxis = {
+      categories: topPerformers.map((c: CashierPerformanceDTO) => c.cashier?.name || 'Unknown')
+    };
+
+    // Update refunds pie chart
+    const totalRefunds = this.filteredReportData.cashiers.reduce((sum: number, c: CashierPerformanceDTO) => sum + (c.refunds || 0), 0);
+
+    if (totalRefunds > 0) {
+      const topRefunders = this.filteredReportData.cashiers
+        .filter((c: CashierPerformanceDTO) => (c.refunds || 0) > 0)
+        .slice(0, 4);
+
+      this.refundsChartOptions.series = topRefunders.map((c: CashierPerformanceDTO) =>
+        ((c.refunds || 0) / totalRefunds) * 100
+      );
+      this.refundsChartOptions.labels = topRefunders.map((c: CashierPerformanceDTO) =>
+        c.cashier?.name || 'Unknown'
+      );
+    } else {
+      this.refundsChartOptions.series = [];
+      this.refundsChartOptions.labels = [];
+    }
+
+    console.log('Charts updated successfully');
   }
 
-  const topPerformers = [...this.filteredReportData.cashiers]
-    .sort((a, b) => (b.revenueGenerated || 0) - (a.revenueGenerated || 0))
-    .slice(0, 5);
-  
-  console.log('Top performers:', topPerformers);
-  
-  // Update revenue chart
-  this.revenueChartOptions.series = [{
-    name: 'Revenue',
-    data: topPerformers.map(c => c.revenueGenerated || 0)
-  }];
-  this.revenueChartOptions.xaxis = {
-    categories: topPerformers.map(c => c.cashier?.name || 'Unknown')
-  };
-  
-  // Update orders chart
-  this.ordersChartOptions.series = [
-    {
-      name: 'Orders Handled',
-      data: topPerformers.map(c => c.ordersHandled || 0)
-    },
-    {
-      name: 'Refunds',
-      data: topPerformers.map(c => c.refunds || 0)
-    }
-  ];
-  this.ordersChartOptions.xaxis = {
-    categories: topPerformers.map(c => c.cashier?.name || 'Unknown')
-  };
-  
-  // Update refunds pie chart
-  const totalRefunds = this.filteredReportData.cashiers.reduce((sum, c) => sum + (c.refunds || 0), 0);
-  
-  if (totalRefunds > 0) {
-    const topRefunders = this.filteredReportData.cashiers
-      .filter(c => (c.refunds || 0) > 0)
-      .slice(0, 4);
-    
-    this.refundsChartOptions.series = topRefunders.map(c => 
-      ((c.refunds || 0) / totalRefunds) * 100
-    );
-    this.refundsChartOptions.labels = topRefunders.map(c => 
-      c.cashier?.name || 'Unknown'
-    );
-  } else {
-    this.refundsChartOptions.series = [];
-    this.refundsChartOptions.labels = [];
-  }
-  
-  console.log('Charts updated successfully');
-}
   setActiveTab(tab: string): void {
     this.activeTab = tab;
   }
@@ -462,23 +438,23 @@ export class InventoryReportComponent implements OnInit {
 
   getAverageRevenue(): number {
     if (!this.filteredReportData?.cashiers.length) return 0;
-    const total = this.filteredReportData.cashiers.reduce((sum, c) => sum + c.revenueGenerated, 0);
+    const total = this.filteredReportData.cashiers.reduce((sum: number, c: CashierPerformanceDTO) => sum + c.revenueGenerated, 0);
     return total / this.filteredReportData.cashiers.length;
   }
 
   getTotalOrders(): number {
     const cashiers = this.filteredReportData?.cashiers || [];
-    return cashiers.reduce((sum, c) => sum + (c.ordersHandled || 0), 0);
+    return cashiers.reduce((sum: number, c: CashierPerformanceDTO) => sum + (c.ordersHandled || 0), 0);
   }
 
   getTotalRevenue(): number {
     const cashiers = this.filteredReportData?.cashiers || [];
-    return cashiers.reduce((sum, c) => sum + (c.revenueGenerated || 0), 0);
+    return cashiers.reduce((sum: number, c: CashierPerformanceDTO) => sum + (c.revenueGenerated || 0), 0);
   }
 
   getTotalRefunds(): number {
     const cashiers = this.filteredReportData?.cashiers || [];
-    return cashiers.reduce((sum, c) => sum + (c.refunds || 0), 0);
+    return cashiers.reduce((sum: number, c: CashierPerformanceDTO) => sum + (c.refunds || 0), 0);
   }
 
   exportReport(format: 'pdf' | 'excel'): void {
@@ -492,18 +468,18 @@ export class InventoryReportComponent implements OnInit {
   }
 
   getCashiersByBranch(branchId: number) {
-    return this.filteredReportData?.cashiers?.filter(c => c.branch?.id === branchId) || [];
+    return this.filteredReportData?.cashiers?.filter((c: CashierPerformanceDTO) => c.branch?.id === branchId) || [];
   }
-  
+
   getOrdersHandled(branchId: number): number {
-    return this.getCashiersByBranch(branchId).reduce((sum, c) => sum + (c.ordersHandled || 0), 0);
+    return this.getCashiersByBranch(branchId).reduce((sum: number, c: CashierPerformanceDTO) => sum + (c.ordersHandled || 0), 0);
   }
-  
+
   getRevenue(branchId: number): number {
-    return this.getCashiersByBranch(branchId).reduce((sum, c) => sum + (c.revenueGenerated || 0), 0);
+    return this.getCashiersByBranch(branchId).reduce((sum: number, c: CashierPerformanceDTO) => sum + (c.revenueGenerated || 0), 0);
   }
-  
+
   getRefunds(branchId: number): number {
-    return this.getCashiersByBranch(branchId).reduce((sum, c) => sum + (c.refunds || 0), 0);
+    return this.getCashiersByBranch(branchId).reduce((sum: number, c: CashierPerformanceDTO) => sum + (c.refunds || 0), 0);
   }
 }

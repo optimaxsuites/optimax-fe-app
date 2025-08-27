@@ -1,28 +1,18 @@
-import { Component, HostListener, ViewChild } from '@angular/core';
+import { Component, HostListener, ViewChild, OnInit } from '@angular/core';
 import { MenuItem, MessageService } from 'primeng/api';
 import { ChangeDetectorRef } from '@angular/core';
 import { Menu, MenuModule } from 'primeng/menu';
-
 import { OverlayPanel, OverlayPanelModule } from 'primeng/overlaypanel';
 import { Refund, RefundMethod, RefundStatus } from '../../../models/interface';
 import { MetadataService } from '../../../service/metadata.service';
 import { getUserPermissionsFor, isSuperUser } from '../../../../shared/pipes/helper';
-
-
-
-
-
 
 @Component({
   selector: 'app-refund',
   templateUrl: './refund.component.html',
   styleUrl: './refund.component.scss'
 })
-
-
-
-export class RefundComponent {
-  
+export class RefundComponent implements OnInit {
   @ViewChild('op') op!: OverlayPanel;  // Reference to the Overlay Panel
   selectedDate: Date | null = null;
   searchQuery: string = '';
@@ -30,7 +20,7 @@ export class RefundComponent {
   isModalOpen: boolean = false;
   selectedRefund: Refund | null = null; // Store the selected refund
   cashierList: string[] = [];
-  selectedCashier: string  | null= null;
+  selectedCashier: string | null = null;
   selectedStatus: string | null = null;
   startDate: any;
   endDate: any;
@@ -39,9 +29,9 @@ export class RefundComponent {
   isDatePickerOpen = false;
   dateRange: Date[] = [];
   items: any[] = [];
-  statuses: string[] = Object.keys(RefundStatus)
-  refundList: Refund[] = []
-  filteredRefundList: Refund[] = [...this.refundList];
+  statuses: string[] = Object.values(RefundStatus);
+  refundList: Refund[] = [];
+  filteredRefundList: Refund[] = [];
   returnReasons = [
     { label: 'Defective Product', value: 'DEFECTIVE' },
     { label: 'Wrong Item Received', value: 'WRONG_ITEM' },
@@ -49,17 +39,6 @@ export class RefundComponent {
     { label: 'Size/Fit Issue', value: 'SIZE_ISSUE' },
     { label: 'Item Not As Described', value: 'NOT_AS_DESCRIBED' },
     { label: 'Others', value: 'OTHERS' }
-  ]
-  adminComment: string = ''
-  refundDetails = [
-    { label: 'Customer', value: this.selectedRefund?.name },
-    { label: 'Amount Requested', value: '₦' + this.selectedRefund?.refundableAmount },
-    // { label: 'Reason Type', value: this.getRefundReasonLabel(this.selectedRefund?.reason) },
-    { label: 'Return Mode', value: this.selectedRefund?.refundReason },
-    { label: 'Customer Phone', value: this.selectedRefund?.phoneNumber },
-    { label: 'Payment ID', value: this.selectedRefund?.orderId },
-    { label: 'Royalty Account ID', value: this.selectedRefund?.royaltyAccountId },
-    { label: 'Requested Date', value: this.formatDate(this.selectedRefund?.createdAt) }
   ];
     
   refundPermission = {
@@ -68,15 +47,18 @@ export class RefundComponent {
   canDelete: false,
   canCreate: false,
   }; 
- constructor(
 
-  private messageService: MessageService,
-  private cdr: ChangeDetectorRef,
-  private metadataService: MetadataService
-) {}
+  adminComment: string = '';
+  refundDetails: any[] = [];
+
+  constructor(
+    private messageService: MessageService,
+    private cdr: ChangeDetectorRef,
+    private metadataService: MetadataService
+  ) {}
 
   ngOnInit() {
-    this.loadRefund()
+    this.loadRefund();
     // this.getCashierList();
     // this.filterTable();
     if (isSuperUser()) {
@@ -94,132 +76,141 @@ export class RefundComponent {
 
   isMenuOpen = false;
 
-toggleMenu(event: Event) {
-  event.stopPropagation();
-  this.isMenuOpen = !this.isMenuOpen;
-}
-
-
-// Close menu when clicking outside
-@HostListener('document:click')
-closeMenu() {
-  this.isMenuOpen = false;
-}
-
-loadRefund(){
-  this.metadataService.returns$.subscribe(value => {
-    console.log(value)
-    this.refundList = value
-    this.filteredRefundList = [...value]
-  })
-}
-
-
-
-// getCashierList() {
-//   this.cashierList = [...new Set(this.refundList.map(refund => refund.cashier))];
-// }
-toggleDatePicker() {
-  this.isDatePickerOpen = !this.isDatePickerOpen;
-}
-
-closeOverlay() {
-  if (this.op) {
-    this.op.hide();
-  }
-}
-
-filterTable() {
-  // Reset the filtered list
-  this.filteredRefundList = [...this.refundList];
-
-  // Apply search filter
-  if (this.searchQuery) {
-    const query = this.searchQuery.toLowerCase();
-    this.filteredRefundList = this.filteredRefundList.filter(refund =>
-      refund.orderId.toLowerCase().includes(query) ||
-      // refund.cashier.toLowerCase().includes(query) ||
-      refund.refundReason.toLowerCase().includes(query) ||
-      refund.status.toLowerCase().includes(query) ||
-      refund.createdAt.toLowerCase().includes(query)
-    );
+  toggleMenu(event: Event) {
+    event.stopPropagation();
+    this.isMenuOpen = !this.isMenuOpen;
   }
 
-  if (this.dateRange && this.dateRange.length === 2) {
-    this.startDate = this.dateRange[0];
-    this.endDate = this.dateRange[1];
-    
-    console.log("Filtering from", this.startDate, "to", this.endDate);
+  // Close menu when clicking outside
+  @HostListener('document:click')
+  closeMenu() {
+    this.isMenuOpen = false;
   }
-  // Apply cashier filter
-  // if (this.selectedCashier) {
-  //   this.filteredRefundList = this.filteredRefundList.filter(refund => refund.cashier === this.selectedCashier);
+
+  loadRefund() {
+    this.metadataService.returns$.subscribe(value => {
+      console.log(value);
+      this.refundList = value;
+      this.filteredRefundList = [...value];
+      this.updateRefundDetails();
+    });
+  }
+
+  // getCashierList() {
+  //   this.cashierList = [...new Set(this.refundList.map(refund => refund.cashier))];
   // }
 
-  // Apply status filter
-  if (this.selectedStatus) {
-    this.filteredRefundList = this.filteredRefundList.filter(refund => refund.status === this.selectedStatus);
-  }
-   // Filter by selected weekday
-   if (this.selectedDay) {
-    this.filteredRefundList = this.filteredRefundList.filter(refund => {
-      return this.getDayOfWeek(refund.createdAt) === this.selectedDay;
-    });
+  toggleDatePicker() {
+    this.isDatePickerOpen = !this.isDatePickerOpen;
   }
 
-  // Apply date range filter
-  if (this.startDate && this.endDate) {
-    const start = new Date(this.startDate);
-    const end = new Date(this.endDate);
-
-    this.filteredRefundList = this.filteredRefundList.filter(refund => {
-      const refundDate = new Date(refund.createdAt);
-      return refundDate >= start && refundDate <= end;
-    });
+  closeOverlay() {
+    if (this.op) {
+      this.op.hide();
+    }
   }
-}
 
-// Helper function to get the day of the week from a date
-getDayOfWeek(dateString: string): string {
-  const date = new Date(dateString);
-  return this.daysOfWeek[date.getDay()];
-}
+  filterTable() {
+    // Start with the full list
+    this.filteredRefundList = [...this.refundList];
+
+    // Apply search filter
+    if (this.searchQuery) {
+      const query = this.searchQuery.toLowerCase();
+      this.filteredRefundList = this.filteredRefundList.filter(refund =>
+        (refund.id && refund.id.toLowerCase().includes(query)) ||
+        (refund.name && refund.name.toLowerCase().includes(query)) ||
+        (refund.orderId && refund.orderId.toLowerCase().includes(query)) ||
+        (refund.refundReason && refund.refundReason.toLowerCase().includes(query)) ||
+        (refund.refundStatus && refund.refundStatus.toLowerCase().includes(query))
+      );
+    }
+
+    // Apply status filter
+    if (this.selectedStatus) {
+      this.filteredRefundList = this.filteredRefundList.filter(refund => 
+        refund.refundStatus === this.selectedStatus
+      );
+    }
+
+    // Filter by selected weekday
+    if (this.selectedDay) {
+      this.filteredRefundList = this.filteredRefundList.filter(refund => {
+        return this.getDayOfWeek(refund.createdAt) === this.selectedDay;
+      });
+    }
+
+    // Apply date range filter
+    if (this.dateRange && this.dateRange.length === 2) {
+      const start = new Date(this.dateRange[0]);
+      const end = new Date(this.dateRange[1]);
+      end.setHours(23, 59, 59, 999); // Include the entire end date
+
+      this.filteredRefundList = this.filteredRefundList.filter(refund => {
+        const refundDate = new Date(refund.createdAt);
+        return refundDate >= start && refundDate <= end;
+      });
+    }
+
+    // Apply cashier filter (commented out)
+    // if (this.selectedCashier) {
+    //   this.filteredRefundList = this.filteredRefundList.filter(refund => refund.cashier === this.selectedCashier);
+    // }
+  }
+
+  // Helper function to get the day of the week from a date
+  getDayOfWeek(dateString: string): string {
+    const date = new Date(dateString);
+    return this.daysOfWeek[date.getDay()];
+  }
 
   toggleDropdown(index: number) {
     this.dropdownIndex = this.dropdownIndex === index ? null : index;
   }
 
-  viewRefund(refund: any) {
+  viewRefund(refund: Refund) {
     this.selectedRefund = refund;
     this.isModalOpen = true;
     this.dropdownIndex = null;
-    this.refundDetails = [
-      { label: 'Customer', value: this.selectedRefund?.name },
-      { label: 'Amount Requested', value: '₦' + this.selectedRefund?.refundableAmount },
-      { label: 'Reason Type', value: this.reason(this.selectedRefund?.reason) },
-      { label: 'Return Mode', value: this.selectedRefund?.refundReason },
-      { label: 'Customer Phone', value: this.selectedRefund?.phoneNumber },
-      { label: 'Payment ID', value: this.selectedRefund?.orderId },
-      { label: 'Royalty Account ID', value: this.selectedRefund?.royaltyAccountId },
-      { label: 'Requested Date', value: this.formatDate(this.selectedRefund?.createdAt) }
-    ]; // Close the dropdown
+    this.updateRefundDetails();
+  }
+
+  updateRefundDetails() {
+    if (this.selectedRefund) {
+      this.refundDetails = [
+        { label: 'Customer', value: this.selectedRefund.name || 'N/A' },
+        { label: 'Amount Requested', value: '₦' + (this.selectedRefund.refundableAmount || '0') },
+        { label: 'Reason Type', value: this.reason(this.selectedRefund.reason) || 'N/A' },
+        { label: 'Return Mode', value: this.selectedRefund.refundReason || 'N/A' },
+        { label: 'Customer Phone', value: this.selectedRefund.phoneNumber || 'N/A' },
+        { label: 'Payment ID', value: this.selectedRefund.orderId || 'N/A' },
+        { label: 'Royalty Account ID', value: this.selectedRefund.royaltyAccountId || 'N/A' },
+        { label: 'Requested Date', value: this.formatDate(this.selectedRefund.createdAt) || 'N/A' }
+      ];
+    } else {
+      this.refundDetails = [];
+    }
   }
 
   selectRefund(refund: Refund) {
     this.selectedRefund = refund; // Set the selected refund
+    this.updateRefundDetails();
   }
 
-  acceptRefund(refund: any) {
+  acceptRefund(refund: Refund) {
     if (!refund) {
       console.error("Refund is null or undefined");
       return;
     }
     console.log("Accepted:", refund);
     refund.refundStatus = 'Accepted'; // Update the status of the specific refund
-    if (this.selectedRefund) {
-      this.selectedRefund.status = 'Accepted';
-      console.log(this.selectedRefund);
+    
+    // Update the status in the main list
+    const index = this.refundList.findIndex(r => r.id === refund.id);
+    if (index !== -1) {
+      this.refundList[index].refundStatus = 'Accepted';
     }
+    
     this.messageService.add({
       severity: 'success',
       summary: 'Success',
@@ -227,43 +218,51 @@ getDayOfWeek(dateString: string): string {
       life: 3000,
       key: 'tg'
     });
-    this.sortRefunds();
+    
+    this.filterTable(); // Reapply filters
     this.closeModal();
     this.dropdownIndex = null; // Close the dropdown
   }
 
-  rejectRefund(refund: any) {
+  rejectRefund(refund: Refund) {
     if (!refund) {
       console.error("Refund is null");
       return;
     }
     console.log("Rejected:", refund);
-  refund.refundStatus = 'Rejected'; // Ensure status is updated correctly
+    refund.refundStatus = 'Rejected'; // Ensure status is updated correctly
 
-    if (this.selectedRefund) {
-      this.selectedRefund.status = 'Rejected';
+    // Update the status in the main list
+    const index = this.refundList.findIndex(r => r.id === refund.id);
+    if (index !== -1) {
+      this.refundList[index].refundStatus = 'Rejected';
     }
+    
     this.messageService.add({
-      severity: 'sucess',
-      summary: 'Sucess',
+      severity: 'success',
+      summary: 'Success',
       detail: 'Rejected refund request successful',
       life: 3000,
       key: 'tg'
     });
-    this.sortRefunds();
+    
+    this.filterTable(); // Reapply filters
     this.closeModal();
     this.dropdownIndex = null; // Close the dropdown
   }
+
   closeModal() {
     this.isModalOpen = false;
     this.selectedRefund = null;
+    this.updateRefundDetails();
   }
+
   sortRefunds() {
     const statusOrder: Record<string, number> = { 'Pending': 1, 'Rejected': 2, 'Accepted': 3 };
   
     this.filteredRefundList = [...this.filteredRefundList.sort((a, b) => {
-      return (statusOrder[a.status as keyof typeof statusOrder] || 4) - 
-             (statusOrder[b.status as keyof typeof statusOrder] || 4);
+      return (statusOrder[a.refundStatus as keyof typeof statusOrder] || 4) - 
+             (statusOrder[b.refundStatus as keyof typeof statusOrder] || 4);
     })];
   
     this.cdr.detectChanges(); // Force UI update
@@ -282,10 +281,10 @@ getDayOfWeek(dateString: string): string {
     return this.returnReasons.find(r => r.value === this.selectedRefund?.reason)?.label;
   }
 
-   reason(reason: string){
+  reason(reason: string): string | undefined {
     return this.returnReasons.find(r => r.value === reason)?.label;
-
   }  
+
   getStatusIcon(status?: string): string {
     switch (status) {
       case 'Processing':
@@ -298,6 +297,7 @@ getDayOfWeek(dateString: string): string {
         return 'pi-info-circle';
     }
   }
+
   getRefundStatusClass(status?: string): string {
     switch (status) {
       case 'Pending':
@@ -320,5 +320,4 @@ getDayOfWeek(dateString: string): string {
         return 'text-gray-800 bg-gray-200';
     }
   }
-  
 }
