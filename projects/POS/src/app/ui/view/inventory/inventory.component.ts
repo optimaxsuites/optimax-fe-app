@@ -136,15 +136,15 @@ export class InventoryComponent implements OnInit, OnDestroy {
   // Subscribe to branches
   this.metadataService.branches$.subscribe((data) => {
     this.branches = data;
-    console.log('Branches loaded:', this.branches); // Debug log
+    console.log('Branches loaded:', this.branches); 
   });
   
-  // Set selected branch and load inventories
+
   if (this.selectedBranch) {
     this.metadataService.setSelectedBranch(this.selectedBranch);
   }
   
-  // Load inventories after branch is set
+
   this.getInventories();
 
   if (isSuperUser()) {
@@ -841,13 +841,14 @@ getInventories(): void {
 
 
 // inventory.component.ts
-placeholderPath = 'assets/images/placeholder-product.jpg'; // make sure this file exists
+// placeholderPath = 'assets/placeholder-product.jpg'; 
 
 
-onImgError(event: Event) {
-  const img = event.target as HTMLImageElement;
-  img.src = 'assets/images/placeholder-product.jpg';
-}getImageUrl(item: any): Observable<string> {
+// onImgError(event: Event) {
+//   const img = event.target as HTMLImageElement;
+//   img.src = 'assets/placeholder-product.jpg';
+// }
+getImageUrl(item: any): Observable<string> {
   // Check if we have image data in the mapped inventory item
   const productImages = item.__originalProduct?.productImages || 
                        item.productImages || 
@@ -858,7 +859,7 @@ onImgError(event: Event) {
     return this.imageCacheService.getImage(remoteImageUrl);
   }
   
-  // Return placeholder URL as Observable
+ 
   return new Observable(observer => {
     observer.next('https://via.placeholder.com/300x200?text=No+Image');
     observer.complete();

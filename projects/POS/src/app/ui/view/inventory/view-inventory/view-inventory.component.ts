@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, HostListener } from '@angular/core';
 import { ProductData, supplierData, StockMovementByInventory } from '../../../models/interface';
 import { PosServiceService } from '../../../service/pos-service.service';
 import { Router } from '@angular/router';
@@ -20,13 +20,25 @@ export class ViewInventoryComponent implements OnInit {
   @Output() close = new EventEmitter<void>();
 
   supplier: supplierData | null = null;
+  suppliersList: supplierData[] = []; // List of all suppliers for dropdown
   revivedDate: Date = new Date();
   loading = true;
 
   stockMovements: StockMovementByInventory[] = [];
   isMovementsLoading = false;
-  hasTriedMovements = false;             // show “no data” only after we attempt a load
+  hasTriedMovements = false;             // show "no data" only after we attempt a load
   private inventoryId: number | null = null;
+
+  // Dropdown and Edit Modal properties
+  activeDropdownIndex: number | null = null;
+  showEditModal = false;
+  editingMovement: any = {};
+  isUpdatingMovement = false;
+
+  // Delete Modal properties
+  showDeleteModal = false;
+  movementToDelete: StockMovementByInventory | null = null;
+  isDeletingMovement = false;
 
   constructor(
     private router: Router,
@@ -79,6 +91,9 @@ export class ViewInventoryComponent implements OnInit {
         next: ({ product, suppliers }) => {
           // keep inventoryId merged into activeItem so the template can still see it if needed
           this.activeItem = { ...product, inventoryId: this.inventoryId, __inventory: passed?.__inventory };
+
+          // Store suppliers list for dropdown
+          this.suppliersList = suppliers;
 
           // handle supplier resolution
           if (product?.supplier) {
@@ -177,5 +192,106 @@ private movementDateDesc = (
     new Date(this.toIsoString(a.createdDate)).getTime()
   );
 };
+
+// Close dropdown when clicking outside
+@HostListener('document:click', ['$event'])
+onDocumentClick(e: MouseEvent) {
+  const target = e.target as HTMLElement;
+  if (!target.closest('.mv-actions')) {
+    this.activeDropdownIndex = null;
+  }
+}
+
+ // Toggle
+toggleDropdown(index: number): void {
+  this.activeDropdownIndex = this.activeDropdownIndex === index ? null : index;
+}
+
+ 
+  editStockMovement(movement: StockMovementByInventory): void {
+    this.editingMovement = { ...movement };
+    this.showEditModal = true;
+    this.activeDropdownIndex = null;
+  }
+
+  
+  deleteStockMovement(movement: StockMovementByInventory): void {
+    this.movementToDelete = movement;
+    this.showDeleteModal = true;
+    this.activeDropdownIndex = null;
+  }
+
+  confirmDelete(): void {
+    if (!this.movementToDelete) return;
+
+    this.isDeletingMovement = true;
+    
+    this.posService.deleteStockMovement(this.movementToDelete.id).subscribe({
+      next: () => {
+        this.stockMovements = this.stockMovements.filter(m => m.id !== this.movementToDelete!.id);
+        console.log('Stock movement deleted successfully');
+        this.cancelDelete();
+      },
+      error: (err) => {
+        console.error('Failed to delete stock movement:', err);
+        // You could replace this alert with another nice modal if you want
+        alert('Failed to delete stock movement. Please try again.');
+        this.isDeletingMovement = false;
+      }
+    });
+  }
+
+  cancelDelete(): void {
+    this.showDeleteModal = false;
+    this.movementToDelete = null;
+    this.isDeletingMovement = false;
+  }
+
+  
+  saveStockMovement(): void {
+    if (!this.editingMovement.id) {
+      return;
+    }
+
+    this.isUpdatingMovement = true;
+    
+    
+    const updateData: any = {
+      id: this.editingMovement.id, 
+      reference: this.editingMovement.reference,
+      quantity: Number(this.editingMovement.quantity),
+      purchasePrice: Number(this.editingMovement.purchasePrice),
+      sellingPrice: Number(this.editingMovement.sellingPrice),
+      supplierId: this.editingMovement.supplierId,
+      inventoryId: this.inventoryId,
+      createdDate: this.editingMovement.createdDate, 
+      ingredientId: this.editingMovement.ingredientId || null 
+    };
+
+    this.posService.updateStockMovement(this.editingMovement.id, updateData).subscribe({
+      next: (updatedMovement) => {
+        // Update the movement in the local array
+        const index = this.stockMovements.findIndex(m => m.id === this.editingMovement.id);
+        if (index !== -1) {
+          this.stockMovements[index] = { ...this.stockMovements[index], ...updatedMovement };
+        }
+        this.showEditModal = false;
+        this.editingMovement = {};
+        this.isUpdatingMovement = false;
+        console.log('Stock movement updated successfully');
+      },
+      error: (err) => {
+        console.error('Failed to update stock movement:', err);
+        alert('Failed to update stock movement. Please try again.');
+        this.isUpdatingMovement = false;
+      }
+    });
+  }
+
+  // Cancel edit
+  cancelEdit(): void {
+    this.showEditModal = false;
+    this.editingMovement = {};
+  }
 
 }

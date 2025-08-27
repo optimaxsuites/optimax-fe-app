@@ -57,6 +57,10 @@ const routes: Routes = [
     component: RefundComponent,
   },
   {
+    path : 'orderRefund/:uuid',
+    component : OrderRefundComponent,
+  },
+  {
     path: 'ingredients/:uuid',
     component: IngredientComponent,
   },

@@ -11,10 +11,12 @@
   >
     Cancel
   </button>
-  <div
-    class="overflow-y-auto max-h-[80vh] p-8 pl-10 bg-white border border-gray-200 rounded-lg shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 w-full flex flex-col"
-    style="box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2)"
-  >
+<!-- AFTER -->
+<div
+  class="p-8 pl-10 bg-white border border-gray-200 rounded-lg shadow-lg dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 w-full flex flex-col"
+  style="box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2)"
+>
+
     <!-- All modal content below here -->
     <h1 class="text-2xl mb-7 mt-3 font-semibold text-center">
       Product Information
@@ -140,9 +142,9 @@
       readonly
     />
 
-    <!-- Stock Movements -->
-<div class="mt-10">
-  <h2 class="text-2xl font-semibold text-center">Stock Movements</h2>
+
+<div class="mt-10 relative">
+  <h2 class="text-2xl font-semibold text-center mb-4">Stock Movements</h2>
 
   <div *ngIf="isMovementsLoading" class="w-full p-6 text-center text-gray-500">
     Loading movement history…
@@ -155,17 +157,18 @@
   <div *ngIf="!isMovementsLoading && stockMovements.length > 0" class="overflow-x-auto mt-4">
     <table class="min-w-full border border-gray-200 rounded-lg">
       <thead class="bg-gray-100 text-gray-700">
-        <tr>
+        <tr class="border-t hover:bg-gray-50 relative overflow-visible">
           <th class="px-4 py-2 text-left">Date</th>
           <th class="px-4 py-2 text-left">Reference</th>
           <th class="px-4 py-2 text-right">Qty</th>
           <th class="px-4 py-2 text-right">Purchase</th>
           <th class="px-4 py-2 text-right">Selling</th>
           <th class="px-4 py-2 text-left">Supplier</th>
+          <th class="px-4 py-2 text-center w-24">Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let mv of stockMovements" class="border-t">
+        <tr *ngFor="let mv of stockMovements; let i = index" class="border-t hover:bg-gray-50">
           <td class="px-4 py-2">
             {{ toIsoString(mv.createdDate) | date:'medium' }}
           </td>
@@ -183,9 +186,122 @@
           <td class="px-4 py-2">
             {{ mv.supplierId || '-' }}
           </td>
+          <td class="mv-actions px-4 py-2 text-center w-24 relative overflow-visible">
+<button
+  (click)="$event.stopPropagation(); toggleDropdown(i)"
+  class="text-gray-700 hover:text-gray-900 focus:outline-none p-2 rounded-full hover:bg-gray-100"
+  type="button"
+  title="More actions"
+>
+  
+  <span class="text-xl leading-none select-none">⋮</span>
+ 
+</button>
+            
+            <!-- Dropdown Menu -->
+            <div 
+              *ngIf="activeDropdownIndex === i"
+              class="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[120px]"
+            >
+              <button 
+                (click)="editStockMovement(mv)"
+                class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 rounded-t-lg"
+                type="button"
+              >
+                <i class="fa-solid fa-edit text-blue-600"></i>
+                Edit
+              </button>
+              <button 
+                (click)="deleteStockMovement(mv)"
+                class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-b-lg"
+                type="button"
+              >
+                <i class="fa-solid fa-trash text-red-600"></i>
+                Delete
+              </button>
+            </div>
+          </td>
         </tr>
       </tbody>
     </table>
+  </div>
+</div>
+
+
+<!-- Edit Stock Movement Modal -->
+<div *ngIf="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+    <h3 class="text-lg font-semibold mb-4">Edit Stock Movement</h3>
+    
+    <div class="space-y-4">
+      <div>
+        <label for="editReference" class="block text-sm font-medium text-gray-700 mb-1">Reference</label>
+        <input
+          id="editReference"
+          type="text"
+          [(ngModel)]="editingMovement.reference"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+      
+      <div>
+        <label for="editQuantity" class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+        <input
+          id="editQuantity"
+          type="number"
+          [(ngModel)]="editingMovement.quantity"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+      
+      <div>
+        <label for="editPurchasePrice" class="block text-sm font-medium text-gray-700 mb-1">Purchase Price</label>
+        <input
+          id="editPurchasePrice"
+          type="number"
+          step="0.01"
+          [(ngModel)]="editingMovement.purchasePrice"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+      
+      <div>
+        <label for="editSellingPrice" class="block text-sm font-medium text-gray-700 mb-1">Selling Price</label>
+        <input
+          id="editSellingPrice"
+          type="number"
+          step="0.01"
+          [(ngModel)]="editingMovement.sellingPrice"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+      
+      <div>
+        <label for="editSupplierId" class="block text-sm font-medium text-gray-700 mb-1">Supplier ID</label>
+        <input
+          id="editSupplierId"
+          type="text"
+          [(ngModel)]="editingMovement.supplierId"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+    </div>
+    
+    <div class="flex gap-3 mt-6">
+      <button
+        (click)="saveStockMovement()"
+        class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        [disabled]="isUpdatingMovement"
+      >
+        {{ isUpdatingMovement ? 'Saving...' : 'Save' }}
+      </button>
+      <button
+        (click)="cancelEdit()"
+        class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
+      >
+        Cancel
+      </button>
+    </div>
   </div>
 </div>
 
