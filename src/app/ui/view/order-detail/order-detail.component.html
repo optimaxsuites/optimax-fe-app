@@ -92,7 +92,7 @@
 
         <div class="flex justify-between font-bold text-2xl items-center">
           <span>Total</span>
-          <span>{{ navigationState.order.totalAmount | currency: '₦'}}</span>
+          <span>{{ getTotalPrice() | currency: '₦'}}</span>
         </div>
       </div>
     </div>
@@ -262,7 +262,8 @@
     <hr style="border-top: 1px dashed black; margin: 5px 0;">
     <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px;">
       <span>Total</span>
-      <span>{{ navigationState.order.totalAmount | currency: '₦' }}</span>
+      <!-- <span>{{ navigationState.order.totalAmount | currency: '₦' }}</span> -->
+      <span>{{ getTotalPrice() | currency: '₦' }}</span>
     </div>
   </div>
 
