@@ -89,6 +89,32 @@
   }
 }
 
+.btn-success {
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  &:hover:enabled {
+    background: #15803d;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-warning {
+  background: #ffa07a;
+  color: #fff;
+  border: none;
+  &.hover:enabled {
+    background: #ff9900;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
 .btn-danger {
   background: #dc2626;
   color: #fff;
@@ -533,3 +559,4 @@ h1{
 .dropdown-content a:hover {
   background-color: #f1f1f1;
 }
+

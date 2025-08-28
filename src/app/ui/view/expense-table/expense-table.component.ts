@@ -40,7 +40,7 @@ export class ExpenseTableComponent implements OnInit {
   expense: any;
   expenseId: string | null = null;
   selectedExpenses: any[] = [];
-  requests: any;
+  //requests: any;
 
   onRowSelect(event: any) {
     this.selectedExpenses = event.value;
@@ -89,24 +89,6 @@ export class ExpenseTableComponent implements OnInit {
   
   }
 
-  reject(request: any): void {
-    request.status = 'Rejected';
-    request.showActions = false;
-    
-    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
-    const updatedExpenses = expenses.map((item: any) => 
-      item.id === request.id ? { ...item, status: 'Rejected' } : item
-    );
-
-    localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
-    this.requests = updatedExpenses;
-
-    this.messageService.add({
-      severity: 'error',
-      summary: 'Request Rejected',
-      detail: 'Expense for ${request.merchant} has been rejected.'
-    });
-  }
 
 
 
@@ -461,16 +443,16 @@ export class ExpenseTableComponent implements OnInit {
 
 
   approve(request: any): void {
-    request.status = 'Approved';
-    request.showActions = false;
-  
-    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
-    const updatedExpenses = expenses.map((item: any) =>
-      item.id === request.id ? { ...item, status: 'Approved' } : item
+    this.expenses = this.expenses.map(item => 
+      item.id === request.id ? {...item, status: 'Approved'} : item
+
     );
-  
-    localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
-    this.requests = updatedExpenses;
+    
+    this.filteredExpenses = this.filteredExpenses.map(item => 
+      item.id === request.id ? {...item, status: 'Approved'} : item
+    );
+
+    localStorage.setItem('expenses', JSON.stringify(this.expenses));  
   
     this.messageService.add({
       severity: 'success',
@@ -478,6 +460,92 @@ export class ExpenseTableComponent implements OnInit {
       detail: `Expense for ${request.merchant} has been approved successfully.`
     });
   }
+  
+
+    reject(request: any): void {
+      this.expenses = this.expenses.map(item => 
+        item.id === request.id ? {...item, status:'Rejected'} : item
+      );
+
+      this.filteredExpenses = this.filteredExpenses.map(item => 
+        item.id === request.id ? {...item, status: 'Rejected'} : item
+      );
+
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Request Rejected',
+      detail: 'Expense for ${request.merchant} has been rejected.'
+    });
+  }
+
+
+
+
+  bulkApprove(): void {
+  if (this.selectedExpenses.length === 0) {
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'No Expenses Selected',
+      detail: 'Please select at least one expense to approve.'
+    });
+    return; 
+  }
+
+  const selectedIds = this.selectedExpenses.map(item => item.id);
+
+  this.expenses = this.expenses.map(item =>
+    selectedIds.includes(item.id) ? {...item, status: 'Approve'} : item
+  );
+
+  this.filteredExpenses = this.filteredExpenses.map(item =>
+    selectedIds.includes(item.id) ? {...item, status:'Approved'} : item
+  );
+
+  localStorage.setItem('expenses', JSON.stringify(this.expenses));
+
+  const count = this.selectedExpenses.length;
+  this.selectedExpenses = [];
+
+  this.messageService.add({
+    severity: 'success',  
+    summary: 'Expeneses Approved',
+    detail: `${count} expenses have been successfully approved.`
+  });
+}
+
+bulkReject(): void {
+  if (this.selectedExpenses.length === 0) {
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'No Expenses Selected',
+      detail: 'Please select at least one expense to reject.'
+    });
+    return; 
+  }
+
+  
+  const selectedIds = this.selectedExpenses.map(item => item.id);
+
+  this.expenses = this.expenses.map(item =>
+    selectedIds.includes(item.id) ? {...item, status:'Rejected'} : item
+  );
+
+  this.filteredExpenses = this.filteredExpenses.map(item => 
+    selectedIds.includes(item.id) ? {...item, status:'Rejected'} : item
+  );
+
+  localStorage.setItem('expenses', JSON.stringify(this.expenses));
+
+  const count = this.selectedExpenses.length;
+  this.selectedExpenses = [];
+
+  this.messageService.add({
+    severity: 'error', 
+    summary: 'Expenses Rejected',
+    detail: `${count} expenses have been successfully rejected.`
+  });
+}
+
 
 }
 
