@@ -109,20 +109,19 @@
 
         <div class="form-group">
           <label for="category">Quantity</label>
-          <ng-select
-            [items]="Quantity"
-            bindLabel="name"
-            bindValue="name"
-            [(ngModel)]="expenseSummary.quantity"
-            name="quantity"
-            required
-            placeholder="Select a quantity"
-            class="w-full mt-3"
-          >
-          </ng-select>
+          <input
+          type="number"
+          id="quantity"
+          name="quantity"
+          [ngModel]="expenseSummary.quantity"
+          required
+          placeholder="Enter quantity"
+          />
           <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.quantity">
             Quantity is required.
         </div>
+
+        
 
         <div class="form-group">
           <label for="tax-percentage">Tax Percentage (%)</label>

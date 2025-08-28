@@ -88,6 +88,8 @@
   </div>
 
   <div class="floating-box">
+
+    
     <!-- Filters and Table Section -->
     <div class="table-with-filters w-full max-w-9xl mx-auto px-4">
       <div class="filter-panel">
@@ -145,6 +147,26 @@
 
         <!-- Right: Delete Button -->   
         <div class="filter-right">
+        
+        
+        <button class="btn btn-success"
+        [disabled]="!selectedExpenses?.length"
+        (click)="bulkApprove()"
+        >
+          <span class="material-icons btn-icon">check_circle</span>
+          Accept
+        </button>
+
+      
+        <button class="btn btn-warning"
+        [disabled]="!selectedExpenses?.length"
+        (click)="bulkReject()"
+        >
+          <span class="material-icons btn-icon">cancel</span>
+          Reject
+        </button>
+
+
           <button
             class="btn btn-danger"
             [disabled]="!selectedExpenses?.length"
