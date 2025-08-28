@@ -132,6 +132,7 @@ total
 // In order-detail.component.ts
 get changeAmount(): number {
   const tendered = this.navigationState?.order?.amountTendered ?? 0;
+  // const total = this.navigationState?.order?.total ?? 0;
   const total = this.navigationState?.order?.totalAmount ?? 0;
   return tendered - total;
 }
