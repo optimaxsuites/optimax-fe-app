@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import {
   ApexAxisChartSeries,
@@ -21,7 +21,14 @@ import {
   BranchDTO,
   InventoryItemDTO,
   InventoryReportDTO
-} from '../../../models/interface'; // Corrected import path
+} from '../../../models/interface';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
+
+interface DropdownData {
+  label: string;
+  value: any;
+}
 
 @Component({
   selector: 'app-stock-report',
@@ -29,6 +36,8 @@ import {
   styleUrl: './stock-report.component.scss'
 })
 export class StockReportComponent implements OnInit {
+  @ViewChild('reportContent') reportContent!: ElementRef;
+
   filterForm!: FormGroup;
   reportData!: InventoryReportDTO;
 
@@ -39,10 +48,12 @@ export class StockReportComponent implements OnInit {
   lowStockItems = 0;
   totalValue = 0;
 
+  // Initializing with empty but valid ApexCharts configuration
   categoriesChartOptions: any;
   stockTrendChartOptions: any;
   branchComparisonChartOptions: any;
   salesVsStockChartOptions: any;
+  
   isFilterFormOpen = false;
   isLoading = false;
   page = 1;
@@ -52,6 +63,18 @@ export class StockReportComponent implements OnInit {
 
   Math = Math;
 
+  isDropdownOpen: { [key: string]: boolean } = {
+    totalItems: false,
+    lowStockItems: false
+  };
+  dropdownData: { [key: string]: DropdownData[] } = {
+    totalItems: [],
+    lowStockItems: []
+  };
+  hoveringInfo: { [key: string]: boolean } = {
+    totalValue: false
+  };
+
   constructor(
     private fb: FormBuilder,
     private reportService: ReportService
@@ -59,6 +82,7 @@ export class StockReportComponent implements OnInit {
 
   ngOnInit(): void {
     this.initFilters();
+    this.initEmptyCharts(); 
     this.loadInitialData();
   }
 
@@ -112,7 +136,7 @@ export class StockReportComponent implements OnInit {
         error: (error) => {
           console.error('Error loading categories:', error);
           this.categories = [];
-          resolve(); // Continue even if categories fail to load
+          resolve();
         }
       });
     });
@@ -140,6 +164,7 @@ export class StockReportComponent implements OnInit {
         this.reportData = data;
         this.calculateSummaryMetrics();
         this.initCharts();
+        this.prepareDropdownData();
         this.isLoading = false;
       },
       error: (error) => {
@@ -148,6 +173,7 @@ export class StockReportComponent implements OnInit {
         this.reportData = { inventory: [] };
         this.calculateSummaryMetrics();
         this.initCharts();
+        this.prepareDropdownData();
       }
     });
   }
@@ -182,6 +208,7 @@ export class StockReportComponent implements OnInit {
   }
 
   initEmptyCharts(): void {
+    // These now provide a complete, empty configuration
     this.categoriesChartOptions = this.createEmptyBarChart('Stock by Category');
     this.stockTrendChartOptions = this.createEmptyLineChart('Inventory Trend (Last 6 Months)');
     this.branchComparisonChartOptions = this.createEmptyPieChart('Stock Distribution by Branch');
@@ -387,12 +414,13 @@ export class StockReportComponent implements OnInit {
     };
   }
 
+  // Helper functions to create empty, but valid chart configs
   createEmptyBarChart(title: string): any {
     return {
-      series: [{ data: [] }],
+      series: [{ name: 'Data', data: [] }],
       chart: { type: 'bar', height: 350 },
-      colors: ['#4F46E5'],
       title: { text: title, align: 'left' },
+      xaxis: { categories: [] },
       noData: { text: 'No data available' }
     };
   }
@@ -400,8 +428,9 @@ export class StockReportComponent implements OnInit {
   createEmptyLineChart(title: string): any {
     return {
       series: [{ name: 'Data', data: [] }],
-      chart: { height: 350, type: 'line' },
+      chart: { type: 'line', height: 350 },
       title: { text: title, align: 'left' },
+      xaxis: { categories: [] },
       noData: { text: 'No data available' }
     };
   }
@@ -530,8 +559,40 @@ export class StockReportComponent implements OnInit {
   }
 
   exportToPdf(): void {
-    console.log('Exporting to PDF...');
-    // Implement PDF export logic here
+    if (!this.reportContent?.nativeElement) {
+      console.error('Report content element not found for PDF export.');
+      return;
+    }
+
+    const element = this.reportContent.nativeElement;
+    const originalStyle = element.style.cssText;
+    element.style.padding = '20px'; // Add some padding for better formatting
+
+    html2canvas(element, { scale: 2 }).then(canvas => {
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`inventory-report-${new Date().toISOString().split('T')[0]}.pdf`);
+      element.style.cssText = originalStyle; // Restore original style
+    }).catch(error => {
+      console.error('Error generating PDF:', error);
+      element.style.cssText = originalStyle; // Ensure style is restored even on error
+    });
   }
 
   printReport(): void {
@@ -541,5 +602,38 @@ export class StockReportComponent implements OnInit {
 
   trackByItemId(index: number, item: InventoryItemDTO): any {
     return item.product?.id || index;
+  }
+
+  // New methods for dropdowns and tooltips
+  prepareDropdownData(): void {
+    if (!this.reportData?.inventory) return;
+
+    // Total Items in Stock
+    const totalItemsData = [...this.reportData.inventory]
+      .sort((a, b) => b.currentStock - a.currentStock)
+      .map(item => ({
+        label: `${item.product.name} (${item.branch.name})`,
+        value: item.currentStock.toLocaleString()
+      }));
+    this.dropdownData['totalItems'] = totalItemsData;
+
+    // Low Stock Items
+    const lowStockData = [...this.reportData.inventory]
+      .filter(item => item.lowStockAlert)
+      .sort((a, b) => a.currentStock - b.currentStock) 
+      .map(item => ({
+        label: `${item.product.name} (${item.branch.name})`,
+        value: item.currentStock.toLocaleString()
+      }));
+    this.dropdownData['lowStockItems'] = lowStockData;
+  }
+
+  toggleDropdown(metric: string): void {
+    this.isDropdownOpen[metric] = !this.isDropdownOpen[metric];
+    for (const key in this.isDropdownOpen) {
+      if (key !== metric) {
+        this.isDropdownOpen[key] = false;
+      }
+    }
   }
 }

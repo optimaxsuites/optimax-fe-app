@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import {
   ApexAxisChartSeries,
@@ -24,7 +24,16 @@ import {
   BranchReportRequestDTO,
   BranchDTO,
   ChartOptions
-} from '../../../models/interface'; // Corrected import path
+} from '../../../models/interface';
+
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
+import * as XLSX from 'xlsx';
+
+interface DropdownData {
+  label: string;
+  value: any;
+}
 
 @Component({
   selector: 'app-finance-report',
@@ -32,6 +41,7 @@ import {
   styleUrl: './finance-report.component.scss'
 })
 export class FinanceReportComponent implements OnInit {
+  @ViewChild('reportContent') reportContent!: ElementRef;
   filterForm!: FormGroup;
   reportData!: BranchReportDTO;
   selectedBranch!: BranchPerformanceDTO;
@@ -40,6 +50,21 @@ export class FinanceReportComponent implements OnInit {
   averageGrowth = 0;
   totalCustomers = 0;
   totalProducts = 0;
+  isExportDropdownOpen = false;
+
+  // New state variables for dropdowns and tooltips
+  isDropdownOpen: { [key: string]: boolean } = {
+    totalRevenue: false,
+    averageGrowth: false
+  };
+  dropdownData: { [key: string]: DropdownData[] } = {
+    totalRevenue: [],
+    averageGrowth: []
+  };
+  hoveringInfo: { [key: string]: boolean } = {
+    totalCustomers: false,
+    totalProducts: false
+  };
 
   public revenueChartOptions!: ChartOptions;
   public growthChartOptions!: ChartOptions;
@@ -93,6 +118,7 @@ export class FinanceReportComponent implements OnInit {
         this.reportData = data;
         this.calculateSummaryMetrics();
         this.initializeCharts();
+        this.prepareDropdownData();
 
         if (this.reportData.branches.length > 0) {
           this.selectedBranch = this.reportData.branches[0];
@@ -107,6 +133,7 @@ export class FinanceReportComponent implements OnInit {
         this.reportData = { branches: [] };
         this.calculateSummaryMetrics();
         this.initializeCharts();
+        this.prepareDropdownData();
       }
     });
   }
@@ -115,11 +142,11 @@ export class FinanceReportComponent implements OnInit {
     const branches = this.reportData?.branches || [];
 
     this.totalCompanyRevenue = branches.reduce((sum: number, branch: BranchPerformanceDTO) => sum + (branch.totalRevenue || 0), 0);
-    
+
     const branchesWithGrowth = branches.filter((b: BranchPerformanceDTO) => b.revenueGrowthPercent !== undefined && b.revenueGrowthPercent !== null);
     const totalGrowth = branchesWithGrowth.reduce((sum: number, branch: BranchPerformanceDTO) => sum + (branch?.revenueGrowthPercent || 0), 0);
     this.averageGrowth = branchesWithGrowth.length > 0 ? totalGrowth / branchesWithGrowth.length : 0;
-    
+
     this.totalCustomers = branches.reduce((sum: number, branch: BranchPerformanceDTO) => sum + (branch.customerFootfall || 0), 0);
     this.totalProducts = branches.reduce((sum: number, branch: BranchPerformanceDTO) => sum + (branch.productMovement || 0), 0);
   }
@@ -159,7 +186,7 @@ export class FinanceReportComponent implements OnInit {
     const branches = this.reportData?.branches || [];
     const branchNames = branches.map((b: BranchPerformanceDTO) => b.branch.name);
     const revenues = branches.map((b: BranchPerformanceDTO) => b.totalRevenue);
-    
+
     // Revenue Comparison Chart
     this.revenueChartOptions = {
       series: [{
@@ -184,7 +211,7 @@ export class FinanceReportComponent implements OnInit {
           formatter: (val: number) => this.formatCurrency(val),
           style: { colors: '#64748B' }
         }
-      } 
+      }
     };
 
     // Growth Chart
@@ -321,4 +348,135 @@ export class FinanceReportComponent implements OnInit {
     return growth >= 0 ? 'trending_up' : 'trending_down';
   }
 
+  // --- New Export Methods ---
+  toggleExportDropdown(): void {
+    this.isExportDropdownOpen = !this.isExportDropdownOpen;
+  }
+
+  exportReport(format: 'pdf' | 'excel') {
+    this.isExportDropdownOpen = false;
+    if (!this.reportContent || !this.reportContent.nativeElement) {
+      console.error('Report content element not found for export.');
+      alert('Could not find report content. Please ensure it has the correct template reference variable (#reportContent).');
+      return;
+    }
+
+    if (format === 'pdf') {
+      this.exportToPdf('main');
+    } else if (format === 'excel') {
+      this.exportToExcel('main');
+    }
+  }
+
+  exportSingleBranchReport(format: 'pdf' | 'excel') {
+    if (!this.selectedBranch) {
+      alert('Please select a branch to export a detailed report.');
+      return;
+    }
+    if (format === 'pdf') {
+      // For single branch PDF export, you'd need a separate #branchContent template reference variable
+      alert('Single branch PDF export is not implemented in this example.');
+    } else if (format === 'excel') {
+      this.exportToExcel('single');
+    }
+  }
+
+  private exportToPdf(type: 'main' | 'single') {
+    const elementToExport = this.reportContent.nativeElement;
+
+    html2canvas(elementToExport).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png');
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - pageHeight;
+        doc.addPage();
+        doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      doc.save('branch-performance-report.pdf');
+    });
+  }
+
+  private exportToExcel(type: 'main' | 'single') {
+    let dataToExport: any[] = [];
+    let fileName: string = '';
+
+    if (type === 'main') {
+      dataToExport = this.reportData.branches.map((item) => {
+        return {
+          'Branch Name': item.branch.name,
+          'Location': item.branch.location,
+          'Manager': item.branch.manager,
+          'Total Revenue': item.totalRevenue,
+          'Revenue Growth (%)': item.revenueGrowthPercent,
+          'Product Movement': item.productMovement,
+          'Customer Footfall': item.customerFootfall
+        };
+      });
+      fileName = 'branch-performance-summary.xlsx';
+    } else if (type === 'single' && this.selectedBranch) {
+      dataToExport = [
+        { 'Metric': 'Total Revenue', 'Value': this.selectedBranch.totalRevenue },
+        { 'Metric': 'Revenue Growth (%)', 'Value': this.selectedBranch.revenueGrowthPercent },
+        { 'Metric': 'Product Movement', 'Value': this.selectedBranch.productMovement },
+        { 'Metric': 'Customer Footfall', 'Value': this.selectedBranch.customerFootfall },
+        // You can add more data from the charts here if needed, in a more complex structure
+      ];
+      fileName = `${this.selectedBranch.branch.name}-detailed-report.xlsx`;
+    } else {
+      console.error('No data to export.');
+      return;
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'BranchReport');
+    XLSX.writeFile(workbook, fileName);
+  }
+
+  // New method to prepare dropdown data
+  prepareDropdownData(): void {
+    if (!this.reportData || !this.reportData.branches) {
+      return;
+    }
+
+    // Prepare data for Total Revenue dropdown
+    const revenueData = [...this.reportData.branches]
+      .sort((a, b) => (b.totalRevenue || 0) - (a.totalRevenue || 0))
+      .slice(0, 5) // Get top 5
+      .map(branch => ({
+        label: branch.branch.name,
+        value: this.formatCurrency(branch.totalRevenue)
+      }));
+    this.dropdownData['totalRevenue'] = revenueData;
+
+    // Prepare data for Average Growth dropdown
+    const growthData = [...this.reportData.branches]
+      .sort((a, b) => (b.revenueGrowthPercent || 0) - (a.revenueGrowthPercent || 0))
+      .slice(0, 5) // Get top 5
+      .map(branch => ({
+        label: branch.branch.name,
+        value: this.formatPercent(branch.revenueGrowthPercent || 0)
+      }));
+    this.dropdownData['averageGrowth'] = growthData;
+  }
+
+  // Toggle dropdown visibility
+  toggleDropdown(metric: 'totalRevenue' | 'averageGrowth'): void {
+    this.isDropdownOpen[metric] = !this.isDropdownOpen[metric];
+    for (const key in this.isDropdownOpen) {
+      if (key !== metric) {
+        this.isDropdownOpen[key] = false;
+      }
+    }
+  }
 }

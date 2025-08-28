@@ -6,10 +6,28 @@
           <h1 class="text-2xl font-bold text-gray-700">Branch Performance Report</h1>
           <p class="mt-1 text-gray-500">Analyze branch performance metrics and trends</p>
         </div>
-        <div>
+        <div class="flex items-center space-x-4">
           <button class="inline-flex items-center px-4 py-2 border border-transparent font-medium rounded-md shadow-sm text-white bg-customBlue hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue" (click)="openFilterForm()">
             Apply Filters
           </button>
+          
+          <div class="relative inline-block text-left" (click)="toggleExportDropdown()">
+            <button type="button" class="inline-flex items-center px-4 py-2 border border-transparent font-medium rounded-md shadow-sm text-white bg-customBlue hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue" id="export-menu-button">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Export
+              <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+            <div *ngIf="isExportDropdownOpen" class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+              <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="export-menu-button">
+                <button (click)="exportReport('pdf')" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Export Report as PDF</button>
+                <button (click)="exportReport('excel')" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Export Branches as Excel</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -31,7 +49,7 @@
             <input type="date" id="endDate" formControlName="endDate" 
                    class="w-full rounded-lg border border-gray-300 focus:border-customBlue focus:ring-customBlue shadow-sm px-3 py-2">
           </div>
-          </div>
+        </div>
       
         <div class="flex justify-end">
           <button type="button"  class="border border-gray-300 rounded-md px-4 py-2 mr-2 bg-white text-gray-700 hover:bg-gray-50">
@@ -48,50 +66,82 @@
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
     </div>
 
-    <div *ngIf="!isLoading && reportData">
+    <div *ngIf="!isLoading && reportData" #reportContent>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-customBlue">
-          <div class="flex items-center">
-            <div class="p-3 rounded-full bg-blue-100 text-customBlue">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+        <div class="relative">
+          <div (click)="toggleDropdown('totalRevenue')" class="bg-white rounded-lg shadow-md p-6 border-l-4 border-customBlue cursor-pointer hover:bg-gray-50 transition-colors">
+            <div class="flex items-center">
+              <div class="p-3 rounded-full bg-blue-100 text-customBlue">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Total Revenue</p>
+                <h3 class="text-2xl font-bold text-gray-700 mt-1">{{ formatCurrency(totalCompanyRevenue) }}</h3>
+              </div>
             </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-500">Total Revenue</p>
-              <h3 class="text-2xl font-bold text-gray-700 mt-1">{{ formatCurrency(totalCompanyRevenue) }}</h3>
-            </div>
-          </div>
-          <div class="mt-4 flex items-center font-medium" [ngClass]="getGrowthClass(averageGrowth)">
-            <span class="material-icons align-middle mr-1">{{ getGrowthIcon(averageGrowth) }}</span>
-            {{ formatPercent(averageGrowth) }}
-            <span class="text-gray-500 ml-1.5 font-normal">from previous period</span>
-          </div>
-        </div>
-      
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4" [ngClass]="{'border-green-600': averageGrowth >= 0, 'border-red-600': averageGrowth < 0}">
-          <div class="flex items-center">
-            <div class="p-3 rounded-full bg-green-100 text-green-600">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-500">Average Growth</p>
-              <h3 class="text-2xl font-bold" [class]="getGrowthClass(averageGrowth)">{{ formatPercent(averageGrowth) }}</h3>
+            <div class="mt-4 flex items-center font-medium" [ngClass]="getGrowthClass(averageGrowth)">
+              <span class="material-icons align-middle mr-1">{{ getGrowthIcon(averageGrowth) }}</span>
+              {{ formatPercent(averageGrowth) }}
+              <span class="text-gray-500 ml-1.5 font-normal">from previous period</span>
             </div>
           </div>
-          <div class="mt-4">
-            <div class="w-full bg-gray-200 rounded-full h-2.5">
-              <div class="h-2.5 rounded-full" [style.width.%]="Math.abs(averageGrowth)"
-                   [ngClass]="{'bg-green-600': averageGrowth >= 0, 'bg-red-600': averageGrowth < 0}"></div>
+          <div *ngIf="isDropdownOpen['totalRevenue']" class="absolute top-full left-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20">
+            <div class="py-1">
+              <p class="px-4 py-2 text-sm font-semibold text-gray-700 border-b">Top Branches by Revenue</p>
+              <ng-container *ngIf="dropdownData['totalRevenue'].length > 0; else noData">
+                <div *ngFor="let item of dropdownData['totalRevenue']" class="flex justify-between items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <span class="truncate">{{ item.label }}</span>
+                  <span class="font-medium text-gray-900">{{ item.value }}</span>
+                </div>
+              </ng-container>
+              <ng-template #noData>
+                <p class="px-4 py-2 text-sm text-gray-500">No data available.</p>
+              </ng-template>
             </div>
           </div>
         </div>
       
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-600">
+        <div class="relative">
+          <div (click)="toggleDropdown('averageGrowth')" class="bg-white rounded-lg shadow-md p-6 border-l-4 cursor-pointer hover:bg-gray-50 transition-colors" [ngClass]="{'border-green-600': averageGrowth >= 0, 'border-red-600': averageGrowth < 0}">
+            <div class="flex items-center">
+              <div class="p-3 rounded-full bg-green-100 text-green-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              </div>
+              <div class="ml-4">
+                <p class="text-sm font-medium text-gray-500">Average Growth</p>
+                <h3 class="text-2xl font-bold" [class]="getGrowthClass(averageGrowth)">{{ formatPercent(averageGrowth) }}</h3>
+              </div>
+            </div>
+            <div class="mt-4">
+              <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div class="h-2.5 rounded-full" [style.width.%]="Math.abs(averageGrowth)"
+                     [ngClass]="{'bg-green-600': averageGrowth >= 0, 'bg-red-600': averageGrowth < 0}"></div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="isDropdownOpen['averageGrowth']" class="absolute top-full left-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20">
+            <div class="py-1">
+              <p class="px-4 py-2 text-sm font-semibold text-gray-700 border-b">Top Branches by Growth</p>
+              <ng-container *ngIf="dropdownData['averageGrowth'].length > 0; else noData">
+                <div *ngFor="let item of dropdownData['averageGrowth']" class="flex justify-between items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <span class="truncate">{{ item.label }}</span>
+                  <span class="font-medium text-gray-900">{{ item.value }}</span>
+                </div>
+              </ng-container>
+              <ng-template #noData>
+                <p class="px-4 py-2 text-sm text-gray-500">No data available.</p>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+      
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-600 relative transition-transform transform hover:scale-105">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-purple-100 text-purple-600">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -104,12 +154,23 @@
               <h3 class="text-2xl font-bold text-gray-700 mt-1">{{ totalCustomers.toLocaleString() }}</h3>
             </div>
           </div>
-          <div class="mt-4 text-gray-500">
-            <span>Avg. {{ (totalCustomers / reportData.branches.length).toFixed(0) }} per branch</span>
+          <div class="mt-4 text-gray-500 relative">
+            <span>Avg. {{ (totalCustomers / (reportData.branches.length || 1)).toFixed(0) }} per branch</span>
+            <div class="absolute top-1 right-2 cursor-pointer"
+              (mouseenter)="hoveringInfo['totalCustomers'] = true"
+              (mouseleave)="hoveringInfo['totalCustomers'] = false">
+              <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-2 2a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+              </svg>
+              <div *ngIf="hoveringInfo['totalCustomers']"
+                class="absolute z-30 top-full right-0 w-64 bg-gray-700 text-white text-xs rounded-md shadow-lg p-2 mt-1">
+                This metric represents the total number of customers across all branches for the selected date range.
+              </div>
+            </div>
           </div>
         </div>
       
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-amber-600">
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-amber-600 relative transition-transform transform hover:scale-105">
           <div class="flex items-center">
             <div class="p-3 rounded-full bg-amber-100 text-amber-600">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -122,8 +183,19 @@
               <h3 class="text-2xl font-bold text-gray-700 mt-1">{{ totalProducts.toLocaleString() }}</h3>
             </div>
           </div>
-          <div class="mt-4 text-gray-500">
-            <span>Avg. {{ (totalProducts / reportData.branches.length).toFixed(0) }} per branch</span>
+          <div class="mt-4 text-gray-500 relative">
+            <span>Avg. {{ (totalProducts / (reportData.branches.length || 1)).toFixed(0) }} per branch</span>
+            <div class="absolute top-1 right-2 cursor-pointer"
+              (mouseenter)="hoveringInfo['totalProducts'] = true"
+              (mouseleave)="hoveringInfo['totalProducts'] = false">
+              <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-2 2a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+              </svg>
+              <div *ngIf="hoveringInfo['totalProducts']"
+                class="absolute z-30 top-full right-0 w-64 bg-gray-700 text-white text-xs rounded-md shadow-lg p-2 mt-1">
+                This shows the total count of products sold or moved out of inventory across all branches for the selected period.
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -234,136 +306,138 @@
       </div>
 
       <div *ngIf="selectedBranch">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-bold text-gray-700">{{ selectedBranch.branch.name }} Performance</h2>
-          <div class="inline-flex shadow-sm rounded-md">
-            <button type="button" class="px-4 py-2 font-medium text-gray-700 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50">
-              Export PDF
-            </button>
-            <button type="button" class="px-4 py-2 font-medium text-gray-700 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50">
-              Export Excel
-            </button>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div class="bg-white rounded-lg shadow p-6">
-            <p class="text-sm font-medium text-gray-500">Total Revenue</p>
-            <h3 class="text-2xl font-bold text-gray-700 mb-2">{{ formatCurrency(selectedBranch.totalRevenue) }}</h3>
-            <div class="flex items-center">
-              <span [class]="getGrowthClass(selectedBranch.revenueGrowthPercent)" class="text-sm font-medium">
-                <span class="material-icons align-middle mr-1">{{ getGrowthIcon(selectedBranch.revenueGrowthPercent) }}</span>
-                {{ formatPercent(selectedBranch.revenueGrowthPercent) }}
-              </span>
-              <span class="text-gray-500 ml-1.5">vs previous</span>
+        <div #branchContent>
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-gray-700">{{ selectedBranch.branch.name }} Performance</h2>
+            <div class="inline-flex shadow-sm rounded-md">
+              <button type="button" (click)="exportSingleBranchReport('pdf')" class="px-4 py-2 font-medium text-gray-700 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50">
+                Export PDF
+              </button>
+              <button type="button" (click)="exportSingleBranchReport('excel')" class="px-4 py-2 font-medium text-gray-700 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50">
+                Export Excel
+              </button>
             </div>
           </div>
 
-          <div class="bg-white rounded-lg shadow p-6">
-            <p class="text-sm font-medium text-gray-500">Product Movement</p>
-            <h3 class="text-2xl font-bold text-gray-700 mb-2">{{ selectedBranch.productMovement.toLocaleString() }}</h3>
-            <div class="text-sm text-gray-500">
-              <span>{{ (selectedBranch.totalRevenue / (selectedBranch.productMovement || 1)).toFixed(2) }} avg. revenue per product</span>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+              <p class="text-sm font-medium text-gray-500">Total Revenue</p>
+              <h3 class="text-2xl font-bold text-gray-700 mb-2">{{ formatCurrency(selectedBranch.totalRevenue) }}</h3>
+              <div class="flex items-center">
+                <span [class]="getGrowthClass(selectedBranch.revenueGrowthPercent)" class="text-sm font-medium">
+                  <span class="material-icons align-middle mr-1">{{ getGrowthIcon(selectedBranch.revenueGrowthPercent) }}</span>
+                  {{ formatPercent(selectedBranch.revenueGrowthPercent) }}
+                </span>
+                <span class="text-gray-500 ml-1.5">vs previous</span>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+              <p class="text-sm font-medium text-gray-500">Product Movement</p>
+              <h3 class="text-2xl font-bold text-gray-700 mb-2">{{ selectedBranch.productMovement.toLocaleString() }}</h3>
+              <div class="text-sm text-gray-500">
+                <span>{{ (selectedBranch.totalRevenue / (selectedBranch.productMovement || 1)).toFixed(2) }} avg. revenue per product</span>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+              <p class="text-sm font-medium text-gray-500">Customer Footfall</p>
+              <h3 class="text-2xl font-bold text-gray-700 mb-2">{{ selectedBranch.customerFootfall?.toLocaleString() || 'N/A' }}</h3>
+              <div class="text-sm text-gray-500">
+                <span>{{ (selectedBranch.totalRevenue / (selectedBranch.customerFootfall || 1)).toFixed(2) }} avg. revenue per customer</span>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+              <p class="text-sm font-medium text-gray-500">Branch Manager</p>
+              <h3 class="text-lg font-bold text-gray-700 mb-1">{{ selectedBranch.branch.manager }}</h3>
+              <div class="text-sm text-gray-500 mb-3">{{ selectedBranch.branch.location }}</div>
+              <a href="mailto:{{ selectedBranch.branch.contactInfo }}" class="text-customBlue hover:text-blue-800 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                {{ selectedBranch.branch.contactInfo }}
+              </a>
             </div>
           </div>
 
-          <div class="bg-white rounded-lg shadow p-6">
-            <p class="text-sm font-medium text-gray-500">Customer Footfall</p>
-            <h3 class="text-2xl font-bold text-gray-700 mb-2">{{ selectedBranch.customerFootfall?.toLocaleString() || 'N/A' }}</h3>
-            <div class="text-sm text-gray-500">
-              <span>{{ (selectedBranch.totalRevenue / (selectedBranch.customerFootfall || 1)).toFixed(2) }} avg. revenue per customer</span>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+              <h2 class="text-lg font-medium text-gray-700 mb-4">Monthly Performance Trend</h2>
+              <div class="h-auto">
+                <apx-chart
+                  *ngIf="trendChartOptions"
+                  [series]="trendChartOptions.series!"
+                  [chart]="trendChartOptions.chart!"
+                  [xaxis]="trendChartOptions.xaxis!"
+                  [yaxis]="trendChartOptions.yaxis!"
+                  [dataLabels]="trendChartOptions.dataLabels!"
+                  [grid]="trendChartOptions.grid!"
+                  [stroke]="trendChartOptions.stroke!"
+                  [title]="trendChartOptions.title!"
+                  [plotOptions]="trendChartOptions.plotOptions!"
+                  [fill]="trendChartOptions.fill!"
+                  [tooltip]="trendChartOptions.tooltip!"
+                  [legend]="trendChartOptions.legend!"
+                  [colors]="trendChartOptions.colors!"
+                ></apx-chart>
+              </div>
             </div>
-          </div>
 
-          <div class="bg-white rounded-lg shadow p-6">
-            <p class="text-sm font-medium text-gray-500">Branch Manager</p>
-            <h3 class="text-lg font-bold text-gray-700 mb-1">{{ selectedBranch.branch.manager }}</h3>
-            <div class="text-sm text-gray-500 mb-3">{{ selectedBranch.branch.location }}</div>
-            <a href="mailto:{{ selectedBranch.branch.contactInfo }}" class="text-customBlue hover:text-blue-800 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              {{ selectedBranch.branch.contactInfo }}
-            </a>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-lg font-medium text-gray-700 mb-4">Monthly Performance Trend</h2>
-            <div class="h-auto">
-              <apx-chart
-                *ngIf="trendChartOptions"
-                [series]="trendChartOptions.series!"
-                [chart]="trendChartOptions.chart!"
-                [xaxis]="trendChartOptions.xaxis!"
-                [yaxis]="trendChartOptions.yaxis!"
-                [dataLabels]="trendChartOptions.dataLabels!"
-                [grid]="trendChartOptions.grid!"
-                [stroke]="trendChartOptions.stroke!"
-                [title]="trendChartOptions.title!"
-                [plotOptions]="trendChartOptions.plotOptions!"
-                [fill]="trendChartOptions.fill!"
-                [tooltip]="trendChartOptions.tooltip!"
-                [legend]="trendChartOptions.legend!"
-                [colors]="trendChartOptions.colors!"
-              ></apx-chart>
+            <div class="bg-white rounded-lg shadow p-6">
+              <h2 class="text-lg font-medium text-gray-700 mb-4">Product Category Distribution</h2>
+              <div class="h-auto">
+                <apx-chart
+                  *ngIf="categoryChartOptions"
+                  [series]="categoryChartOptions.series!"
+                  [chart]="categoryChartOptions.chart!"
+                  [labels]="categoryChartOptions.labels!"
+                  [responsive]="categoryChartOptions.responsive!"
+                  [dataLabels]="categoryChartOptions.dataLabels!"
+                  [legend]="categoryChartOptions.legend!"
+                  [colors]="categoryChartOptions.colors!"
+                  [plotOptions]="categoryChartOptions.plotOptions!"
+                ></apx-chart>
+              </div>
             </div>
-          </div>
 
-          <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-lg font-medium text-gray-700 mb-4">Product Category Distribution</h2>
-            <div class="h-auto">
-              <apx-chart
-                *ngIf="categoryChartOptions"
-                [series]="categoryChartOptions.series!"
-                [chart]="categoryChartOptions.chart!"
-                [labels]="categoryChartOptions.labels!"
-                [responsive]="categoryChartOptions.responsive!"
-                [dataLabels]="categoryChartOptions.dataLabels!"
-                [legend]="categoryChartOptions.legend!"
-                [colors]="categoryChartOptions.colors!"
-                [plotOptions]="categoryChartOptions.plotOptions!"
-              ></apx-chart>
+            <div class="bg-white rounded-lg shadow p-6">
+              <h2 class="text-lg font-medium text-gray-700 mb-4">Customer Demographics</h2>
+              <div class="h-auto">
+                <apx-chart
+                  *ngIf="demographicChartOptions"
+                  [series]="demographicChartOptions.series!"
+                  [chart]="demographicChartOptions.chart!"
+                  [xaxis]="demographicChartOptions.xaxis!"
+                  [dataLabels]="demographicChartOptions.dataLabels!"
+                  [plotOptions]="demographicChartOptions.plotOptions!"
+                  [responsive]="demographicChartOptions.responsive!"
+                  [colors]="demographicChartOptions.colors!"
+                  [legend]="demographicChartOptions.legend!"
+                  [fill]="demographicChartOptions.fill!"
+                  [stroke]="demographicChartOptions.stroke!"
+                ></apx-chart>
+              </div>
             </div>
-          </div>
 
-          <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-lg font-medium text-gray-700 mb-4">Customer Demographics</h2>
-            <div class="h-auto">
-              <apx-chart
-                *ngIf="demographicChartOptions"
-                [series]="demographicChartOptions.series!"
-                [chart]="demographicChartOptions.chart!"
-                [xaxis]="demographicChartOptions.xaxis!"
-                [dataLabels]="demographicChartOptions.dataLabels!"
-                [plotOptions]="demographicChartOptions.plotOptions!"
-                [responsive]="demographicChartOptions.responsive!"
-                [colors]="demographicChartOptions.colors!"
-                [legend]="demographicChartOptions.legend!"
-                [fill]="demographicChartOptions.fill!"
-                [stroke]="demographicChartOptions.stroke!"
-              ></apx-chart>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-lg font-medium text-gray-700 mb-4">Hourly Customer Traffic</h2>
-            <div class="h-auto">
-              <apx-chart
-                *ngIf="trafficChartOptions"
-                [series]="trafficChartOptions.series!"
-                [chart]="trafficChartOptions.chart!"
-                [xaxis]="trafficChartOptions.xaxis!"
-                [yaxis]="trafficChartOptions.yaxis!"
-                [dataLabels]="trafficChartOptions.dataLabels!"
-                [grid]="trafficChartOptions.grid!"
-                [stroke]="trafficChartOptions.stroke!"
-                [title]="trafficChartOptions.title!"
-                [fill]="trafficChartOptions.fill!"
-                [tooltip]="trafficChartOptions.tooltip!"
-                [colors]="trafficChartOptions.colors!"
-              ></apx-chart>
+            <div class="bg-white rounded-lg shadow p-6">
+              <h2 class="text-lg font-medium text-gray-700 mb-4">Hourly Customer Traffic</h2>
+              <div class="h-auto">
+                <apx-chart
+                  *ngIf="trafficChartOptions"
+                  [series]="trafficChartOptions.series!"
+                  [chart]="trafficChartOptions.chart!"
+                  [xaxis]="trafficChartOptions.xaxis!"
+                  [yaxis]="trafficChartOptions.yaxis!"
+                  [dataLabels]="trafficChartOptions.dataLabels!"
+                  [grid]="trafficChartOptions.grid!"
+                  [stroke]="trafficChartOptions.stroke!"
+                  [title]="trafficChartOptions.title!"
+                  [fill]="trafficChartOptions.fill!"
+                  [tooltip]="trafficChartOptions.tooltip!"
+                  [colors]="trafficChartOptions.colors!"
+                ></apx-chart>
+              </div>
             </div>
           </div>
         </div>
