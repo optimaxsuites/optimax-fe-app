@@ -1,5 +1,4 @@
 <div class="bg-gray-50 min-h-screen pb-12">
-    <!-- Header -->
     <header class="bg-white shadow-sm">
       <div class=" px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center py-6">
@@ -7,10 +6,10 @@
                 <h1 class="text-2xl font-bold text-gray-700">Inventory Performance Report</h1>
                 <p class="mt-1 text-gray-500">Analyze your Stock Movement metrics to identify trends and opportunities.</p>
             </div>
-         
+          
 
           <div class="flex space-x-3">
-            <!-- <button (click)="exportToCsv()" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+            <button (click)="exportToCsv()" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
               <i class="fas fa-file-csv mr-2"></i> Export CSV
             </button>
             <button (click)="exportToPdf()" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
@@ -18,7 +17,7 @@
             </button>
             <button (click)="printReport()" class="px-4 py-2 border border-gray-300 rounded-md shadow-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
               <i class="fas fa-print mr-2"></i> Print
-            </button> -->
+            </button>
             <button class="inline-flex items-center px-4 py-2 border border-transparent font-medium rounded-md shadow-sm text-white bg-customBlue hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue" (click)="openFilterForm()">
                 Apply Filters
                </button>
@@ -27,18 +26,15 @@
       </div>
     </header>
   
-    <!-- Main Content -->
-    <main class=" px-4 sm:px-6 lg:px-8 mt-8">
-      <!-- Filters Section -->
+    <main class=" px-4 sm:px-6 lg:px-8 mt-8" #reportContent>
       <div class="bg-white rounded-lg shadow p-6 mb-6" *ngIf="isFilterFormOpen">
         <h2 class="text-lg font-medium text-gray-900 mb-4">Filter Report</h2>
         
         <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Branch Selection -->
             <div>
               <label for="branches" class="block font-medium text-gray-700 mb-1">Branches</label>
-         
+            
               <ng-select 
               [multiple]="true"
               [items]="branches" 
@@ -50,7 +46,6 @@
             </ng-select>
             </div>
             
-            <!-- Category Selection -->
             <div>
               <label for="categories" class="block font-medium text-gray-700 mb-1">Categories</label>
               <ng-select 
@@ -64,7 +59,6 @@
             </ng-select>
             </div>
             
-            <!-- Low Stock Option -->
             <div class="flex items-center">
               <div class="flex items-center h-5">
                 <input formControlName="includeLowStock" id="lowStock" type="checkbox" class="focus:ring-custom bg-customBlue h-4 w-4 text-custombg-customBlue border-gray-300 rounded">
@@ -86,43 +80,71 @@
         </form>
       </div>
       
-      <!-- Summary Cards -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <!-- Total Items Card -->
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-customBlue">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500">Total Items in Stock</p>
-              <p class="text-2xl font-bold text-gray-700 mt-1">{{ totalItems | number }}</p>
+        <div class="relative">
+          <button (click)="toggleDropdown('totalItems')" class="bg-white rounded-lg shadow-md p-6 border-l-4 border-customBlue w-full text-left transition-transform transform hover:scale-105">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-500">Total Items in Stock</p>
+                <p class="text-2xl font-bold text-gray-700 mt-1">{{ totalItems | number }}</p>
+              </div>
+              <div class="h-12 w-12 bg-customBlue rounded-full flex items-center justify-center">
+                <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
             </div>
-            <div class="h-12 w-12 bg-customBlue rounded-full flex items-center justify-center">
-              <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
-            </div>
-          </div>
-        </div>
-      
-        <!-- Low Stock Items Card -->
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500">Low Stock Items</p>
-              <p class="text-2xl font-bold text-gray-700 mt-1">{{ lowStockItems }}</p>
-            </div>
-            <div class="h-12 w-12 bg-red-100 rounded-full flex items-center justify-center">
-              <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
+          </button>
+          <div *ngIf="isDropdownOpen['totalItems']" class="absolute top-full left-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20">
+            <div class="py-1 max-h-60 overflow-y-auto">
+              <p class="px-4 py-2 text-sm font-semibold text-gray-700 border-b">All Items by Stock</p>
+              <ng-container *ngIf="dropdownData['totalItems'] && dropdownData['totalItems'].length > 0; else noData">
+                <div *ngFor="let item of dropdownData['totalItems']" class="flex justify-between items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <span class="truncate">{{ item.label }}</span>
+                  <span class="font-medium text-gray-900">{{ item.value }}</span>
+                </div>
+              </ng-container>
+              <ng-template #noData>
+                <p class="px-4 py-2 text-sm text-gray-500">No data available.</p>
+              </ng-template>
             </div>
           </div>
         </div>
       
-        <!-- Total Value Card -->
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+        <div class="relative">
+          <button (click)="toggleDropdown('lowStockItems')" class="bg-white rounded-lg shadow-md p-6 border-l-4 border-red-500 w-full text-left transition-transform transform hover:scale-105">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-500">Low Stock Items</p>
+                <p class="text-2xl font-bold text-gray-700 mt-1">{{ lowStockItems }}</p>
+              </div>
+              <div class="h-12 w-12 bg-red-100 rounded-full flex items-center justify-center">
+                <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+          </button>
+          <div *ngIf="isDropdownOpen['lowStockItems']" class="absolute top-full left-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20">
+            <div class="py-1 max-h-60 overflow-y-auto">
+              <p class="px-4 py-2 text-sm font-semibold text-gray-700 border-b">Items Running Low</p>
+              <ng-container *ngIf="dropdownData['lowStockItems'] && dropdownData['lowStockItems'].length > 0; else noData">
+                <div *ngFor="let item of dropdownData['lowStockItems']" class="flex justify-between items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <span class="truncate">{{ item.label }}</span>
+                  <span class="font-medium text-gray-900">{{ item.value }}</span>
+                </div>
+              </ng-container>
+              <ng-template #noData>
+                <p class="px-4 py-2 text-sm text-gray-500">No data available.</p>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+      
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500 relative">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-500">Total Inventory Value</p>
@@ -136,79 +158,84 @@
               </svg>
             </div>
           </div>
+          <div class="absolute top-2 right-2 cursor-pointer"
+            (mouseenter)="hoveringInfo['totalValue'] = true"
+            (mouseleave)="hoveringInfo['totalValue'] = false">
+            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-2 2a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+            <div *ngIf="hoveringInfo['totalValue']"
+              class="absolute z-30 top-full right-0 w-64 bg-gray-700 text-white text-xs rounded-md shadow-lg p-2 mt-1">
+              The total value is a sum of the current stock of all items multiplied by their retail price.
+            </div>
+          </div>
         </div>
       </div>
       
-  
-      <!-- Charts Section -->
+ 
       <div class="mb-8">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Category Chart -->
           <div class="bg-white rounded-lg shadow p-6">
             <div id="categoryChart">
               <apx-chart 
-                [series]="categoriesChartOptions.series"
-                [chart]="categoriesChartOptions.chart"
-                [colors]="categoriesChartOptions.colors"
-                [plotOptions]="categoriesChartOptions.plotOptions"
-                [dataLabels]="categoriesChartOptions.dataLabels"
-                [xaxis]="categoriesChartOptions.xaxis"
-                [title]="categoriesChartOptions.title"
+                [series]="categoriesChartOptions?.series"
+                [chart]="categoriesChartOptions?.chart"
+                [colors]="categoriesChartOptions?.colors"
+                [plotOptions]="categoriesChartOptions?.plotOptions"
+                [dataLabels]="categoriesChartOptions?.dataLabels"
+                [xaxis]="categoriesChartOptions?.xaxis"
+                [title]="categoriesChartOptions?.title"
               ></apx-chart>
             </div>
           </div>
-  
-          <!-- Trend Chart -->
+ 
           <div class="bg-white rounded-lg shadow p-6">
             <div id="trendChart">
               <apx-chart 
-                [series]="stockTrendChartOptions.series"
-                [chart]="stockTrendChartOptions.chart"
-                [colors]="stockTrendChartOptions.colors"
-                [stroke]="stockTrendChartOptions.stroke"
-                [xaxis]="stockTrendChartOptions.xaxis"
-                [title]="stockTrendChartOptions.title"
-                [fill]="stockTrendChartOptions.fill"
-                [markers]="stockTrendChartOptions.markers"
+                [series]="stockTrendChartOptions?.series"
+                [chart]="stockTrendChartOptions?.chart"
+                [colors]="stockTrendChartOptions?.colors"
+                [stroke]="stockTrendChartOptions?.stroke"
+                [xaxis]="stockTrendChartOptions?.xaxis"
+                [title]="stockTrendChartOptions?.title"
+                [fill]="stockTrendChartOptions?.fill"
+                [markers]="stockTrendChartOptions?.markers"
               ></apx-chart>
             </div>
           </div>
-  
-          <!-- Branch Comparison Chart -->
+ 
           <div class="bg-white rounded-lg shadow p-6">
             <div id="branchChart">
               <apx-chart 
-                [series]="branchComparisonChartOptions.series"
-                [chart]="branchComparisonChartOptions.chart"
-                [labels]="branchComparisonChartOptions.labels"
-                [colors]="branchComparisonChartOptions.colors"
-                [responsive]="branchComparisonChartOptions.responsive"
-                [title]="branchComparisonChartOptions.title"
+                [series]="branchComparisonChartOptions?.series"
+                [chart]="branchComparisonChartOptions?.chart"
+                [labels]="branchComparisonChartOptions?.labels"
+                [colors]="branchComparisonChartOptions?.colors"
+                [responsive]="branchComparisonChartOptions?.responsive"
+                [title]="branchComparisonChartOptions?.title"
               ></apx-chart>
             </div>
           </div>
-  
-          <!-- Sales vs Stock Chart -->
+ 
           <div class="bg-white rounded-lg shadow p-6">
             <div id="salesVsStockChart">
               <apx-chart 
-                [series]="salesVsStockChartOptions.series"
-                [chart]="salesVsStockChartOptions.chart"
-                [dataLabels]="salesVsStockChartOptions.dataLabels"
-                [plotOptions]="salesVsStockChartOptions.plotOptions"
-                [title]="salesVsStockChartOptions.title"
-                [colors]="salesVsStockChartOptions.colors"
-                [markers]="salesVsStockChartOptions.markers"
-                [xaxis]="salesVsStockChartOptions.xaxis"
-                [yaxis]="salesVsStockChartOptions.yaxis"
-                [tooltip]="salesVsStockChartOptions.tooltip"
+                [series]="salesVsStockChartOptions?.series"
+                [chart]="salesVsStockChartOptions?.chart"
+                [dataLabels]="salesVsStockChartOptions?.dataLabels"
+                [plotOptions]="salesVsStockChartOptions?.plotOptions"
+                [title]="salesVsStockChartOptions?.title"
+                [colors]="salesVsStockChartOptions?.colors"
+                [markers]="salesVsStockChartOptions?.markers"
+                [xaxis]="salesVsStockChartOptions?.xaxis"
+                [yaxis]="salesVsStockChartOptions?.yaxis"
+                [tooltip]="salesVsStockChartOptions?.tooltip"
               ></apx-chart>
             </div>
           </div>
         </div>
       </div>
-  
-      <!-- Inventory Table -->
+ 
       <div class="bg-white shadow overflow-hidden sm:rounded-lg">
         <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
           <h3 class="text-lg leading-6 font-medium text-gray-900">
@@ -219,12 +246,10 @@
           </p>
         </div>
         
-        <!-- Loading Spinner -->
         <div *ngIf="isLoading" class="flex justify-center items-center p-12">
           <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-custombg-customBlue"></div>
         </div>
         
-        <!-- Table Content -->
         <div *ngIf="!isLoading" class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -284,7 +309,7 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr *ngFor="let item of reportData.inventory | slice:(page-1)*pageSize:(page)*pageSize" 
+              <tr *ngFor="let item of reportData?.inventory | slice:(page-1)*pageSize:(page)*pageSize" 
                   [ngClass]="{'bg-red-50': item.lowStockAlert}">
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="text-sm font-medium text-gray-900">{{ item.product.name }}</div>
@@ -301,14 +326,13 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="text-sm font-medium" 
-                       [ngClass]="{'text-red-600': item.lowStockAlert, 'text-gray-900': !item.lowStockAlert}">
+                      [ngClass]="{'text-red-600': item.lowStockAlert, 'text-gray-900': !item.lowStockAlert}">
                     {{ item.currentStock }}
                   </div>
-                  <!-- Stock bar visualization -->
                   <div class="w-full bg-gray-200 rounded-full h-1.5 mt-1">
                     <div class="h-1.5 rounded-full" 
-                         [ngClass]="{'bg-red-500': item.lowStockAlert, 'bg-green-500': !item.lowStockAlert}"
-                         [ngStyle]="{'width': (item.currentStock / 100 * 100) + '%'}"></div>
+                          [ngClass]="{'bg-red-500': item.lowStockAlert, 'bg-green-500': !item.lowStockAlert}"
+                          [ngStyle]="{'width': (item.currentStock / 100 * 100) + '%'}"></div>
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -327,8 +351,7 @@
                 </td>
               </tr>
               
-              <!-- Empty state -->
-              <tr *ngIf="reportData.inventory.length === 0">
+              <tr *ngIf="reportData?.inventory?.length === 0">
                 <td colspan="8" class="px-6 py-12 text-center">
                   <div class="text-gray-500">
                     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -348,15 +371,14 @@
           </table>
         </div>
         
-        <!-- Pagination -->
         <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
           <div class="flex-1 flex justify-between sm:hidden">
             <button [disabled]="page === 1" (click)="page = page - 1" class="relative inline-flex items-center px-4 py-2 border border-gray-300 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                     [ngClass]="{'opacity-50 cursor-not-allowed': page === 1}">
               Previous
             </button>
-            <button [disabled]="page >= reportData.inventory.length / pageSize" (click)="page = page + 1" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                    [ngClass]="{'opacity-50 cursor-not-allowed': page >= reportData.inventory.length / pageSize}">
+            <button [disabled]="page >= (reportData?.inventory?.length || 0) / pageSize" (click)="page = page + 1" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                    [ngClass]="{'opacity-50 cursor-not-allowed': page >= (reportData?.inventory?.length || 0) / pageSize}">
               Next
             </button>
           </div>
@@ -366,9 +388,9 @@
                 Showing
                 <span class="font-medium">{{ (page - 1) * pageSize + 1 }}</span>
                 to
-                <span class="font-medium">{{ Math.min(page * pageSize, reportData.inventory.length) }}</span>
+                <span class="font-medium">{{ Math.min(page * pageSize, reportData?.inventory?.length || 0) }}</span>
                 of
-                <span class="font-medium">{{ reportData.inventory.length }}</span>
+                <span class="font-medium">{{ reportData?.inventory?.length || 0 }}</span>
                 results
               </p>
             </div>
@@ -382,7 +404,7 @@
                   </svg>
                 </button>
                 
-                <ng-container *ngFor="let p of [].constructor(Math.min(5, Math.ceil(reportData.inventory.length / pageSize))); let i = index">
+                <ng-container *ngFor="let p of [].constructor(Math.ceil((reportData?.inventory?.length || 0) / pageSize)); let i = index">
                   <button (click)="page = i + 1" 
                           [ngClass]="{'bg-customBlueborder-custombg-customBlue text-custombg-customBlue': page === i + 1, 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50': page !== i + 1}"
                           class="relative inline-flex items-center px-4 py-2 border font-medium">
@@ -390,8 +412,8 @@
                   </button>
                 </ng-container>
                 
-                <button [disabled]="page >= Math.ceil(reportData.inventory.length / pageSize)" (click)="page = page + 1" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white font-medium text-gray-500 hover:bg-gray-50"
-                        [ngClass]="{'opacity-50 cursor-not-allowed': page >= Math.ceil(reportData.inventory.length / pageSize)}">
+                <button [disabled]="page >= Math.ceil((reportData?.inventory?.length || 0) / pageSize)" (click)="page = page + 1" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white font-medium text-gray-500 hover:bg-gray-50"
+                        [ngClass]="{'opacity-50 cursor-not-allowed': page >= Math.ceil((reportData?.inventory?.length || 0) / pageSize)}">
                   <span class="sr-only">Next</span>
                   <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />

@@ -107,7 +107,7 @@ export class InventoryReportComponent implements OnInit {
     lastMonth.setMonth(lastMonth.getMonth() - 1);
 
     const endDate = today;
-    const startDate = lastMonth;
+    const startDate = today;
 
     this.reportForm = this.fb.group({
       startDate: [startDate],

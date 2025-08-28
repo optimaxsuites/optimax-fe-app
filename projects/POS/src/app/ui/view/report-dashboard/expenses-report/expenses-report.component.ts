@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit, ElementRef } from '@angular/core';
 import {
   ApexAxisChartSeries,
   ApexChart,
@@ -23,9 +23,13 @@ import {
   BranchDTO,
   ProductPerformanceReportRequestDTO,
   ProductPerformanceDTO,
-  ProductDTO, // Added for type safety
-} from '../../../models/interface'; // Corrected import path
+  ProductDTO,
+} from '../../../models/interface';
 import { ReportService } from '../../../service/report.service';
+
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
+import * as XLSX from 'xlsx';
 
 export type ChartOptions = {
   series: ApexAxisChartSeries;
@@ -64,6 +68,11 @@ interface MappedBreakdownStats {
   avgMargin: number;
 }
 
+interface DropdownData {
+  label: string;
+  value: any;
+}
+
 @Component({
   selector: 'app-expenses-report',
   templateUrl: './expenses-report.component.html',
@@ -72,9 +81,10 @@ interface MappedBreakdownStats {
 export class ExpensesReportComponent implements OnInit, AfterViewInit {
   @ViewChild('revenueChart') revenueChart!: ChartComponent;
   @ViewChild('productSalesChart') productSalesChart!: ChartComponent;
-  @ViewChild('categoryPerformanceChart')
-  categoryPerformanceChart!: ChartComponent;
+  @ViewChild('categoryPerformanceChart') categoryPerformanceChart!: ChartComponent;
+  @ViewChild('reportContent') reportContent!: ElementRef;
 
+  isExportDropdownOpen = false;
   reportForm!: FormGroup;
   isLoading = false;
   report: ProductPerformanceReportDTO | null = null;
@@ -84,6 +94,20 @@ export class ExpensesReportComponent implements OnInit, AfterViewInit {
   productPage = 1;
   productItemsPerPage = 10;
   Math = Math;
+
+  // New state variables for dropdowns and tooltips
+  isDropdownOpen: { [key: string]: boolean } = {
+    totalProductsSold: false,
+    totalRevenue: false
+  };
+  dropdownData: { [key: string]: DropdownData[] } = {
+    totalProductsSold: [],
+    totalRevenue: []
+  };
+  hoveringInfo: { [key: string]: boolean } = {
+    avgOrderValue: false,
+    avgGrossMargin: false
+  };
 
   public revenueChartOptions: ChartOptions = {
     series: [],
@@ -364,9 +388,11 @@ export class ExpensesReportComponent implements OnInit, AfterViewInit {
         this.report = data;
         if (data && (data.productPerformanceBreakdown || data.bestsellers)) {
           this.safeUpdateCharts();
+          this.prepareDropdownData();
         } else {
           console.warn('No data received from API');
           this.initializeEmptyCharts();
+          this.dropdownData = { totalProductsSold: [], totalRevenue: [] };
         }
         this.isLoading = false;
       },
@@ -374,6 +400,7 @@ export class ExpensesReportComponent implements OnInit, AfterViewInit {
         console.error('Error loading report:', err);
         this.isLoading = false;
         this.initializeEmptyCharts();
+        this.dropdownData = { totalProductsSold: [], totalRevenue: [] };
       },
     });
   }
@@ -651,7 +678,7 @@ export class ExpensesReportComponent implements OnInit, AfterViewInit {
 
   formatPercent(value?: number | null): string {
     const numValue = this.getSafeNumber(value);
-    return numValue.toFixed(1) + '%';
+    return (numValue * 100).toFixed(1) + '%';
   }
 
   formatNumber(value?: number | null): string {
@@ -709,5 +736,113 @@ export class ExpensesReportComponent implements OnInit, AfterViewInit {
 
   onSubmit(): void {
     this.generateReport();
+  }
+
+  // New export methods
+  toggleExportDropdown(): void {
+    this.isExportDropdownOpen = !this.isExportDropdownOpen;
+  }
+
+  exportReport(format: 'pdf' | 'excel') {
+    this.isExportDropdownOpen = false;
+    if (!this.reportContent || !this.reportContent.nativeElement) {
+      console.error('Report content element not found for export.');
+      alert(
+        'Could not find report content. Please ensure it has the correct template reference variable (#reportContent).'
+      );
+      return;
+    }
+
+    if (format === 'pdf') {
+      this.exportToPdf();
+    } else if (format === 'excel') {
+      this.exportToExcel();
+    }
+  }
+
+  private exportToPdf() {
+    html2canvas(this.reportContent.nativeElement).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png');
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - pageHeight;
+        doc.addPage();
+        doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      doc.save('product-performance-report.pdf');
+    });
+  }
+
+  private exportToExcel() {
+    const dataToExport = this.normalizeBreakdown(
+      this.report?.productPerformanceBreakdown || []
+    ).map((item) => {
+      return {
+        'Product': item.product?.name || 'N/A',
+        'Category': item.category?.name || 'N/A',
+        'Variant': item.variant || 'Standard',
+        'Branch': item.branch?.name || 'All Branches',
+        'Price (₦)': this.getSafeNumber(item.product?.price || 0),
+        'Quantity Sold': this.getSafeNumber(item.quantitySold || 0),
+        'Revenue (₦)': this.getSafeNumber(item.totalRevenue || 0),
+        'Gross Margin (%)': this.getSafeNumber(item.grossMargin || 0) * 100,
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'ProductPerformance');
+    XLSX.writeFile(workbook, 'product-performance-report.xlsx');
+  }
+
+  // New method to prepare dropdown data
+  prepareDropdownData(): void {
+    if (!this.report) {
+      return;
+    }
+
+    // Prepare data for Total Products Sold dropdown
+    const bestsellers = this.report.bestsellers || [];
+    this.dropdownData['totalProductsSold'] = bestsellers.map(item => ({
+      label: item.product?.name || 'N/A',
+      value: this.formatNumber(item.quantitySold) + ' units'
+    })).slice(0, 5); // Show top 5
+
+    // Prepare data for Total Revenue dropdown
+    const breakdown = this.normalizeBreakdown(this.report.productPerformanceBreakdown || []);
+    const revenueMap = breakdown.reduce((acc, curr) => {
+      const productName = curr.product?.name || 'N/A';
+      acc[productName] = (acc[productName] || 0) + this.getSafeNumber(curr.totalRevenue);
+      return acc;
+    }, {} as { [key: string]: number });
+
+    const sortedRevenue = Object.entries(revenueMap)
+      .sort(([, a], [, b]) => b - a)
+      .map(([name, revenue]) => ({
+        label: name,
+        value: this.formatCurrency(revenue)
+      })).slice(0, 5); // Show top 5
+
+    this.dropdownData['totalRevenue'] = sortedRevenue;
+  }
+
+  toggleDropdown(metric: 'totalProductsSold' | 'totalRevenue'): void {
+    this.isDropdownOpen[metric] = !this.isDropdownOpen[metric];
+    // Close other dropdowns
+    for (const key in this.isDropdownOpen) {
+      if (key !== metric) {
+        this.isDropdownOpen[key] = false;
+      }
+    }
   }
 }

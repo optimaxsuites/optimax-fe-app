@@ -1,5 +1,4 @@
 <div class="min-h-screen bg-gray-50">
-  <!-- Header -->
   <header class="bg-white shadow">
     <div class=" px-4 sm:px-6 lg:px-8 py-6">
       <div class="flex items-center justify-between">
@@ -13,25 +12,37 @@
           <button
             class="inline-flex items-center px-4 py-2 border border-transparent font-medium rounded-md shadow-sm text-white bg-customBlue hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue"
             (click)="openFilterForm()">
-
             Apply Filters
           </button>
-        </div>
 
+          <div class="relative inline-block text-left" (click)="toggleExportDropdown()">
+            <button type="button" class="inline-flex items-center px-4 py-2 border border-transparent font-medium rounded-md shadow-sm text-white bg-customBlue hover:bg-customBlueHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-customBlue" id="export-menu-button">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Export
+              <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+            <div *ngIf="isExportDropdownOpen" class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+              <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="export-menu-button">
+                <button (click)="exportReport('pdf')" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Export as PDF</button>
+                <button (click)="exportReport('excel')" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Export as Excel</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-
   </header>
 
-  <!-- Filter Form -->
   <div class=" px-4 sm:px-6 lg:px-8 py-6">
     <div class="bg-white shadow rounded-2xl p-8 mb-8" *ngIf="filterForm">
       <h2 class="text-xl font-semibold text-gray-800 mb-6">Report Filters</h2>
 
       <form [formGroup]="reportForm" (ngSubmit)="onSubmit()" class="space-y-6">
-        <!-- Main Filters Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <!-- Start Date -->
           <div>
             <label for="startDate"
               class="block font-medium text-gray-700 mb-1">Start Date</label>
@@ -42,7 +53,6 @@
               class="w-full rounded-lg border border-gray-300 focus:border-custombbg-customBlue focus:ring-custombbg-customBlue shadow-sm px-3 py-2">
           </div>
 
-          <!-- End Date -->
           <div>
             <label for="endDate"
               class="block font-medium text-gray-700 mb-1">End Date</label>
@@ -53,7 +63,6 @@
               class="w-full rounded-lg border border-gray-300 focus:border-custombbg-customBlue focus:ring-custombbg-customBlue shadow-sm px-3 py-2">
           </div>
 
-          <!-- Group By -->
           <div>
             <label for="groupBy"
               class="block font-medium text-gray-700 mb-1">Group By</label>
@@ -67,9 +76,7 @@
           </div>
         </div>
 
-        <!-- Multi-Selects Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Branches -->
           <div>
             <label class="block font-medium text-gray-700 mb-1">Branches</label>
             <ng-select
@@ -85,7 +92,6 @@
               branches.</p>
           </div>
 
-          <!-- Categories -->
           <div>
             <label
               class="block font-medium text-gray-700 mb-1">Categories</label>
@@ -103,7 +109,6 @@
           </div>
         </div>
 
-        <!-- Submit Button -->
         <div class="flex justify-end pt-4">
           <button
             type="submit"
@@ -124,58 +129,87 @@
       </form>
     </div>
 
-    <!-- Report Content -->
     <div *ngIf="report" class="space-y-6">
-      <!-- Summary Metrics -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Total Products Sold -->
-        <div
-          class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500">Total Products
-                Sold</p>
-              <p class="text-2xl font-bold text-gray-700 mt-1">{{
-                report.totalProductsSold | number }}</p>
+        <div class="relative">
+          <button (click)="toggleDropdown('totalProductsSold')"
+            class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500 w-full text-left transition-transform transform hover:scale-105">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-500">Total Products
+                  Sold</p>
+                <p class="text-2xl font-bold text-gray-700 mt-1">{{
+                  report.totalProductsSold | number }}</p>
+              </div>
+              <div
+                class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                  class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+              </div>
             </div>
-            <div
-              class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg"
-                class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        <!-- Total Revenue -->
-        <div
-          class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-500">Total Revenue</p>
-              <p class="text-2xl font-bold text-gray-700 mt-1">{{
-                formatCurrency(report.totalRevenue) }}</p>
-            </div>
-            <div
-              class="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg"
-                class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+          </button>
+          <div *ngIf="isDropdownOpen['totalProductsSold']"
+            class="absolute top-full left-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20">
+            <div class="py-1">
+              <p class="px-4 py-2 text-sm font-semibold text-gray-700 border-b">Top Products by Units Sold</p>
+              <ng-container *ngIf="dropdownData['totalProductsSold'].length > 0; else noData">
+                <div *ngFor="let item of dropdownData['totalProductsSold']" class="flex justify-between items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <span class="truncate">{{ item.label }}</span>
+                  <span class="font-medium text-gray-900">{{ item.value }}</span>
+                </div>
+              </ng-container>
+              <ng-template #noData>
+                <p class="px-4 py-2 text-sm text-gray-500">No data available.</p>
+              </ng-template>
             </div>
           </div>
         </div>
 
-        <!-- Avg. Order Value -->
+        <div class="relative">
+          <button (click)="toggleDropdown('totalRevenue')"
+            class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500 w-full text-left transition-transform transform hover:scale-105">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-500">Total Revenue</p>
+                <p class="text-2xl font-bold text-gray-700 mt-1">{{
+                  formatCurrency(report.totalRevenue) }}</p>
+              </div>
+              <div
+                class="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                  class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </button>
+          <div *ngIf="isDropdownOpen['totalRevenue']"
+            class="absolute top-full left-0 mt-2 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20">
+            <div class="py-1">
+              <p class="px-4 py-2 text-sm font-semibold text-gray-700 border-b">Top Products by Revenue</p>
+              <ng-container *ngIf="dropdownData['totalRevenue'].length > 0; else noData">
+                <div *ngFor="let item of dropdownData['totalRevenue']" class="flex justify-between items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <span class="truncate">{{ item.label }}</span>
+                  <span class="font-medium text-gray-900">{{ item.value }}</span>
+                </div>
+              </ng-container>
+              <ng-template #noData>
+                <p class="px-4 py-2 text-sm text-gray-500">No data available.</p>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+
         <div
-          class="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500">
+          class="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-500 relative transition-transform transform hover:scale-105">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-500">Avg. Order Value</p>
@@ -198,11 +232,21 @@
               </svg>
             </div>
           </div>
+          <div class="absolute top-2 right-2 cursor-pointer"
+            (mouseenter)="hoveringInfo['avgOrderValue'] = true"
+            (mouseleave)="hoveringInfo['avgOrderValue'] = false">
+            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-2 2a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+            <div *ngIf="hoveringInfo['avgOrderValue']"
+              class="absolute z-30 top-full right-0 w-64 bg-gray-700 text-white text-xs rounded-md shadow-lg p-2 mt-1">
+              Average Order Value is calculated as **Total Revenue / Total Products Sold**.
+            </div>
+          </div>
         </div>
 
-        <!-- Avg. Gross Margin -->
         <div
-          class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
+          class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500 relative transition-transform transform hover:scale-105">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-500">Avg. Gross Margin</p>
@@ -221,10 +265,20 @@
               </svg>
             </div>
           </div>
+          <div class="absolute top-2 right-2 cursor-pointer"
+            (mouseenter)="hoveringInfo['avgGrossMargin'] = true"
+            (mouseleave)="hoveringInfo['avgGrossMargin'] = false">
+            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-2 2a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+            <div *ngIf="hoveringInfo['avgGrossMargin']"
+              class="absolute z-30 top-full right-0 w-64 bg-gray-700 text-white text-xs rounded-md shadow-lg p-2 mt-1">
+              Average Gross Margin is the average of the gross margin for each product, calculated as **(Revenue - Cost of Goods) / Revenue**.
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Revenue by Product Chart -->
       <div class="bg-white shadow h-auto rounded-lg p-6">
         <h2 class="text-lg font-medium text-gray-700 mb-4">Revenue by Top
           Products</h2>
@@ -244,9 +298,7 @@
         </div>
       </div>
 
-      <!-- Two Column Layout -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Bestsellers Product Chart -->
         <div class="bg-white shadow rounded-lg p-6">
           <h2 class="text-lg font-medium text-gray-700 mb-4">Top Selling
             Products</h2>
@@ -257,12 +309,11 @@
               [labels]="productSalesChartOptions.labels"
               [dataLabels]="productSalesChartOptions.dataLabels ?? {}"
               [tooltip]="productSalesChartOptions.tooltip ?? {}"
-              [legend]="productSalesChartOptions.legend  ?? {}"
-              [colors]="productSalesChartOptions.colors  ?? []"></apx-chart>
+              [legend]="productSalesChartOptions.legend  ?? {}"
+              [colors]="productSalesChartOptions.colors  ?? []"></apx-chart>
           </div>
         </div>
 
-        <!-- Category Performance Chart -->
         <div class="bg-white shadow rounded-lg p-6">
           <h2 class="text-lg font-medium text-gray-700 mb-4">Category
             Performance</h2>
@@ -282,7 +333,6 @@
         </div>
       </div>
 
-      <!-- Bestsellers Table -->
       <div class="bg-white shadow rounded-lg overflow-hidden">
         <div class="p-6 border-b border-gray-200">
           <h2 class="text-lg font-medium text-gray-700">Top Performing
@@ -343,7 +393,6 @@
         </div>
       </div>
 
-      <!-- Underperformers Table -->
       <div class="bg-white shadow rounded-lg overflow-hidden">
         <div class="p-6 border-b border-gray-200">
           <h2 class="text-lg font-medium text-gray-700">Underperforming
@@ -404,7 +453,6 @@
         </div>
       </div>
 
-      <!-- Detailed Product Performance Table -->
       <div class="bg-white shadow rounded-lg overflow-hidden">
         <div class="p-6 border-b border-gray-200">
           <h2 class="text-lg font-medium text-gray-700">Detailed Product
@@ -461,14 +509,13 @@
                   <span
                     [class]="(item.grossMargin || 0) >= 0.4 ? 'bg-green-100 text-green-800' : (item.grossMargin || 0) >= 0.3 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'"
                     class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full">
-                    {{ formatPercent(item.grossMargin || 0) }}
+                    {{ formatPercent(item.grossMargin) }}
                   </span>
                 </td>
               </tr>
             </tbody>
           </table>
 
-          <!-- Pagination Footer -->
           <div
             class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
             <div>
@@ -529,7 +576,6 @@
       </div>
     </div>
 
-        <!-- Loading Placeholder -->
     <div *ngIf="isLoading && !report"
       class="bg-white shadow rounded-lg p-8 text-center">
       <div class="animate-spin mx-auto h-12 w-12 text-custombbg-customBlue">
@@ -543,7 +589,6 @@
       <p class="mt-4 text-gray-500">Generating report data...</p>
     </div>
 
-    <!-- Empty State -->
     <div *ngIf="!isLoading && !report"
       class="bg-white shadow rounded-lg p-8 text-center">
       <svg class="mx-auto h-12 w-12 text-gray-400" fill="none"

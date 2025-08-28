@@ -1,28 +1,33 @@
-import { Component, OnInit, ViewChild, HostListener } from '@angular/core';
-import { 
-  ApexAxisChartSeries, 
-  ApexChart, 
-  ApexXAxis, 
-  ApexDataLabels, 
-  ApexStroke, 
-  ApexYAxis, 
-  ApexTitleSubtitle, 
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import {
+  ApexAxisChartSeries,
+  ApexChart,
+  ApexXAxis,
+  ApexDataLabels,
+  ApexStroke,
+  ApexYAxis,
+  ApexTitleSubtitle,
   ApexLegend,
   ApexTooltip,
   ApexFill,
   ApexPlotOptions,
-  ChartComponent
+  ChartComponent,
 } from 'ng-apexcharts';
 import { formatDate } from '@angular/common';
-import { 
-  SalesReportDTO, 
-  SalesReportBreakdownDTO, 
-  TopProductDTO, 
+import {
+  SalesReportDTO,
+  SalesReportBreakdownDTO,
+  TopProductDTO,
   BranchSalesDTO,
-  BranchDTO 
+  BranchDTO,
+  CategoryDTO,
+  PaymentMethodDTO,
 } from '../../../models/interface';
 import { ReportService } from '../../../service/report.service';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import * as XLSX from 'xlsx';
 
 type PaymentMethodBreakdown = {
   paymentMethod: string;
@@ -84,13 +89,14 @@ export type TrendChartOptions = {
 @Component({
   selector: 'app-sales-report',
   templateUrl: './sales-report.component.html',
-  styleUrls: ['./sales-report.component.scss']
+  styleUrls: ['./sales-report.component.scss'],
 })
 export class SalesReportComponent implements OnInit {
-  @ViewChild("branchChart") branchChart!: ChartComponent;
-  @ViewChild("productChart") productChart!: ChartComponent;
-  @ViewChild("paymentChart") paymentChart!: ChartComponent;
-  @ViewChild("trendChart") trendChart!: ChartComponent;
+  @ViewChild('branchChart') branchChart!: ChartComponent;
+  @ViewChild('productChart') productChart!: ChartComponent;
+  @ViewChild('paymentChart') paymentChart!: ChartComponent;
+  @ViewChild('trendChart') trendChart!: ChartComponent;
+  @ViewChild('reportContent') reportContent!: ElementRef;
 
   public branchChartOptions!: BranchChartOptions;
   public productChartOptions!: ProductChartOptions;
@@ -102,57 +108,58 @@ export class SalesReportComponent implements OnInit {
   selectedTab = 'overview';
   currentPage = 1;
   itemsPerPage = 10;
+
+  // Filter panel properties
   isFilterFormOpen = false;
+  selectedDateRange: string = 'today';
+  paymentMethods: string[] = [];
+  categories: CategoryDTO[] = [];
+
+  // Export dropdown properties
+  isExportDropdownOpen = false;
+
   Math = Math;
-  
+
   // Form properties
   reportForm!: FormGroup;
-  
-  // Filter properties
-  branches: BranchDTO[] = []; 
-  paymentMethods = [
-    { id: 'cash', name: 'Cash' },
-    { id: 'card', name: 'Card' },
-    { id: 'transfer', name: 'Transfer' },
-    { id: 'wallet', name: 'Wallet' }
-  ];
 
-  constructor(
-    private reportService: ReportService,
-    private fb: FormBuilder
-  ) {
+  // Filter properties
+  branches: BranchDTO[] = [];
+
+  constructor(private reportService: ReportService, private fb: FormBuilder) {
     this.initChartOptions();
     this.createForm();
   }
 
   ngOnInit(): void {
     this.setDefaultDateRange();
-    this.loadBranches(); 
+    this.loadBranches();
+    this.loadPaymentMethods();
+    this.loadCategories();
   }
 
   createForm(): void {
     this.reportForm = this.fb.group({
       startDate: ['', Validators.required],
       endDate: ['', Validators.required],
+      dateRange: ['today'],
       branchIds: [[]],
       paymentMethodIds: [[]],
-      groupBy: ['day']
+      categoryId: [null],
     });
   }
 
-  // Set default date range (last 30 days)
   setDefaultDateRange(): void {
     const today = new Date();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(today.getDate() - 30);
-    
-    const startDate = this.formatDateForInput(thirtyDaysAgo);
+    const startDate = this.formatDateForInput(today);
     const endDate = this.formatDateForInput(today);
-    
+
     this.reportForm.patchValue({
       startDate: startDate,
-      endDate: endDate
+      endDate: endDate,
+      dateRange: 'today',
     });
+    this.selectedDateRange = 'today';
   }
 
   formatDateForInput(date: Date): string {
@@ -162,11 +169,10 @@ export class SalesReportComponent implements OnInit {
     return `${year}-${month}-${day}`;
   }
 
-  // Toggle filter form
   toggleFilterForm(): void {
     this.isFilterFormOpen = !this.isFilterFormOpen;
   }
-  
+
   loadBranches(): void {
     this.reportService.getBranches().subscribe({
       next: (branches) => {
@@ -177,20 +183,80 @@ export class SalesReportComponent implements OnInit {
         console.error('Error loading branches:', err);
         this.branches = [];
         this.loadSalesData();
-      }
+      },
     });
   }
 
+  loadPaymentMethods(): void {
+    this.paymentMethods = [
+      'CASH',
+      'CARD',
+      'BANK_TRANSFER',
+      'MOBILE_MONEY',
+      'LOYALTY_POINTS',
+      'VOUCHER',
+      'GIFT_CARD',
+      'CRYPTOCURRENCY',
+    ];
+    console.log('Payment methods loaded locally for dropdown:', this.paymentMethods);
+  }
+
+  loadCategories(): void {
+    this.reportService.getCategories().subscribe({
+      next: (categories) => {
+        this.categories = categories || [];
+      },
+      error: (err) => {
+        console.error('Error loading categories:', err);
+        this.categories = [];
+      },
+    });
+  }
+
+  onDateRangeChange(event: any): void {
+    const range = event.target.value;
+    this.selectedDateRange = range;
+    const today = new Date();
+    let startDate: Date;
+    let endDate = today;
+
+    switch (range) {
+      case 'today':
+        startDate = today;
+        break;
+      case 'last3Days':
+        startDate = new Date();
+        startDate.setDate(today.getDate() - 3);
+        break;
+      case 'last1Week':
+        startDate = new Date();
+        startDate.setDate(today.getDate() - 7);
+        break;
+      case 'thisMonth':
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        break;
+      default:
+        return;
+    }
+
+    this.reportForm.patchValue({
+      startDate: this.formatDateForInput(startDate),
+      endDate: this.formatDateForInput(endDate),
+    });
+  }
+
+  onCategoryChange(categoryId: number | null): void {
+    this.reportForm.patchValue({ categoryId });
+  }
 
   loadSalesData(): void {
     this.loading = true;
-    
+
     const formValue = this.reportForm.value;
-    
-    // Convert dates to ISO format with time
+
     const startDate = new Date(formValue.startDate);
     startDate.setHours(0, 0, 0, 0);
-    
+
     const endDate = new Date(formValue.endDate);
     endDate.setHours(23, 59, 59, 999);
 
@@ -199,22 +265,21 @@ export class SalesReportComponent implements OnInit {
       endDate: endDate.toISOString(),
       branchIds: formValue.branchIds || [],
       cashierIds: [],
+      // The payment methods are passed as a string array, which is correct
       paymentMethods: formValue.paymentMethodIds || [],
-      groupBy: formValue.groupBy || 'day'
+      categoryIds: formValue.categoryId ? [formValue.categoryId] : [],
     };
 
     this.reportService.getSalesPerformanceReport(payload).subscribe({
       next: (data) => {
         this.salesReport = data;
-        
-        
         this.loading = false;
         this.updateCharts();
       },
       error: (err) => {
         this.loading = false;
         console.error('Error loading sales data:', err);
-      }
+      },
     });
   }
 
@@ -223,11 +288,13 @@ export class SalesReportComponent implements OnInit {
     const end = start + this.itemsPerPage;
     return this.salesReport?.breakdown?.slice(start, end) || [];
   }
-  
+
   get totalPages() {
-    return Math.ceil((this.salesReport?.breakdown?.length || 0) / this.itemsPerPage);
+    return Math.ceil(
+      (this.salesReport?.breakdown?.length || 0) / this.itemsPerPage
+    );
   }
-  
+
   setPage(page: number) {
     if (page >= 1 && page <= this.totalPages) {
       this.currentPage = page;
@@ -235,292 +302,177 @@ export class SalesReportComponent implements OnInit {
   }
 
   initChartOptions() {
-    // Branch sales chart (bar chart)
     this.branchChartOptions = {
-      series: [{
-        name: "Revenue",
-        data: []
-      }],
-      chart: {
-        type: "bar",
-        height: 350,
-        toolbar: {
-          show: false
-        }
-      },
-      colors: ["#4F46E5"],
-      dataLabels: {
-        enabled: false
-      },
-      stroke: {
-        curve: "smooth",
-        width: 2
-      },
+      series: [{ name: 'Revenue', data: [] }],
+      chart: { type: 'bar', height: 350, toolbar: { show: false } },
+      colors: ['#4F46E5'],
+      dataLabels: { enabled: false },
+      stroke: { curve: 'smooth', width: 2 },
       title: {
-        text: "Revenue by Branch",
-        align: "left",
-        style: {
-          fontSize: '16px',
-          fontWeight: '600',
-          color: '#374151'
-        }
+        text: 'Revenue by Branch',
+        align: 'left',
+        style: { fontSize: '16px', fontWeight: '600', color: '#374151' },
       },
-      xaxis: {
-        categories: []
-      },
+      xaxis: { categories: [] },
       yaxis: {
         title: {
-          text: "Revenue (₦)",
-          style: {
-            fontSize: '14px',
-            fontWeight: '500',
-            color: '#6B7280'
-          }
-        }
+          text: 'Revenue (₦)',
+          style: { fontSize: '14px', fontWeight: '500', color: '#6B7280' },
+        },
       },
-      tooltip: {
-        y: {
-          formatter: (val: number) => {
-            return this.formatCurrency(val);
-          }
-        }
-      }
+      tooltip: { y: { formatter: (val: number) => this.formatCurrency(val) } },
     };
 
-    // Top products chart (horizontal bar)
     this.productChartOptions = {
-      series: [{
-        name: "Revenue",
-        data: []
-      }],
-      chart: {
-        type: "bar",
-        height: 350,
-        toolbar: {
-          show: false
-        }
-      },
+      series: [{ name: 'Revenue', data: [] }],
+      chart: { type: 'bar', height: 350, toolbar: { show: false } },
       plotOptions: {
-        bar: {
-          horizontal: true,
-          barHeight: '70%',
-          distributed: false
-        }
+        bar: { horizontal: true, barHeight: '70%', distributed: false },
       },
-      colors: ["#10B981"],
+      colors: ['#10B981'],
       dataLabels: {
         enabled: true,
-        formatter: (val: number) => {
-            return this.formatCurrency(val, false);
-        },
+        formatter: (val: number) => this.formatCurrency(val, false),
         textAnchor: 'start',
-        style: {
-          fontSize: '12px',
-          colors: ['#fff']
-        },
-        offsetX: 0
+        style: { fontSize: '12px', colors: ['#fff'] },
+        offsetX: 0,
       },
-      stroke: {
-        width: 0
-      },
-      xaxis: {
-        categories: []
-      },
-      yaxis: {
-        labels: {
-          show: true
-        }
-      },
+      stroke: { width: 0 },
+      xaxis: { categories: [] },
+      yaxis: { labels: { show: true } },
       title: {
-        text: "Top Selling Products",
-        align: "left",
-        style: {
-          fontSize: '16px',
-          fontWeight: '600',
-          color: '#374151'
-        }
+        text: 'Top Selling Products',
+        align: 'left',
+        style: { fontSize: '16px', fontWeight: '600', color: '#374151' },
       },
-      tooltip: {
-        y: {
-          formatter: (val: number) => {
-            return this.formatCurrency(val);
-          }
-        }
-      },
-      fill: {
-        opacity: 1
-      }
+      tooltip: { y: { formatter: (val: number) => this.formatCurrency(val) } },
+      fill: { opacity: 1 },
     };
 
-    // Payment methods chart (pie chart)
     this.paymentChartOptions = {
       series: [],
-      chart: {
-        type: "donut",
-        height: 350
-      },
+      chart: { type: 'donut', height: 350 },
       labels: [],
       dataLabels: {
         enabled: true,
-        formatter: (val: number, opts?: any) => {
-          return `${opts.w.config.labels[opts.seriesIndex]}: ${this.formatCurrency(val, false)}`;
-        }
+        formatter: (val: number, opts?: any) =>
+          `${opts.w.config.labels[opts.seriesIndex]}: ${this.formatCurrency(
+            val,
+            false
+          )}`,
       },
-      colors: ["#3B82F6", "#F97316", "#14B8A6", "#EC4899", "#8B5CF6"],
+      colors: ['#3B82F6', '#F97316', '#14B8A6', '#EC4899', '#8B5CF6'],
       title: {
-        text: "Payment Method Distribution",
-        align: "left",
-        style: {
-          fontSize: '16px',
-          fontWeight: '600',
-          color: '#374151'
-        }
+        text: 'Payment Method Distribution',
+        align: 'left',
+        style: { fontSize: '16px', fontWeight: '600', color: '#374151' },
       },
-      legend: {
-        position: "bottom"
-      },
-      tooltip: {
-        y: {
-          formatter: (val: number) => {
-            return this.formatCurrency(val);
-          }
-        }
-      }
+      legend: { position: 'bottom' },
+      tooltip: { y: { formatter: (val: number) => this.formatCurrency(val) } },
     };
 
-    // Sales trend chart (line chart)
     this.trendChartOptions = {
       series: [
-        {
-          name: "Revenue",
-          data: []
-        },
-        {
-          name: "Transactions",
-          data: []
-        }
+        { name: 'Revenue', data: [] },
+        { name: 'Transactions', data: [] },
       ],
-      chart: {
-        height: 350,
-        type: "area",
-        toolbar: {
-          show: false
-        }
-      },
-      dataLabels: {
-        enabled: false
-      },
-      stroke: {
-        curve: "smooth",
-        width: 2
-      },
-      colors: ["#6366F1", "#F59E0B"],
+      chart: { height: 350, type: 'area', toolbar: { show: false } },
+      dataLabels: { enabled: false },
+      stroke: { curve: 'smooth', width: 2 },
+      colors: ['#6366F1', '#F59E0B'],
       title: {
         text: `Sales Trend`,
-        align: "left",
-        style: {
-          fontSize: '16px',
-          fontWeight: '600',
-          color: '#374151'
-        }
+        align: 'left',
+        style: { fontSize: '16px', fontWeight: '600', color: '#374151' },
       },
-      xaxis: {
-        type: "category",
-        categories: []
-      },
+      xaxis: { type: 'category', categories: [] },
       yaxis: {
         title: {
-          text: "Amount (₦)",
-          style: {
-            fontSize: '14px',
-            fontWeight: '500',
-            color: '#6B7280'
-          }
-        }
+          text: 'Amount (₦)',
+          style: { fontSize: '14px', fontWeight: '500', color: '#6B7280' },
+        },
       },
-      legend: {
-        position: "top",
-        horizontalAlign: "right"
-      },
-      tooltip: {
-        y: {
-          formatter: (val: number) => {
-            return this.formatCurrency(val);
-          }
-        }
-      }
+      legend: { position: 'top', horizontalAlign: 'right' },
+      tooltip: { y: { formatter: (val: number) => this.formatCurrency(val) } },
     };
   }
 
   updateCharts() {
     if (!this.salesReport) return;
+    const formValue = this.reportForm.value;
 
-    // Update branch chart
-    this.branchChartOptions.series = [{
-      name: "Revenue",
-      data: this.salesReport.totalSalesPerBranch.map(b => b.totalRevenue)
-    }];
-    this.branchChartOptions.xaxis = {
-      categories: this.salesReport.totalSalesPerBranch.map(b => b.branch.name)
-    };
+    // Filter data for charts based on form selection
+    const filteredProducts = formValue.categoryId
+      ? this.salesReport.topSellingProducts.filter(
+          (p) => p.product.category === formValue.categoryId
+        )
+      : this.salesReport.topSellingProducts;
 
-    // Update product chart - aggregate products with the same name
+    const filteredPayments = formValue.paymentMethodIds.length > 0
+      ? this.salesReport.paymentMethodBreakdown.filter((p) =>
+          formValue.paymentMethodIds.includes(p.paymentMethod)
+        )
+      : this.salesReport.paymentMethodBreakdown;
+
+    // Update Product Chart
     const productMap = new Map<string, number>();
-    this.salesReport.topSellingProducts.forEach(product => {
+    filteredProducts.forEach((product) => {
       const productName = product.product.name;
       const currentRevenue = productMap.get(productName) || 0;
       productMap.set(productName, currentRevenue + product.revenue);
     });
-
     const sortedProducts = Array.from(productMap.entries())
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 10); 
-
-    this.productChartOptions.series = [{
-      name: "Revenue",
-      data: sortedProducts.map(p => p[1])
-    }];
+      .slice(0, 10);
+    this.productChartOptions.series = [
+      { name: 'Revenue', data: sortedProducts.map((p) => p[1]) },
+    ];
     this.productChartOptions.xaxis = {
-      categories: sortedProducts.map(p => p[0])
+      categories: sortedProducts.map((p) => p[0]),
     };
 
-    // Update payment method chart
-    this.paymentChartOptions.series = this.salesReport.paymentMethodBreakdown.map(p => p.revenue);
-    this.paymentChartOptions.labels = this.salesReport.paymentMethodBreakdown.map(p => p.paymentMethod);
+    // Update Payment Chart
+    this.paymentChartOptions.series = filteredPayments.map((p) => p.revenue);
+    this.paymentChartOptions.labels = filteredPayments.map((p) => p.paymentMethod);
 
-    // Update trend chart title with current date range
-    const formValue = this.reportForm.value;
+    // Update other charts as before
+    this.branchChartOptions.series = [
+      {
+        name: 'Revenue',
+        data: this.salesReport.totalSalesPerBranch.map((b) => b.totalRevenue),
+      },
+    ];
+    this.branchChartOptions.xaxis = {
+      categories: this.salesReport.totalSalesPerBranch.map((b) => b.branch.name),
+    };
+    
     this.trendChartOptions.title = {
       ...this.trendChartOptions.title,
-      text: `Sales Trend (${formValue.startDate} to ${formValue.endDate})`
+      text: `Sales Trend (${formValue.startDate} to ${formValue.endDate})`,
     };
-
-    // Prepare data for trend chart from current breakdown
     const groupedByDate = this.groupBreakdownByDate(this.salesReport.breakdown);
     const dates = Array.from(groupedByDate.keys()).sort((a, b) => a - b);
-    
     this.trendChartOptions.series = [
       {
-        name: "Revenue",
-        data: dates.map(date => {
+        name: 'Revenue',
+        data: dates.map((date) => {
           const group = groupedByDate.get(date);
           return group ? group.revenue : 0;
-        })
+        }),
       },
       {
-        name: "Transactions",
-        data: dates.map(date => {
+        name: 'Transactions',
+        data: dates.map((date) => {
           const group = groupedByDate.get(date);
           return group ? group.transactions : 0;
-        })
-      }
+        }),
+      },
     ];
-    
     this.trendChartOptions.xaxis = {
-      categories: dates.map(date => formatDate(new Date(date), 'MMM dd', 'en-US'))
+      categories: dates.map((date) => formatDate(new Date(date), 'MMM dd', 'en-US')),
     };
 
-    // Update all charts
+    // Re-render charts
     if (this.branchChart) this.branchChart.updateOptions(this.branchChartOptions);
     if (this.productChart) this.productChart.updateOptions(this.productChartOptions);
     if (this.paymentChart) this.paymentChart.updateOptions(this.paymentChartOptions);
@@ -528,27 +480,37 @@ export class SalesReportComponent implements OnInit {
   }
 
   groupBreakdownByDate(breakdown: SalesReportBreakdownDTO[]) {
-    const groups = new Map<number, { revenue: number, transactions: number }>();
-    
-    breakdown.forEach(item => {
+    const groups = new Map<number, { revenue: number; transactions: number }>();
+
+    breakdown.forEach((item) => {
       const dateKey = new Date(item.date).getTime();
-      
       if (!groups.has(dateKey)) {
         groups.set(dateKey, { revenue: 0, transactions: 0 });
       }
-      
       const group = groups.get(dateKey);
       if (group) {
         group.revenue += item.revenue;
         group.transactions += item.transactions;
       }
     });
-    
     return groups;
   }
 
   setTab(tab: string) {
     this.selectedTab = tab;
+    this.currentPage = 1;
+  }
+
+  showTotalRevenueDetails() {
+    this.setTab('details');
+  }
+
+  showTotalTransactionsDetails() {
+    this.setTab('details');
+  }
+
+  showTotalDiscountDetails() {
+    this.setTab('details');
   }
 
   onSubmit() {
@@ -562,15 +524,78 @@ export class SalesReportComponent implements OnInit {
     this.reportForm.patchValue({
       branchIds: [],
       paymentMethodIds: [],
-      groupBy: 'day'
+      categoryId: null,
     });
+    this.loadSalesData();
   }
 
   formatCurrency(amount: number, includeSymbol: boolean = true): string {
-    return (includeSymbol ? '₦' : '') + amount.toLocaleString('en-NG', { 
-      minimumFractionDigits: 0, 
-      maximumFractionDigits: 2 
+    return (
+      (includeSymbol ? '₦' : '') +
+      amount.toLocaleString('en-NG', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      })
+    );
+  }
+
+  toggleExportDropdown(): void {
+    this.isExportDropdownOpen = !this.isExportDropdownOpen;
+  }
+
+  exportReport(format: 'pdf' | 'excel') {
+    this.isExportDropdownOpen = false;
+    if (!this.reportContent || !this.reportContent.nativeElement) {
+      console.error('Report content element not found for PDF export.');
+      alert(
+        'Could not find report content. Please ensure it has the correct ID.'
+      );
+      return;
+    }
+    if (format === 'pdf') {
+      this.exportToPdf();
+    } else if (format === 'excel') {
+      this.exportToExcel();
+    }
+  }
+
+  private exportToPdf() {
+    html2canvas(this.reportContent.nativeElement).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png');
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+      doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        doc.addPage();
+        doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      doc.save('sales-report.pdf');
     });
+  }
+
+  private exportToExcel() {
+    const dataToExport = this.salesReport.breakdown.map((item) => {
+      return {
+        date: formatDate(new Date(item.date), 'shortDate', 'en-US'),
+        branch: item.branch?.name || 'N/A',
+        cashier: item.cashier?.name || 'N/A',
+        paymentMethod: item.paymentMethod || 'N/A',
+        transactions: item.transactions,
+        revenue: item.revenue,
+        discounts: item.discounts,
+      };
+    });
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'SalesReport');
+    XLSX.writeFile(workbook, 'sales-report.xlsx');
   }
 
   get report() {
