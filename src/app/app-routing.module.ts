@@ -31,6 +31,7 @@ import { JobApplicationFormComponent } from './ui/shared/view/job-application-fo
 import { EmployeeOnboardingFormComponent } from 'projects/hr/src/app/ui/view/employee-management/employee-onboarding-form/employee-onboarding-form.component';
 import { MarketplaceComponent } from './ui/marketplace/view/marketplace/marketplace.component';
 import { NotFoundComponent } from './ui/not-found.component';
+import { UnauthourizedComponent } from './ui/unauthourized.component';
 
 const routes: Routes = [
   {
@@ -190,6 +191,10 @@ const routes: Routes = [
   {
     path: 'job-application',
     component: JopOpeningsComponent, 
+  },
+  {
+    path:'unauthorized',
+    component: UnauthourizedComponent
   },
 
   { path: '**', component: NotFoundComponent }

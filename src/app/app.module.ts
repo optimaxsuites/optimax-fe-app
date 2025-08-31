@@ -244,6 +244,7 @@ import { CalendarModule } from 'primeng/calendar';
 import { CheckboxModule } from 'primeng/checkbox';
 import { TagModule } from 'primeng/tag';
 import { AppInitService } from 'projects/POS/src/app/ui/service/app-init.service';
+import { UnauthourizedComponent } from './ui/unauthourized.component';
 
 
 @NgModule({
@@ -412,7 +413,8 @@ import { AppInitService } from 'projects/POS/src/app/ui/service/app-init.service
     PayslipViewComponent,
     EmployeePayslipListComponent,
     MarketplaceComponent,
-    NotFoundComponent
+    NotFoundComponent,
+    UnauthourizedComponent
   ],
   imports: [
       BrowserModule,
