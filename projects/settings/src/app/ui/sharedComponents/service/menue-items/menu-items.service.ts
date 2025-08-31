@@ -234,6 +234,14 @@ export class MenuItemsService {
           icon: 'pi pi-credit-card',
           description: 'Process payments and manage the customer checkout flow.'
         },
+         {
+          label: 'Kitchen',
+          code: 'kitchen',
+          route: this.navigationLink.getLink('kitchenLink'),
+          roles: ['ROLE_USER', 'ROLE_ADMIN'],
+          icon: 'pi pi-credit-card',
+          description: 'Process payments and manage the customer checkout flow.'
+        },
         {
           label: 'Report',
           code: 'POS_REPRT',

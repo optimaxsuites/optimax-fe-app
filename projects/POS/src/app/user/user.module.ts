@@ -57,6 +57,7 @@ import { EditProductComponent } from '../ui/view/products/edit-product/edit-prod
 import { RequestDetailsComponent } from '../ui/view/request-details/request-details.component';
 import { UserRoutingModule } from './user-routing.module';
 import { PaginatorModule } from 'primeng/paginator';
+import { CheckoutKitchenHeaderComponent } from '../ui/view/checkout-kitchen-header/checkout-header.component';
 // import { ProductVariantModalComponent } from '../ui/view/product-variant-modal/product-variant-modal.component';
 
 @NgModule({
@@ -81,6 +82,7 @@ import { PaginatorModule } from 'primeng/paginator';
     AppResizeDirective,
         // CloseRegisterModalComponent,
     PosStoreComponent,
+    CheckoutKitchenHeaderComponent
     // ProductVariantModalComponent,
   ],
   imports: [

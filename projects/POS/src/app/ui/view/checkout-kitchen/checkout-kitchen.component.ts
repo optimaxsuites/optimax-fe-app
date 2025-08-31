@@ -20,6 +20,7 @@ import { PosServiceService } from "../../service/pos-service.service";
 import { ProductHelperService } from "../../service/product-helper.service";
 import { UserService } from "../../service/user.service";
 import { arrayToDate, dateToArray } from "../../shared";
+import { isSuperUser, getUserPermissionsFor } from "../../../shared/pipes/helper";
 
 /* `TableOrderStatus` stuff is basically all the relevant data about the customer's orders of that *table* as well as the staff who attended to that order. This `TableOrderStatus` can be broken down into a collection of orders (`Table Order`) and other date like the state of the order (UNPAID or PAID), the ids of the waiter, chef, cashier, etc. */
 
@@ -127,15 +128,29 @@ export class CheckoutKitchenComponent implements OnInit {
 		};
 	});
 
+	  orderPermissions = {
+		canView: false,
+		canEdit: false,
+		canDelete: false,
+		canCreate: false,
+		};
+
+		paymentPermissions = {
+		canView: false,
+		canEdit: false,
+		canDelete: false,
+		canCreate: false,
+		};
+
 	/**
 	 * The status (and orders) of all the tables in the restaurant. It is indexed with the `id`
 	 */
 	tableStatuses = signal<Map<number, TableOrderStatusGET>>(new Map());
 
-	testMode = signal<typeof this.mode>("chef");
+	testMode = signal<typeof this.mode>(this.orderPermissions.canCreate ? "waiter" : this.paymentPermissions.canCreate ? "cashier" : "chef");
 
-	changeTestMode(e: Event) {
-		this.testMode.update(() => (e.target as HTMLInputElement).value as any);
+	changeTestMode(mode: "waiter" | "chef" | "cashier") {
+		this.testMode.update(() => (mode));
 	}
 
 	/**
@@ -183,6 +198,8 @@ export class CheckoutKitchenComponent implements OnInit {
 	private readonly _dummyTableOrderStatus = 9999999;
 
 	isPaymentModalOpen = false;
+
+	
 
 	constructor(
 		private _posService: PosServiceService,
@@ -258,6 +275,25 @@ export class CheckoutKitchenComponent implements OnInit {
 			this.currCategoryProducts =
 				this.productCategories.values().next().value ?? [];
 		})();
+
+			if (isSuperUser()) {
+				  this.orderPermissions = {
+					canView: true,
+					canEdit: true,
+					canDelete: true,
+					canCreate: true,
+				  };
+				   this.paymentPermissions = {
+					canView: true,
+					canEdit: true,
+					canDelete: true,
+					canCreate: true,
+				  };
+				}else {
+				this.orderPermissions = getUserPermissionsFor('kitchen_order');
+				this.paymentPermissions = getUserPermissionsFor('kitchen_payment');
+			
+			}
 	}
 
 	openOrderDetails(table: TableOrderStatusGET) {

@@ -245,9 +245,9 @@ submitUser() {
 }
 
 assignRole(user: any, event: any) {
-  user.appRolesId$.subscribe((appRoleId: number) => {
+  // user.appRolesId$.subscribe((appRoleId: number) => {
     const roleRequest = {
-      id: appRoleId,
+      // id: appRoleId,
       userId: user.id,
       appRoleId: this.selectedRole?.id
     };
@@ -270,7 +270,7 @@ assignRole(user: any, event: any) {
         });
       }
     });
-  });
+  // });
 }
 
 

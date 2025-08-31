@@ -15,7 +15,7 @@ import { v4 as uuidV4 } from 'uuid';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 import { Message } from 'primeng/api';
 import { environment } from 'src/environments/environment.prod';
-import { hasOnlyCheckoutPermission } from 'projects/POS/src/app/shared/pipes/helper';
+import { hasOnlyCheckoutPermission, hasOnlyKitchenPermissions } from 'projects/POS/src/app/shared/pipes/helper';
 
 
 /** Error when invalid control is dirty, touched, or submitted. */
@@ -299,12 +299,17 @@ async posLoginAction(): Promise<void> {
         );
       }
 
-      console.log(hasOnlyCheckoutPermission())
-      if (hasOnlyCheckoutPermission()) {
+      // console.log(hasOnlyCheckoutPermission())
+      // console.log((hasOnlyKitchenPermissions()))
       
+      if (hasOnlyCheckoutPermission()) {
         const checkoutLink = this.navigationLink.getLink('checkoutLink');
         this.router.navigate([checkoutLink]); 
-      } else {
+      } else if (hasOnlyKitchenPermissions()){
+        const kitchenLink = this.navigationLink.getLink('kitchenLink');
+        this.router.navigate([kitchenLink]);
+      }
+       else {
         const dashboardLink = this.navigationLink.getLink('dashboardLink');
         this.router.navigate([dashboardLink]);
       }

@@ -1,10 +1,10 @@
   <div>
-  <app-checkout-header></app-checkout-header>
+  <app-checkout-kitchen-header (changeMode)="changeTestMode($event)" [mode]="testMode()"></app-checkout-kitchen-header>
 </div>
 
 <div class="kitchen-order-container">
   <!-- TOP BAR (Using p-menubar for a modern top navigation) -->
-  <p-menubar class="top-bar">
+  <!-- <p-menubar class="top-bar">
     <ng-template pTemplate="start">
       <div class="top-bar-left">
         <span class="logo">Logo</span>
@@ -37,16 +37,16 @@
       <label for="waiter">Waiter</label>
     </ng-template>
     <ng-template pTemplate="center">
-      <!-- <div class="top-bar-center">
+      <div class="top-bar-center">
         <h1>KITCHEN ORDER</h1>
-      </div> -->
+      </div>
     </ng-template>
     <ng-template pTemplate="end">
       <div class="top-bar-right">
         <span class="chef-name">Chef Name</span>
       </div>
     </ng-template>
-  </p-menubar>
+  </p-menubar> -->
 
   <!-- MAIN CONTENT AREA -->
   <div class="main-content">
@@ -57,6 +57,7 @@
         @if (testMode() == "waiter") {
           <!-- An absolutely positioned button in the lower right corner for adding table orders -->
           <button
+            *ngIf="orderPermissions.canCreate"
             pButton
             label="Take Order"
             class="waiter-order-btn p-button-success px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring focus:ring-green-200 z-50"

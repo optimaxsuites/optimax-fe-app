@@ -49,3 +49,26 @@ export function isSuperUser(): boolean {
   const roles = sessionStorage.getItem("role");
   return roles?.includes("ROLE_ADMIN") ?? false;
 }
+
+export function hasOnlyKitchenPermissions(): boolean {
+  const user = JSON.parse(sessionStorage.getItem('userApplicationRole') || '{}');
+  if (!user?.appRole?.appRolePermissionList) return false;
+
+  const permissions = user.appRole.appRolePermissionList;
+
+  const activePermissions = permissions.filter(
+    (p: any) => p.canView || p.canCreate || p.canDelete || p.canUpdate
+  );
+
+  console.log("activePermissions", activePermissions);
+
+  const kitchenPermissions = activePermissions.filter(
+    (p: any) => p.appRegister?.appCode?.startsWith("kitchen")
+  );
+
+  console.log("kitchenPermissions", kitchenPermissions);
+
+  if (kitchenPermissions.length === 0) return false;
+
+  return activePermissions.length === kitchenPermissions.length;
+}
