@@ -54,6 +54,12 @@ export class OrderDetailComponent {
       return sum + tax;
     }, 0);
   }
+
+  goBack(){
+    this.router.lastSuccessfulNavigation?.previousNavigation?.finalUrl
+    ? this.router.navigateByUrl(this.router.lastSuccessfulNavigation.previousNavigation.finalUrl.toString())
+    : this.router.navigate([this.navigationLink.getLink('checkoutOrderLink')]);
+  }
   
   getTotalPrice(): number {
     return this.getSubtotal() + this.getTotalTax();

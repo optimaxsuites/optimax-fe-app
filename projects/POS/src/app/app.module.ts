@@ -164,7 +164,7 @@ export function appInitializerFactory(appInitService: AppInitService) {
     SaleSummaryComponent,
     SaleComponent,
     SaleSummariesComponent,
-    KitchenOrderComponent,
+    // KitchenOrderComponent,
     // CheckoutKitchenComponent,
     
     IngredientComponent,

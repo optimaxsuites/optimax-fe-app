@@ -158,24 +158,49 @@ fetchUsers(){
 
 
 submitUser() {
+
+  const business = sessionStorage.getItem('userPrimaryInfoRegData') ? JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}') : null;
+
+  const businessInfo = {
+    fullName: business?.fullName,
+    username: this.newUser.name,
+    profileImage: business?.profileImage,
+    email: this.newUser.email,
+    phoneNumber: business?.phoneNumber,
+    address: business?.address,
+    country: business?.country,
+    state: business?.state,
+    city: business?.city,
+    postalCode: business?.postalCode,
+    industry: business?.industry,
+    companyName: business?.companyName,
+    clientType: business?.clientType,
+    bio: business?.bio,
+    currency: business?.currency,
+    language: business?.language,
+    timeZone: business?.timeZone,
+  };
+
+
   const signupDetails = {
     username: this.newUser.name,
     password: this.newUser.password,
     email: this.newUser.email,
     project: `${environment.project}`,
-    apiKey: `${environment.apiKey}`
+    apiKey: `${environment.apiKey}`,
+    upi: businessInfo
   };
+
+  console.log(signupDetails)
 
   this.authenticationService.userRegistration(signupDetails).subscribe({
     next: (data) => {
-      // Prepare requests for each role
+
       const roleRequest = {
           userId: data.id,
           appRoleId: this.selectedRole?.id
         }
       
-
-      // Run all role requests in parallel and wait for completion
       this.authenticationService.userApplicationRole(roleRequest).subscribe({
         next: () => {
           if (this.codeAuthType) {

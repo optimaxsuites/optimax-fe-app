@@ -47,7 +47,7 @@ const routes: Routes = [
     component: PosCheckoutPageComponent,
   },
   {
-    path: "kitchen/order/:uuid",
+    path: "kitchen/orders/:uuid",
     component: KitchenOrderComponent,
   },
   {

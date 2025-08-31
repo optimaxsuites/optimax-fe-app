@@ -58,6 +58,7 @@ import { RequestDetailsComponent } from '../ui/view/request-details/request-deta
 import { UserRoutingModule } from './user-routing.module';
 import { PaginatorModule } from 'primeng/paginator';
 import { CheckoutKitchenHeaderComponent } from '../ui/view/checkout-kitchen-header/checkout-header.component';
+import { KitchenOrderComponent } from '../ui/view/kitchen-order/kitchen-order.component';
 // import { ProductVariantModalComponent } from '../ui/view/product-variant-modal/product-variant-modal.component';
 
 @NgModule({
@@ -82,7 +83,8 @@ import { CheckoutKitchenHeaderComponent } from '../ui/view/checkout-kitchen-head
     AppResizeDirective,
         // CloseRegisterModalComponent,
     PosStoreComponent,
-    CheckoutKitchenHeaderComponent
+    CheckoutKitchenHeaderComponent,
+    KitchenOrderComponent
     // ProductVariantModalComponent,
   ],
   imports: [

@@ -324,6 +324,7 @@ async posLoginAction(): Promise<void> {
       }
     })
 
+    this.checkUserReg();
      
   }
 
