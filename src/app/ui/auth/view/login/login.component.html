@@ -70,13 +70,15 @@
         <div class="text-center mb-6">
           <p class="text-lg mb-4">Enter your PIN</p>
           <!-- PIN dots display -->
-          <div class="flex justify-center space-x-3 mb-8">
-            <div 
-              *ngFor="let dot of pinDots; let i = index"
-              class="w-10 h-10 rounded-full border-2 border-gray-300 transition-all duration-200"
-              [ngClass]="i < posCode.length ? 'bg-customGreen border-customGreen' : 'bg-transparent'"
-            ></div>
-          </div>
+          <div class="flex justify-center items-center">
+          <ng-container *ngIf="!loading; else loadingTpl">
+            <div class="flex justify-center space-x-3 mb-8"> <div *ngFor="let dot of pinDots; let i = index" class="w-10 h-10 rounded-full border-2 border-gray-300 transition-all duration-200" [ngClass]="i < posCode.length ? 'bg-customGreen border-customGreen' : 'bg-transparent'" ></div> </div>
+          </ng-container>
+
+          <ng-template #loadingTpl>
+            <div class="w-8 h-8 border-4 border-gray-300 border-t-customGreen rounded-full animate-spin flex items-center justify-center"></div>
+          </ng-template>
+        </div>
         </div>
 
         <!-- Numpad Grid -->
@@ -193,7 +195,7 @@
     </div>
   </form>
 
-  <div class="bottom " *ngIf="!isCodeLogin">
+  <!-- <div class="bottom " *ngIf="!isCodeLogin">
     <span class="text-lg">New to Oprimax? <span (click)="navigateToSignup()" class="text-customGreen cursor-pointer mx-1">sign-up</span>here</span>
-  </div>
+  </div> -->
 </div>

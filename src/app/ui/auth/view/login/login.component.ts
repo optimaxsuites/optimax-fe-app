@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, OnInit, signal } from '@angular/core';
 import {
   FormControl,
   FormGroupDirective,
@@ -114,42 +114,31 @@ async posLoginAction(): Promise<void> {
   const data = await this.authenticationService.userLogin(loginDetails).toPromise();
   this.loadInitParam(data);
 
-  if (!data) {
-  this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
-  this.loggedIn = false;
-  } else {
-  // const registrationComplete = await this.checkUserReg();
-  // console.log('Registration complete:', registrationComplete)
-  const dashboardLink = this.navigationLink.getLink('dashboardLink');
-   this.router.navigate([dashboardLink]);
-
-
-  // if (registrationComplete) {
-  //  console.log('routing...')
-  //  const dashboardLink = this.navigationLink.getLink('dashboardLink');
-  //  console.log(dashboardLink)
-
-
-  //  this.router.navigate([dashboardLink]);
+  // if (!data) {
+  // this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
+  // this.loggedIn = false;
   // } else {
-  //  const registrationLink = this.navigationLink.getLink('userRegistrationLink');
-  //  this.router.navigate([registrationLink]);
+  // // const registrationComplete = await this.checkUserReg();
+  // // console.log('Registration complete:', registrationComplete)
+  // const dashboardLink = this.navigationLink.getLink('dashboardLink');
+  //  this.router.navigate([dashboardLink]);
+
+
+  // // if (registrationComplete) {
+  // //  console.log('routing...')
+  // //  const dashboardLink = this.navigationLink.getLink('dashboardLink');
+  // //  console.log(dashboardLink)
+
+
+  // //  this.router.navigate([dashboardLink]);
+  // // } else {
+  // //  const registrationLink = this.navigationLink.getLink('userRegistrationLink');
+  // //  this.router.navigate([registrationLink]);
+  // // }
+  // this.loggedIn = true;
   // }
-  this.loggedIn = true;
-  }
  } catch (error) {
-  if (error instanceof HttpErrorResponse) {
-  if (error.status === 500) {
-   this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
-  }
-  else if (error.status === 404) {
-   this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.' });
-  } else if (error.status === 0) {
-   this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
-  }
-  } else {
-  this.messageService.add({ severity: 'error', summary: 'Unknown Error', detail: 'An unexpected error occurred.' });
-  }
+  this.handleLoginError(error);
   this.loggedIn = false;
  } finally {
   this.loading = false;
@@ -170,7 +159,9 @@ async posLoginAction(): Promise<void> {
   }
 
   async passwordLoginAction(): Promise<void> {
-   console.log(this.posCode)
+
+    this.loading = true;
+
     const loginDetails = {
       eCode: this.posCode,
       apiKey: `${environment.apiKey}`
@@ -179,11 +170,16 @@ async posLoginAction(): Promise<void> {
     try {
       const data = await this.authenticationService.userWithLogin(loginDetails).toPromise();
       this.handleCodeLoginResponse(data);
+      this.loading = false;
+
     } catch (error) {
       this.handleLoginError(error);
-    } finally {
       this.loading = false;
-    }
+      this.posCode = '';
+      this.loggedIn = false;
+
+    } 
+   
   }
 
 
@@ -227,14 +223,18 @@ async posLoginAction(): Promise<void> {
 
 
   handleLoginError(error: any): void {
-    if (error instanceof HttpErrorResponse) {
-      if (error.status === 500) {
+   
+    if (error) {
+      if (error === '500') {
         this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid credentials. Please check and try again.' });
       }
-      else if (error.status === 404) {
+      else if (error === '404') {
         this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Sign in failed. User is not authenticated.' });
-      } else if (error.status === 0) {
+      } else if (error === '0') {
         this.messageService.add({ severity: 'error', summary: 'Server Unreachable', detail: 'Unable to connect to the server. Please check your internet connection.' });
+      }
+      else if (error === '400') {
+        this.messageService.add({ severity: 'error', summary: 'Invalid credentials', detail: 'The credentials provided are invalid.' });
       }
     } else {
       this.messageService.add({ severity: 'error', summary: 'Unknown Error', detail: 'An unexpected error occurred.' });
@@ -352,10 +352,13 @@ async posLoginAction(): Promise<void> {
   }
 
   if (this.posCode.length === 4) {
-      setTimeout(() => {
+    this.loading = true;
+
+      // setTimeout(() => {
         // this.loginInfo.username = this.posCode; 
         this.passwordLoginAction();
-      }, 300);
+
+      // }, 300);
     }
 
 }
@@ -363,5 +366,16 @@ async posLoginAction(): Promise<void> {
 // userWithCodeLogin(){
 
 // }
+
+@HostListener('document:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent) {
+    if (/^\d$/.test(event.key)) {
+      this.onNumpadClick(event.key);
+    } else if (event.key === 'Backspace') {
+      this.onNumpadClick('delete');
+    } else if (event.key.toLowerCase() === 'c') {
+      this.onNumpadClick('clear');
+    }
+  }
 
 }
