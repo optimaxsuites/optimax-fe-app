@@ -221,8 +221,8 @@
                 >
                   {{ expense.category }}
                 </div>
-              </td>
-              <td class="table-item">{{ expense.amount }}</td>
+              </td>                                                       
+              <td class="table-item">{{ calculateDisplayAmount(expense) | number:'1.2-2' }}</td>
               <td class="table-item">
                 <span
                   *ngIf="expense.status === 'Pending'"
@@ -355,14 +355,24 @@
         >Amount:</label
       >
       <input
-        [(ngModel)]="selectedExpense.amount"
+        [value]="formatAmount(selectedExpense?.amount)"
+        (input)="updateEditAmount($event)"
+        (keypress)="onlyNumbers($event)"
         name="amount"
-        type="number"
+        type="text"
       />
     </div>
 
-   
-
+    <div>
+      <label 
+        >Tax Percentage:</label
+      >
+      <input
+        [(ngModel)]="selectedExpense.taxPercentage"
+        name="tax percentage"
+        type="number"
+      />
+    </div>
 
     <div>
       <label 
@@ -438,8 +448,15 @@
       <div class="detail-row flex justify-between items-center">
         <label class="detail-label text-2xl text-gray-700">Amount(NGN):</label>
         <span class="detail-value text-2xl text-gray-900">{{
-          selectedExpense.amount
+          formatAmount(selectedExpense.amount)
         }}</span>
+      </div>
+
+       <div class="detail-row flex justify-between items-center">
+        <label class="detail-label text-2xl text-gray-700">Tax Percentage(%):</label>
+        <span class="detail-value text-2xl text-gray-900">{{
+          selectedExpense.taxPercentage ? selectedExpense.taxPercentage + '%' : 'No tax applied'
+        }}</span> 
       </div>
 
       <!-- Expense Date -->

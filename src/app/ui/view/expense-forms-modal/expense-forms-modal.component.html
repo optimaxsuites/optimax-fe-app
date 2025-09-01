@@ -101,6 +101,9 @@
             required
             placeholder="Select a category"
             class="w-full mt-3"
+            [addTag]="true"
+            [addTagText]="'Add'"
+
           >
           </ng-select>
           <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.category">
@@ -113,7 +116,7 @@
           type="number"
           id="quantity"
           name="quantity"
-          [ngModel]="expenseSummary.quantity"
+          [(ngModel)]="expenseSummary.quantity"
           required
           placeholder="Enter quantity"
           />
