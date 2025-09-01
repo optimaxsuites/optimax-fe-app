@@ -15,7 +15,7 @@ import { v4 as uuidV4 } from 'uuid';
 import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-links/navigation-links.service';
 import { Message } from 'primeng/api';
 import { environment } from 'src/environments/environment.prod';
-import { hasOnlyCheckoutPermission, hasOnlyKitchenPermissions } from 'projects/POS/src/app/shared/pipes/helper';
+import { hasOnlyCheckoutPermission, hasOnlyKitchenPermissions, isSuperUser } from 'projects/POS/src/app/shared/pipes/helper';
 
 
 /** Error when invalid control is dirty, touched, or submitted. */
@@ -189,15 +189,6 @@ async posLoginAction(): Promise<void> {
       this.loggedIn = false;
     } else {
       this.loadInitParam(data);
-
-      // const registrationComplete = await this.checkUserReg();
-      // if (registrationComplete) {
-      //   const dashboardLink = this.navigationLink.getLink('dashboardLink');
-      //   this.router.navigate([dashboardLink]);
-      // } else {
-      //   const registrationLink = this.navigationLink.getLink('userRegistrationLink');
-      //   this.router.navigate([registrationLink]);
-      // }
       this.loggedIn = true;
     }
   }
@@ -208,15 +199,6 @@ async posLoginAction(): Promise<void> {
       this.loggedIn = false;
     } else {
       this.loadInitParam(data);
-
-      // const registrationComplete = await this.checkUserReg();
-      // if (registrationComplete) {
-      //   const dashboardLink = this.navigationLink.getLink('dashboardLink');
-      //   this.router.navigate([dashboardLink]);
-      // } else {
-      //   const registrationLink = this.navigationLink.getLink('userRegistrationLink');
-      //   this.router.navigate([registrationLink]);
-      // }
       this.loggedIn = true;
     }
   }
@@ -282,6 +264,12 @@ async posLoginAction(): Promise<void> {
     localStorage.setItem("accessToken2", data.accessToken);
     sessionStorage["userRegData"] = JSON.stringify(data);
 
+     if(isSuperUser()){
+        const dashboardLink = this.navigationLink.getLink('dashboardLink');
+        this.router.navigate([dashboardLink]);
+        return;
+      }
+
      this.authenticationService.getUserApplicationRole(data.id).subscribe({
       next: (response) => {
         console.log("User application role:", response);
@@ -301,7 +289,8 @@ async posLoginAction(): Promise<void> {
 
       // console.log(hasOnlyCheckoutPermission())
       // console.log((hasOnlyKitchenPermissions()))
-      
+
+     
       if (hasOnlyCheckoutPermission()) {
         const checkoutLink = this.navigationLink.getLink('checkoutLink');
         this.router.navigate([checkoutLink]); 
@@ -369,6 +358,7 @@ async posLoginAction(): Promise<void> {
 
 @HostListener('document:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
+    if(this.isCodeLogin){
     if (/^\d$/.test(event.key)) {
       this.onNumpadClick(event.key);
     } else if (event.key === 'Backspace') {
@@ -376,6 +366,8 @@ async posLoginAction(): Promise<void> {
     } else if (event.key.toLowerCase() === 'c') {
       this.onNumpadClick('clear');
     }
+    }
+   
   }
 
 }
