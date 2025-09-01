@@ -25,12 +25,12 @@ throw new Error('Method not implemented.');
 
   productData: any = {};
   categories: { name: string }[] = [
-     { name: 'Administraitve' },
+     { name: 'Administrative' },
      {name: 'Cost of Goods Sold' },
      { name: 'Employee-Related' },
      { name: 'Operating Expenses' },
      { name: 'Sales and Marketing' },
-     { name: 'Others' },
+    //  { name: 'Others' },
   ];
  
 
@@ -184,6 +184,7 @@ throw new Error('Method not implemented.');
       ...this.expenseSummary,
       id: this.expenseSummary.id || this.generateId(),
       status: 'Pending',
+      amount: Number(this.expenseSummary.amount),
       receiptFile: this.receiptFile, 
       invoiceFile: this.invoiceFile, 
       signature: this.signatureUrl, 
@@ -259,6 +260,19 @@ updateAmount(event: any): void {
   const raw = (event.target.value || '').toString().replace(/,/g, '');
   const num = Number(raw);
   this.expenseSummary.amount = !isNaN(num) ? num : null;
+}
+
+
+calculateTotalAmount(): number {
+  if (!this.expenseSummary.amount || !this.expenseSummary.taxPercentage) {
+    return this.expenseSummary.amount || 0;
+  }
+  
+  const baseAmount = Number(this.expenseSummary.amount);
+  const taxRate = Number(this.expenseSummary.taxPercentage) / 100;
+  const taxAmount = baseAmount * taxRate;
+  
+  return baseAmount + taxAmount;
 }
 
 }

@@ -494,7 +494,7 @@ export class ExpenseTableComponent implements OnInit {
   const selectedIds = this.selectedExpenses.map(item => item.id);
 
   this.expenses = this.expenses.map(item =>
-    selectedIds.includes(item.id) ? {...item, status: 'Approve'} : item
+    selectedIds.includes(item.id) ? {...item, status: 'Approved'} : item
   );
 
   this.filteredExpenses = this.filteredExpenses.map(item =>
@@ -546,6 +546,54 @@ bulkReject(): void {
   });
 }
 
+
+calculateDisplayAmount(expense: any): number {
+    const baseAmount = Number(expense.amount);
+
+  if (!expense.taxPercentage) {
+    return expense.amount;
+  }
+
+  const taxRate = Number(expense.taxPercentage) / 100;
+  // const taxAmount = baseAmount * taxRate;
+
+  return baseAmount * ( 1 + taxRate);
+}
+
+formatAmount(value: number | string | null): string {
+  const n = Number(value);
+  return !isNaN(n) && value !== null ? n.toLocaleString(): '';
+}
+
+
+updateEditAmount(event: any): void {
+  if (this.selectedExpense){
+     const raw = (event.target.value || '').toString().replace(/,/g, '');
+     const num = Number(raw);
+     this.selectedExpense.amount = !isNaN(num) ? num : null;
+  }
+ 
+}
+
+updateSelectedExpenseAmount(event: any): void {
+  if (this.selectedExpense) {
+    this.selectedExpense.amount = event.target.value;
+  }
+}
+
+onlyNumbers(event: KeyboardEvent): void {
+  const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight'];
+
+  if (allowedKeys.includes(event.key) || 
+    (event.ctrlKey && ['a', 'c', 'v', 'x'].includes(event.key.toLowerCase()))) {
+        return;
+    }
+
+    if (!/[0-9]/.test(event.key)) {
+      event.preventDefault();
+    }
+
+}
 
 }
 
