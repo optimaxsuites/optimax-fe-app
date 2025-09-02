@@ -2,68 +2,71 @@
 
 <!-- Top bar -->
 <div class="w-full px-4 md:px-10 mt-6 md:mt-10 flex flex-col gap-4 md:gap-6">
-  <!-- Title + Quick range -->
+  <!-- Title -->
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
     <h2 class="text-xl font-semibold text-gray-800">Checkout Orders</h2>
-
-    <div class="flex items-center gap-2">
-      <span class="text-xs text-gray-500 hidden sm:inline">Quick range:</span>
-      <div class="inline-flex rounded-md border border-gray-300 overflow-hidden">
-        <button
-          type="button"
-          class="px-3 py-2 text-sm"
-          [ngClass]="activeFilter === 'today' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
-          (click)="setRangeToToday()"
-          aria-label="Show today's orders"
-        >
-          Today
-        </button>
-        <button
-          type="button"
-          class="px-3 py-2 text-sm border-l border-gray-300"
-          [ngClass]="activeFilter === 'all' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
-          (click)="showAllOrders()"
-          aria-label="Show all orders"
-        >
-          All
-        </button>
-      </div>
-    </div>
   </div>
 
-  <!-- Filters Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-    <!-- Search -->
+  <!-- Search Bar - Top Line -->
+  <div class="grid grid-cols-1 gap-3">
     <label class="block">
-      <span class="block text-xs font-medium text-gray-600 mb-1">Search</span>
+      <span class="block text-xs font-medium text-gray-600 mb-1">Search Orders</span>
       <div class="relative">
         <input
           type="text"
           [(ngModel)]="searchText"
           (input)="applyFilters()"
-          placeholder="Order # or customer name"
+          placeholder="Search by order number, customer, or amount"
           class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          aria-label="Search by order number "
+          aria-label="Search orders"
         />
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute left-3 top-2.5" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M8 4a4 4 0 100 8A4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+          <path fill-rule="evenodd" d="M8 4a4 4 0 100 8A4 4 0 008 4zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
         </svg>
       </div>
     </label>
+  </div>
 
-    <!-- Last X Days -->
+  <!-- Filters Grid - Bottom Line -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+    <!-- Date Range Dropdown -->
     <label class="block">
-      <span class="block text-xs font-medium text-gray-600 mb-1">Last X days</span>
+      <span class="block text-xs font-medium text-gray-600 mb-1">Date Range</span>
+      <ng-select
+        [items]="dateRangeOptions"
+        bindLabel="label"
+        bindValue="value"
+        placeholder="Select range"
+        class="rounded-md border-gray-300 shadow-sm"
+        [(ngModel)]="selectedDateRange"
+        (ngModelChange)="onDateRangeChange()"
+        aria-label="Filter by date range"
+      >
+      </ng-select>
+    </label>
+
+    <!-- Custom Date Range -->
+    <label class="block">
+      <span class="block text-xs font-medium text-gray-600 mb-1 flex items-center">
+        Custom Days
+        <span class="ml-1 relative group">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+          </svg>
+          <span class="absolute hidden group-hover:block w-48 p-2 bg-gray-800 text-white text-xs rounded bottom-full left-1/2 transform -translate-x-1/2 -translate-y-1 shadow-lg z-10">
+            Enter number of days to filter orders (e.g., 7 for last week)
+          </span>
+        </span>
+      </span>
       <input
         type="number"
         min="1"
-        [(ngModel)]="daysFilter"
-        (input)="onDaysFilterChange()"
+        [(ngModel)]="customDaysFilter"
+        (input)="onCustomDaysChange()"
         placeholder="e.g. 7"
         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        aria-label="Filter by last X days"
+        aria-label="Filter by custom number of days"
       />
-      <span class="text-[11px] text-gray-400 mt-1 block">Enter a number to override the quick range above.</span>
     </label>
 
     <!-- Status -->
@@ -81,9 +84,6 @@
       >
       </ng-select>
     </label>
-
-   
-    
   </div>
 </div>
 
@@ -114,7 +114,7 @@
     </h3>
     <p class="text-gray-500">
       <span *ngIf="searchText">No orders match your search "{{ searchText }}"</span>
-      <span *ngIf="searchText">Try adjusting your filters or check back later</span>
+      <span *ngIf="!searchText">Try adjusting your filters or check back later</span>
     </p>
   </div>
 </div>

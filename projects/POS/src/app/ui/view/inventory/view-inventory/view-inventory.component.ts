@@ -135,13 +135,19 @@ export class ViewInventoryComponent implements OnInit {
   }
 
   // must be public for template usage
-  toIsoString(d: string | number[] | Date): string {
-    if (Array.isArray(d)) {
-      const [y, m = 1, day = 1, h = 0, mi = 0, s = 0] = d;
-      return new Date(y, m - 1, day, h, mi, s).toISOString();
-    }
+// Replace the existing toIsoString method with this:
+toIsoString(d: string | number[] | Date): string {
+  if (Array.isArray(d)) {
+    
+    const [y, m = 1, day = 1, h = 0, mi = 0, s = 0] = d;
+   
+    return new Date(y, m - 1, day, h, mi, s).toISOString();
+  } else if (typeof d === 'string') {
+  
     return new Date(d).toISOString();
   }
+  return d.toISOString();
+}
 
   loadMovements(inventoryId: number): void {
   this.isMovementsLoading = true;

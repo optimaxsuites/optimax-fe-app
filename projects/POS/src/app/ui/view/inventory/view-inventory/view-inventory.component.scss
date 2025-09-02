@@ -1,0 +1,22 @@
+.mv-actions {
+  position: relative;
+  
+  .absolute {
+    &.bottom-full {
+      top: auto;
+      bottom: 100%;
+    }
+    
+    &.top-full {
+      top: 100%;
+      bottom: auto;
+    }
+  }
+}
+
+// Ensure table rows have consistent height
+tr {
+  td {
+    vertical-align: middle;
+  }
+}

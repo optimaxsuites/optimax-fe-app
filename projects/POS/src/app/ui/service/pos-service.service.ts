@@ -196,7 +196,7 @@ export class PosServiceService {
 
   getProductsByBranchId(id: number) {
     return (this.products$ = this.http
-      .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/getBy/${id}`)
+      .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/products/getBy/${id}?page=1&size=100`)
       .pipe(
         catchError(this.handleError),
         shareReplay(this.shareReplayOptions)
@@ -611,8 +611,8 @@ createStockMovement(data: StockMovementPostBody) {
 
    updateStockMovement(id: number, data: StockMovementCreatePayload) {
     return this.http
-      .post<StockMovementResponsePayload>(
-        this.getBaseApiUrl() + `/x/api/v2/pos/stockMovements`,
+      .put<StockMovementResponsePayload>(
+        this.getBaseApiUrl() + `/x/api/v2/pos/stockMovements/${id}`,
         data
       )
       .pipe(catchError(this.handleError));

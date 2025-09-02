@@ -118,27 +118,31 @@
                     </button>
                     
                     <!-- Dropdown Menu -->
-                    <div 
-                      *ngIf="activeDropdownIndex === i"
-                      class="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[120px]"
-                    >
-                      <button 
-                        (click)="editStockMovement(movement)"
-                        class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 rounded-t-lg"
-                        type="button"
-                      >
-                        <i class="fa-solid fa-edit text-blue-600"></i>
-                        Edit
-                      </button>
-                      <button 
-                        (click)="deleteStockMovement(movement)"
-                        class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-b-lg"
-                        type="button"
-                      >
-                        <i class="fa-solid fa-trash text-red-600"></i>
-                        Delete
-                      </button>
-                    </div>
+                 <!-- Replace the dropdown menu section with this: -->
+<div 
+  *ngIf="activeDropdownIndex === i"
+  class="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[120px]"
+  [class.bottom-full]="i >= stockMovements.length - 3"
+  [class.top-full]="i < stockMovements.length - 3"
+  [class.mb-1]="i >= stockMovements.length - 3"
+>
+  <button 
+    (click)="editStockMovement(movement)"
+    class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 rounded-t-lg"
+    type="button"
+  >
+    <i class="fa-solid fa-edit text-blue-600"></i>
+    Edit
+  </button>
+  <button 
+    (click)="deleteStockMovement(movement)"
+    class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-b-lg"
+    type="button"
+  >
+    <i class="fa-solid fa-trash text-red-600"></i>
+    Delete
+  </button>
+</div>
                   </td>
                 </tr>
               </tbody>

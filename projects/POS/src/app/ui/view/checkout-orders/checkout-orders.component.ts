@@ -16,6 +16,16 @@ export class CheckoutOrdersComponent implements OnInit {
   statusFilter: string = 'ALL';
   groupedOrders: Array<{ key: string; label: string; items: any[] }> = [];
 
+  // New properties for date range filtering
+  dateRangeOptions = [
+    { value: 1, label: 'Today' },
+    { value: 3, label: 'Last 3 Days' },
+    { value: 7, label: 'Last Week' },
+    { value: 30, label: 'Last Month' },
+    { value: 0, label: 'All Time' }
+  ];
+  selectedDateRange: number = 1; // Default to Today
+  customDaysFilter: number | null = null;
   
   // pagination - using PrimeNG's built-in pagination
   rowsPerPage = 15;
@@ -28,9 +38,8 @@ export class CheckoutOrdersComponent implements OnInit {
   ];
   
   // filters
-  daysFilter = 0;
+  daysFilter = 1; // Default to Today
   searchText = '';
-  // statusFilter = 'ALL';
   activeFilter: 'today' | 'all' | 'custom' = 'today';
   isLoading = true;
 
@@ -55,13 +64,39 @@ export class CheckoutOrdersComponent implements OnInit {
     this.setRangeToToday();
   }
 
+  // New methods for date range filtering
+  onDateRangeChange(): void {
+    if (this.selectedDateRange !== null) {
+      if (this.selectedDateRange === 0) {
+        this.showAllOrders();
+      } else if (this.selectedDateRange === 1) {
+        this.setRangeToToday();
+      } else {
+        this.daysFilter = this.selectedDateRange;
+        this.customDaysFilter = null;
+        this.activeFilter = 'custom';
+        this.applyFilters();
+      }
+    }
+  }
+
+  onCustomDaysChange(): void {
+    if (this.customDaysFilter !== null && this.customDaysFilter > 0) {
+      this.daysFilter = this.customDaysFilter;
+      this.selectedDateRange = -1; // Use a value not in the options to indicate custom
+      this.activeFilter = 'custom';
+      this.applyFilters();
+    }
+  }
 
   setRangeToToday(): void {
     const start = new Date(); start.setHours(0, 0, 0, 0);
     const end = new Date();   end.setHours(23, 59, 59, 999);
     this.dateFrom = start.toISOString();
     this.dateTo = end.toISOString();
-    this.daysFilter = 0;
+    this.daysFilter = 1;
+    this.selectedDateRange = 1;
+    this.customDaysFilter = null;
     this.activeFilter = 'today';
     this.applyFilters();
   }
@@ -70,12 +105,9 @@ export class CheckoutOrdersComponent implements OnInit {
     this.dateFrom = '1970-01-01T00:00:00.000Z';
     this.dateTo = new Date().toISOString();
     this.daysFilter = 0;
+    this.selectedDateRange = 0;
+    this.customDaysFilter = null;
     this.activeFilter = 'all';
-    this.applyFilters();
-  }
-
-  onDaysFilterChange(): void {
-    this.activeFilter = 'custom';
     this.applyFilters();
   }
 
@@ -118,10 +150,11 @@ export class CheckoutOrdersComponent implements OnInit {
 
     this.filteredOrders = filtered;
   }
-    get isGroupedView(): boolean {
-    
+  
+  get isGroupedView(): boolean {
     return this.activeFilter === 'all' && !this.daysFilter && !this.dateFrom && !this.dateTo;
   }
+  
   formatDate(parts: any): Date | null {
     if (!parts) return null;
     if (Array.isArray(parts)) return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
@@ -145,5 +178,4 @@ export class CheckoutOrdersComponent implements OnInit {
   closeRegister() {
     this.registerService.triggerCloseRegister();
   }
-  
 }
