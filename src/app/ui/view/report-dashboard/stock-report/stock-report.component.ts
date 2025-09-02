@@ -53,7 +53,7 @@ export class StockReportComponent implements OnInit {
   stockTrendChartOptions: any;
   branchComparisonChartOptions: any;
   salesVsStockChartOptions: any;
-  
+
   isFilterFormOpen = false;
   isLoading = false;
   page = 1;
@@ -62,6 +62,7 @@ export class StockReportComponent implements OnInit {
   sortDirection = 'asc';
 
   Math = Math;
+  showCustomDateRange = false;
 
   isDropdownOpen: { [key: string]: boolean } = {
     totalItems: false,
@@ -82,7 +83,7 @@ export class StockReportComponent implements OnInit {
 
   ngOnInit(): void {
     this.initFilters();
-    this.initEmptyCharts(); 
+    this.initEmptyCharts();
     this.loadInitialData();
   }
 
@@ -90,24 +91,59 @@ export class StockReportComponent implements OnInit {
     this.filterForm = this.fb.group({
       branchIds: [[]],
       categoryIds: [[]],
-      includeLowStock: [false]
+      includeLowStock: [false],
+      dateRange: ['last7Days'],
+      startDate: [null],
+      endDate: [null]
     });
+    this.onDateRangeChange(null);
+  }
+
+  onDateRangeChange(event: any): void {
+    const value = this.filterForm.get('dateRange')?.value;
+    this.showCustomDateRange = value === 'custom';
+
+    const today = new Date();
+    let startDate: Date;
+
+    switch (value) {
+      case 'today':
+        startDate = new Date(today.setHours(0, 0, 0, 0));
+        break;
+      case '3daysAgo':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 3);
+        break;
+      case 'last7Days':
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 7);
+        break;
+      case '1month':
+        startDate = new Date(today);
+        startDate.setMonth(today.getMonth() - 1);
+        break;
+      default:
+        return;
+    }
+
+    if (value !== 'custom') {
+      this.filterForm.patchValue({
+        startDate: startDate.toISOString().substring(0, 10),
+        endDate: today.toISOString().substring(0, 10)
+      });
+    }
   }
 
   loadInitialData(): void {
     this.isLoading = true;
-
-    // Load branches and categories concurrently
-    Promise.all([
-      this.loadBranches(),
-      this.loadCategories()
-    ]).then(() => {
-      // Load initial inventory report
-      this.loadInventoryReport();
-    }).catch(error => {
-      console.error('Error loading initial data:', error);
-      this.isLoading = false;
-    });
+    Promise.all([this.loadBranches(), this.loadCategories()])
+      .then(() => {
+        this.loadInventoryReport();
+      })
+      .catch(error => {
+        console.error('Error loading initial data:', error);
+        this.isLoading = false;
+      });
   }
 
   loadBranches(): Promise<void> {
@@ -145,21 +181,23 @@ export class StockReportComponent implements OnInit {
   loadInventoryReport(filters?: InventoryReportRequestDTO): void {
     this.isLoading = true;
 
-    const requestPayload: InventoryReportRequestDTO = filters || {
-      branchIds: [],
-      categoryIds: [],
-      includeLowStock: false
+    // This is the correct way to handle the type-checking error
+    const cleanedFilters: InventoryReportRequestDTO = {
+      branchIds: filters?.branchIds || undefined,
+      categoryIds: filters?.categoryIds || undefined,
+      includeLowStock: filters?.includeLowStock || false,
+      startDate: filters?.startDate || undefined,
+      endDate: filters?.endDate || undefined
     };
 
-    // If no specific branches/categories selected, include all
-    if (!requestPayload.branchIds?.length) {
-      requestPayload.branchIds = this.branches.map(b => b.id);
+    if (!cleanedFilters.branchIds?.length) {
+      cleanedFilters.branchIds = this.branches.map(b => b.id);
     }
-    if (!requestPayload.categoryIds?.length) {
-      requestPayload.categoryIds = this.categories.map(c => c.id);
+    if (!cleanedFilters.categoryIds?.length) {
+      cleanedFilters.categoryIds = this.categories.map(c => c.id);
     }
 
-    this.reportService.getInventoryReport(requestPayload).subscribe({
+    this.reportService.getInventoryReport(cleanedFilters).subscribe({
       next: (data: InventoryReportDTO) => {
         this.reportData = data;
         this.calculateSummaryMetrics();
@@ -192,7 +230,10 @@ export class StockReportComponent implements OnInit {
 
     this.totalItems = this.reportData.inventory.reduce((sum: number, item: InventoryItemDTO) => sum + item.currentStock, 0);
     this.lowStockItems = this.reportData.inventory.filter((item: InventoryItemDTO) => item.lowStockAlert).length;
-    this.totalValue = this.reportData.inventory.reduce((sum: number, item: InventoryItemDTO) => sum + (item.currentStock * item.product.price), 0);
+    this.totalValue = this.reportData.inventory.reduce((sum: number, item: InventoryItemDTO) => {
+      const price = parseFloat(item.product?.sellingPrice || '0');
+      return sum + (item.currentStock * price);
+    }, 0);
   }
 
   initCharts(): void {
@@ -208,7 +249,6 @@ export class StockReportComponent implements OnInit {
   }
 
   initEmptyCharts(): void {
-    // These now provide a complete, empty configuration
     this.categoriesChartOptions = this.createEmptyBarChart('Stock by Category');
     this.stockTrendChartOptions = this.createEmptyLineChart('Inventory Trend (Last 6 Months)');
     this.branchComparisonChartOptions = this.createEmptyPieChart('Stock Distribution by Branch');
@@ -217,7 +257,7 @@ export class StockReportComponent implements OnInit {
 
   initCategoriesChart(): void {
     const categoryData = this.categories.map((category: CategoryDTO) => {
-      const items = this.reportData.inventory.filter((item: InventoryItemDTO) => item.category.id === category.id);
+      const items = this.reportData.inventory.filter((item: InventoryItemDTO) => item.category?.id === category.id);
       const totalStock = items.reduce((sum: number, item: InventoryItemDTO) => sum + item.currentStock, 0);
       return { x: category.name, y: totalStock };
     }).filter(item => item.y > 0);
@@ -308,7 +348,7 @@ export class StockReportComponent implements OnInit {
   initBranchComparisonChart(): void {
     const branchData = this.branches.map((branch: BranchDTO) => {
       const branchStock = this.reportData.inventory
-        .filter((item: InventoryItemDTO) => item.branch.id === branch.id)
+        .filter((item: InventoryItemDTO) => item.branch?.id === branch.id)
         .reduce((sum: number, item: InventoryItemDTO) => sum + item.currentStock, 0);
       return {
         label: branch.name,
@@ -344,7 +384,7 @@ export class StockReportComponent implements OnInit {
 
   initSalesVsStockChart(): void {
     const categoryStats = this.categories.map((category: CategoryDTO) => {
-      const items = this.reportData.inventory.filter((item: InventoryItemDTO) => item.category.id === category.id);
+      const items = this.reportData.inventory.filter((item: InventoryItemDTO) => item.category?.id === category.id);
       const totalStock = items.reduce((sum: number, item: InventoryItemDTO) => sum + item.currentStock, 0);
       const totalSold = items.reduce((sum: number, item: InventoryItemDTO) => sum + item.soldQuantity, 0);
 
@@ -456,14 +496,18 @@ export class StockReportComponent implements OnInit {
   }
 
   applyFilters(): void {
-    const filters = this.filterForm.value as InventoryReportRequestDTO;
+    const filters = this.filterForm.value;
+    this.page = 1; // Reset to first page on filter change
 
+    // Fix the TS2739 error by ensuring the object literal matches the DTO type
     const cleanedFilters: InventoryReportRequestDTO = {
       branchIds: filters.branchIds?.length ? filters.branchIds : undefined,
       categoryIds: filters.categoryIds?.length ? filters.categoryIds : undefined,
-      includeLowStock: filters.includeLowStock || false
+      includeLowStock: filters.includeLowStock || false,
+      startDate: filters.startDate ? new Date(filters.startDate).toISOString() : undefined,
+      endDate: filters.endDate ? new Date(filters.endDate).toISOString() : undefined
     };
-
+    
     console.log('Applying filters:', cleanedFilters);
     this.loadInventoryReport(cleanedFilters);
   }
@@ -472,8 +516,11 @@ export class StockReportComponent implements OnInit {
     this.filterForm.reset({
       branchIds: [],
       categoryIds: [],
-      includeLowStock: false
+      includeLowStock: false,
+      dateRange: 'last7Days'
     });
+    this.showCustomDateRange = false;
+    this.onDateRangeChange(null); // Recalculate and set the date range
     this.loadInventoryReport();
   }
 
@@ -493,39 +540,45 @@ export class StockReportComponent implements OnInit {
 
       switch (column) {
         case 'product.name':
-          aValue = a.product.name.toLowerCase();
-          bValue = b.product.name.toLowerCase();
+          aValue = a.product?.name?.toLowerCase();
+          bValue = b.product?.name?.toLowerCase();
           break;
         case 'product.sku':
-          aValue = a.product.sku.toLowerCase();
-          bValue = b.product.sku.toLowerCase();
+          aValue = a.product?.sku?.toLowerCase();
+          bValue = b.product?.sku?.toLowerCase();
           break;
         case 'category.name':
-          aValue = a.category.name.toLowerCase();
-          bValue = b.category.name.toLowerCase();
+          aValue = a.category?.name?.toLowerCase();
+          bValue = b.category?.name?.toLowerCase();
+          break;
+        case 'branch.name':
+          aValue = a.branch?.name?.toLowerCase();
+          bValue = b.branch?.name?.toLowerCase();
           break;
         case 'currentStock':
           aValue = a.currentStock;
           bValue = b.currentStock;
           break;
-        case 'product.price':
-          aValue = a.product.price;
-          bValue = b.product.price;
+        case 'soldQuantity':
+          aValue = a.soldQuantity;
+          bValue = b.soldQuantity;
           break;
-        case 'branch.name':
-          aValue = a.branch.name.toLowerCase();
-          bValue = b.branch.name.toLowerCase();
+        case 'product.sellingPrice':
+          aValue = parseFloat(a.product?.sellingPrice || '0');
+          bValue = parseFloat(b.product?.sellingPrice || '0');
           break;
         default:
           return 0;
       }
 
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return this.sortDirection === 'asc' ? 1 : -1;
+      if (bValue == null) return this.sortDirection === 'asc' ? -1 : 1;
+
       if (aValue < bValue) return this.sortDirection === 'asc' ? -1 : 1;
       if (aValue > bValue) return this.sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-
-    console.log(`Sorted by ${this.sortColumn} in ${this.sortDirection} order`);
   }
 
   exportToCsv(): void {
@@ -536,12 +589,12 @@ export class StockReportComponent implements OnInit {
 
     const headers = ['Product Name', 'SKU', 'Category', 'Current Stock', 'Price', 'Branch', 'Low Stock Alert'];
     const csvData = this.reportData.inventory.map((item: InventoryItemDTO) => [
-      item.product.name,
-      item.product.sku,
-      item.category.name,
+      item.product?.name,
+      item.product?.sku,
+      item.category?.name,
       item.currentStock,
-      item.product.price,
-      item.branch.name,
+      item.product?.sellingPrice,
+      item.branch?.name,
       item.lowStockAlert ? 'Yes' : 'No'
     ]);
 
@@ -604,7 +657,6 @@ export class StockReportComponent implements OnInit {
     return item.product?.id || index;
   }
 
-  // New methods for dropdowns and tooltips
   prepareDropdownData(): void {
     if (!this.reportData?.inventory) return;
 
@@ -612,7 +664,7 @@ export class StockReportComponent implements OnInit {
     const totalItemsData = [...this.reportData.inventory]
       .sort((a, b) => b.currentStock - a.currentStock)
       .map(item => ({
-        label: `${item.product.name} (${item.branch.name})`,
+        label: `${item.product?.name} (${item.branch?.name})`,
         value: item.currentStock.toLocaleString()
       }));
     this.dropdownData['totalItems'] = totalItemsData;
@@ -620,9 +672,9 @@ export class StockReportComponent implements OnInit {
     // Low Stock Items
     const lowStockData = [...this.reportData.inventory]
       .filter(item => item.lowStockAlert)
-      .sort((a, b) => a.currentStock - b.currentStock) 
+      .sort((a, b) => a.currentStock - b.currentStock)
       .map(item => ({
-        label: `${item.product.name} (${item.branch.name})`,
+        label: `${item.product?.name} (${item.branch?.name})`,
         value: item.currentStock.toLocaleString()
       }));
     this.dropdownData['lowStockItems'] = lowStockData;

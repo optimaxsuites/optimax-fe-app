@@ -28,6 +28,7 @@ import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
+import { forkJoin, Observable } from 'rxjs';
 
 type PaymentMethodBreakdown = {
   paymentMethod: string;
@@ -104,6 +105,14 @@ export class SalesReportComponent implements OnInit {
   public trendChartOptions!: TrendChartOptions;
 
   salesReport!: SalesReportDTO;
+  previousPeriodReport!: SalesReportDTO; // New property for previous period's data
+
+  // New properties for growth percentages
+  totalRevenueGrowth: number | null = null;
+  totalTransactionsGrowth: number | null = null;
+  averageOrderValueGrowth: number | null = null;
+  totalDiscountsGrowth: number | null = null;
+
   loading = true;
   selectedTab = 'overview';
   currentPage = 1;
@@ -198,7 +207,6 @@ export class SalesReportComponent implements OnInit {
       'GIFT_CARD',
       'CRYPTOCURRENCY',
     ];
-    console.log('Payment methods loaded locally for dropdown:', this.paymentMethods);
   }
 
   loadCategories(): void {
@@ -251,29 +259,38 @@ export class SalesReportComponent implements OnInit {
 
   loadSalesData(): void {
     this.loading = true;
-
     const formValue = this.reportForm.value;
 
-    const startDate = new Date(formValue.startDate);
-    startDate.setHours(0, 0, 0, 0);
+    const currentPeriod = this.getDateRange(formValue.startDate, formValue.endDate);
+    const previousPeriod = this.getPreviousDateRange(currentPeriod.startDate, currentPeriod.endDate);
 
-    const endDate = new Date(formValue.endDate);
-    endDate.setHours(23, 59, 59, 999);
-
-    const payload = {
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
+    const currentPayload = {
+      startDate: currentPeriod.startDate.toISOString(),
+      endDate: currentPeriod.endDate.toISOString(),
       branchIds: formValue.branchIds || [],
       cashierIds: [],
-      // The payment methods are passed as a string array, which is correct
       paymentMethods: formValue.paymentMethodIds || [],
       categoryIds: formValue.categoryId ? [formValue.categoryId] : [],
     };
 
-    this.reportService.getSalesPerformanceReport(payload).subscribe({
-      next: (data) => {
-        this.salesReport = data;
+    const previousPayload = {
+      startDate: previousPeriod.startDate.toISOString(),
+      endDate: previousPeriod.endDate.toISOString(),
+      branchIds: formValue.branchIds || [],
+      cashierIds: [],
+      paymentMethods: formValue.paymentMethodIds || [],
+      categoryIds: formValue.categoryId ? [formValue.categoryId] : [],
+    };
+
+    forkJoin({
+      current: this.reportService.getSalesPerformanceReport(currentPayload),
+      previous: this.reportService.getSalesPerformanceReport(previousPayload),
+    }).subscribe({
+      next: (results) => {
+        this.salesReport = results.current;
+        this.previousPeriodReport = results.previous;
         this.loading = false;
+        this.calculateGrowth();
         this.updateCharts();
       },
       error: (err) => {
@@ -281,6 +298,43 @@ export class SalesReportComponent implements OnInit {
         console.error('Error loading sales data:', err);
       },
     });
+  }
+
+  private getDateRange(startDateStr: string, endDateStr: string): { startDate: Date, endDate: Date } {
+    const startDate = new Date(startDateStr);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(endDateStr);
+    endDate.setHours(23, 59, 59, 999);
+
+    return { startDate, endDate };
+  }
+
+  private getPreviousDateRange(currentStartDate: Date, currentEndDate: Date): { startDate: Date, endDate: Date } {
+    const diffInMilliseconds = currentEndDate.getTime() - currentStartDate.getTime();
+    const previousEndDate = new Date(currentStartDate.getTime() - 1);
+    const previousStartDate = new Date(previousEndDate.getTime() - diffInMilliseconds);
+
+    return { startDate: previousStartDate, endDate: previousEndDate };
+  }
+
+  private calculateGrowth(): void {
+    const currentRevenue = this.salesReport.totalRevenue || 0;
+    const previousRevenue = this.previousPeriodReport.totalRevenue || 0;
+
+    const currentTransactions = this.salesReport.totalTransactions || 0;
+    const previousTransactions = this.previousPeriodReport.totalTransactions || 0;
+
+    const currentAOV = this.salesReport.averageOrderValue || 0;
+    const previousAOV = this.previousPeriodReport.averageOrderValue || 0;
+
+    const currentDiscounts = this.salesReport.totalDiscounts || 0;
+    const previousDiscounts = this.previousPeriodReport.totalDiscounts || 0;
+
+    this.totalRevenueGrowth = previousRevenue > 0 ? ((currentRevenue - previousRevenue) / previousRevenue) * 100 : 0;
+    this.totalTransactionsGrowth = previousTransactions > 0 ? ((currentTransactions - previousTransactions) / previousTransactions) * 100 : 0;
+    this.averageOrderValueGrowth = previousAOV > 0 ? ((currentAOV - previousAOV) / previousAOV) * 100 : 0;
+    this.totalDiscountsGrowth = previousDiscounts > 0 ? ((currentDiscounts - previousDiscounts) / previousDiscounts) * 100 : 0;
   }
 
   get paginatedBreakdown() {

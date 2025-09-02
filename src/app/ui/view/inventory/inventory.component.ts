@@ -26,14 +26,13 @@ import {
 import { MessageService } from 'primeng/api';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { catchError, Observable, of } from 'rxjs';
 import { ImageCacheService } from '../../service/image-cache.service';
 import { OverlayPanel } from 'primeng/overlaypanel';
 import { MetadataService } from '../../service/metadata.service';
 import { DOCUMENT } from '@angular/common';
 import { EditInventoryComponent } from './edit-inventory/edit-inventory.component';
 import { BehaviorSubject } from 'rxjs';
-import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-inventory',
@@ -99,6 +98,12 @@ export class InventoryComponent implements OnInit, OnDestroy {
   showInformation = false;
   selectedProductId: number | null = null;
   private originalBodyOverflow: string = '';
+  inventoryPermission = {
+  canView: false,
+  canEdit: false,
+  canDelete: false,
+  canCreate: false,
+  };  
 
   constructor(
     private messageService: MessageService,

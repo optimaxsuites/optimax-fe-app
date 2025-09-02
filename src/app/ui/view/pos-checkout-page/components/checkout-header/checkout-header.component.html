@@ -4,21 +4,21 @@
   <nav>
     <ul class="flex gap-12 list-none">
       <li>
-        <a [routerLink]="navigationLink.getLink('checkoutOrderLink')">Orders</a>
+        <a class="cursor-pointer" [routerLink]="navigationLink.getLink('checkoutOrderLink')">Orders</a>
       </li>
-      <li (click)="closeRegister()">
+      <!-- <li (click)="closeRegister()">
         <a class="cursor-pointer"> Close Register </a>
       </li>
       <li>
         <a [routerLink]="navigationLink.getLink('kitchen')">Kitchen</a>
-      </li>
+      </li> -->
       <li>
-        <a [routerLink]="navigationLink.getLink('orderRefund')"
+        <a class="cursor-pointer" [routerLink]="navigationLink.getLink('orderRefund')"
           >Return/Refund</a
         >
       </li>
       <li>
-        <a [routerLink]="navigationLink.getLink('checkoutLink')">Checkout</a>
+        <a class="cursor-pointer" [routerLink]="navigationLink.getLink('checkoutLink')">Checkout</a>
       </li>
     </ul>
   </nav>

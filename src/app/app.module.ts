@@ -164,7 +164,7 @@ export function appInitializerFactory(appInitService: AppInitService) {
     SaleSummaryComponent,
     SaleComponent,
     SaleSummariesComponent,
-    KitchenOrderComponent,
+    // KitchenOrderComponent,
     // CheckoutKitchenComponent,
     
     IngredientComponent,
@@ -196,11 +196,10 @@ export function appInitializerFactory(appInitService: AppInitService) {
     SalesDetailsComponent,
     UniquePipe,
     //CheckoutKitchenComponent,
-    //CheckoutHeaderComponent,
   ],
   imports: [
-    BrowserModule,
-    UserModule,
+    // BrowserModule,
+    // UserModule,
     AppRoutingModule,
     CheckboxModule,
     CommonModule,
@@ -256,7 +255,7 @@ export function appInitializerFactory(appInitService: AppInitService) {
     ProgressSpinnerModule,
     SelectButtonModule,
 
-    BrowserAnimationsModule,
+    // BrowserAnimationsModule,
 
     TagModule,
   ],

@@ -65,6 +65,7 @@
       <ng-template pTemplate="left">
         <app-button
           text="Delete"
+          *ngIf="productPermissions.canDelete"
           class="btn-delete"
           (click)="toggleMultiDeleteModal()"
           [disabled]="!listOfSelectedItems.length"
@@ -74,10 +75,12 @@
       <ng-template pTemplate="right">
         <app-button
           text="Add New"
+          *ngIf="productPermissions.canCreate"
           class="btn-navigate"
           (btnClick)="openAddProdut()"
         ></app-button>
         <app-button
+        *ngIf="productPermissions.canCreate"
           text="Import"
           class="btn-export"
           (btnClick)="toggleImportDialog()"
@@ -211,6 +214,7 @@
                     class="table-item-panel"
                     (click)="openEdit(item)"
                     style="column-gap: 0.5rem"
+                    *ngIf="productPermissions.canEdit"
                   >
                     <i class="pi pi-pen-to-square table-item me-2"></i>
                     <span>Edit</span>
@@ -225,6 +229,7 @@
                   </li>
                   <li
                     class="table-item-panel"
+                    *ngIf="productPermissions.canDelete"
                     (click)="openDeleteModal(item)"
                     style="column-gap: 0.5rem"
                   >
@@ -265,7 +270,7 @@
               [src]="product.imageUrl$"
               alt="{{product.name}}"
               class="w-full h-48 object-cover"
-              onerror="this.src='assets/images/placeholder-product.jpg'"
+              onerror="this.src='assets/logo.png'"
             /> 
             <div class="absolute top-3 right-3">
               <button 
@@ -286,6 +291,7 @@
                   </li>
                   <li
                     class="table-item-panel"
+                    *ngIf="productPermissions.canEdit"
                     (click)="openEdit(product)"
                    
                   >
@@ -302,6 +308,7 @@
                   </li>
                   <li
                     class="table-item-panel"
+                    *ngIf="productPermissions.canDelete"
                     (click)="openDeleteModal(product); op.hide()"
                    
                   >
