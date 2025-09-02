@@ -286,6 +286,7 @@ export interface SelectedRequest extends Refund {
 
 // TODO: Fill this up with the appropriate types
 export interface InventoryProductDTO {
+  sellingPrice: string;
   // The inventory to be associated to
   inventoryId: number;
   // The product to be associated to
@@ -954,6 +955,8 @@ export interface BranchReportRequestDTO {
 }
 
 export interface InventoryReportRequestDTO {
+  startDate?: string;
+  endDate?: string;
   branchIds?: number[];
   categoryIds?: number[];
   includeLowStock?: boolean;

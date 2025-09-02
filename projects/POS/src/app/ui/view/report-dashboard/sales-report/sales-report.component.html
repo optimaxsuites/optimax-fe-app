@@ -148,13 +148,13 @@
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-customBlue"></div>
     </div>
 
-    <div *ngIf="!loading && report" class="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div *ngIf="!loading && salesReport" class="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-customBlue cursor-pointer transition-transform duration-200 hover:scale-[1.02]" (click)="showTotalRevenueDetails()">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-500">Total Revenue</p>
-              <p class="text-2xl font-bold text-gray-700 mt-1">{{ formatCurrency(report.totalRevenue) }}</p>
+              <p class="text-2xl font-bold text-gray-700 mt-1">{{ formatCurrency(salesReport.totalRevenue) }}</p>
             </div>
             <div class="h-12 w-12 bg-indigo-100 rounded-full flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-customBlueHover" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -162,11 +162,11 @@
               </svg>
             </div>
           </div>
-          <div class="mt-4 flex items-center font-medium text-green-500">
+         <div class="mt-4 flex items-center font-medium text-green-500">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
             </svg>
-            <span>8.2% from previous period</span>
+            <span>{{ Math.abs(totalRevenueGrowth || 0).toFixed(1) }}% from previous period</span>
           </div>
         </div>
 
@@ -174,7 +174,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-500">Transactions</p>
-              <p class="text-2xl font-bold text-gray-700 mt-1">{{ report.totalTransactions.toLocaleString() }}</p>
+              <p class="text-2xl font-bold text-gray-700 mt-1">{{ salesReport.totalTransactions.toLocaleString() }}</p>
             </div>
             <div class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -186,7 +186,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
             </svg>
-            <span>5.3% from previous period</span>
+            <span>{{ Math.abs(totalTransactionsGrowth || 0).toFixed(1) }}% from previous period</span>
           </div>
         </div>
 
@@ -194,7 +194,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-500">Avg. Order Value</p>
-              <p class="text-2xl font-bold text-gray-700 mt-1">{{ formatCurrency(report.averageOrderValue) }}</p>
+              <p class="text-2xl font-bold text-gray-700 mt-1">{{ formatCurrency(salesReport.averageOrderValue) }}</p>
             </div>
             <div class="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -206,7 +206,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
             </svg>
-            <span>2.8% from previous period</span>
+            <span>{{ Math.abs(averageOrderValueGrowth || 0).toFixed(1) }}% from previous period</span>
           </div>
         </div>
 
@@ -214,7 +214,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-500">Total Discounts</p>
-              <p class="text-2xl font-bold text-gray-700 mt-1">{{ formatCurrency(report.totalDiscounts) }}</p>
+              <p class="text-2xl font-bold text-gray-700 mt-1">{{ formatCurrency(salesReport.totalDiscounts) }}</p>
             </div>
             <div class="h-12 w-12 bg-amber-100 rounded-full flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -226,7 +226,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
             </svg>
-            <span>1.5% from previous period</span>
+            <span>{{ Math.abs(totalDiscountsGrowth || 0).toFixed(1) }}% from previous period</span>
           </div>
         </div>
       </div>
@@ -353,7 +353,7 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr *ngFor="let branch of report.totalSalesPerBranch">
+              <tr *ngFor="let branch of salesReport.totalSalesPerBranch">
                 <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-700">{{ branch.branch.name }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ branch.branch.location }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ formatCurrency(branch.totalRevenue) }}</td>
@@ -385,7 +385,7 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr *ngFor="let product of report.topSellingProducts">
+              <tr *ngFor="let product of salesReport.topSellingProducts">
                 <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-700">{{ product.product.name }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ product.product.sku }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-gray-500">{{ product.product.category }}</td>
