@@ -1,3 +1,5 @@
+// inventory.component.ts - Fixed version
+
 import {
   Component,
   OnInit,
@@ -24,14 +26,14 @@ import {
 import { MessageService } from 'primeng/api';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { ImageCacheService } from '../../service/image-cache.service';
 import { OverlayPanel } from 'primeng/overlaypanel';
 import { MetadataService } from '../../service/metadata.service';
 import { DOCUMENT } from '@angular/common';
 import { EditInventoryComponent } from './edit-inventory/edit-inventory.component';
 import { BehaviorSubject } from 'rxjs';
-
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-inventory',
@@ -44,6 +46,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
   mode: 'create' | 'edit' = 'create';
   editInventoryComponent!: EditInventoryComponent;
   isLoading: boolean = false;
+  isBranchSwitching: boolean = false; // NEW: Track branch switching state
   selectedProduct: any = null;
   currentPage = 0;
   rowsPerPage = 15;
@@ -51,9 +54,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
   branches: BranchDTO[] = [];
   @Output() formReset = new EventEmitter<void>();
 
-  // Use enriched products from MetadataService
   products: ProductData[] = [];
-  // inventories: InventoryResponsePayload[] = [];
   inventories: InventoryResponsePayload[] = [];
   tableSections: boolean = false;
   @Output() productUpdated = new EventEmitter<any>();
@@ -87,14 +88,12 @@ export class InventoryComponent implements OnInit, OnDestroy {
     startDate: '',
     endDate: '',
   };
-  // isLoading = this.metadataService.loading$;
-
+  
   quantityBasedDiscount: { minQuantity: number } = { minQuantity: 0 };
   productImage: any = '';
   tableSection: boolean = true;
   searchTerm: string = '';
   selectedCategories: number[] = [];
-  // paginatedProducts: any[] = [];
   categories: any[] = [];
   isImportDialogOpen = false;
   showInformation = false;
@@ -119,121 +118,51 @@ export class InventoryComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-  this.originalBodyOverflow = this.document.body.style.overflow || 'auto';
-  this.isLoading = true;
+    this.originalBodyOverflow = this.document.body.style.overflow || 'auto';
+    this.isLoading = true;
 
-  // Load supporting data
-  this.loadCategory();
-  this.getDiscountTypes();
-  
-  // Subscribe to branches
-  this.metadataService.branches$.subscribe((data) => {
-    this.branches = data;
-    console.log('Branches loaded:', this.branches); 
-  });
-  
-
-  if (this.selectedBranch) {
-    this.metadataService.setSelectedBranch(this.selectedBranch);
-  }
-  
-
-  this.getInventories();
-}
-onInventoryUpdated(ev: { inventoryId: number; quantity: number; status: string }) {
-   console.log('parent received updated', ev);
-  const updateOne = (arr: any[]) => {
-    const idx = arr?.findIndex(
-      p => p?.inventoryId === ev.inventoryId || p?.__inventory?.id === ev.inventoryId
-    );
-    if (idx > -1) {
-      arr[idx] = { ...arr[idx], quantity: ev.quantity, status: ev.status };
+    // Load supporting data
+    this.loadCategory();
+    this.getDiscountTypes();
+    
+    // Subscribe to branches
+    this.metadataService.branches$.subscribe((data) => {
+      this.branches = data;
+      console.log('Branches loaded:', this.branches); 
+    });
+    
+    if (this.selectedBranch) {
+      this.metadataService.setSelectedBranch(this.selectedBranch);
     }
-  };
-
-  updateOne(this.products);
-  updateOne(this.paginatedProducts);
-
-  
-  this.products = [...this.products];
-  
-}
-
-
-  private mapInventoryToProductRow(inv: any): any {
-  console.log('Mapping inventory item:', inv); 
-  
-  // Handle different response structures
-  const product = inv.product || inv.ingredient || {};
-  const productId = product.id || inv.productId || inv.ingredientId || inv.id;
-  
-  // Handle creation date
-  let createdDateMs = Date.now();
-  if (product.createdDate) {
-    if (Array.isArray(product.createdDate)) {
-      createdDateMs = new Date(
-        product.createdDate[0],
-        (product.createdDate[1] || 1) - 1,
-        product.createdDate[2] || 1,
-        product.createdDate[3] || 0,
-        product.createdDate[4] || 0,
-        product.createdDate[5] || 0
-      ).getTime();
-    } else {
-      createdDateMs = new Date(product.createdDate).getTime();
-    }
+    
+    this.getInventories();
   }
 
-  const mapped = {
-    // Essential fields for display
-    id: productId,
-    code: product.code || inv.code || '',
-    sku: product.sku || inv.sku || '',
-    name: product.name || inv.name || `Product #${productId}`,
-    sellingPrice: Number(product.sellingPrice || inv.sellingPrice || 0),
-    quantity: inv.availableQuantity !== undefined && inv.availableQuantity !== null
-  ? Number(inv.availableQuantity)
-  : Number(inv.quantity || 0),
+  // FIXED: Handle branch filter change with proper loading states
+  onBranchChange(branchId: number): void {
+    console.log('Branch changed to:', branchId);
+    this.selectedBranch = branchId;
+    this.isBranchSwitching = true; // Set branch switching state
+    this.metadataService.setSelectedBranch(branchId);
+    this.getInventories(); // Reload data immediately
+  }
 
-    
-    // Category information
-    productCategory: product.productCategory || inv.productCategory || null,
-    
-    // Image handling
-    imageUrl$: product.imageUrl || 
-               (product.productImages && product.productImages[0]?.url) || 
-               (inv.productImages && inv.productImages[0]?.url) || 
-               null,
-    
-    // Additional fields
-    variants: product.variants || [],
-    inventoryId: inv.id,
-    branch: { id: inv.branchId || this.selectedBranch },
-    createdDateMs,
-    
-    // Keep original inventory data for reference
-    __inventory: inv,
-    __originalProduct: product
-  };
-  
-  console.log('Mapped result:', mapped); // Debug log
-  return mapped;
-}
-loadInventories(): void {
-  this.isLoading = true;
-  this.posService.getInventories().subscribe({
-    next: (res) => {
-      console.log('Inventories loaded:', res); // 👈 Debug log
-      this.inventories = res || [];
-      this.isLoading = false;
-    },
-    error: (err) => {
-      console.error('Error fetching inventories:', err);
-      this.isLoading = false;
-    }
-  });
-}
+  onInventoryUpdated(ev: { inventoryId: number; quantity: number; status: string }) {
+    console.log('parent received updated', ev);
+    const updateOne = (arr: any[]) => {
+      const idx = arr?.findIndex(
+        p => p?.inventoryId === ev.inventoryId || p?.__inventory?.id === ev.inventoryId
+      );
+      if (idx > -1) {
+        arr[idx] = { ...arr[idx], quantity: ev.quantity, status: ev.status };
+      }
+    };
 
+    updateOne(this.products);
+    updateOne(this.paginatedProducts);
+    
+    this.products = [...this.products];
+  }
 
   ngOnDestroy(): void {
     // Ensure modal is closed and body scroll is restored when component is destroyed
@@ -250,64 +179,101 @@ loadInventories(): void {
     this.renderer.removeClass(this.document.body, 'modal-open');
   }
 
-  // In your component class
-
   get paginatedProducts() {
     const startIndex = this.currentPage * this.rowsPerPage;
     return this.products.slice(startIndex, startIndex + this.rowsPerPage);
   }
 
-  
-  // AFTER
-getInventories(): void {
-  this.isLoading = true;
-  console.log('Loading inventories...'); // Debug log
-  
-  this.posService.getInventories().subscribe({
-    next: (response) => {
-      console.log('Raw inventory response:', response); // Debug log
-      
-      if (!response || !Array.isArray(response)) {
-        console.error('Invalid inventory response:', response);
-        this.products = [];
-        this.originalProducts = [];
-        this.isLoading = false;
-        return;
-      }
-
-      // Map inventory data to product format
-      const mapped = response.map((inv: any) => this.mapInventoryToProductRow(inv));
-      console.log('Mapped inventory data:', mapped); // Debug log
-
-      // Filter by selected branch if needed
-      const filtered = this.selectedBranch
-        ? mapped.filter(p => p.branch?.id === this.selectedBranch)
-        : mapped;
-
-      // Sort by creation date
-      filtered.sort((a, b) => (b.createdDateMs ?? 0) - (a.createdDateMs ?? 0));
-
-      this.originalProducts = filtered;
-      this.products = [...filtered];
-      
-      console.log('Final products array:', this.products); // Debug log
-      this.isLoading = false;
-    },
-    error: (err) => {
-      console.error('Failed to load inventories:', err);
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to load inventory data'
-      });
-      this.originalProducts = [];
-      this.products = [];
-      this.isLoading = false;
+  // FIXED: Inventory fetching with proper loading states
+  getInventories(): void {
+    // Don't set isLoading if we're just switching branches
+    if (!this.isBranchSwitching) {
+      this.isLoading = true;
     }
-  });
+    
+    console.log('Loading inventories for branch:', this.selectedBranch);
+    
+    this.posService.getInventories().subscribe({
+      next: (response) => {
+        console.log('Raw inventory response:', response);
+        
+        if (!response || !Array.isArray(response)) {
+          console.error('Invalid inventory response:', response);
+          this.products = [];
+          this.originalProducts = [];
+          this.isLoading = false;
+          this.isBranchSwitching = false;
+          return;
+        }
+
+        // Store raw inventories
+        this.inventories = response;
+        
+        // Filter by selected branch if needed
+        const filteredInventories = this.selectedBranch
+          ? response.filter(inv => inv.branch?.id === this.selectedBranch)
+          : response;
+
+        // Map to product format for display
+        const mapped = filteredInventories.map((inv: any) => this.mapInventoryToProductRow(inv));
+        console.log('Filtered and mapped inventory data:', mapped);
+
+        // Sort by creation date (newest first)
+        mapped.sort((a, b) => (b.createdDateMs ?? 0) - (a.createdDateMs ?? 0));
+
+        this.originalProducts = mapped;
+        this.products = [...mapped];
+        
+        console.log('Final products array:', this.products);
+        this.isLoading = false;
+        this.isBranchSwitching = false; // Reset branch switching state
+      },
+      error: (err) => {
+        console.error('Failed to load inventories:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load inventory data'
+        });
+        this.originalProducts = [];
+        this.products = [];
+        this.isLoading = false;
+        this.isBranchSwitching = false; // Reset branch switching state
+      }
+    });
+  }
+
+  
+ private mapInventoryToProductRow(inv: any): any {
+  console.log('Mapping inventory item:', inv);
+  
+  // Use type assertion to access the properties that might exist
+  const inventory = inv as any;
+  
+  return {
+    id: inventory.product?.id || inventory.productId || inventory.id,
+    code: inventory.product?.code || '',
+    sku: inventory.product?.sku || '',
+    name: inventory.product?.name || `Product #${inventory.productId || inventory.id}`,
+    sellingPrice: Number(inventory.product?.sellingPrice || 0),
+    quantity: inventory.availableQuantity !== undefined && inventory.availableQuantity !== null
+      ? Number(inventory.availableQuantity)
+      : Number(inventory.quantity || 0),
+    
+    productCategory: inventory.product?.productCategory || null,
+    imageUrl$: inventory.product?.imageUrl || 
+              (inventory.product?.productImages && inventory.product.productImages[0]?.url) || 
+              null,
+    
+    variants: inventory.product?.variants || [],
+    inventoryId: inventory.id,
+    branch: inventory.branch || { id: inventory.branchId },
+    createdDateMs: new Date(inventory.createdDate || Date.now()).getTime(),
+    
+    __inventory: inventory,
+    __originalProduct: inventory.product
+  };
 }
-
-
 
   toggleDropdown2(item: any, event?: Event) {
     if (event) {
@@ -341,12 +307,6 @@ getInventories(): void {
   closeDropdown(item: any) {
     item.showMenu = false;
   }
-
-  // Use the same image loading approach as the first component
-  // getImageUrl(item: any): Observable<string> {
-  //   const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${item.productImages[0].imgNo}`;
-  //   return this.imageCacheService.getImage(remoteImageUrl);
-  // }
 
   toggleView() {
     this.tableSections = !this.tableSections;
@@ -408,37 +368,6 @@ getInventories(): void {
       this.openEditInventory(item, 'edit');
     }
   }
-
-  // Load products using enriched products from MetadataService (same as first component)
-  // getProducts() {
-  //   this.metadataService.enrichedProduct$.subscribe(async (data) => {
-  //     if (data) {
-  //       this.originalProducts = data.sort((a: any, b: any) => {
-  //         const dateA = new Date(
-  //           a.createdDate[0],
-  //           a.createdDate[1] - 1,
-  //           a.createdDate[2],
-  //           a.createdDate[3],
-  //           a.createdDate[4],
-  //           a.createdDate[5]
-  //         );
-  //         const dateB = new Date(
-  //           b.createdDate[0],
-  //           b.createdDate[1] - 1,
-  //           b.createdDate[2],
-  //           b.createdDate[3],
-  //           b.createdDate[4],
-  //           b.createdDate[5]
-  //         );
-  //         return dateB.getTime() - dateA.getTime();
-  //       });
-  //       this.products = [...this.originalProducts];
-  //       console.log('Products loaded:', this.products);
-  //     } else {
-  //       console.log('error loading data');
-  //     }
-  //   });
-  // }
 
   getDiscountTypes() {
     this.posService.getDiscountTypes().subscribe(async (data) => {
@@ -818,34 +747,33 @@ getInventories(): void {
     this.getInventories();
     this.tableSections = false;
   }
-
-
-
-// inventory.component.ts
-// placeholderPath = 'assets/placeholder-product.jpg'; 
-
-
-// onImgError(event: Event) {
-//   const img = event.target as HTMLImageElement;
-//   img.src = 'assets/placeholder-product.jpg';
-// }
-getImageUrl(item: any): Observable<string> {
-  // Check if we have image data in the mapped inventory item
-  const productImages = item.__originalProduct?.productImages || 
-                       item.productImages || 
-                       item.__inventory?.product?.productImages;
-                       
-  if (productImages && productImages.length > 0 && productImages[0].imgNo) {
-    const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${productImages[0].imgNo}`;
-    return this.imageCacheService.getImage(remoteImageUrl);
-  }
   
- 
-  return new Observable(observer => {
-    observer.next('https://via.placeholder.com/300x200?text=No+Image');
-    observer.complete();
-  });
-}}
 
+  onImageError(event: Event): void {
+  const target = event.target as HTMLImageElement;
+  if (target) {
+    target.src = 'assets/placeholder-product.jpg';
+  }
+}
 
-
+  // FIXED: Image URL handling with proper error handling and correct API path
+  getImageUrl(item: any): Observable<string> {
+    const productImages = item.productImages || 
+                         item.__originalProduct?.productImages || 
+                         item.__inventory?.product?.productImages;
+                         
+    if (productImages && productImages.length > 0 && productImages[0].imgNo) {
+      // FIXED: Using correct API path from your file structure
+      const remoteImageUrl = `https://be.optimaxsuites.com/x/api/v2/pos/products/images/${productImages[0].imgNo}`;
+      return this.imageCacheService.getImage(remoteImageUrl).pipe(
+        catchError((error) => {
+          // Don't log error to console to avoid spam
+          return of('assets/images/placeholder-product.jpg');
+        })
+      );
+    }
+    
+    // Return placeholder without logging error
+    return of('assets/images/placeholder-product.jpg');
+  }
+}

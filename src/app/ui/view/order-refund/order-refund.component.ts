@@ -138,40 +138,45 @@ export class OrderRefundComponent {
   }
 
   resetForm(): void {
-    if (this.returnForm) {
-      this.returnForm.resetForm();
-    }
-
-    this.orderItems = [];
-    this.selectedItems = [];
-    this.orderDetails = null;
-    this.hasSelectedItems = false;
-    this.priceDifference = 0;
-
-    this.returnData = {
-      name: "",
-      phoneNumber: "",
-      order: { id: "", orderItem: [], createdDate: new Date() } as Order,
-      items: [],
-      reason: "",
-      cashierComment: "",
-      status: ReturnStatus.PENDING,
-      refundableAmount: 0,
-      refundStatus: RefundStatus.Processing,
-      refundMethod: RefundMethod.CASH,
-      bankDetails: {
-        bankName: "",
-        accountNumber: "",
-        accountName: "",
-      },
-      royaltyAccount: {
-        id: 0,
-        name: '',
-        phoneNumber: ''
-      },
-      exchangeFor: {} as ProductData,
-    };
+  if (this.returnForm) {
+    this.returnForm.resetForm();
   }
+
+  this.orderItems = [];
+  this.selectedItems = [];
+  this.orderDetails = null;
+  this.hasSelectedItems = false;
+  this.priceDifference = 0;
+
+  this.returnData = {
+    id: 0,
+    name: "",
+    phoneNumber: "",
+    order: { id: "", orderItem: [], createdDate: new Date() } as Order,
+    items: [],
+    reason: "",
+    cashierComment: "",
+    status: ReturnStatus.PENDING,
+    refundableAmount: 0,
+    refundStatus: RefundStatus.Processing,
+    refundMethod: RefundMethod.CASH,
+    bankDetails: {
+      bankName: "",
+      accountNumber: "",
+      accountName: "",
+    },
+    royaltyAccount: {
+      id: 0,
+      name: '',
+      phoneNumber: ''
+    },
+    exchangeFor: {} as ProductData,
+  };
+  
+  // Make sure royaltyAccountId is not set initially
+  delete this.returnData.royaltyAccountId;
+}
+
 
   validateOrder(number: any): void {
     if (!this.returnData.order.id) {
@@ -246,27 +251,39 @@ export class OrderRefundComponent {
   }
 
   validateRoyaltyAccount(phone: any): void {
-    // if (!this.returnData.royaltyAccount?.id) return;
-    
-    
-    this.customerService.getCustomerByPhone(phone).subscribe(
-      (customer: CustomerDTO) => {
-        console.log(customer)
-        this.returnData.royaltyAccount = customer;
-        this.returnData.name = customer.name
-      },
-      (error) => {
-        console.error('Error validating royalty account:', error);
-        this.returnData.royaltyAccount = {
-          id: 0,
-          name: '',
-          phoneNumber: ''
-        };
-
-        // Show error message to user
-      },
-    );
+  if (!phone || phone.trim() === '') {
+    this.returnData.royaltyAccount = {
+      id: 0,
+      name: '',
+      phoneNumber: ''
+    };
+    return;
   }
+  
+  this.customerService.getCustomerByPhone(phone).subscribe(
+    (customer: CustomerDTO) => {
+      console.log(customer);
+      this.returnData.royaltyAccount = customer;
+      this.returnData.name = customer.name;
+    },
+    (error) => {
+      console.error('Error validating royalty account:', error);
+      this.returnData.royaltyAccount = {
+        id: 0,
+        name: '',
+        phoneNumber: ''
+      };
+      
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Warning',
+        detail: 'Customer not found with this phone number',
+        key: 'tl',
+        life: 3000,
+      });
+    }
+  );
+}
 
   createCustomer(){
     if (!this.returnData.name || !this.returnData.phoneNumber) {
@@ -324,33 +341,33 @@ export class OrderRefundComponent {
       }
     );
   }
-  onRefundMethodChange(method: RefundMethod): void {
-    // Reset relevant fields based on the selected method
-    if (method !== RefundMethod.BANK_TRANSFER) {
-      this.returnData.bankDetails = {
-        bankName: "",
-        accountNumber: "",
-        accountName: "",
-      };
-    }
-
-    if (method !== RefundMethod.ROYALTY_TOPUP) {
-      this.returnData.royaltyAccount = {
-        id: 0,
-        name: '',
-        phoneNumber: ''
-      };
-    }
-
-    if (method !== RefundMethod.EXCHANGE) {
-      this.returnData.exchangeFor = {
-        id: 0,
-        name: "",
-        sellingPrice: "",
-      } as ProductData;
-      this.priceDifference = 0;
-    }
+ onRefundMethodChange(method: RefundMethod): void {
+  this.returnData.refundMethod = method;
+  
+  // Reset relevant fields based on the selected method
+  if (method !== RefundMethod.BANK_TRANSFER) {
+    this.returnData.bankDetails = {
+      bankName: "",
+      accountNumber: "",
+      accountName: "",
+    };
   }
+
+  if (method !== RefundMethod.ROYALTY_TOPUP) {
+    this.returnData.royaltyAccount = {
+      id: 0,
+      name: '',
+      phoneNumber: ''
+    };
+    // Remove royaltyAccountId if it exists
+    delete this.returnData.royaltyAccountId;
+  }
+
+  if (method !== RefundMethod.EXCHANGE) {
+    this.returnData.exchangeFor = {} as ProductData;
+    this.priceDifference = 0;
+  }
+}
   onExchangeProductSelected(productId: number): void {
     if (!productId) return;
 
@@ -462,52 +479,53 @@ export class OrderRefundComponent {
   }
 
   submitReturnRequest(): void {
-    if (this.returnForm.invalid || !this.hasSelectedItems) {
-      return;
-    }
-
-    // Set the current date for the return request
-    this.returnData.orderId = parseInt(this.orderDetails?.id || "0" )
-    this.returnData.royaltyAccountId = this.returnData.royaltyAccount.id
-    this.returnData.createdAt = new Date();
-    console.log(this.returnData)
-    const returnItems = this.returnData.items.map((item) => ({
-      quantity: 0,
-      totalPricePaid: item.orderItem.totalPrice,
-      productId: item.orderItem.product.id,
-      ...(item.orderItem.productVariant && { variantId: item.orderItem.productVariant.id })
-
-    }))
-
-    this.returnData.returnItems = returnItems
-    this.orderService.makeRequest(this.returnData).subscribe(
-      (response) => {
-        console.log('Return request submitted successfully:', response);
-        // from(returnItems)
-        // .pipe(
-        //   concatMap(item =>
-        //     this.orderService.sendReturnItemsLog({
-        //       ...item,
-        //       itemReturnLogId: response.id
-        //     })
-        //   )
-        // )
-        // .subscribe({
-        //   next: (res) => console.log('Logged item:', res),
-        //   error: (err) => console.error('Error logging return item:', err),
-        //   complete: () => {
-        //     console.log('All return items logged.');
-        //     this.openRequestForm();
-        //   }
-        // });
-        this.openRequestForm();
-      },
-      (error) => {
-        console.error('Error submitting return request:', error);
-      }
-    );
+  if (this.returnForm.invalid || !this.hasSelectedItems) {
+    return;
   }
 
+  // Set the current date for the return request
+  this.returnData.orderId = parseInt(this.orderDetails?.id || "0");
+  
+  // Only set royaltyAccountId if the refund method is ROYALTY_TOPUP and we have a valid customer
+  if (this.returnData.refundMethod === RefundMethod.ROYALTY_TOPUP && 
+      this.returnData.royaltyAccount?.id && 
+      this.returnData.royaltyAccount.id > 0) {
+    this.returnData.royaltyAccountId = this.returnData.royaltyAccount.id;
+  } else {
+    // Don't send royaltyAccountId if it's not needed or invalid
+    delete this.returnData.royaltyAccountId;
+  }
+  
+  this.returnData.createdAt = new Date();
+  console.log(this.returnData);
+
+  const returnItems = this.returnData.items.map((item) => ({
+    quantity: item.quantity || item.orderItem.quantity, // Use the actual quantity
+    totalPricePaid: item.orderItem.totalPrice,
+    productId: item.orderItem.product.id,
+    ...(item.orderItem.productVariant && { variantId: item.orderItem.productVariant.id })
+  }));
+
+  this.returnData.returnItems = returnItems;
+  
+  this.orderService.makeRequest(this.returnData).subscribe(
+    (response) => {
+      console.log('Return request submitted successfully:', response);
+      this.openRequestForm();
+      this.resetForm(); // Reset the form after successful submission
+    },
+    (error) => {
+      console.error('Error submitting return request:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to submit return request',
+        key: 'tl',
+        life: 3000,
+      });
+    }
+  );
+}
   loadrefundRequests() {
     this.metadataService.returns$.subscribe((value) => {
       console.log(value);

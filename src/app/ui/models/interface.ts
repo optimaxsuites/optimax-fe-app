@@ -860,6 +860,9 @@ export interface InventoryResponsePayload {
   productId: number;
   branchId: number;
   stockMovement: StockMovementResponsePayload[];
+  product?: ProductData; 
+  branch?: BranchDTO;
+  createdDate?: string;
 }
 
 export interface StockMovementCreatePayload {

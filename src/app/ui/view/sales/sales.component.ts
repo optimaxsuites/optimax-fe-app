@@ -1,4 +1,3 @@
-
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { CheckoutService } from '../../service/checkout.service';
@@ -17,14 +16,25 @@ export class SalesComponent implements OnInit {
   paginatedOrders: Order[] = [];
   searchText: string = '';
   statusFilter: string = 'ALL';
-  daysFilter: number = 0; // 0 means no filter
+  daysFilter: number = 1; // Default to Today (1 day)
   sortBy: string = 'id';
   sortDirection: 'asc' | 'desc' = 'desc';
   isViewPageOpen: boolean = false;
   activeOrder: Order = {} as Order;
   selectedCashier: string = 'All';
-  isLoading: boolean = true; // Add isLoading property
+  isLoading: boolean = true;
   
+  // New properties for date range filtering
+  dateRangeOptions = [
+    { value: 1, label: 'Today' },
+    { value: 3, label: 'Last 3 Days' },
+    { value: 7, label: 'Last Week' },
+    { value: 30, label: 'Last Month' },
+    { value: 0, label: 'All Time' }
+  ];
+  selectedDateRange: number = 1; // Default to Today
+  customDaysFilter: number | null = null;
+
   // Pagination properties
   currentPage: number = 1;
   itemsPerPage: number = 10;
@@ -49,15 +59,32 @@ export class SalesComponent implements OnInit {
   }
   
   loadOrders(): void {
-    this.isLoading = true; // Set loading to true when starting to load orders
+    this.isLoading = true;
     this.metadataService.orders$.subscribe(orders => {
       this.orders = orders;
       console.log('Loaded orders:', orders);
-      this.isLoading = false; // Set loading to false when orders are loaded
+      this.isLoading = false;
       this.applyFiltersAndSort();
     });
   }
   
+  // New methods for date range filtering
+  onDateRangeChange(): void {
+    if (this.selectedDateRange !== null) {
+      this.daysFilter = this.selectedDateRange;
+      this.customDaysFilter = null;
+      this.applyFiltersAndSort();
+    }
+  }
+
+  onCustomDaysChange(): void {
+    if (this.customDaysFilter !== null && this.customDaysFilter > 0) {
+      this.daysFilter = this.customDaysFilter;
+      this.selectedDateRange = -1; // Use a value not in the options to indicate custom
+      this.applyFiltersAndSort();
+    }
+  }
+
   viewOrderDetails(order: Order): void {
     this.isViewPageOpen = true;
     this.activeOrder = order;
@@ -66,12 +93,6 @@ export class SalesComponent implements OnInit {
   closeViewDetail(){
     this.isViewPageOpen = false;
     this.activeOrder = {} as Order;
-  }
-  
-  // Add method for Today/All buttons
-  setDaysFilter(days: number): void {
-    this.daysFilter = days;
-    this.applyFiltersAndSort();
   }
   
   applyFiltersAndSort(): void {
