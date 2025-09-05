@@ -1,39 +1,25 @@
-
-<div class="form-buttons" (click)=" goBack()">
-  <div class="arrow-left">
-    <div></div>
-  </div>
-  </div>
-
-<div class="parent-container">
-
-
-  <div class="header">
-    <h1>Fill in the details below to submit your expense.</h1>
-  </div>  
- 
-  <!--div class="progress-container">
-    <div class="progress-bar" [ngClass]="currentStage"></div>
-    <div class="progress-stages">
-      <div class="stage" [ngClass]="{ active: currentStage === 'to-submit' }">
-        Submit
+ <div class="ERM1 mx-5">
+    <div class="ERM2">
+      <div class="arrow-left" (click)=" goBack()">
+               <div></div>
+        </div>
+      <div class="header-left">
+        <h1 class="ERM3 text-3xl">New Expense Request</h1>
       </div>
-      <div class="stage" [ngClass]="{ active: currentStage === 'submitted' }">
-        Submitted
-      </div>
-      <div class="stage" [ngClass]="{ active: currentStage === 'approved' }">
-        Approved
-      </div>
-      <div class="stage" [ngClass]="{ active: currentStage === 'paid' }">
-        Paid
-      </div> 
     </div>
-  </div-->
+
+
+  <div class="ERM8 notice-box">
+   <b>Important: </b>Please ensure all expense details are accurate and include valid receipts before submitting.
+  </div>
+
+  
+  
   <form #expenseForm="ngForm" (ngSubmit)="submitExpense(expenseForm)">
-  <div class="add-expense-container">
-    <div class="expense-form">
+    <div class="form-container">
       <div class="form-left">
          <div class="floating-box form-subsection">
+          <div class="section-header">Expense Information</div>
           <div class="form-group">
           <label for="name">Expense Name</label>
           <input
@@ -49,49 +35,11 @@
             </p>
           
         </div>
-    
 
-        <div class="form-group">
-          <label for="amount">Amount</label>
-          <input
-            type="text"
-            id="amount"
-            name="amount"
-            [value]="formatAmount(expenseSummary.amount)"
-            (input)="updateAmount($event)"
-            required
-            placeholder="Enter amount"
-          />
-          <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.amount">
-            Amount is required.
-        </div>
-
-        <div class="form-group">
-          <label for="merchant">Supplier</label>
-          <input
-            type="text"
-            id="merchant"
-            name="merchant"
-            [(ngModel)]="expenseSummary.merchant"
-            required
-            placeholder="Enter merchant"
-          />
-          <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.merchant">
-            Merchant is required.
-        </div>
-
-        <!-- <div class="form-group">
-          <label for="expense-date">Expense Date</label>
-          <input
-            type="date"
-            id="expense-date"
-            name="expense-date"
-            [(ngModel)]="expenseSummary.expenseDate"
-          />
-        </div> -->
 
         <div class="form-group">
           <label for="category">Category</label>
+          <div class="category-input-row">
           <ng-select
             [items]="categories"
             bindLabel="name"
@@ -101,54 +49,35 @@
             required
             placeholder="Select a category"
             class="w-full mt-3"
-            [addTag]="true"
-            [addTagText]="'Add'"
-
           >
           </ng-select>
+          <button type="button" class="add-button" (click)="openModal('category')">+</button>
+            </div>
           <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.category">
             Category is required.
         </div>
 
+    
+
         <div class="form-group">
-          <label for="category">Quantity</label>
-          <input
-          type="number"
-          id="quantity"
-          name="quantity"
-          [(ngModel)]="expenseSummary.quantity"
+          <label for="merchant">Merchant</label>
+          <div class="category-input-row">
+          <ng-select 
+          [items]="merchants"
+          bindLabel="name"
+          bindValue="name"
+          [(ngModel)]="expenseSummary.merchant"
+          name="merchant"
           required
-          placeholder="Enter quantity"
-          />
-          <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.quantity">
-            Quantity is required.
-        </div>
+          placeholder="Select a merchant"
+          >
+          </ng-select>
+            <button type="button" class="add-button" (click)="openModal('merchant')">+</button>
+            </div>
+          <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.merchant">
+            Merchant is required.
+        </div>  
 
-        
-
-        <div class="form-group">
-          <label for="tax-percentage">Tax Percentage (%)</label>
-          <input
-            type="number"
-            id="tax-percentage"
-            name="taxPercentage"
-            [(ngModel)]="expenseSummary.taxPercentage"
-            placeholder="Enter tax percentage"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="event-date">Event Date</label>
-          <input
-            type="date"
-            id="event-date"
-            name="eventDate"
-            [(ngModel)]="expenseSummary.eventDate"
-            required
-          />
-          <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.eventDate">
-            Event Date is required.
-        </div>
 
         <div class="form-group">
           <label for="description">Description</label>
@@ -164,119 +93,258 @@
           <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.description">
             Description is required.
         </div>
-         
-          <!-- <div class="form-group">
-          <label for="comment">Comment</label>
-          <textarea
-            id="comment"
-            name="comment"
-            rows="4"
-            cols="50"
-            [(ngModel)]="expenseSummary.comment"
-            placeholder="Enter your comments here..."
-          ></textarea>
-        </div> -->
 
+
+        <div class="form-group">
+          <label for="event-date">Event Date</label>
+          <input
+            type="date"
+            id="event-date"
+            name="eventDate"
+            [(ngModel)]="expenseSummary.eventDate"
+            required
+          />
+          <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.eventDate">
+            Event Date is required.
         </div>
 
-       
-        <!--div class="floating-box form-subsection"-->
-        <!-- <div class="form-group">
-          <label for="pay-method">Payment Method</label>
-          <ng-select
-            [items]="paymentMethods"
-            bindLabel="label"
-            bindValue="value"
-            [(ngModel)]="expenseSummary.payMethod"
-            placeholder="Select Payment Method"
-            class="w-full mt-3"
-          >
-          </ng-select>
-        </div> -->
+        
+        </div> 
 
-        <!--div class="form-group">
-          <label for="project">Project</label>
-          <ng-select
-            [items]="projects"
-            bindLabel="label"
-            bindValue="value"
-            [(ngModel)]="expenseSummary.project"
-            placeholder="Select Project"
-            class="w-full mt-3"
-          >
-          </ng-select>
-        </div-->
+        <div class="floating-box form-subsection">
+          <div class="section-header">Financial Information</div>
+          <div class="form-group">
+          <label for="category">Quantity</label>
+          <input
+          type="number"
+          id="quantity"
+          name="quantity"
+          [(ngModel)]="expenseSummary.quantity"
+          required
+          placeholder="Enter quantity"
+          />
+          <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.quantity">
+            Quantity is required.
+        </div>
+
+        <div class="form-group">
+          <label for="amount">Amount</label>
+          <input
+            type="text"
+            id="amount"
+            name="amount"
+            [value]="formatAmount(expenseSummary.amount)"
+            (input)="updateAmount($event)"
+            required
+            placeholder="Enter amount"
+          />
+          <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.amount">
+            Amount is required.
+            </p>
+        </div>
+
 
         
-         
-        
+        <div class="form-group">
+          <label for="tax-percentage">Tax Percentage (%)</label>
+          <div class="category-input-row">
+          <ng-select
+          [items]="taxRates"
+          bindLabel="name"
+          bindValue="rate"
+          [(ngModel)]="expenseSummary.taxPercentage"
+          name="taxPercentage"
+          placeholder="Select a tax rate"
+          >
+          <ng-option *ngFor="let tax of taxRates" [value]="tax.rate">
+               {{ tax.rate }}% - {{ tax.name}}
+          </ng-option>
+          </ng-select>
+            <button type="button" class="add-button" (click)="openModal('tax')">+</button>
+            </div>
+        </div>
+        </div>        
       </div>
 
+      
+
       <div class="form-right">
+        <!-- <h4>Upload Receipt</h4> -->
         <div
           class="upload-container"
           (click)="fileInput.click()"
           (dragover)="onDragOver($event)"
           (drop)="onFileDrop($event, 'receipt')"
         >
-          <input
+
+        <div>
+          <i class="fas fa-cloud-upload-alt"></i>
+          <p *ngIf="!receiptFile">Click or drag and drop to upload Document</p>
+          <p *ngIf="receiptFile">Receipt: {{ receiptFile.name }}</p>
+          <p>Supported formats: JPG, PNG, PDF (max 10MB)</p>
+          <label>
+            <span>Browse Files</span>
+              <input
             type="file"
             #fileInput
             class="file-input"
             (change)="onFileSelect($event, 'receipt')"
+            accept=".jpg,.png,.pdf"
           />
-          <p *ngIf="!receiptFile">Click or drag and drop to upload Document</p>
-          <p *ngIf="receiptFile">Receipt: {{ receiptFile.name }}</p>
+          </label>
         </div>
+      </div>
+    
+  </div>
 
-        <!-- <div
-          class="upload-container"
-          (click)="invoiceInput.click()"
-          (dragover)="onDragOver($event)"
-          (drop)="onFileDrop($event, 'invoice')"
-        >
-          <input
-            type="file"
-            #invoiceInput
-            class="file-input"
-            (change)="onFileSelect($event, 'invoice')"
-          />
-          <p *ngIf="!invoiceFile">
-            Click or drag and drop to upload an Invoice/Receipt
-          </p>
-          <p *ngIf="invoiceFile">Invoice: {{ invoiceFile.name }}</p>
-        </div> -->
+  <div class="modal" [class.show]="showCategoryModal" *ngIf="showCategoryModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Add New Category</h2>
+        <button class="close-button" (click)=" closeModal('category')">&times;</button>
+      </div>
+      <form class="modal-form" (ngSubmit)="addNewCategory()">
+        <div class="form-group">
+          <label for="categoryName">Category Name</label>
+          <input type="text" id="categoryName" [(ngModel)]="newCategoryData.name" name="categoryName"
+          required
+          placeholder="Enter category name"
+          >
+        </div>
+        <div class="form-group">
+          <label for="categoryDescription">Description</label>
+          <textarea id="categoryDescription"
+          [(ngModel)]="newCategoryData.description"
+          name="categoryDescription"
+          rows="3"
+          placeholder="Enter category description"
+          ></textarea>
+        </div>
+        <div class="modal-buttons">
+          <button type="button" class="modal-button secondary" (click)="closeModal('category')">Cancel</button>
+          <button type="button" class="modal-button primary">Add Category</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-        <!-- <div class="signature-container">
-          <label for="signature">Signature</label>
-          <div class="signature-pad-wrapper">
-            <signature-pad
-              [options]="signaturePadOptions"
-              (onEnd)="drawComplete()"
-              (onBegin)="drawStart()"
-            ></signature-pad>
-          </div>
 
-          <div class="signature-actions">
-            <button (click)="clearSignature()">Clear</button>
-            <button (click)="saveSignature()">Save</button>
-          </div>
-        </div> -->
+    <div class="modal" [class.show]="showMerchantModal" *ngIf="showMerchantModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Add New Merchant</h2>
+        <button class="close-button" (click)=" closeModal('merchant')">&times;</button>
+      </div>
+      <form class="modal-form" (ngSubmit)="addNewMerchant()">
+        <div class="form-group">
+          <label for="merchantName">Merchant Name</label>
+          <input type="text" id="merchantName" [(ngModel)]="newMerchantData.name" name="merchantName"
+          required
+          placeholder="Enter merchant name"
+          >
+        </div>
+        <div class="form-group">
+          <label for="merchantPhone">Phone number</label>
+          <input type="tel"
+          id="merchantPhone"
+          [(ngModel)]="newMerchantData.phoneNumber"
+          name="merchantPhone"
+          placeholder="Enter phone number"
+          >
+        </div>
+        <div class="form-group">
+          <label for="merchantAddress">Address</label>
+          <textarea 
+          id="merchantAddress"
+          [(ngModel)]="newMerchantData.address"
+          name="merchantAddress"
+          rows="2"
+          placeholder="Enter address"
+          ></textarea>
+        </div>
+        <div class="form-group">
+          <label for="merchantEmail">Email Address</label>
+          <input type="email"
+          id="merchantEmail"
+          [(ngModel)]="newMerchantData.emailAddress"
+          name="merchantEmail"
+          placeholder="Enter email address"
+          >
+        </div>
+        <div class="form-group">
+          <label for="contactPersonName">Contact Person Name</label>
+          <input type="text"
+          id="contactPersonName"
+          [(ngModel)]="newMerchantData.contactPersonName"
+          name="contactPersonName"
+          placeholder="Enter contact person name"
+          >
+        </div>
+        <div class="modal-buttons">
+          <button type="button" class="modal-button secondary" (click)="closeModal('merchant')">Cancel</button>
+          <button type="button" class="modal-button primary">Add Merchant</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-       
 
-        <div class="form-buttons">
+  <div class="modal" [class.show]="showTaxModal" *ngIf="showTaxModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Add New Tax Rate</h2>
+        <button class="close-button" (click)=" closeModal('category')">&times;</button>
+      </div>
+      <form class="modal-form" (ngSubmit)="addNewTaxRate()">
+        <div class="form-group">
+          <label for="taxName">Tax Name</label>
+          <input type="text" id="taxName" [(ngModel)]="newTaxData.name" name="taxName"
+          required
+          placeholder="Enter tax name (e.g., VAT, Sales Tax)"
+          >
+        </div>
+        <div class="form-group">
+          <label for="taxRate">Tax Rate (%)</label>
+          <input type="number"
+          id="taxRate"
+          [(ngModel)]="newTaxData.rate"
+          name="taxRate"
+          min="0"
+          max="100"
+          step="0.01"
+          required
+          placeholder="Enter tax percentage"
+          >
+        </div>
+        <div class="form-group">
+          <label for="taxDescription">Description</label>
+          <textarea id="taxDescription"
+          [(ngModel)]="newTaxData.description"
+          name="taxDescription"
+          rows="3"
+          placeholder="Enter tax description"
+          ></textarea>
+        </div>
+        <div class="modal-buttons">
+          <button type="button" class="modal-button secondary" (click)="closeModal('tax')">Cancel</button>
+          <button type="button" class="modal-button primary">Add Tax Rate</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+     
+      </div>
+
+   </form>
+
+ <div class="form-buttons">
           <button class="footer-button submit-button" type="submit">
             Submit
           </button>
           <!--button class="footer-button save-button">Save</button-->
           <button type="button" class="footer-button cancel-button" (click)="cancelExpenses()">Cancel</button>
         </div>
-      </div>
-    </div>
-    </div>
-
-  
-   </form>
 
   <p-toast></p-toast>
