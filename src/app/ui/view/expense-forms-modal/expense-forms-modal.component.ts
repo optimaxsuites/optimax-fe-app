@@ -275,4 +275,216 @@ calculateTotalAmount(): number {
   return baseAmount + taxAmount;
 }
 
+// openAddCategory = false;
+
+// newCategoryData: { name: string; code?: string; description?: string } = {
+//   name: '',
+//   code: '',
+//   description: ''
+// };
+
+// addNewCategory() {
+//   if (this.newCategoryData.name.trim()) {
+//     this.categories.push({
+//       name: this.newCategoryData.name,
+//     });
+
+//     this.newCategoryData = { name: '', code: '', description: '' };
+//     this.openAddCategory = false;
+
+//     this.messageService.add({
+//       severity: 'success',
+//       summary: 'Category Added',
+//       detail: 'New category has been created successfully.'
+//     });
+//   }
+// }
+
+
+// First, update your component TypeScript file
+// Add these properties and methods to your existing ExpenseFormsModalComponent
+
+// Add these new properties to your existing component
+showCategoryModal = false;
+showMerchantModal = false;
+showTaxModal = false;
+
+// New data structures for the modals
+newCategoryData: { name: string; description: string } = {
+  name: '',
+  description: ''
+};
+
+newMerchantData: { 
+  name: string; 
+  phoneNumber: string; 
+  address: string; 
+  emailAddress: string; 
+  contactPersonName: string 
+} = {
+  name: '',
+  phoneNumber: '',
+  address: '',
+  emailAddress: '',
+  contactPersonName: ''
+};
+
+newTaxData: { name: string; rate: number; description: string } = {
+  name: '',
+  rate: 0,
+  description: ''
+};
+
+// Add merchants and tax rates arrays
+merchants: { name: string; emailAddress?: string }[] = [
+  { name: 'Amazon' },
+  { name: 'Walmart' },
+  { name: 'Target' },
+  { name: 'Best Buy' }
+];
+
+taxRates: { name: string; rate: number }[] = [
+  { name: 'No Tax', rate: 0 },
+  { name: 'Standard Rate', rate: 10 },
+  { name: 'High Rate', rate: 15 }
+];
+
+// Modal control methods
+openModal(modalType: 'category' | 'merchant' | 'tax') {
+  switch(modalType) {
+    case 'category':
+      this.showCategoryModal = true;
+      break;
+    case 'merchant':
+      this.showMerchantModal = true;
+      break;
+    case 'tax':
+      this.showTaxModal = true;
+      break;
+  }
+}
+
+closeModal(modalType: 'category' | 'merchant' | 'tax') {
+  switch(modalType) {
+    case 'category':
+      this.showCategoryModal = false;
+      this.resetCategoryData();
+      break;
+    case 'merchant':
+      this.showMerchantModal = false;
+      this.resetMerchantData();
+      break;
+    case 'tax':
+      this.showTaxModal = false;
+      this.resetTaxData();
+      break;
+  }
+}
+
+// Add new category
+addNewCategory() {
+  if (this.newCategoryData.name.trim()) {
+    const newCategory = {
+      name: this.newCategoryData.name
+    };
+    
+    this.categories.push(newCategory);
+    this.expenseSummary.category = this.newCategoryData.name;
+    
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Category Added',
+      detail: 'New category has been created successfully.'
+    });
+    
+    this.closeModal('category');
+  } else {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Invalid Input',
+      detail: 'Please enter a category name.'
+    });
+  }
+}
+
+// Add new merchant
+addNewMerchant() {
+  if (this.newMerchantData.name.trim()) {
+    const newMerchant = {
+      name: this.newMerchantData.name,
+      phoneNumber: this.newMerchantData.phoneNumber,
+      address: this.newMerchantData.address,
+      emailAddress: this.newMerchantData.emailAddress,
+      contactPersonName: this.newMerchantData.contactPersonName
+    };
+    
+    this.merchants.push({ name: newMerchant.name });
+    this.expenseSummary.merchant = this.newMerchantData.name;
+    
+    // You can save the full merchant data to a separate service/storage if needed
+    console.log('Full merchant data:', newMerchant);
+    
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Merchant Added',
+      detail: 'New merchant has been created successfully.'
+    });
+    
+    this.closeModal('merchant');
+  } else {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Invalid Input',
+      detail: 'Please enter a merchant name.'
+    });
+  }
+}
+
+// Add new tax rate
+addNewTaxRate() {
+  if (this.newTaxData.name.trim() && this.newTaxData.rate >= 0) {
+    const newTaxRate = {
+      name: this.newTaxData.name,
+      rate: this.newTaxData.rate,
+      description: this.newTaxData.description
+    };
+    
+    this.taxRates.push(newTaxRate);
+    this.expenseSummary.taxPercentage = this.newTaxData.rate;
+    
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Tax Rate Added',
+      detail: 'New tax rate has been created successfully.'
+    });
+    
+    this.closeModal('tax');
+  } else {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Invalid Input',
+      detail: 'Please enter a valid tax name and rate.'
+    });
+  }
+}
+
+// Reset methods
+private resetCategoryData() {
+  this.newCategoryData = { name: '', description: '' };
+}
+
+private resetMerchantData() {
+  this.newMerchantData = {
+    name: '',
+    phoneNumber: '',
+    address: '',
+    emailAddress: '',
+    contactPersonName: ''
+  };
+}
+
+private resetTaxData() {
+  this.newTaxData = { name: '', rate: 0, description: '' };
+}
+
 }
