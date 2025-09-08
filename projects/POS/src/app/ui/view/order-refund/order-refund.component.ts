@@ -1,17 +1,28 @@
-import { Component, HostListener, ViewChild } from '@angular/core';
-import { Router } from '@angular/router';
-import { MessageService } from 'primeng/api';
-import { CustomerDTO, Order, OrderItemDTO, ProductData, Refund, RefundMethod, RefundStatus, ReturnDTO, ReturnItemDTO, ReturnStatus } from '../../models/interface';
-import { RegisterService } from '../../service/register.service';
-import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
-import { NgForm } from '@angular/forms';
-import { MetadataService } from '../../service/metadata.service';
-import { PosServiceService } from '../../service/pos-service.service';
-import { CustomerService } from '../../service/customer.service';
-import { OrderService } from '../../service/order.service';
-import { from, Subject } from 'rxjs';
-import { concatMap, debounceTime, distinctUntilChanged } from 'rxjs/operators';
-
+import { Component, HostListener, ViewChild } from "@angular/core";
+import { Router } from "@angular/router";
+import { MessageService } from "primeng/api";
+import {
+  CustomerDTO,
+  Order,
+  OrderItemDTO,
+  ProductData,
+  Refund,
+  RefundMethod,
+  RefundStatus,
+  ReturnDTO,
+  ReturnItemDTO,
+  ReturnStatus,
+} from "../../models/interface";
+import { RegisterService } from "../../service/register.service";
+import { NavigationLinksService } from "../../sharedComponent/service/navigation-links/navigation-links.service";
+import { NgForm } from "@angular/forms";
+import { MetadataService } from "../../service/metadata.service";
+import { PosServiceService } from "../../service/pos-service.service";
+import { CustomerService } from "../../service/customer.service";
+import { OrderService } from "../../service/order.service";
+import { from, Subject } from "rxjs";
+import { concatMap, debounceTime, distinctUntilChanged } from "rxjs/operators";
+import { ActivatedRoute } from "@angular/router";
 
 @Component({
   selector: "app-order-refund",
@@ -32,7 +43,7 @@ export class OrderRefundComponent {
     cashierComment: "",
     status: ReturnStatus.PENDING,
     refundableAmount: 0,
-    refundStatus: RefundStatus.Processing,
+    refundStatus: RefundStatus.PROCESSING,
     refundMethod: RefundMethod.CASH,
     bankDetails: {
       bankName: "",
@@ -40,9 +51,9 @@ export class OrderRefundComponent {
       accountName: "",
     },
     royaltyAccount: {
-      id: 0,
-      name: '',
-      phoneNumber: ''
+      id: null as any,
+      name: "",
+      phoneNumber: "",
     },
     exchangeFor: {} as ProductData,
   };
@@ -51,6 +62,7 @@ export class OrderRefundComponent {
   availableProducts: ProductData[] = [];
   priceDifference: number = 0;
   hasSelectedItems: boolean = false;
+   isValidatingRoyaltyAccount: boolean = false;
   Math = Math;
   refundDetails: any = {};
   selectedRefundMethod = null;
@@ -63,7 +75,7 @@ export class OrderRefundComponent {
     { label: "Others", value: "OTHERS" },
   ];
   phoneInput$ = new Subject<string>();
-  orderNumber$ = new Subject<string>()
+  orderNumber$ = new Subject<string>();
   refundMethods = [
     { label: "Cash Refund", value: RefundMethod.CASH },
     { label: "Bank Transfer", value: RefundMethod.BANK_TRANSFER },
@@ -100,30 +112,25 @@ export class OrderRefundComponent {
 
   constructor(
     private router: Router,
+    private route: ActivatedRoute,
     public navigationLink: NavigationLinksService,
     private messageService: MessageService,
     private registerService: RegisterService,
     private metadataService: MetadataService,
     private posService: PosServiceService,
     private customerService: CustomerService,
-    private orderService: OrderService,
+    private orderService: OrderService
   ) {}
 
   ngOnInit(): void {
     this.loadAvailableProducts();
-    this.loadrefundRequests()
+    this.loadrefundRequests();
     this.phoneInput$
-    .pipe(
-      debounceTime(500), 
-      distinctUntilChanged() 
-    )
-    .subscribe(phone => this.validateRoyaltyAccount(phone));
+      .pipe(debounceTime(500), distinctUntilChanged())
+      .subscribe((phone) => this.validateRoyaltyAccount(phone));
     this.orderNumber$
-    .pipe(
-      debounceTime(500),
-      distinctUntilChanged()
-    )
-    .subscribe(number => this.validateOrder(number))
+      .pipe(debounceTime(500), distinctUntilChanged())
+      .subscribe((number) => this.validateOrder(number));
   }
 
   loadAvailableProducts(): void {
@@ -133,50 +140,50 @@ export class OrderRefundComponent {
       },
       (error) => {
         console.error("Error loading products:", error);
-      },
+      }
     );
   }
 
-  resetForm(): void {
-  if (this.returnForm) {
-    this.returnForm.resetForm();
-  }
+   resetForm(): void {
+    if (this.returnForm) {
+      this.returnForm.resetForm();
+    }
 
-  this.orderItems = [];
-  this.selectedItems = [];
-  this.orderDetails = null;
-  this.hasSelectedItems = false;
-  this.priceDifference = 0;
+    this.orderItems = [];
+    this.selectedItems = [];
+    this.orderDetails = null;
+    this.hasSelectedItems = false;
+    this.priceDifference = 0;
+    this.isValidatingRoyaltyAccount = false; // Reset loading state
 
-  this.returnData = {
-    id: 0,
-    name: "",
-    phoneNumber: "",
-    order: { id: "", orderItem: [], createdDate: new Date() } as Order,
-    items: [],
-    reason: "",
-    cashierComment: "",
-    status: ReturnStatus.PENDING,
-    refundableAmount: 0,
-    refundStatus: RefundStatus.Processing,
-    refundMethod: RefundMethod.CASH,
-    bankDetails: {
-      bankName: "",
-      accountNumber: "",
-      accountName: "",
-    },
-    royaltyAccount: {
+    this.returnData = {
       id: 0,
-      name: '',
-      phoneNumber: ''
-    },
-    exchangeFor: {} as ProductData,
-  };
-  
-  // Make sure royaltyAccountId is not set initially
-  delete this.returnData.royaltyAccountId;
-}
+      name: "",
+      phoneNumber: "",
+      order: { id: "", orderItem: [], createdDate: new Date() } as Order,
+      items: [],
+      reason: "",
+      cashierComment: "",
+      status: ReturnStatus.PENDING,
+      refundableAmount: 0,
+      refundStatus: RefundStatus.PROCESSING,
+      refundMethod: RefundMethod.CASH,
+      bankDetails: {
+        bankName: "",
+        accountNumber: "",
+        accountName: "",
+      },
+      royaltyAccount: {
+        id:  null as any,
+        name: "",
+        phoneNumber: "",
+      },
+      exchangeFor: {} as ProductData,
+    };
 
+    // Make sure royaltyAccountId is not set initially
+    delete this.returnData.royaltyAccountId;
+  }
 
   validateOrder(number: any): void {
     if (!this.returnData.order.id) {
@@ -206,7 +213,7 @@ export class OrderRefundComponent {
       (error) => {
         console.error("Error fetching order:", error);
         // Show an error message to the user
-      },
+      }
     );
   }
 
@@ -250,124 +257,141 @@ export class OrderRefundComponent {
       parseInt(this.returnData.exchangeFor.sellingPrice);
   }
 
-  validateRoyaltyAccount(phone: any): void {
-  if (!phone || phone.trim() === '') {
-    this.returnData.royaltyAccount = {
-      id: 0,
-      name: '',
-      phoneNumber: ''
-    };
-    return;
-  }
-  
-  this.customerService.getCustomerByPhone(phone).subscribe(
-    (customer: CustomerDTO) => {
-      console.log(customer);
-      this.returnData.royaltyAccount = customer;
-      this.returnData.name = customer.name;
-    },
-    (error) => {
-      console.error('Error validating royalty account:', error);
+ validateRoyaltyAccount(phone: any): void {
+    if (!phone || phone.trim() === "") {
       this.returnData.royaltyAccount = {
-        id: 0,
-        name: '',
-        phoneNumber: ''
+        id: null as any,
+        name: "",
+        phoneNumber: "",
       };
-      
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Warning',
-        detail: 'Customer not found with this phone number',
-        key: 'tl',
-        life: 3000,
-      });
+      this.isValidatingRoyaltyAccount = false;
+      return;
     }
-  );
-}
 
-  createCustomer(){
+     this.isValidatingRoyaltyAccount = true;
+
+    this.customerService.getCustomerByPhone(phone).subscribe(
+      (customer: CustomerDTO) => {
+        console.log(customer);
+        this.returnData.royaltyAccount = customer;
+        this.returnData.name = customer.name;
+        this.isValidatingRoyaltyAccount = false;
+      },
+      (error) => {
+        console.error("Error validating royalty account:", error);
+        this.returnData.royaltyAccount = {
+          id: 0, 
+          name: "",
+          phoneNumber: "",
+        };
+        this.isValidatingRoyaltyAccount = false;
+
+        this.messageService.add({
+          severity: "info", 
+          summary: "Customer Not Found",
+          detail: "No customer found with this phone number. You can create a new account.",
+          key: "tl",
+          life: 4000,
+        });
+      }
+    );
+  }
+
+   createCustomer() {
     if (!this.returnData.name || !this.returnData.phoneNumber) {
-      // this.toastr.warning('Name and phone number are required');
       this.messageService.add({
-        severity: 'warn',
-        summary: 'Warning',
-        detail: 'Name and phone number is required ',
-        key: 'tl',
-        life: 3000,
+        severity: "warn",
+        summary: "Missing Information",
+        detail: "Customer name and phone number are required to create an account",
+        key: "tl",
+        life: 4000,
       });
       return;
     }
 
     if (this.returnData.phoneNumber.length !== 11) {
-      // this.toastr.warning('Name and phone number are required');
       this.messageService.add({
-        severity: 'warn',
-        summary: 'Warning',
-        detail: 'Phone number is invalid',
-        key: 'tl',
-        life: 3000,
+        severity: "warn",
+        summary: "Invalid Phone Number",
+        detail: "Please enter a valid 11-digit phone number",
+        key: "tl",
+        life: 4000,
       });
       return;
     }
-  
-    this.customerService.createCustomer({
-      name: this.returnData.name,
-      phoneNumber: this.returnData.phoneNumber,
-      loyaltyPoints: 0,
-      email: ''
-    }).subscribe(
-      (customer) => {
-       this.validateRoyaltyAccount(this.returnData.phoneNumber)
-        // this.toastr.success('Customer created successfully');
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Customer created successfully',
-          key: 'tl',
-          life: 3000,
-        });
 
-      },
-      (error) => {
-        // this.toastr.error('Failed to create customer');
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Error',
-          detail: 'Failed to create customer',
-          key: 'tl',
-          life: 3000,
-        });
-        console.error('Customer creation error:', error);
-      }
-    );
-  }
- onRefundMethodChange(method: RefundMethod): void {
-  this.returnData.refundMethod = method;
-  
-  // Reset relevant fields based on the selected method
-  if (method !== RefundMethod.BANK_TRANSFER) {
-    this.returnData.bankDetails = {
-      bankName: "",
-      accountNumber: "",
-      accountName: "",
-    };
-  }
+    // Show loading state during customer creation
+    this.isValidatingRoyaltyAccount = true;
 
-  if (method !== RefundMethod.ROYALTY_TOPUP) {
-    this.returnData.royaltyAccount = {
-      id: 0,
-      name: '',
-      phoneNumber: ''
-    };
-    // Remove royaltyAccountId if it exists
-    delete this.returnData.royaltyAccountId;
-  }
+    this.customerService
+      .createCustomer({
+        name: this.returnData.name,
+        phoneNumber: this.returnData.phoneNumber,
+        loyaltyPoints: 0,
+        email: "",
+      })
+      .subscribe(
+        (customer) => {
+          // Automatically validate the newly created customer
+          this.validateRoyaltyAccount(this.returnData.phoneNumber);
+          
+          this.messageService.add({
+            severity: "success",
+            summary: "Account Created",
+            detail: "Customer account created successfully and linked to this refund",
+            key: "tl",
+            life: 4000,
+          });
+        },
+        (error) => {
+          this.isValidatingRoyaltyAccount = false;
+          
+          // Handle different types of errors
+          let errorMessage = "Failed to create customer account";
+          if (error.error?.message) {
+            errorMessage = error.error.message;
+          } else if (error.status === 409) {
+            errorMessage = "A customer with this phone number already exists";
+          }
 
-  if (method !== RefundMethod.EXCHANGE) {
-    this.returnData.exchangeFor = {} as ProductData;
-    this.priceDifference = 0;
+          this.messageService.add({
+            severity: "error",
+            summary: "Creation Failed",
+            detail: errorMessage,
+            key: "tl",
+            life: 5000,
+          });
+          console.error("Customer creation error:", error);
+        }
+      );
   }
-}
+  onRefundMethodChange(method: RefundMethod): void {
+    this.returnData.refundMethod = method;
+
+    // Reset relevant fields based on the selected method
+    if (method !== RefundMethod.BANK_TRANSFER) {
+      this.returnData.bankDetails = {
+        bankName: "",
+        accountNumber: "",
+        accountName: "",
+      };
+    }
+
+    if (method !== RefundMethod.ROYALTY_TOPUP) {
+      this.returnData.royaltyAccount = {
+        id: 0,
+        name: "",
+        phoneNumber: "",
+      };
+      // Remove royaltyAccountId if it exists
+      delete this.returnData.royaltyAccountId;
+    }
+
+    if (method !== RefundMethod.EXCHANGE) {
+      this.returnData.exchangeFor = {} as ProductData;
+      this.priceDifference = 0;
+    }
+  }
   onExchangeProductSelected(productId: number): void {
     if (!productId) return;
 
@@ -378,7 +402,7 @@ export class OrderRefundComponent {
       },
       (error) => {
         console.error("Error loading product details:", error);
-      },
+      }
     );
   }
 
@@ -450,7 +474,7 @@ export class OrderRefundComponent {
   sortRequestByTimestamp() {
     this.requests.sort(
       (a, b) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
   }
 
@@ -479,53 +503,57 @@ export class OrderRefundComponent {
   }
 
   submitReturnRequest(): void {
-  if (this.returnForm.invalid || !this.hasSelectedItems) {
-    return;
-  }
-
-  // Set the current date for the return request
-  this.returnData.orderId = parseInt(this.orderDetails?.id || "0");
-  
-  // Only set royaltyAccountId if the refund method is ROYALTY_TOPUP and we have a valid customer
-  if (this.returnData.refundMethod === RefundMethod.ROYALTY_TOPUP && 
-      this.returnData.royaltyAccount?.id && 
-      this.returnData.royaltyAccount.id > 0) {
-    this.returnData.royaltyAccountId = this.returnData.royaltyAccount.id;
-  } else {
-    // Don't send royaltyAccountId if it's not needed or invalid
-    delete this.returnData.royaltyAccountId;
-  }
-  
-  this.returnData.createdAt = new Date();
-  console.log(this.returnData);
-
-  const returnItems = this.returnData.items.map((item) => ({
-    quantity: item.quantity || item.orderItem.quantity, // Use the actual quantity
-    totalPricePaid: item.orderItem.totalPrice,
-    productId: item.orderItem.product.id,
-    ...(item.orderItem.productVariant && { variantId: item.orderItem.productVariant.id })
-  }));
-
-  this.returnData.returnItems = returnItems;
-  
-  this.orderService.makeRequest(this.returnData).subscribe(
-    (response) => {
-      console.log('Return request submitted successfully:', response);
-      this.openRequestForm();
-      this.resetForm(); // Reset the form after successful submission
-    },
-    (error) => {
-      console.error('Error submitting return request:', error);
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to submit return request',
-        key: 'tl',
-        life: 3000,
-      });
+    if (this.returnForm.invalid || !this.hasSelectedItems) {
+      return;
     }
-  );
-}
+
+    // Set the current date for the return request
+    this.returnData.orderId = parseInt(this.orderDetails?.id || "0");
+
+    // Only set royaltyAccountId if the refund method is ROYALTY_TOPUP and we have a valid customer
+    if (
+      this.returnData.refundMethod === RefundMethod.ROYALTY_TOPUP &&
+      this.returnData.royaltyAccount?.id &&
+      this.returnData.royaltyAccount.id > 0
+    ) {
+      this.returnData.royaltyAccountId = this.returnData.royaltyAccount.id;
+    } else {
+      // Don't send royaltyAccountId if it's not needed or invalid
+      delete this.returnData.royaltyAccountId;
+    }
+
+    this.returnData.createdAt = new Date();
+    console.log(this.returnData);
+
+    const returnItems = this.returnData.items.map((item) => ({
+      quantity: item.quantity || item.orderItem.quantity, // Use the actual quantity
+      totalPricePaid: item.orderItem.totalPrice,
+      productId: item.orderItem.product.id,
+      ...(item.orderItem.productVariant && {
+        variantId: item.orderItem.productVariant.id,
+      }),
+    }));
+
+    this.returnData.returnItems = returnItems;
+
+    this.orderService.makeRequest(this.returnData).subscribe(
+      (response) => {
+        console.log("Return request submitted successfully:", response);
+        this.openRequestForm();
+        this.resetForm(); // Reset the form after successful submission
+      },
+      (error) => {
+        console.error("Error submitting return request:", error);
+        this.messageService.add({
+          severity: "error",
+          summary: "Error",
+          detail: "Failed to submit return request",
+          key: "tl",
+          life: 3000,
+        });
+      }
+    );
+  }
   loadrefundRequests() {
     this.metadataService.returns$.subscribe((value) => {
       console.log(value);
@@ -535,47 +563,92 @@ export class OrderRefundComponent {
 
   requestDetails(request: Refund) {
     const selectedRequest = request;
-    const checkoutLink = this.navigationLink.getLink("requestDetails");
-    this.router.navigate([checkoutLink], { state: { selectedRequest } });
-  }
 
+    // Get current UUID from route
+    const currentUuid = this.route.snapshot.params["uuid"];
+
+    if (!currentUuid) {
+      console.error("No UUID found in current route");
+      return;
+    }
+
+    // Navigate with proper route structure
+    this.router.navigate(["refund-request", currentUuid], {
+      relativeTo: this.route.parent,
+      state: { selectedRequest },
+    });
+  }
   closeRegister() {
     this.registerService.triggerCloseRegister();
   }
 
-  formatDate(parts: any): Date {
-    // const parts = raw.split(',').map(Number);
-    return new Date(
-      parts[0],
-      parts[1] - 1,
-      parts[2],
-      parts[3],
-      parts[4],
-      parts[5],
-    );
+  formatDate(dateInput: any): Date | string {
+  // Handle null or undefined
+  if (!dateInput) {
+    return new Date(); // or return 'N/A' if you prefer
   }
-  
+
+  // If it's already a Date object, return it
+  if (dateInput instanceof Date) {
+    return dateInput;
+  }
+
+  // If it's an ISO string, convert it
+  if (typeof dateInput === 'string') {
+    return new Date(dateInput);
+  }
+
+  // If it's an array (your old format), convert it
+  if (Array.isArray(dateInput) && dateInput.length >= 3) {
+    const [year, month, day, hour, minute, second] = dateInput;
+    return new Date(year, month - 1, day, hour || 0, minute || 0, second || 0);
+  }
+
+  // Fallback
+  console.warn('Unknown date format:', dateInput);
+  return new Date();
+}
+
   getRefundStatusClass(status: string): string {
     switch (status) {
-      case 'Pending':
-        return 'text-yellow-500 bg-yellow-100';
-      case 'Approved':
-        return 'text-green-600 bg-green-100';
-      case 'Rejected':
-        return 'text-red-600 bg-red-100';
-      case 'Processing':
-        return 'text-blue-500 bg-blue-100';
-      case 'Canceled':
-        return 'text-gray-500 bg-gray-100';
-      case 'Expired':
-        return 'text-orange-600 bg-orange-100';
-      case 'UnderReview':
-        return 'text-purple-600 bg-purple-100';
-      case 'Chargeback':
-        return 'text-pink-600 bg-pink-100';
+      case "Pending":
+        return "text-yellow-500 bg-yellow-100";
+      case "Approved":
+        return "text-green-600 bg-green-100";
+      case "Rejected":
+        return "text-red-600 bg-red-100";
+      case "Processing":
+        return "text-blue-500 bg-blue-100";
+      case "Canceled":
+        return "text-gray-500 bg-gray-100";
+      case "Expired":
+        return "text-orange-600 bg-orange-100";
+      case "UnderReview":
+        return "text-purple-600 bg-purple-100";
+      case "Chargeback":
+        return "text-pink-600 bg-pink-100";
       default:
-        return 'text-gray-800 bg-gray-200';
+        return "text-gray-800 bg-gray-200";
     }
   }
+
+getReceiptId(request: any): string {
+  console.log("Request object for debugging:", request);
   
+  if (!request) return 'N/A';
+  
+  // First try to get the actual order ID (which is the receipt number)
+  // This follows the same pattern as order-detail component
+  return (
+    request.order?.id?.toString() ||
+    request.orderId?.toString() ||
+    request.orderNumber?.toString() ||
+    request.id?.toString() ||
+    'N/A'
+  );
+}
+getOrderId(request: any): string {
+  return request?.order?.orderNumber || request?.order?.id || 'N/A';
+}
+
 }

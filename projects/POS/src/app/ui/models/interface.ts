@@ -1,6 +1,21 @@
-import { Observable, Subscribable } from 'rxjs';
-import { BusinessType } from './enums';
-import { ApexAxisChartSeries, ApexChart, ApexXAxis, ApexYAxis, ApexDataLabels, ApexGrid, ApexStroke, ApexTooltip, ApexPlotOptions, ApexFill, ApexLegend, ApexResponsive, ApexNonAxisChartSeries, ApexTitleSubtitle } from 'ng-apexcharts';
+import { Observable, Subscribable } from "rxjs";
+import { BusinessType } from "./enums";
+import {
+  ApexAxisChartSeries,
+  ApexChart,
+  ApexXAxis,
+  ApexYAxis,
+  ApexDataLabels,
+  ApexGrid,
+  ApexStroke,
+  ApexTooltip,
+  ApexPlotOptions,
+  ApexFill,
+  ApexLegend,
+  ApexResponsive,
+  ApexNonAxisChartSeries,
+  ApexTitleSubtitle,
+} from "ng-apexcharts";
 
 /** Like `satisfies` but for types */
 export type Satisfy<
@@ -15,7 +30,7 @@ export type DateArray = ReadonlyArray<number> & {
 /** Date String Format: "2025-02-02T22:56:31.935Z". Date Array Format: [2025, 2, 2, 22, 56, 31, 935] */
 export type DateType = DateString | DateArray;
 
-export interface ProductJSONFormat<TDateType extends 'string' | 'array'> {
+export interface ProductJSONFormat<TDateType extends "string" | "array"> {
   id: number;
   name: string;
   code: string;
@@ -27,9 +42,9 @@ export interface ProductJSONFormat<TDateType extends 'string' | 'array'> {
   quantity?: number;
 
   /** Date String Format: "2025-02-02T22:56:31.935Z" */
-  createdDate: TDateType extends 'string' ? DateString : DateArray;
+  createdDate: TDateType extends "string" ? DateString : DateArray;
   /** Date String Format: "2025-02-02T22:56:31.935Z" */
-  expiryDate: TDateType extends 'string' ? DateString : DateArray;
+  expiryDate: TDateType extends "string" ? DateString : DateArray;
   createdBy: string | null;
   partNumber: string;
   tax: TaxDTO;
@@ -45,8 +60,8 @@ export interface ProductJSONFormat<TDateType extends 'string' | 'array'> {
   reorderThreshold?: number | null;
 }
 
-export type ProductJSONFormatPOST = ProductJSONFormat<'string'>;
-export type ProductJSONFormatGET = ProductJSONFormat<'array'>;
+export type ProductJSONFormatPOST = ProductJSONFormat<"string">;
+export type ProductJSONFormatGET = ProductJSONFormat<"array">;
 
 type ProductDataShared = {
   productVariant: any;
@@ -84,7 +99,7 @@ export interface DiscountDTO {
   code?: string;
   description?: string;
   active?: boolean;
-  discountType: DiscountTypeDTO | 'PERCENTAGE' | 'FIXED_AMOUNT';
+  discountType: DiscountTypeDTO | "PERCENTAGE" | "FIXED_AMOUNT";
   discountValue?: number;
 
   // Date String Format: "2025-02-02T22:56:31.935Z"
@@ -103,16 +118,16 @@ export interface DiscountTypeDTO {
   description: string;
 }
 
-interface ProductCategoryShared<TDateType extends 'string' | 'array'> {
+interface ProductCategoryShared<TDateType extends "string" | "array"> {
   id: number;
   name: string;
   code: string;
   description: string;
   /** Date String Format: "2025-02-02T22:56:31.935Z". Date Array Format: [2025, 2, 2, 22, 56, 31, 935] */
-  endDate: TDateType extends 'string' ? DateString : DateArray;
+  endDate: TDateType extends "string" ? DateString : DateArray;
 }
-export interface ProductCategoryPOST extends ProductCategoryShared<'string'> {}
-export interface ProductCategoryGET extends ProductCategoryShared<'array'> {}
+export interface ProductCategoryPOST extends ProductCategoryShared<"string"> {}
+export interface ProductCategoryGET extends ProductCategoryShared<"array"> {}
 
 export interface ProductImageDTO {
   id: number;
@@ -137,7 +152,7 @@ export interface VariantDTO {
    * Might revert this type to a regular `string`
    */
   color: string;
-  size: 'XXS' | 'XS' | 'Small' | 'Medium' | 'Regular' | 'Large' | 'XL' | 'XXL';
+  size: "XXS" | "XS" | "Small" | "Medium" | "Regular" | "Large" | "XL" | "XXL";
 }
 
 export interface DiscountOption {
@@ -203,11 +218,11 @@ export interface Order {
   cartDiscount: number;
   state: string;
   total: number;
-  cart: ProductJSONFormat<'array'>[];
+  cart: ProductJSONFormat<"array">[];
   id: string;
 }
 
-export type PaymentModes = 'card' | 'mobile' | 'cash' | 'loyalty';
+export type PaymentModes = "card" | "mobile" | "cash" | "loyalty";
 export type Cart = {
   id: string;
   orderId: number;
@@ -252,7 +267,9 @@ export interface Refund {
   customerName: string;
   refundMeans: string;
   refundReason: string;
+   refundMethod?: string;
   cashierComment: string;
+  adminComment?: string;
   status: string;
   selectedItems: any;
   bankName?: string;
@@ -308,7 +325,7 @@ export interface HistoryDTO {
 }
 
 export interface ChangeDTO {
-  returnType: 'customer';
+  returnType: "customer";
 }
 export type supplierData = {
   id?: number;
@@ -485,38 +502,38 @@ interface HotelProductDTO extends ProductDTO {}
 // }
 
 export const MeasurementUnit = {
-  UNIT: 'UNIT',
-  PIECE: 'Piece',
-  PACK: 'Pack',
-  BOX: 'Box',
-  DOZEN: 'Dozen',
-  KG: 'Kg',
-  GRAM: 'Gram',
-  POUND: 'Pound',
-  TON: 'Ton',
-  LITER: 'Liter',
-  MILLILITER: 'Milliliter',
-  CUBIC_METER: 'Cubic Meter',
-  METER: 'Meter',
-  CENTIMETER: 'Centimeter',
-  INCH: 'Inch',
-  FOOT: 'Foot',
-  YARD: 'Yard',
-  PER_MINUTE: 'Per Minute',
-  PER_HOUR: 'Per Hour',
-  PER_DAY: 'Per Day',
-  PER_WEEK: 'Per Week',
-  PER_MONTH: 'Per Month',
-  PER_YEAR: 'Per Year',
-  PER_SESSION: 'Per Session',
-  PER_VISIT: 'Per Visit',
-  PER_USAGE: 'Per Usage',
-  PER_NIGHT: 'Per Night',
-  PER_PERSON: 'Per Person',
-  PER_ROOM: 'Per Room',
-  PER_KM: 'Per Kilometer',
-  PER_MILE: 'Per Mile',
-  PER_TRIP: 'Per Trip',
+  UNIT: "UNIT",
+  PIECE: "Piece",
+  PACK: "Pack",
+  BOX: "Box",
+  DOZEN: "Dozen",
+  KG: "Kg",
+  GRAM: "Gram",
+  POUND: "Pound",
+  TON: "Ton",
+  LITER: "Liter",
+  MILLILITER: "Milliliter",
+  CUBIC_METER: "Cubic Meter",
+  METER: "Meter",
+  CENTIMETER: "Centimeter",
+  INCH: "Inch",
+  FOOT: "Foot",
+  YARD: "Yard",
+  PER_MINUTE: "Per Minute",
+  PER_HOUR: "Per Hour",
+  PER_DAY: "Per Day",
+  PER_WEEK: "Per Week",
+  PER_MONTH: "Per Month",
+  PER_YEAR: "Per Year",
+  PER_SESSION: "Per Session",
+  PER_VISIT: "Per Visit",
+  PER_USAGE: "Per Usage",
+  PER_NIGHT: "Per Night",
+  PER_PERSON: "Per Person",
+  PER_ROOM: "Per Room",
+  PER_KM: "Per Kilometer",
+  PER_MILE: "Per Mile",
+  PER_TRIP: "Per Trip",
 } as const;
 
 /**
@@ -537,7 +554,7 @@ interface TableOrderStatusDTO {
    * Status of the order
    * @remarks Enum: 'PAID' | 'UNPAID'
    */
-  status?: 'PAID' | 'UNPAID';
+  status?: "PAID" | "UNPAID";
 
   /** Identifier for water (32-bit integer) */
   waterId?: number;
@@ -586,7 +603,7 @@ export interface TableOrderStatusFullDTO {
    * Status of the order
    * @remarks Enum: 'PAID' | 'UNPAID'
    */
-  status?: 'PAID' | 'UNPAID';
+  status?: "PAID" | "UNPAID";
 
   /** Identifier for water (32-bit integer) */
   waterId?: number;
@@ -640,17 +657,17 @@ interface BankDetailsDTO {
 }
 
 export enum RefundMethod {
-  CASH = 'CASH',
-  BANK_TRANSFER = 'BANK_TRANSFER',
-  ROYALTY_TOPUP = 'ROYALTY_POINTS',
-  EXCHANGE = 'EXCHANGE',
+  CASH = "CASH",
+  BANK_TRANSFER = "BANK_TRANSFER",
+  ROYALTY_TOPUP = "ROYALTY_POINTS",
+  EXCHANGE = "EXCHANGE",
 }
 
 export enum ReturnStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-  PROCESSED = 'PROCESSED',
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+  PROCESSED = "PROCESSED",
 }
 
 export interface UserDTO {
@@ -684,19 +701,28 @@ export interface ReturnDTO {
 }
 
 export enum RefundStatus {
-  Pending = 'Pending',
-  Approved = 'Approved',
-  Rejected = 'Rejected',
-  Processing = 'Processing',
-  Canceled = 'Canceled',
-  Expired = 'Expired',
-  UnderReview = 'UnderReview',
-  Chargeback = 'Chargeback',
+  PENDING = "Pending",
+  APPROVED = "Approved",
+  REJECTED = "Rejected",
+  PROCESSING = "Processing",
+  CANCELED = "Canceled",
+  EXPIRED = "Expired",
+  UNDER_REVIEW = "UnderReview",
+  CHARGEBACK = "Chargeback",
+}
+
+export interface RefundDecisionRequest {
+  refundStatus: RefundStatus;
+  adminComment: string;
+  orderId?: string;
+}
+export interface RefundUpdateRequest {
+  refundRequest: RefundDecisionRequest;
 }
 export interface InventoryPayload {
   id: number;
   availableQuantity: number;
-  status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK';
+  status: "IN_STOCK" | "OUT_OF_STOCK" | "LOW_STOCK";
   productId: number;
   branchId: number;
   stockMovement: StockMovementPayload[];
@@ -719,7 +745,7 @@ export interface StockMovementPayload {
   inventory?: {
     id: number;
     availableQuantity: number;
-    status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK';
+    status: "IN_STOCK" | "OUT_OF_STOCK" | "LOW_STOCK";
     product: ProductData;
     branch: BranchDTO;
     stockMovement: string[];
@@ -727,7 +753,7 @@ export interface StockMovementPayload {
   stockMovements?: {
     id: number;
     availableQuantity: number;
-    status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK';
+    status: "IN_STOCK" | "OUT_OF_STOCK" | "LOW_STOCK";
     product: ProductData;
     branch: BranchDTO;
     stockMovement: string[];
@@ -737,7 +763,7 @@ export interface StockMovementPayload {
 export interface StockMovementsPayload {
   id: number;
   availableQuantity: number;
-  status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK';
+  status: "IN_STOCK" | "OUT_OF_STOCK" | "LOW_STOCK";
   product: ProductData;
   branch: BranchDTO;
   stockMovement: string[];
@@ -751,7 +777,6 @@ export interface LegacyInventoryPayload {
   branch: BranchDTO;
   stockMovement: StockMovementPayload[];
 }
-
 
 export interface CreateStockMovementPayload {
   id: number;
@@ -807,8 +832,7 @@ export interface StockMovementCreateDTO {
   // stockMovementsId?: number; // only include if server mandates it; otherwise omit
 }
 
-export type InventoryStatus = 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK';
-
+export type InventoryStatus = "IN_STOCK" | "OUT_OF_STOCK" | "LOW_STOCK";
 
 export interface InventoryCreatePayload {
   availableQuantity: number;
@@ -817,12 +841,9 @@ export interface InventoryCreatePayload {
   productId?: number;
   ingredientId?: number;
   stockMovement?: StockMovementCreateForInventory[];
-
-
 }
 
 export interface StockMovementCreateStandalone {
-
   quantity: number;
   reference?: string;
   purchasePrice?: number;
@@ -830,9 +851,7 @@ export interface StockMovementCreateStandalone {
   createdDate: string;
   supplierId?: number | null;
   inventoryId: number;
-
 }
-
 
 export interface StockMovementCreateForInventory {
   quantity: number;
@@ -843,12 +862,10 @@ export interface StockMovementCreateForInventory {
   supplierId?: number | null;
 }
 
-
-
 export interface InventoryUpdatePayload {
   id: number;
   availableQuantity: number;
-  status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK';
+  status: "IN_STOCK" | "OUT_OF_STOCK" | "LOW_STOCK";
   productId: number;
   branchId: number;
   stockMovement: StockMovementCreatePayload[];
@@ -857,11 +874,11 @@ export interface InventoryUpdatePayload {
 export interface InventoryResponsePayload {
   id: number;
   availableQuantity: number;
-  status: 'IN_STOCK' | 'OUT_OF_STOCK' | 'LOW_STOCK';
+  status: "IN_STOCK" | "OUT_OF_STOCK" | "LOW_STOCK";
   productId: number;
   branchId: number;
   stockMovement: StockMovementResponsePayload[];
-  product?: ProductData; 
+  product?: ProductData;
   branch?: BranchDTO;
   createdDate?: string;
 }
@@ -875,7 +892,6 @@ export interface StockMovementCreatePayload {
   supplierId?: number | null;
   ingredientId: number;
   inventoryId?: number;
-
 }
 
 export interface StockMovementResponsePayload {
@@ -931,7 +947,6 @@ export interface StockMovementByInventory {
   } | null;
 }
 
-
 // These are the report-related DTOs and other types from the  code that were causing conflicts,
 // but which I've included here to ensure the file is complete. I've corrected them where necessary.
 export interface ProductPerformanceReportRequestDTO {
@@ -939,7 +954,7 @@ export interface ProductPerformanceReportRequestDTO {
   endDate: string;
   branchIds?: number[];
   categoryIds?: number[];
-  groupBy?: 'product' | 'category' | 'variant';
+  groupBy?: "product" | "category" | "variant";
 }
 
 export interface PromotionsReportRequestDTO {
