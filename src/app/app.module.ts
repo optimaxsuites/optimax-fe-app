@@ -198,8 +198,8 @@ export function appInitializerFactory(appInitService: AppInitService) {
     //CheckoutKitchenComponent,
   ],
   imports: [
-    // BrowserModule,
-    // UserModule,
+    BrowserModule,
+    UserModule,
     AppRoutingModule,
     CheckboxModule,
     CommonModule,
@@ -255,7 +255,7 @@ export function appInitializerFactory(appInitService: AppInitService) {
     ProgressSpinnerModule,
     SelectButtonModule,
 
-    // BrowserAnimationsModule,
+    BrowserAnimationsModule,
 
     TagModule,
   ],

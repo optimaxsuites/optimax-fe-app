@@ -21,9 +21,6 @@ export class PermissionService {
   }
 
   hasPermission(appCode: string): boolean {
-    console.log(appCode)
-    console.log(this.activePermissions.some((p: any) => p.appRegister.appCode === appCode))
-    console.log(this.activePermissions)
     return this.activePermissions.some((p: any) => p.appRegister.appCode === appCode);
   }
 

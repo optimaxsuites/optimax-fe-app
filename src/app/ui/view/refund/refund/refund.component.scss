@@ -157,3 +157,12 @@
 th{
   @apply text-white uppercase
 }
+:host ::ng-deep {
+  .custom-menu {
+    z-index: 1000 !important;
+  }
+  
+  .relative.z-50 {
+    z-index: 50;
+  }
+}
