@@ -1,53 +1,166 @@
-<div class="c-main h-[100vh] w-[100vw] bg-[#fafafa]">
-  <!-- Top bar containing the logo and utility btns -->
-  <div class="flex items-center justify-between bg-white">
-    <img src="./../../../../assets/Logo-green.png" />
+<div class="c-main h-full w-full bg-[#fafafa] overflow-x-hidden">
+  <!-- Improved Header with Hamburger, Logo, Cart -->
+  <div class="flex items-center justify-between px-4 py-3 relative">
+    <!-- Hamburger Menu -->
+    <button 
+      class="px-5 py-3 hover:bg-gray-100 rounded-full border md:hidden block border-gray-400 transition-colors"
+      (click)="isHamburgerMenuOpen = !isHamburgerMenuOpen"
+    >
+      <i class="fa-solid fa-bars text-xl text-gray-700"></i>
+    </button>
 
-    <div class="flex items-center justify-around gap-4 mr-4">
-      <i class="fa-solid fa-bars text-4xl"></i>
-      <i class="fa-solid fa-gear text-4xl"></i>
+    <!-- Logo (centered on mobile, left on desktop) -->
+    <div class="md:h-full h-[20%]">
+      <img src="./../../../../assets/Logo-green.png" alt="Logo" />
     </div>
-  </div>
 
-  <!-- Container for the search bar -->
-  <div class="flex items-center justify-center flex-col">
-    <p-iconField iconPosition="right" class="c-search-bar">
-      <!-- <p-inputIcon styleClass="pi pi-search" /> -->
-      <p-inputIcon styleClass="fa-solid fa-magnifying-glass" />
+    <!-- cart and search input -->
+    <div class="flex items-center justify-center">
+    <div class="hidden md:flex items-center justify-center flex-col pr-4 py-8">
+    <div class="">
+    <p-iconField iconPosition="left" class="c-search-bar w-full relative">
+      <p-inputIcon 
+        styleClass="fa-solid fa-magnifying-glass text-gray-500 hover:text-blue-500 transition-colors duration-200 cursor-pointer -mt-2" 
+      />
+
       <input
         #searchBar
         type="text"
         pInputText
-        placeholder="Search"
+        placeholder="Search products..."
         [value]="searchText()"
         (input)="changeSearchInput(searchBar.value)"
+        class="w-[100%] pl-14 py-4 pr-6 text-gray-700 placeholder-gray-400 bg-white border border-gray-400 rounded-2xl hover:shadow-xl focus:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 text-2xl"
       />
     </p-iconField>
-
+    
     <!-- Text that appears when a search is unsuccessful -->
-    @if (didSearchHaveResults() == "no") {
-      <div class="text-md font-bold">
-        No results were found for the search query.
+    <!-- @if (didSearchHaveResults() == "no") {
+      <div class="text-center text-sm font-medium text-gray-500 mt-4 animate-fade-in">
+        <div class="inline-flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full">
+          <i class="fa-solid fa-search text-gray-400 text-xs"></i>
+          No results found for your search query
+        </div>
       </div>
-    }
+    } -->
+  </div>
+    </div>
+    <!-- Cart Icon with Badge -->
+    <div class="relative">
+      <button
+        class="transition-colors md:p-5 p-4 relative hover:bg-gray-100 rounded-2xl border border-gray-400 "
+        (click)="isCartOpen = !isCartOpen"
+        [disabled]="isCartEmpty()"
+        [ngClass]="{
+          'opacity-100 cursor-not-allowed': isCartEmpty(),
+          'hover:bg-[#2EB270]/10': !isCartEmpty()
+        }"
+      >
+        <i class="fa-solid fa-cart-shopping text-xl" 
+           [ngClass]="isCartEmpty() ? 'text-gray-400' : 'text-[#2EB270]'"></i>
+        
+        <!-- Cart Badge -->
+        @if (!isCartEmpty()) {
+          <span class="absolute -top-1 -right-1 bg-[#2EB270] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+            {{ getTotalCartItems() }}
+          </span>
+        }
+      </button>
+    </div>
+    </div>
   </div>
 
+  <!-- Hamburger Menu Overlay -->
+  @if (isHamburgerMenuOpen) {
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-40" (click)="isHamburgerMenuOpen = false"></div>
+    <div class="fixed left-0 top-0 h-full w-64 bg-white shadow-lg z-50 transform transition-transform duration-300">
+      <div class="p-4 border-b">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-gray-800">Menu</h2>
+          <button 
+            class="p-1 hover:bg-gray-100 rounded"
+            (click)="isHamburgerMenuOpen = false"
+          >
+            <i class="fa-solid fa-times text-gray-600"></i>
+          </button>
+        </div>
+      </div>
+      <nav class="p-4">
+        <ul class="space-y-2">
+          <li>
+            <a href="#" class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+              <i class="fa-solid fa-box mr-3 text-gray-600"></i>
+              <span>My Orders</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+              <i class="fa-solid fa-heart mr-3 text-gray-600"></i>
+              <span>Favorites</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+              <i class="fa-solid fa-user mr-3 text-gray-600"></i>
+              <span>Profile</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+              <i class="fa-solid fa-gear mr-3 text-gray-600"></i>
+              <span>Settings</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  }
+
+
+
+
   <!-- Container for the row of categories -->
-  <div class="flex items-center justify-around overflow-x-auto min-h-max">
-    <!-- Wrapper -->
-    <div
-      class="flex gap-4 p-4 items-center justify-center bg-white shadow-md min-h-max c-category-btns font-[small]"
-    >
-      <!-- Default -->
+  <div class="flex flex-col items-center justify-start overflow-x-auto w-full my-8 px-4 pb-3">
+    <div class="md:hidden flex items-center justify-start flex-col pr-4 py-8 w-full">
+    <div class="w-full">
+    <p-iconField iconPosition="left" class="c-search-bar w-full relative">
+      <p-inputIcon 
+        styleClass="fa-solid fa-magnifying-glass text-gray-500 hover:text-blue-500 transition-colors duration-200 cursor-pointer -mt-2" 
+      />
+
+      <input
+        #searchBar
+        type="text"
+        pInputText
+        placeholder="Search products..."
+        [value]="searchText()"
+        (input)="changeSearchInput(searchBar.value)"
+        class="w-full pl-14 py-2 pr-6 text-gray-700 placeholder-gray-400 bg-white border border-gray-400 rounded-2xl hover:shadow-xl focus:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 text-xl"
+      />
+    </p-iconField>
+    
+    <!-- Text that appears when a search is unsuccessful -->
+    <!-- @if (didSearchHaveResults() == "no") {
+      <div class="text-center text-sm font-medium text-gray-500 mt-4 animate-fade-in">
+        <div class="inline-flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full">
+          <i class="fa-solid fa-search text-gray-400 text-xs"></i>
+          No results found for your search query
+        </div>
+      </div>
+    } -->
+  </div>
+    </div>
+    <div class="flex gap-2 items-center min-w-max">
+      <!-- Default Category -->
       <button
         pButton
         pRipple
         [label]="defaultCategory"
-        class="py-3 px-4 min-w-fit rounded-lg font-medium transition-all duration-200 whitespace-nowrap hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-30"
+        class="py-2 px-4 min-w-fit rounded-xl text-xl font-medium transition-all duration-200 whitespace-nowrap hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-[#2E6276] focus:ring-opacity-30"
         [ngClass]="
           selectedCategory() == defaultCategory
-            ? 'bg-customBlue text-white'
-            : 'bg-white text-gray-700 border border-gray-300'
+            ? 'bg-[#2E6276] text-white shadow-sm'
+            : 'bg-white text-gray-700 border border-gray-300 hover:border-[#2E6276]'
         "
         (click)="changeCategory(defaultCategory)"
       ></button>
@@ -57,11 +170,11 @@
           pButton
           pRipple
           [label]="data.key[0].toUpperCase() + data.key.slice(1)"
-          class="py-3 px-4 min-w-fit rounded-lg font-medium transition-all duration-200 whitespace-nowrap hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-30"
+          class="py-2 px-4 min-w-fit rounded-xl text-xl font-medium transition-all duration-200 whitespace-nowrap hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-[#2E6276] focus:ring-opacity-30"
           [ngClass]="
             selectedCategory() == data.key
-              ? 'bg-customBlue text-white'
-              : 'bg-white text-gray-700 border border-gray-300'
+              ? 'bg-[#2E6276] text-white shadow-sm'
+              : 'bg-white text-gray-700 border border-gray-300 hover:border-[#2E6276]'
           "
           (click)="changeCategory(data.key)"
         ></button>
@@ -70,145 +183,130 @@
   </div>
 
   <!-- Container for displaying the products -->
-  <div class="c-product-container">
-    <!-- Shopping cart button -->
-    <div
-      role="button"
-      class="fixed right-0 top-[40%] z-10 p-4 rounded-l-2xl flex justify-center items-center transition-all scale-110 md:scale-125 lg:scale-150"
-      (click)="!isCartEmpty() && (isCartOpen = !isCartOpen)"
-      [ngClass]="{
-        'cursor-not-allowed bg-gray-500/85': isCartEmpty(),
-        'bg-green-500/85 hover:bg-opacity-75 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-30':
-          !isCartEmpty(),
-      }"
-    >
-      <i class="fa-solid fa-cart-shopping"></i>
-    </div>
+  <div class="c-product-container px-4 pb-4">
+    <div class="relative grid grid-cols-3 md:grid-cols-3 lg:grid-cols-7 xl:grid-cols-7  gap-3 md:gap-4">
+      @for (product of filteredProducts(); track $index) {
+        <div
+          class="border rounded-lg p-3 cursor-pointer product-card relative transition-all duration-200 bg-white hover:shadow-md hover:-translate-y-1"
+          [ngClass]="{
+            'ring-2 ring-[#2E6276] border-[#2E6276]': productQuantityInCart(product),
+          }"
+          (click)="
+            selectedProduct = product;
+            product.variants.length && (isVariantModalOpen = true);
+            !product.variants.length && addToCart(product)
+          "
+        >
+          @if (productQuantityInCart(product); as productQuantity) {
+            <!-- Small corner badge for displaying the amount of items currently in the cart -->
+            <div
+              class="absolute -top-2 -right-2 w-6 h-6 md:rounded-xl rounded-full bg-[#2E6276] text-white flex justify-center items-center font-bold text-xs z-10 shadow-sm"
+            >
+              {{ productQuantity }}
+            </div>
+          }
 
-    @for (product of filteredProducts(); track $index) {
-      <div
-        class="border rounded-xl p-2 cursor-pointer h-[20rem] product-card relative transition-transform duration-200 max-h-fit bg-white hover:scale-105 hover: shadow-md"
-        [ngClass]="{
-          'box-border border-green-500': productQuantityInCart(product),
-        }"
-        (click)="
-          selectedProduct = product;
-          product.variants.length && (isVariantModalOpen = true);
-          !product.variants.length && addToCart(product)
-        "
-      >
-        @if (productQuantityInCart(product); as productQuantity) {
-          <!-- Small corner icon for displaying he amount of items currently in the cart -->
-          <div
-            class="absolute top-[-0.5rem] right-[-0.5rem] w-10 h-10 pt-2 pr-1 rounded-3xl bg-green-500/90 text-white flex justify-center items-center font-bold text-xl"
-          >
-            {{ productQuantity }}
+        
+          <div class="flex flex-col relative">
+          <div class="h-full mb-2">
+            <img
+              [src]="getProductImage(product) | async"
+              [alt]="product.name"
+              class="w-full h-full object-cover rounded-md"
+              (error)="handleImageError($event)"
+            />
           </div>
-        }
+          
+          @if (getProductAndVariantData(product); as data) {
+            <div class="flex md:flex-row flex-col w-full justify-between md:items-center items-left md:py-5 md:gap-0 gap-2 py-2">
+              <p class="md:text-2xl text-lg font-medium capitalize text-gray-800 line-clamp-2 leading-tight">
+                {{ product.name }}
+              </p>
 
-        <img
-          [src]="getProductImage(product) | async"
-          [alt]="product.name"
-          class="w-full h-2/3 object-cover rounded-xl"
-        />
-        @if (getProductAndVariantData(product); as data) {
-          <div
-            class="flex flex-col w-full mt-4 px-2 h-[10rem] gap-3 *:text-center *:whitespace-nowrap *:overflow-hidden *:text-ellipsis *:m-0"
-          >
-            <p class="h-10 text-[medium]">
-              {{ product.name }}
-            </p>
-
-            <p class="h-8 text-[small]">
-              @for (price of data.prices; track $index) {
-                @if ($index + 1 != data.prices.length) {
-                  {{ (price | currency: "₦") + ", " }}
-                } @else {
-                  {{ price | currency: "₦" }}
+              <p class="md:text-2xl text-xl text-[#2EB270] font-semibold">
+                @for (price of data.prices; track $index) {
+                  @if ($index + 1 != data.prices.length) {
+                    {{ (price | currency: "₦") + ", " }}
+                  } @else {
+                    {{ price | currency: "₦" }}
+                  }
                 }
-              }
-            </p>
+              </p>
+            </div>
+          }
           </div>
-        }
-      </div>
-    }
+        </div>
+      }
+    </div>
   </div>
 </div>
 
 <!-- Modals and Dialogs -->
-<!-- Variants Modal (shamelessly copied from `pos-checkout-page-component`) -->
+<!-- Variants Modal -->
 @if (isVariantModalOpen) {
   <app-modal (close)="isVariantModalOpen = false">
-    <div
-      class="w-[80vw] sm:w-[60vw] lg:w-full flex flex-col rounded-lg overflow-hidden"
-    >
+    <div class="w-[90vw] sm:w-[60vw] lg:w-[500px] flex flex-col rounded-lg overflow-hidden">
       <!-- Modal Header -->
-      <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
-        <h2 id="modal-title" class="text-xl font-semibold text-gray-800">
+      <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-800">
           Select a Variant
         </h2>
       </div>
 
       <!-- Modal Body -->
-      <div class="bg-white p-6">
-        <div class="py-4">
-          <div class="grid grid-cols-2 gap-4">
-            <!-- Regular Product -->
+      <div class="bg-white p-4 max-h-[60vh] overflow-y-auto">
+        <div class="space-y-3">
+          <!-- Regular Product -->
+          <button
+            type="button"
+            class="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-[#2E6276] hover:bg-[#2E6276]/10 transition-colors"
+            (click)="addToCart(selectedProduct!); isVariantModalOpen = false"
+          >
+            <div class="flex flex-col items-start">
+              <span class="font-medium text-gray-800 text-sm">{{
+                selectedProduct!.name
+              }}</span>
+              <span class="text-xs text-gray-600">Regular</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-gray-400"></i>
+          </button>
+
+          <!-- Variants -->
+          @for (variant of selectedProduct!.variants; track $index) {
             <button
               type="button"
-              class="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-customBlue hover:text-white hover:bg-customBlueHover transition-colors"
-              (click)="addToCart(selectedProduct!)"
+              class="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:border-[#2E6276] hover:bg-[#2E6276]/10 transition-colors"
+              (click)="addToCart(selectedProduct!, variant); isVariantModalOpen = false"
             >
               <div class="flex flex-col items-start">
-                <span class="font-medium text-gray-800">{{
-                  selectedProduct!.name
+                <span class="font-medium text-gray-800 text-sm">{{
+                  variant.name
                 }}</span>
-                <span class="text-sm text-gray-600 mt-1">Regular</span>
+                @if (variant.color) {
+                  <div class="flex items-center mt-1">
+                    <span
+                      class="w-3 h-3 rounded-full mr-2 border border-gray-300"
+                      [ngStyle]="{ 'background-color': variant.color }"
+                    ></span>
+                    <span class="text-xs text-gray-600">{{
+                      variant.color
+                    }}</span>
+                  </div>
+                }
+                @if (variant.size) {
+                  <span class="text-xs text-gray-600">Size: {{ variant.size }}</span>
+                }
               </div>
-              <i class="fa-solid fa-chevron-right"></i>
+              <i class="fa-solid fa-chevron-right text-gray-400"></i>
             </button>
-
-            <!-- Variants -->
-            @for (variant of selectedProduct!.variants; track $index) {
-              <button
-                type="button"
-                class="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-customBlue hover:text-white hover:bg-customBlueHover transition-colors"
-                (click)="addToCart(selectedProduct!, variant)"
-              >
-                <div class="flex flex-col items-start">
-                  <span class="font-medium text-gray-800">{{
-                    variant.name
-                  }}</span>
-                  @if (variant.color) {
-                    <div class="flex items-center mt-1">
-                      <span
-                        class="w-4 h-4 rounded-full mr-2"
-                        [ngStyle]="{ 'background-color': variant.color }"
-                      ></span>
-                      <span class="text-sm text-gray-600">{{
-                        variant.color
-                      }}</span>
-                    </div>
-                  }
-                  @if (variant.size) {
-                    <span class="text-sm text-gray-600 mt-1"
-                      >Size: {{ variant.size }}</span
-                    >
-                  }
-                </div>
-                <i class="fa-solid fa-chevron-right"></i>
-              </button>
-            }
-          </div>
+          }
         </div>
       </div>
 
       <!-- Modal Footer -->
-      <div
-        class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end"
-      >
+      <div class="bg-gray-50 px-4 py-3 border-t border-gray-200 flex justify-end">
         <button
-          class="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors font-medium"
+          class="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors text-sm font-medium"
           (click)="isVariantModalOpen = false"
         >
           Cancel
@@ -218,135 +316,154 @@
   </app-modal>
 }
 
-<!-- Cart dialog -->
-<p-dialog
-  header="Cart"
-  [modal]="true"
-  [dismissableMask]="true"
-  [(visible)]="isCartOpen"
-  [position]="shouldCartHaveViewportWidth ? 'bottom' : 'center'"
-  [style]="{
-    width: shouldCartHaveViewportWidth ? '100vw' : '50vw',
-    'max-height': '75vh',
-  }"
->
-  <!-- Container for utility btns -->
-  <div class="h-16 w-full flex gap-4 flex-row-reverse">
-    <!-- Checkout btn -->
-    <button
-      pButton
-      pRipple
-      label="Checkout"
-      class="py-3 px-4 min-w-fit rounded-lg font-medium transition-all duration-200 whitespace-nowrap hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-30 bg-customBlue text-white"
-      (click)="isCartOpen = false; isPaymentModalOpen = true"
-    ></button>
+<!--  Cart Modal -->
+@if (isCartOpen) {
+  <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+    <div 
+      class="bg-white w-full h-[85vh] md:w-[600px] md:h-auto md:max-h-[80vh] md:rounded-lg shadow-xl flex flex-col"
+      (click)="$event.stopPropagation()"
+    >
+      <!-- Cart Header -->
+      <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 md:rounded-t-lg">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-cart-shopping text-[#2E6276]"></i>
+          <h2 class="text-lg font-semibold text-gray-800">Shopping Cart</h2>
+          <span class="bg-[#2E6276]/10 text-[#2E6276] text-xs px-2 py-1 rounded-full">
+            {{ getTotalCartItems() }} items
+          </span>
+        </div>
+        <button 
+          class="py-3 px-5 hover:bg-gray-200 rounded transition-colors"
+          (click)="isCartOpen = false"
+        >
+          <i class="fa-solid fa-times text-gray-600"></i>
+        </button>
+      </div>
 
-    <!-- Clear Cart btn -->
-    <button
-      pButton
-      pRipple
-      label="Clear Cart"
-      class="py-3 px-4 min-w-fit rounded-lg font-medium transition-all duration-200 whitespace-nowrap hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-30 bg-red-500 text-white"
-      (click)="clearCart(); isCartOpen = false"
-    ></button>
+      <!-- Cart Items -->
+      <div class="flex-1 overflow-y-auto p-4">
+        @if (isCartEmpty()) {
+          <div class="flex flex-col items-center justify-center py-12 text-gray-500">
+            <i class="fa-solid fa-cart-shopping text-4xl mb-4 text-gray-300"></i>
+            <p class="text-lg font-medium">Your cart is empty</p>
+            <p class="text-sm">Add some products to get started</p>
+          </div>
+        } @else {
+          <div class="space-y-3">
+            @for (data of cartProducts() | keyvalue; track $index) {
+              <div class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
+                <!-- Product Image -->
+                <div class="w-16 h-16 flex-shrink-0">
+                  <img
+                    [src]="getProductImage(data.value.product) | async"
+                    [alt]="data.value.product.name"
+                    class="w-full h-full object-cover rounded-md border"
+                    (error)="handleImageError($event)"
+                  />
+                </div>
 
-    <!-- Cart total price -->
-    <div class="m-auto ml-16 text-2xl">
-      Price Subtotal:
-      <span class="font-bold">{{
-        convertedCartProducts().subTotal | currency: "₦"
-      }}</span>
+                <!-- Product Details -->
+                <div class="flex-1 min-w-0">
+                  <h4 class="text-lg capitalize font-medium text-gray-800 truncate">
+                    {{
+                      data.value.isVariant
+                        ? getProductAndVariantData(data.value.product, true).names[1]
+                        : data.value.product.name
+                    }}
+                  </h4>
+                  <p class="text-sm text-gray-600 mt-1">
+                    {{
+                      (data.value.isVariant
+                        ? getProductAndVariantData(data.value.product, true).prices[1]
+                        : data.value.product.sellingPrice
+                      ) | currency: "₦"
+                    }} each
+                  </p>
+                  <!-- Total price for this item -->
+                  <!-- <p class="text-sm font-semibold text-[#2EB270] mt-1">
+                    {{
+                      (data.value.isVariant
+                        ? getProductAndVariantData(data.value.product, true).prices[1]
+                        : strToNum(data.value.product.sellingPrice)) * data.value.quantity
+                        | currency: "₦"
+                    }}
+                  </p> -->
+                </div>
+
+                <!-- Quantity Controls -->
+                <div class="flex items-center space-x-2">
+                  <button
+                    class="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                    (click)="reduceQuantityInCart(data.value.product)"
+                  >
+                    <i class="fa-solid fa-minus text-xs text-gray-600"></i>
+                  </button>
+                  
+                  <span class="w-8 text-center text-sm font-medium">
+                    {{ data.value.quantity }}
+                  </span>
+                  
+                  <button
+                    class="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                    (click)="
+                      addToCart(
+                        data.value.product,
+                        data.value.product.selectedVariants?.[0]
+                      )
+                    "
+                  >
+                    <i class="fa-solid fa-plus text-xs text-gray-600"></i>
+                  </button>
+                </div>
+
+                <!-- Remove Item -->
+                <button
+                  class="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                  (click)="removeFromCart(data.value.product)"
+                >
+                  <i class="fa-solid fa-trash text-xs"></i>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Cart Footer -->
+      @if (!isCartEmpty()) {
+        <div class="border-t border-gray-200 p-4 bg-gray-50 md:rounded-b-lg">
+          <!-- Subtotal -->
+          <div class="flex justify-between items-center mb-4">
+            <span class="text-lg font-semibold text-gray-800">Subtotal:</span>
+            <span class="text-xl font-bold text-[#2EB270]">
+              {{ convertedCartProducts().subTotal | currency: "₦" }}
+            </span>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-col sm:flex-row gap-2">
+            <button
+              class="flex-1 py-3 px-4 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-medium transition-colors"
+              (click)="clearCart(); isCartOpen = false"
+            >
+              Clear Cart
+            </button>
+            <button
+              class="flex-1 py-3 px-4 bg-[#2E6276] hover:bg-[#4291b1] text-white rounded-lg font-medium transition-colors flex items-center justify-center space-x-2"
+              (click)="isCartOpen = false; isPaymentModalOpen = true"
+            >
+              <i class="fa-solid fa-credit-card"></i>
+              <span>Checkout</span>
+            </button>
+          </div>
+        </div>
+      }
     </div>
   </div>
+}
 
-  <!-- List of cart products -->
-  <div class="px-0 py-4 sm:px-4 grid grid-cols-1 gap-4">
-    @for (data of cartProducts() | keyvalue; track $index) {
-      <div
-        class="px-2 py-4 sm:px-4 w-full h-28 border-2 border-solid rounded-lg transition-transform duration-200 c-cart-item hover:scale-105 hover:shadow-md *:min-w-0 *:min-h-0"
-      >
-        <!-- Container for name and money -->
-        <div
-          class="self-center flex flex-col *:text-center *:overflow-hidden *:text-ellipsis"
-        >
-          <!-- On smaller screens, it would be better to show more of the name -->
-          <div class="whitespace-normal md:whitespace-nowrap">
-            {{
-              data.value.isVariant
-                ? getProductAndVariantData(data.value.product, true).names[1]
-                : data.value.product.name
-            }}
-          </div>
-
-          <!-- Not enough space for this on smaller screens -->
-          <div class="hidden md:block whitespace-nowrap">
-            {{
-              (data.value.isVariant
-                ? getProductAndVariantData(data.value.product, true).prices[1]
-                : data.value.product.sellingPrice
-              ) | currency: "₦"
-            }}
-          </div>
-        </div>
-
-        <!-- Container for product thumbnail -->
-        <img
-          [src]="getProductImage(data.value.product) | async"
-          [alt]="data.value.product.name"
-          class="border border-solid rounded-lg object-center object-cover h-full w-full"
-        />
-
-        <!-- Container for quantity toggle -->
-        <div
-          class="h-10 self-center grid grid-cols-3 rounded-lg border-2 border-solid *:flex *:justify-center *:items-center"
-        >
-          <div
-            class="bg-[#fafafa] cursor-pointer border-r-2 border-solid"
-            (click)="reduceQuantityInCart(data.value.product)"
-          >
-            <i class="fa-solid fa-minus"></i>
-          </div>
-
-          <div class="border-r-2 border-solid">
-            <input
-              type="number"
-              [value]="data.value.quantity"
-              [(ngModel)]="data.value.quantity"
-              min="1"
-              max="999"
-              class="h-full w-full text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            />
-          </div>
-
-          <div
-            class="bg-[#fafafa] cursor-pointer"
-            (click)="
-              addToCart(
-                data.value.product,
-                data.value.product.selectedVariants?.[0]
-              )
-            "
-          >
-            <i class="fa-solid fa-plus"></i>
-          </div>
-        </div>
-
-        <!-- Container for total price -->
-        <div class="font-bold flex items-center">
-          {{
-            (data.value.isVariant
-              ? getProductAndVariantData(data.value.product, true).prices[1]
-              : strToNum(data.value.product.sellingPrice)) * data.value.quantity
-              | currency: "₦"
-          }}
-        </div>
-      </div>
-    }
-  </div>
-</p-dialog>
-
-<app-all-payments-modal
+<!-- <app-all-payments-modal
   [cartItem]="convertedCartProducts().products"
   [(isModalOpen)]="isPaymentModalOpen"
   (selectedPayments)="processPayment($event)"
-></app-all-payments-modal>
+></app-all-payments-modal> -->
