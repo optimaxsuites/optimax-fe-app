@@ -38,6 +38,14 @@ export class CashPaymentComponent implements OnInit {
 		loyalty: null,
 		mobile: null,
 	};
+
+	priceOptionsMap: Record<PaymentModes, Array<{label: string, value: number}>> = {
+  cash: [],
+  card: [],
+  loyalty: [],
+  mobile: []
+};
+
 	customers: CustomerDTO[] = [
 		{ id: 1, name: "John Doe", phoneNumber: "08012345678", loyaltyPoints: 500 },
 		{
@@ -97,6 +105,7 @@ export class CashPaymentComponent implements OnInit {
 		);
 	}
 
+
 	get balanceLeft() {
 		return Math.max(0, this.cart.total - this.totalPaid);
 	}
@@ -105,6 +114,20 @@ export class CashPaymentComponent implements OnInit {
 			? this.customerFound.loyaltyPoints
 			: null;
 	}
+
+	updatePriceOptions() {
+  const balance = this.balanceLeft;
+  const commonOptions = [
+    { label: "Balance", value: balance },
+    { label: "10000", value: 10000 },
+    { label: "20000", value: 20000 },
+  ];
+  
+  this.priceOptionsMap.cash = commonOptions;
+  this.priceOptionsMap.card = commonOptions;
+  this.priceOptionsMap.loyalty = commonOptions;
+  this.priceOptionsMap.mobile = commonOptions;
+}
 
 	getPriceOptions(method: string) {
 		return [
@@ -208,6 +231,7 @@ export class CashPaymentComponent implements OnInit {
 		const now = new Date().toISOString();
 		const paymentPayload = {
 			id: 0,
+			// totalAmount: this.cart.total
 			totalAmount: this.cart.total,
 			transactionDate: now,
 			status: "PAID",
@@ -331,6 +355,8 @@ export class CashPaymentComponent implements OnInit {
 					this.showError("Failed to save order");
 				},
 			});
+
+			console.log('ORDER JSON:', JSON.stringify(orderPayload, null, 2));
 	}
 
 	private showError(msg: string) {

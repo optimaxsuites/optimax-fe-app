@@ -24,12 +24,12 @@ throw new Error('Method not implemented.');
 
 
   productData: any = {};
-  categories: { name: string }[] = [
-     { name: 'Administrative' },
-     {name: 'Cost of Goods Sold' },
-     { name: 'Employee-Related' },
-     { name: 'Operating Expenses' },
-     { name: 'Sales and Marketing' },
+  categories: { id: string; name: string; description?:string }[] = [
+     { id: '1', name: 'Administrative', description: 'General administrative expenses and office supplies' },
+     { id: '2', name: 'Cost of Goods Sold', description: 'Direct costs related to the production of goods sold by the company' },
+     { id: '3', name: 'Employee-Related', description: 'Expenses related to employee salaries, benefits, and training' },
+     { id: '4', name: 'Operating Expenses', description: 'Day-to-day expenses required to run the business' },
+     { id: '5', name: 'Sales and Marketing', description: 'Costs associated with promoting and selling products or services' },
     //  { name: 'Others' },
   ];
  
@@ -173,11 +173,6 @@ throw new Error('Method not implemented.');
       return;
     }
 
-    if (!this.expenseSummary.category || !this.expenseSummary.quantity) {
-     alert('Please select a category and quantity.');
-      return;
-    }
-
   
     
     const newExpense: Expense = {
@@ -275,4 +270,246 @@ calculateTotalAmount(): number {
   return baseAmount + taxAmount;
 }
 
+showCategoryModal = false;
+showMerchantModal = false;
+showTaxModal = false;
+
+newCategoryData: {name: string, description: string } = {
+  name: '',
+  description: ''
+};
+
+
+newMerchantData: {
+  name: string;
+  phoneNumber: string;
+  address: string;
+  emailAddress: string;
+  contactPersonName: string
+} = {
+  name: '',
+  phoneNumber: '',
+  address: '',
+  emailAddress: '',
+  contactPersonName: ''
+};
+
+newTaxData: { name: string; rate: number; description: string } = {
+  name: '',
+  rate: 0,
+  description: ''
+};
+
+merchants: { name: string; emailAddress?: string }[] = [
+  { name: 'Amazon'},
+  { name: 'Grand Square'}
+];
+
+taxRates: { name: string; rate: number }[] = [
+  { name: 'No Tax', rate: 0},
+  { name: 'VAT', rate: 7.5}
+];
+
+openModal(modalType: 'category' | 'merchant' | 'tax') {
+  switch(modalType) {
+    case 'category':
+      this.showCategoryModal = true;
+      break;
+
+    case 'merchant':
+      this.showMerchantModal = true;
+      break;
+
+    case 'tax':
+      this.showTaxModal = true;
+      break;
+  }
 }
+
+closeModal(modalType: 'category' | 'merchant' | 'tax') {
+  switch(modalType) {
+    case 'category':
+      this.showCategoryModal = false;
+      this.resetCategoryData();
+      break;
+
+    case 'merchant':
+      this.showMerchantModal = false;
+      this.resetMerchantData();
+      break;
+
+    case 'tax':
+      this.showTaxModal = false;
+      this.resetTaxData();
+      break;
+  }
+}
+
+addNewCategory() {
+  const trimmedName = this.newCategoryData.name?.trim() || '';
+
+  if (!trimmedName) {
+    return;
+    }
+    
+    const exists = this.categories.some(cat =>
+      cat.name.toLowerCase() === trimmedName.toLowerCase()
+    );
+
+    if (exists) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Duplicate Category',  
+        detail: 'This category already exists.'
+      });
+      return;
+    }
+
+const newCategory = {
+  id: this.generateId(),
+  name: trimmedName,
+  description: this.newCategoryData.description?.trim() || 'No description provided'
+};
+
+this.categories = [...this.categories, newCategory];
+
+// this.categories.push(newCategory);
+this.expenseSummary.category = trimmedName;
+
+this.messageService.add({
+  severity: 'success',
+  summary: 'Category added',
+  detail: `Category "${trimmedName}" has been created successfully`
+});
+
+this.closeModal('category');
+
+}
+
+
+
+
+removeCategory(categoryId: string) {
+  const categoryToDelete = this.categories.find(cat => cat.id === categoryId);
+
+  if (categoryToDelete) {
+    this.categories = this.categories.filter(cat => cat.id != categoryId);
+
+    if (this.expenseSummary.category === categoryToDelete.name) {
+      this.expenseSummary.category = null;
+    }
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Category deleted',
+      detail: `Category "${categoryToDelete.name}" has been removed`
+    });
+  }
+}
+
+
+addNewMerchant() {
+  const trimmedName = this.newMerchantData.name?.trim() || '';
+
+  if (!trimmedName) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Invalid Input',
+      detail: 'Merchant name is required'
+    });
+    return;
+  }
+
+  const newMerchant = {
+    name: trimmedName,
+    phoneNumber: this.newMerchantData.phoneNumber,
+    address: this.newMerchantData.address,
+    emailAddress: this.newMerchantData.emailAddress,
+    contactPersonName: this.newMerchantData.contactPersonName
+  };
+
+  this.merchants = [...this.merchants, {name: newMerchant.name, emailAddress: newMerchant.emailAddress}];
+
+  this.expenseSummary.merchant = newMerchant.name;
+  console.log('Full merchant date:', newMerchant);
+
+  this.messageService.add({
+    severity: 'success',  
+    summary: 'Merchant Added',
+    detail: `Merchant "${trimmedName}" has been created successfully`
+  });
+
+  this.closeModal('merchant');
+
+}
+
+addNewTaxRate() {
+  const trimmedName = this.newTaxData.name?.trim() || '';
+
+  if (!trimmedName || this.newTaxData.rate < 0) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Invalid Input',
+      detail: 'Tax name and valid rate are required'
+    });
+    return;
+  }
+
+  const exists = this.taxRates.some(tax =>
+    tax.name.toLowerCase() === trimmedName.toLowerCase()
+  );
+
+  if (exists) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Duplicate Tax Rate',
+      detail: 'This tax rate already exists.'
+    });
+    return;
+  }
+
+  const newTaxRate = {
+    name: trimmedName,
+    rate: this.newTaxData.rate,
+    description: this.newTaxData.description?.trim() || 'No description provided'
+  };
+
+  this.taxRates = [...this.taxRates, newTaxRate];
+
+  this.expenseSummary.taxPercentage = newTaxRate.rate;
+
+  this.messageService.add({
+    severity: 'success',
+    summary: 'Tax Rate Added',
+    detail: `Tax rate "${trimmedName}" has been created successfully`
+  });
+
+  this.closeModal('tax');
+
+}
+
+private resetCategoryData() {
+  this.newCategoryData = { name: '', description: ''};
+}
+
+private resetMerchantData() {
+  this.newMerchantData = {
+    name: '',
+    phoneNumber: '',
+    address: '',
+    emailAddress: '',
+    contactPersonName: ''
+  };
+}
+
+private resetTaxData() {
+  this.newTaxData = { name: '', rate: 0, description: ''};
+}
+
+}
+
+
+
+
+
+

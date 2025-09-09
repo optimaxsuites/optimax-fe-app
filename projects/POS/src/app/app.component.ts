@@ -37,8 +37,8 @@ export class AppComponent implements OnInit{
 
   async userLoginAction(): Promise<void> {
     const loginDetails = {
-      username: 'adminnn',
-      password: '123aa456bb',
+      username: 'ayaobasheba',
+      password: '123456',
       project: 'ERP',
       apiKey: 'ApiKey b784e00442334be0497f434d2a4cbefd',
     };
@@ -90,6 +90,35 @@ export class AppComponent implements OnInit{
     sessionStorage.setItem('accessToken', data.accessToken);
     localStorage.setItem('accessToken2', data.accessToken);
     sessionStorage['userRegData'] = JSON.stringify(data);
+
+
+ this.authenticationService.getUserApplicationRole(data.id).subscribe({
+  next: (response) => {
+    console.log("User application role:", response);
+    // sessionStorage.setItem("userApplicationRole", JSON.stringify(response));
+    if (Array.isArray(data.roles) && data.roles.includes("ROLE_ADMIN")) {
+    console.log("Super user detected");
+    sessionStorage.setItem(
+      "userApplicationRole",
+      JSON.stringify(response)
+    );
+  } else {
+    sessionStorage.setItem(
+      "userApplicationRole",
+      JSON.stringify(response)
+    );
+  }
+
+  },
+  error: (error) => {
+    console.error("Error fetching user application role:", error);
+     const storedRole = sessionStorage.getItem("userApplicationRole");
+      if (storedRole) {
+        console.log("Removing invalid userApplicationRole from sessionStorage");
+        sessionStorage.removeItem("userApplicationRole");
+      }
+  }
+})
   }
 
   onFinalizeRegister(data: any) {

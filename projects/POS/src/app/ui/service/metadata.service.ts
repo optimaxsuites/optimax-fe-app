@@ -1,9 +1,37 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, catchError, finalize, firstValueFrom, forkJoin, max, min, Observable, of, switchMap, take, tap } from 'rxjs';
-import { PosServiceService } from './pos-service.service';
-import { CheckoutService } from './checkout.service';
-import { SalesReportDTO, BranchSalesDTO, TopProductDTO, PaymentMethodSummaryDTO, SalesReportBreakdownDTO, Order } from '../models/interface';
-import { OrderService } from './order.service';
+import { Injectable, isDevMode } from "@angular/core";
+import {
+  BehaviorSubject,
+  catchError,
+  finalize,
+  firstValueFrom,
+  forkJoin,
+  max,
+  min,
+  Observable,
+  of,
+  switchMap,
+  take,
+  tap,
+  throwError,
+} from "rxjs";
+import { PosServiceService } from "./pos-service.service";
+import { CheckoutService } from "./checkout.service";
+import { environment } from "../sharedComponent/service/environments/environment";
+import {
+  SalesReportDTO,
+  BranchSalesDTO,
+  TopProductDTO,
+  PaymentMethodSummaryDTO,
+  SalesReportBreakdownDTO,
+  Order,
+  RefundStatus,
+} from "../models/interface";
+import { OrderService } from "./order.service";
+import {
+  HttpClient,
+  HttpHeaders,
+  HttpErrorResponse,
+} from "@angular/common/http";
 export interface BranchDTO {
   id: number;
   name: string;
@@ -25,41 +53,45 @@ export interface UserDTO {
   role: string;
 }
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class MetadataService {
- 
-  private branches: any = [
-    
-  ];
+  // rejectRefund(refundLogId: number, customerName: any, adminComment: string) {
+  //   throw new Error("Method not implemented.");
+  // }
+  // approveRefund(refundLogId: number, customerName: any, adminComment: string) {
+  //   throw new Error("Method not implemented.");
+  // }
 
-  private products: any = [
-    
-  ];
+  private branches: any = [];
 
-  private users: any = [
-    
-  ];
+  private products: any = [];
 
-  private paymentMethods: string[] = ['Credit Card', 'Debit Card', 'Cash', 'Mobile Payment', 'Gift Card']
+  private users: any = [];
+
+  private paymentMethods: string[] = [
+    "Credit Card",
+    "Debit Card",
+    "Cash",
+    "Mobile Payment",
+    "Gift Card",
+  ];
 
   private selectedBranchIdSubject = new BehaviorSubject<number | null>(1);
   selectedBranchId$ = this.selectedBranchIdSubject.asObservable();
   private loadingSubject = new BehaviorSubject<boolean>(false);
   loading$ = this.loadingSubject.asObservable();
 
-
-
-   discountSubject = new BehaviorSubject<any[]>([]);
-   discountTypesSubject = new BehaviorSubject<any[]>([]);
-   categorySubject = new BehaviorSubject<any[]>([]);
-   taxSubject = new BehaviorSubject<any[]>([]);
-   supplierSubject = new BehaviorSubject<any[]>([]);
-   branchSubject = new BehaviorSubject<any[]>([]);
-   productSubject =  new BehaviorSubject<any[]>([]);
-   enrichedProductSubject =  new BehaviorSubject<any[]>([])
-   orderSubject = new BehaviorSubject<any[]>([])
-   returnSubject = new BehaviorSubject<any[]>([])
+  discountSubject = new BehaviorSubject<any[]>([]);
+  discountTypesSubject = new BehaviorSubject<any[]>([]);
+  categorySubject = new BehaviorSubject<any[]>([]);
+  taxSubject = new BehaviorSubject<any[]>([]);
+  supplierSubject = new BehaviorSubject<any[]>([]);
+  branchSubject = new BehaviorSubject<any[]>([]);
+  productSubject = new BehaviorSubject<any[]>([]);
+  enrichedProductSubject = new BehaviorSubject<any[]>([]);
+  orderSubject = new BehaviorSubject<any[]>([]);
+  returnSubject = new BehaviorSubject<any[]>([]);
 
   discount$ = this.discountSubject.asObservable();
   discountTypes$ = this.discountTypesSubject.asObservable();
@@ -68,45 +100,48 @@ export class MetadataService {
   supplier$ = this.supplierSubject.asObservable();
   branches$ = this.branchSubject.asObservable();
   orders$ = this.orderSubject.asObservable();
- returns$ = this.returnSubject.asObservable();
+  returns$ = this.returnSubject.asObservable();
   products$ = this.productSubject.asObservable();
-  enrichedProduct$ = this.enrichedProductSubject.asObservable()
+  enrichedProduct$ = this.enrichedProductSubject.asObservable();
 
-
-
-  
-  constructor(private posService: PosServiceService, private checkoutService: CheckoutService, private orderService: OrderService) { }
+  constructor(
+    private posService: PosServiceService,
+    private checkoutService: CheckoutService,
+    private orderService: OrderService,
+    private http: HttpClient
+  ) {}
   async setSelectedBranch(id: number) {
     this.selectedBranchIdSubject.next(id);
-   await this.fetchMetaData()
-
+    await this.fetchMetaData();
   }
 
-
-  
-
- 
   async fetchMetaData(): Promise<any> {
     console.log("🔄 [MetadataService] Starting metadata fetch");
-  
+
     const token = sessionStorage.getItem("Token");
     if (!token) {
       console.warn("⛔ No token found. Skipping metadata fetch.");
       return Promise.resolve(true);
     }
-  
+
     const metadata$ = forkJoin({
       discounts: this.posService.getDiscount().pipe(catchError(() => of([]))),
-      discountTypes: this.posService.getDiscountTypes().pipe(catchError(() => of([]))),
-      categories: this.posService.getCategories().pipe(catchError(() => of([]))),
+      discountTypes: this.posService
+        .getDiscountTypes()
+        .pipe(catchError(() => of([]))),
+      categories: this.posService
+        .getCategories()
+        .pipe(catchError(() => of([]))),
       suppliers: this.posService.getSupplier().pipe(catchError(() => of([]))),
       taxes: this.posService.getTax().pipe(catchError(() => of([]))),
       branches: this.posService.getBranches().pipe(catchError(() => of([]))),
       products: this.posService.getProducts().pipe(catchError(() => of([]))),
       orders: this.checkoutService.getOrders().pipe(catchError(() => of([]))),
-      returnRequests: this.orderService.getReturnRequest().pipe(catchError(() => of([]))),
+      returnRequests: this.orderService
+        .getReturnRequest()
+        .pipe(catchError(() => of([]))),
     });
-  
+
     const data = await firstValueFrom(metadata$);
     this.discountSubject.next(data.discounts);
     this.discountTypesSubject.next(data.discountTypes);
@@ -117,31 +152,34 @@ export class MetadataService {
     this.productSubject.next(data.products);
     this.orderSubject.next(data.orders);
     this.returnSubject.next(data.returnRequests);
-  
+
     console.log("✅ [MetadataService] Base metadata loaded");
-  
-    this.selectedBranchId$.pipe(take(1)).subscribe(branchId => {
+
+    this.selectedBranchId$.pipe(take(1)).subscribe((branchId) => {
       if (branchId != null) {
         this.loadingSubject.next(true);
-        this.posService.getFilteredProductsWithDetails(branchId).pipe(
-          catchError(error => {
-            console.error("❌ Failed to load enriched products", error);
-            return of([]);
-          })
-        ).subscribe(filteredProducts => {
-          this.enrichedProductSubject.next(filteredProducts);
-          this.loadingSubject.next(false);
-          console.log("✅ [MetadataService] Enriched products loaded");
-        });
+        this.posService
+          .getFilteredProductsWithDetails(branchId)
+          .pipe(
+            catchError((error) => {
+              console.error("❌ Failed to load enriched products", error);
+              return of([]);
+            })
+          )
+          .subscribe((filteredProducts) => {
+            this.enrichedProductSubject.next(filteredProducts);
+            this.loadingSubject.next(false);
+            console.log("✅ [MetadataService] Enriched products loaded");
+          });
       } else {
-        console.warn("⚠️ No branch ID selected. Skipping filtered products fetch.");
+        console.warn(
+          "⚠️ No branch ID selected. Skipping filtered products fetch."
+        );
       }
     });
-  
+
     return true;
   }
-  
-
 
   private loadEnrichedProductsByBranch(): Observable<void> {
     const branchId = this.selectedBranchIdSubject.value;
@@ -150,29 +188,38 @@ export class MetadataService {
     this.loadingSubject.next(true);
 
     return this.posService.getFilteredProductsWithDetails(branchId).pipe(
-      tap(data => this.enrichedProductSubject.next(data)),
+      tap((data) => this.enrichedProductSubject.next(data)),
       finalize(() => this.loadingSubject.next(false)),
       catchError((error) => {
-        console.error('❌ Failed to load products for branch:', error);
+        console.error("❌ Failed to load products for branch:", error);
         return of(undefined);
       }),
       switchMap(() => of(undefined))
     );
   }
 
-
-
   getSalesReport(): Observable<SalesReportDTO> {
     const branchSales: BranchSalesDTO[] = this.generateBranchSales();
     const topProducts: TopProductDTO[] = this.generateTopProducts();
-    const paymentBreakdown: PaymentMethodSummaryDTO[] = this.generatePaymentMethodBreakdown();
-    const salesBreakdown: SalesReportBreakdownDTO[] = this.generateSalesBreakdown();
+    const paymentBreakdown: PaymentMethodSummaryDTO[] =
+      this.generatePaymentMethodBreakdown();
+    const salesBreakdown: SalesReportBreakdownDTO[] =
+      this.generateSalesBreakdown();
 
     // Calculate totals
-    const totalRevenue = branchSales.reduce((sum, branch) => sum + branch.totalRevenue, 0);
-    const totalTransactions = branchSales.reduce((sum, branch) => sum + branch.totalTransactions, 0);
+    const totalRevenue = branchSales.reduce(
+      (sum, branch) => sum + branch.totalRevenue,
+      0
+    );
+    const totalTransactions = branchSales.reduce(
+      (sum, branch) => sum + branch.totalTransactions,
+      0
+    );
     const averageOrderValue = totalRevenue / totalTransactions;
-    const totalDiscounts = salesBreakdown.reduce((sum, item) => sum + item.discounts, 0);
+    const totalDiscounts = salesBreakdown.reduce(
+      (sum, item) => sum + item.discounts,
+      0
+    );
 
     const salesReport: SalesReportDTO = {
       totalRevenue,
@@ -182,13 +229,12 @@ export class MetadataService {
       totalSalesPerBranch: branchSales,
       topSellingProducts: topProducts,
       paymentMethodBreakdown: paymentBreakdown,
-      breakdown: salesBreakdown
+      breakdown: salesBreakdown,
     };
 
     return of(salesReport);
   }
 
-  
   private generateBranchSales(): BranchSalesDTO[] {
     return this.branches.map((branch: any) => {
       const totalTransactions = this.getRandomInt(100, 500);
@@ -197,20 +243,26 @@ export class MetadataService {
         branch,
         totalRevenue,
         totalTransactions,
-        averageOrderValue: totalRevenue / totalTransactions
+        averageOrderValue: totalRevenue / totalTransactions,
       };
     });
   }
 
   private generateTopProducts(): TopProductDTO[] {
-    return this.products.slice(0, 7).map((product: { price: number; }) => {
-      const quantitySold = this.getRandomInt(20, 200);
-      return {
-        product,
-        quantitySold,
-        revenue: quantitySold * product.price
-      };
-    }).sort((a: { revenue: number; }, b: { revenue: number; }) => b.revenue - a.revenue);
+    return this.products
+      .slice(0, 7)
+      .map((product: { price: number }) => {
+        const quantitySold = this.getRandomInt(20, 200);
+        return {
+          product,
+          quantitySold,
+          revenue: quantitySold * product.price,
+        };
+      })
+      .sort(
+        (a: { revenue: number }, b: { revenue: number }) =>
+          b.revenue - a.revenue
+      );
   }
 
   private generatePaymentMethodBreakdown(): PaymentMethodSummaryDTO[] {
@@ -220,17 +272,17 @@ export class MetadataService {
       return {
         paymentMethod: method,
         transactions,
-        revenue
+        revenue,
       };
     });
   }
 
   private generateSalesBreakdown(): SalesReportBreakdownDTO[] {
     const breakdown: SalesReportBreakdownDTO[] = [];
-    
+
     // Generate data for the last 14 days
     const today = new Date();
-    
+
     for (let i = 13; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(today.getDate() - i);
@@ -238,25 +290,28 @@ export class MetadataService {
       // For each branch, create 1-3 entries per day
       this.branches.forEach((branch: any) => {
         const entriesCount = this.getRandomInt(1, 4);
-        
+
         for (let j = 0; j < entriesCount; j++) {
           const transactions = this.getRandomInt(5, 30);
           const revenue = this.getRandomInt(500, 3000);
           const discounts = revenue * this.getRandomFloat(0.05, 0.15);
-          
+
           breakdown.push({
             date: new Date(date),
             branch,
             cashier: this.users[this.getRandomInt(0, this.users.length)],
-            paymentMethod: this.paymentMethods[this.getRandomInt(0, this.paymentMethods.length)],
+            paymentMethod:
+              this.paymentMethods[
+                this.getRandomInt(0, this.paymentMethods.length)
+              ],
             transactions,
             revenue,
-            discounts
+            discounts,
           });
         }
       });
     }
-    
+
     return breakdown;
   }
 
@@ -265,7 +320,166 @@ export class MetadataService {
   }
 
   private getRandomFloat(min: number, max: number): number {
-    return (Math.random() * (max - min) + min);
+    return Math.random() * (max - min) + min;
   }
+
+  private getBaseApiUrl(): string {
+    return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
+  }
+
+  private handleRefundError = (error: HttpErrorResponse): Observable<never> => {
+    let errorMessage = 'An error occurred';
+
+    if (error.error instanceof ErrorEvent) {
+
+      errorMessage = error.error.message;
+    } else {
+
+      console.error('Full error response:', error);
+
+      if (error.error?.fieldErrors?.length) {
+
+        const fieldMessages = error.error.fieldErrors
+          .map((fe: any) => `${fe.field}: ${fe.errorCode}${fe.message ? ` - ${fe.message}` : ''}`)
+          .join(', ');
+        errorMessage = `Validation errors: ${fieldMessages}`;
+      } else if (error.error?.message) {
+        errorMessage = error.error.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else {
+        errorMessage = `HTTP ${error.status}: ${error.statusText}`;
+      }
+    }
+
+    console.error('Refund update error:', error);
+    return throwError(() => new Error(errorMessage));
+  };
+  updateReturnLogStatus(logId: number, status: string, adminComment?: string): Observable<any> {
+    const body = {
+      refundStatus: status,
+      adminComment: adminComment || ''
+    };
+
+    return this.http.put(`${this.getBaseApiUrl()}/x/api/v2/pos/itemReturnLogs/${logId}`, body)
+      .pipe(catchError(this.handleError));
+  }
+
+  private handleError = (error: any): Observable<any> => {
+    console.error('MetadataService API Error:', error);
+    throw error;
+  };
+
+  async refreshRefundData(): Promise<void> {
+    try {
+      const returnRequests = await firstValueFrom(
+        this.orderService.getReturnRequest().pipe(catchError(() => of([])))
+      );
+      this.returnSubject.next(returnRequests);
+    } catch (error) {
+      console.error('Failed to refresh refund data:', error);
+    }
+  }
+
+approveRefund(refundLogId: number, customerName: string, adminComment: string): Observable<any> {
+  const existingRefund = this.returnSubject.value.find((r: any) => r.id === refundLogId);
+  
+  if (!existingRefund) {
+    return throwError(() => new Error('Refund not found'));
+  }
+
+  const body = {
+    id: refundLogId,
+    name: customerName,
+    refundStatus: 'Approved',
+    adminComment: adminComment?.trim() || '',
+    
+   
+    phoneNumber: existingRefund.phoneNumber || null,
+    reason: existingRefund.reason || null,
+    cashierComment: existingRefund.cashierComment || null,
+    createdAt: existingRefund.createdAt || new Date().toISOString(),
+    refundableAmount: existingRefund.refundableAmount || 0,
+    refundMethod: existingRefund.refundMethod || 'CASH',
+    royaltyAccountId: existingRefund.royaltyAccountId || null,
+    
+   
+    order: existingRefund.order || null,
+    orderId: existingRefund.order?.id || existingRefund.orderId || null,
+    
+    processedById: null,
+    bankDetail: existingRefund.bankDetail || null,
+    bankDetailsId: existingRefund.bankDetailsId || null,
+    exchangeForId: existingRefund.exchangeForId || null,
+    returnItems: existingRefund.returnItems || []
+  };
+
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  });
+
+  return this.http.put(
+    `${this.getBaseApiUrl()}/x/api/v2/pos/itemReturnLogs/${refundLogId}`,
+    body,
+    { headers }
+  ).pipe(
+    tap((response) => {
+      console.log('Approve refund response:', response);
+      this.refreshRefundData();
+    }),
+    catchError(this.handleRefundError)
+  );
 }
 
+rejectRefund(refundLogId: number, customerName: string, adminComment: string): Observable<any> {
+  const existingRefund = this.returnSubject.value.find((r: any) => r.id === refundLogId);
+  
+  if (!existingRefund) {
+    return throwError(() => new Error('Refund not found'));
+  }
+
+  const body = {
+    id: refundLogId,
+    name: customerName,
+    refundStatus: 'Rejected',
+    adminComment: adminComment?.trim() || '',
+    
+   
+    phoneNumber: existingRefund.phoneNumber || null,
+    reason: existingRefund.reason || null,
+    cashierComment: existingRefund.cashierComment || null,
+    createdAt: existingRefund.createdAt || new Date().toISOString(),
+    refundableAmount: existingRefund.refundableAmount || 0,
+    refundMethod: existingRefund.refundMethod || 'CASH',
+    royaltyAccountId: existingRefund.royaltyAccountId || null,
+    
+    
+    order: existingRefund.order || null,
+    orderId: existingRefund.order?.id || existingRefund.orderId || null,
+    
+    processedById: null,
+    bankDetail: existingRefund.bankDetail || null,
+    bankDetailsId: existingRefund.bankDetailsId || null,
+    exchangeForId: existingRefund.exchangeForId || null,
+    returnItems: existingRefund.returnItems || []
+  };
+
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  });
+
+  return this.http.put(
+    `${this.getBaseApiUrl()}/x/api/v2/pos/itemReturnLogs/${refundLogId}`,
+    body,
+    { headers }
+  ).pipe(
+    tap((response) => {
+      console.log('Reject refund response:', response);
+      this.refreshRefundData();
+    }),
+    catchError(this.handleRefundError)
+  );
+}
+}

@@ -38,6 +38,7 @@ import {
   StockMovementPostBody,
   StockMovementByInventory,
   StockMovementCreateStandalone,
+  RefundStatus
 } from '../models/interface';
 import { ImageCacheService } from './image-cache.service';
 import {
@@ -184,7 +185,7 @@ export class PosServiceService {
   getProducts() {
     if (!this.products$) {
       this.products$ = this.http
-        .get<ProductData[]>(this.getBaseApiUrl() + '/x/api/v2/pos/products')
+        .get<ProductData[]>(this.getBaseApiUrl() + '/x/api/v2/pos/products/?page=1&size=300')
         .pipe(
           catchError(this.handleError),
           shareReplay(this.shareReplayOptions)
