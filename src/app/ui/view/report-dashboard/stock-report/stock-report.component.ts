@@ -1,5 +1,7 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
+import { forkJoin, of, Observable } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import {
   ApexAxisChartSeries,
   ApexChart,
@@ -181,7 +183,6 @@ export class StockReportComponent implements OnInit {
   loadInventoryReport(filters?: InventoryReportRequestDTO): void {
     this.isLoading = true;
 
-    // This is the correct way to handle the type-checking error
     const cleanedFilters: InventoryReportRequestDTO = {
       branchIds: filters?.branchIds || undefined,
       categoryIds: filters?.categoryIds || undefined,
@@ -197,16 +198,52 @@ export class StockReportComponent implements OnInit {
       cleanedFilters.categoryIds = this.categories.map(c => c.id);
     }
 
-    this.reportService.getInventoryReport(cleanedFilters).subscribe({
-      next: (data: InventoryReportDTO) => {
+    this.reportService.getInventoryReport(cleanedFilters).pipe(
+      switchMap((data: InventoryReportDTO) => {
         this.reportData = data;
+
+        const productIds = [...new Set(this.reportData.inventory.map(item => item.product?.id))].filter(id => id !== null);
+        const categoryIds = [...new Set(this.reportData.inventory.map(item => item.category?.id))].filter(id => id !== null);
+        const branchIds = [...new Set(this.reportData.inventory.map(item => item.branch?.id))].filter(id => id !== null);
+
+        const productRequests = productIds.map(id => this.reportService.getProductById(id as number).pipe(catchError(() => of(null))));
+        const categoryRequests = categoryIds.map(id => this.reportService.getCategoryById(id as number).pipe(catchError(() => of(null))));
+        const branchRequests = branchIds.map(id => this.reportService.getBranchById(id as number).pipe(catchError(() => of(null))));
+
+        return forkJoin({
+          products: productRequests.length ? forkJoin(productRequests) : of([]),
+          categories: categoryRequests.length ? forkJoin(categoryRequests) : of([]),
+          branches: branchRequests.length ? forkJoin(branchRequests) : of([])
+        });
+      })
+    ).subscribe({
+      next: (fullData: { products: (ProductDTO | null)[], categories: (CategoryDTO | null)[], branches: (BranchDTO | null)[] }) => {
+        const productMap = new Map(fullData.products.filter(p => p !== null).map(p => [p!.id, p!]));
+        const categoryMap = new Map(fullData.categories.filter(c => c !== null).map(c => [c!.id, c!]));
+        const branchMap = new Map(fullData.branches.filter(b => b !== null).map(b => [b!.id, b!]));
+
+        this.reportData.inventory.forEach(item => {
+          if (item.product?.id !== null) {
+            const productDetails = productMap.get(Number(item.product.id));
+            if (productDetails) {
+              Object.assign(item.product, productDetails);
+            }
+          }
+          if (item.category?.id !== null) {
+            item.category = categoryMap.get(item.category.id) || item.category;
+          }
+          if (item.branch?.id !== null) {
+            item.branch = branchMap.get(item.branch.id) || item.branch;
+          }
+        });
+
         this.calculateSummaryMetrics();
         this.initCharts();
         this.prepareDropdownData();
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('Error loading inventory report:', error);
+        console.error('Error loading inventory report or related data:', error);
         this.isLoading = false;
         this.reportData = { inventory: [] };
         this.calculateSummaryMetrics();
@@ -289,19 +326,60 @@ export class StockReportComponent implements OnInit {
   }
 
   initStockTrendChart(): void {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    const currentTotal = this.totalItems;
+    // If there is no report data, display an empty chart
+    if (!this.reportData?.inventory?.length) {
+      this.stockTrendChartOptions = this.createEmptyLineChart('Inventory Trend (Last 6 Months)');
+      return;
+    }
+    
+    // Get total current stock and total sold quantity from the report
+    const totalCurrentStock = this.reportData.inventory.reduce((sum, item) => sum + item.currentStock, 0);
+    const totalSold = this.reportData.inventory.reduce((sum, item) => sum + item.soldQuantity, 0);
+    
+    // Determine the number of months based on the date range, or use a default of 6
+    const dateRange = this.filterForm.get('dateRange')?.value;
+    let monthsToDisplay = 6;
+    if (dateRange === 'today') {
+      monthsToDisplay = 1;
+    } else if (dateRange === '3daysAgo' || dateRange === 'last7Days') {
+      monthsToDisplay = 1; 
+    } else if (dateRange === '1month') {
+      monthsToDisplay = 1;
+    }
 
-    const trendData = months.map((month, index) => {
-      const variance = Math.random() * 0.2 - 0.1;
-      const value = Math.floor(currentTotal * (0.8 + index * 0.05 + variance));
-      return { x: month, y: value };
-    });
+    // Generate month labels and data points dynamically
+    const months = [];
+    const trendValues = [];
+    const now = new Date();
+    
+    // Get the month and year of the latest data point
+    const latestMonth = now.toLocaleString('default', { month: 'short' });
+    const latestYear = now.getFullYear();
 
+    // Populate the chart data backwards from the current month
+    // The chart will only show a single data point if a short date range is selected
+    for (let i = monthsToDisplay - 1; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthName = d.toLocaleString('default', { month: 'short' });
+        months.push(monthName);
+        
+        if (i === 0) {
+            // For the current month, use the actual total current stock
+            trendValues.push(totalCurrentStock);
+        } else {
+            // For past months, use a simple estimation.
+            // This is a placeholder as real historical data is not available.
+            // Assuming sales are spread evenly.
+            const soldPerMonth = totalSold / monthsToDisplay;
+            const estimatedStock = totalCurrentStock + ((monthsToDisplay - 1 - i) * soldPerMonth);
+            trendValues.push(Math.round(estimatedStock));
+        }
+    }
+    
     this.stockTrendChartOptions = {
       series: [{
         name: 'Total Inventory',
-        data: trendData
+        data: trendValues
       }],
       chart: {
         height: 350,
@@ -499,7 +577,6 @@ export class StockReportComponent implements OnInit {
     const filters = this.filterForm.value;
     this.page = 1; // Reset to first page on filter change
 
-    // Fix the TS2739 error by ensuring the object literal matches the DTO type
     const cleanedFilters: InventoryReportRequestDTO = {
       branchIds: filters.branchIds?.length ? filters.branchIds : undefined,
       categoryIds: filters.categoryIds?.length ? filters.categoryIds : undefined,
@@ -641,10 +718,10 @@ export class StockReportComponent implements OnInit {
       }
 
       pdf.save(`inventory-report-${new Date().toISOString().split('T')[0]}.pdf`);
-      element.style.cssText = originalStyle; // Restore original style
+      element.style.cssText = originalStyle; 
     }).catch(error => {
       console.error('Error generating PDF:', error);
-      element.style.cssText = originalStyle; // Ensure style is restored even on error
+      element.style.cssText = originalStyle; 
     });
   }
 
@@ -660,7 +737,6 @@ export class StockReportComponent implements OnInit {
   prepareDropdownData(): void {
     if (!this.reportData?.inventory) return;
 
-    // Total Items in Stock
     const totalItemsData = [...this.reportData.inventory]
       .sort((a, b) => b.currentStock - a.currentStock)
       .map(item => ({
@@ -669,7 +745,6 @@ export class StockReportComponent implements OnInit {
       }));
     this.dropdownData['totalItems'] = totalItemsData;
 
-    // Low Stock Items
     const lowStockData = [...this.reportData.inventory]
       .filter(item => item.lowStockAlert)
       .sort((a, b) => a.currentStock - b.currentStock)

@@ -278,43 +278,36 @@ export class ReportService {
       .pipe(
         catchError((err) => {
           console.error('Error fetching monthly trend data:', err);
-          return throwError(() => err);
+          return of({ revenue: [], customers: [], months: [] });
         })
       );
   }
 
-  getBranchProductCategories(branchId: number): Observable<any> {
-    return this.http
-      .post<any>(`${this.baseUrl}/salesreport/productcategories`, { branchId })
-      .pipe(
-        catchError((err) => {
-          console.error('Error fetching product category data:', err);
-          return throwError(() => err);
-        })
-      );
-  }
-
-  getCustomerDemographics(branchId: number): Observable<any> {
-    return this.http
-      .post<any>(`${this.baseUrl}/salesreport/customerdemographics`, {
-        branchId,
+  // New methods to get full details by ID
+  getProductById(id: number): Observable<ProductDTO> {
+    return this.http.get<ProductDTO>(`${this.baseUrl}/products/${id}`).pipe(
+      catchError((err) => {
+        console.error(`Error fetching product with ID ${id}:`, err);
+        return throwError(() => err);
       })
-      .pipe(
-        catchError((err) => {
-          console.error('Error fetching customer demographics data:', err);
-          return throwError(() => err);
-        })
-      );
+    );
   }
 
-  getHourlyTraffic(branchId: number): Observable<any> {
-    return this.http
-      .post<any>(`${this.baseUrl}/salesreport/hourlytraffic`, { branchId })
-      .pipe(
-        catchError((err) => {
-          console.error('Error fetching hourly traffic data:', err);
-          return throwError(() => err);
-        })
-      );
+  getCategoryById(id: number): Observable<CategoryDTO> {
+    return this.http.get<CategoryDTO>(`${this.baseUrl}/productCategories/${id}`).pipe(
+      catchError((err) => {
+        console.error(`Error fetching category with ID ${id}:`, err);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  getBranchById(id: number): Observable<BranchDTO> {
+    return this.http.get<BranchDTO>(`${this.baseUrl}/branches/${id}`).pipe(
+      catchError((err) => {
+        console.error(`Error fetching branch with ID ${id}:`, err);
+        return throwError(() => err);
+      })
+    );
   }
 }

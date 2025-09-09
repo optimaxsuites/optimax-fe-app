@@ -9,7 +9,7 @@ export class PermissionService {
  private user: any;
 
   constructor(private router: Router) {
-    // this.user = JSON.parse(sessionStorage.getItem('userApplicationRole') || '{}');
+    // this.user = SON.parse(sessionStorage.getItem('userApplicationRole') || '{}');
   }
 
   private get activePermissions() {
