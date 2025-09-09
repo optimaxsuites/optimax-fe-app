@@ -6,7 +6,13 @@ import { JwtHelperService } from '@auth0/angular-jwt';
 import { NavigationLinksService } from '../navigation-links/navigation-links.service';
 import { environment } from '../environments/environment.prod';
 
-
+interface Branch {
+  id: number;
+  name: string;
+  description: string;
+  address: string;
+  phoneNo: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -110,10 +116,24 @@ export class AuthenticationService {
       .pipe(catchError(this.handleError));
   }
 
+   userBranchRole(data: any): Observable<any> {
+    // console.log((this.getBaseApiUrl() + "/x/api/v2/auth/signup"+"---"+JSON.stringify(data)))
+
+    return this.http
+      .post<any>(this.getBaseApiUrl() + `/x/api/v2/pos/userBranches`, data)
+      .pipe(catchError(this.handleError));
+  }
+
   getUserApplicationRole(id: number): Observable<any> {
 
     return this.http
-      .get<any>(this.getBaseApiUrl() + `/x/api/v2/us/ur/findappuserrolepermissionbyid?userid=${id}`)
+      .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/userBranches/findBy/userid/${id}`)
+      .pipe(catchError(this.handleError));
+  }
+
+  getUserBranch(id: number): Observable<Branch> {
+    return this.http
+      .get<Branch>(this.getBaseApiUrl() + `/x/api/v2/us/ur/findappuserrolepermissionbyid?userid=${id}`)
       .pipe(catchError(this.handleError));
   }
 

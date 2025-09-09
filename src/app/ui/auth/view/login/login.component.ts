@@ -189,6 +189,7 @@ async posLoginAction(): Promise<void> {
       this.loggedIn = false;
     } else {
       this.loadInitParam(data);
+      
       this.loggedIn = true;
     }
   }
@@ -250,6 +251,7 @@ async posLoginAction(): Promise<void> {
   }
 
   loadInitParam(data: any) {
+
    
     sessionStorage.setItem("role", data.roles)
     sessionStorage.setItem("username", data.username);
@@ -263,6 +265,9 @@ async posLoginAction(): Promise<void> {
     sessionStorage.setItem("accessToken", data.accessToken);
     localStorage.setItem("accessToken2", data.accessToken);
     sessionStorage["userRegData"] = JSON.stringify(data);
+
+    this.checkUserReg();
+
 
      if(isSuperUser()){
         const dashboardLink = this.navigationLink.getLink('dashboardLink');
@@ -313,7 +318,6 @@ async posLoginAction(): Promise<void> {
       }
     })
 
-    this.checkUserReg();
      
   }
 

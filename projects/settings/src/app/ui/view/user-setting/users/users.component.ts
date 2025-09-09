@@ -7,7 +7,8 @@ import { NavigationLinksService } from '../../../sharedComponents/service/naviga
 import { ModulesService } from '../../../service/modules.service';
 import { UserService } from '../../../sharedComponents/service/user.service';
 
- import { forkJoin, map } from 'rxjs';
+ import { forkJoin, map, Observable } from 'rxjs';
+import { DataService } from '../../../service/data.service';
 
 
 interface user {
@@ -22,7 +23,28 @@ interface user {
   isEditing?:boolean,
   authType: string, 
   accessCode: string,
+  accountState?: string,
+  roles?: any[],
+  id?: number,
+  ecode?: string,
+  allowEcodeAuth?: boolean,
+  username?: string,
 }
+
+interface Branch {
+  id: number;
+  name: string;
+  description: string;
+  address: string;
+  phoneNo: number;
+}
+
+interface UserWithExtras extends user {
+  appRoles$: Observable<string>;
+  appRolesId$: Observable<number | ''>;
+  userBranch$: Observable<Branch>;
+}
+
 @Component({
   selector: 'app-users',
   templateUrl: './users.component.html',
@@ -49,7 +71,7 @@ filteredUsers: any[] = [];
 Object = Object
 autoGenerateCode: boolean = true;
 autoVerify: boolean = false;
-users: any[] = [
+users: UserWithExtras[] = [
  
  
 ];
@@ -69,9 +91,11 @@ newUser: user ={
 selectedModule: string = ''; 
 selectedRole: any = {};
 roles: any[] = []
+branches: any[] = []
+selectedBranch: any = null;
 
 constructor(private confirmationService: ConfirmationService, private messageService: MessageService, private authenticationService: AuthenticationService,     private router: Router,
-  private navigationLink: NavigationLinksService, private moduleService: ModulesService, private userService: UserService){
+  private navigationLink: NavigationLinksService, private moduleService: ModulesService, private userService: UserService, private dataService: DataService){
 
 }
 
@@ -84,6 +108,15 @@ ngOnInit(){
       console.log(err)
      } 
     });
+
+    this.dataService.getBranches().subscribe({
+      next: (data: any[]) => {
+        this.branches = data
+      },
+      error(err) {
+        console.log(err)
+      }
+    })
 
     this.fetchUsers()
 }
@@ -98,8 +131,17 @@ fetchUsers(){
       ),
       appRolesId$: this.authenticationService.getUserApplicationRole(user.id).pipe(
         map(((roleObj: any) => roleObj?.appRole.id ?? ''))
+      ),
+      userBranch$: this.authenticationService.getUserBranch(user.id).pipe(
+        map((roleObj: any): Branch => roleObj?.branch ?? {
+          id: 0,
+          name: '',
+          description: '',
+          address: '',
+          phoneNo: 0,
+        })
       )
-    }));
+    })) as UserWithExtras[];
 
     },
     error(err){
@@ -161,6 +203,8 @@ submitUser() {
 
   const business = sessionStorage.getItem('userPrimaryInfoRegData') ? JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}') : null;
 
+  console.log(business)
+
   const businessInfo = {
     fullName: business?.fullName,
     username: this.newUser.name,
@@ -200,34 +244,53 @@ submitUser() {
           userId: data.id,
           appRoleId: this.selectedRole?.id
         }
+
+
+      const userBranchRequest = {
+        userId: data.id,
+        branchId: this.selectedBranch?.id
+      }
       
       this.authenticationService.userApplicationRole(roleRequest).subscribe({
         next: () => {
-          if (this.codeAuthType) {
-            this.authenticationService.codeActivation(data.ecode, true).subscribe({
-              next: () => {
-                this.messageService.add({
-                  severity: 'success',
-                  summary: 'Success',
-                  detail: 'User registered and eCode activated successfully!'
-                });
-              },
-              error: (err) => {
-                console.error(err);
-                this.messageService.add({
-                  severity: 'error',
-                  summary: 'Error',
-                  detail: 'Failed to activate user eCode, try again later!'
-                });
-              }
-            });
-          } else {
+          this.authenticationService.userBranchRole(userBranchRequest).subscribe({
+           next: (data) => {
+              if (this.codeAuthType) {
+              this.authenticationService.codeActivation(data.ecode, true).subscribe({
+                next: () => {
+                  this.messageService.add({
+                    severity: 'success',
+                    summary: 'Success',
+                    detail: 'User registered and eCode activated successfully!'
+                  });
+                },
+                error: (err) => {
+                  console.error(err);
+                  this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Failed to activate user eCode, try again later!'
+                  });
+                }
+              });
+            } else {
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'User registered and roles assigned successfully!'
+              });
+            }
+         },
+           error: (err) => {
+            console.error(err);
             this.messageService.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: 'User registered and roles assigned successfully!'
-            });
-          }
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to assign branch to user, try again later!'
+          });
+           }
+          })
+        
         },
         error: (err) => {
           console.error(err);
