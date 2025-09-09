@@ -130,6 +130,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TagModule } from 'primeng/tag';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { UniquePipe } from './shared/pipes/unique.pipe';
+import { UpdateStockComponent } from './ui/view/ingredient/update-stock/update-stock.component';
 export function appInitializerFactory(appInitService: AppInitService) {
   return () => appInitService.init();
 }
@@ -195,6 +196,7 @@ export function appInitializerFactory(appInitService: AppInitService) {
     OrderFilterPipe,
     SalesDetailsComponent,
     UniquePipe,
+    UpdateStockComponent,
     //CheckoutKitchenComponent,
   ],
   imports: [

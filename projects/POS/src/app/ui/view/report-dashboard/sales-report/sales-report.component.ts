@@ -105,7 +105,7 @@ export class SalesReportComponent implements OnInit {
   public trendChartOptions!: TrendChartOptions;
 
   salesReport!: SalesReportDTO;
-  previousPeriodReport!: SalesReportDTO; // New property for previous period's data
+  previousPeriodReport!: SalesReportDTO; 
 
   // New properties for growth percentages
   totalRevenueGrowth: number | null = null;
@@ -134,6 +134,7 @@ export class SalesReportComponent implements OnInit {
 
   // Filter properties
   branches: BranchDTO[] = [];
+Number: any;
 
   constructor(private reportService: ReportService, private fb: FormBuilder) {
     this.initChartOptions();

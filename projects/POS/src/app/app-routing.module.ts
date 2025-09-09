@@ -23,12 +23,17 @@ import { ViewIngredientsComponent } from './ui/view/ingredient/view-ingredients/
 import { EditIngredientsComponent } from './ui/view/ingredient/edit-ingredients/edit-ingredients.component';
 import { SalesComponent } from './ui/view/sales/sales.component';
 import { PermissionGuard } from './ui/permission/permission.guard';
+import { UpdateStockComponent } from './ui/view/ingredient/update-stock/update-stock.component';
 
 const routes: Routes = [
   {
     path: '',
     redirectTo: 'product/34567whr4567yhsdzr56',
     pathMatch: 'full',
+  },
+  {
+    path: 'Update-stock/:uuid',
+    component: UpdateStockComponent,
   },
   
   {
@@ -105,19 +110,19 @@ const routes: Routes = [
     // data: { appCode: ['POS_INV'] }
   },
   {
-    path: 'add-ingredient',
+    path: 'add-ingredient/:uuid',
     component: AddIngredientComponent,
     // canActivate: [PermissionGuard],
     // data: { appCode: ['POS_ING'] }
   },
   {
-    path: 'view-ingredient',
+    path: 'view-ingredient/:uuid',
     component: ViewIngredientsComponent,
     // canActivate: [PermissionGuard],
     // data: { appCode: ['POS_ING'] }
   },
   {
-    path: 'edit-ingredient',
+    path: 'edit-ingredient/:uuid',
     component: EditIngredientsComponent,
     // canActivate: [PermissionGuard],
     // data: { appCode: ['POS_ING'] }

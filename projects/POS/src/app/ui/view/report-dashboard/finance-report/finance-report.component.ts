@@ -70,8 +70,6 @@ export class FinanceReportComponent implements OnInit {
   public growthChartOptions!: ChartOptions;
   public categoryChartOptions!: ChartOptions;
   public trendChartOptions!: ChartOptions;
-  public demographicChartOptions!: ChartOptions;
-  public trafficChartOptions!: ChartOptions;
 
   Math = Math;
   filterFormOpen = false;
@@ -160,21 +158,6 @@ export class FinanceReportComponent implements OnInit {
     // Load monthly trend data
     this.reportService.getBranchMonthlyTrend(branchId).subscribe(trendData => {
       this.updateTrendChart(trendData);
-    });
-
-    // Load product category data
-    this.reportService.getBranchProductCategories(branchId).subscribe(categoryData => {
-      this.updateCategoryChart(categoryData);
-    });
-
-    // Load demographic data
-    this.reportService.getCustomerDemographics(branchId).subscribe(demographicData => {
-      this.updateDemographicChart(demographicData);
-    });
-
-    // Load hourly traffic data
-    this.reportService.getHourlyTraffic(branchId).subscribe(trafficData => {
-      this.updateTrafficChart(trafficData);
     });
   }
 
@@ -270,64 +253,6 @@ export class FinanceReportComponent implements OnInit {
         shared: true, intersect: false, y: { formatter: (val: number, { seriesIndex }: any) => { return seriesIndex === 0 ? this.formatCurrency(val) : val.toLocaleString(); } }
       },
       legend: { position: 'top', horizontalAlign: 'left', fontSize: '14px', fontWeight: 500, markers: { width: 12, height: 12, radius: 12 } },
-      grid: { borderColor: '#E2E8F0', strokeDashArray: 4 }
-    };
-  }
-
-  updateCategoryChart(categoryData: any): void {
-    this.categoryChartOptions = {
-      series: categoryData.map((item: any) => item.value),
-      chart: { type: 'donut', height: 350, fontFamily: 'Inter, sans-serif' },
-      labels: categoryData.map((item: any) => item.category),
-      colors: ['#3B82F6', '#EF4444', '#F59E0B', '#10B981', '#8B5CF6'],
-      legend: { position: 'bottom', fontSize: '14px', fontWeight: 500, markers: { width: 12, height: 12, radius: 12 } },
-      plotOptions: {
-        pie: {
-          donut: {
-            size: '60%', labels: { show: true, total: { show: true, label: 'Total', fontSize: '16px', fontWeight: 600, color: '#334155' } }
-          }
-        }
-      },
-      dataLabels: { enabled: true, style: { fontSize: '14px', fontFamily: 'Inter, sans-serif', fontWeight: 500 } },
-      responsive: [
-        { breakpoint: 480, options: { chart: { height: 300 }, legend: { position: 'bottom' } } }
-      ]
-    };
-  }
-
-  updateDemographicChart(demographicData: any): void {
-    this.demographicChartOptions = {
-      series: [
-        { name: 'Male', data: demographicData.map((item: any) => item.male) },
-        { name: 'Female', data: demographicData.map((item: any) => item.female) },
-        { name: 'Other', data: demographicData.map((item: any) => item.other) }
-      ],
-      chart: { type: 'bar', height: 350, stacked: true, fontFamily: 'Inter, sans-serif', toolbar: { show: false } },
-      plotOptions: { bar: { horizontal: false, columnWidth: '55%', borderRadius: 5 } },
-      dataLabels: { enabled: false },
-      stroke: { width: 2, colors: ['transparent'] },
-      xaxis: { categories: demographicData.map((item: any) => item.age), labels: { style: { colors: '#64748B', fontSize: '12px' } } },
-      yaxis: { title: { text: 'Customer Count', style: { fontSize: '14px', fontWeight: 500, color: '#64748B' } }, labels: { style: { colors: '#64748B' } } },
-      fill: { opacity: 1 },
-      colors: ['#3B82F6', '#EC4899', '#F59E0B'],
-      legend: { position: 'top', horizontalAlign: 'left', fontSize: '14px', fontWeight: 500, markers: { width: 12, height: 12, radius: 12 } },
-      grid: { borderColor: '#E2E8F0', strokeDashArray: 4 }
-    };
-  }
-
-  updateTrafficChart(trafficData: any): void {
-    this.trafficChartOptions = {
-      series: [
-        { name: 'Customer Traffic', data: trafficData.traffic }
-      ],
-      chart: { height: 350, type: 'area', fontFamily: 'Inter, sans-serif', toolbar: { show: false } },
-      colors: ['#3B82F6'],
-      dataLabels: { enabled: false },
-      stroke: { curve: 'smooth', width: 3 },
-      fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.7, opacityTo: 0.3, stops: [0, 90, 100] } },
-      xaxis: { categories: trafficData.hours, labels: { style: { colors: '#64748B', fontSize: '12px' } } },
-      yaxis: { title: { text: 'Customer Count', style: { fontSize: '14px', fontWeight: 500, color: '#64748B' } }, labels: { style: { colors: '#64748B' } } },
-      tooltip: { x: { format: 'dd/MM/yy HH:mm' } },
       grid: { borderColor: '#E2E8F0', strokeDashArray: 4 }
     };
   }
