@@ -361,6 +361,7 @@ export interface Business {
 /////
 
 export interface ProductDTO {
+sellingPrice: number;
   category: any;
   price: number;
   id: number;
@@ -909,13 +910,14 @@ export interface StockMovementResponsePayload {
 }
 
 export type StockMovementPostBody = {
+  ingredientId(ingredientId: any): any;
   quantity: number;
   reference?: string;
   purchasePrice?: number;
   sellingPrice?: number;
   createdDate: string;
   supplierId?: number | null;
-  inventoryId: number;
+  inventoryId?: number;
 };
 export interface StockMovementByInventory {
   id: number;

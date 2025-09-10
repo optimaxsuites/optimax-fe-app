@@ -110,6 +110,11 @@ export class PosServiceService {
       .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/taxes/${id}`)
       .pipe(catchError(this.handleError));
   }
+  deleteIngredient(id: number) {
+    return this.http
+      .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/ingredients/${id}`)
+      .pipe(catchError(this.handleError));
+  }
   addProduct(data: any) {
     return this.http
       .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/products/product', data)
@@ -507,45 +512,39 @@ export class PosServiceService {
   //     .pipe(catchError(this.handleError));
   // }
   //A's inventory 
+  createInventory(data: InventoryCreatePayload) {
+    const parentIdKey: 'productId' | 'ingredientId' = 'productId';
 
+    const createPayload: any = {
+      availableQuantity: Number(data.availableQuantity) || 0,
+      status: data.status,
+      branchId: data.branchId,
+    };
+    
+    createPayload[parentIdKey] = (data as any)[parentIdKey];
 
-createInventory(data: InventoryCreatePayload) {
-  
-  const parentIdKey: 'productId' | 'ingredientId' = 'productId';
+    if (Array.isArray(data.stockMovement) && data.stockMovement.length > 0) {
+      createPayload.stockMovement = data.stockMovement.map(m => {
+        const mv: any = {
+          quantity: Number(m.quantity),
+          reference: m.reference ?? '',
+          purchasePrice: Number(m.purchasePrice ?? 0),
+          sellingPrice: Number(m.sellingPrice ?? 0),
+          createdDate: m.createdDate, 
+        };
+        
+        if (m.supplierId != null) mv.supplierId = m.supplierId;
+        return mv;
+      });
+    }
 
-  const createPayload: any = {
-    availableQuantity: Number(data.availableQuantity) || 0,
-    status: data.status,
-    branchId: data.branchId,
-  };
-  
-  createPayload[parentIdKey] = (data as any)[parentIdKey];
-
-
-  if (Array.isArray(data.stockMovement) && data.stockMovement.length > 0) {
-    createPayload.stockMovement = data.stockMovement.map(m => {
-      const mv: any = {
-        quantity: Number(m.quantity),
-        reference: m.reference ?? '',
-        purchasePrice: Number(m.purchasePrice ?? 0),
-        sellingPrice: Number(m.sellingPrice ?? 0),
-        createdDate: m.createdDate, 
-      };
-      
-      if (m.supplierId != null) mv.supplierId = m.supplierId;
-      return mv;
-    });
+    return this.http
+      .post<InventoryResponsePayload>(
+        this.getBaseApiUrl() + '/x/api/v2/pos/inventories',
+        createPayload
+      )
+      .pipe(catchError(this.handleError));
   }
-  
-
-  return this.http
-    .post<InventoryResponsePayload>(
-      this.getBaseApiUrl() + '/x/api/v2/pos/inventories',
-      createPayload
-    )
-    .pipe(catchError(this.handleError));
-}
-
 
 getInventories() {
     return this.http
@@ -594,23 +593,23 @@ getInventories() {
       .pipe(catchError(this.handleError));
   }
 
-createStockMovement(data: StockMovementPostBody) {
-  const payload = {
-    quantity: Number(data.quantity),
-    reference: data.reference ?? '',
-    purchasePrice: Number(data.purchasePrice ?? 0),
-    sellingPrice: Number(data.sellingPrice ?? 0),
-    createdDate: data.createdDate,       
-    supplierId: data.supplierId ?? null,
-    inventoryId: Number(data.inventoryId)
-  };
-  return this.http
-    .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/stockMovements', payload)
-    .pipe(catchError(this.handleError));
-}
+  createStockMovement(data: StockMovementPostBody) {
+    const payload = {
+      quantity: Number(data.quantity),
+      reference: data.reference ?? '',
+      purchasePrice: Number(data.purchasePrice ?? 0),
+      sellingPrice: Number(data.sellingPrice ?? 0),
+      createdDate: data.createdDate,       
+      supplierId: data.supplierId ?? null,
+      inventoryId: Number(data.inventoryId) 
+    };
+    
+    return this.http
+      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/stockMovements', payload)
+      .pipe(catchError(this.handleError));
+  }
 
-
-   updateStockMovement(id: number, data: StockMovementCreatePayload) {
+  updateStockMovement(id: number, data: StockMovementCreatePayload) {
     return this.http
       .put<StockMovementResponsePayload>(
         this.getBaseApiUrl() + `/x/api/v2/pos/stockMovements/${id}`,
@@ -618,9 +617,6 @@ createStockMovement(data: StockMovementPostBody) {
       )
       .pipe(catchError(this.handleError));
   }
-
-  
-
   deleteStockMovement(id: number) {
   return this.http
     .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/stockMovements/${id}`)
@@ -703,8 +699,4 @@ getStockMovementsByInventory(inventoryId: number) {
 }
 
 
-
-
-
 }
-

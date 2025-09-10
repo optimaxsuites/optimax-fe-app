@@ -21,7 +21,7 @@ export class EditIngredientsComponent {
   }
   
   navigateToPrevious() {
-    this.router.navigate(['admin/pos/ingredients/:uuid']); // Replace with your actual route
+    this.router.navigate(['ingredients/:uuid']); 
   }
     ngOnInit(): void {
       this.ingredientForm = new FormGroup({
