@@ -400,45 +400,6 @@
                 ></apx-chart>
               </div>
             </div>
-
-            <div class="bg-white rounded-lg shadow p-6">
-              <h2 class="text-lg font-medium text-gray-700 mb-4">Customer Demographics</h2>
-              <div class="h-auto">
-                <apx-chart
-                  *ngIf="demographicChartOptions"
-                  [series]="demographicChartOptions.series!"
-                  [chart]="demographicChartOptions.chart!"
-                  [xaxis]="demographicChartOptions.xaxis!"
-                  [dataLabels]="demographicChartOptions.dataLabels!"
-                  [plotOptions]="demographicChartOptions.plotOptions!"
-                  [responsive]="demographicChartOptions.responsive!"
-                  [colors]="demographicChartOptions.colors!"
-                  [legend]="demographicChartOptions.legend!"
-                  [fill]="demographicChartOptions.fill!"
-                  [stroke]="demographicChartOptions.stroke!"
-                ></apx-chart>
-              </div>
-            </div>
-
-            <div class="bg-white rounded-lg shadow p-6">
-              <h2 class="text-lg font-medium text-gray-700 mb-4">Hourly Customer Traffic</h2>
-              <div class="h-auto">
-                <apx-chart
-                  *ngIf="trafficChartOptions"
-                  [series]="trafficChartOptions.series!"
-                  [chart]="trafficChartOptions.chart!"
-                  [xaxis]="trafficChartOptions.xaxis!"
-                  [yaxis]="trafficChartOptions.yaxis!"
-                  [dataLabels]="trafficChartOptions.dataLabels!"
-                  [grid]="trafficChartOptions.grid!"
-                  [stroke]="trafficChartOptions.stroke!"
-                  [title]="trafficChartOptions.title!"
-                  [fill]="trafficChartOptions.fill!"
-                  [tooltip]="trafficChartOptions.tooltip!"
-                  [colors]="trafficChartOptions.colors!"
-                ></apx-chart>
-              </div>
-            </div>
           </div>
         </div>
       </div>

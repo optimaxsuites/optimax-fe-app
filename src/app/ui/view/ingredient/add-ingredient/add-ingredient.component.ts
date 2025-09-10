@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, FormControl, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DropdownModule } from 'primeng/dropdown';
-import { ReactiveFormsModule } from '@angular/forms';  // Import this
+import { ReactiveFormsModule } from '@angular/forms';  
 import { FormsModule } from '@angular/forms';
 import { MeasurementUnit, supplierData } from '../../../models/interface';
 import { Message, MessageService } from 'primeng/api';
@@ -137,7 +137,7 @@ measurementUnits = Object.keys(MeasurementUnit)
 
 
   navigateToPrevious() {
-    this.router.navigate(['admin/pos/ingredients/:uuid']); // Replace with your actual route
+    this.router.navigate(['ingredients/:uuid']); // Replace with your actual route
   }
 
   openModal() {
