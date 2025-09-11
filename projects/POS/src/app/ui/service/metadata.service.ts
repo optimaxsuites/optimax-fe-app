@@ -77,7 +77,7 @@ export class MetadataService {
     "Gift Card",
   ];
 
-  private selectedBranchIdSubject = new BehaviorSubject<number | null>(1);
+  private selectedBranchIdSubject = new BehaviorSubject<number | null>(null);
   selectedBranchId$ = this.selectedBranchIdSubject.asObservable();
   private loadingSubject = new BehaviorSubject<boolean>(false);
   loading$ = this.loadingSubject.asObservable();
@@ -114,6 +114,9 @@ export class MetadataService {
     this.selectedBranchIdSubject.next(id);
     await this.fetchMetaData();
   }
+
+  
+
 
   async fetchMetaData(): Promise<any> {
     console.log("🔄 [MetadataService] Starting metadata fetch");

@@ -86,7 +86,7 @@ export class ProductsComponent implements OnInit {
   tableSection: boolean = true;
   searchTerm: string = "";
   selectedCategories: number[] = [];
-  selectedBranch: number = 1;
+  selectedBranch: number | null = null;
 
   categories: any[] = [];
   isImportDialogOpen = false;
@@ -164,6 +164,8 @@ export class ProductsComponent implements OnInit {
   canCreate: false,
   };  
 
+  superUser = isSuperUser();
+
   constructor(
     private messageService: MessageService,
     private posService: PosServiceService,
@@ -176,6 +178,7 @@ export class ProductsComponent implements OnInit {
     this.loadCategory();
     this.getProducts();
     this.getDiscountTypes();
+    this.fetchUserBranchId()
     this.metadataService.branches$.subscribe((data) => (this.branches = data));
     if (this.selectedBranch) {
       this.metadataService.setSelectedBranch(this.selectedBranch);
@@ -206,6 +209,14 @@ export class ProductsComponent implements OnInit {
       "resize",
       this.setRowsPerPageBasedOnScreenSize.bind(this),
     );
+  }
+
+  fetchUserBranchId(){
+    console.log("helloooooooooo")
+    const userBranch= sessionStorage.getItem('userBranchInfoRegData');
+    console.log("xdfyguhjk,m", userBranch)
+
+    this.selectedBranch = userBranch ? JSON.parse(userBranch).branch.id : 1;
   }
 
   setRowsPerPageBasedOnScreenSize() {

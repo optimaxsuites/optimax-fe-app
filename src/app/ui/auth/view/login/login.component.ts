@@ -245,6 +245,22 @@ async posLoginAction(): Promise<void> {
     });
   }
 
+  getUserBranchInfo() {
+    const userId = sessionStorage.getItem('userid');
+      if (!userId) {
+        return;
+      }
+
+    this.authenticationService.getUserBranchInfoById(userId).subscribe(
+      data => {
+        sessionStorage["userBranchInfoRegData"] = JSON.stringify(data);
+      },
+      error => {
+        console.error('Error fetching user branch info:', error);
+      }
+    );
+  }
+
   navigateToSignup(){
     const signupLink = this.navigationLink.getLink('signupLink');
     this.router.navigate([signupLink]);
@@ -267,6 +283,7 @@ async posLoginAction(): Promise<void> {
     sessionStorage["userRegData"] = JSON.stringify(data);
 
     this.checkUserReg();
+    this.getUserBranchInfo();
 
 
      if(isSuperUser()){

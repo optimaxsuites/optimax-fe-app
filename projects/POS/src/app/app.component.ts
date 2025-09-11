@@ -33,6 +33,8 @@ export class AppComponent implements OnInit{
       this.openingAmount = storedOpeningAmount ? Number(storedOpeningAmount) : 0;
       this.showCloseRegisterModal = true;
     });
+
+ 
   }
 
   async userLoginAction(): Promise<void> {
@@ -91,6 +93,8 @@ export class AppComponent implements OnInit{
     localStorage.setItem('accessToken2', data.accessToken);
     sessionStorage['userRegData'] = JSON.stringify(data);
 
+    this.getUserBranchInfo(data);
+
 
  this.authenticationService.getUserApplicationRole(data.id).subscribe({
   next: (response) => {
@@ -119,6 +123,22 @@ export class AppComponent implements OnInit{
       }
   }
 })
+  }
+
+  getUserBranchInfo(data: any) {
+    const userId = sessionStorage.getItem('userid');
+      if (!userId) {
+        return;
+      }
+
+    this.authenticationService.getUserBranchInfoById(userId).subscribe(
+      data => {
+        sessionStorage["userBranchInfoRegData"] = JSON.stringify(data);
+      },
+      error => {
+        console.error('Error fetching user branch info:', error);
+      }
+    );
   }
 
   onFinalizeRegister(data: any) {
