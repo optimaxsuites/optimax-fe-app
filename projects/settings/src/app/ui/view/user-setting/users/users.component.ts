@@ -7,7 +7,7 @@ import { NavigationLinksService } from '../../../sharedComponents/service/naviga
 import { ModulesService } from '../../../service/modules.service';
 import { UserService } from '../../../sharedComponents/service/user.service';
 
- import { forkJoin, map, Observable } from 'rxjs';
+ import { catchError, forkJoin, map, Observable, of, tap } from 'rxjs';
 import { DataService } from '../../../service/data.service';
 
 
@@ -17,6 +17,8 @@ interface user {
   status: string;
   dateCreated: string;
   password: string;
+  firstname: string;
+  lastname: string;
   permission: {
     [key: string]: string;
   };
@@ -42,7 +44,8 @@ interface Branch {
 interface UserWithExtras extends user {
   appRoles$: Observable<string>;
   appRolesId$: Observable<number | ''>;
-  userBranch$: Observable<Branch>;
+  userBranchName$: Observable<string>;
+  userBranchId$: Observable<number | ''>;
 }
 
 @Component({
@@ -77,6 +80,8 @@ users: UserWithExtras[] = [
 ];
 
 newUser: user ={
+  firstname: '',
+  lastname: '',
   name: '',
   email: '',
   status: 'Active',
@@ -132,14 +137,11 @@ fetchUsers(){
       appRolesId$: this.authenticationService.getUserApplicationRole(user.id).pipe(
         map(((roleObj: any) => roleObj?.appRole.id ?? ''))
       ),
-      userBranch$: this.authenticationService.getUserBranch(user.id).pipe(
-        map((roleObj: any): Branch => roleObj?.branch ?? {
-          id: 0,
-          name: '',
-          description: '',
-          address: '',
-          phoneNo: 0,
-        })
+      userBranchId$: this.authenticationService.getUserBranch(user.id).pipe(
+         map(((branchObj: any) => branchObj?.branch.id ?? ''))
+      ),
+      userBranchName$: this.authenticationService.getUserBranch(user.id).pipe(
+         map(((branchObj: any) => branchObj?.branch.name ?? ''))
       )
     })) as UserWithExtras[];
 
@@ -206,7 +208,7 @@ submitUser() {
   console.log(business)
 
   const businessInfo = {
-    fullName: business?.fullName,
+    fullname: this.newUser?.firstname + ' ' + this.newUser?.lastname,
     username: this.newUser.name,
     profileImage: business?.profileImage,
     email: this.newUser.email,
@@ -332,10 +334,10 @@ submitUser() {
   });
 }
 
-assignRole(user: any, event: any) {
-  // user.appRolesId$.subscribe((appRoleId: number) => {
+assignRole(user: UserWithExtras, event: any) {
+  user.appRolesId$.pipe(catchError(() => of(0))).subscribe(appRoleId => {
     const roleRequest = {
-      // id: appRoleId,
+      id: appRoleId || 0,
       userId: user.id,
       appRoleId: this.selectedRole?.id
     };
@@ -358,8 +360,32 @@ assignRole(user: any, event: any) {
         });
       }
     });
-  // });
+  });
 }
+
+assignBranch(user: UserWithExtras, event: any) {
+  user.userBranchId$.pipe(
+    catchError(() => of(0))
+  ).subscribe(branchId => {
+    const roleRequest = {
+      id: branchId || 0,
+      userId: user.id,
+      branchId: this.selectedBranch?.id
+    };
+
+    this.authenticationService.userBranchRole(roleRequest).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Branch assigned!' });
+        this.editCompensation(user, event);
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to assign branch!' });
+      }
+    });
+  });
+}
+
+
 
 
 

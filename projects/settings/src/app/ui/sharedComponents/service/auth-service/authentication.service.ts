@@ -127,13 +127,13 @@ export class AuthenticationService {
   getUserApplicationRole(id: number): Observable<any> {
 
     return this.http
-      .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/userBranches/findBy/userid/${id}`)
+      .get<Branch>(this.getBaseApiUrl() + `/x/api/v2/us/ur/findappuserrolepermissionbyid?userid=${id}`)
       .pipe(catchError(this.handleError));
   }
 
   getUserBranch(id: number): Observable<Branch> {
     return this.http
-      .get<Branch>(this.getBaseApiUrl() + `/x/api/v2/us/ur/findappuserrolepermissionbyid?userid=${id}`)
+      .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/userBranches/findBy/userid/${id}`)
       .pipe(catchError(this.handleError));
   }
 
@@ -161,10 +161,10 @@ export class AuthenticationService {
     if (error.error instanceof ErrorEvent) {
         console.error("An error occurred:", error.error.message);
     } else {
-        console.error(
-            `Backend returned code ${error.status}, ` +
-                `body was: ${JSON.stringify(error.error)}`
-        );
+        // console.error(
+        //     `Backend returned code ${error.status}, ` +
+        //         `body was: ${JSON.stringify(error.error)}`
+        // );
     }
     return throwError(`${error.status}`);
     // 'Something bad happened; please try again later.');
