@@ -82,7 +82,7 @@ export class PosStoreComponent implements OnInit {
 
    // Add this method to handle navigation to product details
   navigateToProductDetails(productId: number): void {
-    this.router.navigate(['/pos-store/product-details', productId]);
+    this.router.navigate(['user/checkout/pos-store/product-details', productId]);
   }
 
   // TODO: add extra dependencies like search filtering
