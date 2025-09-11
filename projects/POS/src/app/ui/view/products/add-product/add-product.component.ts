@@ -111,6 +111,9 @@ export class AddProductComponent {
 	isEditing: boolean = false;
 	editingIndex: number | null = null;
 	Object = Object;
+	savingCategory = false;
+    savingDiscount = false;
+    savingSupplier = false;
 
 	/**
 	 * We use this for now, pending when user registration industry field is updated
@@ -319,19 +322,19 @@ export class AddProductComponent {
 	ngOnInit(): void {
 		const fbGroup: Parameters<typeof this.fb.group>[0] = {
 			name: ["", Validators.required],
-			code: [""],
+			code: ['', [Validators.required, Validators.pattern(/^[A-Z0-9-]+$/)]],
 			description: ["", [Validators.required, Validators.maxLength(255)]],
 			sku: [""],
-			weight: [null, [Validators.min(0)]],
+			weight: [null, [Validators.min(0), Validators.max(9999)]],
 			// purchasePrice: [
 			//   '',
 			//   [Validators.required, Validators.pattern('^[0-9]*.?[0-9]{0,2}$')],
 			// ],
-			costPrice: [null],
-			sellingPrice: [null],
+			costPrice: [null, [Validators.required, Validators.min(0.01)]],
+			sellingPrice: [null, [Validators.required, Validators.min(0.01)]],
 			tax: [null],
 			discount: [null],
-			quantity: [null],
+			quantity: [null, [Validators.required, Validators.min(0)]],
 			supplier: [null],
 			partNumber: [""],
 			selectedBranch: [[], Validators.required],
@@ -345,7 +348,7 @@ export class AddProductComponent {
 			isBundle: [false],
 			bundleItems: [],
 			measurementUnit: [""],
-			reorderThreshold: [null],
+			reorderThreshold: [null, [Validators.required, Validators.min(1)]],
 			expiryDate: [this._defaultExpiryDate.toISOString()],
 		};
 
@@ -871,6 +874,7 @@ export class AddProductComponent {
 						});
 						this.loading = false;
 						this.addSuccessfull = true;
+						this.resetFormAfterSuccess();
 					} else {
 						this.messageService.add({
 							severity: "error",
@@ -895,6 +899,20 @@ export class AddProductComponent {
 			);
 		}
 	}
+	resetFormAfterSuccess() {
+  this.productForm.reset();
+  this.productImage = "";
+  this.variants = [];
+  this.selectedIngredients = [];
+  
+  
+  if (this.branches.length > 0) {
+    const defaultBranch = this.userBranch === "headquarters" ? [this.branches[0]] : this.branches[0];
+    this.productForm.patchValue({
+      selectedBranch: defaultBranch
+    });
+  }
+}
 
 	async createProductPerBranch(branches: any[]) {
 		this.loading = true;
@@ -970,6 +988,19 @@ export class AddProductComponent {
 			this.loading = false;
 		}
 	}
+
+	resetFormOnSuccess() {
+  this.productForm.reset();
+  this.productImage = "";
+  this.variants = [];
+  this.selectedIngredients = [];
+  // Reset to initial state but keep branch selection if not headquarters
+  if (this.branches.length > 0) {
+    this.productForm.patchValue({
+      selectedBranch: this.userBranch === "headquarters" ? [this.branches[0]] : this.branches[0]
+    });
+  }
+}
 
 	autoGenerateSku() {
 		const formValue = this.productForm.value;
@@ -1053,96 +1084,119 @@ export class AddProductComponent {
 		return `${parentSku}${suffix}`;
 	}
 
-	async updateProduct() {
-		const userName = sessionStorage.getItem("username");
+async updateProduct() {
+    this.loading = true;
+    const userName = sessionStorage.getItem("username");
 
-		if (this.productForm.invalid) {
-			this.messageService.add({
-				severity: "error",
-				summary: "Warn",
-				detail: "All fields are required.",
-				key: "tl",
-				life: 3000,
-			});
-			return;
-		}
+    if (!this.isEditMode && this.productForm.invalid) {
+        console.log('Form errors:', this.productForm.errors);
+        Object.keys(this.productForm.controls).forEach(key => {
+            const control = this.productForm.get(key);
+            if (control && control.invalid) {
+                console.log(`${key} is invalid:`, control.errors);
+            }
+        });
+        this.messageService.add({
+            severity: "error",
+            summary: "Warn",
+            detail: "Please fill in all required fields.",
+            key: "tl",
+            life: 3000,
+        });
+        this.loading = false;
+        return;
+    }
 
-		const formValues = this.productForm.value;
+    const formValues = this.productForm.value;
+    const hasNewImage = formValues.image instanceof File;
 
-		const product = {
-			id: this.activeItem.id,
-			name: formValues.name,
-			code: formValues.code,
-			partNumber: formValues.partNumber,
-			description: formValues.description,
-			measurementUnit: formValues.measurementUnit,
-			isBundle: formValues.isBundle,
-			bundleItems: formValues.bundleItems || [],
-			productCategoryId: formValues.category.id,
-			variants: formValues.variants || [],
-			sku: formValues.sku,
-			purchasePrice: formValues.costPrice,
-			sellingPrice: formValues.sellingPrice,
-			quantity: formValues.quantity,
-			weight: formValues.weight,
-			reorderThreshold: formValues.reorderThreshold,
-			taxId: formValues.tax?.id,
-			discountId: formValues.discount?.id,
-			supplierId: formValues.supplier?.id,
-			branchId: formValues.branch.id,
-			createdBy: userName,
-			createdDate: new Date().toISOString(),
+    const product = {
+        id: this.activeItem.id,
+        name: formValues.name,
+        code: formValues.code || this.activeItem.code,
+        partNumber: formValues.partNumber || this.activeItem.partNumber,
+        description: formValues.description,
+        measurementUnit: formValues.measurementUnit || this.activeItem.measurementUnit,
+        isBundle: formValues.isBundle || false,
+        bundleItems: formValues.bundleItems || [],
+        productCategoryId: formValues.category?.id || this.activeItem.productCategory?.id,
+        variants: this.variants || [],
+        sku: formValues.sku || this.activeItem.sku,
+        purchasePrice: formValues.costPrice || this.activeItem.purchasePrice,
+        sellingPrice: formValues.sellingPrice || this.activeItem.sellingPrice,
+        quantity: formValues.quantity || this.activeItem.quantity,
+        weight: formValues.weight || this.activeItem.weight,
+        reorderThreshold: formValues.reorderThreshold || this.activeItem.reorderThreshold,
+        taxId: formValues.tax?.id || this.activeItem.tax?.id,
+        discountId: formValues.discount?.id || this.activeItem.discount?.id,
+        supplierId: formValues.supplier?.id || this.activeItem.supplier?.id,
+        branchId: this.activeItem.branch?.id || this.activeItem.branchId,
+        createdBy: this.activeItem.createdBy,
+        createdDate: this.activeItem.createdDate,
+        expiryDate: formValues.expiryDate || this.activeItem.expiryDate,
+       
+        productImages: hasNewImage ? [] : (this.activeItem.productImages || []),
+      
+        replaceImages: hasNewImage
+    };
 
-			productImages: formValues.productImages || [],
-		};
+    const formData = new FormData();
+    
+   
+    if (hasNewImage) {
+       
+        const productWithImageReplacement = {
+            ...product,
+            productImages: [], 
+            clearExistingImages: true
+        };
+        formData.append("product", JSON.stringify(productWithImageReplacement));
+        formData.append("files", formValues.image);
+        
+        formData.append("replaceImages", "true");
+    } else {
+        
+        formData.append("product", JSON.stringify(product));
+    }
 
-		const formData = new FormData();
-		formData.append("product", JSON.stringify(product));
+    console.log('Updating product with:', product);
+    console.log('Has new image:', hasNewImage);
 
-		if (formValues.image instanceof File) {
-			formData.append("files", formValues.image);
-		}
-		if (formValues.image) {
-			product.productImages.push(...formValues.image);
-
-			formData.append("files", new Blob(), formValues.image);
-		}
-		console.log(formData);
-
-		this.posService.addProduct(formData).subscribe(
-			async (data) => {
-				if (data) {
-					this.messageService.add({
-						severity: "success",
-						summary: "Product updated",
-						detail: "Product updated successfully.",
-						key: "tl",
-						life: 3000,
-					});
-					this.resetForm();
-					this.triggerClose();
-				} else {
-					this.messageService.add({
-						severity: "error",
-						summary: "Failed",
-						detail: "Failed, please try again.",
-						key: "tl",
-						life: 3000,
-					});
-				}
-			},
-			(error) => {
-				this.messageService.add({
-					severity: "error",
-					summary: "Error",
-					detail: error,
-					key: "tl",
-					life: 3000,
-				});
-			},
-		);
-	}
-
+    this.posService.updateProduct(formData).subscribe(
+        async (data) => {
+            this.loading = false;
+            if (data) {
+                this.messageService.add({
+                    severity: "success",
+                    summary: "Product updated",
+                    detail: "Product updated successfully.",
+                    key: "tl",
+                    life: 3000,
+                });
+                this.triggerClose();
+            } else {
+                this.messageService.add({
+                    severity: "error",
+                    summary: "Failed",
+                    detail: "Failed, please try again.",
+                    key: "tl",
+                    life: 3000,
+                });
+            }
+        },
+        (error) => {
+            this.loading = false;
+            console.error('Update error:', error);
+            this.messageService.add({
+                severity: "error",
+                summary: "Error",
+                detail: "Failed to update product. Please try again.",
+                key: "tl",
+                life: 3000,
+            });
+        }
+    );
+}
 	resetForm() {
 		this.productForm.reset();
 		this.productImage = "";
@@ -1670,7 +1724,12 @@ export class AddProductComponent {
 		}
 
 		return "";
+		
 	}
+	isFieldInvalidAndTouched(fieldName: string): boolean {
+  const field = this.productForm.get(fieldName);
+  return !!(field && field.invalid && (field.dirty || field.touched));
+}
 
 	/**
 	 * Yes this looks needlessly complex :p

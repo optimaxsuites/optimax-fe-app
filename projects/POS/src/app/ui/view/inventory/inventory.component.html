@@ -261,32 +261,32 @@
 
         <!-- Menu Button + Overlay -->
         <div class="absolute top-3 right-3">
-          <button 
-            class="bg-white rounded-full p-2 shadow-md hover:bg-gray-100 transition-colors"
-            (click)="op.toggle($event); $event.stopPropagation()"
-          >
-            <i class="pi pi-ellipsis-v text-gray-700"></i>
-          </button>
+  <button 
+    class="bg-white rounded-full p-2 shadow-md hover:bg-gray-100 transition-colors"
+    (click)="closeAllOverlays(); op.toggle($event); $event.stopPropagation()"
+  >
+    <i class="pi pi-ellipsis-v text-gray-700"></i>
+  </button>
 
-          <p-overlayPanel #op [showTransitionOptions]="'150ms'" [hideTransitionOptions]="'150ms'" ngClass="padding: 0;">
-            <ul>
-              <li
-                class="table-item-panel"
-                (click)="openViewProduct(product)"
-              >
-                <i class="pi pi-eye table-item me-2"></i>
-                <span>View Details</span>
-              </li>
-              <li
-                class="table-item-panel"
-                (click)="openEditInventory(product, 'child')"
-              >
-                <i class="pi pi-pen-to-square table-item me-2"></i>
-                <span>Edit</span>
-              </li>
-            </ul>
-          </p-overlayPanel>
-        </div>
+  <p-overlayPanel #op [showTransitionOptions]="'150ms'" [hideTransitionOptions]="'150ms'" ngClass="padding: 0;">
+    <ul>
+      <li
+        class="table-item-panel"
+        (click)="openViewProduct(product); op.hide()"
+      >
+        <i class="pi pi-eye table-item me-2"></i>
+        <span>View Details</span>
+      </li>
+      <li
+        class="table-item-panel"
+        (click)="openEditInventory(product, 'child'); op.hide()"
+      >
+        <i class="pi pi-pen-to-square table-item me-2"></i>
+        <span>Edit</span>
+      </li>
+    </ul>
+  </p-overlayPanel>
+</div>
       </div>
 
       <!-- Product Info -->

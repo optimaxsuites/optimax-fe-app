@@ -1,4 +1,4 @@
- import { Component, OnInit } from "@angular/core";
+ import { Component, OnInit,  ViewChildren, QueryList, HostListener } from "@angular/core";
 import { PosServiceService } from "../../service/pos-service.service";
 import JsBarcode from "jsbarcode";
 import jsPDF from "jspdf";
@@ -41,6 +41,28 @@ import { getUserPermissionsFor, isSuperUser } from "../../../shared/pipes/helper
   providers: [MessageService],
 })
 export class ProductsComponent implements OnInit {
+
+  @ViewChildren('op') overlayPanels!: QueryList<any>;
+  closeAllOverlays() {
+    if (this.overlayPanels) {
+      this.overlayPanels.forEach(overlay => {
+        if (overlay.overlayVisible) {
+          overlay.hide();
+        }
+      });
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+onDocumentClick(event: any) {
+  if (this.overlayPanels) {
+    this.overlayPanels.forEach(overlay => {
+      if (overlay.overlayVisible && !overlay.el.nativeElement.contains(event.target)) {
+        overlay.hide();
+      }
+    });
+  }
+}
   /**
    * The Product data from which the displayed items are generated from. Modify this as you wish, but don't forget to reset by to the `originalProducts` when required
    *
@@ -163,6 +185,7 @@ export class ProductsComponent implements OnInit {
   canDelete: false,
   canCreate: false,
   };  
+  
 
   superUser = isSuperUser();
 
