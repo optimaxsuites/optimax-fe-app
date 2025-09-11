@@ -260,85 +260,86 @@
       </ng-container>
     
       <ng-template #productList>
-        <div 
-          *ngFor="let product of paginatedProducts" 
-          class="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col"
-          (click)="openViewProduct(product)"
-        >
-          <div class="relative">
-             <img
-              [src]="product.imageUrl$"
-              alt="{{product.name}}"
-              class="w-full h-48 object-cover"
-              onerror="this.src='assets/logo.png'"
-            /> 
-            <div class="absolute top-3 right-3">
-              <button 
-                class="bg-white rounded-full p-2 shadow-md hover:bg-gray-100 transition-colors"
-                (click)="op.toggle($event); $event.stopPropagation()"
-              >
-                <i class="pi pi-ellipsis-v text-gray-700"></i>
-              </button>
-              <p-overlayPanel #op [showTransitionOptions]="'150ms'" [hideTransitionOptions]="'150ms'" ngClass="padding: 0;">
-                <ul class=" ">
-                  <li
-                    class="table-item-panel"
-                    (click)="openViewProduct(product)"
-                   
-                  >
-                    <i class="pi pi-eye table-item me-2"></i>
-                    <span>View</span>
-                  </li>
-                  <li
-                    class="table-item-panel"
-                    *ngIf="productPermissions.canEdit"
-                    (click)="openEdit(product)"
-                   
-                  >
-                    <i class="pi pi-pen-to-square table-item me-2"></i>
-                    <span>Edit</span>
-                  </li>
-                  <li
-                    class="table-item-panel"
-                    (click)="promptBarcode(product, op)"
-                   
-                  >
-                    <i class="pi pi-download table-item me-2"></i>
-                    <span>Generate Barcode</span>
-                  </li>
-                  <li
-                    class="table-item-panel"
-                    *ngIf="productPermissions.canDelete"
-                    (click)="openDeleteModal(product); op.hide()"
-                   
-                  >
-                    <i class="pi pi-times-circle table-item me-2"></i>
-                    <span>Delete</span>
-                  </li>
-                </ul>
-              </p-overlayPanel>
-            </div>
-          </div>
+       
+<div 
+  *ngFor="let product of paginatedProducts" 
+  class="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col"
+  (click)="openViewProduct(product)"
+>
+  <div class="relative">
+     <img
+      [src]="product.imageUrl$"
+      alt="{{product.name}}"
+      class="w-full h-48 object-cover"
+      onerror="this.src='assets/logo.png'"
+    /> 
+    <div class="absolute top-3 right-3">
+      <button 
+        class="bg-white rounded-full p-2 shadow-md hover:bg-gray-100 transition-colors"
+        (click)="closeAllOverlays(); op.toggle($event); $event.stopPropagation()"
+      >
+        <i class="pi pi-ellipsis-v text-gray-700"></i>
+      </button>
+      <p-overlayPanel #op [showTransitionOptions]="'150ms'" [hideTransitionOptions]="'150ms'" ngClass="padding: 0;">
+        <ul class=" ">
+          <li
+            class="table-item-panel"
+            (click)="openViewProduct(product)"
+           
+          >
+            <i class="pi pi-eye table-item me-2"></i>
+            <span>View</span>
+          </li>
+          <li
+            class="table-item-panel"
+            *ngIf="productPermissions.canEdit"
+            (click)="openEdit(product)"
+           
+          >
+            <i class="pi pi-pen-to-square table-item me-2"></i>
+            <span>Edit</span>
+          </li>
+          <li
+            class="table-item-panel"
+            (click)="promptBarcode(product, op)"
+           
+          >
+            <i class="pi pi-download table-item me-2"></i>
+            <span>Generate Barcode</span>
+          </li>
+          <li
+            class="table-item-panel"
+            *ngIf="productPermissions.canDelete"
+            (click)="openDeleteModal(product); op.hide()"
+           
+          >
+            <i class="pi pi-times-circle table-item me-2"></i>
+            <span>Delete</span>
+          </li>
+        </ul>
+      </p-overlayPanel>
+    </div>
+  </div>
+
+  <div class="p-4 flex flex-col flex-grow">
+    <h3 class="font-medium text-gray-800 mb-2 line-clamp-2 h-10 text-[13px]">{{ product.name }}</h3>
     
-          <div class="p-4 flex flex-col flex-grow">
-            <h3 class="font-medium text-gray-800 mb-2 line-clamp-2 h-10 text-[13px]">{{ product.name }}</h3>
-            
-            <div class="mt-2 space-y-1 text-sm flex-grow">
-              <div class="flex justify-between">
-                <span class="text-gray-500">Price:</span>
-                <span class="font-semibold text-gray-800">{{ product?.sellingPrice | currency : "₦" }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-500">Quantity:</span>
-                <span class="font-semibold text-gray-800">{{ product?.quantity }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-500">Category:</span>
-                <span class="font-semibold text-gray-800">{{ product.productCategory.name }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div class="mt-2 space-y-1 text-sm flex-grow">
+      <div class="flex justify-between">
+        <span class="text-gray-500">Price:</span>
+        <span class="font-semibold text-gray-800">{{ product?.sellingPrice | currency : "₦" }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-gray-500">Quantity:</span>
+        <span class="font-semibold text-gray-800">{{ product?.quantity }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-gray-500">Category:</span>
+        <span class="font-semibold text-gray-800">{{ product.productCategory.name }}</span>
+      </div>
+    </div>
+  </div>
+</div>
       </ng-template>
     </div>
 

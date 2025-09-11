@@ -931,12 +931,11 @@
           >
             <img
               class="w-full h-full object-contain"
-              [src]="
-                isEditMode
-                  ? activeItem?.imageUrl$
-                  : productImage ||
-                    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s'
-              "
+             [src]="
+  productImage || 
+  (isEditMode ? activeItem?.imageUrl$ : '') ||
+  'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s'
+"
               alt="product image"
             />
           </div>
