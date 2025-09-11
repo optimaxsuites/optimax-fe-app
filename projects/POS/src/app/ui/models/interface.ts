@@ -83,6 +83,7 @@ type ProductDataShared = {
   selectedVariants?: VariantDTO[];
 
   pricingQuantity: any;
+  quantity: number;
 };
 
 /**

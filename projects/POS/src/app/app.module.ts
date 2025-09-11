@@ -130,6 +130,9 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TagModule } from 'primeng/tag';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { UniquePipe } from './shared/pipes/unique.pipe';
+import { StoreHeaderComponent } from './ui/view/pos-store/store-header/store-header.component';
+// import { StoreProductsDetailsComponent } from './ui/view/store-products-details/store-products-details.component';
+import { ProductDetailsComponent } from './ui/view/pos-store/product-details/product-details.component';
 import { UpdateStockComponent } from './ui/view/ingredient/update-stock/update-stock.component';
 export function appInitializerFactory(appInitService: AppInitService) {
   return () => appInitService.init();
@@ -196,6 +199,9 @@ export function appInitializerFactory(appInitService: AppInitService) {
     OrderFilterPipe,
     SalesDetailsComponent,
     UniquePipe,
+    StoreHeaderComponent,
+    // StoreProductsDetailsComponent,
+    // ProductDetailsComponent,
     UpdateStockComponent,
     //CheckoutKitchenComponent,
   ],

@@ -1,16 +1,19 @@
-import { Component, computed, OnInit, signal } from "@angular/core";
-import Fuse, { IFuseOptions } from "fuse.js";
-import { ProductData, VariantDTO } from "../../models/interface";
-import { ImageCacheService } from "../../service/image-cache.service";
-import { PaymentServiceService } from "../../service/payment-service.service";
-import { PosServiceService } from "../../service/pos-service.service";
-import { ProductHelperService } from "../../service/product-helper.service";
+import { Component, computed, OnInit, signal } from '@angular/core';
+import Fuse, { IFuseOptions } from 'fuse.js';
+import { ProductData, VariantDTO } from '../../models/interface';
+import { ImageCacheService } from '../../service/image-cache.service';
+import { PaymentServiceService } from '../../service/payment-service.service';
+import { PosServiceService } from '../../service/pos-service.service';
+import { ProductHelperService } from '../../service/product-helper.service';
+import { Router } from '@angular/router';
 
 /** Indexed by each `category`'s name */
 type ProductDataMap = Map<string, ProductData[]>;
 
-type ProductAndVariantCombinedId =
-  `${ProductData["id"]}-${Exclude<ProductData["selectedVariants"], undefined>[0]["id"]}`;
+type ProductAndVariantCombinedId = `${ProductData['id']}-${Exclude<
+  ProductData['selectedVariants'],
+  undefined
+>[0]['id']}`;
 
 type ConvertedCartProducts = {
   products: ProductData[];
@@ -21,17 +24,17 @@ type ConvertedCartProducts = {
 };
 
 @Component({
-  selector: "app-pos-store",
-  templateUrl: "./pos-store.component.html",
-  styleUrl: "./pos-store.component.scss",
+  selector: 'app-pos-store',
+  templateUrl: './pos-store.component.html',
+  styleUrl: './pos-store.component.scss',
 })
 export class PosStoreComponent implements OnInit {
   private static readonly _fuseOptions: IFuseOptions<ProductData> = {
     keys: [
-      { name: "sku", weight: 2 },
-      { name: "name", weight: 1.5 },
-      "description",
-      "category",
+      { name: 'sku', weight: 2 },
+      { name: 'name', weight: 1.5 },
+      'description',
+      'category',
     ],
     includeScore: true,
     threshold: 0.333, // Lower threshold for less fuzzy matching
@@ -42,21 +45,45 @@ export class PosStoreComponent implements OnInit {
   /** Populated in `ngOnInit` */
   productData = signal<ProductDataMap>(new Map());
 
-  readonly defaultCategory = "All";
+  readonly defaultCategory = 'All';
 
   /** Populated in `ngOnInit` */
   selectedCategory = signal(this.defaultCategory);
 
   private _productsInChosenCategory = computed(
-    () => this.productData().get(this.selectedCategory()) ?? this._allProducts,
+    () => this.productData().get(this.selectedCategory()) ?? this._allProducts
   );
 
-  searchText = signal("");
+  searchText = signal('');
 
   private readonly _fuse = new Fuse<ProductData>(
     this._productsInChosenCategory(),
-    PosStoreComponent._fuseOptions,
+    PosStoreComponent._fuseOptions
   );
+
+  isSidebarVisible = true;
+
+  // Create category options for the dropdown
+  categoryOptions = computed(() => {
+    const options = [
+      { label: this.defaultCategory, value: this.defaultCategory },
+    ];
+
+    // Fix: Use proper iteration over the Map
+    this.productData().forEach((_, key) => {
+      options.push({
+        label: key[0].toUpperCase() + key.slice(1),
+        value: key,
+      });
+    });
+
+    return options;
+  });
+
+   // Add this method to handle navigation to product details
+  navigateToProductDetails(productId: number): void {
+    this.router.navigate(['/pos-store/product-details', productId]);
+  }
 
   // TODO: add extra dependencies like search filtering
   filteredProducts = computed(() => {
@@ -73,18 +100,18 @@ export class PosStoreComponent implements OnInit {
     else return searchResults;
   });
 
-  didSearchHaveResults = computed<"no_search_yet" | "no" | "yes">(() => {
+  didSearchHaveResults = computed<'no_search_yet' | 'no' | 'yes'>(() => {
     if (!this.searchText() || !this._productsInChosenCategory().length)
-      return "no_search_yet";
+      return 'no_search_yet';
     else if (this.filteredProducts() === this._productsInChosenCategory())
-      return "no";
-    else return "yes";
+      return 'no';
+    else return 'yes';
   });
 
   /** This is just a way for me to detect whether the device is mobile and in portrait mode */
   readonly shouldCartHaveViewportWidth =
     window.innerWidth < 640 &&
-    window.matchMedia("(orientation: portrait)").matches;
+    window.matchMedia('(orientation: portrait)').matches;
 
   isCartOpen = false;
   isHamburgerMenuOpen = false;
@@ -97,9 +124,9 @@ export class PosStoreComponent implements OnInit {
   /** Each index is either the number id of a product: `234` or the combined string literal of both the id and a selected variant: `"234-1"`, and it holds a **clone** of the product as well as the quantity. Note that if a string literal representing the product id and variant id is present, then the `selectedVariants` property will be populated with 1 variant. */
   cartProducts = signal(
     new Map<
-      ProductData["id"] | ProductAndVariantCombinedId,
+      ProductData['id'] | ProductAndVariantCombinedId,
       { product: ProductData; quantity: number; isVariant: boolean }
-    >(),
+    >()
   );
 
   isCartEmpty = computed(() => !this.cartProducts().size);
@@ -124,7 +151,7 @@ export class PosStoreComponent implements OnInit {
           tax: accTax,
           total: accTotal,
         },
-        [_, { product: currProduct, quantity: currQuantity }],
+        [_, { product: currProduct, quantity: currQuantity }]
       ) => {
         accProducts.push(...Array(currQuantity).fill(currProduct));
         accDiscount +=
@@ -141,17 +168,18 @@ export class PosStoreComponent implements OnInit {
           total: accTotal,
         };
       },
-      { products: [], subTotal: 0, tax: 0, discount: 0, total: 0 },
-    ),
+      { products: [], subTotal: 0, tax: 0, discount: 0, total: 0 }
+    )
   );
 
   isPaymentModalOpen = false;
 
   constructor(
     private _posService: PosServiceService,
+    private router: Router,
     private _imgCacheService: ImageCacheService,
     private _productHelper: ProductHelperService,
-    private _paymentService: PaymentServiceService,
+    private _paymentService: PaymentServiceService
   ) {}
 
   ngOnInit(): void {
@@ -164,7 +192,7 @@ export class PosStoreComponent implements OnInit {
 
         if (!this.productData().has(categoryName)) {
           this.productData.update((oldMap) =>
-            new Map(oldMap).set(categoryName, [iteratedProduct]),
+            new Map(oldMap).set(categoryName, [iteratedProduct])
           );
         } else {
           this.productData.update((oldMap) => {
@@ -203,7 +231,7 @@ export class PosStoreComponent implements OnInit {
   addToCart(
     product: ProductData,
     /** If given, the variant's data would overwrite relevant product fields. */
-    variant?: VariantDTO,
+    variant?: VariantDTO
   ) {
     this.cartProducts.update((previousMap) => {
       const clonedProductToAdd = structuredClone(product);
@@ -248,10 +276,10 @@ export class PosStoreComponent implements OnInit {
 
   reduceQuantityInCart(
     /** If a variant must be reduced / removed, ensure that `selectedVariants` contains a single instance of the aforementioned variant. */
-    product: ProductData,
+    product: ProductData
   ) {
     this.cartProducts.update((previousMap) => {
-      const idToUse: ProductData["id"] | ProductAndVariantCombinedId = product
+      const idToUse: ProductData['id'] | ProductAndVariantCombinedId = product
         .selectedVariants?.[0]
         ? `${product.id}-${product.selectedVariants[0].id}`
         : product.id;
@@ -276,10 +304,22 @@ export class PosStoreComponent implements OnInit {
     });
   }
 
+  // Add to your component class
+  isCartSidebarVisible = true;
+
+  // Toggle cart function
+  toggleCart() {
+    if (window.innerWidth < 768) {
+      this.isCartOpen = !this.isCartOpen;
+    } else {
+      this.isCartSidebarVisible = !this.isCartSidebarVisible;
+    }
+  }
+
   /** Completely remove an item from cart */
   removeFromCart(product: ProductData) {
     this.cartProducts.update((previousMap) => {
-      const idToUse: ProductData["id"] | ProductAndVariantCombinedId = product
+      const idToUse: ProductData['id'] | ProductAndVariantCombinedId = product
         .selectedVariants?.[0]
         ? `${product.id}-${product.selectedVariants[0].id}`
         : product.id;
@@ -298,7 +338,7 @@ export class PosStoreComponent implements OnInit {
   }
 
   productQuantityInCart(product: ProductData): number {
-    const idToUse: ProductData["id"] | ProductAndVariantCombinedId = product
+    const idToUse: ProductData['id'] | ProductAndVariantCombinedId = product
       .selectedVariants?.[0]
       ? `${product.id}-${product.selectedVariants[0].id}`
       : product.id;

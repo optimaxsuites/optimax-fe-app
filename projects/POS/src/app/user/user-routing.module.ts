@@ -13,6 +13,7 @@ import { HotelCheckoutComponent } from "../ui/view/hotel-checkout/hotel-checkout
 import {RefundComponent} from "../ui/view/refund/refund/refund.component";
 import { PosStoreComponent } from "../ui/view/pos-store/pos-store.component";
 import { PermissionGuard } from "../ui/permission/permission.guard";
+import { ProductDetailsComponent } from "../ui/view/pos-store/product-details/product-details.component";
 
 const routes: Routes = [
   {
@@ -101,6 +102,9 @@ const routes: Routes = [
     component: PosStoreComponent,
  
   },
+
+  { path: 'product/:id', component: ProductDetailsComponent },
+  { path: 'pos-store/product-details/:id', component: ProductDetailsComponent }
 ];
 
 @NgModule({

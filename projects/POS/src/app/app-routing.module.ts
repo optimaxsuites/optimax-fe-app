@@ -37,7 +37,7 @@ const routes: Routes = [
   },
   
   {
-    path: 'product/:uuid',
+    path: '',
     component: ProductsComponent,
     canActivate: [PermissionGuard],
     data: { appCode: ['POS_PDT'] }
