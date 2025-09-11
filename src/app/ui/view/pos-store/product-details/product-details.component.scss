@@ -1,0 +1,33 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .product-container {
+    flex-direction: column;
+  }
+  
+  .product-image, .product-info {
+    width: 100% !important;
+  }
+}
+
+// Variant button animations
+.variant-btn {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-1px);
+  }
+}
+
+// Quantity selector styles
+.quantity-selector {
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
