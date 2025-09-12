@@ -39,6 +39,7 @@ import { MatRadioModule } from '@angular/material/radio';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { DropdownModule } from 'primeng/dropdown';
+import { InputSwitchModule } from 'primeng/inputswitch';
 //import { TagModule } from 'primeng/tag';
 
 // import { EditorModule } from "@progress/kendo-angular-editor";
@@ -245,6 +246,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { TagModule } from 'primeng/tag';
 import { AppInitService } from 'projects/POS/src/app/ui/service/app-init.service';
 import { UnauthourizedComponent } from './ui/unauthourized.component';
+import { PaymentComponent } from './ui/marketplace/view/payment/payment.component';
 
 
 @NgModule({
@@ -414,7 +416,8 @@ import { UnauthourizedComponent } from './ui/unauthourized.component';
     EmployeePayslipListComponent,
     MarketplaceComponent,
     NotFoundComponent,
-    UnauthourizedComponent
+    UnauthourizedComponent,
+    PaymentComponent
   ],
   imports: [
       BrowserModule,
@@ -481,6 +484,7 @@ import { UnauthourizedComponent } from './ui/unauthourized.component';
       NgSelectModule,
       MatMenuModule,
       FullCalendarModule,
+      InputSwitchModule,
       ServiceWorkerModule.register('ngsw-worker.js', {
         enabled: !isDevMode(),
         // Register the ServiceWorker as soon as the application is stable

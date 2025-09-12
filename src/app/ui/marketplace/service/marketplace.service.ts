@@ -41,6 +41,18 @@ export class MarketplaceService {
         .pipe(catchError(this.handleError));
   }
 
+  getApps(): Observable<any> {
+    return this.http
+        .get<any>(this.getBaseApiUrl() + "/x/api/v2/sub/subscriptionModules")
+        .pipe(catchError(this.handleError));
+  }
+
+  getAppById(id: any): Observable<any> {
+    return this.http
+        .get<any>(this.getBaseApiUrl() + `/x/api/v2/sub/subscriptionModules/${id}`)
+        .pipe(catchError(this.handleError));
+  }
+
 
   private getBaseApiUrl(): string {
     return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;

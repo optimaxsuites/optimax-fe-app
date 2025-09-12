@@ -14,20 +14,28 @@ import { forkJoin } from 'rxjs';
 })
 export class MarketplaceComponent {
   role: string|null = ''
-  modules: MenuItem[] = [];
+  modules: any[] = [];
   visible: boolean = false;
   module: any = {}
   code: string = ''
   key: string = ''
   loading: boolean = false
+  selectedPlan: any = {}
   constructor(private menuService: MenuItemsService, private messageService: MessageService,
-   private navigationLink: NavigationLinksService, private marketplaceService: MarketplaceService) {}
+   private navigationLink: NavigationLinksService, private marketplaceService: MarketplaceService, private router: Router) {}
 
    ngOnInit(): void {
       this.role = sessionStorage.getItem('role'); 
       console.log("role = ", this.role)
       if (this.role) {
-        this.modules = this.menuService.getAllModules().sort((a, b) => (b.active ? 1 : 0) - (a.active ? 1 : 0));
+        this.marketplaceService.getApps().subscribe({
+          next: (data) => {
+            this.modules = data
+          },
+          error(err) {
+            console.error(err)
+          },
+        })
       }
  
     }
@@ -148,5 +156,14 @@ export class MarketplaceComponent {
         default:
           return '';
       }
+    }
+
+    proceedToPayment(selectedPlan: any, module: any){
+      if (!selectedPlan || !module) return;
+
+        this.router.navigate(
+          ['/subscription', module.id],
+          { queryParams: { plan: selectedPlan.id } }
+        );
     }
 }

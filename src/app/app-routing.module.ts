@@ -32,6 +32,7 @@ import { EmployeeOnboardingFormComponent } from 'projects/hr/src/app/ui/view/emp
 import { MarketplaceComponent } from './ui/marketplace/view/marketplace/marketplace.component';
 import { NotFoundComponent } from './ui/not-found.component';
 import { UnauthourizedComponent } from './ui/unauthourized.component';
+import { PaymentComponent } from './ui/marketplace/view/payment/payment.component';
 
 const routes: Routes = [
   {
@@ -172,6 +173,11 @@ const routes: Routes = [
       },
      
     ],
+  },
+
+  {
+    path: 'subscription/:id',
+    component: PaymentComponent
   },
 
   {
