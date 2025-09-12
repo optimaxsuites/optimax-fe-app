@@ -1,13 +1,15 @@
 // inventory.component.ts - Fixed version
 
 import {
-  Component,
+ Component,
   OnInit,
   Input,
   Output,
   EventEmitter,
   HostListener,
   ViewChild,
+  ViewChildren,
+  QueryList,
   Renderer2,
   Inject,
   OnDestroy,
@@ -41,8 +43,10 @@ import { isSuperUser, getUserPermissionsFor } from '../../../shared/pipes/helper
   styleUrl: './inventory.component.scss',
 })
 export class InventoryComponent implements OnInit, OnDestroy {
+  @ViewChildren('op') overlayPanels!: QueryList<any>;
   @ViewChild('op') op!: OverlayPanel;
   @ViewChild('editInventoryComponent')
+  @HostListener('document:click', ['$event'])
   mode: 'create' | 'edit' = 'create';
   editInventoryComponent!: EditInventoryComponent;
   isLoading: boolean = false;
@@ -124,6 +128,36 @@ export class InventoryComponent implements OnInit, OnDestroy {
     @Inject(DOCUMENT) private document: Document,
     private renderer: Renderer2
   ) {}
+
+  closeAllOverlays() {
+    if (this.overlayPanels) {
+      this.overlayPanels.forEach(overlay => {
+        if (overlay.overlayVisible) {
+          overlay.hide();
+        }
+      });
+    }
+  }
+
+  onDocumentClick(event: any) {
+   
+    if (this.products && Array.isArray(this.products)) {
+      this.products.forEach((p: any) => (p.showMenu = false));
+    }
+    if (this.paginatedProducts && Array.isArray(this.paginatedProducts)) {
+      this.paginatedProducts.forEach((p: any) => (p.showMenu = false));
+    }
+
+    
+    if (this.overlayPanels) {
+      this.overlayPanels.forEach(overlay => {
+        if (overlay.overlayVisible && !overlay.el.nativeElement.contains(event.target)) {
+          overlay.hide();
+        }
+      });
+    }
+  }
+
 
   onPageChange(event: any) {
     this.currentPage = event.page;
@@ -328,6 +362,9 @@ export class InventoryComponent implements OnInit, OnDestroy {
     if (this.paginatedProducts && Array.isArray(this.paginatedProducts)) {
       this.paginatedProducts.forEach((p: any) => (p.showMenu = false));
     }
+    
+   
+    this.closeAllOverlays();
   }
 
   closeDropdown(item: any) {
