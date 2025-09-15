@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ProductData, VariantDTO } from '../../../models/interface';
 import { PosServiceService } from '../../../service/pos-service.service';
 import { ImageCacheService } from '../../../service/image-cache.service';
 import { StoreCartService } from '../../../service/store-cart.service';
+import { StoreHeaderComponent } from '../store-header/store-header.component';
 
 @Component({
   selector: 'app-product-details',
@@ -16,19 +17,31 @@ export class ProductDetailsComponent implements OnInit {
   product: ProductData | null = null;
   quantity: number = 1;
   selectedVariants: { [key: string]: string } = {};
+  storeUuid: string = '';
+  cartItemCount: number = 0;
+  isCartEmpty: boolean = true;
   
   variantGroups: { type: string; values: string[] }[] = [];
   selectedVariantType: string = '';
   selectedVariantValue: string = '';
 
+  // Image gallery
+  mainImage: string = '';
+  thumbnailImages: string[] = [];
+
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private posService: PosServiceService,
     private imageCacheService: ImageCacheService,
-    private storeCartService: StoreCartService // Fixed capitalization
+    private storeCartService: StoreCartService
   ) { }
 
   ngOnInit(): void {
+    // Get store UUID from parent route
+    this.storeUuid = this.route.parent?.snapshot.params['uuid'] || '';
+    
+    // Get product ID from current route
     const productId = this.route.snapshot.paramMap.get('id');
     if (productId) {
       const idNumber = parseInt(productId, 10);
@@ -36,6 +49,12 @@ export class ProductDetailsComponent implements OnInit {
         this.loadProductDetails(idNumber);
       }
     }
+
+    // Subscribe to cart changes
+    this.storeCartService.cartItems$.subscribe(items => {
+      this.cartItemCount = items.reduce((total, item) => total + item.quantity, 0);
+      this.isCartEmpty = this.cartItemCount === 0;
+    });
   }
 
   loadProductDetails(productId: number): void {
@@ -43,6 +62,7 @@ export class ProductDetailsComponent implements OnInit {
       next: (product: ProductData) => {
         this.product = product;
         this.processVariants();
+        this.loadImages();
       },
       error: (err: any) => {
         console.error('Error loading product details:', err);
@@ -50,8 +70,13 @@ export class ProductDetailsComponent implements OnInit {
     });
   }
 
-  getProductImage(product: ProductData) {
-    return this.imageCacheService.getProductImage(product);
+  loadImages(): void {
+    if (!this.product) return;
+    
+    this.imageCacheService.getProductImage(this.product).subscribe(imageUrl => {
+      this.mainImage = imageUrl;
+      this.thumbnailImages = [imageUrl]; // You can add more thumbnails if available
+    });
   }
 
   processVariants(): void {
@@ -118,24 +143,61 @@ export class ProductDetailsComponent implements OnInit {
         );
       });
       
-      // if (matchingVariant) {
-      //   productToAdd.selectedVariants = [matchingVariant];
-      //   if (matchingVariant.price) {
-          
-      //     productToAdd.sellingPrice = Number(matchingVariant.price);
-      //   }
-      // }
+      if (matchingVariant) {
+        productToAdd.selectedVariants = [matchingVariant];
+      }
     }
     
     this.storeCartService.addToCart(productToAdd, this.quantity);
     
-    this.quantity = 1;
-    this.selectedVariants = {};
-    
-    alert('Product added to cart!');
+    // Show success message
+    this.showSuccessMessage('Product added to cart!');
+  }
+
+  showSuccessMessage(message: string): void {
+    // You can implement a toast notification here
+    alert(message);
+  }
+
+  goBack(): void {
+    this.router.navigate(['/store', this.storeUuid]);
   }
 
   getCategoryName(): string {
-    return this.product?.productCategory?.name || 'Category';
+    return this.product?.productCategory?.name || 'Products';
+  }
+
+  onToggleCart(): void {
+    // Handle cart toggle if needed
+    console.log('Cart toggled');
+  }
+
+  onToggleMenu(): void {
+    // Handle menu toggle if needed
+    console.log('Menu toggled');
+  }
+
+  changeImage(imageUrl: string): void {
+    this.mainImage = imageUrl;
+  }
+
+  getCurrentPrice(): number {
+    if (!this.product) return 0;
+    
+    // If variants are selected, use variant price, otherwise use product price
+    if (Object.keys(this.selectedVariants).length > 0 && this.product.variants) {
+      const matchingVariant = this.product.variants.find((variant: VariantDTO) => {
+        return (
+          (!this.selectedVariants['color'] || variant.color === this.selectedVariants['color']) &&
+          (!this.selectedVariants['size'] || variant.size === this.selectedVariants['size'])
+        );
+      });
+      
+      if (matchingVariant && matchingVariant.price) {
+        return Number(matchingVariant.price);
+      }
+    }
+    
+    return Number(this.product.sellingPrice);
   }
 }

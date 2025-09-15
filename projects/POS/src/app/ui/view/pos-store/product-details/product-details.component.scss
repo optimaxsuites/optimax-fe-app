@@ -31,3 +31,22 @@
     cursor: not-allowed;
   }
 }
+
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+// Smooth transitions
+* {
+  transition: all 0.3s ease;
+}
+
+// Custom scrollbar
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}

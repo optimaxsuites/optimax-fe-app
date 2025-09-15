@@ -6,6 +6,7 @@ import { PaymentServiceService } from '../../service/payment-service.service';
 import { PosServiceService } from '../../service/pos-service.service';
 import { ProductHelperService } from '../../service/product-helper.service';
 import { Router } from '@angular/router';
+import { StoreHeaderComponent } from './store-header/store-header.component';
 
 /** Indexed by each `category`'s name */
 type ProductDataMap = Map<string, ProductData[]>;
