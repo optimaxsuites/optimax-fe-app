@@ -23,6 +23,7 @@
         </ng-select>
 
         <ng-select
+        *ngIf="superUser"
           [items]="branches"
           bindLabel="name"
           bindValue="id"

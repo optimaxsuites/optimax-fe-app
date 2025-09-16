@@ -35,6 +35,7 @@ import { MetadataService } from '../../service/metadata.service';
 import { DOCUMENT } from '@angular/common';
 import { EditInventoryComponent } from './edit-inventory/edit-inventory.component';
 import { BehaviorSubject } from 'rxjs';
+import { isSuperUser, getUserPermissionsFor } from '../../../shared/pipes/helper';
 
 @Component({
   selector: 'app-inventory',
@@ -108,6 +109,13 @@ export class InventoryComponent implements OnInit, OnDestroy {
   canDelete: false,
   canCreate: false,
   };  
+  superUser = isSuperUser();
+   productPermissions = {
+  canView: false,
+  canEdit: false,
+  canDelete: false,
+  canCreate: false,
+  };  
 
   constructor(
     private messageService: MessageService,
@@ -173,8 +181,21 @@ export class InventoryComponent implements OnInit, OnDestroy {
     if (this.selectedBranch) {
       this.metadataService.setSelectedBranch(this.selectedBranch);
     }
+    if (isSuperUser()) {
+          this.productPermissions = {
+            canView: true,
+            canEdit: true,
+            canDelete: true,
+            canCreate: true,
+          };
+        }else {
+        this.productPermissions = getUserPermissionsFor('POS_PDT');
     
+    }
+
     this.getInventories();
+
+
   }
 
   // FIXED: Handle branch filter change with proper loading states

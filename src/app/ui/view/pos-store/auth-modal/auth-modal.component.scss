@@ -1,0 +1,12 @@
+@media (max-width: 640px) {
+  :host {
+    .fixed {
+      align-items: flex-end;
+    }
+    
+    .max-w-md {
+      max-width: none;
+      border-radius: 1rem 1rem 0 0;
+    }
+  }
+}
