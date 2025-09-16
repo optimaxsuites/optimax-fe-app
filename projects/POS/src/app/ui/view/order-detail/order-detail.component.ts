@@ -135,13 +135,17 @@ total
     return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
   }
   
-// In order-detail.component.ts
+
 get changeAmount(): number {
-  const tendered = this.navigationState?.order?.amountTendered ?? 0;
-  // const total = this.navigationState?.order?.total ?? 0;
-  const total = this.navigationState?.order?.totalAmount ?? 0;
-  return tendered - total;
-}
+    const tendered = this.navigationState?.order?.amountTendered ?? 0;
+    const total = this.getTotalPrice(); 
+    
+    if (tendered > total) {
+      return tendered - total;
+    }
+    return 0;
+  }
+
 
 printReciept() {
   const content = document.getElementById('receipt-container')?.outerHTML;

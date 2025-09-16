@@ -240,3 +240,14 @@
     background: #a8a8a8;
   }
 }
+
+
+  /* In pos-store.component.scss */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}

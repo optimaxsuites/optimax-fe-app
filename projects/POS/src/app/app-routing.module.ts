@@ -25,12 +25,19 @@ import { SalesComponent } from './ui/view/sales/sales.component';
 import { PermissionGuard } from './ui/permission/permission.guard';
 import { UpdateStockComponent } from './ui/view/ingredient/update-stock/update-stock.component';
 
+
 const routes: Routes = [
   {
     path: '',
     redirectTo: 'product/34567whr4567yhsdzr56',
     pathMatch: 'full',
   },
+  {
+    path: 'user/checkout/cash-payment/:id',
+    component: CashPaymentComponent
+  },
+  
+
   {
     path: 'Update-stock/:uuid',
     component: UpdateStockComponent,

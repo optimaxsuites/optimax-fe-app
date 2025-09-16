@@ -55,6 +55,62 @@ export class PosStoreComponent implements OnInit {
     () => this.productData().get(this.selectedCategory()) ?? this._allProducts
   );
 
+  user = signal({ name: 'Guest', isGuest: true });
+
+  branches: any[] = [];
+
+  getCategoryList(): string[] {
+  const categories: string[] = [];
+  this.productData().forEach((_, key) => {
+    if (key !== 'All') {
+      categories.push(key);
+    }
+  });
+  return categories;
+}
+
+// Method to get products by category
+getProductsByCategory(category: string): ProductData[] {
+  return this.productData().get(category) || [];
+}
+
+categoryCarousels: { [key: string]: Element } = {};
+
+// After view init, get references to carousel elements
+ngAfterViewInit() {
+  // We'll use a small timeout to ensure the view is rendered
+  setTimeout(() => {
+    this.getCategoryList().forEach(category => {
+      const element = document.querySelector(`[data-category="${category}"]`);
+      if (element) {
+        this.categoryCarousels[category] = element;
+      }
+    });
+  }, 100);
+}
+
+scrollCarouselLeft(category: string): void {
+  const carousel = document.querySelector(`[data-category="${category}"]`);
+  if (carousel) {
+    carousel.scrollBy({ left: -300, behavior: 'smooth' });
+  }
+}
+
+scrollCarouselRight(category: string): void {
+  const carousel = document.querySelector(`[data-category="${category}"]`);
+  if (carousel) {
+    carousel.scrollBy({ left: 300, behavior: 'smooth' });
+  }
+}
+
+// Method to handle branch change
+changeBranch(branch: any) {
+  // Implement logic to filter products by branch
+  console.log('Branch changed to:', branch);
+  // You'll need to update your product fetching logic based on the selected branch
+}
+
+
   searchText = signal('');
 
   private readonly _fuse = new Fuse<ProductData>(
@@ -184,9 +240,16 @@ export class PosStoreComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+
+      // Fetch branches
+  this._posService.getBranches().subscribe((branches) => {
+    this.branches = branches;
+  });
+
+
     // Populate the product data
     this._posService.getProducts().subscribe((data) => {
-      this._allProducts = data;
+    this._allProducts = data;
 
       data.forEach((iteratedProduct) => {
         const categoryName = iteratedProduct.productCategory.name;
