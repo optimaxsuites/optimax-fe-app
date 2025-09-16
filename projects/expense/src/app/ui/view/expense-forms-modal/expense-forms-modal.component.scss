@@ -693,3 +693,42 @@ p {
   }
 }
 }
+.split-bill-btn {
+ margin-top: 10px;
+  padding: 10px 20px;
+  font-weight: bold;
+  border: none;
+  color: white;
+      background-color: #224957;
+}
+.schedule-payment-btn {
+  margin-top: 10px;
+  padding: 10px 20px;
+  font-weight: bold;
+  border: none;
+  color: white;
+   background-color: #224957;
+}
+.save-split-btn{
+  background-color: #218838;
+  padding: 10px 20px;
+   font-size: 16px;
+  font-weight: bold;
+  &:hover {
+    background-color: #218838;
+  }
+}
+.cancel-split-btn{
+  background-color: rgb(220, 53, 69);
+  font-size: 16px;
+  font-weight: bold;
+  padding: 10px 20px;
+  &:hover {
+    background-color: #e43e20;
+  }
+}
+.edit-btn{
+   font-size: 16px;
+  font-weight: bold;
+  padding: 10px 20px;
+}

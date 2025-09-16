@@ -3,13 +3,15 @@ import { ExpenseService, Expense } from '../../service/expense.service';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { NgForm } from '@angular/forms';
-
+import { RecurringPaymentModalComponent } from "../../sharedComponent/view/recurring-payment-modal/recurring-payment-modal.component";
+import { RecurringPayment } from '../../sharedComponent/view/recurring-payment-modal/recurring-payment.model';
+import { BillSplit, BillSplitParticipant } from '../../sharedComponent/view/bill-splitting-modal/bill-splitting.model';
 
 @Component({
   selector: 'app-expense-forms-modal',
   templateUrl: './expense-forms-modal.component.html',
   styleUrls: ['./expense-forms-modal.component.scss'],
-  providers: [MessageService]
+  providers: [MessageService],
 })
 export class ExpenseFormsModalComponent implements OnInit {
 drawStart() {
@@ -152,60 +154,6 @@ throw new Error('Method not implemented.');
 
 
 
-  submitExpense(form: NgForm): void {
-    if (form.invalid) {
-      form.control.markAllAsTouched();
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Form Invalid',
-        detail: 'Please fill in all required fields.'
-      });
-      return;
-      
-    } 
-
-      if (!this.receiptFile) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Missing Receipt',
-        detail: 'Please upload a receipt file.'
-      });
-      return;
-    }
-
-  
-    
-    const newExpense: Expense = {
-      ...this.expenseSummary,
-      id: this.expenseSummary.id || this.generateId(),
-      status: 'Pending',
-      amount: Number(this.expenseSummary.amount),
-      receiptFile: this.receiptFile, 
-      invoiceFile: this.invoiceFile, 
-      signature: this.signatureUrl, 
-    };
-
-    newExpense.amount = Number(newExpense.amount);
-    // if (this.expenseSummary.id) {
-    //   this.expenseService.updateExpense(newExpense);
-    // } else {
-    //   this.expenseService.addExpense(newExpense);
-    // }
-      // Save the expense to localStorage
-// Save the expense to localStorage
-this.saveExpenseToLocalStorage(newExpense);
-console.log('Expense saved to localStorage:', newExpense);
-
-this.messageService.add({
-  severity: 'success',
-  summary: 'Expense Submitted',
-  detail: `Expense for ${newExpense.merchant} has been successfully submitted.`
-})
-
- // Reset the form data
-  this.resetForm();
-  form.resetForm();
-  }
 
   saveExpenseToLocalStorage(expense: any): void {
     // Retrieve existing expenses from localStorage, or initialize an empty array
@@ -506,9 +454,254 @@ private resetTaxData() {
   this.newTaxData = { name: '', rate: 0, description: ''};
 }
 
+ // Recurring payment data
+  advancedPaymentData?: RecurringPayment;
+  showAdvancedPayment = false;
+
+  @ViewChild(RecurringPaymentModalComponent) recurringModal?: RecurringPaymentModalComponent;
+
+  // Called when recurring modal emits "save"
+  onAdvancedPaymentSave(payment: RecurringPayment) {
+    this.advancedPaymentData = payment;
+    this.showAdvancedPayment = false;  // hide form after save
+    console.log('Recurring Payment Saved:', payment);
+  }
+
+  onAdvancedPaymentCancel() {
+    this.showAdvancedPayment = false; // hide form
+  }
+
+  // Include recurring data in the final expense object
+submitExpense(form: NgForm): void {
+  // ✅ 1. Validate main form
+  if (form.invalid) {
+    form.control.markAllAsTouched();
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Form Invalid',
+      detail: 'Please fill in all required fields.'
+    });
+    return;
+  }
+
+  // ✅ 2. Validate receipt
+  if (!this.receiptFile) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Missing Receipt',
+      detail: 'Please upload a receipt file.'
+    });
+    return;
+  }
+
+  // ✅ 3. Validate recurring payment if present
+  if (this.advancedPaymentData) {
+    const { type, frequency, startDate, endDate, noEndDate, occurrences } = this.advancedPaymentData;
+
+    // Start date required & must not be in the past
+    if (!startDate || new Date(startDate) < new Date()) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Invalid Start Date',
+        detail: 'Start date must be today or in the future.'
+      });
+      return;
+    }
+
+    if (type === 'recurring') {
+      // Frequency required
+      if (!frequency) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Invalid Frequency',
+          detail: 'Please select a recurrence frequency.'
+        });
+        return;
+      }
+
+      // Must have endDate, occurrences, or noEndDate selected
+      if (!noEndDate && !endDate && !occurrences) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Invalid End Condition',
+          detail: 'Choose an end date, number of occurrences, or select "No end date".'
+        });
+        return;
+      }
+
+      // End date must be after start date
+      if (endDate && new Date(endDate) <= new Date(startDate)) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Invalid End Date',
+          detail: 'End date must be after the start date.'
+        });
+        return;
+      }
+    }
+  }
+
+  // ✅ 4. Validate bill split if present
+  if (this.billSplitData?.enabled) {
+    const total = Number(this.expenseSummary.amount);
+
+    if (this.billSplitData.method === 'percentage') {
+      const sumPercent = this.billSplitData.participants.reduce((acc, p) => acc + (p.sharePercent || 0), 0);
+      if (sumPercent !== 100) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Invalid Split',
+          detail: 'The Percentages must add up to 100%.'
+        });
+        return;
+      }
+    }
+
+    if (this.billSplitData.method === 'amount') {
+      const sumAmount = this.billSplitData.participants.reduce((acc, p) => acc + (p.shareAmount || 0), 0);
+      if (sumAmount !== total) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Invalid Split',
+          detail: `Split amounts must add up to ${total}.`
+        });
+        return;
+      }
+    }
+  }
+
+  // ✅ 5. Build the new expense object
+  const newExpense: Expense = {
+    ...this.expenseSummary,
+    id: this.expenseSummary.id || this.generateId(),
+    status: 'Pending',
+    amount: Number(this.expenseSummary.amount),
+    receiptFile: this.receiptFile,
+    invoiceFile: this.invoiceFile,
+    signature: this.signatureUrl,
+
+    // 👇 include advanced payment + bill split
+    recurringPayment: this.advancedPaymentData || null,
+    billSplit: this.billSplitData || null
+  };
+
+  // ✅ 6. Save expense (localStorage or API placeholder)
+  this.saveExpenseToLocalStorage(newExpense);
+  console.log('Expense saved to localStorage:', newExpense);
+
+  this.messageService.add({
+    severity: 'success',
+    summary: 'Expense Submitted',
+    detail: `Expense for ${newExpense.merchant} has been successfully submitted.`
+  });
+
+  // ✅ 7. Reset everything
+  this.resetForm();
+  form.resetForm();
+
+  // clear advanced payment + bill split
+  this.advancedPaymentData = undefined;
+  this.billSplitData = undefined;
+  this.showAdvancedPayment = false;
+  this.showBillSplit = false;
 }
 
 
+  // Bill Split state
+  billSplitData?: BillSplit;
+  showBillSplit = false;
+  numParticipants = 2;
+  splitError: string | null = null;
+selectedCurrency = 'NGN';
+availableCurrencies = ['USD', 'EUR', 'GBP', 'NGN'];
+
+  // ➖➖ Bill Split Methods ➖➖
+  openBillSplit() {
+    this.billSplitData = {
+      enabled: true,
+      method: 'equal',
+      participants: [],
+      totalAmount: this.expenseSummary.amount
+    };
+    this.generateParticipants();
+    this.showBillSplit = true;
+  }
+
+  generateParticipants() {
+    if (!this.billSplitData) return;
+
+    this.billSplitData.participants = Array.from(
+      { length: this.numParticipants },
+      (_, i) =>
+        ({
+          id: `${i + 1}`,
+          name: `Person ${i + 1}`,
+          shareAmount: 0,
+          sharePercent: 0
+        } as BillSplitParticipant)
+    );
+
+    if (this.billSplitData.method === 'equal') {
+      this.autoDistributeEqual();
+    }
+  }
+
+  autoDistributeEqual() {
+    if (!this.billSplitData) return;
+    const total = this.expenseSummary.amount;
+    const count = this.billSplitData.participants.length;
+    if (count > 0) {
+      const perPerson = total / count;
+      this.billSplitData.participants.forEach(p => {
+        p.shareAmount = perPerson;
+      });
+    }
+  }
+
+  saveBillSplit() {
+    this.splitError = null;
+    if (!this.billSplitData) return;
+
+    const total = this.expenseSummary.amount;
+
+    if (this.billSplitData.method === 'equal') {
+      this.autoDistributeEqual();
+    }
+
+    if (this.billSplitData.method === 'percentage') {
+      const sumPercent = this.billSplitData.participants.reduce(
+        (acc, p) => acc + (p.sharePercent || 0),
+        0
+      );
+      if (sumPercent !== 100) {
+        this.splitError = 'Percentages must add up to 100%.';
+        return;
+      }
+      this.billSplitData.participants.forEach(p => {
+        p.shareAmount = (p.sharePercent! / 100) * total;
+      });
+    }
+
+    if (this.billSplitData.method === 'amount') {
+      const sumAmount = this.billSplitData.participants.reduce(
+        (acc, p) => acc + (p.shareAmount || 0),
+        0
+      );
+      if (sumAmount !== total) {
+        this.splitError = `Amounts must add up to ${total}`;
+        return;
+      }
+    }
+
+    this.billSplitData.totalAmount = total;
+    this.showBillSplit = false;
+  }
+
+  removeBillSplit() {
+    this.billSplitData = undefined;
+    this.showBillSplit = false;
+  }
+}
 
 
 
