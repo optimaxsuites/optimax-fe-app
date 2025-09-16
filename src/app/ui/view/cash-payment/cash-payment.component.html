@@ -58,7 +58,6 @@
       <span class="text-[16px] mb-2"> Amount due </span>
       <span class="font-semibold text-[30px]">{{ approximateCartTotal | currency:'₦'}}</span>
 
-      <!-- Updated Payment Section -->
       <div class="flex flex-col gap-4 mt-3 w-1/2">
         <div class="flex justify-between items-center w-full px-3 mb-2">
           <p class="text-xl font-semibold">Payment</p>
@@ -68,10 +67,8 @@
         </div>
         
         <div *ngFor="let mode of navigationState.cart.paymentModes" class="w-full shadow-lg px-3 py-4 rounded-xl">
-          <!-- Loyalty Section -->
           <ng-container *ngIf="mode === 'loyalty'">
             <div class="flex flex-col gap-3 mb-2">
-              <!-- Customer Search -->
               <div class="flex items-center justify-between" >
                 <p class="text-lg font-medium">Customer Loyalty</p>
                 <div class="flex items-center">
@@ -89,7 +86,6 @@
                   </button>
                 </div>
               </div>
-              <!-- Customer Information (when found) -->
               <div *ngIf="customerFound" class="bg-orange-50 p-3 rounded-lg">
                 <div class="flex justify-between items-center">
                   <div>
@@ -102,7 +98,6 @@
                   </div>
                 </div>
               </div>
-              <!-- Customer Not Found Message -->
               <div *ngIf="customerNotFound" class="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
                 <div class="flex justify-between items-center">
                   <p>No customer found with this phone number.</p>
@@ -345,3 +340,10 @@
     </div>
   </div>
 </div>
+
+<app-all-payments-modal
+  [(isModalOpen)]="isAllPaymentsModalOpen"
+  [initialSelectedPayments]="navigationState?.cart?.paymentModes || []"
+  [cartItem]="navigationState?.cart?.cartItems || []"
+  (selectedPayments)="onPaymentsSelected($event)"
+></app-all-payments-modal>

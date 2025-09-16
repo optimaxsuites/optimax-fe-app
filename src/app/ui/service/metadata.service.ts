@@ -77,7 +77,7 @@ export class MetadataService {
     "Gift Card",
   ];
 
-  private selectedBranchIdSubject = new BehaviorSubject<number | null>(null);
+  private selectedBranchIdSubject = new BehaviorSubject<number | null>(5);
   selectedBranchId$ = this.selectedBranchIdSubject.asObservable();
   private loadingSubject = new BehaviorSubject<boolean>(false);
   loading$ = this.loadingSubject.asObservable();

@@ -14,6 +14,9 @@ import { StoreHeaderComponent } from '../store-header/store-header.component';
   standalone: false
 })
 export class ProductDetailsComponent implements OnInit {
+getProductImage(arg0: ProductData) {
+throw new Error('Method not implemented.');
+}
   product: ProductData | null = null;
   quantity: number = 1;
   selectedVariants: { [key: string]: string } = {};
