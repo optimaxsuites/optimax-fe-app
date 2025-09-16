@@ -134,6 +134,7 @@ import { StoreHeaderComponent } from './ui/view/pos-store/store-header/store-hea
 // import { StoreProductsDetailsComponent } from './ui/view/store-products-details/store-products-details.component';
 import { ProductDetailsComponent } from './ui/view/pos-store/product-details/product-details.component';
 import { UpdateStockComponent } from './ui/view/ingredient/update-stock/update-stock.component';
+// import { AuthModalComponent } from './ui/view/pos-store/auth-modal/auth-modal.component';
 export function appInitializerFactory(appInitService: AppInitService) {
   return () => appInitService.init();
 }
@@ -199,10 +200,11 @@ export function appInitializerFactory(appInitService: AppInitService) {
     OrderFilterPipe,
     SalesDetailsComponent,
     UniquePipe,
-    StoreHeaderComponent,
+    // StoreHeaderComponent,
     // StoreProductsDetailsComponent,
     // ProductDetailsComponent,
     UpdateStockComponent,
+    // AuthModalComponent,
     //CheckoutKitchenComponent,
   ],
   imports: [

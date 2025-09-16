@@ -202,9 +202,9 @@ export class StockReportComponent implements OnInit {
       switchMap((data: InventoryReportDTO) => {
         this.reportData = data;
 
-        const productIds = [...new Set(this.reportData.inventory.map(item => item.product?.id))].filter(id => id !== null);
-        const categoryIds = [...new Set(this.reportData.inventory.map(item => item.category?.id))].filter(id => id !== null);
-        const branchIds = [...new Set(this.reportData.inventory.map(item => item.branch?.id))].filter(id => id !== null);
+        const productIds = [...new Set(this.reportData.inventory.map(item => item.product?.id))].filter(id => id !== undefined && id !== null);
+        const categoryIds = [...new Set(this.reportData.inventory.map(item => item.category?.id))].filter(id => id !== undefined && id !== null);
+        const branchIds = [...new Set(this.reportData.inventory.map(item => item.branch?.id))].filter(id => id !== undefined && id !== null);
 
         const productRequests = productIds.map(id => this.reportService.getProductById(id as number).pipe(catchError(() => of(null))));
         const categoryRequests = categoryIds.map(id => this.reportService.getCategoryById(id as number).pipe(catchError(() => of(null))));
@@ -215,6 +215,13 @@ export class StockReportComponent implements OnInit {
           categories: categoryRequests.length ? forkJoin(categoryRequests) : of([]),
           branches: branchRequests.length ? forkJoin(branchRequests) : of([])
         });
+      }),
+      catchError(error => {
+        console.error('Error loading inventory report or related data:', error);
+        this.isLoading = false;
+        this.reportData = { inventory: [] };
+        // Return an empty observable to prevent the stream from completing
+        return of({ products: [], categories: [], branches: [] });
       })
     ).subscribe({
       next: (fullData: { products: (ProductDTO | null)[], categories: (CategoryDTO | null)[], branches: (BranchDTO | null)[] }) => {
@@ -223,16 +230,16 @@ export class StockReportComponent implements OnInit {
         const branchMap = new Map(fullData.branches.filter(b => b !== null).map(b => [b!.id, b!]));
 
         this.reportData.inventory.forEach(item => {
-          if (item.product?.id !== null) {
+          if (item.product?.id) {
             const productDetails = productMap.get(Number(item.product.id));
             if (productDetails) {
               Object.assign(item.product, productDetails);
             }
           }
-          if (item.category?.id !== null) {
+          if (item.category?.id) {
             item.category = categoryMap.get(item.category.id) || item.category;
           }
-          if (item.branch?.id !== null) {
+          if (item.branch?.id) {
             item.branch = branchMap.get(item.branch.id) || item.branch;
           }
         });
@@ -243,12 +250,7 @@ export class StockReportComponent implements OnInit {
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('Error loading inventory report or related data:', error);
-        this.isLoading = false;
-        this.reportData = { inventory: [] };
-        this.calculateSummaryMetrics();
-        this.initCharts();
-        this.prepareDropdownData();
+        console.error('Subscription error:', error);
       }
     });
   }
@@ -336,15 +338,11 @@ export class StockReportComponent implements OnInit {
     const totalCurrentStock = this.reportData.inventory.reduce((sum, item) => sum + item.currentStock, 0);
     const totalSold = this.reportData.inventory.reduce((sum, item) => sum + item.soldQuantity, 0);
     
-    // Determine the number of months based on the date range, or use a default of 6
+    // Determine the number of months to display based on the date range, or use a default of 6
     const dateRange = this.filterForm.get('dateRange')?.value;
     let monthsToDisplay = 6;
-    if (dateRange === 'today') {
-      monthsToDisplay = 1;
-    } else if (dateRange === '3daysAgo' || dateRange === 'last7Days') {
-      monthsToDisplay = 1; 
-    } else if (dateRange === '1month') {
-      monthsToDisplay = 1;
+    if (dateRange === 'today' || dateRange === '3daysAgo' || dateRange === 'last7Days' || dateRange === '1month') {
+        monthsToDisplay = 1;
     }
 
     // Generate month labels and data points dynamically
@@ -367,11 +365,9 @@ export class StockReportComponent implements OnInit {
             // For the current month, use the actual total current stock
             trendValues.push(totalCurrentStock);
         } else {
-            // For past months, use a simple estimation.
-            // This is a placeholder as real historical data is not available.
-            // Assuming sales are spread evenly.
+            // For past months, use a simple estimation based on sold quantity.
             const soldPerMonth = totalSold / monthsToDisplay;
-            const estimatedStock = totalCurrentStock + ((monthsToDisplay - 1 - i) * soldPerMonth);
+            const estimatedStock = totalCurrentStock + (i * soldPerMonth);
             trendValues.push(Math.round(estimatedStock));
         }
     }
@@ -575,7 +571,7 @@ export class StockReportComponent implements OnInit {
 
   applyFilters(): void {
     const filters = this.filterForm.value;
-    this.page = 1; // Reset to first page on filter change
+    this.page = 1; 
 
     const cleanedFilters: InventoryReportRequestDTO = {
       branchIds: filters.branchIds?.length ? filters.branchIds : undefined,
@@ -584,7 +580,7 @@ export class StockReportComponent implements OnInit {
       startDate: filters.startDate ? new Date(filters.startDate).toISOString() : undefined,
       endDate: filters.endDate ? new Date(filters.endDate).toISOString() : undefined
     };
-    
+
     console.log('Applying filters:', cleanedFilters);
     this.loadInventoryReport(cleanedFilters);
   }
@@ -718,10 +714,10 @@ export class StockReportComponent implements OnInit {
       }
 
       pdf.save(`inventory-report-${new Date().toISOString().split('T')[0]}.pdf`);
-      element.style.cssText = originalStyle; 
+      element.style.cssText = originalStyle;
     }).catch(error => {
       console.error('Error generating PDF:', error);
-      element.style.cssText = originalStyle; 
+      element.style.cssText = originalStyle;
     });
   }
 

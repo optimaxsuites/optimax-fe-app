@@ -5,10 +5,10 @@ import JsBarcode from "jsbarcode";
 import { MessageService } from "primeng/api";
 import { NavigationLinks } from "../../models/enums";
 import {
-	Cart,
-	CustomerDTO,
-	NavigationState,
-	PaymentModes,
+  Cart,
+  CustomerDTO,
+  NavigationState,
+  PaymentModes,
 } from "../../models/interface";
 import { OrderPOST } from "../../models/interfaces/kitchen";
 import { CheckoutService } from "../../service/checkout.service";
@@ -17,407 +17,403 @@ import { NavigationLinksService } from "../../sharedComponent/service/navigation
 import { RandomTokenService } from "../../sharedComponent/service/random-token/random-token.service";
 
 @Component({
-	selector: "app-cash-payment",
-	templateUrl: "./cash-payment.component.html",
-	styleUrl: "./cash-payment.component.scss",
-	providers: [MessageService],
+  selector: "app-cash-payment",
+  templateUrl: "./cash-payment.component.html",
+  styleUrl: "./cash-payment.component.scss",
+  providers: [MessageService],
 })
 export class CashPaymentComponent implements OnInit {
-	navigationState: NavigationState;
-	cart: Cart = {} as unknown as Cart;
-	priceOptions: any[] = [];
-	priceValue = 0.0;
-	orders: any;
-	changeOffered: number = 0.0;
-	changeOfferedModal: boolean = false;
-	receiptID: string = Math.floor(100000 + Math.random() * 900000).toString();
-	token: string = "";
-	paymentValues: Record<PaymentModes, number | null> = {
-		cash: null,
-		card: null,
-		loyalty: null,
-		mobile: null,
-	};
+  navigationState: NavigationState;
+  cart: Cart = {} as unknown as Cart;
+  priceOptions: any[] = [];
+  priceValue = 0.0;
+  orders: any;
+  changeOffered: number = 0.0;
+  changeOfferedModal: boolean = false;
+  receiptID: string = Math.floor(100000 + Math.random() * 900000).toString();
+  token: string = "";
+  paymentValues: Record<PaymentModes, number | null> = {
+    cash: null,
+    card: null,
+    loyalty: null,
+    mobile: null,
+  };
 
-	priceOptionsMap: Record<PaymentModes, Array<{label: string, value: number}>> = {
-  cash: [],
-  card: [],
-  loyalty: [],
-  mobile: []
-};
+  priceOptionsMap: Record<PaymentModes, Array<{ label: string; value: number }>> = {
+    cash: [],
+    card: [],
+    loyalty: [],
+    mobile: [],
+  };
 
-	customers: CustomerDTO[] = [
-		{ id: 1, name: "John Doe", phoneNumber: "08012345678", loyaltyPoints: 500 },
-		{
-			id: 2,
-			name: "Jane Smith",
-			phoneNumber: "08087654321",
-			loyaltyPoints: 300,
-		},
-	];
-	customerSearch: string = "";
-	customerFound: CustomerDTO | null = null;
-	customerNotFound: boolean = false;
-	showCreateCustomerModal: boolean = false;
-	newCustomer: CustomerDTO = {
-		id: 0,
-		name: "",
-		phoneNumber: "",
-		email: "",
-		loyaltyPoints: 0,
-	};
-	isLoading: boolean = false;
+  customerSearch: string = "";
+  customerFound: CustomerDTO | null = null;
+  customerNotFound: boolean = false;
+  showCreateCustomerModal: boolean = false;
+  isAllPaymentmodalopen: boolean = false;
+  newCustomer: CustomerDTO = {
+    id: 0,
+    name: "",
+    phoneNumber: "",
+    email: "",
+    loyaltyPoints: 0,
+  };
+  isLoading: boolean = false;
 
-	constructor(
-		private router: Router,
-		public navigationLink: NavigationLinksService,
-		private messageService: MessageService,
-		private customerService: CustomerService,
-		private randomTokenService: RandomTokenService,
-		private checkoutService: CheckoutService,
-		private _location: Location,
-	) {
-		const navigation = this.router.getCurrentNavigation();
-		this.navigationState = navigation?.extras.state as NavigationState;
-		if (!this.navigationState) {
-			const savedState = localStorage.getItem("navigationState");
-			if (savedState) {
-				this.navigationState = JSON.parse(savedState);
-			}
-		} else {
-			localStorage.setItem(
-				"navigationState",
-				JSON.stringify(this.navigationState),
-			);
-		}
-		console.log(this.navigationState);
-	}
-	ngOnInit(): void {
-		this.cart = this.navigationState?.cart;
-		this.initializePriceOptions();
-		this.token = this.randomTokenService.getRandomToken();
-	}
-	get totalPaid() {
-		return (
-			(this.paymentValues.cash ?? 0) +
-			(this.paymentValues.card ?? 0) +
-			(this.paymentValues.loyalty ?? 0)
-		);
-	}
+  constructor(
+    private router: Router,
+    public navigationLink: NavigationLinksService,
+    private messageService: MessageService,
+    private customerService: CustomerService,
+    private randomTokenService: RandomTokenService,
+    private checkoutService: CheckoutService,
+    private _location: Location
+  ) {
+    const navigation = this.router.getCurrentNavigation();
+    this.navigationState = navigation?.extras.state as NavigationState;
+    if (!this.navigationState) {
+      const savedState = localStorage.getItem("navigationState");
+      if (savedState) {
+        this.navigationState = JSON.parse(savedState);
+      }
+    } else {
+      localStorage.setItem("navigationState", JSON.stringify(this.navigationState));
+    }
+    console.log(this.navigationState);
+  }
 
+  ngOnInit(): void {
+    this.cart = this.navigationState?.cart;
+    this.initializePriceOptions();
+    this.token = this.randomTokenService.getRandomToken();
+  }
 
-	get balanceLeft() {
-		return Math.max(0, this.cart.total - this.totalPaid);
-	}
-	getLoyaltyMax(mode: string): number | null {
-		return mode === "loyalty" && this.customerFound?.loyaltyPoints != null
-			? this.customerFound.loyaltyPoints
-			: null;
-	}
+  get totalPaid() {
+    return (
+      (this.paymentValues.cash ?? 0) +
+      (this.paymentValues.card ?? 0) +
+      (this.paymentValues.loyalty ?? 0) +
+      (this.paymentValues.mobile ?? 0) 
+    );
+  }
 
-	updatePriceOptions() {
-  const balance = this.balanceLeft;
-  const commonOptions = [
-    { label: "Balance", value: balance },
-    { label: "10000", value: 10000 },
-    { label: "20000", value: 20000 },
-  ];
-  
-  this.priceOptionsMap.cash = commonOptions;
-  this.priceOptionsMap.card = commonOptions;
-  this.priceOptionsMap.loyalty = commonOptions;
-  this.priceOptionsMap.mobile = commonOptions;
-}
+  openAllPaymentsModal() {
+    this.isAllPaymentmodalopen = true;
+  }
+  removePaymentMode(modeToRemove: PaymentModes) {
+    this.paymentValues[modeToRemove] = null;
+    this.navigationState.cart.paymentModes = this.navigationState.cart.paymentModes.filter(
+      (mode) => mode !== modeToRemove);
+    this.updatePriceOptions();
+  }
+  get balanceLeft() {
+    return Math.max(0, this.cart.total - this.totalPaid);
+  }
 
-	getPriceOptions(method: string) {
-		return [
-			{ label: "Balance", value: this.balanceLeft },
-			{ label: "10000", value: 10000 },
-			{ label: "20000", value: 20000 },
-		] as const;
-	}
-	getPaymentLabel(mode: string): string {
-		const labels: { [key: string]: string } = {
-			cash: "Cash Tendered",
-			card: "Amount Charged to Card",
-			loyalty: "Loyalty Charge",
-		};
-		return labels[mode] || "Payment Amount";
-	}
+  getLoyaltyMax(mode: string): number | null {
+    return mode === "loyalty" && this.customerFound?.loyaltyPoints != null
+      ? this.customerFound.loyaltyPoints
+      : null;
+  }
 
-	findCustomer() {
-		const customer = this.customers.find(
-			(c) => c.phoneNumber === this.customerSearch,
-		);
-		if (customer) {
-			this.customerFound = customer;
-			this.customerNotFound = false;
-			// this.paymentValues['loyalty'] = customer.loyaltyPoints || null;
-		} else {
-			this.customerFound = null;
-			this.customerNotFound = true;
+  updatePriceOptions() {
+    const balance = this.balanceLeft;
+    const commonOptions = [
+      { label: "Balance", value: balance },
+      { label: "10000", value: 10000 },
+      { label: "20000", value: 20000 },
+    ];
 
-			console.log("Customer not found!");
-		}
-	}
+    this.priceOptionsMap.cash = commonOptions;
+    this.priceOptionsMap.card = commonOptions;
+    this.priceOptionsMap.loyalty = commonOptions;
+    this.priceOptionsMap.mobile = commonOptions;
+  }
 
-	openCreateCustomerModal(): void {
-		this.showCreateCustomerModal = true;
-		// Pre-fill phone number from search
-		this.newCustomer = {
-			id: 0,
-			name: "",
-			phoneNumber: this.customerSearch,
-			email: "",
-			loyaltyPoints: 0,
-		};
-	}
+  getPriceOptions(method: string) {
+    const commonOptions = [
+      { label: "Balance", value: this.balanceLeft },
+      { label: "10000", value: 10000 },
+      { label: "20000", value: 20000 },
+    ];
+    return commonOptions;
+  }
 
-	createCustomer(): void {
-		if (!this.newCustomer.name || !this.newCustomer.phoneNumber) {
-			// this.toastr.warning('Name and phone number are required');
-			return;
-		}
+  getPaymentLabel(mode: string): string {
+    const labels: { [key: string]: string } = {
+      cash: "Cash Tendered",
+      card: "Amount Charged to Card",
+      loyalty: "Loyalty Charge",
+    };
+    return labels[mode] || "Payment Amount";
+  }
 
-		this.customerService.createCustomer(this.newCustomer).subscribe(
-			(customer) => {
-				this.customerFound = customer;
-				this.customerNotFound = false;
-				this.showCreateCustomerModal = false;
-				// this.toastr.success('Customer created successfully');
-				this.messageService.add({
-					severity: "success",
-					summary: "Success",
-					detail: "Customer created successfully",
-					key: "tl",
-					life: 3000,
-				});
-			},
-			(error) => {
-				// this.toastr.error('Failed to create customer');
-				this.messageService.add({
-					severity: "warn",
-					summary: "Error",
-					detail: "Failed to create customer",
-					key: "tl",
-					life: 3000,
-				});
-				console.error("Customer creation error:", error);
-			},
-		);
-	}
+  findCustomer() {
+    if (!this.customerSearch) return;
 
-	initializePriceOptions() {
-		this.priceOptions = [
-			{ label: "Exact", value: this.balanceLeft },
-			{ label: "100", value: 100 },
-			{ label: "200", value: 200 },
-		];
-	}
-	processCashPayment() {
-		this.isLoading = true;
-		if (this.totalPaid < this.cart?.total) {
-			this.isLoading = false;
-			this.messageService.add({
-				severity: "warn",
-				summary: "Error",
-				detail: "Wrong amount tendered",
-				key: "tl",
-				life: 3000,
-			});
-			return;
-		}
+    this.isLoading = true;
 
-		const now = new Date().toISOString();
-		const paymentPayload = {
-			id: 0,
-			// totalAmount: this.cart.total
-			totalAmount: this.cart.total,
-			transactionDate: now,
-			status: "PAID",
-		};
+    this.customerService.getCustomerByPhone(this.customerSearch).subscribe({
+      next: (customer) => {
+        this.customerFound = customer;
+        this.customerNotFound = false;
+        this.paymentValues["loyalty"] = customer.loyaltyPoints || null;
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error("Customer lookup failed:", err);
+        this.customerFound = null;
+        this.customerNotFound = true;
+        this.isLoading = false;
+      },
+    });
+  }
 
-		// Step 1: Make Payment
-		this.checkoutService.makePayment(paymentPayload).subscribe({
-			next: (paymentId) => {
-				if (!paymentId) {
-					return this.showError("Missing payment ID from response");
-				}
+  openCreateCustomerModal(): void {
+    this.showCreateCustomerModal = true;
+    this.newCustomer = {
+      id: 0,
+      name: "",
+      phoneNumber: this.customerSearch,
+      email: "",
+      loyaltyPoints: 0,
+    };
+  }
 
-				// Step 2: Send each Payment Breakdown individually
-				const paymentBreakdownPayloads = this.cart.paymentModes.map((mode) => ({
-					id: 0,
-					amountPaid: this.paymentValues[mode],
-					transactionRefernce: "",
-					paymentMethod: mode.toUpperCase(),
-					paymentId: paymentId,
-				}));
+  createCustomer(): void {
+    if (!this.newCustomer.name || !this.newCustomer.phoneNumber) return;
 
-				let breakdownCount = 0;
-				for (const breakdown of paymentBreakdownPayloads) {
-					this.checkoutService.savePaymentBreakdown(breakdown).subscribe({
-						next: () => {
-							breakdownCount++;
-							if (breakdownCount === paymentBreakdownPayloads.length) {
-								// All breakdowns saved — Proceed to Step 3
-								this.submitOrder(paymentId, now);
-								this.isLoading = false;
-							}
-						},
-						error: () => this.showError("Failed to save payment breakdown"),
-					});
-				}
-			},
-			error: () => this.showError("Failed to process payment"),
-		});
-	}
+    this.customerService.createCustomer(this.newCustomer).subscribe(
+      (customer) => {
+        this.customerFound = customer;
+        this.customerNotFound = false;
+        this.showCreateCustomerModal = false;
+        this.messageService.add({
+          severity: "success",
+          summary: "Success",
+          detail: "Customer created successfully",
+          key: "tl",
+          life: 3000,
+        });
+      },
+      (error) => {
+        this.messageService.add({
+          severity: "warn",
+          summary: "Error",
+          detail: "Failed to create customer",
+          key: "tl",
+          life: 3000,
+        });
+        console.error("Customer creation error:", error);
+      }
+    );
+  }
 
-	private submitOrder(paymentId: number, now: string) {
-		const orderPayload = {
-			id: 0 | this.cart.orderId,
-			orderNumber: this.randomTokenService.getRandomToken(),
-			orderStatus: "PAID",
-			updatedAt: now,
-			createdDate: now,
-			totalAmount: this.totalPaid,
-			amountTendered: this.totalPaid,
-			quantity: 0,
-			customerId: 1,
-			branchId: 1,
-			cashier: 67,
-			paymentId: paymentId,
-			orderItem: this.cart.cartItems.flatMap((item) => {
-				// For some reason, this can also be null, but adding it to the type will mean a bunch of refactors in other places :p
-				const orderItems = item.count
-					? [
-							{
-								totalPrice: item.count * parseInt(item.sellingPrice || "0"),
-								quantity: item.count,
-								productId: item.id,
-							},
-						]
-					: [];
+  initializePriceOptions() {
+    this.priceOptions = [
+      { label: "Exact", value: this.balanceLeft },
+      { label: "100", value: 100 },
+      { label: "200", value: 200 },
+    ];
+  }
 
-				if (item.selectedVariants?.length) {
-					item.selectedVariants.forEach((variant) => {
-						const selectedQuantity = variant.selectedQuantity ?? 0;
-						const price = variant.price || 0;
-						if (selectedQuantity > 0) {
-							orderItems.push({
-								totalPrice: selectedQuantity * price,
-								quantity: selectedQuantity,
-								productId: item.id,
-								productVariantId: variant.id,
-							} as {
-								totalPrice: number;
-								quantity: number;
-								productId: number;
-								productVariantId: number | null;
-							});
-						}
-					});
-				}
+  private getBackendPaymentMethod(mode: string): string {
+    const map: Record<string, string> = {
+      cash: "CASH",
+      card: "CARD",
+      loyalty: "LOYALTY_POINTS",
+      mobile: "MOBILE_MONEY",
+    };
+    return map[mode] || mode.toUpperCase();
+  }
 
-				return orderItems;
-			}),
-		};
+  processCashPayment() {
+    this.isLoading = true;
+    if (this.totalPaid < this.cart?.total) {
+      this.isLoading = false;
+      this.messageService.add({
+        severity: "warn",
+        summary: "Error",
+        detail: "Wrong amount tendered",
+        key: "tl",
+        life: 3000,
+      });
+      return;
+    }
 
-		this.checkoutService
-			.saveOrder(orderPayload as unknown as OrderPOST)
-			.subscribe({
-				next: () => {
-					this.messageService.add({
-						severity: "success",
-						summary: "Success",
-						detail: "Payment, Breakdown & Order saved successfully",
-						key: "tl",
-						life: 3000,
-					});
+    const now = new Date().toISOString();
+    const paymentPayload = {
+      id: 0,
+      totalAmount: this.cart.total,
+      transactionDate: now,
+      status: "PAID",
+    };
 
-					const historyState = history.state;
-					const paymentTrackingHistory = historyState.paymentTracking;
-					this.router.navigateByUrl(historyState.prevUrlBeforePaymentPage, {
-						state: {
-							...historyState,
-							paymentTracking: paymentTrackingHistory
-								? { ...paymentTrackingHistory, paymentSuccess: true }
-								: undefined,
-						},
-					});
+    this.checkoutService.makePayment(paymentPayload).subscribe({
+      next: (paymentId) => {
+        if (!paymentId) return this.showError("Missing payment ID from response");
 
-					// this._location.historyGo(-1);
-					// const checkoutLink = this.navigationLink.getLink("checkoutLink");
-					// this.router.navigate([checkoutLink]);
-					this.printReceipt();
-					this.isLoading = false;
-				},
-				error: () => {
-					this.showError("Failed to save order");
-				},
-			});
+        const paymentBreakdownPayloads = this.cart.paymentModes.map((mode) => ({
+          id: 0,
+          amountPaid: this.paymentValues[mode],
+          transactionRefernce: "",
+          paymentMethod: this.getBackendPaymentMethod(mode),
+          paymentId: paymentId,
+        }));
 
-			console.log('ORDER JSON:', JSON.stringify(orderPayload, null, 2));
-	}
+        let breakdownCount = 0;
+        for (const breakdown of paymentBreakdownPayloads) {
+          this.checkoutService.savePaymentBreakdown(breakdown).subscribe({
+            next: () => {
+              breakdownCount++;
+              if (breakdownCount === paymentBreakdownPayloads.length) {
+                this.submitOrder(paymentId, now);
+                this.isLoading = false;
+              }
+            },
+            error: () => this.showError("Failed to save payment breakdown"),
+          });
+        }
+      },
+      error: () => this.showError("Failed to process payment"),
+    });
+  }
 
-	private showError(msg: string) {
-		this.messageService.add({
-			severity: "error",
-			summary: "Error",
-			detail: msg,
-			key: "tl",
-			life: 3000,
-		});
-		this.isLoading = false;
-	}
+  private submitOrder(paymentId: number, now: string) {
+    const orderPayload = {
+      id: 0 | this.cart.orderId,
+      orderNumber: this.randomTokenService.getRandomToken(),
+      orderStatus: "PAID",
+      updatedAt: now,
+      createdDate: now,
+      totalAmount: this.totalPaid,
+      amountTendered: this.paymentValues.cash,
+      quantity: 0,
+      customerId: 1,
+      branchId: 1,
+      cashier: 67,
+      paymentId: paymentId,
+      orderItem: this.cart.cartItems.flatMap((item) => {
+        const orderItems = item.count
+          ? [
+              {
+                totalPrice: item.count * parseInt(item.sellingPrice || "0"),
+                quantity: item.count,
+                productId: item.id,
+              },
+            ]
+          : [];
 
-	saveCurrentCartItem() {
-		const paidCart = {
-			name: "fulfilled",
-			cart: this.cart?.cartItems.map((item) => ({ ...item })),
-			cartDiscount: this.cart?.discount,
-			tax: this.cart?.tax,
-			subtotal: this.cart?.subtotal,
-			state: "Paid",
-			total: this.cart?.total,
-			paymentMethod: "cash",
-			priceTender: this.priceValue,
-			changeOffered: this.priceValue - this.cart?.total,
-			id: this.token,
-			timestamp: new Date().toLocaleString(),
-		};
-		const savedItems = localStorage.getItem("savedItems");
-		this.orders = savedItems ? JSON.parse(savedItems) : [];
+        if (item.selectedVariants?.length) {
+          item.selectedVariants.forEach((variant) => {
+            const selectedQuantity = variant.selectedQuantity ?? 0;
+            const price = variant.price || 0;
+            if (selectedQuantity > 0) {
+              orderItems.push({
+                totalPrice: selectedQuantity * price,
+                quantity: selectedQuantity,
+                productId: item.id,
+                productVariantId: variant.id,
+              } as {
+                totalPrice: number;
+                quantity: number;
+                productId: number;
+                productVariantId: number | null;
+              });
+            }
+          });
+        }
 
-		this.orders.push(paidCart);
-		localStorage.setItem("savedItems", JSON.stringify(this.orders));
-	}
+        return orderItems;
+      }),
+    };
 
-	navigateBack() {
-		this._location.back();
-		// const checkoutLink = this.navigationLink.getLink(NavigationLinks.CHECKOUT);
-		// const cart = this.cart;
-		// this.router.navigate([checkoutLink], { state: { cart } });
-	}
+   this.checkoutService
+  .saveOrder(orderPayload as unknown as OrderPOST)
+  .subscribe({
+    next: () => {
+      this.messageService.add({
+        severity: "success",
+        summary: "Success",
+        detail: "Payment, Breakdown & Order saved successfully",
+        key: "tl",
+        life: 3000,
+      });
 
-	get approximateCartTotal() {
-		return Math.round(this.cart?.total * 100) / 100;
-	}
+      const historyState = history.state;
+      const paymentTrackingHistory = historyState.paymentTracking;
+      this.router.navigateByUrl(historyState.prevUrlBeforePaymentPage, {
+        state: {
+          ...historyState,
+          paymentTracking: paymentTrackingHistory
+            ? { ...paymentTrackingHistory, paymentSuccess: true }
+            : undefined,
+        },
+      });
 
-	printReceipt() {
-		const content = document.getElementById("receipt-container")?.outerHTML;
+      this.printReceipt();
+      this.isLoading = false;
+    },
+    error: () => this.showError("Failed to save order"),
+  });
+  }
 
-		if (content) {
-			const iframe = document.createElement("iframe");
-			iframe.style.position = "absolute";
-			iframe.style.width = "0";
-			iframe.style.height = "0";
-			iframe.style.border = "none";
-			document.body.appendChild(iframe);
+  private showError(msg: string) {
+    this.messageService.add({
+      severity: "error",
+      summary: "Error",
+      detail: msg,
+      key: "tl",
+      life: 3000,
+    });
+    this.isLoading = false;
+  }
 
-			const doc = iframe.contentWindow?.document;
-			if (doc) {
-				doc.open();
-				doc.write(`
+  saveCurrentCartItem() {
+    const paidCart = {
+      name: "fulfilled",
+      cart: this.cart?.cartItems.map((item) => ({ ...item })),
+      cartDiscount: this.cart?.discount,
+      tax: this.cart?.tax,
+      subtotal: this.cart?.subtotal,
+      state: "Paid",
+      total: this.cart?.total,
+      paymentMethod: "cash",
+      priceTender: this.priceValue,
+      changeOffered: this.priceValue - this.cart?.total,
+      id: this.token,
+      timestamp: new Date().toLocaleString(),
+    };
+    const savedItems = localStorage.getItem("savedItems");
+    this.orders = savedItems ? JSON.parse(savedItems) : [];
+
+    this.orders.push(paidCart);
+    localStorage.setItem("savedItems", JSON.stringify(this.orders));
+  }
+
+  navigateBack() {
+    this._location.back();
+  }
+
+  get approximateCartTotal() {
+    return Math.round(this.cart?.total * 100) / 100;
+  }
+
+  printReceipt() {
+    const content = document.getElementById("receipt-container")?.outerHTML;
+
+    if (content) {
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "absolute";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "none";
+      document.body.appendChild(iframe);
+
+      const doc = iframe.contentWindow?.document;
+      if (doc) {
+        doc.open();
+        doc.write(`
           <html>
           <head>
             <title>Receipt</title>
@@ -434,23 +430,23 @@ export class CashPaymentComponent implements OnInit {
           </body>
           </html>
         `);
-				doc.close();
-			}
+        doc.close();
+      }
 
-			setTimeout(() => document.body.removeChild(iframe), 5000);
-		}
-	}
+      setTimeout(() => document.body.removeChild(iframe), 5000);
+    }
+  }
 
-	ngAfterViewInit() {
-		JsBarcode("#barcode", this.token, {
-			format: "CODE128",
-			displayValue: false,
-			width: 2,
-			height: 40,
-		});
-	}
+  ngAfterViewInit() {
+    JsBarcode("#barcode", this.token, {
+      format: "CODE128",
+      displayValue: false,
+      width: 2,
+      height: 40,
+    });
+  }
 
-	parseFloat(arg: string) {
-		return parseFloat(arg);
-	}
+  parseFloat(arg: string) {
+    return parseFloat(arg);
+  }
 }

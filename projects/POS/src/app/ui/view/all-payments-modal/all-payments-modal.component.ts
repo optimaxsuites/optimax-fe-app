@@ -11,6 +11,7 @@ export class AllPaymentsModalComponent {
   @Output() isModalOpenChange = new EventEmitter<typeof this.isModalOpen>();
   @Output() cashPayment = new EventEmitter<void>();
   @Input() cartItem: ProductData[] = [];
+  @Input() initialSelectedPayments: Cart["paymentModes"] = [];
 
   @Output() selectedPayments = new EventEmitter<Cart["paymentModes"]>();
 
@@ -46,6 +47,7 @@ export class AllPaymentsModalComponent {
   }>;
 
   ngOnInit() {
+    this.selectedPaymentsToGo = [...this.initialSelectedPayments];
     console.log(this.cartItem);
   }
   closeModal() {
