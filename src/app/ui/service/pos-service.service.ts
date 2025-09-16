@@ -190,7 +190,7 @@ export class PosServiceService {
   getProducts() {
     if (!this.products$) {
       this.products$ = this.http
-        .get<ProductData[]>(this.getBaseApiUrl() + '/x/api/v2/pos/products/?page=1&size=300')
+        .get<ProductData[]>(this.getBaseApiUrl() + '/x/api/v2/pos/products?page=1&size=300')
         .pipe(
           catchError(this.handleError),
           shareReplay(this.shareReplayOptions)

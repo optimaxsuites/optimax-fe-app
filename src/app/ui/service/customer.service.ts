@@ -25,7 +25,7 @@ export class CustomerService {
           .pipe(catchError(this.handleError));
       }
 
-      getCustomerByPhone(phone: number) {
+      getCustomerByPhone(phone: string) {
         return this.http
           .get<any>(this.getBaseApiUrl() + `/x/api/v2/pos/customers/get/by/phoneNumber?phoneNumber=${phone}`)
           .pipe(catchError(this.handleError));

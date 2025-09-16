@@ -26,6 +26,14 @@ export class UserService {
 		return JSON.parse(userRegDataJSON);
 	}
 
+	getUserBranch(): UserRegData | null {
+		const userRegDataJSON = sessionStorage.getItem("userRegData");
+
+		if (!userRegDataJSON) return null;
+
+		return JSON.parse(userRegDataJSON);
+	}
+
 	get isUser():
 		| { isUser: true; userId: number }
 		| { isUser: false; userId: null } {
