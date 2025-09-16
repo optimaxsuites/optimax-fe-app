@@ -56,6 +56,7 @@
             </div>
             <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.merchant">
               Merchant is required.
+              </p>
           </div>
 
 
@@ -65,6 +66,7 @@
               required placeholder="Enter description"></textarea>
             <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.description">
               Description is required.
+              </p>
           </div>
 
 
@@ -73,6 +75,7 @@
             <input type="date" id="event-date" name="eventDate" [(ngModel)]="expenseSummary.eventDate" required />
             <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.eventDate">
               Event Date is required.
+              </p>
           </div>
 
 
@@ -86,7 +89,17 @@
               placeholder="Enter quantity" />
             <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.quantity">
               Quantity is required.
+              </p>
           </div>
+
+      <div class="form-group">
+       <label for="currency">Currency</label>
+        <select id="currency" [(ngModel)]="selectedCurrency" name="currency" class="border px-2 py-1 rounded">
+           <option *ngFor="let c of availableCurrencies" [value]="c">
+             {{ c }}
+           </option>
+        </select>
+      </div>
 
           <div class="form-group">
             <label for="amount">Amount</label>
@@ -112,7 +125,180 @@
             </div>
           </div>
         </div>
+
+        <!--Advanced payment section -->
+  <div class="floating-box form-subsection">
+  <div class="section-header">Advanced Payment Option</div>
+<div>
+  <!-- Show button if no advanced payment yet -->
+  @if (!advancedPaymentData && !showAdvancedPayment) {
+    <button type="button"
+      class="px-4 py-2 bg-customBlue text-white rounded schedule-payment-btn"
+      (click)="showAdvancedPayment = true">
+      Scheduled Payment
+    </button>
+  }
+  
+  @if (showAdvancedPayment) {
+    <div class="form-group mt-3">
+      <app-recurring-payment-modal
+        (save)="onAdvancedPaymentSave($event)"
+        (cancel)="onAdvancedPaymentCancel()">
+      </app-recurring-payment-modal>
+    </div>
+  }
+
+  <!-- Show reciept of schduled payment -->
+  @if (advancedPaymentData && !showAdvancedPayment) {
+    <div class="mt-3 p-3 border rounded bg-gray-50">
+      <h4 class="font-semibold">Recurring Payment Configured</h4>
+      <p>Type: {{ advancedPaymentData.type }}</p>
+      @if (advancedPaymentData.type === 'recurring') {
+        <p>Frequency: {{ advancedPaymentData.frequency }}</p>
+      }
+      <p>Start: {{ advancedPaymentData.startDate | date }}</p>
+      @if (advancedPaymentData.endDate) {
+        <p>End: {{ advancedPaymentData.endDate | date }}</p>
+      }
+      @if (advancedPaymentData.occurrences) {
+        <p>Occurrences: {{ advancedPaymentData.occurrences }}</p>
+      }
+
+      <button type="button"
+        class="px-3 py-1 bg-yellow-500 text-white rounded mt-2 edit-btn"
+        (click)="showAdvancedPayment = true">
+        Edit Recurring Payment
+      </button>
+      <button type="button"
+        class="px-3 py-1 bg-red-500 text-white rounded mt-2 ml-2  cancel-split-btn"
+        (click)="advancedPaymentData = undefined">
+        Remove
+      </button>
+    </div>
+  }
+  </div>
+
+<!-- end of scheduled payment -->
+
+  <!-- beginning ofBill Splitting Option -->
+   
+  <!-- Button to open -->
+  <button
+    *ngIf="!billSplitData && !showBillSplit"
+    type="button"
+    class="px-4 py-2 bg-customBlue text-white rounded split-bill-btn"
+    (click)="openBillSplit()"
+  >
+    Split Bill
+  </button>
+
+  <!-- Bill Split Form -->
+  <div *ngIf="showBillSplit" class="mt-3 border p-3 rounded">
+    <h4 class="font-semibold">Bill Split</h4>
+
+    <!-- Method -->
+    <label>Split Method:</label>
+    <select [(ngModel)]="billSplitData!.method" name="splitMethod" class="border px-2 py-1 rounded">
+      <option value="equal">Equal</option>
+      <option value="percentage">Percentage</option>
+      <option value="amount">Custom Amount</option>
+    </select>
+
+    <!-- Number of participants -->
+    <div class="mt-3">
+      <label>Number of People:</label>
+      <input
+        type="number"
+        [(ngModel)]="numParticipants"
+        (change)="generateParticipants()"
+        min="2"
+        max="9"
+        class="border px-2 py-1 rounded w-24"
+      />
+    </div>
+
+    <!-- Participant inputs -->
+    <div *ngFor="let p of billSplitData?.participants; let i = index" class="mt-3 border p-2 rounded">
+      <label>Name</label>
+      <input
+        type="text"
+        [(ngModel)]="p.name"
+        name="participantName{{ i }}"
+        placeholder="Enter name"
+        class="border px-2 py-1 rounded w-full"
+      />
+
+      <!-- Percentage -->
+      <div *ngIf="billSplitData?.method === 'percentage'" class="mt-2">
+        <label>Percentage (%)</label>
+        <input
+          type="number"
+          [(ngModel)]="p.sharePercent"
+          name="sharePercent{{ i }}"
+          min="0"
+          max="100"
+          class="border px-2 py-1 rounded w-32"
+        />
       </div>
+
+      <!-- Amount -->
+      <div *ngIf="billSplitData?.method === 'amount'" class="mt-2">
+        <label>Amount</label>
+        <input
+          type="number"
+          [(ngModel)]="p.shareAmount"
+          name="shareAmount{{ i }}"
+          min="0"
+          class="border px-2 py-1 rounded w-32"
+        />
+      </div>
+
+      <!-- Equal (readonly) -->
+      <div *ngIf="billSplitData?.method === 'equal'" class="mt-2">
+        <strong>Share: {{ p.shareAmount | currency: selectedCurrency }} </strong>
+      </div>
+    </div>
+
+    <!-- Validation Error -->
+    <div *ngIf="splitError" class="text-red-600 mt-2">
+      {{ splitError }}
+    </div>
+
+    <!-- Actions -->
+    <div class="mt-3">
+      <button type="button" class="px-3 py-1 bg-green-600 text-white rounded save-split-btn" (click)="saveBillSplit()">
+        Save Split
+      </button>
+      <button type="button" class="px-3 py-1 bg-red-500 text-white rounded ml-2 cancel-split-btn" (click)="removeBillSplit()">
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <!-- Saved Summary -->
+  <div *ngIf="billSplitData && !showBillSplit" class="mt-3 p-3 border rounded bg-gray-50">
+    <h4 class="font-semibold">Bill Split Summary</h4>
+    <div *ngFor="let p of billSplitData.participants">
+      {{ p.name }} - {{ p.shareAmount | currency:selectedCurrency }}
+      <span *ngIf="billSplitData.method === 'percentage'"> ({{ p.sharePercent }}%)</span>
+    </div>
+
+    <button type="button" class="px-3 py-1 bg-yellow-500 text-white rounded mt-2 edit-btn" (click)="showBillSplit = true">
+      Edit Split
+    </button>
+    <button type="button" class="px-3 py-1 bg-red-500 text-white rounded mt-2 ml-2 cancel-split-btn" (click)="removeBillSplit()">
+      Remove Split
+    </button>
+  </div>
+</div>
+
+
+  <!-- end of bill splitting -->
+
+
+</div>
+        <!-- end advanced payment option -->
+      
 
 
 
@@ -226,6 +412,7 @@
 
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4 mb-6">
       <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Add New Merchant</h3>
+
       <form (ngSubmit)="addNewMerchant()">
         <div class="grid grid-cols-1 gap-4 mb-4">
           <div>
@@ -373,9 +560,7 @@
     </div>
   </div>
 </app-side-modal>
-
-
-    </div>
+</div>
     <div class="form-buttons">
       <button class="footer-button submit-button" type="submit">
         Submit
