@@ -200,4 +200,8 @@ export class ProductDetailsComponent implements OnInit {
     
     return Number(this.product.sellingPrice);
   }
+
+  getProductImage(product: any){
+
+  }
 }

@@ -15,7 +15,7 @@
   <p class="text-gray-600  text-center my-6">{{ module?.description }}</p>
 
   <!-- Selected Plan Banner -->
-  <div *ngIf="selectedPlan" class="mb-6 p-4 bg-blue-100 text-blue-700 rounded-lg">
+  <div *ngIf="selectedPlan" class="mb-6 p-4 bg-blue-100 text-customBbg-customBlue rounded-lg">
     ✅ You picked the <b>{{ selectedPlan.name | titlecase }}</b> plan
   </div>
 
@@ -30,7 +30,7 @@
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
     <div *ngFor="let plan of module?.subscriptionPlans"
          class="p-6 border rounded-lg shadow-md relative"
-         [ngClass]="{ 'border-blue-500 ring-2 ring-blue-300': plan.id === selectedPlan?.id }" (click)="selectPlan(plan)">
+         [ngClass]="{ 'border-customBbg-customBlue ring-2 ring-customBbg-customBlue': plan.id === selectedPlan?.id }" (click)="selectPlan(plan)">
 
       <!-- Highlight Badge -->
       <div *ngIf="plan.id === selectedPlan?.id"
@@ -51,7 +51,7 @@
       </ul>
 
       <button (click)="selectPlan(plan)" 
-              class="mt-4 w-full py-2 rounded bg-blue-500 text-white hover:bg-blue-600">
+              class="mt-4 w-full py-2 rounded bg-customBlue text-white hover:bg-customBlue">
         {{ plan.id === selectedPlan?.id ? 'Selected' : 'Choose Plan' }}
       </button>
     </div>
@@ -60,7 +60,7 @@
   <div class="flex justify-end">
     <button (click)="proceedToPay()" 
             [disabled]="!selectedPlan"
-            class="bg-green-500 text-white px-6 py-3 rounded-lg shadow hover:bg-green-600">
+            class="bg-customGreen text-white px-6 py-3 rounded-lg shadow hover:bg-green-600">
       Proceed to Pay ₦{{ isYearly ? (selectedPlan?.price * 11) : selectedPlan?.price }}
     </button>
   </div>

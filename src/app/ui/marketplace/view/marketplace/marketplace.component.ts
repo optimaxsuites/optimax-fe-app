@@ -7,6 +7,8 @@ import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-lin
 import { MarketplaceService } from '../../service/marketplace.service'
 import { MenuItemsService } from 'projects/settings/src/app/ui/sharedComponents/service/menue-items/menu-items.service';
 import { forkJoin } from 'rxjs';
+import { SubscriptionService } from '../../service/subscription.service';
+import { AppRegisterServiceService } from 'projects/settings/src/app/ui/sharedComponents/service/app-register-service.service';
 @Component({
   selector: 'app-marketplace',
   templateUrl: './marketplace.component.html',
@@ -21,8 +23,11 @@ export class MarketplaceComponent {
   key: string = ''
   loading: boolean = false
   selectedPlan: any = {}
+  openHistory: boolean = false
+  history: any[] = []
+  appList  = []
   constructor(private menuService: MenuItemsService, private messageService: MessageService,
-   private navigationLink: NavigationLinksService, private marketplaceService: MarketplaceService, private router: Router) {}
+   private navigationLink: NavigationLinksService, private marketplaceService: MarketplaceService, private router: Router, private subscriptionService: SubscriptionService, private appRegisterService: AppRegisterServiceService) {}
 
    ngOnInit(): void {
       this.role = sessionStorage.getItem('role'); 
@@ -30,13 +35,35 @@ export class MarketplaceComponent {
       if (this.role) {
         this.marketplaceService.getApps().subscribe({
           next: (data) => {
-            this.modules = data
+            this.modules = data.map((module: any) => ({
+              ...module,
+              locked: true 
+            }));
           },
           error(err) {
             console.error(err)
           },
         })
       }
+
+      this.subscriptionService.getOrderRecord().subscribe({
+        next: (data) => {
+          this.history = data
+        },
+        error(err) {
+          console.error(err)
+        },
+      })
+
+      this.appRegisterService.getRegisteredApp().subscribe({
+      next: (app: any) => {
+        this.appList = app;
+        this.markModulesWithLockStatus()
+      },
+      error: (error: any) => {
+        console.error('Error fetching app data:', error);
+      }
+    });
  
     }
 
@@ -166,4 +193,40 @@ export class MarketplaceComponent {
           { queryParams: { plan: selectedPlan.id } }
         );
     }
+
+    getActionItems(order: any) {
+  return [
+    { label: 'Renew', icon: 'pi pi-refresh', command: () => this.renew(order) },
+    { label: 'Change Plan', icon: 'pi pi-pencil', command: () => this.changePlan(order) }
+  ];
+  }
+
+  renew(order: any) {
+    console.log('Renew clicked for order:', order);
+    this.router.navigate(['/subscription', order.moduleId], {
+      queryParams: { planId: order.planId, action: 'renew' }
+    });
+  }
+
+  changePlan(order: any) {
+    console.log('Change Plan clicked for order:', order);
+    this.router.navigate(['/subscription', order.moduleId], {
+      queryParams: { action: 'change-plan' }
+    });
+  }
+
+  markModulesWithLockStatus() {
+  const unlockedRoutes = this.appList.map((app: { name: string }) => app.name);
+
+  console.log(unlockedRoutes)
+
+  this.modules = this.modules.map(module => ({
+    ...module,
+    locked: !unlockedRoutes.includes(module.name) 
+  }));
+
+  console.log(this.modules)
+
+}
+
 }

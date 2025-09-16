@@ -177,7 +177,7 @@ export class MenuItemsService {
     },    
     {
       label: 'Point of Sale (POS)',
-      code: 'POS',
+      code: 'optimaXPOS',
       icon: 'fas fa-cash-register',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       description: 'The POS (Point of Sale) module of OptimaXSuites provides a comprehensive system for managing retail operations including products, inventory, sales, and customer checkout.',
@@ -589,8 +589,6 @@ export class MenuItemsService {
     } else {
       console.log('No token yet — skipping app registration fetch');
     }
-  
-   
   }
   
   async getRegisterApps(){

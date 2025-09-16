@@ -249,6 +249,7 @@ import { UnauthourizedComponent } from './ui/unauthourized.component';
 import { PaymentComponent } from './ui/marketplace/view/payment/payment.component';
 
 
+
 @NgModule({
   declarations: [
     AppComponent,
