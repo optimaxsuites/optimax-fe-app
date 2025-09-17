@@ -1,60 +1,68 @@
-import { Component, HostListener, ViewEncapsulation } from '@angular/core';
-import { MenuItemsService } from './ui/shared/service/menue-items/menu-items.service';
-import { NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router } from '@angular/router';
+import { Component } from '@angular/core';
+import { AuthenticationService } from './ui/sharedComponents/service/auth-service/authentication.service';
+import { environment } from './ui/sharedComponents/service/environments/environment.prod';
 
-declare global {
-  interface Window {
-  electronAPI: {
-  sendMessage:
-    (message : string) => void;
-  }
-  }
-}
+
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  encapsulation: ViewEncapsulation.None,
-  styleUrls: ['./app.component.scss']
+  styleUrl: './app.component.scss'
 })
-
-
 export class AppComponent {
-  sendMessage() { window.electronAPI.sendMessage("Hello from Angular!"); }
-  title = 'ERP-FE';
-  sidebarVisible2: boolean = false;
+  messageService: any;
+  navigationLink: any;
+  router: any;
+  sidebarHidden: boolean = true;
+constructor(
+  private authenticationService: AuthenticationService 
+){
+this.userLoginAction()
 
-  screenWidth: number;
-  isLoading = false
+}
 
-  // Ensure this property exists and is initialized
-  clockedInTime: string | null = null;
 
-  constructor(private menuItemService: MenuItemsService, private router: Router) {
-    this.screenWidth = window.innerWidth;
-    this.router.events.subscribe((event) => {
-      if (event instanceof NavigationStart) {
-        this.isLoading = true;
-      }
-      if (event instanceof NavigationEnd || event instanceof NavigationCancel || event instanceof NavigationError) {
-        this.isLoading = false;
-      }
-    });
+
+ngOnInit(): void {
+}
+  async userLoginAction(): Promise<void> {
+  
+    const loginDetails = {
+      username: "Ayaobasheba",
+      password: 123456,
+      project: 'ERP',
+      apiKey: environment.apiKey
+    };
+  
+    if (!loginDetails.username || !loginDetails.password) {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Username and password are required' });
+      return;
+    }
+  
+    try {
+      const data = await this.authenticationService.userLogin(loginDetails).toPromise();
+      this.loadInitParam(data);
+  
+      if (!data) {
+        this.messageService.add({ severity: 'error', summary: 'Authentication Failed', detail: 'Invalid username or password. Please check credentials and try again.' });
+      } 
+    } catch (error) {
+      
+      } 
   }
-
-  NgOnInit(){
-    // this.menuItemService.loadUnlockedModules()
+  loadInitParam(data: any) {
+    sessionStorage.setItem("role", data.roles)
+    sessionStorage.setItem("username", data.username);
+    sessionStorage.setItem("fullname", data.fullname);
+    sessionStorage.setItem("email", data.email);
+    sessionStorage.setItem("userid", data.id);
+    const tokenStartIndex = data.accessToken.indexOf('=') + 1;
+    const token = data.accessToken.substring(tokenStartIndex, data.accessToken.indexOf(';'));
+    sessionStorage.setItem("Token", token);
+    localStorage.setItem("Token2", token);
+    sessionStorage.setItem("accessToken", data.accessToken);
+    localStorage.setItem("accessToken2", data.accessToken);
+    sessionStorage["userRegData"] = JSON.stringify(data);
   }
-
-  @HostListener('window:resize', ['$event'])
-  onResize(event: any) {
-    this.screenWidth = window.innerWidth;
-    console.log('Screen width:', this.screenWidth);
-    // Apply logic based on screen width
-  }
-
-  // This method should correctly capture the event emitted by ClockInClockOutComponent
-  // onClockInTime(time: string | null) {
-  //   console.log("Received clock-in time:", time);
-  //   this.clockedInTime = time; // Assign the emitted clock-in time
-  // }
+  
 }
