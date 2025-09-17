@@ -32,7 +32,11 @@ export class NavigationLinksService {
 
 
 
-    this.links['accountingLink'] = '/admin/accounting/' +uuidV4();
+    this.links['transactionLink'] = '/admin/accounting/transaction/' +uuidV4();
+    this.links['accountingReportLink'] = '/admin/accounting/reports/' +uuidV4();
+    this.links['reconciliationLink'] = '/admin/accounting/reconciliation/' +uuidV4();
+
+
 
 // links =========================================================================================================================
     this.links['']
@@ -48,13 +52,23 @@ export class NavigationLinksService {
     this.links['allPayslip'] = 'employee-payslip'
     this.links['performanceLink'] = '/admin/hr/performance/' +uuidV4();
 
+// hospitality ================================================================================================================
+    this.links['roomLink'] = '/admin/hospitality/room/' +uuidV4();
+    this.links['serviceLink'] = '/admin/hospitality/service/' +uuidV4();
+    this.links['shortletLink'] = '/admin/hospitality/shortlet/' +uuidV4();
+    this.links['roomsCheckoutLink'] = '/user/hospitality/checkout/' +uuidV4();
+    this.links['servicesCheckoutLink'] = '/user/hospitality/services/' +uuidV4();
+
+    
 
 
 //  resources ================================================================================================================
     this.links['posLink'] = '/admin/pos/' +uuidV4();
     this.links['crmLink'] = '/admin/crm/' +uuidV4();
-    this.links['expensesLink'] = '/admin/expenses/' + uuidV4();
+    this.links['expensesLink'] = '/admin/expenses/expense/' + uuidV4();
     this.links['orderDetails'] = '/user/checkout/order/' + uuidV4();
+    this.links['productivityLink'] = '/admin/productivity/' +uuidV4();
+
 
 // Vendor link========================================================================================================
     this.links['vendorLink'] = '/vendor/' +uuidV4();
@@ -68,7 +82,7 @@ export class NavigationLinksService {
     this.links['vrfLink'] = '/user/auth/vrf/' +uuidV4();
     this.links['signupLink'] = '/user/auth/sign-up/' +uuidV4();
     this.links['emvLink'] = '/user/auth/emv/' +uuidV4();
-    this.links['verifyLink'] = '/users/auth/verify';
+    this.links['verifyLink'] = '/user/auth/verify';
 //=============================================================================================================================
     this.links['checkoutLink'] = '/user/checkout/' +uuidV4();
     this.links['checkoutOrderLink'] = '/user/checkout/orders/' +uuidV4();
@@ -84,7 +98,23 @@ this.links['settingsLink'] = '/admin/settings/general-settings/' +uuidV4();
 this.links['generalSettings'] = 'general-settings/' +uuidV4();
 this.links['HRSettings'] = 'HR-settings/' +uuidV4();
 this.links['posSettings'] = 'POS-settings/' +uuidV4();
+this.links['HOSSettings'] = 'Hospitality-settings/' +uuidV4();
 this.links['userRoles'] = 'user-roles/' +uuidV4();
+
+// POS ================================================================================================================
+this.links['productLink'] = '/admin/pos/product/' +uuidV4();
+this.links['inventoryLink'] = `/admin/pos/inventory/${uuidV4()}`;
+this.links['salesLink'] = '/admin/pos/sale/' +uuidV4();
+this.links['refundLink'] = '/admin/pos/refunds/' +uuidV4();
+this.links['reportLink'] = '/admin/pos/report/' +uuidV4();
+this.links['ingredientLink'] = '/admin/pos/ingredients/' +uuidV4(); 
+
+
+
+// Expenses ================================================================================================================
+this.links['reimbursementLink'] = '/admin/expenses/reimbursement/' +uuidV4()
+this.links['advanceLink'] = '/admin/expenses/advance/' +uuidV4()
+this.links['expenseReportLink'] = '/admin/expenses/report/' +uuidV4()
 
 
 

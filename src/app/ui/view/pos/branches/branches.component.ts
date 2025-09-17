@@ -1,12 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { DataService } from '../../../service/data.service';
 
 interface BranchDTO {
-  id: number;
+  id?: number;
   name: string;
   description: string;
   address: string;
-  phoneNo: number;
+  phoneNo: string;
   isEditing?: boolean;
 }
 
@@ -19,29 +20,40 @@ interface BranchDTO {
 export class BranchesComponent implements OnInit {
   branches: BranchDTO[] = [];
   newBranch: BranchDTO = {
-    id: 0,
+  
     name: '',
     description: '',
     address: '',
-    phoneNo: 0,
+    phoneNo: '',
   };
   showAddForm: boolean = false;
 
   constructor(
     private confirmationService: ConfirmationService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private dataService: DataService
   ) {}
 
   ngOnInit() {
-    this.loadBranchesFromLocalStorage();
+    this.loadBranches();
   }
 
   // Load branches from localStorage
-  loadBranchesFromLocalStorage() {
-    const savedBranches = localStorage.getItem('branches');
-    if (savedBranches) {
-      this.branches = JSON.parse(savedBranches);
-    }
+  loadBranches() {
+    this.dataService.getBranches().subscribe({
+      next: (data: any) => {
+        console.log(data)
+        const formattedData = data.map((branch: any) => ({
+          ...branch,
+          isEditing: false
+        }));
+  
+        this.branches = formattedData;
+      },
+      error: (error: any) => {
+        console.log(error)
+      },
+    })
   }
 
   // Save branches to localStorage
@@ -62,7 +74,7 @@ export class BranchesComponent implements OnInit {
       name: '',
       description: '',
       address: '',
-      phoneNo: 0,
+      phoneNo: '',
     };
   }
 
@@ -71,42 +83,69 @@ export class BranchesComponent implements OnInit {
       return;
     }
 
-    // Generate a unique ID for the new branch
-    this.newBranch.id = this.branches.length + 1;
+    this.dataService.addBranch(this.newBranch).subscribe({
+      next: (data: any) => {
+        this.branches.push(data);
 
-    // Add the new branch to the list
-    this.branches.push({ ...this.newBranch });
+        this.messageService.add({
+          severity:'success',
+          summary: 'Success',
+          detail: 'Branch added successfully!',
+        });
+        this.toggleForm();
+        this.resetForm();
+      },
+      error: (error: any) => {
 
-    // Save to localStorage
-    this.saveBranchesToLocalStorage();
-
-    // Show success message
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Branch added successfully!',
-    });
-
-    // Reset the form and hide the add form
-    this.toggleForm();
-    this.resetForm();
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to add branch, please try again.',
+        });
+      },
+    })
+   
   }
 
   editBranch(branch: BranchDTO, event: Event) {
     event.stopPropagation();
     branch.isEditing = !branch.isEditing;
-
+this.newBranch= branch
     if (!branch.isEditing) {
-      // Save changes to localStorage
-      this.saveBranchesToLocalStorage();
+    //   this.saveBranchesToLocalStorage();
 
-      // Show success message
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Success',
-        detail: 'Branch updated successfully!',
-      });
+    //   this.messageService.add({
+    //     severity: 'success',
+    //     summary: 'Success',
+    //     detail: 'Branch updated successfully!',
+    //   });
+    // }
+    const data: BranchDTO = {
+      id: branch.id,
+      ...this.newBranch
     }
+    this.dataService.addBranch(data).subscribe({
+      next: (data: any) => {
+        // this.branches.push(data);
+
+        this.messageService.add({
+          severity:'success',
+          summary: 'Success',
+          detail: 'Branch updated successfully!',
+        });
+        // this.toggleForm();
+        this.resetForm();
+      },
+      error: (error: any) => {
+
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to update branch, please try again.',
+        });
+      },
+    })
+  }
   }
 
   confirmBranchDelete(branch: BranchDTO, event: Event) {
@@ -117,21 +156,33 @@ export class BranchesComponent implements OnInit {
       message: `Are you sure you want to delete the branch "${branch.name}"?`,
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
-        // Remove the branch from the list
+      this.dataService.deleteBranch(branch.id || 0).subscribe({
+        next: (data: any) => {
+          // this.branches.push(data);
         this.branches = this.branches.filter((b) => b.id !== branch.id);
 
-        // Save to localStorage
-        this.saveBranchesToLocalStorage();
-
-        // Show success message
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Branch deleted successfully!',
-        });
+  
+          this.messageService.add({
+            severity:'success',
+            summary: 'Success',
+            detail: 'Branch deleted successfully!',
+          });
+          // this.toggleForm();
+          this.resetForm();
+        },
+        error: (error: any) => {
+  
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to delete branch, please try again.',
+          });
+        },
+      })
+       
       },
       reject: () => {
-        // Optional: Show a message if the user cancels
+      
         this.messageService.add({
           severity: 'info',
           summary: 'Cancelled',
