@@ -1,11 +1,11 @@
+<!-- <app-close-register-modal
+  *ngIf="showCloseRegisterModal"
+  [openingAmount]="openingAmount"
+  [closeAmount]="closingAmount"
+  (finalizeRegisterEvent)="onFinalizeRegister($event)"
+  (closeModalEvent)="onCloseRegisterModal()"
+></app-close-register-modal> -->
 
-
-<div *ngIf="isLoading" class="fixed inset-0 flex items-center justify-center bg-white z-50">
-    <span class="text-[#2EB270] font-bold text-xl animate-pulse">Loading...</span>
-  </div>
-  
 <router-outlet></router-outlet>
 
-
-
-<p-toast position="top-right" key="tf" />
+<p-toast key="tg" position="top-right"/>
