@@ -96,33 +96,33 @@ export class AppComponent implements OnInit{
     this.getUserBranchInfo(data);
 
 
- this.authenticationService.getUserApplicationRole(data.id).subscribe({
-  next: (response) => {
-    console.log("User application role:", response);
-    // sessionStorage.setItem("userApplicationRole", JSON.stringify(response));
-    if (Array.isArray(data.roles) && data.roles.includes("ROLE_ADMIN")) {
-    console.log("Super user detected");
-    sessionStorage.setItem(
-      "userApplicationRole",
-      JSON.stringify(response)
-    );
-  } else {
-    sessionStorage.setItem(
-      "userApplicationRole",
-      JSON.stringify(response)
-    );
-  }
+//  this.authenticationService.getUserApplicationRole(data.id).subscribe({
+//   next: (response) => {
+//     console.log("User application role:", response);
+//     // sessionStorage.setItem("userApplicationRole", JSON.stringify(response));
+//     if (Array.isArray(data.roles) && data.roles.includes("ROLE_ADMIN")) {
+//     console.log("Super user detected");
+//     sessionStorage.setItem(
+//       "userApplicationRole",
+//       JSON.stringify(response)
+//     );
+//   } else {
+//     sessionStorage.setItem(
+//       "userApplicationRole",
+//       JSON.stringify(response)
+//     );
+//   }
 
-  },
-  error: (error) => {
-    console.error("Error fetching user application role:", error);
-     const storedRole = sessionStorage.getItem("userApplicationRole");
-      if (storedRole) {
-        console.log("Removing invalid userApplicationRole from sessionStorage");
-        sessionStorage.removeItem("userApplicationRole");
-      }
-  }
-})
+//   },
+//   error: (error) => {
+//     console.error("Error fetching user application role:", error);
+//      const storedRole = sessionStorage.getItem("userApplicationRole");
+//       if (storedRole) {
+//         console.log("Removing invalid userApplicationRole from sessionStorage");
+//         sessionStorage.removeItem("userApplicationRole");
+//       }
+//   }
+// })
   }
 
   getUserBranchInfo(data: any) {

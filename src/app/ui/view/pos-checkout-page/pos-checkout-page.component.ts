@@ -250,7 +250,7 @@ clearCart() {
 
   processScannedSKU() {
     let product = this.categorizedProducts.find(
-      (item) => item.sku === this.scannedSKU.trim(),
+      (item) => item.code === this.scannedSKU.trim(),
     );
 
     if (product) {

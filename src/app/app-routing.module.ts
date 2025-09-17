@@ -14,7 +14,6 @@ import { EditInventoryComponent } from './ui/view/inventory/edit-inventory/edit-
 import { InformationComponent } from './ui/view/inventory/information/information.component';
 import { ProductsComponent } from './ui/view/products/products.component';
 import { ReportDashboardComponent } from './ui/view/report-dashboard/report-dashboard.component';
-
 import { RefundComponent } from './ui/view/refund/refund/refund.component';
 import { IngredientComponent } from './ui/view/ingredient/ingredient/ingredient.component';
 import { AddIngredientComponent } from './ui/view/ingredient/add-ingredient/add-ingredient.component';

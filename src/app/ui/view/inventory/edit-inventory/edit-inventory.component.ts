@@ -485,6 +485,7 @@ this.stockMovementForm = this.fb.group({
   alert('Basic button functionality works!');
 }
 
+
   updateProductInList(updatedProduct: ProductData): void {
     const index = this.product.findIndex((p) => p.id === updatedProduct.id);
     if (index !== -1) {

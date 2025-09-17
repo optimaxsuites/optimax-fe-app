@@ -1,21 +1,48 @@
-<div class="createVendor p-4">
-  <div class="flex justify-between mb-4">
-    <p class="back pt-2 text-[12px] cursor-pointer" (click)="closeEdit()">
-      <i class="fa-solid fa-arrow-left"></i> Back
-    </p>
+<form [formGroup]="stockMovementForm" (ngSubmit)="saveStockMovement()" class="w-full mx-auto bg-gray-50 p-12">
+  <!-- Header Section -->
+  <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-2">
+      <button type="button" class="text-gray-600 hover:text-gray-800" (click)="closeEdit()">
+        <i class="fa-solid fa-arrow-left text-lg"></i>
+      </button>
+      <h1 class="text-2xl font-bold text-gray-800">
+        {{ mode === "create" ? "Add New Inventory" : "Edit Inventory Item" }}
+      </h1>
+    </div>
+    <button
+      class="px-6 py-3 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      type="submit"
+      [disabled]="isLoading || stockMovementForm.invalid"
+    >
+      <ng-container *ngIf="isLoading">
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        Recording...
+      </ng-container>
+      <ng-container *ngIf="!isLoading">
+        <i class="fa-solid fa-save"></i>
+        Record Movement
+      </ng-container>
+    </button>
   </div>
 
-  <form [formGroup]="productForm" class="w-full mx-auto bg-gray-50">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  
+  <div class="md:col-span-2">
       <!-- Inventory Form (Left Side) -->
-      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+    <!-- Product Information -->
+<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
   <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
-    {{ mode === "create" ? "Add New Inventory" : "Edit Inventory Item" }}
+    Product Information
   </h2>
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
   <!-- Product Selection -->
- <div class="mb-4">
-  <label class="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+<div class="col-span-2">
+  <label for="productName" class="block text-sm font-medium text-gray-700 mb-1">
+    Product Name <span class="text-red-500">*</span>
+  </label>
   <ng-select
     [items]="product"
     bindLabel="name"
@@ -24,11 +51,14 @@
     (ngModelChange)="activeItem && (activeItem.id = $event)"
     (change)="onProductChange($event)"
     [ngModelOptions]="{standalone: true}"
-    class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue h-[42px]"
+    class="ng-select-custom"
     placeholder="Select product"
     required
   >
   </ng-select>
+  <div *ngIf="!activeItem" class="mt-1 text-sm text-red-500">
+    Product selection is required
+  </div>
 </div>
 
   <!-- Product Details (Non-editable) -->
@@ -142,10 +172,10 @@
 
 <form [formGroup]="stockMovementForm">
       <!-- Stock Movement Form (Right Side) -->
-      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
-          Stock Movement
-        </h2>
+     <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+  <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
+    Stock Movement & Pricing
+  </h2>
 
         <!-- Movement Date and Reference -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -183,6 +213,10 @@
               required
               min="1"
             />
+            <div *ngIf="stockMovementForm.get('quantity')?.invalid && stockMovementForm.get('quantity')?.touched" 
+     class="mt-1 text-sm text-red-500">
+  {{ getErrorMessage('quantity') }}
+</div>
           </div>
 
           <div>
@@ -196,6 +230,10 @@
     placeholder="Select supplier"
     class="flex-1"
   ></ng-select>
+  <div *ngIf="stockMovementForm.get('supplier')?.invalid && stockMovementForm.get('supplier')?.touched" 
+     class="mt-1 text-sm text-red-500">
+  {{ getErrorMessage('supplier') }}
+</div>
   <button
     class="px-3 py-1 bg-customBlue hover:bg-customBlueHover text-white rounded transition"
     type="button"
@@ -307,7 +345,7 @@
        
 
         <!-- Save Button -->
-      <div [formGroup]="stockMovementForm">
+      <!-- <div [formGroup]="stockMovementForm">
   ...
   <button
     type="button"
@@ -318,11 +356,16 @@
     <span>Record Movement</span>
     <i *ngIf="isLoading" class="pi pi-spinner pi-spin ml-2"></i>
   </button>
-</div>
+</div> -->
+
 
       </div>
+
+      
    
   </form>
+  
+
 
 
   <app-side-modal *ngIf="openAddSupplier" (close)="openAddSupplier = false">
