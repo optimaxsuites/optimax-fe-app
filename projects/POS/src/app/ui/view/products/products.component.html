@@ -202,44 +202,47 @@
                 (click)="op.toggle($event)"
               ></i>
 
-              <p-overlayPanel #op ngClass="padding: 0;">
-                <ul class=" ">
-                  <li
-                    class="table-item-panel"
-                    (click)="openViewProduct(item)"
-                    style="column-gap: 0.5rem"
-                  >
-                    <i class="pi pi-eye table-item me-2"></i>
-                    <span>View</span>
-                  </li>
-                  <li
-                    class="table-item-panel"
-                    (click)="openEdit(item)"
-                    style="column-gap: 0.5rem"
-                    *ngIf="productPermissions.canEdit"
-                  >
-                    <i class="pi pi-pen-to-square table-item me-2"></i>
-                    <span>Edit</span>
-                  </li>
-                  <li
-                    class="table-item-panel"
-                    (click)="promptBarcode(item, op)"
-                    style="column-gap: 0.5rem"
-                  >
-                    <i class="pi pi-download table-item me-2"></i>
-                    <span>Generate Barcode</span>
-                  </li>
-                  <li
-                    class="table-item-panel"
-                    *ngIf="productPermissions.canDelete"
-                    (click)="openDeleteModal(item)"
-                    style="column-gap: 0.5rem"
-                  >
-                    <i class="pi pi-times-circle table-item me-2"></i>
-                    <span>Delete</span>
-                  </li>
-                </ul>
-              </p-overlayPanel>
+           <p-overlayPanel #op ngClass="padding: 0;">
+  <ul class="">
+    <li
+      class="table-item-panel"
+      (click)="openViewProduct(item)"
+      style="column-gap: 0.5rem"
+    >
+      <i class="pi pi-eye table-item me-2"></i>
+      <span>View</span>
+    </li>
+    <li
+      class="table-item-panel"
+      (click)="openEdit(item)"
+      style="column-gap: 0.5rem"
+      *ngIf="productPermissions.canEdit"
+    >
+      <i class="pi pi-pen-to-square table-item me-2"></i>
+      <span>Edit</span>
+    </li>
+    <li
+      class="table-item-panel"
+      (click)="promptBarcode(item, op)"
+      style="column-gap: 0.5rem"
+    >
+      <i class="pi pi-download table-item me-2"></i>
+      <span>Generate Barcode</span>
+    </li>
+    <li
+      class="table-item-panel"
+      *ngIf="productPermissions.canDelete"
+      (click)="openDeleteModalWithValidation(item)"
+      style="column-gap: 0.5rem"
+      [title]="!canDeleteProduct(item) ? 'Warning: ' + getDeleteRestrictionMessage(item) : ''"
+      [ngClass]="{'text-orange-600': !canDeleteProduct(item)}"
+    >
+      <i class="pi pi-times-circle table-item me-2"></i>
+      <span>Delete</span>
+      <i *ngIf="!canDeleteProduct(item)" class="pi pi-exclamation-triangle text-orange-500 ml-1 text-xs"></i>
+    </li>
+  </ul>
+</p-overlayPanel>
             </div>
           </td>
         </tr>
@@ -283,43 +286,42 @@
         <i class="pi pi-ellipsis-v text-gray-700"></i>
       </button>
       <p-overlayPanel #op [showTransitionOptions]="'150ms'" [hideTransitionOptions]="'150ms'" ngClass="padding: 0;">
-        <ul class=" ">
-          <li
-            class="table-item-panel"
-            (click)="openViewProduct(product)"
-           
-          >
-            <i class="pi pi-eye table-item me-2"></i>
-            <span>View</span>
-          </li>
-          <li
-            class="table-item-panel"
-            *ngIf="productPermissions.canEdit"
-            (click)="openEdit(product)"
-           
-          >
-            <i class="pi pi-pen-to-square table-item me-2"></i>
-            <span>Edit</span>
-          </li>
-          <li
-            class="table-item-panel"
-            (click)="promptBarcode(product, op)"
-           
-          >
-            <i class="pi pi-download table-item me-2"></i>
-            <span>Generate Barcode</span>
-          </li>
-          <li
-            class="table-item-panel"
-            *ngIf="productPermissions.canDelete"
-            (click)="openDeleteModal(product); op.hide()"
-           
-          >
-            <i class="pi pi-times-circle table-item me-2"></i>
-            <span>Delete</span>
-          </li>
-        </ul>
-      </p-overlayPanel>
+  <ul class="">
+    <li
+      class="table-item-panel"
+      (click)="openViewProduct(product)"
+    >
+      <i class="pi pi-eye table-item me-2"></i>
+      <span>View</span>
+    </li>
+    <li
+      class="table-item-panel"
+      *ngIf="productPermissions.canEdit"
+      (click)="openEdit(product)"
+    >
+      <i class="pi pi-pen-to-square table-item me-2"></i>
+      <span>Edit</span>
+    </li>
+    <li
+      class="table-item-panel"
+      (click)="promptBarcode(product, op)"
+    >
+      <i class="pi pi-download table-item me-2"></i>
+      <span>Generate Barcode</span>
+    </li>
+    <li
+      class="table-item-panel"
+      *ngIf="productPermissions.canDelete"
+      (click)="openDeleteModalWithValidation(product); op.hide()"
+      [title]="!canDeleteProduct(product) ? 'Warning: ' + getDeleteRestrictionMessage(product) : ''"
+      [ngClass]="{'text-orange-600': !canDeleteProduct(product)}"
+    >
+      <i class="pi pi-times-circle table-item me-2"></i>
+      <span>Delete</span>
+      <i *ngIf="!canDeleteProduct(product)" class="pi pi-exclamation-triangle text-orange-500 ml-1 text-xs"></i>
+    </li>
+  </ul>
+</p-overlayPanel>
     </div>
   </div>
 
@@ -358,20 +360,40 @@
 </div>
 
 <app-modal
-  *ngIf="deleteModal"
-  [header]="'Delete' + activeItem.name"
+  *ngIf="deleteModal && activeItem"
+  [header]="'Delete ' + (activeItem.name || 'Product')"
   [title]="'Cancel'"
-  (close)="openDeleteModal()"
+  (close)="deleteModal = false"
 >
-  <p class="modalText">
-    Are You sure you want to carry out this action? <br />
-    Clicking on <span style="color: red; font-weight: bold">DELETE </span>,
-    would lead to permanent removal of
-    <span style="font-weight: bold">{{ activeItem.name }}</span>
-  </p>
+  <div class="modalText">
+    <p>Are you sure you want to delete this product?</p>
+    <div class="bg-gray-100 p-3 rounded mt-2 mb-3">
+      <strong>{{ activeItem.name }}</strong>
+      <br>
+      <small class="text-gray-600">SKU: {{ activeItem.sku }} | Code: {{ activeItem.code }}</small>
+    </div>
+    
+    <div *ngIf="!canDeleteProduct(activeItem)" class="bg-orange-50 border-l-4 border-orange-400 p-3 mb-3">
+      <div class="flex items-center">
+        <i class="pi pi-exclamation-triangle text-orange-400 mr-2"></i>
+        <div>
+          <p class="text-orange-800 font-medium">Warning</p>
+          <p class="text-orange-700 text-sm">
+            This product {{ getDeleteRestrictionMessage(activeItem) }}. 
+            Deletion may fail if it's actively referenced in the system.
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <p class="text-red-600 font-semibold">This action cannot be undone.</p>
+  </div>
 
   <div class="modalBtn">
-    <button class="btn create-invoice-btn" (click)="openDeleteModal()">
+    <button 
+      class="btn create-invoice-btn" 
+      (click)="deleteModal = false"
+      type="button">
       Cancel
     </button>
 
@@ -379,12 +401,11 @@
       class="btn create-invoice-btn"
       style="background-color: red !important"
       (click)="deleteProduct()"
-    >
-      Delete
+      type="button">
+      Delete Anyway
     </button>
   </div>
 </app-modal>
-
 @if (deleteMultipleItemsModal) {
 <app-modal
   [header]="

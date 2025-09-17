@@ -1,5 +1,5 @@
-<div class="w-full bg-gray-50 overflow-y-auto" id="printable-area">
-  <div class="mx-auto p-4 sm:p-6">
+<div class="w-full h-screen bg-gray-50 overflow-hidden flex flex-col">
+  <div class="mx-auto p-4 sm:p-6 flex-1 w-full overflow-auto">
     <div class="flex items-center justify-between mb-4 sm:mb-6">
       <div class="flex items-center gap-2">
         <button
@@ -26,11 +26,11 @@
       </div>
     </div>
 
-    <div *ngIf="!loading" class="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+    <div *ngIf="!loading" class="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 h-[calc(100%-4rem)]">
       <!-- Left Column - Stock Movements (3/4 width) -->
-      <div class="lg:col-span-3">
+      <div class="lg:col-span-3 h-full">
         <!-- Stock Movements Section -->
-        <div class="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200 mb-4 sm:mb-6">
+        <div class="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
           <div class="flex justify-between items-center mb-4 pb-2 border-b">
             <h2 class="text-lg font-semibold text-gray-800">Stock Movement History</h2>
             <div class="text-sm text-gray-600" *ngIf="stockMovements?.length">
@@ -38,21 +38,21 @@
             </div>
           </div>
 
-          <div *ngIf="isMovementsLoading" class="w-full p-6 text-center text-gray-500">
+          <div *ngIf="isMovementsLoading" class="w-full p-6 text-center text-gray-500 flex-1 flex items-center justify-center">
             <i class="fa fa-spinner fa-spin mr-2"></i>
             Loading stock movement history...
           </div>
 
           <div
             *ngIf="!isMovementsLoading && hasTriedMovements && (!stockMovements || stockMovements.length === 0)"
-            class="w-full p-6 text-center text-gray-500">
+            class="w-full p-6 text-center text-gray-500 flex-1 flex items-center justify-center">
             <i class="fa fa-info-circle mr-2"></i>
             No stock movements found for this product.
           </div>
 
-          <div *ngIf="!isMovementsLoading && stockMovements && stockMovements.length > 0" class="overflow-x-auto">
+          <div *ngIf="!isMovementsLoading && stockMovements && stockMovements.length > 0" class="overflow-auto flex-1">
             <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
+              <thead class="bg-gray-50 sticky top-0">
                 <tr>
                   <th class="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
                     Date & Time
@@ -151,7 +151,7 @@
       </div>
 
       <!-- Right Column - Image and Product Details (1/4 width) -->
-      <div class="lg:col-span-1">
+      <div class="lg:col-span-1 h-full overflow-auto">
         <!-- Product Image -->
         <div class="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200 mb-4 sm:mb-6">
           <div class="flex flex-col items-center gap-3 sm:gap-4">
@@ -278,6 +278,7 @@
     </div>
   </div>
 </div>
+
 
 
 <!-- Edit Stock Movement Modal -->

@@ -26,6 +26,7 @@ import { ProductExcelColumns } from "../../models/enums";
 import { ImageCacheService } from "../../service/image-cache.service";
 import { MetadataService } from "../../service/metadata.service";
 import { getUserPermissionsFor, isSuperUser } from "../../../shared/pipes/helper";
+import { BrowserModule } from "@angular/platform-browser";
 /**
  * Responsible for showing the list of available products in `admin/pos`
  *
@@ -386,25 +387,76 @@ onDocumentClick(event: any) {
       );
     }
   }
-  deleteProduct() {
-    this.posService
-      .deleteProduct(this.activeItem.id)
-      .subscribe(async (data) => {
-        if (data) {
-          console.log(data);
-        } else {
-          this.deleteModal = false;
-          this.getProducts();
-          this.messageService.add({
-            severity: "success",
-            summary: "Product deleted",
-            detail: `Product deleted successfully`,
-            key: "tl",
-            life: 3000,
-          });
-        }
-      });
+ deleteProduct() {
+  if (!this.activeItem?.id) {
+    this.messageService.add({
+      severity: "error",
+      summary: "Error",
+      detail: "No product selected for deletion",
+      key: "tl",
+      life: 3000,
+    });
+    return;
   }
+
+  this.posService.deleteProduct(this.activeItem.id).subscribe({
+    next: (response) => {
+      // Success response
+      this.deleteModal = false;
+      this.getProducts(); // Refresh the product list
+      this.messageService.add({
+        severity: "success",
+        summary: "Product Deleted",
+        detail: `${this.activeItem.name} has been deleted successfully`,
+        key: "tl",
+        life: 3000,
+      });
+      this.activeItem = {}; // Clear active item
+    },
+    error: (error: HttpErrorResponse) => {
+      this.deleteModal = false;
+      console.error('Delete error:', error);
+      
+     
+      if (error.status === 500 && 
+          (error.error?.exception === 'DataIntegrityViolationException' || 
+           error.error?.message?.includes('foreign key constraint') ||
+           error.error?.message?.includes('violates foreign key constraint'))) {
+        this.messageService.add({
+          severity: "error",
+          summary: "Cannot Delete Product",
+          detail: `${this.activeItem.name} cannot be deleted because it's currently being used in inventory, sales, or other transactions. Please remove it from inventory first or contact your administrator.`,
+          key: "tl",
+          life: 6000,
+        });
+      } else if (error.status === 404) {
+        this.messageService.add({
+          severity: "error",
+          summary: "Product Not Found",
+          detail: "The product you're trying to delete no longer exists.",
+          key: "tl",
+          life: 3000,
+        });
+      } else if (error.status === 403) {
+        this.messageService.add({
+          severity: "error",
+          summary: "Access Denied",
+          detail: "You don't have permission to delete this product.",
+          key: "tl",
+          life: 3000,
+        });
+      } else {
+        this.messageService.add({
+          severity: "error",
+          summary: "Deletion Failed",
+          detail: error.error?.message || "An unexpected error occurred while deleting the product. Please try again or contact support.",
+          key: "tl",
+          life: 4000,
+        });
+      }
+    }
+  });
+}
   toggleSelectedItemInList(item: ProductData) {
     const id = item.id;
 
@@ -417,37 +469,176 @@ onDocumentClick(event: any) {
     }
   }
 
-  // TODO: At the end of the loop, show the number of items deleted succesfully and those that didn't
-  deleteSelectedProducts(ids: number[] = this.listOfSelectedItems) {
-    ids.forEach((id) => {
-      this.posService.deleteProduct(id).subscribe(async (data) => {
-        if (data) {
-          console.log(
-            `Product with id ${id} deleted successfully. It's data was ${JSON.stringify(
-              data,
-            )}`,
-          );
-        } else {
-          this.deleteMultipleItemsModal = false;
-          this.getProducts();
-          this.messageService.add({
-            severity: "success",
-            summary: "Product deleted",
-            detail: `Product deleted successfully`,
-            key: "tl",
-            life: 3000,
-          });
-        }
-      });
-
-      // Remove the ID from the list
-      this.listOfSelectedItems = this.listOfSelectedItems.filter(
-        (itemId) => itemId !== id,
-      );
+ deleteSelectedProducts(ids: number[] = this.listOfSelectedItems) {
+  if (ids.length === 0) {
+    this.messageService.add({
+      severity: "warn",
+      summary: "No Selection",
+      detail: "Please select products to delete",
+      key: "tl",
+      life: 3000,
     });
-
-    this.toggleMultiDeleteModal();
+    return;
   }
+
+  let successCount = 0;
+  let errorCount = 0;
+  const totalCount = ids.length;
+
+  ids.forEach((id, index) => {
+    this.posService.deleteProduct(id).subscribe({
+      next: (response) => {
+        successCount++;
+        // Remove the ID from the selected list
+        this.listOfSelectedItems = this.listOfSelectedItems.filter(
+          (itemId) => itemId !== id
+        );
+        
+        // Check if this is the last item being processed
+        if (successCount + errorCount === totalCount) {
+          this.handleBulkDeleteComplete(successCount, errorCount);
+        }
+      },
+      error: (error: HttpErrorResponse) => {
+        errorCount++;
+        console.error(`Failed to delete product with id ${id}:`, error);
+        
+        // Track specific error types for better reporting
+        if (error.status === 500 && 
+            (error.error?.exception === 'DataIntegrityViolationException' || 
+             error.error?.message?.includes('foreign key constraint'))) {
+          // This is a constraint violation - product is in use
+        }
+        
+        // Check if this is the last item being processed
+        if (successCount + errorCount === totalCount) {
+          this.handleBulkDeleteComplete(successCount, errorCount);
+        }
+      }
+    });
+  });
+
+  this.toggleMultiDeleteModal();
+}
+
+private handleBulkDeleteComplete(successCount: number, errorCount: number) {
+  this.getProducts(); // Refresh the product list
+  
+  if (successCount > 0 && errorCount === 0) {
+    this.messageService.add({
+      severity: "success",
+      summary: "Bulk Delete Successful",
+      detail: `${successCount} product(s) deleted successfully`,
+      key: "tl",
+      life: 3000,
+    });
+  } else if (successCount > 0 && errorCount > 0) {
+    this.messageService.add({
+      severity: "warn",
+      summary: "Partial Success",
+      detail: `${successCount} product(s) deleted, ${errorCount} failed (may be in use)`,
+      key: "tl",
+      life: 5000,
+    });
+  } else {
+    this.messageService.add({
+      severity: "error",
+      summary: "Bulk Delete Failed",
+      detail: `Failed to delete ${errorCount} product(s). They may be referenced in other records.`,
+      key: "tl",
+      life: 5000,
+    });
+  }
+}
+
+canDeleteProduct(product: ProductData): boolean {
+  // Check if product has quantity in inventory
+  if (product.quantity && product.quantity > 0) {
+    return false;
+  }
+  
+  // Check if product has variants with quantity
+  if (product.variants && product.variants.length > 0) {
+    const hasVariantsWithQuantity = product.variants.some(variant => variant.quantity > 0);
+    if (hasVariantsWithQuantity) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+getDeleteRestrictionMessage(product: ProductData): string {
+  const reasons: string[] = [];
+  
+  if (product.quantity && product.quantity > 0) {
+    reasons.push(`has ${product.quantity} items in inventory`);
+  }
+  
+  if (product.variants && product.variants.length > 0) {
+    const variantsWithQuantity = product.variants.filter(v => v.quantity > 0);
+    if (variantsWithQuantity.length > 0) {
+      reasons.push(`has ${variantsWithQuantity.length} variants with inventory`);
+    }
+  }
+  
+  if (reasons.length === 0) {
+    return "may be referenced in transactions or other records";
+  }
+  
+  return reasons.join(" and ");
+}
+
+openDeleteModalWithValidation(item: ProductData) {
+  this.activeItem = item;
+  
+  // Optional: Show warning if product might not be deletable
+  if (!this.canDeleteProduct(item)) {
+    const reason = this.getDeleteRestrictionMessage(item);
+    this.messageService.add({
+      severity: "warn",
+      summary: "Delete Warning",
+      detail: `This product ${reason}. Deletion may fail if it's actively used in the system.`,
+      key: "tl",
+      life: 4000,
+    });
+  }
+  
+  this.deleteModal = true;
+}
+
+getProductActions(product: ProductData) {
+  const actions = [
+    { 
+      label: 'View', 
+      icon: 'pi pi-eye', 
+      action: () => this.openViewProduct(product),
+      show: true 
+    },
+    { 
+      label: 'Edit', 
+      icon: 'pi pi-pen-to-square', 
+      action: () => this.openEdit(product),
+      show: this.productPermissions.canEdit 
+    },
+    { 
+      label: 'Generate Barcode', 
+      icon: 'pi pi-download', 
+      action: (op: any) => this.promptBarcode(product, op),
+      show: true 
+    },
+    { 
+      label: 'Delete', 
+      icon: 'pi pi-times-circle', 
+      action: () => this.openDeleteModalWithValidation(product),
+      show: this.productPermissions.canDelete,
+      class: this.canDeleteProduct(product) ? '' : 'text-orange-500',
+      tooltip: this.canDeleteProduct(product) ? '' : `Cannot delete: ${this.getDeleteRestrictionMessage(product)}`
+    }
+  ];
+  
+  return actions.filter(action => action.show);
+}
 
   openViewProduct(item: any = {}) {
     this.activeItem = item;
@@ -811,7 +1002,7 @@ onDocumentClick(event: any) {
   generateBarcode(shouldPrint?: boolean) {
     const barcodes: { svg: SVGSVGElement; text: string }[] = [];
 
-    const sku = this.activeItem?.sku;
+    const sku = this.activeItem?.code;
     if (typeof sku === "string") {
       const displayValue = `${(
         this.activeItem.name?.split(" ")[0] || ""
