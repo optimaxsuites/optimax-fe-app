@@ -203,8 +203,4 @@ throw new Error('Method not implemented.');
     
     return Number(this.product.sellingPrice);
   }
-
-  getProductImage(product: any){
-
-  }
 }
