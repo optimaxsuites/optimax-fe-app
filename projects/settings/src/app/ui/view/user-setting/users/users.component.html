@@ -1,0 +1,378 @@
+<div class="flex gap-4 items-center">
+    <i class="pi pi-receipt text-4xl text-customBlue"></i>
+    <div>
+        <p class="text-customBlue/60">User and Roles Management</p>
+        <p class="text-customBlue font-semibold text-[17px]">User Management</p>
+    </div>
+  </div>
+
+
+
+@if(!openAddForm){
+
+  <div class="flex w-full justify-between gap-4 px-3 my-4">
+    <div class="flex gap-4 items-center">
+      <div class="w-full">
+        <ng-select
+          [items]="uniqueLevels"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by role"
+          [(ngModel)]="selectedEmployeeType"
+          (ngModelChange)="filterBySelectedEmployeeType()">
+        </ng-select>
+      </div>
+
+      <div class="w-full">
+        <ng-select
+          [items]="uniquePositions"
+          bindLabel="position"
+          [multiple]="true"
+          placeholder="Filter by module"
+          [(ngModel)]="selectedPosition"
+          (ngModelChange)="filterBySelectedPosition()"
+          >
+        </ng-select>
+      </div>
+      <input
+      type="text"
+      placeholder="Search"
+      [(ngModel)]="searchTerm"
+      (ngModelChange)="applyFilters()"
+      class="editInput bg-gray-50 w-full outline-none"
+    />
+    </div>
+    <div class="flex items-end">
+        <Button  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3" (click)="openAddForm = true">Create new user</Button>
+       </div>
+</div>
+
+    <mat-accordion class="">
+      @for(user of users; track user.name){
+        <mat-expansion-panel #panel>
+          <mat-expansion-panel-header>
+            <mat-panel-title class="capitalize">
+              {{ user.username }}
+            </mat-panel-title>
+            <mat-panel-description class="action-buttons">
+               <button (click)="activateUser(user,  $event)" class="text-yellow-600 hover:bg-yellow-200 p-3 rounded-xl">
+                <i class="fa-solid fa-power-off cursor-pointer text-2xl pr-2"></i>
+                <span *ngIf="panel.expanded">{{ !user.allowEcodeAuth ? 'Activate eCode' : 'Deactivate eCode' }}</span>
+              </button>
+              <button (click)="editCompensation(user,  $event)" class="text-customGreen hover:bg-green-50 p-3 rounded-xl">
+                <i class="fa-solid fa-pen-to-square cursor-pointer text-2xl pr-2"></i>
+                <span *ngIf="panel.expanded">{{ user.isEditing ? 'Save Changes' : 'Edit' }}</span>
+              </button>
+              <button (click)="confirmDeleteUser(user, $event)" class="text-red-500 hover:bg-red-50 p-3 rounded-xl" *ngIf="!user.isEditing">
+                <i class="fa-solid fa-trash text-2xl pr-2"></i>
+                <span *ngIf="panel.expanded">Delete</span>
+              </button>
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+
+          <div class="flex gap-4  flex-col my-2">
+            <!-- <p ><strong>Name:</strong> {{ user.name }}</p> -->
+            <p><strong>Email:</strong> {{ user.email }}</p>
+            <p><strong>Status:</strong> {{ user.accountState }}</p>
+            <p><strong>Role:</strong> {{ getRoleNames(user) }}</p>
+            <p><strong class="capitalize">Application Role:</strong> {{ (user.appRoles$ | async) || 'N/A'}}</p>
+            <p><strong class="capitalize">Branch:</strong> {{ (user.userBranchName$ | async) || 'N/A' }}</p>
+            <p><strong>eCode:</strong> {{ user.ecode }}</p>
+
+
+          </div>
+          
+          <div class="flex flex-col gap-3 py-3 w-full h-full" *ngIf="user.isEditing">
+          <p class="text-nowrap text-customBlue">Assign new role</p>
+          <div class="w-full flex gap-4 item-center"> 
+            <div class="w-full">
+               <!-- <label for="role" class="text-customBlue">Role</label> -->
+                <ng-select
+                  [items]="roles"
+                  id="role"
+                  bindLabel="name"
+                  [multiple]="false"
+                  placeholder="Select Role"
+                  [(ngModel)]="selectedRole"
+                >
+                </ng-select>
+            </div>
+          <button (click)="assignRole(user, $event)"  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3">Assign</button>
+
+          </div>      
+
+          </div>
+
+           <div class="flex flex-col gap-3 py-3 w-full h-full" *ngIf="user.isEditing">
+          <p class="text-nowrap text-customBlue">Assign new branch</p>
+          <div class="w-full flex gap-4 item-center"> 
+            <div class="w-full">
+               <!-- <label for="role" class="text-customBlue">Role</label> -->
+                <ng-select
+                  [items]="branches"
+                  id="role"
+                  bindLabel="name"
+                  [multiple]="false"
+                  placeholder="Select Role"
+                  [(ngModel)]="selectedBranch"
+                >
+                </ng-select>
+            </div>
+          <button (click)="assignBranch(user, $event)"  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3">Assign</button>
+
+          </div>      
+
+          </div>
+          
+    
+          <!-- <div class="">
+            <table class="w-full border-collapse border border-gray-300">
+              <thead>
+                <tr class="bg-gray-100">
+                  <th class="border border-gray-300 px-4 py-2">Module</th>
+                  <th class="border border-gray-300 px-4 py-2 text-center">Role</th>
+                  <th *ngIf="user.isEditing" class="border border-gray-300 px-4 py-2 text-center w-16"></th>
+
+            
+                </tr>
+              </thead>
+              <tbody>
+                @for(moduleKey of Object.keys(user.permission); track moduleKey) {
+          
+                    <tr class="border-t-4 border-transparent"> 
+                      <td class="border border-gray-300 px-4 py-2 capitalize">{{ moduleKey }}</td>
+                      <td class="border border-gray-300 px-4 py-2 text-center">
+                         <p class="capitalize">{{user.permission[moduleKey]}}</p>
+                      </td>
+                      <td *ngIf="user.isEditing"  class="border border-gray-300 px-4 py-2 capitalize text-center cursor-pointer text-red-500 w-16" (click)="revokeRole(user, moduleKey)">Revoke</td>                   
+                    </tr>
+                 
+                }
+                <tr *ngIf="user.isEditing">
+                    <td class="border border-gray-300 px-4 py-2 relative">
+                      <ng-select 
+                        [items]="uniquePositions"
+                        bindLabel="name"
+                        placeholder="Select Module"
+                        class="z-50 absolute"
+                        [(ngModel)]="selectedModule">
+                      </ng-select>
+                    </td>
+                    <td class="border border-gray-300 px-4 py-2 text-center">
+                      <ng-select 
+                        [items]="uniqueLevels"
+                        bindLabel="name"
+                        placeholder="Select Role"
+                        [(ngModel)]="selectedRole">
+                      </ng-select>
+                    </td>
+                  
+                    <td *ngIf="user.isEditing"  class="border border-gray-300 px-4 py-2 capitalize text-center cursor-pointer text-customGreen w-16" (click)="updateRole(user.permission)">Add</td>     
+                  </tr>
+              </tbody>
+              
+            </table>
+          </div> -->
+        </mat-expansion-panel>
+      }
+      @empty {<li>There are no items.</li>}
+    </mat-accordion>
+    
+  }
+
+
+  @if (openAddForm) {
+    
+  <div class="flex w-full justify-between gap-4 px-3 my-4">
+  <div class="text-xl font-semibold text-customBlue capitalize flex-1">Create new user</div>
+  <div class="flex items-end">
+    <Button class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl p-3" (click)="openAddForm = false">Cancel</Button>
+  </div>
+</div>
+
+<div class="px-4 flex flex-col justify-center items-center w-full ">
+  <div class="w-[75%] py-2 px-10 rounded-lg bg-white">
+    
+    <!-- Authentication Type Selection -->
+    <div class="py-3 flex flex-col gap-3">
+      <h3 class="text-lg font-semibold text-customBlue">Authentication Type</h3>
+      <div class="flex gap-4">
+       
+        <label class="flex items-center cursor-pointer">
+          <input 
+            type="checkbox" 
+            name="authType" 
+          
+            class="mr-2 text-customBlue focus:ring-customBlue" 
+            [(ngModel)]="codeAuthType"
+            
+          >
+          <span class="text-gray-700">Access Code</span>
+          <span class="text-sm text-gray-500 ml-2">(Quick checkout users)</span>
+        </label>
+      </div>
+
+       <div class="bg-blue-50 border-l-4 border-customBlue p-3 my-3" *ngIf="codeAuthType">
+        <div class="flex items-start">
+          <i class="fa-solid fa-info-circle text-customBlue mr-2 mt-1"></i>
+          <div class="text-sm text-gray-700">
+            <p class="font-semibold text-customBlue">Code-based Authentication</p>
+            <p>This user will only need to enter their access code to log in. Perfect for checkout stations and quick access scenarios.</p>
+          </div>
+        </div>
+      </div>
+
+
+       <!-- <h3 class="text-lg font-semibold text-customBlue">Automatically verify user</h3> -->
+      <div class="flex gap-4 mt-1">
+        
+        <label class="flex items-center cursor-pointer">
+          <input 
+            type="checkbox" 
+            name="authType" 
+          
+            class="mr-2 text-customBlue focus:ring-customBlue" 
+            [(ngModel)]="autoVerify"
+            
+          >
+          <span class="text-gray-700">Automatically verify account</span>
+          <!-- <span class="text-sm text-gray-500 ml-2">()</span> -->
+        </label>
+      </div>
+
+       <div class="bg-blue-50 border-l-4 border-customBlue p-3 my-3" *ngIf="autoVerify">
+        <div class="flex items-start">
+          <i class="fa-solid fa-info-circle text-customBlue mr-2 mt-1"></i>
+          <div class="text-sm text-gray-700">
+            <p class="font-semibold text-customBlue">Automatically verify account</p>
+            <p>This user will not need to verify their account themselves.</p>
+          </div>
+        </div>
+      </div>
+      
+
+    </div>
+
+    <!-- Basic Information -->
+     <div class="w-full flex gap-2">
+       <div class="py-3 flex flex-col gap-1 w-full">
+      <label for="name" class="font-semibold text-customBlue">First Name</label>
+      <input 
+        type="text" 
+        placeholder="first name" 
+        id="name" 
+        class="editInput" 
+        [(ngModel)]="newUser.firstname"
+      >
+    </div>
+
+     <div class="py-3 flex flex-col gap-1 w-full">
+      <label for="name" class="font-semibold text-customBlue">Last Name</label>
+      <input 
+        type="text" 
+        placeholder="last name" 
+        id="name" 
+        class="editInput" 
+        [(ngModel)]="newUser.lastname"
+      >
+    </div>
+     </div>
+    <div class="py-3 flex flex-col gap-1">
+      <label for="name" class="font-semibold text-customBlue">Username</label>
+      <input 
+        type="text" 
+        placeholder="User name" 
+        id="name" 
+        class="editInput" 
+        [(ngModel)]="newUser.name"
+      >
+    </div>
+
+    <!-- Email (only for password-based users) -->
+    <div class="py-3 flex flex-col gap-1" *ngIf="newUser.authType === 'password'">
+      <label for="email" class="font-semibold text-customBlue">Email</label>
+      <input 
+        type="email" 
+        placeholder="Email" 
+        id="email" 
+        class="editInput" 
+        [(ngModel)]="newUser.email"
+      >
+    </div>
+
+    <!-- Password (only for password-based users) -->
+    <div class="py-3 flex flex-col gap-1" *ngIf="newUser.authType === 'password'">
+      <label for="password" class="font-semibold text-customBlue">Password</label>
+      <input 
+        type="password" 
+        placeholder="Password" 
+        id="password" 
+        class="editInput" 
+        [(ngModel)]="newUser.password"
+      >
+    </div>
+
+    <!-- <div class="my-3" *ngIf="selectedRole.length > 0">
+      <h3 class="text-lg font-semibold text-customBlue">Selected roles</h3>
+     <p>{{ selectedRole.join(", ") }}</p>
+      <p>{{getSelectedRoleNames()}}</p>
+    </div> -->
+
+    <div class="flex gap-3 py-3 w-full items-center h-full" >
+
+      <div class="w-full">
+        <label for="role" class="text-customBlue">Branch</label>
+        <ng-select
+          [items]="branches"
+          id="role"
+          bindLabel="name"
+          [multiple]="false"
+          placeholder="Select Branch"
+          [(ngModel)]="selectedBranch"
+        >
+        </ng-select>
+      </div>
+     
+
+      <div class="w-full">
+        <label for="role" class="text-customBlue">Role</label>
+        <ng-select
+          [items]="roles"
+          id="role"
+          bindLabel="name"
+          [multiple]="false"
+          placeholder="Select Role"
+          [(ngModel)]="selectedRole"
+        >
+        </ng-select>
+      </div>
+
+      <!-- <div (click)="attachModuleToRole()" class="w-[15%] text-customGreen cursor-pointer hover:text-customGreenHover">
+        + add
+      </div> -->
+    </div>
+
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 my-3" *ngIf="newUser.authType === 'code'">
+      <div class="flex items-start">
+        <i class="fa-solid fa-exclamation-triangle text-yellow-600 mr-2 mt-1"></i>
+        <div class="text-sm text-gray-700">
+          <p class="font-semibold text-yellow-800">Limited Access</p>
+          <p>Code-based users have restricted access suitable for checkout and basic operations only.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="text-right my-3">
+      <button 
+        type="submit" 
+        class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-customGreenHover disabled:cursor-not-allowed disabled:bg-gray-400"
+        (click)="submitUser()" 
+        [disabled]="!isFormValid()"
+      >
+        {{ newUser.authType === 'code' ? 'Create Code User' : 'Create User' }}
+      </button>
+    </div>
+  </div>
+</div>
+  }

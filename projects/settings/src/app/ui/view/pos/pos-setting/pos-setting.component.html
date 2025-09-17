@@ -1,0 +1,53 @@
+
+
+<div class="flex flex-col w-[full">
+    <div class="search-bar flex justify-end items-center ml-auto  w-1/3 mt-2 relative">
+    
+      <input 
+        type="text" 
+        placeholder="Search" 
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="filterSettings()"
+        class="editInput text-customBlue outline-none bg-gray-50 p-2 rounded-md w-full"
+      />
+    </div>
+    
+    <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-10 px-10 py-4" > 
+      <div *ngFor="let setting of filteredSettings; let i = index" class="relative bg-gray-50 transition ease-linear hover:scale-105 hover:border-2 text-customBlue text-center rounded-xl cursor-pointer flex flex-col  items-center  justify-center w-[21rem] p-3"  (click)="openSideBar(setting)" (mouseleave)="hoveredIndex = -1">
+          <i *ngIf="setting.icon" [class]="setting.icon" class="text-5xl"></i>
+          <p class="text-[16px] font-bold my-3">{{setting.name}}</p>
+          <span class="text-[14px]" >
+            {{ setting.subSetting.slice(0, 3).join(', ') }}
+            <span *ngIf="setting.subSetting.length > 3" 
+                  class="cursor-pointer" 
+                  >
+                  <span *ngIf="setting.subSetting.length > 3 && hoveredIndex !== i" class="cursor-pointer ellipsis" (mouseover)="hoveredIndex = i" 
+                    >...</span>
+                </span>
+          </span>
+          
+          <span *ngIf="hoveredIndex === i" class="text-[14px]">
+            {{ setting.subSetting.slice(3).join(', ') }}
+          </span>
+      </div>
+  
+      
+    </div>
+  
+   </div>
+  
+  
+  
+  
+  
+  
+  
+  
+  <app-large-side-modal *ngIf="sidebar" (close)="sidebar = false">
+      <ng-container *ngIf="selectedComp; else noComponent">
+          <ng-container *ngComponentOutlet="selectedComp"></ng-container>
+        </ng-container>
+        <ng-template #noComponent>
+          <p>Coming soon!!</p>
+        </ng-template>
+  </app-large-side-modal>

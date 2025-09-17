@@ -1,0 +1,573 @@
+<div class="ERM1 mx-5">
+  <div class="ERM2">
+    <div class="arrow-left" (click)=" goBack()">
+      <div></div>
+    </div>
+    <div class="header-left">
+      <h1 class="ERM3 text-3xl">New Expense Request</h1>
+    </div>
+  </div>
+
+
+  <div class="ERM8 notice-box">
+    <b>Important: </b>Please ensure all expense details are accurate and include valid receipts before submitting.
+  </div>
+
+
+
+  <form #expenseForm="ngForm" (ngSubmit)="submitExpense(expenseForm)">
+    <div class="form-container">
+      <div class="form-left">
+        <div class="floating-box form-subsection">
+          <div class="section-header">Expense Information</div>
+          <div class="form-group">
+            <label for="name">Expense Name</label>
+            <input type="text" id="name" name="name" [(ngModel)]="expenseSummary.name" required
+              placeholder="Enter name" />
+            <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.name">
+              Name is required.
+            </p>
+
+          </div>
+
+
+          <div class="form-group">
+            <label for="category">Category</label>
+            <div class="category-input-row">
+              <ng-select [items]="categories" bindLabel="name" bindValue="name" [(ngModel)]="expenseSummary.category"
+                name="category" required placeholder="Select a category" class="w-full mt-3">
+              </ng-select>
+              <button type="button" class="add-button" (click)="openModal('category')">+</button>
+            </div>
+            <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.category">
+              Category is required.
+            </p>
+          </div>
+
+
+
+          <div class="form-group">
+            <label for="merchant">Merchant</label>
+            <div class="category-input-row">
+              <ng-select [items]="merchants" bindLabel="name" bindValue="name" [(ngModel)]="expenseSummary.merchant"
+                name="merchant" required placeholder="Select a merchant">
+              </ng-select>
+              <button type="button" class="add-button" (click)="openModal('merchant')">+</button>
+            </div>
+            <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.merchant">
+              Merchant is required.
+              </p>
+          </div>
+
+
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="4" cols="50" [(ngModel)]="expenseSummary.description"
+              required placeholder="Enter description"></textarea>
+            <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.description">
+              Description is required.
+              </p>
+          </div>
+
+
+          <div class="form-group">
+            <label for="event-date">Event Date</label>
+            <input type="date" id="event-date" name="eventDate" [(ngModel)]="expenseSummary.eventDate" required />
+            <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.eventDate">
+              Event Date is required.
+              </p>
+          </div>
+
+
+        </div>
+
+        <div class="floating-box form-subsection">
+          <div class="section-header">Financial Information</div>
+          <div class="form-group">
+            <label for="category">Quantity</label>
+            <input type="number" id="quantity" name="quantity" [(ngModel)]="expenseSummary.quantity" required
+              placeholder="Enter quantity" />
+            <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.quantity">
+              Quantity is required.
+              </p>
+          </div>
+
+      <div class="form-group">
+       <label for="currency">Currency</label>
+        <select id="currency" [(ngModel)]="selectedCurrency" name="currency" class="border px-2 py-1 rounded">
+           <option *ngFor="let c of availableCurrencies" [value]="c">
+             {{ c }}
+           </option>
+        </select>
+      </div>
+
+          <div class="form-group">
+            <label for="amount">Amount</label>
+            <input type="text" id="amount" name="amount" [value]="formatAmount(expenseSummary.amount)"
+              (input)="updateAmount($event)" required placeholder="Enter amount" />
+            <p class="error-message" *ngIf="expenseForm.submitted && !expenseSummary.amount">
+              Amount is required.
+            </p>
+          </div>
+
+
+
+          <div class="form-group">
+            <label for="tax-percentage">Tax Percentage (%)</label>
+            <div class="category-input-row">
+              <ng-select [items]="taxRates" bindLabel="name" bindValue="rate" [(ngModel)]="expenseSummary.taxPercentage"
+                name="taxPercentage" placeholder="Select a tax rate">
+                <ng-option *ngFor="let tax of taxRates" [value]="tax.rate">
+                  {{ tax.rate }}% - {{ tax.name}}
+                </ng-option>
+              </ng-select>
+              <button type="button" class="add-button" (click)="openModal('tax')">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!--Advanced payment section -->
+  <div class="floating-box form-subsection">
+  <div class="section-header">Advanced Payment Option</div>
+<div>
+  <!-- Show button if no advanced payment yet -->
+  @if (!advancedPaymentData && !showAdvancedPayment) {
+    <button type="button"
+      class="px-4 py-2 bg-customBlue text-white rounded schedule-payment-btn"
+      (click)="showAdvancedPayment = true">
+      Scheduled Payment
+    </button>
+  }
+  
+  @if (showAdvancedPayment) {
+    <div class="form-group mt-3">
+      <app-recurring-payment-modal
+        (save)="onAdvancedPaymentSave($event)"
+        (cancel)="onAdvancedPaymentCancel()">
+      </app-recurring-payment-modal>
+    </div>
+  }
+
+  <!-- Show reciept of schduled payment -->
+  @if (advancedPaymentData && !showAdvancedPayment) {
+    <div class="mt-3 p-3 border rounded bg-gray-50">
+      <h4 class="font-semibold">Recurring Payment Configured</h4>
+      <p>Type: {{ advancedPaymentData.type }}</p>
+      @if (advancedPaymentData.type === 'recurring') {
+        <p>Frequency: {{ advancedPaymentData.frequency }}</p>
+      }
+      <p>Start: {{ advancedPaymentData.startDate | date }}</p>
+      @if (advancedPaymentData.endDate) {
+        <p>End: {{ advancedPaymentData.endDate | date }}</p>
+      }
+      @if (advancedPaymentData.occurrences) {
+        <p>Occurrences: {{ advancedPaymentData.occurrences }}</p>
+      }
+
+      <button type="button"
+        class="px-3 py-1 bg-yellow-500 text-white rounded mt-2 edit-btn"
+        (click)="showAdvancedPayment = true">
+        Edit Recurring Payment
+      </button>
+      <button type="button"
+        class="px-3 py-1 bg-red-500 text-white rounded mt-2 ml-2  cancel-split-btn"
+        (click)="advancedPaymentData = undefined">
+        Remove
+      </button>
+    </div>
+  }
+  </div>
+
+<!-- end of scheduled payment -->
+
+  <!-- beginning ofBill Splitting Option -->
+   
+  <!-- Button to open -->
+  <button
+    *ngIf="!billSplitData && !showBillSplit"
+    type="button"
+    class="px-4 py-2 bg-customBlue text-white rounded split-bill-btn"
+    (click)="openBillSplit()"
+  >
+    Split Bill
+  </button>
+
+  <!-- Bill Split Form -->
+  <div *ngIf="showBillSplit" class="mt-3 border p-3 rounded">
+    <h4 class="font-semibold">Bill Split</h4>
+
+    <!-- Method -->
+    <label>Split Method:</label>
+    <select [(ngModel)]="billSplitData!.method" name="splitMethod" class="border px-2 py-1 rounded">
+      <option value="equal">Equal</option>
+      <option value="percentage">Percentage</option>
+      <option value="amount">Custom Amount</option>
+    </select>
+
+    <!-- Number of participants -->
+    <div class="mt-3">
+      <label>Number of People:</label>
+      <input
+        type="number"
+        [(ngModel)]="numParticipants"
+        (change)="generateParticipants()"
+        min="2"
+        max="9"
+        class="border px-2 py-1 rounded w-24"
+      />
+    </div>
+
+    <!-- Participant inputs -->
+    <div *ngFor="let p of billSplitData?.participants; let i = index" class="mt-3 border p-2 rounded">
+      <label>Name</label>
+      <input
+        type="text"
+        [(ngModel)]="p.name"
+        name="participantName{{ i }}"
+        placeholder="Enter name"
+        class="border px-2 py-1 rounded w-full"
+      />
+
+      <!-- Percentage -->
+      <div *ngIf="billSplitData?.method === 'percentage'" class="mt-2">
+        <label>Percentage (%)</label>
+        <input
+          type="number"
+          [(ngModel)]="p.sharePercent"
+          name="sharePercent{{ i }}"
+          min="0"
+          max="100"
+          class="border px-2 py-1 rounded w-32"
+        />
+      </div>
+
+      <!-- Amount -->
+      <div *ngIf="billSplitData?.method === 'amount'" class="mt-2">
+        <label>Amount</label>
+        <input
+          type="number"
+          [(ngModel)]="p.shareAmount"
+          name="shareAmount{{ i }}"
+          min="0"
+          class="border px-2 py-1 rounded w-32"
+        />
+      </div>
+
+      <!-- Equal (readonly) -->
+      <div *ngIf="billSplitData?.method === 'equal'" class="mt-2">
+        <strong>Share: {{ p.shareAmount | currency: selectedCurrency }} </strong>
+      </div>
+    </div>
+
+    <!-- Validation Error -->
+    <div *ngIf="splitError" class="text-red-600 mt-2">
+      {{ splitError }}
+    </div>
+
+    <!-- Actions -->
+    <div class="mt-3">
+      <button type="button" class="px-3 py-1 bg-green-600 text-white rounded save-split-btn" (click)="saveBillSplit()">
+        Save Split
+      </button>
+      <button type="button" class="px-3 py-1 bg-red-500 text-white rounded ml-2 cancel-split-btn" (click)="removeBillSplit()">
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <!-- Saved Summary -->
+  <div *ngIf="billSplitData && !showBillSplit" class="mt-3 p-3 border rounded bg-gray-50">
+    <h4 class="font-semibold">Bill Split Summary</h4>
+    <div *ngFor="let p of billSplitData.participants">
+      {{ p.name }} - {{ p.shareAmount | currency:selectedCurrency }}
+      <span *ngIf="billSplitData.method === 'percentage'"> ({{ p.sharePercent }}%)</span>
+    </div>
+
+    <button type="button" class="px-3 py-1 bg-yellow-500 text-white rounded mt-2 edit-btn" (click)="showBillSplit = true">
+      Edit Split
+    </button>
+    <button type="button" class="px-3 py-1 bg-red-500 text-white rounded mt-2 ml-2 cancel-split-btn" (click)="removeBillSplit()">
+      Remove Split
+    </button>
+  </div>
+</div>
+
+
+  <!-- end of bill splitting -->
+
+
+</div>
+        <!-- end advanced payment option -->
+      
+
+
+
+      <div class="form-right">
+        <!-- <h4>Upload Receipt</h4> -->
+        <div class="upload-container" (click)="fileInput.click()" (dragover)="onDragOver($event)"
+          (drop)="onFileDrop($event, 'receipt')">
+
+          <div>
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p *ngIf="!receiptFile">Click or drag and drop to upload Document</p>
+            <p *ngIf="receiptFile">Receipt: {{ receiptFile.name }}</p>
+            <p>Supported formats: JPG, PNG, PDF (max 10MB)</p>
+            <label>
+              <span>Browse Files</span>
+              <input type="file" #fileInput class="file-input" (change)="onFileSelect($event, 'receipt')"
+                accept=".jpg,.png,.pdf" />
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+      <app-side-modal *ngIf="showCategoryModal" (close)="closeModal('category')">
+        <div class="p-6">
+          <div class="flex justify-between items-center h-auto mb-6">
+            <h2 class="text-xl font-bold text-gray-800">Categories</h2>
+            <button class="p-2 text-gray-500 hover:text-red-700 transition" (click)=" closeModal('category')">
+              <i class="fa-solid fa-times"></i>
+            </button>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4 mb-6">
+            <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Add New Category</h3>
+
+              <div class="grid grid-cols-1 gap-4 mb-4">
+                <div>
+                  <label for="categoryName" class="block text-xl font-medium text-gray-700 mb-1">
+                    Category Name <span class="text-red-500"></span>
+                  </label>
+
+                  <input
+                    class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+                    [(ngModel)]="newCategoryData.name" name="categoryName" #categoryName="ngModel" required
+                    placeholder="Enter category name" id="name" />
+
+                  <div *ngIf="categoryName.invalid && categoryName.touched" class="text-red-500 text-sm mt-1">
+                    Category name is required.
+                  </div>
+                </div>
+
+                <div>
+                  <label for="categoryDescription" class="block text-xl font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+                    rows="3" [(ngModel)]="newCategoryData.description" placeholder="Enter category description"
+                    id="categoryDescription"></textarea>
+                </div>
+              </div>
+
+              <div class="flex justify-end mt-4">
+                <button type="button"
+                  class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlue transition flex items-center gap-2"
+                  [disabled]="!newCategoryData.name?.trim()"
+                  (click)="addNewCategory()">
+                  <i class="fa-solid fa-plus"></i>
+                  Add Category
+                </button>
+              </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4">
+            <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Existing Categories</h3>
+            <div *ngIf="categories.length === 0" class="text-center py-4 text-gray-500">
+              No Categories found. Create your first category above.</div>
+
+            <ul *ngIf="categories.length > 0" class="divide-y divide-gray-200">
+              <li *ngFor="let category of categories" class="py-3 flex justify-between items-center">
+                <div class="flex items-center">
+                  <div
+                    class="h-8 w-8 bg-customBlue/50 text-customBlue rounded-full flex items-center justify-center mr-3">
+                    <i class="fa-solid fa-folder"></i>
+                  </div>
+
+                  <div>
+                    <div class="font-medium text-gray-700">{{ category.name }}</div>
+                    <div class="text-sm text-gray-600">{{ category.description || 'No description provided'}}</div>
+                  </div>
+                </div>
+
+                <button class="text-red-500 hover:text-red-700 transition" (click)="removeCategory(category.id)">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </app-side-modal>
+
+
+      <app-side-modal *ngIf="showMerchantModal" (close)="closeModal('merchant')">
+  <div class="p-6">
+    <div class="flex justify-between items-center h-auto mb-6">
+      <h2 class="text-xl font-bold text-gray-800">Merchants</h2>
+      <button class="p-2 text-gray-500 hover:text-red-700 transition" (click)="closeModal('merchant')">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4 mb-6">
+      <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Add New Merchant</h3>
+
+      <form (ngSubmit)="addNewMerchant()">
+        <div class="grid grid-cols-1 gap-4 mb-4">
+          <div>
+            <label for="merchantName" class="block text-xl font-medium text-gray-700 mb-1">
+              Merchant Name
+            </label>
+            <input type="text" id="merchantName" [(ngModel)]="newMerchantData.name" name="merchantName" required
+              placeholder="Enter merchant name"
+              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+          </div>
+          <div>
+            <label for="merchantPhone" class="block text-xl font-medium text-gray-700 mb-1">
+              Phone number
+            </label>
+            <input type="tel" id="merchantPhone" [(ngModel)]="newMerchantData.phoneNumber" name="merchantPhone"
+              placeholder="Enter phone number"
+              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+          </div>
+          <div>
+            <label for="merchantAddress" class="block text-xl font-medium text-gray-700 mb-1">
+              Address
+            </label>
+            <textarea id="merchantAddress" [(ngModel)]="newMerchantData.address" name="merchantAddress" rows="2"
+              placeholder="Enter address"
+              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"></textarea>
+          </div>
+          <div>
+            <label for="merchantEmail" class="block text-xl font-medium text-gray-700 mb-1">
+              Email Address
+            </label>
+            <input type="email" id="merchantEmail" [(ngModel)]="newMerchantData.emailAddress" name="merchantEmail"
+              placeholder="Enter email address"
+              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+          </div>
+          <div>
+            <label for="contactPersonName" class="block text-xl font-medium text-gray-700 mb-1">
+              Contact Person Name
+            </label>
+            <input type="text" id="contactPersonName" [(ngModel)]="newMerchantData.contactPersonName" name="contactPersonName"
+              placeholder="Enter contact person name"
+              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+          </div>
+        </div>
+        <div class="flex justify-end mt-4">
+          <button type="submit"
+            class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlue transition flex items-center gap-2"
+            [disabled]="!newMerchantData.name?.trim()">
+            <i class="fa-solid fa-plus"></i>
+            Add Merchant
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4">
+      <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Existing Merchants</h3>
+      <div *ngIf="merchants.length === 0" class="text-center py-4 text-gray-500">
+        No Merchants found. Create your first merchant above.
+      </div>
+      <ul *ngIf="merchants.length > 0" class="divide-y divide-gray-200">
+        <li *ngFor="let merchant of merchants" class="py-3 flex justify-between items-center">
+          <div class="flex items-center">
+            <div class="h-8 w-8 bg-customBlue/50 text-customBlue rounded-full flex items-center justify-center mr-3">
+              <i class="fa-solid fa-store"></i>
+            </div>
+            <div>
+              <div class="font-medium text-gray-700">{{ merchant.name }}</div>
+              <div class="text-sm text-gray-600">{{ merchant.emailAddress || 'No email provided' }}</div>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</app-side-modal>
+ 
+
+      <app-side-modal *ngIf="showTaxModal" (close)="closeModal('tax')">
+  <div class="p-6">
+    <div class="flex justify-between items-center h-auto mb-6">
+      <h2 class="text-xl font-bold text-gray-800">Tax Rates</h2>
+      <button class="p-2 text-gray-500 hover:text-red-700 transition" (click)="closeModal('tax')">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4 mb-6">
+      <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Add New Tax Rate</h3>
+      <form (ngSubmit)="addNewTaxRate()">
+        <div class="grid grid-cols-1 gap-4 mb-4">
+          <div>
+            <label for="taxName" class="block text-sm font-medium text-gray-700 mb-1">
+              Tax Name
+            </label>
+            <input type="text" id="taxName" [(ngModel)]="newTaxData.name" name="taxName" required
+              placeholder="Enter tax name (e.g., VAT, Sales Tax)"
+              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+          </div>
+          <div>
+            <label for="taxRate" class="block text-sm font-medium text-gray-700 mb-1">
+              Tax Rate (%)
+            </label>
+            <input type="number" id="taxRate" [(ngModel)]="newTaxData.rate" name="taxRate" min="0" max="100" step="0.01" required
+              placeholder="Enter tax percentage"
+              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue" />
+          </div>
+          <div>
+            <label for="taxDescription" class="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea id="taxDescription" [(ngModel)]="newTaxData.description" name="taxDescription" rows="3"
+              placeholder="Enter tax description"
+              class="text-xl w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"></textarea>
+          </div>
+        </div>
+        <div class="flex justify-end mt-4">
+          <button type="submit"
+            class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlue transition flex items-center gap-2"
+            [disabled]="!newTaxData.name?.trim() || newTaxData.rate < 0">
+            <i class="fa-solid fa-plus"></i>
+            Add Tax Rate
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 py-5 px-4">
+      <h3 class="text-md font-medium text-gray-700 mb-4 pb-2 border-b">Existing Tax Rates</h3>
+      <div *ngIf="taxRates.length === 0" class="text-center py-4 text-gray-500">
+        No Tax Rates found. Create your first tax rate above.
+      </div>
+      <ul *ngIf="taxRates.length > 0" class="divide-y divide-gray-200">
+        <li *ngFor="let tax of taxRates" class="py-3 flex justify-between items-center">
+          <div class="flex items-center">
+            <div class="h-8 w-8 bg-customBlue/50 text-customBlue rounded-full flex items-center justify-center mr-3">
+              <i class="fa-solid fa-percent"></i>
+            </div>
+            <div>
+              <div class="font-medium text-gray-700">{{ tax.name }}</div>
+              <div class="text-sm text-gray-600">{{ tax.rate }}%</div>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</app-side-modal>
+</div>
+    <div class="form-buttons">
+      <button class="footer-button submit-button" type="submit">
+        Submit
+      </button>
+      <!--button class="footer-button save-button">Save</button-->
+      <button type="button" class="footer-button cancel-button" (click)="cancelExpenses()">Cancel</button>
+    </div>
+  </form>
+
+  <p-toast></p-toast>
