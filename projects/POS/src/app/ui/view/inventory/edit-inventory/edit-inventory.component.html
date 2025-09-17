@@ -1,0 +1,431 @@
+<div class="createVendor p-4">
+  <div class="flex justify-between mb-4">
+    <p class="back pt-2 text-[12px] cursor-pointer" (click)="closeEdit()">
+      <i class="fa-solid fa-arrow-left"></i> Back
+    </p>
+  </div>
+
+  <form [formGroup]="productForm" class="w-full mx-auto bg-gray-50">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Inventory Form (Left Side) -->
+      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+  <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
+    {{ mode === "create" ? "Add New Inventory" : "Edit Inventory Item" }}
+  </h2>
+
+  <!-- Product Selection -->
+ <div class="mb-4">
+  <label class="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+  <ng-select
+    [items]="product"
+    bindLabel="name"
+    bindValue="id"
+    [ngModel]="activeItem?.id"
+    (ngModelChange)="activeItem && (activeItem.id = $event)"
+    (change)="onProductChange($event)"
+    [ngModelOptions]="{standalone: true}"
+    class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue h-[42px]"
+    placeholder="Select product"
+    required
+  >
+  </ng-select>
+</div>
+
+  <!-- Product Details (Non-editable) -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+      <input
+        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue bg-gray-100"
+        [value]="activeItem?.sku"
+        readonly
+      />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Product Code</label>
+      <input
+        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue bg-gray-100"
+        [value]="activeItem?.code"
+        readonly
+      />
+    </div>
+  </div>
+
+  <!-- Category and Measurement Unit -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div>
+  <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+  <input
+    class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue bg-gray-100"
+    [value]="activeItem?.productCategory?.name || 'N/A'"
+    readonly
+  />
+</div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Measurement Unit</label>
+      <input
+        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue bg-gray-100"
+        [value]="activeItem?.measurementUnit"
+        readonly
+      />
+    </div>
+  </div>
+
+  <!-- Supplier and Part Number -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+      <input
+        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue bg-gray-100"
+        [value]="activeItem?.supplier?.name || 'N/A'"
+        readonly
+      />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Part Number</label>
+      <input
+        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue bg-gray-100"
+        [value]="activeItem?.partNumber || 'N/A'"
+        readonly
+      />
+    </div>
+  </div>
+
+  <!-- Pricing Section (Non-editable) -->
+  <h3 class="text-md font-semibold text-gray-800 mb-2">Pricing</h3>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Purchase Price</label>
+      <input
+        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue bg-gray-100"
+        [value]="(activeItem?.purchasePrice || 0) | currency:'₦':'symbol':'1.2-2'"
+        readonly
+      />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Selling Price</label>
+      <input
+        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue bg-gray-100"
+        [value]="(activeItem?.sellingPrice || 0) | currency:'₦':'symbol':'1.2-2'"
+        readonly
+      />
+    </div>
+</div>
+
+  <!-- Inventory Section -->
+  <h3 class="text-md font-semibold text-gray-800 mb-2">Inventory</h3>
+  <div class="mb-4">
+    <label class="block text-sm font-medium text-gray-700 mb-1">Current Quantity</label>
+    <input
+      class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue bg-gray-200"
+      [value]="getCurrentQuantity()"
+      readonly
+    />
+  </div>
+  <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">New Total Quantity</label>
+          <input
+            name="newTotalQuantity"
+            type="number"
+            [value]="getCurrentQuantity() + (newQuantity || 0)"
+            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue bg-gray-200"
+            readonly
+          />
+        </div>
+       
+      
+</div>
+
+<form [formGroup]="stockMovementForm">
+      <!-- Stock Movement Form (Right Side) -->
+      <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
+          Stock Movement
+        </h2>
+
+        <!-- Movement Date and Reference -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Movement Date</label>
+            <input
+              formControlName="createdDate"
+              name="createdDate"
+              type="date"
+              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Reference</label>
+            <input
+              formControlName="reference"
+              name="reference"
+              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+              placeholder="Enter reference (optional)"
+            />
+          </div>
+        </div>
+
+        <!-- Quantity and Supplier -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+            <input
+              formControlName="quantity"
+              name="quantity"
+              type="number"
+              class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+              placeholder="Enter quantity"
+              required
+              min="1"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+            <div class="flex gap-2">
+              <ng-select
+    [items]="suppliers"
+    bindLabel="name"
+    bindValue="id"
+    formControlName="supplier"
+    placeholder="Select supplier"
+    class="flex-1"
+  ></ng-select>
+  <button
+    class="px-3 py-1 bg-customBlue hover:bg-customBlueHover text-white rounded transition"
+    type="button"
+    (click)="openAddSupplier = true"
+  >
+    <i class="fa-solid fa-plus"></i>
+  </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Purchase Price and Selling Price -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+  <div>
+    <label class="block text-sm font-medium text-gray-700 mb-1">Purchase Price</label>
+    <div class="relative">
+      <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-600">₦</span>
+      <input
+        formControlName="purchasePrice"
+        name="purchasePrice"
+        type="number"
+        class="w-full pl-8 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+        placeholder="0.00"
+        required
+        min="0"
+        step="0.01"
+      />
+    </div>
+  </div>
+
+  <div>
+    <label class="block text-sm font-medium text-gray-700 mb-1">Base Selling Price</label>
+    <div class="relative">
+      <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-600">₦</span>
+      <input
+        type="number"
+        [(ngModel)]="priceDetails.basePrice"
+        (ngModelChange)="onBasePriceChange($event)"
+        [ngModelOptions]="{standalone: true}"
+        class="w-full pl-8 px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-customBlue"
+        placeholder="0.00"
+        min="0"
+        step="0.01"
+      />
+    </div>
+  </div>
+</div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+  <!-- Tax -->
+  <div>
+    <label for="tax" class="block text-sm font-medium text-gray-700 mb-1">
+      Tax <span class="text-red-500">*</span>
+    </label>
+    <div class="flex gap-1">
+      <ng-select
+        [items]="taxes"
+        bindLabel="name"
+        formControlName="tax"
+        placeholder="Select tax"
+        class="flex-1"
+      ></ng-select>
+      <button
+        class="px-3 py-1 bg-customBlue hover:bg-customBlueHover text-white rounded transition"
+        type="button"
+        (click)="openAddTax = true"
+      >
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    </div>
+    <div
+      *ngIf="productForm.get('tax')?.invalid && productForm.get('tax')?.touched"
+      class="mt-1 text-sm text-red-500"
+    >
+      {{ getErrorMessage('tax') }}
+    </div>
+  </div>
+
+  <!-- Discount -->
+  <div>
+    <label for="discount" class="block text-sm font-medium text-gray-700 mb-1">
+      Discount <span class="text-red-500">*</span>
+    </label>
+    <div class="flex gap-1">
+      <ng-select
+        [items]="discounts"
+        bindLabel="name"
+        formControlName="discount"
+        placeholder="Select discount"
+        class="flex-1"
+      ></ng-select>
+      <button
+        class="px-3 py-1 bg-customBlue hover:bg-customBlueHover text-white rounded transition"
+        type="button"
+        (click)="openAddDiscount = true"
+      >
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    </div>
+    <div
+      *ngIf="productForm.get('discount')?.invalid && productForm.get('discount')?.touched"
+      class="mt-1 text-sm text-red-500"
+    >
+      {{ getErrorMessage('discount') }}
+    </div>
+  </div>
+</div>
+
+       
+
+        <!-- Save Button -->
+      <div [formGroup]="stockMovementForm">
+  ...
+  <button
+    type="button"
+    class="px-6 py-2 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center gap-2"
+    (click)="saveStockMovement()"
+    [disabled]="isLoading || stockMovementForm.invalid"
+  >
+    <span>Record Movement</span>
+    <i *ngIf="isLoading" class="pi pi-spinner pi-spin ml-2"></i>
+  </button>
+</div>
+
+      </div>
+   
+  </form>
+
+
+  <app-side-modal *ngIf="openAddSupplier" (close)="openAddSupplier = false">
+  <app-supplier ></app-supplier>
+</app-side-modal>
+<app-side-modal *ngIf="openAddTax" (close)="openAddTax = false">
+  <app-tax></app-tax>
+</app-side-modal>
+<app-side-modal *ngIf="openAddDiscount" (close)="openAddDiscount = false">
+  <div class="modal-header flex justify-between items-center text-gray-700">
+    <h2 class="font-semibold pb-0 mb-0">Discount</h2>
+
+    <div class="flex gap-3">
+      <button
+        class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold"
+        (click)="openAddDiscount = false"
+      >
+        Cancel
+      </button>
+      <button class="btn create-invoice-btn" (click)="addDiscount()">
+        Save
+      </button>
+    </div>
+  </div>
+
+  <div class="mt-5 mb-2 flex flex-col gap-4">
+    <div class="detailDiv w-full">
+      <label for="e-price">Name</label>
+      <input
+        class="name editInput"
+        type="text"
+        id="e-price"
+        [(ngModel)]="discount.name"
+        placeholder="Discount name"
+      />
+    </div>
+
+    <div class="detailDiv w-full">
+      <label for="discount">Discount percentage (%)</label>
+      <input
+        id="discount"
+        [(ngModel)]="discount.value"
+        class="name editInput"
+        placeholder="Discount value"
+      />
+    </div>
+
+    <div class="detailDiv w-full">
+      <label for="discountType">Discount Type</label>
+      <ng-select
+        [items]="discountTypes"
+        bindLabel="name"
+        bindValue="id"
+        [(ngModel)]="discount.discountType"
+        [multiple]="true"
+        placeholder="Select discount types"
+      >
+      </ng-select>
+    </div>
+
+    <!-- <div  *ngIf="productData.discount.discountType.includes(2)"> -->
+    <div>
+      <p class="text-lg text-gray-700 ml-3 pb-0 mb-0 mt-2">
+        Discount validity period
+      </p>
+
+      <div class="flex gap-4 items-center w-full">
+        <div class="detailDiv w-full">
+          <label for="start">Start date</label>
+          <input
+            type="date"
+            formControlName="startDate"
+            id="start"
+            class="name editInput"
+          />
+        </div>
+        <div class="detailDiv w-full">
+          <label for="end">End date</label>
+          <input
+            type="date"
+            formControlName="endDate"
+            id="end"
+            class="name editInput"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- <div *ngIf="productData.discount.discountType.includes(3)"> -->
+    <div>
+      <div class="detailDiv w-full">
+        <label for="minQuantity">Minimum quantity</label>
+        <input
+          type="text"
+          id="minQuantity"
+          formControlName="discountMinQuantity"
+          class="name editInput"
+        />
+      </div>
+    </div>
+  </div>
+  
+</app-side-modal>
+</div>
+
+<p-toast position="top-right" key="tl" />

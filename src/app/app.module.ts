@@ -1,9 +1,17 @@
-import { NgModule } from '@angular/core';
+import { CUSTOM_ELEMENTS_SCHEMA, NgModule, isDevMode, APP_INITIALIZER } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-
-import { AppRoutingModule } from './app-routing.module';
-import { AppComponent } from './app.component';
-
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { provideNativeDateAdapter } from '@angular/material/core';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
+import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
+import { CdkScrollable } from '@angular/cdk/scrolling';
 import { ButtonModule } from 'primeng/button';
 import { EditorModule } from 'primeng/editor';
 import { PasswordModule } from 'primeng/password';
@@ -23,145 +31,470 @@ import { InputTextModule } from 'primeng/inputtext';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { MessagesModule } from 'primeng/messages';
 import { MessageModule } from 'primeng/message';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { RippleModule } from 'primeng/ripple';
-import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { LargeSideModalComponent } from './ui/sharedComponents/view/large-side-modal/large-side-modal.component';
-import { NgSelectModule } from '@ng-select/ng-select';
-import { HrSettingsComponent } from './ui/view/hr/hr-settings/hr-settings.component';
-import { SalaryComponent } from './ui/view/hr/salary/salary.component';
-
-///mat
-import { MatDialogModule } from '@angular/material/dialog';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatExpansionModule } from '@angular/material/expansion';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatSelectModule } from '@angular/material/select';
-import { MatTooltip, MatTooltipModule } from '@angular/material/tooltip';
-import { MatButtonModule } from '@angular/material/button';
-import { MatMenuModule } from '@angular/material/menu';
 import { MatTabGroup, MatTabsModule } from '@angular/material/tabs';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatRadioModule } from '@angular/material/radio';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { NgApexchartsModule } from 'ng-apexcharts';
+import { DropdownModule } from 'primeng/dropdown';
+import { InputSwitchModule } from 'primeng/inputswitch';
+//import { TagModule } from 'primeng/tag';
+
+// import { EditorModule } from "@progress/kendo-angular-editor";
+
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
+import { AngularEditorModule } from '@kolkov/angular-editor';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { AsyncPipe, CommonModule } from '@angular/common';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { SettingsPageComponent } from './ui/view/settings-page.component';
-import { ScoresheetConfigComponent } from './ui/view/hr/scoresheet-config/scoresheet-config.component';
-import { NavigationLinksService } from './ui/sharedComponents/service/navigation-links/navigation-links.service';
-import { MenuItemsService } from './ui/sharedComponents/service/menue-items/menu-items.service';
-import { GeneralSettingsComponent } from './ui/view/general/general-settings/general-settings.component';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { LevelComponent } from './ui/view/hr/level/level.component';
-import { LeaveComponent } from './ui/view/hr/leave/leave.component';
-import {
-  HTTP_INTERCEPTORS,
-  provideHttpClient,
-  withInterceptorsFromDi,
-} from '@angular/common/http';
-import { AuthInterceptor } from './ui/sharedComponents/service/auth-service/auth.interceptor.service';
-import { JWT_OPTIONS, JwtHelperService } from '@auth0/angular-jwt';
-import { AppraisalassessmentComponent } from './ui/view/hr/appraisalassessment/appraisalassessment.component';
-import { SideModalComponent } from './ui/sharedComponents/view/side-modal/side-modal.component';
-import { CompensationComponent } from './ui/view/hr/compensation/compensation.component';
-import { NavTabComponent } from './ui/sharedComponents/view/nav-tab/nav-tab.component';
-import { LeaveStrctureComponent } from './ui/view/hr/leave-strcture/leave-strcture.component';
-import { CheckoutComponent } from './ui/view/pos/checkout/checkout.component';
-import { PosSettingComponent } from './ui/view/pos/pos-setting/pos-setting.component';
-import { BusInfoSettingComponent } from './ui/view/pos/bus-info-setting/bus-info-setting.component';
-import { PAndISettingComponent } from './ui/view/pos/p-and-isetting/p-and-isetting.component';
-import { UserSettingComponent } from './ui/view/user-setting/user-setting.component';
-import { RolesNpermissionComponent } from './ui/view/user-setting/roles-npermission/roles-npermission.component';
-import { UsersComponent } from './ui/view/user-setting/users/users.component';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
-import { BranchesComponent } from './ui/view/pos/branches/branches.component';
 
-//
+import { AppRoutingModule } from './app-routing.module';
+import { CanvasJSAngularChartsModule } from '@canvasjs/angular-charts';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { MatCardModule } from '@angular/material/card';
+import { MatGridListModule } from '@angular/material/grid-list';
+
+import { AppComponent } from './app.component';
+import { GeneralLedegerManagementComponent } from './ui/shared/view/general-ledeger-management/general-ledeger-management.component';
+import { CustomerFulfilmentComponent } from './ui/shared/view/customer-fulfilment/customer-fulfilment.component';
+import { EarningsComponent } from './ui/dashboard/view/earnings/earnings.component';
+import { FooterComponent } from './ui/shared/view/footer/footer.component';
+import { LevelsComponent } from './ui/dashboard/view/levels/levels.component';
+import { ManagementComponent } from './ui/shared/view/management/management.component';
+import { NavbarComponent } from './ui/shared/view/navbar/navbar.component';
+import { ProductDesignComponent } from './ui/shared/view/product-design/product-design.component';
+import { ProfileInfoComponent } from './ui/shared/view/profile-info/profile-info.component';
+import { QuestionAnswerComponent } from './ui/shared/view/question-answer/question-answer.component';
+import { SalesCardComponent } from './ui/dashboard/view/sales-card/sales-card.component';
+import { SearchbarComponent } from './ui/shared/view/searchbar/searchbar.component';
+import { SidebarComponent } from './ui/shared/view/sidebar/sidebar.component';
+import { SponsorComponent } from './ui/dashboard/view/sponsor/sponsor.component';
+import { TodaySalesComponent } from './ui/dashboard/view/today-sales/today-sales.component';
+import { TopProductsComponent } from './ui/dashboard/view/top-products/top-products.component';
+import { TotalRevenueComponent } from './ui/dashboard/view/total-revenue/total-revenue.component';
+import { TransactionCardComponent } from './ui/dashboard/view/transaction-card/transaction-card.component';
+import { UserInterfaceComponent } from './ui/shared/view/user-interface/user-interface.component';
+import { MasterComponent } from './master.component';
+import { DefaultComponent } from './default.component';
+import { DashboardPageComponent } from './ui/dashboard/view/dashboard-page.component';
+import { AccountingPageComponent } from './ui/accounting/view/accounting-page.component';
+import { SettingsPageComponent } from './ui/settings/view/settings-page.component';
+import { LoginComponent } from './ui/auth/view/login/login.component';
+import { RegisterComponent } from './ui/auth/view/register/register.component';
+import { InvoiceModalComponent } from './ui/sales/view/invoice-modal/invoice-modal.component';
+import { SalesPageComponent } from './ui/sales/view/sales-page.component';
+import { QuotationComponent } from './ui/sales/view/quotation/quotation.component';
+import { ProformaInvoiceComponent } from './ui/sales/view/proforma-invoice/proforma-invoice.component';
+import { ReceiptComponent } from './ui/shared/view/receipt/receipt.component';
+import { InvoiceComponent } from './ui/sales/view/invoice/invoice.component';
+import { NumberOnlyDirective } from './ui/shared/service/number-only/number-only.directive';
+import { AccountPayabaleManagementComponent } from './ui/shared/view/account-payabale-management/account-payabale-management.component';
+import { AccountReceivableManagementComponent } from './ui/accounting/view/account-receivable-management/account-receivable-management.component';
+import { BudgetingForecastingComponent } from './ui/accounting/view/budgeting-forecasting/budgeting-forecasting.component';
+import { CashManagementComponent } from './ui/shared/view/cash-management/cash-management.component';
+import { PaymentReceiptsComponent } from './ui/accounting/view/payment-receipts/payment-receipts.component';
+import { RfqComponent } from './ui/purchase/view/rfq/rfq.component';
+import { PaymentReceiptsModalComponent } from './ui/accounting/view/payment-receipts-modal/payment-receipts-modal.component';
+import { PaymentRecordReceivedComponent } from './ui/accounting/view/payment-record-received/payment-record-received.component';
+import { SalesOrderComponent } from './ui/accounting/view/sales-order/sales-order.component';
+import { EditableLabelComponent } from './ui/shared/view/editable-label/editable-label.component';
+import { ConfigureTaxPopupComponent } from './ui/shared/view/configure-tax-popup/configure-tax-popup.component';
+import { NumberCurrencyPopupComponent } from './ui/shared/view/number-currency-popup/number-currency-popup.component';
+import { AddNewClientComponent } from './ui/sales/view/add-new-client/add-new-client.component';
+import { InventoryPageComponent } from './ui/inventory/view/inventory-page.component';
+import { InventoryTableComponent } from './ui/inventory/view/inventory-table/inventory-table.component';
+import { InventoryFormComponent } from './ui/inventory/view/inventory-form/inventory-form.component';
+import { ManagedInventoryTableComponent } from './ui/shared/view/managed-inventory-table/managed-inventory-table.component';
+import { PurchasePageComponent } from './ui/purchase/view/purchase-page.component';
+import { RfqModalComponent } from './ui/purchase/view/rfq-modal/rfq-modal.component';
+import { BookKeepingComponent } from './ui/accounting/view/book-keeping/book-keeping.component';
+import { StripHtmlPipe } from './ui/shared/service/strip-html/strip-html.pipe';
+import { QuotationModalComponent } from './ui/sales/view/quotation-modal/quotation-modal.component';
+import { ProformaInvoiceModalComponent } from './ui/sales/view/proforma-invoice-modal/proforma-invoice-modal.component';
+import { DispatchNoteComponent } from './ui/sales/view/dispatch-note/dispatch-note.component';
+import { DispatchNoteModalComponent } from './ui/sales/view/dispatch-note-modal/dispatch-note-modal.component';
+import { MailVerificationComponent } from './ui/auth/view/mail-verification/mail-verification.component';
+import { CrmPageComponent } from './ui/crm/view/crm-page.component';
+import { VendorManagementComponent } from './ui/crm/view/vendorMangement/vendorManagement';
+import { VendorCategoryComponent } from './ui/crm/view/vendor-category/vendor-category.component';
+import { VendorIndividualComponent } from './ui/crm/view/vendor-individual/vendor-individual.component';
+import { UserRegComponent } from './ui/auth/view/user-reg/user-reg.component';
+import { BusinessRegComponent } from './ui/auth/view/business-reg/business-reg.component';
+import { Navbar2Component } from './ui/shared/view/navbar/navbar2.component';
+import { PosPageComponent } from './ui/pos/view/pos-page.component';
+import { ProductsComponent } from './ui/pos/view/products/products.component';
+import { ConfigurationComponent } from './ui/pos/view/configuration/configuration.component';
+import { POSDashboardComponent } from './ui/pos/view/posdashboard/posdashboard.component';
+import { PosCheckoutPageComponent } from './ui/pos/view/pos-checkout-page/pos-checkout-page.component';
+import { UserComponent } from './user.component';
+import { VerificationSuccessfullComponent } from './ui/auth/view/mail-verification/verification-successfull.component';
+import { VerificationFailedComponent } from './ui/auth/view/mail-verification/verification-failed.component';
+import { VendorListComponent } from './ui/crm/view/vendor-list/vendor-list.component';
+import { UserRegLayoutComponent } from './ui/auth/view/user-reg-layout.component';
+import { ProductCardComponent } from './ui/pos/view/product-card/product-card.component';
+import { CartItemCardComponent } from './ui/pos/view/cart-item-card/cart-item-card.component';
+import { ManageUsersComponent } from './ui/pos/view/manage-users/manage-users.component';
+import { ManageUserFormComponent } from './ui/pos/view/manage-user-form/manage-user-form.component';
+import { ModalComponent } from './ui/shared/view/modal/modal.component';
+import { CommisionComponent } from './ui/pos/view/commision/commision.component';
+import { AuthInterceptor } from './ui/auth/service/auth.interceptor.service';
+import { ProfileCardComponent } from './ui/shared/view/profile-card/profile-card.component';
+//import { CheckoutHeaderComponent } from './ui/pos/view/pos-checkout-page/components/checkout-header/checkout-header.component';
+import { ButtonComponent } from './ui/shared/view/button/button.component';
+import { BackButtonComponent } from './ui/shared/view/back-button/back-button.component';
+import { CheckoutOrdersComponent } from './ui/pos/view/checkout-orders/checkout-orders.component';
+import { CashPaymentComponent } from './ui/pos/view/cash-payment/cash-payment.component';
+import { OrderDetailComponent } from './ui/pos/view/order-detail/order-detail.component';
+import { VerifyTokenComponent } from './ui/auth/view/verify-token/verify-token.component';
+import { ExpensesComponent } from './ui/expenses/view/expenses.component';
+import { ExpenseTableComponent } from './ui/expenses/view/expense-table/expense-table.component';
+import { ExpenseFormsModalComponent } from './ui/expenses/view/expense-forms-modal/expense-forms-modal.component';
+//import { CalendarModule } from 'primeng/calendar';
+//import { CheckboxModule } from 'primeng/checkbox';
+import { OrderRefundComponent } from './ui/pos/view/order-refund/order-refund.component';
+import { DropdownComponent } from './ui/shared/view/dropdown/dropdown.component';
+import { RequestDetailsComponent } from './ui/pos/view/request-details/request-details.component';
+import { OpenRegisterComponent } from './ui/pos/view/open-register/open-register.component';
+import { CloseRegisterComponent } from './ui/pos/view/close-register/close-register.component';
+import { TruncatePipe } from './truncate.pipe';
+import { SideModalComponent } from './ui/shared/view/side-modal/side-modal.component';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { UploadRecieptComponent } from './ui/expenses/view/upload-reciept/upload-reciept.component';
+import { AddPerDiemComponent } from './ui/expenses/view/add-per-diem/add-per-diem.component';
+import { ExpenseSummaryComponent } from './ui/expenses/view/expense-summary/expense-summary.component';
+import { ExpenseApprovalComponent } from './ui/expenses/view/expense-approval/expense-approval.component';
+
+import { JwtHelperService, JWT_OPTIONS } from '@auth0/angular-jwt';
+import { AddShippingDetailsComponent } from './ui/sales/view/add-shipping-details/add-shipping-details.component';
+import { AddQuotationItemComponent } from './ui/sales/view/add-quotation-item/add-quotation-item.component';
+import { InventoryComponent } from './ui/pos/view/inventory/inventory.component';
+import { ViewProductComponent } from './ui/pos/view/products/view-product/view-product.component';
+import { AddProductComponent } from './ui/pos/view/products/add-product/add-product.component';
+import { EditProductComponent } from './ui/pos/view/products/edit-product/edit-product.component';
+import { NavTabComponent } from './ui/shared/view/nav-tab/nav-tab.component';
+import { ProcurementPageComponent } from './ui/procurement/view/procurement.page.component';
+import { RfqListComponent } from './ui/procurement/view/rfq-list/rfq-list.component';
+import { RfqFormComponent } from './ui/procurement/view/rfq-form/rfq-form.component';
+import { Sidebar2Component } from './ui/shared/view/sidebar2/sidebar2.component';
+import { VendorPageComponent } from './ui/vendor/view/vendor-page.component';
+import { AddRfqItemComponent } from './ui/procurement/view/add-rfq-item/add-rfq-item.component';
+import { RfqCategoryListComponent } from './ui/procurement/view/rfq-category-list/rfq-category-list.component';
+import { RfqCategoryFormComponent } from './ui/procurement/view/rfq-category-form/rfq-category-form.component';
+import { ProcurementSettingsComponent } from './ui/procurement/view/procurement-settings/procurement-settings.component';
+import { VendorRfqComponent } from './ui/vendor/view/vendor-rfq/vendor-rfq.component';
+import { VendorRfqListComponent } from './ui/vendor/view/vendor-rfq-list/vendor-rfq-list.component';
+import { VendorRfqFormComponent } from './ui/vendor/view/vendor-rfq-form/vendor-rfq-form.component';
+import { VendorQuoteFormComponent } from './ui/vendor/view/vendor-quote-form/vendor-quote-form.component';
+import { RecuitmentComponent } from './ui/hr/view/recuitment/recuitment.component';
+import { RecuitmentFormComponent } from './ui/hr/view/recuitment/recuitment-form/recuitment-form.component';
+import { CandidateComponent } from './ui/hr/view/candidate/candidate.component';
+import { VacancyComponent } from './ui/hr/view/vacancy/vacancy.component';
+import { LeaveComponent } from './ui/hr/view/leave/leave.component';
+import { LeaveRequestComponent } from './ui/hr/view/leave-request/leave-request.component';
+import { AssignLeaveComponent } from './ui/hr/view/assign-leave/assign-leave.component';
+import { LeaveUsageComponent } from './ui/hr/view/leave-usage/leave-usage.component';
+import { ApplyComponent } from './ui/hr/view/apply/apply.component';
+import { VacancyFormComponent } from './ui/hr/view/vacancy-form/vacancy-form.component';
+import { AttendanceComponent } from './ui/hr/view/attendance/attendance.component';
+import { MyAttendanceComponent } from './ui/hr/view/my-attendance/my-attendance.component';
+import { InterviewComponent } from './ui/hr/view/interview/interview.component';
+import { ScheduledInterviewComponent } from './ui/hr/view/interview/scheduled-interview/scheduled-interview.component';
+import { InterviewInviteComponent } from './ui/hr/view/candidate/interview-invite/interview-invite.component';
+import { AttendanceSheetsComponent } from './ui/hr/view/attendance-sheet/attendance-sheet.component';
+import { GeneralSettingsComponent } from './ui/settings/view/general/general-settings/general-settings.component';
+import { HrSettingsComponent } from './ui/settings/view/hr/hr-settings/hr-settings.component';
+import { SalaryComponent } from './ui/settings/view/hr/salary/salary.component';
+import { LargeSideModalComponent } from './ui/shared/view/large-side-modal/large-side-modal.component';
+import { InterviewScoreSheetComponent } from './ui/hr/view/interview/interview-score-sheet/interview-score-sheet.component';
+import { RecruitmentListComponent } from './ui/hr/view/recuitment/recruitment-list/recruitment-list.component';
+
+import { FullCalendarModule } from '@fullcalendar/angular';
+import { AddEmployeeFormComponent } from './ui/hr/view/employee/add-employee-form/add-employee-form.component';
+import { JopOpeningsComponent } from './jop.openings.component';
+import { OfferLetterComponent } from './ui/hr/view/interview/scheduled-interview/offer-letter/offer-letter.component';
+import { AppointmentLetterComponent } from './ui/hr/view/interview/scheduled-interview/appointment-letter/appointment-letter.component';
+import { EmployeesComponent } from './ui/hr/view/employee/employees/employees.component';
+import { EmployeeManagementComponent } from './ui/hr/view/employee/employee-management/employee-management.component';
+import { NotificationComponent } from './ui/hr/view/my-attendance/notification/notification.component';
+import { TimeSheetComponent } from './ui/hr/view/attendance/time-sheet/time-sheet.component';
+import { EmployeeOnboardingFormComponent } from './ui/hr/view/employee/employee-onboarding-form/employee-onboarding-form.component';
+import { ScoresheetConfigComponent } from './ui/settings/view/hr/scoresheet-config/scoresheet-config.component';
+import { EmployeePayrollComponent } from './ui/hr/view/payroll/employee-payroll/employee-payroll.component';
+import { CareerJobPostingComponent } from './ui/shared/view/career-job-posting/career-job-posting.component';
+import { JobApplicationFormComponent } from './ui/shared/view/job-application-form/job-application-form.component';
+import { JobApplicationFormKeepComponent } from './ui/shared/view/job-application-form-keep/job-application-form-keep.component';
+import { DashboardFooterComponent } from './ui/shared/view/dashboard-footer/dashboard-footer.component';
+import { PayslipViewComponent } from './ui/hr/view/payroll/payslip-view/payslip-view.component';
+import { EmployeePayslipListComponent } from './ui/hr/view/payroll/employee-payslip-list/employee-payslip-list.component';
+import { TooltipModule } from 'primeng/tooltip';
+import { AppDashboardModule } from 'projects/dashboard/src/app/app.module';
+import { ToastrModule } from 'ngx-toastr';
+import { AppHrModule } from 'projects/hr/src/app/app.module';
+import { MarketplaceComponent } from './ui/marketplace/view/marketplace/marketplace.component';
+import { ServiceWorkerModule } from '@angular/service-worker';
+import { AppResizeDirective } from '../../projects/POS/src/app/ui/service/app-resize.directive';
+//import { AppInitService } from 'projects/POS/src/app/ui/service/app-init.service';
+import { NotFoundComponent } from './ui/not-found.component';
+import { CheckoutHeaderComponent } from 'projects/POS/src/app/ui/view/pos-checkout-page/components/checkout-header/checkout-header.component';
+import { CalendarModule } from 'primeng/calendar';
+import { CheckboxModule } from 'primeng/checkbox';
+import { TagModule } from 'primeng/tag';
+import { AppInitService } from 'projects/POS/src/app/ui/service/app-init.service';
+import { UnauthourizedComponent } from './ui/unauthourized.component';
+import { PaymentComponent } from './ui/marketplace/view/payment/payment.component';
+
+
 
 @NgModule({
   declarations: [
     AppComponent,
+    GeneralLedegerManagementComponent,
+    CustomerFulfilmentComponent,
+    EarningsComponent,
+    FooterComponent,
+    LevelsComponent,
+    ManagementComponent,
+    NavbarComponent,
+    ProductDesignComponent,
+    ProfileCardComponent,
+    ProfileInfoComponent,
+    QuestionAnswerComponent,
+    SalesCardComponent,
+    SearchbarComponent,
+    SidebarComponent,
+    SponsorComponent,
+    TodaySalesComponent,
+    TopProductsComponent,
+    TotalRevenueComponent,
+    TransactionCardComponent,
+    UserInterfaceComponent,
+    MasterComponent,
+    DefaultComponent,
+    DashboardPageComponent,
+    AccountingPageComponent,
+    SettingsPageComponent,
+    // MembersPageComponent,
+    LoginComponent,
+    RegisterComponent,
+    InvoiceModalComponent,
+    SalesPageComponent,
+    QuotationComponent,
+    ProformaInvoiceComponent,
+    ReceiptComponent,
+    InvoiceComponent,
+    NumberOnlyDirective,
+    AccountPayabaleManagementComponent,
+    AccountReceivableManagementComponent,
+    BudgetingForecastingComponent,
+    CashManagementComponent,
+    PaymentReceiptsComponent,
+    RfqComponent,
+    PaymentReceiptsModalComponent,
+    PaymentRecordReceivedComponent,
+    SalesOrderComponent,
+    EditableLabelComponent,
+    ConfigureTaxPopupComponent,
+    NumberCurrencyPopupComponent,
+    AddNewClientComponent,
+    InventoryPageComponent,
+    InventoryTableComponent,
+    InventoryFormComponent,
+    ManagedInventoryTableComponent,
+    PurchasePageComponent,
+    RfqModalComponent,
+    BookKeepingComponent,
+    StripHtmlPipe,
+    QuotationModalComponent,
+    ProformaInvoiceModalComponent,
+    DispatchNoteComponent,
+    DispatchNoteModalComponent,
+    MailVerificationComponent,
+    CrmPageComponent,
+    VendorManagementComponent,
+    VendorCategoryComponent,
+    VendorIndividualComponent,
+    UserRegComponent,
+    BusinessRegComponent,
+    Navbar2Component,
+    PosPageComponent,
+    ProductsComponent,
+    ConfigurationComponent,
+    POSDashboardComponent,
+    PosCheckoutPageComponent,
+    UserComponent,
+    VerificationSuccessfullComponent,
+    VerificationFailedComponent,
+    VendorListComponent,
+    UserRegLayoutComponent,
+    ProductCardComponent,
+    CartItemCardComponent,
+    ManageUsersComponent,
+    ManageUserFormComponent,
+    ModalComponent,
+    CommisionComponent,
+    ModalComponent,
+    ButtonComponent,
+    BackButtonComponent,
+    CheckoutOrdersComponent,
+    CashPaymentComponent,
+    OrderDetailComponent,
+    VerifyTokenComponent,
+    ExpensesComponent,
+    ExpenseTableComponent,
+    ExpenseFormsModalComponent,
+    OrderRefundComponent,
+    DropdownComponent,
+    RequestDetailsComponent,
+    OpenRegisterComponent,
+    CloseRegisterComponent,
+    TruncatePipe,
+    SideModalComponent,
+    UploadRecieptComponent,
+    AddPerDiemComponent,
+    ExpenseSummaryComponent,
+    AddShippingDetailsComponent,
+    AddQuotationItemComponent,
+    ViewProductComponent,
+    AddProductComponent,
+    EditProductComponent,
+    NavTabComponent,
+    ProcurementPageComponent,
+    RfqListComponent,
+    RfqFormComponent,
+    Sidebar2Component,
+    VendorPageComponent,
+    AddRfqItemComponent,
+    RfqCategoryListComponent,
+    RfqCategoryFormComponent,
+    ProcurementSettingsComponent,
+    VendorRfqComponent,
+    VendorRfqListComponent,
+    VendorRfqFormComponent,
+    VendorQuoteFormComponent,
+    RecuitmentComponent,
+    RecuitmentFormComponent,
+    CandidateComponent,
+    VacancyComponent,
+    LeaveComponent,
+    LeaveRequestComponent,
+    AssignLeaveComponent,
+    LeaveUsageComponent,
+    ApplyComponent,
+    VacancyFormComponent,
+    AttendanceComponent,
+    AttendanceSheetsComponent,
+    MyAttendanceComponent,
+    InterviewComponent,
+    ScheduledInterviewComponent,
+    InterviewInviteComponent,
+    GeneralSettingsComponent,
     HrSettingsComponent,
     SalaryComponent,
-    SettingsPageComponent,
+    LargeSideModalComponent,
+    InterviewScoreSheetComponent,
+    RecruitmentListComponent,
+    EmployeesComponent,
+    EmployeeManagementComponent,
+    AddEmployeeFormComponent,
+    JopOpeningsComponent,
+    OfferLetterComponent,
+    AppointmentLetterComponent,
+    NotificationComponent,
+    TimeSheetComponent,
+    EmployeeOnboardingFormComponent,
     ScoresheetConfigComponent,
-    GeneralSettingsComponent,
-    LevelComponent,
-    LeaveComponent,
-    AppraisalassessmentComponent,
-    CompensationComponent,
-    NavTabComponent,
-    LeaveStrctureComponent,
-    CheckoutComponent,
-    PosSettingComponent,
-    BusInfoSettingComponent,
-    PAndISettingComponent,
-    UserSettingComponent,
-    UsersComponent,
-    RolesNpermissionComponent,
-    BranchesComponent,
+    EmployeePayrollComponent,
+    CareerJobPostingComponent,
+    JobApplicationFormComponent,
+    JobApplicationFormKeepComponent,
+    DashboardFooterComponent,
+    PayslipViewComponent,
+    EmployeePayslipListComponent,
+    MarketplaceComponent,
+    NotFoundComponent,
+    UnauthourizedComponent,
+    PaymentComponent
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
-    AppRoutingModule,
-    CommonModule,
-    AppRoutingModule,
-    TableModule,
-    RippleModule,
-    DialogModule,
-    ToastModule,
-    FormsModule,
-    ReactiveFormsModule,
-    SidebarModule,
-    TabViewModule,
-    ToolbarModule,
-    ConfirmDialogModule,
-    SplitButtonModule,
-    PanelModule,
-    DividerModule,
-    OverlayPanelModule,
-    StepperModule,
-    InputTextModule,
-    FloatLabelModule,
-    EditorModule,
-    MessagesModule,
-    MessageModule,
-    RippleModule,
-    TableModule,
-    PasswordModule,
-    ButtonModule,
-    NgSelectModule,
-    MatExpansionModule,
-    MatRadioModule,
-    MatPaginatorModule,
-    MatTableModule,
-    MatRadioModule,
-    MatDialogModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatIconModule,
-    MatTabsModule,
-    MatDatepickerModule,
-    MatSelectModule,
-    MatTooltipModule,
-    MatButtonModule,
-    MatDividerModule,
-    MatTooltip,
-    MatTabGroup,
-    MatMenuModule,
-    LargeSideModalComponent,
-    SideModalComponent,
-    MatSnackBarModule,
+      BrowserModule,
+      CommonModule,
+      AppRoutingModule,
+      AppDashboardModule,
+      AppHrModule,
+      MatTabGroup,
+      FormsModule, 
+      MatTooltip,
+      TooltipModule,
+      MatGridListModule,
+      ReactiveFormsModule,
+      NgApexchartsModule,
+      CanvasJSAngularChartsModule,
+      MatDialogModule,
+      MatFormFieldModule,
+      MatInputModule,
+      MatIconModule,
+      MatTabsModule,
+      MatDatepickerModule,
+      MatSelectModule,
+      MatTooltipModule,
+      MatButtonModule,
+      CdkScrollable,
+      MatTabsModule,
+      MatDividerModule,
+      DropdownModule,
+      MatProgressSpinnerModule,
+      SidebarModule,
+      DialogModule,
+      TabViewModule,
+      ToolbarModule,
+      ConfirmDialogModule,
+      SplitButtonModule,
+      PanelModule,
+      DividerModule,
+      OverlayPanelModule,
+      StepperModule,
+      InputTextModule,
+      FloatLabelModule,
+      EditorModule,
+      MessagesModule,
+      MessageModule,
+      RippleModule,
+      TableModule,
+      PasswordModule,
+      ButtonModule,
+      MatCardModule,
+      BrowserAnimationsModule,
+      HttpClientModule,
+      AngularEditorModule,
+      AsyncPipe,
+      MatAutocompleteModule,
+      MatExpansionModule,
+      MatRadioModule,
+      MatPaginatorModule,
+      MatTableModule,
+      MatRadioModule,
+      ToastModule,
+      TagModule,
+      CalendarModule,
+      CheckboxModule,
+      NgSelectModule,
+      MatMenuModule,
+      FullCalendarModule,
+      InputSwitchModule,
+      ServiceWorkerModule.register('ngsw-worker.js', {
+        enabled: !isDevMode(),
+        // Register the ServiceWorker as soon as the application is stable
+        // or after 30 seconds (whichever comes first).
+        registrationStrategy: 'registerWhenStable:30000'
+      }),   
+      // ToastrModule.forRoot(),
   ],
   providers: [
-    NavigationLinksService,
-    MenuItemsService,
-    MessageService,
-    ConfirmationService,
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
@@ -169,11 +502,21 @@ import { BranchesComponent } from './ui/view/pos/branches/branches.component';
     },
     {
       provide: JWT_OPTIONS,
-      useValue: JWT_OPTIONS,
+      useValue: JWT_OPTIONS
     },
+      {
+          provide: APP_INITIALIZER,
+          useFactory: (appInitService: AppInitService) => () => appInitService.init(),
+          deps: [AppInitService],
+          multi: true
+        },
     JwtHelperService,
-    provideHttpClient(withInterceptorsFromDi()),
+    provideAnimationsAsync(),
+    provideNativeDateAdapter(),
+    MessageService,
+    ConfirmationService
   ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   bootstrap: [AppComponent],
 })
-export class AppSettingsModule {}
+export class AppModule {}

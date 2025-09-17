@@ -1,0 +1,1012 @@
+<div class="rfq-form" *ngIf="showCreate">
+    <div class="card" #contentToPrint>
+      <app-back-button class="table-item" (click)="goBack()"></app-back-button>
+
+      <div class="p-8 table-item">
+        <!-- <div class="header-section">
+          <section class="title-section">
+            <p class="form-title">{{isEdit ? 'Edit Quotation' : 'Quotation'}}</p>
+          </section>
+        </div> -->
+    
+        <div class="info-section">
+          <section class="first-info-section">
+            <div class="right">
+              <div class="input-container-100">
+                <label for="qNo">RFQ No</label>
+                <input type="text" name="any" id="qNo" [(ngModel)]="rfqData.rfqNo" class="editInput" />
+              </div>
+              <div class="flex flex-col gap-4 my-4 md:flex-row">
+                <div class="w-full md:w-1/2">
+                  <label for="qDate">Date</label>
+                  <input type="" name="any" id="qDate" [(ngModel)]="rfqData.date" class="editInput" />
+                </div>
+                <div class="w-full md:w-1/2">
+                  <label for="qDueDate">Due Date</label>
+                  <input type="date" name="any" id="qDueDate" [(ngModel)]="rfqData.dueDate" class="editInput" />
+                </div>
+              </div>
+              <div class="input-container-100">
+                <label for="projectTitle">Project Title</label>
+                <input type="text" name="any" id="projectTitle" [(ngModel)]="rfqData.projectTitle" class="editInput" />
+              </div>
+              <div class="editInput mt-2">
+                <button class="add-btn"  (click)="addField()">
+                  <i class="fas fa-plus me-2"></i>Add More Field
+                </button>
+                <div *ngFor="let field of rfqData.field; let i = index" class="input-container-100 editable-label-container gap-4 my-4">
+                  <div class="editable-label">
+                    <input type="text" name="any" [(ngModel)]="field.title" class="editInput" placeholder="Title" />
+                  </div>
+                  <div class="editable-label-input">
+                    <input type="text" name="any" [(ngModel)]="field.description" class="editInput" placeholder="Description" />
+                    <i (click)="removeField(i)" class="pi pi-times-circle table-item p-2"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="left" *ngIf="isRfq">
+              <div class="top-container"></div>
+              <div class="bottom-container">
+                <div class="top-container">
+                  <div class="billing-selection">
+                    <div>
+                      <label>Select Vendor(s)</label>
+                      <ng-select 
+                      [items]="vendorList"
+                      bindLabel="name"
+                      bindValue="id"
+                      [(ngModel)]="rfqData.customer"
+                      [multiple]="true"
+                      (ngModelChange)="onVendorChange($event)"
+                      placeholder="Select Vendor(s)">
+                      </ng-select>
+                    </div>
+                  </div>
+                </div>
+                <!-- <div class="info-bottom-section">
+                  <div class="first-component mt-4" *ngIf="!showSecondComponent">
+                    <p>Select Vendor(s) From List</p>
+                  </div>
+                  <div class="second-component" *ngIf="showSecondComponent">
+                    <div class="business-info">
+                      vendor list
+                    </div>
+                  </div>
+                </div> -->
+              </div>
+            </div>
+          </section>
+
+          <!-- shipping-details-container -->
+          <section class="shipping-details-container" *ngIf="isQuote">
+            <div class="shipping-wrapper editInput mb-8">
+              <button class="add-btn" (click)="toggleForm()" >
+                <i class="fas fa-plus me-2"></i> Add Shipping Details
+              </button>
+
+              <!-- <button class="add-btn" (click)="openAddShipping=true"> <i class="fas fa-plus me-2"></i> Add Shipping Info</button> -->
+    
+              <div *ngIf="isFormVisible" class="second-info-section mt-4">
+                <!-- shipping from starts -->
+                <div class="right">
+                  <div class="shipping-header-wrapper">
+                    <p><b>Shipped From</b></p>
+                  </div>
+                  <div class="">
+                    <input type="text" [(ngModel)]="shippingData.fromName" placeholder="Business / Freelancer Name" class="editInput" />
+                  </div>
+                  <div class="">
+                    <input type="text" [(ngModel)]="shippingData.fromNo" placeholder="Phone No" class="editInput my-2" />
+                  </div>
+                  <div class="">
+                    <input type="text" [(ngModel)]="shippingData.fromEmail" placeholder="Email" class="editInput" />
+                  </div>
+                  <div class="">
+                    <input type="text" [(ngModel)]="shippingData.fromAddress" placeholder="Address" class="editInput my-2" />
+                  </div>
+                  <div class="flex gap-2">
+                    <div class="input-container-50">
+                      <input type="text" [(ngModel)]="shippingData.fromCountry" placeholder="Country" class="editInput" />
+                    </div>
+                    <div class="input-container-50">
+                      <input type="text" [(ngModel)]="shippingData.fromState" placeholder="State" class="editInput" />
+                    </div>
+                  </div>
+                  <div class="flex gap-2 my-2">
+                    <div class="input-container-50">
+                      <input type="text" [(ngModel)]="shippingData.fromCity" placeholder="City" class="editInput" />
+                    </div>
+                    <div class="input-container-50">
+                      <input type="text" [(ngModel)]="shippingData.fromPostalCode" placeholder="Postal Code / Zip Code" class="editInput" />
+                    </div>
+                  </div>
+                </div>
+                <!-- shipping from ends -->
+
+                <!-- shipping to starts -->
+                <div class="left">
+                  <div class="shipping-header-wrapper">
+                    <p><b>Shipped To</b></p>
+                  </div>
+                  <div class="">
+                    <input type="text" [(ngModel)]="shippingData.toName" placeholder="Client's Business Name" class="editInput" />
+                  </div>
+                  <div class="">
+                    <input type="text" [(ngModel)]="shippingData.toNo" placeholder="Phone No" class="editInput my-2" />
+                  </div>
+                  <div class="">
+                    <input type="text" [(ngModel)]="shippingData.toEmail" placeholder="Email" class="editInput" />
+                  </div>
+                  <div class="">
+                    <input type="text" [(ngModel)]="shippingData.toAddress" placeholder="Address" class="editInput my-2" />
+                  </div>
+                  <div class="flex gap-2">
+                    <div class="input-container-50">
+                      <input type="text" [(ngModel)]="shippingData.toCountry" placeholder="Country" class="editInput" />
+                    </div>
+                    <div class="input-container-50">
+                      <input type="text" [(ngModel)]="shippingData.toState" placeholder="State" class="editInput" />
+                    </div>
+                  </div>
+                  <div class="flex gap-2 my-2">
+                    <div class="input-container-50">
+                      <input type="text" [(ngModel)]="shippingData.toCity" placeholder="City" class="editInput" />
+                    </div>
+                    <div class="input-container-50">
+                      <input type="text" [(ngModel)]="shippingData.toPostalCode" placeholder="Postal Code / Zip Code" class="editInput" />
+                    </div>
+                  </div>
+                </div>
+                <!-- shipping to ends -->
+              </div>
+            </div>
+          </section>
+
+        </div>
+    
+        <div class="card mb-4">
+          <p-toolbar styleClass="mb-4 gap-2" *ngIf="isRfq">
+            <ng-template pTemplate="left">
+            </ng-template>
+      
+            <ng-template pTemplate="right">
+              <app-button  (click)="openAddItem=true" text="Add New Item" class="btn-navigate" ></app-button>
+            </ng-template>
+          </p-toolbar>
+          <div>
+            <p-table 
+              [value]="rfqData.items"
+              [paginator]="true" 
+              dataKey="id"
+              responsiveLayout="stack" 
+              [breakpoint]="'960px'"
+              styleClass="p-datatable-striped"
+              [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+              [rows]="5"
+            >
+              <ng-template pTemplate="header" let-columns>
+                <tr>
+                  <th class="table-item">Item</th>
+                  <th class="table-item" *ngIf="hasSerialNo">Serial No</th>
+                  <th class="table-item">Quantity</th>
+                  <th class="table-item" *ngIf="isQuote && !isRfq">Tax Rate</th>
+                  <th class="table-item" *ngIf="isQuote && !isRfq">Rate</th>
+                  <th class="table-item" *ngIf="isQuote && !isRfq">Amount</th>
+                  <th class="table-item" *ngIf="isQuote && !isRfq">Tax</th>
+                  <th class="table-item" *ngIf="isQuote && !isRfq">Total</th>
+                  <th class="table-item"></th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-item let-i="rowIndex">
+                   <tr class="p-table-row">
+                    <td class="table-item"><span class="p-column-title">Item</span>{{ item.name }}</td>
+                    <td class="table-item" *ngIf="hasSerialNo">
+                      <span class="p-column-title">Serial No</span>{{ item.serialNo }}
+                    </td>
+                    <td class="table-item" *ngIf="!hasSerialNo"></td> <!-- Placeholder -->
+                    <td class="table-item"><span class="p-column-title">Quantity</span>{{ item.qty }}</td>
+                    <td class="table-item" *ngIf="isQuote">
+                      <span class="p-column-title">Tax Rate</span>{{ item.taxRate }}
+                    </td>
+                    <td class="table-item" *ngIf="!isQuote  && !isRfq"></td> <!-- Placeholder -->
+                    <td class="table-item" *ngIf="isQuote  && !isRfq">
+                      <span class="p-column-title">Rate</span>{{ item.rate }}
+                    </td>
+                    <td class="table-item" *ngIf="!isQuote  && !isRfq"></td> <!-- Placeholder -->
+                    <td class="table-item" *ngIf="isQuote  && !isRfq">
+                      <span class="p-column-title">Amount</span>{{ item.amount }}
+                    </td>
+                    <td class="table-item" *ngIf="!isQuote  && !isRfq"></td> <!-- Placeholder -->
+                    <td class="table-item" *ngIf="isQuote  && !isRfq">
+                      <span class="p-column-title">Tax</span>{{ item.tax }}
+                    </td>
+                    <td class="table-item" *ngIf="!isQuote  && !isRfq"></td> <!-- Placeholder -->
+                    <td class="table-item" *ngIf="isQuote  && !isRfq">
+                      <span class="p-column-title">Total</span>{{ item.total }}
+                    </td>
+                    <td class="table-item" *ngIf="isView"></td> <!-- Placeholder -->
+                    <td class="actions gap-8 table-item" *ngIf="!isView">
+                      <span class="p-column-title">Action</span>
+                      <i class="pi pi-pen-to-square table-item" (click)="editItem(item)"></i>
+                      <i class="pi pi-trash table-item" *ngIf="isRfq" (click)="deleteItem(item)"></i>
+                    </td>
+                  </tr>   
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td colspan="8" class="text-center table-item py-4"> 
+                        No item(s) added yet
+                    </td>
+                  </tr>
+            </ng-template>
+            </p-table>
+          </div>
+        </div>
+
+        <div *ngIf="isQuote">
+
+
+
+
+  
+          <div class="calculated-container">
+            <div class="calculated-wrapper " >
+              <div class="amount-total editInput mb-3">
+                <p><b>Amount</b></p>
+                <p>
+                  <span style="font-size: 1.1em; font-weight: 500">{{ rfqData.totalAmount }} NGN</span>
+                </p>
+              </div>
+              <div class="amount-total editInput mb-3">
+                <p><b>Tax</b></p>
+                <p>
+                  <span style="font-size: 1.1em; font-weight: 500">{{ rfqData.totalTax }} NGN</span>
+                </p>
+              </div>
+              
+              <div class="discount-container editInput mb-3">
+                <div class="amount-total mb-2" *ngFor="let discount of rfqData.discounts; let i = index">
+                  <p><b>Discount Amount</b></p>
+                  <div class="value">
+                    <p class="me-2">NGN</p>
+                    <div class="d-flex gap-4">
+                      <input type="number" [(ngModel)]="discount.value" (ngModelChange)="onDiscountChange()" class="editInput" />
+                    </div>
+                    <i (click)="removeDiscount(i)" class="pi pi-times-circle table-item p-2"></i>
+                  </div>
+                </div>
+                <div class="discount-btn-wrapper d-block">
+                  <button class="add-btn" (click)="addDiscount()">
+                    <i class="fas fa-plus me-2"></i>Add Discount
+                  </button>
+                </div>
+              </div>
+              
+              <div class="discount-container editInput mb-3">
+                <div class="amount-total" *ngFor="let charge of rfqData.charges; let i = index">
+                  <p><b>Additional Charges Amount</b></p>
+                  <div class="value d-flex">
+                    <p class="me-2">NGN</p>
+                    <div class="d-flex">
+                      <input type="number" [(ngModel)]="charge.value" (ngModelChange)="onChargeChange()" class="editInput" />
+                    </div>
+                    <i (click)="removeCharge(i)" class="pi pi-times-circle table-item p-2"></i>
+                  </div>
+                </div>
+                <div class="discount-btn-wrapper d-block">
+                  <button class="add-btn" (click)="addCharge()">
+                    <i class="fas fa-plus me-2"></i>Add Additional Charges
+                  </button>
+                </div>
+              </div>
+              
+              <div class="amount-total editInput mb-3">
+                <p><b>Total</b></p>
+                <p>
+                  <span style="font-size: 1.1em; font-weight: 500">{{ rfqData.grandTotal }} NGN</span>
+                </p>
+              </div>
+              
+              <div class="editInput my-4" *ngIf="showAmountWord">
+                <div class="flex justify-between">
+                  <p><b>Amount In Words</b></p>
+                  <i (click)="showAmountWord = false" class="pi pi-times-circle table-item p-2"></i>
+                </div>
+                <div class="uppercase">
+                  {{ rfqData.totalAmountInWords }}
+                </div>
+              </div>
+              <div class="editInput d-block my-4" *ngIf="!showAmountWord">
+                <button class="add-btn" (click)="showAmountInWord()">
+                  <i class="fas fa-plus me-2"></i>Add Amount In Words
+                </button>
+              </div>
+              
+    
+              <div class="signature-upload-container editInput mb-4">
+                <div class="wrapper" *ngIf="showSignatureButton">
+                  <div class="btn-sign">
+                    <input type="file" name="any" #fileInput style="display: none" (change)="onSignatureSelected($event)" />
+                    <button class="add-btn" (click)="fileInput.click()">
+                      <i class="fas fa-plus me-2"></i>Upload Signature
+                    </button>
+                  </div>
+                  <div class="signature-wrapper">
+                    <img *ngIf="signatureUrl" [src]="signatureUrl" [(ngModel)]="rfqData.signature" alt="Signature" class="signature" />
+                  </div>
+                  <i (click)="clearSignature()" class="pi pi-times-circle table-item p-2"></i>
+                </div>
+  
+                <div class="" *ngIf="!showSignatureButton" >
+                  <button class="add-btn"  (click)="showSignatureButton = true" >
+                    <i class="fas fa-plus me-2"></i>Add Signature
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+    
+
+        <div class="form-buttom-section editInput mb-2">
+          <div class="btn-bottom-container" *ngIf="!showTermsCondition">
+            <button class="add-btn "  (click)="showTermsCondition = true">
+              <i class="fas fa-plus me-2"></i> Add Terms and Conditions
+            </button>
+          </div>
+    
+          <div class="contents-wrapper">
+            <div class="terms-conditions-container" *ngIf="showTermsCondition">
+              <div class="terms-condition-wrapper">
+                <div class="top">
+                  <div class="label mb-4"><p><b>Add Terms and Conditions</b></p></div>
+                  <i (click)="cancelTermsCondition()" class="pi pi-times-circle table-item p-2"></i>
+                </div>
+                <textarea class="textarea editInput" placeholder="'Enter text here...'" [(ngModel)]="rfqData.terms"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+    
+    
+  
+        <div class="form-buttom-section editInput mb-2">
+          <div class="btn-bottom-container" *ngIf="!showNotes">
+            <button class="add-btn "  (click)="showNotes = true">
+              <i class="fas fa-plus me-2"></i> Add Notes
+            </button>
+          </div>
+    
+          <div class="contents-wrapper">
+            <div class="terms-conditions-container" *ngIf="showNotes">
+              <div class="terms-condition-wrapper">
+                <div class="top">
+                  <div class="label mb-4"><p><b>Add Notes</b></p></div>
+                  <i (click)="cancelNotes()" class="pi pi-times-circle table-item p-2"></i>
+                </div>
+                <textarea class="textarea editInput" placeholder="'Enter text here...'" [(ngModel)]="rfqData.quotationNote"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+  
+        <!-- <div class="form-bottom-section editInput mb-2">
+          <div class="btn-bottom-container" *ngIf="!showAttachments">
+            <button class="add-btn" (click)="showAttachments = true">
+              <i class="fas fa-plus me-2"></i> Add Attachments
+            </button>
+          </div>
+        
+          <div class="contents-wrapper">
+            <div class="terms-conditions-container" *ngIf="showAttachments">
+              <div class="terms-condition-wrapper">
+                <div class="terms-condition-wrapper">
+                  <div class="top">
+                    <div class="label">
+                      <p><b>Add Attachments</b></p>
+                    </div>
+                    <i (click)="showAttachments = false" class="pi pi-times-circle table-item p-2"></i>
+                  </div>
+                  <div class="content">
+                    <p>Add any other attachments that are necessary for the quotation</p>
+        
+                    <div class="file-upload-continer">
+                      <input type="file" #fileInput (change)="fileInputChange($event)" style="display: none" multiple />
+                      <button class="add-btn" (click)="fileInput.click()">
+                        <i class="fas fa-plus me-2"></i> Browse
+                      </button>
+                    </div>
+        
+                    <ul class="uploaded-files">
+                      <li *ngFor="let file of rfqData.attachments; let i = index" [class]="file.status" class="uploaded-file">
+                        <div class="file-details">
+                          <div class="file-name">{{ file.name }}</div>
+                          <div class="file-progress">
+                            <div class="file-progress-bar" [style.width.%]="file.progress"></div>
+                          </div>
+                          <div class="file-size">{{ (file.size / (1024 * 1024)).toFixed(2) }} MB</div>
+                        </div>
+                        <div class="file-icons">
+                          <i (click)="cancelUpload(i)" class="pi pi-times-circle table-item p-2"></i>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div> -->
+
+        <div class="form-bottom-section editInput mb-2">
+          <div class="btn-bottom-container" *ngIf="!showAttachments">
+            <button class="add-btn" (click)="showAttachments = true">
+              <i class="fas fa-plus me-2"></i> Add Attachments
+            </button>
+          </div>
+        
+          <div class="contents-wrapper" *ngIf="showAttachments">
+            <div class="terms-conditions-container">
+              <div class="terms-condition-wrapper">
+                <div class="top">
+                  <div class="label">
+                    <p><b>Add Attachments</b></p>
+                  </div>
+                  <i (click)="showAttachments = false" class="pi pi-times-circle table-item p-2"></i>
+                </div>
+                <div class="content">
+                  <p>Upload necessary attachment(s)</p>
+        
+                  <div class="file-upload-container">
+                    <input type="file" #fileInput (change)="fileInputChange($event)" style="display: none" multiple />
+                    <button class="add-btn" (click)="fileInput?.click()">
+                      <i class="fas fa-plus me-2"></i> Browse
+                    </button>
+                  </div>
+        
+                  <ul class="uploaded-files">
+                    <li
+                      *ngFor="let file of rfqData.attachments; let i = index"
+                      [ngClass]="file.status"
+                      class="uploaded-file"
+                    >
+                      <div class="file-details">
+                        <div class="file-name">{{ file.name }}</div>
+                        <div class="file-progress">
+                          <div class="file-progress-bar" [style.width.%]="file.progress"></div>
+                        </div>
+                        <div class="file-size">{{ (file.size / (1024 * 1024)).toFixed(2) }} MB</div>
+                      </div>
+                      <div class="file-icons">
+                        <i (click)="cancelUpload(i)" class="pi pi-times-circle table-item p-2"></i>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+    
+        <div class="btn-wrapper">
+          <app-button text="{{ isEdit ? 'Update' : 'Save' }}" (click)="onSubmit()" class="btn-save"></app-button>
+        </div>
+      </div>
+    </div>
+</div>
+
+
+<app-side-modal *ngIf="openAddItem" (close)="openAddItem = false" class="table-item">
+  <div class="modal-header flex justify-between items-center text-gray-700">
+    <h2 class="font-semibold pb-0 mb-0">Add New Item</h2>
+    <div class="flex gap-3">
+      <button class="border-2 border-customBlue py-2 px-4 rounded-xl text-xl font-semibold" (click)="openAddItem = false">Cancel</button>
+    </div>
+  </div>
+  <app-add-quotation-item
+  [isEdit]="isItemEdit"
+  [itemToEdit]="selectedItem"
+  (itemAdded)="onItemAdded($event)"
+  (itemEdited)="onItemEdited($event)"
+  [isRfq]="isRfq" [isQuote]="isQuote" (back)="close()"
+   >
+  </app-add-quotation-item>
+</app-side-modal>
+
+
+<div class="rfq-form" *ngIf="showViewing">
+  <div class="card" #contentToPrint>
+    <app-back-button class="table-item" (click)="goBack()"></app-back-button>
+
+    <div class="p-8 table-item">
+  
+      <div class="info-section">
+        <section class="first-info-section">
+          <div class="right">
+            <div class="input-container-100">
+              <label for="qNo">RFQ No</label>
+              <input type="text" name="any" id="qNo" [(ngModel)]="rfqData.rfqNo" class="editInput" disabled />
+            </div>
+            <div class="flex flex-col gap-4 my-4 md:flex-row">
+              <div class="w-full md:w-1/2">
+                <label for="qDate">Date</label>
+                <input type="" name="any" id="qDate" [(ngModel)]="rfqData.date" class="editInput" disabled />
+              </div>
+              <div class="w-full md:w-1/2">
+                <label for="qDueDate">Due Date</label>
+                <input type="date" name="any" id="qDueDate" [(ngModel)]="rfqData.dueDate" class="editInput" disabled />
+              </div>
+            </div>
+            <div class="input-container-100">
+              <label for="projectTitle">Project Title</label>
+              <input type="text" name="any" id="projectTitle" [(ngModel)]="rfqData.projectTitle" class="editInput" disabled />
+            </div>
+            <div class="editablenput mt-2" *ngIf="rfqData.field && rfqData.field.length > 0">
+              <!-- <button class="add-btn"   (click)="addField()">
+                <i class="fas fa-plus me-2"></i>Add More Field
+              </button> -->
+              <div *ngFor="let field of rfqData.field; let i = index" class="input-container-100 editable-label-container gap-4 my-4">
+                <div class="editable-label">
+                  <input type="text" name="any" [(ngModel)]="field.title" class="editInput" placeholder="Title" />
+                </div>
+                <div class="editable-label-input">
+                  <input type="text" name="any" [(ngModel)]="field.description" class="editInput" placeholder="Description" />
+                  <!-- <i (click)="removeField(i)" class="pi pi-times-circle table-item p-2"></i> -->
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="left" *ngIf="isRfq">
+            <div class="top-container"></div>
+            <div class="bottom-container">
+              <div class="top-container">
+                <div class="billing-selection">
+                  <div>
+                    <label>Selected Vendor(s)</label>
+                    <ul *ngFor="let item of rfqData.customer">
+                      <li>
+                        {{item.name}}
+                      </li>
+                    </ul>
+                    <ng-select 
+                    [items]="vendorList"
+                    bindLabel="name"
+                    bindValue="id"
+                    [(ngModel)]="rfqData.customer"
+                    [multiple]="true"
+                    (ngModelChange)="onVendorChange($event)"
+                    placeholder="Selected Vendor(s)"
+                    [disabled]="isView">
+                    </ng-select>
+                  </div>
+                </div>
+              </div>
+              <div class="info-bottom-section">
+                <!-- <div class="first-component mt-4" *ngIf="!showSecondComponent">
+                  <p>Select Vendor(s) From List</p>
+                </div>
+                <div class="second-component" *ngIf="showSecondComponent">
+                  <div class="business-info">
+                    vendor list
+                  </div>
+                </div> -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- shipping-details-container -->
+        <section class="shipping-details-container" *ngIf="isQuote && rfqData.shippingInfo && rfqData.shippingInfo.fromNo" >
+          <div class="shipping-wrapper editInput mb-8">
+            <p><b>Shipping Information</b></p>
+            <!-- <button class="add-btn" (click)="toggleForm()" >
+              <i class="fas fa-plus me-2"></i> Add Shipping Details
+            </button> -->
+  
+            <div *ngIf="isFormVisible" class="second-info-section mt-4">
+              <div class="right">
+                <div class="shipping-header-wrapper">
+                  <p><b>Shipped From</b></p>
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="rfqData.shippingInfo.fromName" placeholder="Business / Freelancer Name" class="editInput" disabled />
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="rfqData.shippingInfo.fromNo" placeholder="Phone No" class="editInput my-2" disabled />
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="rfqData.shippingInfo.fromEmail" placeholder="Email" class="editInput" disabled />
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="rfqData.shippingInfo.fromAddress" placeholder="Address" class="editInput my-2" disabled />
+                </div>
+                <div class="flex gap-2">
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="rfqData.shippingInfo.fromCountry" placeholder="Country" class="editInput" disabled />
+                  </div>
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="rfqData.shippingInfo.fromState" placeholder="State" class="editInput" disabled />
+                  </div>
+                </div>
+                <div class="flex gap-2 my-2">
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="rfqData.shippingInfo.fromCity" placeholder="City" class="editInput" disabled />
+                  </div>
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="rfqData.shippingInfo.fromPostalCode" placeholder="Postal Code / Zip Code" class="editInput" disabled />
+                  </div>
+                </div>
+              </div>
+
+
+              <div class="left">
+                <div class="shipping-header-wrapper">
+                  <p><b>Shipped To</b></p>
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="rfqData.shippingInfo.toName" placeholder="Client's Business Name" class="editInput" disabled />
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="rfqData.shippingInfo.toNo" placeholder="Phone No" class="editInput my-2" disabled />
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="rfqData.shippingInfo.toEmail" placeholder="Email" class="editInput" disabled />
+                </div>
+                <div class="">
+                  <input type="text" [(ngModel)]="rfqData.shippingInfo.toAddress" placeholder="Address" class="editInput my-2" disabled />
+                </div>
+                <div class="flex gap-2">
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="rfqData.shippingInfo.toCountry" placeholder="Country" class="editInput" disabled />
+                  </div>
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="rfqData.shippingInfo.toState" placeholder="State" class="editInput" disabled />
+                  </div>
+                </div>
+                <div class="flex gap-2 my-2">
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="rfqData.shippingInfo.toCity" placeholder="City" class="editInput" disabled />
+                  </div>
+                  <div class="input-container-50">
+                    <input type="text" [(ngModel)]="rfqData.shippingInfo.toPostalCode" placeholder="Postal Code / Zip Code" class="editInput" disabled />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+  
+      <div class="card mb-4">
+        <p-toolbar styleClass="mb-4 gap-2" *ngIf="!isView">
+          <ng-template pTemplate="left">
+          </ng-template>
+    
+          <ng-template pTemplate="right">
+            <app-button  (click)="openAddItem=true" text="Add New Item" class="btn-navigate" ></app-button>
+          </ng-template>
+        </p-toolbar>
+        <div>
+          <p-table 
+            [value]="rfqData.items"
+            [paginator]="true" 
+            dataKey="id"
+            responsiveLayout="stack" 
+            [breakpoint]="'960px'"
+            styleClass="p-datatable-striped"
+            [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+            [rows]="5"
+          >
+            <ng-template pTemplate="header" let-columns>
+                <tr>
+                  <th class="table-item">Item</th>
+                  <th class="table-item" *ngIf="hasSerialNo">Serial No</th>
+                  <th class="table-item">Quantity</th>
+                  <th class="table-item" *ngIf="isQuote && !isRfq">Tax Rate</th>
+                  <th class="table-item" *ngIf="isQuote && !isRfq">Rate</th>
+                  <th class="table-item" *ngIf="isQuote && !isRfq">Amount</th>
+                  <th class="table-item" *ngIf="isQuote && !isRfq">Tax</th>
+                  <th class="table-item" *ngIf="isQuote && !isRfq">Total</th>
+                  <!-- <th class="table-item"></th> -->
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-item let-i="rowIndex">
+                  <tr class="p-table-row">
+                    <td class="table-item"><span class="p-column-title">Item</span>{{ item.name }}</td>
+                    <td class="table-item" *ngIf="hasSerialNo">
+                      <span class="p-column-title">Serial No</span>{{ item.serialNo }}
+                    </td>
+                    <td class="table-item" *ngIf="!hasSerialNo"></td> <!-- Placeholder -->
+                    <td class="table-item"><span class="p-column-title">Quantity</span>{{ item.qty }}</td>
+                    <td class="table-item" *ngIf="isQuote">
+                      <span class="p-column-title">Tax Rate</span>{{ item.taxRate }}
+                    </td>
+                    <td class="table-item" *ngIf="!isQuote  && !isRfq"></td> <!-- Placeholder -->
+                    <td class="table-item" *ngIf="isQuote  && !isRfq">
+                      <span class="p-column-title">Rate</span>{{ item.rate }}
+                    </td>
+                    <td class="table-item" *ngIf="!isQuote  && !isRfq"></td> <!-- Placeholder -->
+                    <td class="table-item" *ngIf="isQuote  && !isRfq">
+                      <span class="p-column-title">Amount</span>{{ item.amount }}
+                    </td>
+                    <td class="table-item" *ngIf="!isQuote  && !isRfq"></td> <!-- Placeholder -->
+                    <td class="table-item" *ngIf="isQuote  && !isRfq">
+                      <span class="p-column-title">Tax</span>{{ item.tax }}
+                    </td>
+                    <td class="table-item" *ngIf="!isQuote  && !isRfq"></td> <!-- Placeholder -->
+                    <td class="table-item" *ngIf="isQuote  && !isRfq">
+                      <span class="p-column-title">Total</span>{{ item.total }}
+                    </td>
+                    <!-- <td class="table-item" *ngIf="isView"></td> 
+                    <td class="actions gap-8 table-item" *ngIf="!isView">
+                      <span class="p-column-title">Action</span>
+                      <i class="pi pi-pen-to-square table-item" (click)="editItem(item.id)"></i>
+                      <i class="pi pi-trash table-item" (click)="deleteItem(item.id)"></i>
+                    </td> -->
+                  </tr>                          
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                  <td colspan="8" class="text-center table-item py-4"> 
+                      No item(s) added
+                  </td>
+                </tr>
+          </ng-template>
+          </p-table>
+        </div>
+      </div>
+
+      <div *ngIf="isQuote && rfqData.totalAmount">
+        <div class="calculated-container">
+          <div class="calculated-wrapper " >
+            <div class="amount-total editInput mb-3">
+              <p><b>Amount</b></p>
+              <p>
+                <span style="font-size: 1.1em; font-weight: 500">{{ rfqData.totalAmount }} NGN</span>
+              </p>
+            </div>
+            <div class="amount-total editInput mb-3">
+              <p><b>Tax</b></p>
+              <p>
+                <span style="font-size: 1.1em; font-weight: 500">{{ rfqData.totalTax }} NGN</span>
+              </p>
+            </div>
+  
+            <div class="discount-container editInput mb-3" *ngIf="rfqData.discounts">
+              <div class="amount-total mb-2" *ngFor="let discount of rfqData.discounts; let i = index">
+                <p><b>Discount Amount</b></p>
+                <div class="value">
+                  <p class="me-2">NGN</p>
+                  <div class="d-flex gap-4">
+                    <input type="number" name="any" [(ngModel)]="discount.value" (ngModelChange)="onDiscountChange()" class="editInput" disabled />
+                  </div>
+                  <!-- <i (click)="removeDiscount(i)" class="pi pi-times-circle table-item p-2"></i> -->
+                </div>
+              </div>
+              
+              <!-- <div class="discount-btn-wrapper d-block">
+                <button class="add-btn" (click)="addDiscount()">
+                  <i class="fas fa-plus me-2"></i>Add Discount
+                </button>
+              </div> -->
+            </div>
+
+
+            <div class="discount-container editInput mb-3" *ngIf="rfqData.charges">
+              <div class="amount-total" *ngFor="let charge of rfqData.charges; let i = index">
+                <p><b>Additional Charges Amount</b></p>
+                <div class="value d-flex">
+                  <p class="me-2">NGN</p>
+                  <div class="d-flex">
+                    <input type="number" name="any" [(ngModel)]="charge.value" (ngModelChange)="onChargeChange()" class="editInput" disabled />
+                  </div>
+                  <!-- <i (click)="removeCharge(i)" class="pi pi-times-circle table-item p-2"></i> -->
+                </div>
+              </div>
+
+              <!-- <div class="discount-btn-wrapper d-block">
+                <button class="add-btn" (click)="addCharge()">
+                  <i class="fas fa-plus me-2"></i>Add Additional Charges
+                </button>
+              </div> -->
+            </div>
+
+            <div class="amount-total editInput mb-3">
+              <p><b>Total</b></p>
+              <p>
+                <span style="font-size: 1.1em; font-weight: 500">{{ rfqData.grandTotal }} NGN</span>
+              </p>
+            </div>
+  
+            <div class="editInput my-4" *ngIf="showAmountWord">
+              <div class="flex justify-between">
+                <p><b>Amount In Words</b></p>
+                <!-- <i (click)="showAmountWord = false" class="pi pi-times-circle table-item p-2"></i> -->
+              </div>
+              <div class="uppercase">
+                <br>
+                <p>{{ rfqData.totalAmountInWords }}</p>
+              </div>
+            </div>
+            <!-- <div class="editInput d-block my-4" *ngIf="!showAmountWord">
+              <button class="add-btn" (click)="showAmountWord = true; convertToWords(rfqData.grandTotal)">
+                <i class="fas fa-plus me-2"></i>Add Amount In Words
+              </button>
+            </div> -->
+  
+            <div class="signature-upload-container editInput mb-4" *ngIf="isView">
+              <div class="wrapper" *ngIf="showSignatureButton">
+                <p><b>Uploaded Signature</b></p>
+                <!-- <div class="btn-sign">
+                  <input type="file" name="any" #fileInput style="display: none" (change)="onSignatureSelected($event)" />
+                  <button class="add-btn" (click)="fileInput.click()">
+                    <i class="fas fa-plus me-2"></i>Upload Signature
+                  </button>
+                </div> -->
+                <div class="signature-wrapper">
+                  <img *ngIf="signatureUrl" [src]="signatureUrl" [(ngModel)]="rfqData.signature" alt="Signature" class="signature" />
+                </div>
+                <!-- <i (click)="clearSignature()" class="pi pi-times-circle table-item p-2"></i> -->
+              </div>
+
+              <!-- <div class="" *ngIf="!showSignatureButton" >
+                <button class="add-btn"  (click)="showSignatureButton = true" >
+                  <i class="fas fa-plus me-2"></i>Add Signature
+                </button>
+              </div> -->
+            </div>
+          </div>
+        </div>
+      </div>
+  
+  
+      <div class="form-buttom-section editInput mb-2" *ngIf="rfqData.terms && rfqData.terms.length > 0">
+        <!-- <div class="btn-bottom-container" *ngIf="!showTermsCondition">
+          <button class="add-btn "  (click)="showTermsCondition = true">
+            <i class="fas fa-plus me-2"></i> Add Terms and Conditions
+          </button>
+        </div> -->
+  
+        <div class="contents-wrapper">
+          <div class="terms-conditions-container" *ngIf="showTermsCondition">
+            <div class="terms-condition-wrapper">
+              <div class="top">
+                <div class="label mb-4"><p><b>Added Terms and Condition</b></p></div>
+                <!-- <i (click)="cancelTermsCondition()" class="pi pi-times-circle table-item p-2"></i> -->
+              </div>
+              <textarea class="textarea editInput" placeholder="'Enter text here...'" [(ngModel)]="rfqData.terms"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>  
+
+      <div class="form-buttom-section editInput mb-2" *ngIf="rfqData.quotationNote && rfqData.quotationNote.length > 0">
+        <!-- <div class="btn-bottom-container" *ngIf="!showNotes">
+          <button class="add-btn "  (click)="showNotes = true">
+            <i class="fas fa-plus me-2"></i> Add Notes
+          </button>
+        </div> -->
+  
+        <div class="contents-wrapper">
+          <div class="terms-conditions-container" *ngIf="showNotes">
+            <div class="terms-condition-wrapper">
+              <div class="top">
+                <div class="label mb-4"><p><b>Added Note</b></p></div>
+                <!-- <i (click)="cancelNotes()" class="pi pi-times-circle table-item p-2"></i> -->
+              </div>
+              <textarea class="textarea editInput" placeholder="'Enter text here...'" [(ngModel)]="rfqData.quotationNote" disabled></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- <div class="form-bottom-section editInput mb-2">
+        <div class="btn-bottom-container" *ngIf="!showAttachments">
+          <button class="add-btn" (click)="showAttachments = true">
+            <i class="fas fa-plus me-2"></i> Add Attachments
+          </button>
+        </div>
+      
+        <div class="contents-wrapper">
+          <div class="terms-conditions-container" *ngIf="showAttachments">
+            <div class="terms-condition-wrapper">
+              <div class="terms-condition-wrapper">
+                <div class="top">
+                  <div class="label">
+                    <p><b>Add Attachments</b></p>
+                  </div>
+                  <i (click)="showAttachments = false" class="pi pi-times-circle table-item p-2"></i>
+                </div>
+                <div class="content">
+                  <p>Add any other attachments that are necessary for the quotation</p>
+      
+                  <div class="file-upload-continer">
+                    <input type="file" #fileInput (change)="fileInputChange($event)" style="display: none" multiple />
+                    <button class="add-btn" (click)="fileInput.click()">
+                      <i class="fas fa-plus me-2"></i> Browse
+                    </button>
+                  </div>
+      
+                  <ul class="uploaded-files">
+                    <li *ngFor="let file of rfqData.attachments; let i = index" [class]="file.status" class="uploaded-file">
+                      <div class="file-details">
+                        <div class="file-name">{{ file.name }}</div>
+                        <div class="file-progress">
+                          <div class="file-progress-bar" [style.width.%]="file.progress"></div>
+                        </div>
+                        <div class="file-size">{{ (file.size / (1024 * 1024)).toFixed(2) }} MB</div>
+                      </div>
+                      <div class="file-icons">
+                        <i (click)="cancelUpload(i)" class="pi pi-times-circle table-item p-2"></i>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div> -->
+
+      <div class="form-bottom-section editInput mb-2" *ngIf="rfqData.attachments && rfqData.attachments.length > 0">
+        <!-- <div class="btn-bottom-container" *ngIf="!showAttachments">
+          <button class="add-btn" (click)="showAttachments = true">
+            <i class="fas fa-plus me-2"></i> Add Attachments
+          </button>
+        </div> -->
+      
+        <div class="contents-wrapper" *ngIf="showAttachments">
+          <div class="terms-conditions-container">
+            <div class="terms-condition-wrapper">
+              <div class="top">
+                <div class="label">
+                  <p><b>Added Attachments</b></p>
+                </div>
+                <i></i>
+                <!-- <i (click)="showAttachments = false" class="pi pi-times-circle table-item p-2"></i> -->
+              </div>
+              <div class="content">
+
+                <p>Uploaded attachment(s)</p>
+                <br>
+      
+                <!-- <div class="file-upload-container">
+                  <input type="file" #fileInput (change)="fileInputChange($event)" style="display: none" multiple />
+                  <button class="add-btn" (click)="fileInput?.click()">
+                    <i class="fas fa-plus me-2"></i> Browse
+                  </button>
+                </div> -->
+      
+                <ul class="uploaded-files">
+                  <li
+                    *ngFor="let file of rfqData.attachments; let i = index"
+                    [ngClass]="file.status"
+                    class="uploaded-file"
+                  >
+                    <div class="file-details">
+                      <div class="file-name">{{ file.name }}</div>
+                      <div class="file-progress">
+                        <div class="file-progress-bar" [style.width.%]="file.progress"></div>
+                      </div>
+                      <div class="file-size">{{ (file.size / (1024 * 1024)).toFixed(2) }} MB</div>
+                    </div>
+                    <!-- <div class="file-icons">
+                      <i (click)="cancelUpload(i)" class="pi pi-times-circle table-item p-2"></i>
+                    </div> -->
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+  
+      <!-- <div class="btn-wrapper">
+        <app-button text="{{ isEdit ? 'Update' : 'Save' }}" (click)="onSubmit()" class="btn-save"></app-button>
+      </div> -->
+    </div>
+  </div>
+</div>

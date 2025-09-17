@@ -1,0 +1,44 @@
+<div class="chart-container">
+  <!-- ng-apexcharts chart -->
+  <apx-chart
+    [series]="chartData.series"
+    [chart]="chartData.chart"
+    [xaxis]="chartData.xaxis"
+    [dataLabels]="chartData.dataLabels"
+    [stroke]="chartData.stroke"
+  ></apx-chart>
+</div>
+
+<div class="button-container">
+  <!-- PrimeNG button to trigger modal -->
+  <button
+    pButton
+    type="button"
+    label="View Tabular Data"
+    (click)="showModal = true"
+  ></button>
+</div>
+
+<!-- PrimeNG Dialog for modal with the table -->
+<p-dialog
+  header="Chart Data"
+  [(visible)]="showModal"
+  [modal]="true"
+  [closable]="true"
+  styleClass="dialog"
+>
+  <p-table [value]="tableData">
+    <ng-template pTemplate="header">
+      <tr>
+        <th>Period</th>
+        <th>Value</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-rowData>
+      <tr>
+        <td>{{ rowData.colName }}</td>
+        <td>{{ rowData.value }}</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</p-dialog>

@@ -1,0 +1,482 @@
+<div class="w-full bg-gray-50 overflow-y-auto" id="printable-area">
+  <div class="mx-auto p-4 sm:p-6">
+    <div class="flex items-center justify-between mb-4 sm:mb-6">
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="text-gray-600 hover:text-gray-800"
+          (click)="closeEditInventory()"
+        >
+          <i class="fa-solid fa-arrow-left text-lg"></i>
+        </button>
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Product Details</h1>
+      </div>
+      <button
+        class="px-4 py-2 sm:px-6 sm:py-3 bg-customBlue text-white rounded-lg hover:bg-customBlueHover transition flex items-center gap-2 disabled:opacity-70 cursor-pointer text-sm sm:text-base"
+        type="button"
+        (click)="printPage()"
+      >
+        <i class="fa fa-print" aria-hidden="true"></i> Print Report
+      </button>
+    </div>
+
+    <div *ngIf="loading" class="flex justify-center items-center py-10">
+      <div class="text-lg font-medium text-gray-600">
+        Loading inventory details...
+      </div>
+    </div>
+
+    <div *ngIf="!loading" class="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+      <!-- Left Column - Stock Movements (3/4 width) -->
+      <div class="lg:col-span-3">
+        <!-- Stock Movements Section -->
+        <div class="bg-white p-4 sm:p-6 rounded-lg shadow-sm border border-gray-200 mb-4 sm:mb-6">
+          <div class="flex justify-between items-center mb-4 pb-2 border-b">
+            <h2 class="text-lg font-semibold text-gray-800">Stock Movement History</h2>
+            <div class="text-sm text-gray-600" *ngIf="stockMovements?.length">
+              Total Movements: {{ stockMovements.length }}
+            </div>
+          </div>
+
+          <div *ngIf="isMovementsLoading" class="w-full p-6 text-center text-gray-500">
+            <i class="fa fa-spinner fa-spin mr-2"></i>
+            Loading stock movement history...
+          </div>
+
+          <div
+            *ngIf="!isMovementsLoading && hasTriedMovements && (!stockMovements || stockMovements.length === 0)"
+            class="w-full p-6 text-center text-gray-500">
+            <i class="fa fa-info-circle mr-2"></i>
+            No stock movements found for this product.
+          </div>
+
+          <div *ngIf="!isMovementsLoading && stockMovements && stockMovements.length > 0" class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
+                    Date & Time
+                  </th>
+                  <th class="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
+                    Reference
+                  </th>
+                  <th class="px-3 py-2 sm:px-6 sm:py-3 text-center text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
+                    Quantity Change
+                  </th>
+                  <th class="px-3 py-2 sm:px-6 sm:py-3 text-right text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
+                    Purchase Price
+                  </th>
+                  <th class="px-3 py-2 sm:px-6 sm:py-3 text-right text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
+                    Selling Price
+                  </th>
+                  <th class="px-3 py-2 sm:px-6 sm:py-3 text-left text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
+                    Supplier 
+                  </th>
+                  <th class="px-3 py-2 sm:px-6 sm:py-3 text-center text-xs font-medium text-white bg-customBlue uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr *ngFor="let movement of stockMovements; let i = index" 
+                    class="hover:bg-gray-50 transition-colors duration-200"
+                    [class.bg-green-50]="movement.quantity > 0"
+                    [class.bg-red-50]="movement.quantity < 0">
+                  <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
+                    {{ toIsoString(movement.createdDate) | date:'medium' }}
+                  </td>
+                  <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600">
+                    {{ movement.reference || 'N/A' }}
+                  </td>
+                  <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-center text-xs sm:text-sm font-medium"
+                      [ngClass]="{
+                        'text-green-700 bg-green-100 rounded-full px-2 py-1 sm:px-3 sm:py-1': movement.quantity > 0,
+                        'text-red-700 bg-red-100 rounded-full px-2 py-1 sm:px-3 sm:py-1': movement.quantity < 0,
+                        'text-gray-700': movement.quantity === 0
+                      }">
+                    <span *ngIf="movement.quantity > 0">+{{ movement.quantity }}</span>
+                    <span *ngIf="movement.quantity < 0">{{ movement.quantity }}</span>
+                    <span *ngIf="movement.quantity === 0">{{ movement.quantity }}</span>
+                  </td>
+                  <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-right text-xs sm:text-sm text-gray-900">
+                    {{ (movement.purchasePrice || 0) | currency:'₦':'symbol':'1.2-2' }}
+                  </td>
+                  <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-right text-xs sm:text-sm text-gray-900">
+                    {{ (movement.sellingPrice || 0) | currency:'₦':'symbol':'1.2-2' }}
+                  </td>
+                  <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600">
+                    {{ movement.supplier?.name || movement.supplierId || 'N/A' }}
+                  </td>
+                  <td class="mv-actions px-3 py-2 sm:px-6 sm:py-4 text-center relative overflow-visible">
+                    <button
+                      (click)="$event.stopPropagation(); toggleDropdown(i)"
+                      class="text-gray-700 hover:text-gray-900 focus:outline-none p-1 sm:p-2 rounded-full hover:bg-gray-100"
+                      type="button"
+                      title="More actions"
+                    >
+                      <span class="text-xl leading-none select-none">⋮</span>
+                    </button>
+                    
+                    <!-- Dropdown Menu -->
+                    <div 
+                      *ngIf="activeDropdownIndex === i"
+                      class="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[120px]"
+                      [class.bottom-full]="i >= stockMovements.length - 3"
+                      [class.top-full]="i < stockMovements.length - 3"
+                      [class.mb-1]="i >= stockMovements.length - 3"
+                    >
+                      <button 
+                        (click)="editStockMovement(movement)"
+                        class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 rounded-t-lg"
+                        type="button"
+                      >
+                        <i class="fa-solid fa-edit text-blue-600"></i>
+                        Edit
+                      </button>
+                      <button 
+                        (click)="deleteStockMovement(movement)"
+                        class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-b-lg"
+                        type="button"
+                      >
+                        <i class="fa-solid fa-trash text-red-600"></i>
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column - Image and Product Details (1/4 width) -->
+      <div class="lg:col-span-1">
+        <!-- Product Image -->
+        <div class="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200 mb-4 sm:mb-6">
+          <div class="flex flex-col items-center gap-3 sm:gap-4">
+            <div class="w-32 h-32 sm:w-40 sm:h-40 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+              <img
+                class="w-full h-full object-contain"
+                [src]="getImageUrl(activeItem) | async"
+                alt="product image"
+              />
+            </div>
+            <div class="text-center">
+              <h3 class="text-base sm:text-lg font-medium text-gray-800">{{ activeItem?.name }}</h3>
+              <p class="text-xs sm:text-sm text-gray-600 mt-1">Created: {{ Timestamp }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product Information -->
+        <div class="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200 mb-4 sm:mb-6">
+          <h2 class="text-base sm:text-lg font-semibold text-gray-800 mb-3 pb-2 border-b">
+            Product Details
+          </h2>
+
+          <div class="space-y-2 sm:space-y-3">
+            <!-- Name -->
+            <div>
+              <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Product Name
+              </label>
+              <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.name || '-' }}</p>
+            </div>
+
+            <!-- Category -->
+            <div>
+              <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Category
+              </label>
+              <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.productCategory?.name || '-' }}</p>
+            </div>
+
+            <!-- Quantity -->
+            <div>
+              <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Current Quantity
+              </label>
+              <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.quantity || 0 }}</p>
+            </div>
+
+            <!-- Price -->
+            <div>
+              <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Current Price
+              </label>
+              <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.sellingPrice | currency : "₦" }}</p>
+            </div>
+
+            <!-- SKU -->
+            <div>
+              <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                SKU
+              </label>
+              <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.sku || '-' }}</p>
+            </div>
+
+            <!-- Product Code -->
+            <div>
+              <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Product Code
+              </label>
+              <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.code || '-' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Supplier Information -->
+        <div *ngIf="supplier && activeItem?.supplier" class="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200">
+          <h2 class="text-base sm:text-lg font-semibold text-gray-800 mb-3 pb-2 border-b">
+            Supplier Details
+          </h2>
+
+          <div class="space-y-2 sm:space-y-3">
+            <!-- Name -->
+            <div>
+              <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Name
+              </label>
+              <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.supplier?.name || '-' }}</p>
+            </div>
+
+            <!-- Contact Person -->
+            <div>
+              <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Contact Person
+              </label>
+              <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.supplier?.contactPerson || '-' }}</p>
+            </div>
+
+            <!-- Email -->
+            <div>
+              <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.supplier?.email || '-' }}</p>
+            </div>
+
+            <!-- Phone -->
+            <div>
+              <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Phone Number
+              </label>
+              <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.supplier?.phoneNumber || '-' }}</p>
+            </div>
+
+            <!-- Address -->
+            <div>
+              <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Address
+              </label>
+              <p class="text-xs sm:text-sm text-gray-900">{{ activeItem?.supplier?.address || '-' }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Edit Stock Movement Modal -->
+<div *ngIf="showEditModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity duration-300">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100 opacity-100">
+    <!-- Modal Header -->
+    <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xl font-semibold text-gray-800 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          Edit Stock Movement
+        </h3>
+        <button (click)="cancelEdit()" class="text-gray-400 hover:text-gray-600 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Modal Body -->
+    <div class="px-6 py-5 max-h-[70vh] overflow-y-auto">
+      <div class="space-y-5">
+        <!-- Reference Field -->
+        <div>
+          <label for="editReference" class=" text-sm font-medium text-gray-700 mb-2 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Reference
+          </label>
+          <input
+            id="editReference"
+            type="text"
+            [(ngModel)]="editingMovement.reference"
+            class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+            placeholder="Enter reference"
+          />
+        </div>
+        
+        <!-- Quantity Field -->
+        <div>
+          <label for="editQuantity" class=" text-sm font-medium text-gray-700 mb-2 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Quantity
+          </label>
+          <input
+            id="editQuantity"
+            type="number"
+            [(ngModel)]="editingMovement.quantity"
+            class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+            placeholder="Enter quantity"
+          />
+        </div>
+        
+        <!-- Price Fields in Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Purchase Price -->
+          <div>
+            <label for="editPurchasePrice" class=" text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Purchase Price
+            </label>
+            <div class="relative">
+              <span class="absolute left-3 top-3 text-gray-500">$</span>
+              <input
+                id="editPurchasePrice"
+                type="number"
+                step="0.01"
+                [(ngModel)]="editingMovement.purchasePrice"
+                class="w-full border border-gray-200 rounded-lg pl-7 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+          
+          <!-- Selling Price -->
+          <div>
+            <label for="editSellingPrice" class=" text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Selling Price
+            </label>
+            <div class="relative">
+              <span class="absolute left-3 top-3 text-gray-500">$</span>
+              <input
+                id="editSellingPrice"
+                type="number"
+                step="0.01"
+                [(ngModel)]="editingMovement.sellingPrice"
+                class="w-full border border-gray-200 rounded-lg pl-7 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+        </div>
+        
+        <!-- Supplier Field -->
+        <div>
+          <label for="editSupplierId" class=" text-sm font-medium text-gray-700 mb-2 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+            Supplier
+          </label>
+          <select
+            id="editSupplierId"
+            [(ngModel)]="editingMovement.supplierId"
+            class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 appearance-none bg-white"
+          >
+            <option value="" class="text-gray-400">Select Supplier</option>
+            <option *ngFor="let supplier of suppliersList" [value]="supplier.id" class="text-gray-800">
+              {{ supplier.name }}
+            </option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 -mt-9 mr-2">
+            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Modal Footer -->
+    <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+      <div class="flex gap-3">
+        <button
+          (click)="saveStockMovement()"
+          [disabled]="isUpdatingMovement"
+          class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+        >
+          <svg *ngIf="isUpdatingMovement" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          {{ isUpdatingMovement ? 'Saving Changes...' : 'Save Changes' }}
+        </button>
+        <button
+          (click)="cancelEdit()"
+          class="flex-1 bg-white text-gray-700 px-4 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div *ngIf="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4 transform transition-all">
+    <div class="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full">
+      <i class="fa-solid fa-exclamation-triangle text-red-600 text-xl"></i>
+    </div>
+    
+    <h3 class="text-lg font-semibold text-gray-900 text-center mb-2">Delete Stock Movement</h3>
+    
+    <p class="text-sm text-gray-500 text-center mb-6">
+      Are you sure you want to delete this stock movement? This action cannot be undone.
+    </p>
+    
+    <div *ngIf="movementToDelete" class="bg-gray-50 rounded-lg p-4 mb-6">
+      <div class="text-sm space-y-1">
+        <p><span class="font-medium">Reference:</span> {{ movementToDelete.reference || 'N/A' }}</p>
+        <p><span class="font-medium">Quantity:</span> 
+          <span [class]="movementToDelete.quantity >= 0 ? 'text-green-600' : 'text-red-600'">
+            {{ movementToDelete.quantity }}
+          </span>
+        </p>
+        <p><span class="font-medium">Date:</span> {{ toIsoString(movementToDelete.createdDate) | date:'short' }}</p>
+      </div>
+    </div>
+    
+    <div class="flex gap-3">
+      <button
+        (click)="cancelDelete()"
+        class="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+      >
+        Cancel
+      </button>
+      <button
+        (click)="confirmDelete()"
+        class="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
+        [disabled]="isDeletingMovement"
+      >
+        <span *ngIf="!isDeletingMovement">Delete</span>
+        <span *ngIf="isDeletingMovement" class="flex items-center justify-center gap-2">
+          <i class="fa fa-spinner fa-spin"></i>
+          Deleting...
+        </span>
+      </button>
+    </div>
+  </div>
+</div>

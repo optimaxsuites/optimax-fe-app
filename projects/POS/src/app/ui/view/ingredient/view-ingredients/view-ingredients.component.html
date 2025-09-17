@@ -1,0 +1,132 @@
+<div class="p-6 bg-gray-100 min-h-screen">
+  <!-- Back Button -->
+  <div class="mb-4">
+    <p 
+      class="flex items-center text-blue-600 cursor-pointer hover:underline font-medium" 
+      (click)="navigateToPrevious()"
+    >
+      <i class="fa-solid fa-arrow-left mr-2"></i> Back
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Tables Section -->
+    <div class="lg:col-span-2 space-y-6">
+      
+      <!-- Incoming Movements Table -->
+      <div class="bg-white rounded-2xl shadow p-4">
+        <h2 class="text-lg font-semibold mb-3 text-gray-700">Incoming Movements</h2>
+        <p-table 
+          [value]="incomingMovements" 
+          [paginator]="true" 
+          [rows]="10" 
+          styleClass="p-datatable-striped w-full"
+        >
+          <ng-template pTemplate="header">
+            <tr class="bg-gray-50 text-gray-700">
+              <th class="px-3 py-2 text-left">DATE & TIME</th>
+              <th class="px-3 py-2 text-left">REFERENCE</th>
+              <th class="px-3 py-2 text-left">QUANTITY CHANGE</th>
+              <th class="px-3 py-2 text-left">PURCHASE PRICE</th>
+              <th class="px-3 py-2 text-left">SELLING PRICE</th>
+              <th class="px-3 py-2 text-left">SUPPLIER</th>
+              <th class="px-3 py-2 text-center">ACTIONS</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-movement>
+            <tr class="border-b hover:bg-gray-50">
+              <td class="px-3 py-2">{{ movement.createdDate | date: 'medium' }}</td>
+              <td class="px-3 py-2">{{ movement.reference }}</td>
+              <td 
+                class="px-3 py-2 font-semibold"
+                [ngClass]="{'text-green-600': movement.quantity > 0, 'text-red-600': movement.quantity < 0}"
+              >
+                {{ transformQuantity(movement.quantity) }}
+              </td>
+              <td class="px-3 py-2">₦{{ movement.purchasePrice | number }}</td>
+              <td class="px-3 py-2">₦{{ movement.sellingPrice | number }}</td>
+              <td class="px-3 py-2">{{ movement.supplier?.name || 'N/A' }}</td>
+              <td class="px-3 py-2 text-center">
+                <i class="pi pi-ellipsis-h text-gray-600 cursor-pointer"></i>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <!-- Outgoing Movements Table -->
+      <div class="bg-white rounded-2xl shadow p-4">
+        <h2 class="text-lg font-semibold mb-3 text-gray-700">Outgoing Movements</h2>
+        <p-table 
+          [value]="outgoingMovements" 
+          [paginator]="true" 
+          [rows]="10" 
+          styleClass="p-datatable-striped w-full"
+        >
+          <ng-template pTemplate="header">
+            <tr class="bg-gray-50 text-gray-700">
+              <th class="px-3 py-2 text-left">DATE & TIME</th>
+              <th class="px-3 py-2 text-left">REFERENCE</th>
+              <th class="px-3 py-2 text-left">QUANTITY CHANGE</th>
+              <th class="px-3 py-2 text-left">DESTINATION</th>
+              <th class="px-3 py-2 text-center">ACTIONS</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-movement>
+            <tr class="border-b hover:bg-gray-50">
+              <td class="px-3 py-2">{{ movement.createdDate | date: 'medium' }}</td>
+              <td class="px-3 py-2">{{ movement.reference }}</td>
+              <td 
+                class="px-3 py-2 font-semibold"
+                [ngClass]="{'text-green-600': movement.quantity > 0, 'text-red-600': movement.quantity < 0}"
+              >
+                {{ transformQuantity(movement.quantity) }}
+              </td>
+              <td class="px-3 py-2">{{ movement.destination || 'Kitchen' }}</td>
+              <td class="px-3 py-2 text-center">
+                <i class="pi pi-ellipsis-h text-gray-600 cursor-pointer"></i>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+
+    <!-- Details Section -->
+    <div class="space-y-6">
+      <!-- Product Image -->
+      <div class="bg-white rounded-2xl shadow p-4 text-center">
+        <img 
+          src="path/to/product/image.png" 
+          alt="Product Image" 
+          class="mx-auto w-24 h-24 object-contain"
+        >
+        <h4 class="mt-2 text-lg font-semibold">{{ activeItem?.name }}</h4>
+        <p class="text-sm text-gray-500">Created: {{ activeItem?.createdDate | date: 'mediumDate' }}</p>
+      </div>
+
+      <!-- Product Details -->
+      <div class="bg-white rounded-2xl shadow p-4">
+        <h4 class="text-lg font-semibold border-b pb-2 mb-3">Product Details</h4>
+        <div class="space-y-2 text-sm text-gray-700">
+          <div class="flex justify-between"><strong>Product Name</strong><span>{{ activeItem?.name }}</span></div>
+          <div class="flex justify-between"><strong>Category</strong><span>{{ activeItem?.category || 'N/A' }}</span></div>
+          <div class="flex justify-between"><strong>Current Quantity</strong><span>{{ activeItem?.currentStock }}</span></div>
+          <div class="flex justify-between"><strong>Current Price</strong><span>₦{{ activeItem?.purchasePrice | number }}</span></div>
+          <div class="flex justify-between"><strong>SKU</strong><span>{{ activeItem?.sku }}</span></div>
+          <div class="flex justify-between"><strong>Product Code</strong><span>{{ activeItem?.code }}</span></div>
+        </div>
+      </div>
+
+      <!-- Supplier Details -->
+      <div class="bg-white rounded-2xl shadow p-4">
+        <h4 class="text-lg font-semibold border-b pb-2 mb-3">Supplier Details</h4>
+        <div class="space-y-2 text-sm text-gray-700">
+          <div class="flex justify-between"><strong>Name</strong><span>{{ activeItem?.supplier?.name || 'N/A' }}</span></div>
+          <div class="flex justify-between"><strong>Contact Person</strong><span>{{ activeItem?.supplier?.contactPerson || 'N/A' }}</span></div>
+          <div class="flex justify-between"><strong>Email</strong><span>{{ activeItem?.supplier?.email || 'N/A' }}</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
