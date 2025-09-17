@@ -1,3 +1,4 @@
+// pos-checkout-page.component.ts
 import {
   Component,
   ElementRef,
@@ -6,7 +7,6 @@ import {
   ViewChild,
 } from "@angular/core";
 import { Router } from "@angular/router";
-
 // import { UserComponent } from 'src/app/user.component';
 import { RegisterService } from "../../service/register.service";
 import { PosServiceService } from "../../service/pos-service.service";
@@ -61,7 +61,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   products: ProductData[] = [];
   categorizedProducts: ProductData[] = [];
   shownProducts: ProductData[] = [];
-  cartWidth = 300; 
+  cartWidth = 300;
   resizing = false;
   subtotal: number = 0.0;
   tax: number = 0.0;
@@ -90,7 +90,8 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   isNotesModalOpen = false;
   isDeliveryModalOpen = false;
   isAllPaymentsModalOpen = false;
-  isCategorySidebarOpen= false
+  isCategorySidebarOpen = false;
+  selectedPaymentModes: PaymentModes[] = [];
 
   constructor(
     private router: Router,
@@ -110,29 +111,46 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   }
 
   ngOnInit() {
-    // Register initialization
-    this.checkRegisterState();
+  // Register initialization
+  this.checkRegisterState();
 
-    const storedOpeningAmount = localStorage.getItem("openingAmount");
-    this.openingAmount = storedOpeningAmount ? Number(storedOpeningAmount) : 0;
+  const storedOpeningAmount = localStorage.getItem("openingAmount");
+  this.openingAmount = storedOpeningAmount ? Number(storedOpeningAmount) : 0;
 
-    if (this.navigationState?.order) {
-      this.loadOrder(this.navigationState.order);
-    }
-    if (this.navigationState?.cart) {
-      const cart = this.navigationState.cart;
-      console.log(cart)
-
-      this.cartItems = [...cart.cartItems];
-      this.total = cart.total;
-      this.displayedDiscount = cart.discount;
-      this.tax = cart.tax;
-      this.subtotal = cart.subtotal;
-    }
-    // this.metadataService.fetchMetaData();
-    this.getProducts();
-    this.loadCategory();
+  if (this.navigationState?.order) {
+    this.loadOrder(this.navigationState.order);
   }
+  if (this.navigationState?.cart) {
+    const cart = this.navigationState.cart;
+    this.cartItems = [...cart.cartItems];
+    this.total = cart.total;
+    this.displayedDiscount = cart.discount;
+    this.tax = cart.tax;
+    this.subtotal = cart.subtotal;
+  }
+  
+  // Check for the paymentSuccess flag from the router state
+  if (this.router.getCurrentNavigation()?.extras.state?.["paymentSuccess"]) {
+    this.clearCart();
+    this.router.navigate([], { replaceUrl: true }); // Clear the state from the URL
+  }
+  
+  this.getProducts();
+  this.loadCategory();
+}
+
+// Add a new method to clear the cart
+clearCart() {
+  this.cartItems = [];
+  this.subtotal = 0;
+  this.tax = 0;
+  this.discount = 0;
+  this.total = 0;
+  this.orderName = '';
+  // You may also want to reset other related properties, like discountValue
+  this.discountValue = 0;
+  this.displayedDiscount = 0;
+}
 
   // New Register Methods
   checkRegisterState() {
@@ -156,7 +174,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
       this.errorMessage =
         "Mismatch: The cash count total does not match the opening amount.";
     } else {
-      this.errorMessage = null; 
+      this.errorMessage = null;
     }
 
     // Enable or disable the confirm button
@@ -216,10 +234,10 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     return this.closingAmount! - this.expectedBalance;
   }
 
-  toggleCategorySidebar(){
-    this.isCategorySidebarOpen = !this.isCategorySidebarOpen
+  toggleCategorySidebar() {
+    this.isCategorySidebarOpen = !this.isCategorySidebarOpen;
   }
-  @HostListener('window:keydown', ['$event'])
+  @HostListener("window:keydown", ["$event"])
   handleKeyDown(event: KeyboardEvent) {
     console.log(this.scannedSKU.trim());
     if (event.key === "Enter" && this.scannedSKU.trim() !== "") {
@@ -257,41 +275,42 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
   loadOrder(order: any) {
     console.log(order);
-    this.cartItems = this.buildCartFromOrders(order.orderItem)
+    this.cartItems = this.buildCartFromOrders(order.orderItem);
     // this.cartItems = order.orderItems.map((item: any) => ({ ...item }));
-    console.log(this.cartItems)
+    console.log(this.cartItems);
     this.discount = order.cartDiscount | 0;
     this.discountValue = order.discountValue;
     this.value = order.value;
     this.total = order.totalAmount;
     this.calculateTotals();
   }
- 
+
   buildCartFromOrders(orders: any): any {
     const groupedCartItems: any[] = [];
-  
+
     orders.forEach((item: any) => {
       if (!item.productVariant) {
         // Only match variants with the same product.id
-        const variants = orders.filter((v: any) =>
-          v.productVariant &&
-          item.product &&
-          v.product.id === item.product.id
+        const variants = orders.filter(
+          (v: any) =>
+            v.productVariant && v.product && v.product.id === item.product.id,
         );
-    
+
         const selectedVariants = variants.map((v: any) => ({
           ...v.productVariant,
           selectedQuantity: v.quantity,
         }));
-    
+
         const variantTotal = selectedVariants.reduce(
-          (sum: number, variant: any) => sum + (variant.price * variant.selectedQuantity),
-          0
+          (sum: number, variant: any) =>
+            sum + variant.price * variant.selectedQuantity,
+          0,
         );
-    
-        const itemTotal = parseFloat(item.product.sellingPrice) * parseFloat(item.quantity);
+
+        const itemTotal =
+          parseFloat(item.product.sellingPrice) * parseFloat(item.quantity);
         const cartPriceTotal = itemTotal + variantTotal;
-    
+
         groupedCartItems.push({
           orderId: item.id,
           ...item.product,
@@ -301,21 +320,18 @@ export class PosCheckoutPageComponent implements OnInit, Business {
         });
       }
     });
-    
-  
+
     const subtotal = groupedCartItems.reduce(
       (sum, item) => sum + parseFloat(item.cartPriceTotal),
       0,
     );
-  
+
     const taxRate = 0.1; // example: 10%
     const tax = subtotal * taxRate;
     const discount = 0;
     const total = subtotal + tax;
-  
-return  groupedCartItems as any
 
-    // console.log( this.navigationState.order.cart)
+    return groupedCartItems as any;
   }
   getLabelForValue(value: string): string {
     const option = this.stateOptions.find((opt) => opt.value === value);
@@ -423,21 +439,21 @@ return  groupedCartItems as any
     this.displayedDiscount = this.discount + productDiscount;
 
     this.tax = this.cartItems.reduce((sum, item) => {
-  let itemTotal = (item.count ?? 0) * parseFloat(item.sellingPrice || '0');
+      let itemTotal = (item.count ?? 0) * parseFloat(item.sellingPrice || "0");
 
-  let variantsTotal = (item.selectedVariants ?? []).reduce(
-    (variantAcc, variant) =>
-      variantAcc + (variant.selectedQuantity ?? 0) * (Number(variant.price) || 0),
-    0
-  );
+      let variantsTotal = (item.selectedVariants ?? []).reduce(
+        (variantAcc, variant) =>
+          variantAcc +
+          (variant.selectedQuantity ?? 0) * (Number(variant.price) || 0),
+        0,
+      );
 
-  let subtotal = itemTotal + variantsTotal;
+      let subtotal = itemTotal + variantsTotal;
 
-  let taxRate = item.tax?.rate || item.product?.tax?.rate || 0;
+      let taxRate = item.tax?.rate || item.product?.tax?.rate || 0;
 
-  return sum + ((taxRate / 100) * subtotal);
-}, 0);
-
+      return sum + (taxRate / 100) * subtotal;
+    }, 0);
 
     this.total = this.subtotal + this.tax - this.displayedDiscount;
   }
@@ -610,8 +626,11 @@ return  groupedCartItems as any
       // product.discount.value = 0.0;
     });
   }
-  //
-  processPayment(modes: PaymentModes[]) {
+
+  // This new method handles the payment methods selected from the modal.
+  onPaymentsConfirmed(modes: PaymentModes[]) {
+    this.selectedPaymentModes = modes;
+    this.isAllPaymentsModalOpen = false;
     this._paymentService.processPayment({
       paymentModes: modes,
       cartItems: [...this.cartItems],
@@ -656,7 +675,7 @@ return  groupedCartItems as any
   getProducts() {
     this.metadataService.enrichedProduct$.subscribe(async (data) => {
       if (data) {
-        console.log(data)
+        console.log(data);
         const p = data.sort((a: any, b: any) => {
           const dateA = new Date(
             a.createdDate[0],
@@ -685,8 +704,7 @@ return  groupedCartItems as any
         console.log(this.products);
         this.categorizedProducts = this.products;
         this.shownProducts = this.products;
-      };
-  
+      }
     });
   }
   loadCategory() {
@@ -739,5 +757,3 @@ return  groupedCartItems as any
     document.removeEventListener("mouseup", this.stopResizing);
   };
 }
-
-

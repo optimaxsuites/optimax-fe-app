@@ -51,6 +51,7 @@ export class CashPaymentComponent implements OnInit {
   customerNotFound: boolean = false;
   showCreateCustomerModal: boolean = false;
   isAllPaymentmodalopen: boolean = false;
+  isAllPaymentsModalOpen = false;
   newCustomer: CustomerDTO = {
     id: 0,
     name: "",
@@ -96,16 +97,24 @@ export class CashPaymentComponent implements OnInit {
       (this.paymentValues.mobile ?? 0) 
     );
   }
-
+  
   openAllPaymentsModal() {
-    this.isAllPaymentmodalopen = true;
+    this.isAllPaymentsModalOpen = !this.isAllPaymentsModalOpen;
   }
+  
+  onPaymentsSelected(selectedModes: PaymentModes[]) {
+    this.navigationState.cart.paymentModes = selectedModes;
+    this.isAllPaymentsModalOpen = false;
+    this.updatePriceOptions();
+  }
+  
   removePaymentMode(modeToRemove: PaymentModes) {
     this.paymentValues[modeToRemove] = null;
     this.navigationState.cart.paymentModes = this.navigationState.cart.paymentModes.filter(
       (mode) => mode !== modeToRemove);
     this.updatePriceOptions();
   }
+
   get balanceLeft() {
     return Math.max(0, this.cart.total - this.totalPaid);
   }
@@ -296,12 +305,12 @@ export class CashPaymentComponent implements OnInit {
       orderItem: this.cart.cartItems.flatMap((item) => {
         const orderItems = item.count
           ? [
-              {
-                totalPrice: item.count * parseInt(item.sellingPrice || "0"),
-                quantity: item.count,
-                productId: item.id,
-              },
-            ]
+            {
+              totalPrice: item.count * parseInt(item.sellingPrice || "0"),
+              quantity: item.count,
+              productId: item.id,
+            },
+          ]
           : [];
 
         if (item.selectedVariants?.length) {
@@ -323,39 +332,38 @@ export class CashPaymentComponent implements OnInit {
             }
           });
         }
-
         return orderItems;
       }),
     };
 
-   this.checkoutService
-  .saveOrder(orderPayload as unknown as OrderPOST)
-  .subscribe({
-    next: () => {
-      this.messageService.add({
-        severity: "success",
-        summary: "Success",
-        detail: "Payment, Breakdown & Order saved successfully",
-        key: "tl",
-        life: 3000,
-      });
+    this.checkoutService
+      .saveOrder(orderPayload as unknown as OrderPOST)
+      .subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: "success",
+            summary: "Success",
+            detail: "Payment, Breakdown & Order saved successfully",
+            key: "tl",
+            life: 3000,
+          });
 
-      const historyState = history.state;
-      const paymentTrackingHistory = historyState.paymentTracking;
-      this.router.navigateByUrl(historyState.prevUrlBeforePaymentPage, {
-        state: {
-          ...historyState,
-          paymentTracking: paymentTrackingHistory
-            ? { ...paymentTrackingHistory, paymentSuccess: true }
-            : undefined,
+          const historyState = history.state;
+          const paymentTrackingHistory = historyState.paymentTracking;
+          this.router.navigateByUrl(historyState.prevUrlBeforePaymentPage, {
+            state: {
+              ...historyState,
+              paymentTracking: paymentTrackingHistory
+                ? { ...paymentTrackingHistory, paymentSuccess: true }
+                : undefined,
+              paymentSuccess: true, // Add this line
+            },
+          });
+          this.printReceipt();
+          this.isLoading = false;
         },
+        error: () => this.showError("Failed to save order"),
       });
-
-      this.printReceipt();
-      this.isLoading = false;
-    },
-    error: () => this.showError("Failed to save order"),
-  });
   }
 
   private showError(msg: string) {
