@@ -1,71 +1,85 @@
-// Example fix for the store-cart.service.ts file
-// Replace the problematic line with proper null checking
-
-// Before (line 48):
-// ... item) => total + (item.product.sellingPrice * item.quantity), 0);
-
-// After:
-// ... item) => total + ((item.product.sellingPrice || 0) * item.quantity), 0);
-
-// Or with more robust checking:
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
-import { ProductData } from '../models/interface';
-
-export interface CartItem {
-  product: ProductData;
-  quantity: number;
-}
+import { HttpClient } from '@angular/common/http'; // Add this import
+import { GuestOrderService } from './guest-order.service';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators'; // Add this import
+import { environment } from '../sharedComponent/service/environments/environment';
+import { isDevMode } from '@angular/core'; // Add this import
 
 @Injectable({
   providedIn: 'root'
 })
 export class StoreCartService {
-  private cartItems = new BehaviorSubject<CartItem[]>([]);
-  cartItems$ = this.cartItems.asObservable();
+  private cartSubject = new BehaviorSubject<Map<any, any>>(new Map());
+  private subtotalSubject = new BehaviorSubject<number>(0);
 
-  constructor() {}
+  constructor(
+    private guestOrderService: GuestOrderService,
+    private http: HttpClient // Add HttpClient injection
+  ) {}
 
-  addToCart(product: ProductData, quantity: number = 1): void {
-    const currentItems = this.cartItems.value;
-    const existingItem = currentItems.find(item => item.product.id === product.id);
-
-    if (existingItem) {
-      existingItem.quantity += quantity;
-    } else {
-      currentItems.push({ product, quantity });
-    }
-
-    this.cartItems.next([...currentItems]);
+  private getBaseApiUrl(): string {
+    return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
   }
 
-  removeFromCart(productId: number): void {
-    const currentItems = this.cartItems.value.filter(item => item.product.id !== productId);
-    this.cartItems.next(currentItems);
+  getCart(): { items: Map<any, any>, subtotal: number } {
+    return {
+      items: this.cartSubject.value,
+      subtotal: this.subtotalSubject.value
+    };
   }
 
-  updateQuantity(productId: number, quantity: number): void {
-    const currentItems = this.cartItems.value;
-    const item = currentItems.find(item => item.product.id === productId);
-    
-    if (item) {
-      item.quantity = quantity;
-      this.cartItems.next([...currentItems]);
-    }
-  }
-
-  // getCartTotal(): number {
-  //   return this.cartItems.value.reduce((total, item) => {
-  //     const price = item.product.sellingPrice || 0;
-  //     return total + (price * item.quantity);
-  //   }, 0);
-  // }
-
-  getCartItemCount(): number {
-    return this.cartItems.value.reduce((total, item) => total + item.quantity, 0);
+  setCart(items: Map<any, any>, subtotal: number): void {
+    this.cartSubject.next(items);
+    this.subtotalSubject.next(subtotal);
   }
 
   clearCart(): void {
-    this.cartItems.next([]);
+    this.cartSubject.next(new Map());
+    this.subtotalSubject.next(0);
+  }
+
+  placeOrder(orderData: any): Observable<any> {
+    // Generate order ID for guest
+    const orderId = this.guestOrderService.generateOrderId();
+    
+    const guestOrder = {
+      id: orderId,
+      items: orderData.items,
+      subtotal: orderData.subtotal,
+      deliveryFee: orderData.deliveryFee || 0,
+      total: orderData.total,
+      deliveryMethod: orderData.deliveryMethod,
+      paymentMethod: orderData.paymentMethod,
+      deliveryInfo: orderData.deliveryInfo,
+      orderDate: new Date().toISOString(),
+      status: 'confirmed' as const
+    };
+
+    // Save to localStorage
+    this.guestOrderService.saveOrder(guestOrder);
+
+    // Also call your actual API if needed
+    return this.http.post(`${this.getBaseApiUrl()}/api/orders`, orderData).pipe(
+      catchError((error: any) => {
+        console.warn('API order submission failed, but order saved locally:', error);
+        // Even if API fails, return success for the guest order
+        return of({
+          success: true,
+          orderId: orderId,
+          message: 'Order placed successfully (saved locally)'
+        });
+      })
+    );
+  }
+
+  // Add method to get guest orders
+  getGuestOrders(): any[] {
+    return this.guestOrderService.getOrders();
+  }
+
+  // Add method to get specific guest order
+  getGuestOrder(orderId: string): any {
+    return this.guestOrderService.getOrder(orderId);
   }
 }
