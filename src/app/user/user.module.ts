@@ -61,6 +61,8 @@ import { CheckoutKitchenHeaderComponent } from '../ui/view/checkout-kitchen-head
 import { KitchenOrderComponent } from '../ui/view/kitchen-order/kitchen-order.component';
 import { StoreHeaderComponent } from '../ui/view/pos-store/store-header/store-header.component';
 import { AuthModalComponent } from '../ui/view/pos-store/auth-modal/auth-modal.component';
+import { DecimalPipe, TitleCasePipe, DatePipe } from '@angular/common';
+import { StoreCheckoutComponent } from '../ui/view/pos-store/store-checkout/store-checkout.component';
 // import { StoreHeaderComponent } from './ui/view/pos-store/store-header/store-header.component';
 // import { ProductVariantModalComponent } from '../ui/view/product-variant-modal/product-variant-modal.component';
 
@@ -89,7 +91,8 @@ import { AuthModalComponent } from '../ui/view/pos-store/auth-modal/auth-modal.c
     CheckoutKitchenHeaderComponent,
     KitchenOrderComponent,
     StoreHeaderComponent,
-    AuthModalComponent
+    AuthModalComponent,
+    StoreCheckoutComponent
     // ProductVariantModalComponent,
   ],
   imports: [
@@ -136,6 +139,6 @@ import { AuthModalComponent } from '../ui/view/pos-store/auth-modal/auth-modal.c
     TagModule,
   ],
   exports: [CheckoutKitchenComponent, CheckoutHeaderComponent],
-  providers: [PosCheckoutPageComponent],
+  providers: [PosCheckoutPageComponent, DecimalPipe, TitleCasePipe, DatePipe],
 })
 export class UserModule {}

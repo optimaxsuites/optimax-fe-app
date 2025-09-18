@@ -1,11 +1,13 @@
 import { Component, computed, OnInit, signal } from '@angular/core';
 import Fuse, { IFuseOptions } from 'fuse.js';
 import { ProductData, VariantDTO } from '../../models/interface';
+import { ActivatedRoute } from '@angular/router'; 
 import { ImageCacheService } from '../../service/image-cache.service';
 import { PaymentServiceService } from '../../service/payment-service.service';
 import { PosServiceService } from '../../service/pos-service.service';
 import { ProductHelperService } from '../../service/product-helper.service';
 import { Router } from '@angular/router';
+import { StoreCartService } from '../../service/store-cart.service'; 
 import { StoreHeaderComponent } from './store-header/store-header.component';
 
 /** Indexed by each `category`'s name */
@@ -60,56 +62,55 @@ export class PosStoreComponent implements OnInit {
   branches: any[] = [];
 
   getCategoryList(): string[] {
-  const categories: string[] = [];
-  this.productData().forEach((_, key) => {
-    if (key !== 'All') {
-      categories.push(key);
-    }
-  });
-  return categories;
-}
-
-// Method to get products by category
-getProductsByCategory(category: string): ProductData[] {
-  return this.productData().get(category) || [];
-}
-
-categoryCarousels: { [key: string]: Element } = {};
-
-// After view init, get references to carousel elements
-ngAfterViewInit() {
-  // We'll use a small timeout to ensure the view is rendered
-  setTimeout(() => {
-    this.getCategoryList().forEach(category => {
-      const element = document.querySelector(`[data-category="${category}"]`);
-      if (element) {
-        this.categoryCarousels[category] = element;
+    const categories: string[] = [];
+    this.productData().forEach((_, key) => {
+      if (key !== 'All') {
+        categories.push(key);
       }
     });
-  }, 100);
-}
-
-scrollCarouselLeft(category: string): void {
-  const carousel = document.querySelector(`[data-category="${category}"]`);
-  if (carousel) {
-    carousel.scrollBy({ left: -300, behavior: 'smooth' });
+    return categories;
   }
-}
 
-scrollCarouselRight(category: string): void {
-  const carousel = document.querySelector(`[data-category="${category}"]`);
-  if (carousel) {
-    carousel.scrollBy({ left: 300, behavior: 'smooth' });
+  // Method to get products by category
+  getProductsByCategory(category: string): ProductData[] {
+    return this.productData().get(category) || [];
   }
-}
 
-// Method to handle branch change
-changeBranch(branch: any) {
-  // Implement logic to filter products by branch
-  console.log('Branch changed to:', branch);
-  // You'll need to update your product fetching logic based on the selected branch
-}
+  categoryCarousels: { [key: string]: Element } = {};
 
+  // After view init, get references to carousel elements
+  ngAfterViewInit() {
+    // We'll use a small timeout to ensure the view is rendered
+    setTimeout(() => {
+      this.getCategoryList().forEach((category) => {
+        const element = document.querySelector(`[data-category="${category}"]`);
+        if (element) {
+          this.categoryCarousels[category] = element;
+        }
+      });
+    }, 100);
+  }
+
+  scrollCarouselLeft(category: string): void {
+    const carousel = document.querySelector(`[data-category="${category}"]`);
+    if (carousel) {
+      carousel.scrollBy({ left: -300, behavior: 'smooth' });
+    }
+  }
+
+  scrollCarouselRight(category: string): void {
+    const carousel = document.querySelector(`[data-category="${category}"]`);
+    if (carousel) {
+      carousel.scrollBy({ left: 300, behavior: 'smooth' });
+    }
+  }
+
+  // Method to handle branch change
+  changeBranch(branch: any) {
+    // Implement logic to filter products by branch
+    console.log('Branch changed to:', branch);
+    // You'll need to update your product fetching logic based on the selected branch
+  }
 
   searchText = signal('');
 
@@ -137,7 +138,7 @@ changeBranch(branch: any) {
     return options;
   });
 
-   // Add this method to handle navigation to product details
+  // Add this method to handle navigation to product details
   navigateToProductDetails(productId: number): void {
     this.router.navigate(['user/checkout/pos-store/product-details', productId]);
   }
@@ -236,20 +237,20 @@ changeBranch(branch: any) {
     private router: Router,
     private _imgCacheService: ImageCacheService,
     private _productHelper: ProductHelperService,
-    private _paymentService: PaymentServiceService
+    private _paymentService: PaymentServiceService,
+    private cartService: StoreCartService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
-
-      // Fetch branches
-  this._posService.getBranches().subscribe((branches) => {
-    this.branches = branches;
-  });
-
+    // Fetch branches
+    this._posService.getBranches().subscribe((branches) => {
+      this.branches = branches;
+    });
 
     // Populate the product data
     this._posService.getProducts().subscribe((data) => {
-    this._allProducts = data;
+      this._allProducts = data;
 
       data.forEach((iteratedProduct) => {
         const categoryName = iteratedProduct.productCategory.name;
@@ -433,4 +434,9 @@ changeBranch(branch: any) {
     const imgElement = event.target as HTMLImageElement;
     imgElement.src = 'assets/placeholder-product.jpg';
   }
+navigateToCheckout(): void {
+  const currentUuid = this.route.snapshot.paramMap.get('uuid');
+  this.cartService.setCart(this.cartProducts(), this.convertedCartProducts().subTotal);
+  this.router.navigate(['/store', currentUuid, 'checkout']);
+}
 }

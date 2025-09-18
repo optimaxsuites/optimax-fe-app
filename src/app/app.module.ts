@@ -132,8 +132,11 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { UniquePipe } from './shared/pipes/unique.pipe';
 import { StoreHeaderComponent } from './ui/view/pos-store/store-header/store-header.component';
 // import { StoreProductsDetailsComponent } from './ui/view/store-products-details/store-products-details.component';
-import { ProductDetailsComponent } from './ui/view/pos-store/product-details/product-details.component';
+// import { ProductDetailsComponent } from './ui/view/pos-store/product-details/product-details.component';
 import { UpdateStockComponent } from './ui/view/ingredient/update-stock/update-stock.component';
+// import { OrderConfirmationComponent } from './ui/view/pos-store/order-confirmation/order-confirmation.component';
+import { OrderHistoryComponent } from './ui/view/pos-store/order-history/order-history.component';
+// import { StoreCheckoutComponent } from './ui/view/pos-store/store-checkout/store-checkout.component';
 // import { AuthModalComponent } from './ui/view/pos-store/auth-modal/auth-modal.component';
 export function appInitializerFactory(appInitService: AppInitService) {
   return () => appInitService.init();
@@ -204,6 +207,9 @@ export function appInitializerFactory(appInitService: AppInitService) {
     // StoreProductsDetailsComponent,
     // ProductDetailsComponent,
     UpdateStockComponent,
+    // OrderConfirmationComponent,
+    // OrderHistoryComponent,
+    // StoreCheckoutComponent,
     // AuthModalComponent,
     //CheckoutKitchenComponent,
   ],
