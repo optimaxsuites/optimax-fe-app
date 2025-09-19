@@ -7,8 +7,7 @@ import { NavigationLinksService } from '../../../sharedComponents/service/naviga
 import { ModulesService } from '../../../service/modules.service';
 import { UserService } from '../../../sharedComponents/service/user.service';
 
- import { catchError, forkJoin, map, Observable, of, tap } from 'rxjs';
-import { DataService } from '../../../service/data.service';
+ import { forkJoin, map } from 'rxjs';
 
 
 interface user {
@@ -17,37 +16,13 @@ interface user {
   status: string;
   dateCreated: string;
   password: string;
-  firstname: string;
-  lastname: string;
   permission: {
     [key: string]: string;
   };
   isEditing?:boolean,
   authType: string, 
   accessCode: string,
-  accountState?: string,
-  roles?: any[],
-  id?: number,
-  ecode?: string,
-  allowEcodeAuth?: boolean,
-  username?: string,
 }
-
-interface Branch {
-  id: number;
-  name: string;
-  description: string;
-  address: string;
-  phoneNo: number;
-}
-
-interface UserWithExtras extends user {
-  appRoles$: Observable<string>;
-  appRolesId$: Observable<number | ''>;
-  userBranchName$: Observable<string>;
-  userBranchId$: Observable<number | ''>;
-}
-
 @Component({
   selector: 'app-users',
   templateUrl: './users.component.html',
@@ -74,14 +49,12 @@ filteredUsers: any[] = [];
 Object = Object
 autoGenerateCode: boolean = true;
 autoVerify: boolean = false;
-users: UserWithExtras[] = [
+users: any[] = [
  
  
 ];
 
 newUser: user ={
-  firstname: '',
-  lastname: '',
   name: '',
   email: '',
   status: 'Active',
@@ -96,11 +69,9 @@ newUser: user ={
 selectedModule: string = ''; 
 selectedRole: any = {};
 roles: any[] = []
-branches: any[] = []
-selectedBranch: any = null;
 
 constructor(private confirmationService: ConfirmationService, private messageService: MessageService, private authenticationService: AuthenticationService,     private router: Router,
-  private navigationLink: NavigationLinksService, private moduleService: ModulesService, private userService: UserService, private dataService: DataService){
+  private navigationLink: NavigationLinksService, private moduleService: ModulesService, private userService: UserService){
 
 }
 
@@ -114,15 +85,6 @@ ngOnInit(){
      } 
     });
 
-    this.dataService.getBranches().subscribe({
-      next: (data: any[]) => {
-        this.branches = data
-      },
-      error(err) {
-        console.log(err)
-      }
-    })
-
     this.fetchUsers()
 }
 
@@ -133,17 +95,8 @@ fetchUsers(){
       ...user,
       appRoles$: this.authenticationService.getUserApplicationRole(user.id).pipe(
         map(((roleObj: any) => roleObj?.appRole.name ?? ''))
-      ),
-      appRolesId$: this.authenticationService.getUserApplicationRole(user.id).pipe(
-        map(((roleObj: any) => roleObj?.appRole.id ?? ''))
-      ),
-      userBranchId$: this.authenticationService.getUserBranch(user.id).pipe(
-         map(((branchObj: any) => branchObj?.branch.id ?? ''))
-      ),
-      userBranchName$: this.authenticationService.getUserBranch(user.id).pipe(
-         map(((branchObj: any) => branchObj?.branch.name ?? ''))
       )
-    })) as UserWithExtras[];
+    }));
 
     },
     error(err){
@@ -202,97 +155,51 @@ fetchUsers(){
 
 
 submitUser() {
-
-  const business = sessionStorage.getItem('userPrimaryInfoRegData') ? JSON.parse(sessionStorage.getItem('userPrimaryInfoRegData') || '{}') : null;
-
-  console.log(business)
-
-  const businessInfo = {
-    fullname: this.newUser?.firstname + ' ' + this.newUser?.lastname,
-    username: this.newUser.name,
-    profileImage: business?.profileImage,
-    email: this.newUser.email,
-    phoneNumber: business?.phoneNumber,
-    address: business?.address,
-    country: business?.country,
-    state: business?.state,
-    city: business?.city,
-    postalCode: business?.postalCode,
-    industry: business?.industry,
-    companyName: business?.companyName,
-    clientType: business?.clientType,
-    bio: business?.bio,
-    currency: business?.currency,
-    language: business?.language,
-    timeZone: business?.timeZone,
-  };
-
-
   const signupDetails = {
     username: this.newUser.name,
     password: this.newUser.password,
     email: this.newUser.email,
     project: `${environment.project}`,
-    apiKey: `${environment.apiKey}`,
-    upi: businessInfo
+    apiKey: `${environment.apiKey}`
   };
-
-  console.log(signupDetails)
 
   this.authenticationService.userRegistration(signupDetails).subscribe({
     next: (data) => {
-
+      // Prepare requests for each role
       const roleRequest = {
           userId: data.id,
           appRoleId: this.selectedRole?.id
         }
-
-
-      const userBranchRequest = {
-        userId: data.id,
-        branchId: this.selectedBranch?.id
-      }
       
+
+      // Run all role requests in parallel and wait for completion
       this.authenticationService.userApplicationRole(roleRequest).subscribe({
         next: () => {
-          this.authenticationService.userBranchRole(userBranchRequest).subscribe({
-           next: (data) => {
-              if (this.codeAuthType) {
-              this.authenticationService.codeActivation(data.ecode, true).subscribe({
-                next: () => {
-                  this.messageService.add({
-                    severity: 'success',
-                    summary: 'Success',
-                    detail: 'User registered and eCode activated successfully!'
-                  });
-                },
-                error: (err) => {
-                  console.error(err);
-                  this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Failed to activate user eCode, try again later!'
-                  });
-                }
-              });
-            } else {
-              this.messageService.add({
-                severity: 'success',
-                summary: 'Success',
-                detail: 'User registered and roles assigned successfully!'
-              });
-            }
-         },
-           error: (err) => {
-            console.error(err);
+          if (this.codeAuthType) {
+            this.authenticationService.codeActivation(data.ecode, true).subscribe({
+              next: () => {
+                this.messageService.add({
+                  severity: 'success',
+                  summary: 'Success',
+                  detail: 'User registered and eCode activated successfully!'
+                });
+              },
+              error: (err) => {
+                console.error(err);
+                this.messageService.add({
+                  severity: 'error',
+                  summary: 'Error',
+                  detail: 'Failed to activate user eCode, try again later!'
+                });
+              }
+            });
+          } else {
             this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Failed to assign branch to user, try again later!'
-          });
-           }
-          })
-        
+              severity: 'success',
+              summary: 'Success',
+              detail: 'User registered and roles assigned successfully!'
+            });
+          }
         },
         error: (err) => {
           console.error(err);
@@ -334,59 +241,42 @@ submitUser() {
   });
 }
 
-assignRole(user: UserWithExtras, event: any) {
-  user.appRolesId$.pipe(catchError(() => of(0))).subscribe(appRoleId => {
+assignRole(user: any, event: any){
     const roleRequest = {
-      id: appRoleId || 0,
-      userId: user.id,
-      appRoleId: this.selectedRole?.id
-    };
+          userId: user.id,
+          appRoleId: this.selectedRole?.id
+    }
+
+    // this.authenticationService.getUserApplicationRole(user.id).subscribe({
+    //   next: (response) => {
+        
+    //   },
+    //   error: (error) => {
+    //     console.error("Error fetching user application role:", error);
+    //   }
+    // })
 
     this.authenticationService.userApplicationRole(roleRequest).subscribe({
-      next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Role assigned successfully!'
-        });
-        this.editCompensation(user, event);
-      },
-      error: (err) => {
-        console.error(err);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to assign role, try again later!'
-        });
-      }
-    });
-  });
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Role assigned successfully!'
+          });
+          this.editCompensation(user, event)
+        },
+        error: (err) => {
+          console.error(err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to assign role, try again later!'
+          });
+        }
+      })
+
+
 }
-
-assignBranch(user: UserWithExtras, event: any) {
-  user.userBranchId$.pipe(
-    catchError(() => of(0))
-  ).subscribe(branchId => {
-    const roleRequest = {
-      id: branchId || 0,
-      userId: user.id,
-      branchId: this.selectedBranch?.id
-    };
-
-    this.authenticationService.userBranchRole(roleRequest).subscribe({
-      next: () => {
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Branch assigned!' });
-        this.editCompensation(user, event);
-      },
-      error: () => {
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to assign branch!' });
-      }
-    });
-  });
-}
-
-
-
 
 
     updateUser(user: any) {

@@ -105,8 +105,8 @@ import { BranchesComponent } from './ui/view/pos/branches/branches.component';
     BranchesComponent,
   ],
   imports: [
-    // BrowserModule,
-    // BrowserAnimationsModule,
+    BrowserModule,
+    BrowserAnimationsModule,
     AppRoutingModule,
     CommonModule,
     AppRoutingModule,

@@ -75,8 +75,7 @@
             <p><strong>Email:</strong> {{ user.email }}</p>
             <p><strong>Status:</strong> {{ user.accountState }}</p>
             <p><strong>Role:</strong> {{ getRoleNames(user) }}</p>
-            <p><strong class="capitalize">Application Role:</strong> {{ (user.appRoles$ | async) || 'N/A'}}</p>
-            <p><strong class="capitalize">Branch:</strong> {{ (user.userBranchName$ | async) || 'N/A' }}</p>
+            <p><strong>Application Role:</strong> {{ user.appRoles$ | async}}</p>
             <p><strong>eCode:</strong> {{ user.ecode }}</p>
 
 
@@ -98,27 +97,6 @@
                 </ng-select>
             </div>
           <button (click)="assignRole(user, $event)"  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3">Assign</button>
-
-          </div>      
-
-          </div>
-
-           <div class="flex flex-col gap-3 py-3 w-full h-full" *ngIf="user.isEditing">
-          <p class="text-nowrap text-customBlue">Assign new branch</p>
-          <div class="w-full flex gap-4 item-center"> 
-            <div class="w-full">
-               <!-- <label for="role" class="text-customBlue">Role</label> -->
-                <ng-select
-                  [items]="branches"
-                  id="role"
-                  bindLabel="name"
-                  [multiple]="false"
-                  placeholder="Select Role"
-                  [(ngModel)]="selectedBranch"
-                >
-                </ng-select>
-            </div>
-          <button (click)="assignBranch(user, $event)"  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3">Assign</button>
 
           </div>      
 
@@ -254,29 +232,6 @@
     </div>
 
     <!-- Basic Information -->
-     <div class="w-full flex gap-2">
-       <div class="py-3 flex flex-col gap-1 w-full">
-      <label for="name" class="font-semibold text-customBlue">First Name</label>
-      <input 
-        type="text" 
-        placeholder="first name" 
-        id="name" 
-        class="editInput" 
-        [(ngModel)]="newUser.firstname"
-      >
-    </div>
-
-     <div class="py-3 flex flex-col gap-1 w-full">
-      <label for="name" class="font-semibold text-customBlue">Last Name</label>
-      <input 
-        type="text" 
-        placeholder="last name" 
-        id="name" 
-        class="editInput" 
-        [(ngModel)]="newUser.lastname"
-      >
-    </div>
-     </div>
     <div class="py-3 flex flex-col gap-1">
       <label for="name" class="font-semibold text-customBlue">Username</label>
       <input 
@@ -319,19 +274,6 @@
     </div> -->
 
     <div class="flex gap-3 py-3 w-full items-center h-full" >
-
-      <div class="w-full">
-        <label for="role" class="text-customBlue">Branch</label>
-        <ng-select
-          [items]="branches"
-          id="role"
-          bindLabel="name"
-          [multiple]="false"
-          placeholder="Select Branch"
-          [(ngModel)]="selectedBranch"
-        >
-        </ng-select>
-      </div>
      
 
       <div class="w-full">

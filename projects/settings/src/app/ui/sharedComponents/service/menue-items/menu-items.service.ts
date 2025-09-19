@@ -177,7 +177,7 @@ export class MenuItemsService {
     },    
     {
       label: 'Point of Sale (POS)',
-      code: 'optimaXPOS',
+      code: 'POS',
       icon: 'fas fa-cash-register',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       description: 'The POS (Point of Sale) module of OptimaXSuites provides a comprehensive system for managing retail operations including products, inventory, sales, and customer checkout.',
@@ -230,14 +230,6 @@ export class MenuItemsService {
           label: 'Checkout',
           code: 'POS_CHKOUT',
           route: this.navigationLink.getLink('checkoutLink'),
-          roles: ['ROLE_USER', 'ROLE_ADMIN'],
-          icon: 'pi pi-credit-card',
-          description: 'Process payments and manage the customer checkout flow.'
-        },
-         {
-          label: 'Kitchen',
-          code: 'kitchen',
-          route: this.navigationLink.getLink('kitchenLink'),
           roles: ['ROLE_USER', 'ROLE_ADMIN'],
           icon: 'pi pi-credit-card',
           description: 'Process payments and manage the customer checkout flow.'
@@ -589,6 +581,8 @@ export class MenuItemsService {
     } else {
       console.log('No token yet — skipping app registration fetch');
     }
+  
+   
   }
   
   async getRegisterApps(){
