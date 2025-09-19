@@ -7,6 +7,7 @@ import {
 	FormControl,
 	FormGroup,
 	Validators,
+	ValidationErrors,
 } from "@angular/forms";
 import JsBarcode from "jsbarcode";
 import jsPDF from "jspdf";
@@ -320,10 +321,10 @@ export class AddProductComponent {
 		private metadataService: MetadataService,
 	) {}
 	ngOnInit(): void {
-		const fbGroup: Parameters<typeof this.fb.group>[0] = {
-			name: ["", Validators.required],
-			code: ['', [Validators.required, Validators.pattern(/^[A-Z0-9-]+$/)]],
-			description: ["", [Validators.required, Validators.maxLength(255)]],
+	const fbGroup: Parameters<typeof this.fb.group>[0] = {
+	name: ["", [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+	code: ['', [Validators.required, Validators.pattern(/^[A-Z0-9-]{3,20}$/)]],
+	description: ["", [Validators.required, Validators.minLength(10), Validators.maxLength(500)]],
 			sku: [""],
 			weight: [null, [Validators.min(0), Validators.max(9999)]],
 			// purchasePrice: [
@@ -899,17 +900,28 @@ export class AddProductComponent {
 			);
 		}
 	}
-	resetFormAfterSuccess() {
+resetFormAfterSuccess() {
   this.productForm.reset();
+  this.productForm.markAsUntouched();
+  this.productForm.markAsPristine();
+  
   this.productImage = "";
   this.variants = [];
   this.selectedIngredients = [];
   
   
+  while (this.branchess.length !== 0) {
+    this.branchess.removeAt(0);
+  }
+  
+
   if (this.branches.length > 0) {
     const defaultBranch = this.userBranch === "headquarters" ? [this.branches[0]] : this.branches[0];
     this.productForm.patchValue({
-      selectedBranch: defaultBranch
+      selectedBranch: defaultBranch,
+      expiryDate: this._defaultExpiryDate.toISOString(),
+      isBundle: false,
+      reorderThreshold: 12
     });
   }
 }
@@ -1697,35 +1709,37 @@ async updateProduct() {
 	getImageUrl(string: string) {
 		return this.posService.getProductImage(string);
 	}
-	getErrorMessage(controlName: string, displayName?: string): string {
-		const control = this.productForm.get(controlName);
-		const name = displayName || controlName;
+getErrorMessage(controlName: string, displayName?: string): string {
+	const control = this.productForm.get(controlName);
+	const name = displayName || controlName;
 
-		if (control && control.errors) {
-			const errors = control.errors;
-			const errorKeys = Object.keys(errors);
+	if (control && control.errors) {
+		const errors = control.errors;
+		const errorKeys = Object.keys(errors);
 
-			if (errorKeys.length > 0) {
-				switch (errorKeys[0]) {
-					case "required":
-						return `${name} is required.`;
-					case "pattern":
-						return `${name} has an invalid format.`;
-					case "min":
-						return `${name} must be at least ${errors["min"].min}.`;
-					case "minlength":
-						return `${name} must be at least ${errors["minlength"].requiredLength}.`;
-					case "maxlength":
-						return `${name} should not exceed ${errors["maxlength"].requiredLength} characters.`;
-					default:
-						return `${name} has an error.`;
-				}
+		if (errorKeys.length > 0) {
+			switch (errorKeys[0]) {
+				case "required":
+					return `${name} is required.`;
+				case "pattern":
+					if (controlName === 'code') return 'Code must contain only uppercase letters, numbers, and hyphens (3-20 characters)';
+					if (controlName === 'quantity') return 'Quantity must be a valid number';
+					return `${name} has an invalid format.`;
+				case "min":
+					if (controlName === 'costPrice' || controlName === 'sellingPrice') return `${name} must be greater than 0`;
+					return `${name} must be at least ${errors["min"].min}.`;
+				case "minlength":
+					return `${name} must be at least ${errors["minlength"].requiredLength} characters long.`;
+				case "maxlength":
+					return `${name} should not exceed ${errors["maxlength"].requiredLength} characters.`;
+				default:
+					return `${name} has an error.`;
 			}
 		}
-
-		return "";
-		
 	}
+
+	return "";
+}
 	isFieldInvalidAndTouched(fieldName: string): boolean {
   const field = this.productForm.get(fieldName);
   return !!(field && field.invalid && (field.dirty || field.touched));

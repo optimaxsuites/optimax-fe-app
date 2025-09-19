@@ -13,7 +13,9 @@ import { HotelCheckoutComponent } from '../ui/view/hotel-checkout/hotel-checkout
 import { RefundComponent } from '../ui/view/refund/refund/refund.component';
 import { PosStoreComponent } from '../ui/view/pos-store/pos-store.component';
 import { PermissionGuard } from '../ui/permission/permission.guard';
-import { ProductDetailsComponent } from '../ui/view/pos-store/product-details/product-details.component';
+import { StoreCheckoutComponent } from '../ui/view/pos-store/store-checkout/store-checkout.component';
+import { OrderConfirmationComponent } from '../ui/view/pos-store/order-confirmation/order-confirmation.component';
+// import { ProductDetailsComponent } from '../ui/view/pos-store/product-details/product-details.component';
 
 const routes: Routes = [
   {
@@ -97,20 +99,43 @@ const routes: Routes = [
     canActivate: [PermissionGuard],
       data: { appCode: ['HOP_ROOM'] }
   },
-  {
-    path: 'store/:uuid',
-    component: PosStoreComponent,
-  },
-  {
-    path: 'store/:uuid',
-    component: PosStoreComponent,
-    children: [
-      {
-        path: 'product-details/:id',
-        component: ProductDetailsComponent,
-      },
-    ],
-  },
+  // {
+  //   path: 'store/:uuid',
+  //   component: PosStoreComponent,
+  // },
+  // {
+  //   path: 'store/store-checkout',
+  //   component: StoreCheckoutComponent,
+  // },
+  // {
+  //   path: 'store/:uuid',
+  //   component: PosStoreComponent,
+    
+  //   children: [
+  //     {
+  //       path: 'product-details/:id',
+  //       component: ProductDetailsComponent,
+  //     },
+  //   ],
+  // },
+
+{
+  path: 'store/:uuid',
+  children: [
+    {
+      path: '',
+      component: PosStoreComponent,
+    },
+    {
+      path: 'checkout',
+      component: StoreCheckoutComponent,
+    },
+    {
+      path: 'order-confirmation/:id',
+      component: OrderConfirmationComponent,
+    },
+  ]
+}
 ];
 
 @NgModule({
