@@ -28,7 +28,7 @@ export class GeneralSettingsService {
   // Method to update user data using POST
   updateUserPrimaryInfo(userId: number, userData: any): Observable<any> {
     const url = this.userUpdateApiUrl; 
-    const dataToSend = { ...userData, userid: userId };
+    const dataToSend = { ...userData };
     return this.http.post<any>(url, dataToSend).pipe(
       catchError(this.handleError)
     );

@@ -132,7 +132,7 @@
         <input type="radio" name="selectedPlan" 
                [(ngModel)]="selectedPlan" [value]="plan" class="mr-3" />
         <div>
-          <b>{{ plan.name | uppercase }}</b> – ₦{{ plan.price }} / {{ plan.duration }} month
+          <b>{{ plan.name | uppercase }}</b> – ₦{{ plan.monthlyPrice }} / {{ plan.duration }} month
           <p class="text-sm text-gray-600">{{ plan.description }}</p>
         </div>
       </label>

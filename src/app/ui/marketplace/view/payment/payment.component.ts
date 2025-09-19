@@ -53,14 +53,14 @@ proceedToPay() {
   console.log('Paying for:', this.selectedPlan, this.isYearly ? 'Yearly' : 'Monthly');
 
   const amount = !this.isYearly
-    ? this.selectedPlan.price
-    : this.selectedPlan.price * 11; 
+    ? this.selectedPlan.monthlyPrice
+    : this.selectedPlan.yearlyPrice 
 
   const order = {
     moduleId: this.module.id,
     email: this.email,
     planId: this.selectedPlan.id,
-    status: "PENDING",
+    status: "ACTIVE",
     paymentStatus: "PENDING",
     amount: amount,
     currency: "NGN",

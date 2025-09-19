@@ -42,7 +42,7 @@
       
       <!-- Price (switch monthly/yearly) -->
       <p class="text-xl font-bold mb-2">
-        ₦{{ isYearly ? (plan.price * 11) : plan.price }}
+        ₦{{ isYearly ? plan.yearlyPrice : plan.monthlyPrice }}
         <span class="text-sm text-gray-500">/ {{ isYearly ? 'year' : 'month' }}</span>
       </p>
 
@@ -61,7 +61,7 @@
     <button (click)="proceedToPay()" 
             [disabled]="!selectedPlan"
             class="bg-customGreen text-white px-6 py-3 rounded-lg shadow hover:bg-green-600">
-      Proceed to Pay ₦{{ isYearly ? (selectedPlan?.price * 11) : selectedPlan?.price }}
+      Proceed to Pay ₦{{ isYearly ? selectedPlan?.yearlyPrice : selectedPlan?.monthlyPrice }}
     </button>
   </div>
 

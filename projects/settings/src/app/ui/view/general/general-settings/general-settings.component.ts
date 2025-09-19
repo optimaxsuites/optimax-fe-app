@@ -50,6 +50,7 @@ export class GeneralSettingsComponent implements OnInit {
   ];
 
   settings = ["Profile", "Security/privacy"];
+  storedUserId: string = '';
 
   private actualUserId: number | null = null;
 
@@ -77,10 +78,10 @@ export class GeneralSettingsComponent implements OnInit {
       timeZone: new FormControl({ value: '', disabled: true }),
     });
 
-    const storedUserId = sessionStorage.getItem('userid');
+    this.storedUserId = sessionStorage.getItem('userid') || '';
 
-    if (storedUserId) {
-      this.fetchUserData(+storedUserId);
+    if (this.storedUserId) {
+      this.fetchUserData(+this.storedUserId);
     } else {
       console.error('User ID not found in session. Cannot fetch user data.');
     }
@@ -91,7 +92,7 @@ export class GeneralSettingsComponent implements OnInit {
       next: (data) => {
         if (data.id) {
           this.actualUserId = data.id;
-          sessionStorage.setItem('userid', data.id.toString()); 
+          // sessionStorage.setItem('userid', data.id.toString()); 
         }
 
         this.form.patchValue({
@@ -103,7 +104,7 @@ export class GeneralSettingsComponent implements OnInit {
           city: data.city,
           postalCode: data.postalCode,
           industry: data.industry,
-          companyName: data.fullname,
+          companyName: data.companyName,
           clientType: data.clientType,
           bio: data.bio,
           currency: data.currency,
@@ -176,7 +177,12 @@ export class GeneralSettingsComponent implements OnInit {
       if (this.actualUserId) {
         const updatedData = this.form.getRawValue(); 
 
-        this.generalSettingsService.updateUserPrimaryInfo(this.actualUserId, updatedData).subscribe({
+        const data = {
+          id: this.actualUserId,
+          ...updatedData
+        }
+
+        this.generalSettingsService.updateUserPrimaryInfo(+this.storedUserId, data).subscribe({
           next: (response) => {
             console.log('Update successful!', response);
             this.toggleEditMode(); 
