@@ -181,7 +181,7 @@ export class FinanceReportComponent implements OnInit {
         height: 350,
         fontFamily: 'Inter, sans-serif',
         toolbar: { show: false },
-        animations: { enabled: true, easing: 'easeinout', speed: 800, animateGradually: { enabled: true, delay: 150 }, dynamicAnimation: { enabled: true, speed: 350 } }
+        // animations: { enabled: true, easing: 'easeinout', speed: 800, animateGradually: { enabled: true, delay: 150 }, dynamicAnimation: { enabled: true, speed: 350 } }
       },
       colors: ['#3B82F6'],
       plotOptions: { bar: { horizontal: false, columnWidth: '55%', borderRadius: 5, dataLabels: { position: 'top' } } },
@@ -208,7 +208,7 @@ export class FinanceReportComponent implements OnInit {
         height: 350,
         fontFamily: 'Inter, sans-serif',
         toolbar: { show: false },
-        animations: { enabled: true, easing: 'easeinout', speed: 800, animateGradually: { enabled: true, delay: 150 }, dynamicAnimation: { enabled: true, speed: 350 } }
+        // animations: { enabled: true, easing: 'easeinout', speed: 800, animateGradually: { enabled: true, delay: 150 }, dynamicAnimation: { enabled: true, speed: 350 } }
       },
       colors: branches.map((b: BranchPerformanceDTO) => (b.revenueGrowthPercent || 0) >= 0 ? '#10B981' : '#EF4444'),
       plotOptions: { bar: { horizontal: false, columnWidth: '55%', borderRadius: 5, distributed: true } },
@@ -252,7 +252,9 @@ export class FinanceReportComponent implements OnInit {
       tooltip: {
         shared: true, intersect: false, y: { formatter: (val: number, { seriesIndex }: any) => { return seriesIndex === 0 ? this.formatCurrency(val) : val.toLocaleString(); } }
       },
-      legend: { position: 'top', horizontalAlign: 'left', fontSize: '14px', fontWeight: 500, markers: { width: 12, height: 12, radius: 12 } },
+      legend: { position: 'top', horizontalAlign: 'left', fontSize: '14px', fontWeight: 500, 
+        // markers: { width: 12, height: 12, radius: 12 } 
+      },
       grid: { borderColor: '#E2E8F0', strokeDashArray: 4 }
     };
   }

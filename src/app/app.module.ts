@@ -136,11 +136,49 @@ import { StoreHeaderComponent } from './ui/view/pos-store/store-header/store-hea
 import { UpdateStockComponent } from './ui/view/ingredient/update-stock/update-stock.component';
 // import { OrderConfirmationComponent } from './ui/view/pos-store/order-confirmation/order-confirmation.component';
 import { OrderHistoryComponent } from './ui/view/pos-store/order-history/order-history.component';
+import { DBConfig, NgxIndexedDBModule } from 'ngx-indexed-db';
 // import { StoreCheckoutComponent } from './ui/view/pos-store/store-checkout/store-checkout.component';
 // import { AuthModalComponent } from './ui/view/pos-store/auth-modal/auth-modal.component';
 export function appInitializerFactory(appInitService: AppInitService) {
   return () => appInitService.init();
 }
+
+const dbConfig: DBConfig = {
+  name: 'posDB',
+  version: 1,
+  objectStoresMeta: [
+    {
+      store: 'products',
+      storeConfig: { keyPath: 'id', autoIncrement: false },
+      storeSchema: [
+        { name: 'name', keypath: 'name', options: { unique: false } },
+        { name: 'price', keypath: 'price', options: { unique: false } },
+        { name: 'quantity', keypath: 'quantity', options: { unique: false } },
+        { name: 'sku', keypath: 'sku', options: { unique: false } },
+        { name: 'code', keypath: 'code', options: { unique: false } },
+        { name: 'category', keypath: 'category', options: { unique: false } },
+        { name: 'isSynced', keypath: 'isSynced', options: { unique: false } }
+      ]
+    },
+     {
+      store: 'transactions',
+      storeConfig: { keyPath: 'id', autoIncrement: false },
+      storeSchema: [
+        { name: 'orderId', keypath: 'orderId', options: { unique: false } },
+        { name: 'items', keypath: 'items', options: { unique: false } },
+        { name: 'total', keypath: 'total', options: { unique: false } },
+        { name: 'paymentMethod', keypath: 'payment.method', options: { unique: false } },
+        { name: 'paymentStatus', keypath: 'payment.status', options: { unique: false } },
+        { name: 'customerName', keypath: 'customer.name', options: { unique: false } },
+        { name: 'customerPhone', keypath: 'customer.phone', options: { unique: false } },
+        { name: 'isSynced', keypath: 'isSynced', options: { unique: false } },
+        { name: 'createdAt', keypath: 'createdAt', options: { unique: false } },
+        { name: 'syncedAt', keypath: 'syncedAt', options: { unique: false } }
+      ]
+    }
+  ]
+};
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -214,7 +252,7 @@ export function appInitializerFactory(appInitService: AppInitService) {
     //CheckoutKitchenComponent,
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
     UserModule,
     AppRoutingModule,
     CheckboxModule,
@@ -271,9 +309,11 @@ export function appInitializerFactory(appInitService: AppInitService) {
     ProgressSpinnerModule,
     SelectButtonModule,
 
-    BrowserAnimationsModule,
+    // BrowserAnimationsModule,
 
     TagModule,
+    NgxIndexedDBModule.forRoot(dbConfig)
+
   ],
   exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],
   providers: [
@@ -296,6 +336,7 @@ export function appInitializerFactory(appInitService: AppInitService) {
     JwtHelperService,
     provideHttpClient(withInterceptorsFromDi()),
     MessageService,
+
   ],
   bootstrap: [AppComponent],
 })

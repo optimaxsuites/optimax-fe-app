@@ -32,6 +32,7 @@ import {
   HttpHeaders,
   HttpErrorResponse,
 } from "@angular/common/http";
+import { OfflineService } from "./offline.service";
 export interface BranchDTO {
   id: number;
   name: string;
@@ -108,7 +109,8 @@ export class MetadataService {
     private posService: PosServiceService,
     private checkoutService: CheckoutService,
     private orderService: OrderService,
-    private http: HttpClient
+    private http: HttpClient,
+    private offlineService: OfflineService 
   ) {}
   async setSelectedBranch(id: number) {
     this.selectedBranchIdSubject.next(id);
@@ -120,6 +122,14 @@ export class MetadataService {
 
   async fetchMetaData(): Promise<any> {
     console.log("🔄 [MetadataService] Starting metadata fetch");
+    if (!navigator.onLine) {
+      console.warn("⚠️ Offline. Loading products from local cache...");
+      const offlineProducts = await firstValueFrom(this.offlineService.getProducts());
+      this.productSubject.next(offlineProducts);
+      this.enrichedProductSubject.next(offlineProducts);
+      return true;
+    }
+
 
     const token = sessionStorage.getItem("Token");
     if (!token) {
@@ -181,6 +191,17 @@ export class MetadataService {
       }
     });
 
+      if (data.products && data.products.length > 0) {
+      for (const product of data.products) {
+        await this.offlineService.addProduct({
+          ...product,
+          isSynced: true,
+        });
+      }
+      console.log("📦 Products cached locally in IndexedDB");
+    }
+
+
     return true;
   }
 
@@ -201,122 +222,6 @@ export class MetadataService {
     );
   }
 
-  getSalesReport(): Observable<SalesReportDTO> {
-    const branchSales: BranchSalesDTO[] = this.generateBranchSales();
-    const topProducts: TopProductDTO[] = this.generateTopProducts();
-    const paymentBreakdown: PaymentMethodSummaryDTO[] =
-      this.generatePaymentMethodBreakdown();
-    const salesBreakdown: SalesReportBreakdownDTO[] =
-      this.generateSalesBreakdown();
-
-    // Calculate totals
-    const totalRevenue = branchSales.reduce(
-      (sum, branch) => sum + branch.totalRevenue,
-      0
-    );
-    const totalTransactions = branchSales.reduce(
-      (sum, branch) => sum + branch.totalTransactions,
-      0
-    );
-    const averageOrderValue = totalRevenue / totalTransactions;
-    const totalDiscounts = salesBreakdown.reduce(
-      (sum, item) => sum + item.discounts,
-      0
-    );
-
-    const salesReport: SalesReportDTO = {
-      totalRevenue,
-      totalTransactions,
-      averageOrderValue,
-      totalDiscounts,
-      totalSalesPerBranch: branchSales,
-      topSellingProducts: topProducts,
-      paymentMethodBreakdown: paymentBreakdown,
-      breakdown: salesBreakdown,
-    };
-
-    return of(salesReport);
-  }
-
-  private generateBranchSales(): BranchSalesDTO[] {
-    return this.branches.map((branch: any) => {
-      const totalTransactions = this.getRandomInt(100, 500);
-      const totalRevenue = this.getRandomInt(10000, 50000);
-      return {
-        branch,
-        totalRevenue,
-        totalTransactions,
-        averageOrderValue: totalRevenue / totalTransactions,
-      };
-    });
-  }
-
-  private generateTopProducts(): TopProductDTO[] {
-    return this.products
-      .slice(0, 7)
-      .map((product: { price: number }) => {
-        const quantitySold = this.getRandomInt(20, 200);
-        return {
-          product,
-          quantitySold,
-          revenue: quantitySold * product.price,
-        };
-      })
-      .sort(
-        (a: { revenue: number }, b: { revenue: number }) =>
-          b.revenue - a.revenue
-      );
-  }
-
-  private generatePaymentMethodBreakdown(): PaymentMethodSummaryDTO[] {
-    return this.paymentMethods.map((method: any) => {
-      const transactions = this.getRandomInt(50, 300);
-      const revenue = this.getRandomInt(5000, 30000);
-      return {
-        paymentMethod: method,
-        transactions,
-        revenue,
-      };
-    });
-  }
-
-  private generateSalesBreakdown(): SalesReportBreakdownDTO[] {
-    const breakdown: SalesReportBreakdownDTO[] = [];
-
-    // Generate data for the last 14 days
-    const today = new Date();
-
-    for (let i = 13; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
-
-      // For each branch, create 1-3 entries per day
-      this.branches.forEach((branch: any) => {
-        const entriesCount = this.getRandomInt(1, 4);
-
-        for (let j = 0; j < entriesCount; j++) {
-          const transactions = this.getRandomInt(5, 30);
-          const revenue = this.getRandomInt(500, 3000);
-          const discounts = revenue * this.getRandomFloat(0.05, 0.15);
-
-          breakdown.push({
-            date: new Date(date),
-            branch,
-            cashier: this.users[this.getRandomInt(0, this.users.length)],
-            paymentMethod:
-              this.paymentMethods[
-                this.getRandomInt(0, this.paymentMethods.length)
-              ],
-            transactions,
-            revenue,
-            discounts,
-          });
-        }
-      });
-    }
-
-    return breakdown;
-  }
 
   private getRandomInt(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min)) + min;
