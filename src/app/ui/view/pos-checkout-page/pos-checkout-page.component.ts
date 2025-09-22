@@ -36,8 +36,7 @@ import { PaymentServiceService } from "../../service/payment-service.service";
 })
 export class PosCheckoutPageComponent implements OnInit, Business {
   // Register State Management
-  showOpenRegisterModal = true;
-  showCloseRegisterModal = false;
+  isNotePresent = false;
   openingAmount: number = 0;
   closingAmount: number | null = null;
   isRegisterOpened = false;
@@ -92,6 +91,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   isAllPaymentsModalOpen = false;
   isCategorySidebarOpen = false;
   selectedPaymentModes: PaymentModes[] = [];
+  noteText: any;
 
   constructor(
     private router: Router,
@@ -111,55 +111,62 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   }
 
   ngOnInit() {
-  // Register initialization
-  this.checkRegisterState();
-
-  const storedOpeningAmount = localStorage.getItem("openingAmount");
-  this.openingAmount = storedOpeningAmount ? Number(storedOpeningAmount) : 0;
-
-  if (this.navigationState?.order) {
-    this.loadOrder(this.navigationState.order);
-  }
-  if (this.navigationState?.cart) {
-    const cart = this.navigationState.cart;
-    this.cartItems = [...cart.cartItems];
-    this.total = cart.total;
-    this.displayedDiscount = cart.discount;
-    this.tax = cart.tax;
-    this.subtotal = cart.subtotal;
-  }
-  
-  // Check for the paymentSuccess flag from the router state
-  if (this.router.getCurrentNavigation()?.extras.state?.["paymentSuccess"]) {
-    this.clearCart();
-    this.router.navigate([], { replaceUrl: true }); // Clear the state from the URL
-  }
-  
-  this.getProducts();
-  this.loadCategory();
-}
-
-// Add a new method to clear the cart
-clearCart() {
-  this.cartItems = [];
-  this.subtotal = 0;
-  this.tax = 0;
-  this.discount = 0;
-  this.total = 0;
-  this.orderName = '';
-  // You may also want to reset other related properties, like discountValue
-  this.discountValue = 0;
-  this.displayedDiscount = 0;
-}
-
-  // New Register Methods
-  checkRegisterState() {
-    const registerState = localStorage.getItem("registerState");
-    if (registerState) {
-      this.isRegisterOpened = JSON.parse(registerState);
-      this.showOpenRegisterModal = !this.isRegisterOpened;
+    this.checkAndResetNotes();
+    const storedOpeningAmount = localStorage.getItem("openingAmount");
+    this.openingAmount = storedOpeningAmount ? Number(storedOpeningAmount) : 0;
+    
+    // Check for a saved cart from a previous navigation
+    const savedState = localStorage.getItem("navigationState");
+    if (savedState) {
+        const parsedState = JSON.parse(savedState);
+        if (parsedState.cart) {
+            this.cartItems = [...parsedState.cart.cartItems];
+            this.total = parsedState.cart.total;
+            this.displayedDiscount = parsedState.cart.discount;
+            this.tax = parsedState.cart.tax;
+            this.subtotal = parsedState.cart.subtotal;
+        }
+        // Clear the state from local storage so it's not loaded again on a fresh session
+        localStorage.removeItem("navigationState");
+    } else if (this.navigationState?.order) {
+        // This is for navigating from the orders page
+        this.loadOrder(this.navigationState.order);
+    } else if (this.navigationState?.cart) {
+        // This handles cases where the cart is passed via router state
+        const cart = this.navigationState.cart;
+        this.cartItems = [...cart.cartItems];
+        this.total = cart.total;
+        this.displayedDiscount = cart.discount;
+        this.tax = cart.tax;
+        this.subtotal = cart.subtotal;
     }
+    
+    // Check for the paymentSuccess flag from the router state
+    if (this.router.getCurrentNavigation()?.extras.state?.["paymentSuccess"]) {
+      this.clearCart();
+      this.router.navigate([], { replaceUrl: true }); // Clear the state from the URL
+    }
+    
+    this.getProducts();
+    this.loadCategory();
   }
+
+  // The clearCart method should also remove the localStorage item to avoid issues
+  clearCart() {
+    this.cartItems = [];
+    this.subtotal = 0;
+    this.tax = 0;
+    this.discount = 0;
+    this.total = 0;
+    this.orderName = '';
+    this.discountValue = 0;
+    this.displayedDiscount = 0;
+    localStorage.removeItem("navigationState");
+  }
+  // New Register Methods
+  // checkRegisterState() {
+    
+  // }
   calculateOpeningTotal(): void {
     // Calculate the total from cash denominations
     const denomTotal = Object.entries(this.denominationCounts).reduce(
@@ -180,11 +187,26 @@ clearCart() {
     // Enable or disable the confirm button
     this.canFinalize = !this.errorMessage;
   }
+  checkAndResetNotes() {
+  const noteData = localStorage.getItem('orderNote');
+  if (noteData) {
+    const { note, timestamp } = JSON.parse(noteData);
+    const savedTime = new Date(timestamp).getTime();
+    const currentTime = new Date().getTime();
+    const twentyFourHours = 24 * 60 * 60 * 1000;
 
+    if (currentTime - savedTime > twentyFourHours) {
+      localStorage.removeItem('orderNote');
+      this.isNotePresent = false;
+    } else {
+      this.isNotePresent = true;
+    }
+  }
+}
   confirmOpeningRegister(): void {
-    this.calculateOpeningTotal(); // Ensure the opening total is calculated
+    this.calculateOpeningTotal(); 
     if (this.errorMessage) {
-      return; // Prevent confirmation if there is an error
+      return; 
     }
 
     if (this.openingAmount !== null && this.openingAmount >= 0) {
@@ -197,11 +219,10 @@ clearCart() {
           key: "tl",
           life: 3000,
         });
-        return; // Prevent the register from opening
+        return;
       }
 
       this.isRegisterOpened = true;
-      this.showOpenRegisterModal = false;
       localStorage.setItem("registerState", "true");
       localStorage.setItem("openingAmount", this.openingAmount.toString());
     }
@@ -215,7 +236,7 @@ clearCart() {
     if (this.closingAmount !== null) {
       this.closingTotal = this.calculateClosingTotal();
       this.isRegisterOpened = false;
-      this.showCloseRegisterModal = false;
+
 
       // Pass openingAmount to the closing modal
       console.log("Opening Amount:", this.openingAmount);
@@ -685,8 +706,20 @@ this.checkoutService.saveOrder(pausedCart as any).subscribe({
     this.registerService.triggerCloseRegister();
   }
   toggleNotesModal() {
-    this.isNotesModalOpen = !this.isNotesModalOpen;
+  this.isNotesModalOpen = !this.isNotesModalOpen;
+  if (!this.isNotesModalOpen) {
+    
+    const noteContent = this.noteText;
+    if (noteContent) {
+      const noteData = {
+        note: noteContent,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem('orderNote', JSON.stringify(noteData));
+      this.isNotePresent = true;
+    }
   }
+}
   toggleDeliveryModal() {
     this.isDeliveryModalOpen = !this.isDeliveryModalOpen;
   }

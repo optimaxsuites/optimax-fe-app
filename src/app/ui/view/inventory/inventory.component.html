@@ -18,7 +18,7 @@
           [(ngModel)]="selectedCategories"
           [multiple]="true"
           placeholder="Categories"
-          (change)="filterProductsByCategory()"
+          (ngModelChange)="applyFilters()"
         >
         </ng-select>
 
