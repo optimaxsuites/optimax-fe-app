@@ -90,7 +90,7 @@ export class StoreCheckoutComponent implements OnInit {
         const currentUuid = this.route.snapshot.paramMap.get('uuid');
         
         // Navigate to order confirmation with the new route
-        this.router.navigate(['/store', currentUuid, 'order-confirmation', response.orderId]);
+        this.router.navigate(['user/checkout/store', currentUuid, 'order-confirmation', response.orderId]);
       },
       error: (error: any) => {
         console.error('Order placement failed:', error);
@@ -100,6 +100,6 @@ export class StoreCheckoutComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/pos-store']);
+    this.router.navigate(['user/checkout/store/3u2eh3n4n32349012ek23jkr39r23']);
   }
 }

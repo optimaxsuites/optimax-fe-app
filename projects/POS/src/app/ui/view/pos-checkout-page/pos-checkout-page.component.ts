@@ -136,7 +136,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   }
   
   this.getProducts();
-  this.loadCategory();
+  // this.loadCategory();
 }
 
 // Add a new method to clear the cart

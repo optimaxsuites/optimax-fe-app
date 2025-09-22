@@ -32,6 +32,7 @@ import {
   HttpHeaders,
   HttpErrorResponse,
 } from "@angular/common/http";
+import { OfflineService } from "./offline.service";
 export interface BranchDTO {
   id: number;
   name: string;
@@ -109,6 +110,7 @@ export class MetadataService {
     private checkoutService: CheckoutService,
     private orderService: OrderService,
     private http: HttpClient,
+    private offlineService: OfflineService
    
   ) {}
   async setSelectedBranch(id: number) {
@@ -121,13 +123,20 @@ export class MetadataService {
 
   async fetchMetaData(): Promise<any> {
     console.log("🔄 [MetadataService] Starting metadata fetch");
-    // if (!navigator.onLine) {
-    //   console.warn("⚠️ Offline. Loading products from local cache...");
-    //   const offlineProducts = await firstValueFrom(this.offlineService.getProducts());
-    //   this.productSubject.next(offlineProducts);
-    //   this.enrichedProductSubject.next(offlineProducts);
-    //   return true;
-    // }
+    if (!navigator.onLine) {
+      console.warn("⚠️ Offline. Loading products from local cache...");
+      // const offlineProducts = await firstValueFrom(this.offlineService.getProducts());
+      // this.productSubject.next(offlineProducts);
+      // this.enrichedProductSubject.next(offlineProducts);
+
+      // console.log(offlineProducts)
+
+      this.offlineService.getProducts().subscribe((peoples) => {
+        console.log(peoples);
+      });
+;
+      return true;
+    }
 
 
     const token = sessionStorage.getItem("Token");
@@ -189,16 +198,17 @@ export class MetadataService {
         );
       }
     });
+      if (data.products && data.products.length > 0) {
+     console.log("data", data)
 
-    //   if (data.products && data.products.length > 0) {
-    //   for (const product of data.products) {
-    //     await this.offlineService.addProduct({
-    //       ...product,
-    //       isSynced: true,
-    //     });
-    //   }
-    //   console.log("📦 Products cached locally in IndexedDB");
-    // }
+      for (const product of data.products) {
+        await this.offlineService.addProduct({
+          ...product,
+          isSynced: true,
+        });
+      }
+      console.log("📦 Products cached locally in IndexedDB");
+    }
 
 
     return true;

@@ -437,6 +437,6 @@ export class PosStoreComponent implements OnInit {
 navigateToCheckout(): void {
   const currentUuid = this.route.snapshot.paramMap.get('uuid');
   this.cartService.setCart(this.cartProducts(), this.convertedCartProducts().subTotal);
-  this.router.navigate(['/store', currentUuid, 'checkout']);
+  this.router.navigate(['user/checkout/store', currentUuid, 'checkout']);
 }
 }
