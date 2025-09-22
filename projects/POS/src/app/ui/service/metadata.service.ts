@@ -125,15 +125,15 @@ export class MetadataService {
     console.log("🔄 [MetadataService] Starting metadata fetch");
     if (!navigator.onLine) {
       console.warn("⚠️ Offline. Loading products from local cache...");
-      // const offlineProducts = await firstValueFrom(this.offlineService.getProducts());
-      // this.productSubject.next(offlineProducts);
-      // this.enrichedProductSubject.next(offlineProducts);
+      const offlineProducts = await firstValueFrom(this.offlineService.getProducts());
+      this.productSubject.next(offlineProducts);
+      this.enrichedProductSubject.next(offlineProducts);
 
-      // console.log(offlineProducts)
+      console.log(offlineProducts)
 
-      this.offlineService.getProducts().subscribe((peoples) => {
-        console.log(peoples);
-      });
+      // this.offlineService.getProducts().subscribe((peoples) => {
+      //   console.log(peoples);
+      // });
 ;
       return true;
     }

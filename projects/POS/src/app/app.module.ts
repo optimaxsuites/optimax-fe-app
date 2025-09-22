@@ -145,18 +145,20 @@ export function appInitializerFactory(appInitService: AppInitService) {
 
 const dbConfig: DBConfig = {
   name: 'posDB',
-  version: 1,
+  version: 2,
   objectStoresMeta: [
     {
       store: 'products',
       storeConfig: { keyPath: 'id', autoIncrement: false },
-      storeSchema: [
+        storeSchema: [
         { name: 'name', keypath: 'name', options: { unique: false } },
-        { name: 'price', keypath: 'price', options: { unique: false } },
-        { name: 'quantity', keypath: 'quantity', options: { unique: false } },
         { name: 'sku', keypath: 'sku', options: { unique: false } },
         { name: 'code', keypath: 'code', options: { unique: false } },
-        { name: 'category', keypath: 'category', options: { unique: false } },
+        { name: 'sellingPrice', keypath: 'sellingPrice', options: { unique: false } },
+        { name: 'purchasePrice', keypath: 'purchasePrice', options: { unique: false } },
+        { name: 'quantity', keypath: 'quantity', options: { unique: false } },
+        { name: 'category', keypath: 'productCategory.name', options: { unique: false } },
+        { name: 'supplier', keypath: 'supplier.name', options: { unique: false } },
         { name: 'isSynced', keypath: 'isSynced', options: { unique: false } }
       ]
     },

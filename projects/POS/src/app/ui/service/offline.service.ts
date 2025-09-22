@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { NgxIndexedDBService } from 'ngx-indexed-db';
-import { map, switchMap } from 'rxjs';
+import { firstValueFrom, map, switchMap } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -11,21 +11,38 @@ export class OfflineService {
 
    constructor(private dbService: NgxIndexedDBService) {}
 
-  // ✅ Save product locally
-  addProduct(product: any) {
-    console.log("incoming product", product);
-    return this.dbService.add('products', product);
+ async addProduct(product: any) {
+  const mappedProduct = {
+    id: product.id,
+    name: product.name,
+    sellingPrice: product.sellingPrice,
+    quantity: product.quantity,
+    sku: product.sku,
+    code: product.code,
+    category: product.productCategory?.name ?? '',
+    isSynced: product.isSynced
+  };
+
+  try {
+    const result = this.dbService.add('products', mappedProduct)
+    console.log('Saved product:', result);
+    return result;
+  } catch (err) {
+    console.error('Error saving product:', err);
+    throw err;
   }
+}
+
+
 
   getProducts() {
     return this.dbService.getAll('products')
   }
 
-  // ✅ Save offline transaction
   addTransaction(transaction: any) {
     const tx = {
       ...transaction,
-      id: uuidv4(), // unique client ID
+      id: uuidv4(),
       createdAt: new Date(),
       isSynced: false
     };
