@@ -38,6 +38,7 @@ export class AppComponent implements OnInit{
   }
 
   async userLoginAction(): Promise<void> {
+    console.log("logginging in...");
     const loginDetails = {
       username: 'ayaobasheba',
       password: '123456',
@@ -55,6 +56,8 @@ export class AppComponent implements OnInit{
         .userLogin(loginDetails)
         .toPromise();
       this.loadInitParam(data);
+
+      console.log(data)
 
       if (data) {
         this.authenticationService.getUserPrimaryInfoById(data.id).subscribe(
