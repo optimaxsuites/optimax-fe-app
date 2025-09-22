@@ -7,22 +7,22 @@
 // import { StoreCartService } from '../../../service/store-cart.service';
 // import { StoreHeaderComponent } from '../store-header/store-header.component';
 
-@Component({
-  selector: 'app-product-details',
-  templateUrl: './product-details.component.html',
-  styleUrls: ['./product-details.component.scss'],
-  standalone: false
-})
-export class ProductDetailsComponent implements OnInit {
-getProductImage(arg0: ProductData) {
-throw new Error('Method not implemented.');
-}
-  product: ProductData | null = null;
-  quantity: number = 1;
-  selectedVariants: { [key: string]: string } = {};
-  storeUuid: string = '';
-  cartItemCount: number = 0;
-  isCartEmpty: boolean = true;
+// @Component({
+//   selector: 'app-product-details',
+//   templateUrl: './product-details.component.html',
+//   styleUrls: ['./product-details.component.scss'],
+//   standalone: false
+// })
+// export class ProductDetailsComponent implements OnInit {
+// getProductImage(arg0: ProductData) {
+// throw new Error('Method not implemented.');
+// }
+//   product: ProductData | null = null;
+//   quantity: number = 1;
+//   selectedVariants: { [key: string]: string } = {};
+//   storeUuid: string = '';
+//   cartItemCount: number = 0;
+//   isCartEmpty: boolean = true;
   
 //   variantGroups: { type: string; values: string[] }[] = [];
 //   selectedVariantType: string = '';
