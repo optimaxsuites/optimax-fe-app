@@ -598,18 +598,39 @@ clearCart() {
 
     console.log(pausedCart);
 
-    this.checkoutService.saveOrder(pausedCart as any).subscribe({
-      next: (data) => {
-        console.log(data);
-        this.messageService.add({
-          severity: "success",
-          summary: "Success",
-          detail: "Saved",
-          key: "tl",
-          life: 3000,
-        });
-      },
+this.checkoutService.saveOrder(pausedCart as any).subscribe({
+  next: (res: any) => {
+    if (res?.offline) {
+      this.messageService.add({
+        severity: "warn",
+        summary: "Offline",
+        detail: "Order saved locally. Will sync when online.",
+        key: "tl",
+        life: 3000,
+      });
+    } else {
+      this.messageService.add({
+        severity: "success",
+        summary: "Success",
+        detail: "Order saved online",
+        key: "tl",
+        life: 3000,
+      });
+    }
+  },
+  error: () => {
+    this.messageService.add({
+      severity: "error",
+      summary: "Error",
+      detail: "Could not save order",
+      key: "tl",
+      life: 3000,
     });
+  }
+});
+
+
+
 
     this.cartItems = [];
     this.orderName = "";
