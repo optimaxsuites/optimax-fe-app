@@ -1,31 +1,39 @@
 <div *ngIf="tableSection" class="flex flex-col w-full gap-14 p-6">
   <div class="gap-3 w-full flex justify-between items-center">
     <!-- `rotate-0` is used to set this as the container of any `fixed` position elements within it -->
+<div class="flex gap-3">
+ 
+  <ng-container *ngIf="categories.length > 0; else categorySkeleton">
+    <ng-select
+      [items]="categories"
+      bindLabel="name"
+      bindValue="id"
+      [(ngModel)]="selectedCategories"
+      [multiple]="true"
+      placeholder="Categories"
+      (change)="filterProductsByCategory()"
+    >
+    </ng-select>
+  </ng-container>
+  
+  <ng-template #categorySkeleton>
+    <div class="category-skeleton-container">
+      <p-skeleton width="150px" height="40px" borderRadius="6px"></p-skeleton>
+    </div>
+  </ng-template>
 
-    <div class="flex gap-3">
-          <ng-select
-          [items]="categories"
-          bindLabel="name"
-          bindValue="id"
-          [(ngModel)]="selectedCategories"
-          [multiple]="true"
-          placeholder="Categories"
-          (change)="filterProductsByCategory()"
-        >
-        </ng-select>
 
-        
-        <ng-select
-        *ngIf="superUser"
-        [items]="branches"
-        bindLabel="name"
-        bindValue="id"
-        placeholder="Branches"
-        [(ngModel)]="selectedBranch"
-        (ngModelChange)="metadataService.setSelectedBranch($event)"
-      >
-          </ng-select>
-        </div>
+  <ng-select
+    *ngIf="superUser"
+    [items]="branches"
+    bindLabel="name"
+    bindValue="id"
+    placeholder="Branches"
+    [(ngModel)]="selectedBranch"
+    (ngModelChange)="metadataService.setSelectedBranch($event)"
+  >
+  </ng-select>
+</div>
       
 
        <div class="w-1/2 flex gap-2">
@@ -249,28 +257,28 @@
       </ng-template>
     </p-table>
 
-    <div *ngIf="!tableSections" class="card-grid">
-      <ng-container *ngIf="isLoading | async; else productList">
-        <div
-          *ngFor="let i of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12]"
-          class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden"
-        >
-          <p-skeleton width="100%" height="15rem"></p-skeleton>
-          <div class="p-4">
-            <p-skeleton width="100%" height="50%" class="mb-3"></p-skeleton>
-            <p-skeleton width="100%" class="mb-2"></p-skeleton>
-            <p-skeleton width="100%" class="mb-2"></p-skeleton>
-          </div>
-        </div>
-      </ng-container>
-    
-      <ng-template #productList>
+   <div *ngIf="!tableSections" class="card-grid">
+  <ng-container *ngIf="(isLoading | async) || categoryLoading; else productList">
+    <div
+      *ngFor="let i of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]"
+      class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden"
+    >
+        <p-skeleton width="100%" height="15rem"></p-skeleton>
+      <div class="p-4">
+        <p-skeleton width="100%" height="50%" class="mb-3"></p-skeleton>
+        <p-skeleton width="100%" class="mb-2"></p-skeleton>
+        <p-skeleton width="100%" class="mb-2"></p-skeleton>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template #productList>
        
-<div 
-  *ngFor="let product of paginatedProducts" 
-  class="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col"
-  (click)="openViewProduct(product)"
->
+ <div 
+      *ngFor="let product of paginatedProducts" 
+      class="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col"
+      (click)="openViewProduct(product)"
+    >
   <div class="relative">
      <img
       [src]="product.imageUrl$"
@@ -464,10 +472,11 @@
 <app-modal
   *ngIf="configureBarcode"
   (close)="configureBarcode = false"
-  header="Configure Barcode"
+  header="Barcode for {{activeItem.name}}"
+  headerClass="text-lg font-semibold"
 >
   <div class="flex gap-3 mt-2 flex-col">
-    <div class="">
+    <!-- <div class="">
       <label for="type">Barcode Type</label>
       <ng-select
         [items]="barcodes"
@@ -478,28 +487,28 @@
         placeholder="Select branch"
       >
       </ng-select>
-    </div>
+    </div> -->
 
-    <div class="">
-      <label for="name">Quantity</label>
-      <p-inputGroup>
-        <input
-          class="name editInput"
-          type="number"
-          placeholder="1"
-          id="name"
-          [(ngModel)]="barcodeConfig.barcodeQuantity"
-        />
-        <p-inputGroupAddon
-          class="cursor-pointer bg-customBlue"
-          (click)="barcodeConfig.barcodeQuantity = activeItem.effectiveQuantity"
-        >
-          <p class="cursor-pointer bg-customBlue text-white text-center">
-            Effective Quantity
-          </p>
-        </p-inputGroupAddon>
-      </p-inputGroup>
-    </div>
+ <div class="">
+  <label for="name">Quantity</label>
+  <p-inputGroup>
+    <input
+      class="name editInput"
+      type="number"
+      placeholder="1"
+      id="name"
+      [(ngModel)]="barcodeConfig.barcodeQuantity"
+    />
+    <p-inputGroupAddon
+      class="cursor-pointer bg-customBlue"
+      (click)="barcodeConfig.barcodeQuantity = activeItem.quantity"
+    >
+      <p class="cursor-pointer bg-customBlue text-white text-center">
+        Quantity
+      </p>
+    </p-inputGroupAddon>
+  </p-inputGroup>
+</div>
     <div class="flex gap-3 items-center" *ngIf="activeItem.variants.length">
       <input
         class="name cursor-pointer"
@@ -512,13 +521,10 @@
 
     <!-- <svg id="barcode"></svg> -->
 
-    <div class="flex justify-between gap-10 my-5 items-center">
-      <button class="btn create-invoice-btn w-full" (click)="generateBarcode()">
-        Get PDF
-      </button>
-      <button class="btn create-invoice-btn w-full" (click)="printBarcode()">
-        Print
-      </button>
-    </div>
+<div class="flex justify-center my-5 items-center">
+  <button class="btn create-invoice-btn px-8 py-2" (click)="printBarcode()">
+    Print
+  </button>
+</div>
   </div>
 </app-modal>
