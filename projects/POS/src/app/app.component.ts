@@ -3,6 +3,8 @@ import { AuthenticationService } from './ui/sharedComponent/service/auth-service
 import { IndustryDataService } from './ui/service/industry-data.service';
 import { MetadataService } from './ui/service/metadata.service';
 import { RegisterService } from './ui/service/register.service';
+import { OfflineService } from './ui/service/offline.service';
+import { BehaviorSubject, Observable } from 'rxjs';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -15,14 +17,17 @@ export class AppComponent implements OnInit{
   openingAmount: number = 0;
   closingAmount: number | null = null;
   finalizedRegisterData: any = null;
+  // isOffline: boolean = !navigator.onLine;
+
 
   constructor(
     private authenticationService: AuthenticationService,
     private industryDataService: IndustryDataService,
     private metadataService: MetadataService,
-    private registerService: RegisterService
+    private registerService: RegisterService,
   ) {
     this.userLoginAction();
+  
   }
 
   ngOnInit(): void {
@@ -33,6 +38,8 @@ export class AppComponent implements OnInit{
       this.openingAmount = storedOpeningAmount ? Number(storedOpeningAmount) : 0;
       this.showCloseRegisterModal = true;
     });
+
+
 
  
   }

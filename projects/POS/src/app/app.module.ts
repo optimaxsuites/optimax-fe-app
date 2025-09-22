@@ -254,7 +254,7 @@ const dbConfig: DBConfig = {
     //CheckoutKitchenComponent,
   ],
   imports: [
-    BrowserModule,
+    // BrowserModule,
     UserModule,
     AppRoutingModule,
     CheckboxModule,
@@ -311,10 +311,10 @@ const dbConfig: DBConfig = {
     ProgressSpinnerModule,
     SelectButtonModule,
 
-    BrowserAnimationsModule,
+    // BrowserAnimationsModule,
 
     TagModule,
-    NgxIndexedDBModule.forRoot(dbConfig)
+    // NgxIndexedDBModule.forRoot(dbConfig)
   ],
   exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],
   providers: [

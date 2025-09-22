@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { NgxIndexedDBService } from 'ngx-indexed-db';
-import { firstValueFrom, map, switchMap } from 'rxjs';
+import { BehaviorSubject, firstValueFrom, map, Observable, switchMap } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -9,26 +9,35 @@ import { v4 as uuidv4 } from 'uuid';
 })
 export class OfflineService {
 
+
    constructor(private dbService: NgxIndexedDBService) {}
 
+//  isOffline(){
+//     return navigator.onLine
+//  }
+
  async addProduct(product: any) {
-  const mappedProduct = {
-    id: product.id,
-    name: product.name,
-    sellingPrice: product.sellingPrice,
-    quantity: product.quantity,
-    sku: product.sku,
-    code: product.code,
-    category: product.productCategory?.name ?? '',
-    isSynced: product.isSynced
-  };
+console.log("caching offline")
 
   try {
-    const result = this.dbService.add('products', mappedProduct)
-    console.log('Saved product:', result);
-    return result;
+  return this.dbService.bulkAdd('products', product).subscribe((result) => {
+       return  console.log('result: ', result);
+      });
   } catch (err) {
     console.error('Error saving product:', err);
+    throw err;
+  }
+}
+
+ async addCategories(category: any) {
+console.log("caching offline")
+
+  try {
+  return this.dbService.bulkAdd('categories', category).subscribe((result) => {
+       return  console.log('result: ', result);
+      });
+  } catch (err) {
+    console.error('Error saving categories:', err);
     throw err;
   }
 }
@@ -38,6 +47,26 @@ export class OfflineService {
   getProducts() {
     return this.dbService.getAll('products')
   }
+  getCategories(){
+    return this.dbService.getAll('categories')
+
+  }
+    async addPendingPayment(payment: any): Promise<void> {
+    try {
+        await this.dbService.add('pendingPayments', payment);
+        console.log("💾 Payment cached offline:", payment);
+    } catch (error) {
+        console.error("❌ Error saving pending payment:", error);
+    }
+    }
+
+    getPendingPayments(): Observable<any[]> {
+    return this.dbService.getAll('pendingPayments');
+    }
+
+    async clearPendingPayments(): Promise<void> {
+    await this.dbService.clear('pendingPayments');
+ } 
 
   addTransaction(transaction: any) {
     const tx = {
@@ -79,5 +108,16 @@ upsertTransaction(transaction: any) {
   );
 }
 
+async clearProducts() {
+  return this.dbService.clear('products').subscribe((successDeleted) => {
+  console.log('success? ', successDeleted);
+});;
+}
+
+async clearCategories() {
+  return this.dbService.clear('categories').subscribe((successDeleted) => {
+  console.log('success? ', successDeleted);
+});;
+}
 
 }

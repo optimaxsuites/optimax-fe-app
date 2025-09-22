@@ -15,6 +15,7 @@ import { CheckoutService } from "../../service/checkout.service";
 import { CustomerService } from "../../service/customer.service";
 import { NavigationLinksService } from "../../sharedComponent/service/navigation-links/navigation-links.service";
 import { RandomTokenService } from "../../sharedComponent/service/random-token/random-token.service";
+import { OfflineService } from "../../service/offline.service";
 
 @Component({
   selector: "app-cash-payment",
@@ -68,7 +69,8 @@ export class CashPaymentComponent implements OnInit {
     private customerService: CustomerService,
     private randomTokenService: RandomTokenService,
     private checkoutService: CheckoutService,
-    private _location: Location
+    private _location: Location,
+    private offlineService: OfflineService
   ) {
     const navigation = this.router.getCurrentNavigation();
     this.navigationState = navigation?.extras.state as NavigationState;
@@ -241,57 +243,113 @@ export class CashPaymentComponent implements OnInit {
     return map[mode] || mode.toUpperCase();
   }
 
-  processCashPayment() {
-    this.isLoading = true;
-    if (this.totalPaid < this.cart?.total) {
-      this.isLoading = false;
-      this.messageService.add({
-        severity: "warn",
-        summary: "Error",
-        detail: "Wrong amount tendered",
-        key: "tl",
-        life: 3000,
-      });
-      return;
-    }
+ async processCashPayment() {
+  this.isLoading = true;
 
-    const now = new Date().toISOString();
-    const paymentPayload = {
+  if (this.totalPaid < this.cart?.total) {
+    this.isLoading = false;
+    return this.showError("Wrong amount tendered");
+  }
+
+  const now = new Date().toISOString();
+  const paymentPayload = {
+    id: 0,
+    totalAmount: this.cart.total,
+    transactionDate: now,
+    status: "PAID",
+    breakdowns: this.cart.paymentModes.map((mode) => ({
       id: 0,
-      totalAmount: this.cart.total,
-      transactionDate: now,
-      status: "PAID",
-    };
+      amountPaid: this.paymentValues[mode],
+      transactionRefernce: "",
+      paymentMethod: this.getBackendPaymentMethod(mode),
+    })),
+    order: {
+      id: 0 | this.cart.orderId,
+      orderNumber: this.randomTokenService.getRandomToken(),
+      orderStatus: "PAID",
+      updatedAt: now,
+      createdDate: now,
+      totalAmount: this.totalPaid,
+      amountTendered: this.paymentValues.cash,
+      customerId: 1,
+      branchId: 1,
+      cashier: 67,
+      orderItem: this.cart.cartItems.flatMap((item) => {
+        const orderItems = item.count
+          ? [{
+              totalPrice: item.count * parseInt(item.sellingPrice || "0"),
+              quantity: item.count,
+              productId: item.id,
+            }]
+          : [];
 
-    this.checkoutService.makePayment(paymentPayload).subscribe({
-      next: (paymentId) => {
-        if (!paymentId) return this.showError("Missing payment ID from response");
-
-        const paymentBreakdownPayloads = this.cart.paymentModes.map((mode) => ({
-          id: 0,
-          amountPaid: this.paymentValues[mode],
-          transactionRefernce: "",
-          paymentMethod: this.getBackendPaymentMethod(mode),
-          paymentId: paymentId,
-        }));
-
-        let breakdownCount = 0;
-        for (const breakdown of paymentBreakdownPayloads) {
-          this.checkoutService.savePaymentBreakdown(breakdown).subscribe({
-            next: () => {
-              breakdownCount++;
-              if (breakdownCount === paymentBreakdownPayloads.length) {
-                this.submitOrder(paymentId, now);
-                this.isLoading = false;
+        if (item.selectedVariants?.length) {
+          item.selectedVariants.forEach((variant) => {
+            const selectedQuantity = variant.selectedQuantity ?? 0;
+            const price = variant.price || 0;
+            if (selectedQuantity > 0) {
+              orderItems.push({
+                totalPrice: selectedQuantity * price,
+                quantity: selectedQuantity,
+                productId: item.id,
+                productVariantId: variant.id,
+              } as {
+                totalPrice: number;
+                quantity: number;
+                productId: number;
+                productVariantId: number | null;
               }
-            },
-            error: () => this.showError("Failed to save payment breakdown"),
+            );
+            }
           });
         }
-      },
-      error: () => this.showError("Failed to process payment"),
+        return orderItems;
+      }),
+    }
+  };
+
+  if (!navigator.onLine) {
+    await this.offlineService.addPendingPayment(paymentPayload);
+    this.messageService.add({
+      severity: "info",
+      summary: "Offline",
+      detail: "Payment saved offline. It will sync when you're online.",
+      key: "tl",
+      life: 3000,
     });
+    this.isLoading = false;
+    return;
   }
+
+  this.checkoutService.makePayment(paymentPayload).subscribe(
+    { next: (paymentId) => {
+      if (!paymentId) return this.showError("Missing payment ID from response"); 
+      const paymentBreakdownPayloads = this.cart.paymentModes.map((mode) => (
+        { id: 0, 
+          amountPaid: this.paymentValues[mode], 
+          transactionRefernce: "", 
+          paymentMethod: this.getBackendPaymentMethod(mode), 
+          paymentId: paymentId, 
+        }
+      )); 
+    let breakdownCount = 0; 
+    for (const breakdown of paymentBreakdownPayloads) { 
+      this.checkoutService.savePaymentBreakdown(breakdown).subscribe({
+         next: () => {
+           breakdownCount++; 
+           if (breakdownCount === paymentBreakdownPayloads.length) { 
+            this.submitOrder(paymentId, now); this.isLoading = false; 
+          } 
+          }, 
+         error: () => this.showError("Failed to save payment breakdown"),
+         }); 
+        } 
+      },
+         
+      error: () => this.showError("Failed to process payment"), 
+    });
+}
+
 
   private submitOrder(paymentId: number, now: string) {
     const orderPayload = {

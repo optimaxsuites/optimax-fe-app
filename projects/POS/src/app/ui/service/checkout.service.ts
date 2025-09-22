@@ -51,9 +51,19 @@ saveOrder(data: OrderPOST): Observable<any> {
   }
 
   makePayment(data: any) {
+    if(navigator.onLine){
     return this.http
       .post<any>(this.getBaseApiUrl() + "/x/api/v2/pos/payments", data)
       .pipe(catchError(this.handleError));
+
+   } else {
+    return from(this.offlineService.upsertTransaction(data)).pipe(
+      map(() => ({
+        offline: true,
+        data
+      }))
+    );
+  }
   }
   private getBaseApiUrl(): string {
     return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;

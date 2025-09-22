@@ -1,6 +1,7 @@
 import { Component, HostListener, ViewEncapsulation } from '@angular/core';
 import { MenuItemsService } from './ui/shared/service/menue-items/menu-items.service';
 import { NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router } from '@angular/router';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 declare global {
   interface Window {
@@ -25,11 +26,15 @@ export class AppComponent {
 
   screenWidth: number;
   isLoading = false
+    private _isOffline = new BehaviorSubject<boolean>(!navigator.onLine);
+    isOffline$: Observable<boolean> = this._isOffline.asObservable();
 
   // Ensure this property exists and is initialized
   clockedInTime: string | null = null;
 
   constructor(private menuItemService: MenuItemsService, private router: Router) {
+    window.addEventListener('online', () => this._isOffline.next(false));
+    window.addEventListener('offline', () => this._isOffline.next(true));
     this.screenWidth = window.innerWidth;
     this.router.events.subscribe((event) => {
       if (event instanceof NavigationStart) {

@@ -1,6 +1,7 @@
 import { Component, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
 import { RegisterService } from './ui/pos/service/register.service';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 
 @Component({
@@ -16,9 +17,14 @@ export class UserComponent {
   register: string = "" 
   openingAmount: string = ''
   inputValue: string = '';
+  private _isOffline = new BehaviorSubject<boolean>(!navigator.onLine);
+  isOffline$: Observable<boolean> = this._isOffline.asObservable();
 
+  constructor(private registerService: RegisterService, private router: Router) {
+     window.addEventListener('online', () => this._isOffline.next(false));
+    window.addEventListener('offline', () => this._isOffline.next(true));
+  }
 
-  constructor(private registerService: RegisterService, private router: Router) {}
   ngOnInit() {
       const openingAmount =  localStorage.getItem('openingAmount')
       if(!openingAmount){

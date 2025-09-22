@@ -126,8 +126,11 @@ export class MetadataService {
     if (!navigator.onLine) {
       console.warn("⚠️ Offline. Loading products from local cache...");
       const offlineProducts = await firstValueFrom(this.offlineService.getProducts());
+      const offlineCategories = await firstValueFrom(this.offlineService.getCategories());
+
       this.productSubject.next(offlineProducts);
       this.enrichedProductSubject.next(offlineProducts);
+      this.categorySubject.next(offlineCategories);
 
       console.log(offlineProducts)
 
@@ -187,10 +190,17 @@ export class MetadataService {
               return of([]);
             })
           )
-          .subscribe((filteredProducts) => {
+          .subscribe(async (filteredProducts) => {
             this.enrichedProductSubject.next(filteredProducts);
             this.loadingSubject.next(false);
             console.log("✅ [MetadataService] Enriched products loaded");
+
+              if (filteredProducts && filteredProducts.length > 0) {
+                console.log(filteredProducts.length)
+              await this.offlineService.clearProducts(); 
+              await this.offlineService.addProduct(filteredProducts);
+              console.log("📦 Enriched products cached locally in IndexedDB");
+            }
           });
       } else {
         console.warn(
@@ -199,15 +209,8 @@ export class MetadataService {
       }
     });
       if (data.products && data.products.length > 0) {
-     console.log("data", data)
-
-      for (const product of data.products) {
-        await this.offlineService.addProduct({
-          ...product,
-          isSynced: true,
-        });
-      }
-      console.log("📦 Products cached locally in IndexedDB");
+        this.offlineService.addCategories(data.categories);
+        console.log("📦 Categories cached locally in IndexedDB");
     }
 
 

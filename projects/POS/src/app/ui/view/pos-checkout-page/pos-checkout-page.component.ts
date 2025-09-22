@@ -24,7 +24,7 @@ import { IndustryDataService } from "../../service/industry-data.service";
 import { MetadataService } from "../../service/metadata.service";
 import { CheckoutService } from "../../service/checkout.service";
 import { MessageService } from "primeng/api";
-import { lastValueFrom } from "rxjs";
+import { BehaviorSubject, lastValueFrom, Observable } from "rxjs";
 import { PaymentServiceService } from "../../service/payment-service.service";
 // import { AppResizeDirective } from '../../service/app-resize.directive';
 
@@ -92,6 +92,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   isCategorySidebarOpen = false;
   selectedPaymentModes: PaymentModes[] = [];
   noteText: any;
+
 
   constructor(
     private router: Router,
