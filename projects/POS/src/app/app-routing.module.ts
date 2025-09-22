@@ -69,6 +69,11 @@ const routes: Routes = [
     // data: { appCode: ['POS_SALES'] }
   },
   {
+    path: 'orderDetails/:uuid',
+    component: OrderDetailComponent,
+    // canActivate: [PermissionGuard],
+  },
+  {
   path: 'user/checkout/orders/:uuid',
   component: CheckoutOrdersComponent,
     // canActivate: [PermissionGuard],

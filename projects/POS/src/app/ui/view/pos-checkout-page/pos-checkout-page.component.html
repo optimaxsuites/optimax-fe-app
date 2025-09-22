@@ -76,9 +76,9 @@
       @if (businessType != "Generic") {
         <nav class="nav-options flex justify-around items-center border-b border-gray-200">
           <div class="flex w-full divide-x divide-gray-200">
-            <p (click)="toggleNotesModal()" class="py-3 px-4 flex-1 text-center font-medium text-gray-700 hover:bg-customBlueHover hover:text-customBlue transition-colors duration-200">
+            <p (click)="toggleNotesModal()" class="py-3 px-4 flex-1 text-center font-medium text-gray-700 hover:bg-customBlueHover hover:text-customBlue transition-colors duration-200" [ngClass]="{'bg-red-500 text-white': isNotePresent}">
               <i class="far fa-sticky-note mr-2"></i>Note
-            </p>
+             </p>
             <p
               (click)="toggleDiscountModal()"
               [class.opacity-50]="!cartItems.length"

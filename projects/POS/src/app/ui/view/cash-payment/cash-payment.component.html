@@ -121,12 +121,11 @@
                 [max]="getLoyaltyMax(mode)"
               />
               <span class="text-2xl ml-2 font-medium">₦</span>
+              <button (click)="removePaymentMode(mode)" class="ml-2 text-gray-400 hover:text-red-500 transition-colors">
+                <i class="fa-solid fa-times-circle"></i>
+              </button>
             </div>
-            <button (click)="removePaymentMode(mode)" class="ml-2 text-gray-400 hover:text-red-500 transition-colors">
-              <i class="fa-solid fa-times-circle"></i>
-            </button>
           </div>
-
           <div *ngIf="mode !== 'loyalty'" class="border rounded-xl bg-customGreen/50 overflow-hidden">
             <div class="grid grid-cols-3 divide-x divide-y">
               <button
@@ -193,15 +192,15 @@
 
 <div id="receipt-container" style=" font-family: 'Courier New', monospace; font-size: 10px; text-align: left; padding: 10px;" class='hidden'>
   <div style="text-align: center;">
-    <strong style="font-size: 22px;">SHOP NAME</strong><br>
-    Address: Lorem Ipsum, 23-10 <br>
-    Telephone: 11223344
+    <strong style="font-size: 22px;">{{businessInfo?.fullname}}</strong><br>
+    Address: {{businessInfo?.address}}, {{businessInfo?.city}},{{businessInfo?.state}}<br>
+    Telephone: {{businessInfo?.phoneNumber}}<br>
   </div>
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
   <div style="text-align: left; margin-bottom: 10px;">
     <div >Sold to: Walk-in Customer</div>
     <div >Date & Time: {{ navigationState.cart.timestamp }}</div>
-    <div >Cashier: Ayaobasheba</div>
+    <div >Cashier: {{ businessInfo?.user?.username }}</div>
     <div >Receipt ID: {{receiptID}}</div>
   </div>
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
@@ -236,7 +235,7 @@
             <td style="text-align: left;">{{ item?.name }}</td>
             <td >{{ item.count }}</td>
             <td>{{ parseFloat(item.sellingPrice ?? "0")  }}</td>
-            <td>{{ item.cartPriceTotal   }}</td>
+            <td>{{ item.cartPriceTotal  }}</td>
           </tr>
         </ng-template>
       </ng-container>
@@ -258,10 +257,9 @@
       <span>Discount</span>
       <span>{{ navigationState.cart.discount | currency: '₦' }}</span>
     </div>
-    <hr *ngIf="navigationState.cart.discount > 0">
-    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px;">
+    <div class="flex justify-between font-bold text-2xl items-center">
       <span>Total</span>
-      <span>{{ navigationState.cart.total | currency: '₦' }}</span>
+      <span>{{ navigationState.cart.total | currency:'₦'}}</span>
     </div>
   </div>
 
@@ -273,9 +271,9 @@
     </div>
   </div>
 
-  <div style="display: flex; justify-content: space-between;">
+  <div *ngIf="totalPaid > navigationState.cart.total" style="display: flex; justify-content: space-between;">
     <span>Change</span>
-    <span>{{ (paymentValues.cash ?? 0) - navigationState.cart.total | currency: '₦' }}</span>
+    <span>{{ totalPaid - navigationState.cart.total | currency: '₦' }}</span>
   </div>
 
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
