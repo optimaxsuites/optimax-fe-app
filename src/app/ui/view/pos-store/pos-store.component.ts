@@ -120,7 +120,7 @@ export class PosStoreComponent implements OnInit {
   );
 
   isSidebarVisible = true;
-
+  // isLoading = signal(true); 
   // Create category options for the dropdown
   categoryOptions = computed(() => {
     const options = [
@@ -241,15 +241,16 @@ export class PosStoreComponent implements OnInit {
     private cartService: StoreCartService,
     private route: ActivatedRoute
   ) {}
+isLoading = signal(true); 
+ngOnInit(): void {
+  // Fetch branches
+  this._posService.getBranches().subscribe((branches) => {
+    this.branches = branches;
+  });
 
-  ngOnInit(): void {
-    // Fetch branches
-    this._posService.getBranches().subscribe((branches) => {
-      this.branches = branches;
-    });
-
-    // Populate the product data
-    this._posService.getProducts().subscribe((data) => {
+  // Populate the product data
+  this._posService.getProducts().subscribe({
+    next: (data) => {
       this._allProducts = data;
 
       data.forEach((iteratedProduct) => {
@@ -271,9 +272,16 @@ export class PosStoreComponent implements OnInit {
           });
         }
       });
-    });
-  }
-
+      
+      // Hide loading skeleton when data is loaded
+      this.isLoading.set(false);
+    },
+    error: (error) => {
+      console.error('Error loading products', error);
+      this.isLoading.set(false);
+    }
+  });
+}
   getProductImage(product: ProductData) {
     return this._imgCacheService.getProductImage(product);
   }
