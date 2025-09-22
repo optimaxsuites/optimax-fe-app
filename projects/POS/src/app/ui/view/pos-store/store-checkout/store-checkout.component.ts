@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router'; // Add ActivatedRoute
+import { ActivatedRoute, Router } from '@angular/router';
 import { ImageCacheService } from '../../../service/image-cache.service';
 import { StoreCartService } from '../../../service/store-cart.service';
 
@@ -14,6 +14,7 @@ export class StoreCheckoutComponent implements OnInit {
   isDelivery: boolean = false;
   deliveryFee: number = 1000;
   paymentMethod: string = 'cash';
+  isLoading: boolean = false;
 
   deliveryInfo = {
     fullName: '',
@@ -24,9 +25,9 @@ export class StoreCheckoutComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private route: ActivatedRoute, // Add ActivatedRoute
+    private route: ActivatedRoute,
     private imageCacheService: ImageCacheService,
-    private cartService: StoreCartService 
+    private cartService: StoreCartService
   ) {}
 
   ngOnInit(): void {
@@ -66,13 +67,56 @@ export class StoreCheckoutComponent implements OnInit {
   }
 
   placeOrder(): void {
-    const orderData = {
+    if (this.isLoading) return;
+    
+    this.isLoading = true;
+    const orderNumber = this.generateOrderNumber();
+    const totalQuantity = Array.from(this.cartItems.values()).reduce(
+      (total, item) => total + item.quantity, 0
+    );
+
+    // Prepare order items
+    const orderItems = Array.from(this.cartItems.entries()).flatMap(([key, value]) => {
+      const items: any[] = [];
+      
+      // Main product
+      const mainItem = {
+        productId: value.product.id,
+        productName: value.product.name,
+        quantity: value.quantity,
+        unitPrice: value.product.sellingPrice,
+        totalPrice: value.product.sellingPrice * value.quantity,
+        selectedVariants: value.product.selectedVariants || []
+      };
+      items.push(mainItem);
+
+      return items;
+    });
+
+    // Create the order payload
+    const orderPayload = {
+      orderNumber: orderNumber,
+      orderStatus: 'CONFIRMED',
+      totalAmount: this.total,
+      quantity: totalQuantity,
+      branchId: 1, // You'll need to get this from your store context
+      deliveryMethod: this.isDelivery ? 'DELIVERY' : 'PICKUP',
+      paymentMethod: this.paymentMethod.toUpperCase(),
+      orderItems: orderItems,
+      deliveryInfo: this.isDelivery ? this.deliveryInfo : null,
+      createdDate: new Date().toISOString(),
+      subtotal: this.subtotal,
+      deliveryFee: this.isDelivery ? this.deliveryFee : 0
+    };
+
+    // For guest orders, we'll use the simplified approach
+    const guestOrderData = {
       items: Array.from(this.cartItems.entries()).map(([key, value]) => ({
         productId: value.product.id,
-        productName: value.product.name, // Add product name for display
+        productName: value.product.name,
         quantity: value.quantity,
         price: value.product.sellingPrice,
-        selectedVariants: value.product.selectedVariants // Add variants if needed
+        selectedVariants: value.product.selectedVariants
       })),
       subtotal: this.subtotal,
       deliveryFee: this.isDelivery ? this.deliveryFee : 0,
@@ -83,20 +127,31 @@ export class StoreCheckoutComponent implements OnInit {
       orderDate: new Date().toISOString()
     };
 
-    // Save order and clear cart
-    this.cartService.placeOrder(orderData).subscribe({
+    this.cartService.placeOrder(guestOrderData).subscribe({
       next: (response: any) => {
-        // Get the current UUID from the route
-        const currentUuid = this.route.snapshot.paramMap.get('uuid');
-        
+        this.isLoading = false;
+        console.log('Order placed successfully:', response);
+        this.cartService.clearCart();
+         const currentUuid = this.route.snapshot.paramMap.get('uuid');
+        const orderId = response.orderId || orderNumber;
         // Navigate to order confirmation with the new route
-        this.router.navigate(['user/checkout/store', currentUuid, 'order-confirmation', response.orderId]);
+        this.router.navigate(['user/checkout/store', currentUuid, 'order-confirmation', orderId]);
+     
+        
+        // this.router.navigate(['/store', currentUuid, 'order-confirmation', orderId]);
       },
       error: (error: any) => {
+        this.isLoading = false;
         console.error('Order placement failed:', error);
         alert('Failed to place order. Please try again.');
       }
     });
+  }
+
+  private generateOrderNumber(): string {
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substr(2, 5);
+    return `ORD-${timestamp}-${random}`.toUpperCase();
   }
 
   goBack(): void {

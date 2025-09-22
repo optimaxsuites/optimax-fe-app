@@ -82,11 +82,16 @@ export class CashPaymentComponent implements OnInit {
     }
     console.log(this.navigationState);
   }
+  businessInfo: string | any;
 
   ngOnInit(): void {
     this.cart = this.navigationState?.cart;
     this.initializePriceOptions();
     this.token = this.randomTokenService.getRandomToken();
+    const userInfoString = sessionStorage.getItem("userInfo");
+    if (userInfoString) {
+      this.businessInfo = JSON.parse(userInfoString);
+    }
   }
 
   get totalPaid() {
@@ -356,7 +361,7 @@ export class CashPaymentComponent implements OnInit {
               paymentTracking: paymentTrackingHistory
                 ? { ...paymentTrackingHistory, paymentSuccess: true }
                 : undefined,
-              paymentSuccess: true, // Add this line
+              paymentSuccess: true, 
             },
           });
           this.printReceipt();

@@ -1,7 +1,7 @@
 // inventory.component.ts - Fixed version
 
 import {
- Component,
+  Component,
   OnInit,
   Input,
   Output,
@@ -50,7 +50,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
   mode: 'create' | 'edit' = 'create';
   editInventoryComponent!: EditInventoryComponent;
   isLoading: boolean = false;
-  isBranchSwitching: boolean = false; // NEW: Track branch switching state
+  isBranchSwitching: boolean = false; 
   selectedProduct: any = null;
   currentPage = 0;
   rowsPerPage = 15;
@@ -287,6 +287,7 @@ export class InventoryComponent implements OnInit, OnDestroy {
         console.log('Final products array:', this.products);
         this.isLoading = false;
         this.isBranchSwitching = false; // Reset branch switching state
+        this.applyFilters();
       },
       error: (err) => {
         console.error('Failed to load inventories:', err);
@@ -464,35 +465,36 @@ export class InventoryComponent implements OnInit, OnDestroy {
     ${item.effectivePrice}\nStock: ${item.effectiveQuantity}`;
   }
 
-  filterProductsBySearch(searchValue: string) {
-    this.searchTerm = searchValue;
-    if (searchValue.length === 0) {
-      if (this.selectedCategories.length === 0) {
-        this.products = [...this.originalProducts];
-      } else {
-        this.filterProductsByCategory();
-      }
-    } else {
-      this.products = this.originalProducts.filter((product) => {
-        const matchesCategory =
-          this.selectedCategories.length === 0 ||
-          this.selectedCategories.includes(product.productCategory?.id);
-        const matchesSearch = product.name
-          .toLowerCase()
-          .includes(this.searchTerm.toLowerCase());
-        return matchesCategory && matchesSearch;
-      });
-    }
-  }
+  applyFilters() {
+    let tempProducts = [...this.originalProducts];
+    const lowerCaseSearchTerm = this.searchTerm.toLowerCase().trim();
 
-  filterProductsByCategory() {
-    if (this.selectedCategories.length === 0) {
-      this.products = [...this.originalProducts];
-    } else {
-      this.products = this.originalProducts.filter((product) =>
+    // Apply category filter
+    if (this.selectedCategories.length > 0) {
+      tempProducts = tempProducts.filter(product =>
         this.selectedCategories.includes(product.productCategory?.id)
       );
     }
+
+    // Apply search filter
+    if (lowerCaseSearchTerm) {
+      tempProducts = tempProducts.filter(product =>
+        (typeof product.name === 'string' && product.name.toLowerCase().includes(lowerCaseSearchTerm)) ||
+        (typeof product.sku === 'string' && product.sku.toLowerCase().includes(lowerCaseSearchTerm)) ||
+        (typeof product.code === 'string' && product.code.toLowerCase().includes(lowerCaseSearchTerm))
+      );
+    }
+    
+    this.products = tempProducts;
+  }
+
+  filterProductsBySearch(searchValue: string) {
+    this.searchTerm = searchValue;
+    this.applyFilters();
+  }
+
+  filterProductsByCategory() {
+    this.applyFilters();
   }
 
   openViewProduct(item: any = {}) {

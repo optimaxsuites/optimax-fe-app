@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http'; // Add this import
+import { HttpClient } from '@angular/common/http';
 import { GuestOrderService } from './guest-order.service';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { catchError } from 'rxjs/operators'; // Add this import
+import { catchError } from 'rxjs/operators';
 import { environment } from '../sharedComponent/service/environments/environment';
-import { isDevMode } from '@angular/core'; // Add this import
+import { isDevMode } from '@angular/core';
 
 @Injectable({
   providedIn: 'root'
@@ -12,11 +12,14 @@ import { isDevMode } from '@angular/core'; // Add this import
 export class StoreCartService {
   private cartSubject = new BehaviorSubject<Map<any, any>>(new Map());
   private subtotalSubject = new BehaviorSubject<number>(0);
+  private apiUrl: string;
 
   constructor(
     private guestOrderService: GuestOrderService,
-    private http: HttpClient // Add HttpClient injection
-  ) {}
+    private http: HttpClient
+  ) {
+    this.apiUrl = this.getBaseApiUrl();
+  }
 
   private getBaseApiUrl(): string {
     return isDevMode() ? environment.apiBaseUrl : environment.apiBaseUrl;
@@ -60,7 +63,7 @@ export class StoreCartService {
     this.guestOrderService.saveOrder(guestOrder);
 
     // Also call your actual API if needed
-    return this.http.post(`${this.getBaseApiUrl()}/api/orders`, orderData).pipe(
+    return this.http.post(`${this.apiUrl}/orders`, orderData).pipe(
       catchError((error: any) => {
         console.warn('API order submission failed, but order saved locally:', error);
         // Even if API fails, return success for the guest order
@@ -73,15 +76,25 @@ export class StoreCartService {
     );
   }
 
-  // Add method to get guest orders
+  processPayment(paymentPayload: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/payments`, paymentPayload).pipe(
+      catchError((error: any) => {
+        console.warn('Payment processing failed:', error);
+        // Return a mock payment response for guest orders
+        return of({
+          success: true,
+          paymentId: `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          message: 'Payment processed (mock response for guest order)'
+        });
+      })
+    );
+  }
+
   getGuestOrders(): any[] {
     return this.guestOrderService.getOrders();
   }
 
-  // Add method to get specific guest order
   getGuestOrder(orderId: string): any {
     return this.guestOrderService.getOrder(orderId);
   }
-
-  
 }

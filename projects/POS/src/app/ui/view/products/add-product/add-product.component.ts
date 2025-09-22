@@ -321,84 +321,107 @@ export class AddProductComponent {
 		private metadataService: MetadataService,
 	) {}
 	ngOnInit(): void {
-	const fbGroup: Parameters<typeof this.fb.group>[0] = {
-	name: ["", [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
-	code: ['', [Validators.required, Validators.pattern(/^[A-Z0-9-]{3,20}$/)]],
-	description: ["", [Validators.required, Validators.minLength(10), Validators.maxLength(500)]],
-			sku: [""],
-			weight: [null, [Validators.min(0), Validators.max(9999)]],
-			// purchasePrice: [
-			//   '',
-			//   [Validators.required, Validators.pattern('^[0-9]*.?[0-9]{0,2}$')],
-			// ],
-			costPrice: [null, [Validators.required, Validators.min(0.01)]],
-			sellingPrice: [null, [Validators.required, Validators.min(0.01)]],
-			tax: [null],
-			discount: [null],
-			quantity: [null, [Validators.required, Validators.min(0)]],
-			supplier: [null],
-			partNumber: [""],
-			selectedBranch: [[], Validators.required],
-			branches: this.fb.array([]),
-			category: [""],
-			image: [null],
-			startDate: [""],
-			endDate: [""],
-			discountMinQuantity: [0],
-			discountName: [""],
-			isBundle: [false],
-			bundleItems: [],
-			measurementUnit: [""],
-			reorderThreshold: [null, [Validators.required, Validators.min(1)]],
-			expiryDate: [this._defaultExpiryDate.toISOString()],
-		};
+    const fbGroup: Parameters<typeof this.fb.group>[0] = {
+        name: ["", [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+        code: ['', [Validators.required, Validators.pattern(/^[A-Z0-9-]{3,20}$/)]],
+        description: ['', [Validators.required]], 
+        sku: [""],
+        weight: [null, [Validators.min(0), Validators.max(9999)]],
+        costPrice: [null, [Validators.required, Validators.min(0.01)]],
+        sellingPrice: [null, [Validators.required, Validators.min(0.01)]],
+        tax: [null],
+        discount: [null],
+        quantity: [null, [Validators.required, Validators.min(0)]],
+        supplier: [null],
+        partNumber: [""],
+        selectedBranch: [[], Validators.required],
+        branches: this.fb.array([]),
+        category: [""],
+        image: [null],
+        startDate: [""],
+        endDate: [""],
+        discountMinQuantity: [0],
+        discountName: [""],
+        isBundle: [false],
+        bundleItems: [],
+        measurementUnit: [""],
+        reorderThreshold: [null, [Validators.required, Validators.min(1)]],
+        expiryDate: [this._defaultExpiryDate.toISOString()],
+    };
 
-		this.productForm = this.fb.group(fbGroup);
-		this.fetchMetaData();
+    this.productForm = this.fb.group(fbGroup);
+    this.fetchMetaData();
 
 		if (this.isEditMode && this.activeItem) {
-			this.productForm.patchValue(this.activeItem);
-			if (this.activeItem.variants.length > 0) {
-				this.variants = this.activeItem.variants;
-			}
-			this.productForm
-				.get("discountType")
-				?.setValue(this.activeItem?.discount?.discountType);
-			this.productForm
-				.get("discountName")
-				?.setValue(this.activeItem?.discount?.name);
-			this.productForm
-				.get("discountMinQuantity")
-				?.setValue(this.activeItem?.discount?.minQuantity);
-			this.productForm
-				.get("startDate")
-				?.setValue(this.activeItem?.discount?.startDate);
-			this.productForm
-				.get("endDate")
-				?.setValue(this.activeItem?.discount?.endDate);
-			this.productForm
-				.get("category")
-				?.setValue(this.activeItem?.productCategory);
-			this.productForm
-				.get("discountValue")
-				?.setValue(this.activeItem?.discount?.value);
-			this.productForm.get("image")?.setValue(this.activeItem?.imageUrl$);
-			this.productForm
-				.get("costPrice")
-				?.setValue(this.activeItem?.purchasePrice);
-		}
+    console.log('Initializing edit mode with:', this.activeItem);
+    
+    // Ensure we have all the product data
+    this.productForm.patchValue({
+        name: this.activeItem.name || '',
+        code: this.activeItem.code || '',
+        description: this.activeItem.description || '',
+        sku: this.activeItem.sku || '',
+        weight: this.activeItem.weight || 0,
+        costPrice: this.activeItem.purchasePrice || this.activeItem.costPrice || 0,
+        sellingPrice: this.activeItem.sellingPrice || 0,
+        quantity: this.activeItem.quantity || 0,
+        partNumber: this.activeItem.partNumber || '',
+        reorderThreshold: this.activeItem.reorderThreshold || 12,
+        expiryDate: this.activeItem.expiryDate || this._defaultExpiryDate.toISOString(),
+        isBundle: this.activeItem.isBundle || false,
+        bundleItems: this.activeItem.bundleItems || [],
+        measurementUnit: this.activeItem.measurementUnit || ''
+    });
 
-		// if (this.userBranch !== 'headquarters') {
-		//   this.productForm.get('selectedBranch')?.disable();
-		// } else {
-		//   this.productForm.get('selectedBranch')?.enable();
-		// }
+    
+    if (this.activeItem.productCategory) {
+        this.productForm.patchValue({ category: this.activeItem.productCategory });
+    }
+    
+    
+    if (this.activeItem.tax) {
+        const matchingTax = this.taxes.find(t => t.id === this.activeItem.tax?.id);
+        if (matchingTax) {
+            this.productForm.patchValue({ tax: matchingTax });
+        }
+    }
+    
+    
+    if (this.activeItem.discount) {
+        const matchingDiscount = this.discounts.find(d => d.id === this.activeItem.discount?.id);
+        if (matchingDiscount) {
+            this.productForm.patchValue({ discount: matchingDiscount });
+        }
+    }
+    
 
-		this.productForm.get("selectedBranch")?.valueChanges.subscribe(() => {
-			this.console.log(this.selecteddBranch);
-			this.updateBranches();
-		});
-	}
+    if (this.activeItem.supplier) {
+        const matchingSupplier = this.suppliers.find(s => s.id === this.activeItem.supplier?.id);
+        if (matchingSupplier) {
+            this.productForm.patchValue({ supplier: matchingSupplier });
+        }
+    }
+
+   
+    if (this.activeItem.variants && this.activeItem.variants.length > 0) {
+        this.variants = [...this.activeItem.variants];
+    }
+
+    
+    if (this.activeItem.branch) {
+        this.productForm.patchValue({ selectedBranch: this.activeItem.branch });
+    }
+
+ 
+    this.productImage = this.getLastImage();
+    
+    console.log('Form after patching:', this.productForm.value);
+}
+    this.productForm.get("selectedBranch")?.valueChanges.subscribe(() => {
+        console.log(this.selecteddBranch);
+        this.updateBranches();
+    });
+}
 
 	fetchMetaData() {
 		this.metadataService.discount$.subscribe((data) => (this.discounts = data));
@@ -749,19 +772,19 @@ export class AddProductComponent {
 		);
 	}
 	onImageUpload(event: any) {
-		const file = event.target.files[0];
-
-		this.productForm.get("image")?.setValue(file);
-
-		if (file) {
-			const reader = new FileReader();
-			reader.onload = (e: any) => {
-				this.productImage = e.target.result;
-				console.log(this.productImage);
-			};
-			reader.readAsDataURL(file);
-		}
-	}
+    const file = event.target.files[0];
+    
+    if (file) {
+        this.productForm.get("image")?.setValue(file);
+        
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+            this.productImage = e.target.result;
+            console.log('New image uploaded:', this.productImage);
+        };
+        reader.readAsDataURL(file);
+    }
+}
 
 	getProducts() {
 		this.posService.getProducts().subscribe(async (data) => {
@@ -1100,18 +1123,20 @@ async updateProduct() {
     this.loading = true;
     const userName = sessionStorage.getItem("username");
 
-    if (!this.isEditMode && this.productForm.invalid) {
-        console.log('Form errors:', this.productForm.errors);
+    // Only validate if required fields are missing
+    if (this.productForm.invalid) {
+        console.log('Form validation errors:');
         Object.keys(this.productForm.controls).forEach(key => {
             const control = this.productForm.get(key);
             if (control && control.invalid) {
                 console.log(`${key} is invalid:`, control.errors);
             }
         });
+        
         this.messageService.add({
             severity: "error",
-            summary: "Warn",
-            detail: "Please fill in all required fields.",
+            summary: "Validation Error",
+            detail: "Please fill in all required fields correctly.",
             key: "tl",
             life: 3000,
         });
@@ -1122,92 +1147,91 @@ async updateProduct() {
     const formValues = this.productForm.value;
     const hasNewImage = formValues.image instanceof File;
 
+    console.log('Form values:', formValues);
+    console.log('Has new image:', hasNewImage);
+
+    // Build the product object with proper fallbacks
     const product = {
         id: this.activeItem.id,
         name: formValues.name,
-        code: formValues.code || this.activeItem.code,
-        partNumber: formValues.partNumber || this.activeItem.partNumber,
+        code: formValues.code,
+        partNumber: formValues.partNumber,
         description: formValues.description,
-        measurementUnit: formValues.measurementUnit || this.activeItem.measurementUnit,
-        isBundle: formValues.isBundle || false,
+        measurementUnit: formValues.measurementUnit,
+        isBundle: formValues.isBundle,
         bundleItems: formValues.bundleItems || [],
         productCategoryId: formValues.category?.id || this.activeItem.productCategory?.id,
         variants: this.variants || [],
-        sku: formValues.sku || this.activeItem.sku,
-        purchasePrice: formValues.costPrice || this.activeItem.purchasePrice,
-        sellingPrice: formValues.sellingPrice || this.activeItem.sellingPrice,
-        quantity: formValues.quantity || this.activeItem.quantity,
-        weight: formValues.weight || this.activeItem.weight,
-        reorderThreshold: formValues.reorderThreshold || this.activeItem.reorderThreshold,
-        taxId: formValues.tax?.id || this.activeItem.tax?.id,
-        discountId: formValues.discount?.id || this.activeItem.discount?.id,
-        supplierId: formValues.supplier?.id || this.activeItem.supplier?.id,
+        sku: formValues.sku,
+        purchasePrice: formValues.costPrice,
+        sellingPrice: formValues.sellingPrice,
+        quantity: formValues.quantity,
+        weight: formValues.weight,
+        reorderThreshold: formValues.reorderThreshold,
+        taxId: formValues.tax?.id,
+        discountId: formValues.discount?.id,
+        supplierId: formValues.supplier?.id,
         branchId: this.activeItem.branch?.id || this.activeItem.branchId,
         createdBy: this.activeItem.createdBy,
         createdDate: this.activeItem.createdDate,
         expiryDate: formValues.expiryDate || this.activeItem.expiryDate,
-       
-        productImages: hasNewImage ? [] : (this.activeItem.productImages || []),
-      
-        replaceImages: hasNewImage
+        // Clear existing images if new image is provided
+        clearExistingImages: hasNewImage
     };
 
+    console.log('Product data to update:', product);
+
     const formData = new FormData();
+    formData.append("product", JSON.stringify(product));
     
-   
+    // If there's a new image, add it and set replacement flags
     if (hasNewImage) {
-       
-        const productWithImageReplacement = {
-            ...product,
-            productImages: [], 
-            clearExistingImages: true
-        };
-        formData.append("product", JSON.stringify(productWithImageReplacement));
         formData.append("files", formValues.image);
-        
         formData.append("replaceImages", "true");
-    } else {
-        
-        formData.append("product", JSON.stringify(product));
+        formData.append("clearExistingImages", "true");
+    } else if (this.activeItem.productImages && this.activeItem.productImages.length > 0) {
+        // Keep the existing images if no new image is provided
+        const existingImages = this.activeItem.productImages.map((img: any) => img.id);
+        formData.append("existingImageIds", JSON.stringify(existingImages));
     }
 
-    console.log('Updating product with:', product);
-    console.log('Has new image:', hasNewImage);
-
-    this.posService.updateProduct(formData).subscribe(
-        async (data) => {
-            this.loading = false;
-            if (data) {
-                this.messageService.add({
-                    severity: "success",
-                    summary: "Product updated",
-                    detail: "Product updated successfully.",
-                    key: "tl",
-                    life: 3000,
-                });
-                this.triggerClose();
-            } else {
-                this.messageService.add({
-                    severity: "error",
-                    summary: "Failed",
-                    detail: "Failed, please try again.",
-                    key: "tl",
-                    life: 3000,
-                });
-            }
-        },
-        (error) => {
-            this.loading = false;
-            console.error('Update error:', error);
+    try {
+        const response = await this.posService.updateProduct(formData).toPromise();
+        
+        this.loading = false;
+        
+        if (response) {
+            this.messageService.add({
+                severity: "success",
+                summary: "Success",
+                detail: "Product updated successfully.",
+                key: "tl",
+                life: 3000,
+            });
+            
+            // Close the modal and refresh data
+            this.triggerClose();
+        } else {
             this.messageService.add({
                 severity: "error",
-                summary: "Error",
+                summary: "Failed",
                 detail: "Failed to update product. Please try again.",
                 key: "tl",
                 life: 3000,
             });
         }
-    );
+    } catch (error) {
+        this.loading = false;
+        console.error('Update error:', error);
+        
+        this.messageService.add({
+            severity: "error",
+            summary: "Error",
+            detail: "Failed to update product. Please try again.",
+            key: "tl",
+            life: 3000,
+        });
+    }
 }
 	resetForm() {
 		this.productForm.reset();
@@ -1346,15 +1370,27 @@ async updateProduct() {
 			});
 		});
 
-		// Clear from form after deletion
+		
 		this.branchess.controls.forEach((branchGroup: FormGroup) => {
 			const variants = branchGroup.get("variants") as FormArray;
 			variants.clear(); // Remove all variants from the UI
 		});
 
-		// Also clear from this.variants if you're tracking it separately
+		
 		this.variants = [];
 	}
+	private isEditFormValid(): boolean {
+    const requiredFields = ['name', 'description'];
+    
+    for (const field of requiredFields) {
+        const control = this.productForm.get(field);
+        if (!control?.value || (typeof control.value === 'string' && control.value.trim() === '')) {
+            return false;
+        }
+    }
+    
+    return true;
+}
 
 	editVariant(index: number) {
 		this.isEditing = true;
@@ -1618,7 +1654,15 @@ async updateProduct() {
 			alert("Please fill in the SKU with valid data.");
 		}
 	}
-
+getLastImage(): string {
+    if (this.activeItem?.productImages && this.activeItem.productImages.length > 0) {
+        // Get the most recently added image (last in the array)
+        const lastImage = this.activeItem.productImages[this.activeItem.productImages.length - 1];
+        return lastImage.imageUrl || lastImage.url || lastImage;
+    }
+    
+    return this.activeItem?.imageUrl$ || this.activeItem?.imageUrl || '';
+}
 	convertSvgToPng(svgElement: Node, shouldPrint?: boolean) {
 		const svgString = new XMLSerializer().serializeToString(svgElement);
 
