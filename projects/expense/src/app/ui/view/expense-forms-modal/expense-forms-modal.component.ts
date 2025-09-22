@@ -67,6 +67,12 @@ throw new Error('Method not implemented.');
   receiptFile: File | null = null;
   invoiceFile: File | null = null;
   signatureUrl: string | null = null; 
+  // Who paid for this expense (default: company)
+paidBy: 'company' | 'employee' = 'company';
+
+// Extra receipt when employee is the payer
+employeeReceiptFile: File | null = null;
+
 
   public signaturePadOptions: Object = {
     minWidth: 1,
@@ -149,6 +155,8 @@ throw new Error('Method not implemented.');
       this.receiptFile = file;
     } else if (type === 'invoice') {
       this.invoiceFile = file;
+    } else if (type === 'employeeReceipt') {
+      this.employeeReceiptFile = file;
     }
   }
 
@@ -484,7 +492,7 @@ submitExpense(form: NgForm): void {
     return;
   }
 
-  // ✅ 2. Validate receipt
+  // ✅ 2. Validate receipt (always required)
   if (!this.receiptFile) {
     this.messageService.add({
       severity: 'error',
@@ -494,11 +502,20 @@ submitExpense(form: NgForm): void {
     return;
   }
 
+  // ✅ 2b. Extra validation if paid by employee
+  if (this.expenseSummary.paidBy === 'employee' && !this.employeeReceiptFile) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Missing Employee Receipt',
+      detail: 'Please upload the employee receipt file since this expense is paid by the employee.'
+    });
+    return;
+  }
+
   // ✅ 3. Validate recurring payment if present
   if (this.advancedPaymentData) {
     const { type, frequency, startDate, endDate, noEndDate, occurrences } = this.advancedPaymentData;
 
-    // Start date required & must not be in the past
     if (!startDate || new Date(startDate) < new Date()) {
       this.messageService.add({
         severity: 'error',
@@ -509,7 +526,6 @@ submitExpense(form: NgForm): void {
     }
 
     if (type === 'recurring') {
-      // Frequency required
       if (!frequency) {
         this.messageService.add({
           severity: 'error',
@@ -519,7 +535,6 @@ submitExpense(form: NgForm): void {
         return;
       }
 
-      // Must have endDate, occurrences, or noEndDate selected
       if (!noEndDate && !endDate && !occurrences) {
         this.messageService.add({
           severity: 'error',
@@ -529,7 +544,6 @@ submitExpense(form: NgForm): void {
         return;
       }
 
-      // End date must be after start date
       if (endDate && new Date(endDate) <= new Date(startDate)) {
         this.messageService.add({
           severity: 'error',
@@ -580,7 +594,8 @@ submitExpense(form: NgForm): void {
     invoiceFile: this.invoiceFile,
     signature: this.signatureUrl,
 
-    // 👇 include advanced payment + bill split
+    // 👇 include employee-only file + extras
+    employeeReceiptFile: this.employeeReceiptFile || null,
     recurringPayment: this.advancedPaymentData || null,
     billSplit: this.billSplitData || null
   };
@@ -599,13 +614,11 @@ submitExpense(form: NgForm): void {
   this.resetForm();
   form.resetForm();
 
-  // clear advanced payment + bill split
   this.advancedPaymentData = undefined;
   this.billSplitData = undefined;
   this.showAdvancedPayment = false;
   this.showBillSplit = false;
 }
-
 
   // Bill Split state
   billSplitData?: BillSplit;

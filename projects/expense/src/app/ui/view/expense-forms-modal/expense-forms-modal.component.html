@@ -68,6 +68,65 @@
               Description is required.
               </p>
           </div>
+       <div class="section-header">Paid by</div>
+<div class="category-input-row">
+<div class="form-group">
+  <label> Company
+    <input 
+      type="radio" 
+      [(ngModel)]="expenseSummary.paidBy" 
+      name="paidBy" 
+      value="company" 
+      class="paidBy"
+      required
+    />
+   
+  </label>
+
+  <label class="ml-4">
+    Employee (reimburse)
+    <input 
+      type="radio" 
+      [(ngModel)]="expenseSummary.paidBy" 
+      name="paidBy" 
+      value="employee" 
+      class="paidBy"
+      required
+    />
+    
+  </label>
+  </div>
+</div>
+<div *ngIf="expenseSummary.paidBy === 'employee'" class="form-group">
+  <label>Upload Employee Receipt (required)</label>
+
+  <div class="upload-container" 
+       (click)="employeeReceiptInput.click()" 
+       (dragover)="onDragOver($event)" 
+       (drop)="onFileDrop($event, 'employeeReceipt')">
+
+    <div>
+      <i class="fas fa-cloud-upload-alt"></i>
+
+      <p *ngIf="!employeeReceiptFile">Click or drag and drop to upload Employee Receipt</p>
+      <p *ngIf="employeeReceiptFile">Employee Receipt: {{ employeeReceiptFile.name }}</p>
+      <p>Supported formats: JPG, PNG, PDF (max 10MB)</p>
+
+      <label>
+        <span>Browse Files</span>
+        <input 
+          type="file" 
+          #employeeReceiptInput 
+          class="file-input" 
+          (change)="onFileSelect($event, 'employeeReceipt')" 
+          accept=".jpg,.png,.pdf" 
+        />
+      </label>
+    </div>
+  </div>
+</div>
+
+
 
 
           <div class="form-group">
@@ -181,7 +240,7 @@
 <!-- end of scheduled payment -->
 
   <!-- beginning ofBill Splitting Option -->
-   
+
   <!-- Button to open -->
   <button
     *ngIf="!billSplitData && !showBillSplit"
@@ -487,8 +546,7 @@
       </ul>
     </div>
   </div>
-</app-side-modal>
- 
+</app-side-modal> 
 
       <app-side-modal *ngIf="showTaxModal" (close)="closeModal('tax')">
   <div class="p-6">
