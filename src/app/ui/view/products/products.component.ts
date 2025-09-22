@@ -93,6 +93,7 @@ onDocumentClick(event: any) {
   deleteMultipleItemsModal = false;
   editProduct: boolean = false;
   configureBarcode: boolean = false;
+  categoryLoading: boolean = false;
 
   discountTypes = [
     { label: "Periodic", value: "periodic" },
@@ -128,11 +129,11 @@ onDocumentClick(event: any) {
       .sku as (typeof this.productTableHeaders)[keyof typeof this.productTableHeaders],
     order: "asc" as "asc" | "desc",
   };
-  barcodeConfig = {
-    barcodeType: "CODE128",
-    barcodeQuantity: 1,
-    variants: false,
-  };
+ barcodeConfig = {
+  barcodeType: "CODE128",
+  barcodeQuantity: 0, // Will be set when modal opens
+  variants: false,
+};
   barcodes = [
     { label: "CODE128 ", value: "CODE128" },
     // { label: 'CODE128 A/B/C', value: 'CODE128' },
@@ -378,15 +379,21 @@ onDocumentClick(event: any) {
     }
   }
 
-  filterProductsByCategory() {
-    if (this.selectedCategories.length === 0) {
-      this.products = [...this.originalProducts];
-    } else {
+ filterProductsByCategory() {
+  if (this.selectedCategories.length === 0) {
+    this.products = [...this.originalProducts];
+  } else {
+    this.categoryLoading = true;
+    
+    
+    setTimeout(() => {
       this.products = this.originalProducts.filter((product) =>
         this.selectedCategories.includes(product.productCategory?.id),
       );
-    }
+      this.categoryLoading = false;
+    }, 300); 
   }
+}
  deleteProduct() {
   if (!this.activeItem?.id) {
     this.messageService.add({
@@ -988,12 +995,15 @@ getProductActions(product: ProductData) {
     }
   }
 
-  promptBarcode(item: any, op: any) {
-    op.hide();
-
-    this.configureBarcode = true;
-    this.activeItem = item;
-  }
+getBarcodeModalHeader(): string {
+  return `Barcode for ${this.activeItem.name || 'Product'}`;
+}
+ promptBarcode(item: any, op: any) {
+  op.hide();
+  this.configureBarcode = true;
+  this.activeItem = item;
+  this.barcodeConfig.barcodeQuantity = item.quantity || 1;
+}
 
   printBarcode() {
     this.generateBarcode(true);
@@ -1206,4 +1216,5 @@ getProductActions(product: ProductData) {
 
     pdf.save("barcodes.pdf");
   }
+  
 }
