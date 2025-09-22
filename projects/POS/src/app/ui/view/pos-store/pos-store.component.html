@@ -25,7 +25,7 @@
         <!-- Horizontal Category Cards Container -->
         <div class="flex overflow-x-auto pb-4 space-x-4">
           @for (category of getCategoryList(); track category) {
-          <div class="min-w-[300px] bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+          <div class="min-w-[500px] bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
             <!-- Category Title -->
             <h3 class="text-lg font-semibold text-gray-800 p-3 border-b capitalize">{{ category }}</h3>
             
@@ -34,10 +34,10 @@
               @for (product of getProductsByCategory(category); track product.id; let i = $index) {
                 @if (i < 4) {
                 <div 
-                  class="bg-gray-50 rounded-md overflow-hidden transition-all duration-300 relative group"
+                  class="bg-gray-50 rounded-xl border border-black/10 overflow-hidden transition-all hover:shadow-xl duration-300 relative flex flex-row gap-3"
                 >
                   <!-- Product Image -->
-                  <div class="h-32 bg-gray-100 overflow-hidden">
+                  <div class="h-32 w-32 bg-gray-100 overflow-hidden">
                     <img 
                       [src]="getProductImage(product) | async" 
                       [alt]="product.name"
@@ -47,20 +47,33 @@
                   </div>
                   
                   <!-- Product Info (Always visible) -->
-                  <div class="p-2">
-                    <h4 class="font-medium text-gray-800 text-xs line-clamp-1 capitalize">
+                  <div class="p-2 flex flex-col justify-between items-start">
+                    <div>
+                    <h4 class="font-medium text-gray-800 text-xl line-clamp-1 capitalize">
                       {{ product.name }}
                     </h4>
                     
                     <!-- Price -->
-                    <p class="text-customBlue font-semibold text-sm">
+                    <p class="text-customBlue font-semibold text-xl">
                       ₦{{ product.sellingPrice }}
                     </p>
+                    </div>
+
+                    <div class="">
+                      <button 
+                      class="bg-customGreen text-white px-3 py-3 rounded-full text-sm flex items-center justify-center gap-1"
+                      (click)="$event.stopPropagation(); addToCart(product)"
+                      [disabled]="product.quantity === 0"
+                      [class.opacity-50]="product.quantity === 0"
+                      [class.cursor-not-allowed]="product.quantity === 0"
+                    >
+                      <i class="fa-solid fa-plus text-xs"></i>
+                      <span>Buy Now</span>
+                    </button>
+                    </div>
                   </div>
                   
-                  <!-- Hover Overlay with Additional Info -->
-                  <div class="absolute inset-0 bg-black bg-opacity-70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center p-2">
-                    <!-- Stock Status -->
+                  <!-- <div class="absolute inset-0 bg-black bg-opacity-70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center p-2">
                     <p class="text-white text-xs text-center mb-2">
                       @if (product.quantity > 0) {
                         {{ product.quantity }} available
@@ -69,7 +82,7 @@
                       }
                     </p>
                     
-                    <!-- Add to Cart Button -->
+                    
                     <button 
                       class="bg-customGreen text-white px-2 py-1 rounded text-xs flex items-center justify-center gap-1"
                       (click)="$event.stopPropagation(); addToCart(product)"
@@ -80,24 +93,7 @@
                       <i class="fa-solid fa-plus text-xs"></i>
                       <span>Add to Cart</span>
                     </button>
-                    
-                    <!-- View Details Button -->
-                    <button 
-                      class="mt-2 bg-white text-gray-800 px-2 py-1 rounded text-xs"
-                      (click)="$event.stopPropagation(); navigateToProductDetails(product.id)"
-                    >
-                      View Details
-                    </button>
-                  </div>
-                </div>
-                }
-              }
-              
-              <!-- Empty slots if less than 4 products -->
-              @if (getProductsByCategory(category).length < 4) {
-                @for (empty of [].constructor(4 - getProductsByCategory(category).length); track $index) {
-                <div class="bg-gray-100 rounded-md border border-dashed border-gray-300 flex items-center justify-center h-full min-h-[160px]">
-                  <p class="text-gray-400 text-xs text-center">No product<br>available</p>
+                  </div> -->
                 </div>
                 }
               }
@@ -118,7 +114,7 @@
           >
             <!-- Product Image -->
             <div class="bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
-              <div class="md:h-48 h-20 mb-4 flex items-center justify-center overflow-hidden rounded-md bg-gray-100">
+              <div class="md:h-48 h-20 my-4 flex items-center justify-center overflow-hidden rounded-md bg-gray-100">
                 <img 
                 [src]="getProductImage(product) | async" 
                 [alt]="product.name"
@@ -130,35 +126,41 @@
             
             <!-- Product Info -->
             <div class="p-3 flex flex-col flex-1">
-              <h3 class="font-medium text-gray-800 text-sm line-clamp-2 mb-2 capitalize">
+              <h3 class="font-medium text-gray-800 text-xl line-clamp-2 mb-2 capitalize">
                 {{ product.name }}
               </h3>
-              
-              <!-- Price -->
-              <p class="text-customBlue font-semibold mb-2 mt-auto">
-                ₦{{ product.sellingPrice }}
-              </p>
-              
-              <!-- Add to Cart Button -->
-              <button 
-                class="bg-customGreen text-white px-3 py-2 rounded-lg text-sm flex items-center justify-center gap-1 w-full mt-auto"
-                (click)="$event.stopPropagation(); addToCart(product)"
-                [disabled]="product.quantity === 0"
-                [class.opacity-50]="product.quantity === 0"
-                [class.cursor-not-allowed]="product.quantity === 0"
-              >
-                <i class="fa-solid fa-plus text-xs"></i>
-                <span>Add to Cart</span>
-              </button>
-              
+
               <!-- Stock Status -->
-              <p class="text-xs text-gray-500 mt-2 text-center">
+              <p class="text-xs text-gray-500 text-left">
                 @if (product.quantity > 0) {
                   {{ product.quantity }} available
                 } @else {
                   Out of stock
                 }
               </p>
+
+              <div class="flex flex-row items-center justify-between">
+              <!-- Price -->
+              <p class="text-customBlue font-semibold mb-2 mt-auto">
+                ₦{{ product.sellingPrice }}
+              </p>
+              
+              <!-- Add to Cart Button -->
+              <div class="">
+                      <button 
+                      class="bg-customGreen text-white px-4 py-4 rounded-full text-sm flex items-center justify-center gap-1"
+                      (click)="$event.stopPropagation(); addToCart(product)"
+                      [disabled]="product.quantity === 0"
+                      [class.opacity-50]="product.quantity === 0"
+                      [class.cursor-not-allowed]="product.quantity === 0"
+                    >
+                      <i class="fa-solid fa-plus text-xs"></i>
+                      <span>Buy Now</span>
+                    </button>
+                    </div>
+              
+              </div>
+ 
             </div>
           </div>
           }

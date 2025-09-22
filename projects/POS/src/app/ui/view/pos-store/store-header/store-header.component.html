@@ -8,7 +8,7 @@
 
     <!-- Centered Filters + Search -->
     <div class="flex flex-1 justify-center">
-      <div class="flex items-center gap-3 w-full max-w-4xl">
+      <div class="flex items-center gap-5 w-full max-w-4xl">
         
         <!-- Location Selector -->
         <div class="relative flex-shrink-0">
@@ -16,13 +16,13 @@
             class="flex items-center text-gray-700 hover:text-gray-900 text-left capitalize"
             (click)="toggleBranchDropdown()"
           >
-            <i class="fa-solid fa-location-dot text-2xl mr-2"></i>
+            <i class="fa-solid fa-location-dot text-4xl mr-2"></i>
             <span class="truncate">{{ selectedBranch?.name || 'Select Location' }}</span>
             <i class="fa-solid fa-chevron-down ml-2 text-xs"></i>
           </button>
 
           @if (isBranchDropdownOpen) {
-            <div class="absolute top-full left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+            <div class="absolute top-full left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-4 z-50 border border-gray-200">
               @for (branch of branches; track branch.id) {
                 <button 
                   (click)="selectBranch(branch)"
@@ -37,7 +37,7 @@
 
         <!-- Category Dropdown -->
         <select
-          class="w-40 bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-customGreen"
+          class="w-40 bg-white border border-customBlue rounded-lg px-5 py-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-customGreen"
           [value]="selectedCategory" 
           (change)="onCategoryChange($any($event.target).value)"
         >
@@ -52,7 +52,7 @@
           <input
             type="text"
             placeholder="Search products..."
-            class="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-customGreen"
+            class="w-full pl-10 pr-4 py-4 bg-white border border-customBlue focus:border-none  rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-customGreen"
             [value]="searchText"
             (input)="onSearchChange($any($event.target).value)"
           >
@@ -65,7 +65,7 @@
     
     <!-- User Icon -->
 <!-- User Icon -->
-<div class="relative mx-4">
+<div class="relative mx-4 border py-4 px-5 rounded-full border-customBlue">
   <button 
     class="flex items-center text-gray-700 hover:text-gray-900"
     (click)="toggleUserDropdown()"
@@ -81,19 +81,19 @@
       @if (user.isGuest) {
         <button 
           (click)="openAuthModal('login')"
-          class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+          class="block px-4 py-2 text-xl text-gray-700 hover:bg-gray-100 w-full text-left"
         >
           Sign In
         </button>
         <button 
           (click)="openAuthModal('signup')"
-          class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+          class="block px-4 py-2 text-xl text-gray-700  hover:bg-gray-200 w-full text-left"
         >
           Create Account
         </button>
       } @else {
         <button 
-          class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+          class="block px-4 py-2 text-sm text-gray-700 hover:text-customGreenHover hover:bg-gray-200 w-full text-left"
         >
           My Profile
         </button>
@@ -131,8 +131,8 @@
       [disabled]="isCartEmpty"
       [ngClass]="{'opacity-50 cursor-not-allowed': isCartEmpty}"
     >
-      <i class="fa-solid fa-cart-shopping text-xl"
-        [ngClass]="isCartEmpty ? 'text-gray-400' : 'text-customBlue'"></i>
+      <i class="fa-solid fa-cart-shopping text-2xl"
+        [ngClass]="isCartEmpty ? 'text-customBlue' : 'text-customGreen'"></i>
       
       @if (!isCartEmpty && totalCartItems > 0) {
         <span class="absolute -top-1 -right-1 bg-customBlue text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">

@@ -3,13 +3,12 @@ import { environment } from "../sharedComponent/service/environments/environment
 import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { catchError, from, map, Observable, throwError } from "rxjs";
 import { OrderGET, OrderPOST } from "../models/interfaces/kitchen";
-import { OfflineService } from "./offline.service";
 
 @Injectable({
   providedIn: "root",
 })
 export class CheckoutService {
-  constructor(private http: HttpClient, private offlineService: OfflineService) {}
+  constructor(private http: HttpClient) {}
 
   processCheckout(data: any) {
     return this.http
@@ -18,18 +17,22 @@ export class CheckoutService {
   }
 
 saveOrder(data: OrderPOST): Observable<any> {
-  if (navigator.onLine) {
-    return this.http
+  // if (navigator.onLine) {
+  //   return this.http
+  //     .post<OrderGET>(this.getBaseApiUrl() + "/x/api/v2/pos/orders", data)
+  //     .pipe(catchError(this.handleError));
+  // } else {
+  //   return from(this.offlineService.upsertTransaction(data)).pipe(
+  //     map(() => ({
+  //       offline: true,
+  //       data
+  //     }))
+  //   );
+  // }
+
+   return this.http
       .post<OrderGET>(this.getBaseApiUrl() + "/x/api/v2/pos/orders", data)
       .pipe(catchError(this.handleError));
-  } else {
-    return from(this.offlineService.upsertTransaction(data)).pipe(
-      map(() => ({
-        offline: true,
-        data
-      }))
-    );
-  }
 }
 
 
