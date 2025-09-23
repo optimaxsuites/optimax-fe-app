@@ -338,10 +338,9 @@ private async syncOfflinePayments() {
       createdDate: now,
       totalAmount: this.totalPaid,
       amountTendered: this.totalPaid,
-      customerId: 1,
       quantity: 0,
       branchId: branchId,
-      cashier: Number(sessionStorage.getItem("userId")),
+      cashierId: Number(sessionStorage.getItem("userid")),
       orderItem: this.cart.cartItems.flatMap((item) => {
         const orderItems = item.count
           ? [{
@@ -438,7 +437,7 @@ private async syncOfflinePayments() {
   private async submitOrder(paymentId: number, now: string) {
   const branchId = await firstValueFrom(this.metaDataService.selectedBranchId$);
 
-    const orderPayload = {
+    const orderPayload: any = {
       id: 0 | this.cart.orderId,
       orderNumber: this.randomTokenService.getRandomToken(),
       orderStatus: "PAID",
@@ -447,9 +446,9 @@ private async syncOfflinePayments() {
       totalAmount: this.totalPaid,
       amountTendered: this.totalPaid,
       quantity: 0,
-      customerId: 1,
+      // customerId: 1,
       branchId: branchId,
-      cashier: sessionStorage.getItem("userId"),
+      cashierId: Number(sessionStorage.getItem("userid")),
       paymentId: paymentId,
       orderItem: this.cart.cartItems.flatMap((item) => {
         const orderItems = item.count
@@ -484,6 +483,11 @@ private async syncOfflinePayments() {
         return orderItems;
       }),
     };
+    if(this.customerFound) {
+      orderPayload.customerId = this.customerFound?.id
+    }
+
+    
 
     this.checkoutService
       .saveOrder(orderPayload as unknown as OrderPOST)
