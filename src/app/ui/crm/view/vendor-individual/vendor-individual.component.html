@@ -1,0 +1,437 @@
+<div class="container-fluid" *ngIf="dataService.tableSection">
+  <div class="container-header">
+    <button class="btn create-invoice-btn" (click)="openForm()">
+      Create New Vendor
+    </button>
+  </div>
+  <section class="selectClients">
+    <div class="asd">
+      <div class="top-products-container">
+        <div class="top-products">
+          <div class="top-products-table-container">
+            <table class="top-products-table w3-table w3-striped">
+              <thead>
+                <tr class="top-products-table-row">
+                  <th class="top-products-table-head checkbox"></th>
+                  <th class="top-products-table-head col-1">Name</th>
+                  <th class="top-products-table-head col-1">Contact</th>
+                  <th class="top-products-table-head col-1">Phone Number</th>
+                  <th class="top-products-table-head col-1">Email</th>
+                  <th class="top-products-table-head col-1">Category</th>
+                  <th class="top-products-table-head col-1">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  class="top-products-table-row"
+                  *ngFor="let iVen of individualVendorList"
+                >
+                  <td class="top-products-table-data">
+                    <input
+                      type="checkbox"
+                      class="check"
+                      (change)="toggleCheckbox(iVen.id)"
+                    />
+                  </td>
+                  <td class="top-products-table-data">
+                    {{ iVen.individualVendorName }}
+                  </td>
+                  <td class="top-products-table-data">
+                    {{ iVen.individualVendorContactPerson }}
+                  </td>
+                  <td class="top-products-table-data">
+                    {{ iVen.individualVendorNumber }}
+                  </td>
+                  <td class="top-products-table-data">
+                    {{ iVen.individualVendorEmail }}
+                  </td>
+                  <td class="top-products-table-data">
+                    {{ iVen.categoryType }}
+                  </td>
+
+                  <td class="top-products-table-data col-1">
+                    <div class="actionDiv">
+                      <div class="image-container">
+                        <img
+                          (click)="viewVendor(iVen)"
+                          class="actionTags"
+                          src="../../../assets/view.svg"
+                          alt=""
+                        />
+                        <span class="tooltip">View</span>
+                      </div>
+                      <div class="image-container">
+                        <img
+                          (click)="editVendor(iVen)"
+                          class="actionTags"
+                          src="../../../assets/Edit.svg"
+                          alt=""
+                        />
+                        <span class="tooltip">Edit</span>
+                      </div>
+
+                      <div class="image-container">
+                        <img
+                          (click)="deleteVendor(iVen.id)"
+                          class="actionTags"
+                          src="../../../assets/delete (1).svg"
+                          alt=""
+                        />
+                        <span class="tooltip">Delete</span>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<form
+  class="createVendor"
+  *ngIf="dataService.formSection"
+  (ngSubmit)="saveVendor()"
+>
+  <div class="viewFlex">
+    <div class="vendorCategory">
+      <span>Vendor Name</span>
+      <br />
+      <input
+        class="inputField"
+        type="text"
+        placeholder="Name"
+        [(ngModel)]="individualVendor.individualVendorName"
+        [ngModelOptions]="{ standalone: true }"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>Vendor Type</span>
+      <br />
+      <select
+        name="vendorType"
+        id="vendorType"
+        class="smallInput"
+        [(ngModel)]="selectedVendorType"
+        (change)="onVendorTypeChange($event)"
+      >
+        <option value="" disabled selected hidden>Choose Type</option>
+        <option value="individual">Individual</option>
+        <option value="Company">Company</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="inputFlex">
+    <div class="vendorCategory">
+      <span>Vendor Address</span>
+      <br />
+      <input
+        [(ngModel)]="individualVendor.individualVendorAddress"
+        [ngModelOptions]="{ standalone: true }"
+        class="inputField"
+        type="text"
+        placeholder="Address"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>Industry</span>
+      <br />
+      <input
+        [(ngModel)]="individualVendor.individualVendorIndustry"
+        [ngModelOptions]="{ standalone: true }"
+        class="smallInput"
+        type="text"
+        placeholder="Industry"
+      />
+    </div>
+  </div>
+
+  <div class="inputFlex">
+    <div class="vendorCategory">
+      <span>Vendor Email</span>
+      <br />
+      <input
+        class="inputField"
+        type="text"
+        placeholder="Email"
+        [(ngModel)]="individualVendor.individualVendorEmail"
+        [ngModelOptions]="{ standalone: true }"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>Category</span>
+      <br />
+      <select
+        name="category"
+        id="category"
+        class="smallInput"
+        [(ngModel)]="selectedCategory"
+        (change)="onCategoryChange($event)"
+        [ngModelOptions]="{ standalone: true }"
+      >
+        <option value="" disabled selected hidden>Choose Type</option>
+
+        <option *ngFor="let vCat of vCatList" [value]="vCat.categoryName">
+          {{ vCat.categoryName }}
+        </option>
+      </select>
+    </div>
+  </div>
+
+  <div class="inputFlex">
+    <div class="vendorCategory">
+      <span>Contact Person</span>
+      <br />
+      <input
+        class="inputField"
+        type="text"
+        placeholder="Contact Person"
+        [(ngModel)]="individualVendor.individualVendorContactPerson"
+        [ngModelOptions]="{ standalone: true }"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>Phone Number</span>
+      <br />
+      <input
+        class="smallInput"
+        type="text"
+        placeholder="Phone Number"
+        [(ngModel)]="individualVendor.individualVendorNumber"
+        [ngModelOptions]="{ standalone: true }"
+      />
+    </div>
+  </div>
+
+  <div class="inputFlex">
+    <div class="vendorCategory">
+      <span>Job Position</span>
+      <br />
+      <input
+        class="smallInput"
+        type="text"
+        placeholder="Job Position"
+        [(ngModel)]="individualVendor.individualVendorJobPosition"
+        [ngModelOptions]="{ standalone: true }"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>Website Link</span>
+      <br />
+      <input
+        class="inputField"
+        type="text"
+        placeholder="Website Link"
+        [(ngModel)]="individualVendor.individualVendorWebsite"
+        [ngModelOptions]="{ standalone: true }"
+      />
+    </div>
+  </div>
+
+  <div class="inputFlex">
+    <div class="vendorCategory">
+      <span>Country</span>
+      <br />
+      <input
+        class="inputField"
+        type="text"
+        placeholder="Country"
+        [(ngModel)]="individualVendor.individualVendorCountry"
+        [ngModelOptions]="{ standalone: true }"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>Street Address</span>
+      <br />
+      <input
+        class="smallInput"
+        type="text"
+        placeholder="Street Address"
+        [(ngModel)]="individualVendor.individualVendorStreetAddress"
+        [ngModelOptions]="{ standalone: true }"
+      />
+    </div>
+  </div>
+
+  <div class="inputFlex">
+    <div class="vendorCategory">
+      <span>State</span>
+      <br />
+      <input
+        [(ngModel)]="individualVendor.individualVendorState"
+        [ngModelOptions]="{ standalone: true }"
+        class="threeInputField"
+        type="text"
+        placeholder="State"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>City</span>
+      <br />
+      <input
+        [(ngModel)]="individualVendor.individualVendorCity"
+        [ngModelOptions]="{ standalone: true }"
+        class="threeInputField"
+        type="text"
+        placeholder="City"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>Postal Code</span>
+      <br />
+      <input
+        [(ngModel)]="individualVendor.individualVendorPostalCode"
+        [ngModelOptions]="{ standalone: true }"
+        class="threeInputField"
+        type="text"
+        placeholder="Postal Code"
+      />
+    </div>
+  </div>
+
+  <div class="inputFlex" *ngIf="companyForm">
+    <div class="vendorCategory">
+      <span>CAC NO:</span>
+      <br />
+      <input
+        [(ngModel)]="individualVendor.individualVendorCACNum"
+        [ngModelOptions]="{ standalone: true }"
+        class="threeInputField"
+        type="text"
+        placeholder="CAC NO:"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>TIN NO:</span>
+      <br />
+      <input
+        [(ngModel)]="individualVendor.individualVendorTINNum"
+        [ngModelOptions]="{ standalone: true }"
+        class="threeInputField"
+        type="text"
+        placeholder="TIN NO:"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>BVN (Optional)</span>
+      <br />
+      <input
+        [(ngModel)]="individualVendor.individualVendorBVN"
+        [ngModelOptions]="{ standalone: true }"
+        class="threeInputField"
+        type="text"
+        placeholder="BVN (Optional)"
+      />
+    </div>
+  </div>
+
+  <h2>BANK DETAILS</h2>
+  <div class="inputFlex">
+    <div class="vendorCategory">
+      <span>Bank Name</span>
+      <br />
+      <input
+        [(ngModel)]="individualVendor.individualVendorAcctName"
+        [ngModelOptions]="{ standalone: true }"
+        class="inputField"
+        type="text"
+        placeholder="Bank Name"
+      />
+    </div>
+    <div class="vendorCategory">
+      <span>Account NO:</span>
+      <br />
+      <input
+        class="smallInput"
+        type="text"
+        placeholder="Account NO:"
+        [(ngModel)]="individualVendor.individualVendorAcctNum"
+        [ngModelOptions]="{ standalone: true }"
+      />
+    </div>
+  </div>
+
+  <div class="btn-wrapper">
+    <button type="submit" class="saveButton">Save & Continue</button>
+  </div>
+</form>
+
+<ng-container *ngIf="dataService.vendorDetails">
+  <article class="viewVendor">
+    <div class="viewFlex">
+      <p>Name:</p>
+      <span>{{ dataService.selectedVendor.individualVendorName }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Contact Person:</p>
+      <span>{{
+        dataService.selectedVendor.individualVendorContactPerson
+      }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Phone Number:</p>
+      <span>{{ dataService.selectedVendor.individualVendorNumber }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Job Position:</p>
+      <span>{{ dataService.selectedVendor.individualVendorJobPosition }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Email:</p>
+      <span>{{ dataService.selectedVendor.individualVendorEmail }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Website:</p>
+      <span>{{ dataService.selectedVendor.individualVendorWebsite }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Industry:</p>
+      <span>{{ dataService.selectedVendor.individualVendorIndustry }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Address:</p>
+      <span>{{ dataService.selectedVendor.individualVendorAddress }}</span>
+    </div>
+
+    <div class="viewFlex">
+      <p>Country:</p>
+      <span>{{ dataService.selectedVendor.individualVendorCountry }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>State:</p>
+      <span>{{ dataService.selectedVendor.individualVendorState }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>City:</p>
+      <span>{{ dataService.selectedVendor.individualVendorCity }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Postal Code:</p>
+      <span>{{ dataService.selectedVendor.individualVendorPostalCode }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>CAC Number:</p>
+      <span>{{ dataService.selectedVendor.individualVendorCACNum }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>TIN Number:</p>
+      <span>{{ dataService.selectedVendor.individualVendorTINNum }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>BVN:</p>
+      <span>{{ dataService.selectedVendor.individualVendorBVN }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Bank:</p>
+      <span>{{ dataService.selectedVendor.individualVendorAcctName }}</span>
+    </div>
+    <div class="viewFlex">
+      <p>Account Number:</p>
+      <span>{{ dataService.selectedVendor.individualVendorAcctNum }}</span>
+    </div>
+  </article>
+</ng-container>

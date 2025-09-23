@@ -1,0 +1,109 @@
+<div *ngIf="tableSection" class=" flex flex-col w-full gap-14  p-4">
+
+    <div class="gap-3 w-full flex justify-between items-center ">
+        <ng-select 
+        [items]="categories"
+        bindLabel="name"
+        bindValue="id"
+        [(ngModel)]="selectedCategories"
+        [multiple]="true"
+        placeholder="Categories"
+        (change)="filterProductsByCategory()">
+        </ng-select>
+    
+    <div class="w-1/2">
+      <div class='search-container'>
+        <input type="input" class="Search-input" placeholder='Search...'  [(ngModel)]="searchTerm" 
+        (ngModelChange)="filterProductsBySearch($event)"  />
+        <i class="fas fa-search"></i>
+    </div>
+
+    </div>
+    
+    </div>
+
+     <div class="">
+        <p-toolbar styleClass="mb-4 gap-2">
+          <ng-template pTemplate="left">
+            <app-button text="Delete"  class="btn-delete" ></app-button>
+          </ng-template>
+    
+          <ng-template pTemplate="right">
+            <app-button text="Add New"  class="btn-navigate"  (btnClick)="openAddProdut()"></app-button>
+            <app-button text="Import"  class="btn-export" ></app-button>
+          </ng-template>
+        </p-toolbar>
+        <p-table 
+        [value]="products"
+          [paginator]="true" 
+          dataKey="id"
+          responsiveLayout="stack" 
+          [breakpoint]="'960px'"
+          styleClass="p-datatable-striped"
+          [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}"
+          [rows]="15"
+          >
+            <ng-template pTemplate="header" class="header" let-columns>
+              <tr>
+                <th style="width: 4rem"><p-tableHeaderCheckbox /></th>
+                <th class="table-item">SKU</th>
+                <th class="table-item">Code</th>
+                <th class="table-item">Name</th>
+                <th class="table-item">Price</th>
+                <th class="table-item">Quantity</th>
+                <th class="table-item">Category</th>
+                <th class="table-item">Action</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-item let-i="rowIndex" let-columns="columns">
+                <tr>
+                  <td>
+                    <p-tableCheckbox [value]="item" class="custom-checkbox"/>
+                  </td>
+                  <td class="table-item"><span class="p-column-title">Product SKU</span>{{ item.sku}}</td>
+                  <td class="table-item"><span class="p-column-title">Product Code</span>{{ item.code}}</td>
+                  
+                  <td class="table-item"><span class="p-column-title">Name</span>{{ item.name  }}</td>
+                  <td class="table-item"><span class="p-column-title">Price</span>{{item.effectivePrice}}
+                  <td class="table-item"><span class="p-column-title">Quantity</span>{{item.effectiveQuantity}}</td>
+                  <td class="table-item"><span class="p-column-title">Category</span>{{ item.productCategory?.name }}</td>
+                  <td class="actions table-item">
+                    <span class="p-column-title">Action</span>
+                    <i  class="pi pi-eye table-item" (click)="openViewProduct(item)" ></i>
+                    <i  class="pi pi-pen-to-square table-item" (click)="openEdit(item)"></i>
+                    <i  class="pi pi-times-circle table-item" (click)="openDeleteModal(item)"></i>
+                  </td>
+                </tr>                            
+            </ng-template>
+        </p-table>
+      </div>
+</div>
+
+<app-modal *ngIf="deleteModal"
+[header]="'Delete ' + activeItem.name"
+[title]="'Cancel'"
+(close)="openDeleteModal()">
+<p class="modalText">Are You sure you want to carry out this action? <br>
+  Clicking on <span style="color: red; font-weight: bold;">DELETE </span>, would lead to permanent removal of <span style="font-weight: bold;">{{activeItem.name}}</span></p>
+
+  <div class="modalBtn">
+    <button class="btn create-invoice-btn" (click)="openDeleteModal()" >
+    Cancel
+    </button>
+
+    <button class="btn create-invoice-btn" style="background-color: red !important;"  (click)="deleteProduct()"  >
+    Delete
+    </button>
+  </div>
+</app-modal>
+
+<div *ngIf="addProduct">
+  <app-add-product (close)="closeAddProduct()"></app-add-product>
+</div>
+<div *ngIf="viewProduct">
+  <app-view-product [activeItem]="activeItem" (edit)="openEdit(activeItem)" (closeView)="openViewProduct()"></app-view-product>
+</div>
+<div *ngIf="editProduct" >
+  <app-add-product [activeItem]="activeItem"  [isEditMode]="true" (close)="closeEdit()"></app-add-product>
+</div>
+<p-toast position="top-right" key="tl" />

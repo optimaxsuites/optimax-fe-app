@@ -1,0 +1,208 @@
+<!-- navbar.component.html -->
+<nav
+  class="fixed w-full z-30 bg-white dark:bg-gray-900 shadow-lg border-b border-gray-200 dark:border-gray-700 transition-colors duration-300"
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-16">
+      <!-- Logo -->
+      <div class="flex-shrink-0 flex items-center">
+        <div class="flex items-center space-x-2">
+          <div
+            class="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center"
+          >
+            <svg
+              class="w-5 h-5 text-white"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"
+              />
+            </svg>
+          </div>
+          <span class="text-xl font-bold text-gray-900 dark:text-white"
+            >Bookings</span
+          >
+        </div>
+      </div>
+
+      <!-- Desktop Navigation -->
+      <div class="hidden md:flex items-center space-x-8">
+        <a
+          [routerLink]="['/user/bookings', currentUserId]"
+          routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="text-gradient-to-r from-rose-200 via-orange-100 to-amber-200 dark:from-emerald-400 dark:to-teal-500 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium transition-colors duration-200"
+          >Home</a
+        >
+        <a
+          [routerLink]="['/user/rooms', currentUserId]"
+          routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold"
+          class="text-gradient-to-r from-rose-200 via-orange-100 to-amber-200 dark:from-emerald-400 dark:to-teal-500 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium transition-colors duration-200"
+          >Rooms</a
+        >
+        <a
+          routerLink="/bookings"
+          routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold"
+          class="text-gradient-to-r from-rose-200 via-orange-100 to-amber-200 dark:from-emerald-400 dark:to-teal-500 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium transition-colors duration-200"
+          >Bookings</a
+        >
+      </div>
+
+      <!-- Right side buttons -->
+      <div class="hidden md:flex items-center space-x-4">
+        <button
+          (click)="toggleDarkMode()"
+          class="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
+          [attr.aria-label]="
+            isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'
+          "
+        >
+          <svg
+            *ngIf="!isDarkMode"
+            class="w-5 h-5"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <svg
+            *ngIf="isDarkMode"
+            class="w-5 h-5"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"
+            />
+          </svg>
+        </button>
+
+        <button
+          routerLink="/contact"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+        >
+          Contact Us
+        </button>
+      </div>
+
+      <!-- Mobile menu button -->
+      <div class="md:hidden flex items-center space-x-2">
+        <button
+          (click)="toggleDarkMode()"
+          class="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
+          [attr.aria-label]="
+            isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'
+          "
+        >
+          <svg
+            *ngIf="!isDarkMode"
+            class="w-5 h-5"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <svg
+            *ngIf="isDarkMode"
+            class="w-5 h-5"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"
+            />
+          </svg>
+        </button>
+
+        <button
+          (click)="toggleMobileMenu()"
+          class="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+          [attr.aria-expanded]="isMobileMenuOpen"
+          aria-label="Toggle navigation menu"
+        >
+          <svg
+            *ngIf="!isMobileMenuOpen"
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+          <svg
+            *ngIf="isMobileMenuOpen"
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Navigation Menu -->
+  <div
+    class="md:hidden transition-all duration-300 ease-in-out overflow-hidden"
+    [class.max-h-96]="isMobileMenuOpen"
+    [class.max-h-0]="!isMobileMenuOpen"
+  >
+    <div
+      class="px-4 pt-2 pb-6 space-y-1 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700"
+    >
+      <a
+        [routerLink]="['/user/bookings', currentUserId]"
+        routerLinkActive="text-blue-600 dark:text-blue-400 bg-gray-100 dark:bg-gray-800 font-semibold"
+        [routerLinkActiveOptions]="{ exact: true }"
+        (click)="isMobileMenuOpen = false"
+        class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-sm font-medium transition-colors duration-200"
+        >Home</a
+      >
+      <a
+        [routerLink]="['/user/rooms', currentUserId]"
+        routerLinkActive="text-blue-600 dark:text-blue-400 bg-gray-100 dark:bg-gray-800 font-semibold"
+        (click)="isMobileMenuOpen = false"
+        class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-sm font-medium transition-colors duration-200"
+        >Rooms</a
+      >
+      <a
+        routerLink="/bookings"
+        routerLinkActive="text-blue-600 dark:text-blue-400 bg-gray-100 dark:bg-gray-800 font-semibold"
+        (click)="isMobileMenuOpen = false"
+        class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-sm font-medium transition-colors duration-200"
+        >Bookings</a
+      >
+
+      <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+        <button
+          routerLink="/contact"
+          (click)="isMobileMenuOpen = false"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+        >
+          Contact Us
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>

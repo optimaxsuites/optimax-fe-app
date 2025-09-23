@@ -1,0 +1,258 @@
+<div class="card table-item">
+  <p-toast></p-toast>
+
+    <div class="move-back">
+        <app-back-button class="" (click)="goBack()" ></app-back-button>
+    </div>
+    <div class="invite-main">
+  
+        <!-- Interviewer Info Section -->
+         <div class="input-container-100 gap-4 d-flex">
+            <div class="input-container-50 mb-4">
+                <h3><strong>Interviewer Information</strong></h3>
+                <div class="input-container-100 input-label-flex">
+                  <span for="interviewerName">Name:</span>
+                  <input
+                    type="text"
+                    id="interviewerName"
+                    class="editInput"
+                    [(ngModel)]="interviewer.fullname"
+                    placeholder="Eniola Johnson"
+                    disabled
+                  />
+                </div>
+                <div class="input-container-100 input-label-flex">
+                  <span for="interviewerPosition">Position:</span>
+                  <input
+                    type="text"
+                    id="interviewerPosition"
+                    class="editInput"
+                    [(ngModel)]="interviewer.position"
+                    placeholder="Project Manager"
+                    disabled
+                  />
+                </div>
+                <div class="input-container-100 input-label-flex">
+                  <span for="interviewerDepartment">Department:</span>
+                  <input
+                    type="text"
+                    id="interviewerDepartment"
+                    class="editInput"
+                    [(ngModel)]="interviewer.department"
+                    placeholder="IT"
+                    disabled
+                  />
+                </div>
+                <div class="input-container-100 gap-4 d-flex">
+                  <div class="input-container-50">
+                      <span for="interviewDate">Interview Date:</span>
+                      <input
+                        type="date"
+                        id="interviewDate"
+                        class="editInput"
+                        [(ngModel)]="interviewer.interviewDate"
+                        disabled
+                      />
+                    </div>
+                    <div class="input-container-50">
+                      <span for="interviewTime">Interview Time:</span>
+                      <input
+                        type="time"
+                        id="interviewTime"
+                        class="editInput"
+                        [(ngModel)]="interviewer.interviewTime"
+                        disabled
+                      />
+                    </div>
+                </div>
+            </div>
+            <div class="input-container-50">
+                <h3><strong>Candidate Information</strong></h3>
+                <div class="input-container-100 input-label-flex">
+                    <span for="candidateName">Name:</span>
+                    <input
+                        type="text"
+                        id="candidateName"
+                        class="editInput"
+                        [(ngModel)]="candidate.candidateName"
+                        placeholder="Lawson Jerry"
+                        disabled
+                    />
+                </div>
+                <div class="input-container-100 input-label-flex">
+                    <span for="candidatePosition">Position:</span>
+                    <input
+                      type="text"
+                      id="candidatePosition"
+                      class="editInput"
+                      [(ngModel)]="candidate.position"
+                      placeholder="Web Developer (JNR)"
+                      disabled
+                    />
+                  </div>
+                  <div class="input-container-100 input-label-flex">
+                    <span for="candidateEmail">Email:</span>
+                    <input
+                      type="text"
+                      id="candidateEmail"
+                      class="editInput"
+                      [(ngModel)]="candidate.email"
+                      placeholder="jerry@gmail.com"
+                      disabled
+                    />
+                  </div>
+                  <div class="input-container-100 input-label-flex">
+                    <span for="candidatePhoneNo">Phone:</span>
+                    <input
+                      type="text"
+                      id="candidatePhoneNo"
+                      class="editInput"
+                      [(ngModel)]="candidate.contactNo"
+                      placeholder="08111111111"
+                      disabled
+                    />
+                  </div>
+            </div>
+         </div>
+         <hr>
+
+         <div>
+            <div class="input-container-50 mb-4">
+              <span for="criteria">Criteria:</span>
+              <ng-select
+                [items]="allCriteria"
+                bindLabel="title"
+                bindValue="id"
+                placeholder="Select Criteria"
+                (change)="onCriteriaChange($event.id)"
+              ></ng-select>
+            </div>
+         </div>
+      
+        <!-- Interview Score Sheet -->
+
+        <div *ngIf="selectedCriterias.length === 0" class="text-gray-500 text-center my-4">
+          Select Ctiteria Above
+        </div>
+
+        <div *ngIf="selectedCriterias.length > 0">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Criteria</th>
+                <th class="text-center">1</th>
+                <th class="text-center">2</th>
+                <th class="text-center">3</th>
+                <th class="text-center">4</th>
+                <th class="text-center">5</th>
+              </tr>
+            </thead>
+              <tbody>
+
+                <tr *ngFor="let question of selectedCriterias; let j = index">
+                  <td>{{ j + 1 }}</td>
+                  <td>{{ question.text }}</td>
+                  <td class="text-center" *ngFor="let value of [1, 2, 3, 4, 5]">
+                    <label class="custom-radio">
+                      <input
+                        type="radio"
+                        [name]="'question_' + j"
+                        [(ngModel)]="question.score"
+                        [value]="value"
+                        (change)="onScoreChange(question)"
+                      />
+                      <span class="custom-radio-checkmark"></span>
+                    </label>
+                  </td>
+                </tr>
+                
+                <!-- <tr *ngFor="let question of selectedCriterias; let j = index">
+                  <td>{{ j + 1 }}</td>
+                  <td>{{ question.text }}</td>
+                  <td class="text-center">
+                    <label class="custom-radio">
+                      <input
+                        type="radio"
+                        [name]="'question.text_' + j"
+                        [(ngModel)]="question.score"
+                        [value]="1"
+                        (change)="onScoreChange(question)"
+                      />
+                      <span class="custom-radio-checkmark"></span>
+                    </label>
+                  </td>
+                  <td class="text-center">
+                    <label class="custom-radio">
+                      <input
+                        type="radio"
+                        [name]="'question.text_' + j"
+                        [(ngModel)]="question.score"
+                        [value]="2"
+                        (change)="onScoreChange(question)"
+                      />
+                      <span class="custom-radio-checkmark"></span>
+                    </label>
+                  </td>
+                  <td class="text-center">
+                    <label class="custom-radio">
+                      <input
+                        type="radio"
+                        [name]="'question.text_' + j"
+                        [(ngModel)]="question.score"
+                        [value]="3"
+                        (change)="onScoreChange(question)"
+                      />
+                      <span class="custom-radio-checkmark"></span>
+                    </label>
+                  </td>
+                  <td class="text-center">
+                    <label class="custom-radio">
+                      <input
+                        type="radio"
+                        [name]="'question.text_' + j"
+                        [(ngModel)]="question.score"
+                        [value]="4"
+                        (change)="onScoreChange(question)"
+                      />
+                      <span class="custom-radio-checkmark"></span>
+                    </label>
+                  </td>
+                  <td class="text-center">
+                    <label class="custom-radio">
+                      <input
+                        type="radio"
+                        [name]="'question.text_' + j"
+                        [(ngModel)]="question.score"
+                        [value]="5"
+                        (change)="onScoreChange(question)"
+                      />
+                      <span class="custom-radio-checkmark"></span>
+                    </label>
+                  </td>
+                </tr> -->
+              </tbody>
+          </table>
+          <div>
+            <p>Score: {{ sumOfScore }}</p>
+            <p>Maximum Score: {{ maximumScore }}</p>
+            <p>Total Score Over 100: {{totalScoreOver100 | number:'1.1-1'}}</p>
+          </div>
+        <div class="btn-wrapper">
+            <app-button (click)="submitForm()"  text="Submit" class="btn-save"></app-button>
+        </div>
+        </div>
+    </div>
+</div>
+  
+
+<!-- Step-by-step Calculation
+  Sum of scores: 5+5+4+4+4+3+3+3+4+4=43
+
+Maximum possible score:
+  Number of questions: 10
+  Maximum score per question: 5
+  Maximum total score: 10×5=50
+
+Total score over 100:
+  Total Score Over 100=(50/43)×100=86 -->

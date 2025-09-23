@@ -1,0 +1,295 @@
+@use "primeng/resources/themes/lara-light-blue/theme.css";
+@use "primeng/resources/primeng.css";
+@use "primeicons/primeicons.css";
+
+// Custom theme colors
+$customBlue: #2E6276;
+$customGreen: #2EB270;
+$customBlueHover: #4291b1;
+$customGreenHover: #47e797;
+$lightGray: #f5f5f5;
+$mediumGray: #e0e0e0;
+$darkGray: #333333;
+
+// Base styles
+.bank-account-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: $darkGray;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+// Header styles
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  
+  .bank-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    
+    h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      color: $customBlue;
+    }
+    
+    .account-info {
+      margin: 0.2rem 0 0;
+      color: #666;
+    }
+  }
+  
+  .currency {
+    font-weight: bold;
+    color: $customBlue;
+    font-size: 1.2rem;
+  }
+}
+
+// Account Overview styles
+.account-overview {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  
+  .balance-section {
+    display: flex;
+    gap: 3rem;
+    
+    .balance-item {
+      label {
+        display: block;
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 0.5rem;
+      }
+      
+      h2 {
+        margin: 0;
+        font-size: 1.8rem;
+        color: $customBlue;
+      }
+    }
+  }
+  
+  .sync-section {
+    button {
+      background-color: $customBlue;
+      border: none;
+      
+      &:hover {
+        background-color: $customBlueHover;
+      }
+    }
+  }
+}
+
+// Statement Summary styles
+.statement-summary {
+  .summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    
+    h3 {
+      margin: 0;
+      color: $customBlue;
+    }
+  }
+  
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+    
+    .summary-item {
+      padding: 1rem;
+      border-radius: 6px;
+      background: $lightGray;
+      
+      label {
+        display: block;
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 0.5rem;
+      }
+      
+      p {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 500;
+      }
+      
+      &.positive p {
+        color: $customGreen;
+      }
+      
+      &.negative p {
+        color: #e74c3c;
+      }
+    }
+  }
+}
+
+// Filters styles
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: flex-end;
+  
+  .filter-group {
+    flex: 1;
+    min-width: 200px;
+    
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      color: #666;
+    }
+    
+    &.actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      
+      button {
+        margin-left: 0.5rem;
+      }
+    }
+  }
+}
+
+// Transactions table styles
+.transactions {
+  .p-datatable {
+    .p-datatable-thead > tr > th {
+      background-color: $customBlue;
+      color: white;
+    }
+    
+    .p-datatable-tbody > tr > td {
+      vertical-align: middle;
+      
+      &.positive {
+        color: $customGreen;
+        font-weight: 500;
+      }
+      
+      &.negative {
+        color: #e74c3c;
+        font-weight: 500;
+      }
+    }
+    
+    .category-label {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      background: $lightGray;
+      cursor: pointer;
+      
+      &:hover {
+        background: $mediumGray;
+      }
+      
+      .edit-icon {
+        margin-left: 0.5rem;
+        font-size: 0.8rem;
+        color: $customBlue;
+      }
+    }
+    
+    .edit-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    
+    // Category color indicators
+    .category-income {
+      background: rgba($customGreen, 0.1);
+      border-left: 3px solid $customGreen;
+    }
+    
+    .category-withdrawal {
+      background: rgba(#e74c3c, 0.1);
+      border-left: 3px solid #e74c3c;
+    }
+    
+    .category-utilities {
+      background: rgba(#f39c12, 0.1);
+      border-left: 3px solid #f39c12;
+    }
+    
+    .category-transfer {
+      background: rgba(#3498db, 0.1);
+      border-left: 3px solid #3498db;
+    }
+  }
+}
+
+// Import/Export dialog styles
+.import-export-content {
+  .file-types {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: #666;
+  }
+  
+  .export-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    
+    .export-range {
+      margin-top: 1rem;
+      
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        color: #666;
+      }
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .account-overview {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+    
+    .balance-section {
+      flex-direction: column;
+      gap: 1rem;
+      width: 100%;
+    }
+  }
+  
+  .filters {
+    flex-direction: column;
+    
+    .filter-group.actions {
+      justify-content: flex-start;
+    }
+  }
+}
