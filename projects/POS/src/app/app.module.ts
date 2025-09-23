@@ -149,7 +149,7 @@ const dbConfig: DBConfig = {
   objectStoresMeta: [
     {
       store: 'products',
-      storeConfig: { keyPath: 'id', autoIncrement: false },
+      storeConfig: { keyPath: 'id', autoIncrement: true },
         storeSchema: [
         { name: 'name', keypath: 'name', options: { unique: false } },
         { name: 'sku', keypath: 'sku', options: { unique: false } },
@@ -164,7 +164,7 @@ const dbConfig: DBConfig = {
     },
      {
       store: 'transactions',
-      storeConfig: { keyPath: 'id', autoIncrement: false },
+      storeConfig: { keyPath: 'id', autoIncrement: true },
       storeSchema: [
         { name: 'orderId', keypath: 'orderId', options: { unique: false } },
         { name: 'items', keypath: 'items', options: { unique: false } },

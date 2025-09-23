@@ -5,6 +5,7 @@
   <!-- Title -->
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
     <h2 class="text-xl font-semibold text-gray-800">Checkout Orders</h2>
+    <button (click)="showOfflineRecord = !showOfflineRecord"  class="bg-customBlue text-white font-bold text-xl  py-2 px-3 rounded-xl">Offline records</button>
   </div>
 
   <!-- Search Bar - Top Line -->
@@ -104,7 +105,7 @@
 
 
 <!-- Empty state -->
-<div *ngIf="filteredOrders.length === 0 && !isLoading" class="px-4 md:px-10 mt-10 text-center">
+<div *ngIf="filteredOrders.length === 0 && !isLoading && !showOfflineRecord" class="px-4 md:px-10 mt-10 text-center">
   <div class="bg-gray-50 rounded-lg p-8 border border-gray-200">
     <i class="fa-solid fa-clipboard-list text-4xl text-gray-400 mb-4"></i>
     <h3 class="text-xl font-semibold text-gray-700 mb-2">
@@ -127,8 +128,10 @@
   </div>
 </div>
 
+
+<ng-container *ngIf="!showOfflineRecord, else offlineOrderTable" >
 <!-- Orders Table with PrimeNG Pagination -->
-<div class="px-4 md:px-8 mt-6 md:mt-10" *ngIf="filteredOrders.length > 0 && !isLoading">
+<div class="px-4 md:px-8 mt-6 md:mt-10" *ngIf="filteredOrders.length > 0 && !isLoading ">
   <p-table 
     [value]="filteredOrders" 
     [paginator]="true" 
@@ -185,3 +188,65 @@
     </ng-template>
   </p-table>
 </div>
+</ng-container>
+
+<ng-template #offlineOrderTable>
+ <p>wow</p>
+ <div class="px-4 md:px-8 mt-6 md:mt-10" *ngIf="offlineRecords$.length > 0 && !isLoading">
+  <p-table 
+    [value]="offlineRecords$" 
+    [paginator]="true" 
+    [rows]="rowsPerPage"
+    [rowsPerPageOptions]="[5, 10, 15, 20, 25]"
+    [totalRecords]="offlineRecords$.length"
+    responsiveLayout="stack"
+    styleClass="p-datatable-striped"
+    [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}">
+    
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="updatedAt" style="width:20%">
+          Date <p-sortIcon field="updatedAt"></p-sortIcon>
+        </th>
+        <th pSortableColumn="orderStatus" style="width:15%">
+          Status <p-sortIcon field="orderStatus"></p-sortIcon>
+        </th>
+        <th pSortableColumn="orderNumber" style="width:20%">
+          Order Number <p-sortIcon field="orderNumber"></p-sortIcon>
+        </th>
+        <th pSortableColumn="totalAmount" style="width:20%">
+          Total Sales <p-sortIcon field="totalAmount"></p-sortIcon>
+        </th>
+        <th style="width:25%">Action</th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-order>
+      <tr (click)="orderDetails(order)" style="cursor:pointer">
+        <td>{{ formatDate(order?.transactionDate) | date:'medium' }}</td>
+        <td>
+          <span [ngClass]="{
+                'text-orange-500': order?.status === 'UNPAID',
+                'text-green-600': order?.status === 'PAID',
+                'text-blue-500': order?.status === 'PENDING'
+              }"
+              class="font-bold">
+            {{ order?.status }}
+          </span>
+        </td>
+        <td class="capitalize">{{ order?.order?.orderNumber }}</td>
+        <td>₦{{ order?.totalAmount | number:'1.2-2' }}</td>
+        <td>
+          <div class="flex gap-3 text-[18px]" (click)="$event.stopPropagation()">
+            <i *ngIf="order?.status === 'UNPAID'"
+               class="fa-solid fa-cart-shopping hover:bg-green-100 p-2 rounded-md transition-colors"
+               (click)="reOpenCart(order)"></i>
+            <i class="fa-solid fa-arrow-right hover:bg-blue-100 rounded-md p-2 transition-colors"
+               (click)="orderDetails(order)"></i>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+</ng-template>

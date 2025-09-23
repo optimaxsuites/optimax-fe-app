@@ -4,6 +4,8 @@ import { Order } from '../../models/interface';
 import { RegisterService } from '../../service/register.service';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
 import { MetadataService } from '../../service/metadata.service';
+import { OfflineService } from '../../service/offline.service';
+import { firstValueFrom, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-checkout-orders',
@@ -15,7 +17,7 @@ export class CheckoutOrdersComponent implements OnInit {
   filteredOrders: Order[] = [];
   statusFilter: string = 'ALL';
   groupedOrders: Array<{ key: string; label: string; items: any[] }> = [];
-
+   showOfflineRecord: boolean = false;
   // New properties for date range filtering
   dateRangeOptions = [
     { value: 1, label: 'Today' },
@@ -36,6 +38,9 @@ export class CheckoutOrdersComponent implements OnInit {
     { value: 'UNPAID', label: 'Unpaid' },
     { value: 'PENDING', label: 'Pending' }
   ];
+
+  offlineRecords$:any[] =[];
+
   
   // filters
   daysFilter = 1; // Default to Today
@@ -50,18 +55,29 @@ export class CheckoutOrdersComponent implements OnInit {
     private router: Router,
     public navigationLink: NavigationLinksService,
     private registerService: RegisterService,
-    private metadataService: MetadataService
+    private metadataService: MetadataService,
+    private offlineService: OfflineService
   ) {}
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    if(navigator.onLine){
     this.metadataService.fetchMetaData();
     this.metadataService.orders$.subscribe((data: Order[]) => {
       this.allOrders = Array.isArray(data) ? [...data] : [];
-      this.isLoading = false;
       this.applyFilters();
     });
+  }else{
+    this.showOfflineRecord = true
+  }
 
+   this.offlineRecords$ = await firstValueFrom(this.offlineService.getPendingPayments())
+   console.log(this.offlineRecords$)
+  
     this.setRangeToToday();
+    this.isLoading = false;
+
+
+
   }
 
   // New methods for date range filtering

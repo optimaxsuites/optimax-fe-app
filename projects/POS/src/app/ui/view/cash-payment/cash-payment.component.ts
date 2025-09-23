@@ -16,6 +16,8 @@ import { CustomerService } from "../../service/customer.service";
 import { NavigationLinksService } from "../../sharedComponent/service/navigation-links/navigation-links.service";
 import { RandomTokenService } from "../../sharedComponent/service/random-token/random-token.service";
 import { OfflineService } from "../../service/offline.service";
+import { BehaviorSubject, firstValueFrom, Observable } from "rxjs";
+import { MetadataService } from "../../service/metadata.service";
 
 @Component({
   selector: "app-cash-payment",
@@ -60,7 +62,11 @@ export class CashPaymentComponent implements OnInit {
     email: "",
     loyaltyPoints: 0,
   };
+  businessInfo: string | any;
+
   isLoading: boolean = false;
+    private _isOffline = new BehaviorSubject<boolean>(!navigator.onLine);
+    isOffline$: Observable<boolean> = this._isOffline.asObservable();
 
   constructor(
     private router: Router,
@@ -70,7 +76,8 @@ export class CashPaymentComponent implements OnInit {
     private randomTokenService: RandomTokenService,
     private checkoutService: CheckoutService,
     private _location: Location,
-    private offlineService: OfflineService
+    private offlineService: OfflineService,
+    private metaDataService: MetadataService
   ) {
     const navigation = this.router.getCurrentNavigation();
     this.navigationState = navigation?.extras.state as NavigationState;
@@ -83,8 +90,10 @@ export class CashPaymentComponent implements OnInit {
       localStorage.setItem("navigationState", JSON.stringify(this.navigationState));
     }
     console.log(this.navigationState);
+
+    window.addEventListener('online', () => this._isOffline.next(false));
+    window.addEventListener('offline', () => this._isOffline.next(true));
   }
-  businessInfo: string | any;
 
   ngOnInit(): void {
     this.cart = this.navigationState?.cart;
@@ -94,7 +103,63 @@ export class CashPaymentComponent implements OnInit {
     if (userInfoString) {
       this.businessInfo = JSON.parse(userInfoString);
     }
+    // if(navigator.onLine) this.syncOfflinePayments()
+    window.addEventListener("online", () => this.syncOfflinePayments())
   }
+private async syncOfflinePayments() {
+  console.log("🌐 You are now online, preparing to sync...");
+
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
+  const pendingPayments = await firstValueFrom(this.offlineService.getPendingPayments());
+  if (!pendingPayments.length) return;
+
+  console.log("🔄 Syncing offline payments:", pendingPayments);
+
+  for (const payment of pendingPayments) {
+    const now = new Date().toISOString();
+    const onlinePaymentPayload = {
+      id: payment.id,
+      totalAmount: payment.totalAmount,
+      transactionDate: payment.transactionDate,
+      status: payment.status,
+    };
+
+    this.checkoutService.makePayment(onlinePaymentPayload).subscribe({
+      next: (paymentId) => {
+        let breakdownCount = 0;
+
+        for (const breakdown of payment.breakdowns) {
+          breakdown.paymentId = paymentId;
+          this.checkoutService.savePaymentBreakdown(breakdown).subscribe({
+            next: () => {
+              breakdownCount++;
+              if (breakdownCount === payment.breakdowns.length) {
+                payment.order.paymentId = paymentId;
+                this.checkoutService.saveOrder(payment.order).subscribe({
+                  next: async () => {
+                    console.log("✅ Offline payment synced:", payment);
+
+                    await this.offlineService.removePendingPayment(payment.id);
+
+                   
+                  },
+                  error: (err) =>
+                    console.error("❌ Failed to sync order:", err),
+                });
+              }
+            },
+            error: (err) =>
+              console.error("❌ Failed to sync payment breakdown:", err),
+          });
+        }
+      },
+      error: (err) => console.error("❌ Failed to sync payment:", err),
+    });
+  }
+
+  this.offlineService.clearPendingPayments()
+}
 
   get totalPaid() {
     return (
@@ -252,11 +317,13 @@ export class CashPaymentComponent implements OnInit {
   }
 
   const now = new Date().toISOString();
+  const branchId = await firstValueFrom(this.metaDataService.selectedBranchId$);
   const paymentPayload = {
     id: 0,
     totalAmount: this.cart.total,
     transactionDate: now,
     status: "PAID",
+     __dbKey: this.randomTokenService.getRandomToken(),
     breakdowns: this.cart.paymentModes.map((mode) => ({
       id: 0,
       amountPaid: this.paymentValues[mode],
@@ -270,10 +337,11 @@ export class CashPaymentComponent implements OnInit {
       updatedAt: now,
       createdDate: now,
       totalAmount: this.totalPaid,
-      amountTendered: this.paymentValues.cash,
+      amountTendered: this.totalPaid,
       customerId: 1,
-      branchId: 1,
-      cashier: 67,
+      quantity: 0,
+      branchId: branchId,
+      cashier: Number(sessionStorage.getItem("userId")),
       orderItem: this.cart.cartItems.flatMap((item) => {
         const orderItems = item.count
           ? [{
@@ -308,6 +376,10 @@ export class CashPaymentComponent implements OnInit {
     }
   };
 
+  console.log(paymentPayload)
+
+  const onlinePaymentPayload = { id: 0, totalAmount: this.cart.total, transactionDate: now, status: "PAID", };
+
   if (!navigator.onLine) {
     await this.offlineService.addPendingPayment(paymentPayload);
     this.messageService.add({
@@ -315,13 +387,25 @@ export class CashPaymentComponent implements OnInit {
       summary: "Offline",
       detail: "Payment saved offline. It will sync when you're online.",
       key: "tl",
-      life: 3000,
+      life: 5000,
     });
+     const historyState = history.state;
+                    const paymentTrackingHistory = historyState.paymentTracking;
+                    this.router.navigateByUrl(historyState.prevUrlBeforePaymentPage, {
+                      state: {
+                        ...historyState,
+                        paymentTracking: paymentTrackingHistory
+                          ? { ...paymentTrackingHistory, paymentSuccess: true }
+                          : undefined,
+                        paymentSuccess: true,
+                      },
+                    });
+      this.printReceipt();
     this.isLoading = false;
     return;
   }
 
-  this.checkoutService.makePayment(paymentPayload).subscribe(
+  this.checkoutService.makePayment(onlinePaymentPayload).subscribe(
     { next: (paymentId) => {
       if (!paymentId) return this.showError("Missing payment ID from response"); 
       const paymentBreakdownPayloads = this.cart.paymentModes.map((mode) => (
@@ -351,7 +435,9 @@ export class CashPaymentComponent implements OnInit {
 }
 
 
-  private submitOrder(paymentId: number, now: string) {
+  private async submitOrder(paymentId: number, now: string) {
+  const branchId = await firstValueFrom(this.metaDataService.selectedBranchId$);
+
     const orderPayload = {
       id: 0 | this.cart.orderId,
       orderNumber: this.randomTokenService.getRandomToken(),
@@ -359,17 +445,17 @@ export class CashPaymentComponent implements OnInit {
       updatedAt: now,
       createdDate: now,
       totalAmount: this.totalPaid,
-      amountTendered: this.paymentValues.cash,
+      amountTendered: this.totalPaid,
       quantity: 0,
       customerId: 1,
-      branchId: 1,
-      cashier: 67,
+      branchId: branchId,
+      cashier: sessionStorage.getItem("userId"),
       paymentId: paymentId,
       orderItem: this.cart.cartItems.flatMap((item) => {
         const orderItems = item.count
           ? [
             {
-              totalPrice: item.count * parseInt(item.sellingPrice || "0"),
+              totalPrice: item.count * Number(item.sellingPrice || "0")  ,
               quantity: item.count,
               productId: item.id,
             },
