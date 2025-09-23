@@ -1,155 +1,338 @@
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 min-h-screen">
-     <header class="w-full">
-    <nav>
-      <div class="flex items-center px-4 py-3 relative">
-        <!-- Hamburger Menu for mobile-->
-        <button
-          class="px-5 py-3 hover:bg-gray-100 rounded-lg border md:hidden block border-gray-400 transition-colors"
-          >
-          <i class="fa-solid fa-bars text-xl text-gray-700"></i>
-        </button>
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <app-store-header
+    [branches]="branches"
+    [categoryOptions]="categoryOptions()"
+    [selectedCategory]="selectedCategory()"
+    [searchText]="searchText()"
+    [isCartEmpty]="isCartEmpty()"
+    [totalCartItems]="getTotalCartItems()"
+    [user]="user()"
+    (categoryChange)="changeCategory($event)"
+    (searchChange)="changeSearchInput($event)"
+    (toggleCart)="toggleCart()"
+    (branchChange)="changeBranch($event)"
+  ></app-store-header>
 
-        <!-- Logo (centered on mobile, left on desktop) -->
-        <div class="h-full md:h-[20%] md:w-[9%] w-[24%]">
-          <img src="./../../../../assets/Logo-green.png" alt="Logo" />
-        </div>
-        
-        <!-- Cart Icon for Mobile -->
-        <div class="md:hidden ml-auto">
-          <button
-            class="transition-colors p-3 relative hover:bg-gray-100 rounded-lg border border-gray-400"
-            
-          >
-            <i class="fa-solid fa-cart-shopping text-lg"></i>
-            
-          </button>
-        </div>
-      </div>
-    </nav>
-  </header>
-  <!-- Breadcrumbs -->
-  <nav class="mb-6">
-    <ol class="flex items-center space-x-2 text-sm">
-      <li><a href="/" class="text-customBlue hover:text-blue-800">Home</a></li>
-      <li class="flex items-center">
-        <span class="mx-2 text-gray-400">></span>
-        <a href="#" class="text-customBlue hover:text-blue-800">{{ getCategoryName() }}</a>
-      </li>
-      <li class="flex items-center">
-        <span class="mx-2 text-gray-400">></span>
-        <span class="text-gray-600 truncate">{{ product?.name }}</span>
-      </li>
-    </ol>
-  </nav>
-
-  <div class="flex flex-col lg:flex-row gap-8 bg-white rounded-xl shadow-md p-6">
-    <!-- Product Image -->
-    <div class="lg:w-1/2">
-      <div class="rounded-lg overflow-hidden bg-gray-100 aspect-square flex items-center justify-center">
-        <!-- <img 
-          [src]="(product ? getProductImage(product) : null) " 
-          [alt]="product?.name"
-          class="w-full h-full object-cover"
-        
-        /> -->
-      </div>
-    </div>
-
-    <!-- Product Info -->
-    <div class="lg:w-1/2 flex flex-col justify-between">
-      <div>
-        <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{{ product?.name }}</h1>
-        
-        <div class="flex items-center mb-4">
-          <span class="text-2xl font-bold text-customGreen">₦{{ product?.sellingPrice || 0 }}</span>
-          <span 
-            class="ml-4 px-3 py-1 text-xs font-medium rounded-full" 
-            [class.bg-green-100]="product && (product.quantity || 0) > 0"
-            [class.text-green-800]="product && (product.quantity || 0) > 0"
-            [class.bg-red-100]="product && (product.quantity || 0) === 0"
-            [class.text-red-800]="product && (product.quantity || 0) === 0"
-          >
-            {{ product && (product.quantity || 0) > 0 ? (product.quantity || 0) + ' available' : 'Out of stock' }}
-          </span>
-        </div>
-
-        <!-- Description -->
-        <div class="mb-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-2">Description</h2>
-          <p class="text-gray-700">{{ product?.description || 'No description available.' }}</p>
-        </div>
-
-        <!-- Variants Section with Dropdown -->
-        <div class="mb-6" *ngIf="variantGroups.length > 0">
-          <h2 class="text-lg font-semibold text-gray-900 mb-3">Options</h2>
-          <div class="space-y-4">
-            <div *ngFor="let variantGroup of variantGroups" class="border border-gray-200 rounded-lg p-4">
-              <h3 class="font-medium text-gray-800 mb-2 capitalize">{{ variantGroup.type }}</h3>
-              
-              <!-- Dropdown for variant selection -->
-              <select 
-                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-customBlue focus:border-transparent"
-                (change)="selectVariant(variantGroup.type, $any($event.target).value)"
+  <!-- Breadcrumb -->
+  <div class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+      <nav class="flex" aria-label="Breadcrumb">
+        <ol class="flex items-center space-x-2">
+          <li>
+            <div class="flex items-center">
+              <a 
+                [routerLink]="['/user/checkout/pos-store', storeUuid]" 
+                class="text-customBlue hover:text-customBlue/80 font-medium"
               >
-                <option value="">Select {{ variantGroup.type }}</option>
-                <option 
-                  *ngFor="let variant of variantGroup.values" 
-                  [value]="variant"
-                  [selected]="isVariantSelected(variantGroup.type, variant)"
-                >
-                  {{ variant }}
-                </option>
-              </select>
+                Store
+              </a>
+            </div>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <i class="fa-solid fa-chevron-right text-gray-400 mx-2 text-xs"></i>
+              <span class="text-gray-500 capitalize">{{ product()?.productCategory?.name || 'Category' }}</span>
+            </div>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <i class="fa-solid fa-chevron-right text-gray-400 mx-2 text-xs"></i>
+              <span class="text-gray-900 font-medium line-clamp-1 capitalize">
+                {{ product()?.name || 'Product Details' }}
+              </span>
+            </div>
+          </li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Skeleton Loader -->
+    @if (isLoading()) {
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6 md:p-8">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Image Skeleton -->
+            <div class="space-y-4">
+              <div class="bg-gray-200 rounded-lg h-80 md:h-96 animate-pulse"></div>
+              <div class="grid grid-cols-4 gap-2">
+                @for (item of [1,2,3,4]; track item) {
+                  <div class="bg-gray-200 rounded h-20 animate-pulse"></div>
+                }
+              </div>
+            </div>
+            
+            <!-- Content Skeleton -->
+            <div class="space-y-6">
+              <div class="space-y-2">
+                <div class="h-8 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                <div class="h-6 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+              </div>
               
-              <!-- Show selected variant -->
-              <div *ngIf="selectedVariants[variantGroup.type]" class="mt-2">
-                <span class="text-sm text-customGreen font-medium">
-                  Selected: {{ selectedVariants[variantGroup.type] }}
+              <div class="h-6 bg-gray-200 rounded w-full animate-pulse"></div>
+              <div class="h-6 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+              
+              <div class="space-y-3">
+                <div class="h-8 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+                <div class="h-12 bg-gray-200 rounded w-32 animate-pulse"></div>
+              </div>
+              
+              <div class="h-12 bg-gray-200 rounded w-full animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Product Details -->
+    @if (!isLoading() && product()) {
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6 md:p-8">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Product Images -->
+            <div class="space-y-4">
+              <!-- Main Image -->
+              <div class="bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center h-80 md:h-96">
+                <img 
+                  [src]="getProductImage(product()!) | async" 
+                  [alt]="product()!.name"
+                  class="w-full h-full object-cover"
+                  (error)="handleImageError($event)"
+                />
+              </div>
+              
+              <!-- Thumbnail Gallery -->
+              @if (product()!.productImages && product()!.productImages.length > 1) {
+                <div class="grid grid-cols-4 gap-2">
+                  @for (image of product()!.productImages; track image.id; let i = $index) {
+                    <div 
+                      class="bg-gray-100 rounded border-2 cursor-pointer transition-all duration-200 hover:border-customBlue"
+                      [class.border-customBlue]="i === 0"
+                    >
+                      <img 
+                        [src]="getProductImage(product()!, image) | async" 
+                        [alt]="product()!.name"
+                        class="w-full h-20 object-cover rounded"
+                        (error)="handleImageError($event)"
+                      />
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Product Information -->
+            <div class="space-y-6">
+              <!-- Title and Category -->
+              <div>
+                <h1 class="text-3xl font-bold text-gray-900 capitalize mb-2">
+                  {{ product()!.name }}
+                </h1>
+                <div class="flex items-center space-x-4">
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-customBlue/10 text-customBlue capitalize">
+                    {{ product()!.productCategory.name }}
+                  </span>
+                  @if (product()!.sku) {
+                    <span class="text-gray-500 text-sm">SKU: {{ product()!.sku }}</span>
+                  }
+                </div>
+              </div>
+
+              <!-- Price -->
+              <div class="flex items-baseline space-x-2">
+                <span class="text-4xl font-bold text-customBlue">
+                  ₦{{ getSellingPrice() }}
                 </span>
+                @if (hasDiscount()) {
+                  <span class="text-lg text-gray-500 line-through">
+                    ₦{{ getCostPrice() }}
+                  </span>
+                }
+              </div>
+
+              <!-- Stock Status -->
+              <div class="flex items-center space-x-2">
+                @if (isInStock()) {
+                  <span class="text-green-600 font-medium">
+                    <i class="fa-solid fa-check-circle mr-1"></i>
+                    In Stock ({{ getAvailableQuantity() }} available)
+                  </span>
+                } @else {
+                  <span class="text-red-600 font-medium">
+                    <i class="fa-solid fa-times-circle mr-1"></i>
+                    Out of Stock
+                  </span>
+                }
+              </div>
+
+              <!-- Description -->
+              @if (product()!.description) {
+                <div class="prose prose-gray max-w-none">
+                  <h3 class="text-lg font-semibold text-gray-900 mb-2">Description</h3>
+                  <p class="text-gray-600 leading-relaxed">
+                    {{ product()!.description }}
+                  </p>
+                </div>
+              }
+
+              <!-- Variants -->
+              @if (hasVariants()) {
+                <div class="space-y-3">
+                  <h3 class="text-lg font-semibold text-gray-900">Options</h3>
+                  <div class="space-y-4">
+                    @for (variant of getVariants(); track variant.id) {
+                      <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                        <div>
+                          <span class="font-medium text-gray-900 capitalize">{{ variant.name }}</span>
+                          @if (variant.quantity > 0) {
+                            <span class="text-green-600 text-sm ml-2">({{ variant.quantity }} available)</span>
+                          } @else {
+                            <span class="text-red-600 text-sm ml-2">(Out of stock)</span>
+                          }
+                        </div>
+                        <div class="flex items-center space-x-4">
+                          <span class="text-customBlue font-semibold">₦{{ variant.price }}</span>
+                          <button 
+                            class="bg-customGreen text-white px-4 py-2 rounded-full text-sm flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                            (click)="addVariantToCart(variant)"
+                            [disabled]="variant.quantity === 0"
+                          >
+                            <i class="fa-solid fa-plus text-xs"></i>
+                            <span>Add</span>
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Add to Cart Section -->
+              <div class="space-y-4">
+                <div class="flex items-center space-x-4">
+                  <!-- Quantity Selector -->
+                  <div class="flex items-center border border-gray-300 rounded-lg">
+                    <button 
+                      class="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-l-lg transition-colors"
+                      (click)="decreaseQuantity()"
+                      [disabled]="quantity() <= 1"
+                    >
+                      <i class="fa-solid fa-minus"></i>
+                    </button>
+                    <span class="w-12 text-center font-medium text-lg">{{ quantity() }}</span>
+                    <button 
+                      class="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-r-lg transition-colors"
+                      (click)="increaseQuantity()"
+                      [disabled]="!canIncreaseQuantity()"
+                    >
+                      <i class="fa-solid fa-plus"></i>
+                    </button>
+                  </div>
+
+                  <!-- Add to Cart Button -->
+                  <button 
+                    class="flex-1 bg-customGreen text-white px-6 py-3 rounded-lg font-medium hover:bg-customGreen/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    (click)="addToCart()"
+                    [disabled]="!isInStock()"
+                  >
+                    <i class="fa-solid fa-cart-plus"></i>
+                    Add to Cart - ₦{{ calculateTotalPrice() | number:'1.2-2' }}
+                  </button>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="flex space-x-3">
+                  <button class="flex-1 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-heart"></i>
+                    Save
+                  </button>
+                  <button class="flex-1 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-share"></i>
+                    Share
+                  </button>
+                </div>
+              </div>
+
+              <!-- Product Details -->
+              <div class="border-t border-gray-200 pt-4">
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                  @if (product()!.weight) {
+                    <div>
+                      <span class="font-medium text-gray-900">Weight:</span>
+                      <span class="text-gray-600 ml-2">{{ product()!.weight }} kg</span>
+                    </div>
+                  }
+                  @if (product()!.partNumber) {
+                    <div>
+                      <span class="font-medium text-gray-900">Part Number:</span>
+                      <span class="text-gray-600 ml-2">{{ product()!.partNumber }}</span>
+                    </div>
+                  }
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Add to Cart Section -->
-      <div class="border-t border-gray-200 pt-6 mt-auto">
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div class="flex items-center">
-            <span class="text-gray-700 mr-3 font-medium">Quantity:</span>
-            <div class="flex items-center border border-gray-300 rounded-md">
-              <button 
-                (click)="decreaseQuantity()"
-                class="px-3 py-2 text-gray-600 hover:bg-gray-100 transition-colors"
-                [disabled]="quantity === 1"
-                [class.opacity-50]="quantity === 1"
-                [class.cursor-not-allowed]="quantity === 1"
+      <!-- Related Products -->
+      @if (relatedProducts().length > 0) {
+        <div class="mt-12">
+          <h2 class="text-2xl font-bold text-gray-900 mb-6">Related Products</h2>
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            @for (relatedProduct of relatedProducts(); track relatedProduct.id) {
+              <div 
+                class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-md cursor-pointer"
+                (click)="navigateToProductDetails(relatedProduct.id)"
               >
-                <i class="fa-solid fa-minus"></i>
-              </button>
-              <span class="px-4 py-2 border-l border-r border-gray-300 font-medium">{{ quantity }}</span>
-              <button 
-                (click)="increaseQuantity()"
-                class="px-3 py-2 text-gray-600 hover:bg-gray-100 transition-colors"
-                [disabled]="product && quantity >= (product.quantity || 0)"
-                [class.opacity-50]="product && quantity >= (product.quantity || 0)"
-                [class.cursor-not-allowed]="product && quantity >= (product.quantity || 0)"
-              >
-                <i class="fa-solid fa-plus"></i>
-              </button>
-            </div>
+                <div class="bg-gray-100 overflow-hidden flex items-center justify-center h-40">
+                  <img 
+                    [src]="getProductImage(relatedProduct) | async" 
+                    [alt]="relatedProduct.name"
+                    class="w-full h-full object-cover"
+                    (error)="handleImageError($event)"
+                  />
+                </div>
+                <div class="p-3">
+                  <h3 class="font-medium text-gray-800 text-sm line-clamp-2 capitalize mb-2">
+                    {{ relatedProduct.name }}
+                  </h3>
+                  <div class="flex items-center justify-between">
+                    <span class="text-customBlue font-semibold">
+                      ₦{{ relatedProduct.sellingPrice }}
+                    </span>
+                    <button 
+                      class="bg-customGreen text-white p-2 rounded-full text-xs"
+                      (click)="$event.stopPropagation(); addToCart(relatedProduct)"
+                      [disabled]="!relatedProduct.quantity || relatedProduct.quantity === 0"
+                    >
+                      <i class="fa-solid fa-plus"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
           </div>
-          
-          <button 
-            (click)="addToCart()"
-            class="w-full sm:w-auto flex items-center justify-center px-8 py-3 bg-customBlue text-white rounded-lg font-medium transition-colors hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
-            [disabled]="!product || (product.quantity || 0) === 0"
-          >
-            <i class="fa-solid fa-cart-plus mr-2"></i>
-            Add to Cart
-          </button>
         </div>
+      }
+    }
+
+    <!-- Error State -->
+    @if (!isLoading() && !product()) {
+      <div class="text-center py-12">
+        <i class="fa-solid fa-exclamation-triangle text-4xl text-gray-400 mb-4"></i>
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">Product Not Found</h2>
+        <p class="text-gray-600 mb-6">The product you're looking for doesn't exist or is no longer available.</p>
+        <a 
+          [routerLink]="['/user/checkout/pos-store', storeUuid]" 
+          class="bg-customBlue text-white px-6 py-3 rounded-lg font-medium hover:bg-customBlue/90 transition-colors"
+        >
+          Back to Store
+        </a>
       </div>
-    </div>
+    }
   </div>
 </div>

@@ -600,16 +600,16 @@ openDeleteModalWithValidation(item: ProductData) {
   this.activeItem = item;
   
   // Optional: Show warning if product might not be deletable
-  if (!this.canDeleteProduct(item)) {
-    const reason = this.getDeleteRestrictionMessage(item);
-    this.messageService.add({
-      severity: "warn",
-      summary: "Delete Warning",
-      detail: `This product ${reason}. Deletion may fail if it's actively used in the system.`,
-      key: "tl",
-      life: 4000,
-    });
-  }
+  // if (!this.canDeleteProduct(item)) {
+  //   const reason = this.getDeleteRestrictionMessage(item);
+  //   this.messageService.add({
+  //     severity: "warn",
+  //     summary: "Delete Warning",
+  //     detail: `This product ${reason}. Deletion may fail if it's actively used in the system.`,
+  //     key: "tl",
+  //     life: 4000,
+  //   });
+  // }
   
   this.deleteModal = true;
 }

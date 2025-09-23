@@ -323,8 +323,9 @@ export class AddProductComponent {
 	ngOnInit(): void {
     const fbGroup: Parameters<typeof this.fb.group>[0] = {
         name: ["", [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+		isAvailableInStore: [true],
         code: ['', [Validators.required, Validators.pattern(/^[A-Z0-9-]{3,20}$/)]],
-        description: ['', [Validators.required]], 
+        description: ['', [Validators.required]], // Removed character limit validation
         sku: [""],
         weight: [null, [Validators.min(0), Validators.max(9999)]],
         costPrice: [null, [Validators.required, Validators.min(0.01)]],
@@ -352,14 +353,27 @@ export class AddProductComponent {
     this.productForm = this.fb.group(fbGroup);
     this.fetchMetaData();
 
-		if (this.isEditMode && this.activeItem) {
-    console.log('Initializing edit mode with:', this.activeItem);
-    
-    // Ensure we have all the product data
+    if (this.isEditMode && this.activeItem) {
+       
+        setTimeout(() => {
+            this.initializeEditMode();
+        }, 100);
+    }
+
+    this.productForm.get("selectedBranch")?.valueChanges.subscribe(() => {
+        this.console.log(this.selecteddBranch);
+        this.updateBranches();
+    });
+}
+private initializeEditMode() {
+    console.log('Initializing edit mode with activeItem:', this.activeItem);
+
+    // Set basic form values with proper fallbacks
     this.productForm.patchValue({
         name: this.activeItem.name || '',
         code: this.activeItem.code || '',
         description: this.activeItem.description || '',
+		isAvailableInStore: this.activeItem.isAvailableInStore ?? true,
         sku: this.activeItem.sku || '',
         weight: this.activeItem.weight || 0,
         costPrice: this.activeItem.purchasePrice || this.activeItem.costPrice || 0,
@@ -373,56 +387,97 @@ export class AddProductComponent {
         measurementUnit: this.activeItem.measurementUnit || ''
     });
 
-    
-    if (this.activeItem.productCategory) {
-        this.productForm.patchValue({ category: this.activeItem.productCategory });
-    }
-    
-    
-    if (this.activeItem.tax) {
-        const matchingTax = this.taxes.find(t => t.id === this.activeItem.tax?.id);
-        if (matchingTax) {
-            this.productForm.patchValue({ tax: matchingTax });
-        }
-    }
-    
-    
-    if (this.activeItem.discount) {
-        const matchingDiscount = this.discounts.find(d => d.id === this.activeItem.discount?.id);
-        if (matchingDiscount) {
-            this.productForm.patchValue({ discount: matchingDiscount });
-        }
-    }
-    
+    // Set related objects by finding them in the loaded arrays
+    this.setRelatedObjects();
 
-    if (this.activeItem.supplier) {
-        const matchingSupplier = this.suppliers.find(s => s.id === this.activeItem.supplier?.id);
-        if (matchingSupplier) {
-            this.productForm.patchValue({ supplier: matchingSupplier });
-        }
-    }
-
-   
+    // Set variants
     if (this.activeItem.variants && this.activeItem.variants.length > 0) {
         this.variants = [...this.activeItem.variants];
     }
 
-    
-    if (this.activeItem.branch) {
-        this.productForm.patchValue({ selectedBranch: this.activeItem.branch });
+    // Set branch information
+    this.setBranchInformation();
+
+    // Initialize product image
+    this.initializeProductImage();
+
+    console.log('Form after initialization:', this.productForm.value);
+}
+private setRelatedObjects() {
+    // Set category
+    if (this.activeItem.productCategory) {
+        const category = this.categories.find(c => c.id === this.activeItem.productCategory.id);
+        if (category) {
+            this.productForm.patchValue({ category: category });
+        }
     }
 
- 
-    this.productImage = this.getLastImage();
-    
-    console.log('Form after patching:', this.productForm.value);
-}
-    this.productForm.get("selectedBranch")?.valueChanges.subscribe(() => {
-        console.log(this.selecteddBranch);
-        this.updateBranches();
-    });
-}
+    // Set tax
+    if (this.activeItem.tax) {
+        const tax = this.taxes.find(t => t.id === this.activeItem.tax.id);
+        if (tax) {
+            this.productForm.patchValue({ tax: tax });
+        }
+    }
 
+    // Set discount
+    if (this.activeItem.discount) {
+        const discount = this.discounts.find(d => d.id === this.activeItem.discount.id);
+        if (discount) {
+            this.productForm.patchValue({ discount: discount });
+        }
+    }
+
+    // Set supplier
+    if (this.activeItem.supplier) {
+        const supplier = this.suppliers.find(s => s.id === this.activeItem.supplier.id);
+        if (supplier) {
+            this.productForm.patchValue({ supplier: supplier });
+        }
+    }
+}
+private setBranchInformation() {
+    if (this.activeItem.branch) {
+        const branch = this.branches.find(b => b.id === this.activeItem.branch.id);
+        if (branch) {
+            if (this.userBranch === "headquarters") {
+                this.productForm.patchValue({ selectedBranch: [branch] });
+            } else {
+                this.productForm.patchValue({ selectedBranch: branch });
+            }
+        }
+    }
+}
+private initializeProductImage() {
+    // First try to get the image using the service method (like in product view)
+    if (this.activeItem?.productImages && this.activeItem.productImages.length > 0) {
+        const lastImage = this.activeItem.productImages[this.activeItem.productImages.length - 1];
+        
+        // If the image has an ID or filename, use the service to get the full URL
+        if (lastImage?.id || lastImage?.fileName || lastImage?.imageName) {
+            const imageIdentifier = lastImage.id || lastImage.fileName || lastImage.imageName;
+            this.productImage = this.posService.getProductImage(imageIdentifier);
+        }
+        // If it's already a full URL
+        else if (typeof lastImage === 'string' && lastImage.startsWith('http')) {
+            this.productImage = lastImage;
+        }
+        // If it's an object with imageUrl property
+        else if (lastImage?.imageUrl) {
+            this.productImage = lastImage.imageUrl;
+        }
+    }
+    // Fallback to other image properties
+    else if (this.activeItem?.imageUrl) {
+        this.productImage = this.activeItem.imageUrl;
+    }
+    else if (this.activeItem?.image) {
+        this.productImage = this.activeItem.image;
+    }
+    
+    console.log('Initialized product image:', this.productImage);
+    console.log('ActiveItem productImages:', this.activeItem?.productImages);
+}
 	fetchMetaData() {
 		this.metadataService.discount$.subscribe((data) => (this.discounts = data));
 		this.metadataService.category$.subscribe(
@@ -846,6 +901,7 @@ export class AddProductComponent {
 			const product = {
 				id: 0,
 				name: formValues.name,
+				isAvailableInStore: formValues.isAvailableInStore ?? true,
 				code: formValues.code,
 				partNumber: formValues.partNumber,
 				description: formValues.description,
@@ -1155,6 +1211,7 @@ async updateProduct() {
         id: this.activeItem.id,
         name: formValues.name,
         code: formValues.code,
+		isAvailableInStore: formValues.isAvailableInStore ?? this.activeItem.isAvailableInStore ?? true,
         partNumber: formValues.partNumber,
         description: formValues.description,
         measurementUnit: formValues.measurementUnit,
@@ -1655,13 +1712,46 @@ async updateProduct() {
 		}
 	}
 getLastImage(): string {
+    console.log('Getting last image for activeItem:', this.activeItem);
+    
     if (this.activeItem?.productImages && this.activeItem.productImages.length > 0) {
-        // Get the most recently added image (last in the array)
         const lastImage = this.activeItem.productImages[this.activeItem.productImages.length - 1];
-        return lastImage.imageUrl || lastImage.url || lastImage;
+        console.log('Last image object:', lastImage);
+        
+        // Try to get image using service (like in product view)
+        if (lastImage?.id) {
+            return this.posService.getProductImage(lastImage.id);
+        }
+        else if (lastImage?.fileName) {
+            return this.posService.getProductImage(lastImage.fileName);
+        }
+        else if (lastImage?.imageName) {
+            return this.posService.getProductImage(lastImage.imageName);
+        }
+        else if (typeof lastImage === 'string') {
+         
+            if (lastImage.startsWith('http') || lastImage.startsWith('data:')) {
+                return lastImage;
+            }
+           
+            return this.posService.getProductImage(lastImage);
+        }
+        else if (lastImage?.imageUrl) {
+            return lastImage.imageUrl;
+        }
     }
     
-    return this.activeItem?.imageUrl$ || this.activeItem?.imageUrl || '';
+
+    if (this.activeItem?.imageUrl) {
+        return this.activeItem.imageUrl;
+    }
+    
+    if (this.activeItem?.image) {
+        return this.activeItem.image;
+    }
+    
+    console.log('No image found, returning empty string');
+    return '';
 }
 	convertSvgToPng(svgElement: Node, shouldPrint?: boolean) {
 		const svgString = new XMLSerializer().serializeToString(svgElement);

@@ -132,13 +132,11 @@ export class StoreCheckoutComponent implements OnInit {
         this.isLoading = false;
         console.log('Order placed successfully:', response);
         this.cartService.clearCart();
-         const currentUuid = this.route.snapshot.paramMap.get('uuid');
-        const orderId = response.orderId || orderNumber;
-        // Navigate to order confirmation with the new route
-        this.router.navigate(['user/checkout/store', currentUuid, 'order-confirmation', orderId]);
-     
         
-        // this.router.navigate(['/store', currentUuid, 'order-confirmation', orderId]);
+        const currentUuid = this.route.snapshot.paramMap.get('uuid');
+        const orderId = response.orderId || orderNumber;
+        
+        this.router.navigate(['/store', currentUuid, 'order-confirmation', orderId]);
       },
       error: (error: any) => {
         this.isLoading = false;
@@ -155,6 +153,6 @@ export class StoreCheckoutComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['user/checkout/store/3u2eh3n4n32349012ek23jkr39r23']);
+    this.router.navigate(['/pos-store']);
   }
 }

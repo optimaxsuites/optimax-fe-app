@@ -63,6 +63,7 @@ import { StoreHeaderComponent } from '../ui/view/pos-store/store-header/store-he
 import { AuthModalComponent } from '../ui/view/pos-store/auth-modal/auth-modal.component';
 import { DecimalPipe, TitleCasePipe, DatePipe } from '@angular/common';
 import { StoreCheckoutComponent } from '../ui/view/pos-store/store-checkout/store-checkout.component';
+import { ProductDetailsComponent } from '../ui/view/pos-store/product-details/product-details.component';
 // import { DBConfig, NgxIndexedDBModule } from 'ngx-indexed-db';
 // import { StoreHeaderComponent } from './ui/view/pos-store/store-header/store-header.component';
 // import { ProductVariantModalComponent } from '../ui/view/product-variant-modal/product-variant-modal.component';
@@ -93,7 +94,8 @@ import { StoreCheckoutComponent } from '../ui/view/pos-store/store-checkout/stor
     KitchenOrderComponent,
     StoreHeaderComponent,
     AuthModalComponent,
-    StoreCheckoutComponent
+    StoreCheckoutComponent,
+    ProductDetailsComponent
     // ProductVariantModalComponent,
   ],
   imports: [

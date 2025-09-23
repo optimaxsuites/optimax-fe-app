@@ -139,9 +139,9 @@ export class PosStoreComponent implements OnInit {
   });
 
   // Add this method to handle navigation to product details
-  navigateToProductDetails(productId: number): void {
-    this.router.navigate(['user/checkout/pos-store/product-details', productId]);
-  }
+  // navigateToProductDetails(productId: number): void {
+  //   this.router.navigate(['user/checkout/pos-store/product-details', productId]);
+  // }
 
   // TODO: add extra dependencies like search filtering
   filteredProducts = computed(() => {
@@ -445,6 +445,20 @@ ngOnInit(): void {
 navigateToCheckout(): void {
   const currentUuid = this.route.snapshot.paramMap.get('uuid');
   this.cartService.setCart(this.cartProducts(), this.convertedCartProducts().subTotal);
-  this.router.navigate(['user/checkout/store', currentUuid, 'checkout']);
+  this.router.navigate(['/store', currentUuid, 'checkout']);
+}
+
+navigateToProductDetails(productId: number): void {
+  const currentUuid = this.route.snapshot.paramMap.get('uuid');
+  
+  if (currentUuid) {
+    // Use relative navigation since we're already in the store context
+    this.router.navigate(['product-details', productId], { relativeTo: this.route });
+    
+    // Alternative: Use absolute path if the above doesn't work
+    // this.router.navigate(['/user/checkout/store', currentUuid, 'product-details', productId]);
+  } else {
+    console.error('No store UUID found in route parameters');
+  }
 }
 }

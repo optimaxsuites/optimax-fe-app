@@ -1,206 +1,222 @@
-// import { Component, OnInit } from '@angular/core';
-// import { CommonModule } from '@angular/common';
-// import { ActivatedRoute, Router } from '@angular/router';
-// import { ProductData, VariantDTO } from '../../../models/interface';
-// import { PosServiceService } from '../../../service/pos-service.service';
-// import { ImageCacheService } from '../../../service/image-cache.service';
-// import { StoreCartService } from '../../../service/store-cart.service';
-// import { StoreHeaderComponent } from '../store-header/store-header.component';
+import { Component, OnInit, signal, computed } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 
-// @Component({
-//   selector: 'app-product-details',
-//   templateUrl: './product-details.component.html',
-//   styleUrls: ['./product-details.component.scss'],
-//   standalone: false
-// })
-// export class ProductDetailsComponent implements OnInit {
-// getProductImage(arg0: ProductData) {
-// throw new Error('Method not implemented.');
-// }
-//   product: ProductData | null = null;
-//   quantity: number = 1;
-//   selectedVariants: { [key: string]: string } = {};
-//   storeUuid: string = '';
-//   cartItemCount: number = 0;
-//   isCartEmpty: boolean = true;
+import { ProductData, VariantDTO } from '../../../models/interface';
+import { ImageCacheService } from '../../../service/image-cache.service';
+import { PosServiceService } from '../../../service/pos-service.service';
+import { StoreCartService } from '../../../service/store-cart.service';
+
+@Component({
+  selector: 'app-product-details',
+  templateUrl: './product-details.component.html',
+  styleUrls: ['./product-details.component.scss']
+})
+export class ProductDetailsComponent implements OnInit {
+  // Signals
+  product = signal<ProductData | null>(null);
+  isLoading = signal(true);
+  quantity = signal(1);
+  storeUuid = '';
+
+  // Related products
+  relatedProducts = signal<ProductData[]>([]);
+
+  // Header data
+  branches: any[] = [];
+  user = signal({ name: 'Guest', isGuest: true });
+  selectedCategory = signal('All');
+  searchText = signal('');
   
-//   variantGroups: { type: string; values: string[] }[] = [];
-//   selectedVariantType: string = '';
-//   selectedVariantValue: string = '';
+  // Computed values for header
+  categoryOptions = computed(() => [{ label: 'All', value: 'All' }]);
+  isCartEmpty = computed(() => true);
+  getTotalCartItems = computed(() => 0);
 
-//   // Image gallery
-//   mainImage: string = '';
-//   thumbnailImages: string[] = [];
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private posService: PosServiceService,
+    private imageCacheService: ImageCacheService,
+    private cartService: StoreCartService
+  ) {}
 
-//   constructor(
-//     private route: ActivatedRoute,
-//     private router: Router,
-//     private posService: PosServiceService,
-//     private imageCacheService: ImageCacheService,
-//     private storeCartService: StoreCartService
-//   ) { }
-
-//   ngOnInit(): void {
-//     // Get store UUID from parent route
-//     this.storeUuid = this.route.parent?.snapshot.params['uuid'] || '';
+  ngOnInit(): void {
+    this.storeUuid = this.route.snapshot.paramMap.get('uuid') || '';
+    const productId = this.route.snapshot.paramMap.get('id');
     
-//     // Get product ID from current route
-//     const productId = this.route.snapshot.paramMap.get('id');
-//     if (productId) {
-//       const idNumber = parseInt(productId, 10);
-//       if (!isNaN(idNumber)) {
-//         this.loadProductDetails(idNumber);
-//       }
-//     }
+    if (productId) {
+      this.loadProductDetails(parseInt(productId));
+    } else {
+      this.isLoading.set(false);
+    }
+  }
 
-//     // Subscribe to cart changes
-//     this.storeCartService.cartItems$.subscribe(items => {
-//       this.cartItemCount = items.reduce((total, item) => total + item.quantity, 0);
-//       this.isCartEmpty = this.cartItemCount === 0;
-//     });
-//   }
-
-//   loadProductDetails(productId: number): void {
-//     this.posService.getProductById(productId).subscribe({
-//       next: (product: ProductData) => {
-//         this.product = product;
-//         this.processVariants();
-//         this.loadImages();
-//       },
-//       error: (err: any) => {
-//         console.error('Error loading product details:', err);
-//       }
-//     });
-//   }
-
-//   loadImages(): void {
-//     if (!this.product) return;
+  // Helper methods for template safety
+  getSellingPrice(): number {
+    const product = this.product();
+    if (!product || !product.sellingPrice) return 0;
     
-//     this.imageCacheService.getProductImage(this.product).subscribe(imageUrl => {
-//       this.mainImage = imageUrl;
-//       this.thumbnailImages = [imageUrl]; // You can add more thumbnails if available
-//     });
-//   }
+    // Convert string to number if necessary
+    return typeof product.sellingPrice === 'string' 
+      ? parseFloat(product.sellingPrice) 
+      : product.sellingPrice;
+  }
 
-//   processVariants(): void {
-//     if (!this.product?.variants || this.product.variants.length === 0) return;
+  getCostPrice(): number {
+    const product = this.product();
+    if (!product || !product.costPrice) return 0;
     
-//     const variantMap = new Map<string, Set<string>>();
+    return typeof product.costPrice === 'string' 
+      ? parseFloat(product.costPrice) 
+      : product.costPrice;
+  }
+
+  hasDiscount(): boolean {
+    const product = this.product();
+    if (!product || !product.costPrice || !product.sellingPrice) return false;
     
-//     this.product.variants.forEach((variant: VariantDTO) => {
-//       if (variant.color) {
-//         if (!variantMap.has('color')) {
-//           variantMap.set('color', new Set());
-//         }
-//         variantMap.get('color')?.add(variant.color);
-//       }
-      
-//       if (variant.size && variant.size !== 'Regular') {
-//         if (!variantMap.has('size')) {
-//           variantMap.set('size', new Set());
-//         }
-//         variantMap.get('size')?.add(variant.size);
-//       }
-//     });
+    const costPrice = this.getCostPrice();
+    const sellingPrice = this.getSellingPrice();
     
-//     this.variantGroups = Array.from(variantMap.entries()).map(([type, values]) => ({
-//       type,
-//       values: Array.from(values)
-//     }));
+    return sellingPrice < costPrice;
+  }
 
-//     if (this.variantGroups.length > 0) {
-//       this.selectedVariantType = this.variantGroups[0].type;
-//     }
-//   }
+  isInStock(): boolean {
+    const product = this.product();
+    return !!(product?.quantity && product.quantity > 0);
+  }
 
-//   selectVariant(type: string, value: string): void {
-//     this.selectedVariants[type] = value;
-//   }
+  getAvailableQuantity(): number {
+    const product = this.product();
+    return product?.quantity || 0;
+  }
 
-//   isVariantSelected(type: string, value: string): boolean {
-//     return this.selectedVariants[type] === value;
-//   }
+  hasVariants(): boolean {
+    const product = this.product();
+    return !!(product?.variants && product.variants.length > 0);
+  }
 
-//   increaseQuantity(): void {
-//     if (this.product && this.quantity < (this.product.quantity || 0)) {
-//       this.quantity++;
-//     }
-//   }
+  getVariants(): VariantDTO[] {
+    const product = this.product();
+    return product?.variants || [];
+  }
 
-//   decreaseQuantity(): void {
-//     if (this.quantity > 1) {
-//       this.quantity--;
-//     }
-//   }
+  canIncreaseQuantity(): boolean {
+    const currentQuantity = this.quantity();
+    const maxQuantity = this.getAvailableQuantity();
+    return currentQuantity < maxQuantity;
+  }
 
-//   addToCart(): void {
-//     if (!this.product) return;
+  calculateTotalPrice(): number {
+    return this.getSellingPrice() * this.quantity();
+  }
+
+  private loadProductDetails(productId: number): void {
+    this.isLoading.set(true);
     
-//     const productToAdd = { ...this.product };
-    
-//     if (Object.keys(this.selectedVariants).length > 0 && this.product.variants) {
-//       const matchingVariant = this.product.variants.find((variant: VariantDTO) => {
-//         return (
-//           (!this.selectedVariants['color'] || variant.color === this.selectedVariants['color']) &&
-//           (!this.selectedVariants['size'] || variant.size === this.selectedVariants['size'])
-//         );
-//       });
-      
-//       if (matchingVariant) {
-//         productToAdd.selectedVariants = [matchingVariant];
-//       }
-//     }
-    
-//     this.storeCartService.addToCart(productToAdd, this.quantity);
-    
-//     // Show success message
-//     this.showSuccessMessage('Product added to cart!');
-//   }
+    this.posService.getProducts().subscribe({
+      next: (products: ProductData[]) => {
+        const foundProduct = products.find((p: ProductData) => p.id === productId);
+        this.product.set(foundProduct || null);
+        
+        if (foundProduct) {
+          this.loadRelatedProducts(foundProduct);
+        }
+        
+        this.isLoading.set(false);
+      },
+      error: (error: any) => {
+        console.error('Error loading product details:', error);
+        this.isLoading.set(false);
+      }
+    });
+  }
 
-//   showSuccessMessage(message: string): void {
-//     // You can implement a toast notification here
-//     alert(message);
-//   }
+  private loadRelatedProducts(currentProduct: ProductData): void {
+    this.posService.getProducts().subscribe({
+      next: (products: ProductData[]) => {
+        const related = products.filter((p: ProductData) => 
+          p.id !== currentProduct.id && 
+          p.productCategory.id === currentProduct.productCategory.id
+        ).slice(0, 4);
+        
+        this.relatedProducts.set(related);
+      },
+      error: (error: any) => {
+        console.error('Error loading related products:', error);
+      }
+    });
+  }
 
-//   goBack(): void {
-//     this.router.navigate(['/store', this.storeUuid]);
-//   }
+  // Image handling
+  getProductImage(product: ProductData, specificImage?: any) {
+    return this.imageCacheService.getProductImage(product);
+  }
 
-//   getCategoryName(): string {
-//     return this.product?.productCategory?.name || 'Products';
-//   }
+  handleImageError(event: Event): void {
+    const imgElement = event.target as HTMLImageElement;
+    imgElement.src = 'assets/placeholder-product.jpg';
+  }
 
-//   onToggleCart(): void {
-//     // Handle cart toggle if needed
-//     console.log('Cart toggled');
-//   }
+  // Quantity management
+  increaseQuantity(): void {
+    if (this.canIncreaseQuantity()) {
+      this.quantity.set(this.quantity() + 1);
+    }
+  }
 
-//   onToggleMenu(): void {
-//     // Handle menu toggle if needed
-//     console.log('Menu toggled');
-//   }
+  decreaseQuantity(): void {
+    const currentQuantity = this.quantity();
+    if (currentQuantity > 1) {
+      this.quantity.set(currentQuantity - 1);
+    }
+  }
 
-//   changeImage(imageUrl: string): void {
-//     this.mainImage = imageUrl;
-//   }
+  // Cart functionality
+  addToCart(product?: ProductData): void {
+    const productToAdd = product || this.product();
+    if (!productToAdd || !this.isInStock()) return;
 
-//   getCurrentPrice(): number {
-//     if (!this.product) return 0;
-    
-//     // If variants are selected, use variant price, otherwise use product price
-//     if (Object.keys(this.selectedVariants).length > 0 && this.product.variants) {
-//       const matchingVariant = this.product.variants.find((variant: VariantDTO) => {
-//         return (
-//           (!this.selectedVariants['color'] || variant.color === this.selectedVariants['color']) &&
-//           (!this.selectedVariants['size'] || variant.size === this.selectedVariants['size'])
-//         );
-//       });
-      
-//       if (matchingVariant && matchingVariant.price) {
-//         return Number(matchingVariant.price);
-//       }
-//     }
-    
-//     return Number(this.product.sellingPrice);
-//   }
-// }
+    // Add to cart logic here
+    for (let i = 0; i < this.quantity(); i++) {
+      // this.cartService.addToCart(productToAdd);
+    }
+
+    this.quantity.set(1);
+    this.showAddToCartFeedback();
+  }
+
+  addVariantToCart(variant: VariantDTO): void {
+    const product = this.product();
+    if (!product || variant.quantity === 0) return;
+
+    // this.cartService.addToCart(product, variant);
+    this.showAddToCartFeedback();
+  }
+
+  private showAddToCartFeedback(): void {
+    console.log('Product added to cart');
+  }
+
+  // Navigation
+  navigateToProductDetails(productId: number): void {
+    this.router.navigate(['/user/checkout/pos-store', this.storeUuid, 'product-details', productId]);
+  }
+
+  // Header event handlers
+  changeCategory(category: string): void {
+    this.selectedCategory.set(category);
+  }
+
+  changeSearchInput(text: string): void {
+    this.searchText.set(text);
+  }
+
+  toggleCart(): void {
+    // Implement cart toggle logic
+  }
+
+  changeBranch(branch: any): void {
+    // Implement branch change logic
+  }
+}

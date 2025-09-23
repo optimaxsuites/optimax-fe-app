@@ -195,9 +195,28 @@
             <span class="p-column-title">Price</span>{{ item.sellingPrice | currency : "₦" }}
           </td>
           <td class="table-item">
-            <span class="p-column-title">Quantity</span
-            >{{ item.quantity }}
-          </td>
+  <span class="p-column-title">Quantity</span>
+  <div class="flex items-center gap-2">
+    <span
+      class="font-extrabold text-sm"
+      [ngClass]="
+        item?.quantity > 0 
+          ? (item?.quantity >= 11 ? 'text-green-800' : 'text-red-800')
+          : 'text-gray-500'
+      "
+    >{{ item?.quantity }}</span>
+    <span
+      class="text-xs font-extrabold ml-2"
+      [ngClass]="
+        item?.quantity > 0
+          ? (item?.quantity >= 11 ? 'text-green-800' : 'text-red-800') 
+          : 'text-gray-500'
+      "
+    >
+      {{ item?.quantity === 0 ? "Not in Stock" : (item?.quantity >= 11 ? "In Stock" : "Low Stock") }}
+    </span>
+  </div>
+</td>
           <td class="table-item">
             <span class="p-column-title">Category</span
             >{{ item.productCategory?.name }}
@@ -341,10 +360,25 @@
         <span class="text-gray-500">Price:</span>
         <span class="font-semibold text-gray-800">{{ product?.sellingPrice | currency : "₦" }}</span>
       </div>
-      <div class="flex justify-between">
-        <span class="text-gray-500">Quantity:</span>
-        <span class="font-semibold text-gray-800">{{ product?.quantity }}</span>
-      </div>
+      <div class="flex justify-between items-center">
+  <span class="text-gray-500 font-extrabold">Stock:</span>
+  <ng-container *ngIf="product.quantity !== undefined">
+    <span
+      [ngClass]="
+        product.quantity === 0 ? 'text-gray-500' : 'text-gray-800'
+      "
+      class="font-extrabold"
+    >
+      {{ product.quantity }}
+      <span
+        *ngIf="product.quantity === 0"
+        class="ml-2 text-sm font-bold bg-gray-100 text-gray-500 px-2 py-1 rounded-full"
+      >
+        Not in Stock
+      </span>
+    </span>
+  </ng-container>
+</div>
       <div class="flex justify-between">
         <span class="text-gray-500">Category:</span>
         <span class="font-semibold text-gray-800">{{ product.productCategory.name }}</span>
@@ -388,7 +422,7 @@
           <p class="text-orange-800 font-medium">Warning</p>
           <p class="text-orange-700 text-sm">
             This product {{ getDeleteRestrictionMessage(activeItem) }}. 
-            Deletion may fail if it's actively referenced in the system.
+            Are you sure you want to delete this product.
           </p>
         </div>
       </div>

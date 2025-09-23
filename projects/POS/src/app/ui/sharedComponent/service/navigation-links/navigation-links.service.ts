@@ -69,7 +69,6 @@ export class NavigationLinksService {
 		this.links["hotel"] = "/user/checkout/hotel/" + uuidV4();
 		this.links["store"] = "/user/store/" + uuidV4();
 
-
 		// settings links ============================================================================================================
 		this.links["settingsLink"] = "/admin/settings/general-settings/" + uuidV4();
 		this.links["generalSettings"] = "general-settings/" + uuidV4();

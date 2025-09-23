@@ -40,6 +40,7 @@ export interface ProductJSONFormat<TDateType extends "string" | "array"> {
   costPrice: string;
   sellingPrice?: string;
   quantity?: number;
+  isAvailableInStore?: boolean;
 
   /** Date String Format: "2025-02-02T22:56:31.935Z" */
   createdDate: TDateType extends "string" ? DateString : DateArray;

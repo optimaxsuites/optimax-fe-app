@@ -314,15 +314,17 @@
               >
                 {{ product.quantity }}
                 <span
-                  class="ml-2 text-sm font-bold"
-                  [ngClass]="
-                    product.quantity >= 11
-                      ? 'bg-green-100 text-green-800 px-2 py-1 rounded-full'
-                      : 'bg-red-100 text-red-800 px-2 py-1 rounded-full'
-                  "
-                >
-                  {{ product.quantity >= 11 ? "In Stock" : "Low Stock" }}
-                </span>
+  class="ml-2 text-sm font-bold"
+  [ngClass]="
+    product.quantity === 0
+      ? 'bg-gray-100 text-gray-500 px-2 py-1 rounded-full'
+      : (product.quantity >= 11
+          ? 'bg-green-100 text-green-800 px-2 py-1 rounded-full'
+          : 'bg-red-100 text-red-800 px-2 py-1 rounded-full')
+  "
+>
+  {{ product.quantity === 0 ? "Not in Stock" : (product.quantity >= 11 ? "In Stock" : "Low Stock") }}
+</span>
               </span>
             </ng-container>
           </div>

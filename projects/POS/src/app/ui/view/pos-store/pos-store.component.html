@@ -151,8 +151,8 @@
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             @for (product of filteredProducts(); track product.id) {
               <div 
-                class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-md flex flex-col"
-                (click)="navigateToProductDetails(product.id)"
+                class="cursor-pointer bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-md flex flex-col"
+                [routerLink]="['product-details', product.id]"
               >
                 <!-- Product Image -->
                 <div class="bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">

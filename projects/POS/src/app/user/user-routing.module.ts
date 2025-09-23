@@ -15,6 +15,7 @@ import { PosStoreComponent } from '../ui/view/pos-store/pos-store.component';
 import { PermissionGuard } from '../ui/permission/permission.guard';
 import { StoreCheckoutComponent } from '../ui/view/pos-store/store-checkout/store-checkout.component';
 import { OrderConfirmationComponent } from '../ui/view/pos-store/order-confirmation/order-confirmation.component';
+import { ProductDetailsComponent } from '../ui/view/pos-store/product-details/product-details.component';
 // import { ProductDetailsComponent } from '../ui/view/pos-store/product-details/product-details.component';
 
 const routes: Routes = [
@@ -35,7 +36,7 @@ const routes: Routes = [
     path: 'cash-payment/:uuid',
     component: CashPaymentComponent,
     // canActivate: [PermissionGuard],
-    //x   data: { appCode: ['POS_INV'] }
+    //   data: { appCode: ['POS_INV'] }
     canActivate: [PermissionGuard],
       data: { appCode: ['POS_INV'] }
   },
@@ -133,6 +134,10 @@ const routes: Routes = [
     {
       path: 'order-confirmation/:id',
       component: OrderConfirmationComponent,
+    },
+    {
+      path: 'product-details/:id',
+      component: ProductDetailsComponent,
     },
   ]
 }

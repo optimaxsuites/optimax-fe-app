@@ -117,7 +117,7 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
 
   goToStore(): void {
     this.guestOrderService.clearCurrentOrder();
-    this.router.navigate(['user/checkout/store/21ui3hje0491o422']);
+    this.router.navigate(['/pos-store']);
   }
 
   viewOrderHistory(): void {
@@ -170,6 +170,6 @@ formatDate(dateString: string): string {
 
 navigateToOrderConfirmation(orderId: string): void {
   const currentUuid = this.route.snapshot.paramMap.get('uuid');
-  this.router.navigate(['user/checkout/store', currentUuid, 'order-confirmation', orderId]);
+  this.router.navigate(['/store', currentUuid, 'order-confirmation', orderId]);
 }
 }

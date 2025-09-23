@@ -1,4 +1,3 @@
-// pos-checkout-page.component.ts
 import {
   Component,
   ElementRef,
@@ -24,7 +23,7 @@ import { IndustryDataService } from "../../service/industry-data.service";
 import { MetadataService } from "../../service/metadata.service";
 import { CheckoutService } from "../../service/checkout.service";
 import { MessageService } from "primeng/api";
-import { BehaviorSubject, lastValueFrom, Observable } from "rxjs";
+import { lastValueFrom } from "rxjs";
 import { PaymentServiceService } from "../../service/payment-service.service";
 // import { AppResizeDirective } from '../../service/app-resize.directive';
 
@@ -93,7 +92,6 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   selectedPaymentModes: PaymentModes[] = [];
   noteText: any;
 
-
   constructor(
     private router: Router,
     public navigationLink: NavigationLinksService,
@@ -113,33 +111,20 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
   ngOnInit() {
     this.checkAndResetNotes();
+
     const storedOpeningAmount = localStorage.getItem("openingAmount");
     this.openingAmount = storedOpeningAmount ? Number(storedOpeningAmount) : 0;
-    
+
     // Check for a saved cart from a previous navigation
-    const savedState = localStorage.getItem("navigationState");
-    if (savedState) {
-        const parsedState = JSON.parse(savedState);
-        if (parsedState.cart) {
-            this.cartItems = [...parsedState.cart.cartItems];
-            this.total = parsedState.cart.total;
-            this.displayedDiscount = parsedState.cart.discount;
-            this.tax = parsedState.cart.tax;
-            this.subtotal = parsedState.cart.subtotal;
-        }
-        // Clear the state from local storage so it's not loaded again on a fresh session
-        localStorage.removeItem("navigationState");
-    } else if (this.navigationState?.order) {
-        // This is for navigating from the orders page
-        this.loadOrder(this.navigationState.order);
-    } else if (this.navigationState?.cart) {
-        // This handles cases where the cart is passed via router state
-        const cart = this.navigationState.cart;
-        this.cartItems = [...cart.cartItems];
-        this.total = cart.total;
-        this.displayedDiscount = cart.discount;
-        this.tax = cart.tax;
-        this.subtotal = cart.subtotal;
+    const savedCart = localStorage.getItem("currentCart");
+    if (savedCart) {
+        const parsedCart = JSON.parse(savedCart);
+        this.cartItems = parsedCart.cartItems;
+        this.total = parsedCart.total;
+        this.displayedDiscount = parsedCart.discount;
+        this.tax = parsedCart.tax;
+        this.subtotal = parsedCart.subtotal;
+        localStorage.removeItem("currentCart"); // Clear the item after restoring
     }
     
     // Check for the paymentSuccess flag from the router state
@@ -152,7 +137,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     this.loadCategory();
   }
 
-  // The clearCart method should also remove the localStorage item to avoid issues
+  // Add a new method to clear the cart
   clearCart() {
     this.cartItems = [];
     this.subtotal = 0;
@@ -162,8 +147,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     this.orderName = '';
     this.discountValue = 0;
     this.displayedDiscount = 0;
-    localStorage.removeItem("navigationState");
+    localStorage.removeItem("currentCart"); // Also clear from local storage
   }
+
   // New Register Methods
   // checkRegisterState() {
     
@@ -620,39 +606,18 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
     console.log(pausedCart);
 
-this.checkoutService.saveOrder(pausedCart as any).subscribe({
-  next: (res: any) => {
-    if (res?.offline) {
-      this.messageService.add({
-        severity: "warn",
-        summary: "Offline",
-        detail: "Order saved locally. Will sync when online.",
-        key: "tl",
-        life: 3000,
-      });
-    } else {
-      this.messageService.add({
-        severity: "success",
-        summary: "Success",
-        detail: "Order saved online",
-        key: "tl",
-        life: 3000,
-      });
-    }
-  },
-  error: () => {
-    this.messageService.add({
-      severity: "error",
-      summary: "Error",
-      detail: "Could not save order",
-      key: "tl",
-      life: 3000,
+    this.checkoutService.saveOrder(pausedCart as any).subscribe({
+      next: (data) => {
+        console.log(data);
+        this.messageService.add({
+          severity: "success",
+          summary: "Success",
+          detail: "Saved",
+          key: "tl",
+          life: 3000,
+        });
+      },
     });
-  }
-});
-
-
-
 
     this.cartItems = [];
     this.orderName = "";
@@ -690,15 +655,15 @@ this.checkoutService.saveOrder(pausedCart as any).subscribe({
       .value as ProductCategories;
     this.selectedCategory = filterVal;
     // No category is selected, reset
-    if (filterVal == ProductCategories.NONE) {
-      this.categorizedProducts = this.products;
-      this.shownProducts = this.categorizedProducts;
-      return;
-    }
+if (filterVal == ProductCategories.NONE) {
+  this.categorizedProducts = this.products.filter(product => product.quantity > 0);
+  this.shownProducts = this.categorizedProducts;
+  return;
+}
 
-    this.categorizedProducts = this.products.filter(
-      (val) => val.productCategory.name == filterVal,
-    );
+this.categorizedProducts = this.products.filter(
+  (val) => val.productCategory.name == filterVal && val.quantity > 0,
+);
 
     this.shownProducts = this.categorizedProducts;
   }
@@ -726,6 +691,19 @@ this.checkoutService.saveOrder(pausedCart as any).subscribe({
   }
   toggleAllPaymentsModal() {
     this.isAllPaymentsModalOpen = !this.isAllPaymentsModalOpen;
+    const cart: Cart = {
+      id: this.navigationState?.order?.id?.toString() || this.randomTokenService.getRandomToken(),
+      orderId: this.navigationState?.order?.id || 0,
+      cartItems: this.cartItems,
+      subtotal: this.subtotal,
+      tax: this.tax,
+      discount: this.displayedDiscount,
+      total: this.total,
+      paymentModes: [],
+      timestamp: new Date().toISOString()
+    };
+    // Save the current cart state to local storage before navigating
+    localStorage.setItem("currentCart", JSON.stringify(cart));
   }
   getProducts() {
     this.metadataService.enrichedProduct$.subscribe(async (data) => {
@@ -750,15 +728,17 @@ this.checkoutService.saveOrder(pausedCart as any).subscribe({
           );
           return dateB.getTime() - dateA.getTime();
         }) as any[];
-        this.products = [...p];
-        this.products.forEach((product) => {
-          // Add some extra necessary properties
-          product.count = 0;
-          // product.cartPriceTotal = product.effectivePrice;
-        });
-        console.log(this.products);
-        this.categorizedProducts = this.products;
-        this.shownProducts = this.products;
+      // filter out products with zero quantity
+const availableProducts = p.filter(product => product.quantity > 0);
+this.products = [...availableProducts];
+this.products.forEach((product) => {
+  // Add some extra necessary properties
+  product.count = 0;
+  // product.cartPriceTotal = product.effectivePrice;
+});
+console.log(this.products);
+this.categorizedProducts = this.products;
+this.shownProducts = this.products;
       }
     });
   }
