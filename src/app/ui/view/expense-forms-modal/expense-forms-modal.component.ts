@@ -492,22 +492,21 @@ submitExpense(form: NgForm): void {
     return;
   }
 
-  // ✅ 2. Validate receipt (always required)
-  if (!this.receiptFile) {
+  // ✅ 2. Validate receipts based on who paid
+  if (this.expenseSummary.paidBy === 'company' && !this.receiptFile) {
     this.messageService.add({
       severity: 'error',
       summary: 'Missing Receipt',
-      detail: 'Please upload a receipt file.'
+      detail: 'Please upload the company receipt file.'
     });
     return;
   }
 
-  // ✅ 2b. Extra validation if paid by employee
   if (this.expenseSummary.paidBy === 'employee' && !this.employeeReceiptFile) {
     this.messageService.add({
       severity: 'error',
       summary: 'Missing Employee Receipt',
-      detail: 'Please upload the employee receipt file since this expense is paid by the employee.'
+      detail: 'Please upload the employee receipt file.'
     });
     return;
   }
@@ -590,17 +589,15 @@ submitExpense(form: NgForm): void {
     id: this.expenseSummary.id || this.generateId(),
     status: 'Pending',
     amount: Number(this.expenseSummary.amount),
-    receiptFile: this.receiptFile,
+    receiptFile: this.expenseSummary.paidBy === 'company' ? this.receiptFile : null,
+    employeeReceiptFile: this.expenseSummary.paidBy === 'employee' ? this.employeeReceiptFile : null,
     invoiceFile: this.invoiceFile,
     signature: this.signatureUrl,
-
-    // 👇 include employee-only file + extras
-    employeeReceiptFile: this.employeeReceiptFile || null,
     recurringPayment: this.advancedPaymentData || null,
     billSplit: this.billSplitData || null
   };
 
-  // ✅ 6. Save expense (localStorage or API placeholder)
+  // ✅ 6. Save expense
   this.saveExpenseToLocalStorage(newExpense);
   console.log('Expense saved to localStorage:', newExpense);
 
@@ -613,7 +610,6 @@ submitExpense(form: NgForm): void {
   // ✅ 7. Reset everything
   this.resetForm();
   form.resetForm();
-
   this.advancedPaymentData = undefined;
   this.billSplitData = undefined;
   this.showAdvancedPayment = false;
