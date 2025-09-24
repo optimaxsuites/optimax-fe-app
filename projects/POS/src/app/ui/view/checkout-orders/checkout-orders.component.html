@@ -256,7 +256,7 @@
     <td>₦{{ order?.totalAmount | number:'1.2-2' }}</td>
     <td>
       <div class="flex gap-3 text-[18px]" (click)="$event.stopPropagation()">
-        <i *ngIf="order?.status === 'UNPAPAID'"
+        <i *ngIf="order?.status === 'UNPAID'"
            class="fa-solid fa-cart-shopping hover:bg-green-100 p-2 rounded-md transition-colors"
            (click)="reOpenCart(order)"></i>
         <i class="fa-solid fa-arrow-right hover:bg-blue-100 rounded-md p-2 transition-colors"

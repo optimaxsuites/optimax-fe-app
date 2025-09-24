@@ -149,8 +149,8 @@ const dbConfig: DBConfig = {
   objectStoresMeta: [
     {
       store: 'products',
-      storeConfig: { keyPath: 'id', autoIncrement: true },
-        storeSchema: [
+      storeConfig: { keyPath: 'id', autoIncrement: false },
+       storeSchema: [
         { name: 'name', keypath: 'name', options: { unique: false } },
         { name: 'sku', keypath: 'sku', options: { unique: false } },
         { name: 'code', keypath: 'code', options: { unique: false } },
@@ -162,9 +162,35 @@ const dbConfig: DBConfig = {
         { name: 'isSynced', keypath: 'isSynced', options: { unique: false } }
       ]
     },
+    {
+      store: 'categories',
+      storeConfig: { keyPath: 'id', autoIncrement: false },
+       storeSchema: [
+        { name: 'name', keypath: 'name', options: { unique: false } },
+        { name: 'description', keypath: 'description', options: { unique: false } },
+        { name: 'code', keypath: 'code', options: { unique: false } },
+        { name: 'endDate', keypath: 'endDate', options: { unique: false } },
+        { name: 'id', keypath: 'id', options: { unique: false } }
+      ]
+    },
+    {
+      store: 'pendingPayments',
+      storeConfig: { keyPath: '__dbKey', autoIncrement: true },
+      storeSchema: [
+            { name: 'id', keypath: 'id', options: { unique: false } },
+            { name: 'status', keypath: 'status', options: { unique: false } },
+            { name: 'transactionDate', keypath: 'transactionDate', options: { unique: false } },
+            { name: 'orderNumber', keypath: 'order.orderNumber', options: { unique: true } },
+            { name: 'cashierId', keypath: 'order.cashierId', options: { unique: false } },
+            { name: 'branchId', keypath: 'order.branchId', options: { unique: false } },
+            { name: 'orderId', keypath: 'order.id', options: { unique: false } },
+            { name: 'syncFailed', keypath: 'syncFailed', options: { unique: false } },
+            { name: 'failureReason', keypath: 'failureReason', options: { unique: false } }    
+      ]
+    },
      {
       store: 'transactions',
-      storeConfig: { keyPath: 'id', autoIncrement: true },
+      storeConfig: { keyPath: 'id', autoIncrement: false },
       storeSchema: [
         { name: 'orderId', keypath: 'orderId', options: { unique: false } },
         { name: 'items', keypath: 'items', options: { unique: false } },
