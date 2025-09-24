@@ -36,7 +36,6 @@
           <p>{{ navigationState.order.orderStatus }}</p>
         </div>
 
-        <!-- Payment Information Section -->
         <div *ngIf="navigationState.order.payment">
           <span class="font-semibold">Payment Details:</span>
           <div class="ml-2 mt-1">
@@ -63,9 +62,9 @@
           <span class="font-semibold">Amount Tendered:</span>
           <p>{{ navigationState.order.amountTendered | currency: '₦' }}</p>
         </div>
-        <div *ngIf="(navigationState.order.amountTendered ?? 0) > (navigationState.order.totalAmount ?? 0)">
+        <div *ngIf="changeAmount > 0">
           <span class="font-semibold">Change:</span>
-          <p>{{ (changeAmount) | currency: '₦' }}</p>
+          <p>{{ changeAmount | currency: '₦' }}</p>
         </div>
         <hr />
       </div>
@@ -118,40 +117,21 @@
                     </thead>
                     <tbody>
                       <ng-container *ngFor="let item of navigationState.order.orderItem" >
-                        <ng-container *ngIf="item.productVariant; else noVariantTemplate" >
-                             <!-- <ng-container *ngFor="let variant of item.selectedVariants; let i = index" class="flex flex-col"> -->
-                              <tr style=" text-align: center">
-                                <td>{{ item.product.name }} - {{ item.productVariant.name }}</td>
-                                <td>
-                                  <p class="mb-0 capitalize font-bold text-yellow-600">
-                                    {{ item.quantity }}
-                                  </p>
-                                </td>
-                                <td class="capitalize">{{ item.productVariant.price  | currency: '₦'}}</td>
-                                <td>₦0</td>
-                                <td>{{ item.totalPrice | currency: '₦'}}</td>
-                              </tr>
-                            <!-- </ng-container> -->
-
-                        </ng-container>
-
-                        <ng-template #noVariantTemplate>
-                          <tr style=" text-align: center">
-
-                          <td>{{ item?.product.name }}</td>
-                          <td>
-                            <p class="mb-0 capitalize font-bold text-yellow-600">
-                              {{ item.quantity }}
-                            </p>
-                          </td>
-                          <td class="capitalize">{{ item.product.sellingPrice  | currency: '₦'}}</td>
-                          <td>{{ item.discount  | currency: '₦'}}</td>
-                          <td>{{ item.totalPrice  | currency: '₦'}}</td>
-                          </tr>
-                        </ng-template>
+                        <tr>
+                            <td>
+                                {{ item.productVariant ? item.product.name + ' - ' + item.productVariant.name : item.product.name }}
+                            </td>
+                            <td>
+                                <p class="mb-0 capitalize font-bold text-yellow-600">
+                                  {{ item.quantity }}
+                                </p>
+                            </td>
+                            <td class="capitalize">{{ (item.productVariant?.price || item.product?.sellingPrice) | currency: '₦'}}</td>
+                            <td>{{ item.discount | currency: '₦'}}</td>
+                            <td>{{ item.totalPrice | currency: '₦'}}</td>
+                        </tr>
                       </ng-container>
                     </tbody>
-
                   </table>
                 </div>
               </div>
@@ -182,15 +162,15 @@
 
 <div id="receipt-container" style=" font-family: 'Courier New', monospace; font-size: 10px; text-align: left; padding: 10px;" class=''>
   <div style="text-align: center;">
-    <strong style="font-size: 22px;">SHOP NAME</strong><br>
-    Address: Lorem Ipsum, 23-10 <br>
-    Telephone: 11223344
+    <strong style="font-size: 22px;">{{ shopName }}</strong><br>
+    Address: {{ shopAddress }} <br>
+    Telephone: {{ userPrimaryInfoRegData?.phoneNumber }}
   </div>
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
   <div style="text-align: left; margin-bottom: 10px;">
     <div>Sold to: {{ navigationState.order.customer?.name || 'Walk-in Customer' }}</div>
     <div>Date & Time: {{ formatDate(navigationState.order?.updatedAt) | date: 'medium' }}</div>
-    <div>Cashier: Ayaobasheba</div>
+    <div>Cashier: {{ cashierName }}</div>
     <div>Receipt ID: {{navigationState.order.id}}</div>
     <div>Order #: {{navigationState.order.orderNumber}}</div>
   </div>
@@ -209,38 +189,16 @@
     </thead>
 
     <tbody>
-      <ng-container *ngFor="let item of navigationState.order.orderItem">
-          <ng-container *ngIf="item.productVariant; else noVariantTemplate" >
-               <!-- <ng-container *ngFor="let variant of item.selectedVariants; let i = index" class="flex flex-col"> -->
-                <tr style=" text-align: center">
-                  <td>{{ item.product.name }} - {{ item.productVariant.name }}</td>
-                  <td>
-                    <p class="mb-0 capitalize font-bold text-yellow-600">
-                      {{ item.quantity }}
-                    </p>
-                  </td>
-                  <td class="capitalize">{{ item.productVariant.price  | currency: '₦'}}</td>
-                  <!-- <td>₦0</td> -->
-                  <td>{{ item.totalPrice | currency: '₦'}}</td>
-                </tr>
-              <!-- </ng-container> -->
-
-          </ng-container>
-          <ng-template #noVariantTemplate>
-            <tr style=" text-align: center">
-
-            <td>{{ item?.product.name }}</td>
-            <td>
-              <p class="mb-0 capitalize font-bold text-yellow-600">
-                {{ item.quantity }}
-              </p>
-            </td>
-            <td class="capitalize">{{ item.product.sellingPrice  | currency: '₦'}}</td>
-            <!-- <td>{{ item.discount  | currency: '₦'}}</td> -->
-            <td>{{ item.totalPrice  | currency: '₦'}}</td>
+        <ng-container *ngFor="let item of navigationState.order.orderItem">
+            <tr>
+              <td style="text-align: left;">
+                {{ item.productVariant ? item.product.name + ' - ' + item.productVariant.name : item.product.name }}
+              </td>
+              <td style="text-align: center;">{{ item.quantity }}</td>
+              <td style="text-align: center;">{{ (item.productVariant?.price || item.product?.sellingPrice) | currency: '₦'}}</td>
+              <td style="text-align: center;">{{ item.totalPrice | currency: '₦'}}</td>
             </tr>
-          </ng-template>
-      </ng-container>
+        </ng-container>
     </tbody>
   </table>
 
@@ -262,12 +220,10 @@
     <hr style="border-top: 1px dashed black; margin: 5px 0;">
     <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px;">
       <span>Total</span>
-      <!-- <span>{{ navigationState.order.totalAmount | currency: '₦' }}</span> -->
       <span>{{ getTotalPrice() | currency: '₦' }}</span>
     </div>
   </div>
 
-  <!-- Payment Details on Receipt -->
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
   <div *ngIf="navigationState.order.payment?.paymentBreakdown?.length > 0">
     <div style="font-weight: bold; text-align: left; margin-bottom: 5px;">Payment Details:</div>
@@ -275,9 +231,9 @@
       <span>{{ payment.paymentMethod }}</span>
       <span>{{ payment.amountPaid | currency: '₦' }}</span>
     </div>
-    <div style="display: flex; justify-content: space-between;" *ngIf="(navigationState.order.amountTendered ?? 0) > (navigationState.order.totalAmount ?? 0)">
+    <div style="display: flex; justify-content: space-between;" *ngIf="changeAmount > 0">
       <span>Change</span>
-      <span>{{ (changeAmount) | currency: '₦' }}</span>
+      <span>{{ changeAmount | currency: '₦' }}</span>
     </div>
   </div>
 
