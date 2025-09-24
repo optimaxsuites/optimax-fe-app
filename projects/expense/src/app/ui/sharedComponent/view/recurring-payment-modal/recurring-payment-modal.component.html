@@ -14,7 +14,7 @@
 
   <!-- Start Date -->
   <div>
-    <label>Start Date</label>
+    <label>Start Date : </label>
     <input type="date" formControlName="startDate" />
     <div *ngIf="form.get('startDate')?.touched && form.get('startDate')?.invalid">
       Start date is required and must be today or in the future.
@@ -23,7 +23,7 @@
 
   <!-- Frequency (only for recurring) -->
   <div *ngIf="form.get('type')?.value === 'recurring'">
-    <label>Frequency</label>
+    <label>Frequency: </label>
     <select formControlName="frequency">
       <option value="">-- Select --</option>
       <option *ngFor="let freq of frequencies" [value]="freq">{{ freq }}</option>
@@ -44,12 +44,12 @@
     </div>
 
     <div *ngIf="!form.get('noEndDate')?.value">
-      <label>End Date</label>
+      <label>End Date: </label>
       <input type="date" formControlName="endDate" />
     </div>
 
     <div>
-      <label>Occurrences</label>
+      <label>Occurrences : </label>
       <input type="number" formControlName="occurrences" min="1" />
     </div>
   </div>
