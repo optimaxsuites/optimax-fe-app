@@ -314,7 +314,7 @@ const dbConfig: DBConfig = {
     // BrowserAnimationsModule,
 
     TagModule,
-    NgxIndexedDBModule.forRoot(dbConfig)
+    // NgxIndexedDBModule.forRoot(dbConfig)
   ],
   exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],
   providers: [

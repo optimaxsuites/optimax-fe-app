@@ -5,7 +5,7 @@
   <!-- Title -->
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
     <h2 class="text-xl font-semibold text-gray-800">Checkout Orders</h2>
-    <button (click)="showOfflineRecord = !showOfflineRecord"  class="bg-customBlue text-white font-bold text-xl  py-2 px-3 rounded-xl">Offline records</button>
+    <button (click)="showOfflineRecord = !showOfflineRecord"  class="bg-customBlue text-white font-bold text-xl  py-2 px-3 rounded-xl">See {{!showOfflineRecord? "Offline Records" : "Online Records"}}</button>
   </div>
 
   <!-- Search Bar - Top Line -->

@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { NgxIndexedDBService } from 'ngx-indexed-db';
-// import { NgxIndexedDBService } from 'ngx-indexed-db';
-import { map, Observable, switchMap } from 'rxjs';
+import { BehaviorSubject, firstValueFrom, map, Observable, switchMap } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -10,57 +9,38 @@ import { v4 as uuidv4 } from 'uuid';
 })
 export class OfflineService {
 
+
    constructor(private dbService: NgxIndexedDBService) {}
 
-//   // ✅ Save product locally
-//   addProduct(product: any) {
-//     return this.dbService.add('products', product);
-//   }
+//  isOffline(){
+//     return navigator.onLine
+//  }
 
-//   getProducts() {
-//     return this.dbService.getAll('products');
-//   }
+ async addProduct(product: any) {
+console.log("caching offline")
 
-//   // ✅ Save offline transaction
-//   addTransaction(transaction: any) {
-//     const tx = {
-//       ...transaction,
-//       id: uuidv4(), // unique client ID
-//       createdAt: new Date(),
-//       isSynced: false
-//     };
-//     return this.dbService.add('transactions', tx);
-//   }
+  try {
+  return this.dbService.bulkAdd('products', product).subscribe((result) => {
+       return  console.log('result: ', result);
+      });
+  } catch (err) {
+    console.error('Error saving product:', err);
+    throw err;
+  }
+}
 
-//   getPendingTransactions() {
-//   return this.dbService.getAll('transactions').pipe(
-//     map((txs: any[]) => txs.filter(t => !t.isSynced))
-//   );
-// }
+ async addCategories(category: any) {
+console.log("caching offline")
 
-
-//   markTransactionSynced(id: string) {
-//     return this.dbService.update('transactions', { id, isSynced: true });
-//   }
-
-// upsertTransaction(transaction: any) {
-//   return this.dbService.getByKey('transactions', transaction.id).pipe(
-//     switchMap((existing: any) => {
-//       if (existing) {
-//         const updated = { ...existing, ...transaction, isSynced: false };
-//         return this.dbService.update('transactions', updated);
-//       } else {
-//         const newTx = {
-//           ...transaction,
-//           id: transaction.id || uuidv4(),
-//           createdAt: new Date(),
-//           isSynced: false,
-//         };
-//         return this.dbService.add('transactions', newTx);
-//       }
-//     })
-//   );
-// }
+  try {
+  return this.dbService.bulkAdd('categories', category).subscribe((result) => {
+       return  console.log('result: ', result);
+      });
+  } catch (err) {
+    console.error('Error saving categories:', err);
+    throw err;
+  }
+}
 
 
 
