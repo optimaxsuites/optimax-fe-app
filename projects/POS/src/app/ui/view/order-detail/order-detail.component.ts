@@ -4,6 +4,7 @@ import { MessageService } from 'primeng/api';
 import { Cart, NavigationState } from '../../models/interface';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
 import JsBarcode from 'jsbarcode';
+import { BehaviorSubject, take } from 'rxjs';
 @Component({
   selector: 'app-order-detail',
   templateUrl: './order-detail.component.html',
@@ -12,6 +13,12 @@ import JsBarcode from 'jsbarcode';
 export class OrderDetailComponent {
   navigationState: NavigationState;
   // receiptID: string = Math.floor(100000 + Math.random() * 900000).toString(); 
+  public userPrimaryInfoRegData: any; 
+  public shopName: string = '';
+  public cashierName: string = '';
+  public shopAddress: string = '';
+  public industry: string = '';
+  
   constructor(
     private router: Router,
     public navigationLink: NavigationLinksService
@@ -31,6 +38,20 @@ export class OrderDetailComponent {
     // this.buildCartFromOrders(this.navigationState.order)
     // console.log(this.navigationState)
     
+  }
+
+  ngOnInit() {
+    this.fetchUserInfo();
+  }
+
+  fetchUserInfo() {
+    const userDataString = localStorage.getItem('userPrimaryInfoRegData');
+    if (userDataString) {
+      this.userPrimaryInfoRegData = JSON.parse(userDataString);
+      this.shopName = this.userPrimaryInfoRegData.industry;
+      this.shopAddress = this.userPrimaryInfoRegData.address + ', ' + this.userPrimaryInfoRegData.city;
+      this.cashierName = this.userPrimaryInfoRegData.user.username;
+    }
   }
 
   getSubtotal(): number {
@@ -98,7 +119,9 @@ export class OrderDetailComponent {
       }
     });
     
-  
+    // Declare the paymentMethods variable before using it
+    const paymentMethods = this.navigationState.order.payment?.paymentBreakdown?.map((payment: any) => payment.paymentMethod) || [];
+
     const subtotal = groupedCartItems.reduce(
       (sum, item) => sum + parseFloat(item.cartPriceTotal),
       0
@@ -112,12 +135,12 @@ export class OrderDetailComponent {
     this.navigationState.order = 
 {
   ...this.navigationState.order,
-cart: groupedCartItems,
-discount,
-paymentModes: ['cash'], // or dynamic
-subtotal,
-tax,
-total
+  cart: groupedCartItems,
+  discount,
+  paymentModes: paymentMethods, 
+  subtotal,
+  tax,
+  total
 } as any
 
     console.log( this.navigationState.order.cart)
