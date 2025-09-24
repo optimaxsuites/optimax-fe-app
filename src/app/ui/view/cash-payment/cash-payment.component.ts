@@ -15,6 +15,9 @@ import { CheckoutService } from "../../service/checkout.service";
 import { CustomerService } from "../../service/customer.service";
 import { NavigationLinksService } from "../../sharedComponent/service/navigation-links/navigation-links.service";
 import { RandomTokenService } from "../../sharedComponent/service/random-token/random-token.service";
+import { OfflineService } from "../../service/offline.service";
+import { BehaviorSubject, firstValueFrom, Observable } from "rxjs";
+import { MetadataService } from "../../service/metadata.service";
 
 @Component({
   selector: "app-cash-payment",
@@ -59,7 +62,11 @@ export class CashPaymentComponent implements OnInit {
     email: "",
     loyaltyPoints: 0,
   };
+  businessInfo: string | any;
+
   isLoading: boolean = false;
+    private _isOffline = new BehaviorSubject<boolean>(!navigator.onLine);
+    isOffline$: Observable<boolean> = this._isOffline.asObservable();
 
   constructor(
     private router: Router,
@@ -68,13 +75,25 @@ export class CashPaymentComponent implements OnInit {
     private customerService: CustomerService,
     private randomTokenService: RandomTokenService,
     private checkoutService: CheckoutService,
-    private _location: Location
+    private _location: Location,
+    private offlineService: OfflineService,
+    private metaDataService: MetadataService
   ) {
     const navigation = this.router.getCurrentNavigation();
     this.navigationState = navigation?.extras.state as NavigationState;
+    if (!this.navigationState) {
+      const savedState = localStorage.getItem("navigationState");
+      if (savedState) {
+        this.navigationState = JSON.parse(savedState);
+      }
+    } else {
+      localStorage.setItem("navigationState", JSON.stringify(this.navigationState));
+    }
     console.log(this.navigationState);
+
+    window.addEventListener('online', () => this._isOffline.next(false));
+    window.addEventListener('offline', () => this._isOffline.next(true));
   }
-  businessInfo: string | any;
 
   ngOnInit(): void {
     this.cart = this.navigationState?.cart;
@@ -84,14 +103,16 @@ export class CashPaymentComponent implements OnInit {
     if (userInfoString) {
       this.businessInfo = JSON.parse(userInfoString);
     }
+    // if(navigator.onLine) this.syncOfflinePayments()
   }
+
 
   get totalPaid() {
     return (
-      (Number(this.paymentValues.cash) ?? 0) +
-      (Number(this.paymentValues.card) ?? 0) +
-      (Number(this.paymentValues.loyalty) ?? 0) +
-      (Number(this.paymentValues.mobile) ?? 0) 
+      (this.paymentValues.cash ?? 0) +
+      (this.paymentValues.card ?? 0) +
+      (this.paymentValues.loyalty ?? 0) +
+      (this.paymentValues.mobile ?? 0) 
     );
   }
   
@@ -120,12 +141,6 @@ export class CashPaymentComponent implements OnInit {
     return mode === "loyalty" && this.customerFound?.loyaltyPoints != null
       ? this.customerFound.loyaltyPoints
       : null;
-  }
-  
-  // New method to update payment values
-  updatePaymentValue(mode: PaymentModes, value: string) {
-    this.paymentValues[mode] = parseFloat(value) || null;
-    this.updatePriceOptions();
   }
 
   updatePriceOptions() {
@@ -239,85 +254,152 @@ export class CashPaymentComponent implements OnInit {
     return map[mode] || mode.toUpperCase();
   }
 
-  processCashPayment() {
-    this.isLoading = true;
-    if (this.totalPaid < this.cart?.total) {
-      this.isLoading = false;
-      this.messageService.add({
-        severity: "warn",
-        summary: "Error",
-        detail: "Wrong amount tendered",
-        key: "tl",
-        life: 3000,
-      });
-      return;
-    }
+ async processCashPayment() {
+  this.isLoading = true;
 
-    const now = new Date().toISOString();
-    const paymentPayload = {
-      id: 0,
-      totalAmount: this.cart.total,
-      transactionDate: now,
-      status: "PAID",
-    };
-
-    this.checkoutService.makePayment(paymentPayload).subscribe({
-      next: (paymentId) => {
-        if (!paymentId) {
-          this.isLoading = false;
-          return this.showError("Missing payment ID from response");
-        }
-
-        const paymentBreakdownPayloads = this.cart.paymentModes.map((mode) => ({
-          id: 0,
-          amountPaid: this.paymentValues[mode],
-          transactionRefernce: "",
-          paymentMethod: this.getBackendPaymentMethod(mode),
-          paymentId: paymentId,
-        }));
-
-        let breakdownCount = 0;
-        for (const breakdown of paymentBreakdownPayloads) {
-          this.checkoutService.savePaymentBreakdown(breakdown).subscribe({
-            next: () => {
-              breakdownCount++;
-              if (breakdownCount === paymentBreakdownPayloads.length) {
-                this.submitOrder(paymentId, now);
-              }
-            },
-            error: () => {
-              this.isLoading = false;
-              this.showError("Failed to save payment breakdown");
-            },
-          });
-        }
-      },
-      error: () => {
-        this.isLoading = false;
-        this.showError("Failed to process payment");
-      },
-    });
+  if (this.totalPaid < this.cart?.total) {
+    this.isLoading = false;
+    return this.showError("Wrong amount tendered");
   }
 
-  private submitOrder(paymentId: number, now: string) {
-    const orderPayload = {
+  const now = new Date().toISOString();
+  const branchId = await firstValueFrom(this.metaDataService.selectedBranchId$);
+  const paymentPayload = {
+    id: 0,
+    totalAmount: this.cart.total,
+    transactionDate: now,
+    status: "PAID",
+    breakdowns: this.cart.paymentModes.map((mode) => ({
+      id: 0,
+      amountPaid: this.paymentValues[mode],
+      transactionRefernce: "",
+      paymentMethod: this.getBackendPaymentMethod(mode),
+    })),
+    order: {
       id: 0 | this.cart.orderId,
       orderNumber: this.randomTokenService.getRandomToken(),
       orderStatus: "PAID",
       updatedAt: now,
       createdDate: now,
-      totalAmount: this.cart.total, 
+      totalAmount: this.totalPaid,
       amountTendered: this.totalPaid,
       quantity: 0,
-      customerId: 1,
-      branchId: 1,
-      cashier: 67,
+      branchId: branchId,
+      cashierId: Number(sessionStorage.getItem("userid")),
+      orderItem: this.cart.cartItems.flatMap((item) => {
+        const orderItems = item.count
+          ? [{
+              totalPrice: item.count * parseInt(item.sellingPrice || "0"),
+              quantity: item.count,
+              productId: item.id,
+            }]
+          : [];
+
+        if (item.selectedVariants?.length) {
+          item.selectedVariants.forEach((variant) => {
+            const selectedQuantity = variant.selectedQuantity ?? 0;
+            const price = variant.price || 0;
+            if (selectedQuantity > 0) {
+              orderItems.push({
+                totalPrice: selectedQuantity * price,
+                quantity: selectedQuantity,
+                productId: item.id,
+                productVariantId: variant.id,
+              } as {
+                totalPrice: number;
+                quantity: number;
+                productId: number;
+                productVariantId: number | null;
+              }
+            );
+            }
+          });
+        }
+        return orderItems;
+      }),
+    }
+  };
+
+  console.log(paymentPayload)
+
+  const onlinePaymentPayload = { id: 0, totalAmount: this.cart.total, transactionDate: now, status: "PAID", };
+
+  if (!navigator.onLine) {
+    await this.offlineService.addPendingPayment(paymentPayload);
+    this.messageService.add({
+      severity: "info",
+      summary: "Offline",
+      detail: "Payment saved offline. It will sync when you're online.",
+      key: "tl",
+      life: 5000,
+    });
+     const historyState = history.state;
+                    const paymentTrackingHistory = historyState.paymentTracking;
+                    this.router.navigateByUrl(historyState.prevUrlBeforePaymentPage, {
+                      state: {
+                        ...historyState,
+                        paymentTracking: paymentTrackingHistory
+                          ? { ...paymentTrackingHistory, paymentSuccess: true }
+                          : undefined,
+                        paymentSuccess: true,
+                      },
+                    });
+      this.printReceipt();
+    this.isLoading = false;
+    return;
+  }
+
+  this.checkoutService.makePayment(onlinePaymentPayload).subscribe(
+    { next: (paymentId) => {
+      if (!paymentId) return this.showError("Missing payment ID from response"); 
+      const paymentBreakdownPayloads = this.cart.paymentModes.map((mode) => (
+        { id: 0, 
+          amountPaid: this.paymentValues[mode], 
+          transactionRefernce: "", 
+          paymentMethod: this.getBackendPaymentMethod(mode), 
+          paymentId: paymentId, 
+        }
+      )); 
+    let breakdownCount = 0; 
+    for (const breakdown of paymentBreakdownPayloads) { 
+      this.checkoutService.savePaymentBreakdown(breakdown).subscribe({
+         next: () => {
+           breakdownCount++; 
+           if (breakdownCount === paymentBreakdownPayloads.length) { 
+            this.submitOrder(paymentId, now); this.isLoading = false; 
+          } 
+          }, 
+         error: () => this.showError("Failed to save payment breakdown"),
+         }); 
+        } 
+      },
+         
+      error: () => this.showError("Failed to process payment"), 
+    });
+}
+
+
+  private async submitOrder(paymentId: number, now: string) {
+  const branchId = await firstValueFrom(this.metaDataService.selectedBranchId$);
+
+    const orderPayload: any = {
+      id: 0 | this.cart.orderId,
+      orderNumber: this.randomTokenService.getRandomToken(),
+      orderStatus: "PAID",
+      updatedAt: now,
+      createdDate: now,
+      totalAmount: this.totalPaid,
+      amountTendered: this.totalPaid,
+      quantity: 0,
+      // customerId: 1,
+      branchId: branchId,
+      cashierId: Number(sessionStorage.getItem("userid")),
       paymentId: paymentId,
       orderItem: this.cart.cartItems.flatMap((item) => {
         const orderItems = item.count
           ? [
             {
-              totalPrice: item.count * parseInt(item.sellingPrice || "0"),
+              totalPrice: item.count * Number(item.sellingPrice || "0")  ,
               quantity: item.count,
               productId: item.id,
             },
@@ -346,6 +428,11 @@ export class CashPaymentComponent implements OnInit {
         return orderItems;
       }),
     };
+    if(this.customerFound) {
+      orderPayload.customerId = this.customerFound?.id
+    }
+
+    
 
     this.checkoutService
       .saveOrder(orderPayload as unknown as OrderPOST)
@@ -359,15 +446,21 @@ export class CashPaymentComponent implements OnInit {
             life: 3000,
           });
 
-          this.router.navigate([this.navigationLink.getLink('checkoutLink')]);
-
+          const historyState = history.state;
+          const paymentTrackingHistory = historyState.paymentTracking;
+          this.router.navigateByUrl(historyState.prevUrlBeforePaymentPage, {
+            state: {
+              ...historyState,
+              paymentTracking: paymentTrackingHistory
+                ? { ...paymentTrackingHistory, paymentSuccess: true }
+                : undefined,
+              paymentSuccess: true, 
+            },
+          });
           this.printReceipt();
           this.isLoading = false;
         },
-        error: () => {
-          this.isLoading = false;
-          this.showError("Failed to save order");
-        },
+        error: () => this.showError("Failed to save order"),
       });
   }
 
@@ -379,6 +472,7 @@ export class CashPaymentComponent implements OnInit {
       key: "tl",
       life: 3000,
     });
+    this.isLoading = false;
   }
 
   saveCurrentCartItem() {

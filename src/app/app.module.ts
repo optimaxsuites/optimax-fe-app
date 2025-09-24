@@ -136,48 +136,76 @@ import { StoreHeaderComponent } from './ui/view/pos-store/store-header/store-hea
 import { UpdateStockComponent } from './ui/view/ingredient/update-stock/update-stock.component';
 // import { OrderConfirmationComponent } from './ui/view/pos-store/order-confirmation/order-confirmation.component';
 import { OrderHistoryComponent } from './ui/view/pos-store/order-history/order-history.component';
-// import { DBConfig, NgxIndexedDBModule } from 'ngx-indexed-db';
+import { DBConfig, NgxIndexedDBModule } from 'ngx-indexed-db';
 // import { StoreCheckoutComponent } from './ui/view/pos-store/store-checkout/store-checkout.component';
 // import { AuthModalComponent } from './ui/view/pos-store/auth-modal/auth-modal.component';
 export function appInitializerFactory(appInitService: AppInitService) {
   return () => appInitService.init();
 }
 
-// const dbConfig: DBConfig = {
-//   name: 'posDB',
-//   version: 1,
-//   objectStoresMeta: [
-//     {
-//       store: 'products',
-//       storeConfig: { keyPath: 'id', autoIncrement: false },
-//       storeSchema: [
-//         { name: 'name', keypath: 'name', options: { unique: false } },
-//         { name: 'price', keypath: 'price', options: { unique: false } },
-//         { name: 'quantity', keypath: 'quantity', options: { unique: false } },
-//         { name: 'sku', keypath: 'sku', options: { unique: false } },
-//         { name: 'code', keypath: 'code', options: { unique: false } },
-//         { name: 'category', keypath: 'category', options: { unique: false } },
-//         { name: 'isSynced', keypath: 'isSynced', options: { unique: false } }
-//       ]
-//     },
-//      {
-//       store: 'transactions',
-//       storeConfig: { keyPath: 'id', autoIncrement: false },
-//       storeSchema: [
-//         { name: 'orderId', keypath: 'orderId', options: { unique: false } },
-//         { name: 'items', keypath: 'items', options: { unique: false } },
-//         { name: 'total', keypath: 'total', options: { unique: false } },
-//         { name: 'paymentMethod', keypath: 'payment.method', options: { unique: false } },
-//         { name: 'paymentStatus', keypath: 'payment.status', options: { unique: false } },
-//         { name: 'customerName', keypath: 'customer.name', options: { unique: false } },
-//         { name: 'customerPhone', keypath: 'customer.phone', options: { unique: false } },
-//         { name: 'isSynced', keypath: 'isSynced', options: { unique: false } },
-//         { name: 'createdAt', keypath: 'createdAt', options: { unique: false } },
-//         { name: 'syncedAt', keypath: 'syncedAt', options: { unique: false } }
-//       ]
-//     }
-//   ]
-// };
+const dbConfig: DBConfig = {
+  name: 'posDB',
+  version: 2,
+  objectStoresMeta: [
+    {
+      store: 'products',
+      storeConfig: { keyPath: 'id', autoIncrement: false },
+       storeSchema: [
+        { name: 'name', keypath: 'name', options: { unique: false } },
+        { name: 'sku', keypath: 'sku', options: { unique: false } },
+        { name: 'code', keypath: 'code', options: { unique: false } },
+        { name: 'sellingPrice', keypath: 'sellingPrice', options: { unique: false } },
+        { name: 'purchasePrice', keypath: 'purchasePrice', options: { unique: false } },
+        { name: 'quantity', keypath: 'quantity', options: { unique: false } },
+        { name: 'category', keypath: 'productCategory.name', options: { unique: false } },
+        { name: 'supplier', keypath: 'supplier.name', options: { unique: false } },
+        { name: 'isSynced', keypath: 'isSynced', options: { unique: false } }
+      ]
+    },
+    {
+      store: 'categories',
+      storeConfig: { keyPath: 'id', autoIncrement: false },
+       storeSchema: [
+        { name: 'name', keypath: 'name', options: { unique: false } },
+        { name: 'description', keypath: 'description', options: { unique: false } },
+        { name: 'code', keypath: 'code', options: { unique: false } },
+        { name: 'endDate', keypath: 'endDate', options: { unique: false } },
+        { name: 'id', keypath: 'id', options: { unique: false } }
+      ]
+    },
+    {
+      store: 'pendingPayments',
+      storeConfig: { keyPath: '__dbKey', autoIncrement: true },
+      storeSchema: [
+            { name: 'id', keypath: 'id', options: { unique: false } },
+            { name: 'status', keypath: 'status', options: { unique: false } },
+            { name: 'transactionDate', keypath: 'transactionDate', options: { unique: false } },
+            { name: 'orderNumber', keypath: 'order.orderNumber', options: { unique: true } },
+            { name: 'cashierId', keypath: 'order.cashierId', options: { unique: false } },
+            { name: 'branchId', keypath: 'order.branchId', options: { unique: false } },
+            { name: 'orderId', keypath: 'order.id', options: { unique: false } },
+            { name: 'syncFailed', keypath: 'syncFailed', options: { unique: false } },
+            { name: 'failureReason', keypath: 'failureReason', options: { unique: false } }    
+      ]
+    },
+     {
+      store: 'transactions',
+      storeConfig: { keyPath: 'id', autoIncrement: false },
+      storeSchema: [
+        { name: 'orderId', keypath: 'orderId', options: { unique: false } },
+        { name: 'items', keypath: 'items', options: { unique: false } },
+        { name: 'total', keypath: 'total', options: { unique: false } },
+        { name: 'paymentMethod', keypath: 'payment.method', options: { unique: false } },
+        { name: 'paymentStatus', keypath: 'payment.status', options: { unique: false } },
+        { name: 'customerName', keypath: 'customer.name', options: { unique: false } },
+        { name: 'customerPhone', keypath: 'customer.phone', options: { unique: false } },
+        { name: 'isSynced', keypath: 'isSynced', options: { unique: false } },
+        { name: 'createdAt', keypath: 'createdAt', options: { unique: false } },
+        { name: 'syncedAt', keypath: 'syncedAt', options: { unique: false } }
+      ]
+    }
+  ]
+};
 
 @NgModule({
   declarations: [
@@ -252,8 +280,8 @@ export function appInitializerFactory(appInitService: AppInitService) {
     //CheckoutKitchenComponent,
   ],
   imports: [
-    BrowserModule,
-    UserModule,
+    // BrowserModule, 
+    // UserModule,
     AppRoutingModule,
     CheckboxModule,
     CommonModule,
@@ -309,10 +337,10 @@ export function appInitializerFactory(appInitService: AppInitService) {
     ProgressSpinnerModule,
     SelectButtonModule,
 
-    BrowserAnimationsModule,
+    // BrowserAnimationsModule,
 
     TagModule,
-    // // NgxIndexedDBModule.forRoot(dbConfig)
+    // NgxIndexedDBModule.forRoot(dbConfig)
   ],
   exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],
   providers: [

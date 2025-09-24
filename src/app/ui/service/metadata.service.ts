@@ -32,6 +32,7 @@ import {
   HttpHeaders,
   HttpErrorResponse,
 } from "@angular/common/http";
+import { OfflineService } from "./offline.service";
 export interface BranchDTO {
   id: number;
   name: string;
@@ -109,7 +110,7 @@ export class MetadataService {
     private checkoutService: CheckoutService,
     private orderService: OrderService,
     private http: HttpClient,
-   
+    private offlineService: OfflineService
   ) {}
   async setSelectedBranch(id: number) {
     this.selectedBranchIdSubject.next(id);
@@ -121,13 +122,23 @@ export class MetadataService {
 
   async fetchMetaData(): Promise<any> {
     console.log("🔄 [MetadataService] Starting metadata fetch");
-    // if (!navigator.onLine) {
-    //   console.warn("⚠️ Offline. Loading products from local cache...");
-    //   const offlineProducts = await firstValueFrom(this.offlineService.getProducts());
-    //   this.productSubject.next(offlineProducts);
-    //   this.enrichedProductSubject.next(offlineProducts);
-    //   return true;
-    // }
+    if (!navigator.onLine) {
+      console.warn("⚠️ Offline. Loading products from local cache...");
+      const offlineProducts = await firstValueFrom(this.offlineService.getProducts());
+      const offlineCategories = await firstValueFrom(this.offlineService.getCategories());
+
+      this.productSubject.next(offlineProducts);
+      this.enrichedProductSubject.next(offlineProducts);
+      this.categorySubject.next(offlineCategories);
+
+      console.log(offlineProducts)
+
+      // this.offlineService.getProducts().subscribe((peoples) => {
+      //   console.log(peoples);
+      // });
+;
+      return true;
+    }
 
 
     const token = sessionStorage.getItem("Token");
@@ -178,10 +189,17 @@ export class MetadataService {
               return of([]);
             })
           )
-          .subscribe((filteredProducts) => {
+          .subscribe(async (filteredProducts) => {
             this.enrichedProductSubject.next(filteredProducts);
             this.loadingSubject.next(false);
             console.log("✅ [MetadataService] Enriched products loaded");
+
+              if (filteredProducts && filteredProducts.length > 0) {
+                console.log(filteredProducts.length)
+              await this.offlineService.clearProducts(); 
+              await this.offlineService.addProduct(filteredProducts);
+              console.log("📦 Enriched products cached locally in IndexedDB");
+            }
           });
       } else {
         console.warn(
@@ -189,20 +207,15 @@ export class MetadataService {
         );
       }
     });
-
-    //   if (data.products && data.products.length > 0) {
-    //   for (const product of data.products) {
-    //     await this.offlineService.addProduct({
-    //       ...product,
-    //       isSynced: true,
-    //     });
-    //   }
-    //   console.log("📦 Products cached locally in IndexedDB");
-    // }
+      if (data.products && data.products.length > 0) {
+        this.offlineService.addCategories(data.categories);
+        console.log("📦 Categories cached locally in IndexedDB");
+    }
 
 
     return true;
   }
+
 
   private loadEnrichedProductsByBranch(): Observable<void> {
     const branchId = this.selectedBranchIdSubject.value;

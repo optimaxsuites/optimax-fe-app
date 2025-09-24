@@ -3,6 +3,9 @@ import { AuthenticationService } from './ui/sharedComponent/service/auth-service
 import { IndustryDataService } from './ui/service/industry-data.service';
 import { MetadataService } from './ui/service/metadata.service';
 import { RegisterService } from './ui/service/register.service';
+import { firstValueFrom } from 'rxjs';
+import { CheckoutService } from './ui/service/checkout.service';
+import { OfflineService } from './ui/service/offline.service';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -20,7 +23,9 @@ export class AppComponent implements OnInit{
     private authenticationService: AuthenticationService,
     private industryDataService: IndustryDataService,
     private metadataService: MetadataService,
-    private registerService: RegisterService
+    private registerService: RegisterService,
+    private checkoutService: CheckoutService,
+    private offlineService: OfflineService
   ) {
     this.userLoginAction();
   }
@@ -33,8 +38,64 @@ export class AppComponent implements OnInit{
       this.openingAmount = storedOpeningAmount ? Number(storedOpeningAmount) : 0;
       this.showCloseRegisterModal = true;
     });
+    window.addEventListener("online", () => this.syncOfflinePayments())
 
  
+  }
+
+    private async syncOfflinePayments() {
+      console.log("🌐 You are now online, preparing to sync...");
+    
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    
+      const pendingPayments = await firstValueFrom(this.offlineService.getPendingPayments());
+      if (!pendingPayments.length) return;
+    
+      console.log("🔄 Syncing offline payments:", pendingPayments);
+    
+      for (const payment of pendingPayments) {
+        const now = new Date().toISOString();
+        const onlinePaymentPayload = {
+          id: payment.id,
+          totalAmount: payment.totalAmount,
+          transactionDate: payment.transactionDate,
+          status: payment.status,
+        };
+    
+        this.checkoutService.makePayment(onlinePaymentPayload).subscribe({
+          next: (paymentId) => {
+            let breakdownCount = 0;
+    
+            for (const breakdown of payment.breakdowns) {
+              breakdown.paymentId = paymentId;
+              this.checkoutService.savePaymentBreakdown(breakdown).subscribe({
+                next: () => {
+                  breakdownCount++;
+                  if (breakdownCount === payment.breakdowns.length) {
+                    payment.order.paymentId = paymentId;
+                    this.checkoutService.saveOrder(payment.order).subscribe({
+                      next: async () => {
+                        console.log("✅ Offline payment synced:", payment);
+    
+                        await this.offlineService.removePendingPayment(payment.id);
+    
+                       
+                      },
+                      error: (err) =>
+                        console.error("❌ Failed to sync order:", err),
+                    });
+                  }
+                },
+                error: (err) =>
+                  console.error("❌ Failed to sync payment breakdown:", err),
+              });
+            }
+          },
+          error: (err) => console.error("❌ Failed to sync payment:", err),
+        });
+      }
+    
+      this.offlineService.clearPendingPayments()
   }
 
   async userLoginAction(): Promise<void> {

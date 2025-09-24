@@ -5,6 +5,7 @@
   <!-- Title -->
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
     <h2 class="text-xl font-semibold text-gray-800">Checkout Orders</h2>
+    <button (click)="showOfflineRecord = !showOfflineRecord"  class="bg-customBlue text-white font-bold text-xl  py-2 px-3 rounded-xl">See {{!showOfflineRecord? "Offline Records" : "Online Records"}}</button>
   </div>
 
   <!-- Search Bar - Top Line -->
@@ -104,7 +105,7 @@
 
 
 <!-- Empty state -->
-<div *ngIf="filteredOrders.length === 0 && !isLoading" class="px-4 md:px-10 mt-10 text-center">
+<div *ngIf="filteredOrders.length === 0 && !isLoading && !showOfflineRecord" class="px-4 md:px-10 mt-10 text-center">
   <div class="bg-gray-50 rounded-lg p-8 border border-gray-200">
     <i class="fa-solid fa-clipboard-list text-4xl text-gray-400 mb-4"></i>
     <h3 class="text-xl font-semibold text-gray-700 mb-2">
@@ -119,6 +120,21 @@
   </div>
 </div>
 
+<div *ngIf="offlineRecords$.length === 0 && !isLoading && showOfflineRecord" class="px-4 md:px-10 mt-10 text-center">
+  <div class="bg-gray-50 rounded-lg p-8 border border-gray-200">
+    <i class="fa-solid fa-clipboard-list text-4xl text-gray-400 mb-4"></i>
+    <h3 class="text-xl font-semibold text-gray-700 mb-2">
+      <span *ngIf="activeFilter === 'today'">No offline sales recorded for today</span>
+      <span *ngIf="activeFilter === 'all'">No offline sales recorded found</span>
+      <span *ngIf="activeFilter === 'custom'">No offline sales recorded in this period</span>
+    </h3>
+    <p class="text-gray-500">
+      <span *ngIf="searchText">No offline sales record match your search "{{ searchText }}"</span>
+      <span *ngIf="!searchText">Try adjusting your filters or check back later</span>
+    </p>
+  </div>
+</div>
+
 <!-- Loading state -->
 <div *ngIf="isLoading" class="px-4 md:px-10 mt-10 text-center">
   <div class="bg-gray-50 rounded-lg p-8 border border-gray-200">
@@ -127,8 +143,10 @@
   </div>
 </div>
 
+
+<ng-container *ngIf="!showOfflineRecord, else offlineOrderTable" >
 <!-- Orders Table with PrimeNG Pagination -->
-<div class="px-4 md:px-8 mt-6 md:mt-10" *ngIf="filteredOrders.length > 0 && !isLoading">
+<div class="px-4 md:px-8 mt-6 md:mt-10" *ngIf="filteredOrders.length > 0 && !isLoading ">
   <p-table 
     [value]="filteredOrders" 
     [paginator]="true" 
@@ -179,9 +197,160 @@
                (click)="reOpenCart(order)"></i>
             <i class="fa-solid fa-arrow-right hover:bg-blue-100 rounded-md p-2 transition-colors"
                (click)="orderDetails(order)"></i>
+              
           </div>
         </td>
       </tr>
     </ng-template>
   </p-table>
 </div>
+</ng-container>
+
+<ng-template #offlineOrderTable>
+ <div class="my-4 flex justify-end px-3 text-xl text-customBlue font-bold cursor-pointer " *ngIf="offlineRecords$.length > 0 && !isLoading">  <i class="fa-solid fa-arrows-rotate hover:bg-blue-100 rounded-md p-2 transition-colors"
+               (click)="syncOrder()"></i> sync all</div>
+ <div class="px-4 md:px-8 mt-6 md:mt-10" *ngIf="offlineRecords$.length > 0 && !isLoading">
+  <p-table 
+    [value]="offlineRecords$" 
+    [paginator]="true" 
+    [rows]="rowsPerPage"
+    [rowsPerPageOptions]="[5, 10, 15, 20, 25]"
+    [totalRecords]="offlineRecords$.length"
+    responsiveLayout="stack"
+    styleClass="p-datatable-striped"
+    [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}">
+    
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="updatedAt" style="width:20%">
+          Date <p-sortIcon field="updatedAt"></p-sortIcon>
+        </th>
+        <th pSortableColumn="orderStatus" style="width:15%">
+          Status <p-sortIcon field="orderStatus"></p-sortIcon>
+        </th>
+        <th pSortableColumn="orderNumber" style="width:20%">
+          Order Number <p-sortIcon field="orderNumber"></p-sortIcon>
+        </th>
+        <th pSortableColumn="totalAmount" style="width:20%">
+          Total Sales <p-sortIcon field="totalAmount"></p-sortIcon>
+        </th>
+        <th style="width:25%">Action</th>
+      </tr>
+    </ng-template>
+
+  <ng-template pTemplate="body" let-order let-columns="columns">
+  
+  <tr (click)="orderDetails(order)" style="cursor:pointer">
+    <td>{{ formatDate(order?.transactionDate) | date:'medium' }}</td>
+    <td>
+      <span [ngClass]="{
+            'text-orange-500': order?.status === 'UNPAID',
+            'text-green-600': order?.status === 'PAID',
+            'text-blue-500': order?.status === 'PENDING'
+          }"
+          class="font-bold">
+        {{ order?.status }}
+      </span>
+    </td>
+    <td class="capitalize">{{ order?.order?.orderNumber }}</td>
+    <td>₦{{ order?.totalAmount | number:'1.2-2' }}</td>
+    <td>
+      <div class="flex gap-3 text-[18px]" (click)="$event.stopPropagation()">
+        <i *ngIf="order?.status === 'UNPAID'"
+           class="fa-solid fa-cart-shopping hover:bg-green-100 p-2 rounded-md transition-colors"
+           (click)="reOpenCart(order)"></i>
+        <i class="fa-solid fa-arrow-right hover:bg-blue-100 rounded-md p-2 transition-colors"
+           (click)="toggleShowOfflineRecords(order)"></i>
+
+        <i class="fa-solid fa-arrows-rotate hover:bg-blue-100 rounded-md p-2 transition-colors"
+           (click)="syncOrder(order)"></i>
+      </div>
+    </td>
+  </tr>
+
+  <tr *ngIf="order.syncFailed">
+    <td [attr.colspan]="5" class="p-0">
+      <div class="bg-red-100 text-red-500 py-2 px-3 flex items-center justify-between font-medium">
+        <div class="flex items-center">
+            <i class="fa-solid fa-circle-exclamation mr-3 text-lg"></i> 
+            <span>
+               {{order?.failureReason}}
+            </span>
+        </div>
+        
+      </div>
+    </td>
+  </tr>
+</ng-template>
+  </p-table>
+</div>
+</ng-template>
+
+
+<app-modal *ngIf="openOfflineOrder" (close)="toggleShowOfflineRecords()" header="Offline order details">
+
+  <div *ngIf="selectedOrder" class="p-4">
+    
+    <div class="grid grid-cols-2 gap-4 mb-4 border-b pb-3">
+      <div>
+        <p class="text-sm text-gray-500">Transaction Date</p>
+        <p class="font-semibold">{{ selectedOrder.transactionDate | date:'fullDate' }}</p>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Status</p>
+        <span [ngClass]="{
+          'text-orange-500': selectedOrder.status === 'UNPAID',
+          'text-green-600': selectedOrder.status === 'PAID',
+          'text-blue-500': selectedOrder.status === 'PENDING'
+        }" class="font-bold text-lg">
+          {{ selectedOrder.status }}
+        </span>
+      </div>
+      <div *ngIf="selectedOrder.syncFailed">
+        <p class="text-sm text-red-500">Sync Failure Reason</p>
+        <p class="font-semibold text-red-700">{{ selectedOrder.failureReason }}</p>
+      </div>
+    </div>
+
+    <h3 class="text-xl font-bold mb-3">Order Items</h3>
+    <div class="border rounded-lg overflow-hidden">
+      <table class="w-full text-left">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="p-3  font-medium text-gray-600">Product/Variant</th>
+            <!-- <th class="p-3  font-medium text-gray-600">Product name</th> -->
+            <th class="p-3  font-medium text-gray-600">Quantity</th>
+            <th class="p-3  font-medium text-gray-600">Total Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of selectedOrder.order.orderItem" class="border-t hover:bg-gray-50">
+            <td class="p-3">
+            {{ item.productId }}
+              <span *ngIf="item.productVariantId" class="text-xs text-gray-500 block">
+                /{{ item.productVariantId }}
+              </span>
+            </td>
+            <!-- <td class="p-3 text-sm">{{ item.name }}</td> -->
+            <td class="p-3 ">{{ item.quantity }}</td>
+            <td class="p-3 ">₦{{ item.totalPrice | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="text-xl font-bold my-3">Payments</h3>
+    <div *ngFor="let breakdown of selectedOrder.breakdowns" class="mb-2 p-2 border-b">
+      <p class="text-sm text-gray-500">{{ breakdown.paymentMethod }}</p>
+      <p class="font-semibold text-base">₦{{ breakdown.amountPaid | number:'1.2-2' }}</p>
+    </div>
+
+    <div class="mt-4 text-right">
+      <p class="text-xl font-bold text-green-700">TOTAL: ₦{{ selectedOrder.totalAmount | number:'1.2-2' }}</p>
+    </div>
+
+  </div>
+  <div *ngIf="!selectedOrder" class="p-4 text-center text-gray-500">
+    <p>Loading order details...</p>
+  </div>
+</app-modal>

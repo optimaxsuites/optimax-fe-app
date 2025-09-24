@@ -265,3 +265,54 @@
     opacity: .5;
   }
 }
+
+// pos-store.component.scss - ADD THESE STYLES
+.skeleton-preloader {
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+// Smooth transition for content appearance
+:host {
+  display: block;
+}
+
+// Ensure smooth loading transitions
+.skeleton-preloader, .actual-content {
+  transition: opacity 0.3s ease-in-out;
+}
+
+// Pagination styles
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 2rem;
+  
+  .page-item {
+    &.active .page-link {
+      background-color: #3b82f6;
+      color: white;
+      border-color: #3b82f6;
+    }
+    
+    .page-link {
+      padding: 0.5rem 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.375rem;
+      color: #374151;
+      transition: all 0.2s ease-in-out;
+      
+      &:hover:not(.disabled) {
+        background-color: #f9fafb;
+      }
+      
+      &.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+}

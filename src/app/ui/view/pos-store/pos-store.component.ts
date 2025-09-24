@@ -1,5 +1,5 @@
-// pos-store.component.ts - FIXED
-import { Component, computed, OnInit, signal } from '@angular/core';
+// pos-store.component.ts - FULLY UPDATED
+import { Component, computed, OnInit, signal, effect, OnDestroy } from '@angular/core';
 import Fuse, { IFuseOptions } from 'fuse.js';
 import { ProductData, VariantDTO } from '../../models/interface';
 import { ActivatedRoute } from '@angular/router'; 
@@ -14,7 +14,7 @@ type ProductDataMap = Map<string, ProductData[]>;
 
 type ConvertedCartProducts = {
   products: ProductData[];
-  subtotal: number; // Fixed: changed subTotal to subtotal
+  subtotal: number;
   tax: number;
   discount: number;
   total: number;
@@ -25,7 +25,7 @@ type ConvertedCartProducts = {
   templateUrl: './pos-store.component.html',
   styleUrl: './pos-store.component.scss',
 })
-export class PosStoreComponent implements OnInit {
+export class PosStoreComponent implements OnInit, OnDestroy {
   private static readonly _fuseOptions: IFuseOptions<ProductData> = {
     keys: [
       { name: 'sku', weight: 2 },
@@ -51,6 +51,12 @@ export class PosStoreComponent implements OnInit {
   branches: any[] = [];
   searchText = signal('');
   isLoading = signal(true);
+  isContentReady = signal(false); // Combined loading state
+
+  // Pagination signals
+  currentPage = signal(1);
+  itemsPerPage = signal(20);
+  totalPages = signal(0);
 
   private readonly _fuse = new Fuse<ProductData>(
     this._productsInChosenCategory(),
@@ -65,27 +71,28 @@ export class PosStoreComponent implements OnInit {
   isCartSidebarVisible = true;
   selectedProduct: ProductData | null = null;
 
-  // Use ONLY the service for cart state
+  // Cart signals - using service signals directly
   cartProducts = computed(() => this.cartService.cart().items);
   isCartEmpty = computed(() => this.cartService.isCartEmpty());
   totalCartItems = computed(() => this.cartService.totalItems());
   
-  // Fixed: Remove duplicate declaration and use proper type
+  // Converted cart products for display
   convertedCartProducts = computed<ConvertedCartProducts>(() => {
     const cart = this.cartService.getCart();
     return Array.from(cart.items).reduce<ConvertedCartProducts>(
       (acc, [_, { product: currProduct, quantity: currQuantity }]) => {
         acc.products.push(...Array(currQuantity).fill(currProduct));
         acc.discount += this._productHelper.getDiscount(currProduct) * currQuantity;
-        acc.subtotal += this._productHelper.getPrice(currProduct) * currQuantity; // Fixed: subtotal not subTotal
+        acc.subtotal += this._productHelper.getPrice(currProduct) * currQuantity;
         acc.tax += this._productHelper.getTax(currProduct) * currQuantity;
         acc.total += this._productHelper.getRate(currProduct) * currQuantity;
         return acc;
       },
-      { products: [], subtotal: cart.subtotal, tax: 0, discount: 0, total: cart.subtotal } // Fixed: subtotal not subTotal
+      { products: [], subtotal: cart.subtotal, tax: 0, discount: 0, total: cart.subtotal }
     );
   });
 
+  // Category options for dropdown
   categoryOptions = computed(() => {
     const options = [
       { label: this.defaultCategory, value: this.defaultCategory },
@@ -101,6 +108,17 @@ export class PosStoreComponent implements OnInit {
     return options;
   });
 
+  // Paginated products for "All Products" section
+  paginatedProducts = computed(() => {
+    if (!this.isContentReady()) return [];
+    
+    const allProducts = this.filteredProducts();
+    const startIndex = (this.currentPage() - 1) * this.itemsPerPage();
+    const endIndex = startIndex + this.itemsPerPage();
+    return allProducts.slice(startIndex, endIndex);
+  });
+
+  // Filtered products based on search
   filteredProducts = computed(() => {
     if (!this.searchText() || !this._productsInChosenCategory().length) {
       return this._productsInChosenCategory();
@@ -115,6 +133,18 @@ export class PosStoreComponent implements OnInit {
     else return searchResults;
   });
 
+  // Update total pages when filtered products change
+  private updatePagination = effect(() => {
+    const totalItems = this.filteredProducts().length;
+    this.totalPages.set(Math.ceil(totalItems / this.itemsPerPage()));
+    
+    // Reset to page 1 if current page is beyond new total pages
+    if (this.currentPage() > this.totalPages() && this.totalPages() > 0) {
+      this.currentPage.set(1);
+    }
+  });
+
+  // Search results state
   didSearchHaveResults = computed<'no_search_yet' | 'no' | 'yes'>(() => {
     if (!this.searchText() || !this._productsInChosenCategory().length)
       return 'no_search_yet';
@@ -123,13 +153,10 @@ export class PosStoreComponent implements OnInit {
     else return 'yes';
   });
 
+  // Responsive cart width
   readonly shouldCartHaveViewportWidth =
     window.innerWidth < 640 &&
     window.matchMedia('(orientation: portrait)').matches;
-
-  getTotalCartItems(): number {
-    return this.totalCartItems();
-  }
 
   constructor(
     private _posService: PosServiceService,
@@ -142,14 +169,24 @@ export class PosStoreComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // Load branches
     this._posService.getBranches().subscribe((branches) => {
       this.branches = branches;
     });
 
+    // Load products with proper loading sequence
+    this.loadProducts();
+  }
+
+  /**
+   * Load products with proper skeleton loading sequence
+   */
+  private loadProducts(): void {
     this._posService.getProducts().subscribe({
       next: (data) => {
         this._allProducts = data;
 
+        // Process product data into categories
         data.forEach((iteratedProduct) => {
           const categoryName = iteratedProduct.productCategory.name;
 
@@ -160,25 +197,124 @@ export class PosStoreComponent implements OnInit {
           } else {
             this.productData.update((oldMap) => {
               const existingProductArray = oldMap.get(categoryName);
-
               if (!existingProductArray) return new Map(oldMap);
-
               existingProductArray.push(iteratedProduct);
-
               return new Map(oldMap).set(categoryName, existingProductArray);
             });
           }
         });
         
-        this.isLoading.set(false);
+        // Wait for skeleton to complete before showing content
+        this.simulateSkeletonLoading();
       },
       error: (error) => {
         console.error('Error loading products', error);
         this.isLoading.set(false);
+        this.isContentReady.set(true);
       }
     });
   }
 
+  /**
+   * Simulate minimum skeleton loading time for better UX
+   */
+  private simulateSkeletonLoading(): void {
+    const minSkeletonTime = 1500; // 1.5 seconds minimum skeleton display
+    
+    setTimeout(() => {
+      this.isLoading.set(false);
+      
+      // Small delay to ensure smooth transition from skeleton to content
+      setTimeout(() => {
+        this.isContentReady.set(true);
+      }, 300);
+    }, minSkeletonTime);
+  }
+
+  ngOnDestroy(): void {
+    // Clean up the effect to prevent memory leaks
+    this.updatePagination.destroy();
+  }
+
+  // ============ PAGINATION METHODS ============
+
+  /**
+   * Go to next page
+   */
+  nextPage(): void {
+    if (this.currentPage() < this.totalPages()) {
+      this.currentPage.set(this.currentPage() + 1);
+      this.scrollToTop();
+    }
+  }
+
+  /**
+   * Go to previous page
+   */
+  previousPage(): void {
+    if (this.currentPage() > 1) {
+      this.currentPage.set(this.currentPage() - 1);
+      this.scrollToTop();
+    }
+  }
+
+  /**
+   * Go to specific page
+   */
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+      this.scrollToTop();
+    }
+  }
+
+  /**
+   * Scroll to top of page
+   */
+  private scrollToTop(): void {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /**
+   * Generate page numbers for pagination with ellipsis logic
+   */
+  getPageNumbers(): number[] {
+    const total = this.totalPages();
+    const current = this.currentPage();
+    const pages: number[] = [];
+    
+    if (total <= 7) {
+      // Show all pages if total pages is small
+      for (let i = 1; i <= total; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show first page, current page, and last page with ellipses
+      if (current <= 4) {
+        for (let i = 1; i <= 5; i++) pages.push(i);
+        pages.push(-1); // Ellipsis
+        pages.push(total);
+      } else if (current >= total - 3) {
+        pages.push(1);
+        pages.push(-1); // Ellipsis
+        for (let i = total - 4; i <= total; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push(-1); // Ellipsis
+        for (let i = current - 1; i <= current + 1; i++) pages.push(i);
+        pages.push(-1); // Ellipsis
+        pages.push(total);
+      }
+    }
+    
+    return pages;
+  }
+
+  // ============ PRODUCT METHODS ============
+
+  /**
+   * Get list of categories
+   */
   getCategoryList(): string[] {
     const categories: string[] = [];
     this.productData().forEach((_, key) => {
@@ -189,18 +325,50 @@ export class PosStoreComponent implements OnInit {
     return categories;
   }
 
+  /**
+   * Get products by category
+   */
   getProductsByCategory(category: string): ProductData[] {
     return this.productData().get(category) || [];
   }
 
-  // Cart methods using service ONLY
-  addToCart(product: ProductData, variant?: VariantDTO) {
-    this.cartService.addToCart(product, variant);
-    // Force change detection by accessing the signal
-    this.cartProducts(); // This reads the signal and triggers reactivity
+  /**
+   * Get product image with caching
+   */
+  getProductImage(product: ProductData) {
+    return this._imgCacheService.getProductImage(product);
   }
 
-  reduceQuantityInCart(product: ProductData) {
+  /**
+   * Handle image loading errors
+   */
+  handleImageError(event: Event): void {
+    const imgElement = event.target as HTMLImageElement;
+    imgElement.src = 'assets/placeholder-product.jpg';
+  }
+
+  // ============ CART METHODS ============
+
+  /**
+   * Get total cart items count
+   */
+  getTotalCartItems(): number {
+    return this.totalCartItems();
+  }
+
+  /**
+   * Add product to cart
+   */
+  addToCart(product: ProductData, variant?: VariantDTO): void {
+    this.cartService.addToCart(product, variant);
+    // Force reactivity by reading the signal
+    this.cartProducts();
+  }
+
+  /**
+   * Reduce quantity in cart
+   */
+  reduceQuantityInCart(product: ProductData): void {
     const idToUse = product.selectedVariants?.[0] 
       ? `${product.id}-${product.selectedVariants[0].id}` 
       : product.id.toString();
@@ -210,17 +378,26 @@ export class PosStoreComponent implements OnInit {
     this.cartProducts(); // Trigger reactivity
   }
 
-  removeFromCart(product: ProductData) {
+  /**
+   * Remove product from cart
+   */
+  removeFromCart(product: ProductData): void {
     this.cartService.removeFromCart(product, product.selectedVariants?.[0]);
     this.cartProducts(); // Trigger reactivity
   }
 
-  clearCart() {
+  /**
+   * Clear entire cart
+   */
+  clearCart(): void {
     this.cartService.clearCart();
     this.isCartOpen = false;
   }
 
-  toggleCart() {
+  /**
+   * Toggle cart visibility (mobile/desktop)
+   */
+  toggleCart(): void {
     if (window.innerWidth < 768) {
       this.isCartOpen = !this.isCartOpen;
     } else {
@@ -228,6 +405,9 @@ export class PosStoreComponent implements OnInit {
     }
   }
 
+  /**
+   * Get quantity of specific product in cart
+   */
   productQuantityInCart(product: ProductData): number {
     const idToUse = product.selectedVariants?.[0] 
       ? `${product.id}-${product.selectedVariants[0].id}` 
@@ -236,28 +416,37 @@ export class PosStoreComponent implements OnInit {
     return this.cartProducts().get(idToUse)?.quantity || 0;
   }
 
-  getProductImage(product: ProductData) {
-    return this._imgCacheService.getProductImage(product);
-  }
+  // ============ EVENT HANDLERS ============
 
-  changeCategory(category: string) {
+  /**
+   * Handle category change
+   */
+  changeCategory(category: string): void {
     this.selectedCategory.set(category);
+    this.currentPage.set(1); // Reset to first page when category changes
   }
 
-  changeSearchInput(text: string) {
+  /**
+   * Handle search input change
+   */
+  changeSearchInput(text: string): void {
     this.searchText.set(text);
+    this.currentPage.set(1); // Reset to first page when search changes
   }
 
-  handleImageError(event: Event): void {
-    const imgElement = event.target as HTMLImageElement;
-    imgElement.src = 'assets/placeholder-product.jpg';
-  }
+  // ============ NAVIGATION METHODS ============
 
+  /**
+   * Navigate to checkout page
+   */
   navigateToCheckout(): void {
     const currentUuid = this.route.snapshot.paramMap.get('uuid');
     this.router.navigate(['/store', currentUuid, 'checkout']);
   }
 
+  /**
+   * Navigate to product details page
+   */
   navigateToProductDetails(productId: number): void {
     const currentUuid = this.route.snapshot.paramMap.get('uuid');
     
@@ -267,4 +456,85 @@ export class PosStoreComponent implements OnInit {
       console.error('No store UUID found in route parameters');
     }
   }
+
+  // ============ UI STATE METHODS ============
+
+  /**
+   * Toggle hamburger menu (mobile)
+   */
+  toggleHamburgerMenu(): void {
+    this.isHamburgerMenuOpen = !this.isHamburgerMenuOpen;
+  }
+
+  /**
+   * Open variant selection modal
+   */
+  openVariantModal(product: ProductData): void {
+    this.selectedProduct = product;
+    this.isVariantModalOpen = true;
+  }
+
+  /**
+   * Close variant selection modal
+   */
+  closeVariantModal(): void {
+    this.isVariantModalOpen = false;
+    this.selectedProduct = null;
+  }
+
+  /**
+   * Open payment modal
+   */
+  openPaymentModal(): void {
+    this.isPaymentModalOpen = true;
+  }
+
+  /**
+   * Close payment modal
+   */
+  closePaymentModal(): void {
+    this.isPaymentModalOpen = false;
+  }
+
+  /**
+   * Toggle sidebar visibility
+   */
+  toggleSidebar(): void {
+    this.isSidebarVisible = !this.isSidebarVisible;
+  }
+
+  // ============ HELPER METHODS ============
+
+  /**
+   * Check if product is in stock
+   */
+  isProductInStock(product: ProductData): boolean {
+    return product.quantity > 0;
+  }
+
+  /**
+   * Format price for display
+   */
+  formatPrice(price: number): string {
+    return `₦${price.toLocaleString('en-NG')}`;
+  }
+
+  /**
+   * Get stock status text
+   */
+  getStockStatus(product: ProductData): string {
+    return product.quantity > 0 ? `${product.quantity} available` : 'Out of stock';
+  }
+
+  /**
+   * Get stock status class for styling
+   */
+  getStockStatusClass(product: ProductData): string {
+    return product.quantity > 0 ? 'text-green-600' : 'text-red-600';
+  }
+  
+  getDisplayEndIndex(): number {
+  const endIndex = this.currentPage() * this.itemsPerPage();
+  return Math.min(endIndex, this.filteredProducts().length);
+}
 }

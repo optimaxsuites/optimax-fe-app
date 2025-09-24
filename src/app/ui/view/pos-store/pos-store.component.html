@@ -1,4 +1,3 @@
-<!-- pos-store.component.html -->
 <div class="h-screen flex flex-col bg-gray-50">
   <app-store-header
     [branches]="branches"
@@ -17,8 +16,8 @@
   <div class="flex-1 flex overflow-hidden">
     <!-- Products Area -->
     <main class="flex-1 overflow-auto p-4">
-      <!-- Skeleton Preloader -->
-      @if (isLoading()) {
+      <!-- Skeleton Preloader - Show until content is fully ready -->
+      @if (isLoading() || !isContentReady()) {
         <div class="skeleton-preloader">
           <!-- Category Sections Skeleton -->
           <div class="mb-8">
@@ -28,17 +27,13 @@
             <div class="flex overflow-x-auto pb-4 space-x-4">
               @for (item of [1,2,3]; track item) {
                 <div class="min-w-[500px] bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-                  <!-- Category Title Skeleton -->
                   <div class="h-6 w-32 bg-gray-200 rounded m-3 animate-pulse"></div>
                   
-                  <!-- Products Grid Skeleton -->
                   <div class="grid grid-cols-2 gap-2 p-3">
                     @for (product of [1,2,3,4]; track product) {
                       <div class="bg-gray-50 rounded-xl border border-black/10 overflow-hidden flex flex-row gap-3">
-                        <!-- Product Image Skeleton -->
                         <div class="h-32 w-32 bg-gray-200 animate-pulse"></div>
                         
-                        <!-- Product Info Skeleton -->
                         <div class="p-2 flex flex-col justify-between items-start flex-1">
                           <div class="w-full">
                             <div class="h-5 w-3/4 bg-gray-200 rounded mb-2 animate-pulse"></div>
@@ -61,10 +56,8 @@
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               @for (item of [1,2,3,4,5,6,7,8,9,10]; track item) {
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-                  <!-- Product Image Skeleton -->
                   <div class="h-48 bg-gray-200 animate-pulse"></div>
                   
-                  <!-- Product Info Skeleton -->
                   <div class="p-3 flex flex-col flex-1">
                     <div class="h-5 w-full bg-gray-200 rounded mb-2 animate-pulse"></div>
                     <div class="h-4 w-20 bg-gray-200 rounded mb-2 animate-pulse"></div>
@@ -76,29 +69,32 @@
                 </div>
               }
             </div>
+            
+            <!-- Pagination Skeleton -->
+            <div class="flex justify-center items-center space-x-2 mt-8">
+              @for (item of [1,2,3,4,5]; track item) {
+                <div class="h-10 w-10 bg-gray-200 rounded animate-pulse"></div>
+              }
+            </div>
           </div>
         </div>
       }
 
-      <!-- Actual Content -->
-      @if (!isLoading()) {
-        <!-- Category Sections - Horizontal Layout -->
+      <!-- Actual Content - Show only when content is fully ready -->
+      @if (isContentReady() && !isLoading()) {
+        <!-- Category Sections -->
         <div class="mb-8">
           <h2 class="text-2xl font-bold text-gray-800 mb-4">Categories</h2>
           
-          <!-- Horizontal Category Cards Container -->
           <div class="flex overflow-x-auto pb-4 space-x-4">
             @for (category of getCategoryList(); track category) {
               <div class="min-w-[500px] bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-                <!-- Category Title -->
                 <h3 class="text-lg font-semibold text-gray-800 p-3 border-b capitalize">{{ category }}</h3>
                 
-                <!-- Products Grid - 2x2 layout inside category card -->
                 <div class="grid grid-cols-2 gap-2 p-3">
                   @for (product of getProductsByCategory(category); track product.id; let i = $index) {
                     @if (i < 4) {
                       <div class="bg-gray-50 rounded-xl border border-black/10 overflow-hidden transition-all hover:shadow-xl duration-300 relative flex flex-row gap-3 cursor-pointer" [routerLink]="['product-details', product.id]">
-                        <!-- Product Image -->
                         <div class="h-32 w-32 bg-gray-100 overflow-hidden">
                           <img 
                             [src]="getProductImage(product) | async" 
@@ -108,14 +104,11 @@
                           />
                         </div>
                         
-                        <!-- Product Info (Always visible) -->
                         <div class="p-2 flex flex-col justify-between items-start">
                           <div>
                             <h4 class="font-medium text-gray-800 text-xl line-clamp-1 capitalize">
                               {{ product.name }}
                             </h4>
-                            
-                            <!-- Price -->
                             <p class="text-customBlue font-semibold text-xl">
                               ₦{{ product.sellingPrice }}
                             </p>
@@ -143,17 +136,21 @@
           </div>
         </div>
         
-        <!-- All Products Section -->
+        <!-- All Products Section with Pagination -->
         <div class="mt-8">
-          <h2 class="text-2xl font-bold text-gray-800 mb-4">All Products</h2>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">All Products</h2>
+            <div class="text-sm text-gray-600">
+              Showing {{ (currentPage() - 1) * itemsPerPage() + 1 }}-{{ getDisplayEndIndex() }} of {{ filteredProducts().length }} products
+            </div>
+          </div>
           
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            @for (product of filteredProducts(); track product.id) {
+            @for (product of paginatedProducts(); track product.id) {
               <div 
                 class="cursor-pointer bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-md flex flex-col"
                 [routerLink]="['product-details', product.id]"
               >
-                <!-- Product Image -->
                 <div class="bg-gray-100 overflow-hidden flex items-center justify-center flex-shrink-0">
                   <div class="md:h-48 h-20 my-4 flex items-center justify-center overflow-hidden rounded-md bg-gray-100">
                     <img 
@@ -165,13 +162,11 @@
                   </div>
                 </div>
                 
-                <!-- Product Info -->
                 <div class="p-3 flex flex-col flex-1">
                   <h3 class="font-medium text-gray-800 text-xl line-clamp-2 mb-2 capitalize">
                     {{ product.name }}
                   </h3>
 
-                  <!-- Stock Status -->
                   <p class="text-xs text-gray-500 text-left">
                     @if (product.quantity > 0) {
                       {{ product.quantity }} available
@@ -181,12 +176,10 @@
                   </p>
 
                   <div class="flex flex-row items-center justify-between">
-                    <!-- Price -->
                     <p class="text-customBlue font-semibold mb-2 mt-auto">
                       ₦{{ product.sellingPrice }}
                     </p>
                     
-                    <!-- Add to Cart Button -->
                     <div class="">
                       <button 
                         class="bg-customGreen text-white px-4 py-4 rounded-full text-sm flex items-center justify-center gap-1"
@@ -204,11 +197,48 @@
               </div>
             }
           </div>
+
+          <!-- Pagination Controls -->
+          @if (totalPages() > 1) {
+            <div class="flex justify-center items-center space-x-2 mt-8">
+              <button 
+                (click)="previousPage()"
+                [disabled]="currentPage() === 1"
+                class="px-3 py-2 rounded border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+              >
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+
+              @for (page of getPageNumbers(); track page) {
+                @if (page === -1) {
+                  <span class="px-3 py-2 text-gray-500">...</span>
+                } @else {
+                  <button 
+                    (click)="goToPage(page)"
+                    [class.bg-customBlue]="page === currentPage()"
+                    [class.text-white]="page === currentPage()"
+                    [class.text-gray-700]="page !== currentPage()"
+                    class="px-3 py-2 rounded border border-gray-300 hover:bg-gray-50 min-w-[40px] transition-colors"
+                  >
+                    {{ page }}
+                  </button>
+                }
+              }
+
+              <button 
+                (click)="nextPage()"
+                [disabled]="currentPage() === totalPages()"
+                class="px-3 py-2 rounded border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+              >
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+          }
         </div>
       }
     </main>
 
-    <!-- Desktop Cart Sidebar - Fixed on the right -->
+    <!-- Cart Sidebar -->
     @if (isCartSidebarVisible && !isCartEmpty()) {
       <div class="hidden md:block w-[30%] bg-white border-l border-gray-300 overflow-hidden flex flex-col">
         <div class="flex flex-col h-full">

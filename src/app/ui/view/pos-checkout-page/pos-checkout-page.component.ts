@@ -111,6 +111,12 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
   ngOnInit() {
     this.checkAndResetNotes();
+    const navState = this.router.getCurrentNavigation()?.extras.state ?? history.state;
+
+    if (navState?.["paymentSuccess"]) {
+      this.clearCart();
+      this.router.navigate([], { replaceUrl: true });
+    }
 
     const storedOpeningAmount = localStorage.getItem("openingAmount");
     this.openingAmount = storedOpeningAmount ? Number(storedOpeningAmount) : 0;
@@ -126,12 +132,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
         this.subtotal = parsedCart.subtotal;
         localStorage.removeItem("currentCart"); // Clear the item after restoring
     }
-    
+    console.log("psyamnet success",this.router.getCurrentNavigation()?.extras.state?.["paymentSuccess"])
     // Check for the paymentSuccess flag from the router state
-    if (this.router.getCurrentNavigation()?.extras.state?.["paymentSuccess"]) {
-      this.clearCart();
-      this.router.navigate([], { replaceUrl: true }); // Clear the state from the URL
-    }
+   
     
     this.getProducts();
     this.loadCategory();
