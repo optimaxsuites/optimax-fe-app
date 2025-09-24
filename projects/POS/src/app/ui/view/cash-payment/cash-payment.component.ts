@@ -333,17 +333,19 @@ export class CashPaymentComponent implements OnInit {
       key: "tl",
       life: 5000,
     });
-     const historyState = history.state;
-                    const paymentTrackingHistory = historyState.paymentTracking;
-                    this.router.navigateByUrl(historyState.prevUrlBeforePaymentPage, {
-                      state: {
-                        ...historyState,
-                        paymentTracking: paymentTrackingHistory
-                          ? { ...paymentTrackingHistory, paymentSuccess: true }
-                          : undefined,
-                        paymentSuccess: true,
-                      },
-                    });
+    //  const historyState = history.state;
+    //                 const paymentTrackingHistory = historyState.paymentTracking;
+    //                 this.router.navigateByUrl(historyState.prevUrlBeforePaymentPage, {
+    //                   state: {
+    //                     ...historyState,
+    //                     paymentTracking: paymentTrackingHistory
+    //                       ? { ...paymentTrackingHistory, paymentSuccess: true }
+    //                       : undefined,
+    //                     paymentSuccess: true,
+    //                   },
+    //                 });
+    const checkoutLink = this.navigationLink.getLink('checkoutLink');
+      this.router.navigate([checkoutLink]);
       this.printReceipt();
     this.isLoading = false;
     return;
@@ -446,17 +448,19 @@ export class CashPaymentComponent implements OnInit {
             life: 3000,
           });
 
-          const historyState = history.state;
-          const paymentTrackingHistory = historyState.paymentTracking;
-          this.router.navigateByUrl(historyState.prevUrlBeforePaymentPage, {
-            state: {
-              ...historyState,
-              paymentTracking: paymentTrackingHistory
-                ? { ...paymentTrackingHistory, paymentSuccess: true }
-                : undefined,
-              paymentSuccess: true, 
-            },
-          });
+          // const historyState = history.state;
+          // const paymentTrackingHistory = historyState.paymentTracking;
+          // this.router.navigateByUrl(historyState.prevUrlBeforePaymentPage, {
+          //   state: {
+          //     ...historyState,
+          //     paymentTracking: paymentTrackingHistory
+          //       ? { ...paymentTrackingHistory, paymentSuccess: true }
+          //       : undefined,
+          //     paymentSuccess: true, 
+          //   },
+          // });
+          const checkoutLink = this.navigationLink.getLink('checkoutLink');
+          this.router.navigate([checkoutLink]);
           this.printReceipt();
           this.isLoading = false;
         },
@@ -498,7 +502,10 @@ export class CashPaymentComponent implements OnInit {
   }
 
   navigateBack() {
-    this._location.back();
+    // this._location.back();
+    const cart = this.cart;
+    const checkoutLink = this.navigationLink.getLink('checkoutLink');
+    this.router.navigate([checkoutLink], { state: { cart } });
   }
 
   get approximateCartTotal() {
