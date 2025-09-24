@@ -1,3 +1,4 @@
+// product-details.component.ts - FIXED
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -17,6 +18,12 @@ export class ProductDetailsComponent implements OnInit {
   isLoading = signal(true);
   quantity = signal(1);
   storeUuid = '';
+  isCartOpen = signal(false);
+  
+  // Cart signals - FIXED: Remove duplicates and use service signals
+  cartProducts = computed(() => this.cartService.cart().items);
+  isCartEmpty = computed(() => this.cartService.isCartEmpty());
+  totalCartItems = computed(() => this.cartService.totalItems());
 
   // Related products
   relatedProducts = signal<ProductData[]>([]);
@@ -29,8 +36,6 @@ export class ProductDetailsComponent implements OnInit {
   
   // Computed values for header
   categoryOptions = computed(() => [{ label: 'All', value: 'All' }]);
-  isCartEmpty = computed(() => true);
-  getTotalCartItems = computed(() => 0);
 
   constructor(
     private route: ActivatedRoute,
@@ -51,12 +56,88 @@ export class ProductDetailsComponent implements OnInit {
     }
   }
 
+  getTotalCartItems(): number {
+    return this.totalCartItems();
+  }
+
+  getCartSubtotal(): number {
+    return this.cartService.cart().subtotal;
+  }
+
+  // Cart methods
+  toggleCart(): void {
+    this.isCartOpen.set(!this.isCartOpen());
+  }
+
+  addToCart(product?: ProductData): void {
+    const productToAdd = product || this.product();
+    if (!productToAdd || !this.isInStock()) return;
+
+    // Add the product with the current quantity
+    for (let i = 0; i < this.quantity(); i++) {
+      this.cartService.addToCart(productToAdd);
+    }
+    
+    this.quantity.set(1);
+    this.showAddToCartFeedback();
+    
+    // Auto-open cart on mobile after adding item
+    if (window.innerWidth < 768) {
+      this.isCartOpen.set(true);
+    }
+  }
+
+  addVariantToCart(variant: VariantDTO): void {
+    const product = this.product();
+    if (!product || variant.quantity === 0) return;
+
+    // Add the variant with the current quantity
+    for (let i = 0; i < this.quantity(); i++) {
+      this.cartService.addToCart(product, variant);
+    }
+    
+    this.quantity.set(1);
+    this.showAddToCartFeedback();
+    
+    // Auto-open cart on mobile after adding item
+    if (window.innerWidth < 768) {
+      this.isCartOpen.set(true);
+    }
+  }
+
+  reduceQuantityInCart(product: ProductData): void {
+    const idToUse = product.selectedVariants?.[0] 
+      ? `${product.id}-${product.selectedVariants[0].id}` 
+      : product.id.toString();
+    
+    const currentQuantity = this.cartProducts().get(idToUse)?.quantity || 0;
+    this.cartService.updateQuantity(product, currentQuantity - 1, product.selectedVariants?.[0]);
+  }
+
+  removeFromCart(product: ProductData): void {
+    this.cartService.removeFromCart(product, product.selectedVariants?.[0]);
+  }
+
+  clearCart(): void {
+    this.cartService.clearCart();
+    this.isCartOpen.set(false);
+  }
+
+  navigateToCheckout(): void {
+    this.isCartOpen.set(false);
+    this.router.navigate(['/store', this.storeUuid, 'checkout']);
+  }
+
+  private showAddToCartFeedback(): void {
+    // You can add a toast notification here
+    console.log('Product added to cart');
+  }
+
   // Helper methods for template safety
   getSellingPrice(): number {
     const product = this.product();
     if (!product || !product.sellingPrice) return 0;
     
-    // Convert string to number if necessary
     return typeof product.sellingPrice === 'string' 
       ? parseFloat(product.sellingPrice) 
       : product.sellingPrice;
@@ -172,32 +253,6 @@ export class ProductDetailsComponent implements OnInit {
     }
   }
 
-  // Cart functionality
-  addToCart(product?: ProductData): void {
-    const productToAdd = product || this.product();
-    if (!productToAdd || !this.isInStock()) return;
-
-    // Add to cart logic here
-    for (let i = 0; i < this.quantity(); i++) {
-      // this.cartService.addToCart(productToAdd);
-    }
-
-    this.quantity.set(1);
-    this.showAddToCartFeedback();
-  }
-
-  addVariantToCart(variant: VariantDTO): void {
-    const product = this.product();
-    if (!product || variant.quantity === 0) return;
-
-    // this.cartService.addToCart(product, variant);
-    this.showAddToCartFeedback();
-  }
-
-  private showAddToCartFeedback(): void {
-    console.log('Product added to cart');
-  }
-
   // Navigation
   navigateToProductDetails(productId: number): void {
     this.router.navigate(['/user/checkout/pos-store', this.storeUuid, 'product-details', productId]);
@@ -212,11 +267,8 @@ export class ProductDetailsComponent implements OnInit {
     this.searchText.set(text);
   }
 
-  toggleCart(): void {
-    // Implement cart toggle logic
-  }
-
   changeBranch(branch: any): void {
     // Implement branch change logic
+    console.log('Branch changed to:', branch);
   }
 }
