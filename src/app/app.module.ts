@@ -251,7 +251,7 @@ import { DBConfig, NgxIndexedDBModule } from 'ngx-indexed-db';
 
 const dbConfig: DBConfig = {
   name: 'posDB',
-  version: 9,
+  version: 2,
   objectStoresMeta: [
     {
       store: 'products',
@@ -282,7 +282,17 @@ const dbConfig: DBConfig = {
     {
       store: 'pendingPayments',
       storeConfig: { keyPath: '__dbKey', autoIncrement: true },
-      storeSchema: []
+      storeSchema: [
+            { name: 'id', keypath: 'id', options: { unique: false } },
+            { name: 'status', keypath: 'status', options: { unique: false } },
+            { name: 'transactionDate', keypath: 'transactionDate', options: { unique: false } },
+            { name: 'orderNumber', keypath: 'order.orderNumber', options: { unique: true } },
+            { name: 'cashierId', keypath: 'order.cashierId', options: { unique: false } },
+            { name: 'branchId', keypath: 'order.branchId', options: { unique: false } },
+            { name: 'orderId', keypath: 'order.id', options: { unique: false } },
+            { name: 'syncFailed', keypath: 'syncFailed', options: { unique: false } },
+            { name: 'failureReason', keypath: 'failureReason', options: { unique: false } }    
+      ]
     },
      {
       store: 'transactions',

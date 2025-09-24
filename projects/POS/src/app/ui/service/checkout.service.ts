@@ -17,19 +17,6 @@ export class CheckoutService {
   }
 
 saveOrder(data: OrderPOST): Observable<any> {
-  // if (navigator.onLine) {
-  //   return this.http
-  //     .post<OrderGET>(this.getBaseApiUrl() + "/x/api/v2/pos/orders", data)
-  //     .pipe(catchError(this.handleError));
-  // } else {
-  //   return from(this.offlineService.upsertTransaction(data)).pipe(
-  //     map(() => ({
-  //       offline: true,
-  //       data
-  //     }))
-  //   );
-  // }
-
    return this.http
       .post<OrderGET>(this.getBaseApiUrl() + "/x/api/v2/pos/orders", data)
       .pipe(catchError(this.handleError));
@@ -59,6 +46,7 @@ saveOrder(data: OrderPOST): Observable<any> {
   }
 
   private handleError(error: HttpErrorResponse) {
+    console.log(error)
     let errorMessage = "An unknown error occurred!";
     if (error.error instanceof ErrorEvent) {
       // Client-side error
@@ -69,7 +57,16 @@ saveOrder(data: OrderPOST): Observable<any> {
         errorMessage =
           "Server error: " + error.error.message ||
           "Check form details and try again.";
-      } else if (error.status === 404) {
+      } else if (error.error){
+          if (typeof error.error === 'string') {
+                errorMessage = error.error;
+            } else if (error.error.message) {
+                errorMessage = error.error.message;
+            } else {
+                errorMessage = JSON.stringify(error.error);
+            }
+      }
+      else if (error.status === 404) {
         errorMessage = "Resource not found. Please try again.";
       } else if (error.status === 0) {
         errorMessage =

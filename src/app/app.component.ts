@@ -1,7 +1,7 @@
 import { Component, HostListener, ViewEncapsulation } from '@angular/core';
 import { MenuItemsService } from './ui/shared/service/menue-items/menu-items.service';
 import { NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router } from '@angular/router';
-import { BehaviorSubject, firstValueFrom, Observable } from 'rxjs';
+import { BehaviorSubject, firstValueFrom, lastValueFrom, Observable } from 'rxjs';
 import { CheckoutService } from 'projects/POS/src/app/ui/service/checkout.service';
 import { OfflineService } from 'projects/POS/src/app/ui/service/offline.service';
 
@@ -46,13 +46,14 @@ export class AppComponent {
         this.isLoading = false;
       }
     });
+    window.addEventListener("online", () => this.syncOfflinePayments())
+
   }
 
   
 
   NgOnInit(){
     // this.menuItemService.loadUnlockedModules()
-    window.addEventListener("online", () => this.syncOfflinePayments())
   }
 
   @HostListener('window:resize', ['$event'])
@@ -71,6 +72,8 @@ export class AppComponent {
     if (!pendingPayments.length) return;
   
     console.log("🔄 Syncing offline payments:", pendingPayments);
+
+    const OUT_OF_STOCK_ERROR_MESSAGE = "Insuffient order to service your request..."; 
   
     for (const payment of pendingPayments) {
       const now = new Date().toISOString();
@@ -96,12 +99,34 @@ export class AppComponent {
                     next: async () => {
                       console.log("✅ Offline payment synced:", payment);
   
-                      await this.offlineService.removePendingPayment(payment.id);
+                      await this.offlineService.removePendingPayment(payment.__dbKey);
   
                      
                     },
-                    error: (err) =>
-                      console.error("❌ Failed to sync order:", err),
+                    error: async (err) => {
+                      console.log(err)
+                                        // **ERROR PATH: Check for Out-of-Stock Failure**
+                                        const errorMessage = typeof err === 'string' ? err : err.message || JSON.stringify(err);
+
+                                        if (errorMessage.includes(OUT_OF_STOCK_ERROR_MESSAGE)) {
+                                            console.warn(`⚠️ Sync failed for order ${payment.order.orderNumber}: Out of Stock conflict. Flagging for manual resync.`);
+                                            
+                                            // Flag the local record for manual inspection/resync
+                                            const flaggedPayment = {
+                                                ...payment,
+                                                syncFailed: true,
+                                                failureReason: `One or more items were out of stock during sync. Resolve inventory before retrying.`,
+                                                // Include the primary key to ensure the update hits the right record
+                                                __dbKey: payment.__dbKey 
+                                            };
+                                            
+                                            // Use update to save the flagged state and keep the record
+                                            await lastValueFrom(this.offlineService.updatePendingPayment(flaggedPayment)); 
+                                            
+                                        } else {
+                                            console.error(`❌ Failed to sync order ${payment.order.orderNumber} due to unhandled error:`, err);
+                                        }
+                                    },
                   });
                 }
               },
@@ -114,7 +139,7 @@ export class AppComponent {
       });
     }
   
-    this.offlineService.clearPendingPayments()
+    // this.offlineService.clearPendingPayments()
   }
 
   // This method should correctly capture the event emitted by ClockInClockOutComponent

@@ -51,13 +51,13 @@ console.log("caching offline")
     return this.dbService.getAll('categories')
 
   }
-  async addPendingPayment(payment: any): Promise<void> {
+  async addPendingPayment(payment: any) {
         try {
-            await this.dbService.add('pendingPayments', payment).subscribe((result) => {
+          return this.dbService.add('pendingPayments', payment).subscribe((result) => {
             return  console.log('result: ', result);
             });
         } catch (error) {
-            console.error("❌ Error saving pending payment:", error);
+            return console.error("❌ Error saving pending payment:", error);
         }
     }
 
@@ -67,9 +67,17 @@ console.log("caching offline")
         });;    
   }  
 
+   updatePendingPayment(payment: any): Observable<any> {
+        return this.dbService.update('pendingPayments', payment);
+    }
+
   getPendingPayments(): Observable<any[]> {
         return this.dbService.getAll('pendingPayments');
     }
+
+  getPendingPayment(id:any): Observable<any[]> {
+        return this.dbService.getByKey('pendingPayments', id);
+  }
 
   async clearPendingPayments(): Promise<void> {
         await this.dbService.clear('pendingPayments').subscribe((successDeleted) => {

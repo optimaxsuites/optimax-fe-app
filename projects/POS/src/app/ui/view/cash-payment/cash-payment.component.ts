@@ -269,7 +269,6 @@ export class CashPaymentComponent implements OnInit {
     totalAmount: this.cart.total,
     transactionDate: now,
     status: "PAID",
-     __dbKey: this.randomTokenService.getRandomToken(),
     breakdowns: this.cart.paymentModes.map((mode) => ({
       id: 0,
       amountPaid: this.paymentValues[mode],

@@ -5,7 +5,8 @@ import { RegisterService } from '../../service/register.service';
 import { NavigationLinksService } from '../../sharedComponent/service/navigation-links/navigation-links.service';
 import { MetadataService } from '../../service/metadata.service';
 import { OfflineService } from '../../service/offline.service';
-import { firstValueFrom, Observable } from 'rxjs';
+import { firstValueFrom, lastValueFrom, Observable } from 'rxjs';
+import { CheckoutService } from '../../service/checkout.service';
 
 @Component({
   selector: 'app-checkout-orders',
@@ -13,12 +14,15 @@ import { firstValueFrom, Observable } from 'rxjs';
   styleUrls: ['./checkout-orders.component.scss'],
 })
 export class CheckoutOrdersComponent implements OnInit {
+
   allOrders: Order[] = [];
   filteredOrders: Order[] = [];
   statusFilter: string = 'ALL';
   groupedOrders: Array<{ key: string; label: string; items: any[] }> = [];
    showOfflineRecord: boolean = false;
   // New properties for date range filtering
+  openOfflineOrder: boolean = false;
+  selectedOrder: any = null
   dateRangeOptions = [
     { value: 1, label: 'Today' },
     { value: 3, label: 'Last 3 Days' },
@@ -50,16 +54,20 @@ export class CheckoutOrdersComponent implements OnInit {
 
   dateFrom!: string;
   dateTo!: string;
+  // checkoutService: any;
 
   constructor(
     private router: Router,
     public navigationLink: NavigationLinksService,
     private registerService: RegisterService,
     private metadataService: MetadataService,
-    private offlineService: OfflineService
+    private offlineService: OfflineService,
+    private checkoutService: CheckoutService
   ) {}
 
   async ngOnInit(): Promise<void> {
+      // this.offlineService.clearPendingPayments()
+
     if(navigator.onLine){
     this.metadataService.fetchMetaData();
     this.metadataService.orders$.subscribe((data: Order[]) => {
@@ -78,6 +86,12 @@ export class CheckoutOrdersComponent implements OnInit {
 
 
 
+  }
+
+  toggleShowOfflineRecords(order?: any){
+    console.log(order)
+    this.openOfflineOrder = !this.openOfflineOrder
+    this.selectedOrder = order
   }
 
   // New methods for date range filtering
@@ -193,5 +207,101 @@ export class CheckoutOrdersComponent implements OnInit {
   
   closeRegister() {
     this.registerService.triggerCloseRegister();
+  }
+
+syncOrder(order?: any) {
+  if (order) {
+    this.offlineService.getPendingPayment(order.__dbKey).subscribe((payment) => {
+      if (payment) {
+        this.syncOfflinePayments([payment]); 
+      }
+    });
+  } else {
+    this.offlineService.getPendingPayments().subscribe((payments) => {
+      if (payments.length > 0) {
+        this.syncOfflinePayments(payments);
+      }
+    });
+  }
+}
+
+
+  private async syncOfflinePayments(pendingPayment: any) {
+      console.log("🌐 You are now online, preparing to sync...");
+    
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    
+     
+    
+      console.log("🔄 Syncing offline payments:", pendingPayment);
+
+    const OUT_OF_STOCK_ERROR_MESSAGE = "Insuffient order to service your request..."; 
+
+    
+      for (const payment of pendingPayment) {
+        const now = new Date().toISOString();
+        const onlinePaymentPayload = {
+          id: payment.id,
+          totalAmount: payment.totalAmount,
+          transactionDate: payment.transactionDate,
+          status: payment.status,
+        };
+    
+        this.checkoutService.makePayment(onlinePaymentPayload).subscribe({
+          next: (paymentId) => {
+            let breakdownCount = 0;
+    
+            for (const breakdown of payment.breakdowns) {
+              breakdown.paymentId = paymentId;
+              this.checkoutService.savePaymentBreakdown(breakdown).subscribe({
+                next: () => {
+                  breakdownCount++;
+                  if (breakdownCount === payment.breakdowns.length) {
+                    payment.order.paymentId = paymentId;
+                    this.checkoutService.saveOrder(payment.order).subscribe({
+                      next: async () => {
+                        console.log("✅ Offline payment synced:", payment);
+    
+                        await this.offlineService.removePendingPayment(payment.__dbKey);
+    
+                       
+                      },
+                      error: async (err) => {
+                      console.log(err)
+                                        // **ERROR PATH: Check for Out-of-Stock Failure**
+                                        const errorMessage = typeof err === 'string' ? err : err.message || JSON.stringify(err);
+
+                                        if (errorMessage.includes(OUT_OF_STOCK_ERROR_MESSAGE)) {
+                                            console.warn(`⚠️ Sync failed for order ${payment.order.orderNumber}: Out of Stock conflict. Flagging for manual resync.`);
+                                            
+                                            // Flag the local record for manual inspection/resync
+                                            const flaggedPayment = {
+                                                ...payment,
+                                                syncFailed: true,
+                                                failureReason: `One or more items were out of stock during sync. Resolve inventory before retrying.`,
+                                                // Include the primary key to ensure the update hits the right record
+                                                __dbKey: payment.__dbKey 
+                                            };
+                                            
+                                            // Use update to save the flagged state and keep the record
+                                            await lastValueFrom(this.offlineService.updatePendingPayment(flaggedPayment)); 
+                                            
+                                        } else {
+                                            console.error(`❌ Failed to sync order ${payment.order.orderNumber} due to unhandled error:`, err);
+                                        }
+                                    },
+                    });
+                  }
+                },
+                error: (err) =>
+                  console.error("❌ Failed to sync payment breakdown:", err),
+              });
+            }
+          },
+          error: (err) => console.error("❌ Failed to sync payment:", err),
+        });
+      }
+    
+      // this.offlineService.clearPendingPayments()
   }
 }
