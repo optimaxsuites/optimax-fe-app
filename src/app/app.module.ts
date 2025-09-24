@@ -250,8 +250,8 @@ import { PaymentComponent } from './ui/marketplace/view/payment/payment.componen
 import { DBConfig, NgxIndexedDBModule } from 'ngx-indexed-db';
 
 const dbConfig: DBConfig = {
-  name: 'posDB',
-  version: 2,
+  name: 'posDBX',
+  version: 5,
   objectStoresMeta: [
     {
       store: 'products',
@@ -295,19 +295,17 @@ const dbConfig: DBConfig = {
       ]
     },
      {
-      store: 'transactions',
-      storeConfig: { keyPath: 'id', autoIncrement: false },
+      store: 'savedTransactions',
+      storeConfig: { keyPath: '__dfKey', autoIncrement: true },
       storeSchema: [
-        { name: 'orderId', keypath: 'orderId', options: { unique: false } },
-        { name: 'items', keypath: 'items', options: { unique: false } },
-        { name: 'total', keypath: 'total', options: { unique: false } },
-        { name: 'paymentMethod', keypath: 'payment.method', options: { unique: false } },
-        { name: 'paymentStatus', keypath: 'payment.status', options: { unique: false } },
-        { name: 'customerName', keypath: 'customer.name', options: { unique: false } },
-        { name: 'customerPhone', keypath: 'customer.phone', options: { unique: false } },
-        { name: 'isSynced', keypath: 'isSynced', options: { unique: false } },
-        { name: 'createdAt', keypath: 'createdAt', options: { unique: false } },
-        { name: 'syncedAt', keypath: 'syncedAt', options: { unique: false } }
+          { name: 'id', keypath: 'id', options: { unique: false } },
+            { name: 'status', keypath: 'status', options: { unique: false } },
+            { name: 'transactionDate', keypath: 'transactionDate', options: { unique: false } },
+            { name: 'orderNumber', keypath: 'order.orderNumber', options: { unique: true } },
+            { name: 'cashierId', keypath: 'order.cashierId', options: { unique: false } },
+            { name: 'branchId', keypath: 'order.branchId', options: { unique: false } },
+            { name: 'orderId', keypath: 'order.id', options: { unique: false } },
+            { name: 'note', keypath: 'note', options: { unique: false } },
       ]
     }
   ]

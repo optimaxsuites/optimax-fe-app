@@ -59,6 +59,28 @@ console.log("caching offline")
         } catch (error) {
             return console.error("❌ Error saving pending payment:", error);
         }
+  }
+
+   async addPendingTransactions(transaction: any) {
+        try {
+          return this.dbService.add('savedTransactions', transaction).subscribe((result) => {
+            return  console.log('result: ', result);
+            });
+        } catch (error) {
+            return console.error("❌ Error saving transaction:", error);
+        }
+    }
+
+
+
+  removePendingTransaction(id: number){
+    return this.dbService.delete('savedTransactions', id).subscribe((successDeleted) => {
+        console.log('success? ', successDeleted);
+    });;    
+  }  
+
+   updatePendingTransaction(payment: any): Observable<any> {
+        return this.dbService.update('savedTransactions', payment);
     }
 
   removePendingPayment(id: number){
@@ -75,6 +97,11 @@ console.log("caching offline")
         return this.dbService.getAll('pendingPayments');
     }
 
+  getPendingTransactions(): Observable<any[]> {
+        return this.dbService.getAll('savedTransactions');
+  }
+
+
   getPendingPayment(id:any): Observable<any[]> {
         return this.dbService.getByKey('pendingPayments', id);
   }
@@ -85,45 +112,45 @@ console.log("caching offline")
         });
     } 
 
-  addTransaction(transaction: any) {
-    const tx = {
-      ...transaction,
-      id: uuidv4(),
-      createdAt: new Date(),
-      isSynced: false
-    };
-    return this.dbService.add('transactions', tx);
-  }
+  // addTransaction(transaction: any) {
+  //   const tx = {
+  //     ...transaction,
+  //     id: uuidv4(),
+  //     createdAt: new Date(),
+  //     isSynced: false
+  //   };
+  //   return this.dbService.add('transactions', tx);
+  // }
 
-  getPendingTransactions() {
-  return this.dbService.getAll('transactions').pipe(
-    map((txs: any[]) => txs.filter(t => !t.isSynced))
-  );
-}
+//   getPendingTransactions() {
+//   return this.dbService.getAll('transactions').pipe(
+//     map((txs: any[]) => txs.filter(t => !t.isSynced))
+//   );
+// }
 
 
-  markTransactionSynced(id: string) {
-    return this.dbService.update('transactions', { id, isSynced: true });
-  }
+  // markTransactionSynced(id: string) {
+  //   return this.dbService.update('transactions', { id, isSynced: true });
+  // }
 
-upsertTransaction(transaction: any) {
-  return this.dbService.getByKey('transactions', transaction.id).pipe(
-    switchMap((existing: any) => {
-      if (existing) {
-        const updated = { ...existing, ...transaction, isSynced: false };
-        return this.dbService.update('transactions', updated);
-      } else {
-        const newTx = {
-          ...transaction,
-          id: transaction.id || uuidv4(),
-          createdAt: new Date(),
-          isSynced: false,
-        };
-        return this.dbService.add('transactions', newTx);
-      }
-    })
-  );
-}
+// upsertTransaction(transaction: any) {
+//   return this.dbService.getByKey('transactions', transaction.id).pipe(
+//     switchMap((existing: any) => {
+//       if (existing) {
+//         const updated = { ...existing, ...transaction, isSynced: false };
+//         return this.dbService.update('transactions', updated);
+//       } else {
+//         const newTx = {
+//           ...transaction,
+//           id: transaction.id || uuidv4(),
+//           createdAt: new Date(),
+//           isSynced: false,
+//         };
+//         return this.dbService.add('transactions', newTx);
+//       }
+//     })
+//   );
+// }
 
 async clearProducts() {
   return this.dbService.clear('products').subscribe((successDeleted) => {

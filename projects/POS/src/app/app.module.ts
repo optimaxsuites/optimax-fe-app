@@ -144,8 +144,8 @@ export function appInitializerFactory(appInitService: AppInitService) {
 }
 
 const dbConfig: DBConfig = {
-  name: 'posDB',
-  version: 2,
+  name: 'posDBX',
+  version: 4,
   objectStoresMeta: [
     {
       store: 'products',
@@ -175,7 +175,7 @@ const dbConfig: DBConfig = {
     },
     {
       store: 'pendingPayments',
-      storeConfig: { keyPath: '__dbKey', autoIncrement: true },
+      storeConfig: { keyPath: '__dfKey', autoIncrement: true },
       storeSchema: [
             { name: 'id', keypath: 'id', options: { unique: false } },
             { name: 'status', keypath: 'status', options: { unique: false } },
@@ -202,6 +202,20 @@ const dbConfig: DBConfig = {
         { name: 'isSynced', keypath: 'isSynced', options: { unique: false } },
         { name: 'createdAt', keypath: 'createdAt', options: { unique: false } },
         { name: 'syncedAt', keypath: 'syncedAt', options: { unique: false } }
+      ]
+    },
+     {
+      store: 'savedTransactions',
+      storeConfig: { keyPath: '__dbKey', autoIncrement: false },
+      storeSchema: [
+          { name: 'id', keypath: 'id', options: { unique: false } },
+            { name: 'status', keypath: 'status', options: { unique: false } },
+            { name: 'transactionDate', keypath: 'transactionDate', options: { unique: false } },
+            { name: 'orderNumber', keypath: 'order.orderNumber', options: { unique: true } },
+            { name: 'cashierId', keypath: 'order.cashierId', options: { unique: false } },
+            { name: 'branchId', keypath: 'order.branchId', options: { unique: false } },
+            { name: 'orderId', keypath: 'order.id', options: { unique: false } },
+            { name: 'note', keypath: 'note', options: { unique: false } },
       ]
     }
   ]
@@ -281,7 +295,7 @@ const dbConfig: DBConfig = {
   ],
   imports: [
     // BrowserModule, 
-    // UserModule,
+    UserModule,
     AppRoutingModule,
     CheckboxModule,
     CommonModule,

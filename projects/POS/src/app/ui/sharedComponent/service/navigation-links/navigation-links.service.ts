@@ -55,16 +55,18 @@ export class NavigationLinksService {
 		this.links["emvLink"] = "/user/auth/emv/" + uuidV4();
 		this.links["verifyLink"] = "/users/auth/verify";
 		//=============================================================================================================================
-		this.links["checkoutLink"] = "/" + uuidV4();
-		this.links["checkoutOrderLink"] = "/orders/" + uuidV4();
-		this.links["cashPayment"] = "/cash-payment/" + uuidV4();
-		this.links["orderDetails"] = "/order/" + uuidV4();
-		this.links["orderRefund"] = "/refund/" + uuidV4();
-		this.links["requestDetails"] = "/refund-request/" + uuidV4();
-		this.links["openRegister"] = "/openRegister/" + uuidV4();
-		this.links["closeRegister"] = "/closeRegister/" + uuidV4();
-		this.links["kitchen"] = "/kitchen/" + uuidV4();
-		this.links["kitchenOrder"] = "/kitchen/orders/" + uuidV4();
+
+		const basePath = "/user/checkout";
+		this.links["checkoutLink"] = "/user/checkout/" + uuidV4();
+		this.links["checkoutOrderLink"] = "/user/checkout/orders/" + uuidV4();
+		this.links["cashPayment"] = "/user/checkout/cash-payment/" + uuidV4();
+		this.links["orderDetails"] = "/user/checkout/order/" + uuidV4();
+		this.links["orderRefund"] = "/user/checkout/refund/" + uuidV4();
+		this.links["requestDetails"] = "/user/checkout/refund-request/" + uuidV4();
+		this.links["openRegister"] = "/user/checkout/openRegister/" + uuidV4();
+		this.links["closeRegister"] = "/user/checkout/closeRegister/" + uuidV4();
+		this.links["kitchen"] = "/user/checkout/kitchen/" + uuidV4();
+		this.links["kitchenOrder"] = "/user/checkout/kitchen/orders/" + uuidV4();
 
 		this.links["hotel"] = "/hotel/" + uuidV4();
 		this.links["store"] = "/user/store/" + uuidV4();

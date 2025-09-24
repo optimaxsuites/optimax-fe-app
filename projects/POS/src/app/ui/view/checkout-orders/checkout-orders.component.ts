@@ -196,6 +196,7 @@ export class CheckoutOrdersComponent implements OnInit {
   }
 
   reOpenCart(order: Order) {
+    console.log(order)
     const checkoutLink = this.navigationLink.getLink('checkoutLink');
     this.router.navigate([checkoutLink], { state: { order } });
   }

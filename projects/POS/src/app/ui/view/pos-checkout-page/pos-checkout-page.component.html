@@ -339,3 +339,113 @@
 
   <p-toast position="top-right" key="tl" />
 </div>
+
+<button
+  (click)="toggleDraftTransactionModal()"
+  class="fixed bottom-6 left-6 z-30 p-4 bg-yellow-500 text-white rounded-full shadow-lg hover:bg-yellow-600 transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-yellow-400 focus:ring-opacity-50 flex items-center justify-center text-xl"
+  aria-label="View Saved Draft Orders"
+>
+  <i class="fas fa-file-alt"></i>
+</button>
+
+<app-modal
+  *ngIf="openDraftsModal"
+  (close)="toggleDraftTransactionModal()"
+  header="Draft Orders"
+>
+  <div class="w-full">
+    <div *ngIf="draftOrders.length > 0; else noDrafts" >
+      <!-- <ul class="space-y-3">
+        <li *ngFor="let draft of draftOrders" 
+            class="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-150 flex justify-between items-center"
+            (click)="loadDraft(draft)">
+          <div>
+            <p class="font-semibold text-gray-800">{{ draft.orderName || 'Untitled Draft' }}</p>
+            <p class="text-sm text-gray-500">
+              Saved: {{ draft.savedDate | date:'short' }} | Total: ₦{{ draft.totalAmount | number:'1.2-2' }}
+            </p>
+          </div>
+          <div class="flex gap-2">
+            <button (click)="$event.stopPropagation(); loadDraft(draft)" title="Load Draft"
+                    class="p-2 text-customBlue hover:bg-blue-100 rounded-full transition-colors">
+              <i class="fas fa-folder-open"></i>
+            </button>
+            <button (click)="$event.stopPropagation(); deleteDraft(draft)" title="Delete Draft"
+                    class="p-2 text-red-500 hover:bg-red-100 rounded-full transition-colors">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </li>
+      </ul> -->
+      <div class="px-4 md:px-8 mt-6 md:mt-10 w-full" *ngIf="draftOrders.length > 0; else noDrafts">
+        <p-table 
+          [value]="draftOrders" 
+          [paginator]="true" 
+          [rows]="rowsPerPage"
+          [rowsPerPageOptions]="[5, 10, 15, 20, 25]"
+          [totalRecords]="draftOrders.length"
+          responsiveLayout="stack"
+          styleClass="p-datatable-striped"
+          [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}">
+          
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="updatedAt" style="width:20%">
+                Date <p-sortIcon field="updatedAt"></p-sortIcon>
+              </th>
+              <!-- <th pSortableColumn="orderStatus" style="width:15%">
+                Status <p-sortIcon field="orderStatus"></p-sortIcon>
+              </th> -->
+              <th class="text-nowrap mx-2" pSortableColumn="orderNumber" style="width:20%">
+                Order Number
+              </th>
+              <th pSortableColumn="totalAmount" style="width:20%">
+                Total Sales 
+              </th>
+              <th style="width:25%">Action</th>
+            </tr>
+          </ng-template>
+
+        <ng-template pTemplate="body" let-order let-columns="columns">
+        
+        <tr (click)="reOpenCart(order)" style="cursor:pointer">
+          <td class="text-nowrap">{{ formatDate( order.createdDate) | date:'medium' }}</td>
+          <!-- <td>
+            <span [ngClass]="{
+                  'text-orange-500': order?.status === 'UNPAID',
+                  'text-green-600': order?.status === 'PAID',
+                  'text-blue-500': order?.status === 'PENDING'
+                }"
+                class="font-bold">
+              {{ order?.status || order.orderStatus }}
+            </span>
+          </td> -->
+          <td class="capitalize text-nowrap">{{ order.orderNumber }}</td>
+          <td class="text-nowrap">₦{{ order?.totalAmount | number:'1.2-2' }}</td>
+          <td>
+            <div class="flex gap-3 text-[18px]" (click)="$event.stopPropagation()">
+              <i
+                class="fa-solid fa-cart-shopping  p-2 rounded-md transition-colors"
+                (click)="reOpenCart(order)"></i>
+                 <i
+                class="fa-solid fa-times  p-2 rounded-md transition-colors"
+                (click)="deleteDraft(order)"></i>
+            </div>
+          </td>
+        </tr>
+
+       
+      </ng-template>
+        </p-table>
+      </div>
+    </div>
+    
+    <ng-template #noDrafts>
+      <div class="text-center py-10">
+        <i class="fas fa-box-open text-gray-400 text-5xl mb-3"></i>
+        <p class="text-gray-600 font-medium">No saved draft orders found.</p>
+        <p class="text-sm text-gray-500">Use the 'Save' button in the cart view to create a draft.</p>
+      </div>
+    </ng-template>
+  </div>
+</app-modal>

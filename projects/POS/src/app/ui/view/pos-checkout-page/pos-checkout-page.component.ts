@@ -15,6 +15,7 @@ import { BusinessType, ProductCategories } from "../../models/enums";
 import {
   Business,
   Cart,
+  Order,
   PaymentModes,
   ProductData,
   VariantDTO,
@@ -23,8 +24,9 @@ import { IndustryDataService } from "../../service/industry-data.service";
 import { MetadataService } from "../../service/metadata.service";
 import { CheckoutService } from "../../service/checkout.service";
 import { MessageService } from "primeng/api";
-import { lastValueFrom } from "rxjs";
+import { firstValueFrom, lastValueFrom } from "rxjs";
 import { PaymentServiceService } from "../../service/payment-service.service";
+import { OfflineService } from "../../service/offline.service";
 // import { AppResizeDirective } from '../../service/app-resize.directive';
 
 @Component({
@@ -45,9 +47,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   openingTotal: number = 0;
   errorMessage: string | null = null;
   canFinalize: boolean = false;
-
+  draftOrders: any[] = []
   openRegisterModal: boolean = true;
-
+  openDraftsModal: boolean = false; 
   scannedSKU: string = "";
   register: string = "open";
   orderName: string = "";
@@ -82,7 +84,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   displayedDiscount: number = 0;
   productDiscountValue: number = 0;
   value: "naira" | "percentage" = "naira";
-
+  rowsPerPage = 15
   orders: unknown[] = [];
   navigationState: { order: any; cart?: Cart };
   isNotesModalOpen = false;
@@ -103,6 +105,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     private checkoutService: CheckoutService,
     private industryDataService: IndustryDataService,
     private _paymentService: PaymentServiceService,
+    private offlineService: OfflineService,
   ) {
     const navigation = this.router.getCurrentNavigation();
     this.navigationState = navigation?.extras
@@ -121,18 +124,24 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     const storedOpeningAmount = localStorage.getItem("openingAmount");
     this.openingAmount = storedOpeningAmount ? Number(storedOpeningAmount) : 0;
 
-    // Check for a saved cart from a previous navigation
-    const savedCart = localStorage.getItem("currentCart");
-    if (savedCart) {
-        const parsedCart = JSON.parse(savedCart);
-        this.cartItems = parsedCart.cartItems;
-        this.total = parsedCart.total;
-        this.displayedDiscount = parsedCart.discount;
-        this.tax = parsedCart.tax;
-        this.subtotal = parsedCart.subtotal;
-        localStorage.removeItem("currentCart"); // Clear the item after restoring
-    }
-    console.log("psyamnet success",this.router.getCurrentNavigation()?.extras.state?.["paymentSuccess"])
+      if (this.navigationState?.order) {
+        this.loadOrder(this.navigationState.order);
+      }
+      if (this.navigationState?.cart) {
+        const cart = this.navigationState.cart;
+        this.cartItems = [...cart.cartItems];
+        this.total = cart.total;
+        this.displayedDiscount = cart.discount;
+        this.tax = cart.tax;
+        this.subtotal = cart.subtotal;
+      }
+      
+      // Check for the paymentSuccess flag from the router state
+      if (this.router.getCurrentNavigation()?.extras.state?.["paymentSuccess"]) {
+        this.clearCart();
+        this.router.navigate([], { replaceUrl: true }); // Clear the state from the URL
+      }
+    console.log("payment success",this.router.getCurrentNavigation()?.extras.state?.["paymentSuccess"])
     // Check for the paymentSuccess flag from the router state
    
     
@@ -157,6 +166,23 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   // checkRegisterState() {
     
   // }
+  async getDraftOrders() {
+   this.draftOrders = await firstValueFrom(this.offlineService.getPendingTransactions())
+  }
+  toggleDraftTransactionModal() {
+    this.openDraftsModal = !this.openDraftsModal;
+    if (this.openDraftsModal) {
+      this.getDraftOrders();
+    }
+  }
+  reOpenCart(order: any) {
+      // const checkoutLink = this.navigationLink.getLink('checkoutLink');
+      // this.router.navigate([checkoutLink], { state: { order } });
+      console.log(order)
+     this.loadOrder(order);
+     this.openDraftsModal = false;
+      
+  }
   calculateOpeningTotal(): void {
     // Calculate the total from cash denominations
     const denomTotal = Object.entries(this.denominationCounts).reduce(
@@ -556,9 +582,10 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     this.itemUpdateModal = false;
   }
 
-  saveCurrentCartItem() {
+  async saveCurrentCartItem() {
     console.log(this.cartItems);
     const now = new Date().toISOString();
+    const branchId = await firstValueFrom(this.metadataService.selectedBranchId$);
 
     const pausedCart = {
       id: 0,
@@ -569,9 +596,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
       totalAmount: this.total,
       amountTendered: 0,
       quantity: 0,
-      customerId: 1,
-      branchId: 1,
-      cashier: 67,
+      // customerId: 1,
+      branchId: branchId,
+      cashier:  Number(sessionStorage.getItem("userid")),
       orderItem: this.cartItems
         .map((item) => {
           let orderItems = [
@@ -579,6 +606,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
               totalPrice: item.count * parseInt(item.sellingPrice || "0"),
               quantity: item.count,
               productId: item.id,
+              product: item
             },
           ];
 
@@ -591,11 +619,13 @@ export class PosCheckoutPageComponent implements OnInit, Business {
                   totalPrice: selectedQuantity * price,
                   quantity: selectedQuantity,
                   productId: item.id,
+                  product: item,
                   productVariantId: variant.id,
                 } as {
                   totalPrice: number;
                   quantity: number;
                   productId: number;
+                  product: any
                   productVariantId: number | null;
                 });
               }
@@ -609,18 +639,49 @@ export class PosCheckoutPageComponent implements OnInit, Business {
 
     console.log(pausedCart);
 
-    this.checkoutService.saveOrder(pausedCart as any).subscribe({
-      next: (data) => {
-        console.log(data);
+  //   if (!navigator.onLine) {
+  //   await this.offlineService.addPendingPayment(pausedCart);
+  //   this.messageService.add({
+  //     severity: "info",
+  //     summary: "Offline",
+  //     detail: "Payment saved offline.",
+  //     key: "tl",
+  //     life: 5000,
+  //   });
+  //   this.cartItems = [];
+  //   this.orderName = "";
+  //   this.resetDiscount();
+  //   this.resetProductProperties();
+  //   return;
+  // }
+
+     await this.offlineService.addPendingTransactions(pausedCart as any)
         this.messageService.add({
           severity: "success",
           summary: "Success",
           detail: "Saved",
           key: "tl",
           life: 3000,
-        });
-      },
     });
+
+    // this.checkoutService.saveOrder(pausedCart as any).subscribe({
+    //   next: (res) => {
+    //     this.messageService.add({
+    //       severity: "success",
+    //       summary: "Success",
+    //       detail: "Cart saved successfully",
+    //       key: "tl",
+    //       life: 3000,
+    //     });
+    //     this.cartItems = [];
+    //     this.orderName = "";
+    //     this.resetDiscount();
+    //     this.resetProductProperties();
+    //   },
+    //   error: (err) => {
+    //     console.log(err)
+    //   }
+    // })
 
     this.cartItems = [];
     this.orderName = "";
@@ -794,4 +855,18 @@ this.shownProducts = this.products;
     document.removeEventListener("mousemove", this.resize);
     document.removeEventListener("mouseup", this.stopResizing);
   };
+
+  formatDate(parts: any): Date | null {
+    if (!parts) return null;
+    if (Array.isArray(parts)) return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
+    if (typeof parts === 'string' || parts instanceof Date) {
+      const d = new Date(parts);
+      return isNaN(d.getTime()) ? null : d;
+    }
+    return null;
+  }
+
+  async deleteDraft(order: any) {
+    await this.offlineService.removePendingTransaction(order.__dfKey)
+  }
 }
