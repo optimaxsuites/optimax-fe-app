@@ -6,6 +6,9 @@
     <div *ngIf="isOffline$ | async" class="bg-orange-100 text-gray-600 font-bold text-center py-3">
       ⚠️ You are offline. Some features may not be available.
     </div>
+
+    <div *ngIf="syncInProgress" class="bg-blue-100 text-gray-600 font-bold text-center py-3">
+      🌐 Syncing offline data... </div>
 <router-outlet></router-outlet>
 
 

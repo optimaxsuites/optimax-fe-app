@@ -25,7 +25,7 @@ export class AppComponent {
   sendMessage() { window.electronAPI.sendMessage("Hello from Angular!"); }
   title = 'ERP-FE';
   sidebarVisible2: boolean = false;
-
+  syncInProgress = false; 
   screenWidth: number;
   isLoading = false
     private _isOffline = new BehaviorSubject<boolean>(!navigator.onLine);
@@ -65,6 +65,7 @@ export class AppComponent {
 
   private async syncOfflinePayments() {
     console.log("🌐 You are now online, preparing to sync...");
+    this.syncInProgress = true;
   
     await new Promise((resolve) => setTimeout(resolve, 3000));
   
@@ -138,6 +139,9 @@ export class AppComponent {
         error: (err) => console.error("❌ Failed to sync payment:", err),
       });
     }
+
+    this.syncInProgress = false;
+
   
     // this.offlineService.clearPendingPayments()
   }
