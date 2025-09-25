@@ -357,6 +357,8 @@
   header="Draft Orders"
 >
   <div class="w-full">
+     <div (click)="clearAllDraftOrders()"  class="my-4 flex justify-end px-3 text-xl text-customBlue font-bold cursor-pointer " *ngIf="draftOrders.length > 0 ">  <i class="fa-solid fa-trash hover:bg-blue-100 rounded-md p-2 transition-colors"
+               ></i> clear all</div>
     <div *ngIf="draftOrders.length > 0; else noDrafts" >
       <div class="px-4 md:px-8 mt-6 md:mt-10 w-full" *ngIf="draftOrders.length > 0; else noDrafts">
         <p-table 

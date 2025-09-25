@@ -386,6 +386,7 @@ export class MenuItemsService {
   private settingsMenuItems: MenuItem[] = [
     {
       label: 'General Settings',
+      code: 'General Settings',
       route: this.navigationLink.getLink('generalSettings'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-home',
@@ -396,6 +397,8 @@ export class MenuItemsService {
     },
     {
       label: 'Sales',
+      code: 'Sales',
+
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('salesSettings'),
       icon: 'pi pi-dollar', 
@@ -406,6 +409,8 @@ export class MenuItemsService {
     },
     {
       label: 'Purchase',
+      code: 'Purchase',
+
       route: this.navigationLink.getLink('purchaseSettings'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-shopping-cart', 
@@ -416,6 +421,7 @@ export class MenuItemsService {
     },
     {
       label: 'Inventory',
+      code: 'Inventory',
       roles: ['ROLE_USER' , 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('inventorySettings'),
 
@@ -426,6 +432,7 @@ export class MenuItemsService {
     },
     {
       label: 'Procurement',
+      code: 'Procurement',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('vendorSettings'),
 
@@ -437,6 +444,7 @@ export class MenuItemsService {
     },
     {
       label: 'Accounting',
+      code: 'Accounting',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('accountSettings'),
 
@@ -448,6 +456,7 @@ export class MenuItemsService {
     },
     {
       label: 'Human Resources',
+      code: 'Human Resources',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('HRSettings'),
 
@@ -463,6 +472,7 @@ export class MenuItemsService {
     },
     {
       label: 'Hospitality',
+      code: 'Hospitality',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'fas fa-users',
       route: this.navigationLink.getLink('HOSSettings'),
@@ -475,6 +485,7 @@ export class MenuItemsService {
     },
     {
       label: 'Point of Sale (POS)',
+      code: 'optimaXPOS',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('posSettings'),
 
@@ -486,6 +497,7 @@ export class MenuItemsService {
     },
     {
       label: 'Office Productivity',
+      code: 'Office Productivity',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('officeSet'),
 
@@ -497,6 +509,7 @@ export class MenuItemsService {
     },
     {
       label: 'User and Roles Management',
+      code: 'User and Roles Management',
       route: this.navigationLink.getLink('userRoles'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-check', 
@@ -507,6 +520,7 @@ export class MenuItemsService {
     },
     {
       label: 'CRM',
+      code: 'CRM',
       route: this.navigationLink.getLink('CRMSettings'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-users', 
@@ -517,6 +531,7 @@ export class MenuItemsService {
     },
     {
       label: 'Expense',
+      code: 'Expense',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       route: this.navigationLink.getLink('expenseSettings'),
 
@@ -529,6 +544,7 @@ export class MenuItemsService {
     },
     {
       label: 'Tender',
+      code: 'Tender',
       route: this.navigationLink.getLink('tenderSettings'),
 
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
@@ -536,6 +552,7 @@ export class MenuItemsService {
     },
     {
       label: 'Vendor',
+      code: 'Vendor',
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-money-bill',
       route: this.navigationLink.getLink('vendorSettings'),
@@ -546,6 +563,7 @@ export class MenuItemsService {
     },
     {
       label: 'User Management',
+      code: 'User Management',
       route: this.navigationLink.getLink('userManagmentSettings'),
       roles: ['ROLE_USER', 'ROLE_ADMIN'],
       icon: 'pi pi-cog' 
@@ -657,14 +675,14 @@ export class MenuItemsService {
 
   loadUnlockedSettingsModules() {
     // const unlockedRoutes = JSON.parse(localStorage.getItem('unlockedModules') || '[]');
-    const unlockedRoutes = this.appList.map((app : {title : string}) => app.title)
+    const unlockedRoutes = this.appList.map((app : {name : string}) => app.name)
     console.log(unlockedRoutes)
   
     this.settingsMenuItems.forEach((module) => {
-      if (module.label === 'General Settings' || module.label === 'User and Roles Management') {
+      if (module.code === 'General Settings' || module.code === 'User and Roles Management') {
         module.locked = false; 
       } else {
-        module.locked = !unlockedRoutes.includes(module.label || 'null');
+        module.locked = !unlockedRoutes.includes(module.code || 'null');
       }
     });
 

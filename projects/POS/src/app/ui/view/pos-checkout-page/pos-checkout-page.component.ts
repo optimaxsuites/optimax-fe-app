@@ -147,6 +147,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     
     this.getProducts();
     this.loadCategory();
+    this.getDraftOrders();
   }
 
   // Add a new method to clear the cart
@@ -167,7 +168,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     
   // }
   async getDraftOrders() {
-   this.draftOrders = await firstValueFrom(this.offlineService.getPendingTransactions())
+   this.offlineService.getPendingTransactions().subscribe((data) => {
+    this.draftOrders = data 
+   })
   }
   toggleDraftTransactionModal() {
     this.openDraftsModal = !this.openDraftsModal;
@@ -183,6 +186,10 @@ export class PosCheckoutPageComponent implements OnInit, Business {
      this.deleteDraft(order);
      this.openDraftsModal = false;
       
+  }
+
+  clearAllDraftOrders(){
+    this.offlineService.clearPendingTransactions();
   }
   calculateOpeningTotal(): void {
     // Calculate the total from cash denominations
