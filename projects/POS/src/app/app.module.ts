@@ -350,6 +350,7 @@ const dbConfig: DBConfig = {
     MultiSelectModule,
     ProgressSpinnerModule,
     SelectButtonModule,
+    BadgeModule,
 
     // BrowserAnimationsModule,
 

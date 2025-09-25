@@ -90,11 +90,13 @@
             <p [routerLink]="navigationLink.getLink('orderRefund')" class="py-3 px-4 flex-1 text-center font-medium text-gray-700 hover:bg-customBlueHover hover:text-customBlue transition-colors duration-200">
               <i class="fas fa-undo mr-2"></i>Refund
             </p>
-            <p (click)="toggleDeliveryModal()" class="py-3 px-4 flex-1 text-center font-medium text-gray-700 hover:bg-customBlueHover hover:text-customBlue transition-colors duration-200">
-              <i class="fas fa-truck mr-2"></i>Delivery
-            </p>
+           
             <p (click)="saveCurrentCartItem()" class="py-3 px-4 flex-1 text-center font-medium text-gray-700 hover:bg-customBlueHover hover:text-customBlue transition-colors duration-200">
               <i class="fas fa-save mr-2"></i>Save
+            </p>
+             <p (click)="clearCart()" [class.opacity-50]="!cartItems.length"
+              [class.will-not-respond-to-click]="!cartItems.length"  class="py-3 px-4 flex-1 text-center font-medium text-gray-700 hover:bg-customBlueHover hover:text-customBlue transition-colors duration-200">
+              <i class="fas fa-trash mr-2"></i>Clear
             </p>
           </div>
         </nav>
@@ -345,7 +347,8 @@
   class="fixed bottom-6 left-6 z-30 p-4 bg-yellow-500 text-white rounded-full shadow-lg hover:bg-yellow-600 transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-yellow-400 focus:ring-opacity-50 flex items-center justify-center text-xl"
   aria-label="View Saved Draft Orders"
 >
-  <i class="fas fa-file-alt"></i>
+  <i class="fas fa-file-alt text-4xl" pBadge [value]="draftOrders.length" severity="danger"  ></i>
+
 </button>
 
 <app-modal
@@ -355,28 +358,6 @@
 >
   <div class="w-full">
     <div *ngIf="draftOrders.length > 0; else noDrafts" >
-      <!-- <ul class="space-y-3">
-        <li *ngFor="let draft of draftOrders" 
-            class="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-150 flex justify-between items-center"
-            (click)="loadDraft(draft)">
-          <div>
-            <p class="font-semibold text-gray-800">{{ draft.orderName || 'Untitled Draft' }}</p>
-            <p class="text-sm text-gray-500">
-              Saved: {{ draft.savedDate | date:'short' }} | Total: ₦{{ draft.totalAmount | number:'1.2-2' }}
-            </p>
-          </div>
-          <div class="flex gap-2">
-            <button (click)="$event.stopPropagation(); loadDraft(draft)" title="Load Draft"
-                    class="p-2 text-customBlue hover:bg-blue-100 rounded-full transition-colors">
-              <i class="fas fa-folder-open"></i>
-            </button>
-            <button (click)="$event.stopPropagation(); deleteDraft(draft)" title="Delete Draft"
-                    class="p-2 text-red-500 hover:bg-red-100 rounded-full transition-colors">
-              <i class="fas fa-trash"></i>
-            </button>
-          </div>
-        </li>
-      </ul> -->
       <div class="px-4 md:px-8 mt-6 md:mt-10 w-full" *ngIf="draftOrders.length > 0; else noDrafts">
         <p-table 
           [value]="draftOrders" 
@@ -386,23 +367,23 @@
           [totalRecords]="draftOrders.length"
           responsiveLayout="stack"
           styleClass="p-datatable-striped"
-          [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px'}">
+          [tableStyle]="{'min-height': 'fit-content', 'max-height': '650px', 'width': '75rem'}">
           
           <ng-template pTemplate="header">
-            <tr>
-              <th pSortableColumn="updatedAt" style="width:20%">
+            <tr class="bg-gray-300 w-full max-w-7xl">
+              <th class="bg-white border-b px-2 text-gray-700" pSortableColumn="updatedAt" style="width:20%">
                 Date <p-sortIcon field="updatedAt"></p-sortIcon>
               </th>
               <!-- <th pSortableColumn="orderStatus" style="width:15%">
                 Status <p-sortIcon field="orderStatus"></p-sortIcon>
               </th> -->
-              <th class="text-nowrap mx-2" pSortableColumn="orderNumber" style="width:20%">
+              <th class="text-nowrap mx-2 bg-white border-b px-2 text-gray-700" pSortableColumn="orderNumber" style="width:20%">
                 Order Number
               </th>
-              <th pSortableColumn="totalAmount" style="width:20%">
+              <th class="bg-white border-b px-2 text-gray-700" pSortableColumn="totalAmount" style="width:20%">
                 Total Sales 
               </th>
-              <th style="width:25%">Action</th>
+              <th class="bg-white border-b px-2 text-gray-700" style="width:25%">Action</th>
             </tr>
           </ng-template>
 

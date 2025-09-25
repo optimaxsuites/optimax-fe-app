@@ -178,8 +178,9 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   reOpenCart(order: any) {
       // const checkoutLink = this.navigationLink.getLink('checkoutLink');
       // this.router.navigate([checkoutLink], { state: { order } });
-      console.log(order)
+    console.log(order)
      this.loadOrder(order);
+     this.deleteDraft(order);
      this.openDraftsModal = false;
       
   }

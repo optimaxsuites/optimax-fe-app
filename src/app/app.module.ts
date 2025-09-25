@@ -248,6 +248,8 @@ import { AppInitService } from 'projects/POS/src/app/ui/service/app-init.service
 import { UnauthourizedComponent } from './ui/unauthourized.component';
 import { PaymentComponent } from './ui/marketplace/view/payment/payment.component';
 import { DBConfig, NgxIndexedDBModule } from 'ngx-indexed-db';
+import { BadgeModule } from 'primeng/badge';
+
 
 const dbConfig: DBConfig = {
   name: 'posDBX',
@@ -547,6 +549,7 @@ const dbConfig: DBConfig = {
       MatMenuModule,
       FullCalendarModule,
       InputSwitchModule,
+      BadgeModule,
       NgxIndexedDBModule.forRoot(dbConfig),
       
       ServiceWorkerModule.register('ngsw-worker.js', {
