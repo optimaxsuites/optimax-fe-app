@@ -26,6 +26,8 @@ export class AppComponent {
   title = 'ERP-FE';
   sidebarVisible2: boolean = false;
   syncInProgress = false; 
+  syncMessage = '';
+  ellipsisInterval: any; 
   screenWidth: number;
   isLoading = false
     private _isOffline = new BehaviorSubject<boolean>(!navigator.onLine);
@@ -66,80 +68,91 @@ export class AppComponent {
   private async syncOfflinePayments() {
     console.log("🌐 You are now online, preparing to sync...");
     this.syncInProgress = true;
+    this.startEllipsisAnimation('🌐 Syncing offline data');
   
     await new Promise((resolve) => setTimeout(resolve, 3000));
   
     const pendingPayments = await firstValueFrom(this.offlineService.getPendingPayments());
-    if (!pendingPayments.length) return;
+    if (!pendingPayments.length) {
+      this.stopEllipsisAnimation('✅ Nothing to sync. All caught up!');
+      this.syncInProgress = false;
+      return;
+    }
+
   
     console.log("🔄 Syncing offline payments:", pendingPayments);
 
     const OUT_OF_STOCK_ERROR_MESSAGE = "Insuffient order to service your request..."; 
   
-    for (const payment of pendingPayments) {
-      const now = new Date().toISOString();
-      const onlinePaymentPayload = {
-        id: payment.id,
-        totalAmount: payment.totalAmount,
-        transactionDate: payment.transactionDate,
-        status: payment.status,
-      };
-  
-      this.checkoutService.makePayment(onlinePaymentPayload).subscribe({
-        next: (paymentId) => {
-          let breakdownCount = 0;
-  
-          for (const breakdown of payment.breakdowns) {
-            breakdown.paymentId = paymentId;
-            this.checkoutService.savePaymentBreakdown(breakdown).subscribe({
-              next: () => {
-                breakdownCount++;
-                if (breakdownCount === payment.breakdowns.length) {
-                  payment.order.paymentId = paymentId;
-                  this.checkoutService.saveOrder(payment.order).subscribe({
-                    next: async () => {
-                      console.log("✅ Offline payment synced:", payment);
-  
-                      await this.offlineService.removePendingPayment(payment.__dbKey);
-  
-                     
-                    },
-                    error: async (err) => {
-                      console.log(err)
-                                        // **ERROR PATH: Check for Out-of-Stock Failure**
-                                        const errorMessage = typeof err === 'string' ? err : err.message || JSON.stringify(err);
+    try {
+      for (const payment of pendingPayments) {
+        const now = new Date().toISOString();
+        const onlinePaymentPayload = {
+          id: payment.id,
+          totalAmount: payment.totalAmount,
+          transactionDate: payment.transactionDate,
+          status: payment.status,
+        };
+    
+        this.checkoutService.makePayment(onlinePaymentPayload).subscribe({
+          next: (paymentId) => {
+            let breakdownCount = 0;
+            
+            for (const breakdown of payment.breakdowns) {
+              breakdown.paymentId = paymentId;
+              this.checkoutService.savePaymentBreakdown(breakdown).subscribe({
+                next: () => {
+                  breakdownCount++;
+                  if (breakdownCount === payment.breakdowns.length) {
+                    payment.order.paymentId = paymentId;
+                    this.checkoutService.saveOrder(payment.order).subscribe({
+                      next: async () => {
+                        console.log("✅ Offline payment synced:", payment);
+    
+                        await this.offlineService.removePendingPayment(payment.__dbKey);
+    
+                      
+                      },
+                      error: async (err) => {
+                        console.log(err)
+                                          // **ERROR PATH: Check for Out-of-Stock Failure**
+                                          const errorMessage = typeof err === 'string' ? err : err.message || JSON.stringify(err);
 
-                                        if (errorMessage.includes(OUT_OF_STOCK_ERROR_MESSAGE)) {
-                                            console.warn(`⚠️ Sync failed for order ${payment.order.orderNumber}: Out of Stock conflict. Flagging for manual resync.`);
-                                            
-                                            // Flag the local record for manual inspection/resync
-                                            const flaggedPayment = {
-                                                ...payment,
-                                                syncFailed: true,
-                                                failureReason: `One or more items were out of stock during sync. Resolve inventory before retrying.`,
-                                                // Include the primary key to ensure the update hits the right record
-                                                __dbKey: payment.__dbKey 
-                                            };
-                                            
-                                            // Use update to save the flagged state and keep the record
-                                            await lastValueFrom(this.offlineService.updatePendingPayment(flaggedPayment)); 
-                                            
-                                        } else {
-                                            console.error(`❌ Failed to sync order ${payment.order.orderNumber} due to unhandled error:`, err);
-                                        }
-                                    },
-                  });
-                }
-              },
-              error: (err) =>
-                console.error("❌ Failed to sync payment breakdown:", err),
-            });
-          }
-        },
-        error: (err) => console.error("❌ Failed to sync payment:", err),
-      });
+                                          if (errorMessage.includes(OUT_OF_STOCK_ERROR_MESSAGE)) {
+                                              console.warn(`⚠️ Sync failed for order ${payment.order.orderNumber}: Out of Stock conflict. Flagging for manual resync.`);
+                                              
+                                              // Flag the local record for manual inspection/resync
+                                              const flaggedPayment = {
+                                                  ...payment,
+                                                  syncFailed: true,
+                                                  failureReason: `One or more items were out of stock during sync. Resolve inventory before retrying.`,
+                                                  // Include the primary key to ensure the update hits the right record
+                                                  __dbKey: payment.__dbKey 
+                                              };
+                                              
+                                              // Use update to save the flagged state and keep the record
+                                              await lastValueFrom(this.offlineService.updatePendingPayment(flaggedPayment)); 
+                                              
+                                          } else {
+                                              console.error(`❌ Failed to sync order ${payment.order.orderNumber} due to unhandled error:`, err);
+                                          }
+                                      },
+                    });
+                  }
+                },
+                error: (err) =>
+                  console.error("❌ Failed to sync payment breakdown:", err),
+              });
+            }
+          },
+          error: (err) => console.error("❌ Failed to sync payment:", err),
+        });
+      }
+      this.stopEllipsisAnimation('✅ All offline payments synced!', true);
+    } catch (err) {
+        console.error(err);
+        this.stopEllipsisAnimation('❌ Sync failed. Check logs.', true);
     }
-
     this.syncInProgress = false;
 
   
@@ -151,4 +164,30 @@ export class AppComponent {
   //   console.log("Received clock-in time:", time);
   //   this.clockedInTime = time; // Assign the emitted clock-in time
   // }
+
+  private startEllipsisAnimation(baseMessage: string, ) {
+  let dots = 0;
+  this.syncMessage = baseMessage;
+
+  this.ellipsisInterval = setInterval(() => {
+    dots = (dots + 1) % 4; 
+    this.syncMessage = baseMessage + '.'.repeat(dots);
+  }, 500);
+  }
+
+  private stopEllipsisAnimation(finalMessage: string, autoClear = false) {
+  if (this.ellipsisInterval) {
+    clearInterval(this.ellipsisInterval);
+    this.ellipsisInterval = null;
+  }
+  this.syncMessage = finalMessage;
+
+  if (autoClear) {
+    setTimeout(() => {
+      this.syncMessage = '';
+    }, 3000); 
+  }
+}
+
+
 }

@@ -8,7 +8,13 @@
     </div>
 
     <div *ngIf="syncInProgress" class="bg-blue-100 text-gray-600 font-bold text-center py-3">
-      🌐 Syncing offline data... </div>
+      {{ syncMessage }}
+    </div>
+
+    <div *ngIf="!syncInProgress && syncMessage" class="text-center py-3 font-semibold">
+      {{ syncMessage }}
+    </div>
+
 <router-outlet></router-outlet>
 
 
