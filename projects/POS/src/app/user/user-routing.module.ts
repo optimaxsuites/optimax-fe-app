@@ -27,70 +27,63 @@ const routes: Routes = [
   {
     path: 'orders/:uuid',
     component: CheckoutOrdersComponent,
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_CHKOUT'] }
-    // canActivate: [PermissionGuard],
-    // data: { appCode: ['POS_CHKOUT'] }
+    canActivate: [PermissionGuard],
+    data: { appCode: ['POS_CHKOUT'] }
+
   },
   {
     path: 'cash-payment/:uuid',
     component: CashPaymentComponent,
-    // canActivate: [PermissionGuard],
-    //   data: { appCode: ['POS_INV'] }
-    // canActivate: [PermissionGuard],
-    //   data: { appCode: ['POS_INV'] }
+    canActivate: [PermissionGuard],
+      data: { appCode: ['POS_INV'] }
+
   },
   {
     path: 'order/:uuid',
     component: OrderDetailComponent,
-    // canActivate: [PermissionGuard],
-    //   data: { appCode: ['POS_CHKOUT', 'kitchen_order', 'kitchen_payment'] }
+    canActivate: [PermissionGuard],
+      data: { appCode: ['POS_CHKOUT', 'kitchen_order', 'kitchen_payment'] }
   },
   {
     path: 'refund/:uuid',
     component: OrderRefundComponent,
-    // canActivate: [PermissionGuard],
-    //   data: { appCode: ['POS_CHKOUT', 'kitchen_order', 'kitchen_payment'] }
+    canActivate: [PermissionGuard],
+      data: { appCode: ['POS_CHKOUT', 'kitchen_order', 'kitchen_payment'] }
   },
   {
     path: 'refund-request/:uuid',
     component: RequestDetailsComponent,
-    // canActivate: [PermissionGuard],
-    //   data: { appCode: ['POS_CHKOUT', 'kitchen_order', 'kitchen_payment'] }
-    // canActivate: [PermissionGuard],
-    //   data: { appCode: ['POS_CHKOUT', 'kitchen_order', 'kitchen_payment'] }
+    canActivate: [PermissionGuard],
+      data: { appCode: ['POS_CHKOUT', 'kitchen_order', 'kitchen_payment'] }
+
   },
   {
     path: 'openRegister/:uuid',
     component: OpenRegisterComponent,
-    // canActivate: [PermissionGuard],
-    //   data: { appCode: ['POS_CHKOUT'] }
-    // canActivate: [PermissionGuard],
-    //   data: { appCode: ['POS_CHKOUT'] }
+    canActivate: [PermissionGuard],
+      data: { appCode: ['POS_CHKOUT'] }
+ 
   },
   {
     path: ':uuid',
     component: PosCheckoutPageComponent,
-    // canActivate: [PermissionGuard],
-    //   data: { appCode: ['POS_CHKOUT'] }
-    // canActivate: [PermissionGuard],
-    //   data: { appCode: ['POS_CHKOUT'] }
+    canActivate: [PermissionGuard],
+      data: { appCode: ['POS_CHKOUT'] }
+
   },
   {
     path: 'kitchen/orders/:uuid',
     component: KitchenOrderComponent,
-    // canActivate: [PermissionGuard],
-    //   data: { appCode: ['kitchen_order', 'kitchen_payment'] }
-    // canActivate: [PermissionGuard],
-    //   data: { appCode: ['kitchen_order', 'kitchen_payment'] }
+
+    canActivate: [PermissionGuard],
+      data: { appCode: ['kitchen_order', 'kitchen_payment'] }
   },
   {
     path: 'kitchen/:uuid',
     component: CheckoutKitchenComponent,
-    // canActivate: [PermissionGuard],
-    //   data: { appCode: ['kitchen_order', 'kitchen_payment'] }
-    // canActivate: [PermissionGuard],
-    //   data: { appCode: ['kitchen_order', 'kitchen_payment'] }
+    canActivate: [PermissionGuard],
+      data: { appCode: ['kitchen_order', 'kitchen_payment'] }
+ 
   },
   {
     path: 'hotel/:uuid',
