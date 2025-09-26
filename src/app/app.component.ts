@@ -74,7 +74,7 @@ export class AppComponent {
   
     const pendingPayments = await firstValueFrom(this.offlineService.getPendingPayments());
     if (!pendingPayments.length) {
-      this.stopEllipsisAnimation('✅ Nothing to sync. All caught up!');
+      this.stopEllipsisAnimation('✅ Nothing to sync. All caught up!', true);
       this.syncInProgress = false;
       return;
     }

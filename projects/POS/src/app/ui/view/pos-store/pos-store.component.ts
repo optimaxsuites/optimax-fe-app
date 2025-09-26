@@ -441,7 +441,7 @@ export class PosStoreComponent implements OnInit, OnDestroy {
    */
   navigateToCheckout(): void {
     const currentUuid = this.route.snapshot.paramMap.get('uuid');
-    this.router.navigate(['/store', currentUuid, 'checkout']);
+    this.router.navigate(['user/checkout/store', currentUuid, 'checkout']);
   }
 
   /**

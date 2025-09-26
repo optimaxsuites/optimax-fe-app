@@ -136,7 +136,7 @@ export class StoreCheckoutComponent implements OnInit {
         const currentUuid = this.route.snapshot.paramMap.get('uuid');
         const orderId = response.orderId || orderNumber;
         
-        this.router.navigate(['/store', currentUuid, 'order-confirmation', orderId]);
+        this.router.navigate(['user/checkout/store', currentUuid, 'order-confirmation', orderId]);
       },
       error: (error: any) => {
         this.isLoading = false;
