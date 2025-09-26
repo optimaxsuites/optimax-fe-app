@@ -113,9 +113,10 @@
             <p class="text-lg font-medium">{{ getPaymentLabel(mode) }}:</p>
             <div class="flex items-center">
               <input
-                type="text"
+                type="number"
                 placeholder="0"
                 [(ngModel)]="paymentValues[mode]"
+                (ngModelChange)="updatePriceOptions()"
                 class="text-right px-3 py-2 border rounded-lg w-32 focus:ring-2 focus:ring-customBlue focus:outline-none"
                 [disabled]="mode === 'loyalty' && !customerFound"
                 [max]="getLoyaltyMax(mode)"
@@ -135,7 +136,7 @@
                 [class.text-white]="opt.value === paymentValues[mode]"
                 [class.hover:text-white]="opt.value !== paymentValues[mode]"
                 [class.hover:bg-customBlue]="opt.value !== paymentValues[mode]"
-                (click)="paymentValues[mode] = opt.value"
+                (click)="paymentValues[mode] = opt.value; updatePriceOptions()"
               >
                 {{ opt.label }}
               </button>
@@ -153,7 +154,7 @@
                 [class.hover:bg-customBlue]="points !== paymentValues[mode]"
                 [disabled]="customerFound.loyaltyPoints != null && points > customerFound.loyaltyPoints"
                 [class.opacity-50]="customerFound.loyaltyPoints != null && points > customerFound.loyaltyPoints"
-                (click)="paymentValues[mode] = points"
+                (click)="paymentValues[mode] = points; updatePriceOptions()"
               >
                 ₦{{ points }}
               </button>
@@ -190,9 +191,10 @@
 <p-toast position="top-right" key="tl" />
 
 
-<div id="receipt-container" style=" font-family: 'Courier New', monospace; font-size: 10px; text-align: left; padding: 10px;" class='hidden'>
+<div id="receipt-container" 
+style=" font-family: 'Courier New', monospace; font-size: 13px; text-align: left; padding: 10px; color: black; font-weight: bold;" class='hidden'>
   <div style="text-align: center;">
-    <strong style="font-size: 22px;">{{businessInfo?.fullname}}</strong><br>
+    <strong style="font-size: 23px;">{{businessInfo?.fullname}}</strong><br>
     Address: {{businessInfo?.address}}, {{businessInfo?.city}},{{businessInfo?.state}}<br>
     Telephone: {{businessInfo?.phoneNumber}}<br>
   </div>
@@ -209,7 +211,7 @@
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
 
     <thead>
-      <tr style=" font-size: 10px;">
+      <tr style=" font-size: 12px; font-weight: bold; color: black;">
         <th style="text-align: left;">Name</th>
         <th style="text-align: center;">Qty</th>
         <th style="text-align: center;">Price</th>

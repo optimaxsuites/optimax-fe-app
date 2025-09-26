@@ -121,8 +121,16 @@
               <span class="ml-1">{{ sortBy === 'salesperson' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
             <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('totalAmount')">
-              Amount 
+              Subtotal 
               <span class="ml-1">{{ sortBy === 'totalAmount' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('tax')">
+              Tax 
+              <span class="ml-1">{{ sortBy === 'tax' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
+            </th>
+            <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('totalWithTax')">
+              Total Paid 
+              <span class="ml-1">{{ sortBy === 'totalWithTax' ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}</span>
             </th>
             <th class="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider cursor-pointer" (click)="sort('orderStatus')">
               Status 
@@ -144,6 +152,8 @@
             <td class="py-4 px-4 text-gray-900">{{ order.customer?.name || "Walk-in" }}</td>
             <td class="py-4 px-4 text-gray-900">{{ getSalespersonName(order) }}</td>
             <td class="py-4 px-4 text-gray-900">₦{{ order.totalAmount.toLocaleString() }}</td>
+            <td class="py-4 px-4 text-gray-900">₦{{ calculateOrderTax(order).toLocaleString() }}</td>
+            <td class="py-4 px-4 text-gray-900 font-semibold">₦{{ calculateOrderTotalWithTax(order).toLocaleString() }}</td>
             <td class="py-4 px-4">
               <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full" [ngClass]="order.orderStatus | orderStatus">
                 {{ order.orderStatus }}

@@ -239,20 +239,21 @@
             </div>
           </div>
 
-          <!-- quantity -->
-          <div>
-            <label
-              for="quantity"
-              class="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Quantity <span class="text-red-500">*</span>
-            </label>
-            <p-inputNumber
-              formControlName="quantity"
-              mode="decimal"
-              [min]="0"
-              styleClass="w-full"
-            ></p-inputNumber>
+        <!-- quantity -->
+<div>
+  <label
+    for="quantity"
+    class="block text-sm font-medium text-gray-700 mb-1"
+  >
+    Quantity <span class="text-red-500">*</span>
+  </label>
+  <p-inputNumber
+    formControlName="quantity"
+    mode="decimal"
+    [min]="0"
+    [readonly]="isEditMode"
+    styleClass="w-full"
+  ></p-inputNumber>
 
             <div
               *ngIf="

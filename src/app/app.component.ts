@@ -3,7 +3,7 @@ import { AuthenticationService } from './ui/sharedComponent/service/auth-service
 import { IndustryDataService } from './ui/service/industry-data.service';
 import { MetadataService } from './ui/service/metadata.service';
 import { RegisterService } from './ui/service/register.service';
-import { firstValueFrom } from 'rxjs';
+import { BehaviorSubject, firstValueFrom, Observable } from 'rxjs';
 import { CheckoutService } from './ui/service/checkout.service';
 import { OfflineService } from './ui/service/offline.service';
 @Component({
@@ -18,6 +18,8 @@ export class AppComponent implements OnInit{
   openingAmount: number = 0;
   closingAmount: number | null = null;
   finalizedRegisterData: any = null;
+  private _isOffline = new BehaviorSubject<boolean>(!navigator.onLine);
+  isOffline$: Observable<boolean> = this._isOffline.asObservable();
 
   constructor(
     private authenticationService: AuthenticationService,
@@ -28,6 +30,8 @@ export class AppComponent implements OnInit{
     private offlineService: OfflineService
   ) {
     this.userLoginAction();
+     window.addEventListener('online', () => this._isOffline.next(false));
+    window.addEventListener('offline', () => this._isOffline.next(true));
   }
 
   ngOnInit(): void {

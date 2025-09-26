@@ -91,18 +91,24 @@ export class CashPaymentComponent implements OnInit {
     }
     console.log(this.navigationState);
 
+    const userInfoString = sessionStorage.getItem("userBranchInfoRegData");
+    if (userInfoString) {
+      this.businessInfo = JSON.parse(userInfoString);
+    }
+
     window.addEventListener('online', () => this._isOffline.next(false));
     window.addEventListener('offline', () => this._isOffline.next(true));
   }
 
   ngOnInit(): void {
     this.cart = this.navigationState?.cart;
+    this.updatePriceOptions();
     this.initializePriceOptions();
     this.token = this.randomTokenService.getRandomToken();
-    const userInfoString = sessionStorage.getItem("userInfo");
-    if (userInfoString) {
-      this.businessInfo = JSON.parse(userInfoString);
-    }
+    // const userInfoString = sessionStorage.getItem("userInfo");
+    // if (userInfoString) {
+    //   this.businessInfo = JSON.parse(userInfoString);
+    // }
     // if(navigator.onLine) this.syncOfflinePayments()
   }
 
@@ -157,14 +163,19 @@ export class CashPaymentComponent implements OnInit {
     this.priceOptionsMap.mobile = commonOptions;
   }
 
-  getPriceOptions(method: string) {
-    const commonOptions = [
-      { label: "Balance", value: this.balanceLeft },
-      { label: "10000", value: 10000 },
-      { label: "20000", value: 20000 },
-    ];
-    return commonOptions;
+  getPriceOptions(mode: PaymentModes) {
+  const commonOptions = [
+    { label: "Balance", value: this.balanceLeft },
+    { label: "10000", value: 10000 },
+    { label: "20000", value: 20000 },
+  ];
+
+  if (mode === 'loyalty' && this.customerFound?.loyaltyPoints) {
+    const loyaltyAmount = Math.min(this.customerFound.loyaltyPoints, this.balanceLeft);
+    return [{ label: `Loyalty Points (${loyaltyAmount})`, value: loyaltyAmount }, ...commonOptions];
   }
+  return commonOptions;
+}
 
   getPaymentLabel(mode: string): string {
     const labels: { [key: string]: string } = {

@@ -280,8 +280,8 @@ const dbConfig: DBConfig = {
     //CheckoutKitchenComponent,
   ],
   imports: [
-    // BrowserModule, 
-    // UserModule,
+    BrowserModule,  
+    UserModule,
     AppRoutingModule,
     CheckboxModule,
     CommonModule,
@@ -337,10 +337,10 @@ const dbConfig: DBConfig = {
     ProgressSpinnerModule,
     SelectButtonModule,
 
-    // BrowserAnimationsModule,
+    BrowserAnimationsModule,
 
     TagModule,
-    // NgxIndexedDBModule.forRoot(dbConfig)
+    NgxIndexedDBModule.forRoot(dbConfig)
   ],
   exports: [HotelRoomlistComponent, HotelRoomdetailsComponent],
   providers: [

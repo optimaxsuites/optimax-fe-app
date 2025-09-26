@@ -39,18 +39,28 @@ export class OrderDetailComponent {
     // console.log(this.navigationState)
     
   }
-
-  ngOnInit() {
+ ngOnInit() {
     this.fetchUserInfo();
   }
 
+  // order-detail.component.ts
+
   fetchUserInfo() {
-    const userDataString = localStorage.getItem('userPrimaryInfoRegData');
+    const userDataString = sessionStorage.getItem('userBranchInfoRegData'); 
+    
     if (userDataString) {
       this.userPrimaryInfoRegData = JSON.parse(userDataString);
-      this.shopName = this.userPrimaryInfoRegData.industry;
-      this.shopAddress = this.userPrimaryInfoRegData.address + ', ' + this.userPrimaryInfoRegData.city;
-      this.cashierName = this.userPrimaryInfoRegData.user.username;
+      
+      // Shop Name (ClientType as requested)
+      this.shopName = this.userPrimaryInfoRegData.clientType || 'POS System';
+      
+      // Shop Address (Combining address, city, state)
+      this.shopAddress = (this.userPrimaryInfoRegData.address || '') + 
+                         (this.userPrimaryInfoRegData.city ? ', ' + this.userPrimaryInfoRegData.city : '') +
+                         (this.userPrimaryInfoRegData.state ? ', ' + this.userPrimaryInfoRegData.state : '');
+      
+      // Cashier Name (from nested 'user' object)
+      this.cashierName = this.userPrimaryInfoRegData.user?.username || 'Cashier';
     }
   }
 
@@ -212,7 +222,7 @@ printReciept() {
 
 
 ngAfterViewInit() {
-  JsBarcode("#barcode", this.navigationState.order.id, {
+  JsBarcode("#barcode", this.navigationState.order.orderNumber, {
     format: "CODE128",
     displayValue: false, 
     width: 2,

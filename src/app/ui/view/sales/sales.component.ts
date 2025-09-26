@@ -68,6 +68,30 @@ export class SalesComponent implements OnInit {
     });
   }
   
+  // New methods for calculating tax and total with tax
+  calculateOrderTax(order: Order): number {
+    if (!order.orderItem || !order.orderItem.length) return 0;
+    
+    return order.orderItem.reduce((totalTax: number, item: any) => {
+      const quantity = item.quantity || 0;
+      const variantPrice = item.productVariant?.price;
+      const productPrice = parseFloat(item.product?.sellingPrice || '0');
+      const unitPrice = variantPrice || productPrice;
+      
+      const subtotal = unitPrice * quantity;
+      const taxRate = item.product?.tax?.rate || 5; // Default 5% tax if none specified
+      const itemTax = (taxRate / 100) * subtotal;
+      
+      return totalTax + itemTax;
+    }, 0);
+  }
+
+  calculateOrderTotalWithTax(order: Order): number {
+    const subtotal = order.totalAmount || 0;
+    const tax = this.calculateOrderTax(order);
+    return subtotal + tax;
+  }
+  
   // New methods for date range filtering
   onDateRangeChange(): void {
     if (this.selectedDateRange !== null) {
@@ -87,7 +111,8 @@ export class SalesComponent implements OnInit {
 
   viewOrderDetails(order: Order): void {
     this.isViewPageOpen = true;
-    this.activeOrder = order;
+    this.activeOrder = { ...order }; // Create a copy to avoid reference issues
+    console.log('Viewing order details:', this.activeOrder);
   }
   
   closeViewDetail(){
@@ -162,6 +187,14 @@ export class SalesComponent implements OnInit {
         case 'totalAmount':
           aValue = a.totalAmount;
           bValue = b.totalAmount;
+          break;
+        case 'tax':
+          aValue = this.calculateOrderTax(a);
+          bValue = this.calculateOrderTax(b);
+          break;
+        case 'totalWithTax':
+          aValue = this.calculateOrderTotalWithTax(a);
+          bValue = this.calculateOrderTotalWithTax(b);
           break;
         case 'orderStatus':
           aValue = a.orderStatus;

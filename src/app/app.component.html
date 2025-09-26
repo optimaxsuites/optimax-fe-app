@@ -6,6 +6,10 @@
   (closeModalEvent)="onCloseRegisterModal()"
 ></app-close-register-modal> -->
 
+<div *ngIf="isOffline$ | async" class="bg-orange-100 text-gray-600 font-bold text-center py-3">
+      ⚠️ You are offline. Some features may not be available.
+    </div>
+
 <router-outlet></router-outlet>
 
 <p-toast key="tg" position="top-right"/>

@@ -160,10 +160,10 @@
   </div>
 </div>
 
-<div id="receipt-container" style=" font-family: 'Courier New', monospace; font-size: 10px; text-align: left; padding: 10px;" class=''>
+<div id="receipt-container" style=" font-family: 'Courier New', monospace; font-size: 13px; text-align: left; padding: 10px;  color: black; font-weight: bold;" class=''>
   <div style="text-align: center;">
     <strong style="font-size: 22px;">{{ shopName }}</strong><br>
-    Address: {{ shopAddress }} <br>
+    Address: {{ userPrimaryInfoRegData?.address }}, {{ userPrimaryInfoRegData?.city }}, {{ userPrimaryInfoRegData?.state }}  <br>
     Telephone: {{ userPrimaryInfoRegData?.phoneNumber }}
   </div>
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
@@ -171,7 +171,7 @@
     <div>Sold to: {{ navigationState.order.customer?.name || 'Walk-in Customer' }}</div>
     <div>Date & Time: {{ formatDate(navigationState.order?.updatedAt) | date: 'medium' }}</div>
     <div>Cashier: {{ cashierName }}</div>
-    <div>Receipt ID: {{navigationState.order.id}}</div>
+    <div>Receipt ID: {{navigationState.order.orderNumber}}</div>
     <div>Order #: {{navigationState.order.orderNumber}}</div>
   </div>
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
@@ -180,7 +180,7 @@
   <hr style="border-top: 1px dashed black; margin: 5px 0;">
 
     <thead>
-      <tr style=" font-size: 10px;">
+      <tr style=" font-size:  12px; font-weight: bold; color: black;">
         <th style="text-align: left;">Name</th>
         <th style="text-align: center;">Qty</th>
         <th style="text-align: center;">Price</th>

@@ -54,7 +54,6 @@ export class CheckoutOrdersComponent implements OnInit {
 
   dateFrom!: string;
   dateTo!: string;
-  // checkoutService: any;
 
   constructor(
     private router: Router,
@@ -66,7 +65,6 @@ export class CheckoutOrdersComponent implements OnInit {
   ) {}
 
   async ngOnInit(): Promise<void> {
-      // this.offlineService.clearPendingPayments()
 
     if(navigator.onLine){
     this.metadataService.fetchMetaData();
@@ -83,9 +81,30 @@ export class CheckoutOrdersComponent implements OnInit {
   
     this.setRangeToToday();
     this.isLoading = false;
+  }
 
+  // Tax calculation methods (copied from sales component)
+  calculateOrderTax(order: Order): number {
+    if (!order.orderItem || !order.orderItem.length) return 0;
+    
+    return order.orderItem.reduce((totalTax: number, item: any) => {
+      const quantity = item.quantity || 0;
+      const variantPrice = item.productVariant?.price;
+      const productPrice = parseFloat(item.product?.sellingPrice || '0');
+      const unitPrice = variantPrice || productPrice;
+      
+      const subtotal = unitPrice * quantity;
+      const taxRate = item.product?.tax?.rate || 5; // Default 5% tax if none specified
+      const itemTax = (taxRate / 100) * subtotal;
+      
+      return totalTax + itemTax;
+    }, 0);
+  }
 
-
+  calculateOrderTotalWithTax(order: Order): number {
+    const subtotal = order.totalAmount || 0;
+    const tax = this.calculateOrderTax(order);
+    return subtotal + tax;
   }
 
   toggleShowOfflineRecords(order?: any){
@@ -141,45 +160,62 @@ export class CheckoutOrdersComponent implements OnInit {
     this.applyFilters();
   }
 
-  applyFilters(): void {
-    let filtered = [...this.allOrders];
+ applyFilters(): void {
+  let filtered = [...this.allOrders];
 
-    // Apply date filter
-    if (this.daysFilter > 0) {
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - this.daysFilter);
-      filtered = filtered.filter(order => {
-        const orderDate = this.formatDate(order.updatedAt);
-        return orderDate && orderDate >= cutoffDate;
-      });
-    } else {
-      const from = new Date(this.dateFrom).getTime();
-      const to = new Date(this.dateTo).getTime();
-      filtered = filtered.filter(o => {
-        const d = this.formatDate(o.updatedAt);
-        if (!d) return false;
-        const t = d.getTime();
-        return t >= from && t <= to;
-      });
-    }
-
-    // Apply status filter
-    if (this.statusFilter !== 'ALL') {
-      filtered = filtered.filter(order => order.orderStatus === this.statusFilter);
-    }
-
-    // Apply search filter
-    if (this.searchText) {
-      const searchLower = this.searchText.toLowerCase();
-      filtered = filtered.filter(order =>
-        order.orderNumber?.toLowerCase().includes(searchLower) ||
-        (order.customer?.name && order.customer.name.toLowerCase().includes(searchLower)) ||
-        order.totalAmount?.toString().includes(searchLower)
-      );
-    }
-
-    this.filteredOrders = filtered;
+  // Apply date filter
+  if (this.activeFilter === 'today') {
+    // For "today", use exact date range from midnight to end of day
+    const from = new Date(this.dateFrom).getTime();
+    const to = new Date(this.dateTo).getTime();
+    filtered = filtered.filter(o => {
+      const d = this.formatDate(o.updatedAt);
+      if (!d) return false;
+      const t = d.getTime();
+      return t >= from && t <= to;
+    });
+  } else if (this.daysFilter > 0) {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - this.daysFilter);
+    filtered = filtered.filter(order => {
+      const orderDate = this.formatDate(order.updatedAt);
+      return orderDate && orderDate >= cutoffDate;
+    });
+  } else {
+    const from = new Date(this.dateFrom).getTime();
+    const to = new Date(this.dateTo).getTime();
+    filtered = filtered.filter(o => {
+      const d = this.formatDate(o.updatedAt);
+      if (!d) return false;
+      const t = d.getTime();
+      return t >= from && t <= to;
+    });
   }
+
+  // Apply status filter
+  if (this.statusFilter !== 'ALL') {
+    filtered = filtered.filter(order => order.orderStatus === this.statusFilter);
+  }
+
+  // Apply search filter
+  if (this.searchText) {
+    const searchLower = this.searchText.toLowerCase();
+    filtered = filtered.filter(order =>
+      order.orderNumber?.toLowerCase().includes(searchLower) ||
+      (order.customer?.name && order.customer.name.toLowerCase().includes(searchLower)) ||
+      order.totalAmount?.toString().includes(searchLower)
+    );
+  }
+
+filtered.sort((a, b) => {
+  const dateA = this.formatDate(a.updatedAt);
+  const dateB = this.formatDate(b.updatedAt);
+  if (!dateA || !dateB) return 0;
+  return dateB.getTime() - dateA.getTime(); ``
+});
+
+  this.filteredOrders = filtered;
+}
   
   get isGroupedView(): boolean {
     return this.activeFilter === 'all' && !this.daysFilter && !this.dateFrom && !this.dateTo;
@@ -225,18 +261,14 @@ syncOrder(order?: any) {
   }
 }
 
-
   private async syncOfflinePayments(pendingPayment: any) {
       console.log("🌐 You are now online, preparing to sync...");
     
       await new Promise((resolve) => setTimeout(resolve, 3000));
     
-     
-    
       console.log("🔄 Syncing offline payments:", pendingPayment);
 
     const OUT_OF_STOCK_ERROR_MESSAGE = "Insuffient order to service your request..."; 
-
     
       for (const payment of pendingPayment) {
         const now = new Date().toISOString();
@@ -263,8 +295,6 @@ syncOrder(order?: any) {
                         console.log("✅ Offline payment synced:", payment);
     
                         await this.offlineService.removePendingPayment(payment.__dbKey);
-    
-                       
                       },
                       error: async (err) => {
                       console.log(err)
@@ -301,7 +331,5 @@ syncOrder(order?: any) {
           error: (err) => console.error("❌ Failed to sync payment:", err),
         });
       }
-    
-      // this.offlineService.clearPendingPayments()
   }
 }
