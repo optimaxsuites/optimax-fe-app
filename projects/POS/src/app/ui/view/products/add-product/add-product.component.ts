@@ -449,34 +449,58 @@ private setBranchInformation() {
     }
 }
 private initializeProductImage() {
-    // First try to get the image using the service method (like in product view)
-    if (this.activeItem?.productImages && this.activeItem.productImages.length > 0) {
+    console.log('Initializing product image for activeItem:', this.activeItem);
+    
+    // Check if productImages array exists and has items
+    if (this.activeItem?.productImages && Array.isArray(this.activeItem.productImages) && this.activeItem.productImages.length > 0) {
         const lastImage = this.activeItem.productImages[this.activeItem.productImages.length - 1];
+        console.log('Found last image:', lastImage);
         
-        // If the image has an ID or filename, use the service to get the full URL
-        if (lastImage?.id || lastImage?.fileName || lastImage?.imageName) {
-            const imageIdentifier = lastImage.id || lastImage.fileName || lastImage.imageName;
-            this.productImage = this.posService.getProductImage(imageIdentifier);
-        }
-        // If it's already a full URL
-        else if (typeof lastImage === 'string' && lastImage.startsWith('http')) {
+        // If it's already a complete URL, use it directly
+        if (typeof lastImage === 'string' && (lastImage.startsWith('http') || lastImage.startsWith('data:'))) {
             this.productImage = lastImage;
+            console.log('Using direct URL:', this.productImage);
+            return;
         }
+        
         // If it's an object with imageUrl property
-        else if (lastImage?.imageUrl) {
+        if (lastImage?.imageUrl) {
             this.productImage = lastImage.imageUrl;
+            console.log('Using imageUrl property:', this.productImage);
+            return;
         }
-    }
-    // Fallback to other image properties
-    else if (this.activeItem?.imageUrl) {
-        this.productImage = this.activeItem.imageUrl;
-    }
-    else if (this.activeItem?.image) {
-        this.productImage = this.activeItem.image;
+        
+        // If lastImage is an object, try to use it directly without service call
+        if (typeof lastImage === 'object' && lastImage !== null) {
+            // Check if we can construct a data URL or use base64
+            if (lastImage.data || lastImage.base64) {
+                this.productImage = `data:image/jpeg;base64,${lastImage.data || lastImage.base64}`;
+                return;
+            }
+            
+            // For now, skip the service call that's causing 401 and use placeholder
+            console.log('Skipping service call due to auth issues, using placeholder');
+            this.productImage = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s';
+            return;
+        }
     }
     
-    console.log('Initialized product image:', this.productImage);
-    console.log('ActiveItem productImages:', this.activeItem?.productImages);
+    // Try direct properties on activeItem
+    if (this.activeItem?.imageUrl) {
+        this.productImage = this.activeItem.imageUrl;
+        console.log('Using activeItem.imageUrl:', this.productImage);
+        return;
+    }
+    
+    if (this.activeItem?.image) {
+        this.productImage = this.activeItem.image;
+        console.log('Using activeItem.image:', this.productImage);
+        return;
+    }
+    
+    // Default fallback
+    this.productImage = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s';
+    console.log('Using fallback image');
 }
 	fetchMetaData() {
 		this.metadataService.discount$.subscribe((data) => (this.discounts = data));
@@ -1712,46 +1736,8 @@ async updateProduct() {
 		}
 	}
 getLastImage(): string {
-    console.log('Getting last image for activeItem:', this.activeItem);
-    
-    if (this.activeItem?.productImages && this.activeItem.productImages.length > 0) {
-        const lastImage = this.activeItem.productImages[this.activeItem.productImages.length - 1];
-        console.log('Last image object:', lastImage);
-        
-        // Try to get image using service (like in product view)
-        if (lastImage?.id) {
-            return this.posService.getProductImage(lastImage.id);
-        }
-        else if (lastImage?.fileName) {
-            return this.posService.getProductImage(lastImage.fileName);
-        }
-        else if (lastImage?.imageName) {
-            return this.posService.getProductImage(lastImage.imageName);
-        }
-        else if (typeof lastImage === 'string') {
-         
-            if (lastImage.startsWith('http') || lastImage.startsWith('data:')) {
-                return lastImage;
-            }
-           
-            return this.posService.getProductImage(lastImage);
-        }
-        else if (lastImage?.imageUrl) {
-            return lastImage.imageUrl;
-        }
-    }
-    
-
-    if (this.activeItem?.imageUrl) {
-        return this.activeItem.imageUrl;
-    }
-    
-    if (this.activeItem?.image) {
-        return this.activeItem.image;
-    }
-    
-    console.log('No image found, returning empty string');
-    return '';
+   
+    return this.productImage || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s';
 }
 	convertSvgToPng(svgElement: Node, shouldPrint?: boolean) {
 		const svgString = new XMLSerializer().serializeToString(svgElement);

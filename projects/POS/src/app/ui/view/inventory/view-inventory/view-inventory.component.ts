@@ -177,26 +177,316 @@ toIsoString(d: string | number[] | Date): string {
   closeEdit()    { this.close.emit(); }
   closeEditInventory() { this.close.emit(); }
 
-  printPage() {
-    const printContents = document.getElementById('printable-area')?.innerHTML;
-    if (printContents) {
-      const originalContents = document.body.innerHTML;
-      document.body.innerHTML = printContents;
-      window.print();
-      document.body.innerHTML = originalContents;
-      location.reload();
-    }
-  }
+printPage() {
+  // Create print content
+  const printContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Product Details - ${this.activeItem?.name || 'Inventory'}</title>
+      <meta charset="utf-8">
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+          line-height: 1.6; 
+          color: #333; 
+          padding: 20px;
+          background: white;
+        }
+        .print-header { 
+          text-align: center; 
+          margin-bottom: 30px; 
+          border-bottom: 3px solid #2563eb; 
+          padding-bottom: 15px; 
+        }
+        .print-header h1 { 
+          color: #2563eb; 
+          font-size: 28px; 
+          margin-bottom: 5px; 
+        }
+        .section { 
+          margin-bottom: 25px; 
+          break-inside: avoid; 
+        }
+        .section h2 { 
+          color: #1f2937; 
+          font-size: 18px; 
+          margin-bottom: 10px; 
+          border-bottom: 1px solid #e5e7eb; 
+          padding-bottom: 5px; 
+        }
+        .info-grid { 
+          display: grid; 
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+          gap: 15px; 
+          margin-top: 10px;
+        }
+        .info-item { 
+          background: #f8fafc; 
+          padding: 10px 15px; 
+          border-radius: 5px; 
+          border-left: 3px solid #3b82f6;
+        }
+        .info-label { 
+          font-weight: 600; 
+          color: #374151; 
+          font-size: 14px;
+        }
+        .info-value { 
+          color: #111827; 
+          margin-top: 2px;
+        }
+        table { 
+          width: 100%; 
+          border-collapse: collapse; 
+          margin-top: 15px; 
+          font-size: 12px;
+        }
+        th, td { 
+          border: 1px solid #d1d5db; 
+          padding: 8px 6px; 
+          text-align: left; 
+        }
+        th { 
+          background-color: #2563eb; 
+          color: white; 
+          font-weight: 600; 
+          font-size: 11px;
+          text-transform: uppercase;
+        }
+        tr:nth-child(even) { background-color: #f9fafb; }
+        .positive { 
+          color: #059669; 
+          font-weight: 600; 
+          background: #d1fae5;
+          padding: 2px 6px;
+          border-radius: 3px;
+        }
+        .negative { 
+          color: #dc2626; 
+          font-weight: 600; 
+          background: #fee2e2;
+          padding: 2px 6px;
+          border-radius: 3px;
+        }
+        .text-center { text-align: center; }
+        .no-movements { 
+          text-align: center; 
+          color: #6b7280; 
+          font-style: italic; 
+          padding: 20px;
+          background: #f3f4f6;
+          border-radius: 5px;
+        }
+        @media print {
+          body { margin: 0; padding: 15px; }
+          .section { page-break-inside: avoid; }
+          @page { margin: 1cm; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="print-header">
+        <h1>Product Details Report</h1>
+        <p><strong>Generated on:</strong> ${new Date().toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })}</p>
+      </div>
+      
+      <div class="section">
+        <h2>Product Information</h2>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">Product Name</div>
+            <div class="info-value">${this.activeItem?.name || '-'}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">SKU</div>
+            <div class="info-value">${this.activeItem?.sku || '-'}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Category</div>
+            <div class="info-value">${this.activeItem?.productCategory?.name || '-'}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Current Quantity</div>
+            <div class="info-value">${this.activeItem?.quantity || 0}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Current Price</div>
+            <div class="info-value">${this.activeItem?.sellingPrice ? '₦' + Number(this.activeItem.sellingPrice).toFixed(2) : '-'}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Product Code</div>
+            <div class="info-value">${this.activeItem?.code || '-'}</div>
+          </div>
+        </div>
+      </div>
+      
+      ${this.supplier && this.activeItem?.supplier ? `
+        <div class="section">
+          <h2>Supplier Information</h2>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Supplier Name</div>
+              <div class="info-value">${this.activeItem.supplier.name || '-'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Contact Person</div>
+              <div class="info-value">${this.activeItem.supplier.contactPerson || '-'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Email</div>
+              <div class="info-value">${this.activeItem.supplier.email || '-'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Phone</div>
+              <div class="info-value">${this.activeItem.supplier.phoneNumber || '-'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Address</div>
+              <div class="info-value">${this.activeItem.supplier.address || '-'}</div>
+            </div>
+          </div>
+        </div>
+      ` : ''}
+      
+      <div class="section">
+        <h2>Stock Movement History</h2>
+        <p style="margin-bottom: 10px;"><strong>Total Movements:</strong> ${this.stockMovements.length}</p>
+        ${this.stockMovements && this.stockMovements.length > 0 ? `
+          <table>
+            <thead>
+              <tr>
+                <th>Date & Time</th>
+                <th>Reference</th>
+                <th>Qty Change</th>
+                <th>Purchase Price</th>
+                <th>Selling Price</th>
+                <th>Supplier</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${this.stockMovements.map(movement => `
+                <tr>
+                  <td>${this.formatDateForPrint(movement.createdDate)}</td>
+                  <td>${movement.reference || 'N/A'}</td>
+                  <td class="text-center">
+                    <span class="${movement.quantity > 0 ? 'positive' : movement.quantity < 0 ? 'negative' : ''}">
+                      ${movement.quantity > 0 ? '+' : ''}${movement.quantity}
+                    </span>
+                  </td>
+                  <td>${movement.purchasePrice ? '₦' + Number(movement.purchasePrice).toFixed(2) : '-'}</td>
+                  <td>${movement.sellingPrice ? '₦' + Number(movement.sellingPrice).toFixed(2) : '-'}</td>
+                  <td>${movement.supplier?.name || (movement.supplierId ? 'ID: ' + movement.supplierId : 'N/A')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : '<div class="no-movements">No stock movements found for this product.</div>'}
+      </div>
+      
+      <script>
+        window.onload = function() {
+          setTimeout(function() {
+            window.print();
+            window.onafterprint = function() {
+              window.close();
+            };
+          }, 100);
+        };
+      </script>
+    </body>
+    </html>
+  `;
 
-  // add this helper inside the class
+ 
+  try {
+    
+    const printWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+    
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+    } else {
+     
+      const blob = new Blob([printContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const newWindow = window.open(url, '_blank');
+      
+      if (!newWindow) {
+       
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `product-report-${this.activeItem?.name || 'inventory'}-${new Date().getTime()}.html`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        alert('Print popup was blocked. The report has been downloaded as an HTML file. Open it in your browser to print.');
+      }
+    }
+  } catch (error) {
+    console.error('Print error:', error);
+    
+    this.printInline();
+  }
+}
+
+
+private printInline() {
+  const originalContent = document.body.innerHTML;
+  const printableContent = document.getElementById('printable-area');
+  
+  if (printableContent) {
+    const printContent = printableContent.innerHTML;
+    document.body.innerHTML = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h1>Product Details - ${this.activeItem?.name}</h1>
+        ${printContent}
+      </div>
+    `;
+    
+    window.print();
+    document.body.innerHTML = originalContent;
+    window.location.reload();
+  } else {
+    alert('Unable to print. Please try again or use your browser\'s print function.');
+  }
+}
+
+private formatDateForPrint(date: any): string {
+  try {
+    const dateObj = new Date(this.toIsoString(date));
+    return dateObj.toLocaleDateString('en-US', {
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (error) {
+    return 'Invalid Date';
+  }
+}
+
+
 private movementDateDesc = (
   a: StockMovementByInventory,
   b: StockMovementByInventory
 ): number => {
-  return (
-    new Date(this.toIsoString(b.createdDate)).getTime() -
-    new Date(this.toIsoString(a.createdDate)).getTime()
-  );
+  const dateA = new Date(this.toIsoString(a.createdDate)).getTime();
+  const dateB = new Date(this.toIsoString(b.createdDate)).getTime();
+  
+
+  return dateB - dateA;
 };
 
 // Close dropdown when clicking outside
@@ -276,7 +566,7 @@ toggleDropdown(index: number): void {
 
     this.posService.updateStockMovement(this.editingMovement.id, updateData).subscribe({
       next: (updatedMovement) => {
-        // Update the movement in the local array
+        
         const index = this.stockMovements.findIndex(m => m.id === this.editingMovement.id);
         if (index !== -1) {
           this.stockMovements[index] = { ...this.stockMovements[index], ...updatedMovement };

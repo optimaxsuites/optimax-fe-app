@@ -593,30 +593,36 @@ getInventories() {
       .pipe(catchError(this.handleError));
   }
 
-  createStockMovement(data: StockMovementPostBody) {
-    const payload = {
-      quantity: Number(data.quantity),
-      reference: data.reference ?? '',
-      purchasePrice: Number(data.purchasePrice ?? 0),
-      sellingPrice: Number(data.sellingPrice ?? 0),
-      createdDate: data.createdDate,       
-      supplierId: data.supplierId ?? null,
-      inventoryId: Number(data.inventoryId) 
-    };
-    
-    return this.http
-      .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/stockMovements', payload)
-      .pipe(catchError(this.handleError));
-  }
-
-  updateStockMovement(id: number, data: StockMovementCreatePayload) {
-    return this.http
-      .put<StockMovementResponsePayload>(
-        this.getBaseApiUrl() + `/x/api/v2/pos/stockMovements/${id}`,
-        data
-      )
-      .pipe(catchError(this.handleError));
-  }
+createStockMovement(data: StockMovementPostBody) {
+  const payload = {
+    // id: 0, 
+    quantity: Number(data.quantity),
+    reference: data.reference ?? '',
+    purchasePrice: Number(data.purchasePrice ?? 0),
+    sellingPrice: Number(data.sellingPrice ?? 0),
+    createdDate: data.createdDate,
+    stockMovementsId: 0, 
+    createdById: data.createdById ?? 0, 
+    supplierId: data.supplierId ?? null,
+    // ingredientId: Number(data.ingredientId ?? 0), 
+    inventoryId: Number(data.inventoryId) 
+  };
+  
+  return this.http
+    .post<any>(this.getBaseApiUrl() + '/x/api/v2/pos/stockMovements', payload)
+    .pipe(catchError(this.handleError));
+}
+ updateStockMovement(id: number, data: StockMovementCreatePayload) {
+  
+  const payload = { ...data, id };
+  
+  return this.http
+    .post<StockMovementResponsePayload>(
+      this.getBaseApiUrl() + '/x/api/v2/pos/stockMovements',
+      payload 
+    )
+    .pipe(catchError(this.handleError));
+}
   deleteStockMovement(id: number) {
   return this.http
     .delete<any>(this.getBaseApiUrl() + `/x/api/v2/pos/stockMovements/${id}`)

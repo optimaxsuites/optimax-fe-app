@@ -382,51 +382,77 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     const option = this.stateOptions.find((opt) => opt.value === value);
     return option ? option.label : "";
   }
-  addToCart(product: ProductData, chosenVariant?: VariantDTO) {
-    if (!this.cartItems) this.cartItems = [];
+addToCart(product: ProductData, chosenVariant?: VariantDTO) {
+  if (!this.cartItems) this.cartItems = [];
 
-    let existingItem = this.cartItems.find(
-      (item) => item.name === product.name,
-    );
+  let existingItem = this.cartItems.find(
+    (item) => item.name === product.name,
+  );
 
-    if (chosenVariant) {
-      if (!existingItem) {
-        existingItem = { ...product, selectedVariants: [] };
-        this.cartItems.push(existingItem);
-      }
-
-      let existingVariant = existingItem?.selectedVariants?.find(
-        (v) => v.id === chosenVariant.id,
-      );
-
-      if (existingVariant) {
-        existingVariant.selectedQuantity =
-          (existingVariant.selectedQuantity || 0) + 1;
-      } else {
-        existingItem?.selectedVariants?.push({
-          ...chosenVariant,
-          selectedQuantity: 1,
-        });
-      }
-    } else {
-      if (existingItem) {
-        existingItem.count += 1;
-        existingItem.cartPriceTotal = (
-          existingItem.count * parseInt(existingItem.sellingPrice || "0")
-        ).toString();
-      } else {
-        product.count = 1;
-        product.cartPriceTotal = product.sellingPrice || "0";
-        this.cartItems.push({ ...product, selectedVariants: [] });
-      }
+  if (chosenVariant) {
+    // Check variant inventory
+    const currentVariantQuantity = existingItem?.selectedVariants?.find(v => v.id === chosenVariant.id)?.selectedQuantity || 0;
+    
+    if (currentVariantQuantity >= (chosenVariant.quantity || 0)) {
+      this.messageService.add({
+        severity: "warn",
+        summary: "Out of Stock",
+        detail: `${chosenVariant.name} is out of stock`,
+        key: "tl",
+        life: 3000,
+      });
+      return;
     }
 
-    // this.calculateProductDiscount();
-    this.calculateTotals();
-    this.calculateDiscount();
+    if (!existingItem) {
+      existingItem = { ...product, selectedVariants: [] };
+      this.cartItems.push(existingItem);
+    }
 
-    console.log(this.cartItems);
+    let existingVariant = existingItem?.selectedVariants?.find(
+      (v) => v.id === chosenVariant.id,
+    );
+
+    if (existingVariant) {
+      existingVariant.selectedQuantity =
+        (existingVariant.selectedQuantity || 0) + 1;
+    } else {
+      existingItem?.selectedVariants?.push({
+        ...chosenVariant,
+        selectedQuantity: 1,
+      });
+    }
+  } else {
+    // Check main product inventory
+    const currentCartQuantity = existingItem?.count || 0;
+    
+    if (currentCartQuantity >= product.quantity) {
+      this.messageService.add({
+        severity: "warn",
+        summary: "Out of Stock",
+        detail: `${product.name} is out of stock`,
+        key: "tl",
+        life: 3000,
+      });
+      return;
+    }
+
+    if (existingItem) {
+      existingItem.count += 1;
+      existingItem.cartPriceTotal = (
+        existingItem.count * parseInt(existingItem.sellingPrice || "0")
+      ).toString();
+    } else {
+      product.count = 1;
+      product.cartPriceTotal = product.sellingPrice || "0";
+      this.cartItems.push({ ...product, selectedVariants: [] });
+    }
   }
+
+  this.calculateTotals();
+  this.calculateDiscount();
+  console.log(this.cartItems);
+}
 
   deleteCartItem(index: number, isVariant?: boolean, variantIndex?: number) {
     if (isVariant) {

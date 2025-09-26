@@ -2,21 +2,13 @@
   position: relative;
   
   .absolute {
-    &.bottom-full {
-      top: auto;
-      bottom: 100%;
-    }
-    
-    &.top-full {
-      top: 100%;
-      bottom: auto;
-    }
+    position: absolute;
+    right: 0;
+    z-index: 1000;
   }
 }
 
-// Ensure table rows have consistent height
-tr {
-  td {
-    vertical-align: middle;
-  }
+
+tbody tr {
+  position: relative;
 }

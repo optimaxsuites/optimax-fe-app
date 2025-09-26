@@ -912,13 +912,14 @@ export interface StockMovementResponsePayload {
 }
 
 export type StockMovementPostBody = {
-  ingredientId(ingredientId: any): any;
   quantity: number;
   reference?: string;
   purchasePrice?: number;
   sellingPrice?: number;
   createdDate: string;
+  createdById?: number;
   supplierId?: number | null;
+  ingredientId?: number | null;
   inventoryId?: number;
 };
 export interface StockMovementByInventory {

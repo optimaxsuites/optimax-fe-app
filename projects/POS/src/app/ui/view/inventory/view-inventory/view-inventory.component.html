@@ -83,8 +83,8 @@
                     [class.bg-green-50]="movement.quantity > 0"
                     [class.bg-red-50]="movement.quantity < 0">
                   <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
-                    {{ toIsoString(movement.createdDate) | date:'medium' }}
-                  </td>
+  {{ toIsoString(movement.createdDate) | date:'mediumDate' }}
+</td>
                   <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600">
                     {{ movement.reference || 'N/A' }}
                   </td>
@@ -107,42 +107,43 @@
                   <td class="px-3 py-2 sm:px-6 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600">
                     {{ movement.supplier?.name || movement.supplierId || 'N/A' }}
                   </td>
-                  <td class="mv-actions px-3 py-2 sm:px-6 sm:py-4 text-center relative overflow-visible">
-                    <button
-                      (click)="$event.stopPropagation(); toggleDropdown(i)"
-                      class="text-gray-700 hover:text-gray-900 focus:outline-none p-1 sm:p-2 rounded-full hover:bg-gray-100"
-                      type="button"
-                      title="More actions"
-                    >
-                      <span class="text-xl leading-none select-none">⋮</span>
-                    </button>
-                    
-                    <!-- Dropdown Menu -->
-                    <div 
-                      *ngIf="activeDropdownIndex === i"
-                      class="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[120px]"
-                      [class.bottom-full]="i >= stockMovements.length - 3"
-                      [class.top-full]="i < stockMovements.length - 3"
-                      [class.mb-1]="i >= stockMovements.length - 3"
-                    >
-                      <button 
-                        (click)="editStockMovement(movement)"
-                        class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 rounded-t-lg"
-                        type="button"
-                      >
-                        <i class="fa-solid fa-edit text-blue-600"></i>
-                        Edit
-                      </button>
-                      <button 
-                        (click)="deleteStockMovement(movement)"
-                        class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-b-lg"
-                        type="button"
-                      >
-                        <i class="fa-solid fa-trash text-red-600"></i>
-                        Delete
-                      </button>
-                    </div>
-                  </td>
+               <td class="mv-actions px-3 py-2 sm:px-6 sm:py-4 text-center relative overflow-visible">
+  <button
+    (click)="$event.stopPropagation(); toggleDropdown(i)"
+    class="text-gray-700 hover:text-gray-900 focus:outline-none p-1 sm:p-2 rounded-full hover:bg-gray-100"
+    type="button"
+    title="More actions"
+  >
+    <span class="text-xl leading-none select-none">⋮</span>
+  </button>
+  
+ 
+  <div 
+    *ngIf="activeDropdownIndex === i"
+    class="absolute right-0 z-50 bg-white border border-gray-200 rounded-lg shadow-lg min-w-[120px]"
+    [class.bottom-0]="i >= stockMovements.length - 2"
+    [class.top-0]="i < stockMovements.length - 2"
+    [class.mb-8]="i >= stockMovements.length - 2"
+    [class.mt-8]="i < stockMovements.length - 2"
+  >
+    <button 
+      (click)="editStockMovement(movement)"
+      class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 rounded-t-lg"
+      type="button"
+    >
+      <i class="fa-solid fa-edit text-blue-600"></i>
+      Edit
+    </button>
+    <button 
+      (click)="deleteStockMovement(movement)"
+      class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-b-lg"
+      type="button"
+    >
+      <i class="fa-solid fa-trash text-red-600"></i>
+      Delete
+    </button>
+  </div>
+</td>
                 </tr>
               </tbody>
             </table>
@@ -282,10 +283,11 @@
 
 
 <!-- Edit Stock Movement Modal -->
-<div *ngIf="showEditModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity duration-300">
-  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100 opacity-100">
+<!-- Edit Stock Movement Modal -->
+<div *ngIf="showEditModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity duration-300">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg transform transition-all duration-300 scale-100 opacity-100 max-h-[90vh] overflow-y-auto">
     <!-- Modal Header -->
-    <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl">
+    <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl sticky top-0">
       <div class="flex items-center justify-between">
         <h3 class="text-xl font-semibold text-gray-800 flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -293,8 +295,8 @@
           </svg>
           Edit Stock Movement
         </h3>
-        <button (click)="cancelEdit()" class="text-gray-400 hover:text-gray-600 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <button (click)="cancelEdit()" class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
@@ -302,12 +304,12 @@
     </div>
     
     <!-- Modal Body -->
-    <div class="px-6 py-5 max-h-[70vh] overflow-y-auto">
-      <div class="space-y-5">
+    <div class="px-6 py-6">
+      <form class="space-y-6">
         <!-- Reference Field -->
         <div>
-          <label for="editReference" class=" text-sm font-medium text-gray-700 mb-2 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <label for="editReference" class="block text-sm font-semibold text-gray-700 mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             Reference
@@ -316,46 +318,50 @@
             id="editReference"
             type="text"
             [(ngModel)]="editingMovement.reference"
-            class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-            placeholder="Enter reference"
+            name="reference"
+            class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+            placeholder="Enter reference number or description"
           />
         </div>
         
         <!-- Quantity Field -->
         <div>
-          <label for="editQuantity" class=" text-sm font-medium text-gray-700 mb-2 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <label for="editQuantity" class="block text-sm font-semibold text-gray-700 mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            Quantity
+            Quantity Change
           </label>
           <input
             id="editQuantity"
             type="number"
             [(ngModel)]="editingMovement.quantity"
-            class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-            placeholder="Enter quantity"
+            name="quantity"
+            class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+            placeholder="Enter quantity (+ for stock in, - for stock out)"
           />
+          <p class="text-xs text-gray-500 mt-1">Use positive numbers for stock additions, negative for removals</p>
         </div>
         
         <!-- Price Fields in Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <!-- Purchase Price -->
           <div>
-            <label for="editPurchasePrice" class=" text-sm font-medium text-gray-700 mb-2 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <label for="editPurchasePrice" class="block text-sm font-semibold text-gray-700 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Purchase Price
             </label>
             <div class="relative">
-              <span class="absolute left-3 top-3 text-gray-500">$</span>
+              <span class="absolute left-3 top-3.5 text-gray-500 font-medium">₦</span>
               <input
                 id="editPurchasePrice"
                 type="number"
                 step="0.01"
                 [(ngModel)]="editingMovement.purchasePrice"
-                class="w-full border border-gray-200 rounded-lg pl-7 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                name="purchasePrice"
+                class="w-full border-2 border-gray-200 rounded-lg pl-8 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                 placeholder="0.00"
               />
             </div>
@@ -363,20 +369,21 @@
           
           <!-- Selling Price -->
           <div>
-            <label for="editSellingPrice" class=" text-sm font-medium text-gray-700 mb-2 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <label for="editSellingPrice" class="block text-sm font-semibold text-gray-700 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-2 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Selling Price
             </label>
             <div class="relative">
-              <span class="absolute left-3 top-3 text-gray-500">$</span>
+              <span class="absolute left-3 top-3.5 text-gray-500 font-medium">₦</span>
               <input
                 id="editSellingPrice"
                 type="number"
                 step="0.01"
                 [(ngModel)]="editingMovement.sellingPrice"
-                class="w-full border border-gray-200 rounded-lg pl-7 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                name="sellingPrice"
+                class="w-full border-2 border-gray-200 rounded-lg pl-8 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                 placeholder="0.00"
               />
             </div>
@@ -385,48 +392,55 @@
         
         <!-- Supplier Field -->
         <div>
-          <label for="editSupplierId" class=" text-sm font-medium text-gray-700 mb-2 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          <label for="editSupplierId" class="block text-sm font-semibold text-gray-700 mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-2 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h4a1 1 0 011 1v5m-6 0h6" />
             </svg>
             Supplier
           </label>
-          <select
-            id="editSupplierId"
-            [(ngModel)]="editingMovement.supplierId"
-            class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 appearance-none bg-white"
-          >
-            <option value="" class="text-gray-400">Select Supplier</option>
-            <option *ngFor="let supplier of suppliersList" [value]="supplier.id" class="text-gray-800">
-              {{ supplier.name }}
-            </option>
-          </select>
-          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 -mt-9 mr-2">
-            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-            </svg>
+          <div class="relative">
+            <select
+              id="editSupplierId"
+              [(ngModel)]="editingMovement.supplierId"
+              name="supplierId"
+              class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none bg-white"
+            >
+              <option value="" class="text-gray-400">Select a supplier (optional)</option>
+              <option *ngFor="let supplier of suppliersList" [value]="supplier.id" class="text-gray-800">
+                {{ supplier.name }}
+              </option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+              <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </div>
           </div>
         </div>
-      </div>
+      </form>
     </div>
     
     <!-- Modal Footer -->
-    <div class="px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+    <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl sticky bottom-0">
       <div class="flex gap-3">
         <button
           (click)="saveStockMovement()"
           [disabled]="isUpdatingMovement"
-          class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+          class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center font-semibold"
         >
-          <svg *ngIf="isUpdatingMovement" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <svg *ngIf="isUpdatingMovement" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <svg *ngIf="!isUpdatingMovement" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
           </svg>
           {{ isUpdatingMovement ? 'Saving Changes...' : 'Save Changes' }}
         </button>
         <button
           (click)="cancelEdit()"
-          class="flex-1 bg-white text-gray-700 px-4 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
+          [disabled]="isUpdatingMovement"
+          class="flex-1 bg-white text-gray-700 px-6 py-3 rounded-lg border-2 border-gray-300 hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 font-semibold disabled:opacity-70"
         >
           Cancel
         </button>
