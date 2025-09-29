@@ -252,8 +252,8 @@ import { BadgeModule } from 'primeng/badge';
 
 
 const dbConfig: DBConfig = {
-  name: 'posDBX',
-  version: 5,
+  name: 'posDB',
+  version: 6,
   objectStoresMeta: [
     {
       store: 'products',
@@ -283,7 +283,7 @@ const dbConfig: DBConfig = {
     },
     {
       store: 'pendingPayments',
-      storeConfig: { keyPath: '__dbKey', autoIncrement: true },
+      storeConfig: { keyPath: 'order.orderNumber', autoIncrement: true },
       storeSchema: [
             { name: 'id', keypath: 'id', options: { unique: false } },
             { name: 'status', keypath: 'status', options: { unique: false } },

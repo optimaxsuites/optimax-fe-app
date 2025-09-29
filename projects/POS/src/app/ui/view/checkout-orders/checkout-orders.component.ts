@@ -76,7 +76,9 @@ export class CheckoutOrdersComponent implements OnInit {
     this.showOfflineRecord = true
   }
 
-   this.offlineRecords$ = await firstValueFrom(this.offlineService.getPendingPayments())
+  this.offlineService.getPendingPayments().subscribe((records) => {
+      this.offlineRecords$ = records;
+    })
    console.log(this.offlineRecords$)
   
     this.setRangeToToday();
@@ -295,7 +297,7 @@ syncOrder(order?: any) {
                       next: async () => {
                         console.log("✅ Offline payment synced:", payment);
     
-                        await this.offlineService.removePendingPayment(payment.__dbKey);
+                        await this.offlineService.removePendingPayment(payment.order.orderNumber);
                       },
                       error: async (err) => {
                       console.log(err)

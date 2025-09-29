@@ -79,6 +79,7 @@ export class AppComponent {
       return;
     }
 
+
   
     console.log("🔄 Syncing offline payments:", pendingPayments);
 
@@ -109,7 +110,7 @@ export class AppComponent {
                       next: async () => {
                         console.log("✅ Offline payment synced:", payment);
     
-                        await this.offlineService.removePendingPayment(payment.__dbKey);
+                        await this.offlineService.removePendingPayment(payment.order.orderNumber);
     
                       
                       },

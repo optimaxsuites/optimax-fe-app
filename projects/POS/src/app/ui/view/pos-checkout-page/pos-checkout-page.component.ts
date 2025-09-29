@@ -869,7 +869,6 @@ this.shownProducts = this.products;
   get businessType() {
     return this.industryDataService.businessType;
   }
-
   startResizing(event: MouseEvent) {
     this.resizing = true;
 

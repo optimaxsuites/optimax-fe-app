@@ -58,16 +58,40 @@ console.log("caching offline")
     return this.dbService.getAll('categories')
 
   }
-  async addPendingPayment(payment: any) {
-        try {
-          return this.dbService.add('pendingPayments', payment).subscribe((result) => {
-                  this.pendingPayments$.next([...this.pendingPayments$.value, payment]);
-                  return  console.log('result: ', result);
-            });
-        } catch (error) {
-            return console.error("❌ Error saving pending payment:", error);
-        }
+  // async addPendingPayment(payment: any) {
+  //       try {
+  //         return this.dbService.add('pendingPayments', payment).subscribe((result) => {
+  //                 this.pendingPayments$.next([...this.pendingPayments$.value, payment]);
+  //                 return  console.log('result: ', result);
+  //           });
+  //       } catch (error) {
+  //           return console.error("❌ Error saving pending payment:", error);
+  //       }
+  // }
+
+ async addPendingPayment(payment: any) {
+  try {
+    const cleanPayment = JSON.parse(JSON.stringify(payment));
+    delete cleanPayment.__dbKey;
+
+    const generatedKey = await firstValueFrom(
+      this.dbService.add('pendingPayments', cleanPayment)
+    );
+
+    const savedPayment = { ...cleanPayment, __dbKey: generatedKey };
+
+    this.pendingPayments$.next([...this.pendingPayments$.value, savedPayment]);
+
+    console.log('✅ Pending payment saved with key:', generatedKey);
+    return generatedKey;
+  } catch (error) {
+    console.error("❌ Error saving pending payment:", error);
+    throw error;
   }
+}
+
+
+
 
    async addPendingTransactions(transaction: any) {
         try {
