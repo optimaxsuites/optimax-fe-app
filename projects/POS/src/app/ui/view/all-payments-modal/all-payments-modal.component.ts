@@ -35,11 +35,11 @@ export class AllPaymentsModalComponent {
       value: "cash",
       image: "https://cdn-icons-png.flaticon.com/512/1087/1087099.png",
     },
-    {
-      label: "Loyalty",
-      value: "loyalty",
-      image: "https://cdn-icons-png.flaticon.com/512/1440/1440505.png",
-    },
+    // {
+    //   label: "Loyalty",
+    //   value: "loyalty",
+    //   image: "https://cdn-icons-png.flaticon.com/512/1440/1440505.png",
+    // },
   ] as const satisfies Array<{
     value: PaymentModes;
     label: string;

@@ -1,25 +1,57 @@
 <div
-  class="border rounded-xl p-2 cursor-pointer h-[20rem] product-card relative"
+  class="border rounded-xl p-2 h-[20rem] product-card relative overflow-hidden transition-all duration-200"
+  [ngClass]="{ 
+    'cursor-pointer': !isOutOfStock, 
+    'cursor-not-allowed': isOutOfStock,
+    'opacity-60 grayscale': isOutOfStock, 
+    'inCart': amountOfProductInCart 
+  }"
   (click)="onAddToCart()"
-  [class.inCart]="amountOfProductInCart"
 >
   @if (amountOfProductInCart) {
-
-  <div class="product-quantity absolute">{{ amountOfProductInCart }}</div>
+    <div 
+      class="absolute top-0 right-0 m-2 w-7 h-7 flex items-center justify-center 
+             bg-green-500 text-white text-sm font-bold rounded-full z-30"
+    >
+      {{ amountOfProductInCart }}
+    </div>
   }
-  <!-- TODO: Is it alright to load images like this? -->
-  <img
-    [src]="product.imageUrl$ ?? imageUrl"
-    alt="product image"
-    class="w-full h-2/3 object-cover rounded-xl"
-  />
-  <div class="flex flex-col w-full mt-4 px-2 h-[10rem]">
-    <!-- <p>Nivea lotion - Even glow</p>
-        <p>#5000</p> -->
+  
+  <div class="relative w-full h-2/3 rounded-xl overflow-hidden">
+    <img
+      [src]="product.imageUrl$ ?? imageUrl"
+      alt="product image"
+      class="w-full h-full object-cover rounded-xl transition-opacity duration-300"
+    />
 
-    <p class="whitespace-nowrap overflow-hidden text-ellipsis h-10">
+    @if (isOutOfStock) {
+    <div
+      class="absolute inset-0 bg-gray-800 bg-opacity-30 flex items-center justify-center pointer-events-none"
+    >
+      <div
+        class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-45 w-[200%] h-10 
+               bg-red-600 text-white text-center font-extrabold text-xl leading-10 shadow-lg"
+        style="z-index: 10;"
+      >
+        OUT OF STOCK
+      </div>
+    </div>
+    }
+  </div>
+  
+  <div class="flex flex-col w-full mt-4 px-2 h-[10rem]">
+    <p 
+      class="whitespace-nowrap overflow-hidden text-ellipsis h-10 transition-opacity duration-200"
+      [class.opacity-70]="isOutOfStock"
+    >
       {{ product.name }}
     </p>
-    <p class="h-8">{{ product.sellingPrice | currency : "₦" }}</p>
+    
+    <p 
+      class="h-8 transition-opacity duration-200"
+      [class.opacity-70]="isOutOfStock"
+    >
+      {{ product.sellingPrice | currency : "₦" }}
+    </p>
   </div>
 </div>

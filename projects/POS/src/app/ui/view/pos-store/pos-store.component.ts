@@ -26,6 +26,7 @@ type ConvertedCartProducts = {
   styleUrl: './pos-store.component.scss',
 })
 export class PosStoreComponent implements OnInit, OnDestroy {
+   private _allProducts: ProductData[] = [];
   private static readonly _fuseOptions: IFuseOptions<ProductData> = {
     keys: [
       { name: 'sku', weight: 2 },
@@ -37,7 +38,10 @@ export class PosStoreComponent implements OnInit, OnDestroy {
     threshold: 0.333,
   };
 
-  private _allProducts: ProductData[] = [];
+  // private _allProducts: ProductData[] = [];
+  allProducts: ProductData[] = [];
+
+
 
   productData = signal<ProductDataMap>(new Map());
   readonly defaultCategory = 'All';
@@ -70,6 +74,8 @@ export class PosStoreComponent implements OnInit, OnDestroy {
   isPaymentModalOpen = false;
   isCartSidebarVisible = true;
   selectedProduct: ProductData | null = null;
+  showScrollToTop = false;
+
 
   // Cart signals - using service signals directly
   cartProducts = computed(() => this.cartService.cart().items);
@@ -176,7 +182,27 @@ export class PosStoreComponent implements OnInit, OnDestroy {
 
     // Load products with proper loading sequence
     this.loadProducts();
+
+    this.addScrollListener();
   }
+
+  private addScrollListener(): void {
+    window.addEventListener('scroll', ()=> {
+      this.showScrollToTop = window.scrollY > 300;
+    })
+  }
+
+//   scrollToTop(): void {
+//   window.scrollTo({ top: 0, behavior: 'smooth' });
+// }
+
+navigateToCategory(category: string): void {
+  const currentUuid = this.route.snapshot.paramMap.get('uuid');
+  if (currentUuid) {
+    this.router.navigate(['/store', currentUuid, 'category', category.toLowerCase()]);
+  }
+}
+
 
   /**
    * Load products with proper skeleton loading sequence
@@ -185,6 +211,7 @@ export class PosStoreComponent implements OnInit, OnDestroy {
     this._posService.getProducts().subscribe({
       next: (data) => {
         this._allProducts = data;
+        this.allProducts = data; // Also set the public property
 
         // Process product data into categories
         data.forEach((iteratedProduct) => {
@@ -234,6 +261,11 @@ export class PosStoreComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     // Clean up the effect to prevent memory leaks
     this.updatePagination.destroy();
+
+      // Remove scroll event listener
+  window.removeEventListener('scroll', () => {
+    this.showScrollToTop = window.scrollY > 300;
+  });
   }
 
   // ============ PAGINATION METHODS ============
@@ -271,7 +303,7 @@ export class PosStoreComponent implements OnInit, OnDestroy {
   /**
    * Scroll to top of page
    */
-  private scrollToTop(): void {
+  scrollToTop(): void {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -537,4 +569,25 @@ export class PosStoreComponent implements OnInit, OnDestroy {
   const endIndex = this.currentPage() * this.itemsPerPage();
   return Math.min(endIndex, this.filteredProducts().length);
 }
+
+navigateToCategoryPage(category: string): void {
+  const currentUuid = this.route.snapshot.paramMap.get('uuid');
+  if (currentUuid) {
+    this.router.navigate(['/store', currentUuid, 'category', category.toLowerCase()]);
+  }
+}
+
+ onProductSelect(productId: number): void {
+    this.navigateToProductDetails(productId);
+  }
+
+    onSearchSubmit(searchTerm: string): void {
+    const currentUuid = this.route.snapshot.paramMap.get('uuid');
+    if (currentUuid && searchTerm.trim()) {
+      // Navigate to a special "Search Results" category page
+      this.router.navigate(['/store', currentUuid, 'category', 'search-results'], {
+        queryParams: { search: searchTerm.trim() }
+      });
+    }
+  }
 }
