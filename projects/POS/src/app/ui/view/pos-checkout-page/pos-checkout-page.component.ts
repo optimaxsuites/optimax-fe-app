@@ -93,6 +93,13 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   isCategorySidebarOpen = false;
   selectedPaymentModes: PaymentModes[] = [];
   noteText: any;
+  globalSearchResults: any[] = [];
+  globalSearchQuery: string = '';
+  isSearching: boolean = false;
+  searchError: string | null = null;
+  
+  // NEW: Cache for local products by ID for quick lookup
+  private localProductCache: Map<number, ProductData> = new Map();
 
   constructor(
     private router: Router,
@@ -160,7 +167,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     this.orderName = '';
     this.discountValue = 0;
     this.displayedDiscount = 0;
-    localStorage.removeItem("currentCart"); // Also clear from local storage
+    localStorage.removeItem("currentCart"); 
   }
 
   // New Register Methods
@@ -227,57 +234,6 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     }
   }
 }
-  confirmOpeningRegister(): void {
-    this.calculateOpeningTotal(); 
-    if (this.errorMessage) {
-      return; 
-    }
-
-    if (this.openingAmount !== null && this.openingAmount >= 0) {
-      if (this.openingTotal !== this.openingAmount) {
-        this.messageService.add({
-          severity: "error",
-          summary: "Error",
-          detail:
-            "The total from cash denominations must equal the opening amount.",
-          key: "tl",
-          life: 3000,
-        });
-        return;
-      }
-
-      this.isRegisterOpened = true;
-      localStorage.setItem("registerState", "true");
-      localStorage.setItem("openingAmount", this.openingAmount.toString());
-    }
-  }
-
-  confirmClosingRegister(): void {
-    const openingAmount = Number(localStorage.getItem("openingAmount")) || 0; // Retrieve the opening amount
-    const salesTotal = this.total; // Use the existing cart total
-    this.expectedBalance = openingAmount + salesTotal; // Calculate the expected balance
-
-    if (this.closingAmount !== null) {
-      this.closingTotal = this.calculateClosingTotal();
-      this.isRegisterOpened = false;
-
-
-      // Pass openingAmount to the closing modal
-      console.log("Opening Amount:", this.openingAmount);
-      console.log("Closing Amount:", this.closingAmount);
-
-      localStorage.setItem("registerState", "false");
-      // Add API call here if needed
-    }
-  }
-
-  // Add this new calculation method
-  private calculateClosingTotal(): number {
-    const openingAmount = Number(localStorage.getItem("openingAmount")) || 0;
-    const salesTotal = this.total; // Using your existing cart total
-    this.expectedBalance = openingAmount + salesTotal;
-    return this.closingAmount! - this.expectedBalance;
-  }
 
   toggleCategorySidebar() {
     this.isCategorySidebarOpen = !this.isCategorySidebarOpen;
@@ -426,6 +382,18 @@ addToCart(product: ProductData, chosenVariant?: VariantDTO) {
     // Check main product inventory
     const currentCartQuantity = existingItem?.count || 0;
     
+    //To prevent adding out-of-stock items to the cart.
+    if (product.quantity <= 0) {
+       this.messageService.add({
+        severity: "warn",
+        summary: "Out of Stock",
+        detail: `${product.name} is out of stock and cannot be added to cart.`,
+        key: "tl",
+        life: 3000,
+      });
+      return;
+    }
+
     if (currentCartQuantity >= product.quantity) {
       this.messageService.add({
         severity: "warn",
@@ -750,19 +718,26 @@ addToCart(product: ProductData, chosenVariant?: VariantDTO) {
   // Filters the displayed items based on the selected value in the select element
   filterItems(event: Event) {
     const filterVal = (event.target as HTMLSelectElement | HTMLButtonElement)
-      .value as ProductCategories;
+      .value; 
     this.selectedCategory = filterVal;
-    // No category is selected, reset
-if (filterVal == ProductCategories.NONE) {
-  this.categorizedProducts = this.products.filter(product => product.quantity > 0);
-  this.shownProducts = this.categorizedProducts;
-  return;
-}
 
-this.categorizedProducts = this.products.filter(
-  (val) => val.productCategory.name == filterVal && val.quantity > 0,
-);
+    let filteredProducts: ProductData[] = [];
+    if (filterVal === "Category") {
+      filteredProducts = [...this.products];
+    } else {
+      filteredProducts = this.products.filter(
+        (val) => val.productCategory.name === filterVal,
+      );
+    }
 
+    // Sort products: in-stock first, then out-of-stock
+    filteredProducts.sort((a, b) => {
+      const aInStock = a.quantity > 0 ? 1 : 0;
+      const bInStock = b.quantity > 0 ? 1 : 0;
+      return bInStock - aInStock;
+    });
+
+    this.categorizedProducts = filteredProducts;
     this.shownProducts = this.categorizedProducts;
   }
 
@@ -803,6 +778,57 @@ this.categorizedProducts = this.products.filter(
     // Save the current cart state to local storage before navigating
     localStorage.setItem("currentCart", JSON.stringify(cart));
   }
+  
+  //  Method to handle the global search event from the search bar 
+  async handleGlobalSearch(query: string) {
+    // 1. Clear previous state
+    this.globalSearchResults = [];
+    this.searchError = null;
+    
+    if (!query.trim()) {
+      // Clear all state if query is empty (triggered by searchbar.clearSearchText)
+      this.globalSearchQuery = '';
+      this.isSearching = false;
+      return;
+    }
+
+    this.globalSearchQuery = query;
+    this.isSearching = true; 
+    
+    // Function to get product name from cache or provide a safe ID fallback
+    const getProductNameFromCache = (productId: number | undefined): string => {
+        // Fallback to "Product ID: Unknown" if the ID is missing
+        if (productId === undefined || productId === null) {
+            return 'Product ID: Unknown';
+        }
+        // Fallback to local cache using productId
+        return this.localProductCache.get(productId)?.name || `Product ID: ${productId}`;
+    };
+
+    try {
+        const results = await lastValueFrom(this.posService.getGlobalStockBySearch(query)); 
+        
+        this.globalSearchResults = (results as any[])?.map(result => {
+            const apiName = result.name || result.product?.name;
+            const fallbackName = getProductNameFromCache(result.productId);
+
+            return {
+                productName: apiName || fallbackName, 
+                branchName: result.branch?.name || `Branch ${result.branch?.id || 'Unknown'}`, 
+                address: result.branch?.address || 'Remote Location', 
+                quantity: result.quantity, 
+                productId: result.productId
+            };
+        }) || [];
+        
+    } catch (error) {
+        console.error("Global search failed:", error);
+        this.searchError = "Could not retrieve global stock information. Please try again.";
+    } finally {
+        this.isSearching = false;
+    }
+  }
+
   getProducts() {
     this.metadataService.enrichedProduct$.subscribe(async (data) => {
       if (data) {
@@ -826,17 +852,22 @@ this.categorizedProducts = this.products.filter(
           );
           return dateB.getTime() - dateA.getTime();
         }) as any[];
-      // filter out products with zero quantity
-const availableProducts = p.filter(product => product.quantity > 0);
-this.products = [...availableProducts];
-this.products.forEach((product) => {
-  // Add some extra necessary properties
-  product.count = 0;
-  // product.cartPriceTotal = product.effectivePrice;
-});
-console.log(this.products);
-this.categorizedProducts = this.products;
-this.shownProducts = this.products;
+      
+      // Sort products: in-stock first, then out-of-stock
+      p.sort((a, b) => {
+        const aInStock = a.quantity > 0 ? 1 : 0;
+        const bInStock = b.quantity > 0 ? 1 : 0;
+        return bInStock - aInStock;
+      });
+      
+      this.products = [...p];
+      this.products.forEach((product) => {
+        product.count = 0;
+        this.localProductCache.set(product.id, product);
+      });
+      console.log(this.products);
+      this.categorizedProducts = this.products;
+      this.shownProducts = this.products;
       }
     });
   }

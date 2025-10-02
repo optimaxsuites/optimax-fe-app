@@ -16,6 +16,7 @@ import { PermissionGuard } from '../ui/permission/permission.guard';
 import { StoreCheckoutComponent } from '../ui/view/pos-store/store-checkout/store-checkout.component';
 import { OrderConfirmationComponent } from '../ui/view/pos-store/order-confirmation/order-confirmation.component';
 import { ProductDetailsComponent } from '../ui/view/pos-store/product-details/product-details.component';
+import { CategoryProductsComponent } from '../ui/view/pos-store/category-products/category-products.component';
 // import { ProductDetailsComponent } from '../ui/view/pos-store/product-details/product-details.component';
 
 const routes: Routes = [
@@ -131,6 +132,10 @@ const routes: Routes = [
     {
       path: 'product-details/:id',
       component: ProductDetailsComponent,
+    },
+    {
+      path: 'category/:categoryName',  // ADD THIS ROUTE
+      component: CategoryProductsComponent,
     },
   ]
 }
