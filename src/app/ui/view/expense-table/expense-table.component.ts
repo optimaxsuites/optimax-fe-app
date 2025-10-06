@@ -1,9 +1,8 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { ExpenseService, Expense } from '../../service/expense.service';
-import { debounceTime, from, Subject } from 'rxjs';
+import { ExpenseService, Expense, ExpenseStatus, MerchantDTO, CategoryDTO, TaxDTO } from '../../service/expense.service';
+import { debounceTime, Subject } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { ExclamationTriangleIcon } from 'primeng/icons/exclamationtriangle';
 
 @Component({
   selector: 'app-expense-table',
@@ -15,7 +14,8 @@ export class ExpenseTableComponent implements OnInit {
   expenses: Expense[] = [];
   filteredExpenses: Expense[] = [];
   searchTerm: string = '';
-  selectedExpense: any = null;
+  // FIX: Allow selectedExpense to be null to match its initialization.
+  selectedExpense: Expense | null = null;
   currentUserId: string = '';
   private searchTermSubject: Subject<string> = new Subject();
 
@@ -35,12 +35,12 @@ export class ExpenseTableComponent implements OnInit {
   dateTo: string | null = null;
 
   categories = ['Administrative', 'Cost of Goods Sold', 'Employee-Related', 'Operating Expenses', 'Sales and Marketing', 'Others'];
-  statuses = ['Pending', 'Approved', 'Rejected', 'Paid'];
+  statuses = Object.values(ExpenseStatus);
 
   expense: any;
   expenseId: string | null = null;
-  selectedExpenses: any[] = [];
-  //requests: any;
+  // FIX: Change selectedExpenses type to an array of Expense objects.
+  selectedExpenses: Expense[] = [];
 
   onRowSelect(event: any) {
     this.selectedExpenses = event.value;
@@ -49,7 +49,6 @@ export class ExpenseTableComponent implements OnInit {
   onRowUnselect(event: any) {
     this.selectedExpenses = event.value;
   }
-
   
   deleteSelectedExpenses() {
     if (!this.selectedExpenses.length) return;
@@ -70,28 +69,7 @@ export class ExpenseTableComponent implements OnInit {
         this.selectedExpenses = [];
       }
     });
-
-    // this.filteredExpenses = this.filteredExpenses.filter(
-    //   exp => !this.selectedExpenses.includes(exp)
-    // );
-    
-    // this.expenses = this.expenses.filter(
-    //   exp => !this.selectedExpenses.includes(exp)
-    // );
-    
-    // this.selectedExpenses = [];
-    // // Optionally show a toast
-    // this.messageService.add({
-    //   severity: 'success',
-    //   summary: 'Deleted',
-    //   detail: 'Selected expenses have been deleted.'
-    // });
-  
   }
-
-
-
-
 
   colorClasses: string[] = [
     'color-lightblue',
@@ -107,27 +85,25 @@ export class ExpenseTableComponent implements OnInit {
     private confirmationService: ConfirmationService,
     private messageService: MessageService,
     private cdr: ChangeDetectorRef
-  ) {
-    this.loadExpensesFromLocalStorage();
-  }
+  ) {}
 
   getExpenseCount(): number {
     return this.expenses?.length || 0;
   }
 
   ngOnInit(): void {
-    this.loadExpensesFromLocalStorage();
+    this.loadExpenses();
     this.searchTermSubject.pipe(debounceTime(300)).subscribe(() => {
       this.applyFilters();
     });
-    console.log('Loaded expenses from local storage:', this.filteredExpenses);
   }
 
-  loadExpensesFromLocalStorage(): void {
-    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
-    this.expenses = expenses;
-    this.filteredExpenses = [...this.expenses];
-    console.log('Loaded expenses from local storage:', this.filteredExpenses);
+  loadExpenses(): void {
+    this.expenseService.getExpenses().subscribe(expenses => {
+      this.expenses = expenses;
+      this.filteredExpenses = [...this.expenses];
+      console.log('Loaded expenses from API:', this.filteredExpenses);
+    });
   }
 
   get dateRangeLabel(): string {
@@ -145,23 +121,23 @@ export class ExpenseTableComponent implements OnInit {
     this.searchTermSubject.next(this.searchTerm);
   }
 
-  // New method to apply all filters
   applyFilters(): void {
     this.filteredExpenses = this.expenses.filter(expense => {
-      // Search term filter
+      const merchantName = (expense.merchant as MerchantDTO)?.name || '';
+      const categoryName = (expense.category as CategoryDTO)?.name || '';
+
       if (this.searchTerm &&
-        !expense.merchant.toLowerCase().includes(this.searchTerm.toLowerCase()) &&
+        !merchantName.toLowerCase().includes(this.searchTerm.toLowerCase()) &&
         !expense.id.toString().includes(this.searchTerm) &&
-        !expense.amount.toString().includes(this.searchTerm)) {
+        !expense.amount.toString().includes(this.searchTerm) &&
+        !categoryName.toLowerCase().includes(this.searchTerm.toLowerCase())) {
         return false;
       }
 
-      // Category filter
-      if (this.selectedCategory && expense.category !== this.selectedCategory) {
+      if (this.selectedCategory && categoryName !== this.selectedCategory) {
         return false;
       }
 
-      // Status filter
       if (this.selectedStatus && expense.status !== this.selectedStatus) {
         return false;
       }
@@ -169,25 +145,21 @@ export class ExpenseTableComponent implements OnInit {
       if (this.dateFrom && this.dateTo) {
         const fromDate = new Date(this.dateFrom);
         const toDate = new Date(this.dateTo + 'T23:59:59');
-
-        const expenseDate = new Date(expense.date || expense.eventDate);
+        const expenseDate = new Date(expense.eventDate);
 
         if (expenseDate < fromDate || expenseDate > toDate) {
           return false;
         }
       }
-
       return true;
     });
   }
-
   
   applyDateRange(): void {
     if (!this.dateRangeType) {
       this.applyFilters();
       return;
     }
-
     const today = new Date();
     let fromDate = new Date();
     let toDate = new Date();
@@ -197,55 +169,34 @@ export class ExpenseTableComponent implements OnInit {
         fromDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         toDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
         break;
-
       case 'week':
-          const dayOfWeek = today.getDay();
-          const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-          fromDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysToMonday);
-          toDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
-          break;
-
-      case 'month':
-        fromDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 1);
-        toDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 0, 23, 59, 59);
+        const dayOfWeek = today.getDay();
+        const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        fromDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysToMonday);
+        toDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
         break;
-        
+      case 'month':
+        fromDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        toDate = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
+        break;
       case 'custom':
         if (!this.dateFrom || !this.dateTo) {
           this.applyFilters();
           return;
         }
-
         fromDate = new Date(this.dateFrom);
         toDate = new Date(this.dateTo + 'T23:59:59');
         break;
-
       default:
         this.applyFilters();
         return;
-
     }
-
 
     if (this.dateRangeType !== 'custom') {
       this.dateFrom = fromDate.toISOString().split('T')[0];
       this.dateTo = toDate.toISOString().split('T')[0];
     }
-
     this.applyFilters();
-    // if (this.dateFrom && this.dateTo) {
-    //   const fromDate = new Date(this.dateFrom);
-    //   const toDate = new Date(this.dateTo);
-
-    //   this.filteredExpenses = this.expenses.filter(expense => {
-    //     const expenseDate = new Date(expense.date)
-    //       ;
-    //     return expenseDate >= fromDate && expenseDate <= toDate;
-    //   });
-    // } else {
-    //   this.filteredExpenses = [...this.expenses];
-    // }
-    // this.applyFilters(); 
   }
 
   clearSearch(): void {
@@ -281,28 +232,22 @@ export class ExpenseTableComponent implements OnInit {
     if (range !== 'custom') {
       this.dateFrom = null;
       this.dateTo = null;
-      }
-
-      else if (range === 'custom'){
-        this.dateRangeType = null;
-        this.dateFrom = null;
-        this.dateTo = null;
-
-      }
-
-      this.applyDateRange();
+    } else if (range === 'custom') {
+      this.dateRangeType = null;
+      this.dateFrom = null;
+      this.dateTo = null;
     }
-  
 
+    this.applyDateRange();
+  }
+  
   applyCustomDateRange(): void {
     if (this.dateFrom && this.dateTo) {
-
       if (new Date(this.dateFrom) > new Date(this.dateTo)) {
         const temp = this.dateFrom;
         this.dateFrom = this.dateTo;
         this.dateTo = temp;
       }
-
       this.applyFilters();
     }
   }
@@ -328,14 +273,13 @@ export class ExpenseTableComponent implements OnInit {
   }
 
   navigateToForm(): void {
-    console.log('Navigating to form');
     this.router.navigate(['/expensesForm']);
   }
 
   confirmDelete(expense: Expense): void {
     this.confirmationService.confirm({
-      message: `Are you sure you want to carry out this action?  Clicking on <b>DELETE</b>, would lead to permanent removal of - ${expense.merchant}`,
-      header: `Delete Expense - ${expense.merchant}`,
+      message: `Are you sure you want to delete this expense?`,
+      header: `Delete Expense - ${expense.merchant?.name ?? ''}`,
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       rejectButtonStyleClass: 'p-button-warning',
@@ -350,79 +294,37 @@ export class ExpenseTableComponent implements OnInit {
   }
 
   deleteExpense(expense: Expense): void {
-    this.expenses = this.expenses.filter(e => e.id !== expense.id); 
-    this.filteredExpenses = this.filteredExpenses.filter(e => e.id !== expense.id);
-
-    localStorage.setItem('expenses', JSON.stringify(this.expenses));
-
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Expense Deleted',
-      detail: `Expense for ${expense.merchant} has been successfully deleted.`
+    this.expenseService.deleteExpense(expense.id).subscribe(() => {
+      this.loadExpenses();
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Expense Deleted',
+        detail: `Expense for ${expense.merchant?.name ?? ''} has been successfully deleted.`
+      });
     });
-    /*this.expenseService.deleteExpense(expense.id);
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Expense Deleted',
-      detail: `Expense for ${expense.merchant} has been successfully deleted.`
-    });
-    this.loadExpensesFromLocalStorage();
-    */
-  }
-
-  deleteExpense2(expenseId: string): void {
-    if (!expenseId) return;
-    this.expenses = this.expenses.filter(e => e.id !== expenseId);
-    this.filteredExpenses = this.filteredExpenses.filter(e => e.id !== expenseId);    
-    localStorage.setItem('expenses', JSON.stringify(this.expenses));
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Expense Deleted',
-      detail: `Expense with ID ${expenseId} has been successfully deleted.`
-    });
-    
-    /*
-    const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
-    const updatedExpenses = expenses.filter((exp: any) => exp.id !== expenseId);
-    localStorage.setItem('expenses', JSON.stringify(updatedExpenses));
-    this.filteredExpenses = updatedExpenses;
-    */
   }
 
   viewExpenseApproval(expense: Expense): void {
-    console.log('Edit function called');
     this.selectedExpense = { ...expense };
     this.isModalOpen2 = true;
   }
 
-  editExpense(expense: any): void {
-    console.log('Edit function called');
+  editExpense(expense: Expense): void {
     this.selectedExpense = { ...expense };
     this.isModalOpen = true;
   }
 
   saveEditedExpense(): void {
     if (!this.selectedExpense) return;
-
-    const index = this.filteredExpenses.findIndex(e => e.id === this.selectedExpense.id);
-    if (index > -1) {
-      this.filteredExpenses[index] = this.selectedExpense;
-      localStorage.setItem('expenses', JSON.stringify(this.filteredExpenses));
-      this.expenses = [...this.filteredExpenses];
-    }
-    this.closeModal();
-  }
-
-  downloadExpense(): void {
-   
-  }
-
-  emailExpense(): void {
-    
-  }
-
-  exportExpense(): void {
-    
+    this.expenseService.updateExpense(this.selectedExpense.id, this.selectedExpense).subscribe(() => {
+      this.loadExpenses();
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Expense Updated',
+        detail: `Expense for ${this.selectedExpense?.merchant?.name} has been successfully updated.`
+      });
+      this.closeModal();
+    });
   }
 
   getTotalAmount(): number {
@@ -430,170 +332,85 @@ export class ExpenseTableComponent implements OnInit {
   }
 
   getApprovedCount(): number {
-    return this.expenses.filter(expense => expense.status === 'Approved').length;
+    return this.expenses.filter(expense => expense.status === ExpenseStatus.APPROVED).length;
   }
 
   getPendingCount(): number {
-    return this.expenses.filter(expense => expense.status === 'Pending').length;
+    return this.expenses.filter(expense => expense.status === ExpenseStatus.PENDING).length;
   }
 
   getRejectedCount(): number {
-    return this.expenses.filter(expense => expense.status === 'Rejected').length;
+    return this.expenses.filter(expense => expense.status === ExpenseStatus.REJECTED).length;
   }
 
-
-  approve(request: any): void {
-    this.expenses = this.expenses.map(item => 
-      item.id === request.id ? {...item, status: 'Approved'} : item
-
-    );
-    
-    this.filteredExpenses = this.filteredExpenses.map(item => 
-      item.id === request.id ? {...item, status: 'Approved'} : item
-    );
-
-    localStorage.setItem('expenses', JSON.stringify(this.expenses));  
-  
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Request Approved',  
-      detail: `Expense for ${request.merchant} has been approved successfully.`
+  approve(request: Expense): void {
+    this.expenseService.updateExpense(request.id, { ...request, status: ExpenseStatus.APPROVED }).subscribe(() => {
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Request Approved',
+        detail: `Expense for ${request.merchant?.name ?? ''} has been approved successfully.`
+      });
+      this.loadExpenses();
     });
   }
   
-
-    reject(request: any): void {
-      this.expenses = this.expenses.map(item => 
-        item.id === request.id ? {...item, status:'Rejected'} : item
-      );
-
-      this.filteredExpenses = this.filteredExpenses.map(item => 
-        item.id === request.id ? {...item, status: 'Rejected'} : item
-      );
-
-    this.messageService.add({
-      severity: 'error',
-      summary: 'Request Rejected',
-      detail: 'Expense for ${request.merchant} has been rejected.'
+  reject(request: Expense): void {
+    this.expenseService.updateExpense(request.id, { ...request, status: ExpenseStatus.REJECTED }).subscribe(() => {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Request Rejected',
+        detail: `Expense for ${request.merchant?.name ?? ''} has been rejected.`
+      });
+      this.loadExpenses();
     });
   }
-
-
-
 
   bulkApprove(): void {
-  if (this.selectedExpenses.length === 0) {
-    this.messageService.add({
-      severity: 'warn',
-      summary: 'No Expenses Selected',
-      detail: 'Please select at least one expense to approve.'
-    });
-    return; 
-  }
-
-  const selectedIds = this.selectedExpenses.map(item => item.id);
-
-  this.expenses = this.expenses.map(item =>
-    selectedIds.includes(item.id) ? {...item, status: 'Approved'} : item
-  );
-
-  this.filteredExpenses = this.filteredExpenses.map(item =>
-    selectedIds.includes(item.id) ? {...item, status:'Approved'} : item
-  );
-
-  localStorage.setItem('expenses', JSON.stringify(this.expenses));
-
-  const count = this.selectedExpenses.length;
-  this.selectedExpenses = [];
-
-  this.messageService.add({
-    severity: 'success',  
-    summary: 'Expeneses Approved',
-    detail: `${count} expenses have been successfully approved.`
-  });
-}
-
-bulkReject(): void {
-  if (this.selectedExpenses.length === 0) {
-    this.messageService.add({
-      severity: 'warn',
-      summary: 'No Expenses Selected',
-      detail: 'Please select at least one expense to reject.'
-    });
-    return; 
-  }
-
-  
-  const selectedIds = this.selectedExpenses.map(item => item.id);
-
-  this.expenses = this.expenses.map(item =>
-    selectedIds.includes(item.id) ? {...item, status:'Rejected'} : item
-  );
-
-  this.filteredExpenses = this.filteredExpenses.map(item => 
-    selectedIds.includes(item.id) ? {...item, status:'Rejected'} : item
-  );
-
-  localStorage.setItem('expenses', JSON.stringify(this.expenses));
-
-  const count = this.selectedExpenses.length;
-  this.selectedExpenses = [];
-
-  this.messageService.add({
-    severity: 'error', 
-    summary: 'Expenses Rejected',
-    detail: `${count} expenses have been successfully rejected.`
-  });
-}
-
-
-calculateDisplayAmount(expense: any): number {
-    const baseAmount = Number(expense.amount);
-
-  if (!expense.taxPercentage) {
-    return expense.amount;
-  }
-
-  const taxRate = Number(expense.taxPercentage) / 100;
-  // const taxAmount = baseAmount * taxRate;
-
-  return baseAmount * ( 1 + taxRate);
-}
-
-formatAmount(value: number | string | null): string {
-  const n = Number(value);
-  return !isNaN(n) && value !== null ? n.toLocaleString(): '';
-}
-
-
-updateEditAmount(event: any): void {
-  if (this.selectedExpense){
-     const raw = (event.target.value || '').toString().replace(/,/g, '');
-     const num = Number(raw);
-     this.selectedExpense.amount = !isNaN(num) ? num : null;
-  }
- 
-}
-
-updateSelectedExpenseAmount(event: any): void {
-  if (this.selectedExpense) {
-    this.selectedExpense.amount = event.target.value;
-  }
-}
-
-onlyNumbers(event: KeyboardEvent): void {
-  const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight'];
-
-  if (allowedKeys.includes(event.key) || 
-    (event.ctrlKey && ['a', 'c', 'v', 'x'].includes(event.key.toLowerCase()))) {
-        return;
+    if (this.selectedExpenses.length === 0) {
+      this.messageService.add({ severity: 'warn', summary: 'No Expenses Selected', detail: 'Please select at least one expense to approve.' });
+      return;
     }
+    const updates = this.selectedExpenses.map(item => this.expenseService.updateExpense(item.id, { ...item, status: ExpenseStatus.APPROVED }));
+    this.selectedExpenses.forEach(exp => this.approve(exp));
+    this.selectedExpenses = [];
+  }
 
+  bulkReject(): void {
+    if (this.selectedExpenses.length === 0) {
+      this.messageService.add({ severity: 'warn', summary: 'No Expenses Selected', detail: 'Please select at least one expense to reject.' });
+      return;
+    }
+    this.selectedExpenses.forEach(exp => this.reject(exp));
+    this.selectedExpenses = [];
+  }
+
+  calculateDisplayAmount(expense: Expense): number {
+    const baseAmount = Number(expense.amount);
+    const taxRate = expense.tax && typeof expense.tax === 'object' && 'rate' in expense.tax ? (expense.tax as TaxDTO).rate / 100 : 0;
+    return baseAmount * (1 + taxRate);
+  }
+
+  formatAmount(value: number | string | null | undefined): string {
+    const n = Number(value);
+    return !isNaN(n) && value !== null && value !== undefined ? n.toLocaleString(): '';
+  }
+
+  updateEditAmount(event: any): void {
+    if (this.selectedExpense){
+      const raw = (event.target.value || '').toString().replace(/,/g, '');
+      const num = Number(raw);
+      this.selectedExpense.amount = !isNaN(num) ? num : 0;
+
+    }
+  }
+
+  onlyNumbers(event: KeyboardEvent): void {
+    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight'];
+    if (allowedKeys.includes(event.key) || (event.ctrlKey && ['a', 'c', 'v', 'x'].includes(event.key.toLowerCase()))) {
+      return;
+    }
     if (!/[0-9]/.test(event.key)) {
       event.preventDefault();
     }
-
+  }
 }
-
-}
-
