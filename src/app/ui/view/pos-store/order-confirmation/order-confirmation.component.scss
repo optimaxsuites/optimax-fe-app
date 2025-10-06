@@ -1,0 +1,78 @@
+:host {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.confirmation-content {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+}
+
+/* Force all elements to be visible */
+// * {
+//   opacity: 1 !important;
+//   visibility: visible !important;
+// }
+
+// Animation for fade-in effect
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+// Progress bar animation
+.progress-bar {
+  transition: width 0.5s ease-out;
+}
+
+// Print styles
+@media print {
+  .fixed,
+  button,
+  canvas {
+    display: none !important;
+  }
+  
+  .bg-gray-50 {
+    background-color: white !important;
+  }
+  
+  .shadow-lg {
+    box-shadow: none !important;
+  }
+}
+
+// Smooth transitions
+.transition {
+  transition: all 0.3s ease;
+}
+
+// Custom scrollbar for tracking section
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

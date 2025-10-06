@@ -1,0 +1,194 @@
+<div class="min-h-screen bg-gray-50">
+  <!-- Breadcrumb -->
+  <nav class="bg-white border-b border-gray-200 px-6 py-3">
+    <div class="container mx-auto">
+      <ol class="flex items-center space-x-2 text-sm">
+        <li>
+          <a [routerLink]="['/store', storeUuid]" class="text-customBlue hover:text-blue-700 transition-colors">
+            Store
+          </a>
+        </li>
+        <li class="flex items-center">
+          <i class="fa-solid fa-chevron-right text-gray-400 text-xs mx-2"></i>
+          <a [routerLink]="['/store', storeUuid]" class="text-customBlue hover:text-blue-700 transition-colors">
+            All Products
+          </a>
+        </li>
+        <li class="flex items-center">
+          <i class="fa-solid fa-chevron-right text-gray-400 text-xs mx-2"></i>
+          <span class="text-gray-600 capitalize">{{ categoryName }}</span>
+        </li>
+      </ol>
+    </div>
+  </nav>
+
+  <!-- Header -->
+  <app-store-header [branches]="branches" [categoryOptions]="categoryOptions()" [selectedCategory]="selectedCategory()"
+    [searchText]="searchText()" [isCartEmpty]="isCartEmpty()" [totalCartItems]="getTotalCartItems()" [user]="user"
+    (categoryChange)="onCategoryChange($event)" (searchChange)="onSearchChange($event)"
+    (toggleCart)="onToggleCart()"></app-store-header>
+
+  <div class="flex flex-1">
+    <!-- Sidebar Filters -->
+    <aside class="w-64 bg-white border-r border-gray-200 p-4 hidden md:block">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-semibold text-lg">Filters</h3>
+        <button *ngIf="hasActiveFilters()" (click)="clearFilters()" class="text-xs text-customBlue hover:text-blue-700">
+          Clear All
+        </button>
+      </div>
+
+      <!-- Price Range -->
+      <div class="mb-6">
+        <h4 class="font-medium mb-2">Price Range</h4>
+        <div class="space-y-2">
+          <label class="flex items-center">
+            <input type="radio" name="price" value="0-1000" class="mr-2" [checked]="filters().priceRange === '0-1000'"
+              (change)="updatePriceRange('0-1000')">
+            Under ₦1,000
+          </label>
+          <label class="flex items-center">
+            <input type="radio" name="price" value="1000-5000" class="mr-2"
+              [checked]="filters().priceRange === '1000-5000'" (change)="updatePriceRange('1000-5000')">
+            ₦1,000 - ₦5,000
+          </label>
+          <label class="flex items-center">
+            <input type="radio" name="price" value="5000-10000" class="mr-2"
+              [checked]="filters().priceRange === '5000-10000'" (change)="updatePriceRange('5000-10000')">
+            ₦5,000 - ₦10,000
+          </label>
+          <label class="flex items-center">
+            <input type="radio" name="price" value="10000+" class="mr-2" [checked]="filters().priceRange === '10000+'"
+              (change)="updatePriceRange('10000+')">
+            Over ₦10,000
+          </label>
+        </div>
+      </div>
+
+      <!-- Stock Status -->
+      <div class="mb-6">
+        <h4 class="font-medium mb-2">Stock Status</h4>
+        <div class="space-y-2">
+          <label class="flex items-center">
+            <input type="checkbox" class="mr-2" [checked]="filters().inStock"
+              (change)="updateStockFilter('inStock', !filters().inStock)">
+            In Stock
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" class="mr-2" [checked]="filters().outOfStock"
+              (change)="updateStockFilter('outOfStock', !filters().outOfStock)">
+            Out of Stock
+          </label>
+        </div>
+      </div>
+
+      <!-- Sort By -->
+      <div class="mb-6">
+        <h4 class="font-medium mb-2">Sort By</h4>
+        <select class="w-full border border-gray-300 rounded p-2" [value]="filters().sortBy"
+          (change)="updateSort($any($event).target.value)">
+          <option value="name-asc">Name: A to Z</option>
+          <option value="name-desc">Name: Z to A</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+        </select>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-6">
+      <!-- Mobile Filter Button -->
+      <div class="md:hidden mb-4">
+        <button (click)="toggleMobileFilters()"
+          class="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium">
+          <i class="fa-solid fa-filter"></i>
+          Filters
+          <span *ngIf="getActiveFiltersCount() > 0"
+            class="bg-customBlue text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+            {{ getActiveFiltersCount() }}
+          </span>
+        </button>
+      </div>
+
+      <!-- Category Header -->
+      <div class="mb-6">
+        @if (categoryName === 'Search Results') {
+        <div class="flex items-center gap-3">
+          <h1 class="text-3xl font-bold">Search Results</h1>
+          @if (searchText()) {
+          <span class="bg-customBlue text-white px-3 py-1 rounded-full text-sm">
+            "{{ searchText() }}"
+          </span>
+          }
+        </div>
+        <p class="text-gray-600 mt-2">
+          Found {{ filteredProducts().length }} products matching your search
+          @if (searchText()) {
+          for "{{ searchText() }}"
+          }
+        </p>
+        } @else {
+        <h1 class="text-3xl font-bold capitalize">{{ categoryName }}</h1>
+        <p class="text-gray-600">{{ filteredProducts().length }} products found</p>
+        }
+      </div>
+      <!-- Products Grid -->
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        @for (product of filteredProducts(); track product.id) {
+        <div
+          class="cursor-pointer bg-gray-50 rounded-xl border border-black/10 overflow-hidden transition-all hover:shadow-xl duration-300 relative flex flex-col min-h-[150px]"
+          [routerLink]="['/store', storeUuid, 'product-details', product.id]">
+          <!-- Out of Stock Badge -->
+          @if (product.quantity === 0) {
+          <div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium z-10">
+            Out of stock
+          </div>
+          }
+
+          <!-- Product Image -->
+          <div class="h-44 w-full rounded-t-xl bg-gray-100 overflow-hidden flex-shrink-0">
+            <img [src]="getProductImage(product) | async" [alt]="product.name" class="w-full h-full object-cover"
+              (error)="handleImageError($event)" />
+          </div>
+
+          <!-- Product Info -->
+          <div class="p-3 flex flex-col flex-1 justify-between">
+            <div>
+              <h3 class="font-medium text-gray-800 text-lg line-clamp-2 capitalize mb-1">
+                {{ product.name }}
+              </h3>
+              <p class="text-xs text-gray-500 text-left">
+                {{ product.quantity }} items left
+              </p>
+              <p class="text-customBlue font-semibold text-lg">
+                ₦{{ product.sellingPrice }}
+              </p>
+            </div>
+
+            <!-- Buy Button - Only show if in stock -->
+            @if (product.quantity > 0) {
+            <div class="mt-2">
+              <button
+                class="bg-customGreen text-white px-3 py-2 rounded-full text-sm flex items-center justify-center gap-1 w-full"
+                (click)="$event.stopPropagation(); addToCart(product)">
+                <i class="fa-solid fa-plus text-xs"></i>
+                <span>Buy Now</span>
+              </button>
+            </div>
+            }
+          </div>
+        </div>
+        }
+      </div>
+
+      <!-- No Products Message -->
+      @if (filteredProducts().length === 0 && !isLoading()) {
+      <div class="text-center py-12">
+        <i class="fa-solid fa-box-open text-4xl text-gray-300 mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No products found</h3>
+        <p class="text-gray-500">Try adjusting your filters or search terms</p>
+      </div>
+      }
+    </main>
+  </div>
+</div>

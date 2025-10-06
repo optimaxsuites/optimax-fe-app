@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { Cart, PaymentModes, ProductData } from "../../models/interface";
+import { MessageService } from "primeng/api";
 
 @Component({
   selector: "app-all-payments-modal",
@@ -14,8 +15,10 @@ export class AllPaymentsModalComponent {
   @Input() initialSelectedPayments: Cart["paymentModes"] = [];
 
   @Output() selectedPayments = new EventEmitter<Cart["paymentModes"]>();
+  constructor(private messageService: MessageService) {}
 
   selectedPaymentsToGo: Cart["paymentModes"] = [];
+  readonly disabledPayments: PaymentModes[] = ['loyalty'];
 
   readonly paymentOptions = [
     {
@@ -35,11 +38,11 @@ export class AllPaymentsModalComponent {
       value: "cash",
       image: "https://cdn-icons-png.flaticon.com/512/1087/1087099.png",
     },
-    {
-      label: "Loyalty",
-      value: "loyalty",
-      image: "https://cdn-icons-png.flaticon.com/512/1440/1440505.png",
-    },
+    // {
+    //   label: "Loyalty",
+    //   value: "loyalty",
+    //   image: "https://cdn-icons-png.flaticon.com/512/1440/1440505.png",
+    // },
   ] as const satisfies Array<{
     value: PaymentModes;
     label: string;
@@ -54,6 +57,9 @@ export class AllPaymentsModalComponent {
     this.isModalOpen = false;
     this.isModalOpenChange.emit(this.isModalOpen);
   }
+  isPaymentDisabled(paymentType: PaymentModes): boolean {
+  return this.disabledPayments.includes(paymentType);
+}
 
   proceedCashPayment() {
     const transactionDetail = {
@@ -98,15 +104,26 @@ export class AllPaymentsModalComponent {
     this.cashPayment.emit();
   }
 
-  togglePayment(paymentType: PaymentModes) {
-    if (this.selectedPaymentsToGo.includes(paymentType)) {
-      this.selectedPaymentsToGo = this.selectedPaymentsToGo.filter(
-        (p) => p !== paymentType,
-      );
-    } else {
-      this.selectedPaymentsToGo.push(paymentType);
-    }
+togglePayment(paymentType: PaymentModes) {
+  if (this.isPaymentDisabled(paymentType)) {
+    this.messageService.add({
+      severity: "warn",
+      summary: "Payment Unavailable",
+      detail: "Loyalty payments are temporarily unavailable. Please select another payment method.",
+      key: "tl",
+      life: 3000,
+    });
+    return;
   }
+  
+  if (this.selectedPaymentsToGo.includes(paymentType)) {
+    this.selectedPaymentsToGo = this.selectedPaymentsToGo.filter(
+      (p) => p !== paymentType,
+    );
+  } else {
+    this.selectedPaymentsToGo.push(paymentType);
+  }
+}
 
   confirmPayment() {
     if (this.selectedPaymentsToGo.length === 0) {

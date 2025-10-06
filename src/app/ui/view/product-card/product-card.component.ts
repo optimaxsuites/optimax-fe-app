@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component,OnInit, EventEmitter, Input, Output } from '@angular/core';
 import { Cart, ProductData, VariantDTO } from '../../models/interface';
 import { ImageCacheService } from '../../service/image-cache.service';
 
@@ -12,6 +12,7 @@ export class ProductCardComponent {
   @Input() product: ProductData;
   //@ts-ignore
   @Input() cartItems: ProductData[] | undefined;
+  @Input() isOutOfStock: boolean = false; // This line is correct and necessary
   @Output() updateItem = new EventEmitter<number>();
   @Output() addToCart = new EventEmitter<string>();
 
@@ -26,6 +27,12 @@ export class ProductCardComponent {
   }
 
   onAddToCart() {
+    // Note: The logic to prevent adding out-of-stock items is in the parent component (pos-checkout-page.component.ts)
+    // but the card should only respond to a click if it's NOT out of stock.
+    if (this.isOutOfStock) {
+        return; 
+    }
+    
     if (this.product.variants.length > 0) {
       // If the product has variants, open the modal and send the chosen variant's id
       this.updateItem.emit(this.product.id);

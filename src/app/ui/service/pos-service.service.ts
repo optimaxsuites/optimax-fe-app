@@ -704,5 +704,12 @@ getStockMovementsByInventory(inventoryId: number) {
     .pipe(catchError(this.handleError));
 }
 
-
+// NEW: Global Stock Search method
+  getGlobalStockBySearch(query: string) {
+    return this.http
+      .get<any[]>(
+        this.getBaseApiUrl() + `/x/api/v2/pos/products/getBy/nameorsku/${query}`
+      )
+      .pipe(catchError(this.handleError));
+  }
 }
