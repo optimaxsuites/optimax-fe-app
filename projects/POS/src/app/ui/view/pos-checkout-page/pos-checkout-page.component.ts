@@ -920,4 +920,33 @@ addToCart(product: ProductData, chosenVariant?: VariantDTO) {
   async deleteDraft(order: any) {
     await this.offlineService.removePendingTransaction(order.__dfKey)
   }
+
+  async getDraftOrders() {
+    this.offlineService.getPendingTransactions().subscribe((data) => {
+     this.draftOrders = data 
+    })
+   }
+   toggleDraftTransactionModal() {
+     this.openDraftsModal = !this.openDraftsModal;
+     if (this.openDraftsModal) {
+       this.getDraftOrders();
+     }
+   
+    }
+    
+    reOpenCart(order: any) {
+      // const checkoutLink = this.navigationLink.getLink('checkoutLink');
+      // this.router.navigate([checkoutLink], { state: { order } });
+    console.log(order)
+     this.loadOrder(order);
+     this.deleteDraft(order);
+     this.openDraftsModal = false;
+      
+  }
+
+  clearAllDraftOrders(){
+    this.offlineService.clearPendingTransactions();
+  }
+
+
 }
