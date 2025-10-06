@@ -3,6 +3,8 @@ import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { HttpClientModule } from '@angular/common/http';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -48,6 +50,7 @@ import { MessageModule } from 'primeng/message';
 import { RippleModule } from 'primeng/ripple';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { ChartModule } from 'primeng/chart';
+import { NgApexchartsModule } from 'ng-apexcharts';
 
 // Angular Material modules
 import { MatDialogModule } from '@angular/material/dialog';
@@ -96,6 +99,10 @@ import { BillSplittingModalComponent } from './ui/sharedComponent/view/bill-spli
     AppRoutingModule,
     FormsModule,
     ReactiveFormsModule,
+    CommonModule,
+    RouterModule,
+    HttpClientModule,
+
     // PrimeNG
     ButtonModule,
     EditorModule,
@@ -143,6 +150,7 @@ import { BillSplittingModalComponent } from './ui/sharedComponent/view/bill-spli
 
     // NgSelect
     NgSelectModule,
+    NgApexchartsModule,
 
     // Standalone components
     BackButtonComponent,

@@ -150,7 +150,7 @@
         
         
         <button class="btn btn-success"
-        [disabled]="!selectedExpenses?.length"
+  [disabled]="!selectedExpenses.length"
         (click)="bulkApprove()"
         >
           <span class="material-icons btn-icon">check_circle</span>
@@ -159,7 +159,7 @@
 
       
         <button class="btn btn-warning"
-        [disabled]="!selectedExpenses?.length"
+  [disabled]="!selectedExpenses.length"
         (click)="bulkReject()"
         >
           <span class="material-icons btn-icon">cancel</span>
@@ -169,7 +169,7 @@
 
           <button
             class="btn btn-danger"
-            [disabled]="!selectedExpenses?.length"
+            [disabled]="!selectedExpenses.length"
             (click)="deleteSelectedExpenses()"
           >
             <span class="material-icons btn-icon">delete</span>
@@ -318,105 +318,75 @@
 <!-- Edit Expense Modal -->
 <app-side-modal *ngIf="isModalOpen" (close)="closeModal()">
   <div class="side-modal-content">
-  <h1>Edit Expense</h1>
+    <h1>Edit Expense</h1>
 
-  <form #editForm="ngForm" class="space-y-6">
-   <div>
-      <label>Name:</label
-      >
-      <input
-        [(ngModel)]="selectedExpense.name"
-        name="name"
-      />
-    </div>
+    <!-- ✅ Guard entire form -->
+    <form *ngIf="selectedExpense" #editForm="ngForm" class="space-y-6">
+      <div>
+        <label>Name:</label>
+        <input [(ngModel)]="selectedExpense.name" name="name" />
+      </div>
 
-    <div>
-      <label 
-        >Merchant:</label
-      >
-      <input
-        [(ngModel)]="selectedExpense.merchant"
-        name="merchant"
-      />
-    </div>
+      <div>
+        <label>Merchant:</label>
+        <input [(ngModel)]="selectedExpense.merchant" name="merchant" />
+      </div>
 
-    <div>
-      <label 
-        >Category:</label
-      >
-      <input
-        [(ngModel)]="selectedExpense.category"
-        name="category"
-      />
-    </div>
+      <div>
+        <label>Category:</label>
+        <input [(ngModel)]="selectedExpense.category" name="category" />
+      </div>
 
-    <div>
-      <label 
-        >Amount:</label
-      >
-      <input
-        [value]="formatAmount(selectedExpense?.amount)"
-        (input)="updateEditAmount($event)"
-        (keypress)="onlyNumbers($event)"
-        name="amount"
-        type="text"
-      />
-    </div>
+      <div>
+        <label>Amount:</label>
+        <input
+          [value]="formatAmount(selectedExpense.amount)"
+          (input)="updateEditAmount($event)"
+          (keypress)="onlyNumbers($event)"
+          name="amount"
+          type="text"
+        />
+      </div>
 
-    <div>
-      <label 
-        >Tax Percentage:</label
-      >
-      <input
-        [(ngModel)]="selectedExpense.taxPercentage"
-        name="tax percentage"
-        type="number"
-      />
-    </div>
+      <div>
+        <label>Tax Percentage:</label>
+        <input
+          [(ngModel)]="selectedExpense.taxPercentage"
+          name="taxPercentage"
+          type="number"
+        />
+      </div>
 
-    <div>
-      <label 
-        >Expense Date:</label
-      >
-      <input
-        [(ngModel)]="selectedExpense.date"
-        name="date"
-        type="date"
-      />
-    </div>
+      <div>
+        <label>Expense Date:</label>
+        <input
+          [(ngModel)]="selectedExpense.date"
+          name="date"
+          type="date"
+        />
+      </div>
 
-    
+      <div>
+        <label>Description:</label>
+        <textarea
+          [(ngModel)]="selectedExpense.description"
+          name="description"
+        ></textarea>
+      </div>
 
-    <div>
-      <label 
-        >Decription:</label
-      >
-      <textarea
-        [(ngModel)]="selectedExpense.description"
-        name="description"
-      ></textarea>
-    </div>
-
-    <!-- Save / Cancel buttons -->
-    <div class="modal-actions">
-      <button
-        type="button"
-        class="btn btn-primary"
-        (click)="saveEditedExpense()"
-      >
-        Save
-      </button>
-      <button
-        type="button"
-        class="btn btn-outline-success"
-        (click)="closeModal()"
-      >
-        Cancel
-      </button>
-    </div>
-  </form>
+      <!-- Save / Cancel buttons -->
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" (click)="saveEditedExpense()">
+          Save
+        </button>
+        <button type="button" class="btn btn-outline-success" (click)="closeModal()">
+          Cancel
+        </button>
+      </div>
+    </form>
   </div>
 </app-side-modal>
+
 
 <!-- Expense Approval Modal -->
 <app-side-modal *ngIf="isModalOpen2" (close)="closeModal()">
@@ -428,92 +398,96 @@
     </h1>
 
     <div class="expense-details space-y-4">
-      <div class="detail-row flex justify-between items-center">
-        <label class="detail-label text-2xl text-gray-700">Name:</label>
-        <span class="detail-value text-2xl text-gray-900">{{
-          selectedExpense.name
-        }}</span>
-      </div>
+  <div class="detail-row flex justify-between items-center">
+    <label class="detail-label text-2xl text-gray-700">Name:</label>
+    <span class="detail-value text-2xl text-gray-900">
+      {{ selectedExpense?.name }}
+    </span>
+  </div>
 
-      <!-- Merchant -->
-      <div class="detail-row flex justify-between items-center">
-        <label class="detail-label text-2xl text-gray-700">Merchant:</label>
-        <span class="detail-value text-2xl text-gray-900">{{
-          selectedExpense.merchant
-        }}</span>
-      </div>
+  <!-- Merchant -->
+  <div class="detail-row flex justify-between items-center">
+    <label class="detail-label text-2xl text-gray-700">Merchant:</label>
+    <span class="detail-value text-2xl text-gray-900">
+      {{ selectedExpense?.merchant }}
+    </span>
+  </div>
+
+  <!-- Amount -->
+  <div class="detail-row flex justify-between items-center">
+    <label class="detail-label text-2xl text-gray-700">Amount (NGN):</label>
+    <span class="detail-value text-2xl text-gray-900">
+      {{ selectedExpense ? formatAmount(selectedExpense.amount) : '' }}
+    </span>
+  </div>
+
+  <!-- Tax Percentage -->
+  <div class="detail-row flex justify-between items-center">
+  <label class="detail-label text-2xl text-gray-700">Tax Percentage (%):</label>
+
+  <span *ngIf="selectedExpense?.taxPercentage as tax" class="detail-value text-2xl text-gray-900">
+    {{ tax }}%
+  </span>
+  <span *ngIf="!selectedExpense?.taxPercentage" class="detail-value text-2xl text-gray-900">
+    No tax applied
+  </span>
+</div>
 
 
-      <!-- Amount -->
-      <div class="detail-row flex justify-between items-center">
-        <label class="detail-label text-2xl text-gray-700">Amount(NGN):</label>
-        <span class="detail-value text-2xl text-gray-900">{{
-          formatAmount(selectedExpense.amount)
-        }}</span>
-      </div>
+  <!-- Expense Date -->
+  <div class="detail-row flex justify-between items-center">
+    <label class="detail-label text-2xl text-gray-700">Expense Date:</label>
+    <span class="detail-value text-2xl text-gray-900">
+      {{ selectedExpense?.eventDate }}
+    </span>
+  </div>
 
-       <div class="detail-row flex justify-between items-center">
-        <label class="detail-label text-2xl text-gray-700">Tax Percentage(%):</label>
-        <span class="detail-value text-2xl text-gray-900">{{
-          selectedExpense.taxPercentage ? selectedExpense.taxPercentage + '%' : 'No tax applied'
-        }}</span> 
-      </div>
+  <!-- Category -->
+  <div class="detail-row flex justify-between items-center">
+    <label class="detail-label text-2xl text-gray-700">Category:</label>
+    <span class="detail-value text-2xl text-gray-900">
+      {{ selectedExpense?.category }}
+    </span>
+  </div>
 
-      <!-- Expense Date -->
-      <div class="detail-row flex justify-between items-center">
-        <label class="detail-label text-2xl text-gray-700">Expense Date:</label>
-        <span class="detail-value text-2xl text-gray-900">{{
-          selectedExpense.eventDate
-        }}</span>
-      </div>
+  <!-- Description -->
+  <div class="detail-row flex justify-between items-center">
+    <label class="detail-label text-2xl text-gray-700">Description:</label>
+    <span class="detail-value text-2xl text-gray-900">
+      {{ selectedExpense?.description }}
+    </span>
+  </div>
 
-      <!-- Category -->
-      <div class="detail-row flex justify-between items-center">
-        <label class="detail-label text-2xl text-gray-700">Category:</label>
-        <span class="detail-value text-2xl text-gray-900">{{
-          selectedExpense.category
-        }}</span>
-      </div>
+  <!-- Status -->
+  <div class="detail-row flex justify-between items-center">
+    <label class="detail-label text-2xl text-gray-700">Status:</label>
+    <span
+      class="detail-value flex items-center px-3 py-1 rounded-lg text-2xl"
+      [ngClass]="{
+    'text-green-500': selectedExpense?.status === 'APPROVED',
+    'text-red-500': selectedExpense?.status === 'REJECTED',
+    'text-yellow-500': selectedExpense?.status === 'PENDING'
+      }"
+    >
+      <mat-icon
+        *ngIf="selectedExpense?.status === 'APPROVED'"
+        class="mr-2 align-middle"
+        >check_circle</mat-icon
+      >
+      <mat-icon
+        *ngIf="selectedExpense?.status === 'REJECTED'"
+        class="mr-2 align-middle"
+        >cancel</mat-icon
+      >
+      <mat-icon
+        *ngIf="selectedExpense?.status === 'PENDING'"
+        class="mr-2 align-middle"
+        >access_time</mat-icon
+      >
+      {{ selectedExpense?.status }}
+    </span>
+  </div>
+</div>
 
-      <div class="detail-row flex justify-between items-center">
-        <label class="detail-label text-2xl text-gray-700">Description:</label>
-        <span class="detail-value text-2xl text-gray-900">{{
-          selectedExpense.description
-        }}</span>
-      </div>
-
-      <!-- Status -->
-      <div class="detail-row flex justify-between items-center">
-        <label class="detail-label text-2xl text-gray-700">Status:</label>
-        <span
-          class="detail-value flex items-center px-3 py-1 rounded-lg text-2xl"
-          [ngClass]="{
-            'text-green-500': selectedExpense.status === 'Approved',
-            'text-red-500': selectedExpense.status === 'Rejected',
-            'text-yellow-500': selectedExpense.status === 'Pending'
-          }"
-        >
-          <mat-icon
-            *ngIf="selectedExpense.status === 'Approved'"
-            class="mr-2 align-middle"
-            >check_circle</mat-icon
-          >
-          <mat-icon
-            *ngIf="selectedExpense.status === 'Rejected'"
-            class="mr-2 align-middle"
-            >cancel</mat-icon
-          >
-          <mat-icon
-            *ngIf="selectedExpense.status === 'Pending'"
-            class="mr-2 align-middle"
-            >access_time</mat-icon
-          >
-          {{ selectedExpense.status }}
-        </span>
-      </div>
-
-      
-      
-    </div>
   </div>
 </app-side-modal>
