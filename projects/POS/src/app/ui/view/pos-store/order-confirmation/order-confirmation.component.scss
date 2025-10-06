@@ -1,154 +1,78 @@
-// order-confirmation.component.scss
+:host {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.confirmation-content {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+}
+
+/* Force all elements to be visible */
+// * {
+//   opacity: 1 !important;
+//   visibility: visible !important;
+// }
+
+// Animation for fade-in effect
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
 }
 
-.animate-fade-in { 
-  animation: fadeIn 0.7s ease-out; 
-}
-
-.animate-pulse-slow { 
-  animation: pulse 2s infinite; 
-}
-
+// Progress bar animation
 .progress-bar {
-  background: linear-gradient(90deg, #10b981, #34d399);
-  border-radius: 3px;
-  transition: width 0.5s ease-in-out;
-}
-
-.step-active { 
-  background-color: #10b981; 
-  color: white;
-  transform: scale(1.1);
-}
-
-.step-completed { 
-  background-color: #10b981; 
-  color: white;
-}
-
-.step-pending { 
-  background-color: #e5e7eb; 
-  color: #6b7280;
-}
-
-.tracking-map {
-  height: 200px;
-  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
-  border-radius: 8px;
-  position: relative;
-  overflow: hidden;
-}
-
-.driver-marker {
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  background: #ef4444;
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
-  top: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  transition: left 1s ease-in-out;
-}
-
-.driver-marker:after {
-  content: "🚗";
-  transform: rotate(45deg);
-  font-size: 16px;
-}
-
-.store-marker, .customer-marker {
-  position: absolute;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.store-marker {
-  background: #10b981;
-  top: 30%;
-  left: 10%;
-}
-
-.customer-marker {
-  background: #3b82f6;
-  top: 70%;
-  left: 90%;
+  transition: width 0.5s ease-out;
 }
 
 // Print styles
 @media print {
-  .min-h-screen {
-    min-height: auto;
-  }
-  
-  .bg-gray-50 {
-    background: white !important;
-  }
-  
-  canvas, button {
-    display: none !important;
-  }
-}
-
-// order-confirmation.component.scss
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
-
-.animate-fade-in { 
-  animation: fadeIn 0.7s ease-out; 
-}
-
-.animate-pulse { 
-  animation: pulse 2s infinite; 
-}
-
-.progress-bar {
-  background: linear-gradient(90deg, #10b981, #34d399);
-  border-radius: 3px;
-  transition: width 0.5s ease-in-out;
-}
-
-// Print styles
-@media print {
-  .min-h-screen {
-    min-height: auto;
-  }
-  
-  .bg-gray-50 {
-    background: white !important;
-  }
-  
-  canvas, button {
+  .fixed,
+  button,
+  canvas {
     display: none !important;
   }
   
-  .bg-blue-50, .bg-gray-50 {
-    background: #f8fafc !important;
+  .bg-gray-50 {
+    background-color: white !important;
   }
+  
+  .shadow-lg {
+    box-shadow: none !important;
+  }
+}
+
+// Smooth transitions
+.transition {
+  transition: all 0.3s ease;
+}
+
+// Custom scrollbar for tracking section
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }

@@ -1,9 +1,8 @@
-// order-confirmation.component.ts - FIXED VERSION
-import { Component, OnInit, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
+// order-confirmation.component.ts - COMPLETE VERSION
+import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { StoreCartService } from '../../../service/store-cart.service';
 import { GuestOrderService } from '../../../service/guest-order.service';
-import { PosServiceService } from '../../../service/pos-service.service'; 
 import * as confetti from 'canvas-confetti';
 
 interface DeliveryStep {
@@ -30,182 +29,270 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
   isGuestOrder: boolean = true;
   showTracking: boolean = false;
   
-  // Delivery tracking properties
   deliverySteps: DeliveryStep[] = [];
+  
+  // Debug properties
+  debugMode: boolean = true;
+  displayState: string = 'loading';
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private cartService: StoreCartService,
     private guestOrderService: GuestOrderService,
-    private posService: PosServiceService 
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.orderId = this.route.snapshot.paramMap.get('id') || '';
-    console.log('Loading order details for ID:', this.orderId);
+    console.log('🔄 Order Confirmation - Order ID:', this.orderId);
+    this.displayState = 'loading';
     this.loadOrderDetails();
   }
 
   ngAfterViewInit(): void {
     setTimeout(() => {
       this.fireConfetti();
-    }, 100);
+    }, 500);
   }
 
   loadOrderDetails(): void {
-    console.log('Attempting to load order details...');
+    console.log('🔍 Starting order details loading...');
     
-    // Try to get order from guest service first
-    const guestOrder = this.guestOrderService.getOrder(this.orderId);
-    console.log('Guest order from service:', guestOrder);
-    
-    if (guestOrder) {
-      this.orderDetails = guestOrder;
-      this.isGuestOrder = true;
-      this.processOrderItems();
-      this.initializeDeliveryTracking();
-      this.isLoading = false;
-      console.log('Order details loaded successfully from guest service');
-    } else {
-      // Try to get from cart service (recent orders)
-      const guestOrders = this.cartService.getGuestOrders();
-      console.log('All guest orders:', guestOrders);
-      
-      const foundOrder = guestOrders.find(order => order.id === this.orderId);
-      console.log('Found order from cart service:', foundOrder);
-      
-      if (foundOrder) {
-        this.orderDetails = foundOrder;
-        this.isGuestOrder = true;
-        this.processOrderItems();
-        this.initializeDeliveryTracking();
-        this.isLoading = false;
-        console.log('Order details loaded successfully from cart service');
-      } else {
-        // If not found, try to parse the order ID differently
-        console.log('Order not found in standard locations, checking localStorage directly...');
-        this.checkLocalStorageForOrder();
-      }
-    }
-  }
-
-  private checkLocalStorageForOrder(): void {
     try {
-      // Check localStorage directly for guest orders
-      const storedOrders = localStorage.getItem('guest_orders');
-      if (storedOrders) {
-        const orders = JSON.parse(storedOrders);
-        console.log('Orders found in localStorage:', orders);
-        
-        const foundOrder = orders.find((order: any) => order.id === this.orderId);
-        if (foundOrder) {
-          this.orderDetails = foundOrder;
-          this.isGuestOrder = true;
-          this.processOrderItems();
-          this.initializeDeliveryTracking();
-          this.isLoading = false;
-          console.log('Order found in localStorage');
-          return;
-        }
+      // Method 1: Check navigation state (most recent order)
+      const navigation = this.router.getCurrentNavigation();
+      const stateOrder = navigation?.extras?.state?.['orderData'];
+      
+      if (stateOrder) {
+        console.log('✅ Found order in navigation state');
+        this.orderDetails = stateOrder;
+        this.processData();
+        return;
       }
 
-      // Check for cart data that might contain the order
-      const storedCart = localStorage.getItem('store_cart');
-      if (storedCart) {
-        console.log('Cart data found in localStorage');
-      }
-
-      // Final fallback - create mock data for demonstration
-      this.createMockOrderData();
+      // Method 2: Check all possible storage locations
+      this.checkAllStorageLocations();
       
     } catch (error) {
-      console.error('Error checking localStorage:', error);
-      this.createMockOrderData();
+      console.error('❌ Error loading order details:', error);
+      this.createDemoOrderData();
     }
   }
 
-  private createMockOrderData(): void {
-    console.log('Creating mock order data for demonstration');
+  private checkAllStorageLocations(): void {
+    console.log('🔍 Checking all storage locations...');
     
-    // Create mock order data based on typical cart structure
+    // Check multiple storage keys
+    const storageKeys = ['guest_orders', 'store_orders', 'recent_orders'];
+    
+    for (const key of storageKeys) {
+      console.log(`🔍 Checking localStorage key: ${key}`);
+      const storedData = localStorage.getItem(key);
+      
+      if (storedData) {
+        try {
+          const data = JSON.parse(storedData);
+          console.log(`📁 Data found in ${key}:`, data);
+          
+          let foundOrder = this.findOrderInData(data, this.orderId);
+          
+          if (foundOrder) {
+            console.log(`✅ Order found in ${key}:`, foundOrder);
+            this.orderDetails = foundOrder;
+            this.processData();
+            return;
+          }
+        } catch (error) {
+          console.error(`❌ Error parsing ${key}:`, error);
+        }
+      }
+    }
+    
+    // If still not found, check guest service
+    console.log('🔍 Checking guest order service...');
+    const guestOrder = this.guestOrderService.getOrder(this.orderId);
+    if (guestOrder) {
+      console.log('✅ Found order in guest service:', guestOrder);
+      this.orderDetails = guestOrder;
+      this.processData();
+      return;
+    }
+    
+    // Final fallback - create demo data
+    console.log('🔄 No order found, creating demo data');
+    this.createDemoOrderData();
+  }
+
+  private findOrderInData(data: any, orderId: string): any {
+    if (Array.isArray(data)) {
+      // Array of orders
+      return data.find(order => 
+        order.id === orderId || 
+        order.orderId === orderId ||
+        order.orderNumber === orderId
+      );
+    } else if (data && typeof data === 'object') {
+      // Single order object
+      if (data.id === orderId || data.orderId === orderId || data.orderNumber === orderId) {
+        return data;
+      }
+      
+      // Check if it's a cart structure
+      if (data.items && (data.subtotal !== undefined || data.total !== undefined)) {
+        console.log('🛒 Found cart-like structure, converting to order');
+        return this.convertCartToOrder(data, orderId);
+      }
+    }
+    
+    return null;
+  }
+
+  private convertCartToOrder(cartData: any, orderId: string): any {
+    const items = cartData.items instanceof Map ? 
+      Array.from(cartData.items.values()) : 
+      Object.values(cartData.items || {});
+    
+    const subtotal = cartData.subtotal || this.calculateSubtotal(items);
+    const deliveryFee = cartData.deliveryFee || 0;
+    const total = subtotal + deliveryFee;
+
+    return {
+      id: orderId,
+      orderNumber: orderId,
+      items: items,
+      subtotal: subtotal,
+      deliveryFee: deliveryFee,
+      total: total,
+      deliveryMethod: 'pickup',
+      paymentMethod: 'cash',
+      orderDate: new Date().toISOString(),
+      status: 'confirmed'
+    };
+  }
+
+  private calculateSubtotal(items: any[]): number {
+    return items.reduce((total, item) => {
+      const price = item.product?.sellingPrice || item.price || 0;
+      const quantity = item.quantity || 1;
+      return total + (price * quantity);
+    }, 0);
+  }
+
+  private processData(): void {
+    console.log('🔄 Processing order data...');
+    
+    if (!this.orderDetails) {
+      console.error('❌ No order details to process');
+      this.createDemoOrderData();
+      return;
+    }
+    
+    console.log('📊 Raw order details:', this.orderDetails);
+    
+    this.isGuestOrder = true;
+    this.processOrderItems();
+    this.initializeDeliveryTracking();
+    
+    // CRITICAL: Set loading to false and force change detection
+    this.isLoading = false;
+    this.displayState = 'confirmed';
+    this.cdr.detectChanges();
+    
+    console.log('✅ Order processing complete');
+    console.log('📊 isLoading:', this.isLoading);
+    console.log('📊 displayState:', this.displayState);
+    console.log('📦 Order Items Count:', this.orderItems.length);
+    console.log('📦 Order Items:', this.orderItems);
+    
+    // Force another change detection after a brief delay
+    setTimeout(() => {
+      this.cdr.detectChanges();
+      console.log('🔄 Forced change detection completed');
+    }, 100);
+  }
+
+  private createDemoOrderData(): void {
+    console.log('🎭 Creating demo order data');
+    
     this.orderDetails = {
-      id: this.orderId || `ORD-${Date.now()}`,
-      items: this.getMockOrderItems(),
-      subtotal: 150.00,
+      id: this.orderId,
+      orderNumber: `DEMO-${this.orderId}`,
+      items: [
+        {
+          product: {
+            id: 1,
+            name: 'Demo Product 1',
+            sellingPrice: 25.99,
+            selectedVariants: []
+          },
+          quantity: 2,
+          isVariant: false
+        },
+        {
+          product: {
+            id: 2,
+            name: 'Demo Product 2',
+            sellingPrice: 45.50,
+            selectedVariants: []
+          },
+          quantity: 1,
+          isVariant: false
+        }
+      ],
+      subtotal: 97.48,
       deliveryFee: 10.00,
-      total: 160.00,
+      total: 107.48,
       deliveryMethod: 'delivery',
       paymentMethod: 'cash',
       deliveryInfo: {
-        fullName: 'John Doe',
+        fullName: 'Demo Customer',
         phoneNumber: '+1234567890',
-        address: '123 Main Street, City, State',
-        instructions: 'Leave at front door'
+        address: '123 Demo Street, Demo City',
+        instructions: 'Demo delivery instructions'
       },
       orderDate: new Date().toISOString(),
       status: 'confirmed'
     };
     
-    this.isGuestOrder = true;
-    this.processOrderItems();
-    this.initializeDeliveryTracking();
-    this.isLoading = false;
-  }
-
-  private getMockOrderItems(): any[] {
-    // Create mock items that match your cart structure
-    return [
-      {
-        product: {
-          id: 1,
-          name: 'Sample Product 1',
-          sellingPrice: 50.00,
-          quantity: 1,
-          selectedVariants: []
-        },
-        quantity: 1,
-        isVariant: false
-      },
-      {
-        product: {
-          id: 2,
-          name: 'Sample Product 2',
-          sellingPrice: 100.00,
-          quantity: 1,
-          selectedVariants: []
-        },
-        quantity: 1,
-        isVariant: false
-      }
-    ];
+    this.processData();
   }
 
   processOrderItems(): void {
-    console.log('Processing order items:', this.orderDetails?.items);
+    console.log('🔄 Processing order items...');
     
-    if (this.orderDetails && this.orderDetails.items) {
-      try {
-        // Handle different data structures
-        if (this.orderDetails.items instanceof Map) {
-          this.orderItems = Array.from(this.orderDetails.items.values());
-        } else if (Array.isArray(this.orderDetails.items)) {
-          this.orderItems = this.orderDetails.items;
-        } else if (typeof this.orderDetails.items === 'object') {
-          // Convert object to array
-          this.orderItems = Object.values(this.orderDetails.items);
-        } else {
-          console.warn('Unknown items format:', this.orderDetails.items);
-          this.orderItems = [];
-        }
-        
-        console.log('Processed order items:', this.orderItems);
-      } catch (error) {
-        console.error('Error processing order items:', error);
+    if (!this.orderDetails) {
+      console.warn('❌ No order details available');
+      this.orderItems = [];
+      return;
+    }
+
+    try {
+      let items = this.orderDetails.items;
+      
+      console.log('📦 Raw items data type:', typeof items);
+      console.log('📦 Raw items data:', items);
+      
+      // Handle different data structures
+      if (items instanceof Map) {
+        console.log('🗺️ Items is a Map, converting to array');
+        this.orderItems = Array.from(items.values());
+      } else if (Array.isArray(items)) {
+        console.log('📋 Items is already an array');
+        this.orderItems = items;
+      } else if (typeof items === 'object' && items !== null) {
+        console.log('🔤 Items is an object, converting to array');
+        this.orderItems = Object.values(items);
+      } else {
+        console.warn('❌ Unknown items format:', items);
         this.orderItems = [];
       }
-    } else {
-      console.warn('No items found in order details');
+      
+      console.log('✅ Final processed order items:', this.orderItems);
+      console.log('✅ Order items count:', this.orderItems.length);
+      
+    } catch (error) {
+      console.error('❌ Error processing order items:', error);
       this.orderItems = [];
     }
   }
@@ -213,9 +300,102 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
   initializeDeliveryTracking(): void {
     if (!this.orderDetails) return;
 
-    // Ensure status is set
+    // Ensure required fields exist
     if (!this.orderDetails.status) {
       this.orderDetails.status = 'confirmed';
+    }
+    if (!this.orderDetails.deliveryMethod) {
+      this.orderDetails.deliveryMethod = 'pickup';
+    }
+
+    const orderDate = new Date(this.orderDetails.orderDate);
+    
+    this.deliverySteps = [
+      {
+        status: 'confirmed',
+        label: 'Order Confirmed',
+        icon: '✓',
+        time: this.formatTime(orderDate),
+        completed: true,
+        active: this.orderDetails.status === 'confirmed'
+      },
+      {
+        status: 'preparing',
+        label: 'Preparing',
+        icon: '👨‍🍳',
+        time: this.formatTime(new Date(orderDate.getTime() + 10 * 60000)),
+        completed: this.isStepCompleted('preparing'),
+        active: this.orderDetails.status === 'preparing'
+      },
+      {
+        status: 'on_the_way',
+        label: 'On the Way',
+        icon: '🚗',
+        time: this.formatTime(new Date(orderDate.getTime() + 20 * 60000)),
+        completed: this.isStepCompleted('on_the_way'),
+        active: this.orderDetails.status === 'on_the_way'
+      },
+      {
+        status: 'delivered',
+        label: 'Delivered',
+        icon: '🏠',
+        time: this.formatTime(new Date(orderDate.getTime() + 45 * 60000)),
+        completed: this.isStepCompleted('delivered'),
+        active: this.orderDetails.status === 'delivered'
+      }
+    ];
+
+    console.log('✅ Delivery tracking initialized:', this.deliverySteps);
+  }
+
+  isStepCompleted(stepStatus: string): boolean {
+    const statusOrder = ['confirmed', 'preparing', 'on_the_way', 'delivered'];
+    const currentStatusIndex = statusOrder.indexOf(this.orderDetails.status);
+    const stepStatusIndex = statusOrder.indexOf(stepStatus);
+    
+    return stepStatusIndex <= currentStatusIndex;
+  }
+
+  isStepActive(stepStatus: string): boolean {
+    return this.orderDetails.status === stepStatus;
+  }
+
+  getStepClass(step: DeliveryStep): string {
+    if (step.completed) {
+      return step.active ? 'bg-green-500 text-white animate-pulse' : 'bg-green-500 text-white';
+    }
+    return 'bg-gray-200 text-gray-500';
+  }
+
+  getDeliveryProgress(): number {
+    const statusOrder = ['confirmed', 'preparing', 'on_the_way', 'delivered'];
+    const currentStatusIndex = statusOrder.indexOf(this.orderDetails.status);
+    return Math.max(25, ((currentStatusIndex + 1) / statusOrder.length) * 100);
+  }
+
+  trackDelivery(): void {
+    this.showTracking = true;
+    setTimeout(() => {
+      const element = document.querySelector('.bg-white.shadow-lg');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  }
+
+  formatTime(date: Date): string {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  }
+
+  fireConfetti(): void {
+    if (!this.confettiCanvas?.nativeElement) {
+      console.log('❌ Confetti canvas not found, will retry');
+      setTimeout(() => this.fireConfetti(), 100);
+      return;
     }
 
     const orderDate = new Date(this.orderDetails.orderDate);
@@ -264,97 +444,98 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
     console.log('Delivery tracking initialized:', this.deliverySteps);
   }
 
-  isStepCompleted(stepStatus: string): boolean {
-    const statusOrder = ['confirmed', 'preparing', 'on_the_way', 'delivered'];
-    const currentStatusIndex = statusOrder.indexOf(this.orderDetails.status);
-    const stepStatusIndex = statusOrder.indexOf(stepStatus);
+  // isStepCompleted(stepStatus: string): boolean {
+  //   const statusOrder = ['confirmed', 'preparing', 'on_the_way', 'delivered'];
+  //   const currentStatusIndex = statusOrder.indexOf(this.orderDetails.status);
+  //   const stepStatusIndex = statusOrder.indexOf(stepStatus);
     
-    return stepStatusIndex <= currentStatusIndex;
-  }
+  //   return stepStatusIndex <= currentStatusIndex;
+  // }
 
-  isStepActive(stepStatus: string): boolean {
-    return this.orderDetails.status === stepStatus;
-  }
+  // isStepActive(stepStatus: string): boolean {
+  //   return this.orderDetails.status === stepStatus;
+  // }
 
-  getStepClass(step: DeliveryStep): string {
-    if (step.completed) {
-      return step.active ? 'bg-green-500 text-white animate-pulse' : 'bg-green-500 text-white';
-    }
-    return 'bg-gray-200 text-gray-500';
-  }
+  // getStepClass(step: DeliveryStep): string {
+  //   if (step.completed) {
+  //     return step.active ? 'bg-green-500 text-white animate-pulse' : 'bg-green-500 text-white';
+  //   }
+  //   return 'bg-gray-200 text-gray-500';
+  // }
 
-  getDeliveryProgress(): number {
-    const statusOrder = ['confirmed', 'preparing', 'on_the_way', 'delivered'];
-    const currentStatusIndex = statusOrder.indexOf(this.orderDetails.status);
-    return Math.max(25, ((currentStatusIndex + 1) / statusOrder.length) * 100);
-  }
+  // getDeliveryProgress(): number {
+  //   const statusOrder = ['confirmed', 'preparing', 'on_the_way', 'delivered'];
+  //   const currentStatusIndex = statusOrder.indexOf(this.orderDetails.status);
+  //   return Math.max(25, ((currentStatusIndex + 1) / statusOrder.length) * 100);
+  // }
 
-  trackDelivery(): void {
-    this.showTracking = true;
-    // Scroll to tracking section
-    setTimeout(() => {
-      const element = document.querySelector('.bg-white.shadow-lg');
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
-    }, 100);
-  }
+  // trackDelivery(): void {
+  //   this.showTracking = true;
+  //   // Scroll to tracking section
+  //   setTimeout(() => {
+  //     const element = document.querySelector('.bg-white.shadow-lg');
+  //     if (element) {
+  //       element.scrollIntoView({ behavior: 'smooth' });
+  //     }
+  //   }, 100);
+  // }
 
-  formatTime(date: Date): string {
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-  }
+  // formatTime(date: Date): string {
+  //   return date.toLocaleTimeString('en-US', {
+  //     hour: '2-digit',
+  //     minute: '2-digit',
+  //     hour12: true
+  //   });
+  // }
 
-  fireConfetti(): void {
-    if (!this.confettiCanvas?.nativeElement) return;
+  // fireConfetti(): void {
+  //   if (!this.confettiCanvas?.nativeElement) return;
 
-    try {
-      const canvas = this.confettiCanvas.nativeElement;
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+  //   try {
+  //     const canvas = this.confettiCanvas.nativeElement;
+  //     canvas.width = window.innerWidth;
+  //     canvas.height = window.innerHeight;
       
-      const myConfetti = confetti.create(canvas, {
-        resize: true,
-        useWorker: true
-      });
+  //     const myConfetti = confetti.create(canvas, {
+  //       resize: true,
+  //       useWorker: true
+  //     });
 
-      myConfetti({
-        particleCount: 150,
-        spread: 100,
-        origin: { y: 0.6 }
-      });
+  //     myConfetti({
+  //       particleCount: 150,
+  //       spread: 100,
+  //       origin: { y: 0.6 }
+  //     });
 
-      setTimeout(() => {
-        myConfetti({
-          particleCount: 80,
-          angle: 60,
-          spread: 65,
-          origin: { x: 0 }
-        });
+  //     setTimeout(() => {
+  //       myConfetti({
+  //         particleCount: 80,
+  //         angle: 60,
+  //         spread: 65,
+  //         origin: { x: 0 }
+  //       });
 
-        myConfetti({
-          particleCount: 80,
-          angle: 120,
-          spread: 65,
-          origin: { x: 1 }
-        });
-      }, 300);
-    } catch (error) {
-      console.error('Confetti error:', error);
-    }
-  }
+  //       myConfetti({
+  //         particleCount: 80,
+  //         angle: 120,
+  //         spread: 65,
+  //         origin: { x: 1 }
+  //       });
+  //     }, 300);
+      
+  //     console.log('🎉 Confetti fired successfully');
+  //   } catch (error) {
+  //     console.error('❌ Confetti error:', error);
+  //   }
+  // }
 
   goToStore(): void {
-    // Clear current order but keep order history
-    this.guestOrderService.clearCurrentOrder();
-    this.router.navigate(['/user/checkout/store/qjneh219-2ee3qwr-23e23rsadas-2dwajdnad']);
-  }
-
-  viewOrderHistory(): void {
-    this.router.navigate(['/order-history']);
+    const currentUuid = this.route.snapshot.paramMap.get('uuid');
+    if (currentUuid) {
+      this.router.navigate(['/store', currentUuid]);
+    } else {
+      this.router.navigate(['/store']);
+    }
   }
 
   printOrder(): void {
@@ -362,7 +543,7 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
   }
 
   getStatusColorClass(): string {
-    switch (this.orderDetails.status) {
+    switch (this.orderDetails?.status) {
       case 'confirmed': return 'text-blue-600';
       case 'preparing': return 'text-yellow-600';
       case 'on_the_way': return 'text-orange-600';
@@ -372,7 +553,7 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
   }
 
   getStatusBadgeClass(): string {
-    switch (this.orderDetails.status) {
+    switch (this.orderDetails?.status) {
       case 'confirmed': return 'bg-blue-100 text-blue-800';
       case 'preparing': return 'bg-yellow-100 text-yellow-800';
       case 'on_the_way': return 'bg-orange-100 text-orange-800';
@@ -389,7 +570,7 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
   }
 
   formatNumber(value: number): string {
-    if (!value) return '0.00';
+    if (!value && value !== 0) return '0.00';
     return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
@@ -400,10 +581,6 @@ export class OrderConfirmationComponent implements OnInit, AfterViewInit {
     });
   }
 
-navigateToOrderConfirmation(orderId: string): void {
-  const currentUuid = this.route.snapshot.paramMap.get('uuid');
-  this.router.navigate(['user/checkout/store', currentUuid, 'order-confirmation', orderId]);
-}
   formatDate(dateString: string): string {
     if (!dateString) return 'Unknown date';
     try {
@@ -418,5 +595,25 @@ navigateToOrderConfirmation(orderId: string): void {
     } catch (error) {
       return 'Invalid date';
     }
+  }
+
+  // Add this method to test template rendering
+  testTemplateRendering(): void {
+    console.log('🧪 Testing template rendering...');
+    console.log('🧪 isLoading:', this.isLoading);
+    console.log('🧪 orderDetails:', !!this.orderDetails);
+    console.log('🧪 orderItems length:', this.orderItems.length);
+    
+    // Force Angular to re-render the template
+    this.cdr.detectChanges();
+    
+    // Check if the main content element exists in DOM
+    setTimeout(() => {
+      const mainContent = document.querySelector('.bg-white.shadow-lg');
+      console.log('🧪 Main content element in DOM:', !!mainContent);
+      console.log('🧪 Main content visibility:', mainContent ? window.getComputedStyle(mainContent).visibility : 'N/A');
+      console.log('🧪 Main content display:', mainContent ? window.getComputedStyle(mainContent).display : 'N/A');
+      console.log('🧪 Main content opacity:', mainContent ? window.getComputedStyle(mainContent).opacity : 'N/A');
+    }, 100);
   }
 }

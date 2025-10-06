@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges, HostListener } from '@angular/core';
 
 interface ProductSuggestion {
   id: number;
@@ -36,6 +36,7 @@ export class StoreHeaderComponent implements OnChanges {
   @Output() productSelect = new EventEmitter<number>(); 
   @Output() searchSubmit = new EventEmitter<string>(); 
 
+  // Desktop state
   isBranchDropdownOpen = false;
   selectedBranch: any = null;
   isUserDropdownOpen = false;
@@ -49,10 +50,51 @@ export class StoreHeaderComponent implements OnChanges {
   categorySuggestions: CategorySuggestion[] = [];
   selectedSuggestionIndex = -1;
 
+  // Mobile state
+  isMobileMenuOpen = false;
+  isMobile = false;
+
+  ngOnInit(): void {
+    this.checkScreenSize();
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    this.checkScreenSize();
+  }
+
+  private checkScreenSize(): void {
+    this.isMobile = window.innerWidth < 768; // md breakpoint
+    // Close mobile menu when switching to desktop
+    if (!this.isMobile) {
+      this.isMobileMenuOpen = false;
+    }
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['allProducts'] && this.allProducts) {
       // You can preprocess data here if needed
     }
+    
+    if (changes['branches'] && this.branches.length > 0 && !this.selectedBranch) {
+      // Auto-select first branch if available
+      this.selectedBranch = this.branches[0];
+    }
+  }
+
+  // Mobile menu methods
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+    // Close other dropdowns when opening mobile menu
+    if (this.isMobileMenuOpen) {
+      this.isBranchDropdownOpen = false;
+      this.isUserDropdownOpen = false;
+      this.showSuggestions = false;
+    }
+  }
+
+  closeMobileMenu(): void {
+    this.isMobileMenuOpen = false;
   }
 
   // Search input handling
@@ -62,15 +104,11 @@ export class StoreHeaderComponent implements OnChanges {
     this.searchChange.emit(text);
   }
 
-  // onSearchSubmit(): void {
-  //   this.showSuggestions = false;
-  //   this.searchChange.emit(this.searchText);
-  // }
-
-   onSearchSubmit(): void {
+  onSearchSubmit(): void {
     if (this.searchText.trim()) {
-      this.searchSubmit.emit(this.searchText); // Emit the search term
+      this.searchSubmit.emit(this.searchText);
       this.showSuggestions = false;
+      this.closeMobileMenu();
     }
   }
 
@@ -182,23 +220,31 @@ export class StoreHeaderComponent implements OnChanges {
     this.searchText = '';
     this.showSuggestions = false;
     this.categoryChange.emit(category.name);
+    this.closeMobileMenu();
   }
 
   selectProductSuggestion(product: ProductSuggestion): void {
     this.searchText = '';
     this.showSuggestions = false;
     this.productSelect.emit(product.id);
+    this.closeMobileMenu();
   }
 
-  // Existing methods
+  // User dropdown methods
   toggleUserDropdown(): void {
     this.isUserDropdownOpen = !this.isUserDropdownOpen;
+    // Close other dropdowns when opening user dropdown
+    if (this.isUserDropdownOpen) {
+      this.isBranchDropdownOpen = false;
+      this.isMobileMenuOpen = false;
+    }
   }
 
   openAuthModal(mode: 'login' | 'signup'): void {
     this.authModalMode = mode;
     this.isAuthModalOpen = true;
     this.isUserDropdownOpen = false;
+    this.closeMobileMenu();
   }
 
   closeAuthModal(): void {
@@ -225,31 +271,61 @@ export class StoreHeaderComponent implements OnChanges {
   logout(): void {
     this.user = { name: 'Guest', isGuest: true };
     this.isUserDropdownOpen = false;
+    this.closeMobileMenu();
   }
 
+  // Category change handler
   onCategoryChange(category: string): void {
     this.categoryChange.emit(category);
+    this.closeMobileMenu();
   }
 
   onSearchChange(text: string): void {
     this.searchChange.emit(text);
   }
 
+  // Cart methods
   onToggleCart(): void {
     this.toggleCart.emit();
+    this.closeMobileMenu();
   }
 
   onUserAction(): void {
     this.userAction.emit();
   }
 
+  // Branch selection methods
   selectBranch(branch: any): void {
     this.selectedBranch = branch;
     this.isBranchDropdownOpen = false;
     this.branchChange.emit(branch);
+    this.closeMobileMenu();
   }
 
   toggleBranchDropdown(): void {
     this.isBranchDropdownOpen = !this.isBranchDropdownOpen;
+    // Close other dropdowns when opening branch dropdown
+    if (this.isBranchDropdownOpen) {
+      this.isUserDropdownOpen = false;
+      this.isMobileMenuOpen = false;
+    }
+  }
+
+  // Close all dropdowns when clicking outside (optional enhancement)
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    const target = event.target as HTMLElement;
+    
+    // Close dropdowns if click is outside
+    if (!target.closest('.relative')) {
+      this.isBranchDropdownOpen = false;
+      this.isUserDropdownOpen = false;
+      this.showSuggestions = false;
+    }
+    
+    // Close mobile menu if click is outside mobile menu area
+    if (this.isMobileMenuOpen && !target.closest('.md\\:hidden') && !target.closest('button')) {
+      this.isMobileMenuOpen = false;
+    }
   }
 }

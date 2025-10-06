@@ -92,7 +92,7 @@ export class PosCheckoutPageComponent implements OnInit, Business {
   isAllPaymentsModalOpen = false;
   isCategorySidebarOpen = false;
   selectedPaymentModes: PaymentModes[] = [];
-  noteText: any;
+  noteText: string = '';
   globalSearchResults: any[] = [];
   globalSearchQuery: string = '';
   isSearching: boolean = false;
@@ -170,70 +170,28 @@ export class PosCheckoutPageComponent implements OnInit, Business {
     localStorage.removeItem("currentCart"); 
   }
 
-  // New Register Methods
-  // checkRegisterState() {
-    
-  // }
-  async getDraftOrders() {
-   this.offlineService.getPendingTransactions().subscribe((data) => {
-    this.draftOrders = data 
-   })
-  }
-  toggleDraftTransactionModal() {
-    this.openDraftsModal = !this.openDraftsModal;
-    if (this.openDraftsModal) {
-      this.getDraftOrders();
-    }
-  }
-  reOpenCart(order: any) {
-      // const checkoutLink = this.navigationLink.getLink('checkoutLink');
-      // this.router.navigate([checkoutLink], { state: { order } });
-    console.log(order)
-     this.loadOrder(order);
-     this.deleteDraft(order);
-     this.openDraftsModal = false;
-      
-  }
-
-  clearAllDraftOrders(){
-    this.offlineService.clearPendingTransactions();
-  }
-  calculateOpeningTotal(): void {
-    // Calculate the total from cash denominations
-    const denomTotal = Object.entries(this.denominationCounts).reduce(
-      (sum, [denom, count]) => sum + Number(denom) * (count || 0),
-      0,
-    );
-
-    this.openingTotal = denomTotal;
-
-    // Validate totals
-    if (this.openingTotal !== this.openingAmount) {
-      this.errorMessage =
-        "Mismatch: The cash count total does not match the opening amount.";
-    } else {
-      this.errorMessage = null;
-    }
-
-    // Enable or disable the confirm button
-    this.canFinalize = !this.errorMessage;
-  }
+ 
   checkAndResetNotes() {
-  const noteData = localStorage.getItem('orderNote');
-  if (noteData) {
-    const { note, timestamp } = JSON.parse(noteData);
-    const savedTime = new Date(timestamp).getTime();
-    const currentTime = new Date().getTime();
-    const twentyFourHours = 24 * 60 * 60 * 1000;
+    const noteData = localStorage.getItem('orderNote');
+    if (noteData) {
+      const { note, timestamp } = JSON.parse(noteData);
+      const savedTime = new Date(timestamp).getTime();
+      const currentTime = new Date().getTime();
+      const twentyFourHours = 24 * 60 * 60 * 1000;
 
-    if (currentTime - savedTime > twentyFourHours) {
-      localStorage.removeItem('orderNote');
-      this.isNotePresent = false;
+      if (currentTime - savedTime > twentyFourHours) {
+        localStorage.removeItem('orderNote');
+        this.noteText = ''; // Clear note text on expiry
+        this.isNotePresent = false;
+      } else {
+        this.noteText = note; // Load note text
+        this.isNotePresent = true;
+      }
     } else {
-      this.isNotePresent = true;
+      this.noteText = '';
+      this.isNotePresent = false;
     }
   }
-}
 
   toggleCategorySidebar() {
     this.isCategorySidebarOpen = !this.isCategorySidebarOpen;
@@ -744,21 +702,43 @@ addToCart(product: ProductData, chosenVariant?: VariantDTO) {
   closeRegister() {
     this.registerService.triggerCloseRegister();
   }
-  toggleNotesModal() {
-  this.isNotesModalOpen = !this.isNotesModalOpen;
-  if (!this.isNotesModalOpen) {
-    
-    const noteContent = this.noteText;
-    if (noteContent) {
-      const noteData = {
-        note: noteContent,
-        timestamp: new Date().toISOString()
-      };
-      localStorage.setItem('orderNote', JSON.stringify(noteData));
-      this.isNotePresent = true;
+  
+  // MODIFIED: Added logic for opening, closing, and saving the note
+  toggleNotesModal(open: boolean = !this.isNotesModalOpen, shouldSave: boolean = false) {
+    if (open) {
+      // OPEN: Load existing note (already done in ngOnInit and checkAndResetNotes)
+      this.checkAndResetNotes();
+      this.isNotesModalOpen = true;
+    } else {
+      // CLOSE: Handle saving if requested
+      if (shouldSave) {
+        if (this.noteText.trim() !== '') {
+            const noteData = {
+              note: this.noteText.trim(),
+              timestamp: new Date().toISOString()
+            };
+            localStorage.setItem('orderNote', JSON.stringify(noteData));
+            this.isNotePresent = true;
+        } else {
+            // If the user clicks save but the text is empty, clear the note
+            this.clearNote(false);
+        }
+      } 
+      // Close the modal regardless of saving
+      this.isNotesModalOpen = false;
     }
   }
-}
+  
+  // NEW: Method to clear the note
+  clearNote(closeModal: boolean = true) {
+      this.noteText = '';
+      localStorage.removeItem('orderNote');
+      this.isNotePresent = false;
+      if (closeModal) {
+          this.isNotesModalOpen = false;
+      }
+  }
+
   toggleDeliveryModal() {
     this.isDeliveryModalOpen = !this.isDeliveryModalOpen;
   }
@@ -781,53 +761,60 @@ addToCart(product: ProductData, chosenVariant?: VariantDTO) {
   
   //  Method to handle the global search event from the search bar 
   async handleGlobalSearch(query: string) {
-    // 1. Clear previous state
-    this.globalSearchResults = [];
-    this.searchError = null;
-    
-    if (!query.trim()) {
-      // Clear all state if query is empty (triggered by searchbar.clearSearchText)
-      this.globalSearchQuery = '';
-      this.isSearching = false;
-      return;
-    }
+  // 1. Clear previous state
+  this.globalSearchResults = [];
+  this.searchError = null;
 
-    this.globalSearchQuery = query;
-    this.isSearching = true; 
-    
-    // Function to get product name from cache or provide a safe ID fallback
-    const getProductNameFromCache = (productId: number | undefined): string => {
-        // Fallback to "Product ID: Unknown" if the ID is missing
-        if (productId === undefined || productId === null) {
-            return 'Product ID: Unknown';
-        }
-        // Fallback to local cache using productId
-        return this.localProductCache.get(productId)?.name || `Product ID: ${productId}`;
-    };
-
-    try {
-        const results = await lastValueFrom(this.posService.getGlobalStockBySearch(query)); 
-        
-        this.globalSearchResults = (results as any[])?.map(result => {
-            const apiName = result.name || result.product?.name;
-            const fallbackName = getProductNameFromCache(result.productId);
-
-            return {
-                productName: apiName || fallbackName, 
-                branchName: result.branch?.name || `Branch ${result.branch?.id || 'Unknown'}`, 
-                address: result.branch?.address || 'Remote Location', 
-                quantity: result.quantity, 
-                productId: result.productId
-            };
-        }) || [];
-        
-    } catch (error) {
-        console.error("Global search failed:", error);
-        this.searchError = "Could not retrieve global stock information. Please try again.";
-    } finally {
-        this.isSearching = false;
-    }
+  if (!query.trim()) {
+    // Clear all state if query is empty
+    this.globalSearchQuery = '';
+    this.isSearching = false;
+    return;
   }
+
+  this.globalSearchQuery = query;
+  this.isSearching = true;
+
+  // Helper to get product details from local cache
+  const getProductFromCache = (productId: number | undefined): { name: string, price: string } => {
+    if (!productId) {
+      return { name: 'Unknown Product', price: 'N/A' };
+    }
+    const product = this.localProductCache.get(productId);
+    return {
+      name: product?.name || `Product ID: ${productId}`,
+      price: product?.sellingPrice || 'N/A'
+    };
+  };
+
+  try {
+    const results = await lastValueFrom(this.posService.getGlobalStockBySearch(query));
+
+    this.globalSearchResults = (results as any[])?.map(result => {
+      const cacheData = getProductFromCache(result.id || result.productId);
+
+      //  API values but fallback to cache if missing
+      const productName = result.name || result.product?.name || cacheData.name;
+      const sellingPrice = result.sellingPrice || result.product?.sellingPrice || cacheData.price;
+
+      return {
+        productName,
+        price: sellingPrice,  // selling price from payload
+        branchName: result.branch?.name || `Branch ${result.branch?.id || 'Unknown'}`,
+        address: result.branch?.address || 'Remote Location',
+        quantity: result.quantity || 0,
+        productId: result.id || result.productId
+      };
+    }) || [];
+
+  } catch (error) {
+    console.error("Global search failed:", error);
+    this.searchError = "Could not retrieve global stock information. Please try again.";
+  } finally {
+    this.isSearching = false;
+  }
+}
+
 
   getProducts() {
     this.metadataService.enrichedProduct$.subscribe(async (data) => {

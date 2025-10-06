@@ -9,6 +9,7 @@ interface SearchProduct {
   name: string;
   sku: string;
   quantity: number;
+  price?: string; // NEW: Price for display
   productCategory?: { name: string }; 
   branchName?: string; // Branch name or ID for display
   address?: string; // Branch location
@@ -40,6 +41,9 @@ export class SearchbarComponent {
   @Input() globalSearchResults: any[] = []; 
   @Input() isSearching: boolean = false;   
   @Input() searchError: string | null = null;
+  
+  // Passed down from parent to display in the dropdown logic (no changes here, used in HTML)
+  @Input() globalSearchQuery: string = '';
 
   //  NEW: Tracks if the user has clicked the icon to trigger a global search
   hasGlobalSearchBeenTriggered = false; 
@@ -49,6 +53,7 @@ export class SearchbarComponent {
   noLocalResults = false; 
   
   private fuse: Fuse<SearchProduct>;
+  private readonly MIN_GLOBAL_SEARCH_LENGTH = 3; // NEW: Minimum length for global search
 
   constructor() {
     this.fuse = new Fuse([], {
@@ -151,6 +156,14 @@ export class SearchbarComponent {
       return;
     }
     
+    // NEW LOGIC: Only trigger if query length is sufficient
+    if (trimmedValue.length < this.MIN_GLOBAL_SEARCH_LENGTH) {
+        this.hasGlobalSearchBeenTriggered = true; // Still open dropdown to show the warning
+        this.isDropdownOpen = true;
+        this.globalSearchResults = []; // Clear any previous results
+        return;
+    }
+
     // NEW: Only trigger global search on click
     this.hasGlobalSearchBeenTriggered = true;
     this.isDropdownOpen = true; // Keep dropdown open while searching
@@ -199,5 +212,4 @@ export class SearchbarComponent {
   get inStockGlobalResults(): any[] {
     return this.globalSearchResults.filter(result => result.quantity > 0);
   }
-
 }

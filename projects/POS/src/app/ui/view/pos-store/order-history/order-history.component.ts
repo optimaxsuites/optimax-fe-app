@@ -61,7 +61,7 @@ export class OrderHistoryComponent implements OnInit {
   }
 
   goToStore(): void {
-    this.router.navigate(['/pos-store']);
+    this.router.navigate(['/store']);
   }
 
   clearOrders(): void {

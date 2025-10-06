@@ -663,69 +663,244 @@
         </div>
       </div>
 
-      <!-- Bundle/Combo Options -->
-      <div
-        class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6"
-      >
-        <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
-          Combo Options
-        </h2>
+  <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+  <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
+    Combo Options
+  </h2>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Is Bundle Checkbox -->
-          <div class="flex items-center">
-            <input
-              class="h-4 w-4 text-customBlue focus:ring-customBlue border-gray-300 rounded"
-              type="checkbox"
-              id="isBundle"
-              formControlName="isBundle"
-            />
-            <label
-              for="isBundle"
-              class="ml-2 block text-sm font-medium text-gray-700"
-            >
-              Is this a combo product?
-            </label>
-            <div
-              *ngIf="
-                productForm.get('isBundle')?.invalid &&
-                productForm.get('isBundle')?.touched
-              "
-              class="ml-2 text-sm text-red-500"
-            >
-              {{ getErrorMessage("isBundle") }}
+  <div class="space-y-4">
+    <!-- Is Bundle Checkbox -->
+    <div class="flex items-center justify-between">
+      <div class="flex items-center">
+        <input
+          class="h-4 w-4 text-customBlue focus:ring-customBlue border-gray-300 rounded"
+          type="checkbox"
+          id="isBundle"
+          formControlName="isBundle"
+          (change)="onBundleToggle($event)"
+        />
+        <label
+          for="isBundle"
+          class="ml-2 block text-sm font-medium text-gray-700"
+        >
+          Is this a combo product?
+        </label>
+      </div>
+      
+      <!-- Info tooltip -->
+      <div class="relative group">
+        <i class="fa-solid fa-info-circle text-gray-400 hover:text-gray-600 cursor-help text-sm"></i>
+        <div class="absolute bottom-full right-0 mb-2 px-3 py-2 text-xs text-white bg-gray-800 rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 w-64">
+          A combo product combines multiple individual products at a potentially discounted price
+          <div class="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bundle Configuration (Only shown when isBundle is true) -->
+    <div *ngIf="productForm.get('isBundle')?.value" class="space-y-4 border-t pt-4">
+      
+      <!-- Bundle Items Selection -->
+   <div>
+  <label class="block text-sm font-medium text-gray-700 mb-2">
+    Select Products for Combo <span class="text-red-500">*</span>
+  </label>
+  
+  <!-- Fixed ng-select with proper binding -->
+  <ng-select
+    [items]="availableProducts"
+    bindLabel="name"
+    bindValue="id"
+    [multiple]="true"
+    formControlName="selectedProductIds"
+    placeholder="Search and select products to include in combo"
+    class="ng-select-custom"
+    [clearable]="true"
+    [searchable]="true"
+    [closeOnSelect]="false"
+  >
+    <ng-option *ngFor="let product of availableProducts" [value]="product.id">
+      <div class="flex justify-between items-center">
+        <span>{{ product.name }}</span>
+        <span class="text-sm text-gray-500">₦{{ +(product.sellingPrice || 0) | number:'1.2-2' }}</span>
+      </div>
+    </ng-option>
+  </ng-select>
+  
+  <!-- Show error message for bundle items selection -->
+  <div
+    *ngIf="productForm.get('isBundle')?.value && 
+           productForm.get('bundleItems')?.invalid && 
+           productForm.get('bundleItems')?.touched"
+    class="mt-1 text-sm text-red-500"
+  >
+    Please select at least one product for the combo.
+  </div>
+</div>
+
+      <!-- Selected Bundle Items Configuration -->
+      <div *ngIf="selectedBundleItems.length > 0" class="mt-4">
+        <h4 class="text-sm font-medium text-gray-700 mb-3">Configure Combo Items</h4>
+        
+        <div class="overflow-x-auto border rounded-lg">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Product
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Unit Price
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Quantity in Combo
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Price Adjustment
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Bundle Price
+                </th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Action
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr *ngFor="let item of selectedBundleItems; let i = index" class="hover:bg-gray-50">
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0 h-10 w-10">
+                      <img 
+                        class="h-10 w-10 rounded object-cover" 
+                        [src]="item.product.imageUrl$ || 'https://via.placeholder.com/40'" 
+                        [alt]="item.product.name"
+                      >
+                    </div>
+                    <div class="ml-3">
+                      <div class="text-sm font-medium text-gray-900">{{ item.product.name }}</div>
+                      <div class="text-sm text-gray-500">SKU: {{ item.product.sku }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                  ₦{{ (+(item.product?.sellingPrice || 0)) | number:'1.2-2' }}
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <div class="flex items-center space-x-2">
+                    <button 
+                      type="button"
+                      class="h-8 w-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
+                      (click)="decrementBundleItemQuantity(i)"
+                      [disabled]="item.quantity <= 1"
+                    >
+                      <i class="fa-solid fa-minus text-xs"></i>
+                    </button>
+                    <!-- Fix: Remove ngModel and handle input properly -->
+                    <input
+                      type="number"
+                      [value]="item.quantity"
+                      (input)="updateBundleItemQuantity(i, $any($event.target).value)"
+                      (blur)="updateBundleItemsForm()"
+                      class="w-16 text-center border border-gray-300 rounded px-2 py-1 text-sm"
+                      min="1"
+                      max="99"
+                    />
+                    <button 
+                      type="button"
+                      class="h-8 w-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center"
+                      (click)="incrementBundleItemQuantity(i)"
+                    >
+                      <i class="fa-solid fa-plus text-xs"></i>
+                    </button>
+                  </div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <div class="flex items-center space-x-1">
+                    <span class="text-sm text-gray-500">₦</span>
+                    <!-- Fix: Remove ngModel and handle input properly -->
+                    <input
+                      type="number"
+                      [value]="item.priceAdjustment"
+                      (input)="updateBundlePriceAdjustment(i, $any($event.target).value)"
+                      (blur)="updateBundleItemsForm()"
+                      class="w-20 text-center border border-gray-300 rounded px-2 py-1 text-sm"
+                      step="0.01"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div class="text-xs text-gray-400 mt-1">
+                    {{ item.priceAdjustment >= 0 ? '+' : '' }}{{ item.priceAdjustment | number:'1.2-2' }}
+                  </div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                  ₦{{ (((+(item.product.sellingPrice || 0)) + item.priceAdjustment) * item.quantity) | number:'1.2-2' }}
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                  <button
+                    type="button"
+                    class="text-red-600 hover:text-red-900"
+                    (click)="removeBundleItem(i)"
+                  >
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Bundle Summary -->
+        <div class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div class="flex justify-between items-center">
+            <div>
+              <p class="text-sm font-medium text-blue-900">Bundle Summary</p>
+              <p class="text-xs text-blue-700">Total calculated price: ₦{{ calculateBundleTotalPrice() | number:'1.2-2' }}</p>
+              <p class="text-xs text-blue-700">Bundle selling price: ₦{{ productForm.get('sellingPrice')?.value | number:'1.2-2' }}</p>
             </div>
-          </div>
-
-          <!-- Bundle Items -->
-          <div>
-            <label
-              for="bundleItems"
-              class="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Combo Items
-            </label>
-            <ng-select
-              [items]="originalProducts"
-              bindLabel="name"
-              formControlName="bundleItems"
-              [multiple]="true"
-              placeholder="Select products"
-              class="ng-select-custom"
-            >
-            </ng-select>
-            <div
-              *ngIf="
-                productForm.get('bundleItems')?.invalid &&
-                productForm.get('bundleItems')?.touched
-              "
-              class="mt-1 text-sm text-red-500"
-            >
-              {{ getErrorMessage("bundleItems") }}
+            <div class="text-right">
+              <p class="text-lg font-bold text-blue-900">
+                {{ selectedBundleItems.length }} item(s)
+              </p>
+              <p class="text-sm" [ngClass]="{
+                'text-green-700': calculateBundleSavings() > 0,
+                'text-red-700': calculateBundleSavings() < 0,
+                'text-blue-700': calculateBundleSavings() === 0
+              }">
+                {{ calculateBundleSavings() > 0 ? 'Savings' : calculateBundleSavings() < 0 ? 'Premium' : 'Break-even' }}: 
+                ₦{{ getAbsValue(calculateBundleSavings()) | number:'1.2-2' }}
+              </p>
             </div>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Error Messages for Bundle Form -->
+    <div
+      *ngIf="
+        productForm.get('bundleItems')?.invalid &&
+        productForm.get('bundleItems')?.touched
+      "
+      class="mt-1 text-sm text-red-500"
+    >
+      Please select at least one product for the combo.
+    </div>
+  </div>
+</div>
+
+    <!-- Error Messages -->
+    <div
+      *ngIf="
+        productForm.get('isBundle')?.invalid &&
+        productForm.get('isBundle')?.touched
+      "
+      class="mt-1 text-sm text-red-500"
+    >
+      {{ getErrorMessage("isBundle") }}
+    </div>
+
+
 
       <!-- Product Variants -->
       <div

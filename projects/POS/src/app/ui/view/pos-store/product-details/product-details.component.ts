@@ -255,7 +255,7 @@ export class ProductDetailsComponent implements OnInit {
 
   // Navigation
   navigateToProductDetails(productId: number): void {
-    this.router.navigate(['/user/checkout/pos-store', this.storeUuid, 'product-details', productId]);
+    this.router.navigate(['/user/checkout/store', this.storeUuid, 'product-details', productId]);
   }
 
   // Header event handlers

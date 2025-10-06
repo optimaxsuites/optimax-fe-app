@@ -8,8 +8,9 @@
 
   <app-store-header [branches]="branches" [categoryOptions]="categoryOptions()" [selectedCategory]="selectedCategory()"
     [searchText]="searchText()" [isCartEmpty]="isCartEmpty()" [totalCartItems]="getTotalCartItems()" [user]="user()"
-    (categoryChange)="changeCategory($event)" (searchChange)="changeSearchInput($event)"
-    (toggleCart)="toggleCart()" [allProducts]="allProducts" (productSelect)="onProductSelect($event)" (searchSubmit)="onSearchSubmit($event)"></app-store-header>
+    (categoryChange)="changeCategory($event)" (searchChange)="changeSearchInput($event)" (toggleCart)="toggleCart()"
+    [allProducts]="allProducts" (productSelect)="onProductSelect($event)"
+    (searchSubmit)="onSearchSubmit($event)"></app-store-header>
 
   <!-- Main Content with Cart Sidebar -->
   <div class="flex-1 flex overflow-hidden">
@@ -18,53 +19,80 @@
       <!-- Skeleton Preloader - Show until content is fully ready -->
       @if (isLoading() || !isContentReady()) {
       <div class="skeleton-preloader">
+        <!-- Hero Section Skeleton -->
+        <div
+          class="flex md:flex-row flex-col md:items-center justify-between w-full md:py-[8rem] py-[4rem] md:px-[4rem] px-[1rem] gap-3 mb-8">
+          <div class="flex gap-3">
+            <div class="md:w-32 w-20 h-32 bg-gray-200 rounded animate-pulse"></div>
+            <div class="flex flex-col gap-4">
+              <div class="h-16 w-64 bg-gray-200 rounded animate-pulse"></div>
+              <div class="h-6 w-48 bg-gray-200 rounded animate-pulse md:hidden block"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- Category Sections Skeleton -->
-        <div class="mb-8">
-          <div class="h-8 w-48 bg-gray-200 rounded mb-4 animate-pulse"></div>
+        <div class="flex flex-col gap-[2rem] pb-4 md:px-[4rem] px-[1rem]">
+          @for (item of [1,2,3]; track item) {
+          <div class="w-full bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+            <!-- Category Header Skeleton -->
+            <div class="flex flex-row justify-between items-center border-gray-200 bg-gray-200 border p-3">
+              <div class="h-6 w-32 bg-gray-300 rounded animate-pulse"></div>
+              <div class="h-6 w-16 bg-gray-300 rounded animate-pulse"></div>
+            </div>
 
-          <!-- Horizontal Category Cards Skeleton -->
-          <div class="flex overflow-x-auto pb-4 space-x-4">
-            @for (item of [1,2,3]; track item) {
-            <div
-              class="min-w-[500px] bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-              <div class="h-6 w-32 bg-gray-200 rounded m-3 animate-pulse"></div>
+            <!-- Category Products Skeleton - Matches actual structure -->
+            <div class="relative p-3">
+              <div class="flex gap-4 overflow-x-auto">
+                @for (product of [1,2,3,4,5,6,7]; track product) {
+                <div
+                  class="flex-shrink-0 bg-gray-50 rounded-xl border border-black/10 overflow-hidden flex flex-col gap-3 md:w-[200px] w-[100px]">
+                  <!-- Image Skeleton -->
+                  <div class="h-44 w-full rounded-xl bg-gray-200 animate-pulse"></div>
 
-              <div class="grid grid-cols-2 gap-2 p-3">
-                @for (product of [1,2,3,4]; track product) {
-                <div class="bg-gray-50 rounded-xl border border-black/10 overflow-hidden flex flex-row gap-3">
-                  <div class="h-32 w-32 bg-gray-200 animate-pulse"></div>
-
-                  <div class="p-2 flex flex-col justify-between items-start flex-1">
+                  <!-- Content Skeleton -->
+                  <div class="p-2 flex flex-col justify-between items-start">
                     <div class="w-full">
                       <div class="h-5 w-3/4 bg-gray-200 rounded mb-2 animate-pulse"></div>
-                      <div class="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
+                      <div class="h-6 w-16 bg-gray-200 rounded mb-2 animate-pulse"></div>
                     </div>
-                    <div class="h-10 w-24 bg-gray-200 rounded-full animate-pulse"></div>
+                    <!-- Stock info skeleton -->
+                    <div class="h-4 w-20 bg-gray-200 rounded mb-2 animate-pulse"></div>
+                    <!-- Button skeleton -->
+                    <div class="h-10 w-full bg-gray-200 rounded-full animate-pulse"></div>
                   </div>
                 </div>
                 }
               </div>
             </div>
-            }
           </div>
+          }
         </div>
 
         <!-- All Products Section Skeleton -->
-        <div class="mt-8">
-          <div class="h-8 w-48 bg-gray-200 rounded mb-4 animate-pulse"></div>
+        <div class="mt-8 md:px-[4rem] px-[2rem]">
+          <!-- Section Header Skeleton -->
+          <div class="flex justify-between items-center mb-4">
+            <div class="h-8 w-48 bg-gray-200 rounded animate-pulse"></div>
+            <div class="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
 
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            @for (item of [1,2,3,4,5,6,7,8,9,10]; track item) {
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-              <div class="h-48 bg-gray-200 animate-pulse"></div>
+          <!-- Products Grid Skeleton - Matches 6 columns on xl screens -->
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            @for (item of [1,2,3,4,5,6,7,8,9,10,11,12]; track item) {
+            <div class="bg-gray-50 rounded-xl border border-black/10 overflow-hidden flex flex-col min-h-[150px]">
+              <!-- Image Skeleton -->
+              <div class="h-44 w-full bg-gray-200 animate-pulse"></div>
 
-              <div class="p-3 flex flex-col flex-1">
-                <div class="h-5 w-full bg-gray-200 rounded mb-2 animate-pulse"></div>
-                <div class="h-4 w-20 bg-gray-200 rounded mb-2 animate-pulse"></div>
-                <div class="flex flex-row items-center justify-between mt-auto">
+              <!-- Content Skeleton -->
+              <div class="p-3 flex flex-col flex-1 justify-between">
+                <div>
+                  <div class="h-5 w-full bg-gray-200 rounded mb-2 animate-pulse"></div>
+                  <div class="h-4 w-20 bg-gray-200 rounded mb-2 animate-pulse"></div>
                   <div class="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
-                  <div class="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
                 </div>
+                <!-- Button Skeleton -->
+                <div class="h-10 w-full bg-gray-200 rounded-full animate-pulse mt-2"></div>
               </div>
             </div>
             }
@@ -80,162 +108,226 @@
       </div>
       }
 
+
       <!-- Actual Content - Show only when content is fully ready -->
       @if (isContentReady() && !isLoading()) {
-      <!-- Category Sections -->
-      <div class="mb-8">
-        <div class="flex flex-row items-center justify-between w-full py-[8rem] px-[4rem] gap-3" id="bg-box">
-          <div class="flex gap-3">
-            <img src="assets/price-tag.png" alt="Price-tag" class="w-32">
-            <h2 class="font-bold text-gray-800 mb-4 text-[4rem] leading-[3.8rem]">Everything you need,<br /> in one
-              place.</h2>
-          </div>
-          <span class="text-[1.7rem]">A Shopping experience tailored just for you</span>
-        </div>
-
-        <div class="flex flex-col gap-[2rem] pb-4 space-x-4 px-[4rem]">
-          @for (category of getCategoryList(); track category) {
-          <div class="w-full bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-            <div class="flex flex-row justify-between items-center border-gray-200 bg-orange-400 border">
-              <h3 class="text-lg font-semibold text-gray-800 p-3 uppercase tracking-wider">{{ category }}</h3>
-              <div class="p-3">
-                <button class="text-white hover:text-blue-600 font-medium transition-colors underline"
-                  (click)="navigateToCategoryPage(category)">
-                  View all
-                </button>
+        <!-- Category Sections -->
+        <div class="mb-8">
+          <div class="flex md:flex-row flex-col md:items-center justify-between w-full md:py-[8rem] py-[4rem] md:px-[4rem] px-[1rem] gap-3" id="bg-box">
+            <div class="flex gap-3">
+              <img src="assets/price-tag.png" alt="Price-tag" class="md:w-32 w-20">
+              <div>
+                <h2 class="font-bold text-gray-800 mb-4 md:text-[4rem] text-[2rem] md:leading-[3.8rem] leading-[2rem]">
+                  Everything you need,<br /> in one place.
+                </h2>
+                <span class="md:text-[1.7rem] text-md md:hidden block">A Shopping experience tailored just for you</span>
               </div>
             </div>
+          </div>
 
-            <div class="flex gap-4 p-3">
-              @for (product of getProductsByCategory(category); track product.id; let i = $index) {
-              @if (i < 7) { <div
-                class="bg-gray-50 rounded-xl border border-black/10 overflow-hidden transition-all hover:shadow-xl duration-300 relative flex flex-col gap-3 cursor-pointer w-[200px]"
+          <div class="flex flex-col gap-[2rem] pb-4 md:px-[4rem] px-[1rem]">
+            @for (category of getCategoryList(); track category) {
+              <div class="w-full bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+                <div class="flex flex-row justify-between items-center border-gray-200 bg-orange-400 border">
+                  <h3 class="text-lg font-semibold text-gray-800 p-3 uppercase tracking-wider">{{ category }}</h3>
+                  <div class="p-3">
+                    <button class="text-white hover:text-blue-600 font-medium transition-colors underline"
+                      (click)="navigateToCategoryPage(category)">
+                      View all
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Category Products Container with Scroll -->
+                <div class="relative">
+                  <!-- Scroll Container -->
+                  <div #scrollContainer class="flex gap-4 p-3 overflow-x-auto scrollbar-hide scroll-smooth"
+                    [attr.data-category]="category" (scroll)="onCategoryScroll(category, $event)">
+                    @for (product of getProductsByCategory(category); track product.id; let i = $index) {
+                      @if (i < 7) {
+                        <div class="flex-shrink-0 bg-gray-50 rounded-xl border border-black/10 overflow-hidden transition-all hover:shadow-xl duration-300 relative flex flex-col gap-3 cursor-pointer md:w-[200px] w-[100px]"
+                          [routerLink]="['product-details', product.id]">
+                          <!-- Out of Stock Badge -->
+                          @if (product.quantity === 0) {
+                            <div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium z-10">
+                              Out of stock
+                            </div>
+                          }
+
+                          <div class="h-44 w-full rounded-xl bg-gray-100 overflow-hidden">
+                            <img [src]="getProductImage(product) | async" [alt]="product.name"
+                              class="w-full h-full object-cover" (error)="handleImageError($event)" />
+                          </div>
+
+                          <div class="p-2 flex flex-col justify-between items-start">
+                            <div>
+                              <h4 class="font-medium text-gray-800 text-xl line-clamp-1 capitalize">
+                                {{ product.name }}
+                              </h4>
+                              <p class="text-customBlue font-semibold text-xl">
+                                ₦{{ product.sellingPrice }}
+                              </p>
+                            </div>
+
+                            <!-- Stock Information -->
+                            <div class="w-full mt-2">
+                              @if (product.quantity > 0) {
+                                <p class="text-xs text-gray-500 text-left">
+                                  {{ product.quantity }} items left
+                                </p>
+                              }
+                            </div>
+
+                            <!-- Buy Button - Only show if in stock -->
+                            @if (product.quantity > 0) {
+                              <div class="mt-2">
+                                <button class="bg-customGreen text-white px-3 py-2 rounded-full text-sm flex items-center justify-center gap-1 w-full"
+                                  (click)="$event.stopPropagation(); addToCart(product)">
+                                  <i class="fa-solid fa-plus text-xs"></i>
+                                  <span>Buy Now</span>
+                                </button>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
+                    }
+                  </div>
+
+                  <!-- Navigation Arrows -->
+                  <div class="absolute bottom-4 right-4 flex gap-2 md:hidden">
+                    <button class="bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-white transition-all"
+                      (click)="scrollCategoryLeft(category)" [class.opacity-50]="!canScrollLeft(category)"
+                      [class.cursor-not-allowed]="!canScrollLeft(category)">
+                      <i class="fa-solid fa-chevron-left text-gray-700 text-sm"></i>
+                    </button>
+
+                    <button class="bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-white transition-all"
+                      (click)="scrollCategoryRight(category)" [class.opacity-50]="!canScrollRight(category)"
+                      [class.cursor-not-allowed]="!canScrollRight(category)">
+                      <i class="fa-solid fa-chevron-right text-gray-700 text-sm"></i>
+                    </button>
+                  </div>
+
+                  <!-- Desktop Scroll Indicators -->
+                  <div class="hidden md:flex absolute bottom-4 right-4 gap-2">
+                    <button class="bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-white hover:scale-110 transition-all"
+                      (click)="scrollCategoryLeft(category)" [class.opacity-50]="!canScrollLeft(category)"
+                      [class.cursor-not-allowed]="!canScrollLeft(category)">
+                      <i class="fa-solid fa-chevron-left text-gray-700"></i>
+                    </button>
+
+                    <button class="bg-white/90 backdrop-blur-sm border border-gray-300 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-white hover:scale-110 transition-all"
+                      (click)="scrollCategoryRight(category)" [class.opacity-50]="!canScrollRight(category)"
+                      [class.cursor-not-allowed]="!canScrollRight(category)">
+                      <i class="fa-solid fa-chevron-right text-gray-700"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div> <!-- Close Category Sections -->
+
+        <!-- All Products Section with Pagination -->
+        <div class="mt-8 md:px-[4rem] px-[2rem]">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">All Products</h2>
+            <div class="text-sm text-gray-600">
+              Showing {{ (currentPage() - 1) * itemsPerPage() + 1 }}-{{ getDisplayEndIndex() }} of {{
+              filteredProducts().length }} products
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            @for (product of paginatedProducts(); track product.id) {
+              <div class="cursor-pointer bg-gray-50 rounded-xl border border-black/10 overflow-hidden transition-all hover:shadow-xl duration-300 relative flex flex-col min-h-[150px]"
                 [routerLink]="['product-details', product.id]">
                 <!-- Out of Stock Badge -->
                 @if (product.quantity === 0) {
-                <div
-                  class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium z-10">
-                  Out of stock
-                </div>
+                  <div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium z-10">
+                    Out of stock
+                  </div>
                 }
 
-                <div class="h-44 w-full rounded-xl bg-gray-100 overflow-hidden">
+                <!-- Product Image -->
+                <div class="h-44 w-full rounded-t-xl bg-gray-100 overflow-hidden flex-shrink-0">
                   <img [src]="getProductImage(product) | async" [alt]="product.name" class="w-full h-full object-cover"
                     (error)="handleImageError($event)" />
                 </div>
 
-                <div class="p-2 flex flex-col justify-between items-start">
+                <!-- Product Info -->
+                <div class="p-3 flex flex-col flex-1 justify-between">
                   <div>
-                    <h4 class="font-medium text-gray-800 text-xl line-clamp-1 capitalize">
+                    <h3 class="font-medium text-gray-800 text-lg line-clamp-2 capitalize mb-1">
                       {{ product.name }}
-                    </h4>
-                    <p class="text-customBlue font-semibold text-xl">
+                    </h3>
+                    <p class="text-xs text-gray-500 text-left">
+                      {{ product.quantity }} items left
+                    </p>
+                    <p class="text-customBlue font-semibold text-lg">
                       ₦{{ product.sellingPrice }}
                     </p>
                   </div>
 
-                  <!-- Stock Information -->
-                  <div class="w-full mt-2">
-                    @if (product.quantity > 0) {
-                    <p class="text-xs text-gray-500 text-left">
-                      {{ product.quantity }} items left
-                    </p>
-                    }
-                  </div>
-
                   <!-- Buy Button - Only show if in stock -->
                   @if (product.quantity > 0) {
-                  <div class="mt-2">
-                    <button
-                      class="bg-customGreen text-white px-3 py-2 rounded-full text-sm flex items-center justify-center gap-1 w-full"
-                      (click)="$event.stopPropagation(); addToCart(product)">
-                      <i class="fa-solid fa-plus text-xs"></i>
-                      <span>Buy Now</span>
-                    </button>
-                  </div>
+                    <div class="mt-2">
+                      <button class="bg-customGreen text-white px-3 py-2 rounded-full text-sm flex items-center justify-center gap-1 w-full"
+                        (click)="$event.stopPropagation(); addToCart(product)">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span>Buy Now</span>
+                      </button>
+                    </div>
                   }
                 </div>
             </div>
             }
-            }
+            
           </div>
-        </div>
-        }
-      </div>
-  </div>
-
-  <!-- All Products Section with Pagination -->
-  <div class="mt-8 px-[4rem]">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-2xl font-bold text-gray-800">All Products</h2>
-      <div class="text-sm text-gray-600">
-        Showing {{ (currentPage() - 1) * itemsPerPage() + 1 }}-{{ getDisplayEndIndex() }} of {{
-        filteredProducts().length }} products
-      </div>
-    </div>
-
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-      @for (product of paginatedProducts(); track product.id) {
-      <div
-        class="cursor-pointer bg-gray-50 rounded-xl border border-black/10 overflow-hidden transition-all hover:shadow-xl duration-300 relative flex flex-col min-h-[150px]"
-        [routerLink]="['product-details', product.id]">
-        <!-- Out of Stock Badge -->
-        @if (product.quantity === 0) {
-        <div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-medium z-10">
-          Out of stock
-        </div>
-        }
-
-        <!-- Product Image -->
-        <div class="h-44 w-full rounded-t-xl bg-gray-100 overflow-hidden flex-shrink-0">
-          <img [src]="getProductImage(product) | async" [alt]="product.name" class="w-full h-full object-cover"
-            (error)="handleImageError($event)" />
+ 
+ 
         </div>
 
-        <!-- Product Info -->
-        <div class="p-3 flex flex-col flex-1 justify-between">
-          <div>
-            <h3 class="font-medium text-gray-800 text-lg line-clamp-2 capitalize mb-1">
-              {{ product.name }}
-            </h3>
-            <p class="text-xs text-gray-500 text-left">
-              {{ product.quantity }} items left
-            </p>
-            <p class="text-customBlue font-semibold text-lg">
-              ₦{{ product.sellingPrice }}
-            </p>
-          </div>
+          <!-- Pagination Controls -->
+          @if (totalPages() > 1) {
+            <div class="flex justify-center items-center space-x-2 mt-8">
+              <!-- Previous Button -->
+              <button (click)="previousPage()" [disabled]="currentPage() === 1"
+                class="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
 
-          <!-- Buy Button - Only show if in stock -->
-          @if (product.quantity > 0) {
-          <div class="mt-2">
-            <button
-              class="bg-customGreen text-white px-3 py-2 rounded-full text-sm flex items-center justify-center gap-1 w-full"
-              (click)="$event.stopPropagation(); addToCart(product)">
-              <i class="fa-solid fa-plus text-xs"></i>
-              <span>Buy Now</span>
-            </button>
-          </div>
+              <!-- Page Numbers -->
+              @for (page of getPageNumbers(); track page) {
+                @if (page === '...') {
+                  <span class="px-3 py-2 text-gray-500">...</span>
+                } @else {
+                  <button (click)="goToPage($any(page))" 
+                    [class.bg-customBlue]="currentPage() === page"
+                    [class.text-white]="currentPage() === page" 
+                    [class.bg-white]="currentPage() !== page"
+                    [class.text-gray-700]="currentPage() !== page"
+                    class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors min-w-[44px]">
+                    {{ page }}
+                  </button>
+                }
+              }
+
+              <!-- Next Button -->
+              <button (click)="nextPage()" [disabled]="currentPage() === totalPages()"
+                class="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
           }
-        </div>
-      </div>
-      }
-    </div>
+      } 
+    </main> <!-- Close main -->
 
-    <!-- Pagination Controls -->
-    @if (totalPages() > 1) {
-    <div class="flex justify-center items-center space-x-2 mt-8">
-      <!-- Pagination buttons remain the same -->
-    </div>
-    }
-  </div>
-  }
-  </main>
-
-  <!-- Cart Sidebar -->
-  @if (isCartSidebarVisible && !isCartEmpty()) {
-  <div class="hidden md:block w-[30%] bg-white border-l border-gray-300 overflow-hidden flex flex-col">
-    <div class="flex flex-col h-full">
+    <!-- Cart Sidebar -->
+    @if (isCartSidebarVisible && !isCartEmpty()) {
+      <div class="hidden md:block w-[30%] bg-white border-l border-gray-300 overflow-hidden flex flex-col">
+         <div class="flex flex-col h-full">
       <div class="p-4 bg-gray-50 border-b">
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-semibold text-gray-800">Shopping Cart</h2>
@@ -323,11 +415,11 @@
         </div>
       </div>
     </div>
-  </div>
-  }
-</div>
+      </div>
+    }
+  </div> <!-- Close flex container -->
 
-<!-- Mobile Cart Modal -->
+  <!-- Mobile Cart Modal -->
 @if (isCartOpen) {
 <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end justify-center p-0 md:hidden">
   <div class="bg-white w-full h-4/5 rounded-t-2xl shadow-xl flex flex-col" (click)="$event.stopPropagation()">

@@ -305,6 +305,7 @@ export interface SelectedRequest extends Refund {
 
 // TODO: Fill this up with the appropriate types
 export interface InventoryProductDTO {
+  costPrice: string;
   sellingPrice: string;
   // The inventory to be associated to
   inventoryId: number;
@@ -1093,4 +1094,76 @@ export interface CategoryDTO {
   id: number;
   name: string;
   description?: string;
+}
+
+
+// interfaces for e-store orders
+
+export interface OrderDTO {
+  id: number;
+  orderNumber: string;
+  orderStatus: string;
+  updatedAt: string;
+  createdDate: string;
+  amountTendered: number;
+  totalAmount: string;
+  quantity: number;
+  customerId: number;
+  branchId: number;
+  discountId: number;
+  paymentId: number;
+  cashierId: number;
+  orderItem: OrderItemsDTO[];
+  deliveryFee: number;
+  estimatedReadyTime: string;
+  estimatedDeliveryTime: string;
+  customerEmail: string;
+  deliveryInfoId: number;
+  deliveryMethod?: 'DELIVERY' | 'PICKUP';
+  deliveryInfo?: DeliveryInfoDTO;
+}
+
+export interface DeliveryInfoDTO {
+  id: number;
+  fullName: string;
+  phoneNumber: string;
+  address: string;
+  email: string;
+  instructions: string;
+}
+
+export interface OrderItemsDTO {
+  id: number;
+  totalPrice: number;
+  quantity: number;
+  productId: number;
+  productVariantId: number;
+  orderId: number;
+  productName?: string;
+  unitPrice?: number;
+  selectedVariants?: VariantDTO[];
+}
+
+// Add order status enum
+export enum OrderStatus {
+  PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
+  PREPARING = 'PREPARING',
+  READY_FOR_PICKUP = 'READY_FOR_PICKUP',
+  OUT_FOR_DELIVERY = 'OUT_FOR_DELIVERY',
+  DELIVERED = 'DELIVERED',
+  CANCELLED = 'CANCELLED',
+  COMPLETED = 'COMPLETED'
+}
+
+export enum DeliveryMethod {
+  DELIVERY = 'DELIVERY',
+  PICKUP = 'PICKUP'
+}
+
+export enum PaymentMethod {
+  CASH = 'CASH',
+  TRANSFER = 'TRANSFER',
+  CARD = 'CARD',
+  MOBILE = 'MOBILE'
 }

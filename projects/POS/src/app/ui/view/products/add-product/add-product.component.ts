@@ -12,7 +12,7 @@ import {
 import JsBarcode from "jsbarcode";
 import jsPDF from "jspdf";
 import { MessageService } from "primeng/api";
-import { skipUntil } from "rxjs";
+import { debounceTime, skipUntil } from "rxjs";
 import {
 	BranchDTO,
 	DiscountDTO,
@@ -33,6 +33,11 @@ import { firstValueFrom } from 'rxjs';
 interface SelectedIngredientDTO {
 	ingredient: IngredientDTO;
 	quantity: number;
+}
+interface BundleItem {
+  product: ProductData;
+  quantity: number;
+  priceAdjustment: number; 
 }
 
 @Component({
@@ -255,6 +260,8 @@ export class AddProductComponent {
 	discounts: any[] = [];
 	suppliers: supplierData[] = [];
 	taxes: TaxDTO[] = [];
+	selectedBundleItems: BundleItem[] = [];
+    availableProducts: ProductData[] = [];
 
 	periodicDiscount: { startDate: string; endDate: string } = {
 		startDate: "",
@@ -301,6 +308,7 @@ export class AddProductComponent {
 	//@ts-ignore
 	selectedBranchFromForm: (typeof this.branches)[0]["value"];
 	dataOfChosenBranches: any[] = [];
+	selectedProductIds: number[] = [];
 
 	/**
 	 * This should be `true` as long as the backend endpoints for the new models aren't ready
@@ -320,50 +328,238 @@ export class AddProductComponent {
 		private industryData: IndustryDataService,
 		private metadataService: MetadataService,
 	) {}
-	ngOnInit(): void {
-    const fbGroup: Parameters<typeof this.fb.group>[0] = {
-        name: ["", [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
-		isAvailableInStore: [true],
-        code: ['', [Validators.required, Validators.pattern(/^[A-Z0-9-]{3,20}$/)]],
-        description: ['', [Validators.required]], // Removed character limit validation
-        sku: [""],
-        weight: [null, [Validators.min(0), Validators.max(9999)]],
-        costPrice: [null, [Validators.required, Validators.min(0.01)]],
-        sellingPrice: [null, [Validators.required, Validators.min(0.01)]],
-        tax: [null],
-        discount: [null],
-        quantity: [null, [Validators.required, Validators.min(0)]],
-        supplier: [null],
-        partNumber: [""],
-        selectedBranch: [[], Validators.required],
-        branches: this.fb.array([]),
-        category: [""],
-        image: [null],
-        startDate: [""],
-        endDate: [""],
-        discountMinQuantity: [0],
-        discountName: [""],
-        isBundle: [false],
-        bundleItems: [],
-        measurementUnit: [""],
-        reorderThreshold: [null, [Validators.required, Validators.min(1)]],
-        expiryDate: [this._defaultExpiryDate.toISOString()],
-    };
+ngOnInit(): void {
+  const fbGroup: Parameters<typeof this.fb.group>[0] = {
+    name: ["", [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+    isAvailableInStore: [true],
+    code: ['', [Validators.required, Validators.pattern(/^[A-Z0-9-]{3,20}$/)]],
+    description: ['', [Validators.required]],
+    sku: [""],
+    weight: [null, [Validators.min(0), Validators.max(9999)]],
+    costPrice: [null, [Validators.required, Validators.min(0.01)]],
+    sellingPrice: [null, [Validators.required, Validators.min(0.01)]],
+    tax: [null],
+    discount: [null],
+    quantity: [null, [Validators.required, Validators.min(0)]],
+    supplier: [null],
+    partNumber: [""],
+    selectedBranch: [[], Validators.required],
+    branches: this.fb.array([]),
+    category: [""],
+    image: [null],
+    startDate: [""],
+    endDate: [""],
+    discountMinQuantity: [0],
+    discountName: [""],
+    isBundle: [false],
+    bundleItems: [[], this.bundleItemsValidator.bind(this)],
+    selectedProductIds: [[]], 
+    measurementUnit: [""],
+    reorderThreshold: [null, [Validators.required, Validators.min(1)]],
+    expiryDate: [this._defaultExpiryDate.toISOString()],
+  };
 
-    this.productForm = this.fb.group(fbGroup);
-    this.fetchMetaData();
+  this.productForm = this.fb.group(fbGroup);
+  this.fetchMetaData();
+  this.loadAvailableProducts();
 
-    if (this.isEditMode && this.activeItem) {
-       
-        setTimeout(() => {
-            this.initializeEditMode();
-        }, 100);
+  if (this.isEditMode && this.activeItem) {
+    setTimeout(() => {
+      this.initializeEditMode();
+    }, 100);
+  }
+
+  this.productForm.get("selectedBranch")?.valueChanges.subscribe(() => {
+    this.updateBranches();
+  });
+  
+  // Fixed subscription for selectedProductIds
+  this.productForm.get("selectedProductIds")?.valueChanges.subscribe((selectedIds) => {
+    if (selectedIds && Array.isArray(selectedIds)) {
+      this.syncBundleItems(selectedIds);
     }
+  });
+}
+syncBundleItems(selectedProductIds: number[]) {
+  // Avoid processing if the selection hasn't actually changed
+  const currentIds = this.selectedBundleItems.map(item => item.product.id);
+  const newIds = selectedProductIds || [];
+  
+  if (JSON.stringify(currentIds.sort()) === JSON.stringify(newIds.sort())) {
+    return;
+  }
 
-    this.productForm.get("selectedBranch")?.valueChanges.subscribe(() => {
-        this.console.log(this.selecteddBranch);
-        this.updateBranches();
+  console.log('Syncing bundle items with selected IDs:', selectedProductIds);
+
+  // Clear existing items
+  this.selectedBundleItems = [];
+
+  // Add items for each selected product ID
+  if (newIds.length > 0) {
+    newIds.forEach(productId => {
+      const product = this.availableProducts.find(p => p.id === productId);
+      if (product) {
+        this.selectedBundleItems.push({
+          product: product,
+          quantity: 1,
+          priceAdjustment: 0
+        });
+      }
     });
+  }
+
+  // Update the bundle items form array
+  this.updateBundleItemsInForm();
+}
+
+bundleItemsValidator(control: AbstractControl): ValidationErrors | null {
+  
+  const controlValue = control.value;
+  const isBundleControl = control.parent?.get('isBundle');
+  const isBundle = isBundleControl?.value;
+  
+  if (isBundle && (!controlValue || controlValue.length === 0)) {
+    return { required: true };
+  }
+  return null;
+}
+  loadAvailableProducts() {
+    this.metadataService.products$.subscribe((products) => {
+      this.availableProducts = products.filter(product => {
+        // Exclude the current product if in edit mode
+        if (this.isEditMode && this.activeItem) {
+          return product.id !== this.activeItem.id;
+        }
+        return true;
+      });
+    });
+  }
+onBundleToggle(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const isBundle = target.checked;
+  
+  console.log('Bundle toggle:', isBundle);
+  
+  if (!isBundle) {
+    
+    this.selectedBundleItems = [];
+    this.selectedProductIds = [];
+    this.productForm.get('bundleItems')?.setValue([], { emitEvent: false });
+    this.productForm.get('selectedProductIds')?.setValue([], { emitEvent: false });
+  }
+  
+  
+  setTimeout(() => {
+    this.productForm.get('bundleItems')?.updateValueAndValidity({ emitEvent: false });
+  }, 50);
+}
+updateSelectedProductIds() {
+  this.selectedProductIds = this.selectedBundleItems.map(item => item.product.id);
+}
+updateBundleItemsInForm() {
+  const bundleItemsData = this.selectedBundleItems.map(item => ({
+    id: 0,
+    productId: Number(item.product.id),
+    quantity: Number(item.quantity) || 1,
+    priceAdjustment: Number(item.priceAdjustment) || 0
+  }));
+
+  console.log('Updating bundle items in form:', bundleItemsData);
+
+  // Update the form control value
+  this.productForm.get('bundleItems')?.setValue(bundleItemsData, { emitEvent: false });
+  this.productForm.get('bundleItems')?.markAsDirty();
+  
+  // Update validation
+  setTimeout(() => {
+    this.productForm.get('bundleItems')?.updateValueAndValidity({ emitEvent: false });
+  }, 50);
+}
+updateBundleItemsForm() {
+  if (!this.productForm) return;
+  
+  const bundleItemsData = this.selectedBundleItems
+    .map(item => {
+      const productId = Number(item.product.id);
+      const quantity = Number(item.quantity) || 1;
+      const priceAdjustment = Number(item.priceAdjustment) || 0;
+      
+      if (isNaN(productId) || productId <= 0) {
+        console.error('Invalid productId:', item.product.id, item.product);
+        return null;
+      }
+      
+      return {
+        id: 0,
+        productId: productId,
+        quantity: quantity,
+        priceAdjustment: priceAdjustment
+      };
+    })
+    .filter(item => item !== null);
+
+  
+  this.productForm.get('bundleItems')?.setValue(bundleItemsData, { emitEvent: false });
+  
+  
+  const selectedIds = this.selectedBundleItems.map(item => item.product.id);
+  this.selectedProductIds = selectedIds;
+  this.productForm.get('selectedProductIds')?.setValue(selectedIds, { emitEvent: false });
+  
+  this.productForm.get('bundleItems')?.markAsDirty();
+  
+  
+  setTimeout(() => {
+    this.productForm.get('bundleItems')?.updateValueAndValidity({ emitEvent: false });
+  }, 0);
+}
+incrementBundleItemQuantity(index: number) {
+  if (this.selectedBundleItems[index].quantity < 99) {
+    this.selectedBundleItems[index].quantity++;
+    this.updateBundleItemsInForm();
+  }
+}
+
+decrementBundleItemQuantity(index: number) {
+  if (this.selectedBundleItems[index].quantity > 1) {
+    this.selectedBundleItems[index].quantity--;
+    this.updateBundleItemsInForm();
+  }
+}
+updateBundleItemQuantity(index: number, value: any) {
+  const quantity = Number(value) || 1;
+  if (quantity >= 1 && quantity <= 99) {
+    this.selectedBundleItems[index].quantity = quantity;
+    this.updateBundleItemsInForm();
+  }
+}
+
+updateBundlePriceAdjustment(index: number, value: any) {
+  const priceAdjustment = Number(value) || 0;
+  this.selectedBundleItems[index].priceAdjustment = priceAdjustment;
+  this.updateBundleItemsInForm();
+}
+
+removeBundleItem(index: number) {
+  this.selectedBundleItems.splice(index, 1);
+  
+
+  const selectedIds = this.selectedBundleItems.map(item => item.product.id);
+  this.productForm.get('selectedProductIds')?.setValue(selectedIds, { emitEvent: true });
+}
+ calculateBundleTotalPrice(): number {
+  return this.selectedBundleItems.reduce(
+	(total, item) => total + (((Number(item.product.sellingPrice) || 0) + item.priceAdjustment) * item.quantity),
+	0
+  );
+}
+  calculateBundleSavings(): number {
+    const individualTotal = this.calculateBundleTotalPrice();
+    const bundlePrice = this.productForm.get('sellingPrice')?.value || 0;
+    return Math.max(0, individualTotal - bundlePrice);
+  }
+getAbsValue(value: number): number {
+  return Math.abs(value);
 }
 private initializeEditMode() {
     console.log('Initializing edit mode with activeItem:', this.activeItem);
@@ -387,9 +583,15 @@ private initializeEditMode() {
         measurementUnit: this.activeItem.measurementUnit || ''
     });
 
-    // Set related objects by finding them in the loaded arrays
+  
     this.setRelatedObjects();
-
+     if (this.activeItem.isBundle && this.activeItem.bundleItems) {
+      this.selectedBundleItems = this.activeItem.bundleItems.map((item: any) => ({
+        product: this.availableProducts.find(p => p.id === item.productId) || item,
+        quantity: item.quantity || 1,
+        priceAdjustment: item.priceAdjustment || 0
+      }));
+    }
     // Set variants
     if (this.activeItem.variants && this.activeItem.variants.length > 0) {
         this.variants = [...this.activeItem.variants];
@@ -634,32 +836,36 @@ private initializeProductImage() {
 		this.selectedIngredients.splice(index, 1);
 	}
 
-	updateBranches() {
-		const branchArray = this.branchess;
-		const selectedBranches = this.selecteddBranch;
+updateBranches() {
+    const branchArray = this.branchess;
+    const selectedBranches = this.selecteddBranch;
 
-		// if (!Array.isArray(selectedBranches) || selectedBranches.length <= 0) return;
+    if (!selectedBranches || (!Array.isArray(selectedBranches) || selectedBranches.length <= 0)) return;
 
-		if (Array.isArray(selectedBranches) && selectedBranches.length === 1) {
-			while (branchArray.length > 0) {
-				branchArray.removeAt(0);
-			}
-			return;
-		}
+    if (Array.isArray(selectedBranches) && selectedBranches.length === 1) {
+        while (branchArray.length > 0) {
+            branchArray.removeAt(0);
+        }
+        return;
+    }
+	
+   
 
-		if (branchArray.value.length > 1) {
-			for (let i = branchArray.value.length - 1; i >= 0; i--) {
-				const formBranch = branchArray.at(i).get("branchName")?.value;
-				const stillSelected = selectedBranches.some(
-					(b: any) => b.name === formBranch.name,
-				);
+   
+
+    if (branchArray.value.length > 1) {
+        for (let i = branchArray.value.length - 1; i >= 0; i--) {
+            const formBranch = branchArray.at(i).get("branchName")?.value;
+            const stillSelected = selectedBranches.some(
+                (b: any) => b.name === formBranch.name,
+            );
 				console.log(stillSelected);
 				if (!stillSelected) {
 					branchArray.removeAt(i);
 				}
 			}
 		}
-
+         if (!Array.isArray(selectedBranches)) return;
 		selectedBranches.forEach((branch: any) => {
 			const exists = branchArray.controls.some(
 				(ctrl) => ctrl.get("branchName")?.value.name === branch.name,
@@ -892,141 +1098,197 @@ private initializeProductImage() {
 			}
 		});
 	}
-	addToProduct() {
-		const userName = sessionStorage.getItem("username");
-		this.loading = true;
-		// console.log(this.productForm);
-		if (this.productForm.invalid) {
-			for (const controlName in this.productForm.controls) {
-				const control = this.productForm.controls[controlName];
-				console.log(this.productForm.get("branches")?.value);
-				if (control.invalid) {
-					console.log(`${controlName} is invalid. Errors:`, control.errors);
-				}
-			}
-			console.log(this.productForm);
-			this.messageService.add({
-				severity: "error",
-				summary: "Validation Error",
-				detail: "Please ensure all required fields are filled in correctly.",
-				key: "tl",
-				life: 3000,
-			});
-			this.loading = false;
+addToProduct() {
+  const userName = sessionStorage.getItem("username");
+  this.loading = true;
 
-			return;
-		}
-
-		const formValues = this.productForm.value;
-
-		if (this.selecteddBranch?.length > 1) {
-			this.createProductPerBranch(this.branchess.value);
-		} else {
-			const product = {
-				id: 0,
-				name: formValues.name,
-				isAvailableInStore: formValues.isAvailableInStore ?? true,
-				code: formValues.code,
-				partNumber: formValues.partNumber,
-				description: formValues.description,
-				measurementUnit: formValues.measurementUnit,
-				isBundle: formValues.isBundle,
-				bundleItems: formValues.bundleItems || [],
-				productCategoryId: formValues.category.id,
-				variants: this.variants || [],
-				sku: formValues.sku,
-				purchasePrice: formValues.costPrice,
-				sellingPrice: formValues.sellingPrice,
-				quantity: formValues.quantity,
-				weight: formValues.weight,
-				reorderThreshold: formValues.reorderThreshold,
-				taxId: formValues.tax?.id,
-				discountId: formValues.discount?.id,
-				supplierId: formValues.supplier?.id,
-				branchId:
-					formValues.selectedBranch?.id || formValues.selectedBranch[0]?.id,
-				createdBy: userName,
-				createdDate: new Date().toISOString(),
-				expiryDate: formValues.expiryDate,
-			};
-			const formData = new FormData();
-			formData.append("product", JSON.stringify(product));
-			if (formValues.image instanceof File) {
-				formData.append("files", formValues.image);
-			}
-
-			this.posService.addProduct(formData).subscribe(
-				async (data) => {
-					if (data) {
-						console.log(data);
-						const branchId =
-        product.branchId; 
-      await this.createInventoryForNewProduct(
-        data.id,                                  
-        Number(branchId),
-        Number(product.quantity),
-        Number(product.purchasePrice),
-        Number(product.sellingPrice),
-        product.supplierId ?? null
-      );
-						this.messageService.add({
-							severity: "success",
-							summary: "Product Added",
-							detail: "Product added successfully.",
-							key: "tl",
-							life: 3000,
-						});
-						this.loading = false;
-						this.addSuccessfull = true;
-						this.resetFormAfterSuccess();
-					} else {
-						this.messageService.add({
-							severity: "error",
-							summary: "Failed",
-							detail: "An error occured. Please try adding the product again.",
-							key: "tl",
-							life: 3000,
-						});
-						this.loading = false;
-					}
-				},
-				(error) => {
-					this.loading = false;
-					this.messageService.add({
-						severity: "error",
-						summary: "Error",
-						detail: "Unexpected error occured, please try again later.",
-						key: "tl",
-						life: 3000,
-					});
-				},
-			);
-		}
-	}
-resetFormAfterSuccess() {
-  this.productForm.reset();
-  this.productForm.markAsUntouched();
-  this.productForm.markAsPristine();
-  
-  this.productImage = "";
-  this.variants = [];
-  this.selectedIngredients = [];
-  
-  
-  while (this.branchess.length !== 0) {
-    this.branchess.removeAt(0);
-  }
-  
-
-  if (this.branches.length > 0) {
-    const defaultBranch = this.userBranch === "headquarters" ? [this.branches[0]] : this.branches[0];
-    this.productForm.patchValue({
-      selectedBranch: defaultBranch,
-      expiryDate: this._defaultExpiryDate.toISOString(),
-      isBundle: false,
-      reorderThreshold: 12
+  // Validate bundle items if it's a bundle product
+  if (this.productForm.get('isBundle')?.value && this.selectedBundleItems.length === 0) {
+    this.messageService.add({
+      severity: "error",
+      summary: "Validation Error",
+      detail: "Please select at least one product for the combo.",
+      key: "tl",
+      life: 3000,
     });
+    this.loading = false;
+    return;
   }
+
+  if (this.productForm.invalid) {
+    this.markFormGroupTouched(this.productForm);
+    this.messageService.add({
+      severity: "error",
+      summary: "Validation Error",
+      detail: "Please fill in all required fields correctly.",
+      key: "tl",
+      life: 3000,
+    });
+    this.loading = false;
+    return;
+  }
+
+  const formValues = this.productForm.value;
+
+  if (this.selecteddBranch?.length > 1) {
+    this.createProductPerBranch(this.branchess.value);
+  } else {
+    
+let bundleItems: any[] = [];
+if (formValues.isBundle && this.selectedBundleItems.length > 0) {
+  bundleItems = this.selectedBundleItems
+    .map(item => {
+      const productId = Number(item.product.id);
+      
+ 
+      if (isNaN(productId) || productId <= 0) {
+        console.error('Invalid productId in bundle item:', item);
+        return null;
+      }
+      
+      return {
+        productId: productId,
+        quantity: Number(item.quantity) || 1,
+        priceAdjustment: Number(item.priceAdjustment) || 0
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null);
+  
+  console.log('Final bundle items for backend:', JSON.stringify(bundleItems, null, 2));
+  
+  
+  if (bundleItems.length === 0) {
+    this.messageService.add({
+      severity: "error",
+      summary: "Validation Error",
+      detail: "Failed to create valid bundle items. Please check product selection.",
+      key: "tl",
+      life: 3000,
+    });
+    this.loading = false;
+    return;
+  }
+}
+
+    const product = {
+      id: 0,
+      name: formValues.name,
+      isAvailableInStore: formValues.isAvailableInStore ?? true,
+      code: formValues.code,
+      partNumber: formValues.partNumber,
+      description: formValues.description,
+      measurementUnit: formValues.measurementUnit,
+      isBundle: formValues.isBundle || false,
+      bundleItems: bundleItems, 
+      productCategoryId: formValues.category?.id,
+      variants: this.variants || [],
+      sku: formValues.sku,
+      purchasePrice: formValues.costPrice,
+      sellingPrice: formValues.sellingPrice,
+      quantity: formValues.quantity,
+      weight: formValues.weight,
+      reorderThreshold: formValues.reorderThreshold,
+      taxId: formValues.tax?.id,
+      discountId: formValues.discount?.id,
+      supplierId: formValues.supplier?.id,
+      branchId: formValues.selectedBranch?.id || formValues.selectedBranch[0]?.id,
+      createdBy: userName,
+      createdDate: new Date().toISOString(),
+      expiryDate: formValues.expiryDate,
+    };
+
+    console.log('Final product payload:', JSON.stringify(product, null, 2));
+
+    const formData = new FormData();
+    formData.append("product", JSON.stringify(product));
+    if (formValues.image instanceof File) {
+      formData.append("files", formValues.image);
+    }
+
+    this.posService.addProduct(formData).subscribe(
+      async (data) => {
+        if (data) {
+          console.log('Product created successfully:', data);
+          const branchId = product.branchId; 
+          await this.createInventoryForNewProduct(
+            data.id,                                  
+            Number(branchId),
+            Number(product.quantity),
+            Number(product.purchasePrice),
+            Number(product.sellingPrice),
+            product.supplierId ?? null
+          );
+          this.messageService.add({
+            severity: "success",
+            summary: "Product Added",
+            detail: "Product added successfully.",
+            key: "tl",
+            life: 3000,
+          });
+          this.loading = false;
+          this.addSuccessfull = true;
+          this.resetFormAfterSuccess();
+        } else {
+          this.messageService.add({
+            severity: "error",
+            summary: "Failed",
+            detail: "An error occured. Please try adding the product again.",
+            key: "tl",
+            life: 3000,
+          });
+          this.loading = false;
+        }
+      },
+      (error) => {
+        this.loading = false;
+        console.error('Error creating product:', error);
+        this.messageService.add({
+          severity: "error",
+          summary: "Error",
+          detail: "Unexpected error occured, please try again later.",
+          key: "tl",
+          life: 3000,
+        });
+      },
+    );
+  }
+}
+  resetFormAfterSuccess() {
+    this.productForm.reset();
+    this.productForm.markAsUntouched();
+    this.productForm.markAsPristine();
+    
+    this.productImage = "";
+    this.variants = [];
+    this.selectedIngredients = [];
+    this.selectedBundleItems = []; 
+    
+    while (this.branchess.length !== 0) {
+      this.branchess.removeAt(0);
+    }
+
+    if (this.branches.length > 0) {
+      const defaultBranch = this.userBranch === "headquarters" ? [this.branches[0]] : this.branches[0];
+      this.productForm.patchValue({
+        selectedBranch: defaultBranch,
+        expiryDate: this._defaultExpiryDate.toISOString(),
+        isBundle: false,
+        bundleItems: [],
+        reorderThreshold: 12
+      });
+    }
+  }
+
+  private markFormGroupTouched(formGroup: FormGroup) {
+  Object.keys(formGroup.controls).forEach(key => {
+    const control = formGroup.get(key);
+    if (control) {
+      control.markAsTouched();
+      if (control instanceof FormGroup) {
+        this.markFormGroupTouched(control);
+      }
+    }
+  });
 }
 
 	async createProductPerBranch(branches: any[]) {
@@ -1172,6 +1434,7 @@ resetFormAfterSuccess() {
 		}
 		return "AUTO";
 	}
+	
 	generateVariantSku(parentSku: string, variant: VariantDTO) {
 		if (!parentSku) {
 			return "Auto";
