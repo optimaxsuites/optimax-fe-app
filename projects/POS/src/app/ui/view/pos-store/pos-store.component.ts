@@ -572,7 +572,7 @@ export class PosStoreComponent implements OnInit, OnDestroy {
   navigateToCategoryPage(category: string): void {
     const currentUuid = this.route.snapshot.paramMap.get('uuid');
     if (currentUuid) {
-      this.router.navigate(['/store', currentUuid, 'category', category.toLowerCase()]);
+      this.router.navigate(['/user/checkout/store', currentUuid, 'category', category.toLowerCase()]);
     }
   }
 
@@ -583,7 +583,7 @@ export class PosStoreComponent implements OnInit, OnDestroy {
   onSearchSubmit(searchTerm: string): void {
     const currentUuid = this.route.snapshot.paramMap.get('uuid');
     if (currentUuid && searchTerm.trim()) {
-      this.router.navigate(['/store', currentUuid, 'category', 'search-results'], {
+      this.router.navigate(['/user/checkout/store', currentUuid, 'category', 'search-results'], {
         queryParams: { search: searchTerm.trim() }
       });
     }
