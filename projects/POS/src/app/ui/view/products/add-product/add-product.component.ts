@@ -30,10 +30,12 @@ import { IndustryDataService } from "../../../service/industry-data.service";
 import { MetadataService } from "../../../service/metadata.service";
 import { PosServiceService } from "../../../service/pos-service.service";
 import { firstValueFrom } from 'rxjs';
+
 interface SelectedIngredientDTO {
 	ingredient: IngredientDTO;
 	quantity: number;
 }
+
 interface BundleItem {
   product: ProductData;
   quantity: number;
@@ -93,13 +95,13 @@ export class AddProductComponent {
 	};
 
 	discount: {
-		id: 0;
-		name: "";
-		value: 0;
+		id: number;
+		name: string;
+		value: number;
 		startDate: Date;
 		endDate: Date;
-		minQuantity: 0;
-		discountType: { id: 0; code: ""; description: ""; name: "" };
+		minQuantity: number;
+		discountType: { id: number; code: string; description: string; name: string };
 	} = {
 		id: 0,
 		name: "",
@@ -328,6 +330,7 @@ export class AddProductComponent {
 		private industryData: IndustryDataService,
 		private metadataService: MetadataService,
 	) {}
+
 ngOnInit(): void {
   const fbGroup: Parameters<typeof this.fb.group>[0] = {
     name: ["", [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
@@ -380,6 +383,7 @@ ngOnInit(): void {
     }
   });
 }
+
 syncBundleItems(selectedProductIds: number[]) {
   // Avoid processing if the selection hasn't actually changed
   const currentIds = this.selectedBundleItems.map(item => item.product.id);
@@ -412,6 +416,9 @@ syncBundleItems(selectedProductIds: number[]) {
   this.updateBundleItemsInForm();
 }
 
+mainProductImage: string = '';
+productImages: { file: File | null, url: string }[] = [];
+
 bundleItemsValidator(control: AbstractControl): ValidationErrors | null {
   
   const controlValue = control.value;
@@ -423,6 +430,7 @@ bundleItemsValidator(control: AbstractControl): ValidationErrors | null {
   }
   return null;
 }
+
   loadAvailableProducts() {
     this.metadataService.products$.subscribe((products) => {
       this.availableProducts = products.filter(product => {
@@ -434,6 +442,7 @@ bundleItemsValidator(control: AbstractControl): ValidationErrors | null {
       });
     });
   }
+
 onBundleToggle(event: Event) {
   const target = event.target as HTMLInputElement;
   const isBundle = target.checked;
@@ -453,9 +462,11 @@ onBundleToggle(event: Event) {
     this.productForm.get('bundleItems')?.updateValueAndValidity({ emitEvent: false });
   }, 50);
 }
+
 updateSelectedProductIds() {
   this.selectedProductIds = this.selectedBundleItems.map(item => item.product.id);
 }
+
 updateBundleItemsInForm() {
   const bundleItemsData = this.selectedBundleItems.map(item => ({
     id: 0,
@@ -475,6 +486,7 @@ updateBundleItemsInForm() {
     this.productForm.get('bundleItems')?.updateValueAndValidity({ emitEvent: false });
   }, 50);
 }
+
 updateBundleItemsForm() {
   if (!this.productForm) return;
   
@@ -513,6 +525,7 @@ updateBundleItemsForm() {
     this.productForm.get('bundleItems')?.updateValueAndValidity({ emitEvent: false });
   }, 0);
 }
+
 incrementBundleItemQuantity(index: number) {
   if (this.selectedBundleItems[index].quantity < 99) {
     this.selectedBundleItems[index].quantity++;
@@ -526,6 +539,7 @@ decrementBundleItemQuantity(index: number) {
     this.updateBundleItemsInForm();
   }
 }
+
 updateBundleItemQuantity(index: number, value: any) {
   const quantity = Number(value) || 1;
   if (quantity >= 1 && quantity <= 99) {
@@ -547,20 +561,24 @@ removeBundleItem(index: number) {
   const selectedIds = this.selectedBundleItems.map(item => item.product.id);
   this.productForm.get('selectedProductIds')?.setValue(selectedIds, { emitEvent: true });
 }
+
  calculateBundleTotalPrice(): number {
   return this.selectedBundleItems.reduce(
 	(total, item) => total + (((Number(item.product.sellingPrice) || 0) + item.priceAdjustment) * item.quantity),
 	0
   );
 }
+
   calculateBundleSavings(): number {
     const individualTotal = this.calculateBundleTotalPrice();
     const bundlePrice = this.productForm.get('sellingPrice')?.value || 0;
     return Math.max(0, individualTotal - bundlePrice);
   }
+
 getAbsValue(value: number): number {
   return Math.abs(value);
 }
+
 private initializeEditMode() {
     console.log('Initializing edit mode with activeItem:', this.activeItem);
 
@@ -605,6 +623,7 @@ private initializeEditMode() {
 
     console.log('Form after initialization:', this.productForm.value);
 }
+
 private setRelatedObjects() {
     // Set category
     if (this.activeItem.productCategory) {
@@ -638,6 +657,7 @@ private setRelatedObjects() {
         }
     }
 }
+
 private setBranchInformation() {
     if (this.activeItem.branch) {
         const branch = this.branches.find(b => b.id === this.activeItem.branch.id);
@@ -650,6 +670,7 @@ private setBranchInformation() {
         }
     }
 }
+
 private initializeProductImage() {
     console.log('Initializing product image for activeItem:', this.activeItem);
     
@@ -704,6 +725,7 @@ private initializeProductImage() {
     this.productImage = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s';
     console.log('Using fallback image');
 }
+
 	fetchMetaData() {
 		this.metadataService.discount$.subscribe((data) => (this.discounts = data));
 		this.metadataService.category$.subscribe(
@@ -739,6 +761,7 @@ private initializeProductImage() {
 			this.originalProducts = data;
 		});
 	}
+
 	get branchess(): FormArray<FormGroup> {
 		return this.productForm.get("branches") as FormArray<FormGroup>;
 	}
@@ -779,6 +802,7 @@ private initializeProductImage() {
 			console.log("Ingredient already added!");
 		}
 	}
+
 	loadVariants() {
 		const variantMap: { [key: string]: any } = {};
 
@@ -823,6 +847,7 @@ private initializeProductImage() {
 
 		this.populateEditBranches();
 	}
+
 	onIngredientSelect(selectedItems: any[]) {
 		console.log(selectedItems);
 		this.selectedIngredients = selectedItems.map((ingredient) => ({
@@ -832,9 +857,125 @@ private initializeProductImage() {
 
 		console.log(this.selectedIngredients);
 	}
+
 	removeIngredient(index: number) {
 		this.selectedIngredients.splice(index, 1);
 	}
+
+
+	removeImage(index: number) {
+  const removedImage = this.productImages[index];
+  
+  // If removing the main image, set a new main image
+  if (this.mainProductImage === removedImage.url) {
+    if (this.productImages.length > 1) {
+      // Set the next image as main, or the previous if it's the last
+      const newMainIndex = index === this.productImages.length - 1 ? index - 1 : index + 1;
+      this.mainProductImage = this.productImages[newMainIndex].url;
+    } else {
+      this.mainProductImage = '';
+    }
+  }
+  
+  this.productImages.splice(index, 1);
+  this.updateImageFormValidation();
+}
+
+clearAllImages() {
+  this.productImages = [];
+  this.mainProductImage = '';
+  this.updateImageFormValidation();
+}
+
+private updateImageFormValidation() {
+  // Mark the form control as valid if we have at least one image
+  if (this.productImages.length > 0) {
+    this.productForm.get('image')?.setErrors(null);
+  } else {
+    this.productForm.get('image')?.setErrors({ required: true });
+  }
+}
+
+// Update the getLastImage method to handle multiple images
+getLastImage(): string {
+  if (this.productImages.length > 0) {
+    return this.mainProductImage;
+  }
+  
+  // Fallback to existing logic for edit mode
+  if (this.activeItem?.productImages && Array.isArray(this.activeItem.productImages) && this.activeItem.productImages.length > 0) {
+    const lastImage = this.activeItem.productImages[this.activeItem.productImages.length - 1];
+    
+    if (typeof lastImage === 'string' && (lastImage.startsWith('http') || lastImage.startsWith('data:'))) {
+      return lastImage;
+    }
+    
+    if (lastImage?.imageUrl) {
+      return lastImage.imageUrl;
+    }
+  }
+  
+  return 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s';
+}
+
+setAsMainImage(imageUrl: string) {
+  this.mainProductImage = imageUrl;
+}
+
+// In resetFormAfterSuccess() method, add:
+resetFormAfterSuccess() {
+    this.productForm.reset();
+    this.productForm.markAsUntouched();
+    this.productForm.markAsPristine();
+    
+    this.productImage = "";
+    this.variants = [];
+    this.selectedIngredients = [];
+    this.selectedBundleItems = []; 
+    
+    while (this.branchess.length !== 0) {
+      this.branchess.removeAt(0);
+    }
+
+    if (this.branches.length > 0) {
+      const defaultBranch = this.userBranch === "headquarters" ? [this.branches[0]] : this.branches[0];
+      this.productForm.patchValue({
+        selectedBranch: defaultBranch,
+        expiryDate: this._defaultExpiryDate.toISOString(),
+        isBundle: false,
+        bundleItems: [],
+        reorderThreshold: 12
+      });
+    }
+    
+    this.productImages = [];
+    this.mainProductImage = '';
+}
+
+// In resetForm() method, add:
+resetForm() {
+		this.productForm.reset();
+		this.productImage = "";
+		this.variants = [];
+		this.categories = [];
+		this.discounts = [];
+		this.productImages = [];
+		this.mainProductImage = '';
+}
+
+// In initializeEditMode() method, add image initialization:
+private getImageUrlFromItem(imageItem: any): string {
+  if (typeof imageItem === 'string') {
+    return imageItem;
+  }
+  if (imageItem?.imageUrl) {
+    return imageItem.imageUrl;
+  }
+  if (imageItem?.url) {
+    return imageItem.url;
+  }
+  return 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s';
+}
 
 updateBranches() {
     const branchArray = this.branchess;
@@ -952,6 +1093,7 @@ updateBranches() {
 			(variant) => variant.branches && variant.branches.length > 0,
 		);
 	}
+
 	removeVariant(branch: AbstractControl, variantIndex: number) {
 		const variantsArray = branch.get("variants") as FormArray;
 		const variantToRemove = variantsArray.at(variantIndex).get("name")?.value;
@@ -1056,20 +1198,63 @@ updateBranches() {
 				!fieldsToIgnore.includes(key as unknown as keyof TObj),
 		);
 	}
+
 	onImageUpload(event: any) {
-    const file = event.target.files[0];
-    
-    if (file) {
-        this.productForm.get("image")?.setValue(file);
-        
-        const reader = new FileReader();
-        reader.onload = (e: any) => {
-            this.productImage = e.target.result;
-            console.log('New image uploaded:', this.productImage);
+  const files: FileList = event.target.files;
+  
+  if (files && files.length > 0) {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        this.messageService.add({
+          severity: "error",
+          summary: "Invalid File",
+          detail: "Please upload only image files.",
+          key: "tl",
+          life: 3000,
+        });
+        continue;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        this.messageService.add({
+          severity: "error",
+          summary: "File Too Large",
+          detail: "Image must be less than 5MB.",
+          key: "tl",
+          life: 3000,
+        });
+        continue;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        const imageData = {
+          file: file,
+          url: e.target.result
         };
-        reader.readAsDataURL(file);
+        
+        this.productImages.push(imageData);
+        
+        // Set the first uploaded image as main if no main image is set
+        if (!this.mainProductImage) {
+          this.mainProductImage = imageData.url;
+        }
+        
+        // Update form validation
+        this.updateImageFormValidation();
+      };
+      reader.readAsDataURL(file);
     }
+    
+    // Reset the file input to allow uploading the same files again
+    event.target.value = '';
+  }
 }
+
 
 	getProducts() {
 		this.posService.getProducts().subscribe(async (data) => {
@@ -1098,6 +1283,7 @@ updateBranches() {
 			}
 		});
 	}
+
 addToProduct() {
   const userName = sessionStorage.getItem("username");
   this.loading = true;
@@ -1201,6 +1387,22 @@ if (formValues.isBundle && this.selectedBundleItems.length > 0) {
 
     const formData = new FormData();
     formData.append("product", JSON.stringify(product));
+
+	// Append all product images
+this.productImages.forEach((image, index) => {
+  if (image.file) {
+    formData.append("files", image.file);
+  }
+});
+
+// Mark the first image as main if specified
+if (this.mainProductImage && this.productImages.length > 0) {
+  const mainImageIndex = this.productImages.findIndex(img => img.url === this.mainProductImage);
+  if (mainImageIndex !== -1) {
+    formData.append("mainImageIndex", mainImageIndex.toString());
+  }
+}
+
     if (formValues.image instanceof File) {
       formData.append("files", formValues.image);
     }
@@ -1253,31 +1455,6 @@ if (formValues.isBundle && this.selectedBundleItems.length > 0) {
     );
   }
 }
-  resetFormAfterSuccess() {
-    this.productForm.reset();
-    this.productForm.markAsUntouched();
-    this.productForm.markAsPristine();
-    
-    this.productImage = "";
-    this.variants = [];
-    this.selectedIngredients = [];
-    this.selectedBundleItems = []; 
-    
-    while (this.branchess.length !== 0) {
-      this.branchess.removeAt(0);
-    }
-
-    if (this.branches.length > 0) {
-      const defaultBranch = this.userBranch === "headquarters" ? [this.branches[0]] : this.branches[0];
-      this.productForm.patchValue({
-        selectedBranch: defaultBranch,
-        expiryDate: this._defaultExpiryDate.toISOString(),
-        isBundle: false,
-        bundleItems: [],
-        reorderThreshold: 12
-      });
-    }
-  }
 
   private markFormGroupTouched(formGroup: FormGroup) {
   Object.keys(formGroup.controls).forEach(key => {
@@ -1424,6 +1601,7 @@ if (formValues.isBundle && this.selectedBundleItems.length > 0) {
 			});
 		}
 	}
+
 	autoGenerateBranchSku(): string | null {
 		const formValue = this.productForm.value;
 
@@ -1577,17 +1755,11 @@ async updateProduct() {
         });
     }
 }
-	resetForm() {
-		this.productForm.reset();
-		this.productImage = "";
-		this.variants = [];
-		this.categories = [];
-		this.discounts = [];
-	}
 
 	triggerClose() {
 		this.close.emit();
 	}
+
 	get variantFormArray() {
 		return this.productForm.get("variant") as FormArray;
 	}
@@ -1723,6 +1895,7 @@ async updateProduct() {
 		
 		this.variants = [];
 	}
+
 	private isEditFormValid(): boolean {
     const requiredFields = ['name', 'description'];
     
@@ -1834,6 +2007,7 @@ async updateProduct() {
 			);
 		}
 	}
+
 	removeCategory(id: number) {
 		this.posService.deleteCategory(id).subscribe(async (data) => {
 			if (data) {
@@ -1998,10 +2172,7 @@ async updateProduct() {
 			alert("Please fill in the SKU with valid data.");
 		}
 	}
-getLastImage(): string {
-   
-    return this.productImage || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTWN8hLKJungcUipWLReON9fse4yZcyB0rzNw&s';
-}
+
 	convertSvgToPng(svgElement: Node, shouldPrint?: boolean) {
 		const svgString = new XMLSerializer().serializeToString(svgElement);
 
@@ -2089,9 +2260,11 @@ getLastImage(): string {
 
 		pdf.save("barcodes.pdf");
 	}
+
 	getImageUrl(string: string) {
 		return this.posService.getProductImage(string);
 	}
+
 getErrorMessage(controlName: string, displayName?: string): string {
 	const control = this.productForm.get(controlName);
 	const name = displayName || controlName;
@@ -2123,6 +2296,7 @@ getErrorMessage(controlName: string, displayName?: string): string {
 
 	return "";
 }
+
 	isFieldInvalidAndTouched(fieldName: string): boolean {
   const field = this.productForm.get(fieldName);
   return !!(field && field.invalid && (field.dirty || field.touched));
