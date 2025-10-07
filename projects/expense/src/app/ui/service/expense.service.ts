@@ -23,6 +23,9 @@ export interface Expense {
   category?: CategoryDTO;
   tax?: TaxDTO;
   scheduledPayment?: ScheduledPaymentDTO;
+  taxPercentage?: number;
+  date: any;
+
 }
 
 export interface CategoryDTO {
@@ -157,7 +160,7 @@ export class ExpenseService {
     );
   }
 
-  updateExpense(id: number, updatedExpense: Expense): Observable<Expense> { 
+  updateExpense(id: number = 0, updatedExpense: Expense): Observable<Expense> { 
     return this.http.put<Expense>(`${this.apiUrl}/${id}`, updatedExpense).pipe(
       tap(() => this.loadExpenses()),
       catchError(this.handleError)

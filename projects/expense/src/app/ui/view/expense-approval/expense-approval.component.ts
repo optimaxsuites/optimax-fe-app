@@ -55,7 +55,7 @@ export class ExpenseApprovalComponent implements OnInit {
   approveExpense(): void {
     if (this.expense) {
       this.expense.status = 'Approved';
-      this.expenseService.updateExpense(this.expense);
+      this.expenseService.updateExpense(undefined, this.expense);
       this.router.navigate(['/expenses']); 
     }
   }
@@ -63,7 +63,7 @@ export class ExpenseApprovalComponent implements OnInit {
   rejectExpense(): void {
     if (this.expense) {
       this.expense.status = 'Rejected';
-      this.expenseService.updateExpense(this.expense);
+      this.expenseService.updateExpense(undefined, this.expense);
       this.router.navigate(['/expenses']);
     }
   }

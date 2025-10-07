@@ -229,4 +229,14 @@ export class MarketplaceComponent {
 
 }
 
+formatDate(parts: any): Date | null {
+  if (!parts) return null;
+  if (Array.isArray(parts)) return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
+  if (typeof parts === 'string' || parts instanceof Date) {
+    const d = new Date(parts);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
+
 }

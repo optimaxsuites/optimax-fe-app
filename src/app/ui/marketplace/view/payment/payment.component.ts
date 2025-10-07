@@ -56,6 +56,16 @@ proceedToPay() {
     ? this.selectedPlan.monthlyPrice
     : this.selectedPlan.yearlyPrice 
 
+    const now = new Date();
+    const startDate = now.toISOString();
+  
+    const endDate = new Date(now);
+    if (this.isYearly) {
+      endDate.setFullYear(endDate.getFullYear() + 1); 
+    } else {
+      endDate.setMonth(endDate.getMonth() + 1);
+    }
+
   const order = {
     moduleId: this.module.id,
     email: this.email,
@@ -65,7 +75,9 @@ proceedToPay() {
     amount: amount,
     currency: "NGN",
     // paymentId: 0,
-    duration: this.isYearly ? 12 : 1
+    duration: this.isYearly ? 12 : 1,
+    startDate,
+    endDate
   };
 
 
@@ -103,7 +115,7 @@ proceedToPay() {
 
               const updatedOrder = {
                 ...orderResponse,
-                status: response.status === 'success' ? 'PAID' : 'FAILED',
+                status: response.status === 'success' ? 'ACTIVE' : 'FAILED',
                 paymentId: paymentResponse.id
               }
 
@@ -131,6 +143,7 @@ proceedToPay() {
                const updatedOrder = {
                 ...orderResponse,
                 status: 'CANCELED',
+                paymentStatus: 'CANCELED',
                 paymentId: paymentResponse.id
               }
             
