@@ -1,4 +1,4 @@
-// product-details.component.ts - FIXED
+// product-details.component.ts - Enhanced with Image Gallery
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -20,7 +20,11 @@ export class ProductDetailsComponent implements OnInit {
   storeUuid = '';
   isCartOpen = signal(false);
   
-  // Cart signals - FIXED: Remove duplicates and use service signals
+  // Image gallery signals - ENHANCED
+  selectedImageIndex = signal(0);
+  isImageModalOpen = signal(false);
+  
+  // Cart signals
   cartProducts = computed(() => this.cartService.cart().items);
   isCartEmpty = computed(() => this.cartService.isCartEmpty());
   totalCartItems = computed(() => this.cartService.totalItems());
@@ -34,8 +38,30 @@ export class ProductDetailsComponent implements OnInit {
   selectedCategory = signal('All');
   searchText = signal('');
   
-  // Computed values for header
+  // Computed values
   categoryOptions = computed(() => [{ label: 'All', value: 'All' }]);
+  
+  // Computed for current selected image
+  currentImage = computed(() => {
+    const product = this.product();
+    const index = this.selectedImageIndex();
+    
+    if (!product || !product.productImages || product.productImages.length === 0) {
+      return null;
+    }
+    
+    return product.productImages[index] || product.productImages[0];
+  });
+  
+  // Computed for all product images
+  allImages = computed(() => {
+    const product = this.product();
+    return product?.productImages || [];
+  });
+  
+  hasMultipleImages = computed(() => {
+    return this.allImages().length > 1;
+  });
 
   constructor(
     private route: ActivatedRoute,
@@ -56,6 +82,47 @@ export class ProductDetailsComponent implements OnInit {
     }
   }
 
+  // Image Gallery Methods - NEW
+  selectImage(index: number): void {
+    const images = this.allImages();
+    if (index >= 0 && index < images.length) {
+      this.selectedImageIndex.set(index);
+    }
+  }
+
+  nextImage(): void {
+    const images = this.allImages();
+    const currentIndex = this.selectedImageIndex();
+    const nextIndex = (currentIndex + 1) % images.length;
+    this.selectedImageIndex.set(nextIndex);
+  }
+
+  previousImage(): void {
+    const images = this.allImages();
+    const currentIndex = this.selectedImageIndex();
+    const prevIndex = currentIndex === 0 ? images.length - 1 : currentIndex - 1;
+    this.selectedImageIndex.set(prevIndex);
+  }
+
+  openImageModal(): void {
+    this.isImageModalOpen.set(true);
+  }
+
+  closeImageModal(): void {
+    this.isImageModalOpen.set(false);
+  }
+
+  // Handle keyboard navigation in modal
+  handleModalKeyPress(event: KeyboardEvent): void {
+    if (event.key === 'ArrowRight') {
+      this.nextImage();
+    } else if (event.key === 'ArrowLeft') {
+      this.previousImage();
+    } else if (event.key === 'Escape') {
+      this.closeImageModal();
+    }
+  }
+
   getTotalCartItems(): number {
     return this.totalCartItems();
   }
@@ -73,7 +140,6 @@ export class ProductDetailsComponent implements OnInit {
     const productToAdd = product || this.product();
     if (!productToAdd || !this.isInStock()) return;
 
-    // Add the product with the current quantity
     for (let i = 0; i < this.quantity(); i++) {
       this.cartService.addToCart(productToAdd);
     }
@@ -81,7 +147,6 @@ export class ProductDetailsComponent implements OnInit {
     this.quantity.set(1);
     this.showAddToCartFeedback();
     
-    // Auto-open cart on mobile after adding item
     if (window.innerWidth < 768) {
       this.isCartOpen.set(true);
     }
@@ -91,7 +156,6 @@ export class ProductDetailsComponent implements OnInit {
     const product = this.product();
     if (!product || variant.quantity === 0) return;
 
-    // Add the variant with the current quantity
     for (let i = 0; i < this.quantity(); i++) {
       this.cartService.addToCart(product, variant);
     }
@@ -99,7 +163,6 @@ export class ProductDetailsComponent implements OnInit {
     this.quantity.set(1);
     this.showAddToCartFeedback();
     
-    // Auto-open cart on mobile after adding item
     if (window.innerWidth < 768) {
       this.isCartOpen.set(true);
     }
@@ -129,11 +192,10 @@ export class ProductDetailsComponent implements OnInit {
   }
 
   private showAddToCartFeedback(): void {
-    // You can add a toast notification here
     console.log('Product added to cart');
   }
 
-  // Helper methods for template safety
+  // Helper methods
   getSellingPrice(): number {
     const product = this.product();
     if (!product || !product.sellingPrice) return 0;
@@ -194,6 +256,8 @@ export class ProductDetailsComponent implements OnInit {
 
   private loadProductDetails(productId: number): void {
     this.isLoading.set(true);
+    // Reset image selection when loading new product
+    this.selectedImageIndex.set(0);
     
     this.posService.getProducts().subscribe({
       next: (products: ProductData[]) => {
@@ -231,6 +295,24 @@ export class ProductDetailsComponent implements OnInit {
 
   // Image handling
   getProductImage(product: ProductData, specificImage?: any) {
+    // If a specific image is provided, create a modified product object with that image
+    if (specificImage && product.productImages) {
+      const modifiedProduct = {
+        ...product,
+        productImages: [specificImage]
+      };
+      return this.imageCacheService.getProductImage(modifiedProduct);
+    }
+    
+    // If we need a specific image by index, modify the product
+    if (specificImage === undefined && this.selectedImageIndex() > 0 && product.productImages) {
+      const modifiedProduct = {
+        ...product,
+        productImages: [product.productImages[this.selectedImageIndex()]]
+      };
+      return this.imageCacheService.getProductImage(modifiedProduct);
+    }
+    
     return this.imageCacheService.getProductImage(product);
   }
 
@@ -268,7 +350,6 @@ export class ProductDetailsComponent implements OnInit {
   }
 
   changeBranch(branch: any): void {
-    // Implement branch change logic
     console.log('Branch changed to:', branch);
   }
 }

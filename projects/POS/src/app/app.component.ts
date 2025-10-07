@@ -37,7 +37,6 @@ export class AppComponent implements OnInit{
   ngOnInit(): void {
     // this.metadataService.fetchMetaData()
     this.registerService.closeRegister$.subscribe(() => {
-      // Always fetch the latest openingAmount from localStorage before opening the modal
       const storedOpeningAmount = localStorage.getItem('openingAmount');
       this.openingAmount = storedOpeningAmount ? Number(storedOpeningAmount) : 0;
       this.showCloseRegisterModal = true;
