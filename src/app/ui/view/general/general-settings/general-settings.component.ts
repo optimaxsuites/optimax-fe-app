@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core'; 
 import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
 import { GeneralSettingsService } from '../../../service/general-settings-service.service';
 import { AuthenticationService } from '../../../sharedComponents/service/auth-service/authentication.service';
@@ -11,45 +11,33 @@ import { countriesData } from '../../../sharedComponents/service/country-data';
 })
 export class GeneralSettingsComponent implements OnInit {
   form!: FormGroup;
-  showProfileForm: boolean = false;
+  passwordForm!: FormGroup;
+
+  // view state
+  selectedSetting: string | null = null;
   isEditMode: boolean = false;
 
   countries: any[] = countriesData;
   states: any[] = [];
   cities: any[] = [];
   industries: any[] = [
-    { id: 1, name: 'Retail' },
-    { id: 2, name: 'Food & Beverage' },
-    { id: 3, name: 'Pharmacy & Health' },
-    { id: 4, name: 'Hospitality' },
-    { id: 5, name: 'Beauty & Personal Care' },
-    { id: 6, name: 'Automotive' },
-    { id: 7, name: 'Groceries & Food Stores' },
-    { id: 8, name: 'Entertainment & Events' },
-    { id: 9, name: 'Health & Fitness' },
-    { id: 10, name: 'Fashion' },
-    { id: 11, name: 'Electronics & Gadgets' },
-    { id: 12, name: 'Construction & Hardware' },
-    { id: 13, name: 'Education' },
-    { id: 14, name: 'Home & Garden' },
-    { id: 15, name: 'Arts & Crafts' },
-    { id: 16, name: 'Wholesale Distribution' },
+    { id: 1, name: 'Retail' }, { id: 2, name: 'Food & Beverage' }, { id: 3, name: 'Pharmacy & Health' },
+    { id: 4, name: 'Hospitality' }, { id: 5, name: 'Beauty & Personal Care' }, { id: 6, name: 'Automotive' },
+    { id: 7, name: 'Groceries & Food Stores' }, { id: 8, name: 'Entertainment & Events' }, { id: 9, name: 'Health & Fitness' },
+    { id: 10, name: 'Fashion' }, { id: 11, name: 'Electronics & Gadgets' }, { id: 12, name: 'Construction & Hardware' },
+    { id: 13, name: 'Education' }, { id: 14, name: 'Home & Garden' }, { id: 15, name: 'Arts & Crafts' }, { id: 16, name: 'Wholesale Distribution' },
   ];
   currencies: { code: string, label: string }[] = [
-    { code: 'NGN', label: 'Naira (₦)' },
-    { code: 'USD', label: 'US Dollar ($)' },
-    { code: 'EUR', label: 'Euro (€)' },
-    { code: 'GBP', label: 'Pound Sterling (£)' },
+    { code: 'NGN', label: 'Naira (₦)' }, { code: 'USD', label: 'US Dollar ($)' },
+    { code: 'EUR', label: 'Euro (€)' }, { code: 'GBP', label: 'Pound Sterling (£)' },
   ];
   languages: string[] = ['English', 'Yoruba', 'Igbo', 'Hausa', 'French'];
   timeZones: { value: string, label: string }[] = [
-    { value: 'Africa/Lagos', label: 'Africa/Lagos (GMT+1)' },
-    { value: 'UTC', label: 'UTC' },
-    { value: 'Africa/Accra', label: 'Africa/Accra (GMT+0)' },
-    { value: 'America/New_York', label: 'New York (GMT-5)' },
+    { value: 'Africa/Lagos', label: 'Africa/Lagos (GMT+1)' }, { value: 'UTC', label: 'UTC' },
+    { value: 'Africa/Accra', label: 'Africa/Accra (GMT+0)' }, { value: 'America/New_York', label: 'New York (GMT-5)' },
   ];
 
-  settings = ["Profile", "Security/privacy"];
+  settings = ['Profile', 'Security/privacy'];
 
   private actualUserId: number | null = null;
 
@@ -57,7 +45,7 @@ export class GeneralSettingsComponent implements OnInit {
     private fb: FormBuilder,
     private generalSettingsService: GeneralSettingsService,
     private authService: AuthenticationService
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     this.form = this.fb.group({
@@ -77,8 +65,13 @@ export class GeneralSettingsComponent implements OnInit {
       timeZone: new FormControl({ value: '', disabled: true }),
     });
 
-    const storedUserId = sessionStorage.getItem('userid');
+    this.passwordForm = this.fb.group({
+      currentPassword: ['', Validators.required],
+      newPassword: ['', [Validators.required, Validators.minLength(6)]],
+      confirmPassword: ['', Validators.required]
+    });
 
+    const storedUserId = sessionStorage.getItem('userid');
     if (storedUserId) {
       this.fetchUserData(+storedUserId);
     } else {
@@ -91,7 +84,7 @@ export class GeneralSettingsComponent implements OnInit {
       next: (data) => {
         if (data.id) {
           this.actualUserId = data.id;
-          sessionStorage.setItem('userid', data.id.toString()); 
+          sessionStorage.setItem('userid', data.id.toString());
         }
 
         this.form.patchValue({
@@ -125,7 +118,6 @@ export class GeneralSettingsComponent implements OnInit {
         }
 
         this.form.updateValueAndValidity();
-        this.showProfileForm = true;
       },
       error: (err) => {
         console.error('Failed to fetch user data:', err);
@@ -143,11 +135,15 @@ export class GeneralSettingsComponent implements OnInit {
   }
 
   selectSetting(setting: string): void {
-    if (setting === 'Profile') {
-      this.showProfileForm = true;
-    } else {
-      this.showProfileForm = false;
-    }
+    this.selectedSetting = setting;
+    this.isEditMode = false; // reset edit mode
+    this.form.disable(); // always disable profile form initially
+  }
+
+  goBack(): void {
+    this.selectedSetting = null;
+    this.isEditMode = false;
+    this.form.disable();
   }
 
   onCountrySelect(country: any): void {
@@ -172,25 +168,35 @@ export class GeneralSettingsComponent implements OnInit {
   }
 
   submit(): void {
-    if (this.form.valid) {
-      if (this.actualUserId) {
-        const updatedData = this.form.getRawValue(); 
-
-        this.generalSettingsService.updateUserPrimaryInfo(this.actualUserId, updatedData).subscribe({
-          next: (response) => {
-            console.log('Update successful!', response);
-            this.toggleEditMode(); 
-          },
-          error: (err) => {
-            console.error('Update failed:', err);
-          }
-        });
-      } else {
-        console.error('No actual user id available. Cannot update.');
-      }
+    if (this.form.valid && this.actualUserId) {
+      const updatedData = this.form.getRawValue();
+      this.generalSettingsService.updateUserPrimaryInfo(this.actualUserId, updatedData).subscribe({
+        next: (response) => {
+          console.log('Update successful!', response);
+          this.toggleEditMode();
+        },
+        error: (err) => {
+          console.error('Update failed:', err);
+        }
+      });
     } else {
       console.log('Form is invalid. Please correct the errors.');
       this.form.markAllAsTouched();
+    }
+  }
+
+  changePassword(): void {
+    if (this.passwordForm.valid) {
+      const { newPassword, confirmPassword } = this.passwordForm.value;
+      if (newPassword !== confirmPassword) {
+        alert('Passwords do not match!');
+        return;
+      }
+      console.log('Password updated:', this.passwordForm.value);
+      alert('Password updated successfully!');
+      this.passwordForm.reset();
+    } else {
+      this.passwordForm.markAllAsTouched();
     }
   }
 }
