@@ -1,4 +1,4 @@
-// product-details.component.ts - Enhanced with Image Gallery
+// product-details.component.ts - UPDATED VERSION
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -18,11 +18,18 @@ export class ProductDetailsComponent implements OnInit {
   isLoading = signal(true);
   quantity = signal(1);
   storeUuid = '';
-  isCartOpen = signal(false);
   
-  // Image gallery signals - ENHANCED
+  // Cart visibility signals - CHANGED TO MATCH POS-STORE
+  isCartOpen = false; // For mobile modal
+  isCartSidebarVisible = false; // For desktop sidebar
+  
+  // Image gallery signals
   selectedImageIndex = signal(0);
   isImageModalOpen = signal(false);
+  
+  // Toast notification
+  showToast = signal(false);
+  toastMessage = signal('');
   
   // Cart signals
   cartProducts = computed(() => this.cartService.cart().items);
@@ -82,7 +89,7 @@ export class ProductDetailsComponent implements OnInit {
     }
   }
 
-  // Image Gallery Methods - NEW
+  // Image Gallery Methods
   selectImage(index: number): void {
     const images = this.allImages();
     if (index >= 0 && index < images.length) {
@@ -131,11 +138,16 @@ export class ProductDetailsComponent implements OnInit {
     return this.cartService.cart().subtotal;
   }
 
-  // Cart methods
+  // Cart methods 
   toggleCart(): void {
-    this.isCartOpen.set(!this.isCartOpen());
+    if (window.innerWidth < 768) {
+      this.isCartOpen = !this.isCartOpen;
+    } else {
+      this.isCartSidebarVisible = !this.isCartSidebarVisible;
+    }
   }
 
+  // Add to cart with automatic sidebar on desktop and toast on mobile
   addToCart(product?: ProductData): void {
     const productToAdd = product || this.product();
     if (!productToAdd || !this.isInStock()) return;
@@ -145,13 +157,18 @@ export class ProductDetailsComponent implements OnInit {
     }
     
     this.quantity.set(1);
-    this.showAddToCartFeedback();
     
-    if (window.innerWidth < 768) {
-      this.isCartOpen.set(true);
+    //  Show sidebar on desktop, toast on mobile
+    if (window.innerWidth >= 768) {
+      // Desktop - automatically show sidebar (like pos-store)
+      this.isCartSidebarVisible = true;
+    } else {
+      //show toast notification instead of automatically opening modal
+      this.showToastMessage(`added to cart successfully!`);
     }
   }
 
+  // UPDATED: Add variant to cart with same behavior
   addVariantToCart(variant: VariantDTO): void {
     const product = this.product();
     if (!product || variant.quantity === 0) return;
@@ -161,11 +178,40 @@ export class ProductDetailsComponent implements OnInit {
     }
     
     this.quantity.set(1);
-    this.showAddToCartFeedback();
     
-    if (window.innerWidth < 768) {
-      this.isCartOpen.set(true);
+    // CHANGED: Show sidebar on desktop, toast on mobile
+    if (window.innerWidth >= 768) {
+      // Desktop - automatically show sidebar
+      this.isCartSidebarVisible = true;
+    } else {
+      // Mobile - show toast notification
+      this.showToastMessage(`${product.name} (${variant.name}) added to cart successfully!`);
     }
+  }
+
+  // UPDATED: Add related product to cart
+  addRelatedToCart(relatedProduct: ProductData): void {
+    this.cartService.addToCart(relatedProduct);
+    
+    // CHANGED: Show sidebar on desktop, toast on mobile
+    if (window.innerWidth >= 768) {
+      // Desktop - automatically show sidebar
+      this.isCartSidebarVisible = true;
+    } else {
+      // Mobile - show toast notification
+      this.showToastMessage(`${relatedProduct.name} added to cart successfully!`);
+    }
+  }
+
+  // NEW: Show toast message method
+  private showToastMessage(message: string): void {
+    this.toastMessage.set(message);
+    this.showToast.set(true);
+    
+    // Auto hide after 3 seconds
+    setTimeout(() => {
+      this.showToast.set(false);
+    }, 3000);
   }
 
   reduceQuantityInCart(product: ProductData): void {
@@ -183,16 +229,14 @@ export class ProductDetailsComponent implements OnInit {
 
   clearCart(): void {
     this.cartService.clearCart();
-    this.isCartOpen.set(false);
+    this.isCartOpen = false;
+    this.isCartSidebarVisible = false;
   }
 
   navigateToCheckout(): void {
-    this.isCartOpen.set(false);
+    this.isCartOpen = false;
+    this.isCartSidebarVisible = false;
     this.router.navigate(['/store', this.storeUuid, 'checkout']);
-  }
-
-  private showAddToCartFeedback(): void {
-    console.log('Product added to cart');
   }
 
   // Helper methods
@@ -336,9 +380,14 @@ export class ProductDetailsComponent implements OnInit {
   }
 
   // Navigation
-  navigateToProductDetails(productId: number): void {
+  navigateToRelatedProduct(productId: number): void {
     this.router.navigate(['/user/checkout/store', this.storeUuid, 'product-details', productId]);
   }
+
+  navigateToProductDetails(productId: number): void {
+  this.router.navigate(['/user/checkout/store', this.storeUuid, 'product-details', productId]);
+}
+
 
   // Header event handlers
   changeCategory(category: string): void {

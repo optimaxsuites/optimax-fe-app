@@ -128,8 +128,8 @@
           <div class="flex flex-col gap-[2rem] pb-4 md:px-[4rem] px-[1rem]">
             @for (category of getCategoryList(); track category) {
               <div class="w-full bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-                <div class="flex flex-row justify-between items-center border-gray-200 bg-orange-400 border">
-                  <h3 class="text-lg font-semibold text-gray-800 p-3 uppercase tracking-wider">{{ category }}</h3>
+                <div class="flex flex-row justify-between items-center border-gray-200 bg-customBlue border">
+                  <h3 class="text-lg font-semibold text-white p-3 uppercase tracking-wider">{{ category }}</h3>
                   <div class="p-3">
                     <button class="text-white hover:text-blue-600 font-medium transition-colors underline"
                       (click)="navigateToCategoryPage(category)">
