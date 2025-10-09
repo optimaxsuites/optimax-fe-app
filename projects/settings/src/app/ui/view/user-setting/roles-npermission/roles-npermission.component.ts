@@ -3,6 +3,7 @@ import { MessageService } from 'primeng/api';
 import { MenuItemsService } from '../../../sharedComponents/service/menue-items/menu-items.service';
 import { ModulesService } from '../../../service/modules.service';
 import { forkJoin } from 'rxjs';
+import { getLimitsForModule } from '../../pos/branches/branches.component';
 
 
 // interface Permission {
@@ -67,6 +68,7 @@ export class RolesNpermissionComponent {
     permissions: {
     },
   };
+  roleLimit = 0
 
   permissionKeys = Object.keys(this.newRole.permissions);
   Object = Object
@@ -118,6 +120,8 @@ export class RolesNpermissionComponent {
       });
     });
     
+     this.roleLimit = getLimitsForModule('optimaXPOS').roles || 0;
+        console.log(this.roleLimit)
     
   }
 

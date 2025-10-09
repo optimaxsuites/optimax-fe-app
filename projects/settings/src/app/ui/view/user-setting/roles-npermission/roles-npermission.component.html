@@ -6,17 +6,27 @@
   </div>
 </div>
 
+<hr/>
+
+<div class="bg-orange-100 text-gray-600 font-bold text-center py-3 rounded-xl" *ngIf="roles.length >= roleLimit">
+  <p>You have reached your role limit. Upgrade your plan to enjoy more amazing features.</p>
+</div>
+
 <div class="mb-4 mt-3 px-3 flex items-center">
     <p *ngIf="showAddForm" class="text-xl font-semibold text-customBlue capitalize flex-1">
       <span>New</span> Role structure
     </p>
     <button 
-      class="bg-customBlue text-white font-bold p-3 rounded-xl ml-auto" 
+      class="bg-customBlue text-white font-bold p-3 rounded-xl ml-auto disabled:bg-customBlueHover disabled:cursor-not-allowed" 
       (click)="toogleForm()"
+    [disabled]="roles.length >= roleLimit"
+
     >
       {{ showAddForm ? "Cancel" : "Create New" }}
     </button>
   </div>
+
+  
   
 
 @if(!showAddForm){

@@ -72,3 +72,10 @@ export function hasOnlyKitchenPermissions(): boolean {
 
   return activePermissions.length === kitchenPermissions.length;
 }
+
+
+export function getLimitsForModule(moduleName: string) {
+  const cached = localStorage.getItem('plan_limits_map');
+  const mapObj = cached ? JSON.parse(cached) : null
+  return mapObj?.[moduleName] || null;
+}

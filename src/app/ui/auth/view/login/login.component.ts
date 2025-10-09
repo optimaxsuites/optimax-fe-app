@@ -16,6 +16,7 @@ import { NavigationLinksService } from 'src/app/ui/shared/service/navigation-lin
 import { Message } from 'primeng/api';
 import { environment } from 'src/environments/environment.prod';
 import { hasOnlyCheckoutPermission, hasOnlyKitchenPermissions, isSuperUser } from 'projects/POS/src/app/shared/pipes/helper';
+import { SubscriptionService } from 'src/app/ui/marketplace/service/subscription.service';
 
 
 /** Error when invalid control is dirty, touched, or submitted. */
@@ -75,6 +76,7 @@ export class LoginComponent implements OnInit {
     private navigationLink: NavigationLinksService,
     private route: ActivatedRoute,
     private randomTokenService: RandomTokenService,
+    private subscriptionService: SubscriptionService
   ){}
 
   ngOnInit(): void {
@@ -284,6 +286,8 @@ async posLoginAction(): Promise<void> {
 
     this.checkUserReg();
     this.getUserBranchInfo();
+    this.loadPlanLimits()
+
 
 
      if(isSuperUser()){
@@ -324,6 +328,7 @@ async posLoginAction(): Promise<void> {
         const dashboardLink = this.navigationLink.getLink('dashboardLink');
         this.router.navigate([dashboardLink]);
       }
+
       },
       error: (error) => {
         console.error("Error fetching user application role:", error);
@@ -389,6 +394,15 @@ async posLoginAction(): Promise<void> {
     }
     }
    
+  }
+
+  loadPlanLimits(){
+    this.subscriptionService.restoreLimitsFromCache();
+
+    this.subscriptionService.loadAllModulePlanLimits().subscribe({
+      next: () => console.log('All module plan limits loaded'),
+      error: (err) => console.error('Error loading limits', err)
+    });
   }
 
 }

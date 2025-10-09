@@ -6,7 +6,11 @@
     </div>
   </div>
 
+  <hr/>
 
+  <div class="bg-orange-100 text-gray-600 font-bold text-center py-3 rounded-xl" *ngIf="users.length >= userLimit">
+    <p>You have reached your user limit. Upgrade your plan to enjoy more amazing features.</p>
+  </div>
 
 @if(!openAddForm){
 
@@ -43,7 +47,7 @@
     />
     </div>
     <div class="flex items-end">
-        <Button  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3" (click)="openAddForm = true">Create new user</Button>
+        <Button  class="bg-customBlue hover:bg-customBlueHover text-white rounded-xl  p-3 disabled:bg-customBlueHover disabled:cursor-not-allowed"  [disabled]="users.length >= userLimit" (click)="openAddForm = true">Create new user</Button>
        </div>
 </div>
 

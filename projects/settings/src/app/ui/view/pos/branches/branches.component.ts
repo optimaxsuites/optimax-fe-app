@@ -15,7 +15,7 @@ interface BranchDTO {
   selector: 'app-branches',
   templateUrl: './branches.component.html',
   styleUrls: ['./branches.component.scss'],
-  providers: [ConfirmationService, MessageService], // Add ConfirmationService and MessageService here
+  providers: [ConfirmationService, MessageService], 
 })
 export class BranchesComponent implements OnInit {
   branches: BranchDTO[] = [];
@@ -27,15 +27,19 @@ export class BranchesComponent implements OnInit {
     phoneNo: '',
   };
   showAddForm: boolean = false;
+  branchLimit = 0
 
   constructor(
     private confirmationService: ConfirmationService,
     private messageService: MessageService,
-    private dataService: DataService
+    private dataService: DataService,
+    // private subscriptionService: SubscriptionService
   ) {}
 
   ngOnInit() {
     this.loadBranches();
+     this.branchLimit = getLimitsForModule('optimaXPOS').branches || 0;
+    console.log(this.branchLimit)
   }
 
   // Load branches from localStorage
@@ -192,3 +196,9 @@ this.newBranch= branch
     });
   }
 }
+export function getLimitsForModule(moduleName: string) {
+  const cached = localStorage.getItem('plan_limits_map');
+  const mapObj = cached ? JSON.parse(cached) : null
+  return mapObj?.[moduleName][0] || null;
+}
+

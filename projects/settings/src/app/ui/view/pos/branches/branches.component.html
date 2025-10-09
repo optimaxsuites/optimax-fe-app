@@ -1,6 +1,7 @@
 <p-toast></p-toast>
 <p-confirmDialog></p-confirmDialog>
 
+
 <div class="flex gap-4 items-center">
   <i class="pi pi-building text-4xl text-customBlue"></i>
   <div>
@@ -10,6 +11,10 @@
 </div>
 <hr />
 
+<div class="bg-orange-100 text-gray-600 font-bold text-center py-3 rounded-xl" *ngIf="branches.length >= branchLimit">
+  <p>You have reached your branch limit. Upgrade your plan to enjoy more amazing features.</p>
+</div>
+
 <div class="mb-4 mt-3 px-3 flex items-center">
   <p
     *ngIf="showAddForm"
@@ -18,8 +23,9 @@
     <span>New</span> Branch
   </p>
   <button
-    class="bg-customBlue text-white font-bold p-3 rounded-xl ml-auto"
+    class="bg-customBlue text-white font-bold p-3 rounded-xl ml-auto disabled:bg-customBlueHover disabled:cursor-not-allowed"
     (click)="toggleForm()"
+    [disabled]="branches.length >= branchLimit"
   >
     {{ showAddForm ? "Cancel" : "Create New" }}
   </button>

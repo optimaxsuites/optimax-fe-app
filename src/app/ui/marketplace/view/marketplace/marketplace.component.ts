@@ -38,7 +38,18 @@ export class MarketplaceComponent {
             this.modules = data.map((module: any) => ({
               ...module,
               locked: true 
-            }));
+            })
+            );
+
+            this.appRegisterService.getRegisteredApp().subscribe({
+              next: (app: any) => {
+                this.appList = app;
+                this.markModulesWithLockStatus()
+              },
+              error: (error: any) => {
+                console.error('Error fetching app data:', error);
+              }
+            });
           },
           error(err) {
             console.error(err)
@@ -55,15 +66,7 @@ export class MarketplaceComponent {
         },
       })
 
-      this.appRegisterService.getRegisteredApp().subscribe({
-      next: (app: any) => {
-        this.appList = app;
-        this.markModulesWithLockStatus()
-      },
-      error: (error: any) => {
-        console.error('Error fetching app data:', error);
-      }
-    });
+    
  
     }
 
@@ -219,6 +222,7 @@ export class MarketplaceComponent {
   const unlockedRoutes = this.appList.map((app: { name: string }) => app.name);
 
   console.log(unlockedRoutes)
+  console.log(this.modules)
 
   this.modules = this.modules.map(module => ({
     ...module,

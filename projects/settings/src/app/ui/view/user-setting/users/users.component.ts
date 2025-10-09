@@ -8,6 +8,7 @@ import { ModulesService } from '../../../service/modules.service';
 import { UserService } from '../../../sharedComponents/service/user.service';
 
  import { forkJoin, map } from 'rxjs';
+import { getLimitsForModule } from '../../pos/branches/branches.component';
 
 
 interface user {
@@ -69,6 +70,7 @@ newUser: user ={
 selectedModule: string = ''; 
 selectedRole: any = {};
 roles: any[] = []
+userLimit = 0
 
 constructor(private confirmationService: ConfirmationService, private messageService: MessageService, private authenticationService: AuthenticationService,     private router: Router,
   private navigationLink: NavigationLinksService, private moduleService: ModulesService, private userService: UserService){
@@ -86,6 +88,9 @@ ngOnInit(){
     });
 
     this.fetchUsers()
+
+    this.userLimit = getLimitsForModule('optimaXPOS').users || 0;
+    
 }
 
 fetchUsers(){
