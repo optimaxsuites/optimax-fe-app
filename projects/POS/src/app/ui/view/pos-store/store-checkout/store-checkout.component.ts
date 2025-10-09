@@ -1,5 +1,6 @@
 // store-checkout.component.ts - ENHANCED VERSION
 import { Component, OnInit } from '@angular/core';
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ImageCacheService } from '../../../service/image-cache.service';
 import { StoreCartService } from '../../../service/store-cart.service';
@@ -57,7 +58,8 @@ export class StoreCheckoutComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private imageCacheService: ImageCacheService,
-    private cartService: StoreCartService
+    private cartService: StoreCartService,
+    private location: Location
   ) {}
 
   ngOnInit(): void {
@@ -71,7 +73,7 @@ export class StoreCheckoutComponent implements OnInit {
     this.totalItems = cartData.totalItems;
     
     if (this.cartItems.size === 0) {
-      this.router.navigate(['/store']);
+      this.router.navigate(['user/checkout/store/wqjoq-292h39-saj90-nsau8']);
     }
   }
 
@@ -179,7 +181,7 @@ export class StoreCheckoutComponent implements OnInit {
           const currentUuid = this.route.snapshot.paramMap.get('uuid');
           const orderId = response.orderId;
           
-          this.router.navigate(['/store', currentUuid, 'order-confirmation', orderId], {
+          this.router.navigate(['user/checkout/store', currentUuid, 'order-confirmation', orderId], {
             state: { 
               orderData: response,
               deliveryMethod: this.isDelivery ? 'delivery' : 'pickup'
@@ -255,6 +257,6 @@ export class StoreCheckoutComponent implements OnInit {
 }
 
   goBack(): void {
-    this.router.navigate(['/store']);
+    this.location.back()
   }
 }
