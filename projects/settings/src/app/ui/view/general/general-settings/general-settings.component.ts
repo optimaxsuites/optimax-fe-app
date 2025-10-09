@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core'; 
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
 import { GeneralSettingsService } from '../../../service/general-settings-service.service';
 import { AuthenticationService } from '../../../sharedComponents/service/auth-service/authentication.service';
@@ -13,9 +13,10 @@ export class GeneralSettingsComponent implements OnInit {
   form!: FormGroup;
   passwordForm!: FormGroup;
 
-  // view state
+
   selectedSetting: string | null = null;
   isEditMode: boolean = false;
+  isChangePasswordOpen: boolean = false;
 
   countries: any[] = countriesData;
   states: any[] = [];
@@ -132,8 +133,13 @@ export class GeneralSettingsComponent implements OnInit {
 
   selectSetting(setting: string): void {
     this.selectedSetting = setting;
-    this.isEditMode = false; // reset edit mode
-    this.form.disable(); // always disable profile form initially
+    this.isEditMode = false;
+    this.form.disable();
+
+    // 🔹 Open side modal directly if "Security/privacy"
+    if (setting === 'Security/privacy') {
+      this.openChangePassword();
+    }
   }
 
   goBack(): void {
@@ -141,6 +147,16 @@ export class GeneralSettingsComponent implements OnInit {
     this.isEditMode = false;
     this.form.disable();
   }
+
+  goBackSideModal(): void {
+  
+  this.selectedSetting = null;
+  this.isEditMode = false;
+  this.form.disable();
+
+  // Close the side modal
+  this.closeChangePassword();
+}
 
   onCountrySelect(country: any): void {
     const selectedCountry = this.countries.find(c => c.name === country);
@@ -181,6 +197,15 @@ export class GeneralSettingsComponent implements OnInit {
     }
   }
 
+  // 🔹 Side modal control
+  openChangePassword(): void {
+    this.isChangePasswordOpen = true;
+  }
+
+  closeChangePassword(): void {
+    this.isChangePasswordOpen = false;
+  }
+
   changePassword(): void {
     if (this.passwordForm.valid) {
       const { newPassword, confirmPassword } = this.passwordForm.value;
@@ -188,9 +213,11 @@ export class GeneralSettingsComponent implements OnInit {
         alert('Passwords do not match!');
         return;
       }
+
       console.log('Password updated:', this.passwordForm.value);
       alert('Password updated successfully!');
       this.passwordForm.reset();
+      this.closeChangePassword(); // close modal after update
     } else {
       this.passwordForm.markAllAsTouched();
     }
