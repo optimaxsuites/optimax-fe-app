@@ -214,30 +214,30 @@
               <td><p-tableCheckbox [value]="expense" /></td>
               <td class="table-item">{{ expense.eventDate }}</td>
               <td class="table-item">{{ expense.name }}</td>
-              <td class="table-item">{{ expense.merchant }}</td>
+              <td class="table-item">{{ expense.merchant?.name  || expense.merchant }}</td>
               <td class="table-item">
                 <div
                   class="rounded-[50px] w-44 py-2 pl-4"
                 >
-                  {{ expense.category }}
+                  {{ expense.category?.name || expense.category }}
                 </div>
               </td>                                                       
               <td class="table-item">{{ calculateDisplayAmount(expense) | number:'1.2-2' }}</td>
               <td class="table-item">
                 <span
-                  *ngIf="expense.status === 'Pending'"
+                  *ngIf="expense.status === 'PENDING'"
                   class="material-icons text-yellow-600 text-3xl mb-2"
                 >
                   schedule
                 </span>
                 <span
-                  *ngIf="expense.status === 'Approved'"
+                  *ngIf="expense.status === 'APPROVED'"
                   class="material-icons text-green-600 text-3xl mb-2"
                 >
                   check
                 </span>
                 <span
-                  *ngIf="expense.status === 'Rejected'"
+                  *ngIf="expense.status === 'REJECTED'"
                   class="material-icons text-red-600 text-3xl mb-2"
                 >
                   close
@@ -247,9 +247,9 @@
                 <span
                   class="status-text"
                   [ngClass]="{
-                    'pending-icon text-yellow-600 text-xl font-medium': expense.status === 'Pending',
-                    'approved-icon text-green-600 text-xl font-medium': expense.status === 'Approved',
-                    'rejected-icon text-red-600 text-xl font-medium': expense.status === 'Rejected'
+                    'pending-icon text-yellow-600 text-xl font-medium': expense.status === 'PENDING',
+                    'approved-icon text-green-600 text-xl font-medium': expense.status === 'APPROVED',
+                    'rejected-icon text-red-600 text-xl font-medium': expense.status === 'REJECTED'
                   }"
                 >
                   {{ expense.status }}
@@ -351,17 +351,20 @@
       <div>
         <label>Tax Percentage:</label>
         <input
-          [(ngModel)]="selectedExpense.taxPercentage"
+        [value]="getTaxRateDisplayValue(selectedExpense.tax)"
+        (input)="onTaxInputChange($event)"
           name="taxPercentage"
           type="number"
+          step="0.01"
         />
       </div>
 
       <div>
         <label>Expense Date:</label>
         <input
-          [(ngModel)]="selectedExpense.date"
-          name="date"
+        [value]="selectedExpense.eventDate ? (selectedExpense.eventDate | date:'yyyy-MM-dd') : ''"
+        (input)="onDateInputChange($event)"
+          name="eventDate"
           type="date"
         />
       </div>
@@ -425,10 +428,10 @@
   <div class="detail-row flex justify-between items-center">
   <label class="detail-label text-2xl text-gray-700">Tax Percentage (%):</label>
 
-  <span *ngIf="selectedExpense?.taxPercentage as tax" class="detail-value text-2xl text-gray-900">
+  <span *ngIf="getTaxRateDisplayValue(selectedExpense?.tax) as tax" class="detail-value text-2xl text-gray-900">
     {{ tax }}%
   </span>
-  <span *ngIf="!selectedExpense?.taxPercentage" class="detail-value text-2xl text-gray-900">
+  <span *ngIf="!getTaxRateDisplayValue(selectedExpense?.tax)" class="detail-value text-2xl text-gray-900">
     No tax applied
   </span>
 </div>
@@ -468,7 +471,10 @@
     'text-red-500': selectedExpense?.status === 'REJECTED',
     'text-yellow-500': selectedExpense?.status === 'PENDING'
       }"
+      class="status-text"
     >
+    {{ selectedExpense?.status }}
+
       <mat-icon
         *ngIf="selectedExpense?.status === 'APPROVED'"
         class="mr-2 align-middle"

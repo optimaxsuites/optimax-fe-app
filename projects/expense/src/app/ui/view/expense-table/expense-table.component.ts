@@ -233,9 +233,9 @@ export class ExpenseTableComponent implements OnInit {
       this.dateFrom = null;
       this.dateTo = null;
     } else if (range === 'custom') {
-      this.dateRangeType = null;
-      this.dateFrom = null;
-      this.dateTo = null;
+      this.dateRangeType = 'custom';
+      // this.dateFrom = null;
+      // this.dateTo = null;
     }
 
     this.applyDateRange();
@@ -316,7 +316,28 @@ export class ExpenseTableComponent implements OnInit {
 
   saveEditedExpense(): void {
     if (!this.selectedExpense) return;
-    this.expenseService.updateExpense(this.selectedExpense.id, this.selectedExpense).subscribe(() => {
+    const updatedExpense: Expense = {
+      ...this.selectedExpense,
+      name: this.selectedExpense.name || '',
+      description: this.selectedExpense.description || '',
+      eventDate: this.selectedExpense.eventDate || new Date().toISOString(),
+      currency: this.selectedExpense.currency,
+      amount: this.selectedExpense.amount,
+      status: this.selectedExpense.status,
+      paidBy: this.selectedExpense.paidBy,
+      receiptReference: this.selectedExpense.receiptReference,
+      merchantId: this.selectedExpense.merchantId,
+      categoryId: this.selectedExpense.categoryId,
+      taxId: this.selectedExpense.taxId,
+      scheduledPaymentId: this.selectedExpense.scheduledPaymentId,
+      merchant: this.selectedExpense.merchant,
+      category: this.selectedExpense.category,
+      tax: this.selectedExpense.tax,
+      scheduledPayment: this.selectedExpense.scheduledPayment,
+      quantity: this.selectedExpense.quantity
+    };
+    
+    this.expenseService.updateExpense(this.selectedExpense.id, updatedExpense).subscribe(() => {
       this.loadExpenses();
       this.messageService.add({
         severity: 'success',
@@ -344,7 +365,11 @@ export class ExpenseTableComponent implements OnInit {
   }
 
   approve(request: Expense): void {
-    this.expenseService.updateExpense(request.id, { ...request, status: ExpenseStatus.APPROVED }).subscribe(() => {
+    const updatedExpense: Expense = {
+      ...request,
+      status: ExpenseStatus.APPROVED
+    };
+    this.expenseService.updateExpense(request.id, updatedExpense).subscribe(() => {
       this.messageService.add({
         severity: 'success',
         summary: 'Request Approved',
@@ -355,7 +380,11 @@ export class ExpenseTableComponent implements OnInit {
   }
   
   reject(request: Expense): void {
-    this.expenseService.updateExpense(request.id, { ...request, status: ExpenseStatus.REJECTED }).subscribe(() => {
+    const updatedExpense: Expense = {
+      ...request,
+      status: ExpenseStatus.REJECTED
+    };
+    this.expenseService.updateExpense(request.id, updatedExpense).subscribe(() => {
       this.messageService.add({
         severity: 'error',
         summary: 'Request Rejected',
@@ -365,19 +394,25 @@ export class ExpenseTableComponent implements OnInit {
     });
   }
 
+
   bulkApprove(): void {
     if (this.selectedExpenses.length === 0) {
-      this.messageService.add({ severity: 'warn', summary: 'No Expenses Selected', detail: 'Please select at least one expense to approve.' });
+      this.messageService.add({ 
+        severity: 'warn', 
+        summary: 'No Expenses Selected', 
+        detail: 'Please select at least one expense to approve.' });
       return;
     }
-    const updates = this.selectedExpenses.map(item => this.expenseService.updateExpense(item.id, { ...item, status: ExpenseStatus.APPROVED }));
     this.selectedExpenses.forEach(exp => this.approve(exp));
     this.selectedExpenses = [];
   }
 
   bulkReject(): void {
     if (this.selectedExpenses.length === 0) {
-      this.messageService.add({ severity: 'warn', summary: 'No Expenses Selected', detail: 'Please select at least one expense to reject.' });
+      this.messageService.add({ 
+        severity: 'warn', 
+        summary: 'No Expenses Selected', 
+        detail: 'Please select at least one expense to reject.' });
       return;
     }
     this.selectedExpenses.forEach(exp => this.reject(exp));
@@ -386,9 +421,20 @@ export class ExpenseTableComponent implements OnInit {
 
   calculateDisplayAmount(expense: Expense): number {
     const baseAmount = Number(expense.amount);
-    const taxRate = expense.tax && typeof expense.tax === 'object' && 'rate' in expense.tax ? (expense.tax as TaxDTO).rate / 100 : 0;
-    return baseAmount * (1 + taxRate);
+    const taxRate = expense.tax && typeof expense.tax === 'object'
+      ? expense.tax.rate / 100
+      : (typeof expense.tax === 'number' ? 
+        expense.tax / 100 : 0);
+      return baseAmount * (1 + taxRate);
   }
+  
+  getTaxRateDisplayValue(taxPercentage: TaxDTO | number | undefined): number | undefined {
+    if (taxPercentage === undefined || taxPercentage === null) {
+      return undefined;
+    }
+    return typeof taxPercentage === 'object' ? taxPercentage.rate : taxPercentage;
+  }
+
 
   formatAmount(value: number | string | null | undefined): string {
     const n = Number(value);
@@ -413,4 +459,39 @@ export class ExpenseTableComponent implements OnInit {
       event.preventDefault();
     }
   }
+
+
+  hasTaxPercentage(expense: Expense | null): boolean {
+    return !!expense && (expense as any).taxPercentage !== undefined;
+  }
+
+  getTaxPercentage(expense: Expense | null): number | undefined {
+    return expense ? (expense as any).taxPercentage : undefined
+  }
+
+  getExpenseDate(expense: Expense | null): string | Date | undefined {
+    return expense ? (expense as any ).data : undefined;
+  }
+
+  onTaxInputChange(event: Event): void {
+    if (!this.selectedExpense) return;
+
+    const input = event.target as HTMLInputElement;
+    const rateValue = parseFloat(input.value) || 0;
+
+    this.selectedExpense.tax = {
+      id: this.selectedExpense.tax?.id || 0,
+      name: 'Custom',
+      rate: rateValue,
+      description: 'Custom tax rate'
+    };
+  }
+
+  onDateInputChange(event: Event): void {
+    if (!this.selectedExpense) return;
+
+    const input = event.target as HTMLInputElement;
+    this.selectedExpense.eventDate = input.value; 
+  }
+
 }
