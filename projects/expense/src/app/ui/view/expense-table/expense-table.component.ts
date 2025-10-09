@@ -269,11 +269,11 @@ export class ExpenseTableComponent implements OnInit {
   }
 
   navigateToexpense(): void {
-    this.router.navigate(['/admin/expense/expense-summary']);
+    this.router.navigate(['/admin/expenses/expense-summary']);
   }
 
   navigateToForm(): void {
-    this.router.navigate(['/admin/expense/expensesForm']);
+    this.router.navigate(['/admin/expenses/expensesForm']);
   }
 
   confirmDelete(expense: Expense): void {

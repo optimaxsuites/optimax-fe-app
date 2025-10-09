@@ -3,6 +3,7 @@ import { ExpenseService, Expense } from '../../service/expense.service';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { NgForm } from '@angular/forms';
+import { Location } from '@angular/common';
 import { RecurringPaymentModalComponent } from "../../sharedComponent/view/recurring-payment-modal/recurring-payment-modal.component";
 import { RecurringPayment } from '../../sharedComponent/view/recurring-payment-modal/recurring-payment.model';
 import { BillSplit, BillSplitParticipant } from '../../sharedComponent/view/bill-splitting-modal/bill-splitting.model';
@@ -77,7 +78,8 @@ employeeReceiptFile: File | null = null;
     private expenseService: ExpenseService,
     private router: Router,
     private route: ActivatedRoute,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private location: Location
   ) {}
 
  ngOnInit(): void {
@@ -180,11 +182,13 @@ private loadTaxRates(): void {
   }
 
   cancelExpenses() {
-    this.router.navigate(['/expense/:uuid']);
+    this.router.navigate(['expense/:uuid']);
   }
 
   goBack(){
-    this.router.navigate(['/expense/:uuid']);
+    // this.router.navigate(['expense/:uuid']);
+    this.location.back();
+
   }
     
   
