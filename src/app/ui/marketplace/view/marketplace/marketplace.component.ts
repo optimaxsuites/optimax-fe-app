@@ -206,14 +206,14 @@ export class MarketplaceComponent {
 
   renew(order: any) {
     console.log('Renew clicked for order:', order);
-    this.router.navigate(['/subscription', order.moduleId], {
-      queryParams: { planId: order.planId, action: 'renew' }
+    this.router.navigate(['/subscription', order.module.id], {
+      queryParams: { plan: order.plan.id, action: 'renew' }
     });
   }
 
   changePlan(order: any) {
     console.log('Change Plan clicked for order:', order);
-    this.router.navigate(['/subscription', order.moduleId], {
+    this.router.navigate(['/subscription', order.module.id], {
       queryParams: { action: 'change-plan' }
     });
   }

@@ -46,7 +46,7 @@
 <div class="p-2">
   <h2 class="text-xl font-bold mb-4 text-customBlue">Subscription(s) History</h2>
 
-  <div class="overflow-x-auto shadow rounded-lg">
+  <!-- <div class="overflow-x-auto shadow z-10 relative overflow-y-visible  rounded-lg"> -->
     <table class="w-full text-left border-collapse">
       <thead class="">
         <tr class="bg-gray-100">
@@ -83,36 +83,37 @@
           <td class="p-3 border-b">{{ formatDate(order.startDate) | date:'medium' }}</td>
           <td class="p-3 border-b">{{ formatDate(order.endDate) | date:'medium' }}</td>
 
-          <td class="p-3 border-b text-center relative">
-            <div class="inline-block text-left">
-              <button (click)="order.showMenu = !order.showMenu" class="p-2 rounded hover:bg-gray-200">
+          <td class=" p-3 border-b text-center relative z-20">
+            <div class="inline-block text-left relative">
+              <button (click)="order.showMenu = !order.showMenu" class="p-2 rounded relative hover:bg-gray-200">
                 ⋮
+
+
+              <div 
+              *ngIf="order.showMenu"
+              class="absolute right-0 mt-1 w-32 z-[9999] bg-white border rounded shadow-lg"
+            >
+              <button 
+                (click)="renew(order)" 
+                class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+              >
+                Renew
+              </button>
+              <button 
+                (click)="changePlan(order)" 
+                class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+              >
+                Change Plan
+              </button>
+            </div>
               </button>
 
-              <!-- Dropdown -->
-              <div 
-                *ngIf="order.showMenu"
-                class="absolute right-0 mt-2 w-32 bg-white border rounded shadow-lg z-10"
-              >
-                <button 
-                  (click)="renew(order)" 
-                  class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                >
-                  Renew
-                </button>
-                <button 
-                  (click)="changePlan(order)" 
-                  class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                >
-                  Change Plan
-                </button>
-              </div>
             </div>
           </td>
         </tr>
       </tbody>
     </table>
-  </div>
+  <!-- </div> -->
 </div>
 
     </div>
